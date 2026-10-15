@@ -17,12 +17,14 @@ Early work, not audited. Do not rely on it to protect anyone yet.
 - Device safety from Kryfo: wipe PIN, decoy and hidden chats, metadata
   stripping on photos and video, a requests inbox and proof-of-work for
   first contact.
-- One Rust core shared by Android, iOS and desktop apps.
+- One Rust core under one Expo/React Native app for Android, iOS, Linux,
+  macOS and Sailfish OS, structured like LPHL FASOULI.
 
 ## Layout
 
 - `crates/erevos-core`: protocol and crypto. So far the double ratchet and
   message padding.
+- `crates/erevos-import`: reads chats exported from other apps. So far Telegram.
 - `crates/erevos-relay`: the relay server. So far the one-way queue store.
 
 ## Build
