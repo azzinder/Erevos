@@ -1,0 +1,22 @@
+//! Erevos core: protocol, crypto and storage shared by every app.
+//!
+//! Not audited. Do not rely on it to protect anyone yet.
+
+pub mod padding;
+pub mod ratchet;
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("message failed to authenticate")]
+    Crypto,
+    #[error("malformed input")]
+    Malformed,
+    #[error("session cannot send yet")]
+    NotReady,
+    #[error("too many skipped messages")]
+    TooManySkipped,
+    #[error("sending chain exhausted")]
+    ChainExhausted,
+    #[error("message too large")]
+    TooLarge,
+}

@@ -1,0 +1,8 @@
+[package]
+name = "erevos-relay"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+rand = "0.8"
