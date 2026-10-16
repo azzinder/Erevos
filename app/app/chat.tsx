@@ -137,7 +137,11 @@ export default function Chat() {
     }
     const route = routes[selected];
     const target = relayTarget();
-    if (!route || !target) {
+    if (!target) {
+      setNote('Not sent. Type the relay address in Relay first.');
+      return;
+    }
+    if (!route) {
       setNote('Not sent. The link to this phone is not ready, and no relay route is saved for it.');
       return;
     }
