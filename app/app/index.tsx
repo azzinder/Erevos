@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { Link } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 export default function Home() {
@@ -6,6 +7,7 @@ export default function Home() {
     <View style={styles.container}>
       <Text style={styles.title}>Erevos</Text>
       <Text style={styles.body}>No account, no phone number. Messages are end to end encrypted.</Text>
+      <Link href="/radio" style={styles.link}>Radio test (Android)</Link>
       <StatusBar style="light" />
     </View>
   );
@@ -29,5 +31,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     color: '#BFB6AA',
+  },
+  link: {
+    marginTop: 24,
+    fontSize: 15,
+    color: '#D9A441',
   },
 });
