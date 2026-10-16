@@ -9,6 +9,7 @@ export default function Home() {
       <Text style={styles.body}>No account, no phone number. Messages are end to end encrypted.</Text>
       <Link href="/chat" style={styles.link}>Chat (Android)</Link>
       <Link href="/radio" style={styles.link}>Radio test (Android)</Link>
+      <Link href="/relay" style={styles.link}>Relay test (Wi-Fi)</Link>
       <StatusBar style="light" />
     </View>
   );
