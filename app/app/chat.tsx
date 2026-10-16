@@ -222,21 +222,23 @@ export default function Chat() {
       </Pressable>
       {showRelay ? (
         <View style={styles.section}>
+          <Text style={styles.label}>Relay address</Text>
           <TextInput
             value={relayUrl}
             onChangeText={setRelayUrl}
             placeholder="ws://computer-address:7879"
-            placeholderTextColor="#7D7468"
+            placeholderTextColor="#A39A8D"
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
             style={styles.input}
           />
+          <Text style={styles.label}>Token (optional)</Text>
           <TextInput
             value={relayToken}
             onChangeText={setRelayToken}
             placeholder="Token, if the relay needs one"
-            placeholderTextColor="#7D7468"
+            placeholderTextColor="#A39A8D"
             autoCapitalize="none"
             autoCorrect={false}
             secureTextEntry
@@ -256,7 +258,7 @@ export default function Chat() {
               value={contactDraft}
               onChangeText={setContactDraft}
               placeholder="48 hex characters"
-              placeholderTextColor="#7D7468"
+              placeholderTextColor="#A39A8D"
               autoCapitalize="none"
               autoCorrect={false}
               style={styles.input}
@@ -275,7 +277,7 @@ export default function Chat() {
                   value={routeDraft}
                   onChangeText={setRouteDraft}
                   placeholder="48 hex characters"
-                  placeholderTextColor="#7D7468"
+                  placeholderTextColor="#A39A8D"
                   autoCapitalize="none"
                   autoCorrect={false}
                   style={styles.input}
@@ -307,7 +309,7 @@ export default function Chat() {
           onChangeText={setDraft}
           onSubmitEditing={send}
           placeholder="Message"
-          placeholderTextColor="#7D7468"
+          placeholderTextColor="#A39A8D"
           style={styles.input}
         />
         <Pressable onPress={send} style={styles.button}>
@@ -333,6 +335,10 @@ const styles = StyleSheet.create({
   },
   body: {
     fontSize: 15,
+    color: '#BFB6AA',
+  },
+  label: {
+    fontSize: 13,
     color: '#BFB6AA',
   },
   link: {
@@ -402,12 +408,15 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 10,
+    minHeight: 48,
+    paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4A4036',
     backgroundColor: '#2A2520',
     color: '#F5EFE6',
-    fontSize: 15,
+    fontSize: 16,
   },
   button: {
     paddingVertical: 10,
