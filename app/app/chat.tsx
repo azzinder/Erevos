@@ -20,7 +20,24 @@ import {
 type Message = { id: number; peer: string; text: string; mine: boolean };
 type Queue = { recipientHex: string; senderHex: string };
 
+// What is kept on the phone between launches: the relay, our queue, and the relay routes.
+// The recipient id is private, which is why this goes to the secure store.
+type Saved = { url: string; token: string; ownQueue: Queue | null; routes: Record<string, string> };
+
+const STORE_KEY = 'erevos.relay';
 const RELAY_PREFIX = 'relay:';
+
+type SecureStoreModule = typeof import('expo-secure-store');
+
+// The secure store needs a native build that includes it. Until a phone has one, the chat
+// still works and simply forgets its relay settings when it reloads.
+function secureStore(): SecureStoreModule | null {
+  try {
+    return require('expo-secure-store') as SecureStoreModule;
+  } catch {
+    return null;
+  }
+}
 
 const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.NEARBY_WIFI_DEVICES',
@@ -49,6 +66,7 @@ export default function Chat() {
   const [ownQueue, setOwnQueue] = useState<Queue | null>(null);
   const [routeDraft, setRouteDraft] = useState('');
   const [contactDraft, setContactDraft] = useState('');
+  const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
   const thread = useRef<ScrollView>(null);
 
@@ -79,6 +97,41 @@ export default function Chat() {
       stopRadio();
     };
   }, []);
+
+  // Restores the relay settings, our queue and the contacts saved on this phone.
+  useEffect(() => {
+    const store = secureStore();
+    if (!store) {
+      setLoaded(true);
+      return;
+    }
+    store
+      .getItemAsync(STORE_KEY)
+      .then((saved) => {
+        if (!saved) return;
+        const data = JSON.parse(saved) as Partial<Saved>;
+        const routeMap = data.routes ?? {};
+        setRelayUrl(data.url ?? '');
+        setRelayToken(data.token ?? '');
+        setOwnQueue(data.ownQueue ?? null);
+        setRoutes(routeMap);
+        setPeers(Object.keys(routeMap).filter((peer) => peer.startsWith(RELAY_PREFIX)));
+      })
+      .catch(() => {
+        // Nothing usable saved. Start empty.
+      })
+      .finally(() => setLoaded(true));
+  }, []);
+
+  // Saves the relay settings, our queue and the contacts whenever they change.
+  useEffect(() => {
+    const store = secureStore();
+    if (!loaded || !store) return;
+    const data: Saved = { url: relayUrl, token: relayToken, ownQueue, routes };
+    store.setItemAsync(STORE_KEY, JSON.stringify(data)).catch(() => {
+      // A failed save only means the next launch starts empty.
+    });
+  }, [loaded, relayUrl, relayToken, ownQueue, routes]);
 
   // Looks at our own relay queue every few seconds. A message names the sender's relay
   // sender id, so we can answer through the relay and list that sender as a chat.
