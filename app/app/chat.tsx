@@ -2,10 +2,25 @@ import { useEffect, useRef, useState } from 'react';
 import { PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
+import {
+  createQueue,
+  decodeEnvelope,
+  encodeEnvelope,
+  fromHex,
+  receiveMessage,
+  sendMessage,
+  toHex,
+  type Relay,
+} from '../lib/relay';
 
-// Chat over the radio link. Plain text for now, kept in memory only, so it is gone on reload.
+// Chat over the radio link, with a fallback through the relay. A phone is reached over the
+// radio link when that link is ready. Otherwise the message goes through the relay, if a relay
+// sender id is saved for that phone. Plain text, kept in memory only, so it is gone on reload.
 
 type Message = { id: number; peer: string; text: string; mine: boolean };
+type Queue = { recipientHex: string; senderHex: string };
+
+const RELAY_PREFIX = 'relay:';
 
 const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.NEARBY_WIFI_DEVICES',
@@ -15,14 +30,31 @@ const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.ACCESS_FINE_LOCATION',
 ];
 
+function label(peer: string): string {
+  return peer.startsWith(RELAY_PREFIX) ? `relay ${peer.slice(RELAY_PREFIX.length, RELAY_PREFIX.length + 8)}` : peer;
+}
+
 export default function Chat() {
   const [peers, setPeers] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
+  // Peer id to the relay sender id that reaches it. Typed in for radio peers, and
+  // learned from the sender for relay peers.
+  const [routes, setRoutes] = useState<Record<string, string>>({});
+  const [showRelay, setShowRelay] = useState(false);
+  const [relayUrl, setRelayUrl] = useState('');
+  const [relayToken, setRelayToken] = useState('');
+  const [ownQueue, setOwnQueue] = useState<Queue | null>(null);
+  const [routeDraft, setRouteDraft] = useState('');
   const nextId = useRef(1);
   const thread = useRef<ScrollView>(null);
+
+  function relayTarget(): Relay | null {
+    const url = relayUrl.trim();
+    return url ? { url, token: relayToken.trim() || undefined } : null;
+  }
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -47,6 +79,39 @@ export default function Chat() {
     };
   }, []);
 
+  // Looks at our own relay queue every few seconds. A message names the sender's relay
+  // sender id, so we can answer through the relay and list that sender as a chat.
+  useEffect(() => {
+    const url = relayUrl.trim();
+    if (!url || !ownQueue) return;
+    const target: Relay = { url, token: relayToken.trim() || undefined };
+    const recipient = fromHex(ownQueue.recipientHex);
+    let active = true;
+    let busy = false;
+    const timer = setInterval(async () => {
+      if (busy) return;
+      busy = true;
+      try {
+        const bytes = await receiveMessage(target, recipient);
+        const envelope = bytes ? decodeEnvelope(bytes) : null;
+        if (!active || !envelope) return;
+        const peer = `${RELAY_PREFIX}${envelope.from || 'anonymous'}`;
+        if (envelope.from) setRoutes((list) => ({ ...list, [peer]: envelope.from }));
+        setPeers((list) => (list.includes(peer) ? list : [...list, peer]));
+        setSelected((current) => current ?? peer);
+        setMessages((list) => [...list, { id: nextId.current++, peer, text: envelope.text, mine: false }]);
+      } catch (error) {
+        if (active) setNote(error instanceof Error ? error.message : String(error));
+      } finally {
+        busy = false;
+      }
+    }, 3000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [relayUrl, relayToken, ownQueue]);
+
   if (Platform.OS !== 'android') {
     return (
       <View style={styles.container}>
@@ -56,19 +121,64 @@ export default function Chat() {
     );
   }
 
-  function send() {
+  function keep(peer: string, text: string) {
+    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine: true }]);
+    setDraft('');
+  }
+
+  async function send() {
     const text = draft.trim();
     if (!text || !selected) return;
-    if (!sendText(selected, text)) {
-      setNote('Not sent. The link to this phone is not ready.');
+    if (!selected.startsWith(RELAY_PREFIX) && sendText(selected, text)) {
+      keep(selected, text);
+      setNote('');
       return;
     }
-    setMessages((list) => [...list, { id: nextId.current++, peer: selected, text, mine: true }]);
-    setDraft('');
-    setNote('');
+    const route = routes[selected];
+    const target = relayTarget();
+    if (!route || !target) {
+      setNote('Not sent. The link to this phone is not ready, and no relay route is saved for it.');
+      return;
+    }
+    try {
+      await sendMessage(target, fromHex(route), encodeEnvelope(ownQueue?.senderHex ?? '', text));
+      keep(selected, text);
+      setNote('Sent through the relay.');
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function createOwnQueue() {
+    const target = relayTarget();
+    if (!target) {
+      setNote('Type the relay address first.');
+      return;
+    }
+    try {
+      const ids = await createQueue(target);
+      setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
+      setNote('Relay queue created.');
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  function saveRoute() {
+    if (!selected || selected.startsWith(RELAY_PREFIX)) return;
+    try {
+      const hex = routeDraft.trim().toLowerCase();
+      fromHex(hex);
+      setRoutes((list) => ({ ...list, [selected]: hex }));
+      setRouteDraft('');
+      setNote('Relay route saved.');
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
   }
 
   const visible = messages.filter((message) => message.peer === selected);
+  const selectedIsRadio = selected !== null && !selected.startsWith(RELAY_PREFIX);
 
   return (
     <View style={styles.container}>
@@ -83,10 +193,66 @@ export default function Chat() {
             onPress={() => setSelected(peer)}
             style={[styles.chip, peer === selected && styles.chipOn]}
           >
-            <Text style={styles.chipText}>{peer}</Text>
+            <Text style={styles.chipText}>{label(peer)}</Text>
           </Pressable>
         ))}
       </View>
+      <Pressable onPress={() => setShowRelay((on) => !on)}>
+        <Text style={styles.link}>{showRelay ? 'Hide relay' : 'Relay (Wi-Fi or internet)'}</Text>
+      </Pressable>
+      {showRelay ? (
+        <View style={styles.section}>
+          <TextInput
+            value={relayUrl}
+            onChangeText={setRelayUrl}
+            placeholder="ws://computer-address:7879"
+            placeholderTextColor="#7D7468"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            style={styles.input}
+          />
+          <TextInput
+            value={relayToken}
+            onChangeText={setRelayToken}
+            placeholder="Token, if the relay needs one"
+            placeholderTextColor="#7D7468"
+            autoCapitalize="none"
+            autoCorrect={false}
+            secureTextEntry
+            style={styles.input}
+          />
+          <Pressable onPress={createOwnQueue} style={styles.button}>
+            <Text style={styles.buttonText}>Create my relay queue</Text>
+          </Pressable>
+          {ownQueue ? (
+            <Text selectable style={styles.id}>
+              My relay sender id: {ownQueue.senderHex}
+            </Text>
+          ) : null}
+          {selectedIsRadio ? (
+            <View style={styles.section}>
+              <Text style={styles.body}>
+                Relay sender id of {label(selected)}: {routes[selected] ?? 'not set'}
+              </Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  value={routeDraft}
+                  onChangeText={setRouteDraft}
+                  placeholder="48 hex characters"
+                  placeholderTextColor="#7D7468"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={styles.input}
+                />
+                <Pressable onPress={saveRoute} style={styles.button}>
+                  <Text style={styles.buttonText}>Save</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
       <ScrollView
         ref={thread}
         style={styles.thread}
@@ -109,8 +275,8 @@ export default function Chat() {
           placeholderTextColor="#7D7468"
           style={styles.input}
         />
-        <Pressable onPress={send} style={styles.send}>
-          <Text style={styles.sendText}>Send</Text>
+        <Pressable onPress={send} style={styles.button}>
+          <Text style={styles.buttonText}>Send</Text>
         </Pressable>
       </View>
       <StatusBar style="light" />
@@ -133,6 +299,18 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 15,
     color: '#BFB6AA',
+  },
+  link: {
+    fontSize: 14,
+    color: '#D9A441',
+  },
+  section: {
+    gap: 8,
+  },
+  id: {
+    fontSize: 12,
+    color: '#F5EFE6',
+    fontFamily: 'monospace',
   },
   row: {
     flexDirection: 'row',
@@ -196,13 +374,14 @@ const styles = StyleSheet.create({
     color: '#F5EFE6',
     fontSize: 15,
   },
-  send: {
+  button: {
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
+    alignItems: 'center',
     backgroundColor: '#D9A441',
   },
-  sendText: {
+  buttonText: {
     color: '#0D0B09',
     fontSize: 14,
     fontWeight: '600',

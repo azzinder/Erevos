@@ -1,30 +1,16 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { createQueue, receiveMessage, sendMessage } from '../lib/relay';
+import { createQueue, decodeEnvelope, encodeEnvelope, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 
 // Messages through the relay running on a computer, over WebSocket. Phones on the same
 // Wi-Fi reach it at ws://<computer-IP>:7879. Nothing is saved, so reloading forgets the queue.
 
 type Queue = { recipientHex: string; senderHex: string };
 
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-
-function toHex(bytes: Uint8Array): string {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-function fromHex(hex: string): Uint8Array {
-  const clean = hex.trim().toLowerCase();
-  if (!/^[0-9a-f]{48}$/.test(clean)) throw new Error('An id is 48 hex characters.');
-  const bytes = new Uint8Array(24);
-  for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
-  return bytes;
-}
-
 export default function Relay() {
   const [url, setUrl] = useState('');
+  const [token, setToken] = useState('');
   const [queue, setQueue] = useState<Queue | null>(null);
   const [sendTo, setSendTo] = useState('');
   const [draft, setDraft] = useState('');
@@ -32,6 +18,15 @@ export default function Relay() {
 
   function note(line: string) {
     setLog((list) => [line, ...list].slice(0, 30));
+  }
+
+  function target() {
+    const relay = url.trim();
+    if (!relay) {
+      note('Type the relay address first.');
+      return null;
+    }
+    return { url: relay, token: token.trim() || undefined };
   }
 
   async function attempt(action: () => Promise<string>) {
@@ -43,11 +38,8 @@ export default function Relay() {
   }
 
   function create() {
-    const relay = url.trim();
-    if (!relay) {
-      note('Type the relay address first.');
-      return;
-    }
+    const relay = target();
+    if (!relay) return;
     attempt(async () => {
       const ids = await createQueue(relay);
       setQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
@@ -56,29 +48,27 @@ export default function Relay() {
   }
 
   function send() {
-    const relay = url.trim();
+    const relay = target();
     const text = draft.trim();
     if (!relay || !text) return;
     attempt(async () => {
-      await sendMessage(relay, fromHex(sendTo), encoder.encode(text));
+      await sendMessage(relay, fromHex(sendTo), encodeEnvelope('', text));
       setDraft('');
       return `Sent: ${text}`;
     });
   }
 
   function receive() {
-    const relay = url.trim();
-    if (!relay) {
-      note('Type the relay address first.');
-      return;
-    }
+    const relay = target();
+    if (!relay) return;
     if (!queue) {
       note('Create a queue first.');
       return;
     }
     attempt(async () => {
-      const message = await receiveMessage(relay, fromHex(queue.recipientHex));
-      return message ? `Received: ${decoder.decode(message)}` : 'Nothing waiting.';
+      const bytes = await receiveMessage(relay, fromHex(queue.recipientHex));
+      const envelope = bytes ? decodeEnvelope(bytes) : null;
+      return envelope ? `Received: ${envelope.text}` : 'Nothing waiting.';
     });
   }
 
@@ -101,6 +91,16 @@ export default function Relay() {
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
+        style={styles.input}
+      />
+      <TextInput
+        value={token}
+        onChangeText={setToken}
+        placeholder="Token, if the relay needs one"
+        placeholderTextColor="#7D7468"
+        autoCapitalize="none"
+        autoCorrect={false}
+        secureTextEntry
         style={styles.input}
       />
       <Pressable onPress={create} style={styles.button}>
