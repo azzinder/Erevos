@@ -3,6 +3,7 @@
 //! Not audited. Do not rely on it to protect anyone yet.
 
 pub mod padding;
+pub mod pqxdh;
 pub mod ratchet;
 
 #[derive(Debug, thiserror::Error)]
@@ -19,4 +20,6 @@ pub enum Error {
     ChainExhausted,
     #[error("message too large")]
     TooLarge,
+    #[error("prekey bundle signature is invalid")]
+    BadSignature,
 }
