@@ -33,6 +33,10 @@ use crate::Error;
 const F: [u8; 32] = [0xFF; 32];
 const INFO: &[u8] = b"Erevos PQXDH v1";
 
+/// ML-KEM-768 encapsulation key and ciphertext sizes, in bytes.
+pub const PQ_PUBLIC_LEN: usize = 1184;
+pub const PQ_CIPHERTEXT_LEN: usize = 1088;
+
 /// Long-term keys. Keep the identity secrets on the device only.
 pub struct Identity {
     pub signing: SigningKey,

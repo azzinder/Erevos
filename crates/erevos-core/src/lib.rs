@@ -6,6 +6,7 @@ pub mod mesh;
 pub mod padding;
 pub mod pqxdh;
 pub mod ratchet;
+pub mod wire;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

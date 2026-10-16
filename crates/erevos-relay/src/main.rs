@@ -1,11 +1,30 @@
 //! Erevos relay: holds one-way message queues for offline delivery.
 //!
-//! Only the queue store exists so far. The network listener, two-hop
-//! forwarding and retention come next.
+//! Listens on the address given as the first argument, `127.0.0.1:7878` by
+//! default. Put it behind TLS in production; this binary speaks plain TCP.
 
-#[allow(dead_code)] // used once the listener lands
 mod queue;
+mod server;
 
-fn main() {
-    eprintln!("erevos-relay: network listener not written yet");
+use std::env;
+use std::net::TcpListener;
+use std::process::ExitCode;
+
+fn main() -> ExitCode {
+    let addr = env::args().nth(1).unwrap_or_else(|| "127.0.0.1:7878".to_string());
+    let listener = match TcpListener::bind(&addr) {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("erevos-relay: cannot listen on {addr}: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    eprintln!("erevos-relay listening on {addr}");
+    match server::serve(listener) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("erevos-relay: {e}");
+            ExitCode::FAILURE
+        }
+    }
 }

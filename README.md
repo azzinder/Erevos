@@ -30,8 +30,11 @@ Early work, not audited. Do not rely on it to protect anyone yet.
 - `crates/erevos-core`: protocol and crypto. So far the PQXDH handshake
   (X25519 + ML-KEM-768), the double ratchet and message padding.
 - `crates/erevos-core/src/mesh.rs`: store-and-forward for offline delivery.
+- `crates/erevos-core/src/wire.rs`: byte encodings for prekey bundles, handshake
+  messages and packets, with one valid encoding per message.
 - `crates/erevos-import`: reads chats exported from other apps. So far Telegram.
-- `crates/erevos-relay`: the relay server. So far the one-way queue store.
+- `crates/erevos-relay`: the relay server. A TCP listener over the one-way
+  queue store (create, send, receive, delete).
 
 ## Build
 
