@@ -7,6 +7,7 @@ export default function Home() {
     <View style={styles.container}>
       <Text style={styles.title}>Erevos</Text>
       <Text style={styles.body}>No account, no phone number. Messages are end to end encrypted.</Text>
+      <Link href="/chat" style={styles.link}>Chat (Android)</Link>
       <Link href="/radio" style={styles.link}>Radio test (Android)</Link>
       <StatusBar style="light" />
     </View>
