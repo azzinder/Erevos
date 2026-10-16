@@ -25,4 +25,6 @@ pub enum Error {
     BadSignature,
     #[error("store is full")]
     Full,
+    #[error("one-time prekey is unknown or already used")]
+    UnknownPrekey,
 }

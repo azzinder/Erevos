@@ -11,7 +11,8 @@ Early work, not audited. Do not rely on it to protect anyone yet.
 - No user identifiers. Each contact is a pair of one-way relay queues, as in
   SimpleX, so no server holds a contact graph.
 - Double ratchet for 1:1 messages, seeded by a post-quantum hybrid handshake
-  (PQXDH with X25519 and ML-KEM-768). Every message is padded to a fixed size.
+  (PQXDH with X25519 and ML-KEM-768). Each one-time prekey is used once and
+  then deleted, so an initial message cannot be replayed. Every message is padded to a fixed size.
 - Messages go through two relays, so no relay sees both the sender's IP and
   the recipient's queue. Built-in Tor is optional.
 - Offline mesh (Android first, Wi-Fi Aware and Bluetooth LE): packets are
