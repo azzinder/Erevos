@@ -48,6 +48,7 @@ export default function Chat() {
   const [relayToken, setRelayToken] = useState('');
   const [ownQueue, setOwnQueue] = useState<Queue | null>(null);
   const [routeDraft, setRouteDraft] = useState('');
+  const [contactDraft, setContactDraft] = useState('');
   const nextId = useRef(1);
   const thread = useRef<ScrollView>(null);
 
@@ -177,6 +178,21 @@ export default function Chat() {
     }
   }
 
+  function addContact() {
+    try {
+      const hex = contactDraft.trim().toLowerCase();
+      fromHex(hex);
+      const peer = `${RELAY_PREFIX}${hex}`;
+      setRoutes((list) => ({ ...list, [peer]: hex }));
+      setPeers((list) => (list.includes(peer) ? list : [...list, peer]));
+      setSelected(peer);
+      setContactDraft('');
+      setNote('Contact added. Messages to it go through the relay.');
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
   const visible = messages.filter((message) => message.peer === selected);
   const selectedIsRadio = selected !== null && !selected.startsWith(RELAY_PREFIX);
 
@@ -230,6 +246,21 @@ export default function Chat() {
               My relay sender id: {ownQueue.senderHex}
             </Text>
           ) : null}
+          <Text style={styles.body}>Add a contact by the relay sender id they gave you:</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              value={contactDraft}
+              onChangeText={setContactDraft}
+              placeholder="48 hex characters"
+              placeholderTextColor="#7D7468"
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={styles.input}
+            />
+            <Pressable onPress={addContact} style={styles.button}>
+              <Text style={styles.buttonText}>Add</Text>
+            </Pressable>
+          </View>
           {selectedIsRadio ? (
             <View style={styles.section}>
               <Text style={styles.body}>
