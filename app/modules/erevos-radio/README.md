@@ -34,5 +34,8 @@ and `onRadioEvent(name, listener)` for `onStatus`, `onPeer` and `onText`.
   arrive, but there is no de-duplication yet.
 - No reconnect. A dropped link needs a new discovery. A dropped BLE link is removed, and the
   next scan result dials again after 5 seconds.
-- The Wi-Fi Aware path has only been checked on the Pixel 10 Pro. The BLE GATT path is new and
-  not yet tested on two phones.
+- The Wi-Fi Aware path has only been checked on the Pixel 10 Pro, where it attaches and publishes.
+  No text has crossed it between two phones yet.
+- The BLE GATT path carried a text both ways between a Pixel 10 Pro (Android 17) and a phone on
+  Android 16 on 2026-10-16. The Android 16 phone also keeps dialing a third address that never
+  becomes ready. The cause is not known yet.
