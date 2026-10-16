@@ -14,6 +14,10 @@ Early work, not audited. Do not rely on it to protect anyone yet.
   (PQXDH with X25519 and ML-KEM-768). Every message is padded to a fixed size.
 - Messages go through two relays, so no relay sees both the sender's IP and
   the recipient's queue. Built-in Tor is optional.
+- Offline mesh (Android first, Wi-Fi Aware and Bluetooth LE): packets are
+  padded, carry a per-day routing tag only the two session holders can
+  compute, and expire after three days. Based on what Knit does, without its
+  plaintext public room, static keys or flooding of direct messages.
 - Device safety from Kryfo: wipe PIN, decoy and hidden chats, metadata
   stripping on photos and video, a requests inbox and proof-of-work for
   first contact.
@@ -24,6 +28,7 @@ Early work, not audited. Do not rely on it to protect anyone yet.
 
 - `crates/erevos-core`: protocol and crypto. So far the PQXDH handshake
   (X25519 + ML-KEM-768), the double ratchet and message padding.
+- `crates/erevos-core/src/mesh.rs`: store-and-forward for offline delivery.
 - `crates/erevos-import`: reads chats exported from other apps. So far Telegram.
 - `crates/erevos-relay`: the relay server. So far the one-way queue store.
 

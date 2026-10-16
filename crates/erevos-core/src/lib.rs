@@ -2,6 +2,7 @@
 //!
 //! Not audited. Do not rely on it to protect anyone yet.
 
+pub mod mesh;
 pub mod padding;
 pub mod pqxdh;
 pub mod ratchet;
@@ -22,4 +23,6 @@ pub enum Error {
     TooLarge,
     #[error("prekey bundle signature is invalid")]
     BadSignature,
+    #[error("store is full")]
+    Full,
 }
