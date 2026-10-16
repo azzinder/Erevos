@@ -6,3 +6,4 @@ license.workspace = true
 
 [dependencies]
 rand = "0.8"
+tungstenite = "0.30.0"
