@@ -2,6 +2,7 @@
 //!
 //! Not audited. Do not rely on it to protect anyone yet.
 
+pub mod frame;
 pub mod mesh;
 pub mod padding;
 pub mod pqxdh;
