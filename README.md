@@ -27,6 +27,8 @@ Early work, not audited. Do not rely on it to protect anyone yet.
 
 ## Layout
 
+- `app/`: the Expo app (React Native, expo-router), same SDK as LPHL FASOULI.
+  Home screen only so far.
 - `crates/erevos-core`: protocol and crypto. So far the PQXDH handshake
   (X25519 + ML-KEM-768), the double ratchet and message padding.
 - `crates/erevos-core/src/mesh.rs`: store-and-forward for offline delivery.
