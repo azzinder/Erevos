@@ -65,13 +65,13 @@ export default function RadioTest() {
   }
 
   function sendHello() {
-    const awarePeers = peers.filter((peer) => peer.startsWith('aware-'));
-    if (awarePeers.length === 0) {
-      add('no Wi-Fi Aware peer yet');
+    const linkPeers = peers.filter((peer) => peer.startsWith('aware-') || peer.startsWith('ble-link-'));
+    if (linkPeers.length === 0) {
+      add('no data link yet');
       return;
     }
-    const sent = sendText(awarePeers[0], `hello from ${new Date().toLocaleTimeString()}`);
-    add(sent ? `sent to ${awarePeers[0]}` : 'send refused');
+    const sent = sendText(linkPeers[0], `hello from ${new Date().toLocaleTimeString()}`);
+    add(sent ? `sent to ${linkPeers[0]}` : 'send refused');
   }
 
   return (

@@ -1,6 +1,7 @@
 import { requireOptionalNativeModule, type EventSubscription } from 'expo-modules-core';
 
-// Phone radio for Android: Wi-Fi Aware for data, BLE for presence.
+// Phone radio for Android: Wi-Fi Aware for data when both phones support it, BLE GATT
+// for data otherwise, and BLE for presence.
 // On other platforms every function is a no-op, so the app still bundles for web.
 
 export type RadioStatus = {
@@ -12,7 +13,7 @@ export type RadioStatus = {
 
 export type RadioEvents = {
   onStatus: (event: { text: string }) => void;
-  onPeer: (event: { id: string; kind: 'wifi-aware' | 'ble' }) => void;
+  onPeer: (event: { id: string; kind: 'wifi-aware' | 'ble-link' | 'ble' }) => void;
   onText: (event: { peer: string; text: string }) => void;
 };
 
@@ -39,7 +40,7 @@ export function stopRadio(): void {
   native?.stop();
 }
 
-/** Sends text to a link id from an `onPeer` event with kind `wifi-aware`. */
+/** Sends text to a link id from an `onPeer` event with kind `wifi-aware` or `ble-link`. */
 export function sendText(peer: string, text: string): boolean {
   return native ? native.sendText(peer, text) : false;
 }
