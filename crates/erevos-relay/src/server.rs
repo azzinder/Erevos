@@ -17,13 +17,19 @@
 //! A message longer than `MAX_MESSAGE` or an unknown opcode closes the
 //! connection.
 //!
-//! Not audited. Neither front end has TLS or authentication yet.
+//! The WebSocket front end can require a bearer token in the `Authorization`
+//! header (see `serve_ws`). Neither front end speaks TLS: put the WebSocket
+//! behind a TLS proxy before it leaves the local network.
+//!
+//! Not audited.
 
 use std::io::{self, Cursor, ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+use tungstenite::handshake::server::{ErrorResponse, Request, Response};
+use tungstenite::http::StatusCode;
 use tungstenite::Message;
 
 use crate::queue::{QueueError, QueueId, Store};
@@ -57,13 +63,20 @@ pub fn serve(listener: TcpListener, store: SharedStore) -> io::Result<()> {
 }
 
 /// Serves WebSocket connections until the listener fails. Each connection gets
-/// its own thread; all share the same store as the TCP front end.
-pub fn serve_ws(listener: TcpListener, store: SharedStore) -> io::Result<()> {
+/// its own thread; all share the same store as the TCP front end. With a
+/// `token`, a connection must send `Authorization: Bearer <token>` during the
+/// handshake or it is refused with 401.
+pub fn serve_ws(
+    listener: TcpListener,
+    store: SharedStore,
+    token: Option<Arc<str>>,
+) -> io::Result<()> {
     loop {
         let (stream, _) = listener.accept()?;
         let store = Arc::clone(&store);
+        let token = token.clone();
         thread::spawn(move || {
-            let _ = handle_ws(stream, &store);
+            let _ = handle_ws(stream, &store, token.as_deref());
         });
     }
 }
@@ -75,8 +88,14 @@ fn handle_tcp(mut stream: TcpStream, store: &Mutex<Store>) -> io::Result<()> {
     Ok(())
 }
 
-fn handle_ws(stream: TcpStream, store: &Mutex<Store>) -> io::Result<()> {
-    let mut socket = tungstenite::accept(stream).map_err(to_io)?;
+// The error type of the handshake callback is fixed by tungstenite, so it cannot be boxed here.
+#[allow(clippy::result_large_err)]
+fn handle_ws(stream: TcpStream, store: &Mutex<Store>, token: Option<&str>) -> io::Result<()> {
+    let check = |request: &Request, response: Response| match token {
+        Some(expected) if !is_authorized(request, expected) => Err(unauthorized()),
+        _ => Ok(response),
+    };
+    let mut socket = tungstenite::accept_hdr(stream, check).map_err(to_io)?;
     loop {
         let message = match socket.read() {
             Ok(message) => message,
@@ -175,10 +194,32 @@ fn to_io(e: impl std::fmt::Display) -> io::Error {
     io::Error::other(e.to_string())
 }
 
+fn is_authorized(request: &Request, expected: &str) -> bool {
+    let presented = request
+        .headers()
+        .get("authorization")
+        .and_then(|value| value.to_str().ok());
+    let expected = format!("Bearer {expected}");
+    presented.is_some_and(|presented| constant_time_eq(presented.as_bytes(), expected.as_bytes()))
+}
+
+/// Compares without stopping at the first difference, so timing does not show
+/// how much of the token matched.
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    a.len() == b.len() && a.iter().zip(b).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+}
+
+fn unauthorized() -> ErrorResponse {
+    let mut response = ErrorResponse::new(None);
+    *response.status_mut() = StatusCode::UNAUTHORIZED;
+    response
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::net::SocketAddr;
+    use tungstenite::client::IntoClientRequest;
     use tungstenite::stream::MaybeTlsStream;
     use tungstenite::WebSocket;
 
@@ -190,11 +231,12 @@ mod tests {
         addr
     }
 
-    fn start_ws() -> SocketAddr {
+    fn start_ws(token: Option<&str>) -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
         let store = Arc::new(Mutex::new(Store::default()));
-        thread::spawn(move || serve_ws(listener, store));
+        let token: Option<Arc<str>> = token.map(Arc::from);
+        thread::spawn(move || serve_ws(listener, store, token));
         addr
     }
 
@@ -288,8 +330,29 @@ mod tests {
     }
 
     #[test]
+    fn websocket_with_token_needs_the_bearer_header() {
+        let addr = start_ws(Some("s3cret"));
+        assert!(tungstenite::connect(format!("ws://{addr}")).is_err());
+
+        let mut wrong = format!("ws://{addr}").into_client_request().unwrap();
+        wrong
+            .headers_mut()
+            .insert("authorization", "Bearer nope".parse().unwrap());
+        assert!(tungstenite::connect(wrong).is_err());
+
+        let mut right = format!("ws://{addr}").into_client_request().unwrap();
+        right
+            .headers_mut()
+            .insert("authorization", "Bearer s3cret".parse().unwrap());
+        let (mut ws, _) = tungstenite::connect(right).unwrap();
+        let (recipient, sender) = ws_create(&mut ws);
+        assert_eq!(ws_send(&mut ws, &sender, b"hi"), OK);
+        assert_eq!(ws_receive(&mut ws, &recipient).as_deref(), Some(&b"hi"[..]));
+    }
+
+    #[test]
     fn websocket_message_goes_from_sender_to_recipient_once() {
-        let (mut ws, _) = tungstenite::connect(format!("ws://{}", start_ws())).unwrap();
+        let (mut ws, _) = tungstenite::connect(format!("ws://{}", start_ws(None))).unwrap();
         let (recipient, sender) = ws_create(&mut ws);
         assert_eq!(ws_send(&mut ws, &sender, b"hello"), OK);
         assert_eq!(

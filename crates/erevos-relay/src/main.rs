@@ -2,8 +2,13 @@
 //!
 //! Usage: `erevos-relay [TCP_ADDR] [WS_ADDR]`. The defaults are
 //! `127.0.0.1:7878` for TCP and `127.0.0.1:7879` for WebSocket. Both front
-//! ends share one store. Put them behind TLS in production; this binary speaks
-//! plain TCP and plain WebSocket (`ws://`).
+//! ends share one store. This binary speaks plain TCP and plain WebSocket
+//! (`ws://`), so put the WebSocket behind a TLS proxy before it leaves the
+//! local network.
+//!
+//! Set `EREVOS_RELAY_TOKEN` to require `Authorization: Bearer <token>` on
+//! WebSocket connections. Without it, anyone who can reach the WebSocket port
+//! can use the relay.
 
 mod queue;
 mod server;
@@ -38,10 +43,17 @@ fn main() -> ExitCode {
         }
     };
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
+    let token = env::var("EREVOS_RELAY_TOKEN")
+        .ok()
+        .filter(|t| !t.is_empty())
+        .map(|t| Arc::from(t.as_str()));
+    if token.is_none() {
+        eprintln!("erevos-relay: no EREVOS_RELAY_TOKEN set, the WebSocket accepts anyone");
+    }
     let store = Arc::new(Mutex::new(Store::default()));
     let ws_store = Arc::clone(&store);
     thread::spawn(move || {
-        if let Err(e) = server::serve_ws(ws, ws_store) {
+        if let Err(e) = server::serve_ws(ws, ws_store, token) {
             eprintln!("erevos-relay websocket: {e}");
         }
     });
