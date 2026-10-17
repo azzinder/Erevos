@@ -108,10 +108,46 @@ t('a disappearing message is kept with its time, and goes once that has passed',
   assert.equal(await history.expire(999), false);
 
   const again = await History.open('space', 0, key);
-  assert.deepEqual(again.messages().map((m) => [m.text, m.until]), [['stays', undefined], ['soon', 1000], ['later', 5000]]);
+  assert.deepEqual(again.messages().map((m) => [m.text, m.until]), [['stays', 0], ['soon', 1000], ['later', 5000]]);
   assert.equal(await again.expire(1000), true);
   assert.deepEqual((await History.open('space', 0, key)).messages().map((m) => m.text), ['stays', 'later']);
   await again.expire(10_000);
   assert.deepEqual((await History.open('space', 0, key)).messages().map((m) => m.text), ['stays']);
   assert.ok(values().every((v) => v.length === values()[0].length));
+});
+
+t('marks what came and was read, and a disappearing message starts its time once read', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const [one, two, three] = [newTag(), newTag(), newTag()];
+  await history.add({ peer: 'contact:aa', text: 'one', mine: true, at: 1, tag: one, lasts: 60 });
+  await history.add({ peer: 'contact:aa', text: 'two', mine: true, at: 2, tag: two });
+  await history.add({ peer: 'contact:aa', text: 'three', mine: false, at: 3, tag: three, lasts: 300 });
+  await history.add({ peer: 'contact:bb', text: 'four', mine: false, at: 4, tag: newTag() });
+
+  // Ours came to their phone; nothing starts yet, and waiting messages do not expire.
+  assert.deepEqual((await history.mark('contact:aa', true, 1, 100, [one, two])).sort(), [one, two].sort());
+  assert.deepEqual(await history.mark('contact:aa', true, 1, 100, [one]), []);
+  assert.equal(await history.expire(Number.MAX_SAFE_INTEGER), false);
+
+  // They read the first: it disappears 60 seconds from then. Read here: theirs starts too.
+  assert.deepEqual(await history.mark('contact:aa', true, 2, 1000, [one]), [one]);
+  assert.deepEqual(await history.mark('contact:aa', false, 2, 2000), [three]);
+  const again = await History.open('space', 0, key);
+  assert.deepEqual(
+    again.messages().map((m) => [m.text, m.mark, m.until, m.lasts]),
+    [
+      ['one', 2, 61_000, 0],
+      ['two', 1, 0, 0],
+      ['three', 2, 302_000, 0],
+      ['four', 0, 0, 0],
+    ],
+  );
+  await again.expire(61_000);
+  assert.deepEqual((await History.open('space', 0, key)).messages().map((m) => m.text), ['two', 'three', 'four']);
+
+  // A message kept before marks reads as not read.
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'old', one, 0, 0, 7]] } });
+  assert.deepEqual((await History.open('space', 1, key)).messages().map((m) => [m.mark, m.until, m.lasts]), [[0, 0, 0]]);
 });

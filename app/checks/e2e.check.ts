@@ -169,14 +169,14 @@ t('a message carries its tag, and a request to delete one message or all of them
   const got = message(await bob.e2e.receive(hi.packet));
   assert.deepEqual([got.text, got.tag, got.erase], ['hi', hi.tag, null]);
 
-  const one = await alice.e2e.seal(identity, '', alice.from, { tag: hi.tag });
+  const one = await alice.e2e.seal(identity, '', alice.from, { erase: { tag: hi.tag } });
   assert.equal(one.tag, '');
   assert.deepEqual(message(await bob.e2e.receive(one.packet)).erase, { tag: hi.tag });
-  const all = await bob.e2e.seal(hello.identity, '', bob.from, { all: true });
+  const all = await bob.e2e.seal(hello.identity, '', bob.from, { erase: { all: true } });
   const asked = message(await alice.e2e.receive(all.packet));
   assert.deepEqual([asked.text, asked.erase], ['', { all: true }]);
   // A message with text never asks to delete.
-  const both = await alice.e2e.seal(identity, 'text', alice.from, { all: true });
+  const both = await alice.e2e.seal(identity, 'text', alice.from, { erase: { all: true } });
   assert.equal(message(await bob.e2e.receive(both.packet)).erase, null);
 });
 
@@ -212,11 +212,24 @@ t('a chat timer travels with the messages, the later setting wins, and old messa
   const same = message(await alice.e2e.receive((await bob.e2e.seal(hello.identity, 'again', bob.from)).packet));
   assert.deepEqual([same.timer, same.timerChanged], [0, false]);
 
+  // One message can disappear on its own, without changing the chat's timer.
+  const once = await bob.e2e.seal(hello.identity, 'once', bob.from, { lasts: 60 });
+  assert.equal(once.timer, 60);
+  const gotOnce = message(await alice.e2e.receive(once.packet));
+  assert.deepEqual([gotOnce.text, gotOnce.timer, gotOnce.timerChanged], ['once', 60, false]);
+  assert.equal(alice.e2e.contacts()[0].timer, 0);
+
+  // What came and was read travels back by tag.
+  const receipts = await alice.e2e.seal(identity, '', alice.from, { got: [once.tag, 'not a tag'], read: [once.tag] });
+  const back = message(await bob.e2e.receive(receipts.packet));
+  assert.deepEqual([back.text, back.got, back.read, back.timerChanged], ['', [once.tag], [once.tag], false]);
+
   // Kept, sealed, between launches; and only times Erevos knows.
   await alice.e2e.setTimer(identity, 300);
   assert.equal((await E2E.open('space', 0, key)).contacts()[0].timer, 300);
   await assert.rejects(alice.e2e.setTimer(identity, -1));
   await assert.rejects(alice.e2e.setTimer(identity, 1.5));
+  await assert.rejects(alice.e2e.seal(identity, 'x', alice.from, { lasts: -5 }));
   await assert.rejects(alice.e2e.setTimer('00'.repeat(32), 60));
 });
 

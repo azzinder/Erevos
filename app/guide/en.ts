@@ -88,6 +88,14 @@ Pick the chat and tap **Show safety number**. Both phones show the same 60 digit
 in person or on a call: if they match, no one is in between. If they differ, do not trust that chat, and add the
 link again, scanned from their own phone.
 
+### Sent, came and read
+
+Under each of your messages to a contact, **✓** says the relay took it, **✓✓** that it came to their phone, and
+**✓✓✓** that they read it. Their phone tells yours, inside the encryption, the next time each looks at the relay. A
+message counts as read once its chat shows on the screen. Messages to a nearby phone have no marks.
+
+- **They see when you read:** your phone tells theirs, as theirs tells yours. There is no switch to stop it yet.
+
 ### Names and deleting
 
 Pick a chat and tap **Rename** to give it a name. The name stays on this phone, sealed with the chat: the other phone
@@ -102,11 +110,14 @@ Either way Erevos asks where:
 
 ### Disappearing messages
 
-Pick a chat and tap **Disappearing: Off** to choose how long new messages last: 5 minutes, 1 hour, 1 day or 1 week.
-Each new message then says when it disappears, and goes from both phones that long after it is sent or arrives. The
-other phone learns the setting the next time it looks at the relay, and either phone can change it: the later change
-wins. Messages already in the chat stay.
+Pick a chat and tap **Disappearing: Off** to choose how long its new messages last once read: 5 minutes, 1 hour,
+1 day or 1 week. To make only one message disappear, type it and tap **Disappear** beside **Send**, then pick how
+long. Its time starts when the other phone shows it on the screen, and your copy starts when their phone says so
+(**✓✓✓**). Each message says when it disappears. The other phone learns the chat's setting the next time it looks at
+the relay, and either phone can change it: the later change wins. Messages already in the chat stay.
 
+- **Until it is read** a disappearing message stays on both phones, sealed like the rest. If their Erevos never says
+  it read it, your copy stays.
 - **While Erevos is closed:** a message whose time has come is deleted when the chat next opens. Until then it stays
   on the phone, sealed like the rest.
 - **Not a guarantee:** their Erevos deletes them, but a changed app, a screenshot or a copy can still keep them.
@@ -280,6 +291,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
+| **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay sees one more small message. | A switch to stop telling when you read. |
 
 ## What is coming {#coming}
 

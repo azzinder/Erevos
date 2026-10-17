@@ -10,14 +10,23 @@ import { sealedFile, sealedSize, type Holder } from './sealed-file';
 // Only chats with contacts are kept. Messages over the radio link are not: a link's id lasts as
 // long as the link, and nothing is encrypted there yet.
 //
-// A disappearing message is kept with the time it goes (lib/e2e.ts carries the chat's timer), and
-// deleted by `expire` once that has passed: while the chat is open, or when it next opens.
+// Each message keeps its mark: ours, whether it came to their phone and was read there (lib/e2e.ts
+// carries what their phone says); theirs, whether it was read here.
+//
+// A disappearing message (lib/e2e.ts carries the chat's timer) waits, with how long it lasts,
+// until it is read: theirs when it shows here, ours when their phone says it read it. From then
+// on it is kept with the time it goes, and `expire` deletes it once that has passed: while the
+// chat is open, or when it next opens.
+
+/** Ours: the relay took it (0), it came to their phone (1), they read it (2). Theirs: read here (2) or not (0). */
+export type Mark = 0 | 1 | 2;
 
 /**
- * One message: when (milliseconds), whether this phone sent it, its text, its tag, and when it
- * disappears (milliseconds), left out when it does not.
+ * One message: when (milliseconds), whether this phone sent it, its text, its tag, when it
+ * disappears (milliseconds, 0 if not, or not yet), how long it lasts once read (seconds, 0 if it
+ * does not disappear or its time has started), and its mark. Zeros at the end are left out.
  */
-export type Kept = [at: number, mine: 0 | 1, text: string, tag: string, until?: number];
+export type Kept = [at: number, mine: 0 | 1, text: string, tag: string, until?: number, lasts?: number, mark?: Mark];
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -26,7 +35,30 @@ export type HistoryData = { chats: Record<string, Kept[]> };
  * A message as the chat shows it. Its tag names it on both phones, so either can ask the other
  * to delete it: the sender makes it (newTag) and it travels inside the message.
  */
-export type Message = { peer: string; text: string; mine: boolean; at: number; tag: string; until?: number };
+export type Message = {
+  peer: string;
+  text: string;
+  mine: boolean;
+  at: number;
+  tag: string;
+  until?: number;
+  lasts?: number;
+  mark?: Mark;
+};
+
+type Fields = Omit<Message, 'peer'>;
+
+function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0 }: Fields): Kept {
+  const kept: Kept = [at, mine ? 1 : 0, text, tag, until, until ? 0 : lasts, mark];
+  while (kept.length > 4 && !kept[kept.length - 1]) kept.pop();
+  return kept;
+}
+
+function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0]: Kept): Fields {
+  return { at, mine: mine === 1, text, tag, until, lasts, mark };
+}
+
+const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0);
 
 const TAG = /^[0-9a-f]{12}$/;
 
@@ -43,8 +75,8 @@ function checkedKept(m: unknown): Kept | null {
   if (!Array.isArray(m) || m.length < 3 || typeof m[0] !== 'number' || (m[1] !== 0 && m[1] !== 1) || typeof m[2] !== 'string') {
     return null;
   }
-  const tag = isTag(m[3]) ? m[3] : newTag();
-  return typeof m[4] === 'number' && m[4] > 0 ? [m[0], m[1], m[2], tag, m[4]] : [m[0], m[1], m[2], tag];
+  const mark = m[6] === 1 || m[6] === 2 ? m[6] : 0;
+  return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark });
 }
 
 function checked(value: unknown): HistoryData {
@@ -93,7 +125,7 @@ export class History {
   /** Every message, oldest first. */
   messages(): Message[] {
     return Object.entries(this.data.chats)
-      .flatMap(([peer, list]) => list.map(([at, mine, text, tag, until]) => ({ peer, text, mine: mine === 1, at, tag, until })))
+      .flatMap(([peer, list]) => list.map((m) => ({ peer, ...unpack(m) })))
       .sort((a, b) => a.at - b.at);
   }
 
@@ -104,9 +136,8 @@ export class History {
     return this.store(data);
   }
 
-  add({ peer, text, mine, at, tag, until = 0 }: Message): Promise<void> {
-    const message: Kept = until > 0 ? [at, mine ? 1 : 0, text, tag, until] : [at, mine ? 1 : 0, text, tag];
-    const list = [...(this.data.chats[peer] ?? []), message];
+  add({ peer, ...message }: Message): Promise<void> {
+    const list = [...(this.data.chats[peer] ?? []), pack(message)];
     return this.save(fitted({ chats: { ...this.data.chats, [peer]: list } }));
   }
 
@@ -115,6 +146,24 @@ export class History {
     const list = (this.data.chats[peer] ?? []).filter((m) => m[3] !== tag);
     const { [peer]: _gone, ...others } = this.data.chats;
     return this.save({ chats: list.length > 0 ? { ...others, [peer]: list } : others });
+  }
+
+  /**
+   * Raises the mark of a chat's messages, ours (`mine`) or theirs, to `mark`: all of them, or
+   * those with `tags`. A disappearing one marked read starts its time `now`. Returns the tags of
+   * the messages whose mark went up.
+   */
+  async mark(peer: string, mine: boolean, mark: Mark, now: number, tags: string[] | null = null): Promise<string[]> {
+    const raised: string[] = [];
+    const list = (this.data.chats[peer] ?? []).map((kept): Kept => {
+      const m = unpack(kept);
+      if (m.mine !== mine || m.mark! >= mark || (tags && !tags.includes(m.tag))) return kept;
+      raised.push(m.tag);
+      const starts = mark === 2 && !m.until && m.lasts;
+      return pack({ ...m, mark, ...(starts ? { until: now + m.lasts! * 1000, lasts: 0 } : {}) });
+    });
+    if (raised.length > 0) await this.save({ chats: { ...this.data.chats, [peer]: list } });
+    return raised;
   }
 
   /** Deletes the messages whose time to disappear is `now` or before. Says whether there were any. */

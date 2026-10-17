@@ -9,12 +9,12 @@ import { QrCode } from '../components/QrCode';
 import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { hasCore } from '../lib/core';
-import { E2E, toBase64Url, type ContactInfo, type Erase } from '../lib/e2e';
+import { E2E, toBase64Url, type ContactInfo, type Erase, type Extra } from '../lib/e2e';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
 import { openHidden, setHiddenPassword } from '../lock/hidden';
 import { cleanName, MAX_NAME } from '../lock/e2e-data';
-import { History, newTag } from '../lock/history';
+import { History, newTag, type Mark } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, sendMessage, toHex, type Relay } from '../lib/relay';
@@ -27,9 +27,11 @@ import { useStyles } from '../theme/context';
 // when they next look at the relay. The contacts and their conversations are kept sealed
 // (lock/e2e-data.ts), with the names given to them, and so are the messages with them
 // (lock/history.ts). One message, or all of a chat's, can be deleted here only or on both phones
-// (Erase in lib/e2e.ts). A chat with a contact can make its new messages disappear after a time,
-// on both phones (the timer in lib/e2e.ts). Messages over the radio link are kept in memory only,
-// so they are gone when the chat closes.
+// (Erase in lib/e2e.ts). Our messages to a contact are marked ✓ once the relay took them, ✓✓ once
+// their phone says they came, and ✓✓✓ once it says they were read; theirs are read here while
+// their chat shows on the screen. A chat's new messages, or a single one, can disappear on both
+// phones a time after they are read (the timer in lib/e2e.ts). Messages over the radio link are
+// kept in memory only, so they are gone when the chat closes.
 //
 // Every space also has hidden chats (lock/hidden.ts), opened with their own password from the
 // Hidden chats button, which every space shows whether it has hidden chats or not. They are a
@@ -43,8 +45,17 @@ import { useStyles } from '../theme/context';
 // the imported chat's. They are never sent, and stay when this chat's messages are deleted.
 
 // `tag` names a message with a contact on both phones (lock/history.ts). Radio messages have none.
-// `until`: when it disappears, milliseconds, or 0.
-type Message = { id: number; peer: string; text: string; mine: boolean; tag: string; until: number };
+// `until`: when it disappears, milliseconds, or 0. `lasts`: seconds it lasts once read, while it
+// waits for that. `mark`: as lock/history.ts keeps it.
+type Message = { id: number; peer: string; text: string; mine: boolean; tag: string; until: number; lasts: number; mark: Mark };
+
+const MARKS = ['✓', '✓✓', '✓✓✓'];
+
+// What a phone still has to tell a contact's: which of their messages came, and were read.
+type Receipts = Record<string, { got: string[]; read: string[] }>;
+
+// Messages opened from the relay in one look at it, at most.
+const RECEIVE_BATCH = 10;
 
 // Contacts are named by their identity key, after this prefix. Radio peers by their link id.
 const CONTACT_PREFIX = 'contact:';
@@ -88,6 +99,15 @@ function disappearsAt(until: number): string {
   const d = new Date(until);
   const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   return d.toDateString() === new Date().toDateString() ? `at ${time}` : `on ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}`;
+}
+
+// Under a message to or from a contact: its mark if it is ours, and when it disappears.
+function caption(message: Message): string {
+  const parts: string[] = [];
+  if (message.mine && message.tag) parts.push(MARKS[message.mark]);
+  if (message.until) parts.push(`Disappears ${disappearsAt(message.until)}`);
+  else if (message.lasts) parts.push(`Disappears ${timerLabel(message.lasts).toLowerCase()} after it is read`);
+  return parts.join('  ·  ');
 }
 
 function timerLabel(seconds: number): string {
@@ -197,6 +217,10 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
   const [importedShown, setImportedShown] = useState(IMPORTED_PAGE);
   // Set when earlier imported messages are shown, so the thread does not jump to its end.
   const holdScroll = useRef(false);
+  // Choosing how long a single message lasts, before sending it.
+  const [vanishing, setVanishing] = useState(false);
+  const receipts = useRef<Receipts>({});
+  const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
   const history = useRef<History | null>(null);
@@ -206,6 +230,28 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
   function relayTarget(url = relayUrl): Relay | null {
     const address = url.trim();
     return address ? { url: address, token: relayToken.trim() || undefined } : null;
+  }
+
+  // Tells contacts' phones which of their messages came and were read here. What the relay
+  // cannot take now is told with the next look at it.
+  async function sendReceipts(target: Relay) {
+    for (const [peer, { got, read }] of Object.entries(receipts.current)) {
+      delete receipts.current[peer];
+      try {
+        await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', { got, read });
+      } catch {
+        const now = receipts.current[peer] ?? { got: [], read: [] };
+        receipts.current[peer] = { got: [...got, ...now.got], read: [...read, ...now.read] };
+      }
+    }
+  }
+
+  function receipt(peer: string, kind: 'got' | 'read', tags: string[]) {
+    if (tags.length === 0) return;
+    const now = receipts.current[peer] ?? { got: [], read: [] };
+    // A message read needs no word that it came.
+    const got = kind === 'got' ? [...now.got, ...tags] : now.got.filter((tag) => !tags.includes(tag));
+    receipts.current[peer] = { got, read: kind === 'read' ? [...now.read, ...tags] : now.read };
   }
 
   // Hands the relay the first packets of conversations started here that it has not taken yet:
@@ -321,7 +367,10 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
         await kept.expire(Date.now());
         if (!active) return;
         // Ahead of anything the radio brought while it loaded.
-        setMessages((list) => [...kept.messages().map((m) => ({ ...m, until: m.until ?? 0, id: nextId.current++ })), ...list]);
+        setMessages((list) => [
+          ...kept.messages().map((m) => ({ ...m, until: m.until ?? 0, lasts: m.lasts ?? 0, mark: m.mark ?? 0, id: nextId.current++ })),
+          ...list,
+        ]);
         const chats = await E2E.open(holder, space, hiddenKey ?? key);
         if (!active) return;
         setE2E(chats);
@@ -378,6 +427,24 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
     return onContactOffered((code) => void acceptContact(code));
   }, [loaded, shown, relayUrl, relayToken, ownQueue, e2e]);
 
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => setAppActive(state === 'active'));
+    return () => subscription.remove();
+  }, []);
+
+  // A contact's messages are read once their chat shows on the screen: their phone is told with
+  // the next look at the relay, and the disappearing ones start their time.
+  useEffect(() => {
+    if (!shown || !appActive || !selected?.startsWith(CONTACT_PREFIX)) return;
+    if (!messages.some((m) => m.peer === selected && !m.mine && m.mark < 2)) return;
+    const peer = selected;
+    markMessages(peer, false, 2)
+      .then((tags) => receipt(peer, 'read', tags))
+      .catch(() => {
+        // Read here, but their phone is not told.
+      });
+  }, [shown, appActive, selected, messages]);
+
   // Looks at our own relay queue every few seconds and opens what came. Without the core nothing
   // could open it, so the queue is left alone, and its messages wait on the relay.
   useEffect(() => {
@@ -394,42 +461,20 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
       busy = true;
       try {
         await sendPending(e2e, target);
-        const bytes = await receiveMessage(target, recipient);
-        if (!active) return;
-        if (failed !== null) {
-          const shown = failed;
-          setNote((current) => (current === shown ? 'The relay answers again.' : current));
-          failed = null;
+        for (let i = 0; i < RECEIVE_BATCH; i++) {
+          const bytes = await receiveMessage(target, recipient);
+          if (!active) return;
+          if (failed !== null) {
+            const shown = failed;
+            setNote((current) => (current === shown ? 'The relay answers again.' : current));
+            failed = null;
+          }
+          if (!bytes) break;
+          const received = await e2e.receive(bytes);
+          if (!active) return;
+          handle(received);
         }
-        if (!bytes) return;
-        const received = await e2e.receive(bytes);
-        if (!active) return;
-        if (received.kind === 'refused') {
-          if (received.reason === 'plain') setNote('A message that was not end-to-end encrypted came, and was not shown.');
-          return;
-        }
-        const peer = `${CONTACT_PREFIX}${received.identity}`;
-        setContacts(e2e.contacts());
-        setSelected((current) => current ?? peer);
-        if (received.text) addMessage(peer, received.text, false, received.tag, received.timer);
-        const name = label(peer, e2e.contacts());
-        if (received.timerChanged) {
-          setNote(
-            received.timer
-              ? `${name} set new messages in this chat to disappear after ${timerLabel(received.timer).toLowerCase()}.`
-              : `${name} turned disappearing messages off in this chat.`,
-          );
-        }
-        if (received.erase && 'all' in received.erase) {
-          forgetChat(peer);
-          setNote(`${name} deleted the messages of this chat on both phones.`);
-        } else if (received.erase) {
-          forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag, until: 0 });
-          setNote(`${name} deleted a message on both phones.`);
-        }
-        if (received.added) {
-          setNote(`New chat with ${name}: they added your contact link. Compare the safety number with theirs.`);
-        }
+        await sendReceipts(target);
       } catch (error) {
         if (!active) return;
         if (!isQueueNotFound(error)) {
@@ -453,25 +498,77 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
         busy = false;
       }
     }, 3000);
+
+    // What one message from the relay brings.
+    function handle(received: Awaited<ReturnType<E2E['receive']>>) {
+      if (!e2e) return;
+      if (received.kind === 'refused') {
+        if (received.reason === 'plain') setNote('A message that was not end-to-end encrypted came, and was not shown.');
+        return;
+      }
+      const peer = `${CONTACT_PREFIX}${received.identity}`;
+      setContacts(e2e.contacts());
+      setSelected((current) => current ?? peer);
+      if (received.text) {
+        addMessage(peer, received.text, false, received.tag, received.timer);
+        if (received.tag) receipt(peer, 'got', [received.tag]);
+      }
+      // Marked on the screen at once. A mark the history could not keep is the old one when the chat next opens.
+      if (received.got.length > 0) markMessages(peer, true, 1, received.got).catch(() => undefined);
+      if (received.read.length > 0) markMessages(peer, true, 2, received.read).catch(() => undefined);
+      const name = label(peer, e2e.contacts());
+      if (received.timerChanged) {
+        setNote(
+          received.timer
+            ? `${name} set new messages in this chat to disappear ${timerLabel(received.timer).toLowerCase()} after they are read.`
+            : `${name} turned disappearing messages off in this chat.`,
+        );
+      }
+      if (received.erase && 'all' in received.erase) {
+        forgetChat(peer);
+        setNote(`${name} deleted the messages of this chat on both phones.`);
+      } else if (received.erase) {
+        forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag, until: 0, lasts: 0, mark: 0 });
+        setNote(`${name} deleted a message on both phones.`);
+      }
+      if (received.added) {
+        setNote(`New chat with ${name}: they added your contact link. Compare the safety number with theirs.`);
+      }
+    }
+
     return () => {
       active = false;
       clearInterval(timer);
     };
   }, [relayUrl, relayToken, ownQueue, e2e]);
 
-  // Shows a message, and keeps it on the phone when it is with a contact, for `timer` seconds if
-  // it disappears. A contact's message from an Erevos before tags gets one known to this phone only.
+  // Shows a message, and keeps it on the phone when it is with a contact, for `timer` seconds once
+  // read if it disappears. A contact's message from an Erevos before tags gets one known to this
+  // phone only.
   function addMessage(peer: string, text: string, mine: boolean, tag = '', timer = 0) {
     const contact = peer.startsWith(CONTACT_PREFIX);
     const kept = contact ? tag || newTag() : '';
     const at = Date.now();
-    const until = contact && timer > 0 ? at + timer * 1000 : 0;
-    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until }]);
+    const lasts = contact ? timer : 0;
+    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark: 0 }]);
     if (contact) {
-      history.current?.add({ peer, text, mine, at, tag: kept, until }).catch(() => {
+      history.current?.add({ peer, text, mine, at, tag: kept, lasts }).catch(() => {
         // Shown, but gone when the chat next opens.
       });
     }
+  }
+
+  // Raises the mark of a chat's messages, ours or theirs: all of them, or those with `tags`. A
+  // disappearing one marked read starts its time. Returns, through the history, the tags raised.
+  function markMessages(peer: string, mine: boolean, mark: Mark, tags: string[] | null = null): Promise<string[]> {
+    const now = Date.now();
+    setMessages((list) =>
+      list.map((m) => {
+        if (m.peer !== peer || m.mine !== mine || m.mark >= mark || (tags && !tags.includes(m.tag))) return m;
+        return { ...m, mark, ...(mark === 2 && !m.until && m.lasts ? { until: now + m.lasts * 1000, lasts: 0 } : {}) };
+      }),
+    );
+    return history.current?.mark(peer, mine, mark, now, tags) ?? Promise.resolve([]);
   }
 
   function forgetChat(peer: string) {
@@ -493,7 +590,7 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
       return;
     }
     try {
-      await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', erase);
+      await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', { erase });
       here();
       setNote(`Deleted here. ${label(peer, shownContacts)}'s phone deletes them too when it next looks at the relay.`);
     } catch (error) {
@@ -529,14 +626,9 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
 
   // Seals a message for a contact and hands it to the relay, after the first packet of the
   // conversation if the relay has not taken that yet. Returns the message's tag and how long it lasts.
-  async function sendToContact(
-    target: Relay,
-    identity: string,
-    text: string,
-    erase: Erase | null = null,
-  ): Promise<{ tag: string; timer: number }> {
+  async function sendToContact(target: Relay, identity: string, text: string, extra: Extra = {}): Promise<{ tag: string; timer: number }> {
     if (!e2e) throw new Error(NO_CORE);
-    const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', erase);
+    const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', extra);
     if (sealed.first) {
       await sendMessage(target, fromHex(sealed.sender), sealed.first);
       await e2e.firstSent(identity);
@@ -551,9 +643,11 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
       : `Not sent. ${errorText(error)}`;
   }
 
-  async function send() {
+  // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it is read.
+  async function send(lasts = 0) {
     const text = draft.trim();
     if (!text || !selected) return;
+    setVanishing(false);
     if (!selected.startsWith(CONTACT_PREFIX)) {
       if (sendText(selected, text)) {
         keep(selected, text);
@@ -573,9 +667,13 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
       return;
     }
     try {
-      const { tag, timer } = await sendToContact(target, selected.slice(CONTACT_PREFIX.length), text);
+      const { tag, timer } = await sendToContact(target, selected.slice(CONTACT_PREFIX.length), text, { lasts });
       keep(selected, text, tag, timer);
-      setNote('Sent through the relay, end-to-end encrypted.');
+      setNote(
+        timer
+          ? `Sent through the relay, end-to-end encrypted. It disappears from both phones ${timerLabel(timer).toLowerCase()} after it is read.`
+          : 'Sent through the relay, end-to-end encrypted.',
+      );
     } catch (error) {
       setNote(notSent(error));
     }
@@ -635,7 +733,7 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
       return;
     }
     const set = timer
-      ? `New messages in this chat now disappear after ${timerLabel(timer).toLowerCase()}, on both phones.`
+      ? `New messages in this chat now disappear from both phones ${timerLabel(timer).toLowerCase()} after they are read.`
       : 'New messages in this chat no longer disappear.';
     const target = relayTarget();
     try {
@@ -743,8 +841,8 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
             {timing === selectedContact ? (
               <View style={styles.section}>
                 <Text variant="caption" tone="muted">
-                  New messages, sent or received, disappear from both phones this long after they are sent or arrive.
-                  Messages already here stay.
+                  New messages, sent or received, disappear from both phones this long after they are read. Messages
+                  already here stay.
                 </Text>
                 <Row wrap>
                   {TIMERS.map((timer) => (
@@ -888,18 +986,37 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
             style={[styles.bubble, message.mine ? styles.mine : styles.theirs]}
           >
             <Text style={message.mine ? styles.mineText : styles.theirsText}>{message.text}</Text>
-            {message.until ? (
-              <Text style={[message.mine ? styles.mineText : styles.theirsText, styles.time]}>
-                {`Disappears ${disappearsAt(message.until)}`}
-              </Text>
+            {caption(message) ? (
+              <Text style={[message.mine ? styles.mineText : styles.theirsText, styles.time]}>{caption(message)}</Text>
             ) : null}
           </Pressable>
         ))}
       </ScrollView>
       {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
+      {vanishing && selectedContact ? (
+        <Row wrap>
+          <Text variant="caption" tone="muted">
+            Disappears after it is read, in:
+          </Text>
+          {TIMERS.slice(1).map((timer) => (
+            <Chip key={timer} label={timerLabel(timer)} selected={false} onPress={() => void send(timer)} />
+          ))}
+          <TextButton title="Cancel" onPress={() => setVanishing(false)} />
+        </Row>
+      ) : null}
       <Row>
-        <Input value={draft} onChangeText={setDraft} onSubmitEditing={send} placeholder="Message" maxLength={4000} style={styles.grow} />
-        <Button title="Send" compact onPress={send} />
+        <Input
+          value={draft}
+          onChangeText={setDraft}
+          onSubmitEditing={() => void send()}
+          placeholder="Message"
+          maxLength={4000}
+          style={styles.grow}
+        />
+        <Button title="Send" compact onPress={() => void send()} />
+        {selectedContact ? (
+          <Button title="Disappear" kind="secondary" compact onPress={() => setVanishing((on) => !on)} />
+        ) : null}
       </Row>
     </View>
   );
