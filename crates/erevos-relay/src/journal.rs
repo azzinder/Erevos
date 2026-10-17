@@ -1,0 +1,286 @@
+//! Keeps the queue store on disk, so queues and waiting messages survive a
+//! restart. The file is an append-only journal: a header, then one record per
+//! change, written and synced before the change is applied in memory.
+//!
+//! - `CREATE`: recipient id, sender id.
+//! - `SEND`: recipient id, a 4-byte length, the message.
+//! - `RECEIVE`: recipient id. The oldest message of that queue was handed over.
+//! - `DELETE`: recipient id.
+//!
+//! Received messages and deleted queues stay in the file until it is
+//! rewritten. That happens on every start and whenever such records outweigh
+//! the live ones. The old file is replaced by rename, so its blocks are freed,
+//! not wiped: keep the journal on an encrypted disk.
+//!
+//! Not audited.
+
+use std::fs::{File, OpenOptions};
+use std::io::{self, BufReader, BufWriter, ErrorKind, Read, Seek, SeekFrom, Write};
+use std::path::{Path, PathBuf};
+
+use crate::queue::QueueId;
+use crate::server::MAX_MESSAGE;
+
+/// The first bytes of a journal, so the relay never replays or overwrites a
+/// file that is something else.
+pub const HEADER: &[u8; 8] = b"EREVOSJ1";
+
+const CREATE: u8 = 1;
+const SEND: u8 = 2;
+const RECEIVE: u8 = 3;
+const DELETE: u8 = 4;
+
+/// Bytes written since the last check before the relay works out whether a
+/// rewrite is worth it.
+const CHECK_EVERY: u64 = 4 << 20;
+
+pub enum Record<'a> {
+    Create {
+        recipient_id: QueueId,
+        sender_id: QueueId,
+    },
+    Send {
+        recipient_id: QueueId,
+        message: &'a [u8],
+    },
+    Receive {
+        recipient_id: QueueId,
+    },
+    Delete {
+        recipient_id: QueueId,
+    },
+}
+
+impl Record<'_> {
+    /// Bytes this record takes in the journal.
+    pub fn len(&self) -> u64 {
+        match self {
+            Record::Create { .. } => 1 + 24 + 24,
+            Record::Send { message, .. } => 1 + 24 + 4 + message.len() as u64,
+            Record::Receive { .. } | Record::Delete { .. } => 1 + 24,
+        }
+    }
+
+    fn encode(&self, out: &mut Vec<u8>) {
+        match self {
+            Record::Create {
+                recipient_id,
+                sender_id,
+            } => {
+                out.push(CREATE);
+                out.extend_from_slice(recipient_id);
+                out.extend_from_slice(sender_id);
+            }
+            Record::Send {
+                recipient_id,
+                message,
+            } => {
+                out.push(SEND);
+                out.extend_from_slice(recipient_id);
+                out.extend_from_slice(&(message.len() as u32).to_be_bytes());
+                out.extend_from_slice(message);
+            }
+            Record::Receive { recipient_id } => {
+                out.push(RECEIVE);
+                out.extend_from_slice(recipient_id);
+            }
+            Record::Delete { recipient_id } => {
+                out.push(DELETE);
+                out.extend_from_slice(recipient_id);
+            }
+        }
+    }
+}
+
+/// Size of a journal that holds exactly `records`.
+pub fn size<'a>(records: impl Iterator<Item = Record<'a>>) -> u64 {
+    HEADER.len() as u64 + records.map(|r| r.len()).sum::<u64>()
+}
+
+pub struct Journal {
+    file: File,
+    path: PathBuf,
+    len: u64,
+    next_check: u64,
+}
+
+impl Journal {
+    /// Writes a new journal holding `records` and puts it in place of the file
+    /// at `path` in one rename, so a crash leaves either the old file or the
+    /// new one.
+    pub fn create<'a>(
+        path: &Path,
+        records: impl Iterator<Item = Record<'a>>,
+    ) -> io::Result<Journal> {
+        let mut tmp = path.as_os_str().to_owned();
+        tmp.push(".tmp");
+        let tmp = PathBuf::from(tmp);
+        let mut out = BufWriter::new(private_file(&tmp)?);
+        out.write_all(HEADER)?;
+        let mut len = HEADER.len() as u64;
+        let mut bytes = Vec::new();
+        for record in records {
+            bytes.clear();
+            record.encode(&mut bytes);
+            out.write_all(&bytes)?;
+            len += bytes.len() as u64;
+        }
+        let file = out.into_inner().map_err(|e| e.into_error())?;
+        file.sync_all()?;
+        std::fs::rename(&tmp, path)?;
+        sync_dir(path)?;
+        Ok(Journal {
+            file,
+            path: path.to_path_buf(),
+            len,
+            next_check: len + CHECK_EVERY,
+        })
+    }
+
+    /// Adds one record and syncs it to disk. On failure the file is cut back
+    /// to where it was, so a half-written record never stays behind.
+    pub fn append(&mut self, record: &Record) -> io::Result<()> {
+        let mut bytes = Vec::with_capacity(record.len() as usize);
+        record.encode(&mut bytes);
+        let written = self
+            .file
+            .write_all(&bytes)
+            .and_then(|()| self.file.sync_data());
+        if let Err(e) = written {
+            let _ = self.file.set_len(self.len);
+            let _ = self.file.seek(SeekFrom::Start(self.len));
+            return Err(e);
+        }
+        self.len += bytes.len() as u64;
+        Ok(())
+    }
+
+    /// Whether enough has been written since the last check to look at
+    /// rewriting the file.
+    pub fn due(&self) -> bool {
+        self.len >= self.next_check
+    }
+
+    /// Rewrites the file from `live` if most of it no longer matters, and
+    /// schedules the next check either way.
+    pub fn tidy<'a>(
+        &mut self,
+        live_len: u64,
+        live: impl Iterator<Item = Record<'a>>,
+    ) -> io::Result<()> {
+        if self.len - live_len.min(self.len) > live_len {
+            *self = Journal::create(&self.path, live)?;
+        } else {
+            self.next_check = self.len + CHECK_EVERY;
+        }
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub fn len(&self) -> u64 {
+        self.len
+    }
+}
+
+/// Reads the journal at `path` and hands each record to `apply`, oldest first.
+/// A missing or empty file is an empty journal. Returns how many bytes at the
+/// end were skipped because they do not form a whole record, which is what a
+/// write cut short by a crash leaves.
+pub fn replay(path: &Path, mut apply: impl FnMut(Record)) -> io::Result<u64> {
+    let file = match File::open(path) {
+        Ok(file) => file,
+        Err(e) if e.kind() == ErrorKind::NotFound => return Ok(0),
+        Err(e) => return Err(e),
+    };
+    let total = file.metadata()?.len();
+    if total == 0 {
+        return Ok(0);
+    }
+    let mut r = BufReader::new(file);
+    let mut header = [0u8; 8];
+    if r.read_exact(&mut header).is_err() || &header != HEADER {
+        return Err(io::Error::new(
+            ErrorKind::InvalidData,
+            format!("{} is not an erevos-relay journal", path.display()),
+        ));
+    }
+    let mut at = HEADER.len() as u64;
+    let mut message = Vec::new();
+    loop {
+        match read_record(&mut r, &mut message) {
+            Ok(None) => return Ok(0),
+            Ok(Some(record)) => {
+                at += record.len();
+                apply(record);
+            }
+            Err(e) if matches!(e.kind(), ErrorKind::UnexpectedEof | ErrorKind::InvalidData) => {
+                return Ok(total - at)
+            }
+            Err(e) => return Err(e),
+        }
+    }
+}
+
+/// `Ok(None)` at a clean end of file. `UnexpectedEof` for a record cut short,
+/// `InvalidData` for bytes that are not a record.
+fn read_record<'a>(r: &mut impl Read, message: &'a mut Vec<u8>) -> io::Result<Option<Record<'a>>> {
+    let mut tag = [0u8; 1];
+    if r.read(&mut tag)? == 0 {
+        return Ok(None);
+    }
+    let recipient_id = read_id(r)?;
+    let record = match tag[0] {
+        CREATE => Record::Create {
+            recipient_id,
+            sender_id: read_id(r)?,
+        },
+        SEND => {
+            let mut len = [0u8; 4];
+            r.read_exact(&mut len)?;
+            let len = u32::from_be_bytes(len) as usize;
+            if len > MAX_MESSAGE {
+                return Err(ErrorKind::InvalidData.into());
+            }
+            message.resize(len, 0);
+            r.read_exact(message)?;
+            Record::Send {
+                recipient_id,
+                message,
+            }
+        }
+        RECEIVE => Record::Receive { recipient_id },
+        DELETE => Record::Delete { recipient_id },
+        _ => return Err(ErrorKind::InvalidData.into()),
+    };
+    Ok(Some(record))
+}
+
+fn read_id(r: &mut impl Read) -> io::Result<QueueId> {
+    let mut id = [0u8; 24];
+    r.read_exact(&mut id)?;
+    Ok(id)
+}
+
+/// Creates or truncates a file only its owner can read.
+fn private_file(path: &Path) -> io::Result<File> {
+    let mut options = OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
+    options.open(path)
+}
+
+/// Makes the rename itself durable.
+fn sync_dir(path: &Path) -> io::Result<()> {
+    #[cfg(unix)]
+    {
+        let dir = match path.parent() {
+            Some(dir) if !dir.as_os_str().is_empty() => dir,
+            _ => Path::new("."),
+        };
+        File::open(dir)?.sync_all()?;
+    }
+    #[cfg(not(unix))]
+    let _ = path;
+    Ok(())
+}

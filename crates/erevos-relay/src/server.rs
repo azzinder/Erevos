@@ -14,6 +14,10 @@
 //!   message if one was waiting. The message is deleted from the relay.
 //! - `DELETE`: recipient id.
 //!
+//! Reply status: `OK`, `NOT_FOUND` (no such queue), `FULL` (the queue holds
+//! `MAX_QUEUED` messages), or `FAILED` (the relay could not write the change
+//! to its journal, so nothing changed; try again later).
+//!
 //! A message longer than `MAX_MESSAGE` or an unknown opcode closes the
 //! connection.
 //!
@@ -48,6 +52,7 @@ pub const DELETE: u8 = 4;
 pub const OK: u8 = 0;
 pub const NOT_FOUND: u8 = 1;
 pub const FULL: u8 = 2;
+pub const FAILED: u8 = 3;
 
 /// Serves raw TCP connections until the listener fails. Each connection gets
 /// its own thread; all share one store.
@@ -130,11 +135,16 @@ fn respond(r: &mut impl Read, store: &Mutex<Store>) -> io::Result<Option<Vec<u8>
     }
     let reply = match op[0] {
         CREATE => {
-            let q = store.lock().expect("store lock").create();
-            let mut out = vec![OK];
-            out.extend_from_slice(&q.recipient_id);
-            out.extend_from_slice(&q.sender_id);
-            out
+            let created = store.lock().expect("store lock").create();
+            match created {
+                Ok(q) => {
+                    let mut out = vec![OK];
+                    out.extend_from_slice(&q.recipient_id);
+                    out.extend_from_slice(&q.sender_id);
+                    out
+                }
+                Err(e) => vec![code(e)],
+            }
         }
         SEND => {
             let sender = read_id(r)?;
@@ -152,7 +162,7 @@ fn respond(r: &mut impl Read, store: &Mutex<Store>) -> io::Result<Option<Vec<u8>
                     out
                 }
                 Ok(None) => vec![OK, 0],
-                Err(_) => vec![NOT_FOUND],
+                Err(e) => vec![code(e)],
             }
         }
         DELETE => {
@@ -165,11 +175,15 @@ fn respond(r: &mut impl Read, store: &Mutex<Store>) -> io::Result<Option<Vec<u8>
 }
 
 fn status(result: Result<(), QueueError>) -> Vec<u8> {
-    vec![match result {
-        Ok(()) => OK,
-        Err(QueueError::NotFound) => NOT_FOUND,
-        Err(QueueError::Full) => FULL,
-    }]
+    vec![result.map_or_else(code, |()| OK)]
+}
+
+fn code(error: QueueError) -> u8 {
+    match error {
+        QueueError::NotFound => NOT_FOUND,
+        QueueError::Full => FULL,
+        QueueError::Storage => FAILED,
+    }
 }
 
 fn read_id(r: &mut impl Read) -> io::Result<QueueId> {
