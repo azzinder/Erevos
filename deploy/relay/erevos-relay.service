@@ -12,6 +12,8 @@ ExecStart=/usr/local/bin/erevos-relay 127.0.0.1:7878 127.0.0.1:7879
 # EREVOS_RELAY_TOKEN=..., created by install.sh, readable by root only.
 EnvironmentFile=/etc/erevos-relay.env
 Environment=EREVOS_RELAY_JOURNAL=/var/lib/erevos-relay/queues.journal
+# Key for sealed sends from other relays (two-hop sending). Made on first start; keep it.
+Environment=EREVOS_RELAY_KEY=/var/lib/erevos-relay/relay.key
 Restart=on-failure
 RestartSec=2
 

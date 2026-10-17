@@ -153,6 +153,15 @@ pub fn import_chats(name: &[u8], data: &[u8]) -> Result<Vec<u8>> {
     serde_json::to_vec(&json).map_err(|e| e.to_string())
 }
 
+/// Seals a send to a contact's relay, to go through this phone's own relay
+/// first (two-hop sending, erevos_core::relay_seal). `relay_key` is from the
+/// contact's link, `sender_id` is the queue's sender id.
+pub fn relay_seal(relay_key: &[u8], sender_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
+    let relay_key = <[u8; 32]>::try_from(relay_key).map_err(|_| "a relay key is 32 bytes".to_string())?;
+    let sender_id = <[u8; 24]>::try_from(sender_id).map_err(|_| "a sender id is 24 bytes".to_string())?;
+    erevos_core::relay_seal::seal(&relay_key, &sender_id, message).map_err(fail)
+}
+
 /// The safety number of two identity keys.
 pub fn safety_number(ours: &[u8], theirs: &[u8]) -> Result<String> {
     let key = |b: &[u8]| <[u8; 32]>::try_from(b).map_err(|_| "an identity key is 32 bytes".to_string());
@@ -172,6 +181,15 @@ mod tests {
             rest = &rest[4 + len..];
         }
         out
+    }
+
+    #[test]
+    fn seals_for_a_relay() {
+        let relay = erevos_core::relay_seal::RelayKey::generate();
+        let sealed = relay_seal(&relay.public(), &[3; 24], b"hi").unwrap();
+        assert_eq!(relay.open(&sealed).unwrap(), ([3; 24], b"hi".to_vec()));
+        assert!(relay_seal(&[1; 31], &[3; 24], b"hi").is_err());
+        assert!(relay_seal(&relay.public(), &[3; 23], b"hi").is_err());
     }
 
     #[test]

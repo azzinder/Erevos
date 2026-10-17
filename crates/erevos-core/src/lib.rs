@@ -9,6 +9,7 @@ pub mod mesh;
 pub mod padding;
 pub mod pqxdh;
 pub mod ratchet;
+pub mod relay_seal;
 pub mod wire;
 
 #[derive(Debug, thiserror::Error)]

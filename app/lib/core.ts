@@ -19,6 +19,8 @@ export interface Core {
   firstMessageId(packet: Uint8Array): Promise<Uint8Array>;
   safetyNumber(ours: Uint8Array, theirs: Uint8Array): Promise<string>;
   importChats(name: Uint8Array, data: Uint8Array): Promise<Uint8Array>;
+  /** Missing in a build made before two-hop sending. */
+  relaySeal?(relayKey: Uint8Array, senderId: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
 }
 
 let core: Core | null = null;
@@ -73,6 +75,18 @@ export const bundleIdentity = (bundle: Uint8Array) => need().bundleIdentity(bund
 export const conversationPeer = (conversation: Uint8Array) => need().conversationPeer(conversation);
 export const firstMessageId = (packet: Uint8Array) => need().firstMessageId(packet);
 export const safetyNumber = (ours: Uint8Array, theirs: Uint8Array) => need().safetyNumber(ours, theirs);
+
+/** Whether this build can seal a send for a contact's relay (two-hop sending). */
+export function canRelaySeal(): boolean {
+  return typeof core?.relaySeal === 'function';
+}
+
+/** Seals a send for the contact's relay, so this phone's own relay can carry it without reading it. */
+export function relaySeal(relayKey: Uint8Array, senderId: Uint8Array, message: Uint8Array): Promise<Uint8Array> {
+  const it = need();
+  if (!it.relaySeal) throw new NoCoreError();
+  return it.relaySeal(relayKey, senderId, message);
+}
 
 export async function packetKind(packet: Uint8Array): Promise<Kind> {
   const kind = await need().packetKind(packet);

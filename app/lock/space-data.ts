@@ -25,6 +25,10 @@ export type Queue = { recipientHex: string; senderHex: string };
 export type SpaceData = {
   url: string;
   token: string;
+  // A second relay that sends go through first, so the relay never sees this phone's address.
+  // Empty when not used.
+  via: string;
+  viaToken: string;
   ownQueue: Queue | null;
   routes: Record<string, string>;
   // Null until the look is changed in this space: it then takes the look last used. Hidden chats
@@ -32,7 +36,7 @@ export type SpaceData = {
   look: Look | null;
 };
 
-export const EMPTY_SPACE: SpaceData = { url: '', token: '', ownQueue: null, routes: {}, look: null };
+export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '', ownQueue: null, routes: {}, look: null };
 
 const BLOCK = 1024;
 const entry = (space: number) => `erevos.space.${space}`;
@@ -58,6 +62,8 @@ function checked(value: unknown): SpaceData {
   return {
     url: typeof v.url === 'string' ? v.url : '',
     token: typeof v.token === 'string' ? v.token : '',
+    via: typeof v.via === 'string' ? v.via : '',
+    viaToken: typeof v.viaToken === 'string' ? v.viaToken : '',
     ownQueue: q && isHex(q.recipientHex, 48) && isHex(q.senderHex, 48) ? { recipientHex: q.recipientHex, senderHex: q.senderHex } : null,
     routes,
     look: v.look ? checkedLook(v.look) : null,

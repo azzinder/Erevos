@@ -31,6 +31,9 @@ class ErevosCoreModule : Module() {
     AsyncFunction("firstMessageId") { packet: ByteArray -> ErevosCoreNative.firstMessageId(packet) }
     AsyncFunction("safetyNumber") { ours: ByteArray, theirs: ByteArray -> ErevosCoreNative.safetyNumber(ours, theirs) }
     AsyncFunction("importChats") { name: ByteArray, data: ByteArray -> ErevosCoreNative.importChats(name, data) }
+    AsyncFunction("relaySeal") { relayKey: ByteArray, senderId: ByteArray, message: ByteArray ->
+      ErevosCoreNative.relaySeal(relayKey, senderId, message)
+    }
   }
 }
 
@@ -54,4 +57,5 @@ internal object ErevosCoreNative {
   @JvmStatic external fun firstMessageId(packet: ByteArray): ByteArray
   @JvmStatic external fun safetyNumber(ours: ByteArray, theirs: ByteArray): String
   @JvmStatic external fun importChats(name: ByteArray, data: ByteArray): ByteArray
+  @JvmStatic external fun relaySeal(relayKey: ByteArray, senderId: ByteArray, message: ByteArray): ByteArray
 }

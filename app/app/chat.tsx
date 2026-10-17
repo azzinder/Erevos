@@ -83,6 +83,18 @@ const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
 ];
 
 // Relay addresses that differ only in case or a trailing slash are the same relay.
+/** A relay to send to, with the second relay to go through when one is set. Null without an address. */
+function relayFor(url: string, token: string, via: string, viaToken: string): Relay | null {
+  const address = url.trim();
+  if (!address) return null;
+  const second = via.trim();
+  return {
+    url: address,
+    token: token.trim() || undefined,
+    via: second && !sameRelay(second, address) ? { url: second, token: viaToken.trim() || undefined } : undefined,
+  };
+}
+
 function sameRelay(a: string, b: string): boolean {
   const plain = (url: string) => url.trim().replace(/\/+$/, '').toLowerCase();
   return plain(a) === plain(b);
@@ -221,6 +233,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const [details, setDetails] = useState(setup || !initial);
   const [relayUrl, setRelayUrl] = useState('');
   const [relayToken, setRelayToken] = useState('');
+  // The second relay for two-hop sending (lib/relay.ts), empty when not used.
+  const [viaUrl, setViaUrl] = useState('');
+  const [viaToken, setViaToken] = useState('');
   const [ownQueue, setOwnQueue] = useState<Queue | null>(null);
   const [contactDraft, setContactDraft] = useState('');
   const [showQr, setShowQr] = useState(false);
@@ -250,8 +265,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
 
   function relayTarget(url = relayUrl): Relay | null {
-    const address = url.trim();
-    return address ? { url: address, token: relayToken.trim() || undefined } : null;
+    return relayFor(url, relayToken, viaUrl, viaToken);
   }
 
   // Tells contacts' phones which of their messages came and were read here. What the relay
@@ -371,6 +385,8 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         if (!active) return;
         setRelayUrl(data.url);
         setRelayToken(data.token);
+        setViaUrl(data.via);
+        setViaToken(data.viaToken);
         setOwnQueue(data.ownQueue);
       })
       .catch(() => {
@@ -444,11 +460,11 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
     if (!loaded) return;
     // Only what the chat keeps: the look kept beside it stays as it is. Contacts from before
     // messages were encrypted (routes) cannot be written to any more, so they go.
-    const data: Partial<SpaceData> = { url: relayUrl, token: relayToken, ownQueue, routes: {} };
+    const data: Partial<SpaceData> = { url: relayUrl, token: relayToken, via: viaUrl, viaToken, ownQueue, routes: {} };
     (hiddenKey ? updateHiddenData(currentSpace().space, hiddenKey, data) : updateCurrentSpaceData(data)).catch(() => {
       // A failed save only means the next launch starts empty.
     });
-  }, [loaded, relayUrl, relayToken, ownQueue]);
+  }, [loaded, relayUrl, relayToken, viaUrl, viaToken, ownQueue]);
 
   // Takes a contact opened from a scanned code, once the saved contacts are loaded so they
   // cannot overwrite it.
@@ -480,7 +496,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   useEffect(() => {
     const url = relayUrl.trim();
     if (!url || !ownQueue || !e2e) return;
-    const target: Relay = { url, token: relayToken.trim() || undefined };
+    // Taking messages goes straight to our relay; sending goes through the second relay if set.
+    const own: Relay = { url, token: relayToken.trim() || undefined };
+    const sends = relayFor(url, relayToken, viaUrl, viaToken) ?? own;
     const recipient = fromHex(ownQueue.recipientHex);
     let active = true;
     let busy = false;
@@ -490,9 +508,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       if (busy) return;
       busy = true;
       try {
-        await sendPending(e2e, target);
+        await sendPending(e2e, sends);
         for (let i = 0; i < RECEIVE_BATCH; i++) {
-          const bytes = await receiveMessage(target, recipient);
+          const bytes = await receiveMessage(own, recipient);
           if (!active) return;
           if (failed !== null) {
             const shown = failed;
@@ -504,7 +522,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
           if (!active) return;
           handle(received);
         }
-        await sendReceipts(target);
+        await sendReceipts(sends);
       } catch (error) {
         if (!active) return;
         if (!isQueueNotFound(error)) {
@@ -515,7 +533,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         // The relay no longer has our queue (deleted, or a relay that keeps queues in memory
         // was restarted). Make a new one so messages can reach us again.
         try {
-          const ids = await createQueue(target);
+          const ids = await createQueue(own);
           if (!active) return;
           setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
           setNote(
@@ -570,7 +588,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       active = false;
       clearInterval(timer);
     };
-  }, [relayUrl, relayToken, ownQueue, e2e]);
+  }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e]);
 
   // Shows a message, and keeps it on the phone when it is with a contact, for `timer` seconds once
   // read if it disappears. A contact's message from an Erevos before tags gets one known to this
@@ -1001,6 +1019,33 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                     secureTextEntry
                   />
                 </Field>
+                <Field label="Second relay (optional)">
+                  <Input
+                    value={viaUrl}
+                    onChangeText={setViaUrl}
+                    placeholder="wss://another-relay"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="url"
+                  />
+                </Field>
+                {viaUrl.trim() ? (
+                  <Field label="Second relay token (optional)">
+                    <Input
+                      value={viaToken}
+                      onChangeText={setViaToken}
+                      placeholder="Token, if the second relay needs one"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      secureTextEntry
+                    />
+                  </Field>
+                ) : null}
+                <Text variant="caption" tone="muted">
+                  With a second relay, what you send goes through it first, sealed for your relay. Your relay then never sees
+                  your phone's address, and the second relay never sees who a message is for. Taking messages still goes
+                  straight to your relay.
+                </Text>
                 <Button title="Create my relay queue" compact onPress={createOwnQueue} />
                 {ownLink ? (
                   <View style={styles.section}>

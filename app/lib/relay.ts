@@ -3,16 +3,25 @@
 // with its recipient id. Each request is one binary message, and each reply is
 // one binary message. The wire format is in crates/erevos-relay/src/server.rs.
 // Self-contained on purpose, so it can run under plain Node for checks.
+//
+// Two-hop sending: when a relay is given a second relay (`via`), messages for it are sealed to
+// its key and handed to the second relay, which passes them on. The first relay then never sees
+// this phone's address, and the second never sees which queue a message is for.
+
+import { relaySeal } from './core';
 
 const CREATE = 1;
 const SEND = 2;
 const RECEIVE = 3;
 const DELETE = 4;
+const KEY = 5;
+const FORWARD = 6;
 
 const OK = 0;
 const NOT_FOUND = 1;
 const FULL = 2;
 const FAILED = 3;
+const UNREACHABLE = 4;
 
 // Same limit as the relay's MAX_MESSAGE.
 const MAX_MESSAGE = 64 * 1024;
@@ -31,8 +40,9 @@ function utf8Decode(bytes: Uint8Array): string {
 
 export type QueueIds = { recipientId: Uint8Array; senderId: Uint8Array };
 
-/** Where the relay is. `token` is sent as a bearer token when the relay requires one. */
-export type Relay = { url: string; token?: string };
+/** Where the relay is. `token` is sent as a bearer token when the relay requires one. With
+ *  `via`, messages for this relay go through that relay first (two-hop sending). */
+export type Relay = { url: string; token?: string; via?: Relay };
 
 export class RelayError extends Error {
   /** The relay's status byte when it refused the request, such as NOT_FOUND. */
@@ -108,6 +118,8 @@ function check(reply: Uint8Array, what: string): void {
   if (reply[0] === NOT_FOUND) throw new RelayError(`${what}: queue not found`, NOT_FOUND);
   if (reply[0] === FULL) throw new RelayError(`${what}: queue is full`, FULL);
   if (reply[0] === FAILED) throw new RelayError(`${what}: the relay could not save it, try again later`, FAILED);
+  if (reply[0] === UNREACHABLE)
+    throw new RelayError(`${what}: the second relay could not reach your relay, try again later`, UNREACHABLE);
   throw new RelayError(`${what}: unexpected reply ${reply[0]}`, reply[0]);
 }
 
@@ -118,9 +130,45 @@ export async function createQueue(relay: Relay): Promise<QueueIds> {
   return { recipientId: reply.slice(1, 25), senderId: reply.slice(25, 49) };
 }
 
-/** Queues one message. Throws if the sender id is unknown or the queue is full. */
+// Relay keys by address, fetched once per run.
+const keys = new Map<string, Uint8Array>();
+
+/** The relay's key for sealed sends, or null if it has none. */
+export async function relayKey(relay: Relay): Promise<Uint8Array | null> {
+  const known = keys.get(relay.url);
+  if (known) return known;
+  const reply = await request(relay, Uint8Array.of(KEY));
+  if (reply[0] === NOT_FOUND) return null;
+  check(reply, 'key');
+  if (reply.length !== 33) throw new RelayError('key: unexpected reply');
+  const key = reply.slice(1);
+  keys.set(relay.url, key);
+  return key;
+}
+
+/** Hands a message sealed for the relay at `to` to the relay `via`, which passes it on. */
+export async function forwardMessage(via: Relay, to: string, sealed: Uint8Array): Promise<void> {
+  const address = utf8Encode(to);
+  const bytes = new Uint8Array(1 + 2 + address.length + 4 + sealed.length);
+  const view = new DataView(bytes.buffer);
+  bytes[0] = FORWARD;
+  view.setUint16(1, address.length);
+  bytes.set(address, 3);
+  view.setUint32(3 + address.length, sealed.length);
+  bytes.set(sealed, 3 + address.length + 4);
+  check(await request(via, bytes), 'send');
+}
+
+/** Queues one message, through the relay's `via` if it has one. Throws if the sender id is
+ *  unknown or the queue is full. */
 export async function sendMessage(relay: Relay, senderId: Uint8Array, message: Uint8Array): Promise<void> {
   if (message.length > MAX_MESSAGE) throw new RelayError('message is too large');
+  if (relay.via) {
+    const key = await relayKey(relay);
+    if (!key) throw new RelayError('your relay has no key for two-hop sending, so it was not sent through the second relay');
+    await forwardMessage(relay.via, relay.url, await relaySeal(key, senderId, message));
+    return;
+  }
   const header = new Uint8Array(1 + 24 + 4);
   header[0] = SEND;
   header.set(senderId, 1);

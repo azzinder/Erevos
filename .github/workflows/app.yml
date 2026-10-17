@@ -25,6 +25,8 @@ jobs:
           targets: wasm32-unknown-unknown
       - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
       - run: node checks/build-core.mjs
+      # The two-hop checks run two real relays.
+      - run: cargo build -p erevos-relay
       - run: npm run check
       - run: npx expo export --platform web --output-dir dist
         env:

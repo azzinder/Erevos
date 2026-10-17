@@ -13,13 +13,29 @@
 //! - `RECEIVE`: recipient id. Reply: a 1-byte flag, then a length and the
 //!   message if one was waiting. The message is deleted from the relay.
 //! - `DELETE`: recipient id.
+//! - `KEY`: no fields. Reply: the relay's public key (32 bytes) for sealed
+//!   sends, or `NOT_FOUND` if it has none.
+//! - `FORWARD`: a 2-byte length and a relay address (`ws://` or `wss://`),
+//!   then a 4-byte length and a sealed send for that relay (see
+//!   `erevos_core::relay_seal`). This relay passes the sealed send on and
+//!   replies with that relay's status, or `UNREACHABLE`.
+//! - `SEALED_SEND`: a 4-byte length and a sealed send. The relay opens it and
+//!   queues the message as `SEND` would.
+//!
+//! Two-hop sending: a phone gives `FORWARD` to its own relay, which opens a
+//! WebSocket to `<address>/sealed` on the contact's relay and sends
+//! `SEALED_SEND` there. The first relay sees the phone's address but not the
+//! queue; the second sees the queue but not the phone's address. The
+//! `/sealed` path needs no token, so relays can reach each other, and takes
+//! only `KEY` and `SEALED_SEND`.
 //!
 //! Reply status: `OK`, `NOT_FOUND` (no such queue), `FULL` (the queue holds
-//! `MAX_QUEUED` messages), or `FAILED` (the relay could not write the change
-//! to its journal, so nothing changed; try again later).
+//! `MAX_QUEUED` messages), `FAILED` (the relay could not write the change to
+//! its journal, so nothing changed; try again later), or `UNREACHABLE` (a
+//! forward could not reach the other relay, or it closed without a reply).
 //!
-//! A message longer than `MAX_MESSAGE` or an unknown opcode closes the
-//! connection.
+//! A message longer than `MAX_MESSAGE`, an unknown opcode, or an opcode the
+//! path does not allow closes the connection.
 //!
 //! The WebSocket front end can require a bearer token in the `Authorization`
 //! header (see `serve_ws`). Neither front end speaks TLS: put the WebSocket
@@ -28,9 +44,12 @@
 //! Not audited.
 
 use std::io::{self, Cursor, ErrorKind, Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::{TcpListener, TcpStream, ToSocketAddrs};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
+
+use erevos_core::relay_seal::{RelayKey, OVERHEAD};
 
 use tungstenite::handshake::server::{ErrorResponse, Request, Response};
 use tungstenite::http::StatusCode;
@@ -38,7 +57,24 @@ use tungstenite::Message;
 
 use crate::queue::{QueueError, QueueId, Store};
 
-pub type SharedStore = Arc<Mutex<Store>>;
+/// What every connection shares: the queues, and the key for sealed sends
+/// if the relay has one.
+pub struct Shared {
+    pub store: Mutex<Store>,
+    pub key: Option<RelayKey>,
+}
+
+pub type SharedStore = Arc<Shared>;
+
+impl Shared {
+    pub fn new(store: Store, key: Option<RelayKey>) -> SharedStore {
+        Arc::new(Shared { store: Mutex::new(store), key })
+    }
+
+    fn store(&self) -> std::sync::MutexGuard<'_, Store> {
+        self.store.lock().expect("store lock")
+    }
+}
 
 /// Largest message a sender may queue. Above the padding top bucket, to
 /// leave room for the sealing overhead.
@@ -48,11 +84,31 @@ pub const CREATE: u8 = 1;
 pub const SEND: u8 = 2;
 pub const RECEIVE: u8 = 3;
 pub const DELETE: u8 = 4;
+pub const KEY: u8 = 5;
+pub const FORWARD: u8 = 6;
+pub const SEALED_SEND: u8 = 7;
 
 pub const OK: u8 = 0;
 pub const NOT_FOUND: u8 = 1;
 pub const FULL: u8 = 2;
 pub const FAILED: u8 = 3;
+pub const UNREACHABLE: u8 = 4;
+
+/// Largest sealed send: a full message and the sealing.
+pub const MAX_SEALED: usize = MAX_MESSAGE + OVERHEAD;
+/// Longest relay address a forward may name.
+const MAX_ADDRESS: usize = 512;
+/// The WebSocket path other relays use for sealed sends.
+pub const SEALED_PATH: &str = "/sealed";
+const FORWARD_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// What a connection may ask for.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Access {
+    All,
+    /// The `/sealed` path: `KEY` and `SEALED_SEND` only.
+    Sealed,
+}
 
 /// Serves raw TCP connections until the listener fails. Each connection gets
 /// its own thread; all share one store.
@@ -86,8 +142,8 @@ pub fn serve_ws(
     }
 }
 
-fn handle_tcp(mut stream: TcpStream, store: &Mutex<Store>) -> io::Result<()> {
-    while let Some(reply) = respond(&mut stream, store)? {
+fn handle_tcp(mut stream: TcpStream, store: &Shared) -> io::Result<()> {
+    while let Some(reply) = respond(&mut stream, store, Access::All)? {
         stream.write_all(&reply)?;
     }
     Ok(())
@@ -95,10 +151,17 @@ fn handle_tcp(mut stream: TcpStream, store: &Mutex<Store>) -> io::Result<()> {
 
 // The error type of the handshake callback is fixed by tungstenite, so it cannot be boxed here.
 #[allow(clippy::result_large_err)]
-fn handle_ws(stream: TcpStream, store: &Mutex<Store>, token: Option<&str>) -> io::Result<()> {
-    let check = |request: &Request, response: Response| match token {
-        Some(expected) if !is_authorized(request, expected) => Err(unauthorized()),
-        _ => Ok(response),
+fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Result<()> {
+    let mut access = Access::All;
+    let check = |request: &Request, response: Response| {
+        if request.uri().path().ends_with(SEALED_PATH) {
+            access = Access::Sealed;
+            return Ok(response);
+        }
+        match token {
+            Some(expected) if !is_authorized(request, expected) => Err(unauthorized()),
+            _ => Ok(response),
+        }
     };
     let mut socket = tungstenite::accept_hdr(stream, check).map_err(to_io)?;
     loop {
@@ -112,7 +175,7 @@ fn handle_ws(stream: TcpStream, store: &Mutex<Store>, token: Option<&str>) -> io
         match message {
             Message::Binary(bytes) => {
                 let request: &[u8] = bytes.as_ref();
-                let Some(reply) = respond(&mut Cursor::new(request), store)? else {
+                let Some(reply) = respond(&mut Cursor::new(request), store, access)? else {
                     return Ok(());
                 };
                 socket.send(Message::Binary(reply.into())).map_err(to_io)?;
@@ -126,16 +189,19 @@ fn handle_ws(stream: TcpStream, store: &Mutex<Store>, token: Option<&str>) -> io
 
 /// Reads one request from `r` and returns its reply. `None` means the peer
 /// closed before a new request started.
-fn respond(r: &mut impl Read, store: &Mutex<Store>) -> io::Result<Option<Vec<u8>>> {
+fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Option<Vec<u8>>> {
     let mut op = [0u8; 1];
     match r.read_exact(&mut op) {
         Ok(()) => {}
         Err(e) if e.kind() == ErrorKind::UnexpectedEof => return Ok(None),
         Err(e) => return Err(e),
     }
+    if access == Access::Sealed && !matches!(op[0], KEY | SEALED_SEND) {
+        return Err(io::Error::new(ErrorKind::PermissionDenied, "not on the sealed path"));
+    }
     let reply = match op[0] {
         CREATE => {
-            let created = store.lock().expect("store lock").create();
+            let created = shared.store().create();
             match created {
                 Ok(q) => {
                     let mut out = vec![OK];
@@ -149,11 +215,11 @@ fn respond(r: &mut impl Read, store: &Mutex<Store>) -> io::Result<Option<Vec<u8>
         SEND => {
             let sender = read_id(r)?;
             let msg = read_message(r)?;
-            status(store.lock().expect("store lock").send(&sender, msg))
+            status(shared.store().send(&sender, msg))
         }
         RECEIVE => {
             let recipient = read_id(r)?;
-            let got = store.lock().expect("store lock").receive(&recipient);
+            let got = shared.store().receive(&recipient);
             match got {
                 Ok(Some(msg)) => {
                     let mut out = vec![OK, 1];
@@ -167,7 +233,31 @@ fn respond(r: &mut impl Read, store: &Mutex<Store>) -> io::Result<Option<Vec<u8>
         }
         DELETE => {
             let recipient = read_id(r)?;
-            status(store.lock().expect("store lock").delete(&recipient))
+            status(shared.store().delete(&recipient))
+        }
+        KEY => match &shared.key {
+            Some(key) => {
+                let mut out = vec![OK];
+                out.extend_from_slice(&key.public());
+                out
+            }
+            None => vec![NOT_FOUND],
+        },
+        FORWARD => {
+            let address = read_address(r)?;
+            let sealed = read_sealed(r)?;
+            vec![forward(&address, &sealed)]
+        }
+        SEALED_SEND => {
+            let sealed = read_sealed(r)?;
+            match shared.key.as_ref().map(|key| key.open(&sealed)) {
+                Some(Ok((sender, msg))) if msg.len() <= MAX_MESSAGE => {
+                    status(shared.store().send(&sender, msg))
+                }
+                // Sealed for another key, changed on the way, or this relay has no key:
+                // to the sender it is the same as a queue that is not here.
+                _ => vec![NOT_FOUND],
+            }
         }
         _ => return Err(io::Error::new(ErrorKind::InvalidData, "unknown opcode")),
     };
@@ -193,10 +283,75 @@ fn read_id(r: &mut impl Read) -> io::Result<QueueId> {
 }
 
 fn read_message(r: &mut impl Read) -> io::Result<Vec<u8>> {
+    read_bytes(r, MAX_MESSAGE)
+}
+
+fn read_sealed(r: &mut impl Read) -> io::Result<Vec<u8>> {
+    read_bytes(r, MAX_SEALED)
+}
+
+/// A relay address for a forward: `ws://` or `wss://` and nothing else.
+fn read_address(r: &mut impl Read) -> io::Result<String> {
+    let mut len = [0u8; 2];
+    r.read_exact(&mut len)?;
+    let len = u16::from_be_bytes(len) as usize;
+    if len > MAX_ADDRESS {
+        return Err(io::Error::new(ErrorKind::InvalidData, "address too long"));
+    }
+    let mut bytes = vec![0u8; len];
+    r.read_exact(&mut bytes)?;
+    let address = String::from_utf8(bytes).map_err(|_| io::Error::new(ErrorKind::InvalidData, "address is not text"))?;
+    if !(address.starts_with("ws://") || address.starts_with("wss://")) {
+        return Err(io::Error::new(ErrorKind::InvalidData, "not a relay address"));
+    }
+    Ok(address)
+}
+
+/// Passes a sealed send to the relay at `address` and returns its status.
+fn forward(address: &str, sealed: &[u8]) -> u8 {
+    let url = format!("{}{SEALED_PATH}", address.trim_end_matches('/'));
+    match forward_to(&url, sealed) {
+        Ok(reply) if reply.len() == 1 && reply[0] <= FAILED => reply[0],
+        _ => UNREACHABLE,
+    }
+}
+
+fn forward_to(url: &str, sealed: &[u8]) -> io::Result<Vec<u8>> {
+    let uri: tungstenite::http::Uri = url.parse().map_err(to_io)?;
+    let host = uri.host().ok_or_else(|| to_io("no host"))?;
+    let host = host.trim_start_matches('[').trim_end_matches(']');
+    let port = uri
+        .port_u16()
+        .unwrap_or(if uri.scheme_str() == Some("wss") { 443 } else { 80 });
+    let addr = (host, port)
+        .to_socket_addrs()?
+        .next()
+        .ok_or_else(|| to_io("no address"))?;
+    let stream = TcpStream::connect_timeout(&addr, FORWARD_TIMEOUT)?;
+    stream.set_read_timeout(Some(FORWARD_TIMEOUT))?;
+    stream.set_write_timeout(Some(FORWARD_TIMEOUT))?;
+    let (mut socket, _) = tungstenite::client_tls(url, stream).map_err(to_io)?;
+    let mut request = vec![SEALED_SEND];
+    request.extend_from_slice(&(sealed.len() as u32).to_be_bytes());
+    request.extend_from_slice(sealed);
+    socket.send(Message::Binary(request.into())).map_err(to_io)?;
+    loop {
+        match socket.read().map_err(to_io)? {
+            Message::Binary(bytes) => {
+                let _ = socket.close(None);
+                return Ok(bytes.to_vec());
+            }
+            Message::Close(_) => return Err(to_io("closed")),
+            _ => {}
+        }
+    }
+}
+
+fn read_bytes(r: &mut impl Read, max: usize) -> io::Result<Vec<u8>> {
     let mut len = [0u8; 4];
     r.read_exact(&mut len)?;
     let len = u32::from_be_bytes(len) as usize;
-    if len > MAX_MESSAGE {
+    if len > max {
         return Err(io::Error::new(ErrorKind::InvalidData, "message too large"));
     }
     let mut msg = vec![0u8; len];
@@ -236,19 +391,24 @@ mod tests {
     use tungstenite::client::IntoClientRequest;
     use tungstenite::stream::MaybeTlsStream;
     use tungstenite::WebSocket;
+    use erevos_core::relay_seal::seal;
 
     fn start() -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
-        let store = Arc::new(Mutex::new(Store::default()));
+        let store = Shared::new(Store::default(), None);
         thread::spawn(move || serve(listener, store));
         addr
     }
 
     fn start_ws(token: Option<&str>) -> SocketAddr {
+        start_ws_with(token, None)
+    }
+
+    fn start_ws_with(token: Option<&str>, key: Option<RelayKey>) -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
-        let store = Arc::new(Mutex::new(Store::default()));
+        let store = Shared::new(Store::default(), key);
         let token: Option<Arc<str>> = token.map(Arc::from);
         thread::spawn(move || serve_ws(listener, store, token));
         addr
@@ -411,6 +571,108 @@ mod tests {
         req.extend_from_slice(&sender);
         req.extend_from_slice(&((MAX_MESSAGE as u32) + 1).to_be_bytes());
         s.write_all(&req).unwrap();
+        let mut r = [0u8; 1];
+        assert!(matches!(s.read(&mut r), Ok(0) | Err(_)));
+    }
+
+    fn forward_request(address: &str, sealed: &[u8]) -> Vec<u8> {
+        let mut req = vec![FORWARD];
+        req.extend_from_slice(&(address.len() as u16).to_be_bytes());
+        req.extend_from_slice(address.as_bytes());
+        req.extend_from_slice(&(sealed.len() as u32).to_be_bytes());
+        req.extend_from_slice(sealed);
+        req
+    }
+
+    fn connect_with_token(addr: SocketAddr, path: &str, token: &str) -> Ws {
+        let mut request = format!("ws://{addr}{path}").into_client_request().unwrap();
+        request
+            .headers_mut()
+            .insert("authorization", format!("Bearer {token}").parse().unwrap());
+        tungstenite::connect(request).unwrap().0
+    }
+
+    #[test]
+    fn a_forwarded_message_reaches_the_other_relay() {
+        let key = RelayKey::generate();
+        let public = key.public();
+        let far = start_ws_with(Some("far"), Some(key));
+        let near = start_ws_with(Some("near"), None);
+
+        let mut far_ws = connect_with_token(far, "", "far");
+        let r = ws_call(&mut far_ws, vec![KEY]);
+        assert_eq!((r[0], &r[1..]), (OK, &public[..]));
+        let (recipient, sender) = ws_create(&mut far_ws);
+
+        let mut near_ws = connect_with_token(near, "", "near");
+        let sealed = seal(&public, &sender, b"via two relays").unwrap();
+        let r = ws_call(&mut near_ws, forward_request(&format!("ws://{far}"), &sealed));
+        assert_eq!(r, vec![OK]);
+        assert_eq!(
+            ws_receive(&mut far_ws, &recipient).as_deref(),
+            Some(&b"via two relays"[..])
+        );
+
+        // The far relay's answer comes back: a queue that is gone is NOT_FOUND.
+        let mut req = vec![DELETE];
+        req.extend_from_slice(&recipient);
+        assert_eq!(ws_call(&mut far_ws, req), vec![OK]);
+        let sealed = seal(&public, &sender, b"late").unwrap();
+        let r = ws_call(&mut near_ws, forward_request(&format!("ws://{far}/"), &sealed));
+        assert_eq!(r, vec![NOT_FOUND]);
+    }
+
+    #[test]
+    fn a_forward_to_nowhere_is_unreachable() {
+        let near = start_ws_with(None, None);
+        let (mut ws, _) = tungstenite::connect(format!("ws://{near}")).unwrap();
+        let closed = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
+        let sealed = seal(&RelayKey::generate().public(), &[1; 24], b"x").unwrap();
+        let r = ws_call(&mut ws, forward_request(&format!("ws://{closed}"), &sealed));
+        assert_eq!(r, vec![UNREACHABLE]);
+    }
+
+    #[test]
+    fn the_sealed_path_needs_no_token_but_takes_only_sealed_sends() {
+        let key = RelayKey::generate();
+        let public = key.public();
+        let addr = start_ws_with(Some("t"), Some(key));
+        let mut owner = connect_with_token(addr, "", "t");
+        let (recipient, sender) = ws_create(&mut owner);
+
+        let (mut open, _) = tungstenite::connect(format!("ws://{addr}{SEALED_PATH}")).unwrap();
+        let sealed = seal(&public, &sender, b"sealed").unwrap();
+        let mut req = vec![SEALED_SEND];
+        req.extend_from_slice(&(sealed.len() as u32).to_be_bytes());
+        req.extend_from_slice(&sealed);
+        assert_eq!(ws_call(&mut open, req), vec![OK]);
+        assert_eq!(ws_receive(&mut owner, &recipient).as_deref(), Some(&b"sealed"[..]));
+
+        // Sealed to another key: refused like an unknown queue.
+        let wrong = seal(&RelayKey::generate().public(), &sender, b"x").unwrap();
+        let mut req = vec![SEALED_SEND];
+        req.extend_from_slice(&(wrong.len() as u32).to_be_bytes());
+        req.extend_from_slice(&wrong);
+        assert_eq!(ws_call(&mut open, req), vec![NOT_FOUND]);
+
+        // Anything else closes the connection.
+        open.send(Message::Binary(vec![CREATE].into())).unwrap();
+        assert!(!matches!(open.read(), Ok(Message::Binary(_))));
+    }
+
+    #[test]
+    fn a_relay_without_a_key_says_so() {
+        let mut s = TcpStream::connect(start()).unwrap();
+        s.write_all(&[KEY]).unwrap();
+        let mut r = [0u8; 1];
+        s.read_exact(&mut r).unwrap();
+        assert_eq!(r[0], NOT_FOUND);
+    }
+
+    #[test]
+    fn a_forward_to_something_else_closes_the_connection() {
+        let mut s = TcpStream::connect(start()).unwrap();
+        s.write_all(&forward_request("http://example.org", b"x")).unwrap();
         let mut r = [0u8; 1];
         assert!(matches!(s.read(&mut r), Ok(0) | Err(_)));
     }

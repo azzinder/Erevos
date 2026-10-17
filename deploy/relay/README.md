@@ -54,6 +54,10 @@ the install again, and type the new token into every phone.
 - `/var/lib/erevos-relay/queues.journal`: queues and waiting messages. The
   service runs as a temporary user, so systemd keeps the file under
   `/var/lib/private/erevos-relay/`.
+- `/var/lib/erevos-relay/relay.key`: the relay's key for sealed sends from
+  other relays (two-hop sending), made on first start, in the same private
+  place. Keep it: phones that send through a second relay seal to it, and a
+  new key only means they fetch it again.
 - `/etc/caddy/erevos-relay.caddy`: the Caddy site, imported from
   `/etc/caddy/Caddyfile`. If that file was the one the package ships, the
   original is kept as `Caddyfile.orig`.

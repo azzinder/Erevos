@@ -72,3 +72,8 @@ pub fn safety_number(ours: &[u8], theirs: &[u8]) -> Result<String, JsError> {
 pub fn import_chats(name: &[u8], data: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::import_chats(name, data))
 }
+
+#[wasm_bindgen(js_name = relaySeal)]
+pub fn relay_seal(relay_key: &[u8], sender_id: &[u8], message: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::relay_seal(relay_key, sender_id, message))
+}
