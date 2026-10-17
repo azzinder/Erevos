@@ -5,3 +5,4 @@ web-build/
 expo-env.d.ts
 /android/
 /ios/
+/checks/.core/

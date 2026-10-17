@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, PermissionsAndroid, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, PermissionsAndroid, Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
 import { KeyboardPaddedView } from '../components/keyboard';
@@ -7,37 +7,32 @@ import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
 import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
+import { hasCore } from '../lib/core';
+import { E2E, toBase64Url, type ContactInfo } from '../lib/e2e';
 import { openHidden, setHiddenPassword } from '../lock/hidden';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
-import {
-  createQueue,
-  decodeEnvelope,
-  encodeEnvelope,
-  fromHex,
-  isQueueNotFound,
-  receiveMessage,
-  sendMessage,
-  toHex,
-  type Relay,
-} from '../lib/relay';
+import { createQueue, fromHex, isQueueNotFound, receiveMessage, sendMessage, toHex, type Relay } from '../lib/relay';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles } from '../theme/context';
 
-// Chat over the radio link, with a fallback through the relay. A phone is reached over the
-// radio link when that link is ready. Otherwise the message goes through the relay, if a relay
-// sender id is saved for that phone. Plain text, kept in memory only, so it is gone on reload.
+// Chat with contacts through the relay, end-to-end encrypted (lib/e2e.ts), and with nearby phones
+// over the radio link, not encrypted yet. A contact is added from their contact link, which
+// carries their public keys: adding it starts the conversation, and they see the contact appear
+// when they next look at the relay. Messages are kept in memory only, so they are gone on reload.
+// The contacts and their conversations are kept, sealed (lock/e2e-data.ts).
 //
 // Every space also has hidden chats (lock/hidden.ts), opened with their own password from the
 // Hidden chats button, which every space shows whether it has hidden chats or not. They are a
-// second chat with their own relay queue and contacts, over the relay only (the radio link is
-// the phone's, and its chats are the open space's). The other chats stay open underneath and
+// second chat with their own relay queue, account and contacts, over the relay only (the radio
+// link is the phone's, and its chats are the open space's). The other chats stay open underneath and
 // keep receiving. Hidden chats close when the app goes to the background or this screen closes,
 // and their messages go with them.
 
 type Message = { id: number; peer: string; text: string; mine: boolean };
 
-const RELAY_PREFIX = 'relay:';
+// Contacts are named by their identity key, after this prefix. Radio peers by their link id.
+const CONTACT_PREFIX = 'contact:';
 
 const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.NEARBY_WIFI_DEVICES',
@@ -54,8 +49,12 @@ function sameRelay(a: string, b: string): boolean {
 }
 
 function label(peer: string): string {
-  return peer.startsWith(RELAY_PREFIX) ? `relay ${peer.slice(RELAY_PREFIX.length, RELAY_PREFIX.length + 8)}` : peer;
+  return peer.startsWith(CONTACT_PREFIX) ? `contact ${peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8)}` : peer;
 }
+
+const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+const NO_CORE = 'This build cannot encrypt, so chats through the relay are off. Rebuild the app.';
 
 export default function ChatScreen() {
   const [hiddenKey, setHiddenKey] = useState<Uint8Array | null>(null);
@@ -124,35 +123,52 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
   onHidden: () => void;
   onChangePassword?: () => void;
 }) {
+  // Nearby phones on the radio link.
   const [peers, setPeers] = useState<string[]>([]);
+  const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
-  // Peer id to the relay sender id that reaches it. Typed in for radio peers, and
-  // learned from the sender for relay peers.
-  const [routes, setRoutes] = useState<Record<string, string>>({});
   const [showRelay, setShowRelay] = useState(false);
   const [relayUrl, setRelayUrl] = useState('');
   const [relayToken, setRelayToken] = useState('');
   const [ownQueue, setOwnQueue] = useState<Queue | null>(null);
-  const [routeDraft, setRouteDraft] = useState('');
   const [contactDraft, setContactDraft] = useState('');
   const [showQr, setShowQr] = useState(false);
+  const [safety, setSafety] = useState<{ peer: string; number: string } | null>(null);
+  const [e2e, setE2E] = useState<E2E | null>(null);
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
   const thread = useRef<ScrollView>(null);
   const styles = useStyles(makeStyles);
 
-  function relayTarget(): Relay | null {
-    const url = relayUrl.trim();
-    return url ? { url, token: relayToken.trim() || undefined } : null;
+  function relayTarget(url = relayUrl): Relay | null {
+    const address = url.trim();
+    return address ? { url: address, token: relayToken.trim() || undefined } : null;
+  }
+
+  // Hands the relay the first packets of conversations started here that it has not taken yet:
+  // until it does, the contact cannot read anything else from this chat.
+  async function sendPending(chats: E2E, target: Relay) {
+    for (const { identity, sender, first } of chats.pending()) {
+      try {
+        await sendMessage(target, fromHex(sender), first);
+        await chats.firstSent(identity);
+      } catch {
+        // Tried again with the next message, or the next look at the relay.
+      }
+    }
   }
 
   // Adds a contact from a code: typed or pasted here, or scanned and opened on the contact screen.
-  function acceptContact(code: ContactCode) {
+  async function acceptContact(code: ContactCode) {
+    if (!e2e) {
+      setNote(NO_CORE);
+      return;
+    }
     if (code.senderHex === ownQueue?.senderHex) {
-      setNote("Not added. That is this phone's own code.");
+      setNote("Not added. That is this chat's own code.");
       return;
     }
     const ours = relayUrl.trim();
@@ -162,12 +178,33 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
       );
       return;
     }
+    const url = ours || code.relayUrl;
     if (code.relayUrl && !ours) setRelayUrl(code.relayUrl);
-    const peer = `${RELAY_PREFIX}${code.senderHex}`;
-    setRoutes((list) => ({ ...list, [peer]: code.senderHex }));
-    setPeers((list) => (list.includes(peer) ? list : [...list, peer]));
-    setSelected(peer);
-    setNote('Contact added. Messages to it go through the relay.');
+    const target = relayTarget(url);
+    if (!target) {
+      setNote('Not added. Type the relay address in Relay first.');
+      return;
+    }
+    try {
+      // The contact answers through our own queue, so there has to be one.
+      let queue = ownQueue;
+      if (!queue) {
+        const ids = await createQueue(target);
+        queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+        setOwnQueue(queue);
+      }
+      const { identity, added } = await e2e.addContact(code, queue.senderHex);
+      setContacts(e2e.contacts());
+      setSelected(`${CONTACT_PREFIX}${identity}`);
+      await sendPending(e2e, target);
+      setNote(
+        added
+          ? 'Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.'
+          : 'Already a contact. Where to reach them is updated.',
+      );
+    } catch (error) {
+      setNote(`Not added. ${errorText(error)}`);
+    }
   }
 
   // The radio link belongs to the phone, not to a space: until messages are sealed for each
@@ -195,45 +232,66 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
     };
   }, []);
 
-  // Restores the relay settings, our queue and the contacts this space keeps on the phone,
-  // sealed with its key (lock/space-data.ts). Another space finds only its own.
+  // Restores the relay settings and our queue this space keeps on the phone, sealed with its key
+  // (lock/space-data.ts), and its account and contacts (lock/e2e-data.ts). Another space finds
+  // only its own.
   useEffect(() => {
-    (hiddenKey ? loadHiddenData(currentSpace().space, hiddenKey) : loadCurrentSpaceData())
+    let active = true;
+    const { space, key } = currentSpace();
+    (hiddenKey ? loadHiddenData(space, hiddenKey) : loadCurrentSpaceData())
       .then((data) => {
+        if (!active) return;
         setRelayUrl(data.url);
         setRelayToken(data.token);
         setOwnQueue(data.ownQueue);
-        setRoutes(data.routes);
-        setPeers(Object.keys(data.routes).filter((peer) => peer.startsWith(RELAY_PREFIX)));
       })
       .catch(() => {
         // Nothing usable saved. Start empty.
       })
-      .finally(() => setLoaded(true));
+      .then(async () => {
+        if (!hasCore()) {
+          setNote(NO_CORE);
+          return;
+        }
+        const chats = await E2E.open(hiddenKey ? 'hidden' : 'space', space, hiddenKey ?? key);
+        if (!active) return;
+        setE2E(chats);
+        setContacts(chats.contacts());
+      })
+      .catch((error) => {
+        if (active) setNote(`Chats through the relay could not open. ${errorText(error)}`);
+      })
+      .finally(() => {
+        if (active) setLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // Saves the relay settings, our queue and the contacts whenever they change.
+  // Saves the relay settings and our queue whenever they change.
   useEffect(() => {
     if (!loaded) return;
-    // Only what the chat keeps: the look kept beside it stays as it is.
-    const data: Partial<SpaceData> = { url: relayUrl, token: relayToken, ownQueue, routes };
+    // Only what the chat keeps: the look kept beside it stays as it is. Contacts from before
+    // messages were encrypted (routes) cannot be written to any more, so they go.
+    const data: Partial<SpaceData> = { url: relayUrl, token: relayToken, ownQueue, routes: {} };
     (hiddenKey ? updateHiddenData(currentSpace().space, hiddenKey, data) : updateCurrentSpaceData(data)).catch(() => {
       // A failed save only means the next launch starts empty.
     });
-  }, [loaded, relayUrl, relayToken, ownQueue, routes]);
+  }, [loaded, relayUrl, relayToken, ownQueue]);
 
   // Takes a contact opened from a scanned code, once the saved contacts are loaded so they
   // cannot overwrite it.
   useEffect(() => {
     if (!loaded || !shown) return;
-    return onContactOffered(acceptContact);
-  }, [loaded, shown, relayUrl, ownQueue]);
+    return onContactOffered((code) => void acceptContact(code));
+  }, [loaded, shown, relayUrl, relayToken, ownQueue, e2e]);
 
-  // Looks at our own relay queue every few seconds. A message names the sender's relay
-  // sender id, so we can answer through the relay and list that sender as a chat.
+  // Looks at our own relay queue every few seconds and opens what came. Without the core nothing
+  // could open it, so the queue is left alone, and its messages wait on the relay.
   useEffect(() => {
     const url = relayUrl.trim();
-    if (!url || !ownQueue) return;
+    if (!url || !ownQueue || !e2e) return;
     const target: Relay = { url, token: relayToken.trim() || undefined };
     const recipient = fromHex(ownQueue.recipientHex);
     let active = true;
@@ -242,18 +300,26 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
       if (busy) return;
       busy = true;
       try {
+        await sendPending(e2e, target);
         const bytes = await receiveMessage(target, recipient);
-        const envelope = bytes ? decodeEnvelope(bytes) : null;
-        if (!active || !envelope) return;
-        const peer = `${RELAY_PREFIX}${envelope.from || 'anonymous'}`;
-        if (envelope.from) setRoutes((list) => ({ ...list, [peer]: envelope.from }));
-        setPeers((list) => (list.includes(peer) ? list : [...list, peer]));
+        if (!active || !bytes) return;
+        const received = await e2e.receive(bytes);
+        if (!active) return;
+        if (received.kind === 'refused') {
+          if (received.reason === 'plain') setNote('A message that was not end-to-end encrypted came, and was not shown.');
+          return;
+        }
+        const peer = `${CONTACT_PREFIX}${received.identity}`;
+        setContacts(e2e.contacts());
         setSelected((current) => current ?? peer);
-        setMessages((list) => [...list, { id: nextId.current++, peer, text: envelope.text, mine: false }]);
+        if (received.text) setMessages((list) => [...list, { id: nextId.current++, peer, text: received.text, mine: false }]);
+        if (received.added) {
+          setNote(`New contact ${label(peer)}: they added your contact link. Compare the safety number with theirs.`);
+        }
       } catch (error) {
         if (!active) return;
         if (!isQueueNotFound(error)) {
-          setNote(error instanceof Error ? error.message : String(error));
+          setNote(errorText(error));
           return;
         }
         // The relay no longer has our queue (deleted, or a relay that keeps queues in memory
@@ -263,10 +329,10 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
           if (!active) return;
           setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
           setNote(
-            'The relay had lost your queue, so a new one was made. Give your contacts your new relay sender id.',
+            'The relay had lost your queue, so a new one was made. Your contacts learn it from your next message to them.',
           );
         } catch (retry) {
-          if (active) setNote(retry instanceof Error ? retry.message : String(retry));
+          if (active) setNote(errorText(retry));
         }
       } finally {
         busy = false;
@@ -276,7 +342,7 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
       active = false;
       clearInterval(timer);
     };
-  }, [relayUrl, relayToken, ownQueue]);
+  }, [relayUrl, relayToken, ownQueue, e2e]);
 
   function keep(peer: string, text: string) {
     setMessages((list) => [...list, { id: nextId.current++, peer, text, mine: true }]);
@@ -286,33 +352,60 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
   async function send() {
     const text = draft.trim();
     if (!text || !selected) return;
-    if (!selected.startsWith(RELAY_PREFIX) && sendText(selected, text)) {
-      keep(selected, text);
-      setNote('');
+    if (!selected.startsWith(CONTACT_PREFIX)) {
+      if (sendText(selected, text)) {
+        keep(selected, text);
+        setNote('Sent over the radio link, not encrypted.');
+      } else {
+        setNote('Not sent. The link to this phone is not ready.');
+      }
       return;
     }
-    const route = routes[selected];
     const target = relayTarget();
     if (!target) {
       setNote('Not sent. Type the relay address in Relay first.');
       return;
     }
-    if (!route) {
-      setNote('Not sent. The link to this phone is not ready, and no relay route is saved for it.');
+    if (!e2e) {
+      setNote(NO_CORE);
       return;
     }
+    const identity = selected.slice(CONTACT_PREFIX.length);
     try {
-      await sendMessage(target, fromHex(route), encodeEnvelope(ownQueue?.senderHex ?? '', text));
+      const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '');
+      if (sealed.first) {
+        await sendMessage(target, fromHex(sealed.sender), sealed.first);
+        await e2e.firstSent(identity);
+      }
+      await sendMessage(target, fromHex(sealed.sender), sealed.packet);
       keep(selected, text);
-      setNote('Sent through the relay.');
+      setNote('Sent through the relay, end-to-end encrypted.');
     } catch (error) {
       setNote(
         isQueueNotFound(error)
-          ? "Not sent. The relay does not have this contact's queue any more. Ask them for their new relay sender id."
-          : error instanceof Error
-            ? error.message
-            : String(error),
+          ? "Not sent. The relay does not have this contact's queue any more. Ask them to write to you, or for their new contact link."
+          : `Not sent. ${errorText(error)}`,
       );
+    }
+  }
+
+  async function shareLink(link: string) {
+    try {
+      await Share.share({ message: link });
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  async function toggleSafety(peer: string) {
+    if (safety?.peer === peer || !e2e) {
+      setSafety(null);
+      return;
+    }
+    try {
+      setSafety({ peer, number: await e2e.safetyNumber(peer.slice(CONTACT_PREFIX.length)) });
+    } catch (error) {
+      setNote(errorText(error));
     }
   }
 
@@ -327,34 +420,25 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
       setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
       setNote('Relay queue created.');
     } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
+      setNote(errorText(error));
     }
-  }
-
-  function saveRoute() {
-    if (!selected || selected.startsWith(RELAY_PREFIX)) return;
-    const code = parseContact(routeDraft);
-    if (!code) {
-      setNote('That is not a relay sender id (48 hex characters) or an Erevos contact link.');
-      return;
-    }
-    setRoutes((list) => ({ ...list, [selected]: code.senderHex }));
-    setRouteDraft('');
-    setNote('Relay route saved.');
   }
 
   function addContact() {
     const code = parseContact(contactDraft);
     if (!code) {
-      setNote('That is not a relay sender id (48 hex characters) or an Erevos contact link.');
+      setNote('That is not an Erevos contact link.');
       return;
     }
     setContactDraft('');
-    acceptContact(code);
+    void acceptContact(code);
   }
 
   const visible = messages.filter((message) => message.peer === selected);
-  const selectedIsRadio = selected !== null && !selected.startsWith(RELAY_PREFIX);
+  const chips = [...peers, ...contacts.map((contact) => `${CONTACT_PREFIX}${contact.identity}`)];
+  const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
+  const ownLink =
+    ownQueue && e2e ? contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim(), key: toBase64Url(e2e.bundle) }) : null;
 
   return (
     <View style={styles.container}>
@@ -371,17 +455,38 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
       </View>
       <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
         <Text tone="muted">
-          {peers.length > 0
+          {chips.length > 0
             ? 'Pick a chat.'
             : hiddenKey
               ? 'No hidden chats yet. Add a contact through the relay below.'
-              : 'Looking for a nearby Erevos phone.'}
+              : 'Looking for a nearby Erevos phone. Contacts through the relay are under Relay.'}
         </Text>
         <Row wrap>
-          {peers.map((peer) => (
+          {chips.map((peer) => (
             <Chip key={peer} label={label(peer)} mono selected={peer === selected} onPress={() => setSelected(peer)} />
           ))}
         </Row>
+        {selectedContact ? (
+          <View style={styles.section}>
+            <Text variant="caption" tone="muted">
+              End-to-end encrypted. Compare the safety number with theirs, in person or on a call: if both phones show
+              the same, no one is in between.
+            </Text>
+            <TextButton
+              title={safety?.peer === selectedContact ? 'Hide safety number' : 'Show safety number'}
+              onPress={() => void toggleSafety(selectedContact)}
+            />
+            {safety?.peer === selectedContact ? (
+              <Text selectable variant="mono" style={styles.safety}>
+                {safety.number.split(' ').reduce((lines, group, i) => lines + (i === 0 ? '' : i % 4 === 0 ? '\n' : '  ') + group, '')}
+              </Text>
+            ) : null}
+          </View>
+        ) : selected ? (
+          <Text variant="caption" tone="muted">
+            Nearby radio link: not end-to-end encrypted yet. Anyone nearby with the right tools could read it.
+          </Text>
+        ) : null}
         <TextButton title={showRelay ? 'Hide relay' : 'Relay (Wi-Fi or internet)'} onPress={() => setShowRelay((on) => !on)} />
         {showRelay ? (
           <View style={styles.section}>
@@ -406,15 +511,16 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
               />
             </Field>
             <Button title="Create my relay queue" compact onPress={createOwnQueue} />
-            {ownQueue ? (
+            {ownLink ? (
               <View style={styles.section}>
-                <Text selectable variant="mono">
-                  My relay sender id: {ownQueue.senderHex}
-                </Text>
-                <TextButton title={showQr ? 'Hide my QR code' : 'Show my QR code'} onPress={() => setShowQr((on) => !on)} />
+                <Text tone="muted">Your relay queue is ready. Give your contact link to whoever may write to you.</Text>
+                <Row wrap>
+                  <TextButton title={showQr ? 'Hide my QR code' : 'Show my QR code'} onPress={() => setShowQr((on) => !on)} />
+                  <TextButton title="Share my contact link" onPress={() => void shareLink(ownLink)} />
+                </Row>
                 {showQr ? (
                   <>
-                    <QrCode text={contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim() })} />
+                    <QrCode text={ownLink} />
                     <Text variant="caption" tone="muted">
                       Scan it with the other phone's camera and open the link in Erevos. If the camera only
                       shows the text, copy it and paste it below on that phone.
@@ -423,36 +529,18 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
                 ) : null}
               </View>
             ) : null}
-            <Text tone="muted">Add a contact by the relay sender id or the contact link they gave you:</Text>
+            <Text tone="muted">Add a contact by the contact link they gave you:</Text>
             <Row>
               <Input
                 value={contactDraft}
                 onChangeText={setContactDraft}
-                placeholder="Sender id or erevos://contact link"
+                placeholder="erevos://contact link"
                 autoCapitalize="none"
                 autoCorrect={false}
                 style={styles.grow}
               />
               <Button title="Add" compact onPress={addContact} />
             </Row>
-            {selectedIsRadio ? (
-              <View style={styles.section}>
-                <Text tone="muted">
-                  Relay sender id of {label(selected)}: {routes[selected] ?? 'not set'}
-                </Text>
-                <Row>
-                  <Input
-                    value={routeDraft}
-                    onChangeText={setRouteDraft}
-                    placeholder="48 hex characters"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    style={styles.grow}
-                  />
-                  <Button title="Save" compact onPress={saveRoute} />
-                </Row>
-              </View>
-            ) : null}
           </View>
         ) : null}
       </ScrollView>
@@ -470,7 +558,7 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
       </ScrollView>
       {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
       <Row>
-        <Input value={draft} onChangeText={setDraft} onSubmitEditing={send} placeholder="Message" style={styles.grow} />
+        <Input value={draft} onChangeText={setDraft} onSubmitEditing={send} placeholder="Message" maxLength={4000} style={styles.grow} />
         <Button title="Send" compact onPress={send} />
       </Row>
     </View>
@@ -546,5 +634,9 @@ const makeStyles = (colors: Colors) =>
     },
     note: {
       color: colors.accentText,
+    },
+    safety: {
+      fontSize: 15,
+      lineHeight: 24,
     },
   });

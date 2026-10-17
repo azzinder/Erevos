@@ -133,10 +133,14 @@ test('the guide links only to sections that exist, the same ones in both languag
   assert.deepEqual(links(en), links(el));
 });
 
-test('the guide says plainly that messages are not end to end encrypted yet', () => {
+test('the guide says plainly what is end-to-end encrypted, what is not yet, and that nothing is audited', () => {
   const about = (sections: typeof el) => sections.find((s) => s.id === 'about')!.blocks.flatMap(blockTexts).join(' ');
-  assert.match(about(en), /not end to end encrypted yet/);
-  assert.match(about(el), /δεν είναι ακόμα κρυπτογραφημένα από άκρη σε άκρη/);
+  assert.match(about(en), /through a relay are end-to-end encrypted/);
+  assert.match(about(en), /nearby phone are not encrypted yet/);
+  assert.match(about(en), /nothing has been audited/);
+  assert.match(about(el), /μέσω relay είναι κρυπτογραφημένα από άκρη σε άκρη/);
+  assert.match(about(el), /κοντινό τηλέφωνο δεν κρυπτογραφούνται ακόμα/);
+  assert.match(about(el), /τίποτα δεν έχει ελεγχθεί/);
 });
 
 test('the guide is searched ignoring case and accents, titles first', () => {
@@ -144,9 +148,9 @@ test('the guide is searched ignoring case and accents, titles first', () => {
   assert.equal(hidden[0].section.id, 'hidden');
   assert.equal(hidden[0].snippet, null);
   assert.ok(hidden.length > 2);
-  const deep = searchGuide(en, 'sender id');
-  assert.ok(deep.map((h) => h.section.id).includes('paths'));
-  assert.ok(deep.find((h) => h.section.id === 'nearby')?.snippet?.toLowerCase().includes('sender id'));
+  const deep = searchGuide(en, 'safety number');
+  assert.ok(deep.map((h) => h.section.id).includes('relay'));
+  assert.ok(deep.find((h) => h.section.id === 'faq')?.snippet?.toLowerCase().includes('safety number'));
   assert.deepEqual(searchGuide(en, '  '), []);
   assert.deepEqual(searchGuide(en, 'zzzz-nothing'), []);
   for (const hit of searchGuide(el, 'κωδικός')) if (hit.snippet) assert.ok(hit.snippet.length <= 112);

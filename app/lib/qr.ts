@@ -8,8 +8,9 @@ export type Run = { dark: boolean; length: number };
 
 /** The modules of the QR code for `text`, row by row, without the quiet zone around it. */
 export function qrRows(text: string): Run[][] {
-  // Medium error correction: still reads with a smudge or glare on the screen.
-  const qr = qrcode(0, 'M');
+  // Medium error correction, which still reads with a smudge or glare on the screen. A contact
+  // link with its keys is long, and with low error correction its modules stay larger.
+  const qr = qrcode(0, text.length > 1000 ? 'L' : 'M');
   qr.addData(text, 'Byte');
   qr.make();
   const count = qr.getModuleCount();

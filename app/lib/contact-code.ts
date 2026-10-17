@@ -1,24 +1,31 @@
 // Contact codes: what a phone shows, as a QR code, so another phone can write to it through
-// the relay. The code is a link, erevos://contact?id=<relay sender id>&relay=<relay address>,
-// so the phone's own camera app can open Erevos with it. The relay token is never part of it.
-// Self-contained on purpose, so it can run under plain Node for checks.
+// the relay. The code is a link,
+//   erevos://contact?id=<relay sender id>&relay=<relay address>&key=<public keys>
+// so the phone's own camera app can open Erevos with it. The keys are the chat's account bundle
+// (lib/e2e.ts) in base64url, about 1800 characters, which end-to-end encryption starts from.
+// The relay token is never part of it. Self-contained on purpose, so it can run under plain
+// Node for checks.
 
-export type ContactCode = { senderHex: string; relayUrl: string };
+export type ContactCode = { senderHex: string; relayUrl: string; key: string };
 
 const LINK = 'erevos://contact?';
+// A bundle is about 1800 characters. Anything far longer is not one.
+const MAX_KEY = 4096;
 
-export function contactLink({ senderHex, relayUrl }: ContactCode): string {
-  return `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}`;
+export function contactLink({ senderHex, relayUrl, key }: ContactCode): string {
+  return `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}`;
 }
 
-/** Checks the two parts of a code. The relay may be empty, when the code does not name one. */
-export function checkContact(senderHex: unknown, relayUrl: unknown): ContactCode | null {
-  if (typeof senderHex !== 'string' || typeof relayUrl !== 'string') return null;
+/** Checks the parts of a code. The relay and the key may be empty, when the code has none. */
+export function checkContact(senderHex: unknown, relayUrl: unknown, key: unknown = ''): ContactCode | null {
+  if (typeof senderHex !== 'string' || typeof relayUrl !== 'string' || typeof key !== 'string') return null;
   const id = senderHex.trim().toLowerCase();
   const relay = relayUrl.trim();
+  const keys = key.trim();
   if (!/^[0-9a-f]{48}$/.test(id)) return null;
   if (relay && !/^wss?:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(relay)) return null;
-  return { senderHex: id, relayUrl: relay };
+  if (keys.length > MAX_KEY || !/^[A-Za-z0-9_-]*$/.test(keys)) return null;
+  return { senderHex: id, relayUrl: relay, key: keys };
 }
 
 /** Reads a contact link, or a bare 48-character relay sender id. Null if the text is neither. */
@@ -35,7 +42,7 @@ export function parseContact(text: string): ContactCode | null {
       return null;
     }
   }
-  return checkContact(fields.id, fields.relay ?? '');
+  return checkContact(fields.id, fields.relay ?? '', fields.key ?? '');
 }
 
 // Hands a contact from the screen a scanned link opens to the chat screen, which owns the

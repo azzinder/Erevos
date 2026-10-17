@@ -3,12 +3,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Button, Field, Page, Text, TextButton } from '../components/ui';
 import { checkContact, offerContact } from '../lib/contact-code';
 
-// Opens from a scanned contact code, erevos://contact?id=...&relay=... (see lib/contact-code.ts).
+// Opens from a scanned contact code, erevos://contact?id=...&relay=...&key=... (see lib/contact-code.ts).
 // Nothing is added until the person confirms, because any link can open this screen.
 
 export default function Contact() {
-  const { id, relay } = useLocalSearchParams<{ id?: string; relay?: string }>();
-  const code = checkContact(id, relay ?? '');
+  const { id, relay, key } = useLocalSearchParams<{ id?: string; relay?: string; key?: string }>();
+  const code = checkContact(id, relay ?? '', key ?? '');
 
   if (!code) {
     return (
@@ -33,7 +33,17 @@ export default function Contact() {
           {code.relayUrl || 'Not given. The chat uses the relay this phone already has.'}
         </Text>
       </Field>
-      <Text tone="muted">Add it only if you scanned it from the other person's phone yourself.</Text>
+      <Field label="Keys">
+        <Text tone="muted">
+          {code.key
+            ? 'Included. Messages to this contact are end-to-end encrypted.'
+            : 'Missing. This code is from an older version of Erevos and cannot be added. Ask for a new one.'}
+        </Text>
+      </Field>
+      <Text tone="muted">
+        Add it only if you scanned it from the other person's phone yourself. Then compare the safety number in
+        the chat with theirs.
+      </Text>
       <Button
         title="Add to chat"
         onPress={() => {

@@ -12,8 +12,9 @@ internet.
   space.
 - **Appearance:** the LPHL looks: Classic, Modernist and Nocturne, twelve palettes, and glass as on lphl.nekten.eu.
 
-> This is an early test version. Messages are **not end to end encrypted yet**, and nothing has been audited. Do
-> not rely on it to protect anyone yet. [What is protected today](#privacy) says exactly what is and is not.
+> This is an early test version. Messages through a relay are **end-to-end encrypted**, but nothing has been
+> audited yet, and messages to a nearby phone are **not encrypted yet**. Do not rely on it to protect anyone yet.
+> [What is protected today](#privacy) says exactly what is and is not.
 
 This guide opens from **User guide** on the home screen. The search at its top finds any word in it, and the two
 buttons above it switch between Greek and English.
@@ -55,52 +56,59 @@ Wi-Fi Aware. No internet, SIM or Wi-Fi network is needed.
 - **Both phones keep Chat open:** the radio starts when Chat opens and stops when you leave it.
 - **Range:** a few tens of metres in the open, less through walls.
 - **Wi-Fi Aware:** faster, but not every phone has it. Bluetooth works on all of them.
-- **To reach them when they are far:** save their relay sender id for that chat, as in
-  [How Erevos picks the path](#paths).
+- **Not encrypted yet:** messages over the nearby link are plain text, and the line above the messages says so. To
+  write encrypted, add them as a contact through the relay, as in [Chat through a relay](#relay).
 
 > Until messages are sealed with each space's own keys, a message from a nearby phone shows in whichever space is
 > open. Hidden chats never use the nearby link.
 
 ## Chat through a relay {#relay}
 
-A relay is a small server that keeps one-way queues: each phone has its own queue, and whoever knows its
-**sender id** can drop messages into it. The relay holds no accounts, names or phone numbers. Both phones must use
-the same relay for now.
+A relay is a small server that keeps one-way queues: each phone has its own queue, and whoever has its **contact
+link** can drop messages into it. The relay holds no accounts, names or phone numbers, and cannot read the messages:
+they are end-to-end encrypted, and only the two phones have the keys. Both phones must use the same relay for now.
 
 1. In **Chat**, tap **Relay (Wi-Fi or internet)**.
 2. Type the **Relay address**: \`ws://<computer address>:7879\` for a relay on your own network, or
    \`wss://relay.example.org\` for one on the internet. Add the **Token** if the relay needs one.
-3. Tap **Create my relay queue**. Erevos shows **My relay sender id**.
+3. Tap **Create my relay queue**. Erevos says **Your relay queue is ready**.
 4. Tap **Show my QR code** and let the other phone scan it with its camera, then open the link in Erevos. The
    **Add a contact** screen shows what it holds: tap **Add to chat** only if you scanned it yourself.
-5. If their camera only shows the text, copy it and paste it into **Sender id or erevos://contact link**, then tap
-   **Add**.
+5. If their camera only shows the text, or they are far away, tap **Share my contact link** and send it to them.
+   They paste it into **erevos://contact link** and tap **Add**.
 
-The new chat appears as a button named **relay** and the first characters of its id. It is enough that one phone
-adds the other: once both have made their queue, the first message carries the sender's id, so the other phone
-lists the chat and can answer. Erevos looks at its queue every few seconds.
+The new chat appears as a button named **contact** and the first characters of their key. It is enough that one
+phone adds the other: adding a link starts an encrypted conversation and tells the other phone how to answer, so it
+lists the chat the next time it looks at its queue, which it does every few seconds.
 
-> The relay settings, your queue and your contacts are kept in this space, sealed. The messages themselves are not
-> kept yet: when you leave Chat or close Erevos, the conversation is cleared.
+### The safety number
+
+Pick the chat and tap **Show safety number**. Both phones show the same 60 digits for the two of you. Compare them
+in person or on a call: if they match, no one is in between. If they differ, do not trust that chat, and add the
+link again, scanned from their own phone.
+
+> The relay settings, your queue, your contacts and the keys of your conversations are kept in this space, sealed.
+> The messages themselves are not kept yet: when you leave Chat or close Erevos, the conversation is cleared.
 
 ## How Erevos picks the path {#paths}
 
-When you tap **Send**, Erevos tries the paths in this order:
+When you tap **Send**, the chat you picked decides the path:
 
-1. **The nearby link,** if the chat is a nearby phone and the link is ready.
-2. **The relay,** if a relay route is saved for that chat.
+1. **A contact** goes through the relay, end-to-end encrypted.
+2. **A nearby phone** goes over the nearby link, if it is ready, not encrypted.
 3. Otherwise the message is not sent, and a line under the chat says why.
 
-To give a nearby chat a relay route, pick it, open **Relay (Wi-Fi or internet)**, paste their relay sender id
-(48 characters, 0 to 9 and a to f) under **Relay sender id of …** and tap **Save**. From then on, when they are out
-of range, the message goes through the relay.
+For now a nearby phone and a contact are two separate chats, even when they are the same person. Once the nearby
+link is encrypted too, one chat will move between the paths by itself.
 
 | Line under the chat | What to do |
 | --- | --- |
-| **Sent through the relay.** | Nothing: it is on its way. |
+| **Sent through the relay, end-to-end encrypted.** | Nothing: it is on its way. |
+| **Sent over the radio link, not encrypted.** | Nothing, but anyone nearby could read it. |
 | **Not sent. Type the relay address in Relay first.** | Fill in the relay address, as in [Chat through a relay](#relay). |
-| **Not sent. The link to this phone is not ready, and no relay route is saved for it.** | Move closer, or save their relay sender id. |
-| **Not sent. The relay does not have this contact's queue any more.** | Ask them for their new relay sender id. |
+| **Not sent. The link to this phone is not ready.** | Move closer, or add them as a contact through the relay. |
+| **Not sent. The relay does not have this contact's queue any more.** | Ask them to write to you, or for their new contact link. |
+| **This build cannot encrypt, so chats through the relay are off.** | Build the app again: this build is older than its encryption. |
 
 ## Running your own relay {#own-relay}
 
@@ -116,7 +124,7 @@ has everything in \`deploy/relay\`.
 Queues and waiting messages are kept on the server's disk, so a restart loses nothing, and no request is logged.
 
 > Never post the token where others can read it. Whoever runs the server sees the IP addresses that connect, the
-> queue ids, and when and how much arrives. Until messages are end to end encrypted, they can read them too.
+> queue ids, and when and how much arrives. They cannot read the messages, which are end-to-end encrypted.
 
 ## Password lock {#lock}
 
@@ -128,8 +136,8 @@ Under **Lock and second password**, **Lock when Erevos opens** has two choices: 
 
 - **Wrong passwords:** after 5 wrong tries, each further one makes you wait, 30 seconds at first and twice as long
   each time, up to an hour. The count survives a restart.
-- **What is sealed:** each space's contacts, relay settings and look are kept on the phone sealed with a key that
-  only its password opens.
+- **What is sealed:** each space's contacts, the keys of its conversations, its relay settings and its look are
+  kept on the phone sealed with a key that only its password opens.
 
 > There is no way to recover a forgotten password: nothing is stored that could open the data without it.
 
@@ -156,8 +164,8 @@ chats.
 2. To open them, tap **Hidden chats** at the top of **Chat** and type that password.
 3. They open as their own chat, titled **Hidden chats**, with **Change password** and **Close** at the top.
 
-- **Relay only:** hidden chats have their own relay queue and never use the nearby link. While they are closed,
-  their messages wait on the relay.
+- **Relay only:** hidden chats have their own relay queue and their own keys, and never use the nearby link. While
+  they are closed, their messages wait on the relay.
 - **They close by themselves** when Erevos goes to the background.
 - **A new password from Lock** starts them empty and replaces the ones before. To keep them and change only the
   password, open them and use **Change password** there.
@@ -193,8 +201,8 @@ Two screens on the home screen are there to test the connections, step by step.
   the phone that writes to you, and keep the **recipient id** private. **Send** and **Receive** move messages by hand.
 
 > With one phone you can still try a chat through the relay: your chats and your **Hidden chats** each have their
-> own relay queue. Create both queues on the same relay, add the **My relay sender id** of one in the other, and
-> write. The phone's own id is refused as a contact.
+> own relay queue and their own keys. Create both queues on the same relay, tap **Share my contact link** in one and
+> copy it, then add it in the other, and write both ways. A chat's own link is refused as a contact.
 
 ## What is protected today {#privacy}
 
@@ -203,15 +211,16 @@ Erevos says plainly what it protects and what it does not, yet.
 | What | Today | Coming |
 | --- | --- | --- |
 | **Account, phone number, email** | None needed. Contacts are pairs of one-way relay queues. | |
-| **Contacts, relay settings, look** | Sealed on the phone with each space's key. | |
-| **Messages on the way** | **Not end to end encrypted yet.** Whoever runs the relay, or listens to the nearby link, could read them. | End to end encryption (PQXDH with ML-KEM-768, and the double ratchet), already written in Erevos's core. |
+| **Contacts, keys, relay settings, look** | Sealed on the phone with each space's key. | |
+| **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
+| **Messages to a nearby phone** | **Not encrypted yet.** Whoever listens to the nearby link could read them. | The same encryption as through the relay. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. | Two relays, so that none sees both ends. Tor, optional. |
 | **Message history** | Not kept: leaving Chat clears it. | Kept on the phone, sealed in its space. |
 | **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
 
 ## What is coming {#coming}
 
-End to end encryption comes first; most of what follows is built on it.
+End-to-end encryption through the relay is here. The nearby link comes next, and most of what follows is built on it.
 
 - **More ways to stay in touch:** the same Wi-Fi or a phone's hotspot without internet, Wi-Fi Direct, receiving
   while Erevos is closed, messages carried by other Erevos phones until they reach yours, and ways around censorship
@@ -241,12 +250,14 @@ There is no way to recover it. Erevos keeps nothing that could open your data wi
 
 ### A contact code was not added.
 
-Both phones must use the same relay for now. The line under the chat names both relays.
+Both phones must use the same relay for now. The line under the chat names both relays. A code from an older
+Erevos has no keys and is refused: ask for a new one.
 
 ### Can the relay read my messages?
 
-Today, yes: messages are not end to end encrypted yet. Use a relay you run yourself
-([Running your own relay](#own-relay)), or only send what you would not mind being read.
+No. Messages through a relay are end-to-end encrypted, and only the two phones have the keys. The relay still
+sees which queues are used, and when and how much arrives ([Running your own relay](#own-relay)). Compare the safety
+number, as in [Chat through a relay](#relay), to be sure no one is in between. Nothing has been audited yet.
 
 ### Why does Erevos not ask for my phone number?
 
