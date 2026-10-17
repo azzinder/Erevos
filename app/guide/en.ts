@@ -46,8 +46,8 @@ A good first hour:
 With **Chat** open, Erevos looks for other Erevos phones around it, over Bluetooth and, where the phone has it,
 Wi-Fi Aware. No internet, SIM or Wi-Fi network is needed.
 
-1. Open **Chat (Android)** on both phones. The first time, Android asks to find nearby devices and for the location;
-   allow both, or the phones cannot find each other.
+1. Open **Chat (Android)** on both phones. The first time, Android asks to find nearby devices (on Android 12 and
+   older, also for the location); allow it, or the phones cannot find each other.
 2. The chat shows **Looking for a nearby Erevos phone** until the link is ready. Then the other phone appears as a
    button above the messages.
 3. Tap it, type in **Message** and tap **Send**.
@@ -231,8 +231,8 @@ There is no way to recover it. Erevos keeps nothing that could open your data wi
 ### Chat stays on "Looking for a nearby Erevos phone".
 
 - Keep **Chat** open on both phones.
-- Check that Bluetooth and the location are on, and that Erevos may find nearby devices (Android settings → Apps →
-  Erevos → Permissions).
+- Check that Bluetooth is on (and, on Android 12 and older, the location), and that Erevos may find nearby devices
+  (Android settings → Apps → Erevos → Permissions).
 - Bring the phones closer. If one of them has no Wi-Fi Aware, they meet over Bluetooth, which is slower to start.
 
 ### A contact code was not added.
