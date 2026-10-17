@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
+import { QrCode } from '../components/QrCode';
+import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import {
   createQueue,
   decodeEnvelope,
@@ -48,6 +50,12 @@ const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.ACCESS_FINE_LOCATION',
 ];
 
+// Relay addresses that differ only in case or a trailing slash are the same relay.
+function sameRelay(a: string, b: string): boolean {
+  const plain = (url: string) => url.trim().replace(/\/+$/, '').toLowerCase();
+  return plain(a) === plain(b);
+}
+
 function label(peer: string): string {
   return peer.startsWith(RELAY_PREFIX) ? `relay ${peer.slice(RELAY_PREFIX.length, RELAY_PREFIX.length + 8)}` : peer;
 }
@@ -67,6 +75,7 @@ export default function Chat() {
   const [ownQueue, setOwnQueue] = useState<Queue | null>(null);
   const [routeDraft, setRouteDraft] = useState('');
   const [contactDraft, setContactDraft] = useState('');
+  const [showQr, setShowQr] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
   const thread = useRef<ScrollView>(null);
@@ -74,6 +83,27 @@ export default function Chat() {
   function relayTarget(): Relay | null {
     const url = relayUrl.trim();
     return url ? { url, token: relayToken.trim() || undefined } : null;
+  }
+
+  // Adds a contact from a code: typed or pasted here, or scanned and opened on the contact screen.
+  function acceptContact(code: ContactCode) {
+    if (code.senderHex === ownQueue?.senderHex) {
+      setNote("Not added. That is this phone's own code.");
+      return;
+    }
+    const ours = relayUrl.trim();
+    if (code.relayUrl && ours && !sameRelay(code.relayUrl, ours)) {
+      setNote(
+        `Not added. That contact uses the relay at ${code.relayUrl}, and this phone uses ${ours}. Both phones need the same relay for now.`,
+      );
+      return;
+    }
+    if (code.relayUrl && !ours) setRelayUrl(code.relayUrl);
+    const peer = `${RELAY_PREFIX}${code.senderHex}`;
+    setRoutes((list) => ({ ...list, [peer]: code.senderHex }));
+    setPeers((list) => (list.includes(peer) ? list : [...list, peer]));
+    setSelected(peer);
+    setNote('Contact added. Messages to it go through the relay.');
   }
 
   useEffect(() => {
@@ -133,6 +163,13 @@ export default function Chat() {
       // A failed save only means the next launch starts empty.
     });
   }, [loaded, relayUrl, relayToken, ownQueue, routes]);
+
+  // Takes a contact opened from a scanned code, once the saved contacts are loaded so they
+  // cannot overwrite it.
+  useEffect(() => {
+    if (!loaded) return;
+    return onContactOffered(acceptContact);
+  }, [loaded, relayUrl, ownQueue]);
 
   // Looks at our own relay queue every few seconds. A message names the sender's relay
   // sender id, so we can answer through the relay and list that sender as a chat.
@@ -247,30 +284,24 @@ export default function Chat() {
 
   function saveRoute() {
     if (!selected || selected.startsWith(RELAY_PREFIX)) return;
-    try {
-      const hex = routeDraft.trim().toLowerCase();
-      fromHex(hex);
-      setRoutes((list) => ({ ...list, [selected]: hex }));
-      setRouteDraft('');
-      setNote('Relay route saved.');
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
+    const code = parseContact(routeDraft);
+    if (!code) {
+      setNote('That is not a relay sender id (48 hex characters) or an Erevos contact link.');
+      return;
     }
+    setRoutes((list) => ({ ...list, [selected]: code.senderHex }));
+    setRouteDraft('');
+    setNote('Relay route saved.');
   }
 
   function addContact() {
-    try {
-      const hex = contactDraft.trim().toLowerCase();
-      fromHex(hex);
-      const peer = `${RELAY_PREFIX}${hex}`;
-      setRoutes((list) => ({ ...list, [peer]: hex }));
-      setPeers((list) => (list.includes(peer) ? list : [...list, peer]));
-      setSelected(peer);
-      setContactDraft('');
-      setNote('Contact added. Messages to it go through the relay.');
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
+    const code = parseContact(contactDraft);
+    if (!code) {
+      setNote('That is not a relay sender id (48 hex characters) or an Erevos contact link.');
+      return;
     }
+    setContactDraft('');
+    acceptContact(code);
   }
 
   const visible = messages.filter((message) => message.peer === selected);
@@ -324,16 +355,30 @@ export default function Chat() {
             <Text style={styles.buttonText}>Create my relay queue</Text>
           </Pressable>
           {ownQueue ? (
-            <Text selectable style={styles.id}>
-              My relay sender id: {ownQueue.senderHex}
-            </Text>
+            <View style={styles.section}>
+              <Text selectable style={styles.id}>
+                My relay sender id: {ownQueue.senderHex}
+              </Text>
+              <Pressable onPress={() => setShowQr((on) => !on)}>
+                <Text style={styles.link}>{showQr ? 'Hide my QR code' : 'Show my QR code'}</Text>
+              </Pressable>
+              {showQr ? (
+                <>
+                  <QrCode text={contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim() })} />
+                  <Text style={styles.label}>
+                    Scan it with the other phone's camera and open the link in Erevos. If the camera only
+                    shows the text, copy it and paste it below on that phone.
+                  </Text>
+                </>
+              ) : null}
+            </View>
           ) : null}
-          <Text style={styles.body}>Add a contact by the relay sender id they gave you:</Text>
+          <Text style={styles.body}>Add a contact by the relay sender id or the contact link they gave you:</Text>
           <View style={styles.inputRow}>
             <TextInput
               value={contactDraft}
               onChangeText={setContactDraft}
-              placeholder="48 hex characters"
+              placeholder="Sender id or erevos://contact link"
               placeholderTextColor="#A39A8D"
               autoCapitalize="none"
               autoCorrect={false}
