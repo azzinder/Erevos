@@ -148,7 +148,7 @@ impl Prekeys {
 /// Starts a session as the sender. Returns the session and the message to
 /// send with the first ciphertext.
 pub fn initiate(me: &Identity, bundle: &PrekeyBundle) -> Result<(Session, InitialMessage), Error> {
-    verify_bundle(bundle)?;
+    bundle.verify()?;
     let pq_ek = EncapsulationKey::<MlKem768>::new_from_slice(&bundle.pq_prekey).map_err(|_| Error::Malformed)?;
 
     let ephemeral = StaticSecret::random_from_rng(OsRng);
@@ -202,19 +202,17 @@ pub fn respond(me: &Identity, keys: &mut Prekeys, message: &InitialMessage) -> R
     Ok(Session::responder(secret, keys.signed.clone()))
 }
 
-fn verify_bundle(bundle: &PrekeyBundle) -> Result<(), Error> {
-    let vk = VerifyingKey::from_bytes(&bundle.identity_verify).map_err(|_| Error::Malformed)?;
-    let sig = Signature::from_bytes(&bundle.signature);
-    vk.verify_strict(
-        &transcript(
-            &bundle.identity_dh,
-            &bundle.signed_prekey,
-            &bundle.pq_prekey,
-            bundle.one_time.as_ref(),
-        ),
-        &sig,
-    )
-    .map_err(|_| Error::BadSignature)
+impl PrekeyBundle {
+    /// Checks that the identity key signed every other key in the bundle.
+    pub fn verify(&self) -> Result<(), Error> {
+        let vk = VerifyingKey::from_bytes(&self.identity_verify).map_err(|_| Error::Malformed)?;
+        let sig = Signature::from_bytes(&self.signature);
+        vk.verify_strict(
+            &transcript(&self.identity_dh, &self.signed_prekey, &self.pq_prekey, self.one_time.as_ref()),
+            &sig,
+        )
+        .map_err(|_| Error::BadSignature)
+    }
 }
 
 fn transcript(identity_dh: &PublicKey, signed: &PublicKey, pq: &[u8], one_time: Option<&OneTimePrekey>) -> Vec<u8> {

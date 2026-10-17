@@ -1,0 +1,22 @@
+[package]
+name = "erevos-ffi"
+description = "The Erevos core for the apps: Android through JNI, browsers and checks through WebAssembly"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+android = ["dep:jni"]
+web = ["dep:wasm-bindgen", "dep:getrandom02", "dep:getrandom04"]
+
+[dependencies]
+erevos-core = { path = "../erevos-core" }
+jni = { version = "0.21", default-features = false, optional = true }
+wasm-bindgen = { version = "=0.2.129", optional = true }
+# The core's random numbers come through two getrandom versions; in a browser
+# both have to be told to use the browser's.
+getrandom02 = { package = "getrandom", version = "0.2", features = ["js"], optional = true }
+getrandom04 = { package = "getrandom", version = "0.4", features = ["wasm_js"], optional = true }
