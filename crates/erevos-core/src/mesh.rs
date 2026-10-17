@@ -64,12 +64,12 @@ impl TagKey {
         tag
     }
 
-    /// Tags to watch for at `now`: today and the days a packet can still be
-    /// carried from.
+    /// Tags to watch for at `now`: the days a packet can still be carried
+    /// from, and tomorrow, for a sender whose clock runs ahead of ours.
     pub fn watch(&self, now: u64) -> Vec<Tag> {
         let today = now / DAY_SECS;
         let oldest = today.saturating_sub(LIFETIME_SECS / DAY_SECS);
-        (oldest..=today).map(|d| self.tag(d)).collect()
+        (oldest..=today + 1).map(|d| self.tag(d)).collect()
     }
 }
 
@@ -209,6 +209,14 @@ mod tests {
         let sent_day = NOW / DAY_SECS;
         let later = NOW + LIFETIME_SECS;
         assert!(k.watch(later).contains(&k.tag(sent_day)));
+    }
+
+    #[test]
+    fn watch_allows_a_sender_clock_ahead_past_midnight() {
+        let k = TagKey::derive(&[3; 32]);
+        let today = NOW / DAY_SECS;
+        assert!(k.watch(NOW).contains(&k.tag(today + 1)));
+        assert!(!k.watch(NOW).contains(&k.tag(today + 2)));
     }
 
     #[test]
