@@ -54,6 +54,13 @@ const MARKS = ['✓', '✓✓', '✓✓✓'];
 // What a phone still has to tell a contact's: which of their messages came, and were read.
 type Receipts = Record<string, { got: string[]; read: string[] }>;
 
+// What the chat will do and does not yet, said when tapped, in the order they come.
+const COMING = [
+  { title: 'Voice', note: 'Voice messages are not built yet. They come next: hold to talk, sent end-to-end encrypted, even over Bluetooth.' },
+  { title: 'Call', note: 'Voice calls are not built yet. They come after voice messages.' },
+  { title: 'Video', note: 'Video calls are not built yet. They come after voice calls, over Wi-Fi or the internet.' },
+];
+
 // Messages opened from the relay in one look at it, at most.
 const RECEIVE_BATCH = 10;
 
@@ -993,6 +1000,16 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
         ))}
       </ScrollView>
       {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
+      <Input value={draft} onChangeText={setDraft} onSubmitEditing={() => void send()} placeholder="Message" maxLength={4000} />
+      <Row wrap>
+        <Button title="Send" compact onPress={() => void send()} style={styles.action} />
+        {selectedContact ? (
+          <Button title="Disappear" kind="secondary" compact onPress={() => setVanishing((on) => !on)} style={styles.action} />
+        ) : null}
+        {COMING.map(({ title, note }) => (
+          <Button key={title} title={title} kind="secondary" compact onPress={() => setNote(note)} style={styles.action} />
+        ))}
+      </Row>
       {vanishing && selectedContact ? (
         <Row wrap>
           <Text variant="caption" tone="muted">
@@ -1004,20 +1021,6 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
           <TextButton title="Cancel" onPress={() => setVanishing(false)} />
         </Row>
       ) : null}
-      <Row>
-        <Input
-          value={draft}
-          onChangeText={setDraft}
-          onSubmitEditing={() => void send()}
-          placeholder="Message"
-          maxLength={4000}
-          style={styles.grow}
-        />
-        <Button title="Send" compact onPress={() => void send()} />
-        {selectedContact ? (
-          <Button title="Disappear" kind="secondary" compact onPress={() => setVanishing((on) => !on)} />
-        ) : null}
-      </Row>
     </View>
   );
 }
@@ -1050,6 +1053,10 @@ const makeStyles = (colors: Colors) =>
     },
     grow: {
       flex: 1,
+    },
+    // The buttons under the message field, narrow enough for a row of them.
+    action: {
+      paddingHorizontal: space.md,
     },
     // Everything between the title and the messages: it gives way, and scrolls, when the keyboard
     // leaves too little room, so the message field stays in view.

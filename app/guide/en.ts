@@ -304,7 +304,8 @@ End-to-end encryption through the relay is here. The nearby link comes next, and
     it on, with privacy warnings first.
   - **SMS:** off unless you turn it on for a contact, with a warning first: the carrier sees who and when.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
-- **Calls:** walkie-talkie first (it works even over Bluetooth), then voice, then video.
+- **Calls:** walkie-talkie first (it works even over Bluetooth), then voice, then video. Their buttons, **Voice**,
+  **Call** and **Video**, are already under the message field: for now they say when each comes.
 - **Groups:** group chats, and group video calls. Up to four people connect directly; when more join, the call
   moves to a server by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
