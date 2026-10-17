@@ -4,8 +4,8 @@ import { LPHL_PALETTE_ORDER, LPHL_PALETTES, type LphlModeColors, type LphlPalett
 // styles, the twelve LPHL palettes or a colour of your own, and the text on coloured areas. What
 // differs from FASOULI: Classic is Erevos's own warm dark with its gold (and a light one to
 // match), there are no money colours, but there is `success` for notes that something worked,
-// and Modernist is set in Inter Tight alone, as chats are written in Greek as well. FASOULI's glass
-// look is not here yet.
+// and Modernist is set in Inter Tight alone, as chats are written in Greek as well. The glass look
+// is in glass.ts.
 
 const classic = {
   light: {
@@ -147,10 +147,10 @@ export const palettes: Record<StyleName, typeof classic> = { classic, modernist,
 type BaseColors = typeof classic.light;
 
 /**
- * The app's colours, all #RRGGBB but `overlay`. `ground` is what every screen is painted with,
- * `sheet` the bars and `popover` sheets and dialogs (FASOULI's glass makes them see-through; here
- * they are the background and the surface). `accentText` is the accent as small text, deepened
- * where the accent itself would not read on the background.
+ * The app's colours, all #RRGGBB but `overlay` and those the glass look (glass.ts) makes
+ * see-through: `ground` (what every screen is painted with; the background unless the look draws
+ * behind the screens), `sheet` (bars), `popover` (sheets and dialogs) and the surfaces.
+ * `accentText` is the accent as small text, deepened where the accent itself would not read.
  */
 export type Colors = BaseColors & { ground: string; sheet: string; popover: string; accentText: string };
 
@@ -328,6 +328,28 @@ export function buildColors(
   return done(c);
 }
 
+/**
+ * The accent as the palette defines it for a scheme (not deepened for white text): what the
+ * glass's wallpaper is tinted with, and its small text on the smoked side.
+ */
+export function rawAccent(style: StyleName, scheme: 'light' | 'dark', palette: PaletteChoice, customAccent: string): string {
+  if (style === 'nocturne') return NIGHT.primary;
+  if (palette === 'auto') return palettes[style][scheme].primary;
+  if (palette === 'custom') return /^#[0-9a-fA-F]{6}$/.test(customAccent) ? customAccent.toUpperCase() : DEFAULT_COLOR_OPTIONS.customAccent;
+  return LPHL_PALETTES[palette][scheme].accent.toUpperCase();
+}
+
+/**
+ * The accent as small text on a light ground (the site's accent-700, which it uses on its frosted
+ * glass): the palette's 700 step; for a style's own colours, its pressed accent.
+ */
+export function deepAccent(style: StyleName, palette: PaletteChoice, customAccent: string): string {
+  if (style === 'nocturne') return NIGHT.primary;
+  if (palette === 'auto') return palettes[style].light.primaryPressed;
+  const p = palette === 'custom' ? customPalette(rawAccent(style, 'light', 'custom', customAccent), 'light') : LPHL_PALETTES[palette].light;
+  return p.accentRamp['700'].toUpperCase();
+}
+
 /** Colours offered beside the LPHL accents for "My color". */
 export const SWATCHES = [
   '#0F766E', '#138A57', '#65A30D', '#CA8A04', '#F59E0B', '#F97316', '#EF4444', '#E11D48',
@@ -336,6 +358,9 @@ export const SWATCHES = [
 ];
 
 export function withAlpha(hex: string, alpha: number): string {
+  // A see-through colour (the glass's tokens): its own alpha times this one.
+  const rgba = /^rgba\(\s*(\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\s*\)$/.exec(hex);
+  if (rgba) return `rgba(${rgba[1]}, ${rgba[2]}, ${rgba[3]}, ${Math.round(Number(rgba[4]) * alpha * 1000) / 1000})`;
   if (hex === 'transparent') return hex;
   const h = hex.replace('#', '');
   const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h.slice(0, 6);
@@ -359,23 +384,25 @@ interface Shape {
     lines: boolean;
     /** Nocturne's type: medium headings, light kickers, tighter titles. */
     type: 'plain' | 'nocturne';
+    /** The glass look: bars and sheets blur what is behind them where the engine can (components/glass.ts). */
+    glass: boolean;
   };
 }
 
 const SHAPES: Record<StyleName, Shape> = {
   classic: {
     radius: { sm: 10, md: 14, lg: 20, xl: 28, pill: 999, button: 999, chip: 999 },
-    shape: { cardBorder: 1, buttonAlign: 'center', fonts: null, lines: false, type: 'plain' },
+    shape: { cardBorder: 1, buttonAlign: 'center', fonts: null, lines: false, type: 'plain', glass: false },
   },
   // Flat and architectural: no rounded corners, strong 2px rules, labels flush left even inside buttons.
   modernist: {
     radius: { sm: 0, md: 0, lg: 0, xl: 0, pill: 0, button: 0, chip: 0 },
-    shape: { cardBorder: 2, buttonAlign: 'flex-start', fonts: null, lines: false, type: 'plain' },
+    shape: { cardBorder: 2, buttonAlign: 'flex-start', fonts: null, lines: false, type: 'plain', glass: false },
   },
   // The site's 8 px corners, 6 px on chips; circles stay circles; cards a shade lighter than the ground, with no outline.
   nocturne: {
     radius: { sm: 6, md: 8, lg: 8, xl: 8, pill: 999, button: 8, chip: 6 },
-    shape: { cardBorder: 0, buttonAlign: 'center', fonts: null, lines: true, type: 'nocturne' },
+    shape: { cardBorder: 0, buttonAlign: 'center', fonts: null, lines: true, type: 'nocturne', glass: false },
   },
 };
 
@@ -386,11 +413,22 @@ const SHAPES: Record<StyleName, Shape> = {
 export const radius = { ...SHAPES.classic.radius };
 export const shape = { ...SHAPES.classic.shape };
 
+/**
+ * Glass's corners (the panel's: fields 10, buttons 12, cards 20, sheets 24, chips round) win over
+ * the style's, as on the site; cards are outlined with the glass's edge.
+ */
+const GLASS_RADIUS: Shape['radius'] = { sm: 8, md: 10, lg: 20, xl: 24, pill: 999, button: 12, chip: 999 };
+
 /** Sets the shape tokens. `fonts` is the style's own, once loaded (theme/fonts.ts); null keeps the system font. */
-export function applyStyle(style: StyleName, fonts: Fonts | null = null): void {
+export function applyStyle(style: StyleName, fonts: Fonts | null = null, look: 'flat' | 'glass' = 'flat'): void {
   Object.assign(radius, SHAPES[style].radius);
   Object.assign(shape, SHAPES[style].shape);
   shape.fonts = style === 'classic' ? null : fonts;
+  if (look === 'glass') {
+    Object.assign(radius, GLASS_RADIUS);
+    shape.cardBorder = 1;
+    shape.glass = true;
+  }
 }
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };

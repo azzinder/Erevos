@@ -68,14 +68,27 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
   );
 }
 
-// The crescent from the design: a disc in the accent with one in the ground over its upper right.
+// The crescent from the design: a disc in the accent with its upper right cut away by a second disc.
 export function Logo({ size = 56 }: { size?: number }) {
   const colors = useColors();
   const unit = size / 28;
+  // The crescent is the cutting disc's shadow, grown and moved onto the accent disc: a shadow is
+  // never drawn under its own view, so the cut is see-through and the glass or the glow shows through it.
   return (
-    <View style={{ width: size, height: size, overflow: 'hidden' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <View style={[styles.disc, { left: 2 * unit, top: 2 * unit, width: 24 * unit, height: 24 * unit, borderRadius: 12 * unit, backgroundColor: colors.primary }]} />
-      <View style={[styles.disc, { left: 8 * unit, top: 0, width: 21 * unit, height: 21 * unit, borderRadius: 10.5 * unit, backgroundColor: colors.ground }]} />
+    <View style={{ width: size, height: size }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View
+        style={[
+          styles.disc,
+          {
+            left: 8 * unit,
+            top: 0,
+            width: 21 * unit,
+            height: 21 * unit,
+            borderRadius: 10.5 * unit,
+            boxShadow: `${-4.5 * unit}px ${3.5 * unit}px 0px ${1.5 * unit}px ${colors.primary}`,
+          },
+        ]}
+      />
     </View>
   );
 }

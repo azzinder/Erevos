@@ -20,6 +20,8 @@ import {
 import { NOCTURNE, radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
 
+import { useGlassBlur, useGlassLift } from './glass';
+
 // The app's building blocks in the colours and shapes of the open look, as in LPHL FASOULI
 // (src/components/ui.tsx there): text, cards, buttons, chips, fields and sheets.
 
@@ -112,6 +114,7 @@ export function Page({ children, style }: { children: ReactNode; style?: StylePr
 
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const colors = useColors();
+  const lift = useGlassLift();
   return (
     <View
       style={[
@@ -123,6 +126,7 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
           borderWidth: shape.cardBorder,
           borderColor: colors.border,
         },
+        lift,
         style,
       ]}
     >
@@ -314,6 +318,7 @@ export function Sheet({ visible, onClose, title, children }: {
   children: ReactNode;
 }) {
   const colors = useColors();
+  const blur = useGlassBlur();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
@@ -322,20 +327,24 @@ export function Sheet({ visible, onClose, title, children }: {
       >
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
         <View
-          style={{
-            gap: 10,
-            padding: space.xl - 4,
-            paddingBottom: space.xxl,
-            backgroundColor: colors.popover,
-            borderTopLeftRadius: radius.xl,
-            borderTopRightRadius: radius.xl,
-            borderWidth: shape.cardBorder > 1 ? shape.cardBorder : 0,
-            borderBottomWidth: 0,
-            borderColor: colors.border,
-            width: '100%',
-            maxWidth: 760,
-            alignSelf: 'center',
-          }}
+          style={[
+            {
+              gap: 10,
+              padding: space.xl - 4,
+              paddingBottom: space.xxl,
+              backgroundColor: colors.popover,
+              borderTopLeftRadius: radius.xl,
+              borderTopRightRadius: radius.xl,
+              // Modernist's rules, or the glass's edge, as the site's pop-overs.
+              borderWidth: shape.glass ? 1 : shape.cardBorder > 1 ? shape.cardBorder : 0,
+              borderBottomWidth: 0,
+              borderColor: colors.border,
+              width: '100%',
+              maxWidth: 760,
+              alignSelf: 'center',
+            },
+            blur,
+          ]}
         >
           {title ? (
             <Text variant="heading" style={{ marginBottom: 4 }}>

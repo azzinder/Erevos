@@ -9,6 +9,7 @@ import { EMPTY_SPACE, loadSpaceData, saveSpaceData, updateSpaceData } from '../l
 import {
   buildColors,
   contrast,
+  NOCTURNE,
   customAccentChoices,
   FRAME_TEXTS,
   frameTextChoices,
@@ -18,6 +19,8 @@ import {
   resolveScheme,
   STYLES,
 } from '../theme/colors';
+import { rawAccent, withAlpha } from '../theme/colors';
+import { backdropKind, GLASS_KINDS, glassSide, inkGround, paneFrame, withLook } from '../theme/glass';
 import { changeLook, checkedLook, DEFAULT_LOOK, loadLockScreenLook, saveLockScreenLook } from '../theme/look';
 import { LPHL_PALETTES } from '../theme/lphl-palettes';
 import { store } from './secure-memory';
@@ -125,4 +128,70 @@ test("a space keeps its look beside the chat's data, whichever saves first", asy
   await saveLockScreenLook(look);
   assert.deepEqual(await loadLockScreenLook(), look);
   assert.deepEqual(Object.keys(JSON.parse(store.get('erevos.look')!)).sort(), Object.keys(DEFAULT_LOOK).sort());
+});
+
+/** A #rrggbb or rgba() colour as an opaque one over a ground, for contrast. */
+function over(color: string, ground: string): string {
+  const m = /^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/.exec(color);
+  if (!m) return color;
+  const n = parseInt(ground.slice(1), 16);
+  const g = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const a = Number(m[4]);
+  const ch = (i: number) => Math.round(a * Number(m[i + 1]) + (1 - a) * g[i]).toString(16).padStart(2, '0');
+  return `#${ch(0)}${ch(1)}${ch(2)}`;
+}
+
+test('the flat look changes nothing but lets Nocturne\'s glow through; glass draws the wallpaper', () => {
+  const c = buildColors('classic', 'dark', 'auto');
+  assert.equal(withLook(c, { look: 'flat', style: 'classic', scheme: 'dark', palette: 'auto', customAccent: '#D9A441' }), c);
+  const night = buildColors('nocturne', 'dark', 'auto');
+  assert.equal(withLook(night, { look: 'flat', style: 'nocturne', scheme: 'dark', palette: 'auto', customAccent: '' }).ground, 'transparent');
+  assert.equal(backdropKind('classic', 'flat'), null);
+  assert.equal(backdropKind('nocturne', 'flat'), 'glow');
+  assert.equal(backdropKind('modernist', 'glass'), 'wall');
+  assert.deepEqual(paneFrame(390), { left: 8, width: 374, radius: 22 });
+});
+
+test('glass turns surfaces, lines, bars and sheets to glass and keeps every fill', () => {
+  const c = buildColors('classic', 'light', 'kipos');
+  const g = withLook(c, { look: 'glass', style: 'classic', scheme: 'light', palette: 'kipos', customAccent: '#D9A441', blur: false });
+  assert.equal(g.ground, 'transparent');
+  assert.equal(g.background, '#FBFCFD');
+  assert.equal(g.surface, 'rgba(255, 255, 255, 0.66)');
+  assert.equal(g.popover, 'rgba(255, 255, 255, 0.97)');
+  for (const key of ['primary', 'onPrimary', 'hero', 'heroText', 'overlay'] as const) assert.equal(g[key], c[key]);
+  const blurred = withLook(c, { look: 'glass', style: 'classic', scheme: 'light', palette: 'kipos', customAccent: '#D9A441', blur: true });
+  assert.equal(blurred.popover, blurred.sheet);
+});
+
+test('under glass every ink reads on the wallpaper or the pane, in every kind, style, scheme and palette', () => {
+  for (const glassKind of GLASS_KINDS) {
+    for (const style of STYLES) {
+      for (const theme of SCHEMES) {
+        const scheme = resolveScheme(style, theme, null);
+        for (const palette of PALETTE_CHOICES) {
+          for (const frameText of FRAME_TEXTS) {
+            const opts = { customAccent: '#D9A441', frameText, frameTextColor: '#FFFFFF' };
+            const g = withLook(buildColors(style, scheme, palette, opts), { look: 'glass', glassKind, style, scheme, palette, customAccent: '#D9A441' });
+            const side = glassSide(scheme);
+            const accent = rawAccent(style, scheme, palette, '#D9A441');
+            const [wall, field] = [inkGround(side, accent, false, glassKind), inkGround(side, accent, true, glassKind)];
+            const where = `${glassKind} ${style} ${scheme} ${palette} ${frameText}`;
+            for (const key of ['text', 'textMuted'] as const) assert.ok(contrast(g[key], field) >= 4.5, `${where}: ${key}`);
+            assert.ok(contrast(g.textFaint, field) >= 3, `${where}: textFaint`);
+            for (const key of ['accentText', 'success', 'warning', 'danger'] as const) assert.ok(contrast(g[key], wall) >= 4.5, `${where}: ${key}`);
+            // On their tints: a danger button's label, the chosen chip's.
+            assert.ok(contrast(g.danger, over(withAlpha(g.danger, 0.12), wall)) >= 4.5, `${where}: danger on its tint`);
+            assert.ok(contrast(g.accentText, over(withAlpha(g.primary, 0.14), wall)) >= 4.5, `${where}: chosen chip`);
+            if (style === 'nocturne') assert.ok(contrast(NOCTURNE.accentPale, field) >= 4.5, `${where}: kicker`);
+          }
+        }
+      }
+    }
+  }
+});
+
+test('a kept look keeps flat or glass and the kind of glass', () => {
+  assert.deepEqual(checkedLook({ ...DEFAULT_LOOK, look: 'glass', glassKind: 'sheet' }), { ...DEFAULT_LOOK, look: 'glass', glassKind: 'sheet' });
+  assert.deepEqual(checkedLook({ ...DEFAULT_LOOK, look: 'frosted', glassKind: 'bowl' }), DEFAULT_LOOK);
 });

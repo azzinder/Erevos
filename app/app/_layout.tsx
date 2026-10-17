@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
+import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
 import { Text } from '../components/ui';
 import { setupCrypto } from '../lib/crypto-setup';
 import { loadLockConfig, type LockConfig } from '../lock/config';
@@ -136,38 +137,53 @@ function Shell({ phase, error, lockState, onUnlock }: {
   onUnlock: (space: { space: number; key: Uint8Array }) => Promise<void>;
 }) {
   const { colors, scheme } = useTheme();
+  const spec = useBackdropSpec();
   const bar = <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />;
 
   if (error) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: gap.xl, gap: gap.sm, backgroundColor: colors.ground }}>
-        <Text variant="heading" style={{ textAlign: 'center' }}>
-          Erevos could not open
-        </Text>
-        <Text tone="muted" style={{ textAlign: 'center' }}>
-          {error}
-        </Text>
+      <ScreenBackdrop>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: gap.xl, gap: gap.sm, backgroundColor: colors.ground }}>
+          <Text variant="heading" style={{ textAlign: 'center' }}>
+            Erevos could not open
+          </Text>
+          <Text tone="muted" style={{ textAlign: 'center' }}>
+            {error}
+          </Text>
+        </View>
         {bar}
-      </View>
+      </ScreenBackdrop>
     );
   }
-  if (phase.kind === 'loading') return <View style={{ flex: 1, backgroundColor: colors.ground }}>{bar}</View>;
+  if (phase.kind === 'loading') {
+    return (
+      <ScreenBackdrop>
+        <View style={{ flex: 1, backgroundColor: colors.ground }} />
+        {bar}
+      </ScreenBackdrop>
+    );
+  }
   if (phase.kind === 'locked') {
     return (
-      <>
+      <ScreenBackdrop>
         <PasswordGate config={phase.config} onUnlock={onUnlock} />
         {bar}
-      </>
+      </ScreenBackdrop>
     );
   }
-  // Each screen shows its own title, so the header only carries the back arrow. The home screen has no header.
+  // Each screen shows its own title, so the header only carries the back arrow. The home screen
+  // has no header. Under a backdrop (Nocturne's glow, the glass's wallpaper) every screen lies on
+  // it, and the header is drawn over it: the glass's dense pane, or see-through.
+  const headerColor = !spec ? colors.sheet : spec.kind === 'wall' ? colors.sheet : 'transparent';
   return (
     <LockContext.Provider value={lockState}>
       <Stack
         key={phase.space}
+        screenLayout={({ children }) => <ScreenBackdrop>{children}</ScreenBackdrop>}
         screenOptions={{
           title: '',
-          headerStyle: { backgroundColor: colors.sheet },
+          headerStyle: { backgroundColor: headerColor },
+          headerTransparent: spec !== null,
           headerTintColor: colors.text,
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.ground },

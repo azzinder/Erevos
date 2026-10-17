@@ -3,6 +3,7 @@ import { useColorScheme } from 'react-native';
 
 import { applyStyle, buildColors, resolveScheme, type Colors } from './colors';
 import { ensureStyleFonts, styleFonts } from './fonts';
+import { withLook } from './glass';
 import { changeLook, type Look } from './look';
 
 export interface Theme {
@@ -29,14 +30,21 @@ export function ThemeProvider({ look, onChange, children }: {
   current.current = look;
   // The last style asked for: one asked for while the fonts of another load wins.
   const asked = useRef(0);
-  applyStyle(look.style, styleFonts(look.style));
+  applyStyle(look.style, styleFonts(look.style), look.look);
 
   const theme = useMemo<Theme>(() => {
     const scheme = resolveScheme(look.style, look.theme, system);
     return {
       look,
       scheme,
-      colors: buildColors(look.style, scheme, look.palette, look),
+      colors: withLook(buildColors(look.style, scheme, look.palette, look), {
+        look: look.look,
+        glassKind: look.glassKind,
+        style: look.style,
+        scheme,
+        palette: look.palette,
+        customAccent: look.customAccent,
+      }),
       setLook: async (patch) => {
         if (patch.style) {
           const n = ++asked.current;

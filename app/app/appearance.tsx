@@ -20,11 +20,15 @@ import {
   type ThemePref,
 } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
+import { GLASS_KINDS, LOOK_NAMES, type GlassKind, type LookName } from '../theme/glass';
 
-// Appearance, as in LPHL FASOULI's settings: the style, light or dark, the colours (the style's
-// own, one of the twelve LPHL palettes, or a colour of your own) and the text on coloured areas.
+// Appearance, as in LPHL FASOULI's settings: flat or glass (as on lphl.nekten.eu), the style,
+// light or dark, the colours (the style's own, one of the twelve LPHL palettes, or a colour of
+// your own) and the text on coloured areas.
 // Each space keeps its own (theme/look.ts), and every space shows this same screen.
 
+const LOOK_LABELS: Record<LookName, string> = { flat: 'Flat', glass: 'Glass' };
+const GLASS_KIND_LABELS: Record<GlassKind, string> = { cards: 'Panes', sheet: 'One pane' };
 const STYLE_LABELS: Record<StyleName, string> = { classic: 'Classic', modernist: 'Modernist', nocturne: 'Nocturne' };
 const THEME_LABELS: Record<ThemePref, string> = { system: 'System', light: 'Light', dark: 'Dark' };
 const FRAME_TEXT_LABELS: Record<FrameText, string> = { white: 'White', palette: 'As in the palette', custom: 'My color' };
@@ -103,6 +107,27 @@ export default function Appearance() {
   return (
     <Page>
       <Text variant="title">Appearance</Text>
+
+      <SectionTitle title="Look" />
+      <Row wrap>
+        {LOOK_NAMES.map((lk) => (
+          <Chip key={lk} label={LOOK_LABELS[lk]} selected={look.look === lk} onPress={() => setLook({ look: lk })} />
+        ))}
+      </Row>
+      {look.look === 'glass' ? (
+        <>
+          <SectionTitle title="Kind of glass" />
+          <Row wrap>
+            {GLASS_KINDS.map((k) => (
+              <Chip key={k} label={GLASS_KIND_LABELS[k]} selected={look.glassKind === k} onPress={() => setLook({ glassKind: k })} />
+            ))}
+          </Row>
+          <Text variant="caption" tone="faint">
+            Panes: each card is a pane of glass over the wallpaper, as on the LPHL admin panel. One pane: each screen lies on
+            one frosted pane, as on lphl.nekten.eu.
+          </Text>
+        </>
+      ) : null}
 
       <SectionTitle title="Style" />
       <Row wrap>

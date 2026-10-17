@@ -1,6 +1,7 @@
 import { secureGet, secureSet } from '../lib/secure';
 
 import { FRAME_TEXTS, PALETTE_CHOICES, STYLES, THEMES, type FrameText, type PaletteChoice, type PaletteStyle, type StyleName, type ThemePref } from './colors';
+import { GLASS_KINDS, LOOK_NAMES, type GlassKind, type LookName } from './glass';
 
 // How the app looks: what the Appearance screen sets. Each space keeps its own, sealed with its
 // data (lock/space-data.ts), and a second space starts with the look of the space it was set in,
@@ -17,6 +18,9 @@ export interface Look {
   frameTextColor: string;
   /** Under Nocturne: the style it was chosen over, which palettes are shown in and go back to. */
   prevStyle: PaletteStyle;
+  /** Flat, or glass as on the LPHL site (glass.ts), in panes or one pane. */
+  look: LookName;
+  glassKind: GlassKind;
 }
 
 export const DEFAULT_LOOK: Look = {
@@ -27,6 +31,8 @@ export const DEFAULT_LOOK: Look = {
   frameText: 'palette',
   frameTextColor: '#FFFFFF',
   prevStyle: 'classic',
+  look: 'flat',
+  glassKind: 'cards',
 };
 
 const KEY = 'erevos.look';
@@ -46,6 +52,8 @@ export function checkedLook(value: unknown): Look {
     frameText: pick(FRAME_TEXTS, o.frameText, DEFAULT_LOOK.frameText),
     frameTextColor: hex(o.frameTextColor, DEFAULT_LOOK.frameTextColor),
     prevStyle: pick(['classic', 'modernist'] as const, o.prevStyle, DEFAULT_LOOK.prevStyle),
+    look: pick(LOOK_NAMES, o.look, DEFAULT_LOOK.look),
+    glassKind: pick(GLASS_KINDS, o.glassKind, DEFAULT_LOOK.glassKind),
   };
 }
 
