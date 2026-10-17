@@ -1013,13 +1013,13 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
       {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
       <Input value={draft} onChangeText={setDraft} onSubmitEditing={() => void send()} placeholder="Message" maxLength={4000} />
       <Row wrap>
-        <Button title="Send" compact onPress={() => void send()} style={styles.action} />
         {selectedContact ? (
           <Button title="Disappear" kind="secondary" compact onPress={() => setVanishing((on) => !on)} style={styles.action} />
         ) : null}
         {COMING.map(({ title, note }) => (
           <Button key={title} title={title} kind="secondary" compact onPress={() => setNote(note)} style={styles.action} />
         ))}
+        <Button title="Send" compact onPress={() => void send()} style={[styles.action, styles.send]} />
       </Row>
       {vanishing && selectedContact ? (
         <Row wrap>
@@ -1068,6 +1068,10 @@ const makeStyles = (colors: Colors) =>
     // The buttons under the message field, narrow enough for a row of them.
     action: {
       paddingHorizontal: space.md,
+    },
+    // Send keeps to the right of the row.
+    send: {
+      marginLeft: 'auto',
     },
     // Everything between the title and the messages: it gives way, and scrolls, when the keyboard
     // leaves too little room, so the message field stays in view.
