@@ -1,14 +1,20 @@
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, StyleSheet, Text, View } from 'react-native';
+import { AppState, View } from 'react-native';
 
+import { Text } from '../components/ui';
 import { setupCrypto } from '../lib/crypto-setup';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
 import { PasswordGate } from '../lock/gate';
 import { prepareHidden } from '../lock/hidden';
 import { loadOpenKey, setCurrentSpace } from '../lock/keys';
-import { firstSpaceKey } from '../lock/space-data';
+import { firstSpaceKey, loadSpaceData, updateCurrentSpaceData } from '../lock/space-data';
+import { space as gap } from '../theme/colors';
+import { ThemeProvider, useTheme } from '../theme/context';
+import { ensureStyleFonts } from '../theme/fonts';
+import { DEFAULT_LOOK, loadLockScreenLook, saveLockScreenLook, type Look } from '../theme/look';
 
 setupCrypto();
 
@@ -24,10 +30,12 @@ type Phase =
   | { kind: 'open'; space: number; passwordLock: boolean };
 
 // Shows the password screen when the lock is on, and the app once a space is open. The space
-// decides what the chat finds on the phone (lock/space-data.ts), and the screens start afresh
-// in each space, so nothing of one shows in another.
+// decides what the chat finds on the phone (lock/space-data.ts) and how the app looks
+// (theme/look.ts), and the screens start afresh in each space, so nothing of one shows in another.
+// The password screen shows the look last used.
 export default function RootLayout() {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
+  const [look, setLook] = useState<Look>(DEFAULT_LOOK);
   const [error, setError] = useState<string | null>(null);
   const phaseRef = useRef(phase);
   const backgroundAt = useRef<number | null>(null);
@@ -36,10 +44,24 @@ export default function RootLayout() {
     phaseRef.current = phase;
   }, [phase]);
 
-  const openSpace = useCallback((space: number, passwordLock: boolean, key: Uint8Array) => {
-    setCurrentSpace(space, key);
-    setPhase({ kind: 'open', space, passwordLock });
+  const fail = useCallback((e: unknown) => setError(e instanceof Error ? e.message : String(e)), []);
+
+  // A look is shown once its style's fonts are ready, so no screen shows without them.
+  const show = useCallback(async (next: Look) => {
+    await ensureStyleFonts(next.style);
+    setLook(next);
   }, []);
+
+  const openSpace = useCallback(
+    async (space: number, passwordLock: boolean, key: Uint8Array) => {
+      setCurrentSpace(space, key);
+      const kept = (await loadSpaceData(space, key)).look ?? (await loadLockScreenLook());
+      await show(kept);
+      setPhase({ kind: 'open', space, passwordLock });
+      saveLockScreenLook(kept).catch(() => undefined);
+    },
+    [show],
+  );
 
   const start = useCallback(async () => {
     // Nothing of the space that was open stays in memory.
@@ -53,17 +75,18 @@ export default function RootLayout() {
     const config = await loadLockConfig();
     if (config.direct !== null) {
       // The lock was turned off in a later space: that one opens directly, with its key from the keystore.
-      openSpace(config.direct, false, await loadOpenKey(config.direct));
+      await openSpace(config.direct, false, await loadOpenKey(config.direct));
     } else if (config.slots.length > 0) {
+      await show(await loadLockScreenLook());
       setPhase({ kind: 'locked', config });
     } else {
-      openSpace(0, false, await firstSpaceKey());
+      await openSpace(0, false, await firstSpaceKey());
     }
-  }, [openSpace]);
+  }, [openSpace, show]);
 
   useEffect(() => {
-    start().catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
-  }, [start]);
+    start().catch(fail);
+  }, [start, fail]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -72,12 +95,17 @@ export default function RootLayout() {
       const away = Date.now() - backgroundAt.current;
       backgroundAt.current = null;
       const current = phaseRef.current;
-      if (current.kind === 'open' && current.passwordLock && away > RELOCK_AFTER_MS) {
-        start().catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
-      }
+      if (current.kind === 'open' && current.passwordLock && away > RELOCK_AFTER_MS) start().catch(fail);
     });
     return () => subscription.remove();
-  }, [start]);
+  }, [start, fail]);
+
+  // A look changed on the Appearance screen: kept in the open space, and copied for the password screen.
+  const keepLook = useCallback(async (next: Look) => {
+    setLook(next);
+    if (phaseRef.current.kind !== 'open') return;
+    await Promise.all([updateCurrentSpaceData({ look: next }), saveLockScreenLook(next)]);
+  }, []);
 
   const lockState = useMemo<LockState>(
     () => ({
@@ -85,63 +113,69 @@ export default function RootLayout() {
       passwordLock: phase.kind === 'open' && phase.passwordLock,
       setPasswordLock: (on) => setPhase((p) => (p.kind === 'open' ? { ...p, passwordLock: on } : p)),
       lockNow: () => {
-        start().catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+        start().catch(fail);
       },
-      openSpace: ({ space, key }) => openSpace(space, true, key),
+      openSpace: ({ space, key }) => {
+        openSpace(space, true, key).catch(fail);
+      },
     }),
-    [phase, start, openSpace],
+    [phase, start, openSpace, fail],
   );
+
+  return (
+    <ThemeProvider look={look} onChange={keepLook}>
+      <Shell phase={phase} error={error} lockState={lockState} onUnlock={({ space, key }) => openSpace(space, true, key)} />
+    </ThemeProvider>
+  );
+}
+
+function Shell({ phase, error, lockState, onUnlock }: {
+  phase: Phase;
+  error: string | null;
+  lockState: LockState;
+  onUnlock: (space: { space: number; key: Uint8Array }) => Promise<void>;
+}) {
+  const { colors, scheme } = useTheme();
+  const bar = <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />;
 
   if (error) {
     return (
-      <View style={styles.failed}>
-        <Text style={styles.failedTitle}>Erevos could not open</Text>
-        <Text style={styles.failedBody}>{error}</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: gap.xl, gap: gap.sm, backgroundColor: colors.ground }}>
+        <Text variant="heading" style={{ textAlign: 'center' }}>
+          Erevos could not open
+        </Text>
+        <Text tone="muted" style={{ textAlign: 'center' }}>
+          {error}
+        </Text>
+        {bar}
       </View>
     );
   }
-  if (phase.kind === 'loading') return <View style={styles.failed} />;
+  if (phase.kind === 'loading') return <View style={{ flex: 1, backgroundColor: colors.ground }}>{bar}</View>;
   if (phase.kind === 'locked') {
-    return <PasswordGate config={phase.config} onUnlock={async ({ space, key }) => openSpace(space, true, key)} />;
+    return (
+      <>
+        <PasswordGate config={phase.config} onUnlock={onUnlock} />
+        {bar}
+      </>
+    );
   }
-  // Each screen shows its own title, so the header only carries the back arrow, in the app's
-  // dark colours. The home screen has no header.
+  // Each screen shows its own title, so the header only carries the back arrow. The home screen has no header.
   return (
     <LockContext.Provider value={lockState}>
       <Stack
         key={phase.space}
         screenOptions={{
           title: '',
-          headerStyle: { backgroundColor: '#0D0B09' },
-          headerTintColor: '#F5EFE6',
+          headerStyle: { backgroundColor: colors.sheet },
+          headerTintColor: colors.text,
           headerShadowVisible: false,
-          contentStyle: { backgroundColor: '#0D0B09' },
+          contentStyle: { backgroundColor: colors.ground },
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
+      {bar}
     </LockContext.Provider>
   );
 }
-
-const styles = StyleSheet.create({
-  failed: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#0D0B09',
-  },
-  failedTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#F5EFE6',
-    textAlign: 'center',
-  },
-  failedBody: {
-    marginTop: 8,
-    fontSize: 15,
-    color: '#BFB6AA',
-    textAlign: 'center',
-  },
-});

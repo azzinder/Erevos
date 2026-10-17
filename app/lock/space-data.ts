@@ -1,11 +1,14 @@
 import { decryptText, encryptText, randomBytes } from '../lib/crypto';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';
 
+import { checkedLook, type Look } from '../theme/look';
+
 import { currentSpace, loadOpenKey, newSpaceKey, saveOpenKey } from './keys';
 import { SLOTS } from './slots';
 
 // What each space keeps on the phone: the relay it uses, its own relay queue and its contacts,
-// which the chat screen saves. One keystore entry per password slot, `erevos.space.<n>`, sealed
+// which the chat screen saves, and how the app looks in it (theme/look.ts), which the Appearance
+// screen saves. One keystore entry per password slot, `erevos.space.<n>`, sealed
 // with that space's key (keys.ts). Once the lock is on, every slot up to SLOTS has an entry, the
 // unused ones sealed with random keys, and every entry is padded to whole blocks of BLOCK
 // characters, so a used space's entry looks like an unused one. One entry per slot rather than
@@ -19,9 +22,17 @@ import { SLOTS } from './slots';
 // with their own key.
 
 export type Queue = { recipientHex: string; senderHex: string };
-export type SpaceData = { url: string; token: string; ownQueue: Queue | null; routes: Record<string, string> };
+export type SpaceData = {
+  url: string;
+  token: string;
+  ownQueue: Queue | null;
+  routes: Record<string, string>;
+  // Null until the look is changed in this space: it then takes the look last used. Hidden chats
+  // keep none, as they show in the look of their space.
+  look: Look | null;
+};
 
-export const EMPTY_SPACE: SpaceData = { url: '', token: '', ownQueue: null, routes: {} };
+export const EMPTY_SPACE: SpaceData = { url: '', token: '', ownQueue: null, routes: {}, look: null };
 
 const BLOCK = 1024;
 const entry = (space: number) => `erevos.space.${space}`;
@@ -49,6 +60,7 @@ function checked(value: unknown): SpaceData {
     token: typeof v.token === 'string' ? v.token : '',
     ownQueue: q && isHex(q.recipientHex, 48) && isHex(q.senderHex, 48) ? { recipientHex: q.recipientHex, senderHex: q.senderHex } : null,
     routes,
+    look: v.look ? checkedLook(v.look) : null,
   };
 }
 
@@ -68,16 +80,39 @@ async function ensure(name: string): Promise<void> {
   if (!(await secureGet(name))) await secureSet(name, seal(randomBytes(32), EMPTY_SPACE));
 }
 
+// Writes to an entry run one after another, and a change is merged into what the write before it
+// left, so the chat's saves and the Appearance screen's never undo each other.
+const writes = new Map<string, Promise<void>>();
+
+function write(name: string, key: Uint8Array, change: (data: SpaceData) => SpaceData): Promise<void> {
+  const run = (writes.get(name) ?? Promise.resolve())
+    .catch(() => undefined)
+    .then(async () => {
+      await secureSet(name, seal(key, change(await load(name, key))));
+    });
+  writes.set(name, run);
+  return run;
+}
+
 export const loadSpaceData = (space: number, key: Uint8Array) => load(entry(space), key);
 
-export async function saveSpaceData(space: number, key: Uint8Array, data: SpaceData): Promise<void> {
-  await secureSet(entry(space), seal(key, data));
+export function saveSpaceData(space: number, key: Uint8Array, data: SpaceData): Promise<void> {
+  return write(entry(space), key, () => data);
+}
+
+/** Changes some of a space's data and keeps the rest. */
+export function updateSpaceData(space: number, key: Uint8Array, patch: Partial<SpaceData>): Promise<void> {
+  return write(entry(space), key, (data) => ({ ...data, ...patch }));
 }
 
 export const loadHiddenData = (space: number, key: Uint8Array) => load(hiddenEntry(space), key);
 
-export async function saveHiddenData(space: number, key: Uint8Array, data: SpaceData): Promise<void> {
-  await secureSet(hiddenEntry(space), seal(key, data));
+export function saveHiddenData(space: number, key: Uint8Array, data: SpaceData): Promise<void> {
+  return write(hiddenEntry(space), key, () => data);
+}
+
+export function updateHiddenData(space: number, key: Uint8Array, patch: Partial<SpaceData>): Promise<void> {
+  return write(hiddenEntry(space), key, (data) => ({ ...data, ...patch }));
 }
 
 /** Every space up to `count` (and SLOTS) has a hidden chats entry, used or not. */
@@ -91,9 +126,9 @@ export async function loadCurrentSpaceData(): Promise<SpaceData> {
   return loadSpaceData(space, key);
 }
 
-export async function saveCurrentSpaceData(data: SpaceData): Promise<void> {
+export async function updateCurrentSpaceData(patch: Partial<SpaceData>): Promise<void> {
   const { space, key } = currentSpace();
-  await saveSpaceData(space, key, data);
+  await updateSpaceData(space, key, patch);
 }
 
 // The spaces from `from` on, up to SLOTS, have entries from now on, used or not: sealed with

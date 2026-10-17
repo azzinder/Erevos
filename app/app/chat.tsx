@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { AppState, PermissionsAndroid, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
+import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { openHidden, setHiddenPassword } from '../lock/hidden';
 import { currentSpace } from '../lock/keys';
-import { loadCurrentSpaceData, loadHiddenData, saveCurrentSpaceData, saveHiddenData, type Queue, type SpaceData } from '../lock/space-data';
+import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import {
   createQueue,
   decodeEnvelope,
@@ -19,6 +19,8 @@ import {
   toHex,
   type Relay,
 } from '../lib/relay';
+import { radius, space, type Colors } from '../theme/colors';
+import { useStyles } from '../theme/context';
 
 // Chat over the radio link, with a fallback through the relay. A phone is reached over the
 // radio link when that link is ready. Otherwise the message goes through the relay, if a relay
@@ -69,16 +71,15 @@ export default function ChatScreen() {
 
   if (Platform.OS !== 'android') {
     return (
-      <View style={styles.container}>
-        <Text style={styles.body}>Chat runs on Android only for now.</Text>
-        <StatusBar style="light" />
-      </View>
+      <Page>
+        <Text tone="muted">Chat runs on Android only for now.</Text>
+      </Page>
     );
   }
 
   return (
-    <View style={styles.screen}>
-      <View style={[styles.screen, hiddenKey && styles.gone]}>
+    <View style={layout.screen}>
+      <View style={[layout.screen, hiddenKey && layout.gone]}>
         <Chat hiddenKey={null} shown={!hiddenKey} onHidden={() => setAsking('open')} />
       </View>
       {hiddenKey ? (
@@ -137,6 +138,7 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
   const thread = useRef<ScrollView>(null);
+  const styles = useStyles(makeStyles);
 
   function relayTarget(): Relay | null {
     const url = relayUrl.trim();
@@ -209,8 +211,9 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
   // Saves the relay settings, our queue and the contacts whenever they change.
   useEffect(() => {
     if (!loaded) return;
-    const data: SpaceData = { url: relayUrl, token: relayToken, ownQueue, routes };
-    (hiddenKey ? saveHiddenData(currentSpace().space, hiddenKey, data) : saveCurrentSpaceData(data)).catch(() => {
+    // Only what the chat keeps: the look kept beside it stays as it is.
+    const data: Partial<SpaceData> = { url: relayUrl, token: relayToken, ownQueue, routes };
+    (hiddenKey ? updateHiddenData(currentSpace().space, hiddenKey, data) : updateCurrentSpaceData(data)).catch(() => {
       // A failed save only means the next launch starts empty.
     });
   }, [loaded, relayUrl, relayToken, ownQueue, routes]);
@@ -352,82 +355,62 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{hiddenKey ? 'Hidden chats' : 'Chat'}</Text>
+        <Text variant="title">{hiddenKey ? 'Hidden chats' : 'Chat'}</Text>
         {hiddenKey ? (
-          <View style={styles.row}>
-            <Pressable onPress={onChangePassword} accessibilityRole="button">
-              <Text style={styles.link}>Change password</Text>
-            </Pressable>
-            <Pressable onPress={onHidden} accessibilityRole="button">
-              <Text style={styles.link}>Close</Text>
-            </Pressable>
-          </View>
+          <Row>
+            {onChangePassword ? <TextButton title="Change password" onPress={onChangePassword} /> : null}
+            <TextButton title="Close" onPress={onHidden} />
+          </Row>
         ) : (
-          <Pressable onPress={onHidden} accessibilityRole="button">
-            <Text style={styles.link}>Hidden chats</Text>
-          </Pressable>
+          <TextButton title="Hidden chats" onPress={onHidden} />
         )}
       </View>
-      <Text style={styles.body}>
+      <Text tone="muted">
         {peers.length > 0
           ? 'Pick a chat.'
           : hiddenKey
             ? 'No hidden chats yet. Add a contact through the relay below.'
             : 'Looking for a nearby Erevos phone.'}
       </Text>
-      <View style={styles.row}>
+      <Row wrap>
         {peers.map((peer) => (
-          <Pressable
-            key={peer}
-            onPress={() => setSelected(peer)}
-            style={[styles.chip, peer === selected && styles.chipOn]}
-          >
-            <Text style={[styles.chipText, peer === selected && styles.chipTextOn]}>{label(peer)}</Text>
-          </Pressable>
+          <Chip key={peer} label={label(peer)} mono selected={peer === selected} onPress={() => setSelected(peer)} />
         ))}
-      </View>
-      <Pressable onPress={() => setShowRelay((on) => !on)}>
-        <Text style={styles.link}>{showRelay ? 'Hide relay' : 'Relay (Wi-Fi or internet)'}</Text>
-      </Pressable>
+      </Row>
+      <TextButton title={showRelay ? 'Hide relay' : 'Relay (Wi-Fi or internet)'} onPress={() => setShowRelay((on) => !on)} />
       {showRelay ? (
         <View style={styles.section}>
-          <Text style={styles.label}>Relay address</Text>
-          <TextInput
-            value={relayUrl}
-            onChangeText={setRelayUrl}
-            placeholder="ws://computer-address:7879"
-            placeholderTextColor="#A39A8D"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            style={styles.input}
-          />
-          <Text style={styles.label}>Token (optional)</Text>
-          <TextInput
-            value={relayToken}
-            onChangeText={setRelayToken}
-            placeholder="Token, if the relay needs one"
-            placeholderTextColor="#A39A8D"
-            autoCapitalize="none"
-            autoCorrect={false}
-            secureTextEntry
-            style={styles.input}
-          />
-          <Pressable onPress={createOwnQueue} style={styles.button}>
-            <Text style={styles.buttonText}>Create my relay queue</Text>
-          </Pressable>
+          <Field label="Relay address">
+            <Input
+              value={relayUrl}
+              onChangeText={setRelayUrl}
+              placeholder="ws://computer-address:7879"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+          </Field>
+          <Field label="Token (optional)">
+            <Input
+              value={relayToken}
+              onChangeText={setRelayToken}
+              placeholder="Token, if the relay needs one"
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+            />
+          </Field>
+          <Button title="Create my relay queue" compact onPress={createOwnQueue} />
           {ownQueue ? (
             <View style={styles.section}>
-              <Text selectable style={styles.id}>
+              <Text selectable variant="mono">
                 My relay sender id: {ownQueue.senderHex}
               </Text>
-              <Pressable onPress={() => setShowQr((on) => !on)}>
-                <Text style={styles.link}>{showQr ? 'Hide my QR code' : 'Show my QR code'}</Text>
-              </Pressable>
+              <TextButton title={showQr ? 'Hide my QR code' : 'Show my QR code'} onPress={() => setShowQr((on) => !on)} />
               {showQr ? (
                 <>
                   <QrCode text={contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim() })} />
-                  <Text style={styles.label}>
+                  <Text variant="caption" tone="muted">
                     Scan it with the other phone's camera and open the link in Erevos. If the camera only
                     shows the text, copy it and paste it below on that phone.
                   </Text>
@@ -435,40 +418,34 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
               ) : null}
             </View>
           ) : null}
-          <Text style={styles.body}>Add a contact by the relay sender id or the contact link they gave you:</Text>
-          <View style={styles.inputRow}>
-            <TextInput
+          <Text tone="muted">Add a contact by the relay sender id or the contact link they gave you:</Text>
+          <Row>
+            <Input
               value={contactDraft}
               onChangeText={setContactDraft}
               placeholder="Sender id or erevos://contact link"
-              placeholderTextColor="#A39A8D"
               autoCapitalize="none"
               autoCorrect={false}
-              style={styles.input}
+              style={styles.grow}
             />
-            <Pressable onPress={addContact} style={styles.button}>
-              <Text style={styles.buttonText}>Add</Text>
-            </Pressable>
-          </View>
+            <Button title="Add" compact onPress={addContact} />
+          </Row>
           {selectedIsRadio ? (
             <View style={styles.section}>
-              <Text style={styles.body}>
+              <Text tone="muted">
                 Relay sender id of {label(selected)}: {routes[selected] ?? 'not set'}
               </Text>
-              <View style={styles.inputRow}>
-                <TextInput
+              <Row>
+                <Input
                   value={routeDraft}
                   onChangeText={setRouteDraft}
                   placeholder="48 hex characters"
-                  placeholderTextColor="#A39A8D"
                   autoCapitalize="none"
                   autoCorrect={false}
-                  style={styles.input}
+                  style={styles.grow}
                 />
-                <Pressable onPress={saveRoute} style={styles.button}>
-                  <Text style={styles.buttonText}>Save</Text>
-                </Pressable>
-              </View>
+                <Button title="Save" compact onPress={saveRoute} />
+              </Row>
             </View>
           ) : null}
         </View>
@@ -481,154 +458,78 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
       >
         {visible.map((message) => (
           <View key={message.id} style={[styles.bubble, message.mine ? styles.mine : styles.theirs]}>
-            <Text style={[styles.bubbleText, !message.mine && styles.theirsText]}>{message.text}</Text>
+            <Text style={message.mine ? styles.mineText : styles.theirsText}>{message.text}</Text>
           </View>
         ))}
       </ScrollView>
-      {note ? <Text style={styles.note}>{note}</Text> : null}
-      <View style={styles.inputRow}>
-        <TextInput
-          value={draft}
-          onChangeText={setDraft}
-          onSubmitEditing={send}
-          placeholder="Message"
-          placeholderTextColor="#A39A8D"
-          style={styles.input}
-        />
-        <Pressable onPress={send} style={styles.button}>
-          <Text style={styles.buttonText}>Send</Text>
-        </Pressable>
-      </View>
-      <StatusBar style="light" />
+      {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
+      <Row>
+        <Input value={draft} onChangeText={setDraft} onSubmitEditing={send} placeholder="Message" style={styles.grow} />
+        <Button title="Send" compact onPress={send} />
+      </Row>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const layout = StyleSheet.create({
   screen: {
     flex: 1,
   },
   gone: {
     display: 'none',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  container: {
-    flex: 1,
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#0D0B09',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#F5EFE6',
-  },
-  body: {
-    fontSize: 15,
-    color: '#BFB6AA',
-  },
-  label: {
-    fontSize: 13,
-    color: '#BFB6AA',
-  },
-  link: {
-    fontSize: 14,
-    color: '#D9A441',
-  },
-  section: {
-    gap: 8,
-  },
-  id: {
-    fontSize: 12,
-    color: '#F5EFE6',
-    fontFamily: 'monospace',
-  },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#2A2520',
-  },
-  chipOn: {
-    backgroundColor: '#D9A441',
-  },
-  chipText: {
-    fontSize: 13,
-    color: '#F5EFE6',
-    fontFamily: 'monospace',
-  },
-  chipTextOn: {
-    color: '#0D0B09',
-  },
-  thread: {
-    flex: 1,
-  },
-  threadContent: {
-    gap: 8,
-    paddingVertical: 8,
-  },
-  bubble: {
-    maxWidth: '80%',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  mine: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#D9A441',
-  },
-  theirs: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#2A2520',
-  },
-  bubbleText: {
-    fontSize: 15,
-    color: '#0D0B09',
-  },
-  theirsText: {
-    color: '#F5EFE6',
-  },
-  note: {
-    fontSize: 13,
-    color: '#D9A441',
-  },
-  inputRow: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  input: {
-    flex: 1,
-    minHeight: 48,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#4A4036',
-    backgroundColor: '#2A2520',
-    color: '#F5EFE6',
-    fontSize: 16,
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: '#D9A441',
-  },
-  buttonText: {
-    color: '#0D0B09',
-    fontSize: 14,
-    fontWeight: '600',
-  },
 });
+
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: space.xl - 4,
+      gap: space.md,
+      backgroundColor: colors.ground,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space.md,
+    },
+    section: {
+      gap: space.sm,
+    },
+    grow: {
+      flex: 1,
+    },
+    thread: {
+      flex: 1,
+    },
+    threadContent: {
+      gap: space.sm,
+      paddingVertical: space.sm,
+    },
+    bubble: {
+      maxWidth: '80%',
+      paddingVertical: space.sm,
+      paddingHorizontal: space.md,
+      borderRadius: Math.min(radius.md, 16),
+    },
+    mine: {
+      alignSelf: 'flex-end',
+      backgroundColor: colors.primary,
+    },
+    theirs: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.surfaceAlt,
+    },
+    mineText: {
+      fontSize: 15,
+      color: colors.onPrimary,
+    },
+    theirsText: {
+      fontSize: 15,
+      color: colors.text,
+    },
+    note: {
+      color: colors.accentText,
+    },
+  });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { PermissionsAndroid, Platform } from 'react-native';
+
+import { Button, Page, Row, SectionTitle, Text } from '../components/ui';
 import { onRadioEvent, radioStatus, sendText, startRadio, stopRadio, type RadioStatus } from '../modules/erevos-radio';
 
 // Test screen for two Android phones. Not part of the product.
@@ -38,10 +39,9 @@ export default function RadioTest() {
 
   if (Platform.OS !== 'android') {
     return (
-      <View style={styles.container}>
-        <Text style={styles.body}>The radio test runs on Android only.</Text>
-        <StatusBar style="light" />
-      </View>
+      <Page>
+        <Text tone="muted">The radio test runs on Android only.</Text>
+      </Page>
     );
   }
 
@@ -75,85 +75,32 @@ export default function RadioTest() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Radio test</Text>
+    <Page>
+      <Text variant="title">Radio test</Text>
       {status ? (
-        <Text style={styles.body}>
+        <Text tone="muted">
           Android {status.sdk} · Wi-Fi Aware {status.wifiAware ? 'yes' : 'no'} · BLE {status.ble ? 'yes' : 'no'} ·{' '}
           {status.running ? 'running' : 'stopped'}
         </Text>
       ) : null}
-      <View style={styles.row}>
-        <Button label="Permissions" onPress={askPermissions} />
-        <Button label="Start" onPress={start} />
-        <Button label="Stop" onPress={stop} />
-        <Button label="Send hello" onPress={sendHello} />
-      </View>
-      <Text style={styles.section}>Peers ({peers.length})</Text>
+      <Row wrap>
+        <Button title="Permissions" kind="secondary" compact onPress={askPermissions} />
+        <Button title="Start" kind="secondary" compact onPress={start} />
+        <Button title="Stop" kind="secondary" compact onPress={stop} />
+        <Button title="Send hello" kind="secondary" compact onPress={sendHello} />
+      </Row>
+      <SectionTitle title={`Peers (${peers.length})`} />
       {peers.map((peer) => (
-        <Text key={peer} style={styles.line}>
+        <Text key={peer} variant="mono" tone="muted" style={{ fontSize: 13 }}>
           {peer}
         </Text>
       ))}
-      <Text style={styles.section}>Log</Text>
+      <SectionTitle title="Log" />
       {log.map((line, index) => (
-        <Text key={`${index}-${line}`} style={styles.line}>
+        <Text key={`${index}-${line}`} variant="mono" tone="muted" style={{ fontSize: 13 }}>
           {line}
         </Text>
       ))}
-      <StatusBar style="light" />
-    </ScrollView>
+    </Page>
   );
 }
-
-function Button({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={styles.button}>
-      <Text style={styles.buttonText}>{label}</Text>
-    </Pressable>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#0D0B09',
-    minHeight: '100%',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#F5EFE6',
-  },
-  body: {
-    fontSize: 15,
-    color: '#BFB6AA',
-  },
-  section: {
-    marginTop: 12,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#F5EFE6',
-  },
-  line: {
-    fontSize: 13,
-    color: '#BFB6AA',
-    fontFamily: 'monospace',
-  },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: '#2A2520',
-  },
-  buttonText: {
-    color: '#F5EFE6',
-    fontSize: 14,
-  },
-});
