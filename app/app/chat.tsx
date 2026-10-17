@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState, PermissionsAndroid, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
-import { KeyboardAvoidingView } from '../components/keyboard';
+import { KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
 import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
@@ -82,15 +82,13 @@ export default function ChatScreen() {
 
   // The message field rises with the keyboard, and clears the phone's navigation bar without it.
   return (
-    <KeyboardAvoidingView behavior="padding" automaticOffset style={layout.screen}>
-      <View style={[layout.screen, { paddingBottom: insets.bottom }]}>
-        <View style={[layout.screen, hiddenKey && layout.gone]}>
-          <Chat hiddenKey={null} shown={!hiddenKey} onHidden={() => setAsking('open')} />
-        </View>
-        {hiddenKey ? (
-          <Chat hiddenKey={hiddenKey} shown onHidden={() => setHiddenKey(null)} onChangePassword={() => setAsking('change')} />
-        ) : null}
+    <KeyboardPaddedView bottom={insets.bottom} style={layout.screen}>
+      <View style={[layout.screen, hiddenKey && layout.gone]}>
+        <Chat hiddenKey={null} shown={!hiddenKey} onHidden={() => setAsking('open')} />
       </View>
+      {hiddenKey ? (
+        <Chat hiddenKey={hiddenKey} shown onHidden={() => setHiddenKey(null)} onChangePassword={() => setAsking('change')} />
+      ) : null}
       <PasswordSheet
         visible={asking === 'open'}
         title="Hidden chats"
@@ -115,7 +113,7 @@ export default function ChatScreen() {
           setAsking(null);
         }}
       />
-    </KeyboardAvoidingView>
+    </KeyboardPaddedView>
   );
 }
 
@@ -371,91 +369,93 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
           <TextButton title="Hidden chats" onPress={onHidden} />
         )}
       </View>
-      <Text tone="muted">
-        {peers.length > 0
-          ? 'Pick a chat.'
-          : hiddenKey
-            ? 'No hidden chats yet. Add a contact through the relay below.'
-            : 'Looking for a nearby Erevos phone.'}
-      </Text>
-      <Row wrap>
-        {peers.map((peer) => (
-          <Chip key={peer} label={label(peer)} mono selected={peer === selected} onPress={() => setSelected(peer)} />
-        ))}
-      </Row>
-      <TextButton title={showRelay ? 'Hide relay' : 'Relay (Wi-Fi or internet)'} onPress={() => setShowRelay((on) => !on)} />
-      {showRelay ? (
-        <View style={styles.section}>
-          <Field label="Relay address">
-            <Input
-              value={relayUrl}
-              onChangeText={setRelayUrl}
-              placeholder="ws://computer-address:7879"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-            />
-          </Field>
-          <Field label="Token (optional)">
-            <Input
-              value={relayToken}
-              onChangeText={setRelayToken}
-              placeholder="Token, if the relay needs one"
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry
-            />
-          </Field>
-          <Button title="Create my relay queue" compact onPress={createOwnQueue} />
-          {ownQueue ? (
-            <View style={styles.section}>
-              <Text selectable variant="mono">
-                My relay sender id: {ownQueue.senderHex}
-              </Text>
-              <TextButton title={showQr ? 'Hide my QR code' : 'Show my QR code'} onPress={() => setShowQr((on) => !on)} />
-              {showQr ? (
-                <>
-                  <QrCode text={contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim() })} />
-                  <Text variant="caption" tone="muted">
-                    Scan it with the other phone's camera and open the link in Erevos. If the camera only
-                    shows the text, copy it and paste it below on that phone.
-                  </Text>
-                </>
-              ) : null}
-            </View>
-          ) : null}
-          <Text tone="muted">Add a contact by the relay sender id or the contact link they gave you:</Text>
-          <Row>
-            <Input
-              value={contactDraft}
-              onChangeText={setContactDraft}
-              placeholder="Sender id or erevos://contact link"
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={styles.grow}
-            />
-            <Button title="Add" compact onPress={addContact} />
-          </Row>
-          {selectedIsRadio ? (
-            <View style={styles.section}>
-              <Text tone="muted">
-                Relay sender id of {label(selected)}: {routes[selected] ?? 'not set'}
-              </Text>
-              <Row>
-                <Input
-                  value={routeDraft}
-                  onChangeText={setRouteDraft}
-                  placeholder="48 hex characters"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  style={styles.grow}
-                />
-                <Button title="Save" compact onPress={saveRoute} />
-              </Row>
-            </View>
-          ) : null}
-        </View>
-      ) : null}
+      <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
+        <Text tone="muted">
+          {peers.length > 0
+            ? 'Pick a chat.'
+            : hiddenKey
+              ? 'No hidden chats yet. Add a contact through the relay below.'
+              : 'Looking for a nearby Erevos phone.'}
+        </Text>
+        <Row wrap>
+          {peers.map((peer) => (
+            <Chip key={peer} label={label(peer)} mono selected={peer === selected} onPress={() => setSelected(peer)} />
+          ))}
+        </Row>
+        <TextButton title={showRelay ? 'Hide relay' : 'Relay (Wi-Fi or internet)'} onPress={() => setShowRelay((on) => !on)} />
+        {showRelay ? (
+          <View style={styles.section}>
+            <Field label="Relay address">
+              <Input
+                value={relayUrl}
+                onChangeText={setRelayUrl}
+                placeholder="ws://computer-address:7879"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+            </Field>
+            <Field label="Token (optional)">
+              <Input
+                value={relayToken}
+                onChangeText={setRelayToken}
+                placeholder="Token, if the relay needs one"
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry
+              />
+            </Field>
+            <Button title="Create my relay queue" compact onPress={createOwnQueue} />
+            {ownQueue ? (
+              <View style={styles.section}>
+                <Text selectable variant="mono">
+                  My relay sender id: {ownQueue.senderHex}
+                </Text>
+                <TextButton title={showQr ? 'Hide my QR code' : 'Show my QR code'} onPress={() => setShowQr((on) => !on)} />
+                {showQr ? (
+                  <>
+                    <QrCode text={contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim() })} />
+                    <Text variant="caption" tone="muted">
+                      Scan it with the other phone's camera and open the link in Erevos. If the camera only
+                      shows the text, copy it and paste it below on that phone.
+                    </Text>
+                  </>
+                ) : null}
+              </View>
+            ) : null}
+            <Text tone="muted">Add a contact by the relay sender id or the contact link they gave you:</Text>
+            <Row>
+              <Input
+                value={contactDraft}
+                onChangeText={setContactDraft}
+                placeholder="Sender id or erevos://contact link"
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.grow}
+              />
+              <Button title="Add" compact onPress={addContact} />
+            </Row>
+            {selectedIsRadio ? (
+              <View style={styles.section}>
+                <Text tone="muted">
+                  Relay sender id of {label(selected)}: {routes[selected] ?? 'not set'}
+                </Text>
+                <Row>
+                  <Input
+                    value={routeDraft}
+                    onChangeText={setRouteDraft}
+                    placeholder="48 hex characters"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    style={styles.grow}
+                  />
+                  <Button title="Save" compact onPress={saveRoute} />
+                </Row>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+      </ScrollView>
       <ScrollView
         ref={thread}
         style={styles.thread}
@@ -505,6 +505,15 @@ const makeStyles = (colors: Colors) =>
     },
     grow: {
       flex: 1,
+    },
+    // Everything between the title and the messages: it gives way, and scrolls, when the keyboard
+    // leaves too little room, so the message field stays in view.
+    top: {
+      flexGrow: 0,
+      flexShrink: 1,
+    },
+    topContent: {
+      gap: space.md,
     },
     thread: {
       flex: 1,

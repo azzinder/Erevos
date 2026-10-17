@@ -1,10 +1,5 @@
 import type { ReactNode } from 'react';
-import {
-  KeyboardAvoidingView as PlainKeyboardAvoidingView,
-  ScrollView,
-  type KeyboardAvoidingViewProps,
-  type ScrollViewProps,
-} from 'react-native';
+import { KeyboardAvoidingView as PlainKeyboardAvoidingView, ScrollView, View, type ScrollViewProps, type ViewProps } from 'react-native';
 
 /**
  * In browsers the keyboard library has nothing to do: the browser itself keeps the field being
@@ -15,14 +10,14 @@ export function KeyboardProvider({ children }: { children?: ReactNode }) {
   return <>{children}</>;
 }
 
-export function KeyboardAvoidingView(props: KeyboardAvoidingViewProps & { automaticOffset?: boolean }) {
-  const rest = { ...props };
-  delete rest.automaticOffset;
-  return <PlainKeyboardAvoidingView {...rest} />;
-}
+export const KeyboardAvoidingView = PlainKeyboardAvoidingView;
 
 export function KeyboardAwareScrollView(props: ScrollViewProps & { bottomOffset?: number }) {
   const rest = { ...props };
   delete rest.bottomOffset;
   return <ScrollView {...rest} />;
+}
+
+export function KeyboardPaddedView({ bottom = 0, style, ...props }: ViewProps & { bottom?: number }) {
+  return <View style={[style, { paddingBottom: bottom }]} {...props} />;
 }
