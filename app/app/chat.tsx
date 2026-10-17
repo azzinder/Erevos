@@ -61,6 +61,9 @@ const COMING = [
   { title: 'Video', note: 'Video calls are not built yet. They come after voice calls, over Wi-Fi or the internet.' },
 ];
 
+// How long a note under the messages stays, milliseconds.
+const NOTE_SHOWN = 8000;
+
 // Messages opened from the relay in one look at it, at most.
 const RECEIVE_BATCH = 10;
 
@@ -415,6 +418,14 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
     }, 5000);
     return () => clearInterval(timer);
   }, []);
+
+  // A note goes after a while. One that is still true, like a relay that cannot be reached, comes
+  // back with the next try.
+  useEffect(() => {
+    if (!note) return;
+    const timer = setTimeout(() => setNote((current) => (current === note ? '' : current)), NOTE_SHOWN);
+    return () => clearTimeout(timer);
+  }, [note]);
 
   // Saves the relay settings and our queue whenever they change.
   useEffect(() => {
