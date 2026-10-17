@@ -15,13 +15,14 @@ export default function Home() {
         Erevos
       </Text>
       <Text tone="muted" style={styles.body}>
-        No account, no phone number. Messages are end to end encrypted.
+        No account, no phone number. A test version: messages are not end to end encrypted yet.
       </Text>
       <Link href="/chat" style={styles.link}>Chat (Android)</Link>
       <Link href="/radio" style={styles.link}>Radio test (Android)</Link>
       <Link href="/relay" style={styles.link}>Relay test (Wi-Fi)</Link>
       <Link href="/security" style={styles.link}>Lock and second password</Link>
       <Link href="/appearance" style={styles.link}>Appearance</Link>
+      <Link href="/guide" style={styles.link}>User guide</Link>
     </View>
   );
 }
