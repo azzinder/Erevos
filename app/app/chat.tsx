@@ -314,7 +314,7 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
         setSelected((current) => current ?? peer);
         if (received.text) setMessages((list) => [...list, { id: nextId.current++, peer, text: received.text, mine: false }]);
         if (received.added) {
-          setNote(`New contact ${label(peer)}: they added your contact link. Compare the safety number with theirs.`);
+          setNote(`New chat with ${label(peer)}: they added your contact link. Compare the safety number with theirs.`);
         }
       } catch (error) {
         if (!active) return;
