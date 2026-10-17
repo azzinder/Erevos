@@ -7,6 +7,8 @@ import {
   customAccentChoices,
   FRAME_TEXTS,
   frameTextChoices,
+  isFixed,
+  isScene,
   PALETTE_CHOICES,
   radius,
   resolveScheme,
@@ -19,17 +21,21 @@ import {
   type StyleName,
   type ThemePref,
 } from '../theme/colors';
+import { bubbleStyles } from '../theme/bubbles';
 import { useStyles, useTheme } from '../theme/context';
 import { GLASS_KINDS, LOOK_NAMES, type GlassKind, type LookName } from '../theme/glass';
+import { BUBBLE_SHAPES, type BubbleShape } from '../theme/look';
 
 // Appearance, as in LPHL FASOULI's settings: flat or glass (as on lphl.nekten.eu), the style,
 // light or dark, the colours (the style's own, one of the twelve LPHL palettes, or a colour of
-// your own) and the text on coloured areas.
+// your own) and the text on coloured areas; and how a chat draws its messages. Neon and Matrix
+// are styles of their own: always dark, in their own colours, with a scene behind the screens.
 // Each space keeps its own (theme/look.ts), and every space shows this same screen.
 
 const LOOK_LABELS: Record<LookName, string> = { flat: 'Flat', glass: 'Glass' };
 const GLASS_KIND_LABELS: Record<GlassKind, string> = { cards: 'Panes', sheet: 'One pane' };
-const STYLE_LABELS: Record<StyleName, string> = { classic: 'Classic', modernist: 'Modernist', nocturne: 'Nocturne' };
+const STYLE_LABELS: Record<StyleName, string> = { classic: 'Classic', modernist: 'Modernist', nocturne: 'Nocturne', neon: 'Neon', matrix: 'Matrix' };
+const BUBBLE_LABELS: Record<BubbleShape, string> = { round: 'Round', square: 'Square', line: 'Line' };
 const THEME_LABELS: Record<ThemePref, string> = { system: 'System', light: 'Light', dark: 'Dark' };
 const FRAME_TEXT_LABELS: Record<FrameText, string> = { white: 'White', palette: 'As in the palette', custom: 'My color' };
 const PALETTE_LABELS: Record<PaletteChoice, string> = {
@@ -96,9 +102,12 @@ export default function Appearance() {
   const [pickColor, setPickColor] = useState(false);
   const [pickTextColor, setPickTextColor] = useState(false);
 
-  // Nocturne has its own colours and is always dark: as on the LPHL site, the theme and the text
-  // on coloured areas wait, and a palette leaves it for the style it was chosen over.
-  const nocturne = look.style === 'nocturne';
+  // Nocturne, Neon and Matrix have their own colours and are always dark: as on the LPHL site, the
+  // theme and the text on coloured areas wait, and a palette leaves them for the style chosen before.
+  const nocturne = isFixed(look.style);
+  const scene = isScene(look.style);
+  const styleName = STYLE_LABELS[look.style];
+  const bubbles = bubbleStyles(look.bubbles, colors);
   const paletteStyle = nocturne ? look.prevStyle : look.style;
   const paletteScheme = nocturne ? resolveScheme(look.prevStyle, look.theme, system) : scheme;
   // The coloured areas as the palette fills them, to preview each text colour on.
@@ -111,10 +120,15 @@ export default function Appearance() {
       <SectionTitle title="Look" />
       <Row wrap>
         {LOOK_NAMES.map((lk) => (
-          <Chip key={lk} label={LOOK_LABELS[lk]} selected={look.look === lk} onPress={() => setLook({ look: lk })} />
+          <Chip key={lk} label={LOOK_LABELS[lk]} selected={!scene && look.look === lk} disabled={scene} onPress={() => setLook({ look: lk })} />
         ))}
       </Row>
-      {look.look === 'glass' ? (
+      {scene ? (
+        <Text variant="caption" tone="faint">
+          {styleName} draws its own scene behind the screens, so it takes no glass.
+        </Text>
+      ) : null}
+      {look.look === 'glass' && !scene ? (
         <>
           <SectionTitle title="Kind of glass" />
           <Row wrap>
@@ -144,7 +158,7 @@ export default function Appearance() {
       </Row>
       {nocturne ? (
         <Text variant="caption" tone="faint">
-          Nocturne is always dark.
+          {styleName} is always dark.
         </Text>
       ) : null}
 
@@ -185,19 +199,24 @@ export default function Appearance() {
       </Row>
       {nocturne ? (
         <Text variant="caption" tone="faint">
-          Nocturne keeps its own colors here.
+          {styleName} keeps its own colors here.
         </Text>
       ) : null}
 
+      <SectionTitle title="Messages" />
+      <Row wrap>
+        {BUBBLE_SHAPES.map((b) => (
+          <Chip key={b} label={BUBBLE_LABELS[b]} selected={look.bubbles === b} onPress={() => setLook({ bubbles: b })} />
+        ))}
+      </Row>
+
       <SectionTitle title="Preview" />
       <Card>
-        <View style={[styles.bubble, styles.theirs]}>
-          <Text style={{ fontSize: 15 }}>Καλημέρα! Are we still on for tonight?</Text>
+        <View style={[styles.bubble, bubbles.theirs, bubbles.theirsTail]}>
+          <Text style={[{ fontSize: 15 }, bubbles.theirsText]}>Καλημέρα! Are we still on for tonight?</Text>
         </View>
-        <View style={[styles.bubble, styles.mine]}>
-          <Text style={{ fontSize: 15 }} color={colors.onPrimary}>
-            Yes, see you at eight.
-          </Text>
+        <View style={[styles.bubble, bubbles.mine, bubbles.mineTail]}>
+          <Text style={[{ fontSize: 15 }, bubbles.mineText]}>Yes, see you at eight.</Text>
         </View>
         <Row wrap>
           <Button title="Send" compact onPress={() => undefined} />
@@ -269,15 +288,6 @@ const makeStyles = (colors: Colors) =>
       maxWidth: '80%',
       paddingVertical: space.sm,
       paddingHorizontal: space.md,
-      borderRadius: Math.min(radius.md, 16),
-    },
-    mine: {
-      alignSelf: 'flex-end',
-      backgroundColor: colors.primary,
-    },
-    theirs: {
-      alignSelf: 'flex-start',
-      backgroundColor: colors.surfaceAlt,
     },
     hint: {
       fontSize: 14,

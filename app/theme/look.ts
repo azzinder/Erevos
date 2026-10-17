@@ -1,6 +1,6 @@
 import { secureGet, secureSet } from '../lib/secure';
 
-import { FRAME_TEXTS, PALETTE_CHOICES, STYLES, THEMES, type FrameText, type PaletteChoice, type PaletteStyle, type StyleName, type ThemePref } from './colors';
+import { FRAME_TEXTS, isFixed, PALETTE_CHOICES, STYLES, THEMES, type FrameText, type PaletteChoice, type PaletteStyle, type StyleName, type ThemePref } from './colors';
 import { GLASS_KINDS, LOOK_NAMES, type GlassKind, type LookName } from './glass';
 
 // How the app looks: what the Appearance screen sets. Each space keeps its own, sealed with its
@@ -21,7 +21,12 @@ export interface Look {
   /** Flat, or glass as on the LPHL site (glass.ts), in panes or one pane. */
   look: LookName;
   glassKind: GlassKind;
+  /** How messages are drawn in a chat: round bubbles, square ones, or a line beside the text. */
+  bubbles: BubbleShape;
 }
+
+export type BubbleShape = 'round' | 'square' | 'line';
+export const BUBBLE_SHAPES: BubbleShape[] = ['round', 'square', 'line'];
 
 export const DEFAULT_LOOK: Look = {
   style: 'classic',
@@ -33,6 +38,7 @@ export const DEFAULT_LOOK: Look = {
   prevStyle: 'classic',
   look: 'flat',
   glassKind: 'cards',
+  bubbles: 'round',
 };
 
 const KEY = 'erevos.look';
@@ -54,6 +60,7 @@ export function checkedLook(value: unknown): Look {
     prevStyle: pick(['classic', 'modernist'] as const, o.prevStyle, DEFAULT_LOOK.prevStyle),
     look: pick(LOOK_NAMES, o.look, DEFAULT_LOOK.look),
     glassKind: pick(GLASS_KINDS, o.glassKind, DEFAULT_LOOK.glassKind),
+    bubbles: pick(BUBBLE_SHAPES, o.bubbles, DEFAULT_LOOK.bubbles),
   };
 }
 
@@ -70,11 +77,11 @@ export async function loadLockScreenLook(): Promise<Look> {
 }
 
 /**
- * A change to the look as the Appearance screen asks for it: choosing Nocturne remembers the
+ * A change to the look as the Appearance screen asks for it: choosing a style with its own colours (Nocturne, Neon, Matrix) remembers the
  * style it was chosen over, and leaving it for a palette goes back to that style.
  */
 export function changeLook(look: Look, patch: Partial<Look>): Look {
   const next = { ...look, ...patch };
-  if (patch.style === 'nocturne' && look.style !== 'nocturne' && !patch.prevStyle) next.prevStyle = look.style;
+  if (patch.style && isFixed(patch.style) && !isFixed(look.style) && !patch.prevStyle) next.prevStyle = look.style as PaletteStyle;
   return next;
 }

@@ -125,6 +125,57 @@ const NIGHT = {
 };
 const nocturne: typeof classic = { light: NIGHT, dark: NIGHT };
 
+/**
+ * Neon: a night city in LEDs. Cyan light on a violet-black ground, magenta for what stands out,
+ * lines that glow instead of fills. Always dark, with its own colours whatever the palette.
+ */
+const NEON = {
+  background: '#07060F',
+  surface: '#100E1F',
+  surfaceAlt: '#17142B',
+  surfacePressed: '#231E40',
+  border: '#2E2A55',
+  text: '#EAF6FF',
+  textMuted: '#A9B4DA',
+  textFaint: '#7F89B5',
+  primary: '#00E5FF',
+  primaryPressed: '#7DF3FF',
+  onPrimary: '#05040C',
+  primarySoft: '#062F3A',
+  hero: '#FF2BD6',
+  heroText: '#05040C',
+  heroMuted: '#5C0F4E',
+  success: '#39FF88',
+  warning: '#FFD23F',
+  danger: '#FF4D6D',
+  overlay: 'rgba(0, 0, 0, 0.7)',
+};
+const neon: typeof classic = { light: NEON, dark: NEON };
+
+/** Matrix: green phosphor on black, in the platform's monospace, with code raining behind. Always dark. */
+const MATRIX = {
+  background: '#000000',
+  surface: '#020D04',
+  surfaceAlt: '#05180A',
+  surfacePressed: '#0A2A12',
+  border: '#0F5A22',
+  text: '#B6FFC6',
+  textMuted: '#4CE077',
+  textFaint: '#2E9E50',
+  primary: '#00FF41',
+  primaryPressed: '#7DFF9C',
+  onPrimary: '#000000',
+  primarySoft: '#003B10',
+  hero: '#00FF41',
+  heroText: '#000000',
+  heroMuted: '#00591A',
+  success: '#00FF41',
+  warning: '#E5FF00',
+  danger: '#FF4545',
+  overlay: 'rgba(0, 0, 0, 0.75)',
+};
+const matrix: typeof classic = { light: MATRIX, dark: MATRIX };
+
 /** Nocturne's few colours beyond the tokens (nocturne.css §1), for its lines and kickers. */
 export const NOCTURNE = {
   /** The accent's pale end (accent-700): kickers, pressed labels. */
@@ -137,12 +188,20 @@ export const NOCTURNE = {
   fieldLine: '#424450',
 };
 
-export type StyleName = 'classic' | 'modernist' | 'nocturne';
-export const STYLES: StyleName[] = ['classic', 'modernist', 'nocturne'];
-/** The styles a palette can be shown in (Nocturne has its own colours). */
-export type PaletteStyle = Exclude<StyleName, 'nocturne'>;
+export type StyleName = 'classic' | 'modernist' | 'nocturne' | 'neon' | 'matrix';
+export const STYLES: StyleName[] = ['classic', 'modernist', 'nocturne', 'neon', 'matrix'];
+/** The styles a palette can be shown in (the others have their own colours). */
+export type PaletteStyle = 'classic' | 'modernist';
 
-export const palettes: Record<StyleName, typeof classic> = { classic, modernist, nocturne };
+/** Styles with their own colours, always dark, whatever the palette, scheme or text setting. */
+export const FIXED_STYLES: StyleName[] = ['nocturne', 'neon', 'matrix'];
+export const isFixed = (style: StyleName): boolean => FIXED_STYLES.includes(style);
+
+/** Styles that draw their own scene behind the screens (Neon's grid, Matrix's rain), and so take no glass. */
+export const SCENE_STYLES: StyleName[] = ['neon', 'matrix'];
+export const isScene = (style: StyleName): boolean => SCENE_STYLES.includes(style);
+
+export const palettes: Record<StyleName, typeof classic> = { classic, modernist, nocturne, neon, matrix };
 
 type BaseColors = typeof classic.light;
 
@@ -157,9 +216,9 @@ export type Colors = BaseColors & { ground: string; sheet: string; popover: stri
 export type ThemePref = 'system' | 'light' | 'dark';
 export const THEMES: ThemePref[] = ['system', 'light', 'dark'];
 
-/** Light or dark: Nocturne is always dark; otherwise the setting, or the system's. */
+/** Light or dark: Nocturne, Neon and Matrix are always dark; otherwise the setting, or the system's. */
 export function resolveScheme(style: StyleName, theme: ThemePref, system: string | null | undefined): 'light' | 'dark' {
-  if (style === 'nocturne') return 'dark';
+  if (isFixed(style)) return 'dark';
   return theme === 'system' ? (system === 'light' ? 'light' : 'dark') : theme;
 }
 
@@ -213,7 +272,7 @@ export function mixHex(a: string, b: string, t: number): string {
 }
 
 /** Colours for a style and palette, before text on coloured areas is made white. */
-function paletteColors(style: PaletteStyle, scheme: 'light' | 'dark', palette: PaletteChoice, customAccent: string): BaseColors {
+function paletteColors(style: StyleName, scheme: 'light' | 'dark', palette: PaletteChoice, customAccent: string): BaseColors {
   const base = palettes[style][scheme];
   if (palette === 'auto') return { ...base };
   const p = palette === 'custom' ? customPalette(customAccent, scheme) : LPHL_PALETTES[palette][scheme];
@@ -301,7 +360,7 @@ export function buildColors(
   palette: PaletteChoice,
   opts: ColorOptions = DEFAULT_COLOR_OPTIONS,
 ): Colors {
-  if (style === 'nocturne') return done({ ...NIGHT });
+  if (isFixed(style)) return done({ ...palettes[style].dark });
   const c = paletteColors(style, scheme, palette, opts.customAccent);
   // "As in the palette" keeps the fills and text exactly as the palette defines them.
   if (opts.frameText === 'palette') return done(c);
@@ -333,7 +392,7 @@ export function buildColors(
  * glass's wallpaper is tinted with, and its small text on the smoked side.
  */
 export function rawAccent(style: StyleName, scheme: 'light' | 'dark', palette: PaletteChoice, customAccent: string): string {
-  if (style === 'nocturne') return NIGHT.primary;
+  if (isFixed(style)) return palettes[style].dark.primary;
   if (palette === 'auto') return palettes[style][scheme].primary;
   if (palette === 'custom') return /^#[0-9a-fA-F]{6}$/.test(customAccent) ? customAccent.toUpperCase() : DEFAULT_COLOR_OPTIONS.customAccent;
   return LPHL_PALETTES[palette][scheme].accent.toUpperCase();
@@ -344,7 +403,7 @@ export function rawAccent(style: StyleName, scheme: 'light' | 'dark', palette: P
  * glass): the palette's 700 step; for a style's own colours, its pressed accent.
  */
 export function deepAccent(style: StyleName, palette: PaletteChoice, customAccent: string): string {
-  if (style === 'nocturne') return NIGHT.primary;
+  if (isFixed(style)) return palettes[style].dark.primary;
   if (palette === 'auto') return palettes[style].light.primaryPressed;
   const p = palette === 'custom' ? customPalette(rawAccent(style, 'light', 'custom', customAccent), 'light') : LPHL_PALETTES[palette].light;
   return p.accentRamp['700'].toUpperCase();
@@ -384,6 +443,12 @@ interface Shape {
     lines: boolean;
     /** Nocturne's type: medium headings, light kickers, tighter titles. */
     type: 'plain' | 'nocturne';
+    /** The line styles' own inks: the line of fields and outlined boxes, kickers, the chosen chip's label. Null: the colours'. */
+    ink: { fieldLine: string; kicker: string; chosen: string } | null;
+    /** Neon's and Matrix's light: what is lit (buttons, the chosen chip, our messages, titles) glows in its colour. */
+    glow: boolean;
+    /** Matrix's type: everything in the platform's monospace. */
+    mono: boolean;
     /** The glass look: bars and sheets blur what is behind them where the engine can (components/glass.ts). */
     glass: boolean;
   };
@@ -392,17 +457,57 @@ interface Shape {
 const SHAPES: Record<StyleName, Shape> = {
   classic: {
     radius: { sm: 10, md: 14, lg: 20, xl: 28, pill: 999, button: 999, chip: 999 },
-    shape: { cardBorder: 1, buttonAlign: 'center', fonts: null, lines: false, type: 'plain', glass: false },
+    shape: { cardBorder: 1, buttonAlign: 'center', fonts: null, lines: false, type: 'plain', glass: false, ink: null, glow: false, mono: false },
   },
   // Flat and architectural: no rounded corners, strong 2px rules, labels flush left even inside buttons.
   modernist: {
     radius: { sm: 0, md: 0, lg: 0, xl: 0, pill: 0, button: 0, chip: 0 },
-    shape: { cardBorder: 2, buttonAlign: 'flex-start', fonts: null, lines: false, type: 'plain', glass: false },
+    shape: { cardBorder: 2, buttonAlign: 'flex-start', fonts: null, lines: false, type: 'plain', glass: false, ink: null, glow: false, mono: false },
   },
   // The site's 8 px corners, 6 px on chips; circles stay circles; cards a shade lighter than the ground, with no outline.
   nocturne: {
     radius: { sm: 6, md: 8, lg: 8, xl: 8, pill: 999, button: 8, chip: 6 },
-    shape: { cardBorder: 0, buttonAlign: 'center', fonts: null, lines: true, type: 'nocturne', glass: false },
+    shape: {
+      cardBorder: 0,
+      buttonAlign: 'center',
+      fonts: null,
+      lines: true,
+      type: 'nocturne',
+      glass: false,
+      ink: { fieldLine: NOCTURNE.fieldLine, kicker: NOCTURNE.accentPale, chosen: NOCTURNE.accentPaler },
+      glow: false,
+      mono: false,
+    },
+  },
+  // Cut corners rather than round ones, glowing lines, set in Inter Tight.
+  neon: {
+    radius: { sm: 4, md: 6, lg: 10, xl: 14, pill: 999, button: 6, chip: 6 },
+    shape: {
+      cardBorder: 1,
+      buttonAlign: 'center',
+      fonts: null,
+      lines: true,
+      type: 'plain',
+      glass: false,
+      ink: { fieldLine: '#3B3670', kicker: '#FF7BE6', chosen: '#B8F8FF' },
+      glow: true,
+      mono: false,
+    },
+  },
+  // A terminal: square everything, outlined in green, monospace.
+  matrix: {
+    radius: { sm: 0, md: 0, lg: 0, xl: 0, pill: 0, button: 0, chip: 0 },
+    shape: {
+      cardBorder: 1,
+      buttonAlign: 'flex-start',
+      fonts: null,
+      lines: true,
+      type: 'plain',
+      glass: false,
+      ink: { fieldLine: '#13702B', kicker: '#4CE077', chosen: '#B6FFC6' },
+      glow: true,
+      mono: true,
+    },
   },
 };
 
@@ -424,7 +529,7 @@ export function applyStyle(style: StyleName, fonts: Fonts | null = null, look: '
   Object.assign(radius, SHAPES[style].radius);
   Object.assign(shape, SHAPES[style].shape);
   shape.fonts = style === 'classic' ? null : fonts;
-  if (look === 'glass') {
+  if (look === 'glass' && !isScene(style)) {
     Object.assign(radius, GLASS_RADIUS);
     shape.cardBorder = 1;
     shape.glass = true;

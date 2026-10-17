@@ -14,7 +14,7 @@ import { Logo } from '../lock/gate';
 import { History } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
-import { radius, space, withAlpha, type Colors } from '../theme/colors';
+import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // The home screen: the space's chats, newest first, as a messenger shows them, with a search over
@@ -156,7 +156,13 @@ export default function Home() {
         onPress={() => router.push('/chat?setup=1')}
         accessibilityRole="button"
         accessibilityLabel="New chat"
-        style={({ pressed }) => [styles.fab, { bottom: insets.bottom + space.xl }, pressed && styles.fabPressed]}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: insets.bottom + space.xl },
+          // Neon and Matrix: lit, so it glows.
+          shape.glow && { boxShadow: `0px 0px 18px ${withAlpha(colors.primary, 0.6)}` },
+          pressed && styles.fabPressed,
+        ]}
       >
         <PlusIcon color={colors.onPrimary} size={20} />
         <Text variant="label" color={colors.onPrimary}>

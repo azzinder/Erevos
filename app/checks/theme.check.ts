@@ -18,6 +18,8 @@ import {
   palettes,
   resolveScheme,
   STYLES,
+  isFixed,
+  isScene,
 } from '../theme/colors';
 import { rawAccent, withAlpha } from '../theme/colors';
 import { backdropKind, GLASS_KINDS, glassSide, inkGround, paneFrame, withLook } from '../theme/glass';
@@ -83,7 +85,7 @@ test('reads well in every style, scheme, palette and text setting', () => {
           assert.ok(contrast(c.accentText, c.background) >= 4.5, `${where}: accent as text`);
           assert.ok(contrast(c.success, c.background) >= 4.5, `${where}: success`);
           // The palettes' own text on their fills is theirs to choose; white is made to read.
-          if (frameText === 'white' && style !== 'nocturne') {
+          if (frameText === 'white' && !isFixed(style)) {
             assert.ok(contrast(c.primary, c.onPrimary) >= 3, `${where}: button`);
             assert.ok(contrast(c.hero, c.heroText) >= 3, `${where}: hero`);
           }
@@ -166,7 +168,7 @@ test('glass turns surfaces, lines, bars and sheets to glass and keeps every fill
 
 test('under glass every ink reads on the wallpaper or the pane, in every kind, style, scheme and palette', () => {
   for (const glassKind of GLASS_KINDS) {
-    for (const style of STYLES) {
+    for (const style of STYLES.filter((st) => !isScene(st))) {
       for (const theme of SCHEMES) {
         const scheme = resolveScheme(style, theme, null);
         for (const palette of PALETTE_CHOICES) {
@@ -194,4 +196,29 @@ test('under glass every ink reads on the wallpaper or the pane, in every kind, s
 test('a kept look keeps flat or glass and the kind of glass', () => {
   assert.deepEqual(checkedLook({ ...DEFAULT_LOOK, look: 'glass', glassKind: 'sheet' }), { ...DEFAULT_LOOK, look: 'glass', glassKind: 'sheet' });
   assert.deepEqual(checkedLook({ ...DEFAULT_LOOK, look: 'frosted', glassKind: 'bowl' }), DEFAULT_LOOK);
+});
+
+test('Neon and Matrix are dark in their own colours, take no glass, and draw their scenes', () => {
+  for (const style of ['neon', 'matrix'] as const) {
+    assert.equal(resolveScheme(style, 'light', 'light'), 'dark');
+    const c = buildColors(style, 'dark', 'kipos', { customAccent: '#2F7FC4', frameText: 'white' });
+    assert.deepEqual(c, buildColors(style, 'light', 'auto'));
+    assert.ok(contrast(c.primary, c.onPrimary) >= 4.5, `${style}: text on the accent`);
+    assert.ok(contrast(c.textMuted, c.background) >= 4.5, `${style}: muted`);
+    assert.ok(contrast(c.textFaint, c.background) >= 3, `${style}: faint`);
+    assert.ok(contrast(c.text, c.surfaceAlt) >= 4.5, `${style}: their messages`);
+    assert.equal(withLook(c, { look: 'glass', style, scheme: 'dark', palette: 'auto', customAccent: '' }).ground, 'transparent');
+    assert.equal(withLook(c, { look: 'glass', style, scheme: 'dark', palette: 'auto', customAccent: '' }).surface, c.surface);
+  }
+  assert.equal(backdropKind('neon', 'glass'), 'grid');
+  assert.equal(backdropKind('matrix', 'flat'), 'rain');
+  const modern = { ...DEFAULT_LOOK, style: 'modernist' as const };
+  assert.equal(changeLook(modern, { style: 'matrix' }).prevStyle, 'modernist');
+  assert.equal(changeLook(changeLook(modern, { style: 'neon' }), { style: 'matrix' }).prevStyle, 'modernist');
+});
+
+test('a kept look keeps how messages are drawn', () => {
+  assert.equal(checkedLook({ ...DEFAULT_LOOK, bubbles: 'line' }).bubbles, 'line');
+  assert.equal(checkedLook({ ...DEFAULT_LOOK, bubbles: 'blob' }).bubbles, 'round');
+  assert.equal(checkedLook({ ...DEFAULT_LOOK, style: 'matrix' }).style, 'matrix');
 });

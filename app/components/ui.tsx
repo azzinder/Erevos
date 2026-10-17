@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { NOCTURNE, radius, shape, space, withAlpha, type Colors } from '../theme/colors';
+import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 import { useGlassBlur, useGlassLift } from './glass';
@@ -30,6 +30,8 @@ const webNoOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as 
 
 /** With a style's own font each weight is its own font file: picks it from the weight. */
 export function fontStyle(weight: TextStyle['fontWeight'] | undefined): TextStyle | null {
+  // Matrix: the platform's monospace in every weight.
+  if (shape.mono) return { fontFamily: Platform.OS === 'web' ? 'ui-monospace, Menlo, Consolas, monospace' : 'monospace', fontWeight: weight };
   const fonts = shape.fonts;
   if (!fonts) return null;
   const w = Number(weight === 'bold' ? 700 : weight === 'normal' || weight === undefined ? 400 : weight);
@@ -78,17 +80,20 @@ export function Text({ variant = 'body', color, tone, style, children, ...props 
 }) {
   const colors = useColors();
   const night = shape.type === 'nocturne';
-  // Nocturne's kickers are in its accent's pale end.
+  // The line styles' kickers are in their own ink (Nocturne's accent's pale end).
   const c =
     color ??
-    (night && variant === 'overline' ? NOCTURNE.accentPale : tone === 'muted' ? colors.textMuted : tone === 'faint' ? colors.textFaint : colors.text);
+    (shape.ink && variant === 'overline' ? shape.ink.kicker : tone === 'muted' ? colors.textMuted : tone === 'faint' ? colors.textFaint : colors.text);
   const variants = night ? NOCTURNE_VARIANTS : VARIANTS;
+  // Neon and Matrix: titles glow in the accent, as lit signs.
+  const lit = shape.glow && (variant === 'display' || variant === 'title') ? { textShadowColor: withAlpha(colors.primary, 0.75), textShadowRadius: 12 } : null;
   return (
     <RNText
       {...props}
       style={[
         variants[variant],
         { color: c },
+        lit,
         style,
         variant === 'mono' ? null : fontStyle((StyleSheet.flatten(style)?.fontWeight as TextStyle['fontWeight']) ?? variants[variant].fontWeight),
       ]}
@@ -150,7 +155,7 @@ function buttonColors(kind: ButtonKind, colors: Colors): { bg: string; pressed: 
   if (shape.lines && (kind === 'primary' || kind === 'secondary')) {
     return kind === 'primary'
       ? { bg: 'transparent', pressed: colors.surfacePressed, fg: colors.accentText, line: colors.primary }
-      : { bg: 'transparent', pressed: colors.surfacePressed, fg: colors.text, line: NOCTURNE.fieldLine };
+      : { bg: 'transparent', pressed: colors.surfacePressed, fg: colors.text, line: shape.ink?.fieldLine ?? colors.border };
   }
   switch (kind) {
     case 'primary':
@@ -193,6 +198,8 @@ export function Button({ title, onPress, kind = 'primary', disabled, loading, co
           justifyContent: shape.buttonAlign,
           opacity: disabled ? 0.45 : 1,
         },
+        // Neon and Matrix: a lit button glows in its colour.
+        shape.glow && kind === 'primary' && !disabled ? { boxShadow: `0px 0px 14px ${withAlpha(colors.primary, 0.55)}` } : null,
         style,
       ]}
     >
@@ -233,7 +240,7 @@ export function Chip({ label, selected, onPress, disabled, mono }: {
 }) {
   const colors = useColors();
   // The chosen chip's label: the accent's small-text step, or, under Nocturne, its palest step on the wash.
-  const ink = shape.lines ? NOCTURNE.accentPaler : colors.accentText;
+  const ink = shape.ink?.chosen ?? colors.accentText;
   const on = !!selected && !disabled;
   return (
     <Pressable
@@ -251,6 +258,7 @@ export function Chip({ label, selected, onPress, disabled, mono }: {
         borderColor: on ? colors.primary : colors.border,
         backgroundColor: on ? (shape.lines ? colors.surfacePressed : withAlpha(colors.primary, 0.14)) : pressed ? colors.surfaceAlt : colors.surface,
         opacity: disabled ? 0.45 : 1,
+        boxShadow: on && shape.glow ? `0px 0px 10px ${withAlpha(colors.primary, 0.5)}` : undefined,
       })}
     >
       <Text variant={mono ? 'mono' : 'label'} color={on ? ink : colors.text} style={mono ? { fontSize: 13 } : { fontSize: 14 }}>
@@ -297,7 +305,7 @@ export function Input({ style, ...props }: TextInputProps) {
           backgroundColor: colors.surfaceAlt,
           borderRadius: radius.md,
           borderWidth: 1,
-          borderColor: shape.lines ? NOCTURNE.fieldLine : colors.border,
+          borderColor: shape.ink?.fieldLine ?? colors.border,
           color: colors.text,
           fontSize: 16,
         },

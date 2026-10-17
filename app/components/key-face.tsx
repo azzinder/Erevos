@@ -1,11 +1,15 @@
 import { View } from 'react-native';
 
+import { shape } from '../theme/colors';
+import { useTheme } from '../theme/context';
+
 import { Text } from './ui';
 
 // A contact's picture, drawn from their identity key: two colours and a moon of the second over the
 // first, placed by the key's bytes, with the first letter of their name. The same key always gives
 // the same picture, on every phone and in every look, so a contact is known at a glance without a
-// photo leaving anyone's phone. It is not a check of the key: the safety number is.
+// photo leaving anyone's phone. It is not a check of the key: the safety number is. Under Matrix
+// the colours are greens, told apart by their depth instead of their hue.
 
 /** The numbers a picture is drawn from: the key's first bytes, from its hex. */
 export function faceOf(identity: string): { hue: number; turn: number; x: number; y: number; size: number } {
@@ -23,8 +27,12 @@ export function faceOf(identity: string): { hue: number; turn: number; x: number
 const hsl = (hue: number, s: number, l: number) => `hsl(${Math.round(hue % 360)}, ${s}%, ${l}%)`;
 
 export function KeyFace({ identity, name, size = 48 }: { identity: string; name?: string; size?: number }) {
+  useTheme(); // drawn again when the look changes
   const face = faceOf(identity);
   const moon = size * face.size;
+  const green = shape.mono;
+  const ground = green ? hsl(135, 80, 12 + (face.hue / 360) * 18) : hsl(face.hue, 62, 46);
+  const disc = green ? hsl(135, 100, 32 + (face.turn / 180) * 22) : hsl(face.hue + face.turn, 70, 62);
   const letter = [...(name ?? '').trim()][0]?.toUpperCase() ?? '';
   return (
     <View
@@ -35,7 +43,7 @@ export function KeyFace({ identity, name, size = 48 }: { identity: string; name?
         height: size,
         borderRadius: size / 2,
         overflow: 'hidden',
-        backgroundColor: hsl(face.hue, 62, 46),
+        backgroundColor: ground,
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -48,7 +56,7 @@ export function KeyFace({ identity, name, size = 48 }: { identity: string; name?
           borderRadius: moon / 2,
           left: (face.x - 0.1) * size,
           top: (face.y - 0.25) * size,
-          backgroundColor: hsl(face.hue + face.turn, 70, 62),
+          backgroundColor: disc,
           opacity: 0.9,
         }}
       />

@@ -28,7 +28,7 @@ The home screen is the list of your chats, the one that moved last at the top. E
 the last message with its marks, when it came, and how many of their messages you have not read. A clock beside it
 means its messages disappear. **Search chats** finds a chat by its name or its last message.
 
-- **The picture** is drawn from the contact's key: the same key always gives the same colours and moon, so you know
+- **The picture** is drawn from the contact's key: the same key always gives the same colours and moon (in greens under Matrix), so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
 - **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
 - **New chat**, at the bottom, opens the relay settings and adding a contact.
@@ -265,10 +265,14 @@ To go on with the conversation in Erevos, the other person needs Erevos too:
 | Setting | Choices |
 | --- | --- |
 | **Look** | **Flat**, or **Glass** as on lphl.nekten.eu. Glass comes in two kinds: **Panes** (each card a pane of glass over the wallpaper) and **One pane** (each screen on one frosted pane). |
-| **Style** | **Classic** (Erevos's dark and gold), **Modernist** (Inter Tight), **Nocturne** (always dark, with its own colours). |
-| **Theme** | **System**, **Light** or **Dark**. Nocturne is always dark. |
-| **Colors** | The style's own, one of the twelve LPHL palettes, or **My color**. Choosing a palette under Nocturne goes back to the style it was chosen over. |
+| **Style** | **Classic** (Erevos's dark and gold), **Modernist** (Inter Tight), **Nocturne** (always dark, with its own colours), **Neon** (cyan and magenta LEDs that glow, over a grid running to a setting sun) and **Matrix** (green on black in monospace, with code raining behind). |
+| **Theme** | **System**, **Light** or **Dark**. Nocturne, Neon and Matrix are always dark. |
+| **Colors** | The style's own, one of the twelve LPHL palettes, or **My color**. Choosing a palette under Nocturne, Neon or Matrix goes back to the style chosen before. |
 | **Text on colored areas** | **White**, **As in the palette**, or **My color**. |
+| **Messages** | How a chat draws messages: **Round** bubbles, **Square** ones, or **Line**, no bubble but a line beside the text, as a log. |
+
+Neon and Matrix draw their own scene behind every screen, so **Glass** waits while they are chosen. The rain stands
+still when the phone is set to reduce motion.
 
 The **Preview** shows a few messages and buttons in the look you chose. Every combination is checked so that text
 always reads well, on glass too.

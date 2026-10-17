@@ -21,7 +21,8 @@ import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, sendMessage, toHex, type Relay } from '../lib/relay';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
-import { useColors, useStyles } from '../theme/context';
+import { bubbleStyles } from '../theme/bubbles';
+import { useColors, useStyles, useTheme } from '../theme/context';
 
 // Chat with contacts through the relay, end-to-end encrypted (lib/e2e.ts), and with nearby phones
 // over the radio link, not encrypted yet. A contact is added from their contact link, which
@@ -244,7 +245,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const history = useRef<History | null>(null);
   const thread = useRef<ScrollView>(null);
   const styles = useStyles(makeStyles);
-  const colors = useColors();
+  const { colors, look } = useTheme();
+  // How messages are drawn: the look's bubbles (theme/bubbles.ts).
+  const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
 
   function relayTarget(url = relayUrl): Relay | null {
     const address = url.trim();
@@ -1059,9 +1062,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         ) : null}
         {imported.slice(firstImported).map((message, i) => {
           const files = mediaText(message.media);
-          const ink = message.mine ? styles.mineText : styles.theirsText;
+          const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
           return (
-            <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? styles.mine : styles.theirs, styles.imported]}>
+            <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? b.mine : b.theirs, styles.imported]}>
               {importedGroup && !message.mine && message.sender ? <Text style={[ink, styles.sender]}>{message.sender}</Text> : null}
               {message.text ? <Text style={ink}>{message.text}</Text> : null}
               {files ? <Text style={[ink, styles.files]}>{`${files}, not imported`}</Text> : null}
@@ -1090,7 +1093,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
           const newDay = !before || dayOf(before.at) !== dayOf(message.at);
           // The last of a run from one side gets the bubble's tail, and room after it.
           const tail = !after || after.mine !== message.mine || dayOf(after.at) !== dayOf(message.at);
-          const ink = message.mine ? styles.mineText : styles.theirsText;
+          const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
           return (
             <View key={message.id}>
               {newDay && message.at ? (
@@ -1101,7 +1104,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
               <Pressable
                 onLongPress={() => deleteMessage(message)}
                 accessibilityHint="Long press to delete"
-                style={[styles.bubble, message.mine ? styles.mine : styles.theirs, tail && (message.mine ? styles.mineTail : styles.theirsTail)]}
+                style={[styles.bubble, message.mine ? b.mine : b.theirs, tail && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail])]}
               >
                 <Text style={ink}>{message.text}</Text>
                 <Text style={[ink, styles.time]}>{[message.at ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>
@@ -1356,24 +1359,13 @@ const makeStyles = (colors: Colors) =>
       paddingTop: space.sm,
       paddingBottom: 6,
       paddingHorizontal: space.md,
-      borderRadius: 20,
       gap: 2,
     },
-    mine: {
-      alignSelf: 'flex-end',
-      backgroundColor: colors.primary,
-    },
-    theirs: {
-      alignSelf: 'flex-start',
-      backgroundColor: colors.surfaceAlt,
-    },
-    // The last bubble of a run points to its side, and leaves room before the next run.
+    // The last message of a run leaves room before the next run (its corner: theme/bubbles.ts).
     mineTail: {
-      borderBottomRightRadius: 6,
       marginBottom: space.sm,
     },
     theirsTail: {
-      borderBottomLeftRadius: 6,
       marginBottom: space.sm,
     },
     // Imported messages: a little fainter, with their time.
@@ -1410,12 +1402,10 @@ const makeStyles = (colors: Colors) =>
     mineText: {
       fontSize: 15,
       lineHeight: 21,
-      color: colors.onPrimary,
     },
     theirsText: {
       fontSize: 15,
       lineHeight: 21,
-      color: colors.text,
     },
     note: {
       color: colors.accentText,

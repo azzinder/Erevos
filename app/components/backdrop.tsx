@@ -8,13 +8,18 @@ import { useTheme } from '../theme/context';
 import { backdropKind, frostedWall, glassHaze, glassPane, glassSide, glowLayer, paneFrame, wallLayers, type GlassSide } from '../theme/glass';
 
 import { gradientStyle } from './glass';
+import { MatrixRain, NeonGrid } from './scenes';
 
 // What is drawn behind the screens, as in LPHL FASOULI (src/components/backdrop.tsx there):
-// Nocturne's glow, or the glass's wallpaper with its haze or its one pane.
+// Nocturne's glow, Neon's grid, Matrix's rain (components/scenes.tsx), or the glass's wallpaper
+// with its haze or its one pane.
 
-/** What a backdrop draws: Nocturne's glow, or the glass's wallpaper (on its side, tinted with the accent), with one pane over it or not. */
+/**
+ * What a backdrop draws: Nocturne's glow, Neon's grid, Matrix's rain, or the glass's wallpaper (on
+ * its side, tinted with the accent), with one pane over it or not.
+ */
 export interface BackdropSpec {
-  kind: 'glow' | 'wall';
+  kind: 'glow' | 'wall' | 'grid' | 'rain';
   side: GlassSide;
   accent: string;
   sheet: boolean;
@@ -67,6 +72,15 @@ export function Backdrop({ spec, paneTop = 0, contentTop = 0, children }: {
   };
   if (!spec) return <>{children}</>;
   const content = <View style={{ flex: 1, paddingTop: contentTop }}>{children}</View>;
+  if (spec.kind === 'grid' || spec.kind === 'rain') {
+    const Scene = spec.kind === 'grid' ? NeonGrid : MatrixRain;
+    return (
+      <View style={{ flex: 1 }} onLayout={measure}>
+        <Scene width={width} height={height} />
+        {content}
+      </View>
+    );
+  }
   if (spec.kind === 'glow') {
     return (
       <View style={{ flex: 1, backgroundColor: '#161826' }} onLayout={measure}>
