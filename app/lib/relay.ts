@@ -12,6 +12,7 @@ const DELETE = 4;
 const OK = 0;
 const NOT_FOUND = 1;
 const FULL = 2;
+const FAILED = 3;
 
 // Same limit as the relay's MAX_MESSAGE.
 const MAX_MESSAGE = 64 * 1024;
@@ -33,7 +34,20 @@ export type QueueIds = { recipientId: Uint8Array; senderId: Uint8Array };
 /** Where the relay is. `token` is sent as a bearer token when the relay requires one. */
 export type Relay = { url: string; token?: string };
 
-export class RelayError extends Error {}
+export class RelayError extends Error {
+  /** The relay's status byte when it refused the request, such as NOT_FOUND. */
+  status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/** Whether the relay said the queue does not exist: it was deleted, or the relay lost it. */
+export function isQueueNotFound(error: unknown): boolean {
+  return error instanceof RelayError && error.status === NOT_FOUND;
+}
 
 /** Lowercase hex for an id or any other bytes. */
 export function toHex(bytes: Uint8Array): string {
@@ -91,9 +105,10 @@ function request(relay: Relay, bytes: Uint8Array): Promise<Uint8Array> {
 
 function check(reply: Uint8Array, what: string): void {
   if (reply[0] === OK) return;
-  if (reply[0] === NOT_FOUND) throw new RelayError(`${what}: queue not found`);
-  if (reply[0] === FULL) throw new RelayError(`${what}: queue is full`);
-  throw new RelayError(`${what}: unexpected reply ${reply[0]}`);
+  if (reply[0] === NOT_FOUND) throw new RelayError(`${what}: queue not found`, NOT_FOUND);
+  if (reply[0] === FULL) throw new RelayError(`${what}: queue is full`, FULL);
+  if (reply[0] === FAILED) throw new RelayError(`${what}: the relay could not save it, try again later`, FAILED);
+  throw new RelayError(`${what}: unexpected reply ${reply[0]}`, reply[0]);
 }
 
 /** Creates a queue. Keep the recipient id private; hand the sender id to whoever writes to you. */

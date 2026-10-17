@@ -7,6 +7,7 @@ import {
   decodeEnvelope,
   encodeEnvelope,
   fromHex,
+  isQueueNotFound,
   receiveMessage,
   sendMessage,
   toHex,
@@ -155,7 +156,23 @@ export default function Chat() {
         setSelected((current) => current ?? peer);
         setMessages((list) => [...list, { id: nextId.current++, peer, text: envelope.text, mine: false }]);
       } catch (error) {
-        if (active) setNote(error instanceof Error ? error.message : String(error));
+        if (!active) return;
+        if (!isQueueNotFound(error)) {
+          setNote(error instanceof Error ? error.message : String(error));
+          return;
+        }
+        // The relay no longer has our queue (deleted, or a relay that keeps queues in memory
+        // was restarted). Make a new one so messages can reach us again.
+        try {
+          const ids = await createQueue(target);
+          if (!active) return;
+          setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
+          setNote(
+            'The relay had lost your queue, so a new one was made. Give your contacts your new relay sender id.',
+          );
+        } catch (retry) {
+          if (active) setNote(retry instanceof Error ? retry.message : String(retry));
+        }
       } finally {
         busy = false;
       }
@@ -203,7 +220,13 @@ export default function Chat() {
       keep(selected, text);
       setNote('Sent through the relay.');
     } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
+      setNote(
+        isQueueNotFound(error)
+          ? "Not sent. The relay does not have this contact's queue any more. Ask them for their new relay sender id."
+          : error instanceof Error
+            ? error.message
+            : String(error),
+      );
     }
   }
 
