@@ -6,6 +6,8 @@ import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos
 import { KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
+import { ShieldIcon, TimerIcon } from '../components/icons';
+import { KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { hasCore } from '../lib/core';
@@ -18,8 +20,8 @@ import { History, newTag, type Mark } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, sendMessage, toHex, type Relay } from '../lib/relay';
-import { radius, space, type Colors } from '../theme/colors';
-import { useStyles } from '../theme/context';
+import { radius, space, withAlpha, type Colors } from '../theme/colors';
+import { useColors, useStyles } from '../theme/context';
 
 // Chat with contacts through the relay, end-to-end encrypted (lib/e2e.ts), and with nearby phones
 // over the radio link, not encrypted yet. A contact is added from their contact link, which
@@ -47,7 +49,8 @@ import { useStyles } from '../theme/context';
 // `tag` names a message with a contact on both phones (lock/history.ts). Radio messages have none.
 // `until`: when it disappears, milliseconds, or 0. `lasts`: seconds it lasts once read, while it
 // waits for that. `mark`: as lock/history.ts keeps it.
-type Message = { id: number; peer: string; text: string; mine: boolean; tag: string; until: number; lasts: number; mark: Mark };
+// `at`: when it was sent or came, milliseconds.
+type Message = { id: number; peer: string; text: string; mine: boolean; tag: string; until: number; lasts: number; mark: Mark; at: number };
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
 
@@ -133,10 +136,11 @@ const IMPORTED_PAGE = 50;
 
 export default function ChatScreen() {
   const [hiddenKey, setHiddenKey] = useState<Uint8Array | null>(null);
-  const [asking, setAsking] = useState<'open' | 'change' | null>(null);
   const insets = useSafeAreaInsets();
-  // A contact to open with, from an imported chat that goes on with them.
-  const { contact } = useLocalSearchParams<{ contact?: string }>();
+  // A contact to open with (from the home screen, or an imported chat that goes on with them),
+  // the hidden chats' password to ask for at once, or the relay settings to show at once.
+  const { contact, hidden, setup } = useLocalSearchParams<{ contact?: string; hidden?: string; setup?: string }>();
+  const [asking, setAsking] = useState<'open' | 'change' | null>(hidden === '1' ? 'open' : null);
   const initial = typeof contact === 'string' && /^[0-9a-f]{64}$/.test(contact) ? `${CONTACT_PREFIX}${contact}` : null;
 
   useEffect(() => {
@@ -161,7 +165,7 @@ export default function ChatScreen() {
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={layout.screen}>
       <View style={[layout.screen, hiddenKey && layout.gone]}>
-        <Chat hiddenKey={null} initial={initial} shown={!hiddenKey} onHidden={() => setAsking('open')} />
+        <Chat hiddenKey={null} initial={initial} setup={setup === '1'} shown={!hiddenKey} onHidden={() => setAsking('open')} />
       </View>
       {hiddenKey ? (
         <Chat hiddenKey={hiddenKey} shown onHidden={() => setHiddenKey(null)} onChangePassword={() => setAsking('change')} />
@@ -195,9 +199,11 @@ export default function ChatScreen() {
 }
 
 // One chat: the space's own (`hiddenKey` null), or its hidden chats, sealed with that key.
-function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: {
+function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onChangePassword }: {
   hiddenKey: Uint8Array | null;
   initial?: string | null;
+  /** Opens with the relay settings and adding a contact in view. */
+  setup?: boolean;
   shown: boolean;
   onHidden: () => void;
   onChangePassword?: () => void;
@@ -209,7 +215,9 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
-  const [showRelay, setShowRelay] = useState(false);
+  const [showRelay, setShowRelay] = useState(setup);
+  // The chat's details above the messages: safety number, name, timer, deleting, other chats.
+  const [details, setDetails] = useState(setup || !initial);
   const [relayUrl, setRelayUrl] = useState('');
   const [relayToken, setRelayToken] = useState('');
   const [ownQueue, setOwnQueue] = useState<Queue | null>(null);
@@ -236,6 +244,7 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
   const history = useRef<History | null>(null);
   const thread = useRef<ScrollView>(null);
   const styles = useStyles(makeStyles);
+  const colors = useColors();
 
   function relayTarget(url = relayUrl): Relay | null {
     const address = url.trim();
@@ -546,7 +555,7 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
         forgetChat(peer);
         setNote(`${name} deleted the messages of this chat on both phones.`);
       } else if (received.erase) {
-        forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag, until: 0, lasts: 0, mark: 0 });
+        forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag, until: 0, lasts: 0, mark: 0, at: 0 });
         setNote(`${name} deleted a message on both phones.`);
       }
       if (received.added) {
@@ -568,7 +577,7 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
     const kept = contact ? tag || newTag() : '';
     const at = Date.now();
     const lasts = contact ? timer : 0;
-    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark: 0 }]);
+    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark: 0, at }]);
     if (contact) {
       history.current?.add({ peer, text, mine, at, tag: kept, lasts }).catch(() => {
         // Shown, but gone when the chat next opens.
@@ -806,156 +815,225 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
   const ownLink =
     ownQueue && e2e ? contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim(), key: toBase64Url(e2e.bundle) }) : null;
 
+  const selectedName = selected ? label(selected, shownContacts) : '';
+  const subtitle = selectedContact
+    ? selectedTimer
+      ? `End-to-end encrypted · ${timerLabel(selectedTimer).toLowerCase()} after read`
+      : 'End-to-end encrypted'
+    : selected
+      ? 'Nearby · not encrypted yet'
+      : '';
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text variant="title">{hiddenKey ? 'Hidden chats' : 'Chat'}</Text>
-        {hiddenKey ? (
-          <Row>
-            {onChangePassword ? <TextButton title="Change password" onPress={onChangePassword} /> : null}
-            <TextButton title="Close" onPress={onHidden} />
-          </Row>
-        ) : (
-          <TextButton title="Hidden chats" onPress={onHidden} />
-        )}
-      </View>
-      <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
-        <Text tone="muted">
-          {chips.length > 0
-            ? 'Pick a chat.'
-            : hiddenKey
-              ? 'No hidden chats yet. Add a contact through the relay below.'
-              : 'Looking for a nearby Erevos phone. Contacts through the relay are under Relay.'}
+      {hiddenKey ? (
+        <Text variant="overline" tone="muted" style={styles.kicker}>
+          Hidden chats
         </Text>
-        <Row wrap>
-          {chips.map((peer) => (
-            <Chip
-              key={peer}
-              label={label(peer, shownContacts)}
-              mono={!contactName(peer, shownContacts)}
-              selected={peer === selected}
-              onPress={() => setSelected(peer)}
-            />
-          ))}
-        </Row>
-        {selectedContact ? (
-          <View style={styles.section}>
-            <Text variant="caption" tone="muted">
-              End-to-end encrypted. Compare the safety number with theirs, in person or on a call: if both phones show
-              the same, no one is in between.
-            </Text>
-            <Row wrap>
-              <TextButton
-                title={safety?.peer === selectedContact ? 'Hide safety number' : 'Show safety number'}
-                onPress={() => void toggleSafety(selectedContact)}
-              />
-              <TextButton title="Rename" onPress={() => startRenaming(selectedContact)} />
-              <TextButton title="Delete messages" onPress={() => deleteMessages(selectedContact)} />
-              <TextButton
-                title={`Disappearing: ${timerLabel(selectedTimer)}`}
-                onPress={() => setTiming((current) => (current === selectedContact ? null : selectedContact))}
-              />
-            </Row>
-            {timing === selectedContact ? (
-              <View style={styles.section}>
-                <Text variant="caption" tone="muted">
-                  New messages, sent or received, disappear from both phones this long after they are read. Messages
-                  already here stay.
-                </Text>
-                <Row wrap>
-                  {TIMERS.map((timer) => (
-                    <Chip
-                      key={timer}
-                      label={timerLabel(timer)}
-                      selected={timer === selectedTimer}
-                      onPress={() => void changeTimer(selectedContact, timer)}
-                    />
-                  ))}
-                </Row>
-              </View>
-            ) : null}
-            {renaming === selectedContact ? (
-              <Row>
-                <Input
-                  value={nameDraft}
-                  onChangeText={setNameDraft}
-                  onSubmitEditing={() => void rename(selectedContact)}
-                  placeholder="Name, only on this phone"
-                  maxLength={MAX_NAME}
-                  autoFocus
-                  style={styles.grow}
-                />
-                <Button title="Save" compact onPress={() => void rename(selectedContact)} />
-              </Row>
-            ) : null}
-            {safety?.peer === selectedContact ? (
-              <Text selectable variant="mono" style={styles.safety}>
-                {safety.number.split(' ').reduce((lines, group, i) => lines + (i === 0 ? '' : i % 4 === 0 ? '\n' : '  ') + group, '')}
+      ) : null}
+      <View style={styles.header}>
+        {selected ? (
+          <Pressable
+            style={({ pressed }) => [styles.who, pressed && styles.pressed]}
+            onPress={() => setDetails((on) => !on)}
+            accessibilityRole="button"
+            accessibilityLabel={details ? 'Hide chat details' : 'Show chat details'}
+          >
+            {selectedContact ? (
+              <KeyFace identity={selectedIdentity} name={contactName(selectedContact, shownContacts) ?? ''} size={42} />
+            ) : (
+              <NearbyFace size={42} />
+            )}
+            <View style={styles.grow}>
+              <Text variant="heading" numberOfLines={1} style={!contactName(selected, shownContacts) && styles.monoName}>
+                {selectedName}
               </Text>
-            ) : null}
-          </View>
-        ) : selected ? (
-          <Text variant="caption" tone="muted">
-            Nearby radio link: not end-to-end encrypted yet. Anyone nearby with the right tools could read it.
+              <View style={styles.subtitle}>
+                {selectedContact ? <ShieldIcon color={colors.success} size={11} /> : null}
+                {selectedContact && selectedTimer ? <TimerIcon color={colors.textMuted} size={11} /> : null}
+                <Text variant="caption" tone="muted" numberOfLines={1} style={styles.grow}>
+                  {subtitle}
+                </Text>
+              </View>
+            </View>
+          </Pressable>
+        ) : (
+          <Text variant="title" style={styles.grow}>
+            {hiddenKey ? 'Hidden chats' : 'Chat'}
           </Text>
-        ) : null}
-        <TextButton title={showRelay ? 'Hide relay' : 'Relay (Wi-Fi or internet)'} onPress={() => setShowRelay((on) => !on)} />
-        {showRelay ? (
-          <View style={styles.section}>
-            <Field label="Relay address">
-              <Input
-                value={relayUrl}
-                onChangeText={setRelayUrl}
-                placeholder="ws://computer-address:7879"
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-              />
-            </Field>
-            <Field label="Token (optional)">
-              <Input
-                value={relayToken}
-                onChangeText={setRelayToken}
-                placeholder="Token, if the relay needs one"
-                autoCapitalize="none"
-                autoCorrect={false}
-                secureTextEntry
-              />
-            </Field>
-            <Button title="Create my relay queue" compact onPress={createOwnQueue} />
-            {ownLink ? (
-              <View style={styles.section}>
-                <Text tone="muted">Your relay queue is ready. Give your contact link to whoever may write to you.</Text>
-                <Row wrap>
-                  <TextButton title={showQr ? 'Hide my QR code' : 'Show my QR code'} onPress={() => setShowQr((on) => !on)} />
-                  <TextButton title="Share my contact link" onPress={() => void shareLink(ownLink)} />
-                </Row>
-                {showQr ? (
-                  <>
-                    <QrCode text={ownLink} />
-                    <Text variant="caption" tone="muted">
-                      Scan it with the other phone's camera and open the link in Erevos. If the camera only
-                      shows the text, copy it and paste it below on that phone.
+        )}
+        <Row>
+          {selected ? <TextButton title={details ? 'Done' : 'Details'} onPress={() => setDetails((on) => !on)} /> : null}
+          {hiddenKey && onChangePassword && details ? <TextButton title="Change password" onPress={onChangePassword} /> : null}
+          {hiddenKey ? <TextButton title="Close" onPress={onHidden} /> : selected ? null : <TextButton title="Hidden chats" onPress={onHidden} />}
+        </Row>
+      </View>
+      {details || !selected ? (
+        <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
+          {chips.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.faces} keyboardShouldPersistTaps="handled">
+              {chips.map((peer) => {
+                const named = contactName(peer, shownContacts);
+                const on = peer === selected;
+                return (
+                  <Pressable
+                    key={peer}
+                    onPress={() => {
+                      setSelected(peer);
+                      setDetails(false);
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={label(peer, shownContacts)}
+                    style={styles.face}
+                  >
+                    <View style={[styles.ring, on && styles.ringOn]}>
+                      {peer.startsWith(CONTACT_PREFIX) ? (
+                        <KeyFace identity={peer.slice(CONTACT_PREFIX.length)} name={named ?? ''} size={48} />
+                      ) : (
+                        <NearbyFace size={48} />
+                      )}
+                    </View>
+                    <Text variant="caption" tone={on ? undefined : 'muted'} numberOfLines={1} style={[styles.faceName, !named && styles.monoSmall]}>
+                      {named ?? label(peer, shownContacts).replace(/^contact /, '')}
                     </Text>
-                  </>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <Text tone="muted">
+              {hiddenKey
+                ? 'No hidden chats yet. Add a contact through the relay below.'
+                : 'Looking for a nearby Erevos phone. Contacts through the relay are under Relay.'}
+            </Text>
+          )}
+          {selectedContact ? (
+            <View style={styles.panel}>
+              <Text variant="caption" tone="muted">
+                End-to-end encrypted. Compare the safety number with theirs, in person or on a call: if both phones show
+                the same, no one is in between.
+              </Text>
+              <Row wrap>
+                <TextButton
+                  title={safety?.peer === selectedContact ? 'Hide safety number' : 'Show safety number'}
+                  onPress={() => void toggleSafety(selectedContact)}
+                />
+                <TextButton title="Rename" onPress={() => startRenaming(selectedContact)} />
+                <TextButton title="Delete messages" onPress={() => deleteMessages(selectedContact)} />
+                <TextButton
+                  title={`Disappearing: ${timerLabel(selectedTimer)}`}
+                  onPress={() => setTiming((current) => (current === selectedContact ? null : selectedContact))}
+                />
+              </Row>
+              {timing === selectedContact ? (
+                <View style={styles.section}>
+                  <Text variant="caption" tone="muted">
+                    New messages, sent or received, disappear from both phones this long after they are read. Messages
+                    already here stay.
+                  </Text>
+                  <Row wrap>
+                    {TIMERS.map((timer) => (
+                      <Chip
+                        key={timer}
+                        label={timerLabel(timer)}
+                        selected={timer === selectedTimer}
+                        onPress={() => void changeTimer(selectedContact, timer)}
+                      />
+                    ))}
+                  </Row>
+                </View>
+              ) : null}
+              {renaming === selectedContact ? (
+                <Row>
+                  <Input
+                    value={nameDraft}
+                    onChangeText={setNameDraft}
+                    onSubmitEditing={() => void rename(selectedContact)}
+                    placeholder="Name, only on this phone"
+                    maxLength={MAX_NAME}
+                    autoFocus
+                    style={styles.grow}
+                  />
+                  <Button title="Save" compact onPress={() => void rename(selectedContact)} />
+                </Row>
+              ) : null}
+              {safety?.peer === selectedContact ? (
+                <Text selectable variant="mono" style={styles.safety}>
+                  {safety.number.split(' ').reduce((lines, group, i) => lines + (i === 0 ? '' : i % 4 === 0 ? '\n' : '  ') + group, '')}
+                </Text>
+              ) : null}
+            </View>
+          ) : selected ? (
+            <View style={styles.panel}>
+              <Text variant="caption" tone="muted">
+                Nearby radio link: not end-to-end encrypted yet. Anyone nearby with the right tools could read it.
+              </Text>
+            </View>
+          ) : null}
+          <View style={styles.panel}>
+            <Row wrap>
+              <TextButton title={showRelay ? 'Hide relay' : 'Relay and new contacts'} onPress={() => setShowRelay((on) => !on)} />
+              {!hiddenKey && selected ? <TextButton title="Hidden chats" onPress={onHidden} /> : null}
+            </Row>
+            {showRelay ? (
+              <View style={styles.section}>
+                <Field label="Relay address">
+                  <Input
+                    value={relayUrl}
+                    onChangeText={setRelayUrl}
+                    placeholder="ws://computer-address:7879"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="url"
+                  />
+                </Field>
+                <Field label="Token (optional)">
+                  <Input
+                    value={relayToken}
+                    onChangeText={setRelayToken}
+                    placeholder="Token, if the relay needs one"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    secureTextEntry
+                  />
+                </Field>
+                <Button title="Create my relay queue" compact onPress={createOwnQueue} />
+                {ownLink ? (
+                  <View style={styles.section}>
+                    <Text tone="muted">Your relay queue is ready. Give your contact link to whoever may write to you.</Text>
+                    <Row wrap>
+                      <TextButton title={showQr ? 'Hide my QR code' : 'Show my QR code'} onPress={() => setShowQr((on) => !on)} />
+                      <TextButton title="Share my contact link" onPress={() => void shareLink(ownLink)} />
+                    </Row>
+                    {showQr ? (
+                      <>
+                        <QrCode text={ownLink} />
+                        <Text variant="caption" tone="muted">
+                          Scan it with the other phone's camera and open the link in Erevos. If the camera only
+                          shows the text, copy it and paste it below on that phone.
+                        </Text>
+                      </>
+                    ) : null}
+                  </View>
                 ) : null}
+                <Text tone="muted">Add a contact by the contact link they gave you:</Text>
+                <Row>
+                  <Input
+                    value={contactDraft}
+                    onChangeText={setContactDraft}
+                    placeholder="erevos://contact link"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    style={styles.grow}
+                  />
+                  <Button title="Add" compact onPress={addContact} />
+                </Row>
               </View>
             ) : null}
-            <Text tone="muted">Add a contact by the contact link they gave you:</Text>
-            <Row>
-              <Input
-                value={contactDraft}
-                onChangeText={setContactDraft}
-                placeholder="erevos://contact link"
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={styles.grow}
-              />
-              <Button title="Add" compact onPress={addContact} />
-            </Row>
           </View>
-        ) : null}
-      </ScrollView>
+        </ScrollView>
+      ) : null}
       <ScrollView
         ref={thread}
         style={styles.thread}
@@ -996,46 +1074,140 @@ function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: 
             Continued in Erevos
           </Text>
         ) : null}
-        {visible.map((message) => (
-          <Pressable
-            key={message.id}
-            onLongPress={() => deleteMessage(message)}
-            accessibilityHint="Long press to delete"
-            style={[styles.bubble, message.mine ? styles.mine : styles.theirs]}
-          >
-            <Text style={message.mine ? styles.mineText : styles.theirsText}>{message.text}</Text>
-            {caption(message) ? (
-              <Text style={[message.mine ? styles.mineText : styles.theirsText, styles.time]}>{caption(message)}</Text>
-            ) : null}
-          </Pressable>
-        ))}
+        {selected && visible.length === 0 && imported.length === 0 ? (
+          <View style={styles.hello}>
+            {selectedContact ? <ShieldIcon color={colors.textFaint} size={28} /> : <NearbyFace size={40} />}
+            <Text variant="caption" tone="muted" style={styles.divider}>
+              {selectedContact
+                ? 'No messages yet. What you write here is end-to-end encrypted, and kept sealed on this phone.'
+                : 'No messages yet. Nearby messages are not encrypted yet, and go when the chat closes.'}
+            </Text>
+          </View>
+        ) : null}
+        {visible.map((message, i) => {
+          const before = visible[i - 1];
+          const after = visible[i + 1];
+          const newDay = !before || dayOf(before.at) !== dayOf(message.at);
+          // The last of a run from one side gets the bubble's tail, and room after it.
+          const tail = !after || after.mine !== message.mine || dayOf(after.at) !== dayOf(message.at);
+          const ink = message.mine ? styles.mineText : styles.theirsText;
+          return (
+            <View key={message.id}>
+              {newDay && message.at ? (
+                <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
+                  {dayLabel(message.at)}
+                </Text>
+              ) : null}
+              <Pressable
+                onLongPress={() => deleteMessage(message)}
+                accessibilityHint="Long press to delete"
+                style={[styles.bubble, message.mine ? styles.mine : styles.theirs, tail && (message.mine ? styles.mineTail : styles.theirsTail)]}
+              >
+                <Text style={ink}>{message.text}</Text>
+                <Text style={[ink, styles.time]}>{[message.at ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>
+              </Pressable>
+            </View>
+          );
+        })}
       </ScrollView>
       {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
-      <Input value={draft} onChangeText={setDraft} onSubmitEditing={() => void send()} placeholder="Message" maxLength={4000} />
-      <Row wrap>
-        {selectedContact ? (
-          <Button title="Disappear" kind="secondary" compact onPress={() => setVanishing((on) => !on)} style={styles.action} />
-        ) : null}
-        {COMING.map(({ title, note }) => (
-          <Button key={title} title={title} kind="secondary" compact onPress={() => setNote(note)} style={styles.action} />
-        ))}
-        <Button title="Send" compact onPress={() => void send()} style={[styles.action, styles.send]} />
-      </Row>
-      {vanishing && selectedContact ? (
-        <Row wrap>
-          <Text variant="caption" tone="muted">
-            Disappears after it is read, in:
-          </Text>
-          {TIMERS.slice(1).map((timer) => (
-            <Chip key={timer} label={timerLabel(timer)} selected={false} onPress={() => void send(timer)} />
-          ))}
-          <TextButton title="Cancel" onPress={() => setVanishing(false)} />
+      <View style={styles.dock}>
+        <Input
+          value={draft}
+          onChangeText={setDraft}
+          onSubmitEditing={() => void send()}
+          placeholder={selected ? `Message ${selectedName}` : 'Message'}
+          maxLength={4000}
+          style={styles.field}
+        />
+        <Row style={styles.tools}>
+          <Row wrap style={[styles.grow, styles.toolsLeft]}>
+            {selectedContact ? <Tool title="Disappear" on={vanishing} onPress={() => setVanishing((on) => !on)} /> : null}
+            {COMING.map(({ title, note }) => (
+              <Tool key={title} title={title} onPress={() => setNote(note)} />
+            ))}
+          </Row>
+          <Button title="Send" compact disabled={!draft.trim() || !selected} onPress={() => void send()} style={styles.action} />
         </Row>
-      ) : null}
+        {vanishing && selectedContact ? (
+          <Row wrap>
+            <Text variant="caption" tone="muted">
+              Disappears after it is read, in:
+            </Text>
+            {TIMERS.slice(1).map((timer) => (
+              <Chip key={timer} label={timerLabel(timer)} selected={false} onPress={() => void send(timer)} />
+            ))}
+            <TextButton title="Cancel" onPress={() => setVanishing(false)} />
+          </Row>
+        ) : null}
+      </View>
     </View>
   );
 }
 
+// A button under the message field: small, so a row of them fits beside Send.
+function Tool({ title, on = false, onPress }: { title: string; on?: boolean; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+      style={({ pressed }) => ({
+        minHeight: 40,
+        paddingHorizontal: 12,
+        justifyContent: 'center',
+        borderRadius: radius.pill,
+        borderWidth: 1,
+        borderColor: on ? colors.primary : withAlpha(colors.border, 0.7),
+        backgroundColor: pressed ? colors.surfacePressed : on ? withAlpha(colors.primary, 0.14) : colors.surfaceAlt,
+      })}
+    >
+      <Text variant="label" color={on ? colors.accentText : colors.text} style={{ fontSize: 14 }}>
+        {title}
+      </Text>
+    </Pressable>
+  );
+}
+
+// A nearby phone's picture: rings, for the radio.
+function NearbyFace({ size }: { size: number }) {
+  const colors = useColors();
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
+      {[0.7, 0.42, 0.14].map((part) => (
+        <View
+          key={part}
+          style={{
+            position: 'absolute',
+            width: size * part,
+            height: size * part,
+            borderRadius: size,
+            borderWidth: part < 0.2 ? 0 : 1.5,
+            borderColor: colors.accentText,
+            backgroundColor: part < 0.2 ? colors.accentText : 'transparent',
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
+const dayOf = (at: number) => new Date(at).toDateString();
+
+const clock = (at: number) => {
+  const d = new Date(at);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+// Above the first message of a day: Today, Yesterday, or its date.
+function dayLabel(at: number): string {
+  const d = new Date(at);
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) return 'Today';
+  if (d.toDateString() === new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toDateString()) return 'Yesterday';
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 const layout = StyleSheet.create({
   screen: {
     flex: 1,
@@ -1049,51 +1221,143 @@ const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      padding: space.xl - 4,
-      gap: space.md,
+      paddingHorizontal: space.lg,
+      paddingTop: space.sm,
+      gap: space.sm,
       backgroundColor: colors.ground,
+    },
+    kicker: {
+      paddingHorizontal: 2,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      gap: space.sm,
+    },
+    // The contact's picture and name: tapped, it shows or hides the chat's details.
+    who: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: space.md,
+      paddingVertical: 4,
+      paddingRight: space.sm,
+      borderRadius: radius.lg,
+    },
+    pressed: {
+      backgroundColor: colors.surfacePressed,
+    },
+    subtitle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    monoName: {
+      fontFamily: 'monospace',
+      fontSize: 16,
+    },
+    monoSmall: {
+      fontFamily: 'monospace',
+      fontSize: 11,
     },
     section: {
       gap: space.sm,
     },
+    // A group of the chat's details, on a card.
+    panel: {
+      gap: space.sm,
+      padding: space.md,
+      borderRadius: radius.lg,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.border, 0.5),
+    },
+    faces: {
+      gap: space.md,
+      paddingVertical: 2,
+    },
+    face: {
+      width: 64,
+      alignItems: 'center',
+      gap: 4,
+    },
+    ring: {
+      padding: 3,
+      borderRadius: 30,
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    ringOn: {
+      borderColor: colors.primary,
+    },
+    faceName: {
+      fontSize: 12,
+      maxWidth: 64,
+      textAlign: 'center',
+    },
     grow: {
       flex: 1,
+    },
+    // Under the messages: the message field across, and the buttons under it.
+    dock: {
+      gap: space.sm,
+      marginHorizontal: -space.lg,
+      paddingHorizontal: space.lg,
+      paddingTop: space.md,
+      paddingBottom: space.sm,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderBottomWidth: 0,
+      borderColor: withAlpha(colors.border, 0.5),
+    },
+    field: {
+      borderRadius: radius.pill,
+      paddingHorizontal: space.lg,
     },
     // The buttons under the message field, narrow enough for a row of them.
     action: {
       paddingHorizontal: space.md,
+      borderRadius: radius.pill,
     },
-    // Send keeps to the right of the row.
-    send: {
-      marginLeft: 'auto',
+    // Send keeps to the right of the row, and the others wrap beside it when the phone is narrow.
+    tools: {
+      alignItems: 'flex-end',
     },
-    // Everything between the title and the messages: it gives way, and scrolls, when the keyboard
-    // leaves too little room, so the message field stays in view.
+    toolsLeft: {
+      gap: 6,
+    },
+    // The chat's details between the title and the messages: they give way, and scroll, when the
+    // keyboard leaves too little room, so the message field stays in view.
     top: {
       flexGrow: 0,
       flexShrink: 1,
     },
     topContent: {
-      gap: space.md,
+      gap: space.sm,
     },
     thread: {
       flex: 1,
     },
     threadContent: {
-      gap: space.sm,
+      gap: 3,
       paddingVertical: space.sm,
     },
+    hello: {
+      alignItems: 'center',
+      gap: space.md,
+      paddingTop: space.xxl * 2,
+      paddingHorizontal: space.xl,
+    },
     bubble: {
-      maxWidth: '80%',
-      paddingVertical: space.sm,
+      maxWidth: '82%',
+      paddingTop: space.sm,
+      paddingBottom: 6,
       paddingHorizontal: space.md,
-      borderRadius: Math.min(radius.md, 16),
+      borderRadius: 20,
+      gap: 2,
     },
     mine: {
       alignSelf: 'flex-end',
@@ -1103,14 +1367,32 @@ const makeStyles = (colors: Colors) =>
       alignSelf: 'flex-start',
       backgroundColor: colors.surfaceAlt,
     },
+    // The last bubble of a run points to its side, and leaves room before the next run.
+    mineTail: {
+      borderBottomRightRadius: 6,
+      marginBottom: space.sm,
+    },
+    theirsTail: {
+      borderBottomLeftRadius: 6,
+      marginBottom: space.sm,
+    },
     // Imported messages: a little fainter, with their time.
     imported: {
       opacity: 0.8,
-      gap: 2,
+      marginBottom: 3,
     },
     divider: {
       alignSelf: 'center',
       textAlign: 'center',
+    },
+    day: {
+      marginVertical: space.sm,
+      paddingHorizontal: space.md,
+      paddingVertical: 3,
+      borderRadius: radius.pill,
+      backgroundColor: withAlpha(colors.surfaceAlt, 0.7),
+      overflow: 'hidden',
+      fontSize: 12,
     },
     sender: {
       fontSize: 13,
@@ -1123,17 +1405,21 @@ const makeStyles = (colors: Colors) =>
     time: {
       fontSize: 11,
       opacity: 0.7,
+      alignSelf: 'flex-end',
     },
     mineText: {
       fontSize: 15,
+      lineHeight: 21,
       color: colors.onPrimary,
     },
     theirsText: {
       fontSize: 15,
+      lineHeight: 21,
       color: colors.text,
     },
     note: {
       color: colors.accentText,
+      paddingHorizontal: 2,
     },
     safety: {
       fontSize: 15,

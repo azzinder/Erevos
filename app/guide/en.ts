@@ -16,7 +16,7 @@ internet.
 > audited yet, and messages to a nearby phone are **not encrypted yet**. Do not rely on it to protect anyone yet.
 > [What is protected today](#privacy) says exactly what is and is not.
 
-This guide opens from **User guide** on the home screen. The search at its top finds any word in it, and the two
+This guide opens from **User guide** in the home screen's menu (the three dots at the top). The search at its top finds any word in it, and the two
 buttons above it switch between Greek and English.
 
 ## Getting started {#start}
@@ -24,23 +24,36 @@ buttons above it switch between Greek and English.
 For now Erevos is built from its source code; there is no download yet. Chat runs on Android. The other screens
 also open on a computer, for testing.
 
-The home screen leads to everything:
+The home screen is the list of your chats, the one that moved last at the top. Each shows the contact's picture,
+the last message with its marks, when it came, and how many of their messages you have not read. A clock beside it
+means its messages disappear. **Search chats** finds a chat by its name or its last message.
 
-| Button | What it opens |
+- **The picture** is drawn from the contact's key: the same key always gives the same colours and moon, so you know
+  a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
+- **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
+- **New chat**, at the bottom, opens the relay settings and adding a contact.
+- **The lock** at the top locks Erevos at once when a password is set, or opens the lock settings when not.
+- **The three dots** open the rest:
+
+| In the menu | What it opens |
 | --- | --- |
-| **Chat (Android)** | Your chats, nearby or through a relay. See [Chat with a nearby phone](#nearby) and [Chat through a relay](#relay). |
-| **Radio test (Android)** | A test of Bluetooth and Wi-Fi Aware between two phones. See [The test screens](#tests). |
-| **Relay test (Wi-Fi)** | A test of a relay by hand. |
+| **Hidden chats** | The hidden chats, with their own password. See [Hidden chats](#hidden). |
+| **Nearby phones** | Chat over Bluetooth and Wi-Fi Aware. See [Chat with a nearby phone](#nearby). |
 | **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
-| **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
+| **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
 | **User guide** | This guide. |
+| **Relay test**, **Radio test** | Tests of the connections. See [The test screens](#tests). |
+
+Inside a chat, its name and picture are at the top with how it travels: **End-to-end encrypted** through the relay,
+or **Nearby radio link, not encrypted yet**. Tap the name, or **Details**, for the safety number, **Rename**,
+**Delete messages**, **Disappearing**, your other chats and the relay; **Done** hides them again.
 
 A good first hour:
 
 1. Open **Lock and second password** and set a password, so nobody who picks up the phone can open Erevos.
-2. Open **Chat (Android)** on two phones that are close to each other, and allow what Android asks for.
-3. When the other phone shows up, pick it and send a message.
+2. Open **Nearby phones** from the menu on two phones that are close to each other, and allow what Android asks for.
+3. When the other phone shows up, tap it and send a message.
 4. To talk from further away, set up a relay as in [Chat through a relay](#relay).
 
 ## Chat with a nearby phone {#nearby}
@@ -48,7 +61,7 @@ A good first hour:
 With **Chat** open, Erevos looks for other Erevos phones around it, over Bluetooth and, where the phone has it,
 Wi-Fi Aware. No internet, SIM or Wi-Fi network is needed.
 
-1. Open **Chat (Android)** on both phones. The first time, Android asks to find nearby devices (on Android 12 and
+1. Open **Nearby phones** from the menu on both phones. The first time, Android asks to find nearby devices (on Android 12 and
    older, also for the location); allow it, or the phones cannot find each other.
 2. The chat shows **Looking for a nearby Erevos phone** until the link is ready. Then the other phone appears as a
    button above the messages.
@@ -69,7 +82,8 @@ A relay is a small server that keeps one-way queues: each phone has its own queu
 link** can drop messages into it. The relay holds no accounts, names or phone numbers, and cannot read the messages:
 they are end-to-end encrypted, and only the two phones have the keys. Both phones must use the same relay for now.
 
-1. In **Chat**, tap **Relay (Wi-Fi or internet)**.
+1. On the home screen, tap **New chat**. The relay settings open (in a chat they are under **Details**, then
+   **Relay and new contacts**).
 2. Type the **Relay address**: \`ws://<computer address>:7879\` for a relay on your own network, or
    \`wss://relay.example.org\` for one on the internet. Add the **Token** if the relay needs one.
 3. Tap **Create my relay queue**. Erevos says **Your relay queue is ready**.
@@ -78,13 +92,13 @@ they are end-to-end encrypted, and only the two phones have the keys. Both phone
 5. If their camera only shows the text, or they are far away, tap **Share my contact link** and send it to them.
    They paste it into **erevos://contact link** and tap **Add**.
 
-The new chat appears as a button named **contact** and the first characters of their key. It is enough that one
+The new chat appears on the home screen named **contact** and the first characters of their key. It is enough that one
 phone adds the other: adding a link starts an encrypted conversation and tells the other phone how to answer, so it
 lists the chat the next time it looks at its queue, which it does every few seconds.
 
 ### The safety number
 
-Pick the chat and tap **Show safety number**. Both phones show the same 60 digits for the two of you. Compare them
+Open the chat, tap its name and then **Show safety number**. Both phones show the same 60 digits for the two of you. Compare them
 in person or on a call: if they match, no one is in between. If they differ, do not trust that chat, and add the
 link again, scanned from their own phone.
 
@@ -98,10 +112,10 @@ message counts as read once its chat shows on the screen. Messages to a nearby p
 
 ### Names and deleting
 
-Pick a chat and tap **Rename** to give it a name. The name stays on this phone, sealed with the chat: the other phone
+Open a chat, tap its name and then **Rename** to give it a name. The name stays on this phone, sealed with the chat: the other phone
 does not see it. An empty name brings back the start of their key.
 
-To delete one message, press and hold it. To delete all the messages of a chat, pick it and tap **Delete messages**.
+To delete one message, press and hold it. To delete all the messages of a chat, tap its name and then **Delete messages**.
 Either way Erevos asks where:
 
 - **This phone:** only here. The other phone keeps its own.
@@ -110,7 +124,7 @@ Either way Erevos asks where:
 
 ### Disappearing messages
 
-Pick a chat and tap **Disappearing: Off** to choose how long its new messages last once read: 5 minutes, 1 hour,
+Open a chat, tap its name and then **Disappearing: Off** to choose how long its new messages last once read: 5 minutes, 1 hour,
 1 day or 1 week. To make only one message disappear, type it and tap **Disappear** beside **Send**, then pick how
 long. Its time starts when the other phone shows it on the screen, and your copy starts when their phone says so
 (**✓✓✓**). Each message says when it disappears. The other phone learns the chat's setting the next time it looks at
@@ -198,7 +212,7 @@ chats.
 
 1. In **Lock and second password**, under **Hidden chats**, tap **Set hidden chats password**, type it twice and
    tap **Save**.
-2. To open them, tap **Hidden chats** at the top of **Chat** and type that password.
+2. To open them, tap **Hidden chats** in the home screen's menu, or at the top of a chat, and type that password.
 3. They open as their own chat, titled **Hidden chats**, with **Change password** and **Close** at the top.
 
 - **Relay only:** hidden chats have their own relay queue and their own keys, and never use the nearby link. While
@@ -265,7 +279,7 @@ always reads well, on glass too.
 
 ## The test screens {#tests}
 
-Two screens on the home screen are there to test the connections, step by step.
+Two screens in the home screen's menu are there to test the connections, step by step.
 
 - **Radio test (Android):** **Permissions** asks Android for what the radio needs, **Start** and **Stop** turn
   Bluetooth and Wi-Fi Aware on and off, **Send hello** sends a test message to the nearby phone, and the **Log**
