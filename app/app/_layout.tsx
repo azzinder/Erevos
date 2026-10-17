@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
 import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
+import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
 import { setupCrypto } from '../lib/crypto-setup';
 import { loadLockConfig, type LockConfig } from '../lock/config';
@@ -123,10 +124,13 @@ export default function RootLayout() {
     [phase, start, openSpace, fail],
   );
 
+  // Keyboard tracking for every screen and sheet, the password screen too (components/keyboard.tsx).
   return (
-    <ThemeProvider look={look} onChange={keepLook}>
-      <Shell phase={phase} error={error} lockState={lockState} onUnlock={({ space, key }) => openSpace(space, true, key)} />
-    </ThemeProvider>
+    <KeyboardProvider>
+      <ThemeProvider look={look} onChange={keepLook}>
+        <Shell phase={phase} error={error} lockState={lockState} onUnlock={({ space, key }) => openSpace(space, true, key)} />
+      </ThemeProvider>
+    </KeyboardProvider>
   );
 }
 

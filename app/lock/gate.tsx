@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { KeyboardAvoidingView } from '../components/keyboard';
 import { Button, Input, Text } from '../components/ui';
 import { useColors } from '../theme/context';
 
@@ -38,7 +39,7 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.container, { backgroundColor: colors.ground }]}>
+    <KeyboardAvoidingView behavior="padding" style={[styles.container, { backgroundColor: colors.ground }]}>
       <View style={styles.column}>
         <Logo />
         <Text variant="title">Erevos</Text>

@@ -1,11 +1,9 @@
 import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text as RNText,
   TextInput,
@@ -16,11 +14,13 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NOCTURNE, radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 import { useGlassBlur, useGlassLift } from './glass';
+import { KeyboardAvoidingView, KeyboardAwareScrollView } from './keyboard';
 
 // The app's building blocks in the colours and shapes of the open look, as in LPHL FASOULI
 // (src/components/ui.tsx there): text, cards, buttons, chips, fields and sheets.
@@ -98,17 +98,25 @@ export function Text({ variant = 'body', color, tone, style, children, ...props 
   );
 }
 
-/** A screen's scrolling body on the look's ground, centred on wide screens. */
+/**
+ * A screen's scrolling body on the look's ground, centred on wide screens. The field being typed in
+ * is scrolled above the keyboard, and the end clears the phone's navigation bar.
+ */
 export function Page({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
       style={{ flex: 1, backgroundColor: colors.ground }}
-      contentContainerStyle={[{ width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.xl - 4, gap: space.md }, style]}
+      contentContainerStyle={[
+        { width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.xl - 4, paddingBottom: insets.bottom + space.xl, gap: space.md },
+        style,
+      ]}
       keyboardShouldPersistTaps="handled"
+      bottomOffset={space.xl}
     >
       {children}
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -319,19 +327,18 @@ export function Sheet({ visible, onClose, title, children }: {
 }) {
   const colors = useColors();
   const blur = useGlassBlur();
+  const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}
-      >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      {/* The sheet rises with the keyboard, so its fields stay in sight. */}
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
         <View
           style={[
             {
               gap: 10,
               padding: space.xl - 4,
-              paddingBottom: space.xxl,
+              paddingBottom: Math.max(space.xxl, insets.bottom + space.lg),
               backgroundColor: colors.popover,
               borderTopLeftRadius: radius.xl,
               borderTopRightRadius: radius.xl,

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, PermissionsAndroid, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
+import { KeyboardAvoidingView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
 import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
@@ -58,6 +60,7 @@ function label(peer: string): string {
 export default function ChatScreen() {
   const [hiddenKey, setHiddenKey] = useState<Uint8Array | null>(null);
   const [asking, setAsking] = useState<'open' | 'change' | null>(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -77,14 +80,17 @@ export default function ChatScreen() {
     );
   }
 
+  // The message field rises with the keyboard, and clears the phone's navigation bar without it.
   return (
-    <View style={layout.screen}>
-      <View style={[layout.screen, hiddenKey && layout.gone]}>
-        <Chat hiddenKey={null} shown={!hiddenKey} onHidden={() => setAsking('open')} />
+    <KeyboardAvoidingView behavior="padding" automaticOffset style={layout.screen}>
+      <View style={[layout.screen, { paddingBottom: insets.bottom }]}>
+        <View style={[layout.screen, hiddenKey && layout.gone]}>
+          <Chat hiddenKey={null} shown={!hiddenKey} onHidden={() => setAsking('open')} />
+        </View>
+        {hiddenKey ? (
+          <Chat hiddenKey={hiddenKey} shown onHidden={() => setHiddenKey(null)} onChangePassword={() => setAsking('change')} />
+        ) : null}
       </View>
-      {hiddenKey ? (
-        <Chat hiddenKey={hiddenKey} shown onHidden={() => setHiddenKey(null)} onChangePassword={() => setAsking('change')} />
-      ) : null}
       <PasswordSheet
         visible={asking === 'open'}
         title="Hidden chats"
@@ -109,7 +115,7 @@ export default function ChatScreen() {
           setAsking(null);
         }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
