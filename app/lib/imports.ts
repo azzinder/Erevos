@@ -12,6 +12,9 @@ export type ImportedChat = { source: Source; title: string; skipped: number; mes
 
 const SOURCES: Source[] = ['telegram', 'whatsapp', 'viber'];
 
+export const SOURCE_LABELS: Record<Source, string> = { telegram: 'Telegram', whatsapp: 'WhatsApp', viber: 'Viber' };
+const MEDIA_LABELS: Record<string, string> = { photo: 'Photo', video: 'Video', voice: 'Voice message', sticker: 'Sticker', file: 'File' };
+
 function checkedMessage(value: unknown): ImportedMessage | null {
   const m = (value ?? {}) as Record<string, unknown>;
   if (typeof m.text !== 'string') return null;
@@ -87,8 +90,27 @@ export function toArchived(chats: ImportedChat[], me: string, added = Date.now()
     me,
     added,
     skipped: chat.skipped,
+    contact: '',
     messages: chat.messages.map(
       (m): ArchivedMessage => [toMillis(m.at, m.local), m.sender ?? '', m.text, m.attachments.join(',')],
     ),
   }));
+}
+
+/** What files a message had, as words: "Photo, File". */
+export function mediaText(kinds: string): string {
+  return kinds
+    .split(',')
+    .filter(Boolean)
+    .map((kind) => MEDIA_LABELS[kind] ?? 'File')
+    .join(', ');
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** A message's time on this phone's clock, "2026-10-17 09:06", or nothing if the export did not say. */
+export function shownTime(at: number): string {
+  if (!at || !Number.isFinite(at)) return '';
+  const d = new Date(at);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

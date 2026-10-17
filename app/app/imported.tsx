@@ -1,47 +1,40 @@
 import { File } from 'expo-file-system';
+import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
 import { canImport } from '../lib/core';
-import { fileName, readExport, senders, toArchived, type ImportedChat } from '../lib/imports';
-import { Archive, type ArchivedMessage, type ChatSummary, type Source } from '../lock/archive';
+import { fileName, mediaText, readExport, senders, shownTime, SOURCE_LABELS, toArchived, type ImportedChat } from '../lib/imports';
+import { Archive, type ArchivedMessage, type ChatSummary } from '../lock/archive';
+import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles } from '../theme/context';
 
 // Chats brought in from Telegram and WhatsApp exports (lib/imports.ts), kept sealed in this space
-// (lock/archive.ts). They are only to read: Erevos cannot show who really wrote them, so they
-// never mix with its own chats and are never sent anywhere.
+// (lock/archive.ts). They are only to read: Erevos cannot show who really wrote them, and they
+// are never sent anywhere. One can go on in Erevos: linked to one of the space's contacts, it shows
+// in the chat with them, ahead of the new messages.
 
-const SOURCE_LABELS: Record<Source, string> = { telegram: 'Telegram', whatsapp: 'WhatsApp', viber: 'Viber' };
-const MEDIA_LABELS: Record<string, string> = { photo: 'Photo', video: 'Video', voice: 'Voice message', sticker: 'Sticker', file: 'File' };
+type Contact = { identity: string; name: string };
+
+const contactLabel = (identity: string, contacts: Contact[]) =>
+  contacts.find((contact) => contact.identity === identity)?.name || `contact ${identity.slice(0, 8)}`;
+
 // What the phone can hold in memory to read at once. A WhatsApp export with its media is larger.
 const MAX_BYTES = 100 * 1024 * 1024;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-const pad = (n: number) => String(n).padStart(2, '0');
-function when(at: number): string {
-  if (!at) return '';
-  const d = new Date(at);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-const day = (at: number) => (at && Number.isFinite(at) ? when(at).slice(0, 10) : '');
-
-function media(kinds: string): string {
-  return kinds
-    .split(',')
-    .filter(Boolean)
-    .map((kind) => MEDIA_LABELS[kind] ?? 'File')
-    .join(', ');
-}
+const day = (at: number) => shownTime(at).slice(0, 10);
 
 export default function ImportedScreen() {
   const [archive, setArchive] = useState<Archive | null>(null);
   const [chats, setChats] = useState<ChatSummary[]>([]);
+  // The space's own contacts, that an imported chat can go on with. Not its hidden chats'.
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   // What a picked file held, waiting for the owner's name in it before it is kept.
   const [found, setFound] = useState<{ chats: ImportedChat[]; people: string[] } | null>(null);
@@ -60,6 +53,11 @@ export default function ImportedScreen() {
         setChats(opened.chats());
       })
       .catch((error) => active && setNote(`Imported chats could not open. ${errorText(error)}`));
+    loadE2EData('space', current, key)
+      .then((data) => active && setContacts(data.contacts.map(({ identity, name }) => ({ identity, name }))))
+      .catch(() => {
+        // No contacts to go on with.
+      });
     return () => {
       active = false;
     };
@@ -136,9 +134,27 @@ export default function ImportedScreen() {
     ]);
   }
 
+  async function link(chat: ChatSummary, contact: string) {
+    try {
+      await archive?.link(chat.id, contact);
+      if (archive) setChats(archive.chats());
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
   const opened = open ? chats.find((chat) => chat.id === open) : undefined;
   if (opened && archive) {
-    return <ChatView archive={archive} chat={opened} onBack={() => setOpen(null)} onDelete={() => remove(opened)} />;
+    return (
+      <ChatView
+        archive={archive}
+        chat={opened}
+        contacts={contacts}
+        onLink={(contact) => void link(opened, contact)}
+        onBack={() => setOpen(null)}
+        onDelete={() => remove(opened)}
+      />
+    );
   }
 
   return (
@@ -194,6 +210,7 @@ export default function ImportedScreen() {
           <Text variant="caption" tone="muted">
             {SOURCE_LABELS[chat.source]}, {chat.count} messages
             {chat.last ? `, ${day(chat.first)} to ${day(chat.last)}` : ''}
+            {chat.contact ? `. Goes on in Erevos with ${contactLabel(chat.contact, contacts)}.` : ''}
           </Text>
           <Row wrap>
             <TextButton title="Read" onPress={() => setOpen(chat.id)} />
@@ -205,9 +222,18 @@ export default function ImportedScreen() {
   );
 }
 
-function ChatView({ archive, chat, onBack, onDelete }: { archive: Archive; chat: ChatSummary; onBack: () => void; onDelete: () => void }) {
+function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
+  archive: Archive;
+  chat: ChatSummary;
+  contacts: Contact[];
+  onLink: (contact: string) => void;
+  onBack: () => void;
+  onDelete: () => void;
+}) {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const [picking, setPicking] = useState(false);
+  const title = chat.title || SOURCE_LABELS[chat.source];
   const messages = useMemo(() => archive.chat(chat.id)?.messages ?? [], [archive, chat.id]);
   // Newest first, in a list drawn upside down, so it opens at the latest message.
   const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
@@ -216,13 +242,13 @@ function ChatView({ archive, chat, onBack, onDelete }: { archive: Archive; chat:
 
   const render = ({ item: [at, sender, text, kinds] }: { item: ArchivedMessage }) => {
     const mine = chat.me !== '' && sender === chat.me;
-    const files = media(kinds);
+    const files = mediaText(kinds);
     return (
       <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
         {group && !mine && sender ? <Text style={[styles.sender, mine ? styles.mineText : styles.theirsText]}>{sender}</Text> : null}
         {text ? <Text style={mine ? styles.mineText : styles.theirsText}>{text}</Text> : null}
         {files ? <Text style={[styles.files, mine ? styles.mineText : styles.theirsText]}>{`${files}, not imported`}</Text> : null}
-        <Text style={[styles.time, mine ? styles.mineText : styles.theirsText]}>{when(at)}</Text>
+        <Text style={[styles.time, mine ? styles.mineText : styles.theirsText]}>{shownTime(at)}</Text>
       </View>
     );
   };
@@ -231,7 +257,7 @@ function ChatView({ archive, chat, onBack, onDelete }: { archive: Archive; chat:
     <View style={[styles.screen, { paddingBottom: insets.bottom + space.md }]}>
       <View style={styles.header}>
         <Text variant="title" style={styles.grow} numberOfLines={1}>
-          {chat.title || SOURCE_LABELS[chat.source]}
+          {title}
         </Text>
         <TextButton title="Delete" onPress={onDelete} />
         <TextButton title="All imported" onPress={onBack} />
@@ -240,6 +266,43 @@ function ChatView({ archive, chat, onBack, onDelete }: { archive: Archive; chat:
         Imported from {SOURCE_LABELS[chat.source]}, only to read. Erevos cannot show who really wrote these.
         {chat.skipped === 1 ? ' One notice or call was left out.' : chat.skipped ? ` ${chat.skipped} notices and calls were left out.` : ''}
       </Text>
+      {chat.contact ? (
+        <View style={styles.section}>
+          <Text variant="caption" tone="muted">
+            Goes on in Erevos with {contactLabel(chat.contact, contacts)}: these messages show in that chat, ahead of
+            the new ones, only on this phone.
+          </Text>
+          <Row wrap>
+            <TextButton title="Open the chat" onPress={() => router.push({ pathname: '/chat', params: { contact: chat.contact } })} />
+            <TextButton title="Unlink" onPress={() => onLink('')} />
+          </Row>
+        </View>
+      ) : picking ? (
+        <View style={styles.section}>
+          <Text variant="caption" tone="muted">
+            {contacts.length === 0
+              ? `There are no Erevos contacts in this space yet. In Chat, open Relay and add ${title}'s contact link, then come back here.`
+              : `Which Erevos contact is ${title}? These messages then show in the chat with them, ahead of the new ones, only on this phone.`}
+          </Text>
+          <Row wrap>
+            {contacts.map((contact) => (
+              <Chip
+                key={contact.identity}
+                label={contactLabel(contact.identity, contacts)}
+                mono={!contact.name}
+                selected={false}
+                onPress={() => {
+                  setPicking(false);
+                  onLink(contact.identity);
+                }}
+              />
+            ))}
+            <TextButton title="Cancel" onPress={() => setPicking(false)} />
+          </Row>
+        </View>
+      ) : (
+        <TextButton title="Continue in Erevos" onPress={() => setPicking(true)} />
+      )}
       <FlatList
         data={newestFirst}
         inverted
@@ -267,6 +330,9 @@ const makeStyles = (colors: Colors) =>
     },
     grow: {
       flex: 1,
+    },
+    section: {
+      gap: space.sm,
     },
     thread: {
       gap: space.sm,

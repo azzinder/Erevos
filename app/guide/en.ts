@@ -203,9 +203,20 @@ Then:
 3. Delete the export file from the phone yourself: Erevos keeps its own sealed copy, but the file you saved is not
    sealed.
 
+To go on with the conversation in Erevos, the other person needs Erevos too:
+
+1. In **Chat**, add them as a contact through the relay, as in [Chat through a relay](#relay).
+2. Open the imported chat, tap **Continue in Erevos** and pick them.
+3. Their chat now shows the old messages ahead of the new ones, a little fainter, with **Continued in Erevos**
+   between them. **Open the chat** takes you there, and a contact you have not named takes the imported chat's name.
+
 - **Only the words:** photos, voice messages and other files stay behind, and the chat says where one was.
-- **Only to read:** imported messages never mix with Erevos's own chats. Erevos cannot show who really wrote them.
+- **Only on this phone, only to read:** imported messages are never sent, so the other phone does not get them. Erevos
+  cannot show who really wrote them.
 - **Notices and calls** from the other app are left out, and the chat says how many.
+- **Only a space's own chats** can go on from an imported chat, not hidden chats.
+- **Delete messages** in a chat leaves the imported ones: delete those in **Imported chats**. **Unlink** there stops
+  them showing in the chat.
 - **Viber** is not read yet.
 
 > The file of imported chats grows with what you bring in, so its size tells roughly how much was imported, but not

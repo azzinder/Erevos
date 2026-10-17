@@ -7,6 +7,9 @@ import { sealedFile, type Holder } from './sealed-file';
 // (sealed-file.ts), padded to whole blocks of BLOCK bytes. The file's size tells about how much
 // was brought in, but not into which space. Only the messages' words are kept: the photos and
 // other files stay behind.
+//
+// A chat can go on in Erevos: linked to one of the space's contacts, its messages show in the chat
+// with them, ahead of the new ones. They are still only on this phone, and only to read.
 
 export type Source = 'telegram' | 'whatsapp' | 'viber';
 
@@ -23,8 +26,13 @@ export type ArchivedChat = {
   added: number;
   /** Entries in the export that were not messages (notices, calls), left out. */
   skipped: number;
+  /** The identity key, hex, of the space's contact the chat goes on with in Erevos. Empty if none. */
+  contact: string;
   messages: ArchivedMessage[];
 };
+
+/** A message of an imported chat as the chat with its contact shows it. */
+export type LinkedMessage = { at: number; sender: string; text: string; media: string; mine: boolean; source: Source };
 
 export type ArchiveData = { chats: ArchivedChat[] };
 
@@ -34,6 +42,7 @@ const EMPTY: ArchiveData = { chats: [] };
 const SOURCES: Source[] = ['telegram', 'whatsapp', 'viber'];
 
 const isText = (v: unknown): v is string => typeof v === 'string';
+const isIdentity = (v: unknown): v is string => isText(v) && /^[0-9a-f]{64}$/.test(v);
 const isMessage = (m: unknown): m is ArchivedMessage =>
   Array.isArray(m) && m.length === 4 && typeof m[0] === 'number' && isText(m[1]) && isText(m[2]) && isText(m[3]);
 
@@ -47,6 +56,7 @@ function checkedChat(value: unknown): ArchivedChat | null {
     me: isText(v.me) ? v.me : '',
     added: typeof v.added === 'number' ? v.added : 0,
     skipped: typeof v.skipped === 'number' ? v.skipped : 0,
+    contact: isIdentity(v.contact) ? v.contact : '',
     messages: v.messages.filter(isMessage),
   };
 }
@@ -98,6 +108,37 @@ export class Archive {
   private save(data: ArchiveData): Promise<void> {
     this.data = data;
     return this.store(data);
+  }
+
+  /**
+   * The messages of the chats that go on with `contact`, oldest first. A message the export gave
+   * no time stays where its chat had it.
+   */
+  linked(contact: string): LinkedMessage[] {
+    const placed = this.data.chats
+      .filter((chat) => contact !== '' && chat.contact === contact)
+      .flatMap(({ me, source, messages }) => {
+        let after = 0;
+        return messages.map(([at, sender, text, media]) => {
+          after = at > 0 ? at : after;
+          return { after, message: { at, sender, text, media, mine: me !== '' && sender === me, source } };
+        });
+      });
+    return placed
+      .map((entry, index) => ({ ...entry, index }))
+      .sort((a, b) => a.after - b.after || a.index - b.index)
+      .map(({ message }) => message);
+  }
+
+  /** The chats that go on with `contact`, as the list shows them. */
+  linkedChats(contact: string): ChatSummary[] {
+    return this.chats().filter((chat) => contact !== '' && chat.contact === contact);
+  }
+
+  /** Lets a chat go on with one of the space's contacts (its identity key, hex), or with none (empty). */
+  link(id: string, contact: string): Promise<void> {
+    if (contact !== '' && !isIdentity(contact)) return Promise.reject(new Error('Not a contact.'));
+    return this.save({ chats: this.data.chats.map((chat) => (chat.id === id ? { ...chat, contact } : chat)) });
   }
 
   /** Keeps chats, each under a new id. Returns the ids. */

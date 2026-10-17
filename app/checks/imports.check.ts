@@ -10,7 +10,7 @@ import { test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
-import { fileName, readExport, senders, toArchived, toMillis } from '../lib/imports';
+import { fileName, mediaText, readExport, senders, toArchived, toMillis } from '../lib/imports';
 import { Archive, FILE } from '../lock/archive';
 import { files } from './files-memory';
 
@@ -73,6 +73,47 @@ t('a WhatsApp export comes in, is kept sealed in its space, and can be deleted',
   assert.deepEqual((await Archive.open('space', 0, key)).chats(), []);
 });
 
+t('an imported chat goes on with a contact, its messages ahead of theirs', async () => {
+  const key = randomBytes(32);
+  const archive = await Archive.open('space', 0, key);
+  const maria = 'ab'.repeat(32);
+  const [whatsapp] = await archive.add(toArchived(await readExport('WhatsApp Chat with Μαρία.txt', utf8Encode(WHATSAPP)), 'Nekten'));
+  const telegram = JSON.stringify({
+    name: 'Μαρία',
+    messages: [
+      { id: 1, type: 'message', date_unixtime: '1600000000', from: 'Μαρία', text: 'πρώτο' },
+      { id: 2, type: 'message', from: 'Μαρία', text: 'χωρίς ώρα' },
+      { id: 3, type: 'message', date_unixtime: String(Date.UTC(2026, 9, 19) / 1000), from: 'Nekten', text: 'τελευταίο' },
+    ],
+  });
+  const [older] = await archive.add(toArchived(await readExport('result.json', utf8Encode(telegram)), 'Nekten'));
+  assert.deepEqual(archive.linked(maria), []);
+  await assert.rejects(archive.link(whatsapp, 'not a key'), /contact/);
+
+  await archive.link(whatsapp, maria);
+  await archive.link(older, maria);
+  const again = await Archive.open('space', 0, key);
+  assert.deepEqual(again.linkedChats(maria).map((chat) => chat.id).sort(), [whatsapp, older].sort());
+  assert.deepEqual(
+    again.linked(maria).map((m) => [m.source, m.mine, m.text || m.media]),
+    [
+      ['telegram', false, 'πρώτο'],
+      ['telegram', false, 'χωρίς ώρα'],
+      ['whatsapp', false, 'Καλημέρα!\nΤι κάνεις;'],
+      ['whatsapp', true, 'photo'],
+      ['whatsapp', true, 'καλά'],
+      ['telegram', true, 'τελευταίο'],
+    ],
+  );
+  assert.deepEqual(again.linked(''), []);
+  assert.deepEqual(again.linked('cd'.repeat(32)), []);
+
+  await again.link(older, '');
+  assert.deepEqual((await Archive.open('space', 0, key)).linked(maria).map((m) => m.source), ['whatsapp', 'whatsapp', 'whatsapp']);
+  await again.remove(whatsapp);
+  assert.deepEqual((await Archive.open('space', 0, key)).linked(maria), []);
+});
+
 t('every value in the file is the same size until one outgrows a block', async () => {
   const archive = await Archive.open('space', 2, randomBytes(32));
   await archive.add(toArchived(await readExport('a.txt', utf8Encode(WHATSAPP)), ''));
@@ -106,6 +147,8 @@ test('names of picked files and times without a zone', () => {
   );
   assert.equal(fileName('file:///data/user/0/cache/result.json'), 'result.json');
   assert.equal(fileName('content://downloads/document/100%'), '100%');
+  assert.equal(mediaText('photo,voice,hologram'), 'Photo, Voice message, File');
+  assert.equal(mediaText(''), '');
   assert.equal(toMillis(null, true), 0);
   assert.equal(toMillis(10, false), 10_000);
   const local = new Date(toMillis(Date.UTC(2026, 0, 2, 3, 4, 5) / 1000, true));

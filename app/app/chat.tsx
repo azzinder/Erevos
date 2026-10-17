@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
 import { KeyboardPaddedView } from '../components/keyboard';
@@ -9,8 +10,10 @@ import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../comp
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { hasCore } from '../lib/core';
 import { E2E, toBase64Url, type ContactInfo, type Erase } from '../lib/e2e';
+import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
+import { Archive } from '../lock/archive';
 import { openHidden, setHiddenPassword } from '../lock/hidden';
-import { MAX_NAME } from '../lock/e2e-data';
+import { cleanName, MAX_NAME } from '../lock/e2e-data';
 import { History, newTag } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
@@ -33,6 +36,10 @@ import { useStyles } from '../theme/context';
 // link is the phone's, and its chats are the open space's). The other chats stay open underneath and
 // keep receiving. Hidden chats close when the app goes to the background or this screen closes,
 // and their messages go with them.
+//
+// A chat brought in from another messenger (lock/archive.ts) can go on with one of the space's
+// contacts: its messages show ahead of theirs, only to read, and a contact without a name takes
+// the imported chat's. They are never sent, and stay when this chat's messages are deleted.
 
 // `tag` names a message with a contact on both phones (lock/history.ts). Radio messages have none.
 type Message = { id: number; peer: string; text: string; mine: boolean; tag: string };
@@ -69,10 +76,16 @@ const errorText = (error: unknown) => (error instanceof Error ? error.message : 
 
 const NO_CORE = 'This build cannot encrypt, so chats through the relay are off. Rebuild the app.';
 
+// Imported messages shown at first, and added each time earlier ones are asked for.
+const IMPORTED_PAGE = 50;
+
 export default function ChatScreen() {
   const [hiddenKey, setHiddenKey] = useState<Uint8Array | null>(null);
   const [asking, setAsking] = useState<'open' | 'change' | null>(null);
   const insets = useSafeAreaInsets();
+  // A contact to open with, from an imported chat that goes on with them.
+  const { contact } = useLocalSearchParams<{ contact?: string }>();
+  const initial = typeof contact === 'string' && /^[0-9a-f]{64}$/.test(contact) ? `${CONTACT_PREFIX}${contact}` : null;
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -96,7 +109,7 @@ export default function ChatScreen() {
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={layout.screen}>
       <View style={[layout.screen, hiddenKey && layout.gone]}>
-        <Chat hiddenKey={null} shown={!hiddenKey} onHidden={() => setAsking('open')} />
+        <Chat hiddenKey={null} initial={initial} shown={!hiddenKey} onHidden={() => setAsking('open')} />
       </View>
       {hiddenKey ? (
         <Chat hiddenKey={hiddenKey} shown onHidden={() => setHiddenKey(null)} onChangePassword={() => setAsking('change')} />
@@ -130,8 +143,9 @@ export default function ChatScreen() {
 }
 
 // One chat: the space's own (`hiddenKey` null), or its hidden chats, sealed with that key.
-function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
+function Chat({ hiddenKey, initial = null, shown, onHidden, onChangePassword }: {
   hiddenKey: Uint8Array | null;
+  initial?: string | null;
   shown: boolean;
   onHidden: () => void;
   onChangePassword?: () => void;
@@ -139,7 +153,7 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
   // Nearby phones on the radio link.
   const [peers, setPeers] = useState<string[]>([]);
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(initial);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
@@ -154,6 +168,11 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState('');
   const [e2e, setE2E] = useState<E2E | null>(null);
+  // Chats imported into this space. Hidden chats have none.
+  const [archive, setArchive] = useState<Archive | null>(null);
+  const [importedShown, setImportedShown] = useState(IMPORTED_PAGE);
+  // Set when earlier imported messages are shown, so the thread does not jump to its end.
+  const holdScroll = useRef(false);
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
   const history = useRef<History | null>(null);
@@ -280,6 +299,13 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
         if (!active) return;
         setE2E(chats);
         setContacts(chats.contacts());
+        if (!hiddenKey) {
+          Archive.open('space', space, key)
+            .then((imported) => active && setArchive(imported))
+            .catch(() => {
+              // The chats show without what was imported.
+            });
+        }
       })
       .catch((error) => {
         if (active) setNote(`Chats through the relay could not open. ${errorText(error)}`);
@@ -291,6 +317,9 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
       active = false;
     };
   }, []);
+
+  // Another chat starts with its latest imported messages.
+  useEffect(() => setImportedShown(IMPORTED_PAGE), [selected]);
 
   // Saves the relay settings and our queue whenever they change.
   useEffect(() => {
@@ -418,15 +447,16 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
     try {
       await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', erase);
       here();
-      setNote(`Deleted here. ${label(peer, contacts)}'s phone deletes them too when it next looks at the relay.`);
+      setNote(`Deleted here. ${label(peer, shownContacts)}'s phone deletes them too when it next looks at the relay.`);
     } catch (error) {
       setNote(notSent(error).replace('Not sent.', 'Not deleted.'));
     }
   }
 
   function deleteMessages(peer: string) {
-    const name = label(peer, contacts);
-    Alert.alert('Delete messages', `Delete the messages with ${name}? They cannot be brought back.`, [
+    const name = label(peer, shownContacts);
+    const kept = archive && archive.linked(peer.slice(CONTACT_PREFIX.length)).length > 0 ? ' Imported messages stay: delete them in Imported chats.' : '';
+    Alert.alert('Delete messages', `Delete the messages with ${name}? They cannot be brought back.${kept}`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'This phone', onPress: () => forgetChat(peer) },
       { text: 'Both phones', style: 'destructive', onPress: () => void eraseOnBoth(peer, { all: true }, () => forgetChat(peer)) },
@@ -564,8 +594,19 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
   }
 
   const visible = messages.filter((message) => message.peer === selected);
+  const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
+  const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity]);
+  const importedFrom = [...new Set(imported.map((m) => SOURCE_LABELS[m.source]))].join(' and ');
+  // In an imported group, each message says who wrote it.
+  const importedGroup = useMemo(() => new Set(imported.filter((m) => !m.mine && m.sender).map((m) => m.sender)).size > 1, [imported]);
+  // A contact without a name shows as the imported chat that goes on with them.
+  const shownContacts = useMemo(
+    () => contacts.map((c) => (c.name || !archive ? c : { ...c, name: cleanName(archive.linkedChats(c.identity)[0]?.title ?? '') })),
+    [contacts, archive],
+  );
   const chips = [...peers, ...contacts.map((contact) => `${CONTACT_PREFIX}${contact.identity}`)];
   const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
+  const firstImported = Math.max(0, imported.length - importedShown);
   const ownLink =
     ownQueue && e2e ? contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim(), key: toBase64Url(e2e.bundle) }) : null;
 
@@ -594,8 +635,8 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
           {chips.map((peer) => (
             <Chip
               key={peer}
-              label={label(peer, contacts)}
-              mono={!contactName(peer, contacts)}
+              label={label(peer, shownContacts)}
+              mono={!contactName(peer, shownContacts)}
               selected={peer === selected}
               onPress={() => setSelected(peer)}
             />
@@ -701,8 +742,42 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
         ref={thread}
         style={styles.thread}
         contentContainerStyle={styles.threadContent}
-        onContentSizeChange={() => thread.current?.scrollToEnd({ animated: true })}
+        onContentSizeChange={() => {
+          if (holdScroll.current) holdScroll.current = false;
+          else thread.current?.scrollToEnd({ animated: true });
+        }}
       >
+        {firstImported > 0 ? (
+          <TextButton
+            title={`Show earlier imported messages (${firstImported} more)`}
+            onPress={() => {
+              holdScroll.current = true;
+              setImportedShown((count) => count + IMPORTED_PAGE * 4);
+            }}
+          />
+        ) : null}
+        {imported.length > 0 ? (
+          <Text variant="caption" tone="muted" style={styles.divider}>
+            Imported from {importedFrom}: only on this phone, only to read.
+          </Text>
+        ) : null}
+        {imported.slice(firstImported).map((message, i) => {
+          const files = mediaText(message.media);
+          const ink = message.mine ? styles.mineText : styles.theirsText;
+          return (
+            <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? styles.mine : styles.theirs, styles.imported]}>
+              {importedGroup && !message.mine && message.sender ? <Text style={[ink, styles.sender]}>{message.sender}</Text> : null}
+              {message.text ? <Text style={ink}>{message.text}</Text> : null}
+              {files ? <Text style={[ink, styles.files]}>{`${files}, not imported`}</Text> : null}
+              {message.at ? <Text style={[ink, styles.time]}>{shownTime(message.at)}</Text> : null}
+            </View>
+          );
+        })}
+        {imported.length > 0 ? (
+          <Text variant="caption" tone="muted" style={styles.divider}>
+            Continued in Erevos
+          </Text>
+        ) : null}
         {visible.map((message) => (
           <Pressable
             key={message.id}
@@ -781,6 +856,27 @@ const makeStyles = (colors: Colors) =>
     theirs: {
       alignSelf: 'flex-start',
       backgroundColor: colors.surfaceAlt,
+    },
+    // Imported messages: a little fainter, with their time.
+    imported: {
+      opacity: 0.8,
+      gap: 2,
+    },
+    divider: {
+      alignSelf: 'center',
+      textAlign: 'center',
+    },
+    sender: {
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    files: {
+      fontSize: 13,
+      fontStyle: 'italic',
+    },
+    time: {
+      fontSize: 11,
+      opacity: 0.7,
     },
     mineText: {
       fontSize: 15,
