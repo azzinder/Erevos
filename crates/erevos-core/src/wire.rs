@@ -12,16 +12,16 @@ use crate::mesh::Packet;
 use crate::pqxdh::{InitialMessage, OneTimePrekey, PrekeyBundle, PQ_CIPHERTEXT_LEN, PQ_PUBLIC_LEN};
 use crate::Error;
 
-const VERSION: u8 = 1;
+pub(crate) const VERSION: u8 = 1;
 /// Largest packet body, the top padding bucket.
 const MAX_BODY: usize = 16384;
 
-struct Reader<'a> {
+pub(crate) struct Reader<'a> {
     buf: &'a [u8],
 }
 
 impl<'a> Reader<'a> {
-    fn new(buf: &'a [u8]) -> Result<Self, Error> {
+    pub(crate) fn new(buf: &'a [u8]) -> Result<Self, Error> {
         let mut r = Reader { buf };
         if r.u8()? != VERSION {
             return Err(Error::Malformed);
@@ -29,7 +29,7 @@ impl<'a> Reader<'a> {
         Ok(r)
     }
 
-    fn take(&mut self, n: usize) -> Result<&'a [u8], Error> {
+    pub(crate) fn take(&mut self, n: usize) -> Result<&'a [u8], Error> {
         if self.buf.len() < n {
             return Err(Error::Malformed);
         }
@@ -38,22 +38,27 @@ impl<'a> Reader<'a> {
         Ok(head)
     }
 
-    fn u8(&mut self) -> Result<u8, Error> {
+    pub(crate) fn u8(&mut self) -> Result<u8, Error> {
         Ok(self.take(1)?[0])
     }
 
-    fn u32(&mut self) -> Result<u32, Error> {
+    pub(crate) fn u32(&mut self) -> Result<u32, Error> {
         let b = self.take(4)?;
         Ok(u32::from_be_bytes(b.try_into().map_err(|_| Error::Malformed)?))
     }
 
-    fn array<const N: usize>(&mut self) -> Result<[u8; N], Error> {
+    pub(crate) fn array<const N: usize>(&mut self) -> Result<[u8; N], Error> {
         let mut out = [0u8; N];
         out.copy_from_slice(self.take(N)?);
         Ok(out)
     }
 
-    fn finish(self) -> Result<(), Error> {
+    /// Everything left, for a field that runs to the end.
+    pub(crate) fn rest(self) -> &'a [u8] {
+        self.buf
+    }
+
+    pub(crate) fn finish(self) -> Result<(), Error> {
         if self.buf.is_empty() {
             Ok(())
         } else {

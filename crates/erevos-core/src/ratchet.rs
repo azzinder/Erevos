@@ -7,7 +7,7 @@
 //! decrypt works on a copy and only commits it once the message has
 //! authenticated.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
@@ -23,6 +23,10 @@ use crate::Error;
 /// Most message keys one chain may skip ahead, so a peer cannot make us
 /// derive an unbounded number of keys.
 pub const MAX_SKIP: u32 = 1000;
+
+/// Most skipped message keys a session keeps. Past it the oldest go, so a
+/// stored session stays small however many messages are lost on the way.
+pub const MAX_STORED_SKIPPED: usize = 2000;
 
 const RK_INFO: &[u8] = b"erevos ratchet root v1";
 const MK_INFO: &[u8] = b"erevos ratchet message v1";
@@ -64,22 +68,24 @@ impl Header {
 }
 
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
-struct ChainKey([u8; 32]);
+pub(crate) struct ChainKey(pub(crate) [u8; 32]);
 
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
-struct MessageKey([u8; 32]);
+pub(crate) struct MessageKey(pub(crate) [u8; 32]);
 
 #[derive(Clone)]
 pub struct Session {
-    dhs: StaticSecret,
-    dhr: Option<PublicKey>,
-    rk: ChainKey,
-    cks: Option<ChainKey>,
-    ckr: Option<ChainKey>,
-    ns: u32,
-    nr: u32,
-    pn: u32,
-    skipped: HashMap<([u8; 32], u32), MessageKey>,
+    pub(crate) dhs: StaticSecret,
+    pub(crate) dhr: Option<PublicKey>,
+    pub(crate) rk: ChainKey,
+    pub(crate) cks: Option<ChainKey>,
+    pub(crate) ckr: Option<ChainKey>,
+    pub(crate) ns: u32,
+    pub(crate) nr: u32,
+    pub(crate) pn: u32,
+    pub(crate) skipped: HashMap<([u8; 32], u32), MessageKey>,
+    /// The keys of `skipped`, oldest first.
+    pub(crate) skipped_order: VecDeque<([u8; 32], u32)>,
 }
 
 impl Session {
@@ -98,6 +104,7 @@ impl Session {
             nr: 0,
             pn: 0,
             skipped: HashMap::new(),
+            skipped_order: VecDeque::new(),
         }
     }
 
@@ -114,6 +121,7 @@ impl Session {
             nr: 0,
             pn: 0,
             skipped: HashMap::new(),
+            skipped_order: VecDeque::new(),
         }
     }
 
@@ -143,6 +151,7 @@ impl Session {
     fn decrypt_inner(&mut self, header: &Header, ciphertext: &[u8], ad: &[u8]) -> Result<Vec<u8>, Error> {
         let ad = assoc(ad, header);
         if let Some(mk) = self.skipped.remove(&(header.dh, header.n)) {
+            self.skipped_order.retain(|k| *k != (header.dh, header.n));
             return open(&mk, ciphertext, &ad);
         }
         if self.dhr.map(|k| k.to_bytes()) != Some(header.dh) {
@@ -166,12 +175,22 @@ impl Session {
         let dhr = self.dhr.expect("receiving chain implies a peer key").to_bytes();
         while self.nr < until {
             let (next, mk) = kdf_ck(&ck);
-            self.skipped.insert((dhr, self.nr), mk);
+            self.keep_skipped((dhr, self.nr), mk);
             ck = next;
             self.nr += 1;
         }
         self.ckr = Some(ck);
         Ok(())
+    }
+
+    fn keep_skipped(&mut self, key: ([u8; 32], u32), mk: MessageKey) {
+        self.skipped.insert(key, mk);
+        self.skipped_order.push_back(key);
+        while self.skipped_order.len() > MAX_STORED_SKIPPED {
+            if let Some(oldest) = self.skipped_order.pop_front() {
+                self.skipped.remove(&oldest);
+            }
+        }
     }
 
     fn dh_ratchet(&mut self, their: PublicKey) {
@@ -320,6 +339,30 @@ mod tests {
         let mut h = a.encrypt(b"y", AD).unwrap();
         h.0.n = MAX_SKIP + 2;
         assert!(matches!(b.decrypt(&h.0, &h.1, AD), Err(Error::TooManySkipped)));
+    }
+
+    #[test]
+    fn stored_skipped_keys_stay_bounded() {
+        let (mut a, mut b) = pair();
+        let mut oldest = None;
+        // Three sending chains from Alice, each with 999 messages lost and one delivered.
+        for round in 0..3 {
+            for i in 0..MAX_SKIP - 1 {
+                let lost = a.encrypt(b"lost", AD).unwrap();
+                if round == 0 && i == 0 {
+                    oldest = Some(lost);
+                }
+            }
+            let (h, c) = a.encrypt(b"arrives", AD).unwrap();
+            assert_eq!(b.decrypt(&h, &c, AD).unwrap(), b"arrives");
+            let (h, c) = b.encrypt(b"reply", AD).unwrap();
+            a.decrypt(&h, &c, AD).unwrap();
+        }
+        assert_eq!(b.skipped.len(), MAX_STORED_SKIPPED);
+        assert_eq!(b.skipped_order.len(), MAX_STORED_SKIPPED);
+        // The oldest skipped key was dropped to make room.
+        let (h, c) = oldest.unwrap();
+        assert!(b.decrypt(&h, &c, AD).is_err());
     }
 
     #[test]

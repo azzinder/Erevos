@@ -47,7 +47,7 @@ pub struct Identity {
 pub struct Prekeys {
     pub signed: StaticSecret,
     pub pq: DecapsulationKey<MlKem768>,
-    one_time: HashMap<u32, StaticSecret>,
+    pub(crate) one_time: HashMap<u32, StaticSecret>,
 }
 
 /// A one-time X25519 prekey, public part.
@@ -95,10 +95,6 @@ impl Prekeys {
     pub fn generate(identity: &Identity, one_time_count: u32) -> (Self, Vec<PrekeyBundle>) {
         let signed = StaticSecret::random_from_rng(OsRng);
         let pq = DecapsulationKey::<MlKem768>::generate();
-        let pq_pub = pq.encapsulation_key().to_bytes().as_slice().to_vec();
-        let signed_pub = PublicKey::from(&signed);
-        let identity_dh = PublicKey::from(&identity.dh);
-        let identity_verify = identity.signing.verifying_key().to_bytes();
 
         let mut one_time = HashMap::new();
         let mut slots: Vec<Option<OneTimePrekey>> = Vec::new();
@@ -114,24 +110,33 @@ impl Prekeys {
             slots.push(None);
         }
 
-        let bundles = slots
-            .into_iter()
-            .map(|slot| {
-                let signature = identity
-                    .signing
-                    .sign(&transcript(&identity_dh, &signed_pub, &pq_pub, slot.as_ref()))
-                    .to_bytes();
-                PrekeyBundle {
-                    identity_verify,
-                    identity_dh,
-                    signed_prekey: signed_pub,
-                    pq_prekey: pq_pub.clone(),
-                    one_time: slot,
-                    signature,
-                }
-            })
-            .collect();
-        (Prekeys { signed, pq, one_time }, bundles)
+        let keys = Prekeys { signed, pq, one_time };
+        let bundles = slots.into_iter().map(|slot| keys.signed_bundle(identity, slot)).collect();
+        (keys, bundles)
+    }
+
+    /// The bundle without a one-time prekey, signed again. Ed25519 signatures are
+    /// deterministic, so it is the same bytes every time: what a contact link carries.
+    pub fn bundle(&self, identity: &Identity) -> PrekeyBundle {
+        self.signed_bundle(identity, None)
+    }
+
+    fn signed_bundle(&self, identity: &Identity, one_time: Option<OneTimePrekey>) -> PrekeyBundle {
+        let identity_dh = PublicKey::from(&identity.dh);
+        let signed_pub = PublicKey::from(&self.signed);
+        let pq_pub = self.pq.encapsulation_key().to_bytes().as_slice().to_vec();
+        let signature = identity
+            .signing
+            .sign(&transcript(&identity_dh, &signed_pub, &pq_pub, one_time.as_ref()))
+            .to_bytes();
+        PrekeyBundle {
+            identity_verify: identity.signing.verifying_key().to_bytes(),
+            identity_dh,
+            signed_prekey: signed_pub,
+            pq_prekey: pq_pub,
+            one_time,
+            signature,
+        }
     }
 
     /// Number of one-time prekeys still unused.
