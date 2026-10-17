@@ -30,6 +30,7 @@ class ErevosCoreModule : Module() {
     AsyncFunction("packetKind") { packet: ByteArray -> ErevosCoreNative.packetKind(packet) }
     AsyncFunction("firstMessageId") { packet: ByteArray -> ErevosCoreNative.firstMessageId(packet) }
     AsyncFunction("safetyNumber") { ours: ByteArray, theirs: ByteArray -> ErevosCoreNative.safetyNumber(ours, theirs) }
+    AsyncFunction("importChats") { name: ByteArray, data: ByteArray -> ErevosCoreNative.importChats(name, data) }
   }
 }
 
@@ -52,4 +53,5 @@ internal object ErevosCoreNative {
   @JvmStatic external fun packetKind(packet: ByteArray): Int
   @JvmStatic external fun firstMessageId(packet: ByteArray): ByteArray
   @JvmStatic external fun safetyNumber(ours: ByteArray, theirs: ByteArray): String
+  @JvmStatic external fun importChats(name: ByteArray, data: ByteArray): ByteArray
 }

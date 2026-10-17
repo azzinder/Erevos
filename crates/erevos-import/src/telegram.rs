@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::{Attachment, AttachmentKind, ImportError, ImportedChat, ImportedMessage, Source};
+use crate::{Attachment, AttachmentKind, ImportError, ImportedChat, ImportedMessage, Source, Time};
 
 #[derive(Deserialize)]
 struct Export {
@@ -77,7 +77,7 @@ fn convert(chat: Chat) -> ImportedChat {
         }
         messages.push(ImportedMessage {
             source_id: m.id.as_ref().map(id_string),
-            sent_at: m.date_unixtime.and_then(|s| s.parse().ok()),
+            sent_at: m.date_unixtime.and_then(|s| s.parse().ok()).map(Time::Unix),
             sender: m.from,
             text: m.text.as_ref().map(flatten_text).unwrap_or_default(),
             reply_to: m.reply_to_message_id.as_ref().map(id_string),
@@ -157,7 +157,7 @@ mod tests {
         assert_eq!(c.messages.len(), 4);
 
         assert_eq!(c.messages[0].text, "Γεια σου!");
-        assert_eq!(c.messages[0].sent_at, Some(1700000010));
+        assert_eq!(c.messages[0].sent_at, Some(Time::Unix(1700000010)));
 
         let m = &c.messages[1];
         assert_eq!(m.text, "δες αυτό εδώ");

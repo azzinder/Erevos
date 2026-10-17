@@ -20,6 +20,7 @@ export default function Home() {
       <Link href="/chat" style={styles.link}>Chat (Android)</Link>
       <Link href="/radio" style={styles.link}>Radio test (Android)</Link>
       <Link href="/relay" style={styles.link}>Relay test (Wi-Fi)</Link>
+      <Link href="/imported" style={styles.link}>Imported chats</Link>
       <Link href="/security" style={styles.link}>Lock and second password</Link>
       <Link href="/appearance" style={styles.link}>Appearance</Link>
       <Link href="/guide" style={styles.link}>User guide</Link>

@@ -106,6 +106,53 @@ pub fn first_message_id(packet: &[u8]) -> Result<Vec<u8>> {
     Ok(conversation::first_message_id(packet).map_err(fail)?.to_vec())
 }
 
+/// Chats exported from another messenger (crates/erevos-import), for the
+/// app as UTF-8 JSON: a list of `{source, title, skipped, messages}`, each
+/// message `{at, local, sender, text, attachments}`. `at` is in seconds, on
+/// the exporting phone's clock when `local`; `attachments` names the kind of
+/// each file, which stays behind. `name` is the file's name, UTF-8.
+pub fn import_chats(name: &[u8], data: &[u8]) -> Result<Vec<u8>> {
+    use erevos_import::{AttachmentKind, Source, Time};
+    let chats = erevos_import::read(&String::from_utf8_lossy(name), data).map_err(|e| e.to_string())?;
+    let json: Vec<serde_json::Value> = chats
+        .iter()
+        .map(|chat| {
+            let messages: Vec<serde_json::Value> = chat
+                .messages
+                .iter()
+                .map(|m| {
+                    let (at, local) = match m.sent_at {
+                        Some(Time::Unix(at)) => (Some(at), false),
+                        Some(Time::Local(at)) => (Some(at), true),
+                        None => (None, false),
+                    };
+                    let attachments: Vec<&str> = m
+                        .attachments
+                        .iter()
+                        .map(|a| match a.kind {
+                            AttachmentKind::Photo => "photo",
+                            AttachmentKind::Video => "video",
+                            AttachmentKind::Voice => "voice",
+                            AttachmentKind::Sticker => "sticker",
+                            AttachmentKind::File => "file",
+                        })
+                        .collect();
+                    serde_json::json!({
+                        "at": at, "local": local, "sender": m.sender, "text": m.text, "attachments": attachments,
+                    })
+                })
+                .collect();
+            let source = match chat.source {
+                Source::Telegram => "telegram",
+                Source::Viber => "viber",
+                Source::WhatsApp => "whatsapp",
+            };
+            serde_json::json!({ "source": source, "title": chat.title, "skipped": chat.skipped, "messages": messages })
+        })
+        .collect();
+    serde_json::to_vec(&json).map_err(|e| e.to_string())
+}
+
 /// The safety number of two identity keys.
 pub fn safety_number(ours: &[u8], theirs: &[u8]) -> Result<String> {
     let key = |b: &[u8]| <[u8; 32]>::try_from(b).map_err(|_| "an identity key is 32 bytes".to_string());
@@ -125,6 +172,21 @@ mod tests {
             rest = &rest[4 + len..];
         }
         out
+    }
+
+    #[test]
+    fn imports_a_chat_as_json() {
+        let text = "17/10/2026, 09:06 - Μαρία: γεια\n17/10/2026, 09:07 - Nekten: IMG-1.jpg (file attached)";
+        let json: serde_json::Value =
+            serde_json::from_slice(&import_chats("WhatsApp Chat with Μαρία.txt".as_bytes(), text.as_bytes()).unwrap())
+                .unwrap();
+        assert_eq!(json[0]["source"], "whatsapp");
+        assert_eq!(json[0]["title"], "Μαρία");
+        assert_eq!(json[0]["messages"][0]["text"], "γεια");
+        assert_eq!(json[0]["messages"][0]["local"], true);
+        assert_eq!(json[0]["messages"][0]["at"], 1_792_227_960);
+        assert_eq!(json[0]["messages"][1]["attachments"][0], "photo");
+        assert!(import_chats(b"x.html", b"<html>").unwrap_err().contains("result.json"));
     }
 
     #[test]

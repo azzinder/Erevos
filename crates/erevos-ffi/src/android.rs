@@ -58,6 +58,7 @@ bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationSeal => cr
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationOpen => crate::conversation_open, conversation, packet);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationPeer => crate::conversation_peer, conversation);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_firstMessageId => crate::first_message_id, packet);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_importChats => crate::import_chats, name, data);
 
 #[no_mangle]
 pub extern "system" fn Java_expo_modules_erevoscore_ErevosCoreNative_packetKind<'a>(

@@ -18,6 +18,7 @@ export interface Core {
   packetKind(packet: Uint8Array): Promise<number>;
   firstMessageId(packet: Uint8Array): Promise<Uint8Array>;
   safetyNumber(ours: Uint8Array, theirs: Uint8Array): Promise<string>;
+  importChats(name: Uint8Array, data: Uint8Array): Promise<Uint8Array>;
 }
 
 let core: Core | null = null;
@@ -100,3 +101,11 @@ export async function open(conversation: Uint8Array, packet: Uint8Array): Promis
   const [next, plaintext] = splitParts(await need().conversationOpen(conversation, packet), 2);
   return { conversation: next, plaintext };
 }
+
+/** Whether this build's core reads other messengers' exports: one built before it could not. */
+export function canImport(): boolean {
+  return typeof core?.importChats === 'function';
+}
+
+/** Reads another messenger's export: the chats in it as UTF-8 JSON (lib/imports.ts reads it). */
+export const importChats = (name: Uint8Array, data: Uint8Array) => need().importChats(name, data);

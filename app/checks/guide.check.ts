@@ -161,3 +161,13 @@ test('the guide is searched ignoring case and accents, titles first', () => {
   for (const hit of searchGuide(el, 'κωδικός')) if (hit.snippet) assert.ok(hit.snippet.length <= 112);
   for (const s of en) for (const b of s.blocks) assert.ok(blockTexts(b).join('').length > 0);
 });
+
+test('no list marker is left inside a step, an item or a note', () => {
+  for (const sections of [en, el]) {
+    for (const section of sections) {
+      for (const block of section.blocks) {
+        for (const text of blockTexts(block)) assert.doesNotMatch(text, / - \*\*|^- /, `${section.id}: ${text}`);
+      }
+    }
+  }
+});

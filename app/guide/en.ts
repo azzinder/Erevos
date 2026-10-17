@@ -31,6 +31,7 @@ The home screen leads to everything:
 | **Chat (Android)** | Your chats, nearby or through a relay. See [Chat with a nearby phone](#nearby) and [Chat through a relay](#relay). |
 | **Radio test (Android)** | A test of Bluetooth and Wi-Fi Aware between two phones. See [The test screens](#tests). |
 | **Relay test (Wi-Fi)** | A test of a relay by hand. |
+| **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
 | **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
 | **User guide** | This guide. |
@@ -185,6 +186,31 @@ chats.
   password, open them and use **Change password** there.
 - **Discretion:** the app never shows whether hidden chats are set, in any space.
 
+## Imported chats {#import}
+
+Your old chats from Telegram and WhatsApp can come into Erevos, to read. They stay on this phone, sealed in the
+space you bring them into, and are never sent anywhere.
+
+First export the chat from the other app:
+
+- **WhatsApp:** open the chat, then **More**, **Export chat**, **Without media**, and save the file to the phone.
+- **Telegram Desktop:** **Export chat history**, format **JSON**, then copy **result.json** to the phone.
+
+Then:
+
+1. In Erevos, open **Imported chats** and tap **Import a file**, then pick the file. A .zip of either works too.
+2. Erevos says what it found. Tap your own name, so your messages show on the right, and tap **Keep**.
+3. Delete the export file from the phone yourself: Erevos keeps its own sealed copy, but the file you saved is not
+   sealed.
+
+- **Only the words:** photos, voice messages and other files stay behind, and the chat says where one was.
+- **Only to read:** imported messages never mix with Erevos's own chats. Erevos cannot show who really wrote them.
+- **Notices and calls** from the other app are left out, and the chat says how many.
+- **Viber** is not read yet.
+
+> The file of imported chats grows with what you bring in, so its size tells roughly how much was imported, but not
+> into which space.
+
 ## Appearance {#appearance}
 
 **Appearance** follows LPHL FASOULI and the LPHL site.
@@ -229,6 +255,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
 | **Messages to a nearby phone** | **Not encrypted yet.** Whoever listens to the nearby link could read them. | The same encryption as through the relay. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. | Two relays, so that none sees both ends. Tor, optional. |
+| **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. Deleting on both phones relies on the other phone's Erevos. | |
 | **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
 
@@ -246,7 +273,8 @@ End-to-end encryption through the relay is here. The nearby link comes next, and
 - **Calls:** walkie-talkie first (it works even over Bluetooth), then voice, then video.
 - **Groups:** group chats, and group video calls. Up to four people connect directly; when more join, the call
   moves to a server by itself, still encrypted end to end.
-- **Bringing your chats:** importing chats from Telegram, WhatsApp and Viber.
+- **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
+  in, see [Imported chats](#import).
 - **More systems:** Linux, macOS, iOS and Sailfish OS, and more than one device for the same person, with backups.
 
 ## Questions {#faq}

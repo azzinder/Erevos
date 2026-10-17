@@ -67,3 +67,8 @@ pub fn first_message_id(packet: &[u8]) -> Result<Vec<u8>, JsError> {
 pub fn safety_number(ours: &[u8], theirs: &[u8]) -> Result<String, JsError> {
     js(crate::safety_number(ours, theirs))
 }
+
+#[wasm_bindgen(js_name = importChats)]
+pub fn import_chats(name: &[u8], data: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::import_chats(name, data))
+}
