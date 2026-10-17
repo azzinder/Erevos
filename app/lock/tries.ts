@@ -38,6 +38,11 @@ async function load(): Promise<Tries> {
   return { fails: 0, until: 0 };
 }
 
+/** The count exists from the first start, so its entry does not show that a password was ever tried. */
+export async function prepareTries(): Promise<void> {
+  if (!(await secureGet(KEY))) await secureSet(KEY, JSON.stringify({ fails: 0, until: 0 }));
+}
+
 /** Throws LockedOutError while a wait is on. */
 export async function assertNotLockedOut(now = Date.now()): Promise<void> {
   const { until } = await load();

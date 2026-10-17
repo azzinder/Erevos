@@ -46,19 +46,19 @@ export interface Unlocked {
 
 export { SLOTS };
 // Native PBKDF2 (OpenSSL) on phones: well under a second for every slot.
-const ITER = 200_000;
+export const ITER = 200_000;
 const KEY = 'erevos.lock';
 const EMPTY: LockConfig = { slots: [], direct: null, iter: ITER };
 
 /** Seals a space key with a password. */
-async function sealSlot(password: string, spaceKey: Uint8Array, iter: number): Promise<Slot> {
+export async function sealSlot(password: string, spaceKey: Uint8Array, iter: number): Promise<Slot> {
   const salt = randomBytes(16);
   const k = await deriveKey(password, salt, iter);
   return { salt: toBase64(salt), iter, check: toBase64(sha256Bytes(k)), key: encryptText(k, toHex(spaceKey)) };
 }
 
 /** A slot no password opens, shaped like a used one. */
-function unusedSlot(iter: number): Slot {
+export function unusedSlot(iter: number): Slot {
   return {
     salt: toBase64(randomBytes(16)),
     iter,
@@ -74,7 +74,7 @@ function padded(slots: Slot[], iter: number, min = SLOTS): Slot[] {
   return out;
 }
 
-const isSlot = (v: unknown): v is Slot => {
+export const isSlot = (v: unknown): v is Slot => {
   const s = v as Partial<Slot> | null;
   return !!s && typeof s.salt === 'string' && typeof s.iter === 'number' && typeof s.check === 'string' && typeof s.key === 'string';
 };
@@ -114,6 +114,12 @@ async function match(config: LockConfig, password: string): Promise<{ index: num
   );
   const index = results.findIndex((k) => k !== null);
   return { index, k: index < 0 ? null : results[index] };
+}
+
+/** The key a slot holds for a password, or null when it is not that slot's password. */
+export async function trySlot(slot: Slot, password: string): Promise<Uint8Array | null> {
+  const k = await deriveKey(password, fromBase64(slot.salt), slot.iter);
+  return sameBytes(sha256Bytes(k), fromBase64(slot.check)) ? fromHex(decryptText(k, slot.key)) : null;
 }
 
 /** The space key a slot holds for K. */

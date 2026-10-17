@@ -16,8 +16,9 @@ import {
   SLOTS,
   unlock,
 } from '../lock/config';
+import { openHidden, prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
 import { loadOpenKey, saveOpenKey } from '../lock/keys';
-import { EMPTY_SPACE, firstSpaceKey, loadSpaceData, prepareSpaces, saveSpaceData } from '../lock/space-data';
+import { EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
 import { FREE_TRIES, LockedOutError } from '../lock/tries';
 import { store } from './secure-memory';
 
@@ -196,4 +197,71 @@ t('each space sees only its own data, and every entry looks alike', async () => 
   assert.equal((await loadSpaceData(0, key1)).token, '');
   // The keystore entries are the same set as before the second password.
   assert.deepEqual([...store.keys()].sort(), ['erevos.lock', 'erevos.lock-tries', 'erevos.space-keys', 'erevos.space.0', 'erevos.space.1', 'erevos.space.2', 'erevos.space.3']);
+});
+
+t('hidden chats open only with their own password, in each space', async () => {
+  await setLockPassword(0, 'real-1111', real);
+  await setLockPassword(1, 'decoy-2222', decoy);
+  await prepareHidden();
+  assert.equal(await openHidden(0, 'secret-0'), null);
+  const hidden0 = await setHiddenPassword(0, 'secret-0', null);
+  const hidden1 = await setHiddenPassword(1, 'secret-1', null);
+  assert.deepEqual(await openHidden(0, 'secret-0'), hidden0);
+  assert.deepEqual(await openHidden(1, 'secret-1'), hidden1);
+  // Each space's hidden chats open only there.
+  assert.equal(await openHidden(1, 'secret-0'), null);
+  assert.equal(await openHidden(0, 'secret-1'), null);
+  await saveHiddenData(0, hidden0, { ...EMPTY_SPACE, url: 'wss://hidden.example.org' });
+  assert.equal((await loadHiddenData(0, hidden0)).url, 'wss://hidden.example.org');
+  assert.equal((await loadSpaceData(0, real)).url, '');
+});
+
+t('hidden chats look the same, set or not, and take the same work to try', async () => {
+  await setLockPassword(0, 'real-1111', real);
+  await prepareHidden();
+  const before = new Map(store);
+  await setHiddenPassword(0, 'secret-0', null);
+  assert.deepEqual([...store.keys()].sort(), [...before.keys()].sort());
+  for (const name of ['erevos.hidden-lock', 'erevos.hidden.0']) {
+    assert.equal(store.get(name)!.length, before.get(name)!.length, name);
+  }
+  const subtle = globalThis.crypto.subtle as { deriveBits: SubtleCrypto['deriveBits'] };
+  const { deriveBits } = subtle;
+  let derivations = 0;
+  subtle.deriveBits = (...args) => {
+    derivations++;
+    return deriveBits.apply(globalThis.crypto.subtle, args);
+  };
+  try {
+    for (const [space, password] of [[0, 'secret-0'], [0, 'wrong'], [2, 'wrong']] as const) {
+      derivations = 0;
+      await openHidden(space, password);
+      assert.equal(derivations, 1, `${space} ${password}`);
+    }
+  } finally {
+    subtle.deriveBits = deriveBits;
+  }
+});
+
+t('a new hidden password starts empty, changing it keeps them, removing it closes them', async () => {
+  await prepareHidden();
+  const first = await setHiddenPassword(0, 'secret-0', null);
+  await saveHiddenData(0, first, { ...EMPTY_SPACE, token: 'kept' });
+  // Changed from inside: same key, same chats.
+  assert.deepEqual(await setHiddenPassword(0, 'secret-new', first), first);
+  assert.equal(await openHidden(0, 'secret-0'), null);
+  assert.equal((await loadHiddenData(0, (await openHidden(0, 'secret-new'))!)).token, 'kept');
+  // Set anew from the settings: a new, empty set of hidden chats.
+  const second = await setHiddenPassword(0, 'secret-0', null);
+  assert.notDeepEqual(second, first);
+  assert.equal((await loadHiddenData(0, second)).token, '');
+  assert.equal(await openHidden(0, 'secret-new'), null);
+  await removeHiddenPassword(0);
+  assert.equal(await openHidden(0, 'secret-0'), null);
+});
+
+t('refuses the space\'s own password for its hidden chats', async () => {
+  await setLockPassword(0, 'real-1111', real);
+  await assert.rejects(setHiddenPassword(0, 'real-1111', null), SamePasswordError);
+  await setHiddenPassword(0, 'other', null);
 });

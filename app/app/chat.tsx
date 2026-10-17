@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AppState, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
+import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
-import { loadCurrentSpaceData, saveCurrentSpaceData, type Queue } from '../lock/space-data';
+import { openHidden, setHiddenPassword } from '../lock/hidden';
+import { currentSpace } from '../lock/keys';
+import { loadCurrentSpaceData, loadHiddenData, saveCurrentSpaceData, saveHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import {
   createQueue,
   decodeEnvelope,
@@ -20,6 +23,13 @@ import {
 // Chat over the radio link, with a fallback through the relay. A phone is reached over the
 // radio link when that link is ready. Otherwise the message goes through the relay, if a relay
 // sender id is saved for that phone. Plain text, kept in memory only, so it is gone on reload.
+//
+// Every space also has hidden chats (lock/hidden.ts), opened with their own password from the
+// Hidden chats button, which every space shows whether it has hidden chats or not. They are a
+// second chat with their own relay queue and contacts, over the relay only (the radio link is
+// the phone's, and its chats are the open space's). The other chats stay open underneath and
+// keep receiving. Hidden chats close when the app goes to the background or this screen closes,
+// and their messages go with them.
 
 type Message = { id: number; peer: string; text: string; mine: boolean };
 
@@ -43,7 +53,72 @@ function label(peer: string): string {
   return peer.startsWith(RELAY_PREFIX) ? `relay ${peer.slice(RELAY_PREFIX.length, RELAY_PREFIX.length + 8)}` : peer;
 }
 
-export default function Chat() {
+export default function ChatScreen() {
+  const [hiddenKey, setHiddenKey] = useState<Uint8Array | null>(null);
+  const [asking, setAsking] = useState<'open' | 'change' | null>(null);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'background') {
+        setHiddenKey(null);
+        setAsking(null);
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+
+  if (Platform.OS !== 'android') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.body}>Chat runs on Android only for now.</Text>
+        <StatusBar style="light" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.screen}>
+      <View style={[styles.screen, hiddenKey && styles.gone]}>
+        <Chat hiddenKey={null} shown={!hiddenKey} onHidden={() => setAsking('open')} />
+      </View>
+      {hiddenKey ? (
+        <Chat hiddenKey={hiddenKey} shown onHidden={() => setHiddenKey(null)} onChangePassword={() => setAsking('change')} />
+      ) : null}
+      <PasswordSheet
+        visible={asking === 'open'}
+        title="Hidden chats"
+        repeat={false}
+        submitLabel="Open"
+        onClose={() => setAsking(null)}
+        onSubmit={async (password) => {
+          const key = await openHidden(currentSpace().space, password);
+          if (!key) return false;
+          setAsking(null);
+          setHiddenKey(key);
+        }}
+      />
+      <PasswordSheet
+        visible={asking === 'change'}
+        title="Change hidden chats password"
+        repeat
+        submitLabel="Save"
+        onClose={() => setAsking(null)}
+        onSubmit={async (password) => {
+          await setHiddenPassword(currentSpace().space, password, hiddenKey);
+          setAsking(null);
+        }}
+      />
+    </View>
+  );
+}
+
+// One chat: the space's own (`hiddenKey` null), or its hidden chats, sealed with that key.
+function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
+  hiddenKey: Uint8Array | null;
+  shown: boolean;
+  onHidden: () => void;
+  onChangePassword?: () => void;
+}) {
   const [peers, setPeers] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -92,7 +167,7 @@ export default function Chat() {
   // The radio link belongs to the phone, not to a space: until messages are sealed for each
   // space's own keys, a nearby phone's message shows in whichever space is open.
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
+    if (Platform.OS !== 'android' || hiddenKey) return;
     let active = true;
     const subscriptions = [
       onRadioEvent('onPeer', ({ id, kind }) => {
@@ -117,7 +192,7 @@ export default function Chat() {
   // Restores the relay settings, our queue and the contacts this space keeps on the phone,
   // sealed with its key (lock/space-data.ts). Another space finds only its own.
   useEffect(() => {
-    loadCurrentSpaceData()
+    (hiddenKey ? loadHiddenData(currentSpace().space, hiddenKey) : loadCurrentSpaceData())
       .then((data) => {
         setRelayUrl(data.url);
         setRelayToken(data.token);
@@ -134,7 +209,8 @@ export default function Chat() {
   // Saves the relay settings, our queue and the contacts whenever they change.
   useEffect(() => {
     if (!loaded) return;
-    saveCurrentSpaceData({ url: relayUrl, token: relayToken, ownQueue, routes }).catch(() => {
+    const data: SpaceData = { url: relayUrl, token: relayToken, ownQueue, routes };
+    (hiddenKey ? saveHiddenData(currentSpace().space, hiddenKey, data) : saveCurrentSpaceData(data)).catch(() => {
       // A failed save only means the next launch starts empty.
     });
   }, [loaded, relayUrl, relayToken, ownQueue, routes]);
@@ -142,9 +218,9 @@ export default function Chat() {
   // Takes a contact opened from a scanned code, once the saved contacts are loaded so they
   // cannot overwrite it.
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || !shown) return;
     return onContactOffered(acceptContact);
-  }, [loaded, relayUrl, ownQueue]);
+  }, [loaded, shown, relayUrl, ownQueue]);
 
   // Looks at our own relay queue every few seconds. A message names the sender's relay
   // sender id, so we can answer through the relay and list that sender as a chat.
@@ -194,15 +270,6 @@ export default function Chat() {
       clearInterval(timer);
     };
   }, [relayUrl, relayToken, ownQueue]);
-
-  if (Platform.OS !== 'android') {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.body}>Chat runs on Android only for now.</Text>
-        <StatusBar style="light" />
-      </View>
-    );
-  }
 
   function keep(peer: string, text: string) {
     setMessages((list) => [...list, { id: nextId.current++, peer, text, mine: true }]);
@@ -284,9 +351,29 @@ export default function Chat() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Chat</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>{hiddenKey ? 'Hidden chats' : 'Chat'}</Text>
+        {hiddenKey ? (
+          <View style={styles.row}>
+            <Pressable onPress={onChangePassword} accessibilityRole="button">
+              <Text style={styles.link}>Change password</Text>
+            </Pressable>
+            <Pressable onPress={onHidden} accessibilityRole="button">
+              <Text style={styles.link}>Close</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable onPress={onHidden} accessibilityRole="button">
+            <Text style={styles.link}>Hidden chats</Text>
+          </Pressable>
+        )}
+      </View>
       <Text style={styles.body}>
-        {peers.length === 0 ? 'Looking for a nearby Erevos phone.' : 'Pick a phone to talk to.'}
+        {peers.length > 0
+          ? 'Pick a chat.'
+          : hiddenKey
+            ? 'No hidden chats yet. Add a contact through the relay below.'
+            : 'Looking for a nearby Erevos phone.'}
       </Text>
       <View style={styles.row}>
         {peers.map((peer) => (
@@ -418,6 +505,18 @@ export default function Chat() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  gone: {
+    display: 'none',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   container: {
     flex: 1,
     padding: 24,

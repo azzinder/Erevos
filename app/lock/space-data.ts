@@ -14,6 +14,9 @@ import { SLOTS } from './slots';
 // A second space starts empty and takes nothing from the space it was set in: not its relay,
 // its queue or its contacts. The chat history, once the chat keeps one, needs a database per
 // space sealed the same way.
+//
+// Every space also has hidden chats (hidden.ts), kept the same way in `erevos.hidden.<n>`, sealed
+// with their own key.
 
 export type Queue = { recipientHex: string; senderHex: string };
 export type SpaceData = { url: string; token: string; ownQueue: Queue | null; routes: Record<string, string> };
@@ -22,6 +25,7 @@ export const EMPTY_SPACE: SpaceData = { url: '', token: '', ownQueue: null, rout
 
 const BLOCK = 1024;
 const entry = (space: number) => `erevos.space.${space}`;
+const hiddenEntry = (space: number) => `erevos.hidden.${space}`;
 // Where the chat kept its settings before there were spaces, unsealed. They move into the first space.
 const OLDER_ENTRY = 'erevos.relay';
 
@@ -48,9 +52,9 @@ function checked(value: unknown): SpaceData {
   };
 }
 
-/** A space's data, or an empty space when its entry is missing or sealed with another key. */
-export async function loadSpaceData(space: number, key: Uint8Array): Promise<SpaceData> {
-  const raw = await secureGet(entry(space));
+/** An entry's data, or an empty one when the entry is missing or sealed with another key. */
+async function load(name: string, key: Uint8Array): Promise<SpaceData> {
+  const raw = await secureGet(name);
   if (!raw) return { ...EMPTY_SPACE };
   try {
     return checked(JSON.parse(decryptText(key, raw)));
@@ -59,8 +63,26 @@ export async function loadSpaceData(space: number, key: Uint8Array): Promise<Spa
   }
 }
 
+/** Gives an entry a value sealed with a random key, unless it has one. */
+async function ensure(name: string): Promise<void> {
+  if (!(await secureGet(name))) await secureSet(name, seal(randomBytes(32), EMPTY_SPACE));
+}
+
+export const loadSpaceData = (space: number, key: Uint8Array) => load(entry(space), key);
+
 export async function saveSpaceData(space: number, key: Uint8Array, data: SpaceData): Promise<void> {
   await secureSet(entry(space), seal(key, data));
+}
+
+export const loadHiddenData = (space: number, key: Uint8Array) => load(hiddenEntry(space), key);
+
+export async function saveHiddenData(space: number, key: Uint8Array, data: SpaceData): Promise<void> {
+  await secureSet(hiddenEntry(space), seal(key, data));
+}
+
+/** Every space up to `count` (and SLOTS) has a hidden chats entry, used or not. */
+export async function prepareHiddenEntries(count: number): Promise<void> {
+  for (let space = 0; space < Math.max(SLOTS, count); space++) await ensure(hiddenEntry(space));
 }
 
 /** The open space's data (keys.ts says which space is open). */
@@ -77,9 +99,7 @@ export async function saveCurrentSpaceData(data: SpaceData): Promise<void> {
 // The spaces from `from` on, up to SLOTS, have entries from now on, used or not: sealed with
 // random keys no one has, until a password opens one.
 export async function prepareSpaces(from: number): Promise<void> {
-  for (let space = from; space < Math.max(SLOTS, from + 1); space++) {
-    if (!(await secureGet(entry(space)))) await secureSet(entry(space), seal(randomBytes(32), EMPTY_SPACE));
-  }
+  for (let space = from; space < Math.max(SLOTS, from + 1); space++) await ensure(entry(space));
 }
 
 // The key the first space opens with when no lock is on: the one in its keystore slot once the

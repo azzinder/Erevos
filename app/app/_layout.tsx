@@ -6,6 +6,7 @@ import { setupCrypto } from '../lib/crypto-setup';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
 import { PasswordGate } from '../lock/gate';
+import { prepareHidden } from '../lock/hidden';
 import { loadOpenKey, setCurrentSpace } from '../lock/keys';
 import { firstSpaceKey } from '../lock/space-data';
 
@@ -13,6 +14,9 @@ setupCrypto();
 
 // Lock again after the app has been in the background this long.
 const RELOCK_AFTER_MS = 30_000;
+
+// Whether this start made sure every space has its hidden chats slot and entry (lock/hidden.ts).
+let hiddenPrepared = false;
 
 type Phase =
   | { kind: 'loading' }
@@ -40,6 +44,12 @@ export default function RootLayout() {
   const start = useCallback(async () => {
     // Nothing of the space that was open stays in memory.
     setCurrentSpace(null);
+    // The keystore holds the same entries whatever is in use: made once per start, beside the
+    // rest, since the password screen need not wait for them.
+    if (!hiddenPrepared) {
+      hiddenPrepared = true;
+      void prepareHidden().catch(() => undefined);
+    }
     const config = await loadLockConfig();
     if (config.direct !== null) {
       // The lock was turned off in a later space: that one opens directly, with its key from the keystore.

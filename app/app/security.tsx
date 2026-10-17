@@ -1,27 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
-import {
-  loadLockConfig,
-  lockWithPassword,
-  removePasswordLock,
-  removeSecondPassword,
-  SamePasswordError,
-  setLockPassword,
-  type LockConfig,
-} from '../lock/config';
+import { PasswordSheet } from '../components/PasswordSheet';
+import { loadLockConfig, lockWithPassword, removePasswordLock, removeSecondPassword, setLockPassword, type LockConfig } from '../lock/config';
 import { useLock } from '../lock/context';
+import { prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
 import { currentSpace, newSpaceKey } from '../lock/keys';
 import { EMPTY_SPACE, prepareSpaces, saveSpaceData } from '../lock/space-data';
-import { LockedOutError, lockedOutMessage } from '../lock/tries';
 
-// What the password sheet sets: this space's own password, or its second password.
-type Editing = 'own' | 'second' | null;
+// What the password sheet sets: this space's own password, its second password, or the
+// password of its hidden chats.
+type Editing = 'own' | 'second' | 'hidden' | null;
 
 // Lock settings, as in LPHL FASOULI. Every space shows exactly the same screen, and nothing on it
-// says whether a second password is set (see lock/config.ts), so the space a second password
-// opens cannot be told apart from the real one.
+// says whether a second password or hidden chats are set (see lock/config.ts and
+// lock/hidden.ts), so the space a second password opens cannot be told apart from the real one.
 export default function Security() {
   const { space, setPasswordLock, lockNow, openSpace } = useLock();
   const [config, setConfig] = useState<LockConfig | null>(null);
@@ -56,16 +50,30 @@ export default function Security() {
     setNote('Saved.');
   }
 
+  async function removeHidden() {
+    const ok = await confirm(
+      'Remove hidden chats password',
+      'The hidden chats will stop opening. They stay on the phone, and nothing opens them.',
+    );
+    if (!ok) return;
+    await removeHiddenPassword(space);
+    setNote('Saved.');
+  }
+
   async function submit(password: string) {
     const { key } = currentSpace();
-    if (editing === 'second') {
-      // A new space with a new key. Whatever was there before cannot be opened any more.
+    if (editing === 'hidden') {
+      await setHiddenPassword(space, password, null);
+    } else if (editing === 'second') {
+      // A new space with a new key, and no hidden chats. Whatever was there before cannot be opened any more.
       const next = space + 1;
       const nextKey = newSpaceKey();
       await setLockPassword(next, password, nextKey);
       await saveSpaceData(next, nextKey, EMPTY_SPACE);
+      await removeHiddenPassword(next);
       // The space a second password set inside the new one would open exists too.
       await prepareSpaces(next + 1);
+      await prepareHidden(next + 2);
     } else if (locked) {
       await setLockPassword(space, password, key);
     } else {
@@ -129,98 +137,42 @@ export default function Security() {
         </Text>
       )}
 
+      <Text style={styles.section}>Hidden chats</Text>
+      <View style={styles.card}>
+        <Text style={styles.hint}>
+          Chats that open only with their own password, from Hidden chats in the chat screen. They have their own relay
+          queue, so while they are closed their messages wait on the relay and never show among your other chats.
+        </Text>
+        <Text style={styles.hint}>
+          For privacy, the app never shows whether hidden chats are set. A new password here starts them empty and
+          replaces the ones before. To keep them and change only the password, open them and change it there.
+        </Text>
+        <View style={styles.buttons}>
+          <Button title="Set hidden chats password" onPress={() => setEditing('hidden')} />
+          <Button title="Remove hidden chats password" onPress={removeHidden} />
+        </View>
+      </View>
+
       {note ? <Text style={styles.note}>{note}</Text> : null}
 
       <PasswordSheet
         visible={editing !== null}
-        title={editing === 'second' ? 'Set second password' : locked ? 'Change password' : 'Set password'}
+        title={
+          editing === 'hidden'
+            ? 'Set hidden chats password'
+            : editing === 'second'
+              ? 'Set second password'
+              : locked
+                ? 'Change password'
+                : 'Set password'
+        }
+        repeat
+        submitLabel="Save"
         onClose={() => setEditing(null)}
         onSubmit={submit}
       />
       <StatusBar style="light" />
     </ScrollView>
-  );
-}
-
-function PasswordSheet({ visible, title, onClose, onSubmit }: {
-  visible: boolean;
-  title: string;
-  onClose: () => void;
-  onSubmit: (password: string) => Promise<void>;
-}) {
-  const [first, setFirst] = useState('');
-  const [second, setSecond] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  function clear() {
-    setFirst('');
-    setSecond('');
-    setError(null);
-  }
-
-  function close() {
-    clear();
-    onClose();
-  }
-
-  async function save() {
-    if (first.length < 4) return setError('Use at least 4 characters.');
-    if (first !== second) return setError('The passwords do not match.');
-    setBusy(true);
-    try {
-      await onSubmit(first);
-      clear();
-    } catch (e) {
-      setError(
-        e instanceof SamePasswordError
-          ? 'Use a different password.'
-          : e instanceof LockedOutError
-            ? lockedOutMessage(e.until)
-            : e instanceof Error
-              ? e.message
-              : String(e),
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <Text style={styles.sheetTitle}>{title}</Text>
-          <Text style={styles.label}>New password</Text>
-          <TextInput
-            value={first}
-            onChangeText={setFirst}
-            secureTextEntry
-            autoFocus
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel="New password"
-            style={styles.input}
-          />
-          <Text style={styles.label}>Repeat password</Text>
-          <TextInput
-            value={second}
-            onChangeText={setSecond}
-            onSubmitEditing={save}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel="Repeat password"
-            style={styles.input}
-          />
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <View style={styles.buttons}>
-            <Button title={busy ? 'Saving…' : 'Save'} primary disabled={!first || !second || busy} onPress={save} />
-            <Button title="Cancel" disabled={busy} onPress={close} />
-          </View>
-        </View>
-      </View>
-    </Modal>
   );
 }
 
@@ -353,43 +305,5 @@ const styles = StyleSheet.create({
   },
   buttonTextPrimary: {
     color: '#0D0B09',
-  },
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  sheet: {
-    gap: 10,
-    padding: 20,
-    paddingBottom: 32,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    backgroundColor: '#17140F',
-  },
-  sheetTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#F5EFE6',
-    marginBottom: 4,
-  },
-  label: {
-    fontSize: 13,
-    color: '#BFB6AA',
-  },
-  input: {
-    height: 48,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#4A4036',
-    backgroundColor: '#2A2520',
-    color: '#F5EFE6',
-    fontSize: 16,
-  },
-  error: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#E08F6E',
   },
 });
