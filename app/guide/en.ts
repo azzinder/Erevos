@@ -87,11 +87,22 @@ Pick the chat and tap **Show safety number**. Both phones show the same 60 digit
 in person or on a call: if they match, no one is in between. If they differ, do not trust that chat, and add the
 link again, scanned from their own phone.
 
-> The relay settings, your queue, your contacts, the keys of your conversations and the messages are kept in this
-> space, sealed. About a thousand short messages fit; when it is full, the oldest go first. **Delete messages**, under
-> the chat you picked, removes that chat's messages from the phone. Deleted messages can stay for a while in the
-> phone's storage, sealed like the rest, until something is written over them. Messages to and from a nearby phone
-> are not kept.
+### Names and deleting
+
+Pick a chat and tap **Rename** to give it a name. The name stays on this phone, sealed with the chat: the other phone
+does not see it. An empty name brings back the start of their key.
+
+To delete one message, press and hold it. To delete all the messages of a chat, pick it and tap **Delete messages**.
+Either way Erevos asks where:
+
+- **This phone:** only here. The other phone keeps its own.
+- **Both phones:** their phone deletes them too, the next time it looks at the relay. Their Erevos does so, but a
+  changed app, a screenshot or a copy can still keep them.
+
+> The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
+> kept in this space, sealed. About a thousand short messages fit; when it is full, the oldest go first. Deleted
+> messages can stay for a while in the phone's storage, sealed like the rest, until something is written over them.
+> Messages to and from a nearby phone are not kept.
 
 ## How Erevos picks the path {#paths}
 
@@ -214,11 +225,11 @@ Erevos says plainly what it protects and what it does not, yet.
 | What | Today | Coming |
 | --- | --- | --- |
 | **Account, phone number, email** | None needed. Contacts are pairs of one-way relay queues. | |
-| **Contacts, keys, relay settings, look** | Sealed on the phone with each space's key. | |
+| **Contacts and their names, keys, relay settings, look** | Sealed on the phone with each space's key. | |
 | **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
 | **Messages to a nearby phone** | **Not encrypted yet.** Whoever listens to the nearby link could read them. | The same encryption as through the relay. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. | Two relays, so that none sees both ends. Tor, optional. |
-| **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. | |
+| **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. Deleting on both phones relies on the other phone's Erevos. | |
 | **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
 
 ## What is coming {#coming}

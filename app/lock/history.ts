@@ -1,3 +1,5 @@
+import { randomBytes, toHex } from '../lib/crypto';
+
 import { sealedFile, sealedSize, type Holder } from './sealed-file';
 
 // The messages each chat keeps on the phone: a space's own chat, and its hidden chats, each in one
@@ -8,28 +10,42 @@ import { sealedFile, sealedSize, type Holder } from './sealed-file';
 // Only chats with contacts are kept. Messages over the radio link are not: a link's id lasts as
 // long as the link, and nothing is encrypted there yet.
 
-/** One message: when (milliseconds), whether this phone sent it, and its text. */
-export type Kept = [at: number, mine: 0 | 1, text: string];
+/** One message: when (milliseconds), whether this phone sent it, its text, and its tag. */
+export type Kept = [at: number, mine: 0 | 1, text: string, tag: string];
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
 
-export type Message = { peer: string; text: string; mine: boolean; at: number };
+/**
+ * A message as the chat shows it. Its tag names it on both phones, so either can ask the other
+ * to delete it: the sender makes it (newTag) and it travels inside the message.
+ */
+export type Message = { peer: string; text: string; mine: boolean; at: number; tag: string };
+
+const TAG = /^[0-9a-f]{12}$/;
+
+export const newTag = () => toHex(randomBytes(6));
+export const isTag = (value: unknown): value is string => typeof value === 'string' && TAG.test(value);
 
 export const FILE = 'erevos-history';
 export const SIZE = 64 * 1024;
 
 const EMPTY: HistoryData = { chats: {} };
 
-const isKept = (m: unknown): m is Kept =>
-  Array.isArray(m) && m.length === 3 && typeof m[0] === 'number' && (m[1] === 0 || m[1] === 1) && typeof m[2] === 'string';
+// A message kept before tags has none: it gets one here, known to this phone only.
+function checkedKept(m: unknown): Kept | null {
+  if (!Array.isArray(m) || m.length < 3 || typeof m[0] !== 'number' || (m[1] !== 0 && m[1] !== 1) || typeof m[2] !== 'string') {
+    return null;
+  }
+  return [m[0], m[1], m[2], isTag(m[3]) ? m[3] : newTag()];
+}
 
 function checked(value: unknown): HistoryData {
   const chats: Record<string, Kept[]> = {};
   const stored = (value as { chats?: unknown } | null)?.chats;
   if (stored && typeof stored === 'object') {
     for (const [peer, list] of Object.entries(stored)) {
-      const kept = Array.isArray(list) ? list.filter(isKept) : [];
+      const kept = Array.isArray(list) ? list.map(checkedKept).filter((m): m is Kept => m !== null) : [];
       if (kept.length > 0) chats[peer] = kept;
     }
   }
@@ -70,7 +86,7 @@ export class History {
   /** Every message, oldest first. */
   messages(): Message[] {
     return Object.entries(this.data.chats)
-      .flatMap(([peer, list]) => list.map(([at, mine, text]) => ({ peer, text, mine: mine === 1, at })))
+      .flatMap(([peer, list]) => list.map(([at, mine, text, tag]) => ({ peer, text, mine: mine === 1, at, tag })))
       .sort((a, b) => a.at - b.at);
   }
 
@@ -81,9 +97,16 @@ export class History {
     return this.store(data);
   }
 
-  add({ peer, text, mine, at }: Message): Promise<void> {
-    const list = [...(this.data.chats[peer] ?? []), [at, mine ? 1 : 0, text] as Kept];
+  add({ peer, text, mine, at, tag }: Message): Promise<void> {
+    const list = [...(this.data.chats[peer] ?? []), [at, mine ? 1 : 0, text, tag] as Kept];
     return this.save(fitted({ chats: { ...this.data.chats, [peer]: list } }));
+  }
+
+  /** Deletes one message of a chat, by its tag. */
+  remove(peer: string, tag: string): Promise<void> {
+    const list = (this.data.chats[peer] ?? []).filter((m) => m[3] !== tag);
+    const { [peer]: _gone, ...others } = this.data.chats;
+    return this.save({ chats: list.length > 0 ? { ...others, [peer]: list } : others });
   }
 
   /** Deletes one chat's messages from the phone. */

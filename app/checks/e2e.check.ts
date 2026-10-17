@@ -12,7 +12,7 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
 import { E2E, NoKeyError, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
-import { FILE, loadE2EData } from '../lock/e2e-data';
+import { FILE, loadE2EData, MAX_NAME } from '../lock/e2e-data';
 import { files } from './files-memory';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -66,7 +66,7 @@ t('two chats add each other through a link and talk both ways', async () => {
   const hello = message(await bob.e2e.receive(pending.first));
   assert.equal(hello.added, true);
   assert.equal(hello.text, '');
-  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from }]);
+  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '' }]);
   await alice.e2e.firstSent(added.identity);
   assert.deepEqual(alice.e2e.pending(), []);
 
@@ -132,6 +132,52 @@ t('keeps the conversations between launches, sealed', async () => {
   assert.equal((await loadE2EData('space', 0, randomBytes(32))).account, '');
   const other = await E2E.open('space', 0, randomBytes(32));
   assert.notDeepEqual(other.identity, alice.e2e.identity);
+});
+
+t('a contact keeps the name this chat gives it, sealed, through new messages and links', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  await alice.e2e.rename(identity, '  Μαρία\n\u202e Π.  ');
+  assert.equal(alice.e2e.contacts()[0].name, 'Μαρία Π.');
+
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.receive((await bob.e2e.seal(hello.identity, 'hi', bob.from)).packet);
+  await alice.e2e.addContact({ ...bob.code, senderHex: sender() }, alice.from);
+  const again = await E2E.open('space', 0, key);
+  assert.equal(again.contacts()[0].name, 'Μαρία Π.');
+  assert.ok(!files.get(FILE)!.includes('Μαρία'));
+
+  await again.rename(identity, 'x'.repeat(MAX_NAME + 10));
+  assert.equal(again.contacts()[0].name.length, MAX_NAME);
+  await again.rename(identity, '   ');
+  assert.equal((await E2E.open('space', 0, key)).contacts()[0].name, '');
+  await assert.rejects(again.rename('00'.repeat(32), 'nobody'));
+});
+
+t('a message carries its tag, and a request to delete one message or all of them', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  assert.deepEqual([hello.tag, hello.erase], ['', null]);
+  await alice.e2e.firstSent(identity);
+
+  const hi = await alice.e2e.seal(identity, 'hi', alice.from);
+  assert.match(hi.tag, /^[0-9a-f]{12}$/);
+  const got = message(await bob.e2e.receive(hi.packet));
+  assert.deepEqual([got.text, got.tag, got.erase], ['hi', hi.tag, null]);
+
+  const one = await alice.e2e.seal(identity, '', alice.from, { tag: hi.tag });
+  assert.equal(one.tag, '');
+  assert.deepEqual(message(await bob.e2e.receive(one.packet)).erase, { tag: hi.tag });
+  const all = await bob.e2e.seal(hello.identity, '', bob.from, { all: true });
+  const asked = message(await alice.e2e.receive(all.packet));
+  assert.deepEqual([asked.text, asked.erase], ['', { all: true }]);
+  // A message with text never asks to delete.
+  const both = await alice.e2e.seal(identity, 'text', alice.from, { all: true });
+  assert.equal(message(await bob.e2e.receive(both.packet)).erase, null);
 });
 
 t('every slot has a value of the same size, used or not', async () => {

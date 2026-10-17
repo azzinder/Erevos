@@ -16,6 +16,8 @@ export type Contact = {
   conversations: string[];
   /** The first packet of a conversation started here, base64, until the relay has taken it. */
   first: string;
+  /** The name this chat gives them. Empty until one is given. Only this phone knows it. */
+  name: string;
 };
 
 export type E2EData = {
@@ -31,6 +33,14 @@ export const EMPTY_E2E: E2EData = { account: '', contacts: [], seen: [] };
 export const FILE = 'erevos-e2e';
 const BLOCK = 16 * 1024;
 
+export const MAX_NAME = 40;
+
+/** A contact's name as kept: one line of at most MAX_NAME characters, without control or direction marks. */
+export function cleanName(text: string): string {
+  const line = text.replace(/[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2028\u2029\u2066-\u2069]/g, ' ');
+  return [...line.replace(/\s+/g, ' ').trim()].slice(0, MAX_NAME).join('').trim();
+}
+
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isBase64 = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9+/]*={0,2}$/.test(v);
 const isHex = (v: unknown): v is string => isText(v) && /^([0-9a-f]{2})*$/.test(v);
@@ -44,6 +54,7 @@ function checkedContact(value: unknown): Contact | null {
     sender: isHex(v.sender) && v.sender.length === 48 ? v.sender : '',
     conversations,
     first: isBase64(v.first) ? v.first : '',
+    name: isText(v.name) ? cleanName(v.name) : '',
   };
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, PermissionsAndroid, Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, AppState, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
 import { KeyboardPaddedView } from '../components/keyboard';
@@ -8,9 +8,10 @@ import { QrCode } from '../components/QrCode';
 import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { hasCore } from '../lib/core';
-import { E2E, toBase64Url, type ContactInfo } from '../lib/e2e';
+import { E2E, toBase64Url, type ContactInfo, type Erase } from '../lib/e2e';
 import { openHidden, setHiddenPassword } from '../lock/hidden';
-import { History } from '../lock/history';
+import { MAX_NAME } from '../lock/e2e-data';
+import { History, newTag } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, sendMessage, toHex, type Relay } from '../lib/relay';
@@ -21,8 +22,10 @@ import { useStyles } from '../theme/context';
 // over the radio link, not encrypted yet. A contact is added from their contact link, which
 // carries their public keys: adding it starts the conversation, and they see the contact appear
 // when they next look at the relay. The contacts and their conversations are kept sealed
-// (lock/e2e-data.ts), and so are the messages with them (lock/history.ts). Messages over the radio
-// link are kept in memory only, so they are gone when the chat closes.
+// (lock/e2e-data.ts), with the names given to them, and so are the messages with them
+// (lock/history.ts). One message, or all of a chat's, can be deleted here only or on both phones
+// (Erase in lib/e2e.ts). Messages over the radio link are kept in memory only, so they are gone
+// when the chat closes.
 //
 // Every space also has hidden chats (lock/hidden.ts), opened with their own password from the
 // Hidden chats button, which every space shows whether it has hidden chats or not. They are a
@@ -31,7 +34,8 @@ import { useStyles } from '../theme/context';
 // keep receiving. Hidden chats close when the app goes to the background or this screen closes,
 // and their messages go with them.
 
-type Message = { id: number; peer: string; text: string; mine: boolean };
+// `tag` names a message with a contact on both phones (lock/history.ts). Radio messages have none.
+type Message = { id: number; peer: string; text: string; mine: boolean; tag: string };
 
 // Contacts are named by their identity key, after this prefix. Radio peers by their link id.
 const CONTACT_PREFIX = 'contact:';
@@ -50,8 +54,15 @@ function sameRelay(a: string, b: string): boolean {
   return plain(a) === plain(b);
 }
 
-function label(peer: string): string {
-  return peer.startsWith(CONTACT_PREFIX) ? `contact ${peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8)}` : peer;
+// A contact's name if this chat gave it one, otherwise the start of their key.
+function contactName(peer: string, contacts: ContactInfo[]): string | null {
+  const identity = peer.slice(CONTACT_PREFIX.length);
+  return contacts.find((contact) => contact.identity === identity)?.name || null;
+}
+
+function label(peer: string, contacts: ContactInfo[]): string {
+  if (!peer.startsWith(CONTACT_PREFIX)) return peer;
+  return contactName(peer, contacts) ?? `contact ${peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8)}`;
 }
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -139,6 +150,9 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
   const [contactDraft, setContactDraft] = useState('');
   const [showQr, setShowQr] = useState(false);
   const [safety, setSafety] = useState<{ peer: string; number: string } | null>(null);
+  // The contact being named, and the name typed so far.
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState('');
   const [e2e, setE2E] = useState<E2E | null>(null);
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
@@ -321,9 +335,17 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
         const peer = `${CONTACT_PREFIX}${received.identity}`;
         setContacts(e2e.contacts());
         setSelected((current) => current ?? peer);
-        if (received.text) addMessage(peer, received.text, false);
+        if (received.text) addMessage(peer, received.text, false, received.tag);
+        const name = label(peer, e2e.contacts());
+        if (received.erase && 'all' in received.erase) {
+          forgetChat(peer);
+          setNote(`${name} deleted the messages of this chat on both phones.`);
+        } else if (received.erase) {
+          forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag });
+          setNote(`${name} deleted a message on both phones.`);
+        }
         if (received.added) {
-          setNote(`New chat with ${label(peer)}: they added your contact link. Compare the safety number with theirs.`);
+          setNote(`New chat with ${name}: they added your contact link. Compare the safety number with theirs.`);
         }
       } catch (error) {
         if (!active) return;
@@ -353,33 +375,88 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
     };
   }, [relayUrl, relayToken, ownQueue, e2e]);
 
-  // Shows a message, and keeps it on the phone when it is with a contact.
-  function addMessage(peer: string, text: string, mine: boolean) {
-    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine }]);
-    if (peer.startsWith(CONTACT_PREFIX)) {
-      history.current?.add({ peer, text, mine, at: Date.now() }).catch(() => {
+  // Shows a message, and keeps it on the phone when it is with a contact. A contact's message
+  // from an Erevos before tags gets one known to this phone only.
+  function addMessage(peer: string, text: string, mine: boolean, tag = '') {
+    const contact = peer.startsWith(CONTACT_PREFIX);
+    const kept = contact ? tag || newTag() : '';
+    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept }]);
+    if (contact) {
+      history.current?.add({ peer, text, mine, at: Date.now(), tag: kept }).catch(() => {
         // Shown, but gone when the chat next opens.
       });
     }
   }
 
+  function forgetChat(peer: string) {
+    setMessages((list) => list.filter((message) => message.peer !== peer));
+    history.current?.clear(peer).catch((error) => setNote(errorText(error)));
+  }
+
+  function forgetMessage(message: Message) {
+    setMessages((list) => list.filter((m) => m.id !== message.id && !(message.tag && m.peer === message.peer && m.tag === message.tag)));
+    if (message.tag) history.current?.remove(message.peer, message.tag).catch((error) => setNote(errorText(error)));
+  }
+
+  // Asks the contact's phone to delete messages too, and deletes them here once the relay has
+  // taken that. If it cannot, nothing is deleted.
+  async function eraseOnBoth(peer: string, erase: Erase, here: () => void) {
+    const target = relayTarget();
+    if (!target) {
+      setNote('Not deleted. Type the relay address in Relay first.');
+      return;
+    }
+    try {
+      await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', erase);
+      here();
+      setNote(`Deleted here. ${label(peer, contacts)}'s phone deletes them too when it next looks at the relay.`);
+    } catch (error) {
+      setNote(notSent(error).replace('Not sent.', 'Not deleted.'));
+    }
+  }
+
   function deleteMessages(peer: string) {
-    Alert.alert('Delete messages', `Delete the messages with ${label(peer)} from this phone? They cannot be brought back.`, [
+    const name = label(peer, contacts);
+    Alert.alert('Delete messages', `Delete the messages with ${name}? They cannot be brought back.`, [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          setMessages((list) => list.filter((message) => message.peer !== peer));
-          history.current?.clear(peer).catch((error) => setNote(errorText(error)));
-        },
-      },
+      { text: 'This phone', onPress: () => forgetChat(peer) },
+      { text: 'Both phones', style: 'destructive', onPress: () => void eraseOnBoth(peer, { all: true }, () => forgetChat(peer)) },
     ]);
   }
 
-  function keep(peer: string, text: string) {
-    addMessage(peer, text, true);
+  function deleteMessage(message: Message) {
+    const both = message.peer.startsWith(CONTACT_PREFIX) && message.tag;
+    Alert.alert('Delete message', 'Delete this message? It cannot be brought back.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'This phone', onPress: () => forgetMessage(message) },
+      ...(both
+        ? [{ text: 'Both phones', style: 'destructive' as const, onPress: () => void eraseOnBoth(message.peer, { tag: message.tag }, () => forgetMessage(message)) }]
+        : []),
+    ]);
+  }
+
+  function keep(peer: string, text: string, tag = '') {
+    addMessage(peer, text, true, tag);
     setDraft('');
+  }
+
+  // Seals a message for a contact and hands it to the relay, after the first packet of the
+  // conversation if the relay has not taken that yet. Returns the message's tag.
+  async function sendToContact(target: Relay, identity: string, text: string, erase: Erase | null = null): Promise<string> {
+    if (!e2e) throw new Error(NO_CORE);
+    const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', erase);
+    if (sealed.first) {
+      await sendMessage(target, fromHex(sealed.sender), sealed.first);
+      await e2e.firstSent(identity);
+    }
+    await sendMessage(target, fromHex(sealed.sender), sealed.packet);
+    return sealed.tag;
+  }
+
+  function notSent(error: unknown): string {
+    return isQueueNotFound(error)
+      ? "Not sent. The relay does not have this contact's queue any more. Ask them to write to you, or for their new contact link."
+      : `Not sent. ${errorText(error)}`;
   }
 
   async function send() {
@@ -403,22 +480,12 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
       setNote(NO_CORE);
       return;
     }
-    const identity = selected.slice(CONTACT_PREFIX.length);
     try {
-      const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '');
-      if (sealed.first) {
-        await sendMessage(target, fromHex(sealed.sender), sealed.first);
-        await e2e.firstSent(identity);
-      }
-      await sendMessage(target, fromHex(sealed.sender), sealed.packet);
-      keep(selected, text);
+      const tag = await sendToContact(target, selected.slice(CONTACT_PREFIX.length), text);
+      keep(selected, text, tag);
       setNote('Sent through the relay, end-to-end encrypted.');
     } catch (error) {
-      setNote(
-        isQueueNotFound(error)
-          ? "Not sent. The relay does not have this contact's queue any more. Ask them to write to you, or for their new contact link."
-          : `Not sent. ${errorText(error)}`,
-      );
+      setNote(notSent(error));
     }
   }
 
@@ -437,6 +504,26 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
     }
     try {
       setSafety({ peer, number: await e2e.safetyNumber(peer.slice(CONTACT_PREFIX.length)) });
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  function startRenaming(peer: string) {
+    if (renaming === peer) {
+      setRenaming(null);
+      return;
+    }
+    setNameDraft(contactName(peer, contacts) ?? '');
+    setRenaming(peer);
+  }
+
+  async function rename(peer: string) {
+    if (!e2e) return;
+    try {
+      await e2e.rename(peer.slice(CONTACT_PREFIX.length), nameDraft);
+      setContacts(e2e.contacts());
+      setRenaming(null);
     } catch (error) {
       setNote(errorText(error));
     }
@@ -496,7 +583,13 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
         </Text>
         <Row wrap>
           {chips.map((peer) => (
-            <Chip key={peer} label={label(peer)} mono selected={peer === selected} onPress={() => setSelected(peer)} />
+            <Chip
+              key={peer}
+              label={label(peer, contacts)}
+              mono={!contactName(peer, contacts)}
+              selected={peer === selected}
+              onPress={() => setSelected(peer)}
+            />
           ))}
         </Row>
         {selectedContact ? (
@@ -510,8 +603,23 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
                 title={safety?.peer === selectedContact ? 'Hide safety number' : 'Show safety number'}
                 onPress={() => void toggleSafety(selectedContact)}
               />
+              <TextButton title="Rename" onPress={() => startRenaming(selectedContact)} />
               <TextButton title="Delete messages" onPress={() => deleteMessages(selectedContact)} />
             </Row>
+            {renaming === selectedContact ? (
+              <Row>
+                <Input
+                  value={nameDraft}
+                  onChangeText={setNameDraft}
+                  onSubmitEditing={() => void rename(selectedContact)}
+                  placeholder="Name, only on this phone"
+                  maxLength={MAX_NAME}
+                  autoFocus
+                  style={styles.grow}
+                />
+                <Button title="Save" compact onPress={() => void rename(selectedContact)} />
+              </Row>
+            ) : null}
             {safety?.peer === selectedContact ? (
               <Text selectable variant="mono" style={styles.safety}>
                 {safety.number.split(' ').reduce((lines, group, i) => lines + (i === 0 ? '' : i % 4 === 0 ? '\n' : '  ') + group, '')}
@@ -587,9 +695,14 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
         onContentSizeChange={() => thread.current?.scrollToEnd({ animated: true })}
       >
         {visible.map((message) => (
-          <View key={message.id} style={[styles.bubble, message.mine ? styles.mine : styles.theirs]}>
+          <Pressable
+            key={message.id}
+            onLongPress={() => deleteMessage(message)}
+            accessibilityHint="Long press to delete"
+            style={[styles.bubble, message.mine ? styles.mine : styles.theirs]}
+          >
             <Text style={message.mine ? styles.mineText : styles.theirsText}>{message.text}</Text>
-          </View>
+          </Pressable>
         ))}
       </ScrollView>
       {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}

@@ -1,4 +1,6 @@
-import { loadE2EData, saveE2EData, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
+import { cleanName, loadE2EData, saveE2EData, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
+
+import { isTag, newTag } from '../lock/history';
 
 import * as core from './core';
 import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
@@ -16,9 +18,11 @@ import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './
 // start one at the same time: each side then sends in the one it last received in, and opens
 // packets in any of them.
 //
-// What travels inside a packet is a Message: the text, and the relay sender id that reaches
-// the sender, so the other side can answer, and learns a new one when it changes. A
-// conversation's first message has no text.
+// What travels inside a packet is a Message: the text and its tag, and the relay sender id that
+// reaches the sender, so the other side can answer, and learns a new one when it changes. A
+// conversation's first message has no text. Nor has one that asks the other phone to delete
+// the messages of the chat, or one of them by its tag (`erase`): their Erevos does, but nothing
+// makes a changed app do it.
 //
 // Every call runs after the one before it ends, so two calls never move the same conversation
 // from the same state. A message key is never used twice: a packet is only handed back once the
@@ -29,21 +33,32 @@ const MAX_CONVERSATIONS = 3;
 // of an older one shows its message once more, in a conversation that goes nowhere.
 const MAX_SEEN = 100;
 
-type Message = { from: string; text: string };
+/** What a message asks the other phone to delete: every message of the chat, or the one with this tag. */
+export type Erase = { all: true } | { tag: string };
 
-function encodeMessage(message: Message): Uint8Array {
-  return utf8Encode(JSON.stringify(message));
+type Message = { from: string; text: string; tag: string; erase: Erase | null };
+
+function encodeMessage({ from, text, tag, erase }: Message): Uint8Array {
+  return utf8Encode(JSON.stringify({ from, text, ...(tag ? { tag } : {}), ...(erase ? { erase } : {}) }));
+}
+
+function decodeErase(value: unknown): Erase | null {
+  const erase = value as { all?: unknown; tag?: unknown } | null;
+  if (erase?.all === true) return { all: true };
+  return isTag(erase?.tag) ? { tag: erase.tag } : null;
 }
 
 function decodeMessage(bytes: Uint8Array): Message {
   try {
-    const value = JSON.parse(utf8Decode(bytes)) as Partial<Message>;
+    const value = JSON.parse(utf8Decode(bytes)) as Partial<Record<keyof Message, unknown>>;
     return {
       from: typeof value.from === 'string' && /^[0-9a-f]{48}$/.test(value.from) ? value.from : '',
       text: typeof value.text === 'string' ? value.text : '',
+      tag: isTag(value.tag) ? value.tag : '',
+      erase: decodeErase(value.erase),
     };
   } catch {
-    return { from: '', text: '' };
+    return { from: '', text: '', tag: '', erase: null };
   }
 }
 
@@ -56,11 +71,11 @@ export function fromBase64Url(text: string): Uint8Array {
   return fromBase64(text.replace(/-/g, '+').replace(/_/g, '/'));
 }
 
-/** A contact as the chat shows it. */
-export type ContactInfo = { identity: string; sender: string };
+/** A contact as the chat shows it. `name` is empty until this chat gives one. */
+export type ContactInfo = { identity: string; sender: string; name: string };
 
 export type Received =
-  | { kind: 'message'; identity: string; text: string; added: boolean }
+  | { kind: 'message'; identity: string; text: string; tag: string; added: boolean; erase: Erase | null }
   // Not encrypted (as messages before this version were), not for this account, or a replay.
   | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' };
 
@@ -131,7 +146,16 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender }) => ({ identity, sender }));
+    return this.data.contacts.map(({ identity, sender, name }) => ({ identity, sender, name }));
+  }
+
+  /** Gives a contact a name, kept with it and sealed. An empty one takes the name away. */
+  rename(identity: string, name: string): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error('No such contact.');
+      await this.save(this.withContact({ ...contact, name: cleanName(name) }));
+    });
   }
 
   /** The 60-digit number both phones show for a contact: when they match, no one is in between. */
@@ -156,13 +180,14 @@ export class E2E {
         await this.save(this.withContact({ ...known, sender: code.senderHex }));
         return { identity, added: false };
       }
-      const started = await core.startConversation(this.account, bundle, encodeMessage({ from, text: '' }));
+      const started = await core.startConversation(this.account, bundle, encodeMessage({ from, text: '', tag: '', erase: null }));
       await this.save(
         this.withContact({
           identity,
           sender: code.senderHex,
           conversations: [toBase64(started.conversation)],
           first: toBase64(started.packet),
+          name: '',
         }),
       );
       return { identity, added: true };
@@ -170,18 +195,25 @@ export class E2E {
   }
 
   /**
-   * Seals a message for a contact. `from` is this chat's relay sender id. Returns where to send it
-   * and the packet, after the first packet of the conversation if the relay has not taken that
-   * yet. Send that one first, then call `firstSent`.
+   * Seals a message for a contact, or, with `erase` and no text, asks them to delete messages.
+   * `from` is this chat's relay sender id. Returns where to send it, the packet and the message's
+   * tag, after the first packet of the conversation if the relay has not taken that yet. Send
+   * that one first, then call `firstSent`.
    */
-  seal(identity: string, text: string, from: string): Promise<{ sender: string; first: Uint8Array | null; packet: Uint8Array }> {
+  seal(
+    identity: string,
+    text: string,
+    from: string,
+    erase: Erase | null = null,
+  ): Promise<{ sender: string; first: Uint8Array | null; packet: Uint8Array; tag: string }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
       if (!contact.sender) throw new Error('This contact has not said how to reach them yet.');
-      const sealed = await core.seal(fromBase64(contact.conversations[0]), encodeMessage({ from, text }));
+      const tag = text ? newTag() : '';
+      const sealed = await core.seal(fromBase64(contact.conversations[0]), encodeMessage({ from, text, tag, erase: text ? null : erase }));
       await this.save(this.withContact({ ...contact, conversations: [toBase64(sealed.conversation), ...contact.conversations.slice(1)] }));
-      return { sender: contact.sender, first: contact.first ? fromBase64(contact.first) : null, packet: sealed.packet };
+      return { sender: contact.sender, first: contact.first ? fromBase64(contact.first) : null, packet: sealed.packet, tag };
     });
   }
 
@@ -227,9 +259,10 @@ export class E2E {
       sender: message.from || known?.sender || '',
       conversations: [toBase64(opened.conversation), ...(known?.conversations ?? [])].slice(0, MAX_CONVERSATIONS),
       first: known?.first ?? '',
+      name: known?.name ?? '',
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
-    return { kind: 'message', identity, text: message.text, added: !known };
+    return { kind: 'message', identity, text: message.text, tag: message.tag, added: !known, erase: message.erase };
   }
 
   private async open(packet: Uint8Array): Promise<Received> {
@@ -245,14 +278,14 @@ export class E2E {
         const others = contact.conversations.filter((_, j) => j !== i);
         await this.save(
           this.withContact({
-            identity: contact.identity,
+            ...contact,
             sender: message.from || contact.sender,
             // Send in the one they last sent in. Their answer also means they have the first packet.
             conversations: [toBase64(opened.conversation), ...others],
             first: '',
           }),
         );
-        return { kind: 'message', identity: contact.identity, text: message.text, added: false };
+        return { kind: 'message', identity: contact.identity, text: message.text, tag: message.tag, added: false, erase: message.erase };
       }
     }
     return { kind: 'refused', reason: 'unknown' };
