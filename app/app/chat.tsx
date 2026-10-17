@@ -319,13 +319,21 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
     const recipient = fromHex(ownQueue.recipientHex);
     let active = true;
     let busy = false;
+    // The note shown while the relay could not be reached, taken back once it answers again.
+    let failed: string | null = null;
     const timer = setInterval(async () => {
       if (busy) return;
       busy = true;
       try {
         await sendPending(e2e, target);
         const bytes = await receiveMessage(target, recipient);
-        if (!active || !bytes) return;
+        if (!active) return;
+        if (failed !== null) {
+          const shown = failed;
+          setNote((current) => (current === shown ? 'The relay answers again.' : current));
+          failed = null;
+        }
+        if (!bytes) return;
         const received = await e2e.receive(bytes);
         if (!active) return;
         if (received.kind === 'refused') {
@@ -350,7 +358,8 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
       } catch (error) {
         if (!active) return;
         if (!isQueueNotFound(error)) {
-          setNote(errorText(error));
+          failed = errorText(error);
+          setNote(failed);
           return;
         }
         // The relay no longer has our queue (deleted, or a relay that keeps queues in memory
