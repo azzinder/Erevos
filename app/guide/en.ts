@@ -192,6 +192,10 @@ Two screens on the home screen are there to test the connections, step by step.
 - **Relay test (Wi-Fi):** **Create queue** makes a queue on a relay and shows two ids. Give the **sender id** to
   the phone that writes to you, and keep the **recipient id** private. **Send** and **Receive** move messages by hand.
 
+> With one phone you can still try a chat through the relay: your chats and your **Hidden chats** each have their
+> own relay queue. Create both queues on the same relay, add the **My relay sender id** of one in the other, and
+> write. The phone's own id is refused as a contact.
+
 ## What is protected today {#privacy}
 
 Erevos says plainly what it protects and what it does not, yet.
