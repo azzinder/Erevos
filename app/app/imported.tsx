@@ -238,7 +238,7 @@ function ChatView({ archive, chat, onBack, onDelete }: { archive: Archive; chat:
       </View>
       <Text variant="caption" tone="muted">
         Imported from {SOURCE_LABELS[chat.source]}, only to read. Erevos cannot show who really wrote these.
-        {chat.skipped ? ` ${chat.skipped} notices and calls were left out.` : ''}
+        {chat.skipped === 1 ? ' One notice or call was left out.' : chat.skipped ? ` ${chat.skipped} notices and calls were left out.` : ''}
       </Text>
       <FlatList
         data={newestFirst}
