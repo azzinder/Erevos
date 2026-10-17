@@ -1,4 +1,4 @@
-import { cleanName, loadE2EData, saveE2EData, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
+import { cleanName, isTimer, loadE2EData, saveE2EData, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
 
 import { isTag, newTag } from '../lock/history';
 
@@ -24,6 +24,11 @@ import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './
 // the messages of the chat, or one of them by its tag (`erase`): their Erevos does, but nothing
 // makes a changed app do it.
 //
+// Every message also carries the chat's timer for disappearing messages and when it was set, so
+// each phone takes the later setting, and keeps the message only that long. A message with no
+// text and no `erase` only says the timer. Their Erevos deletes the messages in time; nothing
+// makes a changed app do it, or stops a screenshot.
+//
 // Every call runs after the one before it ends, so two calls never move the same conversation
 // from the same state. A message key is never used twice: a packet is only handed back once the
 // conversation that sealed it has been saved past it.
@@ -36,10 +41,13 @@ const MAX_SEEN = 100;
 /** What a message asks the other phone to delete: every message of the chat, or the one with this tag. */
 export type Erase = { all: true } | { tag: string };
 
-type Message = { from: string; text: string; tag: string; erase: Erase | null };
+// `timer` is null in a message from an Erevos before disappearing messages.
+type Message = { from: string; text: string; tag: string; erase: Erase | null; timer: number | null; timerAt: number };
 
-function encodeMessage({ from, text, tag, erase }: Message): Uint8Array {
-  return utf8Encode(JSON.stringify({ from, text, ...(tag ? { tag } : {}), ...(erase ? { erase } : {}) }));
+function encodeMessage({ from, text, tag, erase, timer, timerAt }: Message): Uint8Array {
+  return utf8Encode(
+    JSON.stringify({ from, text, ...(tag ? { tag } : {}), ...(erase ? { erase } : {}), ...(timer !== null ? { timer, timerAt } : {}) }),
+  );
 }
 
 function decodeErase(value: unknown): Erase | null {
@@ -56,10 +64,23 @@ function decodeMessage(bytes: Uint8Array): Message {
       text: typeof value.text === 'string' ? value.text : '',
       tag: isTag(value.tag) ? value.tag : '',
       erase: decodeErase(value.erase),
+      timer: isTimer(value.timer) ? value.timer : null,
+      timerAt: typeof value.timerAt === 'number' && Number.isFinite(value.timerAt) && value.timerAt >= 0 ? value.timerAt : 0,
     };
   } catch {
-    return { from: '', text: '', tag: '', erase: null };
+    return { from: '', text: '', tag: '', erase: null, timer: null, timerAt: 0 };
   }
+}
+
+/**
+ * The chat's timer once a message came: the message's if it was set later than the one kept,
+ * and how long the message itself lasts, as its sender meant.
+ */
+function timerOf(message: Message, contact: Contact | undefined) {
+  const kept = { timer: contact?.timer ?? 0, timerAt: contact?.timerAt ?? 0 };
+  const later = message.timer !== null && message.timerAt > kept.timerAt;
+  const now = later ? { timer: message.timer!, timerAt: message.timerAt } : kept;
+  return { ...now, received: { timer: message.timer ?? now.timer, timerChanged: later && now.timer !== kept.timer } };
 }
 
 /** Base64url without padding, as the contact link carries the bundle. */
@@ -72,10 +93,11 @@ export function fromBase64Url(text: string): Uint8Array {
 }
 
 /** A contact as the chat shows it. `name` is empty until this chat gives one. */
-export type ContactInfo = { identity: string; sender: string; name: string };
+export type ContactInfo = { identity: string; sender: string; name: string; timer: number };
 
 export type Received =
-  | { kind: 'message'; identity: string; text: string; tag: string; added: boolean; erase: Erase | null }
+  // `timer`: seconds this message lasts, 0 for ever. `timerChanged`: the other phone set the chat's timer anew.
+  | { kind: 'message'; identity: string; text: string; tag: string; added: boolean; erase: Erase | null; timer: number; timerChanged: boolean }
   // Not encrypted (as messages before this version were), not for this account, or a replay.
   | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' };
 
@@ -146,7 +168,20 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name }) => ({ identity, sender, name }));
+    return this.data.contacts.map(({ identity, sender, name, timer }) => ({ identity, sender, name, timer }));
+  }
+
+  /**
+   * Sets how long new messages with a contact last, seconds (0 keeps them). Set after any setting
+   * this phone has seen, whatever its clock says, so the other phone takes it.
+   */
+  setTimer(identity: string, timer: number): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error('No such contact.');
+      if (!isTimer(timer)) throw new Error('Not a time Erevos keeps messages for.');
+      await this.save(this.withContact({ ...contact, timer, timerAt: Math.max(Date.now(), contact.timerAt + 1) }));
+    });
   }
 
   /** Gives a contact a name, kept with it and sealed. An empty one takes the name away. */
@@ -180,7 +215,11 @@ export class E2E {
         await this.save(this.withContact({ ...known, sender: code.senderHex }));
         return { identity, added: false };
       }
-      const started = await core.startConversation(this.account, bundle, encodeMessage({ from, text: '', tag: '', erase: null }));
+      const started = await core.startConversation(
+        this.account,
+        bundle,
+        encodeMessage({ from, text: '', tag: '', erase: null, timer: 0, timerAt: 0 }),
+      );
       await this.save(
         this.withContact({
           identity,
@@ -188,6 +227,8 @@ export class E2E {
           conversations: [toBase64(started.conversation)],
           first: toBase64(started.packet),
           name: '',
+          timer: 0,
+          timerAt: 0,
         }),
       );
       return { identity, added: true };
@@ -196,24 +237,29 @@ export class E2E {
 
   /**
    * Seals a message for a contact, or, with `erase` and no text, asks them to delete messages.
-   * `from` is this chat's relay sender id. Returns where to send it, the packet and the message's
-   * tag, after the first packet of the conversation if the relay has not taken that yet. Send
-   * that one first, then call `firstSent`.
+   * With neither, it only tells them the chat's timer. `from` is this chat's relay sender id.
+   * Returns where to send it, the packet, the message's tag and how long it lasts (seconds),
+   * after the first packet of the conversation if the relay has not taken that yet. Send that
+   * one first, then call `firstSent`.
    */
   seal(
     identity: string,
     text: string,
     from: string,
     erase: Erase | null = null,
-  ): Promise<{ sender: string; first: Uint8Array | null; packet: Uint8Array; tag: string }> {
+  ): Promise<{ sender: string; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
       if (!contact.sender) throw new Error('This contact has not said how to reach them yet.');
       const tag = text ? newTag() : '';
-      const sealed = await core.seal(fromBase64(contact.conversations[0]), encodeMessage({ from, text, tag, erase: text ? null : erase }));
+      const { timer, timerAt } = contact;
+      const sealed = await core.seal(
+        fromBase64(contact.conversations[0]),
+        encodeMessage({ from, text, tag, erase: text ? null : erase, timer, timerAt }),
+      );
       await this.save(this.withContact({ ...contact, conversations: [toBase64(sealed.conversation), ...contact.conversations.slice(1)] }));
-      return { sender: contact.sender, first: contact.first ? fromBase64(contact.first) : null, packet: sealed.packet, tag };
+      return { sender: contact.sender, first: contact.first ? fromBase64(contact.first) : null, packet: sealed.packet, tag, timer };
     });
   }
 
@@ -254,15 +300,18 @@ export class E2E {
     const identity = toHex(await core.conversationPeer(opened.conversation));
     const message = decodeMessage(opened.plaintext);
     const known = this.find(identity);
+    const timing = timerOf(message, known);
     const contact: Contact = {
       identity,
       sender: message.from || known?.sender || '',
       conversations: [toBase64(opened.conversation), ...(known?.conversations ?? [])].slice(0, MAX_CONVERSATIONS),
       first: known?.first ?? '',
       name: known?.name ?? '',
+      timer: timing.timer,
+      timerAt: timing.timerAt,
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
-    return { kind: 'message', identity, text: message.text, tag: message.tag, added: !known, erase: message.erase };
+    return { kind: 'message', identity, text: message.text, tag: message.tag, added: !known, erase: message.erase, ...timing.received };
   }
 
   private async open(packet: Uint8Array): Promise<Received> {
@@ -276,6 +325,7 @@ export class E2E {
         }
         const message = decodeMessage(opened.plaintext);
         const others = contact.conversations.filter((_, j) => j !== i);
+        const timing = timerOf(message, contact);
         await this.save(
           this.withContact({
             ...contact,
@@ -283,9 +333,12 @@ export class E2E {
             // Send in the one they last sent in. Their answer also means they have the first packet.
             conversations: [toBase64(opened.conversation), ...others],
             first: '',
+            timer: timing.timer,
+            timerAt: timing.timerAt,
           }),
         );
-        return { kind: 'message', identity: contact.identity, text: message.text, tag: message.tag, added: false, erase: message.erase };
+        const { identity } = contact;
+        return { kind: 'message', identity, text: message.text, tag: message.tag, added: false, erase: message.erase, ...timing.received };
       }
     }
     return { kind: 'refused', reason: 'unknown' };

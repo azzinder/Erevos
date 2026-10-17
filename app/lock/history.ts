@@ -9,9 +9,15 @@ import { sealedFile, sealedSize, type Holder } from './sealed-file';
 //
 // Only chats with contacts are kept. Messages over the radio link are not: a link's id lasts as
 // long as the link, and nothing is encrypted there yet.
+//
+// A disappearing message is kept with the time it goes (lib/e2e.ts carries the chat's timer), and
+// deleted by `expire` once that has passed: while the chat is open, or when it next opens.
 
-/** One message: when (milliseconds), whether this phone sent it, its text, and its tag. */
-export type Kept = [at: number, mine: 0 | 1, text: string, tag: string];
+/**
+ * One message: when (milliseconds), whether this phone sent it, its text, its tag, and when it
+ * disappears (milliseconds), left out when it does not.
+ */
+export type Kept = [at: number, mine: 0 | 1, text: string, tag: string, until?: number];
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -20,7 +26,7 @@ export type HistoryData = { chats: Record<string, Kept[]> };
  * A message as the chat shows it. Its tag names it on both phones, so either can ask the other
  * to delete it: the sender makes it (newTag) and it travels inside the message.
  */
-export type Message = { peer: string; text: string; mine: boolean; at: number; tag: string };
+export type Message = { peer: string; text: string; mine: boolean; at: number; tag: string; until?: number };
 
 const TAG = /^[0-9a-f]{12}$/;
 
@@ -37,7 +43,8 @@ function checkedKept(m: unknown): Kept | null {
   if (!Array.isArray(m) || m.length < 3 || typeof m[0] !== 'number' || (m[1] !== 0 && m[1] !== 1) || typeof m[2] !== 'string') {
     return null;
   }
-  return [m[0], m[1], m[2], isTag(m[3]) ? m[3] : newTag()];
+  const tag = isTag(m[3]) ? m[3] : newTag();
+  return typeof m[4] === 'number' && m[4] > 0 ? [m[0], m[1], m[2], tag, m[4]] : [m[0], m[1], m[2], tag];
 }
 
 function checked(value: unknown): HistoryData {
@@ -86,7 +93,7 @@ export class History {
   /** Every message, oldest first. */
   messages(): Message[] {
     return Object.entries(this.data.chats)
-      .flatMap(([peer, list]) => list.map(([at, mine, text, tag]) => ({ peer, text, mine: mine === 1, at, tag })))
+      .flatMap(([peer, list]) => list.map(([at, mine, text, tag, until]) => ({ peer, text, mine: mine === 1, at, tag, until })))
       .sort((a, b) => a.at - b.at);
   }
 
@@ -97,8 +104,9 @@ export class History {
     return this.store(data);
   }
 
-  add({ peer, text, mine, at, tag }: Message): Promise<void> {
-    const list = [...(this.data.chats[peer] ?? []), [at, mine ? 1 : 0, text, tag] as Kept];
+  add({ peer, text, mine, at, tag, until = 0 }: Message): Promise<void> {
+    const message: Kept = until > 0 ? [at, mine ? 1 : 0, text, tag, until] : [at, mine ? 1 : 0, text, tag];
+    const list = [...(this.data.chats[peer] ?? []), message];
     return this.save(fitted({ chats: { ...this.data.chats, [peer]: list } }));
   }
 
@@ -107,6 +115,19 @@ export class History {
     const list = (this.data.chats[peer] ?? []).filter((m) => m[3] !== tag);
     const { [peer]: _gone, ...others } = this.data.chats;
     return this.save({ chats: list.length > 0 ? { ...others, [peer]: list } : others });
+  }
+
+  /** Deletes the messages whose time to disappear is `now` or before. Says whether there were any. */
+  async expire(now: number): Promise<boolean> {
+    const chats: Record<string, Kept[]> = {};
+    let gone = false;
+    for (const [peer, list] of Object.entries(this.data.chats)) {
+      const kept = list.filter((m) => !(m[4] && m[4] <= now));
+      gone ||= kept.length < list.length;
+      if (kept.length > 0) chats[peer] = kept;
+    }
+    if (gone) await this.save({ chats });
+    return gone;
   }
 
   /** Deletes one chat's messages from the phone. */

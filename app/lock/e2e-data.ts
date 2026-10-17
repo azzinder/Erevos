@@ -18,6 +18,10 @@ export type Contact = {
   first: string;
   /** The name this chat gives them. Empty until one is given. Only this phone knows it. */
   name: string;
+  /** Seconds after which new messages with them disappear, on both phones. 0 keeps them. */
+  timer: number;
+  /** When either phone last set the timer, milliseconds on that phone's clock: the later setting wins. */
+  timerAt: number;
 };
 
 export type E2EData = {
@@ -34,6 +38,12 @@ export const FILE = 'erevos-e2e';
 const BLOCK = 16 * 1024;
 
 export const MAX_NAME = 40;
+
+/** The longest a disappearing message lasts, seconds: four weeks. */
+export const MAX_TIMER = 28 * 24 * 3600;
+
+export const isTimer = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= MAX_TIMER;
+const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 
 /** A contact's name as kept: one line of at most MAX_NAME characters, without control or direction marks. */
 export function cleanName(text: string): string {
@@ -55,6 +65,8 @@ function checkedContact(value: unknown): Contact | null {
     conversations,
     first: isBase64(v.first) ? v.first : '',
     name: isText(v.name) ? cleanName(v.name) : '',
+    timer: isTimer(v.timer) ? v.timer : 0,
+    timerAt: isTime(v.timerAt) ? v.timerAt : 0,
   };
 }
 

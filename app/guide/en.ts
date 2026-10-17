@@ -100,6 +100,17 @@ Either way Erevos asks where:
 - **Both phones:** their phone deletes them too, the next time it looks at the relay. Their Erevos does so, but a
   changed app, a screenshot or a copy can still keep them.
 
+### Disappearing messages
+
+Pick a chat and tap **Disappearing: Off** to choose how long new messages last: 5 minutes, 1 hour, 1 day or 1 week.
+Each new message then says when it disappears, and goes from both phones that long after it is sent or arrives. The
+other phone learns the setting the next time it looks at the relay, and either phone can change it: the later change
+wins. Messages already in the chat stay.
+
+- **While Erevos is closed:** a message whose time has come is deleted when the chat next opens. Until then it stays
+  on the phone, sealed like the rest.
+- **Not a guarantee:** their Erevos deletes them, but a changed app, a screenshot or a copy can still keep them.
+
 > The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
 > kept in this space, sealed. About a thousand short messages fit; when it is full, the oldest go first. Deleted
 > messages can stay for a while in the phone's storage, sealed like the rest, until something is written over them.
@@ -267,7 +278,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages to a nearby phone** | **Not encrypted yet.** Whoever listens to the nearby link could read them. | The same encryption as through the relay. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. | Two relays, so that none sees both ends. Tor, optional. |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
-| **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. Deleting on both phones relies on the other phone's Erevos. | |
+| **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
 
 ## What is coming {#coming}

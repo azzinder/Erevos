@@ -66,7 +66,7 @@ t('two chats add each other through a link and talk both ways', async () => {
   const hello = message(await bob.e2e.receive(pending.first));
   assert.equal(hello.added, true);
   assert.equal(hello.text, '');
-  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '' }]);
+  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0 }]);
   await alice.e2e.firstSent(added.identity);
   assert.deepEqual(alice.e2e.pending(), []);
 
@@ -178,6 +178,46 @@ t('a message carries its tag, and a request to delete one message or all of them
   // A message with text never asks to delete.
   const both = await alice.e2e.seal(identity, 'text', alice.from, { all: true });
   assert.equal(message(await bob.e2e.receive(both.packet)).erase, null);
+});
+
+t('a chat timer travels with the messages, the later setting wins, and old messages keep theirs', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  assert.deepEqual([hello.timer, hello.timerChanged], [0, false]);
+  await alice.e2e.firstSent(identity);
+
+  // Bob sends with no timer while Alice sets one: his message does not take it back.
+  const before = await bob.e2e.seal(hello.identity, 'before', bob.from);
+  assert.equal(before.timer, 0);
+  await alice.e2e.setTimer(identity, 3600);
+  const told = await alice.e2e.seal(identity, '', alice.from);
+  assert.equal(told.timer, 3600);
+  const stale = message(await alice.e2e.receive(before.packet));
+  assert.deepEqual([stale.text, stale.timer, stale.timerChanged], ['before', 0, false]);
+  assert.equal(alice.e2e.contacts()[0].timer, 3600);
+
+  const learnt = message(await bob.e2e.receive(told.packet));
+  assert.deepEqual([learnt.text, learnt.erase, learnt.timer, learnt.timerChanged], ['', null, 3600, true]);
+  assert.equal(bob.e2e.contacts()[0].timer, 3600);
+  const after = await bob.e2e.seal(hello.identity, 'after', bob.from);
+  assert.deepEqual([message(await alice.e2e.receive(after.packet)).timer, after.timer], [3600, 3600]);
+
+  // Bob turns it off; the same setting again changes nothing.
+  await bob.e2e.setTimer(hello.identity, 0);
+  const off = message(await alice.e2e.receive((await bob.e2e.seal(hello.identity, 'off', bob.from)).packet));
+  assert.deepEqual([off.timer, off.timerChanged], [0, true]);
+  const same = message(await alice.e2e.receive((await bob.e2e.seal(hello.identity, 'again', bob.from)).packet));
+  assert.deepEqual([same.timer, same.timerChanged], [0, false]);
+
+  // Kept, sealed, between launches; and only times Erevos knows.
+  await alice.e2e.setTimer(identity, 300);
+  assert.equal((await E2E.open('space', 0, key)).contacts()[0].timer, 300);
+  await assert.rejects(alice.e2e.setTimer(identity, -1));
+  await assert.rejects(alice.e2e.setTimer(identity, 1.5));
+  await assert.rejects(alice.e2e.setTimer('00'.repeat(32), 60));
 });
 
 t('every slot has a value of the same size, used or not', async () => {

@@ -98,3 +98,20 @@ t('deletes the messages of one chat and keeps the others', async () => {
     ['two'],
   );
 });
+
+t('a disappearing message is kept with its time, and goes once that has passed', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  await history.add({ peer: 'contact:aa', text: 'stays', mine: true, at: 1, tag: newTag() });
+  await history.add({ peer: 'contact:aa', text: 'soon', mine: false, at: 2, tag: newTag(), until: 1000 });
+  await history.add({ peer: 'contact:bb', text: 'later', mine: true, at: 3, tag: newTag(), until: 5000 });
+  assert.equal(await history.expire(999), false);
+
+  const again = await History.open('space', 0, key);
+  assert.deepEqual(again.messages().map((m) => [m.text, m.until]), [['stays', undefined], ['soon', 1000], ['later', 5000]]);
+  assert.equal(await again.expire(1000), true);
+  assert.deepEqual((await History.open('space', 0, key)).messages().map((m) => m.text), ['stays', 'later']);
+  await again.expire(10_000);
+  assert.deepEqual((await History.open('space', 0, key)).messages().map((m) => m.text), ['stays']);
+  assert.ok(values().every((v) => v.length === values()[0].length));
+});
