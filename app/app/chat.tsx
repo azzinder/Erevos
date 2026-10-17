@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, PermissionsAndroid, Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, AppState, PermissionsAndroid, Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
 import { KeyboardPaddedView } from '../components/keyboard';
@@ -10,6 +10,7 @@ import { contactLink, onContactOffered, parseContact, type ContactCode } from '.
 import { hasCore } from '../lib/core';
 import { E2E, toBase64Url, type ContactInfo } from '../lib/e2e';
 import { openHidden, setHiddenPassword } from '../lock/hidden';
+import { History } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, sendMessage, toHex, type Relay } from '../lib/relay';
@@ -19,8 +20,9 @@ import { useStyles } from '../theme/context';
 // Chat with contacts through the relay, end-to-end encrypted (lib/e2e.ts), and with nearby phones
 // over the radio link, not encrypted yet. A contact is added from their contact link, which
 // carries their public keys: adding it starts the conversation, and they see the contact appear
-// when they next look at the relay. Messages are kept in memory only, so they are gone on reload.
-// The contacts and their conversations are kept, sealed (lock/e2e-data.ts).
+// when they next look at the relay. The contacts and their conversations are kept sealed
+// (lock/e2e-data.ts), and so are the messages with them (lock/history.ts). Messages over the radio
+// link are kept in memory only, so they are gone when the chat closes.
 //
 // Every space also has hidden chats (lock/hidden.ts), opened with their own password from the
 // Hidden chats button, which every space shows whether it has hidden chats or not. They are a
@@ -140,6 +142,7 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
   const [e2e, setE2E] = useState<E2E | null>(null);
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
+  const history = useRef<History | null>(null);
   const thread = useRef<ScrollView>(null);
   const styles = useStyles(makeStyles);
 
@@ -219,7 +222,7 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
         setSelected((current) => current ?? id);
       }),
       onRadioEvent('onText', ({ peer, text }) => {
-        setMessages((list) => [...list, { id: nextId.current++, peer, text, mine: false }]);
+        addMessage(peer, text, false);
       }),
     ];
     PermissionsAndroid.requestMultiple(PERMISSIONS).finally(() => {
@@ -253,7 +256,13 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
           setNote(NO_CORE);
           return;
         }
-        const chats = await E2E.open(hiddenKey ? 'hidden' : 'space', space, hiddenKey ?? key);
+        const holder = hiddenKey ? 'hidden' : 'space';
+        const kept = await History.open(holder, space, hiddenKey ?? key);
+        if (!active) return;
+        history.current = kept;
+        // Ahead of anything the radio brought while it loaded.
+        setMessages((list) => [...kept.messages().map((m) => ({ ...m, id: nextId.current++ })), ...list]);
+        const chats = await E2E.open(holder, space, hiddenKey ?? key);
         if (!active) return;
         setE2E(chats);
         setContacts(chats.contacts());
@@ -312,7 +321,7 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
         const peer = `${CONTACT_PREFIX}${received.identity}`;
         setContacts(e2e.contacts());
         setSelected((current) => current ?? peer);
-        if (received.text) setMessages((list) => [...list, { id: nextId.current++, peer, text: received.text, mine: false }]);
+        if (received.text) addMessage(peer, received.text, false);
         if (received.added) {
           setNote(`New chat with ${label(peer)}: they added your contact link. Compare the safety number with theirs.`);
         }
@@ -344,8 +353,32 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
     };
   }, [relayUrl, relayToken, ownQueue, e2e]);
 
+  // Shows a message, and keeps it on the phone when it is with a contact.
+  function addMessage(peer: string, text: string, mine: boolean) {
+    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine }]);
+    if (peer.startsWith(CONTACT_PREFIX)) {
+      history.current?.add({ peer, text, mine, at: Date.now() }).catch(() => {
+        // Shown, but gone when the chat next opens.
+      });
+    }
+  }
+
+  function deleteMessages(peer: string) {
+    Alert.alert('Delete messages', `Delete the messages with ${label(peer)} from this phone? They cannot be brought back.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          setMessages((list) => list.filter((message) => message.peer !== peer));
+          history.current?.clear(peer).catch((error) => setNote(errorText(error)));
+        },
+      },
+    ]);
+  }
+
   function keep(peer: string, text: string) {
-    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine: true }]);
+    addMessage(peer, text, true);
     setDraft('');
   }
 
@@ -472,10 +505,13 @@ function Chat({ hiddenKey, shown, onHidden, onChangePassword }: {
               End-to-end encrypted. Compare the safety number with theirs, in person or on a call: if both phones show
               the same, no one is in between.
             </Text>
-            <TextButton
-              title={safety?.peer === selectedContact ? 'Hide safety number' : 'Show safety number'}
-              onPress={() => void toggleSafety(selectedContact)}
-            />
+            <Row wrap>
+              <TextButton
+                title={safety?.peer === selectedContact ? 'Hide safety number' : 'Show safety number'}
+                onPress={() => void toggleSafety(selectedContact)}
+              />
+              <TextButton title="Delete messages" onPress={() => deleteMessages(selectedContact)} />
+            </Row>
             {safety?.peer === selectedContact ? (
               <Text selectable variant="mono" style={styles.safety}>
                 {safety.number.split(' ').reduce((lines, group, i) => lines + (i === 0 ? '' : i % 4 === 0 ? '\n' : '  ') + group, '')}

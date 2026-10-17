@@ -151,6 +151,7 @@ test('the guide is searched ignoring case and accents, titles first', () => {
   const deep = searchGuide(en, 'safety number');
   assert.ok(deep.map((h) => h.section.id).includes('relay'));
   assert.ok(deep.find((h) => h.section.id === 'faq')?.snippet?.toLowerCase().includes('safety number'));
+  for (const sections of [en, el]) assert.ok(searchGuide(sections, 'Delete messages').some((h) => h.section.id === 'relay'));
   assert.deepEqual(searchGuide(en, '  '), []);
   assert.deepEqual(searchGuide(en, 'zzzz-nothing'), []);
   for (const hit of searchGuide(el, 'κωδικός')) if (hit.snippet) assert.ok(hit.snippet.length <= 112);

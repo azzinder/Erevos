@@ -87,8 +87,11 @@ Pick the chat and tap **Show safety number**. Both phones show the same 60 digit
 in person or on a call: if they match, no one is in between. If they differ, do not trust that chat, and add the
 link again, scanned from their own phone.
 
-> The relay settings, your queue, your contacts and the keys of your conversations are kept in this space, sealed.
-> The messages themselves are not kept yet: when you leave Chat or close Erevos, the conversation is cleared.
+> The relay settings, your queue, your contacts, the keys of your conversations and the messages are kept in this
+> space, sealed. About a thousand short messages fit; when it is full, the oldest go first. **Delete messages**, under
+> the chat you picked, removes that chat's messages from the phone. Deleted messages can stay for a while in the
+> phone's storage, sealed like the rest, until something is written over them. Messages to and from a nearby phone
+> are not kept.
 
 ## How Erevos picks the path {#paths}
 
@@ -136,8 +139,8 @@ Under **Lock and second password**, **Lock when Erevos opens** has two choices: 
 
 - **Wrong passwords:** after 5 wrong tries, each further one makes you wait, 30 seconds at first and twice as long
   each time, up to an hour. The count survives a restart.
-- **What is sealed:** each space's contacts, the keys of its conversations, its relay settings and its look are
-  kept on the phone sealed with a key that only its password opens.
+- **What is sealed:** each space's contacts, the keys of its conversations, its messages, its relay settings and its
+  look are kept on the phone sealed with a key that only its password opens.
 
 > There is no way to recover a forgotten password: nothing is stored that could open the data without it.
 
@@ -215,7 +218,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
 | **Messages to a nearby phone** | **Not encrypted yet.** Whoever listens to the nearby link could read them. | The same encryption as through the relay. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. | Two relays, so that none sees both ends. Tor, optional. |
-| **Message history** | Not kept: leaving Chat clears it. | Kept on the phone, sealed in its space. |
+| **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. | |
 | **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
 
 ## What is coming {#coming}
