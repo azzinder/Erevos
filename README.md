@@ -37,8 +37,11 @@ Early work, not audited. Do not rely on it to protect anyone yet.
 - `crates/erevos-core/src/wire.rs`: byte encodings for prekey bundles, handshake
   messages and packets, with one valid encoding per message.
 - `crates/erevos-import`: reads chats exported from other apps. So far Telegram.
-- `crates/erevos-relay`: the relay server. A TCP listener over the one-way
-  queue store (create, send, receive, delete).
+- `crates/erevos-relay`: the relay server. One-way queues (create, send,
+  receive, delete) over TCP and WebSocket, with an optional bearer token and
+  an optional journal on disk so queues survive a restart.
+- `deploy/relay`: scripts that run the relay on a Debian or Ubuntu server
+  behind Caddy, with TLS from Let's Encrypt. See its README.
 
 ## Build
 
