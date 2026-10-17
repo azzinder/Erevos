@@ -6,3 +6,5 @@ expo-env.d.ts
 /android/
 /ios/
 /checks/.core/
+# What the local modules build next to their sources.
+modules/*/android/build/
