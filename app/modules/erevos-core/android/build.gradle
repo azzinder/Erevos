@@ -1,0 +1,77 @@
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.erevoscore'
+version = '0.0.1'
+
+// The core is Rust, in crates/erevos-ffi at the top of the repository. Before this module builds,
+// cargo-ndk builds the core for each Android ABI the app is built for, so the app always carries
+// the core of its own checkout. Rust's Android targets and cargo-ndk are needed once (README.md).
+def repoRoot = file('../../../..')
+def rustLibs = layout.buildDirectory.dir('rustJniLibs').get().asFile
+def allAbis = ['arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64']
+def abis = (findProperty('reactNativeArchitectures') ?: allAbis.join(','))
+  .split(',').collect { it.trim() }.findAll { it }
+// Gradle can start without the shell's PATH, so look where rustup puts cargo first.
+def cargoHome = System.getenv('CARGO_HOME') ?: "${System.getProperty('user.home')}/.cargo"
+def cargo = new File(cargoHome, 'bin/cargo').canExecute() ? "${cargoHome}/bin/cargo" : 'cargo'
+
+android {
+  namespace 'expo.modules.erevoscore'
+  if (rootProject.hasProperty('ndkVersion')) {
+    ndkVersion rootProject.ext.ndkVersion
+  }
+
+  defaultConfig {
+    versionCode 1
+    versionName '0.0.1'
+  }
+
+  sourceSets {
+    main.jniLibs.srcDirs += rustLibs
+  }
+}
+
+def buildRustCore = tasks.register('buildRustCore', Exec) {
+  description = 'Builds the Erevos core (crates/erevos-ffi) for the Android ABIs of this build.'
+  workingDir repoRoot
+  inputs.files(
+    fileTree(new File(repoRoot, 'crates/erevos-core/src')),
+    fileTree(new File(repoRoot, 'crates/erevos-ffi/src')),
+    new File(repoRoot, 'Cargo.toml'),
+    new File(repoRoot, 'Cargo.lock'),
+    new File(repoRoot, 'crates/erevos-core/Cargo.toml'),
+    new File(repoRoot, 'crates/erevos-ffi/Cargo.toml'),
+  )
+  inputs.property('abis', abis)
+  outputs.dir(rustLibs)
+
+  def command = [cargo, 'ndk', '--platform', '24', '-o', rustLibs.path]
+  abis.each { command += ['-t', it] }
+  command += ['build', '--release', '-p', 'erevos-ffi', '--features', 'android']
+  commandLine command
+
+  doFirst {
+    def ready = false
+    try {
+      def check = [cargo, 'ndk', '--version'].execute()
+      check.waitFor()
+      ready = check.exitValue() == 0
+    } catch (IOException ignored) {
+      // No cargo at all.
+    }
+    if (!ready) {
+      throw new GradleException('The Erevos core needs Rust for Android to build: rustup, its Android targets and cargo-ndk. See app/modules/erevos-core/README.md.')
+    }
+    environment 'ANDROID_NDK_HOME', android.ndkDirectory.path
+    // Build scripts run on this computer. A ~/.cargo/config that names a linker which is not
+    // installed would stop them, so they use the system's own unless one is set here.
+    if (!System.getenv('CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER')) {
+      environment 'CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER', 'cc'
+    }
+  }
+}
+
+tasks.named('preBuild') {
+  dependsOn buildRustCore
+}
