@@ -320,7 +320,7 @@ export default function Chat() {
             onPress={() => setSelected(peer)}
             style={[styles.chip, peer === selected && styles.chipOn]}
           >
-            <Text style={styles.chipText}>{label(peer)}</Text>
+            <Text style={[styles.chipText, peer === selected && styles.chipTextOn]}>{label(peer)}</Text>
           </Pressable>
         ))}
       </View>
@@ -419,7 +419,7 @@ export default function Chat() {
       >
         {visible.map((message) => (
           <View key={message.id} style={[styles.bubble, message.mine ? styles.mine : styles.theirs]}>
-            <Text style={styles.bubbleText}>{message.text}</Text>
+            <Text style={[styles.bubbleText, !message.mine && styles.theirsText]}>{message.text}</Text>
           </View>
         ))}
       </ScrollView>
@@ -493,6 +493,9 @@ const styles = StyleSheet.create({
     color: '#F5EFE6',
     fontFamily: 'monospace',
   },
+  chipTextOn: {
+    color: '#0D0B09',
+  },
   thread: {
     flex: 1,
   },
@@ -517,6 +520,9 @@ const styles = StyleSheet.create({
   bubbleText: {
     fontSize: 15,
     color: '#0D0B09',
+  },
+  theirsText: {
+    color: '#F5EFE6',
   },
   note: {
     fontSize: 13,
