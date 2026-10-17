@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
 import { QrCode } from '../components/QrCode';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
+import { loadCurrentSpaceData, saveCurrentSpaceData, type Queue } from '../lock/space-data';
 import {
   createQueue,
   decodeEnvelope,
@@ -21,26 +22,8 @@ import {
 // sender id is saved for that phone. Plain text, kept in memory only, so it is gone on reload.
 
 type Message = { id: number; peer: string; text: string; mine: boolean };
-type Queue = { recipientHex: string; senderHex: string };
 
-// What is kept on the phone between launches: the relay, our queue, and the relay routes.
-// The recipient id is private, which is why this goes to the secure store.
-type Saved = { url: string; token: string; ownQueue: Queue | null; routes: Record<string, string> };
-
-const STORE_KEY = 'erevos.relay';
 const RELAY_PREFIX = 'relay:';
-
-type SecureStoreModule = typeof import('expo-secure-store');
-
-// The secure store needs a native build that includes it. Until a phone has one, the chat
-// still works and simply forgets its relay settings when it reloads.
-function secureStore(): SecureStoreModule | null {
-  try {
-    return require('expo-secure-store') as SecureStoreModule;
-  } catch {
-    return null;
-  }
-}
 
 const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.NEARBY_WIFI_DEVICES',
@@ -106,6 +89,8 @@ export default function Chat() {
     setNote('Contact added. Messages to it go through the relay.');
   }
 
+  // The radio link belongs to the phone, not to a space: until messages are sealed for each
+  // space's own keys, a nearby phone's message shows in whichever space is open.
   useEffect(() => {
     if (Platform.OS !== 'android') return;
     let active = true;
@@ -129,24 +114,16 @@ export default function Chat() {
     };
   }, []);
 
-  // Restores the relay settings, our queue and the contacts saved on this phone.
+  // Restores the relay settings, our queue and the contacts this space keeps on the phone,
+  // sealed with its key (lock/space-data.ts). Another space finds only its own.
   useEffect(() => {
-    const store = secureStore();
-    if (!store) {
-      setLoaded(true);
-      return;
-    }
-    store
-      .getItemAsync(STORE_KEY)
-      .then((saved) => {
-        if (!saved) return;
-        const data = JSON.parse(saved) as Partial<Saved>;
-        const routeMap = data.routes ?? {};
-        setRelayUrl(data.url ?? '');
-        setRelayToken(data.token ?? '');
-        setOwnQueue(data.ownQueue ?? null);
-        setRoutes(routeMap);
-        setPeers(Object.keys(routeMap).filter((peer) => peer.startsWith(RELAY_PREFIX)));
+    loadCurrentSpaceData()
+      .then((data) => {
+        setRelayUrl(data.url);
+        setRelayToken(data.token);
+        setOwnQueue(data.ownQueue);
+        setRoutes(data.routes);
+        setPeers(Object.keys(data.routes).filter((peer) => peer.startsWith(RELAY_PREFIX)));
       })
       .catch(() => {
         // Nothing usable saved. Start empty.
@@ -156,10 +133,8 @@ export default function Chat() {
 
   // Saves the relay settings, our queue and the contacts whenever they change.
   useEffect(() => {
-    const store = secureStore();
-    if (!loaded || !store) return;
-    const data: Saved = { url: relayUrl, token: relayToken, ownQueue, routes };
-    store.setItemAsync(STORE_KEY, JSON.stringify(data)).catch(() => {
+    if (!loaded) return;
+    saveCurrentSpaceData({ url: relayUrl, token: relayToken, ownQueue, routes }).catch(() => {
       // A failed save only means the next launch starts empty.
     });
   }, [loaded, relayUrl, relayToken, ownQueue, routes]);

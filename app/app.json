@@ -16,7 +16,7 @@
         "backgroundColor": "#0D0B09"
       }
     },
-    "plugins": ["expo-router"],
+    "plugins": ["expo-router", "react-native-quick-crypto"],
     "experiments": {
       "typedRoutes": true
     }

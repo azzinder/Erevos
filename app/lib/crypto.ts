@@ -1,0 +1,198 @@
+// Encryption helpers for what the app keeps on the phone: AES-256-GCM with keys derived from a
+// password by PBKDF2-SHA256, the same as in LPHL FASOULI. Pure JavaScript (the audited @noble
+// libraries), so it runs the same on Android, iOS, web and under plain Node for checks. The app
+// plugs in native randomness and a native PBKDF2 at startup (crypto-setup).
+import { gcm } from '@noble/ciphers/aes.js';
+import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
+import { sha256 } from '@noble/hashes/sha2.js';
+
+export type RandomBytes = (length: number) => Uint8Array;
+
+// Web Crypto where there is one (browsers, Node). React Native has none, so a phone build that
+// lacks expo-crypto refuses to make keys rather than make weak ones.
+let random: RandomBytes = (length) => {
+  if (!globalThis.crypto?.getRandomValues) {
+    throw new Error('This build has no secure random source. Rebuild the app so it includes expo-crypto.');
+  }
+  return globalThis.crypto.getRandomValues(new Uint8Array(length));
+};
+
+export function setRandomSource(fn: RandomBytes): void {
+  random = fn;
+}
+
+// The most a random source gives at a time: expo-crypto refuses more than 1024 bytes, Web Crypto
+// more than 65536.
+const RANDOM_CHUNK = 1024;
+
+export function randomBytes(length: number): Uint8Array {
+  if (length <= RANDOM_CHUNK) return random(length);
+  const out = new Uint8Array(length);
+  for (let at = 0; at < length; at += RANDOM_CHUNK) out.set(random(Math.min(RANDOM_CHUNK, length - at)), at);
+  return out;
+}
+
+export function utf8Encode(text: string): Uint8Array {
+  const bytes: number[] = [];
+  for (const ch of text) {
+    const c = ch.codePointAt(0)!;
+    if (c < 0x80) bytes.push(c);
+    else if (c < 0x800) bytes.push(0xc0 | (c >> 6), 0x80 | (c & 63));
+    else if (c < 0x10000) bytes.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+    else bytes.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 63), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+  }
+  return Uint8Array.from(bytes);
+}
+
+export function utf8Decode(bytes: Uint8Array): string {
+  let out = '';
+  const chunk: number[] = [];
+  const flush = () => {
+    out += String.fromCodePoint(...chunk);
+    chunk.length = 0;
+  };
+  for (let i = 0; i < bytes.length; ) {
+    const b = bytes[i];
+    let c: number;
+    if (b < 0x80) {
+      c = b;
+      i += 1;
+    } else if (b < 0xe0) {
+      c = ((b & 31) << 6) | (bytes[i + 1] & 63);
+      i += 2;
+    } else if (b < 0xf0) {
+      c = ((b & 15) << 12) | ((bytes[i + 1] & 63) << 6) | (bytes[i + 2] & 63);
+      i += 3;
+    } else {
+      c = ((b & 7) << 18) | ((bytes[i + 1] & 63) << 12) | ((bytes[i + 2] & 63) << 6) | (bytes[i + 3] & 63);
+      i += 4;
+    }
+    chunk.push(c);
+    if (chunk.length >= 4096) flush();
+  }
+  flush();
+  return out;
+}
+
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const B64_INDEX = new Map([...B64].map((c, i) => [c, i]));
+
+export function toBase64(bytes: Uint8Array): string {
+  let out = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const a = bytes[i];
+    const b = bytes[i + 1] ?? 0;
+    const c = bytes[i + 2] ?? 0;
+    const n = (a << 16) | (b << 8) | c;
+    out += B64[(n >> 18) & 63] + B64[(n >> 12) & 63];
+    out += i + 1 < bytes.length ? B64[(n >> 6) & 63] : '=';
+    out += i + 2 < bytes.length ? B64[n & 63] : '=';
+  }
+  return out;
+}
+
+export function fromBase64(text: string): Uint8Array {
+  const clean = text.replace(/[^A-Za-z0-9+/]/g, '');
+  const out = new Uint8Array(Math.floor((clean.length * 3) / 4));
+  let o = 0;
+  for (let i = 0; i < clean.length; i += 4) {
+    const n =
+      ((B64_INDEX.get(clean[i]) ?? 0) << 18) |
+      ((B64_INDEX.get(clean[i + 1]) ?? 0) << 12) |
+      ((B64_INDEX.get(clean[i + 2]) ?? 0) << 6) |
+      (B64_INDEX.get(clean[i + 3]) ?? 0);
+    if (o < out.length) out[o++] = (n >> 16) & 255;
+    if (o < out.length) out[o++] = (n >> 8) & 255;
+    if (o < out.length) out[o++] = n & 255;
+  }
+  return out;
+}
+
+export type Pbkdf2 = (password: Uint8Array, salt: Uint8Array, iterations: number, length: number) => Promise<Uint8Array>;
+
+let pbkdf2: Pbkdf2 = (password, salt, iterations, length) =>
+  pbkdf2Async(sha256, password, salt, { c: iterations, dkLen: length, asyncTick: 20 });
+
+// PBKDF2 in JavaScript is fine in browsers and checks but far too slow on phones, so the app
+// plugs in a native one at startup.
+export function setPbkdf2(fn: Pbkdf2): void {
+  pbkdf2 = fn;
+}
+
+// PBKDF2 through Web Crypto: native in browsers, and it runs several derivations at once. Null
+// where Web Crypto is missing.
+export function webCryptoPbkdf2(): Pbkdf2 | null {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) return null;
+  const fallback = pbkdf2;
+  return async (password, salt, iterations, length) => {
+    try {
+      const key = await subtle.importKey('raw', new Uint8Array(password), 'PBKDF2', false, ['deriveBits']);
+      const bits = await subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: new Uint8Array(salt), iterations }, key, length * 8);
+      return new Uint8Array(bits);
+    } catch {
+      // Web Crypto without PBKDF2 in it: the same result, in JavaScript.
+      return fallback(password, salt, iterations, length);
+    }
+  };
+}
+
+/** PBKDF2-HMAC-SHA256, 32-byte key. */
+export async function deriveKey(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
+  return pbkdf2(utf8Encode(password), salt, iterations, 32);
+}
+
+const PREFIX = 'EVENC1:';
+
+export function isEncrypted(text: string): boolean {
+  return text.startsWith(PREFIX);
+}
+
+/** AES-256-GCM with a random 96-bit nonce; the output is text-safe. */
+export function encryptText(key: Uint8Array, text: string): string {
+  const nonce = randomBytes(12);
+  const sealed = gcm(key, nonce).encrypt(utf8Encode(text));
+  const joined = new Uint8Array(nonce.length + sealed.length);
+  joined.set(nonce);
+  joined.set(sealed, nonce.length);
+  return PREFIX + toBase64(joined);
+}
+
+export class DecryptError extends Error {
+  constructor() {
+    super('decrypt');
+  }
+}
+
+/** Throws DecryptError when the key is wrong or the data was changed. */
+export function decryptText(key: Uint8Array, blob: string): string {
+  if (!isEncrypted(blob)) throw new DecryptError();
+  const joined = fromBase64(blob.slice(PREFIX.length));
+  try {
+    return utf8Decode(gcm(key, joined.slice(0, 12)).decrypt(joined.slice(12)));
+  } catch {
+    throw new DecryptError();
+  }
+}
+
+export function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+export function fromHex(text: string): Uint8Array {
+  const out = new Uint8Array(text.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(text.slice(2 * i, 2 * i + 2), 16);
+  return out;
+}
+
+export function sha256Bytes(data: Uint8Array): Uint8Array {
+  return sha256(data);
+}
+
+/** Constant-time comparison. */
+export function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
