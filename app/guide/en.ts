@@ -476,27 +476,32 @@ exist.
 
 ## Hidden chats {#hidden}
 
-Every space can keep hidden chats: chats that open only with their own PIN, and never show among your other
-chats. There is no button for them anywhere.
+Every space has 4 places for hidden chats, each opened only with its own PIN, and they never show among your other
+chats. There is no button for them anywhere. Each place can hold one chat or several, so 2 spaces have 8 places.
 
-1. Start them in either of two ways: in **Lock and second password**, under **Hidden chats**, tap **Set hidden chats
-   PIN**, type it twice and tap **Save**; or open a chat's **Details**, tap **Move to hidden chats**, type a PIN of 4
-   characters or more and tap **New hidden chats**, then **Start and move**.
-2. To open them, type the PIN in **Search chats** on the home screen and press Enter (the keyboard's search key). A
-   wrong PIN is just a search: nothing happens.
+1. Start a place in either of two ways: in **Lock and second password**, under **Hidden chats**, pick **Place 1** to
+   **Place 4**, tap **Set hidden chats PIN**, type it twice and tap **Save**; or open a chat's **Details**, tap **Move
+   to hidden chats**, type a PIN of 4 characters or more, tap **New hidden chats**, pick a place, then **Start and
+   move**. Remember which places you use: for privacy, Erevos cannot tell which are free.
+2. To open them, type the PIN in **Search chats** on the home screen and press Enter (the keyboard's search key). It
+   opens only the place with that PIN. A wrong PIN is just a search: nothing happens.
 3. They open as their own chat, titled **Hidden chats**, with **Change PIN** at the top. The back arrow closes them.
-4. To move another chat there, open its **Details**, tap **Move to hidden chats**, type the PIN and tap **Move**. The
+4. To move another chat into a place, open its **Details**, tap **Move to hidden chats**, type that place's PIN and
+   tap **Move**. The
    chat leaves your list with its messages, name, picture and look, and its safety number stays the same. Their phone
    is told at once to write to the hidden chats from now on; a message they send in that very moment may not come.
 
 - **Relay only:** hidden chats have their own relay queue and their own keys, and never use the nearby link. While
   they are closed, their messages wait on the relay.
 - **They close by themselves** when Erevos goes to the background.
-- **A new PIN** (from Lock, or **New hidden chats**) starts them empty and replaces the ones before. To keep them
-  and change only the PIN, open them and use **Change PIN** there.
+- **A new PIN for a place** (from Lock, or **New hidden chats**) starts it empty and replaces what was in it. To keep
+  them and change only the PIN, open them and use **Change PIN** there. Each PIN must differ from the others and from
+  the password that opens Erevos.
 - **Wrong PINs in the search** are counted apart from the lock screen's: after five, searches stop trying for a while,
   silently, and the lock screen never waits because of them.
-- **Discretion:** the app never shows whether hidden chats are set, in any space.
+- **Discretion:** every space has all 4 places from the start, the unused ones filled with random data that looks
+  like used ones, and the search tries every place each time. So nothing shows whether any hidden chats are set, or
+  how many.
 
 ## Backups {#backup}
 

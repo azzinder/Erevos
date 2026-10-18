@@ -36,7 +36,8 @@ import { canRelaySeal, hasCore } from '../lib/core';
 import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
-import { MIN_PIN, openHidden, setHiddenPassword } from '../lock/hidden';
+import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
+import { hiddenHolder, POCKETS } from '../lock/sealed-file';
 import { moveChat } from '../lock/move-chat';
 import { SamePasswordError } from '../lock/config';
 import { LockedOutError, lockedOutMessage } from '../lock/tries';
@@ -202,10 +203,11 @@ export default function ChatScreen() {
   // relay settings to show at once.
   const { contact, hidden, setup, phone } = useLocalSearchParams<{ contact?: string; hidden?: string; setup?: string; phone?: string }>();
   const fromSearch = hidden === 'open';
-  const [hiddenKey, setHiddenKey] = useState<Uint8Array | null>(() => (fromSearch ? takeHidden() : null));
+  const [hiddenPlace, setHiddenPlace] = useState<HiddenPlace | null>(() => (fromSearch ? takeHidden() : null));
+  const hiddenKey = hiddenPlace?.key ?? null;
   // Hidden chats opened from the search close back to the home screen.
   const closeHidden = () => {
-    setHiddenKey(null);
+    setHiddenPlace(null);
     if (fromSearch) router.canGoBack() ? router.back() : router.replace('/');
   };
   const [asking, setAsking] = useState(false);
@@ -248,7 +250,7 @@ export default function ChatScreen() {
             <Chat hiddenKey={null} initial={initial} linkNumber={linkNumber} setup={setup === '1'} shown={!hiddenKey} onLook={setChatLook} />
           </View>
           {hiddenKey ? (
-            <Chat hiddenKey={hiddenKey} shown onHidden={closeHidden} onChangePassword={() => setAsking(true)} onLook={setChatLook} />
+            <Chat hiddenKey={hiddenKey} pocket={hiddenPlace?.pocket ?? 0} shown onHidden={closeHidden} onChangePassword={() => setAsking(true)} onLook={setChatLook} />
           ) : null}
           <PasswordSheet
             visible={asking}
@@ -257,7 +259,7 @@ export default function ChatScreen() {
             submitLabel="Save"
             onClose={() => setAsking(false)}
             onSubmit={async (password) => {
-              await setHiddenPassword(currentSpace().space, password, hiddenKey);
+              await setHiddenPassword(currentSpace().space, hiddenPlace?.pocket ?? 0, password, hiddenKey);
               setAsking(false);
             }}
           />
@@ -296,9 +298,11 @@ function BackButton({ onPress }: { onPress?: () => void }) {
   );
 }
 
-// One chat: the space's own (`hiddenKey` null), or its hidden chats, sealed with that key.
-function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
+// One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
+// space's `pocket` of them.
+function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
+  pocket?: number;
   initial?: string | null;
   /** A phone number to link to the `initial` contact. */
   linkNumber?: string;
@@ -349,6 +353,9 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   // started with it (asked a second time), what went wrong, and while it moves.
   const [pinDraft, setPinDraft] = useState('');
   const [startingNew, setStartingNew] = useState(false);
+  // The place, of the space's POCKETS, new hidden chats are started in: the owner remembers which
+  // they used, as nothing on the phone can tell.
+  const [newPocket, setNewPocket] = useState<number | null>(null);
   const [moveNote, setMoveNote] = useState('');
   const [moving, setMoving] = useState(false);
   const router = useRouter();
@@ -619,7 +626,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     let active = true;
     const { space, key } = currentSpace();
     const held = hiddenKey ? null : holdReceiver();
-    (hiddenKey ? loadHiddenData(space, hiddenKey) : loadCurrentSpaceData())
+    (hiddenKey ? loadHiddenData(space, pocket, hiddenKey) : loadCurrentSpaceData())
       .then((data) => {
         if (!active) return;
         setRelayUrl(data.url);
@@ -639,7 +646,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
         await held;
         if (!active) return;
         const shared = hiddenKey ? null : await spaceChats();
-        const kept = shared?.history ?? (await History.open('hidden', space, hiddenKey!));
+        const kept = shared?.history ?? (await History.open(hiddenHolder(pocket), space, hiddenKey!));
         if (!active) return;
         if (shared) voiceParts.current = shared.voiceParts;
         history.current = kept;
@@ -651,7 +658,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
           ...kept.messages().map((m) => ({ ...m, until: m.until ?? 0, lasts: m.lasts ?? 0, mark: m.mark ?? 0, id: nextId.current++ })),
           ...list,
         ]);
-        const chats = shared?.e2e ?? (await E2E.open('hidden', space, hiddenKey!));
+        const chats = shared?.e2e ?? (await E2E.open(hiddenHolder(pocket), space, hiddenKey!));
         if (!active) return;
         if (linkNumber && initial?.startsWith(CONTACT_PREFIX)) {
           await chats.linkPhone(initial.slice(CONTACT_PREFIX.length), linkNumber);
@@ -709,7 +716,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     // Only what the chat keeps: the look kept beside it stays as it is. Contacts from before
     // messages were encrypted (routes) cannot be written to any more, so they go.
     const data: Partial<SpaceData> = { url: relayUrl, token: relayToken, via: viaUrl, viaToken, ownQueue, routes: {} };
-    (hiddenKey ? updateHiddenData(currentSpace().space, hiddenKey, data) : updateCurrentSpaceData(data)).catch(() => {
+    (hiddenKey ? updateHiddenData(currentSpace().space, pocket, hiddenKey, data) : updateCurrentSpaceData(data)).catch(() => {
       // A failed save only means the next launch starts empty.
     });
   }, [loaded, relayUrl, relayToken, viaUrl, viaToken, ownQueue]);
@@ -1750,7 +1757,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   // new, when `fresh`): the contact, its messages and its look go there, sealed with their key, and
   // nothing of it stays here (lock/move-chat.ts). Their phone is told at once to write to the
   // hidden chats' relay queue from now on; what it sends before it hears that may not come.
-  async function moveToHidden(peer: string, pin: string, fresh: boolean) {
+  async function moveToHidden(peer: string, pin: string, fresh: number | null) {
     if (!e2e || !history.current || moving) return;
     const identity = peer.slice(CONTACT_PREFIX.length);
     if (pin.length < MIN_PIN) {
@@ -1761,13 +1768,14 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     setMoveNote('');
     try {
       const { space } = currentSpace();
-      const key = fresh ? await setHiddenPassword(space, pin, null) : await openHidden(space, pin);
-      if (!key) {
+      const place = fresh !== null ? { key: await setHiddenPassword(space, fresh, pin, null), pocket: fresh } : await openHidden(space, pin);
+      if (!place) {
         setMoveNote('Wrong PIN.');
         return;
       }
+      const { key, pocket } = place;
       // Hidden chats reach the relay as the space does until they are given their own settings.
-      const data = await loadHiddenData(space, key);
+      const data = await loadHiddenData(space, pocket, key);
       const settings = data.url.trim()
         ? { url: data.url, token: data.token, via: data.via, viaToken: data.viaToken }
         : { url: relayUrl, token: relayToken, via: viaUrl, viaToken };
@@ -1778,14 +1786,15 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
         const ids = await createQueue(target);
         queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
       }
-      await updateHiddenData(space, key, { ...settings, ownQueue: queue });
-      const hiddenChats = await E2E.open('hidden', space, key);
-      const hiddenHistory = await History.open('hidden', space, key);
+      await updateHiddenData(space, pocket, key, { ...settings, ownQueue: queue });
+      const hiddenChats = await E2E.open(hiddenHolder(pocket), space, key);
+      const hiddenHistory = await History.open(hiddenHolder(pocket), space, key);
       await moveChat(identity, { e2e, history: history.current, archive }, { e2e: hiddenChats, history: hiddenHistory });
       setMessages((list) => list.filter((m) => m.peer !== peer));
       setContacts(e2e.contacts());
       setPinDraft('');
       setStartingNew(false);
+      setNewPocket(null);
       setOpened(null);
       setDetails(false);
       setSelected(null);
@@ -1807,7 +1816,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     } catch (error) {
       setMoveNote(
         error instanceof SamePasswordError
-          ? 'Use a PIN other than the password that opens Erevos.'
+          ? 'Use another PIN: this one opens Erevos, or other hidden chats.'
           : error instanceof LockedOutError
             ? lockedOutMessage(error.until)
             : `Not moved. ${errorText(error)}`,
@@ -2175,6 +2184,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                             setOpened((now) => (now === 'move' ? null : 'move'));
                             setMoveNote('');
                             setStartingNew(false);
+                            setNewPocket(null);
                           }}
                         />
                         {opened === 'move' ? (
@@ -2193,13 +2203,25 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                               secureTextEntry
                               autoCapitalize="none"
                               autoCorrect={false}
-                              onSubmitEditing={() => void moveToHidden(selectedContact, pinDraft, startingNew)}
+                              onSubmitEditing={() => !startingNew && void moveToHidden(selectedContact, pinDraft, null)}
                             />
                             {startingNew ? (
-                              <Text variant="caption" style={{ color: colors.danger }}>
-                                New hidden chats start with this PIN. Hidden chats this space had before, if any, can no
-                                longer be opened. Tap again to go on.
-                              </Text>
+                              <>
+                                <Text variant="caption" tone="muted">
+                                  Pick a place for them, 1 to {POCKETS}, and remember it: Erevos cannot tell which are used.
+                                </Text>
+                                <Row wrap>
+                                  {Array.from({ length: POCKETS }, (_, place) => (
+                                    <Chip key={place} label={`Place ${place + 1}`} selected={newPocket === place} onPress={() => setNewPocket(place)} />
+                                  ))}
+                                </Row>
+                                {newPocket !== null ? (
+                                  <Text variant="caption" style={{ color: colors.danger }}>
+                                    New hidden chats start in place {newPocket + 1} with this PIN. If that place held hidden chats,
+                                    they can no longer be opened.
+                                  </Text>
+                                ) : null}
+                              </>
                             ) : null}
                             {moveNote ? (
                               <Text variant="caption" style={{ color: colors.danger }}>
@@ -2211,15 +2233,18 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                                 title={startingNew ? 'Start and move' : 'Move'}
                                 compact
                                 loading={moving}
-                                disabled={pinDraft.length < MIN_PIN}
-                                onPress={() => void moveToHidden(selectedContact, pinDraft, startingNew)}
+                                disabled={pinDraft.length < MIN_PIN || (startingNew && newPocket === null)}
+                                onPress={() => void moveToHidden(selectedContact, pinDraft, startingNew ? newPocket : null)}
                               />
                               <Button
                                 title={startingNew ? 'Cancel' : 'New hidden chats'}
                                 kind="secondary"
                                 compact
                                 disabled={moving}
-                                onPress={() => setStartingNew((on) => !on)}
+                                onPress={() => {
+                                  setStartingNew((on) => !on);
+                                  setNewPocket(null);
+                                }}
                               />
                             </Row>
                             <Text variant="caption" tone="muted">

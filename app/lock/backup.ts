@@ -7,6 +7,7 @@ import { ITER } from './config';
 import { FILE as E2E } from './e2e-data';
 import { FILE as GROUPS } from './group-data';
 import { FILE as HISTORY } from './history';
+import { POCKETS } from './sealed-file';
 import { PREFIX as AVATAR } from './avatar-photos';
 import { PREFIX as VOICE } from './voice-clips';
 
@@ -29,10 +30,16 @@ const SALT = 16;
 // The keystore entries kept, in every space and slot whatever is in use: the lock, the spaces'
 // keys, the hidden chats' lock, the password screen's look, and each slot's space and hidden chats.
 const FIXED = ['erevos.lock', 'erevos.space-keys', 'erevos.hidden-lock', 'erevos.look'];
+// The other pockets of hidden chats (hidden.ts): their locks, and their entries in every slot.
+const OTHER_POCKETS = Array.from({ length: POCKETS - 1 }, (_, i) => i + 1);
 // Slots looked for. There are never this many: SLOTS (slots.ts) unless more second passwords were set.
 const MOST_SLOTS = 32;
-const SLOTTED = Array.from({ length: MOST_SLOTS }, (_, n) => [`erevos.space.${n}`, `erevos.hidden.${n}`]).flat();
-const KEYS = [...FIXED, ...SLOTTED];
+const SLOTTED = Array.from({ length: MOST_SLOTS }, (_, n) => [
+  `erevos.space.${n}`,
+  `erevos.hidden.${n}`,
+  ...OTHER_POCKETS.map((p) => `erevos.hidden${p}.${n}`),
+]).flat();
+const KEYS = [...FIXED, ...OTHER_POCKETS.map((p) => `erevos.hidden-lock.${p}`), ...SLOTTED];
 
 // The sealed files that are text; voice messages' sounds are bytes.
 const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS];

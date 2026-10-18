@@ -4,6 +4,7 @@ import { secureDelete, secureGet, secureSet } from '../lib/secure';
 import { checkedLook, type Look } from '../theme/look';
 
 import { currentSpace, loadOpenKey, newSpaceKey, saveOpenKey } from './keys';
+import { POCKETS } from './sealed-file';
 import { SLOTS } from './slots';
 
 // What each space keeps on the phone: the relay it uses, its own relay queue and its contacts,
@@ -18,8 +19,8 @@ import { SLOTS } from './slots';
 // its queue or its contacts. The chat history, once the chat keeps one, needs a database per
 // space sealed the same way.
 //
-// Every space also has hidden chats (hidden.ts), kept the same way in `erevos.hidden.<n>`, sealed
-// with their own key.
+// Every space also has hidden chats (hidden.ts), in POCKETS pockets each with its own PIN, kept the
+// same way in `erevos.hidden.<n>` (the first) and `erevos.hidden<p>.<n>`, sealed with their own key.
 
 export type Queue = { recipientHex: string; senderHex: string };
 export type SpaceData = {
@@ -48,7 +49,7 @@ export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '
 
 const BLOCK = 1024;
 const entry = (space: number) => `erevos.space.${space}`;
-const hiddenEntry = (space: number) => `erevos.hidden.${space}`;
+const hiddenEntry = (space: number, pocket: number) => `erevos.hidden${pocket || ''}.${space}`;
 // Where the chat kept its settings before there were spaces, unsealed. They move into the first space.
 const OLDER_ENTRY = 'erevos.relay';
 
@@ -132,19 +133,21 @@ export function updateSpaceData(space: number, key: Uint8Array, patch: Partial<S
   return write(entry(space), key, (data) => ({ ...data, ...patch }));
 }
 
-export const loadHiddenData = (space: number, key: Uint8Array) => load(hiddenEntry(space), key);
+export const loadHiddenData = (space: number, pocket: number, key: Uint8Array) => load(hiddenEntry(space, pocket), key);
 
-export function saveHiddenData(space: number, key: Uint8Array, data: SpaceData): Promise<void> {
-  return write(hiddenEntry(space), key, () => data);
+export function saveHiddenData(space: number, pocket: number, key: Uint8Array, data: SpaceData): Promise<void> {
+  return write(hiddenEntry(space, pocket), key, () => data);
 }
 
-export function updateHiddenData(space: number, key: Uint8Array, patch: Partial<SpaceData>): Promise<void> {
-  return write(hiddenEntry(space), key, (data) => ({ ...data, ...patch }));
+export function updateHiddenData(space: number, pocket: number, key: Uint8Array, patch: Partial<SpaceData>): Promise<void> {
+  return write(hiddenEntry(space, pocket), key, (data) => ({ ...data, ...patch }));
 }
 
-/** Every space up to `count` (and SLOTS) has a hidden chats entry, used or not. */
+/** Every space up to `count` (and SLOTS) has an entry for each pocket of hidden chats, used or not. */
 export async function prepareHiddenEntries(count: number): Promise<void> {
-  for (let space = 0; space < Math.max(SLOTS, count); space++) await ensure(hiddenEntry(space));
+  for (let space = 0; space < Math.max(SLOTS, count); space++) {
+    for (let pocket = 0; pocket < POCKETS; pocket++) await ensure(hiddenEntry(space, pocket));
+  }
 }
 
 /** The open space's data (keys.ts says which space is open). */

@@ -19,6 +19,7 @@ import {
 import { MIN_PIN, openHidden, prepareHidden, removeHiddenPassword, searchHidden, setHiddenPassword } from '../lock/hidden';
 import { loadOpenKey, saveOpenKey } from '../lock/keys';
 import { EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
+import { POCKETS } from '../lock/sealed-file';
 import { assertNotLockedOut, FREE_TRIES, LockedOutError, SEARCH_TRIES } from '../lock/tries';
 import { store } from './secure-memory';
 
@@ -199,30 +200,58 @@ t('each space sees only its own data, and every entry looks alike', async () => 
   assert.deepEqual([...store.keys()].sort(), ['erevos.lock', 'erevos.lock-tries', 'erevos.space-keys', 'erevos.space.0', 'erevos.space.1', 'erevos.space.2', 'erevos.space.3']);
 });
 
+const opens = async (space: number, password: string) => (await openHidden(space, password))?.key ?? null;
+
 t('hidden chats open only with their own password, in each space', async () => {
   await setLockPassword(0, 'real-1111', real);
   await setLockPassword(1, 'decoy-2222', decoy);
   await prepareHidden();
   assert.equal(await openHidden(0, 'secret-0'), null);
-  const hidden0 = await setHiddenPassword(0, 'secret-0', null);
-  const hidden1 = await setHiddenPassword(1, 'secret-1', null);
-  assert.deepEqual(await openHidden(0, 'secret-0'), hidden0);
-  assert.deepEqual(await openHidden(1, 'secret-1'), hidden1);
+  const hidden0 = await setHiddenPassword(0, 0, 'secret-0', null);
+  const hidden1 = await setHiddenPassword(1, 0, 'secret-1', null);
+  assert.deepEqual(await opens(0, 'secret-0'), hidden0);
+  assert.deepEqual(await opens(1, 'secret-1'), hidden1);
   // Each space's hidden chats open only there.
   assert.equal(await openHidden(1, 'secret-0'), null);
   assert.equal(await openHidden(0, 'secret-1'), null);
-  await saveHiddenData(0, hidden0, { ...EMPTY_SPACE, url: 'wss://hidden.example.org' });
-  assert.equal((await loadHiddenData(0, hidden0)).url, 'wss://hidden.example.org');
+  await saveHiddenData(0, 0, hidden0, { ...EMPTY_SPACE, url: 'wss://hidden.example.org' });
+  assert.equal((await loadHiddenData(0, 0, hidden0)).url, 'wss://hidden.example.org');
   assert.equal((await loadSpaceData(0, real)).url, '');
+});
+
+t('every place of hidden chats has its own PIN and its own data', async () => {
+  await setLockPassword(0, 'real-1111', real);
+  await prepareHidden();
+  const keys = [];
+  for (let pocket = 0; pocket < POCKETS; pocket++) {
+    const key = await setHiddenPassword(0, pocket, `pin-${pocket}`, null);
+    await saveHiddenData(0, pocket, key, { ...EMPTY_SPACE, token: `place ${pocket}` });
+    keys.push(key);
+  }
+  for (let pocket = 0; pocket < POCKETS; pocket++) {
+    const place = await openHidden(0, `pin-${pocket}`);
+    assert.equal(place?.pocket, pocket);
+    assert.deepEqual(place?.key, keys[pocket]);
+    assert.equal((await loadHiddenData(0, pocket, keys[pocket])).token, `place ${pocket}`);
+    // Another place's key opens nothing of this one.
+    assert.equal((await loadHiddenData(0, pocket, keys[(pocket + 1) % POCKETS])).token, '');
+  }
+  // A PIN that opens one place is refused for another, and for the space itself.
+  await assert.rejects(setHiddenPassword(0, 1, 'pin-0', null), SamePasswordError);
+  await assert.rejects(setHiddenPassword(0, 1, 'real-1111', null), SamePasswordError);
+  // Removing one place leaves the others.
+  await removeHiddenPassword(0, 2);
+  assert.equal(await openHidden(0, 'pin-2'), null);
+  assert.equal((await openHidden(0, 'pin-3'))?.pocket, 3);
 });
 
 t('hidden chats look the same, set or not, and take the same work to try', async () => {
   await setLockPassword(0, 'real-1111', real);
   await prepareHidden();
   const before = new Map(store);
-  await setHiddenPassword(0, 'secret-0', null);
+  await setHiddenPassword(0, 2, 'secret-0', null);
   assert.deepEqual([...store.keys()].sort(), [...before.keys()].sort());
-  for (const name of ['erevos.hidden-lock', 'erevos.hidden.0']) {
+  for (const name of ['erevos.hidden-lock', 'erevos.hidden-lock.2', 'erevos.hidden.0', 'erevos.hidden2.0']) {
     assert.equal(store.get(name)!.length, before.get(name)!.length, name);
   }
   const subtle = globalThis.crypto.subtle as { deriveBits: SubtleCrypto['deriveBits'] };
@@ -233,10 +262,11 @@ t('hidden chats look the same, set or not, and take the same work to try', async
     return deriveBits.apply(globalThis.crypto.subtle, args);
   };
   try {
+    // Every place is tried, whichever opens.
     for (const [space, password] of [[0, 'secret-0'], [0, 'wrong'], [2, 'wrong']] as const) {
       derivations = 0;
       await openHidden(space, password);
-      assert.equal(derivations, 1, `${space} ${password}`);
+      assert.equal(derivations, POCKETS, `${space} ${password}`);
     }
   } finally {
     subtle.deriveBits = deriveBits;
@@ -245,33 +275,33 @@ t('hidden chats look the same, set or not, and take the same work to try', async
 
 t('a new hidden password starts empty, changing it keeps them, removing it closes them', async () => {
   await prepareHidden();
-  const first = await setHiddenPassword(0, 'secret-0', null);
-  await saveHiddenData(0, first, { ...EMPTY_SPACE, token: 'kept' });
+  const first = await setHiddenPassword(0, 1, 'secret-0', null);
+  await saveHiddenData(0, 1, first, { ...EMPTY_SPACE, token: 'kept' });
   // Changed from inside: same key, same chats.
-  assert.deepEqual(await setHiddenPassword(0, 'secret-new', first), first);
+  assert.deepEqual(await setHiddenPassword(0, 1, 'secret-new', first), first);
   assert.equal(await openHidden(0, 'secret-0'), null);
-  assert.equal((await loadHiddenData(0, (await openHidden(0, 'secret-new'))!)).token, 'kept');
+  assert.equal((await loadHiddenData(0, 1, (await opens(0, 'secret-new'))!)).token, 'kept');
   // Set anew from the settings: a new, empty set of hidden chats.
-  const second = await setHiddenPassword(0, 'secret-0', null);
+  const second = await setHiddenPassword(0, 1, 'secret-0', null);
   assert.notDeepEqual(second, first);
-  assert.equal((await loadHiddenData(0, second)).token, '');
+  assert.equal((await loadHiddenData(0, 1, second)).token, '');
   assert.equal(await openHidden(0, 'secret-new'), null);
-  await removeHiddenPassword(0);
+  await removeHiddenPassword(0, 1);
   assert.equal(await openHidden(0, 'secret-0'), null);
 });
 
 t('refuses the space\'s own password for its hidden chats', async () => {
   await setLockPassword(0, 'real-1111', real);
-  await assert.rejects(setHiddenPassword(0, 'real-1111', null), SamePasswordError);
-  await setHiddenPassword(0, 'other', null);
+  await assert.rejects(setHiddenPassword(0, 0, 'real-1111', null), SamePasswordError);
+  await setHiddenPassword(0, 0, 'other', null);
 });
 
 t('hidden chats open from a search with their PIN, and a wrong one is only a search', async () => {
   await setLockPassword(0, 'real-1111', real);
   await setLockPassword(1, 'decoy-2222', decoy);
   await prepareHidden();
-  const key = await setHiddenPassword(0, 'pin-0', null);
-  assert.deepEqual(await searchHidden(0, 'pin-0'), key);
+  const key = await setHiddenPassword(0, 3, 'pin-0', null);
+  assert.deepEqual(await searchHidden(0, 'pin-0'), { key, pocket: 3 });
   assert.equal(await searchHidden(1, 'pin-0'), null);
   // Short searches are never tried.
   assert.equal(await searchHidden(0, 'pin-0'.slice(0, MIN_PIN - 1)), null);
@@ -282,5 +312,5 @@ t('hidden chats open from a search with their PIN, and a wrong one is only a sea
   await assert.rejects(assertNotLockedOut(now, SEARCH_TRIES), LockedOutError);
   // While searches wait, even the right PIN opens nothing, and says nothing.
   assert.equal(await searchHidden(0, 'pin-0', now + 1), null);
-  assert.deepEqual(await searchHidden(0, 'pin-0', now + 7 * 24 * 3600_000), key);
+  assert.deepEqual((await searchHidden(0, 'pin-0', now + 7 * 24 * 3600_000))?.key, key);
 });

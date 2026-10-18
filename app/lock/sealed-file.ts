@@ -12,10 +12,22 @@ import { SLOTS } from './slots';
 // whole, so neither the files there are nor when they last changed tell which spaces or hidden
 // chats are in use. With a fixed size, not how much each holds either.
 //
+// Every space has POCKETS hidden chats, each with its own PIN (hidden.ts): the first is held as
+// 'hidden', the others as 'hidden1', 'hidden2', … Each pocket has its value in every slot too.
+//
 // A space whose key changed (a new second password, or hidden chats set up again) finds its old
 // value sealed with another key, and starts empty.
 
-export type Holder = 'space' | 'hidden';
+/** Hidden chats in every space, each opened with its own PIN. */
+export const POCKETS = 4;
+
+export type Holder = 'space' | 'hidden' | `hidden${number}`;
+
+/** Where a space's hidden chats in `pocket` (0 to POCKETS - 1) keep their values. */
+export const hiddenHolder = (pocket: number): Holder => (pocket ? `hidden${pocket}` : 'hidden');
+
+export const HOLDERS: Holder[] = ['space', ...Array.from({ length: POCKETS }, (_, pocket) => hiddenHolder(pocket))];
+
 
 export interface SealedFile<T> {
   /** A space's data, or its hidden chats', or an empty one when there is none sealed with `key`. */
@@ -51,18 +63,18 @@ export function sealedFile<T>({ name, empty, checked, block, fixed = false }: {
 
   /** The sealed values in the file, at least `count` (and SLOTS) of each, the added ones unused. */
   async function loadValues(count: number): Promise<Values> {
-    let values: Values = { space: [], hidden: [] };
+    const values = Object.fromEntries(HOLDERS.map((holder) => [holder, [] as string[]])) as Values;
     const raw = await readFile(name);
     if (raw) {
       try {
         const data = JSON.parse(raw) as Partial<Values>;
         const list = (v: unknown) => (Array.isArray(v) ? v.map((s) => (typeof s === 'string' ? s : fake())) : []);
-        values = { space: list(data.space), hidden: list(data.hidden) };
+        for (const holder of HOLDERS) values[holder] = list(data[holder]);
       } catch {
         // A damaged file: every value in it is lost, and it starts again.
       }
     }
-    for (const holder of ['space', 'hidden'] as const) {
+    for (const holder of HOLDERS) {
       while (values[holder].length < Math.max(SLOTS, count)) values[holder].push(fake());
     }
     return values;

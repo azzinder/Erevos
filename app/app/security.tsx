@@ -18,6 +18,7 @@ import {
 import { loadLockConfig, lockWithPassword, removePasswordLock, removeSecondPassword, setLockPassword, type LockConfig } from '../lock/config';
 import { useLock } from '../lock/context';
 import { prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
+import { POCKETS } from '../lock/sealed-file';
 import { currentSpace, newSpaceKey } from '../lock/keys';
 import { EMPTY_SPACE, prepareSpaces, saveSpaceData } from '../lock/space-data';
 import { useTheme } from '../theme/context';
@@ -35,6 +36,8 @@ export default function Security() {
   const [config, setConfig] = useState<LockConfig | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const [note, setNote] = useState('');
+  // Which of the space's places for hidden chats the PIN buttons below are for.
+  const [place, setPlace] = useState(0);
 
   const reload = () => loadLockConfig().then(setConfig);
   useEffect(() => {
@@ -67,17 +70,17 @@ export default function Security() {
   async function removeHidden() {
     const ok = await confirm(
       'Remove hidden chats PIN',
-      'The hidden chats will stop opening. They stay on the phone, and nothing opens them.',
+      `The hidden chats in place ${place + 1} will stop opening. They stay on the phone, and nothing opens them.`,
     );
     if (!ok) return;
-    await removeHiddenPassword(space);
+    await removeHiddenPassword(space, place);
     setNote('Saved.');
   }
 
   async function submit(password: string) {
     const { key } = currentSpace();
     if (editing === 'hidden') {
-      await setHiddenPassword(space, password, null);
+      await setHiddenPassword(space, place, password, null);
     } else if (editing === 'second') {
       // A new space with a new key, and no hidden chats. Whatever was there before cannot be opened any more.
       const next = space + 1;
@@ -85,7 +88,7 @@ export default function Security() {
       await setLockPassword(next, password, nextKey);
       // It looks like this space, so the two cannot be told apart by their look.
       await saveSpaceData(next, nextKey, { ...EMPTY_SPACE, look });
-      await removeHiddenPassword(next);
+      for (let pocket = 0; pocket < POCKETS; pocket++) await removeHiddenPassword(next, pocket);
       // The space a second password set inside the new one would open exists too.
       await prepareSpaces(next + 1);
       await prepareHidden(next + 2);
@@ -162,9 +165,15 @@ export default function Security() {
           their messages wait on the relay and never show among your other chats.
         </Text>
         <Text variant="caption" tone="muted" style={hint}>
-          For privacy, the app never shows whether hidden chats are set. A new PIN here starts them empty and
-          replaces the ones before. To keep them and change only the PIN, open them and change it there.
+          Every space has {POCKETS} places for hidden chats, each with its own PIN. For privacy, the app never shows
+          whether any are set, so remember which places you use. A new PIN for a place starts it empty and replaces what
+          was there. To keep them and change only the PIN, open them and change it there.
         </Text>
+        <Row wrap>
+          {Array.from({ length: POCKETS }, (_, pocket) => (
+            <Chip key={pocket} label={`Place ${pocket + 1}`} selected={place === pocket} onPress={() => setPlace(pocket)} />
+          ))}
+        </Row>
         <Row wrap>
           <Button title="Set hidden chats PIN" kind="secondary" compact onPress={() => setEditing('hidden')} />
           <Button title="Remove hidden chats PIN" kind="secondary" compact onPress={removeHidden} />
@@ -185,7 +194,7 @@ export default function Security() {
         visible={editing !== null}
         title={
           editing === 'hidden'
-            ? 'Set hidden chats PIN'
+            ? `Set hidden chats PIN, place ${place + 1}`
             : editing === 'second'
               ? 'Set second password'
               : locked

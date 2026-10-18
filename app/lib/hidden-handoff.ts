@@ -1,15 +1,17 @@
-// The key of hidden chats opened from the home screen's search (lock/hidden.ts searchHidden), held
-// in memory only until the chat screen takes it, so it never goes into a route's address.
+import type { HiddenPlace } from '../lock/hidden';
 
-let held: Uint8Array | null = null;
+// The hidden chats opened from the home screen's search (lock/hidden.ts searchHidden), held in
+// memory only until the chat screen takes them, so their key never goes into a route's address.
 
-export function handOverHidden(key: Uint8Array): void {
-  held = key;
+let held: HiddenPlace | null = null;
+
+export function handOverHidden(place: HiddenPlace): void {
+  held = place;
 }
 
-/** The key handed over, once: taking it clears it. */
-export function takeHidden(): Uint8Array | null {
-  const key = held;
+/** The hidden chats handed over, once: taking them clears them. */
+export function takeHidden(): HiddenPlace | null {
+  const place = held;
   held = null;
-  return key;
+  return place;
 }

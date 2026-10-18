@@ -8,7 +8,8 @@ import { encryptBytes, randomBytes, setPbkdf2, toHex, utf8Encode, webCryptoPbkdf
 import { backupKey, backupName, makeBackup, NotABackupError, openBackup, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
 import { loadLockConfig, setLockPassword, unlock } from '../lock/config';
 import { History, newTag } from '../lock/history';
-import { EMPTY_SPACE, loadSpaceData, prepareSpaces, saveSpaceData } from '../lock/space-data';
+import { openHidden, prepareHidden, setHiddenPassword } from '../lock/hidden';
+import { EMPTY_SPACE, loadHiddenData, loadSpaceData, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { blobs, files } from './files-memory';
@@ -128,4 +129,19 @@ t('names backups by the date and time they were made', () => {
   const name = backupName(new Date(2026, 9, 18, 9, 5).getTime());
   assert.equal(name, 'erevos-backup-2026-10-18-0905.erevos');
   return Promise.resolve();
+});
+
+t('holds every place of hidden chats, and gives them back', async () => {
+  await setLockPassword(0, 'real-1111', randomBytes(32));
+  await prepareHidden();
+  const key = await setHiddenPassword(0, 3, 'hidden-pin', null);
+  await saveHiddenData(0, 3, key, { ...EMPTY_SPACE, token: 'place 4' });
+  const file = await makeBackup(await backupKey('backup-pass'));
+  const names = (await openBackup(file, 'backup-pass')).entries.map((entry) => entry.name);
+  for (const name of ['erevos.hidden-lock', 'erevos.hidden-lock.3', 'erevos.hidden.0', 'erevos.hidden3.0']) assert.ok(names.includes(name), name);
+  wipe();
+  await restoreBackup(await openBackup(file, 'backup-pass'));
+  const place = await openHidden(0, 'hidden-pin');
+  assert.equal(place?.pocket, 3);
+  assert.equal((await loadHiddenData(0, 3, place!.key)).token, 'place 4');
 });

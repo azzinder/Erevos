@@ -75,13 +75,13 @@ export default function Home() {
   const [relay, setRelay] = useState<Relay>('none');
   const [query, setQuery] = useState('');
 
-  // A search sent with the keyboard's search key is also tried as the hidden chats' PIN. A right
-  // one opens them and the search empties; a wrong one is a search like any other.
+  // A search sent with the keyboard's search key is also tried as a PIN of hidden chats. A right
+  // one opens those and the search empties; a wrong one is a search like any other.
   async function searchSubmitted() {
-    const key = await searchHidden(currentSpace().space, query).catch(() => null);
-    if (!key) return;
+    const place = await searchHidden(currentSpace().space, query).catch(() => null);
+    if (!place) return;
     setQuery('');
-    handOverHidden(key);
+    handOverHidden(place);
     router.push('/chat?hidden=open');
   }
   const [menu, setMenu] = useState(false);
