@@ -40,6 +40,12 @@ export type Carried = { url: string; sealed: Uint8Array };
 /** Hands a carried packet to its relay (carryTo): true when taken, false when it never will be. Throws to try again later. */
 export type Upload = (url: string, sealed: Uint8Array) => Promise<boolean>;
 
+/** A carried packet as the phone keeps it between runs: `hops` more phones it may go to, kept `until`. */
+export type KeptCarried = Carried & { hops: number; until: number };
+
+/** Where carried packets stay between runs (lib/carried-store.ts): those for others, or a space's own. */
+export type CarriedStore = { load(): Promise<KeptCarried[]>; save(items: KeptCarried[]): Promise<void> };
+
 /** Sends a text frame on a link (sendText of modules/erevos-radio). False if the link is not up. */
 export type RadioSend = (link: string, text: string) => boolean;
 
@@ -90,9 +96,19 @@ export function framesOf(packet: Uint8Array, prefix = PREFIX): string[] | null {
   return Array.from({ length: count }, (_, n) => `${prefix}:${id}:${n}:${count}:${toBase64(packet.subarray(n * PIECE, (n + 1) * PIECE))}`);
 }
 
-// A carried packet kept on this phone. `hops`: how many more phones it may pass on to. `from`: the
+// A carried packet kept on this phone. `hops`: how many more phones it may pass on to. `space`: for
+// this phone's own, the store of the space they came from (null when none was open). `from`: the
 // link it came on, which is not offered it back; `offered`: the links it went to already.
-type Item = Carried & { key: string; hops: number; until: number; own: boolean; from: string | null; offered: Set<string>; triedAt: number };
+type Item = Carried & {
+  key: string;
+  hops: number;
+  until: number;
+  own: boolean;
+  space: CarriedStore | null;
+  from: string | null;
+  offered: Set<string>;
+  triedAt: number;
+};
 
 const keyOf = (url: string, sealed: Uint8Array) => digestOf(joined(Uint8Array.from(url, (char) => char.charCodeAt(0)), sealed));
 
@@ -157,6 +173,15 @@ export class Nearby {
   private readonly takenFrom = new Map<string, number>();
   private carrying = true;
   private uploading: Promise<number> | null = null;
+  // Where carried packets stay: those for others, and the open space's own. Saved to only once
+  // loaded, so what was kept is not written over first; `dirty`: those to save again.
+  private others: CarriedStore | null = null;
+  private ownStore: CarriedStore | null = null;
+  private readonly loaded = new Set<CarriedStore>();
+  private readonly dirty = new Set<CarriedStore>();
+  private writes: Promise<void> = Promise.resolve();
+  private writing = false;
+  private loads: Promise<unknown> = Promise.resolve();
 
   private changed() {
     this.listeners.forEach((listener) => listener());
@@ -314,7 +339,10 @@ export class Nearby {
     }
     const items = made
       .filter(({ url }) => RELAY_URL.test(url))
-      .map(({ url, sealed }) => ({ url, sealed, key: keyOf(url, sealed), hops: MAX_HOPS, until: now + CARRY_FOR, own: true, from: null, offered: new Set<string>(), triedAt: 0 }));
+      .map(({ url, sealed }) => {
+        const space = this.ownStore;
+        return { url, sealed, key: keyOf(url, sealed), hops: MAX_HOPS, until: now + CARRY_FOR, own: true, space, from: null, offered: new Set<string>(), triedAt: 0 };
+      });
     if (items.length === 0) return 'spread';
     for (const item of items) this.keep(item);
     let reached = 0;
@@ -327,10 +355,73 @@ export class Nearby {
     this.seen.push(item.key);
     if (this.seen.length > MAX_SEEN) this.seen.shift();
     this.items.push(item);
+    this.save(item);
+    this.trim();
+  }
+
+  private trim() {
     while (this.items.length > MAX_CARRIED) {
       const others = this.items.findIndex((kept) => !kept.own);
-      this.items.splice(others >= 0 ? others : 0, 1);
+      this.save(...this.items.splice(others >= 0 ? others : 0, 1));
     }
+  }
+
+  // Saves the stores these items are kept in, after the writes before; changes made meanwhile go
+  // in one more write.
+  private save(...items: Item[]) {
+    this.saveTo(items.map((item) => (item.own ? item.space : this.others)));
+  }
+
+  private saveTo(stores: (CarriedStore | null)[]) {
+    for (const store of stores) if (store && this.loaded.has(store)) this.dirty.add(store);
+    if (this.writing || this.dirty.size === 0) return;
+    this.writing = true;
+    this.writes = this.writes.then(async () => {
+      try {
+        for (let store = this.nextDirty(); store; store = this.nextDirty()) await store.save(this.keptIn(store)).catch(() => undefined);
+      } finally {
+        this.writing = false;
+      }
+    });
+  }
+
+  private nextDirty(): CarriedStore | undefined {
+    const store = this.dirty.values().next().value;
+    if (store) this.dirty.delete(store);
+    return store;
+  }
+
+  // What a store keeps: the space's own, or those for others.
+  private keptIn(store: CarriedStore): KeptCarried[] {
+    return this.items
+      .filter((item) => (store === this.others ? !item.own : item.space === store))
+      .map(({ url, sealed, hops, until }) => ({ url, sealed, hops, until }));
+  }
+
+  // Takes back what a store kept, before what came this run, and saves to it from now on.
+  private async restore(store: CarriedStore, own: boolean): Promise<void> {
+    const kept = await store.load().catch(() => [] as KeptCarried[]);
+    const now = Date.now();
+    const known = new Set(this.items.map((item) => item.key));
+    const back: Item[] = [];
+    for (const { url, sealed, hops, until } of kept) {
+      if (!RELAY_URL.test(url) || !(until > now) || !(sealed instanceof Uint8Array) || !Number.isInteger(hops)) continue;
+      const key = keyOf(url, sealed);
+      if (known.has(key) || (!own && !this.carrying)) continue;
+      known.add(key);
+      const most = own ? MAX_HOPS : MAX_HOPS - 1;
+      back.push({ url, sealed, key, hops: Math.max(0, Math.min(hops, most)), until: Math.min(until, now + CARRY_FOR), own, space: own ? store : null, from: null, offered: new Set(), triedAt: 0 });
+    }
+    for (const item of back) {
+      this.seen.push(item.key);
+      if (this.seen.length > MAX_SEEN) this.seen.shift();
+    }
+    this.items = [...back, ...this.items];
+    this.loaded.add(store);
+    // Saved again when it changed: something left out, or kept this run before it loaded.
+    const inIt = this.items.filter((item) => (own ? item.space === store : !item.own));
+    if (back.length !== kept.length || inIt.length !== back.length) this.saveTo([store]);
+    this.trim();
   }
 
   // Gives a carried packet to the phones on `links`, with one hop fewer. False when a link dropped.
@@ -363,7 +454,7 @@ export class Nearby {
     const taken = this.takenFrom.get(link) ?? 0;
     if (taken >= TAKE_PER_LINK) return;
     this.takenFrom.set(link, taken + 1);
-    const kept: Item = { ...item, key, own: false, from: link, offered: new Set(), triedAt: 0 };
+    const kept: Item = { ...item, key, own: false, space: null, from: link, offered: new Set(), triedAt: 0 };
     this.keep(kept);
     this.passOn(kept, [...this.links], now);
   }
@@ -371,7 +462,51 @@ export class Nearby {
   /** Whether this phone takes packets from phones nearby to hand to their relays. Its own always go. */
   setCarrying(on: boolean): void {
     this.carrying = on;
-    if (!on) this.items = this.items.filter((item) => item.own);
+    if (on) return;
+    const others = this.items.filter((item) => !item.own);
+    this.items = this.items.filter((item) => item.own);
+    this.save(...others);
+  }
+
+  /**
+   * Keeps what this phone carries for others in `store` from now on, as well as in memory, and
+   * takes back what it kept there before. Once for the phone; resolves once it is back.
+   */
+  keepOthersIn(store: CarriedStore): Promise<void> {
+    this.others = store;
+    const restored = this.restore(store, false);
+    this.loads = Promise.all([this.loads, restored]);
+    return restored;
+  }
+
+  /**
+   * Keeps this phone's own carried packets, those made from now on, in the open space's `store`
+   * too, and takes back those it kept there before. The function it gives saves them a last time
+   * and lets go of them as the space closes; they come back as it opens again.
+   */
+  keepOwnIn(store: CarriedStore): () => void {
+    this.ownStore = store;
+    const restored = this.restore(store, true);
+    this.loads = Promise.all([this.loads, restored]);
+    return () => {
+      if (this.ownStore === store) this.ownStore = null;
+      void restored.then(() => {
+        // What changed and is not saved yet is saved now, as it was.
+        const last = this.dirty.delete(store) ? this.keptIn(store) : null;
+        this.loaded.delete(store);
+        this.items = this.items.filter((item) => item.space !== store);
+        if (last) this.writes = this.writes.then(() => store.save(last)).catch(() => undefined);
+      });
+    };
+  }
+
+  /** Once what is kept is back, and what changed in carried packets so far is saved. */
+  async carriedSaved(): Promise<void> {
+    await this.loads;
+    for (let writes = this.writes; ; writes = this.writes) {
+      await writes;
+      if (writes === this.writes) return;
+    }
   }
 
   /** How many packets this phone carries now: its own, and for others. */
@@ -400,6 +535,7 @@ export class Nearby {
         try {
           if (await upload(item.url, item.sealed)) taken++;
           this.items = this.items.filter((kept) => kept !== item);
+          this.save(item);
         } catch {
           waiting.add(item.url);
         }

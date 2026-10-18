@@ -8,9 +8,12 @@ const MEMORY = new URL('./secure-memory.ts', import.meta.url).href;
 const FILES = new URL('./files-memory.ts', import.meta.url).href;
 const SMS = new URL('./sms-none.ts', import.meta.url).href;
 
+const LIB = new URL('../lib/', import.meta.url).href;
+
 export async function resolve(specifier, context, next) {
-  if (specifier.endsWith('/lib/secure')) return { url: MEMORY, shortCircuit: true };
-  if (specifier.endsWith('/lib/files')) return { url: FILES, shortCircuit: true };
+  const inLib = context.parentURL?.startsWith(LIB) && specifier.startsWith('./');
+  if (specifier.endsWith('/lib/secure') || (inLib && specifier === './secure')) return { url: MEMORY, shortCircuit: true };
+  if (specifier.endsWith('/lib/files') || (inLib && specifier === './files')) return { url: FILES, shortCircuit: true };
   if (specifier.endsWith('/modules/erevos-sms')) return { url: SMS, shortCircuit: true };
   if ((specifier.startsWith('./') || specifier.startsWith('../')) && context.parentURL?.startsWith('file:')) {
     const base = fileURLToPath(new URL(specifier, context.parentURL));

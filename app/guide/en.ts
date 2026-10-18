@@ -94,9 +94,9 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
 - **Carried by other phones:** when the relay cannot be reached and your contact is not near, the Erevos phones
   nearby also take your message sealed for your contact's relay. Each keeps it, three days at most, gives it to two
   more phones at most that it meets, and hands it to that relay through its own relay once it can; so does yours.
-  They cannot read it, nor tell who it is from or for: they see only the relay's address. Only in memory: closing
-  Erevos lets it go. To carry nothing for others, turn off **Carry messages for others** under **Relay and new
-  contacts**.
+  They cannot read it, nor tell who it is from or for: they see only the relay's address. It stays when Erevos
+  closes, sealed on the phone. Yours stay in your space, and go only while it is open. To carry nothing for others,
+  turn off **Carry messages for others** under **Relay and new contacts**.
 
 > A message from nearby opens only in the space that has that contact. One for another space of this phone waits in
 > memory, six hours at most, until that space opens. Hidden chats never use the nearby link.
@@ -693,7 +693,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Contacts and their names, keys, relay settings, look** | Sealed on the phone with each space's key. | |
 | **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | Wi-Fi Direct. |
-| **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept in memory only, three days at most. Hidden chats are never carried. | Carried messages that stay when Erevos closes. |
+| **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | Group MMS (to several numbers at once). |

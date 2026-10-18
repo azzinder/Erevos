@@ -12,6 +12,7 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
+import { othersCarried, ownCarried } from '../lib/carried-store';
 import { contactLink, parseContact } from '../lib/contact-code';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, toBase64 } from '../lib/crypto';
@@ -305,6 +306,58 @@ test('a phone that carries nothing for others takes nothing, and nonsense is not
   const many = async (): Promise<Carried[]> => Array.from({ length: 40 }, () => ({ url: 'ws://relay.example:7879', sealed: randomBytes(50) }));
   await a.nearby.deliver('bb', [randomBytes(100)], null, many);
   assert.equal(c.nearby.carriedCount().others, 30);
+});
+
+test('what a phone carries stays when Erevos closes: for others on the phone, its own in their space only', async () => {
+  files.clear();
+  const { phone, link } = room();
+  const [a, c] = ['A', 'C'].map(phone);
+  const spaceKey = randomBytes(32);
+  const leaveSpace = a.nearby.keepOwnIn(ownCarried(0, spaceKey));
+  await c.nearby.keepOthersIn(othersCarried());
+  link('A', 'C');
+  const sealed = [randomBytes(300), randomBytes(300)];
+  const carry = async (): Promise<Carried[]> => sealed.map((s) => ({ url: 'ws://relay.example:7879', sealed: s }));
+  assert.equal(await a.nearby.deliver('bb', [randomBytes(100), randomBytes(100)], null, carry), 'carried');
+  await a.nearby.carriedSaved();
+  await c.nearby.carriedSaved();
+  // Sealed on the phone: the packets are not in its files as they went.
+  for (const text of files.values()) for (const s of sealed) assert.ok(!text.includes(toBase64(s)));
+  // Its space closes: its own leave memory with it.
+  leaveSpace();
+  await a.nearby.carriedSaved();
+  assert.deepEqual(a.nearby.carriedCount(), { own: 0, others: 0 });
+
+  // Erevos opens again on both phones. Another space, or the same with another key, has none.
+  const [a2, c2, d] = ['A2', 'C2', 'D'].map(phone);
+  for (const [space, key] of [[1, spaceKey], [0, randomBytes(32)]] as const) {
+    const leave = a2.nearby.keepOwnIn(ownCarried(space, key));
+    await a2.nearby.carriedSaved();
+    assert.deepEqual(a2.nearby.carriedCount(), { own: 0, others: 0 });
+    leave();
+  }
+  const leaveAgain = a2.nearby.keepOwnIn(ownCarried(0, spaceKey));
+  await c2.nearby.keepOthersIn(othersCarried());
+  await a2.nearby.carriedSaved();
+  assert.deepEqual(a2.nearby.carriedCount(), { own: 2, others: 0 });
+  assert.deepEqual(c2.nearby.carriedCount(), { own: 0, others: 2 });
+  // They go on as before: to a phone met later, in order, and to the relay.
+  link('C2', 'D');
+  assert.deepEqual(d.nearby.carriedCount(), { own: 0, others: 2 });
+  const handed: string[] = [];
+  assert.equal(await a2.nearby.uploadCarried(async (_url, s) => handed.push(toBase64(s)) > 0), 2);
+  assert.deepEqual(handed, sealed.map(toBase64));
+  leaveAgain();
+  // Gone once handed over, and what was kept for others once carrying for them is turned off.
+  c2.nearby.setCarrying(false);
+  await a2.nearby.carriedSaved();
+  await c2.nearby.carriedSaved();
+  const [a3, c3] = ['A3', 'C3'].map(phone);
+  a3.nearby.keepOwnIn(ownCarried(0, spaceKey));
+  await c3.nearby.keepOthersIn(othersCarried());
+  await a3.nearby.carriedSaved();
+  assert.deepEqual(a3.nearby.carriedCount(), { own: 0, others: 0 });
+  assert.deepEqual(c3.nearby.carriedCount(), { own: 0, others: 0 });
 });
 
 test('with no relay to reach, a phone nearby carries the message to the contact\'s relay, end-to-end encrypted', { skip: !ready || !relayReady }, async () => {

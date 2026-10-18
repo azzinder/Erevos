@@ -1,3 +1,5 @@
+import { currentSpace } from '../lock/keys';
+import { othersCarried, ownCarried } from './carried-store';
 import { nearby } from './nearby';
 import { HAS_LINKS, onLinkEvent, sendLink, setLanLinks, startLinks, stopLinks } from './radio';
 import { nearbyChanged, openNearby } from './receiver';
@@ -9,17 +11,23 @@ import { secureGet, secureSet } from './secure';
 // group screens too, and while Erevos is in the background, and what waits for a contact goes
 // once their phone is near. The links belong to the phone, not to
 // a space: what comes on them opens only in the chats of the space open (lib/receiver.ts), and the
-// rest is kept a while for the others (lib/nearby.ts). Hidden chats never use them.
+// rest is kept a while for the others (lib/nearby.ts). Hidden chats never use them. What the phone
+// carries for relays stays when Erevos closes (lib/carried-store.ts): what it carries for others
+// from when the first space opens, and the open space's own while it is.
 
 // Whether this phone carries messages from phones nearby to their relays, and whether it looks
 // for Erevos on the same Wi-Fi: for the whole phone, on unless turned off.
 const CARRY_KEY = 'erevos.carry';
 const LAN_KEY = 'erevos.lan';
 
+let othersKept = false;
+
 /** Keeps the links up until the function it gives is called: from when a space opens until it closes. */
 export function startNearbyLinks(): () => void {
   if (!HAS_LINKS) return () => undefined;
   let active = true;
+  const { space, key } = currentSpace();
+  const stopOwn = nearby.keepOwnIn(ownCarried(space, key));
   const stopNearby = nearby.start(sendLink);
   const subscriptions = [
     onLinkEvent('onPeer', ({ id, kind }) => {
@@ -35,6 +43,10 @@ export function startNearbyLinks(): () => void {
   void nearbySettings().then(({ carrying, lan }) => {
     if (!active) return;
     nearby.setCarrying(carrying);
+    if (!othersKept) {
+      othersKept = true;
+      void nearby.keepOthersIn(othersCarried());
+    }
     startLinks({ lan });
   });
   // What came nearby for this space while another was open.
@@ -47,6 +59,7 @@ export function startNearbyLinks(): () => void {
     stopWatching();
     stopNearby();
     stopLinks();
+    stopOwn();
   };
 }
 
