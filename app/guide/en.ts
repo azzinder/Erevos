@@ -294,6 +294,33 @@ they are taken (1024 MB together at most), so a restart loses nothing, and no re
 > Never post the token where others can read it. Whoever runs the server sees the IP addresses that connect, the
 > queue ids, and when and how much arrives. They cannot read the messages, which are end-to-end encrypted.
 
+## Through Tor {#tor}
+
+Under **Tor** in the menu, **Turn Tor on** sends every request of this space to its relays through the Tor network.
+It is off unless you turn it on, and each space has its own switch.
+
+- **What it hides:** the relay no longer sees your phone's IP address, only a Tor exit (or nothing, for a relay
+  with a \`.onion\` address). Your phone company or the Wi-Fi sees only that you use Tor, not which relay.
+- **What it costs:** messages come and go slower, and the first start of Tor takes a while. The screen shows how far
+  Tor is.
+- **What it does not cover:** calls, whose sound and picture go straight between the phones or through the call
+  relay; nearby phones and SMS, which do not use the internet.
+
+> While Tor is on, nothing goes to a relay without it. When Tor cannot reach the relay, the message waits and is
+> tried again; Erevos never falls back to your own connection by itself.
+
+## SMS {#sms}
+
+On Android, Erevos can be the phone's SMS app, under **SMS** in the menu. The home screen then shows SMS and Erevos
+chats in one list.
+
+- **Writing to someone with Erevos:** it goes through Erevos, end-to-end encrypted, once their number is linked to
+  their contact. Link it by hand in the SMS conversation, or let a hidden invite find it.
+- **Hidden invites:** with the first SMS to a number that is not a contact, Erevos also sends a short hidden
+  invite. A phone without Erevos shows nothing; a phone with Erevos answers through the relay and the two become
+  contacts. Each number is asked once a month at most, and **Turn invites off** stops them.
+- **Everyone else:** a plain SMS, marked SMS. The phone company can read it, as it reads every SMS.
+
 ## Password lock {#lock}
 
 Under **Lock and second password**, **Lock when Erevos opens** has two choices: **No lock** and **Password**.
@@ -527,7 +554,8 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Contacts and their names, keys, relay settings, look** | Sealed on the phone with each space's key. | |
 | **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | Wi-Fi Direct, and messages carried by other phones. |
-| **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. | Two relays, so that none sees both ends. Tor, optional. |
+| **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
+| **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | MMS, and two SIM cards. |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
@@ -547,7 +575,7 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   (Tor bridges).
   - **LoRa radios (Meshtastic):** kilometres of range for short texts, behind their own switch, off unless you turn
     it on, with privacy warnings first.
-  - **SMS:** off unless you turn it on for a contact, with a warning first: the carrier sees who and when.
+  - **SMS:** Erevos as the SMS app is here, see [SMS](#sms). Next: MMS and two SIM cards.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
 - **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a
   relay](#relay). Next: a walkie-talkie that works even over Bluetooth.

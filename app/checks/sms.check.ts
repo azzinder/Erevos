@@ -8,7 +8,7 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
-import { relaySeal, setCore, type Core } from '../lib/core';
+import { canSealOpen, relaySeal, setCore, type Core } from '../lib/core';
 import { fromHex, randomBytes, toHex } from '../lib/crypto';
 import { toBase64Url } from '../lib/e2e';
 import { buildInbox } from '../lib/inbox';
@@ -92,11 +92,12 @@ const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 if (existsSync(built)) {
   const wasm = createRequire(import.meta.url)(built.pathname) as Record<string, (...args: never[]) => unknown>;
   setCore(Object.fromEntries(Object.entries(wasm).map(([name, call]) => [name, async (...args: never[]) => call(...args)])) as unknown as Core);
-} else {
-  console.log('Skipping the SMS invite answer check: build the core first with node checks/build-core.mjs');
 }
+// A core built before SMS invites has no sealOpen: build it again.
+const sealing = existsSync(built) && canSealOpen();
+if (!sealing) console.log('Skipping the SMS invite answer check: build the core (again) with node checks/build-core.mjs');
 
-test('an invite answered through the relay gives the inviter the link, once', { skip: !existsSync(built) }, async () => {
+test('an invite answered through the relay gives the inviter the link, once', { skip: !sealing }, async () => {
   files.clear();
   const key = randomBytes(32);
   const link = await SmsLink.open(0, key);

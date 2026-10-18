@@ -37,6 +37,7 @@ type Relay = 'ready' | 'no-queue' | 'none';
 const MENU: { title: string; detail: string; href: Href; phone?: boolean }[] = [
   { title: 'Nearby phones', detail: 'Your contacts over Bluetooth and Wi-Fi, without internet', href: '/chat', phone: true },
   { title: 'SMS', detail: 'Erevos as the SMS app, one list for all messages', href: '/sms-settings', phone: true },
+  { title: 'Tor', detail: 'Reach the relays through Tor, off unless turned on', href: '/tor', phone: true },
   { title: 'Imported chats', detail: 'Telegram and WhatsApp exports', href: '/imported' },
   { title: 'Appearance', detail: 'Style, colours, glass', href: '/appearance' },
   { title: 'Lock and second password', detail: 'Password, second space', href: '/security' },

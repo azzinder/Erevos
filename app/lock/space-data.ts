@@ -34,9 +34,11 @@ export type SpaceData = {
   // Null until the look is changed in this space: it then takes the look last used. Hidden chats
   // keep none, as they show in the look of their space.
   look: Look | null;
+  // Whether the space's relay requests go through Tor (lib/relay.ts setThroughTor). Off unless set.
+  tor: boolean;
 };
 
-export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '', ownQueue: null, routes: {}, look: null };
+export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '', ownQueue: null, routes: {}, look: null, tor: false };
 
 const BLOCK = 1024;
 const entry = (space: number) => `erevos.space.${space}`;
@@ -67,6 +69,7 @@ function checked(value: unknown): SpaceData {
     ownQueue: q && isHex(q.recipientHex, 48) && isHex(q.senderHex, 48) ? { recipientHex: q.recipientHex, senderHex: q.senderHex } : null,
     routes,
     look: v.look ? checkedLook(v.look) : null,
+    tor: v.tor === true,
   };
 }
 

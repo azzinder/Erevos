@@ -48,7 +48,7 @@ def buildRustCore = tasks.register('buildRustCore', Exec) {
 
   def command = [cargo, 'ndk', '--platform', '24', '-o', rustLibs.path]
   abis.each { command += ['-t', it] }
-  command += ['build', '--release', '-p', 'erevos-ffi', '--features', 'android']
+  command += ['build', '--release', '-p', 'erevos-ffi', '--features', 'android,tor']
   commandLine command
 
   doFirst {

@@ -15,8 +15,10 @@ import { onCallChange } from '../lib/calls';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { setAppShown, startReceiver } from '../lib/receiver';
+import { setThroughTor } from '../lib/relay';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
+import { applyTor } from '../lib/tor';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
 import { PasswordGate } from '../lock/gate';
@@ -70,7 +72,10 @@ export default function RootLayout() {
   const openSpace = useCallback(
     async (space: number, passwordLock: boolean, key: Uint8Array) => {
       setCurrentSpace(space, key);
-      const kept = (await loadSpaceData(space, key)).look ?? (await loadLockScreenLook());
+      const data = await loadSpaceData(space, key);
+      // Tor starts in the background; until it is ready, the space's requests wait for it.
+      applyTor(data.tor).catch(() => undefined);
+      const kept = data.look ?? (await loadLockScreenLook());
       await show(kept);
       setPhase({ kind: 'open', space, passwordLock });
       saveLockScreenLook(kept).catch(() => undefined);
@@ -85,6 +90,7 @@ export default function RootLayout() {
     setCurrentSpace(null);
     forgetSpaceChats();
     forgetSmsLink();
+    setThroughTor(false);
     setPhase({ kind: 'loading' });
     // The keystore holds the same entries whatever is in use: made once per start, beside the
     // rest, since the password screen need not wait for them.

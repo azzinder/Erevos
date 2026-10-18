@@ -177,6 +177,54 @@ pub fn seal_open(secret: &[u8], sealed: &[u8]) -> Result<Vec<u8>> {
     Ok([sender.as_slice(), &message].concat())
 }
 
+/// Relay requests through Tor (erevos_tor), with byte arrays in and out as
+/// the JNI calls take them: paths and addresses are UTF-8, a connection's
+/// handle is 8 bytes, big-endian.
+#[cfg(feature = "tor")]
+pub mod tor {
+    use super::Result;
+
+    fn text(bytes: &[u8]) -> Result<&str> {
+        std::str::from_utf8(bytes).map_err(|_| "not UTF-8".to_string())
+    }
+
+    fn handle(bytes: &[u8]) -> Result<u64> {
+        Ok(u64::from_be_bytes(bytes.try_into().map_err(|_| "a handle is 8 bytes".to_string())?))
+    }
+
+    pub fn start(state_dir: &[u8], cache_dir: &[u8]) -> Result<Vec<u8>> {
+        erevos_tor::start(text(state_dir)?.as_ref(), text(cache_dir)?.as_ref())?;
+        Ok(Vec::new())
+    }
+
+    pub fn open(url: &[u8], token: &[u8]) -> Result<Vec<u8>> {
+        Ok(erevos_tor::open(text(url)?, text(token)?)?.to_be_bytes().to_vec())
+    }
+
+    pub fn call(id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
+        erevos_tor::call(handle(id)?, message)
+    }
+
+    pub fn close(id: &[u8]) -> Result<Vec<u8>> {
+        erevos_tor::close(handle(id)?);
+        Ok(Vec::new())
+    }
+
+    pub fn request(url: &[u8], token: &[u8], message: &[u8]) -> Result<Vec<u8>> {
+        erevos_tor::request(text(url)?, text(token)?, message)
+    }
+
+    /// Tor's progress as JSON: {"text": ..., "ready": ...}.
+    pub fn status() -> String {
+        let (text, ready) = erevos_tor::status();
+        serde_json::json!({ "text": text, "ready": ready }).to_string()
+    }
+
+    pub fn stop() {
+        erevos_tor::stop();
+    }
+}
+
 /// The safety number of two identity keys.
 pub fn safety_number(ours: &[u8], theirs: &[u8]) -> Result<String> {
     let key = |b: &[u8]| <[u8; 32]>::try_from(b).map_err(|_| "an identity key is 32 bytes".to_string());

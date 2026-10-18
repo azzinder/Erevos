@@ -62,6 +62,37 @@ bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_importChats => crate::
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_relaySeal => crate::relay_seal, relay_key, sender_id, message);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_sealPublic => crate::seal_public, secret);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_sealOpen => crate::seal_open, secret, sealed);
+#[cfg(feature = "tor")]
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torStart => crate::tor::start, state_dir, cache_dir);
+#[cfg(feature = "tor")]
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torOpen => crate::tor::open, url, token);
+#[cfg(feature = "tor")]
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torCall => crate::tor::call, id, message);
+#[cfg(feature = "tor")]
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torClose => crate::tor::close, id);
+#[cfg(feature = "tor")]
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torRequest => crate::tor::request, url, token, message);
+
+#[cfg(feature = "tor")]
+#[no_mangle]
+pub extern "system" fn Java_expo_modules_erevoscore_ErevosCoreNative_torStatus<'a>(mut env: JNIEnv<'a>, _class: JClass<'a>) -> jstring {
+    match guarded(|| Ok(crate::tor::status())).and_then(|text| env.new_string(text).map_err(|e| e.to_string())) {
+        Ok(text) => text.into_raw(),
+        Err(message) => {
+            throw(&mut env, message);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[cfg(feature = "tor")]
+#[no_mangle]
+pub extern "system" fn Java_expo_modules_erevoscore_ErevosCoreNative_torStop<'a>(_env: JNIEnv<'a>, _class: JClass<'a>) {
+    let _ = guarded(|| {
+        crate::tor::stop();
+        Ok(())
+    });
+}
 
 #[no_mangle]
 pub extern "system" fn Java_expo_modules_erevoscore_ErevosCoreNative_packetKind<'a>(

@@ -2,6 +2,7 @@ package expo.modules.erevoscore
 
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import java.io.File
 
 // The Erevos core (Rust, crates/erevos-ffi in the repository) for JavaScript. Every call runs
 // off the JavaScript thread, as the post-quantum key exchange takes a moment on a phone. A
@@ -36,8 +37,33 @@ class ErevosCoreModule : Module() {
     }
     AsyncFunction("sealPublic") { secret: ByteArray -> ErevosCoreNative.sealPublic(secret) }
     AsyncFunction("sealOpen") { secret: ByteArray, sealed: ByteArray -> ErevosCoreNative.sealOpen(secret, sealed) }
+
+    // Relay requests through Tor (crates/erevos-tor). Tor keeps its state in the app's own folders.
+    AsyncFunction("torStart") {
+      val context = appContext.reactContext ?: throw IllegalStateException("No app context")
+      val state = File(context.filesDir, "tor").apply { mkdirs() }
+      val cache = File(context.cacheDir, "tor").apply { mkdirs() }
+      tor { ErevosCoreNative.torStart(state.path.toByteArray(), cache.path.toByteArray()) }
+      Unit
+    }
+    AsyncFunction("torStatus") { tor { ErevosCoreNative.torStatus() } }
+    AsyncFunction("torStop") { tor { ErevosCoreNative.torStop() } }
+    AsyncFunction("torRequest") { url: String, token: String, message: ByteArray ->
+      tor { ErevosCoreNative.torRequest(url.toByteArray(), token.toByteArray(), message) }
+    }
+    AsyncFunction("torOpen") { url: String, token: String -> tor { ErevosCoreNative.torOpen(url.toByteArray(), token.toByteArray()) } }
+    AsyncFunction("torCall") { id: ByteArray, message: ByteArray -> tor { ErevosCoreNative.torCall(id, message) } }
+    AsyncFunction("torClose") { id: ByteArray -> tor { ErevosCoreNative.torClose(id) } }
   }
 }
+
+// A core built without Tor has none of its functions.
+private inline fun <T> tor(call: () -> T): T =
+  try {
+    call()
+  } catch (_: UnsatisfiedLinkError) {
+    throw IllegalStateException("This build of Erevos has no Tor.")
+  }
 
 // The JNI functions in crates/erevos-ffi/src/android.rs. The library is built into the app by
 // this module's build.gradle.
@@ -62,4 +88,11 @@ internal object ErevosCoreNative {
   @JvmStatic external fun relaySeal(relayKey: ByteArray, senderId: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun sealPublic(secret: ByteArray): ByteArray
   @JvmStatic external fun sealOpen(secret: ByteArray, sealed: ByteArray): ByteArray
+  @JvmStatic external fun torStart(stateDir: ByteArray, cacheDir: ByteArray): ByteArray
+  @JvmStatic external fun torStatus(): String
+  @JvmStatic external fun torStop()
+  @JvmStatic external fun torRequest(url: ByteArray, token: ByteArray, message: ByteArray): ByteArray
+  @JvmStatic external fun torOpen(url: ByteArray, token: ByteArray): ByteArray
+  @JvmStatic external fun torCall(id: ByteArray, message: ByteArray): ByteArray
+  @JvmStatic external fun torClose(id: ByteArray): ByteArray
 }

@@ -23,6 +23,14 @@ export interface Core {
   relaySeal?(relayKey: Uint8Array, senderId: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   sealPublic?(secret: Uint8Array): Promise<Uint8Array>;
   sealOpen?(secret: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
+  /** Relay requests through Tor: only in the Android app, and not in a build made before it. */
+  torStart?(): Promise<void>;
+  torStatus?(): Promise<string>;
+  torStop?(): Promise<void>;
+  torRequest?(url: string, token: string, message: Uint8Array): Promise<Uint8Array>;
+  torOpen?(url: string, token: string): Promise<Uint8Array>;
+  torCall?(id: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
+  torClose?(id: Uint8Array): Promise<Uint8Array>;
 }
 
 let core: Core | null = null;
@@ -88,6 +96,28 @@ export function relaySeal(relayKey: Uint8Array, senderId: Uint8Array, message: U
   const it = need();
   if (!it.relaySeal) throw new NoCoreError();
   return it.relaySeal(relayKey, senderId, message);
+}
+
+/** Whether this build can reach relays through Tor. */
+export function canTor(): boolean {
+  return typeof core?.torRequest === 'function';
+}
+
+/** The core's Tor calls, or an error saying this build has none. */
+export function tor(): Required<Pick<Core, 'torStart' | 'torStatus' | 'torStop' | 'torRequest' | 'torOpen' | 'torCall' | 'torClose'>> {
+  const it = need();
+  if (!it.torStart || !it.torStatus || !it.torStop || !it.torRequest || !it.torOpen || !it.torCall || !it.torClose) {
+    throw new Error('This build of Erevos has no Tor.');
+  }
+  return {
+    torStart: it.torStart.bind(it),
+    torStatus: it.torStatus.bind(it),
+    torStop: it.torStop.bind(it),
+    torRequest: it.torRequest.bind(it),
+    torOpen: it.torOpen.bind(it),
+    torCall: it.torCall.bind(it),
+    torClose: it.torClose.bind(it),
+  };
 }
 
 /** Whether the core can make and open SMS invites (a core from before them cannot). */

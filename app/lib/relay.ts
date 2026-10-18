@@ -11,8 +11,12 @@
 // Files: the chunks of an encrypted file (lib/attachments.ts) go to the relay's file store, many
 // requests on one connection (RelaySession). A contact on another relay takes them through its
 // own relay (`via`), so the sender's relay never sees the contact's phone.
+//
+// Through Tor (setThroughTor, off by default): every request goes through the core's Tor
+// (crates/erevos-tor) instead of the phone's own connection. There is no falling back to a direct
+// connection: when Tor cannot reach the relay, the request fails.
 
-import { relaySeal } from './core';
+import { relaySeal, tor } from './core';
 
 const CREATE = 1;
 const SEND = 2;
@@ -114,8 +118,30 @@ function connect(relay: Relay): WebSocket {
   return socket;
 }
 
+let throughTorOn = false;
+
+/** Sends every relay request through Tor from now on, or no longer. */
+export function setThroughTor(on: boolean): void {
+  throughTorOn = on;
+}
+
+/** Whether relay requests go through Tor. */
+export function throughTor(): boolean {
+  return throughTorOn;
+}
+
+// The core's Tor says what failed in its own words: a RelayError, as a direct connection's failure is.
+async function viaTor<T>(call: () => Promise<T>): Promise<T> {
+  try {
+    return await call();
+  } catch (error) {
+    throw new RelayError(`Through Tor: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 /** Opens a connection, sends one request, and returns the reply. Closes the connection. */
 function request(relay: Relay, bytes: Uint8Array): Promise<Uint8Array> {
+  if (throughTorOn) return viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
   return new Promise((resolve, reject) => {
     const socket = connect(relay);
     socket.onopen = () => socket.send(bytes);
@@ -225,13 +251,17 @@ export function sameRelay(a: string, b: string): boolean {
 
 /** One connection to a relay for many requests, each answered before the next goes. */
 export class RelaySession {
-  private readonly socket: WebSocket;
+  private readonly socket: WebSocket | null;
+  // The connection's handle in the core's Tor, when it goes through Tor.
+  private readonly torId: Uint8Array | null;
   private waiting: ((reply: Uint8Array | RelayError) => void) | null = null;
   private last: Promise<unknown> = Promise.resolve();
   private ended: RelayError | null = null;
 
-  private constructor(socket: WebSocket) {
+  private constructor(socket: WebSocket | null, torId: Uint8Array | null = null) {
     this.socket = socket;
+    this.torId = torId;
+    if (!socket) return;
     const answer = (reply: Uint8Array | RelayError) => {
       const waiting = this.waiting;
       this.waiting = null;
@@ -248,7 +278,11 @@ export class RelaySession {
     };
   }
 
-  static open(relay: Relay): Promise<RelaySession> {
+  static async open(relay: Relay): Promise<RelaySession> {
+    if (throughTorOn) {
+      const id = await viaTor(() => tor().torOpen(relay.url, relay.token ?? ''));
+      return new RelaySession(null, id);
+    }
     return new Promise((resolve, reject) => {
       const socket = connect(relay);
       socket.onopen = () => resolve(new RelaySession(socket));
@@ -259,15 +293,24 @@ export class RelaySession {
 
   /** Sends one request after the ones before it are answered, and returns its reply. */
   call(bytes: Uint8Array): Promise<Uint8Array> {
+    const torId = this.torId;
     const reply = this.last.then(
       () =>
+        torId
+          ? this.ended
+            ? Promise.reject(this.ended)
+            : viaTor(() => tor().torCall(torId, bytes)).catch((error: RelayError) => {
+                this.ended ??= error;
+                throw error;
+              })
+          :
         new Promise<Uint8Array>((resolve, reject) => {
           if (this.ended) {
             reject(this.ended);
             return;
           }
           this.waiting = (answer) => (answer instanceof RelayError ? reject(answer) : resolve(answer));
-          this.socket.send(bytes);
+          this.socket?.send(bytes);
         }),
     );
     this.last = reply.catch(() => undefined);
@@ -276,7 +319,12 @@ export class RelaySession {
 
   close(): void {
     this.ended ??= new RelayError('closed');
-    this.socket.close();
+    if (this.torId) {
+      const id = this.torId;
+      tor()
+        .torClose(id)
+        .catch(() => undefined);
+    } else this.socket?.close();
   }
 }
 
