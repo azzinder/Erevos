@@ -51,7 +51,9 @@ the install again, and type the new token into every phone.
 - `/usr/local/bin/erevos-relay`: the relay.
 - `/etc/systemd/system/erevos-relay.service`: the service.
 - `/etc/erevos-relay.env`: the token, readable by root only.
-- `/var/lib/erevos-relay/queues.journal`: queues and waiting messages. The
+- `/var/lib/erevos-relay/queues.journal`: queues and waiting messages. A
+  message nobody takes expires after 14 days (`EREVOS_RELAY_TTL_DAYS` in the
+  service changes that), and only the hour it came is kept. The
   service runs as a temporary user, so systemd keeps the file under
   `/var/lib/private/erevos-relay/`.
 - `/var/lib/erevos-relay/relay.key`: the relay's key for sealed sends from

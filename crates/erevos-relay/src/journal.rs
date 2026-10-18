@@ -3,8 +3,12 @@
 //! change, written and synced before the change is applied in memory.
 //!
 //! - `CREATE`: recipient id, sender id.
-//! - `SEND`: recipient id, a 4-byte length, the message.
-//! - `RECEIVE`: recipient id. The oldest message of that queue was handed over.
+//! - `SEND`: recipient id, a 4-byte length, the message. Written by relays
+//!   from before messages expired; still read, as a message that came now.
+//! - `SEND_AT`: recipient id, the hour it came (8-byte Unix seconds), a
+//!   4-byte length, the message.
+//! - `RECEIVE`: recipient id. The oldest message of that queue was handed
+//!   over, or expired.
 //! - `DELETE`: recipient id.
 //!
 //! Received messages and deleted queues stay in the file until it is
@@ -29,6 +33,7 @@ const CREATE: u8 = 1;
 const SEND: u8 = 2;
 const RECEIVE: u8 = 3;
 const DELETE: u8 = 4;
+const SEND_AT: u8 = 5;
 
 /// Bytes written since the last check before the relay works out whether a
 /// rewrite is worth it.
@@ -39,8 +44,11 @@ pub enum Record<'a> {
         recipient_id: QueueId,
         sender_id: QueueId,
     },
+    /// `at` is when the message came, in Unix seconds; 0 when the record
+    /// is from before relays kept that.
     Send {
         recipient_id: QueueId,
+        at: u64,
         message: &'a [u8],
     },
     Receive {
@@ -56,7 +64,8 @@ impl Record<'_> {
     pub fn len(&self) -> u64 {
         match self {
             Record::Create { .. } => 1 + 24 + 24,
-            Record::Send { message, .. } => 1 + 24 + 4 + message.len() as u64,
+            Record::Send { at: 0, message, .. } => 1 + 24 + 4 + message.len() as u64,
+            Record::Send { message, .. } => 1 + 24 + 8 + 4 + message.len() as u64,
             Record::Receive { .. } | Record::Delete { .. } => 1 + 24,
         }
     }
@@ -73,10 +82,17 @@ impl Record<'_> {
             }
             Record::Send {
                 recipient_id,
+                at,
                 message,
             } => {
-                out.push(SEND);
-                out.extend_from_slice(recipient_id);
+                if *at == 0 {
+                    out.push(SEND);
+                    out.extend_from_slice(recipient_id);
+                } else {
+                    out.push(SEND_AT);
+                    out.extend_from_slice(recipient_id);
+                    out.extend_from_slice(&at.to_be_bytes());
+                }
                 out.extend_from_slice(&(message.len() as u32).to_be_bytes());
                 out.extend_from_slice(message);
             }
@@ -234,7 +250,17 @@ fn read_record<'a>(r: &mut impl Read, message: &'a mut Vec<u8>) -> io::Result<Op
             recipient_id,
             sender_id: read_id(r)?,
         },
-        SEND => {
+        SEND | SEND_AT => {
+            let at = if tag[0] == SEND_AT {
+                let mut at = [0u8; 8];
+                r.read_exact(&mut at)?;
+                match u64::from_be_bytes(at) {
+                    0 => return Err(ErrorKind::InvalidData.into()),
+                    at => at,
+                }
+            } else {
+                0
+            };
             let mut len = [0u8; 4];
             r.read_exact(&mut len)?;
             let len = u32::from_be_bytes(len) as usize;
@@ -245,6 +271,7 @@ fn read_record<'a>(r: &mut impl Read, message: &'a mut Vec<u8>) -> io::Result<Op
             r.read_exact(message)?;
             Record::Send {
                 recipient_id,
+                at,
                 message,
             }
         }

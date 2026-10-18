@@ -15,6 +15,9 @@
 //! messages there, so they survive a restart. Without it, they live in memory
 //! only and are lost when the relay stops.
 //!
+//! Messages nobody takes expire after 14 days. Set `EREVOS_RELAY_TTL_DAYS`
+//! to change that.
+//!
 //! Set `EREVOS_RELAY_KEY` to a file path to give the relay a key for sealed
 //! sends (two-hop sending, see `server.rs`). The file is made on first start
 //! and must be kept: phones put the public key in their contact links.
@@ -33,6 +36,7 @@ use std::path::Path;
 use std::process::ExitCode;
 use std::sync::Arc;
 use std::thread;
+use std::time::Duration;
 
 use erevos_core::relay_seal::RelayKey;
 use queue::Store;
@@ -92,8 +96,18 @@ fn main() -> ExitCode {
     if token.is_none() {
         eprintln!("erevos-relay: no EREVOS_RELAY_TOKEN set, the WebSocket accepts anyone");
     }
+    let ttl = match env::var("EREVOS_RELAY_TTL_DAYS") {
+        Ok(days) if !days.is_empty() => match days.parse::<u64>() {
+            Ok(days) if days > 0 => days * 24 * 60 * 60,
+            _ => {
+                eprintln!("erevos-relay: EREVOS_RELAY_TTL_DAYS must be a whole number of days, at least 1");
+                return ExitCode::FAILURE;
+            }
+        },
+        _ => queue::DEFAULT_TTL,
+    };
     let store = match env::var("EREVOS_RELAY_JOURNAL") {
-        Ok(path) if !path.is_empty() => match Store::open(Path::new(&path)) {
+        Ok(path) if !path.is_empty() => match Store::open_with(Path::new(&path), ttl) {
             Ok(store) => {
                 eprintln!("erevos-relay: keeping queues in {path}");
                 store
@@ -107,7 +121,7 @@ fn main() -> ExitCode {
             eprintln!(
                 "erevos-relay: no EREVOS_RELAY_JOURNAL set, queues are lost when the relay stops"
             );
-            Store::default()
+            Store::with_ttl(ttl)
         }
     };
     let key = match env::var("EREVOS_RELAY_KEY") {
@@ -125,6 +139,11 @@ fn main() -> ExitCode {
     };
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
     let store = Shared::new(store, key);
+    let sweep_store = Arc::clone(&store);
+    thread::spawn(move || loop {
+        thread::sleep(Duration::from_secs(60 * 60));
+        sweep_store.store.lock().expect("store lock").expire();
+    });
     let ws_store = Arc::clone(&store);
     thread::spawn(move || {
         if let Err(e) = server::serve_ws(ws, ws_store, token) {

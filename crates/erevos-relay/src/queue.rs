@@ -5,10 +5,15 @@
 //! A store opened from a journal (see `journal.rs`) writes every change to
 //! disk before applying it, so queues and waiting messages survive a restart.
 //! `Store::default()` keeps everything in memory only.
+//!
+//! A message nobody takes expires after `ttl` (14 days unless set), as on
+//! Session's nodes, so the relay does not keep it forever. The relay notes
+//! only the hour each message came, not the second.
 
 use std::collections::{HashMap, VecDeque};
 use std::io;
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use rand::RngCore;
 
@@ -20,6 +25,17 @@ pub type QueueId = [u8; 24];
 /// the relay.
 pub const MAX_QUEUED: usize = 1000;
 
+/// How long a message waits for its recipient before it expires.
+pub const DEFAULT_TTL: u64 = 14 * 24 * 60 * 60;
+const HOUR: u64 = 60 * 60;
+
+/// Unix seconds now. A clock before 1970 counts as 1970.
+fn system_now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum QueueError {
     NotFound,
@@ -30,14 +46,28 @@ pub enum QueueError {
 
 struct Queue {
     sender_id: QueueId,
-    messages: VecDeque<Vec<u8>>,
+    /// Oldest first, each with the hour it came.
+    messages: VecDeque<(u64, Vec<u8>)>,
 }
 
-#[derive(Default)]
 pub struct Store {
     queues: HashMap<QueueId, Queue>,
     by_sender: HashMap<QueueId, QueueId>,
     journal: Option<Journal>,
+    ttl: u64,
+    clock: fn() -> u64,
+}
+
+impl Default for Store {
+    fn default() -> Self {
+        Store {
+            queues: HashMap::new(),
+            by_sender: HashMap::new(),
+            journal: None,
+            ttl: DEFAULT_TTL,
+            clock: system_now,
+        }
+    }
 }
 
 pub struct NewQueue {
@@ -59,8 +89,9 @@ fn records(queues: &HashMap<QueueId, Queue>) -> impl Iterator<Item = Record<'_>>
             recipient_id: *recipient_id,
             sender_id: q.sender_id,
         })
-        .chain(q.messages.iter().map(|message| Record::Send {
+        .chain(q.messages.iter().map(|(at, message)| Record::Send {
             recipient_id: *recipient_id,
+            at: *at,
             message,
         }))
     })
@@ -78,11 +109,25 @@ fn log(journal: &mut Option<Journal>, record: &Record) -> Result<(), QueueError>
 }
 
 impl Store {
-    /// Opens the store kept in the journal at `path`, or starts an empty one
-    /// there if the file does not exist yet. The file is rewritten on the way,
-    /// which drops received messages and deleted queues from it.
+    #[cfg(test)]
     pub fn open(path: &Path) -> io::Result<Store> {
-        let mut store = Store::default();
+        Store::open_with(path, DEFAULT_TTL)
+    }
+
+    /// Opens the store kept in the journal at `path`, or starts an empty one
+    /// there if the file does not exist yet, with messages expiring after
+    /// `ttl` seconds. The file is rewritten on the way, which drops received
+    /// and expired messages and deleted queues from it.
+    pub fn open_with(path: &Path, ttl: u64) -> io::Result<Store> {
+        Store::open_clocked(path, ttl, system_now)
+    }
+
+    fn open_clocked(path: &Path, ttl: u64, clock: fn() -> u64) -> io::Result<Store> {
+        let mut store = Store {
+            ttl,
+            clock,
+            ..Store::default()
+        };
         let skipped = journal::replay(path, |record| store.apply(record))?;
         if skipped > 0 {
             eprintln!(
@@ -90,8 +135,73 @@ impl Store {
                 path.display()
             );
         }
+        store.drop_expired();
         store.journal = Some(Journal::create(path, records(&store.queues))?);
         Ok(store)
+    }
+
+    /// An in-memory store whose messages expire after `ttl` seconds.
+    pub fn with_ttl(ttl: u64) -> Store {
+        Store {
+            ttl,
+            ..Store::default()
+        }
+    }
+
+    /// The hour that holds now, the time noted for a message that comes now.
+    fn hour(&self) -> u64 {
+        ((self.clock)() / HOUR * HOUR).max(1)
+    }
+
+    fn expired(&self, at: u64) -> bool {
+        at.saturating_add(self.ttl) <= (self.clock)()
+    }
+
+    /// Drops expired messages from memory only, while opening: the journal
+    /// written right after leaves them out.
+    fn drop_expired(&mut self) {
+        let (now, ttl) = ((self.clock)(), self.ttl);
+        for q in self.queues.values_mut() {
+            q.messages.retain(|(at, _)| at.saturating_add(ttl) > now);
+        }
+    }
+
+    /// Removes expired messages from the front of one queue, noting each in
+    /// the journal as taken.
+    fn expire_queue(&mut self, recipient_id: &QueueId) -> Result<(), QueueError> {
+        loop {
+            let Some(q) = self.queues.get(recipient_id) else {
+                return Ok(());
+            };
+            match q.messages.front() {
+                Some((at, _)) if self.expired(*at) => {}
+                _ => return Ok(()),
+            }
+            log(
+                &mut self.journal,
+                &Record::Receive {
+                    recipient_id: *recipient_id,
+                },
+            )?;
+            if let Some(q) = self.queues.get_mut(recipient_id) {
+                q.messages.pop_front();
+            }
+        }
+    }
+
+    /// Removes every expired message. The relay calls this now and then, so
+    /// messages for queues nobody looks at go too. Returns how many went.
+    pub fn expire(&mut self) -> usize {
+        let ids: Vec<QueueId> = self.queues.keys().copied().collect();
+        let before: usize = self.queues.values().map(|q| q.messages.len()).sum();
+        for id in ids {
+            if self.expire_queue(&id).is_err() {
+                break;
+            }
+        }
+        let after: usize = self.queues.values().map(|q| q.messages.len()).sum();
+        self.tidy();
+        before - after
     }
 
     /// Applies a record read back from the journal.
@@ -112,10 +222,13 @@ impl Store {
             }
             Record::Send {
                 recipient_id,
+                at,
                 message,
             } => {
+                // A record from before relays noted the time counts from now.
+                let at = if at == 0 { self.hour() } else { at };
                 if let Some(q) = self.queues.get_mut(&recipient_id) {
-                    q.messages.push_back(message.to_vec());
+                    q.messages.push_back((at, message.to_vec()));
                 }
             }
             Record::Receive { recipient_id } => {
@@ -158,6 +271,8 @@ impl Store {
 
     pub fn send(&mut self, sender_id: &QueueId, msg: Vec<u8>) -> Result<(), QueueError> {
         let rid = *self.by_sender.get(sender_id).ok_or(QueueError::NotFound)?;
+        self.expire_queue(&rid)?;
+        let at = self.hour();
         let q = self.queues.get_mut(&rid).ok_or(QueueError::NotFound)?;
         if q.messages.len() >= MAX_QUEUED {
             return Err(QueueError::Full);
@@ -166,16 +281,18 @@ impl Store {
             &mut self.journal,
             &Record::Send {
                 recipient_id: rid,
+                at,
                 message: &msg,
             },
         )?;
-        q.messages.push_back(msg);
+        q.messages.push_back((at, msg));
         self.tidy();
         Ok(())
     }
 
     /// Hands over the oldest message and deletes it from the relay.
     pub fn receive(&mut self, recipient_id: &QueueId) -> Result<Option<Vec<u8>>, QueueError> {
+        self.expire_queue(recipient_id)?;
         let q = self
             .queues
             .get_mut(recipient_id)
@@ -189,7 +306,7 @@ impl Store {
                 recipient_id: *recipient_id,
             },
         )?;
-        let msg = q.messages.pop_front();
+        let msg = q.messages.pop_front().map(|(_, msg)| msg);
         self.tidy();
         Ok(msg)
     }
@@ -380,6 +497,83 @@ mod tests {
         drop(s);
         let mut s = Store::open(&path.0).unwrap();
         assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), b"after");
+    }
+
+    use std::sync::atomic::AtomicU64;
+
+    static NOW: AtomicU64 = AtomicU64::new(1_800_000_000);
+    fn fake_now() -> u64 {
+        NOW.load(Ordering::SeqCst)
+    }
+
+    // One test moves the fake clock, so all of them that use it run in this one.
+    #[test]
+    fn messages_expire_after_the_ttl() {
+        let day = 24 * 60 * 60;
+        let mut s = Store {
+            clock: fake_now,
+            ..Store::with_ttl(14 * day)
+        };
+        let q = s.create().unwrap();
+        s.send(&q.sender_id, b"old".to_vec()).unwrap();
+        NOW.fetch_add(10 * day, Ordering::SeqCst);
+        s.send(&q.sender_id, b"newer".to_vec()).unwrap();
+        NOW.fetch_add(5 * day, Ordering::SeqCst);
+        // "old" is 15 days old now, "newer" 5.
+        assert_eq!(s.expire(), 1);
+        assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), b"newer");
+        assert_eq!(s.receive(&q.recipient_id).unwrap(), None);
+
+        // An expired message is never handed over, even before a sweep.
+        s.send(&q.sender_id, b"gone".to_vec()).unwrap();
+        NOW.fetch_add(15 * day, Ordering::SeqCst);
+        assert_eq!(s.receive(&q.recipient_id).unwrap(), None);
+
+        // A full queue makes room as its old messages expire.
+        for _ in 0..MAX_QUEUED {
+            s.send(&q.sender_id, vec![0]).unwrap();
+        }
+        assert_eq!(s.send(&q.sender_id, vec![0]), Err(QueueError::Full));
+        NOW.fetch_add(15 * day, Ordering::SeqCst);
+        assert_eq!(s.send(&q.sender_id, b"room".to_vec()), Ok(()));
+        assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), b"room");
+
+        // Kept on disk with the hour it came, and expired on the way back in.
+        let path = TempPath::new();
+        let q = {
+            let mut s = Store::open_clocked(&path.0, 14 * day, fake_now).unwrap();
+            let q = s.create().unwrap();
+            s.send(&q.sender_id, b"first".to_vec()).unwrap();
+            NOW.fetch_add(7 * day, Ordering::SeqCst);
+            s.send(&q.sender_id, b"second".to_vec()).unwrap();
+            q
+        };
+        NOW.fetch_add(8 * day, Ordering::SeqCst);
+        let mut s = Store::open_clocked(&path.0, 14 * day, fake_now).unwrap();
+        assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), b"second");
+        assert_eq!(s.receive(&q.recipient_id).unwrap(), None);
+
+        // Only the hour is kept, not the second.
+        let at = s.hour();
+        assert_eq!(at % 3600, 0);
+        assert!(at <= fake_now() && fake_now() - at < 3600);
+    }
+
+    #[test]
+    fn a_journal_from_before_expiry_still_opens() {
+        let path = TempPath::new();
+        let mut old = journal::HEADER.to_vec();
+        let (recipient, sender) = ([1u8; 24], [2u8; 24]);
+        old.push(1);
+        old.extend_from_slice(&recipient);
+        old.extend_from_slice(&sender);
+        old.push(2);
+        old.extend_from_slice(&recipient);
+        old.extend_from_slice(&5u32.to_be_bytes());
+        old.extend_from_slice(b"hello");
+        std::fs::write(&path.0, &old).unwrap();
+        let mut s = Store::open(&path.0).unwrap();
+        assert_eq!(s.receive(&recipient).unwrap().unwrap(), b"hello");
     }
 
     #[cfg(unix)]
