@@ -30,6 +30,10 @@ test('puts the chat that moved last first, and counts their messages not read ye
   );
   const voice = buildInbox(contacts, [{ peer: `contact:${C}`, text: '', mine: false, at: 60, voice: { ms: 7400 } }], [], 100);
   assert.equal(voice.find((r) => r.identity === C)?.last, 'Voice message, 0:07');
+  const photo = buildInbox(contacts, [{ peer: `contact:${C}`, text: '', mine: true, at: 60, file: { kind: 'photo', name: 'IMG_1.jpg' } }], [], 100);
+  assert.equal(photo.find((r) => r.identity === C)?.last, 'Photo');
+  const file = buildInbox(contacts, [{ peer: `contact:${C}`, text: '', mine: false, at: 60, file: { kind: 'file', name: 'plan.pdf' } }], [], 100);
+  assert.equal(file.find((r) => r.identity === C)?.last, 'File: plan.pdf');
   assert.deepEqual(
     rows.map((r) => [r.identity, r.last, r.mine, r.mark, r.unread, r.at]),
     [

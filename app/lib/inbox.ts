@@ -16,6 +16,7 @@ export type InboxMessage = {
   until?: number;
   mark?: 0 | 1 | 2;
   voice?: { ms: number };
+  file?: { kind: 'photo' | 'file'; name: string };
 };
 
 export type InboxImported = { title: string; contact: string; last: number };
@@ -24,7 +25,7 @@ export type InboxRow = {
   identity: string;
   /** The name given here, or the imported chat's that goes on with them; empty if neither. */
   name: string;
-  /** The last message's text, or how long it is if it is a voice message; empty if there is none yet. */
+  /** The last message's text, how long it is if it is a voice message, or what file it is; empty if there is none yet. */
   last: string;
   /** Whether the last message is ours, and its mark. */
   mine: boolean;
@@ -59,7 +60,7 @@ export function buildInbox(contacts: InboxContact[], messages: InboxMessage[], i
     return {
       identity: contact.identity,
       name: contact.name || linked[0]?.title.trim() || '',
-      last: last?.voice ? `Voice message, ${voiceDuration(last.voice.ms)}` : (last?.text ?? ''),
+      last: preview(last),
       mine: last?.mine ?? false,
       mark: last?.mark ?? 0,
       at: Math.max(last?.at ?? 0, importedAt),
@@ -69,6 +70,12 @@ export function buildInbox(contacts: InboxContact[], messages: InboxMessage[], i
     };
   });
   return rows.sort((a, b) => b.at - a.at || shownName(a).localeCompare(shownName(b)));
+}
+
+function preview(message: InboxMessage | undefined): string {
+  if (message?.voice) return `Voice message, ${voiceDuration(message.voice.ms)}`;
+  if (message?.file) return message.file.kind === 'photo' ? 'Photo' : `File: ${message.file.name}`;
+  return message?.text ?? '';
 }
 
 /** A row's name, or the start of the contact's key when it has none. */

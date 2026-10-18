@@ -1,0 +1,250 @@
+// Photos and files (lib/attachments.ts, lib/photo.ts, lock/attachment-files.ts): the chunks, the
+// offer a message carries, what a photo keeps, and sending and taking a file through real relays
+// (crates/erevos-relay), skipped with a note when the relay is not built.
+// Run with: npm run check
+/// <reference types="node" />
+import assert from 'node:assert/strict';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { after, before, test } from 'node:test';
+
+import { blobs } from './files-memory';
+import {
+  bytesSource,
+  chunkPlan,
+  FileDamagedError,
+  FileGoneError,
+  offerRef,
+  openChunk,
+  readFile,
+  readOffer,
+  room,
+  sealChunk,
+  sendFile,
+  takeFile,
+  type FileOffer,
+} from '../lib/attachments';
+import { randomBytes } from '../lib/crypto';
+import { cleanJpeg, cleanPng, photoSize } from '../lib/photo';
+import { cleanFileName, isFileRef, PREFIX } from '../lock/attachment-files';
+import { History } from '../lock/history';
+import { RelaySession, getChunk } from '../lib/relay';
+
+test('a file takes one small chunk, one middle one, or 1 MiB chunks', () => {
+  assert.deepEqual(chunkPlan(0), { chunk: 64 * 1024, count: 1 });
+  assert.deepEqual(chunkPlan(room(64 * 1024)), { chunk: 64 * 1024, count: 1 });
+  assert.deepEqual(chunkPlan(room(64 * 1024) + 1), { chunk: 256 * 1024, count: 1 });
+  assert.deepEqual(chunkPlan(room(256 * 1024) + 1), { chunk: 1024 * 1024, count: 1 });
+  assert.deepEqual(chunkPlan(room(1024 * 1024) * 3 + 1), { chunk: 1024 * 1024, count: 4 });
+});
+
+test('a chunk opens only with its key, in its place, unchanged', () => {
+  const key = randomBytes(32);
+  const data = randomBytes(1000);
+  const sealed = sealChunk(key, 2, data, 64 * 1024);
+  assert.equal(sealed.length, 64 * 1024);
+  assert.deepEqual(openChunk(key, 2, sealed, 64 * 1024), data);
+  assert.throws(() => openChunk(key, 3, sealed, 64 * 1024), FileDamagedError);
+  assert.throws(() => openChunk(randomBytes(32), 2, sealed, 64 * 1024), FileDamagedError);
+  const changed = sealed.slice();
+  changed[100] ^= 1;
+  assert.throws(() => openChunk(key, 2, changed, 64 * 1024), FileDamagedError);
+  assert.throws(() => openChunk(key, 2, sealed.slice(0, 1000), 64 * 1024), FileDamagedError);
+});
+
+const OFFER: FileOffer = {
+  name: 'photo.jpg',
+  mime: 'image/jpeg',
+  kind: 'photo',
+  size: 3000,
+  w: 4,
+  h: 3,
+  relay: 'ws://127.0.0.1:7879',
+  ids: 'ab'.repeat(24),
+  key: 'cd'.repeat(32),
+  chunk: 64 * 1024,
+};
+
+test('an offer is read only when it holds together', () => {
+  assert.deepEqual(readOffer(JSON.parse(JSON.stringify(OFFER))), OFFER);
+  const ref = offerRef(OFFER);
+  assert.ok(isFileRef(ref));
+  assert.equal(ref.count, 1);
+  assert.deepEqual(ref.from, { relay: OFFER.relay, ids: OFFER.ids });
+  assert.equal(readOffer({ ...OFFER, ids: OFFER.ids + 'ab'.repeat(24) }), null, 'more chunks than its size takes');
+  assert.equal(readOffer({ ...OFFER, chunk: 1024 * 1024 }), null, 'a chunk size that does not fit');
+  assert.equal(readOffer({ ...OFFER, relay: 'http://example.org' }), null);
+  assert.equal(readOffer({ ...OFFER, key: 'x' }), null);
+  assert.equal(readOffer({ ...OFFER, kind: 'virus' }), null);
+  assert.equal(readOffer({ ...OFFER, size: 200_000_000 }), null, 'over 100 MB');
+  assert.equal(readOffer({ ...OFFER, name: '../../etc/passwd' })?.name, 'passwd');
+  assert.equal(readOffer('nothing'), null);
+});
+
+test('file names lose folders and what cannot be in a name', () => {
+  assert.equal(cleanFileName('C:\\Users\\me\\plan.pdf'), 'plan.pdf');
+  assert.equal(cleanFileName('a\u0000b<c>.txt'), 'abc.txt');
+  assert.equal(cleanFileName('...hidden'), 'hidden');
+  assert.equal(cleanFileName(''), 'file');
+  const long = cleanFileName(`${'x'.repeat(300)}.jpeg`);
+  assert.equal(long.length, 120);
+  assert.ok(long.endsWith('.jpeg'));
+});
+
+// A JPEG put together by hand: JFIF with a thumbnail, EXIF (turned 90°, and a "GPS" string),
+// a comment, Photoshop's APP13, an ICC profile, MPF, the picture's segments and data with stuffing
+// and a restart, its end, and a "video" after it.
+function jpeg(): { bytes: Uint8Array; picture: number[] } {
+  const seg = (marker: number, body: number[]) => [0xff, marker, (body.length + 2) >> 8, (body.length + 2) & 0xff, ...body];
+  const text = (t: string) => [...t].map((c) => c.charCodeAt(0));
+  const jfif = seg(0xe0, [...text('JFIF\0'), 1, 2, 0, 0, 72, 0, 72, 2, 1, 1, 2, 3, 4, 5, 6]);
+  const tiff = [0x49, 0x49, 42, 0, 8, 0, 0, 0, 2, 0, 0x12, 0x01, 3, 0, 1, 0, 0, 0, 6, 0, 0, 0, 0x25, 0x88, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const exif = seg(0xe1, [...text('Exif\0\0'), ...tiff, ...text('GPS 37.97N 23.72E')]);
+  const comment = seg(0xfe, text('Pixel 9, Athens'));
+  const photoshop = seg(0xed, text('Photoshop 3.0\0IPTC'));
+  const icc = seg(0xe2, [...text('ICC_PROFILE\0'), 1, 1, 9, 9, 9]);
+  const mpf = seg(0xe2, [...text('MPF\0'), 1, 2, 3]);
+  const dqt = seg(0xdb, [0, ...Array(64).fill(1)]);
+  const sof = seg(0xc0, [8, 0, 30, 0, 40, 1, 1, 0x11, 0]);
+  const dht = seg(0xc4, [0, ...Array(16).fill(0)]);
+  const sos = seg(0xda, [1, 1, 0, 0, 63, 0]);
+  const data = [0x12, 0xff, 0x00, 0x34, 0xff, 0xd0, 0x56];
+  const picture = [...dqt, ...sof, ...dht, ...sos, ...data, 0xff, 0xd9];
+  const bytes = [0xff, 0xd8, ...jfif, ...exif, ...comment, ...photoshop, ...icc, ...mpf, ...picture, ...text('ftypmp42 motion photo')];
+  return { bytes: Uint8Array.from(bytes), picture };
+}
+
+test('a JPEG keeps its picture and its turn, and nothing else it says', () => {
+  const { bytes, picture } = jpeg();
+  assert.deepEqual(photoSize(bytes), { w: 30, h: 40 }, 'turned 90°, so it shows higher than wide');
+  const clean = cleanJpeg(bytes);
+  const text = String.fromCharCode(...clean);
+  for (const gone of ['GPS', 'Pixel', 'Photoshop', 'MPF', 'motion', 'II*']) assert.ok(!text.includes(gone), gone);
+  assert.ok(text.includes('ICC_PROFILE'));
+  assert.deepEqual([...clean.subarray(clean.length - picture.length)], picture, 'the picture byte for byte, then its end');
+  // JFIF without its thumbnail, then an EXIF with only the turn.
+  assert.deepEqual([...clean.subarray(0, 4)], [0xff, 0xd8, 0xff, 0xe0]);
+  assert.equal(clean[4 + 2 + 12], 0, 'no thumbnail');
+  assert.deepEqual(photoSize(clean), { w: 30, h: 40 }, 'still turned');
+  assert.deepEqual(cleanJpeg(clean), clean, 'cleaning twice changes nothing');
+  assert.throws(() => cleanJpeg(bytes.subarray(0, 60)));
+});
+
+test('a PNG loses its text, EXIF and time chunks', () => {
+  const chunk = (type: string, body: number[]) => {
+    const length = [body.length >>> 24, (body.length >> 16) & 255, (body.length >> 8) & 255, body.length & 255];
+    return [...length, ...[...type].map((c) => c.charCodeAt(0)), ...body, 1, 2, 3, 4];
+  };
+  const ihdr = chunk('IHDR', [0, 0, 1, 0, 0, 0, 0, 200, 8, 6, 0, 0, 0]);
+  const idat = chunk('IDAT', [9, 9, 9]);
+  const iend = chunk('IEND', []);
+  const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  const bytes = Uint8Array.from([
+    ...signature,
+    ...ihdr,
+    ...chunk('tEXt', [...'Author\0me'].map((c) => c.charCodeAt(0))),
+    ...idat,
+    ...chunk('tIME', [7, 234, 10, 18, 9, 0, 0]),
+    ...iend,
+    1,
+    2,
+  ]);
+  assert.deepEqual(photoSize(bytes), { w: 256, h: 200 });
+  assert.deepEqual([...cleanPng(bytes)], [...signature, ...ihdr, ...idat, ...iend]);
+});
+
+test('a message that leaves the history takes its file with it', async () => {
+  const history = await History.open('space', 0, randomBytes(32));
+  const file = { name: 'a.txt', mime: 'text/plain', kind: 'file' as const, size: 5, id: 'ab'.repeat(16), key: 'cd'.repeat(32), chunk: 64 * 1024, count: 2 };
+  blobs.set(`${PREFIX}${file.id}-0`, Uint8Array.of(1));
+  blobs.set(`${PREFIX}${file.id}-1`, Uint8Array.of(2));
+  await history.add({ peer: 'contact:x', text: '', mine: true, at: 1, tag: 'aaaaaaaaaaaa', file });
+  assert.deepEqual(history.messages()[0].file, file);
+  assert.equal(await history.setFile('contact:x', 'aaaaaaaaaaaa', { ...file, name: 'b.txt' }), true);
+  assert.equal(history.messages()[0].file?.name, 'b.txt');
+  assert.equal(await history.setFile('contact:x', 'bbbbbbbbbbbb', file), false);
+  assert.ok(blobs.has(`${PREFIX}${file.id}-1`));
+  await history.remove('contact:x', 'aaaaaaaaaaaa');
+  assert.ok(!blobs.has(`${PREFIX}${file.id}-0`) && !blobs.has(`${PREFIX}${file.id}-1`));
+});
+
+// Through real relays.
+const binary = new URL('../../target/debug/erevos-relay', import.meta.url).pathname;
+const ready = existsSync(binary) && typeof WebSocket === 'function';
+if (!ready) console.log('Skipping the file store checks: build the relay first (cargo build -p erevos-relay)');
+
+function freePort(): Promise<number> {
+  return new Promise((resolve) => {
+    const server = createServer().listen(0, '127.0.0.1', () => {
+      const { port } = server.address() as { port: number };
+      server.close(() => resolve(port));
+    });
+  });
+}
+
+const relays: ChildProcess[] = [];
+
+// Node's WebSocket cannot send the token header that React Native's does, so these relays take none.
+async function startRelay(): Promise<string> {
+  const [tcp, ws] = [await freePort(), await freePort()];
+  const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env: { ...process.env, EREVOS_RELAY_TOKEN: '' }, stdio: 'ignore' });
+  relays.push(child);
+  const url = `ws://127.0.0.1:${ws}`;
+  for (let i = 0; i < 50; i++) {
+    try {
+      (await RelaySession.open({ url })).close();
+      return url;
+    } catch {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+  throw new Error(`the relay at ${url} did not start`);
+}
+
+let mine = '';
+let theirs = '';
+
+before(async () => {
+  if (!ready) return;
+  mine = await startRelay();
+  theirs = await startRelay();
+});
+
+after(() => {
+  for (const relay of relays) relay.kill();
+});
+
+test('a file goes to our relay and comes through theirs, then leaves the relay', { skip: !ready }, async () => {
+  const data = randomBytes(room(1024 * 1024) * 2 + 12345);
+  const progress: number[] = [];
+  const { ref, offer } = await sendFile({ url: mine }, bytesSource(data), { name: 'big.bin', mime: 'application/octet-stream', kind: 'file' }, (done) =>
+    progress.push(done),
+  );
+  assert.deepEqual(progress, [1, 2, 3]);
+  assert.equal(offer.relay, mine);
+  assert.deepEqual(await readFile(ref), data, 'kept here as it went');
+
+  const came = readOffer(JSON.parse(JSON.stringify(offer)))!;
+  const waiting = offerRef(came);
+  assert.equal(await readFile(waiting), null, 'not here until taken');
+  const taken = await takeFile({ url: theirs }, waiting);
+  assert.equal(taken.from, undefined);
+  assert.deepEqual(await readFile(taken), data);
+
+  // Deleted from our relay once taken.
+  const session = await RelaySession.open({ url: mine });
+  assert.equal(await getChunk(session, Uint8Array.from(Buffer.from(offer.ids.slice(0, 48), 'hex'))), null);
+  session.close();
+  await assert.rejects(takeFile({ url: theirs }, offerRef(came)), FileGoneError);
+});
+
+test('a file on the same relay is taken straight, and a wrong key keeps nothing', { skip: !ready }, async () => {
+  const data = randomBytes(5000);
+  const { offer } = await sendFile({ url: mine }, bytesSource(data), { name: 'photo.png', mime: 'image/png', kind: 'photo', w: 2, h: 1 });
+  const wrong = offerRef({ ...offer, key: 'ef'.repeat(32) });
+  await assert.rejects(takeFile({ url: mine }, wrong), FileDamagedError);
+  assert.ok(![...blobs.keys()].some((name) => name.startsWith(`${PREFIX}${wrong.id}`)), 'nothing kept');
+  const taken = await takeFile({ url: `${mine}/` }, offerRef(offer));
+  assert.deepEqual(await readFile(taken), data);
+});

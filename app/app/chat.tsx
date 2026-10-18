@@ -1,17 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { AppState, Image, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
+import { FileGoneError, fileSize, MAX_FILE, offerRef, readFile, sendFile, takeFile, bytesSource, type Source } from '../lib/attachments';
+import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileRef } from '../lock/attachment-files';
+import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
+import { pickSource, TooLargeError } from '../lib/pick-file';
+import { loadPhotoQuality, QUALITIES, qualityNote, savePhotoQuality } from '../lib/photo-quality';
+import { photoUri, releaseUri } from '../lib/photo-uri';
+import { CAN_CHOOSE_FOLDER, saveFile } from '../lib/save-file';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
 import { ShieldIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
-import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
+import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { ask } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
@@ -23,7 +30,7 @@ import { cleanName, MAX_NAME } from '../lock/e2e-data';
 import { History, newTag, type Mark } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
-import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sendMessage, toHex, type Relay } from '../lib/relay';
+import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type Relay } from '../lib/relay';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
@@ -39,7 +46,10 @@ import { useColors, useStyles, useTheme } from '../theme/context';
 // their chat shows on the screen. A chat's new messages, or a single one, can disappear on both
 // phones a time after they are read (the timer in lib/e2e.ts). Voice messages are recorded while
 // Voice is held (lib/audio.ts), travel in parts (lib/voice.ts), and each one's sound is kept in a
-// sealed file of its own (lock/voice-clips.ts). Messages over the radio link are kept in memory
+// sealed file of its own (lock/voice-clips.ts). Photos and files go through the relay's file store
+// (lib/attachments.ts): ours are kept here as they went, theirs are taken from the relay at once
+// up to AUTO_TAKE, larger ones when tapped. A photo shows from memory only, never written out
+// unsealed; Save puts a copy outside Erevos. Messages over the radio link are kept in memory
 // only, so they are gone when the chat closes.
 //
 // Every space also has hidden chats (lock/hidden.ts), opened with their own password from the
@@ -57,6 +67,7 @@ import { useColors, useStyles, useTheme } from '../theme/context';
 // `until`: when it disappears, milliseconds, or 0. `lasts`: seconds it lasts once read, while it
 // waits for that. `mark`: as lock/history.ts keeps it.
 // `at`: when it was sent or came, milliseconds. `voice`: where a voice message's sound is.
+// `file`: where a photo or file is, or where to take it from.
 type Message = {
   id: number;
   peer: string;
@@ -68,6 +79,7 @@ type Message = {
   mark: Mark;
   at: number;
   voice?: VoiceRef;
+  file?: FileRef;
 };
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
@@ -87,6 +99,13 @@ const NOTE_SHOWN = 8000;
 // Messages opened from the relay in one look at it, at most: a minute's voice message comes in one.
 const RECEIVE_BATCH = 50;
 
+// Their photos and files up to this size are taken from the relay as soon as they come.
+const AUTO_TAKE = 16 * 1000 * 1000;
+
+// Photos shown in the thread at once, the latest: each is held whole in memory while shown. The
+// others show when tapped. A computer has the memory for all of them.
+const SHOWN_PHOTOS = Platform.OS === 'web' ? 200 : 6;
+
 // Contacts are named by their identity key, after this prefix. Radio peers by their link id.
 const CONTACT_PREFIX = 'contact:';
 
@@ -98,7 +117,6 @@ const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.ACCESS_FINE_LOCATION',
 ];
 
-// Relay addresses that differ only in case or a trailing slash are the same relay.
 /** A relay to send to, with the second relay to go through when one is set. Null without an address. */
 function relayFor(url: string, token: string, via: string, viaToken: string): Relay | null {
   const address = url.trim();
@@ -117,11 +135,6 @@ function contactTarget(own: Relay, where: { relay: string; relayKey: string }): 
   if (!where.relay || sameRelay(where.relay, own.url)) return own;
   if (!where.relayKey) throw new Error(`That contact uses the relay at ${where.relay}, and its link has no key for it. Ask them for a new link.`);
   return { url: where.relay, key: fromBase64Url(where.relayKey), via: own.via ?? { url: own.url, token: own.token } };
-}
-
-function sameRelay(a: string, b: string): boolean {
-  const plain = (url: string) => url.trim().replace(/\/+$/, '').toLowerCase();
-  return plain(a) === plain(b);
 }
 
 // A contact's name if this chat gave it one, otherwise the start of their key.
@@ -297,6 +310,20 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
   const history = useRef<History | null>(null);
+  const insets = useSafeAreaInsets();
+  // The sheet for sending a photo or file, and how photos go.
+  const [attaching, setAttaching] = useState(false);
+  const [quality, setQuality] = useState<PhotoQuality>('original');
+  // How far each file being taken from the relay is, by `${peer}|${tag}`; 'failed' or 'gone' if it did not come.
+  const [taking, setTaking] = useState<Record<string, string>>({});
+  // Files already tried, so one that failed is taken again only when tapped.
+  const tried = useRef(new Set<string>());
+  // The photo or file shown on its own, to look at or save.
+  const [viewing, setViewing] = useState<Message | null>(null);
+  // Photos shown, by file id, as addresses an Image can show (lib/photo-uri.ts).
+  const [photos, setPhotos] = useState<Record<string, string>>({});
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
   const thread = useRef<ScrollView>(null);
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
@@ -630,6 +657,11 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
             .catch((error) => setNote(`A voice message came but could not be kept. ${errorText(error)}`));
         }
       }
+      if (received.file) {
+        // Taken from the relay by the effect that watches for files waiting.
+        const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file));
+        receipt(peer, 'got', [tag]);
+      }
       if (received.text) {
         addMessage(peer, received.text, false, received.tag, received.timer);
         if (received.tag) receipt(peer, 'got', [received.tag]);
@@ -667,18 +699,19 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
   // Shows a message, and keeps it on the phone when it is with a contact, for `timer` seconds once
   // read if it disappears. A contact's message from an Erevos before tags gets one known to this
-  // phone only.
-  function addMessage(peer: string, text: string, mine: boolean, tag = '', timer = 0, voice?: VoiceRef) {
+  // phone only. Returns its tag.
+  function addMessage(peer: string, text: string, mine: boolean, tag = '', timer = 0, voice?: VoiceRef, file?: FileRef): string {
     const contact = peer.startsWith(CONTACT_PREFIX);
     const kept = contact ? tag || newTag() : '';
     const at = Date.now();
     const lasts = contact ? timer : 0;
-    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark: 0, at, voice }]);
+    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark: 0, at, voice, file }]);
     if (contact) {
-      history.current?.add({ peer, text, mine, at, tag: kept, lasts, voice }).catch(() => {
+      history.current?.add({ peer, text, mine, at, tag: kept, lasts, voice, file }).catch(() => {
         // Shown, but gone when the chat next opens.
       });
     }
+    return kept;
   }
 
   // Raises the mark of a chat's messages, ours or theirs: all of them, or those with `tags`. A
@@ -987,6 +1020,191 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
     }
   }
 
+  // Our relay, straight: files go to it and come through it, never through the second relay.
+  function ownRelay(): Relay | null {
+    const url = relayUrl.trim();
+    return url ? { url, token: relayToken.trim() || undefined } : null;
+  }
+
+  const takingNow = useRef(new Set<string>());
+
+  // Takes a photo or file that came, from the relay it is on through ours, and keeps it here.
+  async function take(own: Relay, peer: string, tag: string, ref: FileRef) {
+    const key = `${peer}|${tag}`;
+    if (takingNow.current.has(key) || !ref.from) return;
+    takingNow.current.add(key);
+    tried.current.add(key);
+    setTaking((now) => ({ ...now, [key]: '0%' }));
+    try {
+      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })));
+      setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, file: taken } : m)));
+      // Deleted while it came: its chunks go too.
+      if (history.current && !(await history.current.setFile(peer, tag, taken))) await deleteChunks(taken.id, taken.count);
+      setTaking(({ [key]: _done, ...rest }) => rest);
+    } catch (error) {
+      setTaking((now) => ({ ...now, [key]: error instanceof FileGoneError ? 'gone' : 'failed' }));
+      setNote(`${ref.kind === 'photo' ? 'A photo' : 'A file'} did not come. ${errorText(error)}`);
+    } finally {
+      takingNow.current.delete(key);
+    }
+  }
+
+  // Their photos and files up to AUTO_TAKE are taken as soon as they come, or when the chat opens.
+  useEffect(() => {
+    const own = ownRelay();
+    if (!loaded || !own) return;
+    for (const m of messages) {
+      if (m.mine || !m.file?.from || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
+      void take(own, m.peer, m.tag, m.file);
+    }
+  }, [loaded, relayUrl, relayToken, messages]);
+
+  useEffect(() => {
+    loadPhotoQuality().then(setQuality, () => undefined);
+  }, []);
+
+  function chooseQuality(next: PhotoQuality) {
+    setQuality(next);
+    savePhotoQuality(next).catch((error) => setNote(errorText(error)));
+  }
+
+  type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; close?: () => void };
+
+  // Sends a photo or file to the contact picked: its chunks to our relay, then, end-to-end
+  // encrypted, where they are and their key. Kept here as it went. If any of it cannot go,
+  // nothing is kept.
+  async function sendAttachment(kind: FileKind, get: () => Promise<Picked | null>) {
+    const peer = selectedContact;
+    const target = relayTarget();
+    const own = ownRelay();
+    if (!peer || !target || !own) {
+      setNote('Photos and files go to contacts through the relay. Type its address in Relay, and pick a contact.');
+      return;
+    }
+    if (!e2e) {
+      setNote(NO_CORE);
+      return;
+    }
+    let picked: Picked | null;
+    try {
+      picked = await get();
+    } catch (error) {
+      setNote(
+        error instanceof TooLargeError
+          ? 'Not sent. Files can be 100 MB at most.'
+          : error instanceof NoCameraError
+            ? error.message
+            : `Cannot open it. ${errorText(error)}`,
+      );
+      return;
+    }
+    if (!picked) return;
+    const what = kind === 'photo' ? 'photo' : 'file';
+    let kept: FileRef | null = null;
+    try {
+      if (picked.source.size > MAX_FILE) throw new TooLargeError();
+      setNote(`Sending the ${what}…`);
+      const size = picked.w && picked.h ? { w: picked.w, h: picked.h } : {};
+      const sent = await sendFile(own, picked.source, { name: picked.name, mime: picked.mime, kind, ...size }, (done, count) => {
+        if (count > 1) setNote(`Sending the ${what}, ${Math.floor((done / count) * 100)}%`);
+      });
+      kept = sent.ref;
+      const identity = peer.slice(CONTACT_PREFIX.length);
+      const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { at: here() });
+      const to = contactTarget(target, sealed);
+      if (sealed.first) {
+        await sendMessage(to, fromHex(sealed.sender), sealed.first);
+        await e2e.firstSent(identity);
+      }
+      await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+      addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, sent.ref);
+      kept = null;
+      // Writing to a message request accepts it.
+      setContacts(e2e.contacts());
+      setNote(`${kind === 'photo' ? 'Photo' : 'File'} sent through the relay, end-to-end encrypted.`);
+    } catch (error) {
+      if (kept) await deleteChunks(kept.id, kept.count).catch(() => undefined);
+      setNote(error instanceof TooLargeError ? 'Not sent. Files can be 100 MB at most.' : notSent(error));
+    } finally {
+      picked.close?.();
+    }
+  }
+
+  // The phone's picker opens once the sheet has gone.
+  function afterSheet(then: () => void) {
+    setAttaching(false);
+    setTimeout(then, Platform.OS === 'web' ? 0 : 350);
+  }
+
+  function sendPhoto(from: 'photos' | 'camera') {
+    afterSheet(() =>
+      void sendAttachment('photo', async () => {
+        const photo = await pickPhoto(from, quality);
+        return photo && { name: photo.name, mime: photo.mime, source: bytesSource(photo.bytes), w: photo.w, h: photo.h };
+      }),
+    );
+  }
+
+  function sendPickedFile() {
+    afterSheet(() =>
+      void sendAttachment('file', async () => {
+        const picked = await pickSource(MAX_FILE);
+        if (!picked) return null;
+        const name = cleanFileName(picked.name);
+        const said = cleanMime(picked.mime);
+        return { name, mime: said === 'application/octet-stream' ? mimeOf(name) : said, source: picked.source, close: picked.close };
+      }),
+    );
+  }
+
+  // A photo or file tapped: taken from the relay if it is not here yet, otherwise shown on its own.
+  function openFile(message: Message) {
+    const file = message.file;
+    if (!file) return;
+    if (file.from) {
+      const own = ownRelay();
+      if (own) void take(own, message.peer, message.tag, file);
+      else setNote('Type the relay address in Relay first.');
+      return;
+    }
+    setViewing(message);
+  }
+
+  async function saveAttachment(message: Message, choose: boolean) {
+    if (!message.file) return;
+    try {
+      const where = await saveFile(message.file, choose);
+      if (!where) return;
+      setViewing(null);
+      setNote(`Saved in ${where}. There it is outside Erevos, not sealed.`);
+    } catch (error) {
+      setViewing(null);
+      setNote(`Not saved. ${errorText(error)}`);
+    }
+  }
+
+  const loadingPhotos = useRef(new Set<string>());
+
+  // Reads a photo into memory to show it.
+  function showPhoto(ref: FileRef) {
+    if (ref.from || photosRef.current[ref.id] || loadingPhotos.current.has(ref.id)) return;
+    loadingPhotos.current.add(ref.id);
+    readFile(ref)
+      .then((bytes) => {
+        if (bytes) setPhotos((now) => ({ ...now, [ref.id]: photoUri(bytes, ref.mime) }));
+      })
+      .catch((error) => setNote(`Cannot show the photo. ${errorText(error)}`))
+      .finally(() => loadingPhotos.current.delete(ref.id));
+  }
+
+  // Photos held in memory go when the chat closes.
+  useEffect(
+    () => () => {
+      for (const uri of Object.values(photosRef.current)) releaseUri(uri);
+    },
+    [],
+  );
+
   // Nothing plays, or records, once the chat closes. Sound a closed Erevos left unsealed goes
   // when it opens.
   useEffect(() => {
@@ -1050,6 +1268,27 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   }
 
   const visible = messages.filter((message) => message.peer === selected);
+  // The photos shown: the latest in the thread, and the one looked at on its own.
+  const shownPhotos = visible
+    .filter((m) => m.file?.kind === 'photo' && !m.file.from)
+    .slice(-SHOWN_PHOTOS)
+    .map((m) => m.file!);
+  if (viewing?.file?.kind === 'photo' && !viewing.file.from) shownPhotos.push(viewing.file);
+  const shownKey = shownPhotos.map((file) => file.id).join(',');
+  useEffect(() => {
+    const wanted = new Set(shownPhotos.map((file) => file.id));
+    for (const file of shownPhotos) showPhoto(file);
+    setPhotos((now) => {
+      const gone = Object.keys(now).filter((id) => !wanted.has(id));
+      if (gone.length === 0) return now;
+      const kept = { ...now };
+      for (const id of gone) {
+        releaseUri(kept[id]);
+        delete kept[id];
+      }
+      return kept;
+    });
+  }, [shownKey]);
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
   const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity]);
   const importedFrom = [...new Set(imported.map((m) => SOURCE_LABELS[m.source]))].join(' and ');
@@ -1393,18 +1632,29 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                 </Text>
               ) : null}
               <Pressable
-                onPress={message.voice ? () => void play(message) : undefined}
+                onPress={message.voice ? () => void play(message) : message.file ? () => openFile(message) : undefined}
                 onLongPress={() => deleteMessage(message)}
-                accessibilityHint={message.voice ? 'Tap to play, long press to delete' : 'Long press to delete'}
-                style={[styles.bubble, message.mine ? b.mine : b.theirs, tail && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail])]}
+                accessibilityHint={
+                  message.voice ? 'Tap to play, long press to delete' : message.file ? 'Tap to open, long press to delete' : 'Long press to delete'
+                }
+                style={[
+                  styles.bubble,
+                  message.mine ? b.mine : b.theirs,
+                  message.file?.kind === 'photo' && styles.photoBubble,
+                  tail && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+                ]}
               >
-                <Text style={ink}>
-                  {message.voice
-                    ? playingId === message.id
-                      ? `■  Playing, ${voiceDuration(Math.max(0, message.voice.ms - played))}`
-                      : `▶  Voice message, ${voiceDuration(message.voice.ms)}`
-                    : message.text}
-                </Text>
+                {message.file ? (
+                  <Attachment file={message.file} uri={photos[message.file.id]} state={taking[`${message.peer}|${message.tag}`]} ink={ink} />
+                ) : (
+                  <Text style={ink}>
+                    {message.voice
+                      ? playingId === message.id
+                        ? `■  Playing, ${voiceDuration(Math.max(0, message.voice.ms - played))}`
+                        : `▶  Voice message, ${voiceDuration(message.voice.ms)}`
+                      : message.text}
+                  </Text>
+                )}
                 <Text style={[ink, styles.time]}>{[message.at ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>
               </Pressable>
             </View>
@@ -1424,6 +1674,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         <Row style={styles.tools}>
           <Row wrap style={[styles.grow, styles.toolsLeft]}>
             {selectedContact ? <Tool title="Disappear" on={vanishing} onPress={() => setVanishing((on) => !on)} /> : null}
+            {selectedContact ? <Tool title="Attach" on={attaching} onPress={() => setAttaching(true)} /> : null}
             <Tool title={talking ? 'Let go to send' : 'Voice'} on={talking} onPressIn={startTalking} onPressOut={() => void stopTalking()} />
             {COMING.map(({ title, note }) => (
               <Tool key={title} title={title} onPress={() => setNote(note)} />
@@ -1443,6 +1694,85 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
           </Row>
         ) : null}
       </View>
+      <Sheet visible={attaching} onClose={() => setAttaching(false)} title="Send a photo or file">
+        <Row wrap>
+          <Button title="Photo" compact onPress={() => sendPhoto('photos')} />
+          {CAN_TAKE_PHOTOS ? <Button title="Take photo" compact onPress={() => sendPhoto('camera')} /> : null}
+          <Button title="File" kind="secondary" compact onPress={sendPickedFile} />
+        </Row>
+        <Text variant="label">Photo quality</Text>
+        <Row wrap>
+          {QUALITIES.map(({ value, label: shown }) => (
+            <Chip key={shown} label={shown} selected={quality === value} onPress={() => chooseQuality(value)} />
+          ))}
+        </Row>
+        <Text variant="caption" tone="muted">
+          {qualityNote(quality)}
+        </Text>
+        <Text variant="caption" tone="muted">
+          A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until
+          {` ${selectedName} `}takes it, 14 days at most.
+        </Text>
+      </Sheet>
+      <Modal visible={viewing !== null} animationType="fade" onRequestClose={() => setViewing(null)}>
+        <View style={[styles.viewer, { paddingTop: Math.max(space.lg, insets.top), paddingBottom: Math.max(space.lg, insets.bottom) }]}>
+          {viewing?.file?.kind === 'photo' ? (
+            photos[viewing.file.id] ? (
+              <Image source={{ uri: photos[viewing.file.id] }} style={styles.viewerPhoto} resizeMode="contain" accessibilityLabel="Photo" />
+            ) : (
+              <Text tone="muted" style={styles.viewerPhoto}>
+                Opening the photo…
+              </Text>
+            )
+          ) : viewing?.file ? (
+            <View style={styles.viewerFile}>
+              <Text variant="heading">{viewing.file.name}</Text>
+              <Text tone="muted">{fileSize(viewing.file.size)}</Text>
+            </View>
+          ) : null}
+          <Row wrap style={styles.viewerTools}>
+            <Button title="Save" compact onPress={() => viewing && void saveAttachment(viewing, false)} />
+            {CAN_CHOOSE_FOLDER ? (
+              <Button title="Save in another folder" kind="secondary" compact onPress={() => viewing && void saveAttachment(viewing, true)} />
+            ) : null}
+            <Button title="Close" kind="secondary" compact onPress={() => setViewing(null)} />
+          </Row>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+// A photo or file in the thread: the photo itself once it is here and shown, otherwise what it
+// is and how far it has come.
+function Attachment({ file, uri, state, ink }: { file: FileRef; uri?: string; state?: string; ink: StyleProp<TextStyle> }) {
+  const colors = useColors();
+  const status = !file.from
+    ? null
+    : state === 'gone'
+      ? 'No longer on the relay'
+      : state === 'failed'
+        ? 'Did not come · tap to try again'
+        : state
+          ? `Coming, ${state}`
+          : `Tap to take it, ${fileSize(file.size)}`;
+  if (file.kind === 'photo') {
+    const width = 240;
+    const height = Math.round(Math.min(320, Math.max(120, file.w && file.h ? (width * file.h) / file.w : 180)));
+    return uri ? (
+      <Image source={{ uri }} style={{ width, height, borderRadius: radius.md }} resizeMode="cover" resizeMethod="resize" accessibilityLabel="Photo" />
+    ) : (
+      <View style={{ width, height, borderRadius: radius.md, backgroundColor: withAlpha(colors.text, 0.08), alignItems: 'center', justifyContent: 'center', padding: space.md }}>
+        <Text style={[ink, { textAlign: 'center' }]}>{status ?? 'Photo · tap to see it'}</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={{ gap: 2, minWidth: 160 }}>
+      <Text style={[ink, { fontWeight: '600' }]} numberOfLines={2}>
+        {file.name}
+      </Text>
+      <Text style={[ink, { fontSize: 13, opacity: 0.8 }]}>{status ?? `${fileSize(file.size)} · tap to save`}</Text>
     </View>
   );
 }
@@ -1663,6 +1993,32 @@ const makeStyles = (colors: Colors) =>
       paddingBottom: 6,
       paddingHorizontal: space.md,
       gap: 2,
+    },
+    // A photo fills its bubble, with a thin edge.
+    photoBubble: {
+      paddingTop: 4,
+      paddingHorizontal: 4,
+    },
+    viewer: {
+      flex: 1,
+      gap: space.md,
+      paddingHorizontal: space.lg,
+      backgroundColor: colors.ground,
+    },
+    viewerPhoto: {
+      flex: 1,
+      width: '100%',
+      textAlign: 'center',
+      textAlignVertical: 'center',
+    },
+    viewerFile: {
+      flex: 1,
+      gap: space.sm,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    viewerTools: {
+      justifyContent: 'center',
     },
     // The last message of a run leaves room before the next run (its corner: theme/bubbles.ts).
     mineTail: {

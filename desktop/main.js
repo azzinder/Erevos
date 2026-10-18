@@ -11,6 +11,7 @@
  *   /__folder                  asks for a folder for backups and remembers it (folders.json)
  *   /__backup?folder=&name=&keep=  writes a backup there, deleting older ones but the newest `keep`
  *   /__pick?most=…             asks for a file to open (a backup, a chat export) and gives its bytes
+ *   /__save?name=…             asks where to save a photo or file from a chat and writes it there
  * The app's data is in the folder Electron gives it (~/.config/Erevos, on a Mac
  * ~/Library/Application Support/Erevos).
  *
@@ -231,6 +232,14 @@ async function pick(url) {
   return new Response(fs.readFileSync(chosen), { headers: { 'X-Erevos-Name': encodeURIComponent(path.basename(chosen)) } });
 }
 
+async function save(request, url) {
+  const name = path.basename(url.searchParams.get('name') || 'file');
+  const result = await dialog.showSaveDialog(window, { defaultPath: path.join(app.getPath('downloads'), name) });
+  if (result.canceled || !result.filePath) return new Response('', { status: 404 });
+  fs.writeFileSync(result.filePath, Buffer.from(await request.arrayBuffer()));
+  return Response.json({ path: result.filePath });
+}
+
 function handle(request) {
   const url = new URL(request.url);
   if (url.pathname.startsWith('/__')) {
@@ -241,6 +250,7 @@ function handle(request) {
     if (url.pathname === '/__folder') return folder();
     if (url.pathname === '/__backup') return backup(request, url);
     if (url.pathname === '/__pick') return pick(url);
+    if (url.pathname === '/__save') return save(request, url);
     return new Response('', { status: 404 });
   }
   return serveFile(url.pathname);

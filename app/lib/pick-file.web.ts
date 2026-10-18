@@ -1,9 +1,18 @@
+import { bytesSource, type Source } from './attachments';
 import { SHELL, shellFetch } from './shell';
 
 // A file the owner picks to open, as pick-file.ts: in the desktop app its own file dialog
 // (lib/shell.ts), in a plain browser the browser's.
 
 export class TooLargeError extends Error {}
+
+export type PickedSource = { name: string; mime: string; source: Source; close(): void };
+
+/** A file to send, as pick-file.ts, read whole: a computer has the memory. */
+export async function pickSource(most: number): Promise<PickedSource | null> {
+  const picked = await pickFile(most);
+  return picked && { name: picked.name, mime: '', source: bytesSource(picked.bytes), close: () => undefined };
+}
 
 export async function pickFile(most: number): Promise<{ name: string; bytes: Uint8Array } | null> {
   if (SHELL) {

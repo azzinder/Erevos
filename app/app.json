@@ -24,6 +24,14 @@
         {
           "microphonePermission": "Erevos uses the microphone for voice messages, only while you hold Voice."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Erevos opens your photos only when you choose one to send.",
+          "cameraPermission": "Erevos uses the camera only when you tap Take photo.",
+          "microphonePermission": "Erevos uses the microphone for voice messages, only while you hold Voice."
+        }
       ]
     ],
     "experiments": {

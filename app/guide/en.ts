@@ -153,6 +153,36 @@ disappearing setting.
 - **While it plays** the sound is unsealed in Erevos's cache, and deleted once it stops. If Erevos is closed while it
   records or plays, what was left goes the next time a chat opens.
 
+### Photos and files
+
+In a contact's chat, tap **Attach**, then **Photo** to pick one from the phone's photos, **Take photo** to take one
+with the camera, or **File** for anything else, up to 100 MB. Under them, **Photo quality** sets how photos go, and
+Erevos remembers it:
+
+- **Original** (the default): the photo exactly as it was, full size, no quality lost. Only what it says besides its
+  picture is taken out: where it was taken, the phone, the time, thumbnails. Its name is just "photo".
+- **90%** and **75%:** a new, smaller photo, quicker to send, that says nothing but its picture.
+
+Their photos and files up to 16 MB come by themselves; tap a bigger one to take it. Tap a photo to see it whole, or a
+file to save it. **Save** puts a copy in a folder you choose the first time, and **Save in another folder** changes
+it. Photos and files have the same marks as the rest, and follow the chat's disappearing setting.
+
+- **How they travel:** each file is encrypted on the phone with a key of its own, in pieces all of one size, and put
+  on your relay. Only where the pieces are and the key go to the contact, end-to-end encrypted. Their phone takes the
+  pieces through their own relay, so your relay never sees their phone's address, checks every piece, and then
+  deletes them from the relay. Pieces nobody takes are deleted after 14 days.
+- **What the relay sees:** how many pieces there are and their size, so roughly how big the file is, and when. Not
+  what it is or who it is for.
+- **A file goes as it is,** with whatever it says inside: a document's author, or a photo's place and phone if you
+  send it with **File**. Send photos with **Photo**.
+- **On the phone** each file is kept in its pieces, as they travelled, sealed with its own key, which only the chat's
+  sealed history holds. When the message goes, its pieces go too. How many pieces there are shows roughly how much the
+  phone keeps, in all its spaces together, not in which. A photo is shown from memory, never written out unsealed.
+  The phone's photo picker hands over a copy in Erevos's cache, deleted once read, and a photo taken here is not kept
+  in the phone's photos.
+- **Saved** photos and files are outside Erevos, not sealed: anyone with the phone can open them.
+- **Through the relay only,** like voice messages. A relay older than this version cannot take files: update it.
+
 > The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
 > kept in this space, sealed. About a thousand short messages fit; when it is full, the oldest go first. Deleted
 > messages can stay for a while in the phone's storage, sealed like the rest, until something is written over them.
@@ -189,7 +219,8 @@ has everything in \`deploy/relay\`.
   \`sslip.io\` name) and ports 80 and 443 open. One command installs the relay behind Caddy, with a certificate from
   Let's Encrypt and a random token. Every phone then uses \`wss://<your domain>\` and that token.
 
-Queues and waiting messages are kept on the server's disk, so a restart loses nothing, and no request is logged.
+Queues and waiting messages are kept on the server's disk, and so are the encrypted pieces of photos and files until
+they are taken (1024 MB together at most), so a restart loses nothing, and no request is logged.
 
 > Never post the token where others can read it. Whoever runs the server sees the IP addresses that connect, the
 > queue ids, and when and how much arrives. They cannot read the messages, which are end-to-end encrypted.
@@ -267,7 +298,9 @@ home screen's menu.
 - **Discretion:** every space shows the same Backups screen, and a backup holds every space, so neither tells how
   many spaces there are or whether hidden chats are set. The file's name says it is an Erevos backup, and its size
   shows roughly how much is kept.
-- **Not in a backup:** the count of wrong passwords, and how automatic backups are set.
+- **Not in a backup:** photos and files, not yet: a backup is made in the phone's memory, and they would not fit. A
+  backup restored on the same phone shows them again; on another phone they show as not on it. Also left out: the
+  count of wrong passwords, and how automatic backups are set.
 
 ## Imported chats {#import}
 
@@ -348,6 +381,7 @@ as on the phone, and keeps its contacts, messages and settings sealed the same w
   \`~/Library/Application Support/Erevos\`), sealed as on the phone. Its keystore is sealed with the system's keyring
   (on a Mac the Keychain). A Linux system without a keyring keeps it as it is: set a password lock there.
 - **Voice messages** recorded on a computer are Opus, on a phone AAC. Both play on both.
+- **Photos** come from the computer's files; there is no camera. **Save** asks where to put a photo or file.
 - **A computer and a phone are two devices:** they do not share contacts and chats yet. A backup moves everything
   from one to the other, see [Backups](#backup), and from then on use only the one.
 - **Tested so far** on Linux. The Mac version is built and opened on GitHub's Mac computers, not yet by a person.
@@ -381,6 +415,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
 | **Voice messages** | End-to-end encrypted through the relay, in pieces: the relay can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
+| **Photos and files** | End-to-end encrypted, through the relay's file store, in pieces of one size: the relay sees how many and when, so roughly how big. Your relay sees your address, as for messages; the contact takes them through their own relay. Photos lose their place, phone and time, unless sent as a file; a file keeps what it says inside. Sealed on the phone in their pieces, shown from memory. Saved copies are outside Erevos. Not in backups yet. | Backups that hold them. |
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring; a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay sees one more small message. | A switch to stop telling when you read. |

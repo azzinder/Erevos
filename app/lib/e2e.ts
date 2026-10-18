@@ -3,6 +3,7 @@ import { cleanName, isRelay, isRelayKey, isTimer, loadE2EData, saveE2EData, type
 import { isTag, newTag } from '../lock/history';
 
 import * as core from './core';
+import { readOffer, type FileOffer } from './attachments';
 import { isVoicePart, splitVoice, type VoicePart } from './voice';
 import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 
@@ -27,7 +28,8 @@ import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './
 //
 // A phone says which messages came (`got`) and which were read (`read`), by their tags, so the
 // sender's chat can mark them. A voice message travels in parts (lib/voice.ts), one in each
-// message, all with the voice message's tag.
+// message, all with the voice message's tag. A photo or file travels on its own through the
+// relay's file store (lib/attachments.ts): its message carries where it is and its key.
 //
 // Every message also carries the chat's timer for disappearing messages and when it was set, so
 // each phone takes the later setting. A disappearing message lasts that long, or as long as its
@@ -69,6 +71,7 @@ type Message = {
   got: string[];
   read: string[];
   voice: VoicePart | null;
+  file: FileOffer | null;
 };
 
 /** What else a message can carry. */
@@ -96,7 +99,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt, lasts, got, read, voice }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt, lasts, got, read, voice, file }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -110,6 +113,7 @@ function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt
       ...(got.length > 0 ? { got } : {}),
       ...(read.length > 0 ? { read } : {}),
       ...(voice ? { voice: encodeVoice(voice) } : {}),
+      ...(file ? { file } : {}),
     }),
   );
 }
@@ -142,9 +146,10 @@ function decodeMessage(bytes: Uint8Array): Message {
       got: tags(value.got),
       read: tags(value.read),
       voice: decodeVoice(value.voice),
+      file: readOffer(value.file),
     };
   } catch {
-    return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null };
+    return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null };
   }
 }
 
@@ -190,6 +195,8 @@ export type Received =
       read: string[];
       // One part of a voice message, whose tag is `tag`.
       voice: VoicePart | null;
+      // A photo or file, still on the relay.
+      file: FileOffer | null;
     }
   // Not encrypted (as messages before this version were), not for this account, or a replay.
   | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' };
@@ -330,7 +337,7 @@ export class E2E {
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ from, ...at, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null }),
+        encodeMessage({ from, ...at, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null }),
       );
       await this.save(
         this.withContact({
@@ -372,7 +379,7 @@ export class E2E {
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
       const { timer, timerAt } = contact;
       const once = text ? lasts : 0;
-      const message = { from, ...at, text, tag, erase: text ? null : erase, timer, timerAt, lasts: once, got: tags(got), read: tags(read), voice: null };
+      const message = { from, ...at, text, tag, erase: text ? null : erase, timer, timerAt, lasts: once, got: tags(got), read: tags(read), voice: null, file: null };
       // Writing to them accepts a request; telling them only what came or was read never does.
       const [packet] = await this.sealFor(contact, [message], !!text);
       const first = contact.first ? fromBase64(contact.first) : null;
@@ -411,11 +418,37 @@ export class E2E {
         got: [],
         read: [],
         voice,
+        file: null,
       }));
       const packets = await this.sealFor(contact, messages, true);
       const first = contact.first ? fromBase64(contact.first) : null;
       const { sender, relay, relayKey } = contact;
       return { sender, relay, relayKey, first, packets, tag, timer: lasts || timer };
+    });
+  }
+
+  /**
+   * Seals a photo or file for a contact: where it is on the relay and its key (`offer`, from
+   * lib/attachments.ts). Otherwise as `seal`.
+   */
+  sealFile(
+    identity: string,
+    offer: FileOffer,
+    from: string,
+    { lasts = 0, at = { relay: '', relayKey: '' } }: { lasts?: number; at?: Where } = {},
+  ): Promise<{ sender: string; relay: string; relayKey: string; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
+      if (!contact.sender) throw new Error('This contact has not said how to reach them yet.');
+      if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
+      const tag = newTag();
+      const { timer, timerAt } = contact;
+      const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer };
+      const [packet] = await this.sealFor(contact, [message], true);
+      const first = contact.first ? fromBase64(contact.first) : null;
+      const { sender, relay, relayKey } = contact;
+      return { sender, relay, relayKey, first, packet, tag, timer: lasts || timer };
     });
   }
 
@@ -485,9 +518,9 @@ export class E2E {
       request: known ? known.request : true,
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
-    const { text, tag, erase, got, read, voice } = message;
+    const { text, tag, erase, got, read, voice, file } = message;
     const { request } = contact;
-    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, ...timing.received };
+    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, ...timing.received };
   }
 
   private async open(packet: Uint8Array): Promise<Received> {
@@ -515,8 +548,8 @@ export class E2E {
           }),
         );
         const { identity, request } = contact;
-        const { text, tag, erase, got, read, voice } = message;
-        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, ...timing.received };
+        const { text, tag, erase, got, read, voice, file } = message;
+        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, file, ...timing.received };
       }
     }
     return { kind: 'refused', reason: 'unknown' };

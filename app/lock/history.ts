@@ -1,5 +1,6 @@
 import { randomBytes, toHex } from '../lib/crypto';
 
+import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
 import { sealedFile, sealedSize, type Holder } from './sealed-file';
 import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
 
@@ -19,8 +20,9 @@ import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
 // on it is kept with the time it goes, and `expire` deletes it once that has passed: while the
 // chat is open, or when it next opens.
 //
-// A voice message keeps where its sound is (lock/voice-clips.ts). When a message leaves the
-// history, however it goes, its sound's file is deleted.
+// A voice message keeps where its sound is (lock/voice-clips.ts), and a photo or file where its
+// chunks are (lock/attachment-files.ts). When a message leaves the history, however it goes, its
+// sound's file or its chunks are deleted.
 
 /** Ours: the relay took it (0), it came to their phone (1), they read it (2). Theirs: read here (2) or not (0). */
 export type Mark = 0 | 1 | 2;
@@ -28,10 +30,20 @@ export type Mark = 0 | 1 | 2;
 /**
  * One message: when (milliseconds), whether this phone sent it, its text, its tag, when it
  * disappears (milliseconds, 0 if not, or not yet), how long it lasts once read (seconds, 0 if it
- * does not disappear or its time has started), its mark, and where its sound is if it is a voice
- * message. What is empty at the end is left out.
+ * does not disappear or its time has started), its mark, where its sound is if it is a voice
+ * message, and where its file is if it is a photo or file. What is empty at the end is left out.
  */
-export type Kept = [at: number, mine: 0 | 1, text: string, tag: string, until?: number, lasts?: number, mark?: Mark, voice?: VoiceRef];
+export type Kept = [
+  at: number,
+  mine: 0 | 1,
+  text: string,
+  tag: string,
+  until?: number,
+  lasts?: number,
+  mark?: Mark,
+  voice?: VoiceRef | 0,
+  file?: FileRef,
+];
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -50,22 +62,27 @@ export type Message = {
   lasts?: number;
   mark?: Mark;
   voice?: VoiceRef;
+  file?: FileRef;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
-function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice }: Fields): Kept {
-  const kept: Kept = [at, mine ? 1 : 0, text, tag, until, until ? 0 : lasts, mark, voice];
+function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file }: Fields): Kept {
+  const kept: Kept = [at, mine ? 1 : 0, text, tag, until, until ? 0 : lasts, mark, voice ?? 0, file];
   while (kept.length > 4 && !kept[kept.length - 1]) kept.pop();
   return kept;
 }
 
-function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice]: Kept): Fields {
-  return { at, mine: mine === 1, text, tag, until, lasts, mark, ...(voice ? { voice } : {}) };
+function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file]: Kept): Fields {
+  return { at, mine: mine === 1, text, tag, until, lasts, mark, ...(voice ? { voice } : {}), ...(file ? { file } : {}) };
 }
 
 const voiceIds = (data: HistoryData) =>
   new Set(Object.values(data.chats).flatMap((list) => list.flatMap((m) => (m[7] ? [m[7].id] : []))));
+
+// Each file's chunks, by id, and how many there are.
+const fileChunks = (data: HistoryData) =>
+  new Map(Object.values(data.chats).flatMap((list) => list.flatMap((m): [string, number][] => (m[8] ? [[m[8].id, m[8].count]] : []))));
 
 const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0);
 
@@ -86,7 +103,8 @@ function checkedKept(m: unknown): Kept | null {
   }
   const mark = m[6] === 1 || m[6] === 2 ? m[6] : 0;
   const voice = isVoiceRef(m[7]) ? m[7] : undefined;
-  return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark, voice });
+  const file = isFileRef(m[8]) ? m[8] : undefined;
+  return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark, voice, file });
 }
 
 function checked(value: unknown): HistoryData {
@@ -141,18 +159,30 @@ export class History {
 
   // Each change is made on what is in memory and saved in turn (sealed-file.ts writes one after
   // another), so changes made close together all land, in order. The sound of a voice message
-  // that left goes once the history without it is saved.
+  // that left, or the chunks of a file, go once the history without it is saved.
   private async save(data: HistoryData): Promise<void> {
     const kept = voiceIds(data);
     const gone = [...voiceIds(this.data)].filter((id) => !kept.has(id));
+    const keptFiles = fileChunks(data);
+    const goneFiles = [...fileChunks(this.data)].filter(([id]) => !keptFiles.has(id));
     this.data = data;
     await this.store(data);
     await Promise.all(gone.map((id) => deleteClip(id).catch(() => undefined)));
+    for (const [id, count] of goneFiles) await deleteChunks(id, count).catch(() => undefined);
   }
 
   add({ peer, ...message }: Message): Promise<void> {
     const list = [...(this.data.chats[peer] ?? []), pack(message)];
     return this.save(fitted({ chats: { ...this.data.chats, [peer]: list } }));
+  }
+
+  /** Changes where a message's file is, once it is taken from the relay. False if the message is gone. */
+  async setFile(peer: string, tag: string, file: FileRef): Promise<boolean> {
+    const list = this.data.chats[peer];
+    if (!list?.some((m) => m[3] === tag)) return false;
+    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), file }) : m));
+    await this.save(fitted({ chats: { ...this.data.chats, [peer]: changed } }));
+    return true;
   }
 
   /** Deletes one message of a chat, by its tag. */
