@@ -44,15 +44,17 @@ const CHOICES = [
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-// What Erevos runs on here: the desktop app is the web build, and so is the web app in a browser,
-// on an iPhone or a computer.
-const DEVICE = Platform.OS !== 'web' ? 'phone' : SHELL ? 'computer' : 'device';
+// What Erevos runs on here: the desktop app is the web build, and so are the Sailfish OS app and
+// the web app in a browser, on an iPhone or a computer.
+const DEVICE = Platform.OS !== 'web' || SHELL === 'sailfish' ? 'phone' : SHELL ? 'computer' : 'device';
 const PLACES =
   Platform.OS !== 'web'
     ? 'Choose a folder, on the phone, a memory card or a cloud app that shows its folders, then a password for the backup.'
-    : SHELL
-      ? 'Choose a folder, on this computer, a USB stick or a folder a cloud app keeps in step, then a password for the backup.'
-      : 'Choose a password for the backup, then where to save the file: on an iPhone in Files, iCloud Drive or another app, on a computer in its downloads.';
+    : SHELL === 'sailfish'
+      ? 'Backups go to Documents/Erevos on the phone. Choose a password for the backup; then copy the file from there to a memory card or another device.'
+      : SHELL
+        ? 'Choose a folder, on this computer, a USB stick or a folder a cloud app keeps in step, then a password for the backup.'
+        : 'Choose a password for the backup, then where to save the file: on an iPhone in Files, iCloud Drive or another app, on a computer in its downloads.';
 
 export default function Backups() {
   const { lockNow } = useLock();
@@ -249,7 +251,7 @@ export default function Backups() {
               ) : null}
               <Row wrap>
                 <Button title={busy ? 'One moment…' : 'Back up now'} kind="secondary" compact onPress={backUpNow} disabled={busy} />
-                <Button title="Change folder" kind="secondary" compact onPress={moveAuto} disabled={busy} />
+                {SHELL === 'sailfish' ? null : <Button title="Change folder" kind="secondary" compact onPress={moveAuto} disabled={busy} />}
                 <Button title="Change password" kind="secondary" compact onPress={changePassword} disabled={busy} />
               </Row>
             </Card>

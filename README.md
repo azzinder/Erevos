@@ -50,6 +50,8 @@ Early work, not audited. Do not rely on it to protect anyone yet.
   only releases signed with a key the server does not have. `deploy/web`
   serves it from your own server. See its README for what that protects and
   what it does not.
+- `sailfish/`: Erevos for Sailfish OS, the same web build in Sailfish WebView,
+  packaged as an RPM with the Sailfish SDK. See its README.
 
 ## Build
 

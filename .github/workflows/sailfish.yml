@@ -1,0 +1,40 @@
+name: sailfish
+
+# Erevos for Sailfish OS (sailfish/): the web build with the core in WebAssembly, in Sailfish
+# WebView, packaged as an RPM with the Sailfish SDK's build image. Runs on main and by hand only:
+# the SDK image is large. The RPM is kept as the run's artifact.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  rpm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Build the web app with its core, and the icons
+        run: sailfish/build-web.sh
+      - name: Build the RPM for aarch64
+        working-directory: sailfish
+        run: |
+          # The SDK image builds as its own user.
+          chmod -R a+rwX .
+          docker run --rm -v "$PWD:/home/mersdk/src" -w /home/mersdk/src \
+            coderus/sailfishos-platform-sdk-aarch64:5.0.0.43 \
+            bash -lc 'mb2 -t SailfishOS-5.0.0.43-aarch64 build'
+          ls RPMS/*.aarch64.rpm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: erevos-sailfish
+          path: sailfish/RPMS/*.rpm

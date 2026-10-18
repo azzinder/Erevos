@@ -1,6 +1,9 @@
 // Erevos on a computer (Linux and macOS) is the web build inside a small Electron shell
-// (desktop/main.js). The build says so (EXPO_PUBLIC_SHELL=electron); the phone and the plain web
-// builds have none. The shell serves the app from its own origin and answers a few paths there,
+// (desktop/main.js), and on Sailfish OS inside Sailfish WebView, served by a small server of the
+// app's own (sailfish/src/shellserver.cpp). The build says which (EXPO_PUBLIC_SHELL=electron or
+// sailfish); the phone and the plain web builds have none. Both shells answer the same paths;
+// on Sailfish OS backups go to Documents/Erevos and saved files to Downloads, without asking, and
+// files to send are picked with the browser's own picker. The shell serves the app from its own origin and answers a few paths there,
 // only with the token it put in the page's address (#erevos-token=…), so nothing else can use them:
 //   /__secret?key=…   the keystore (lib/secure.ts): small values, sealed with the system's keyring
 //                     (on a Mac the Keychain)
@@ -9,7 +12,8 @@
 //   /__backup?…       writes a backup into such a folder, keeping the newest
 //   /__pick           asks for a file to open (lib/pick-file.web.ts), and gives its bytes
 
-export const SHELL: 'electron' | null = process.env.EXPO_PUBLIC_SHELL === 'electron' ? 'electron' : null;
+const BUILT_FOR = process.env.EXPO_PUBLIC_SHELL;
+export const SHELL: 'electron' | 'sailfish' | null = BUILT_FOR === 'electron' || BUILT_FOR === 'sailfish' ? BUILT_FOR : null;
 
 const TOKEN_KEY = 'erevos-shell-token';
 let token = '';

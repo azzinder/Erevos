@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Erevos
+Comment=Private messenger
+Icon=erevos
+Exec=erevos
+X-Nemo-Application-Type=silica-qt5
+
+[X-Sailjail]
+Sandboxing=Disabled
