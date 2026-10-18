@@ -22,7 +22,7 @@ export async function pickFolder(): Promise<string | null> {
 export function folderLabel(uri: string): string {
   const tree = uri.split('/tree/')[1];
   if (!tree) return uri;
-  const path = decodeURIComponent(tree);
+  const path = decodeURIComponent(tree).replace(/\/+$/, '');
   return path.replace(/^primary:/, '') || path;
 }
 
