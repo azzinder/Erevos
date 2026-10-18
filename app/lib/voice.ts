@@ -9,7 +9,7 @@ export const MAX_VOICE_MS = 60_000;
 /** Bytes of sound in one part, small enough for its encrypted message with what else it carries. */
 export const PART_SIZE = 10_000;
 /** The most parts one voice message has: a minute of sound fits with room to spare. */
-export const MAX_PARTS = 40;
+export const MAX_PARTS = 64;
 // Parts of a message that stop coming are dropped after this long, milliseconds.
 const STALE = 10 * 60_000;
 

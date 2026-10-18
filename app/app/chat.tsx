@@ -83,8 +83,8 @@ const COMING = [
 // How long a note under the messages stays, milliseconds.
 const NOTE_SHOWN = 8000;
 
-// Messages opened from the relay in one look at it, at most.
-const RECEIVE_BATCH = 10;
+// Messages opened from the relay in one look at it, at most: a minute's voice message comes in one.
+const RECEIVE_BATCH = 50;
 
 // Contacts are named by their identity key, after this prefix. Radio peers by their link id.
 const CONTACT_PREFIX = 'contact:';

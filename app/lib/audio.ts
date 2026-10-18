@@ -5,26 +5,27 @@ import { useRef } from 'react';
 import { randomBytes, toHex } from './crypto';
 import { MAX_VOICE_MS } from './voice';
 
-// Recording and playing voice messages on the phone (expo-audio). The sound is AAC, mono, at 16 kHz
-// and 24 kbit/s: about 3 KB a second, clear enough for speech. A recording is read into memory and
+// Recording and playing voice messages on the phone (expo-audio). The sound is AAC, mono, at 48 kHz
+// and 64 kbit/s: as clear as speech gets, about 8 KB a second, so a minute is about 480 KB. More
+// would not be heard in a voice, but would be slower to send, and more so over Bluetooth. A recording is read into memory and
 // its file deleted at once; to play, the sound is written unsealed to a file in the app's cache for
 // as long as it plays, then deleted. If Erevos is closed in the middle of either, clearLeftovers
 // deletes what was left the next time a chat opens.
 
 const OPTIONS: RecordingOptions = {
   extension: '.m4a',
-  sampleRate: 16_000,
+  sampleRate: 48_000,
   numberOfChannels: 1,
-  bitRate: 24_000,
+  bitRate: 64_000,
   android: { extension: '.m4a', outputFormat: 'mpeg4', audioEncoder: 'aac' },
   ios: {
     outputFormat: IOSOutputFormat.MPEG4AAC,
-    audioQuality: AudioQuality.LOW,
+    audioQuality: AudioQuality.HIGH,
     linearPCMBitDepth: 16,
     linearPCMIsBigEndian: false,
     linearPCMIsFloat: false,
   },
-  web: { mimeType: 'audio/webm', bitsPerSecond: 24_000 },
+  web: { mimeType: 'audio/webm', bitsPerSecond: 64_000 },
 };
 
 /** A recording shorter than this was a tap, not a voice message, milliseconds. */
