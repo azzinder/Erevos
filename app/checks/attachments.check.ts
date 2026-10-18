@@ -4,6 +4,7 @@
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
+import * as nodeCrypto from 'node:crypto';
 import { before, test } from 'node:test';
 
 import { blobs } from './files-memory';
@@ -23,7 +24,7 @@ import {
   takeFile,
   type FileOffer,
 } from '../lib/attachments';
-import { randomBytes } from '../lib/crypto';
+import { decryptBytes, DecryptError, decryptText, encryptBytes, encryptText, nodeStyleGcm, randomBytes, setGcm, type Gcm } from '../lib/crypto';
 import { cleanJpeg, cleanPng, photoSize } from '../lib/photo';
 import { cleanFileName, freeName, isFileRef, PREFIX } from '../lock/attachment-files';
 import { History } from '../lock/history';
@@ -218,4 +219,34 @@ test('a file on the same relay is taken straight, and a wrong key keeps nothing'
   assert.ok(![...blobs.keys()].some((name) => name.startsWith(`${PREFIX}${wrong.id}`)), 'nothing kept');
   const taken = await takeFile({ url: `${mine}/` }, offerRef(offer));
   assert.deepEqual(await readFile(taken), data);
+});
+
+// Last, as the app does at startup: the checks before ran with the JavaScript AES-GCM.
+test('a native AES-GCM is used only when it seals as the JavaScript one does', () => {
+  const key = randomBytes(32);
+  const piece = randomBytes(room(1024 * 1024));
+  const before = sealChunk(key, 3, piece, 1024 * 1024);
+  const text = encryptText(key, 'still opens');
+
+  const native = nodeStyleGcm(nodeCrypto);
+  const otherNonce: Gcm = { seal: (k, nonce, data) => native.seal(k, nonce.map((b) => b ^ 1), data), open: native.open };
+  // Opens without checking the tag, so what was changed would open too.
+  const unchecked: Gcm = {
+    seal: native.seal,
+    open: (k, nonce, sealed) => nodeCrypto.createDecipheriv('aes-256-gcm', k, nonce).update(sealed.subarray(0, sealed.length - 16)),
+  };
+  assert.equal(setGcm(otherNonce), false);
+  assert.equal(setGcm(unchecked), false);
+  assert.equal(setGcm({ seal: () => { throw new Error('no cipher here'); }, open: native.open }), false);
+  assert.equal(setGcm(native), true);
+
+  // What was sealed before still opens, and what is sealed now is the same.
+  assert.deepEqual(openChunk(key, 3, before, 1024 * 1024), piece);
+  assert.equal(decryptText(key, text), 'still opens');
+  const sealed = encryptBytes(key, piece);
+  assert.equal(sealed.constructor, Uint8Array, 'plain bytes, not a Buffer');
+  assert.deepEqual(decryptBytes(key, sealed), piece);
+  sealed[100] ^= 1;
+  assert.throws(() => decryptBytes(key, sealed), DecryptError);
+  assert.throws(() => decryptBytes(key, sealed.subarray(0, 20)), DecryptError);
 });

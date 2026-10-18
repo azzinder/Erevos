@@ -1,7 +1,7 @@
 // Encryption helpers for what the app keeps on the phone: AES-256-GCM with keys derived from a
 // password by PBKDF2-SHA256, the same as in LPHL FASOULI. Pure JavaScript (the audited @noble
 // libraries), so it runs the same on Android, iOS, web and under plain Node for checks. The app
-// plugs in native randomness and a native PBKDF2 at startup (crypto-setup).
+// plugs in native randomness, a native PBKDF2 and a native AES-GCM at startup (crypto-setup).
 import { gcm } from '@noble/ciphers/aes.js';
 import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { sha256 } from '@noble/hashes/sha2.js';
@@ -142,6 +142,88 @@ export async function deriveKey(password: string, salt: Uint8Array, iterations: 
   return pbkdf2(utf8Encode(password), salt, iterations, 32);
 }
 
+/** AES-256-GCM: `seal` gives what was sealed with the 16-byte tag after it, `open` throws when the tag is wrong. */
+export type Gcm = {
+  seal(key: Uint8Array, nonce: Uint8Array, data: Uint8Array): Uint8Array;
+  open(key: Uint8Array, nonce: Uint8Array, sealed: Uint8Array): Uint8Array;
+};
+
+const nobleGcm: Gcm = {
+  seal: (key, nonce, data) => gcm(key, nonce).encrypt(data),
+  open: (key, nonce, sealed) => gcm(key, nonce).decrypt(sealed),
+};
+
+let aesGcm: Gcm = nobleGcm;
+
+// AES-GCM in JavaScript takes seconds for each megabyte of a file on a phone, so the app plugs in
+// a native one at startup. It is kept only if it seals exactly as the JavaScript one does, opens
+// what that sealed, and refuses what was changed. Says whether it was kept.
+export function setGcm(next: Gcm): boolean {
+  try {
+    for (const length of [0, 1, 15, 16, 17, 1000, 70000]) {
+      const key = randomBytes(32);
+      const nonce = randomBytes(12);
+      const data = randomBytes(length);
+      const sealed = nobleGcm.seal(key, nonce, data);
+      if (!sameBytes(next.seal(key, nonce, data), sealed)) return false;
+      if (!sameBytes(next.open(key, nonce, sealed), data)) return false;
+      const changed = sealed.slice();
+      changed[length >> 1] ^= 1;
+      let refused = false;
+      try {
+        next.open(key, nonce, changed);
+      } catch {
+        refused = true;
+      }
+      if (!refused) return false;
+    }
+  } catch {
+    return false;
+  }
+  aesGcm = next;
+  return true;
+}
+
+type CipherLike = { update(data: Uint8Array): Uint8Array; final(): Uint8Array };
+
+/** What Node's crypto and react-native-quick-crypto give for AES-256-GCM. */
+export type NodeStyleCiphers = {
+  createCipheriv(algorithm: 'aes-256-gcm', key: Uint8Array, iv: Uint8Array): CipherLike & { getAuthTag(): Uint8Array };
+  createDecipheriv(algorithm: 'aes-256-gcm', key: Uint8Array, iv: Uint8Array): CipherLike & { setAuthTag(tag: Uint8Array): unknown };
+};
+
+const TAG = 16;
+
+// Plain bytes, one part after another: what the ciphers give may be Buffers, whose slice() does not copy.
+function joinBytes(...parts: Uint8Array[]): Uint8Array {
+  const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+  let at = 0;
+  for (const part of parts) {
+    out.set(part, at);
+    at += part.length;
+  }
+  return out;
+}
+
+/** AES-256-GCM through Node-style ciphers (createCipheriv, createDecipheriv). */
+export function nodeStyleGcm({ createCipheriv, createDecipheriv }: NodeStyleCiphers): Gcm {
+  return {
+    seal(key, nonce, data) {
+      const cipher = createCipheriv('aes-256-gcm', key, nonce);
+      const sealed = cipher.update(data);
+      const last = cipher.final();
+      return joinBytes(sealed, last, cipher.getAuthTag());
+    },
+    open(key, nonce, sealed) {
+      if (sealed.length < TAG) throw new DecryptError();
+      const decipher = createDecipheriv('aes-256-gcm', key, nonce);
+      decipher.setAuthTag(sealed.subarray(sealed.length - TAG));
+      const plain = decipher.update(sealed.subarray(0, sealed.length - TAG));
+      return joinBytes(plain, decipher.final());
+    },
+  };
+}
+
 const PREFIX = 'EVENC1:';
 
 export function isEncrypted(text: string): boolean {
@@ -151,7 +233,7 @@ export function isEncrypted(text: string): boolean {
 /** AES-256-GCM with a random 96-bit nonce; the output is text-safe. */
 export function encryptText(key: Uint8Array, text: string): string {
   const nonce = randomBytes(12);
-  const sealed = gcm(key, nonce).encrypt(utf8Encode(text));
+  const sealed = aesGcm.seal(key, nonce, utf8Encode(text));
   const joined = new Uint8Array(nonce.length + sealed.length);
   joined.set(nonce);
   joined.set(sealed, nonce.length);
@@ -161,7 +243,7 @@ export function encryptText(key: Uint8Array, text: string): string {
 /** AES-256-GCM with a random 96-bit nonce, for bytes: the nonce, then what was sealed. */
 export function encryptBytes(key: Uint8Array, data: Uint8Array): Uint8Array {
   const nonce = randomBytes(12);
-  const sealed = gcm(key, nonce).encrypt(data);
+  const sealed = aesGcm.seal(key, nonce, data);
   const joined = new Uint8Array(nonce.length + sealed.length);
   joined.set(nonce);
   joined.set(sealed, nonce.length);
@@ -179,7 +261,7 @@ export function decryptText(key: Uint8Array, blob: string): string {
   if (!isEncrypted(blob)) throw new DecryptError();
   const joined = fromBase64(blob.slice(PREFIX.length));
   try {
-    return utf8Decode(gcm(key, joined.slice(0, 12)).decrypt(joined.slice(12)));
+    return utf8Decode(aesGcm.open(key, joined.slice(0, 12), joined.subarray(12)));
   } catch {
     throw new DecryptError();
   }
@@ -188,7 +270,7 @@ export function decryptText(key: Uint8Array, blob: string): string {
 /** Throws DecryptError when the key is wrong or the data was changed. */
 export function decryptBytes(key: Uint8Array, joined: Uint8Array): Uint8Array {
   try {
-    return gcm(key, joined.slice(0, 12)).decrypt(joined.slice(12));
+    return aesGcm.open(key, joined.slice(0, 12), joined.subarray(12));
   } catch {
     throw new DecryptError();
   }

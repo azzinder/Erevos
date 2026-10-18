@@ -1,12 +1,13 @@
 import { nativeCore } from '../modules/erevos-core';
 
 import { setCore } from './core';
-import { setPbkdf2, setRandomSource } from './crypto';
+import { nodeStyleGcm, setGcm, setPbkdf2, setRandomSource } from './crypto';
 
-// Native randomness (expo-crypto) and PBKDF2 (OpenSSL, through react-native-quick-crypto) on
-// Android and iOS, as in LPHL FASOULI. Both are loaded here rather than imported, so a build made
-// before they were added still starts: it then checks passwords in JavaScript, which is slow, and
-// cannot make keys until it is rebuilt. The Erevos core (lib/core.ts) is plugged in here too.
+// Native randomness (expo-crypto), and PBKDF2 and AES-GCM (OpenSSL, through
+// react-native-quick-crypto) on Android and iOS, as in LPHL FASOULI. They are loaded here rather
+// than imported, so a build made before they were added still starts: it then checks passwords
+// and seals files in JavaScript, which is slow, and cannot make keys until it is rebuilt. The
+// Erevos core (lib/core.ts) is plugged in here too.
 export function setupCrypto(): void {
   setCore(nativeCore);
   try {
@@ -15,12 +16,15 @@ export function setupCrypto(): void {
   } catch {
     // crypto.ts refuses to make keys without a secure random source.
   }
-  let pbkdf2: typeof import('react-native-quick-crypto').pbkdf2;
+  let quick: typeof import('react-native-quick-crypto');
   try {
-    pbkdf2 = (require('react-native-quick-crypto') as typeof import('react-native-quick-crypto')).pbkdf2;
+    quick = require('react-native-quick-crypto') as typeof import('react-native-quick-crypto');
   } catch {
     return;
   }
+  const { pbkdf2 } = quick;
+  // Kept only if it seals exactly as the JavaScript one does (setGcm checks).
+  setGcm(nodeStyleGcm(quick));
   setPbkdf2(
     (password, salt, iterations, length) =>
       new Promise((resolve, reject) => {
