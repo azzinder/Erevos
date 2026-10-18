@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Modal } from 'react-native';
+import { AppState, Modal } from 'react-native';
 
 import { callAudio } from '../modules/erevos-call';
 import { currentCall, type Call } from '../lib/call';
@@ -16,7 +16,9 @@ const LOOK_IN_CALL = 700;
 
 // The call screen over whatever screen shows, while the space is open (lib/calls.ts). A contact's
 // call that the receiver opens rings here; the chat screen hands over the ones it opens itself.
-// The call ends when the space closes.
+// The call ends when the space closes. On Android a contact's call rings with the phone's
+// ringtone, and while Erevos is in the background (lib/background.ts) also with a notice that
+// says only "Incoming call", over the lock screen; tapping it brings Erevos up to answer.
 export function CallHost() {
   const [, setShown] = useState(0);
   const [speaker, setSpeaker] = useState(false);
@@ -32,9 +34,15 @@ export function CallHost() {
         setSpeaker(call.video);
         // Ours starts its sound at once; theirs once answered.
         if (call.outgoing) callAudio?.start(call.video);
+        // Theirs rings with the phone's ringtone, and in the background with the call notice too.
+        else if (call.state === 'incoming') callAudio?.ring?.(call.video, AppState.currentState !== 'active');
         if (shown?.place === spaceCalls) void learnSpaceNames().then(() => setShown((n) => n + 1), () => undefined);
       }
-      if (call?.state === 'ended') callAudio?.stop();
+      if (call?.state !== 'incoming') callAudio?.stopRinging?.();
+      if (call?.state === 'ended') {
+        callAudio?.stop();
+        callAudio?.showOverLock?.(false);
+      }
       setShown((n) => n + 1);
     });
     const stopMessages = onMessage((received) => {
@@ -46,7 +54,9 @@ export function CallHost() {
       stopMessages();
       setReceiverPace(() => LOOK_EVERY);
       endCall();
+      callAudio?.stopRinging?.();
       callAudio?.stop();
+      callAudio?.showOverLock?.(false);
     };
   }, []);
 

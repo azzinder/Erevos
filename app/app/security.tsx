@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 
 import { IntegrityCard } from '../components/integrity-card';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
+import { askBattery, askFullScreen, backgroundState, canRingInBackground, loadRingInBackground, saveRingInBackground } from '../lib/background';
 import { loadLockConfig, lockWithPassword, removePasswordLock, removeSecondPassword, setLockPassword, type LockConfig } from '../lock/config';
 import { useLock } from '../lock/context';
 import { prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
@@ -160,6 +161,8 @@ export default function Security() {
         </Row>
       </Card>
 
+      {canRingInBackground ? <BackgroundCalls /> : null}
+
       <IntegrityCard />
 
       {note ? (
@@ -185,6 +188,61 @@ export default function Security() {
         onSubmit={submit}
       />
     </Page>
+  );
+}
+
+// Ringing while Erevos is in the background (lib/background.ts), on this phone: the switch, and
+// what Android still has to allow, each with the way to allow it.
+function BackgroundCalls() {
+  const [on, setOn] = useState<boolean | null>(null);
+  const [allowed, setAllowed] = useState(backgroundState);
+
+  useEffect(() => {
+    loadRingInBackground().then(setOn);
+    // Back from Android's settings: what it allows now.
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setAllowed(backgroundState());
+    });
+    return () => subscription.remove();
+  }, []);
+
+  function choose(next: boolean) {
+    setOn(next);
+    void saveRingInBackground(next).then(() => setAllowed(backgroundState()));
+  }
+
+  if (on === null) return null;
+  return (
+    <>
+      <SectionTitle title="Calls in the background" />
+      <Row wrap>
+        <Chip label="Ring" selected={on} onPress={() => choose(true)} />
+        <Chip label="Only while Erevos shows" selected={!on} onPress={() => choose(false)} />
+      </Row>
+      <Card>
+        <Text variant="caption" tone="muted" style={hint}>
+          {on
+            ? 'While a space is open, Erevos keeps running in the background and a call rings with the phone\'s ringtone, over the lock screen too. The notices say only "Erevos" and "Incoming call", never who calls. Swiped away from the recent apps, Erevos cannot ring.'
+            : 'A call rings only while Erevos shows. Otherwise it shows as a missed call once you open Erevos.'}
+        </Text>
+        {on && allowed && !allowed.notices ? (
+          <Text variant="caption" tone="muted" style={hint}>
+            Notices are off for Erevos in Android's settings: calls still ring, with no notice to tap.
+          </Text>
+        ) : null}
+        {on && allowed && (!allowed.battery || !allowed.fullScreen) ? (
+          <Row wrap>
+            {!allowed.battery ? <Button title="Keep running on battery" kind="secondary" compact onPress={askBattery} /> : null}
+            {!allowed.fullScreen ? <Button title="Show calls over the lock screen" kind="secondary" compact onPress={askFullScreen} /> : null}
+          </Row>
+        ) : null}
+        {on && allowed && !allowed.battery ? (
+          <Text variant="caption" tone="muted" style={hint}>
+            Without it, Android's battery saving may stop Erevos after a while in the background.
+          </Text>
+        ) : null}
+      </Card>
+    </>
   );
 }
 

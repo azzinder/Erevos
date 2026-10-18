@@ -8,7 +8,10 @@ import { CallHost } from '../components/call-host';
 import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
 import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
+import { startBackground } from '../lib/background';
 import { runAutoBackup } from '../lib/backup-folder';
+import { currentCall } from '../lib/call';
+import { onCallChange } from '../lib/calls';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { setAppShown, startReceiver } from '../lib/receiver';
@@ -50,6 +53,7 @@ export default function RootLayout() {
   const [error, setError] = useState<string | null>(null);
   const phaseRef = useRef(phase);
   const backgroundAt = useRef<number | null>(null);
+  const relockAfterCall = useRef(false);
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -116,9 +120,21 @@ export default function RootLayout() {
       const away = Date.now() - backgroundAt.current;
       backgroundAt.current = null;
       const current = phaseRef.current;
-      if (current.kind === 'open' && current.passwordLock && away > RELOCK_AFTER_MS) start().catch(fail);
+      if (current.kind !== 'open' || !current.passwordLock || away <= RELOCK_AFTER_MS) return;
+      // A call that rang in the background, or goes on, would end with the space: it locks once
+      // the call ends.
+      if (currentCall()) relockAfterCall.current = true;
+      else start().catch(fail);
     });
-    return () => subscription.remove();
+    const stopCalls = onCallChange(() => {
+      if (!relockAfterCall.current || currentCall()) return;
+      relockAfterCall.current = false;
+      if (phaseRef.current.kind === 'open') start().catch(fail);
+    });
+    return () => {
+      subscription.remove();
+      stopCalls();
+    };
   }, [start, fail]);
 
   // A look changed on the Appearance screen: kept in the open space, and copied for the password screen.
@@ -229,6 +245,8 @@ function Shell({ phase, error, lockState, onUnlock }: {
 // it whether the app shows: only then do contacts hear the phone is open.
 function Receiver() {
   useEffect(() => startReceiver(), []);
+  // On Android, it goes on while Erevos is in the background, so a call rings (lib/background.ts).
+  useEffect(() => startBackground(), []);
   useEffect(() => {
     setAppShown(AppState.currentState === 'active');
     const subscription = AppState.addEventListener('change', (state) => setAppShown(state === 'active'));

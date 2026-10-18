@@ -1,0 +1,95 @@
+package expo.modules.erevoscall
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.media.AudioAttributes
+import android.os.Build
+
+// The two notices Erevos shows: that it keeps receiving while in the background, and a call that
+// rings. Neither says who: no name, no message, only what kind of call. Tapping either opens
+// Erevos, which shows the rest only once it is open.
+object Notices {
+  const val RECEIVING_ID = 7101
+  const val RINGING_ID = 7102
+  private const val RECEIVING_CHANNEL = "erevos-receiving"
+  private const val CALLS_CHANNEL = "erevos-calls"
+
+  private fun manager(context: Context) = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+  private fun channels(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+    val manager = manager(context)
+    if (manager.getNotificationChannel(RECEIVING_CHANNEL) == null) {
+      manager.createNotificationChannel(
+        NotificationChannel(RECEIVING_CHANNEL, "Receiving in the background", NotificationManager.IMPORTANCE_MIN).apply {
+          setShowBadge(false)
+          lockscreenVisibility = Notification.VISIBILITY_SECRET
+        },
+      )
+    }
+    if (manager.getNotificationChannel(CALLS_CHANNEL) == null) {
+      // The ringtone plays from the app itself (ErevosCallModule), so the channel stays silent and
+      // the sound stops the moment the call is answered or ends.
+      manager.createNotificationChannel(
+        NotificationChannel(CALLS_CHANNEL, "Calls", NotificationManager.IMPORTANCE_HIGH).apply {
+          setSound(null, null as AudioAttributes?)
+          enableVibration(false)
+          lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        },
+      )
+    }
+  }
+
+  // Opens Erevos where it was, or starts it.
+  private fun opening(context: Context, request: Int): PendingIntent? {
+    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+    return PendingIntent.getActivity(context, request, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+  }
+
+  @Suppress("DEPRECATION")
+  private fun builder(context: Context, channel: String): Notification.Builder =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(context, channel) else Notification.Builder(context)
+
+  fun receiving(context: Context): Notification {
+    channels(context)
+    @Suppress("DEPRECATION")
+    return builder(context, RECEIVING_CHANNEL)
+      .setSmallIcon(context.applicationInfo.icon)
+      .setContentTitle("Erevos")
+      .setContentText("Ready for calls and messages")
+      .setOngoing(true)
+      .setShowWhen(false)
+      .setPriority(Notification.PRIORITY_MIN)
+      .setVisibility(Notification.VISIBILITY_SECRET)
+      .setContentIntent(opening(context, 1))
+      .build()
+  }
+
+  fun ring(context: Context, video: Boolean) {
+    channels(context)
+    val open = opening(context, 2)
+    @Suppress("DEPRECATION")
+    val notification = builder(context, CALLS_CHANNEL)
+      .setSmallIcon(context.applicationInfo.icon)
+      .setContentTitle(if (video) "Incoming video call" else "Incoming call")
+      .setContentText("Open Erevos to answer")
+      .setCategory(Notification.CATEGORY_CALL)
+      .setPriority(Notification.PRIORITY_MAX)
+      .setVisibility(Notification.VISIBILITY_PUBLIC)
+      .setOngoing(true)
+      .setAutoCancel(true)
+      .setContentIntent(open)
+      .setFullScreenIntent(open, true)
+      .build()
+    manager(context).notify(RINGING_ID, notification)
+  }
+
+  fun stopRinging(context: Context) {
+    manager(context).cancel(RINGING_ID)
+  }
+}

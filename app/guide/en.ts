@@ -111,8 +111,9 @@ message counts as read once its chat shows on the screen. Messages to a nearby p
 
 - **They see when you read:** your phone tells theirs, as theirs tells yours, unless that chat appears offline (below).
 - **When messages come:** Erevos looks at the relay every few seconds while it is open and unlocked, on any screen,
-  and the home screen moves the chat to the top by itself. Closed, locked, or long in the background, it does not:
-  messages wait on the relay, up to 14 days, and come once Erevos opens again. There are no notifications yet.
+  and the home screen moves the chat to the top by itself. On Android it goes on in the background too, while
+  **Calls in the background** rings (below). Closed, locked, or long in the background otherwise, it does not:
+  messages wait on the relay, up to 14 days, and come once Erevos opens again. There are no message notifications yet.
 
 ### Online, and appearing offline
 
@@ -225,9 +226,15 @@ a missed call.
   goes through it, so neither phone learns the other's IP address. Over Wi-Fi or mobile data, anywhere.
 - **Without a call relay** (a relay on your own computer, for example), Erevos asks first: the call then goes
   straight between the phones, only works on the same Wi-Fi, and each phone sees the other's address on it.
-- **Ringing needs Erevos open** on their phone, in the space your chat is in: until Erevos can receive while closed,
-  a call to a phone where it is closed shows there as a missed call once they open it. A message request cannot call you until
-  you accept it.
+- **Ringing in the background (Android):** while a space is open, Erevos keeps running when you leave it, with a
+  quiet notice that says only "Erevos", and a call rings with the phone's ringtone and a notice that says only
+  "Incoming call", over the lock screen too. Tap it to answer. With the password lock on, a call that rings shows
+  before the password, and Erevos locks as soon as it ends. Set it under **Lock and second password** → **Calls in
+  the background**: **Ring** (the default) or **Only while Erevos shows**. There too, if Android asks for them,
+  **Keep running on battery** and **Show calls over the lock screen**.
+- **Where it cannot ring:** swiped away from the recent apps, stopped by Android, in another space, or on a computer
+  or in the web app while closed. A call there shows as a missed call once Erevos opens. A message request cannot
+  call you until you accept it.
 - **One call at a time.** A call goes on while you move between screens of the space. It ends when the space closes,
   and a call in hidden chats when they close, as they do when Erevos goes to the background.
 - Not over a nearby phone or Bluetooth yet: a walkie-talkie that works there is still to come.
@@ -510,7 +517,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring; a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay sees one more small message. | A switch to stop telling when you read. |
-| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing while Erevos is closed. A walkie-talkie over Bluetooth. |
+| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. A walkie-talkie over Bluetooth. |
 
 ## What is coming {#coming}
 
@@ -523,8 +530,8 @@ End-to-end encryption through the relay is here. The nearby link comes next, and
     it on, with privacy warnings first.
   - **SMS:** off unless you turn it on for a contact, with a warning first: the carrier sees who and when.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
-- **Calls:** voice and video calls are here, see [Chat through a relay](#relay). Next: ringing while Erevos is
-  closed, and a walkie-talkie that works even over Bluetooth.
+- **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a
+  relay](#relay). Next: a walkie-talkie that works even over Bluetooth.
 - **Groups:** group chats, and group video calls. Up to four people connect directly; when more join, the call
   moves to a server by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come

@@ -1,5 +1,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-  <!-- Turning the screen off while the phone is at the ear during a call. -->
+  <!-- Turning the screen off while the phone is at the ear during a call, and keeping the phone
+       awake enough to look at the relay while Erevos is in the background. -->
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <!-- Ringing while Erevos is in the background: a service that keeps it running, the call shown
+       over the lock screen, and asking to be left out of battery saving. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+  <application>
+    <service
+      android:name="expo.modules.erevoscall.ReceiveService"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Keeps a private messenger with no push service connected to the user's own relay, so calls ring and messages arrive while it is in the background." />
+    </service>
+  </application>
 </manifest>
