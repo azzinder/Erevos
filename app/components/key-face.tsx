@@ -1,5 +1,8 @@
-import { View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Image, View } from 'react-native';
 
+import { toBase64 } from '../lib/crypto';
+import { loadPhoto, type PhotoRef } from '../lock/avatar-photos';
 import type { Avatar } from '../lock/e2e-data';
 import { readableOn, shape } from '../theme/colors';
 import { useTheme } from '../theme/context';
@@ -40,6 +43,7 @@ const hsl = (hue: number, s: number, l: number) => `hsl(${Math.round(hue % 360)}
 
 export function KeyFace({ identity, name, size = 48, avatar = null }: { identity: string; name?: string; size?: number; avatar?: Avatar | null }) {
   useTheme(); // drawn again when the look changes
+  if (avatar?.kind === 'photo') return <PhotoFace photo={avatar} identity={identity} name={name} size={size} />;
   if (avatar) {
     return (
       <View
@@ -100,5 +104,40 @@ export function KeyFace({ identity, name, size = 48, avatar = null }: { identity
         </Text>
       ) : null}
     </View>
+  );
+}
+
+// Photos opened this time the app is open, by file id, so a list of chats does not open each again.
+const photos = new Map<string, string>();
+
+/** A contact's photo, opened from its sealed file; the picture from their key until it is, or if it is gone. */
+function PhotoFace({ photo, identity, name, size }: { photo: PhotoRef; identity: string; name?: string; size: number }) {
+  const [uri, setUri] = useState(() => photos.get(photo.id) ?? null);
+  useEffect(() => {
+    if (photos.has(photo.id)) {
+      setUri(photos.get(photo.id)!);
+      return;
+    }
+    let active = true;
+    loadPhoto(photo)
+      .then((bytes) => {
+        if (!bytes) return;
+        const opened = `data:image/jpeg;base64,${toBase64(bytes)}`;
+        photos.set(photo.id, opened);
+        if (active) setUri(opened);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [photo]);
+  if (!uri) return <KeyFace identity={identity} name={name} size={size} />;
+  return (
+    <Image
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      source={{ uri }}
+      style={{ width: size, height: size, borderRadius: size / 2 }}
+    />
   );
 }

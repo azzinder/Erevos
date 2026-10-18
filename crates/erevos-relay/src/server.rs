@@ -31,6 +31,10 @@
 //!   then a whole `FILE_GET` or `FILE_DELETE` request. This relay passes the
 //!   request to `<address>/files` and replies with that relay's reply, or
 //!   `UNREACHABLE`.
+//! - `CALL_RELAY`: no fields. Reply: credentials for the call relay beside
+//!   this relay (see `turn.rs`): a 2-byte length and the username, a 2-byte
+//!   length and the password, a 1-byte count of addresses and each address
+//!   after a 2-byte length. `NOT_FOUND` if the relay has no call relay.
 //!
 //! Two-hop sending: a phone gives `FORWARD` to its own relay, which opens a
 //! WebSocket to `<address>/sealed` on the contact's relay and sends
@@ -76,23 +80,31 @@ use tungstenite::Message;
 
 use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
 use crate::queue::{QueueError, QueueId, Store};
+use crate::turn::Turn;
 
-/// What every connection shares: the queues, the file store, and the key for
-/// sealed sends if the relay has one.
+/// What every connection shares: the queues, the file store, the key for
+/// sealed sends if the relay has one, and the call relay if one runs beside it.
 pub struct Shared {
     pub store: Mutex<Store>,
     pub files: Mutex<FileStore>,
     pub key: Option<RelayKey>,
+    pub turn: Option<Turn>,
 }
 
 pub type SharedStore = Arc<Shared>;
 
 impl Shared {
-    pub fn new(store: Store, files: FileStore, key: Option<RelayKey>) -> SharedStore {
+    pub fn new(
+        store: Store,
+        files: FileStore,
+        key: Option<RelayKey>,
+        turn: Option<Turn>,
+    ) -> SharedStore {
         Arc::new(Shared {
             store: Mutex::new(store),
             files: Mutex::new(files),
             key,
+            turn,
         })
     }
 
@@ -120,6 +132,7 @@ pub const FILE_PUT: u8 = 8;
 pub const FILE_GET: u8 = 9;
 pub const FILE_DELETE: u8 = 10;
 pub const FILE_VIA: u8 = 11;
+pub const CALL_RELAY: u8 = 12;
 
 pub const OK: u8 = 0;
 pub const NOT_FOUND: u8 = 1;
@@ -246,7 +259,10 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         Access::Files => matches!(op[0], FILE_GET | FILE_DELETE),
     };
     if !allowed {
-        return Err(io::Error::new(ErrorKind::PermissionDenied, "not on this path"));
+        return Err(io::Error::new(
+            ErrorKind::PermissionDenied,
+            "not on this path",
+        ));
     }
     let reply = match op[0] {
         CREATE => {
@@ -349,9 +365,29 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
             let id = read_id(r)?;
             file_via(&address, op[0], &id)
         }
+        CALL_RELAY => match &shared.turn {
+            Some(turn) => {
+                let (username, password) = turn.credentials();
+                let mut out = vec![OK];
+                put_short(&mut out, username.as_bytes());
+                put_short(&mut out, password.as_bytes());
+                out.push(turn.urls().len() as u8);
+                for url in turn.urls() {
+                    put_short(&mut out, url.as_bytes());
+                }
+                out
+            }
+            None => vec![NOT_FOUND],
+        },
         _ => return Err(io::Error::new(ErrorKind::InvalidData, "unknown opcode")),
     };
     Ok(Some(reply))
+}
+
+/// Bytes after their 2-byte length. Only short, known strings go out this way.
+fn put_short(out: &mut Vec<u8>, bytes: &[u8]) {
+    out.extend_from_slice(&(bytes.len() as u16).to_be_bytes());
+    out.extend_from_slice(bytes);
 }
 
 fn status(result: Result<(), QueueError>) -> Vec<u8> {
@@ -401,9 +437,13 @@ fn read_address(r: &mut impl Read) -> io::Result<String> {
     }
     let mut bytes = vec![0u8; len];
     r.read_exact(&mut bytes)?;
-    let address = String::from_utf8(bytes).map_err(|_| io::Error::new(ErrorKind::InvalidData, "address is not text"))?;
+    let address = String::from_utf8(bytes)
+        .map_err(|_| io::Error::new(ErrorKind::InvalidData, "address is not text"))?;
     if !(address.starts_with("ws://") || address.starts_with("wss://")) {
-        return Err(io::Error::new(ErrorKind::InvalidData, "not a relay address"));
+        return Err(io::Error::new(
+            ErrorKind::InvalidData,
+            "not a relay address",
+        ));
     }
     Ok(address)
 }
@@ -448,7 +488,11 @@ fn call_relay(url: &str, request: Vec<u8>, timeout: Duration) -> io::Result<Vec<
     let host = host.trim_start_matches('[').trim_end_matches(']');
     let port = uri
         .port_u16()
-        .unwrap_or(if uri.scheme_str() == Some("wss") { 443 } else { 80 });
+        .unwrap_or(if uri.scheme_str() == Some("wss") {
+            443
+        } else {
+            80
+        });
     let addr = (host, port)
         .to_socket_addrs()?
         .next()
@@ -457,7 +501,9 @@ fn call_relay(url: &str, request: Vec<u8>, timeout: Duration) -> io::Result<Vec<
     stream.set_read_timeout(Some(timeout))?;
     stream.set_write_timeout(Some(timeout))?;
     let (mut socket, _) = tungstenite::client_tls(url, stream).map_err(to_io)?;
-    socket.send(Message::Binary(request.into())).map_err(to_io)?;
+    socket
+        .send(Message::Binary(request.into()))
+        .map_err(to_io)?;
     loop {
         match socket.read().map_err(to_io)? {
             Message::Binary(bytes) => {
@@ -510,16 +556,16 @@ fn unauthorized() -> ErrorResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use erevos_core::relay_seal::seal;
     use std::net::SocketAddr;
     use tungstenite::client::IntoClientRequest;
     use tungstenite::stream::MaybeTlsStream;
     use tungstenite::WebSocket;
-    use erevos_core::relay_seal::seal;
 
     fn start() -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
-        let store = Shared::new(Store::default(), FileStore::default(), None);
+        let store = Shared::new(Store::default(), FileStore::default(), None, None);
         thread::spawn(move || serve(listener, store));
         addr
     }
@@ -531,7 +577,7 @@ mod tests {
     fn start_ws_with(token: Option<&str>, key: Option<RelayKey>) -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
-        let store = Shared::new(Store::default(), FileStore::default(), key);
+        let store = Shared::new(Store::default(), FileStore::default(), key, None);
         let token: Option<Arc<str>> = token.map(Arc::from);
         thread::spawn(move || serve_ws(listener, store, token));
         addr
@@ -729,7 +775,10 @@ mod tests {
 
         let mut near_ws = connect_with_token(near, "", "near");
         let sealed = seal(&public, &sender, b"via two relays").unwrap();
-        let r = ws_call(&mut near_ws, forward_request(&format!("ws://{far}"), &sealed));
+        let r = ws_call(
+            &mut near_ws,
+            forward_request(&format!("ws://{far}"), &sealed),
+        );
         assert_eq!(r, vec![OK]);
         assert_eq!(
             ws_receive(&mut far_ws, &recipient).as_deref(),
@@ -741,7 +790,10 @@ mod tests {
         req.extend_from_slice(&recipient);
         assert_eq!(ws_call(&mut far_ws, req), vec![OK]);
         let sealed = seal(&public, &sender, b"late").unwrap();
-        let r = ws_call(&mut near_ws, forward_request(&format!("ws://{far}/"), &sealed));
+        let r = ws_call(
+            &mut near_ws,
+            forward_request(&format!("ws://{far}/"), &sealed),
+        );
         assert_eq!(r, vec![NOT_FOUND]);
     }
 
@@ -749,7 +801,10 @@ mod tests {
     fn a_forward_to_nowhere_is_unreachable() {
         let near = start_ws_with(None, None);
         let (mut ws, _) = tungstenite::connect(format!("ws://{near}")).unwrap();
-        let closed = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
+        let closed = TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap();
         let sealed = seal(&RelayKey::generate().public(), &[1; 24], b"x").unwrap();
         let r = ws_call(&mut ws, forward_request(&format!("ws://{closed}"), &sealed));
         assert_eq!(r, vec![UNREACHABLE]);
@@ -769,7 +824,10 @@ mod tests {
         req.extend_from_slice(&(sealed.len() as u32).to_be_bytes());
         req.extend_from_slice(&sealed);
         assert_eq!(ws_call(&mut open, req), vec![OK]);
-        assert_eq!(ws_receive(&mut owner, &recipient).as_deref(), Some(&b"sealed"[..]));
+        assert_eq!(
+            ws_receive(&mut owner, &recipient).as_deref(),
+            Some(&b"sealed"[..])
+        );
 
         // Sealed to another key: refused like an unknown queue.
         let wrong = seal(&RelayKey::generate().public(), &sender, b"x").unwrap();
@@ -784,6 +842,55 @@ mod tests {
     }
 
     #[test]
+    fn the_call_relay_credentials_go_to_phones_with_the_token_only() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let turn = Turn::new(
+            "turn:relay.example.org:3478,turn:relay.example.org:3478?transport=tcp",
+            "secret",
+        );
+        let store = Shared::new(Store::default(), FileStore::default(), None, turn);
+        thread::spawn(move || serve_ws(listener, store, Some(Arc::from("t"))));
+
+        let mut ws = connect_with_token(addr, "", "t");
+        let r = ws_call(&mut ws, vec![CALL_RELAY]);
+        assert_eq!(r[0], OK);
+        fn short(r: &[u8], at: &mut usize) -> String {
+            let len = u16::from_be_bytes([r[*at], r[*at + 1]]) as usize;
+            let text = String::from_utf8(r[*at + 2..*at + 2 + len].to_vec()).unwrap();
+            *at += 2 + len;
+            text
+        }
+        let mut at = 1;
+        let username = short(&r, &mut at);
+        let password = short(&r, &mut at);
+        assert!(username.parse::<u64>().is_ok());
+        assert_eq!(password.len(), 28);
+        assert_eq!(r[at], 2);
+        at += 1;
+        assert_eq!(short(&r, &mut at), "turn:relay.example.org:3478");
+        assert_eq!(
+            short(&r, &mut at),
+            "turn:relay.example.org:3478?transport=tcp"
+        );
+        assert_eq!(at, r.len());
+
+        // Not on the sealed path, which needs no token.
+        let (mut open, _) = tungstenite::connect(format!("ws://{addr}{SEALED_PATH}")).unwrap();
+        open.send(Message::Binary(vec![CALL_RELAY].into())).unwrap();
+        assert!(!matches!(open.read(), Ok(Message::Binary(_))));
+    }
+
+    #[test]
+    fn a_relay_without_a_call_relay_says_so() {
+        let mut s = TcpStream::connect(start()).unwrap();
+        s.write_all(&[CALL_RELAY]).unwrap();
+        let mut r = [0u8; 1];
+        s.read_exact(&mut r).unwrap();
+        assert_eq!(r[0], NOT_FOUND);
+    }
+
+    #[test]
     fn a_relay_without_a_key_says_so() {
         let mut s = TcpStream::connect(start()).unwrap();
         s.write_all(&[KEY]).unwrap();
@@ -795,7 +902,8 @@ mod tests {
     #[test]
     fn a_forward_to_something_else_closes_the_connection() {
         let mut s = TcpStream::connect(start()).unwrap();
-        s.write_all(&forward_request("http://example.org", b"x")).unwrap();
+        s.write_all(&forward_request("http://example.org", b"x"))
+            .unwrap();
         let mut r = [0u8; 1];
         assert!(matches!(s.read(&mut r), Ok(0) | Err(_)));
     }
@@ -836,10 +944,16 @@ mod tests {
         let r = ws_call(&mut ws, put_request(&chunk));
         assert_eq!((r[0], r.len()), (OK, 25));
         let id = r[1..].to_vec();
-        assert_eq!(chunk_of(&ws_call(&mut ws, id_request(FILE_GET, &id))), &chunk[..]);
+        assert_eq!(
+            chunk_of(&ws_call(&mut ws, id_request(FILE_GET, &id))),
+            &chunk[..]
+        );
         assert_eq!(ws_call(&mut ws, id_request(FILE_DELETE, &id)), vec![OK]);
         assert_eq!(ws_call(&mut ws, id_request(FILE_GET, &id)), vec![NOT_FOUND]);
-        assert_eq!(ws_call(&mut ws, id_request(FILE_DELETE, &id)), vec![NOT_FOUND]);
+        assert_eq!(
+            ws_call(&mut ws, id_request(FILE_DELETE, &id)),
+            vec![NOT_FOUND]
+        );
     }
 
     #[test]
@@ -859,11 +973,15 @@ mod tests {
         let id = ws_call(&mut owner, put_request(b"chunk"))[1..].to_vec();
 
         let (mut open, _) = tungstenite::connect(format!("ws://{addr}{FILES_PATH}")).unwrap();
-        assert_eq!(chunk_of(&ws_call(&mut open, id_request(FILE_GET, &id))), b"chunk");
+        assert_eq!(
+            chunk_of(&ws_call(&mut open, id_request(FILE_GET, &id))),
+            b"chunk"
+        );
         assert_eq!(ws_call(&mut open, id_request(FILE_DELETE, &id)), vec![OK]);
 
         // Putting needs the token.
-        open.send(Message::Binary(put_request(b"x").into())).unwrap();
+        open.send(Message::Binary(put_request(b"x").into()))
+            .unwrap();
         assert!(!matches!(open.read(), Ok(Message::Binary(_))));
         let (mut open, _) = tungstenite::connect(format!("ws://{addr}{FILES_PATH}")).unwrap();
         open.send(Message::Binary(vec![CREATE].into())).unwrap();
@@ -880,20 +998,37 @@ mod tests {
 
         let mut recipient = connect_with_token(near, "", "near");
         let far_address = format!("ws://{far}");
-        let r = ws_call(&mut recipient, via_request(&far_address, &id_request(FILE_GET, &id)));
+        let r = ws_call(
+            &mut recipient,
+            via_request(&far_address, &id_request(FILE_GET, &id)),
+        );
         assert_eq!(chunk_of(&r), &chunk[..]);
-        let r = ws_call(&mut recipient, via_request(&far_address, &id_request(FILE_DELETE, &id)));
+        let r = ws_call(
+            &mut recipient,
+            via_request(&far_address, &id_request(FILE_DELETE, &id)),
+        );
         assert_eq!(r, vec![OK]);
-        let r = ws_call(&mut recipient, via_request(&far_address, &id_request(FILE_GET, &id)));
+        let r = ws_call(
+            &mut recipient,
+            via_request(&far_address, &id_request(FILE_GET, &id)),
+        );
         assert_eq!(r, vec![NOT_FOUND]);
 
-        let closed = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
-        let r = ws_call(&mut recipient, via_request(&format!("ws://{closed}"), &id_request(FILE_GET, &id)));
+        let closed = TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap();
+        let r = ws_call(
+            &mut recipient,
+            via_request(&format!("ws://{closed}"), &id_request(FILE_GET, &id)),
+        );
         assert_eq!(r, vec![UNREACHABLE]);
 
         // Only taking and deleting go through.
         recipient
-            .send(Message::Binary(via_request(&far_address, &put_request(b"x")).into()))
+            .send(Message::Binary(
+                via_request(&far_address, &put_request(b"x")).into(),
+            ))
             .unwrap();
         assert!(!matches!(recipient.read(), Ok(Message::Binary(_))));
     }

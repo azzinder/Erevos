@@ -1,4 +1,6 @@
 import { checkedLook, type Look } from '../theme/look';
+import { isPhotoRef, type PhotoRef } from './avatar-photos';
+import { isTag } from './history';
 import { sealedFile, type Holder } from './sealed-file';
 
 // What each space, and each space's hidden chats, keeps for end-to-end encryption (lib/e2e.ts):
@@ -35,16 +37,24 @@ export type Contact = {
   look: Look | null;
   /** The picture this chat gives them instead of the one drawn from their key, or null. Only this phone knows it. */
   avatar: Avatar | null;
+  /** This chat appears offline to them: nothing tells them this phone is open, and what came
+   *  and was read is held (`heldGot`, `heldRead`) until this chat next writes to them. */
+  hide: boolean;
+  /** Tags of their messages that came here, and that were read here, not told yet because the chat
+   *  appears offline. */
+  heldGot: string[];
+  heldRead: string[];
 };
 
-/** A contact's picture of this chat's choosing: a sign (an emoji) on a colour. */
-export type Avatar = { kind: 'emoji'; emoji: string; color: string };
+/** A contact's picture of this chat's choosing: a sign (an emoji) on a colour, or a photo (lock/avatar-photos.ts). */
+export type Avatar = { kind: 'emoji'; emoji: string; color: string } | ({ kind: 'photo' } & PhotoRef);
 
 const HEX_COLOR = /^#[0-9A-F]{6}$/;
 
 /** A kept picture, checked: one this version does not know (written by a newer one, or damaged) is none. */
 export function checkedAvatar(value: unknown): Avatar | null {
-  const v = (value ?? {}) as Partial<Record<keyof Avatar, unknown>>;
+  const v = (value ?? {}) as Partial<Record<'kind' | 'emoji' | 'color' | 'id' | 'key', unknown>>;
+  if (v.kind === 'photo') return isPhotoRef(v) ? { kind: 'photo', id: v.id, key: v.key } : null;
   if (v.kind !== 'emoji' || !isText(v.emoji) || typeof v.color !== 'string') return null;
   const emoji = v.emoji.trim();
   const color = v.color.toUpperCase();
@@ -88,6 +98,10 @@ export const isRelay = (v: unknown): v is string => isText(v) && v.length <= 512
 /** A relay's public key for sealed sends: 32 bytes, base64url without padding. */
 export const isRelayKey = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9_-]{43}$/.test(v);
 
+/** The most tags held for a contact, of each kind: the latest are kept. */
+export const MAX_HELD = 200;
+const heldTags = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isTag).slice(-MAX_HELD) : []);
+
 function checkedContact(value: unknown): Contact | null {
   const v = (value ?? {}) as Partial<Record<keyof Contact, unknown>>;
   if (!isHex(v.identity) || v.identity.length !== 64) return null;
@@ -105,6 +119,9 @@ function checkedContact(value: unknown): Contact | null {
     request: v.request === true,
     look: v.look && typeof v.look === 'object' ? checkedLook(v.look) : null,
     avatar: checkedAvatar(v.avatar),
+    hide: v.hide === true,
+    heldGot: heldTags(v.heldGot),
+    heldRead: heldTags(v.heldRead),
   };
 }
 

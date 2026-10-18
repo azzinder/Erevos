@@ -9,6 +9,9 @@ anywhere, as `wss://<domain>`:
 - Queues and waiting messages are kept on disk, so a restart or a reboot loses
   nothing.
 - No request is logged, by the relay or by Caddy.
+- A call relay (coturn) runs beside it, so calls go between phones without
+  either learning the other's IP address. Phones get credentials for it from
+  the relay, so only phones with the token can use it.
 
 ## What you need
 
@@ -20,6 +23,10 @@ anywhere, as `wss://<domain>`:
   names, but its limits are shared with everyone who uses them.
 - Ports 80 and 443 open to the internet, including in the provider's firewall
   if it has one. Port 80 is only used to get the certificate.
+- For calls, port 3478 (UDP and TCP) and the UDP ports 50000 to 50999 open as
+  well. A server whose public IP address is not on its own network card (the
+  provider maps it, as AWS and Google Cloud do) also needs
+  `external-ip=<public IP>/<private IP>` added to `/etc/turnserver.conf`.
 
 ## Install or update
 
@@ -50,7 +57,10 @@ the install again, and type the new token into every phone.
 
 - `/usr/local/bin/erevos-relay`: the relay.
 - `/etc/systemd/system/erevos-relay.service`: the service.
-- `/etc/erevos-relay.env`: the token, readable by root only.
+- `/etc/erevos-relay.env`: the token, and the secret the relay shares with the
+  call relay, readable by root only.
+- `/etc/turnserver.conf`: the call relay's settings, with that secret. If the
+  file was there before, the original is kept as `turnserver.conf.orig`.
 - `/var/lib/erevos-relay/queues.journal`: queues and waiting messages. A
   message nobody takes expires after 14 days (`EREVOS_RELAY_TTL_DAYS` in the
   service changes that), and only the hour it came is kept. The
@@ -70,15 +80,17 @@ the install again, and type the new token into every phone.
   original is kept as `Caddyfile.orig`.
 
 `journalctl -u erevos-relay` shows the relay's start-up lines and errors.
-`systemctl status erevos-relay caddy` shows whether both run.
+`systemctl status erevos-relay caddy coturn` shows whether all three run.
 
 ## What the server can see
 
 Whoever runs the server can see the IP addresses that connect, the queue ids,
 when messages arrive and how big they are, and for files the number of chunks
 and their size class. Messages and files are encrypted end to end, so the
-server cannot read them, but it can see who connects and when. Keep its disk
-encrypted if the provider offers it.
+server cannot read them. During a call it sees the IP addresses of the phones
+in it, when the call starts and ends, and how much passes, but not what is
+said or shown: calls are end-to-end encrypted too. Run the relay on a server
+you control, and keep its disk encrypted if the provider offers it.
 
 ## Remove
 
@@ -86,6 +98,8 @@ encrypted if the provider offers it.
     sudo rm /etc/systemd/system/erevos-relay.service /usr/local/bin/erevos-relay /etc/erevos-relay.env
     sudo rm -r /var/lib/erevos-relay /var/lib/private/erevos-relay
     sudo rm /etc/caddy/erevos-relay.caddy
+    sudo systemctl disable --now coturn
+    sudo rm /etc/turnserver.conf
 
 Then delete the `import /etc/caddy/erevos-relay.caddy` line from
 `/etc/caddy/Caddyfile` and run `sudo systemctl reload caddy`.

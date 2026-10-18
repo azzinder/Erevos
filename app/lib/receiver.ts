@@ -3,7 +3,7 @@ import { loadCurrentSpaceData, updateCurrentSpaceData, type Queue } from '../loc
 import { saveClip } from '../lock/voice-clips';
 import { offerRef } from './attachments';
 import { canRelaySeal, hasCore } from './core';
-import { toBase64Url, type Extra, type Received, type Where } from './e2e';
+import { ONLINE, toBase64Url, type Extra, type Received, type Where } from './e2e';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sendMessage, toHex, type Relay } from './relay';
 import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-chats';
 
@@ -12,7 +12,9 @@ import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-ch
 // space's relay queue every few seconds, keeps what came in the space's history as the chat
 // would, tells the contacts' phones that it came, and tells the home screen (onReceived). What
 // only the chat says, such as that a contact set a timer, is not said. A photo or file is taken
-// from the relay once its chat opens. Hidden chats are not looked at: their key is in memory only
+// from the relay once its chat opens. A contact whose chat appears offline is told nothing: what
+// came waits with the contact (E2E.hold). Otherwise, while the app shows, what is told says the
+// phone is open, and so does an answer to a contact who asks. Hidden chats are not looked at: their key is in memory only
 // while they are open.
 
 const EVERY = 3000;
@@ -21,6 +23,7 @@ const BATCH = 50;
 const CONTACT_PREFIX = 'contact:';
 
 type Receipts = Record<string, string[]>;
+type State = { place: Place | null; seen: number; receipts: Receipts; answers: Set<string> };
 
 // Where this space's messages come and go: our relay, the relay that sends (through the second
 // one when set), our queue, and where contacts reach us, said in every message.
@@ -31,6 +34,23 @@ let holds = 0;
 let released = 0;
 let look: Promise<unknown> = Promise.resolve();
 const listeners = new Set<() => void>();
+// Whether the app shows on the screen: only then is a contact told this phone is open.
+let shows = true;
+
+/** Says whether the app shows on the screen (AppState 'active'). */
+export function setAppShown(shown: boolean): void {
+  shows = shown;
+}
+
+/** Whether the app shows on the screen, as last said. */
+export function appShown(): boolean {
+  return shows;
+}
+
+/** Whether to answer a contact who asks if this phone is open: the app shows, and it was not just said. */
+export function answersAsk(toldAt: number, now = Date.now()): boolean {
+  return shows && now - toldAt > (ONLINE * 1000) / 2;
+}
 const messageListeners = new Set<(received: Extract<Received, { kind: 'message' }>) => void>();
 // How long to wait before the next look, asked each time.
 let pace = () => EVERY;
@@ -59,6 +79,11 @@ export function onReceived(listener: () => void): () => void {
   };
 }
 
+/** Tells the screens that listen (onReceived) that the space's chats changed, as when a call left its line. */
+export function announceReceived(): void {
+  listeners.forEach((listener) => listener());
+}
+
 /** Calls `listener` with each message the receiver opens, after it is kept; not those the chat screen opens itself. */
 export function onMessage(listener: (received: Extract<Received, { kind: 'message' }>) => void): () => void {
   messageListeners.add(listener);
@@ -74,7 +99,7 @@ export function setReceiverPace(next: () => number): void {
 
 /** Looks at the open space's relay queue every few seconds (or every `every` milliseconds) until the function it gives is called. */
 export function startReceiver(every?: number): () => void {
-  const state: { place: Place | null; seen: number; receipts: Receipts } = { place: null, seen: -1, receipts: {} };
+  const state: State = { place: null, seen: -1, receipts: {}, answers: new Set() };
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   const next = () => {
@@ -110,7 +135,7 @@ async function placeNow(): Promise<Place | null> {
 
 // One look at the queue: what waits to be sent first, then up to BATCH messages, then the
 // receipts. Says whether anything the home screen shows changed.
-async function lookOnce(state: { place: Place | null; seen: number; receipts: Receipts }, stop: () => boolean): Promise<boolean> {
+async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   if (!hasCore()) return false;
   if (state.seen !== released) {
     state.place = await placeNow();
@@ -135,7 +160,7 @@ async function lookOnce(state: { place: Place | null; seen: number; receipts: Re
       // Taken from the relay, so kept whatever happens meanwhile.
       try {
         const received = await chats.e2e.receive(bytes);
-        changed = (await keep(chats, received, state.receipts)) || changed;
+        changed = (await keep(chats, received, state)) || changed;
         if (received.kind === 'message') messageListeners.forEach((listener) => listener(received));
       } catch {
         // This one is lost, as in the chat; the next ones still come.
@@ -150,23 +175,29 @@ async function lookOnce(state: { place: Place | null; seen: number; receipts: Re
     state.place = { ...place, queue };
     return changed;
   }
-  await sendReceipts(chats, place, state.receipts);
+  await sendReceipts(chats, place, state);
   return changed;
 }
 
 // Keeps what one message brought, as the chat's own handling does. Says whether anything changed.
-async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received, receipts: Receipts): Promise<boolean> {
+async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received, { receipts, answers }: State): Promise<boolean> {
   if (received.kind === 'refused') return false;
   const peer = `${CONTACT_PREFIX}${received.identity}`;
-  const { tag, timer } = received;
+  const { identity, tag, timer } = received;
   const at = Date.now();
-  let changed = received.added || received.timerChanged;
+  const hidden = e2e.contacts().some((contact) => contact.identity === identity && contact.hide);
+  // Their phone says it is open: the home screen shows it.
+  let changed = received.added || received.timerChanged || received.online > 0;
   const add = async (message: Partial<Message>) => {
     await history.add({ peer, text: '', mine: false, at, tag: tag || newTag(), lasts: timer, ...message });
     // A message request hears nothing back, not even that its message came, until accepted.
-    if (tag && !received.request) receipts[peer] = [...(receipts[peer] ?? []), tag];
+    if (tag && !received.request) {
+      if (hidden) await e2e.hold(identity, 'got', [tag]);
+      else receipts[peer] = [...(receipts[peer] ?? []), tag];
+    }
     changed = true;
   };
+  if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(identity), at)) answers.add(peer);
   if (received.voice) {
     const whole = voiceParts.add(peer, received.voice);
     if (whole) await add({ voice: await saveClip(whole.audio, whole.ms) });
@@ -197,18 +228,21 @@ async function tell({ e2e }: SpaceChats, place: Place, identity: string, extra: 
   await sendMessage(to, fromHex(sealed.sender), sealed.packet);
 }
 
-// Tells contacts' phones which of their messages came. What the relay cannot take now is told
-// with the next look.
-async function sendReceipts(chats: SpaceChats, place: Place, receipts: Receipts) {
-  for (const [peer, got] of Object.entries(receipts)) {
+// Tells contacts' phones which of their messages came, and, while the app shows, that this phone
+// is open, as the ones who asked wait to hear. What the relay cannot take now is told with the
+// next look.
+async function sendReceipts(chats: SpaceChats, place: Place, { receipts, answers }: State) {
+  for (const peer of new Set([...Object.keys(receipts), ...answers])) {
+    const got = receipts[peer] ?? [];
     delete receipts[peer];
+    answers.delete(peer);
     const identity = peer.slice(CONTACT_PREFIX.length);
     // A contact deleted meanwhile is told nothing.
     if (!chats.e2e.contacts().some((contact) => contact.identity === identity)) continue;
     try {
-      await tell(chats, place, identity, { got });
+      await tell(chats, place, identity, { got, on: shows ? ONLINE : 0 });
     } catch {
-      receipts[peer] = [...got, ...(receipts[peer] ?? [])];
+      if (got.length > 0) receipts[peer] = [...got, ...(receipts[peer] ?? [])];
     }
   }
 }

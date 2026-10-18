@@ -29,11 +29,17 @@
 //! lost when the relay stops. `EREVOS_RELAY_FILES_MB` sets how much room they
 //! may take together: 1024 MB on disk unless set, 256 MB in memory. Chunks
 //! nobody takes expire like messages.
+//!
+//! Set `EREVOS_TURN_URLS` (comma-separated `turn:` addresses) and
+//! `EREVOS_TURN_SECRET` (the `static-auth-secret` of the coturn beside the
+//! relay) to hand phones credentials for calls through it (see `turn.rs`).
+//! Without them, phones can only call directly, on the same network.
 
 mod files;
 mod journal;
 mod queue;
 mod server;
+mod turn;
 
 use std::env;
 use std::fs;
@@ -49,14 +55,15 @@ use erevos_core::relay_seal::RelayKey;
 use files::FileStore;
 use queue::Store;
 use server::Shared;
+use turn::Turn;
 
 /// Reads the relay key from `path`, or makes one there if the file does not exist.
 fn load_key(path: &Path) -> io::Result<RelayKey> {
     match fs::read(path) {
         Ok(bytes) => {
-            let bytes: [u8; 32] = bytes
-                .try_into()
-                .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "a relay key is 32 bytes"))?;
+            let bytes: [u8; 32] = bytes.try_into().map_err(|_| {
+                io::Error::new(io::ErrorKind::InvalidData, "a relay key is 32 bytes")
+            })?;
             Ok(RelayKey::from_secret_bytes(bytes))
         }
         Err(e) if e.kind() == io::ErrorKind::NotFound => {
@@ -141,7 +148,24 @@ fn main() -> ExitCode {
             }
         },
         _ => {
-            eprintln!("erevos-relay: no EREVOS_RELAY_KEY set, sealed sends from other relays are refused");
+            eprintln!(
+                "erevos-relay: no EREVOS_RELAY_KEY set, sealed sends from other relays are refused"
+            );
+            None
+        }
+    };
+    let turn = match (env::var("EREVOS_TURN_URLS"), env::var("EREVOS_TURN_SECRET")) {
+        (Ok(urls), Ok(secret)) if !urls.is_empty() || !secret.is_empty() => {
+            match Turn::new(&urls, &secret) {
+                Some(turn) => Some(turn),
+                None => {
+                    eprintln!("erevos-relay: EREVOS_TURN_URLS needs turn: or turns: addresses, at most {}, and EREVOS_TURN_SECRET a secret", turn::MAX_URLS);
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+        _ => {
+            eprintln!("erevos-relay: no EREVOS_TURN_URLS and EREVOS_TURN_SECRET set, calls cannot go through a call relay");
             None
         }
     };
@@ -149,7 +173,9 @@ fn main() -> ExitCode {
         Ok(mb) if !mb.is_empty() => match mb.parse::<u64>() {
             Ok(mb) => Some(mb << 20),
             Err(_) => {
-                eprintln!("erevos-relay: EREVOS_RELAY_FILES_MB must be a whole number of megabytes");
+                eprintln!(
+                    "erevos-relay: EREVOS_RELAY_FILES_MB must be a whole number of megabytes"
+                );
                 return ExitCode::FAILURE;
             }
         },
@@ -159,7 +185,10 @@ fn main() -> ExitCode {
         Ok(dir) if !dir.is_empty() => {
             match FileStore::open(Path::new(&dir), cap.unwrap_or(files::DEFAULT_CAP), ttl) {
                 Ok(files) => {
-                    eprintln!("erevos-relay: keeping files in {dir}, {} MB now", files.used() >> 20);
+                    eprintln!(
+                        "erevos-relay: keeping files in {dir}, {} MB now",
+                        files.used() >> 20
+                    );
                     files
                 }
                 Err(e) => {
@@ -174,7 +203,7 @@ fn main() -> ExitCode {
         }
     };
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
-    let store = Shared::new(store, files, key);
+    let store = Shared::new(store, files, key, turn);
     let sweep_store = Arc::clone(&store);
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(60 * 60));

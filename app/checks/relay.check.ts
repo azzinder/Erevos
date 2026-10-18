@@ -1,4 +1,4 @@
-// Two-hop sending (lib/relay.ts) against two real relays (crates/erevos-relay) and the real core
+// Two-hop sending and call relay credentials (lib/relay.ts) against two real relays (crates/erevos-relay) and the real core
 // built to WebAssembly by checks/build-core.mjs. Skipped, with a note, when either build is
 // missing: build the relay with `cargo build -p erevos-relay`.
 // Run with: npm run check
@@ -13,7 +13,7 @@ import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
-import { createQueue, receiveMessage, relayKey, RelayError, sendMessage, type Relay } from '../lib/relay';
+import { callRelay, createQueue, receiveMessage, relayKey, RelayError, sendMessage, type Relay } from '../lib/relay';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const binary = new URL('../../target/debug/erevos-relay', import.meta.url).pathname;
@@ -32,10 +32,16 @@ function freePort(): Promise<number> {
 const relays: ChildProcess[] = [];
 const dir = mkdtempSync(join(tmpdir(), 'erevos-relay-check-'));
 
-/** Starts a relay and returns its WebSocket address once it answers. */
+/** Starts a relay and returns its WebSocket address once it answers. With `key`, it has a key
+ *  for sealed sends and a call relay beside it. */
 async function startRelay(key: boolean): Promise<string> {
   const [tcp, ws] = [await freePort(), await freePort()];
-  const env = { ...process.env, EREVOS_RELAY_KEY: key ? join(dir, `key-${ws}`) : '' };
+  const env = {
+    ...process.env,
+    EREVOS_RELAY_KEY: key ? join(dir, `key-${ws}`) : '',
+    EREVOS_TURN_URLS: key ? 'turn:127.0.0.1:3478,turn:127.0.0.1:3478?transport=tcp' : '',
+    EREVOS_TURN_SECRET: key ? 'secret' : '',
+  };
   const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
   relays.push(child);
   const url = `ws://127.0.0.1:${ws}`;
@@ -92,4 +98,14 @@ test('a second relay that cannot reach the first says so', { skip: !ready }, asy
   const { forwardMessage } = await import('../lib/relay');
   const { relaySeal } = await import('../lib/core');
   await assert.rejects(forwardMessage({ url: near }, closed, await relaySeal(key, ids.senderId, Uint8Array.of(1))), /could not reach/);
+});
+
+test('a relay hands out credentials for its call relay, and one without says so', { skip: !ready }, async () => {
+  const turn = await callRelay({ url: far });
+  assert.ok(turn);
+  assert.deepEqual(turn.urls, ['turn:127.0.0.1:3478', 'turn:127.0.0.1:3478?transport=tcp']);
+  // The username is when they expire, hours from now.
+  assert.ok(Number(turn.username) > Date.now() / 1000 + 3600);
+  assert.equal(turn.credential.length, 28);
+  assert.equal(await callRelay({ url: near }), null);
 });

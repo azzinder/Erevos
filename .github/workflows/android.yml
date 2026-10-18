@@ -1,0 +1,40 @@
+name: android
+
+# Builds the Android app the way the build computer does (expo prebuild, then Gradle), so a
+# native library that does not compile shows here before anyone builds it by hand. One ABI only,
+# the emulator's, to keep it quick.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+    env:
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-linux-android
+      - run: cargo install cargo-ndk --version 4.1.2 --locked
+      - run: npm ci
+      - run: npx expo prebuild --platform android --no-install
+      - name: Gradle
+        working-directory: app/android
+        run: ./gradlew assembleDebug -PreactNativeArchitectures=x86_64 --no-daemon

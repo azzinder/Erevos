@@ -11,10 +11,11 @@ import { contactLink, parseContact } from '../lib/contact-code';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
-import { E2E, NoKeyError, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
+import { E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
 import { checkedAvatar, FILE, loadE2EData, MAX_NAME } from '../lock/e2e-data';
 import { DEFAULT_LOOK } from '../theme/look';
+import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { files } from './files-memory';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -68,7 +69,7 @@ t('two chats add each other through a link and talk both ways', async () => {
   const hello = message(await bob.e2e.receive(pending.first));
   assert.equal(hello.added, true);
   assert.equal(hello.text, '');
-  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true, look: null, avatar: null }]);
+  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true, look: null, avatar: null, hide: false }]);
   await alice.e2e.firstSent(added.identity);
   assert.deepEqual(alice.e2e.pending(), []);
 
@@ -223,7 +224,28 @@ t('a contact keeps the picture this chat gives it, sealed, and a picture of the 
   assert.equal(checkedAvatar({ kind: 'emoji', emoji: 'way too long a sign', color: '#000000' }), null);
   assert.equal(checkedAvatar({ kind: 'emoji', emoji: '\u202e🦊', color: '#000000' }), null);
   assert.equal(checkedAvatar({ kind: 'photo', emoji: '🦊', color: '#000000' }), null);
+  assert.equal(checkedAvatar({ kind: 'photo', id: 'ab', key: 'cd' }), null);
   assert.equal(checkedAvatar({ kind: 'emoji', emoji: '🦊', color: 'orange' }), null);
+});
+
+t('a contact\'s photo is sealed in its own file, deleted when another picture or forgetting them takes its place', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const first = await savePhoto(new Uint8Array([1, 2, 3]));
+  await alice.e2e.setAvatar(identity, { kind: 'photo', ...first });
+  const again = await E2E.open('space', 0, key);
+  const kept = again.contacts()[0].avatar;
+  assert.ok(kept?.kind === 'photo' && kept.id === first.id);
+  assert.deepEqual(await loadPhoto(first), new Uint8Array([1, 2, 3]));
+  assert.ok(!files.get(FILE)!.includes(first.key));
+
+  const second = await savePhoto(new Uint8Array([4]));
+  await again.setAvatar(identity, { kind: 'photo', ...second });
+  assert.equal(await loadPhoto(first), null);
+  await again.removeContact(identity);
+  assert.equal(await loadPhoto(second), null);
 });
 
 t('a message carries its tag, and a request to delete one message or all of them', async () => {
@@ -301,6 +323,62 @@ t('a chat timer travels with the messages, the later setting wins, and old messa
   await assert.rejects(alice.e2e.setTimer(identity, 1.5));
   await assert.rejects(alice.e2e.seal(identity, 'x', alice.from, { lasts: -5 }));
   await assert.rejects(alice.e2e.setTimer('00'.repeat(32), 60));
+});
+
+t('a phone says it is open when it writes or answers, and a chat that appears offline holds its marks', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  const aliceId = hello.identity;
+  await alice.e2e.firstSent(bobId);
+  await bob.e2e.acceptRequest(aliceId);
+  // Nothing said yet: not known to be open.
+  assert.equal(hello.online, 0);
+  assert.equal(bob.e2e.onlineUntil(aliceId), 0);
+
+  // Asking says this phone is open too.
+  const before = Date.now();
+  const asked = message(await bob.e2e.receive((await alice.e2e.seal(bobId, '', alice.from, { ask: true, on: ONLINE })).packet));
+  assert.equal(asked.ask, true);
+  assert.ok(asked.online >= before + ONLINE * 1000 - 50 && asked.online <= Date.now() + ONLINE * 1000);
+  assert.equal(bob.e2e.onlineUntil(aliceId), asked.online);
+  assert.ok(alice.e2e.toldAt(bobId) >= before);
+  // Gone by then.
+  assert.equal(bob.e2e.onlineUntil(aliceId, asked.online + 1), 0);
+
+  // Bob's chat with Alice appears offline: no word of being open, no asking, marks held.
+  await bob.e2e.setHidden(aliceId, true);
+  assert.equal(bob.e2e.contacts()[0].hide, true);
+  const one = await alice.e2e.seal(bobId, 'one', alice.from);
+  const two = await alice.e2e.seal(bobId, 'two', alice.from);
+  message(await bob.e2e.receive(one.packet));
+  message(await bob.e2e.receive(two.packet));
+  await bob.e2e.hold(aliceId, 'got', [one.tag, two.tag]);
+  await bob.e2e.hold(aliceId, 'read', [one.tag]);
+  const quiet = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, '', bob.from, { ask: true, on: ONLINE })).packet));
+  assert.deepEqual([quiet.ask, quiet.online, quiet.got, quiet.read], [false, 0, [], []]);
+  // Held across launches, sealed.
+  const again = await E2E.open('space', 1, bob.key);
+  assert.deepEqual(
+    [again.contacts()[0].hide, (await loadE2EData('space', 1, bob.key)).contacts[0].heldRead],
+    [true, [one.tag]],
+  );
+
+  // Bob writes: open for a while, and what was held goes with it, read beating came.
+  const reply = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'here', bob.from)).packet));
+  assert.equal(reply.text, 'here');
+  assert.ok(reply.online >= Date.now() + ONLINE_AFTER_WRITE * 1000 - 1000);
+  assert.deepEqual([reply.got, reply.read], [[two.tag], [one.tag]]);
+  // Told once only.
+  const after = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'and again', bob.from)).packet));
+  assert.deepEqual([after.got, after.read], [[], []]);
+
+  // Shown again, what is held goes with the next message, whatever it is.
+  await bob.e2e.hold(aliceId, 'read', [two.tag]);
+  await bob.e2e.setHidden(aliceId, false);
+  const shown = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, '', bob.from, { on: ONLINE })).packet));
+  assert.deepEqual([shown.read, shown.online > 0], [[two.tag], true]);
 });
 
 t('a voice message travels in parts, each with its tag, and comes back whole', async () => {
@@ -390,4 +468,29 @@ t('a contact link with its key fits a QR code', async () => {
   assert.ok(link.length < 2000, `${link.length}`);
   // Version 33 or below: 149 modules a side. The relay's key added one version.
   assert.ok(qrRows(link).length <= 149, `${qrRows(link).length}`);
+});
+
+t('a call is set up in sealed messages, and calling accepts a request', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('hidden', 0);
+  const added = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(added.identity);
+  assert.equal(bob.e2e.contacts()[0].request, true);
+
+  // Bob calls Alice back, who wrote first: that accepts her request.
+  const sdp = 'v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\n';
+  const offer = await bob.e2e.seal(hello.identity, '', bob.from, { call: { id: '0123456789abcdef', kind: 'offer', video: true, sdp, at: 5 } });
+  assert.equal(offer.tag, '');
+  assert.equal(bob.e2e.contacts()[0].request, false);
+  const rang = message(await alice.e2e.receive(offer.packet));
+  assert.equal(rang.text, '');
+  assert.deepEqual(rang.call, { id: '0123456789abcdef', kind: 'offer', video: true, sdp, at: 5 });
+
+  const end = await alice.e2e.seal(added.identity, '', alice.from, { call: { id: '0123456789abcdef', kind: 'end', reason: 'decline' } });
+  assert.deepEqual(message(await bob.e2e.receive(end.packet)).call, { id: '0123456789abcdef', kind: 'end', reason: 'decline' });
+
+  // A text never carries a call signal, and a plain message has none.
+  const text = await alice.e2e.seal(added.identity, 'hi', alice.from, { call: { id: '0123456789abcdef', kind: 'ringing' } });
+  assert.equal(message(await bob.e2e.receive(text.packet)).call, null);
 });

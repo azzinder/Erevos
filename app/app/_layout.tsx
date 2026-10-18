@@ -4,13 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
 import { AlertHost } from '../components/alert-host';
+import { CallHost } from '../components/call-host';
 import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
 import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
 import { runAutoBackup } from '../lib/backup-folder';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { startIntegrityAlarm } from '../lib/integrity';
-import { startReceiver } from '../lib/receiver';
+import { setAppShown, startReceiver } from '../lib/receiver';
 import { forgetSpaceChats } from '../lib/space-chats';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
@@ -215,14 +216,21 @@ function Shell({ phase, error, lockState, onUnlock }: {
         <Stack.Screen name="chat" options={{ headerShown: false }} />
       </Stack>
       <Receiver key={phase.space} />
+      <CallHost key={`call-${phase.space}`} />
       <AlertHost />
       {bar}
     </LockContext.Provider>
   );
 }
 
-// Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts).
+// Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), and tells
+// it whether the app shows: only then do contacts hear the phone is open.
 function Receiver() {
   useEffect(() => startReceiver(), []);
+  useEffect(() => {
+    setAppShown(AppState.currentState === 'active');
+    const subscription = AppState.addEventListener('change', (state) => setAppShown(state === 'active'));
+    return () => subscription.remove();
+  }, []);
   return null;
 }
