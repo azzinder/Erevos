@@ -4,9 +4,10 @@
 // them (lock/history.ts) and the chats imported into it (lock/archive.ts). Hidden chats are not in
 // it, and nothing about them is: the home screen looks the same whether a space has them or not.
 
+import type { Avatar } from '../lock/e2e-data';
 import { voiceDuration } from './voice';
 
-export type InboxContact = { identity: string; name: string; timer: number };
+export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null };
 
 export type InboxMessage = {
   peer: string;
@@ -37,6 +38,8 @@ export type InboxRow = {
   timer: number;
   /** An imported chat goes on here. */
   imported: boolean;
+  /** The picture given to them here, or null for the one drawn from their key. */
+  avatar: Avatar | null;
 };
 
 const PREFIX = 'contact:';
@@ -66,6 +69,7 @@ export function buildInbox(contacts: InboxContact[], messages: InboxMessage[], i
       unread: unread.get(contact.identity) ?? 0,
       timer: contact.timer,
       imported: linked.length > 0,
+      avatar: contact.avatar ?? null,
     };
   });
   return rows.sort((a, b) => b.at - a.at || shownName(a).localeCompare(shownName(b)));

@@ -11,7 +11,7 @@ import { KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
 import { ShieldIcon, TimerIcon } from '../components/icons';
-import { KeyFace } from '../components/key-face';
+import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
@@ -19,7 +19,7 @@ import { E2E, fromBase64Url, toBase64Url, type ContactInfo, type Where, type Era
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
 import { openHidden, setHiddenPassword } from '../lock/hidden';
-import { cleanName, MAX_NAME } from '../lock/e2e-data';
+import { cleanName, MAX_NAME, type Avatar } from '../lock/e2e-data';
 import { History, newTag, type Mark } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
@@ -322,6 +322,8 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const [nameDraft, setNameDraft] = useState('');
   // The contact whose disappearing messages timer is being picked.
   const [timing, setTiming] = useState<string | null>(null);
+  // The contact whose picture is being chosen, in the chat's details.
+  const [picturing, setPicturing] = useState<string | null>(null);
   const [e2e, setE2E] = useState<E2E | null>(null);
   // Chats imported into this space. Hidden chats have none.
   const [archive, setArchive] = useState<Archive | null>(null);
@@ -1044,6 +1046,16 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
   // Sets how long new messages with a contact last, and tells their phone at once. If the relay
   // cannot take that now, their phone learns it with the next message.
+  async function changeAvatar(peer: string, avatar: Avatar | null) {
+    if (!e2e) return;
+    try {
+      await e2e.setAvatar(peer.slice(CONTACT_PREFIX.length), avatar);
+      setContacts(e2e.contacts());
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
   async function changeTimer(peer: string, timer: number) {
     if (!e2e) return;
     const identity = peer.slice(CONTACT_PREFIX.length);
@@ -1121,6 +1133,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       : '';
 
   const selectedLook = contacts.find((c) => c.identity === selectedIdentity)?.look ?? null;
+  const selectedAvatar = contacts.find((c) => c.identity === selectedIdentity)?.avatar ?? null;
   useEffect(() => {
     if (!shown) return;
     if (!e2e || !selectedIdentity) {
@@ -1182,7 +1195,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
             accessibilityLabel={details ? 'Hide chat details' : 'Show chat details'}
           >
             {selectedContact ? (
-              <KeyFace identity={selectedIdentity} name={contactName(selectedContact, shownContacts) ?? ''} size={42} />
+              <KeyFace identity={selectedIdentity} name={contactName(selectedContact, shownContacts) ?? ''} size={42} avatar={selectedAvatar} />
             ) : (
               <NearbyFace size={42} />
             )}
@@ -1231,7 +1244,12 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                   >
                     <View style={[styles.ring, on && styles.ringOn]}>
                       {peer.startsWith(CONTACT_PREFIX) ? (
-                        <KeyFace identity={peer.slice(CONTACT_PREFIX.length)} name={named ?? ''} size={48} />
+                        <KeyFace
+                          identity={peer.slice(CONTACT_PREFIX.length)}
+                          name={named ?? ''}
+                          size={48}
+                          avatar={contacts.find((c) => `${CONTACT_PREFIX}${c.identity}` === peer)?.avatar}
+                        />
                       ) : (
                         <NearbyFace size={48} />
                       )}
@@ -1275,6 +1293,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                   onPress={() => void toggleSafety(selectedContact)}
                 />
                 <TextButton title="Rename" onPress={() => startRenaming(selectedContact)} />
+                <TextButton title="Picture" onPress={() => setPicturing((current) => (current === selectedContact ? null : selectedContact))} />
                 <TextButton title="Chat look" onPress={() => setStyling(true)} />
                 <TextButton title="Delete messages" onPress={() => deleteMessages(selectedContact)} />
                 <TextButton
@@ -1298,6 +1317,42 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                       />
                     ))}
                   </Row>
+                </View>
+              ) : null}
+              {picturing === selectedContact ? (
+                <View style={styles.section}>
+                  <Text variant="caption" tone="muted">
+                    A picture for them, only on this phone. Without one, their picture is drawn from their key.
+                  </Text>
+                  <View style={styles.signs}>
+                    {AVATAR_SIGNS.map((emoji) => (
+                      <Pressable
+                        key={emoji}
+                        onPress={() => void changeAvatar(selectedContact, { kind: 'emoji', emoji, color: selectedAvatar?.color ?? AVATAR_COLORS[5] })}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: selectedAvatar?.emoji === emoji }}
+                        accessibilityLabel={emoji}
+                        style={[styles.sign, selectedAvatar?.emoji === emoji && styles.signOn]}
+                      >
+                        <Text style={styles.signText}>{emoji}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {selectedAvatar ? (
+                    <View style={styles.signs}>
+                      {AVATAR_COLORS.map((color) => (
+                        <Pressable
+                          key={color}
+                          onPress={() => void changeAvatar(selectedContact, { ...selectedAvatar, color })}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected: selectedAvatar.color === color }}
+                          accessibilityLabel={`Colour ${color}`}
+                          style={[styles.swatch, { backgroundColor: color }, selectedAvatar.color === color && styles.swatchOn]}
+                        />
+                      ))}
+                    </View>
+                  ) : null}
+                  {selectedAvatar ? <TextButton title="Picture from their key" onPress={() => void changeAvatar(selectedContact, null)} /> : null}
                 </View>
               ) : null}
               {renaming === selectedContact ? (
@@ -1808,6 +1863,40 @@ const makeStyles = (colors: Colors) =>
     note: {
       color: colors.accentText,
       paddingHorizontal: 2,
+    },
+    // The signs and colours offered for a contact's picture.
+    signs: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+    },
+    sign: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    signOn: {
+      borderColor: colors.primary,
+      backgroundColor: colors.surfaceAlt,
+    },
+    signText: {
+      fontSize: 22,
+      lineHeight: 28,
+    },
+    swatch: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    swatchOn: {
+      borderWidth: 3,
+      borderColor: colors.text,
     },
     safety: {
       fontSize: 15,

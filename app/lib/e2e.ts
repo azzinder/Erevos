@@ -1,4 +1,4 @@
-import { cleanName, isRelay, isRelayKey, isTimer, loadE2EData, saveE2EData, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
+import { checkedAvatar, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, saveE2EData, type Avatar, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
 
 import { isTag, newTag } from '../lock/history';
 
@@ -171,7 +171,7 @@ export function fromBase64Url(text: string): Uint8Array {
 }
 
 /** A contact as the chat shows it. `name` is empty until this chat gives one. */
-export type ContactInfo = { identity: string; sender: string; name: string; timer: number; request: boolean; look: Look | null };
+export type ContactInfo = { identity: string; sender: string; name: string; timer: number; request: boolean; look: Look | null; avatar: Avatar | null };
 
 export type Received =
   // `timer`: seconds this message lasts once read, 0 for ever. `timerChanged`: the other phone set
@@ -262,7 +262,7 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, timer, request, look }) => ({ identity, sender, name, timer, request, look }));
+    return this.data.contacts.map(({ identity, sender, name, timer, request, look, avatar }) => ({ identity, sender, name, timer, request, look, avatar }));
   }
 
   /** Accepts a message request: the chat with them is like any other from now on. */
@@ -311,6 +311,15 @@ export class E2E {
     });
   }
 
+  /** Gives a contact a picture of this chat's choosing, kept with it and sealed; null gives back the one drawn from their key. */
+  setAvatar(identity: string, avatar: Avatar | null): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error('No such contact.');
+      await this.save(this.withContact({ ...contact, avatar: avatar && checkedAvatar(avatar) }));
+    });
+  }
+
   /** The 60-digit number both phones show for a contact: when they match, no one is in between. */
   safetyNumber(identity: string): Promise<string> {
     return core.safetyNumber(this.identity, fromHex(identity));
@@ -354,6 +363,7 @@ export class E2E {
           timerAt: 0,
           request: false,
           look: this.find(identity)?.look ?? null,
+          avatar: this.find(identity)?.avatar ?? null,
         }),
       );
       return { identity, added: true };
@@ -495,6 +505,7 @@ export class E2E {
       // Someone new who has this chat's link writes first: a request until accepted.
       request: known ? known.request : true,
       look: known?.look ?? null,
+      avatar: known?.avatar ?? null,
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
     const { text, tag, erase, got, read, voice } = message;

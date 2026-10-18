@@ -13,7 +13,7 @@ import { randomBytes, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
 import { E2E, NoKeyError, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
-import { FILE, loadE2EData, MAX_NAME } from '../lock/e2e-data';
+import { checkedAvatar, FILE, loadE2EData, MAX_NAME } from '../lock/e2e-data';
 import { DEFAULT_LOOK } from '../theme/look';
 import { files } from './files-memory';
 
@@ -68,7 +68,7 @@ t('two chats add each other through a link and talk both ways', async () => {
   const hello = message(await bob.e2e.receive(pending.first));
   assert.equal(hello.added, true);
   assert.equal(hello.text, '');
-  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true, look: null }]);
+  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true, look: null, avatar: null }]);
   await alice.e2e.firstSent(added.identity);
   assert.deepEqual(alice.e2e.pending(), []);
 
@@ -207,6 +207,23 @@ t('a chat keeps its own look, sealed, until given the space\'s again', async () 
   await again.setLook(identity, null);
   assert.equal((await E2E.open('space', 0, key)).contacts()[0].look, null);
   await assert.rejects(again.setLook('00'.repeat(32), null));
+});
+
+t('a contact keeps the picture this chat gives it, sealed, and a picture of the wrong shape is none', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  assert.equal(alice.e2e.contacts()[0].avatar, null);
+  await alice.e2e.setAvatar(identity, { kind: 'emoji', emoji: '🦊', color: '#f76b15' });
+  const again = await E2E.open('space', 0, key);
+  assert.deepEqual(again.contacts()[0].avatar, { kind: 'emoji', emoji: '🦊', color: '#F76B15' });
+  await again.setAvatar(identity, null);
+  assert.equal((await E2E.open('space', 0, key)).contacts()[0].avatar, null);
+  assert.equal(checkedAvatar({ kind: 'emoji', emoji: 'way too long a sign', color: '#000000' }), null);
+  assert.equal(checkedAvatar({ kind: 'emoji', emoji: '\u202e🦊', color: '#000000' }), null);
+  assert.equal(checkedAvatar({ kind: 'photo', emoji: '🦊', color: '#000000' }), null);
+  assert.equal(checkedAvatar({ kind: 'emoji', emoji: '🦊', color: 'orange' }), null);
 });
 
 t('a message carries its tag, and a request to delete one message or all of them', async () => {

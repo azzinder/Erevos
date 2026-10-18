@@ -213,7 +213,7 @@ function ChatRow({ row, now }: { row: InboxRow; now: number }) {
       accessibilityLabel={`${name}${row.unread ? `, ${row.unread} not read` : ''}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      <KeyFace identity={row.identity} name={row.name} size={52} />
+      <KeyFace identity={row.identity} name={row.name} size={52} avatar={row.avatar} />
       <View style={styles.rowBody}>
         <View style={styles.rowLine}>
           <Text variant="bodyStrong" numberOfLines={1} style={[styles.rowName, !row.name && styles.mono]}>
