@@ -77,6 +77,18 @@ export class RelayError extends Error {
   }
 }
 
+/** The relay could not be reached, or the connection to it ended before it answered. */
+export class RelayUnreachableError extends RelayError {}
+
+/**
+ * Whether what failed may go later: the relay could not be reached, or said to try again later
+ * (full, could not save it, or could not reach the next relay).
+ */
+export function canTryLater(error: unknown): boolean {
+  if (error instanceof RelayUnreachableError) return true;
+  return error instanceof RelayError && (error.status === FULL || error.status === FAILED || error.status === UNREACHABLE);
+}
+
 /** Whether the relay said the queue does not exist: it was deleted, or the relay lost it. */
 export function isQueueNotFound(error: unknown): boolean {
   return error instanceof RelayError && error.status === NOT_FOUND;
@@ -154,7 +166,7 @@ async function viaTor<T>(call: () => Promise<T>): Promise<T> {
   try {
     return await call();
   } catch (error) {
-    throw new RelayError(`Through Tor: ${error instanceof Error ? error.message : String(error)}`);
+    throw new RelayUnreachableError(`Through Tor: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -169,8 +181,8 @@ function request(relay: Relay, bytes: Uint8Array): Promise<Uint8Array> {
       resolve(new Uint8Array(event.data as ArrayBuffer));
     };
     socket.onerror = () =>
-      reject(new RelayError(`cannot reach the relay at ${relay.url}, or the token is wrong`));
-    socket.onclose = () => reject(new RelayError('the relay closed the connection'));
+      reject(new RelayUnreachableError(`cannot reach the relay at ${relay.url}, or the token is wrong`));
+    socket.onclose = () => reject(new RelayUnreachableError('the relay closed the connection'));
   });
 }
 
@@ -332,11 +344,11 @@ export class RelaySession {
     };
     socket.onmessage = (event) => answer(new Uint8Array(event.data as ArrayBuffer));
     socket.onerror = () => {
-      this.ended ??= new RelayError('lost the connection to the relay');
+      this.ended ??= new RelayUnreachableError('lost the connection to the relay');
       answer(this.ended);
     };
     socket.onclose = () => {
-      this.ended ??= new RelayError('the relay closed the connection');
+      this.ended ??= new RelayUnreachableError('the relay closed the connection');
       answer(this.ended);
     };
   }
@@ -349,8 +361,8 @@ export class RelaySession {
     return new Promise((resolve, reject) => {
       const socket = connect(relay);
       socket.onopen = () => resolve(new RelaySession(socket));
-      socket.onerror = () => reject(new RelayError(`cannot reach the relay at ${relay.url}, or the token is wrong`));
-      socket.onclose = () => reject(new RelayError('the relay closed the connection'));
+      socket.onerror = () => reject(new RelayUnreachableError(`cannot reach the relay at ${relay.url}, or the token is wrong`));
+      socket.onclose = () => reject(new RelayUnreachableError('the relay closed the connection'));
     });
   }
 

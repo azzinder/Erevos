@@ -101,7 +101,8 @@ type Message = {
 
 /** What else a message can carry. */
 // `on`: seconds this phone says it stays open (0: says nothing). `ask`: asks them to say whether theirs is.
-export type Extra = { erase?: Erase | null; lasts?: number; got?: string[]; read?: string[]; at?: Where; on?: number; ask?: boolean; call?: CallSignal | null; group?: GroupSignal | null };
+// `tag`: the tag a message that waited was kept with (lib/waiting.ts), so it keeps it as it goes.
+export type Extra = { erase?: Erase | null; lasts?: number; got?: string[]; read?: string[]; at?: Where; on?: number; ask?: boolean; call?: CallSignal | null; group?: GroupSignal | null; tag?: string };
 
 /** Where a chat's own queue is: its relay and that relay's key for sealed sends (base64url). */
 export type Where = { relay: string; relayKey: string };
@@ -352,6 +353,12 @@ export class E2E {
     return { ...this.data, contacts: others };
   }
 
+  /** Where a contact's queue is, as they last said, or null for no contact: to tell whether a send can go before sealing it. */
+  queueOf(identity: string): { sender: string; relay: string; relayKey: string; spare: Spare | null } | null {
+    const contact = this.find(identity);
+    return contact ? { sender: contact.sender, relay: contact.relay, relayKey: contact.relayKey, spare: contact.spare ?? null } : null;
+  }
+
   contacts(): ContactInfo[] {
     return this.data.contacts.map(({ identity, sender, name, timer, request, look, avatar, hide }) => ({
       identity,
@@ -584,12 +591,12 @@ export class E2E {
     identity: string,
     text: string,
     from: string,
-    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null }: Extra = {},
+    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given }: Extra = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
-      const tag = text ? newTag() : '';
+      const tag = text ? (isTag(given) ? given : newTag()) : '';
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
       const { timer, timerAt } = contact;
       const once = text ? lasts : 0;
@@ -630,13 +637,13 @@ export class E2E {
     audio: Uint8Array,
     ms: number,
     from: string,
-    { lasts = 0, at = { relay: '', relayKey: '' }, talk = false }: { lasts?: number; at?: Where; talk?: boolean } = {},
+    { lasts = 0, at = { relay: '', relayKey: '' }, talk = false, tag: given }: { lasts?: number; at?: Where; talk?: boolean; tag?: string } = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
-      const tag = newTag();
+      const tag = isTag(given) ? given : newTag();
       const { timer, timerAt } = contact;
       const messages = splitVoice(audio, ms, talk).map((voice) => ({
         from,
@@ -668,13 +675,13 @@ export class E2E {
     identity: string,
     offer: FileOffer,
     from: string,
-    { lasts = 0, at = { relay: '', relayKey: '' } }: { lasts?: number; at?: Where } = {},
+    { lasts = 0, at = { relay: '', relayKey: '' }, tag: given }: { lasts?: number; at?: Where; tag?: string } = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
-      const tag = newTag();
+      const tag = isTag(given) ? given : newTag();
       const { timer, timerAt } = contact;
       const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...SAYS_NOTHING, call: null, group: null };
       const [packet] = await this.sealFor(contact, [message], true);

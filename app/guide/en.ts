@@ -117,8 +117,9 @@ radio, and on Android only.
 
 - **Only text, and slowly:** a message goes in pieces of about 220 bytes, each a second or two on the air, and the law
   allows a radio only so much air time (in the EU, a tenth of each hour). So LoRa takes only texts and deletes, and
-  only when nothing else does. Voice messages, photos, files and calls wait for the relay or a phone nearby. The first
-  message to a contact takes longer, as it holds the keys.
+  only when nothing else does. Voice messages, photos and files wait in the chat, marked **Waiting**, and go by
+  themselves once the relay or a phone nearby can take them; calls need one of those too. The first message to a
+  contact takes longer, as it holds the keys.
 - **Marks:** **✓✓** comes with their next message, as marks alone do not go over LoRa.
 - **To every radio in reach:** each message is heard by every radio around, and passed on by the Meshtastic radios, as
   Meshtastic does. Every Erevos tries it; only your contact's opens it. Nothing is carried for others over LoRa.
@@ -168,6 +169,10 @@ Under each of your messages to a contact, **✓** says the relay or a phone near
 their phone, and **✓✓✓** that they read it. Their phone tells yours, inside the encryption, the next time each looks
 at the relay, or at once when they are nearby. A message counts as read once its chat shows on the screen.
 
+- **Waiting:** a message nothing could take, as the relay cannot be reached and their phone is not near, stays in
+  the chat marked **Waiting**, and goes by itself, in order, once the relay or their phone nearby can take it, while a
+  space is open; then it shows **✓**. A text waits at once. A voice message, photo or file asks first: **Keep it
+  waiting** or **Delete it**. A waiting message is deleted on this phone only. Hidden chats keep nothing waiting.
 - **They see when you read:** your phone tells theirs, as theirs tells yours, unless that chat appears offline (below).
 - **When messages come:** Erevos looks at the relay every few seconds while it is open and unlocked, on any screen,
   and the home screen moves the chat to the top by itself. On Android it goes on in the background too, while
@@ -347,7 +352,8 @@ When you tap **Send**, Erevos picks the path by itself:
    that counts, and those phones carry it to your contact's relay too, as in [Chat with a nearby phone](#nearby).
 3. **Otherwise, with no relay,** it goes to the Erevos phones linked nearby, as in 2.
 4. **And over LoRa,** when a radio is set and the relay could not take a text, as in [Over a LoRa radio](#lora). With
-   no way at all, the message is not sent, and a line under the chat says why.
+   no way at all, the message waits, marked **Waiting**, and goes by itself once there is one, as in
+   [Sent, came and read](#relay); a line under the chat says why.
 
 Every path is end-to-end encrypted: no relay and no phone in between can read what you send.
 
@@ -358,8 +364,8 @@ Every path is end-to-end encrypted: no relay and no phone in between can read wh
 | **Sent to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached.** | It comes only if one of them is theirs: wait for **✓✓**, or check the relay. |
 | **… If their phone is not one of them, they hand it to their relay once they reach the internet, and so does this phone.** | Nothing: it comes once one of them, or this phone, reaches the internet. Wait for **✓✓**. |
 | **Sent over LoRa, end-to-end encrypted, as the relay could not be reached.** | It comes if their Erevos has a radio on the same mesh, within reach: wait for **✓✓**, or check the relay. |
-| **Not sent. There is no relay, and no Erevos phone is linked nearby.** | Fill in the relay address, as in [Chat through a relay](#relay), or come near their phone. |
-| **Not sent. Too large for LoRa, which takes only text.** | Send it once the relay can be reached, or near their phone. |
+| **Waiting. The relay cannot be reached (or There is no relay), and their phone is not near.** | Nothing: it goes by itself once the relay or their phone nearby can take it, and then shows **✓**. Without a relay, fill in its address, as in [Chat through a relay](#relay), or come near their phone. |
+| **Waiting. It is too long for LoRa.** | Nothing: it goes once the relay or their phone nearby can take it. Or send it in shorter parts. |
 | **Not sent. The relay does not have this contact's queue any more.** | Ask them to write to you, or for their new contact link. |
 | **This build cannot encrypt, so chats through the relay are off.** | Build the app again: this build is older than its encryption. |
 
@@ -708,8 +714,7 @@ Erevos says plainly what it protects and what it does not, yet.
 End-to-end encryption is here, through the relay and over the nearby link, and most of what follows is built on it.
 
 - **More ways to stay in touch:** Wi-Fi Direct, receiving while Erevos is closed, and ways around censorship (Tor bridges).
-  - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: photos and voice messages that wait,
-    marked in the chat, while LoRa is the only way.
+  - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: setting the radio's name from Erevos.
   - **SMS:** Erevos as the SMS app is here, with MMS photos and two SIMs, see [SMS](#sms). Next: group MMS.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
 - **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a

@@ -37,3 +37,13 @@ export function confirm(title: string, message: string, action = title): Promise
     ]);
   });
 }
+
+/** Asks which of two to do: true for `yes`, false for `no`. */
+export function choose(title: string, message: string, no: string, yes: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    ask(title, message, [
+      { text: no, style: 'cancel', onPress: () => resolve(false) },
+      { text: yes, onPress: () => resolve(true) },
+    ]);
+  });
+}

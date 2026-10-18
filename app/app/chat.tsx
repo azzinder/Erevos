@@ -5,7 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
 import { nearbySettings, setCarryingKept, setLanKept } from '../lib/nearby-links';
-import { nearby, type Delivery } from '../lib/nearby';
+import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
+import { canWait, sendWaiting, type SendPlace } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { callPermissions } from '../lib/call-permissions';
@@ -15,7 +16,7 @@ import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
-import { FileGoneError, fileSize, MAX_FILE, offerRef, readFile, sendFile, takeFile, bytesSource, type Source } from '../lib/attachments';
+import { FileGoneError, fileSize, keepFile, MAX_FILE, offerRef, readFile, sendFile, takeFile, bytesSource, type Source } from '../lib/attachments';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
@@ -28,7 +29,7 @@ import { QrCode } from '../components/QrCode';
 import { ShieldIcon, TimerIcon } from '../components/icons';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '../components/ui';
-import { ask } from '../lib/alert';
+import { ask, choose } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
 import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
@@ -42,7 +43,7 @@ import { cleanName, MAX_NAME, type Avatar } from '../lock/e2e-data';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
-import { History, newTag, type Mark, type Message as Kept } from '../lock/history';
+import { History, newTag, WAITING, type Mark, type Message as Kept } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { isGroupPacket } from '../lib/groups';
@@ -175,7 +176,7 @@ function disappearsAt(until: number): string {
 // Under a message to or from a contact: its mark if it is ours, and when it disappears.
 function caption(message: Message): string {
   const parts: string[] = [];
-  if (message.mine && message.tag && !isCallLine(message.text)) parts.push(MARKS[message.mark]);
+  if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? 'Waiting' : MARKS[message.mark]);
   if (message.until) parts.push(`Disappears ${disappearsAt(message.until)}`);
   else if (message.lasts) parts.push(`Disappears ${timerLabel(message.lasts).toLowerCase()} after it is read`);
   return parts.join('  ·  ');
@@ -546,7 +547,11 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       setCarrying(settings.carrying);
       setLanOn(settings.lan);
     });
-    const stopWatching = nearby.onChange(() => setNearbyChanged((n) => n + 1));
+    // A contact heard nearby, or a LoRa radio linked: what waits for them may go now.
+    const stopWatching = nearby.onChange(() => {
+      setNearbyChanged((n) => n + 1);
+      sendWaitingNow.current(false);
+    });
     const stopWatchingLora = lora.onChange(() => setNearbyChanged((n) => n + 1));
     const release = takeNearby((link, packet) => nearbyCame.current(link, packet));
     return () => {
@@ -836,6 +841,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
         }
         await spare();
         if (!hiddenKey) await answerInvites(e2e, ownSender, here(), sends).catch(() => undefined);
+        // What waited to go, now that the relay answers.
+        sendWaitingNow.current(true);
         await sendReceipts(sends);
       } catch (error) {
         await spare();
@@ -947,14 +954,15 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   // Shows a message, and keeps it on the phone when it is with a contact, for `timer` seconds once
   // read if it disappears. A contact's message from an Erevos before tags gets one known to this
   // phone only. Returns its tag.
-  function addMessage(peer: string, text: string, mine: boolean, tag = '', timer = 0, voice?: VoiceRef, file?: FileRef): string {
+  // A message of ours that waits to go is marked so (`mark`, lib/waiting.ts).
+  function addMessage(peer: string, text: string, mine: boolean, tag = '', timer = 0, voice?: VoiceRef, file?: FileRef, mark: Mark = 0): string {
     const contact = peer.startsWith(CONTACT_PREFIX);
     const kept = contact ? tag || newTag() : '';
     const at = Date.now();
     const lasts = contact ? timer : 0;
-    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark: 0, at, voice, file }]);
+    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark, at, voice, file }]);
     if (contact) {
-      history.current?.add({ peer, text, mine, at, tag: kept, lasts, voice, file }).catch(() => {
+      history.current?.add({ peer, text, mine, at, tag: kept, lasts, mark, voice, file }).catch(() => {
         // Shown, but gone when the chat next opens.
       });
     }
@@ -1012,7 +1020,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   }
 
   function deleteMessage(message: Message) {
-    const both = message.peer.startsWith(CONTACT_PREFIX) && message.tag;
+    // One that waits never reached their phone.
+    const both = message.peer.startsWith(CONTACT_PREFIX) && message.tag && message.mark !== WAITING;
     ask('Delete message', 'Delete this message? It cannot be brought back.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'This phone', onPress: () => forgetMessage(message) },
@@ -1194,9 +1203,57 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       const sent = sentNote(way, 'Sent', label(selected, contacts));
       setNote(timer ? `${sent} It disappears from both phones ${timerLabel(timer).toLowerCase()} after it is read.` : sent);
     } catch (error) {
-      setNote(notSent(error));
+      if (!canWait(error) || hiddenKey) {
+        setNote(notSent(error));
+        return;
+      }
+      // Nothing could take it now: it waits, and goes by itself (lib/waiting.ts).
+      addMessage(selected, text, true, newTag(), lasts || timerOf(selected), undefined, undefined, WAITING);
+      setDraft('');
+      setNote(`Waiting. ${waitingReason(error, selected, 'It is too long for LoRa.')} It goes by itself once the relay or their phone nearby can take it.`);
     }
   }
+
+  // The chat's timer, seconds.
+  function timerOf(peer: string): number {
+    return e2e?.contacts().find((c) => `${CONTACT_PREFIX}${c.identity}` === peer)?.timer ?? 0;
+  }
+
+  // Why a message could not go now: `lora`, what LoRa says of it, when LoRa was the only way.
+  function waitingReason(error: unknown, peer: string, lora: string): string {
+    if (error instanceof TooLargeForLoraError) return `${lora} ${relayTarget() ? 'The relay cannot be reached.' : 'There is no relay.'}`;
+    return `${relayTarget() ? 'The relay cannot be reached' : 'There is no relay'}, and ${label(peer, contacts)}'s phone is not near.`;
+  }
+
+  // Asks whether a voice message, photo or file that nothing could take now waits to go by itself.
+  function askToWait(what: string, reason: string): Promise<boolean> {
+    return choose(
+      'Not sent yet',
+      `${reason} The ${what} can wait here, marked Waiting, and go by itself once the relay or their phone nearby can take it.`,
+      'Delete it',
+      'Keep it waiting',
+    );
+  }
+
+  // Sends what waits that can go now (lib/waiting.ts), and shows it as gone. `relayUp`: the relay
+  // just answered. Hidden chats keep nothing waiting.
+  const sendWaitingNow = useRef((_relayUp: boolean) => undefined as void);
+  sendWaitingNow.current = (relayUp) => {
+    const kept = history.current;
+    if (hiddenKey || !e2e || !kept) return;
+    const place: SendPlace = { sends: relayTarget(), own: ownRelay(), senderHex: ownQueue?.senderHex ?? '', here: here(), ownKey: ownRelayKey, relayUp };
+    void sendWaiting({ e2e, history: kept }, place)
+      .then((went) => {
+        if (went.length === 0) return;
+        setMessages((list) =>
+          list.map((m) => {
+            const sent = went.find((w) => w.peer === m.peer && w.tag === m.tag);
+            return sent ? { ...m, mark: 0, lasts: sent.lasts } : m;
+          }),
+        );
+      })
+      .catch(() => undefined);
+  };
 
   async function shareLink(link: string) {
     try {
@@ -1355,7 +1412,21 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       setContacts(e2e.contacts());
       setNote(sentNote(way, talk ? 'Walkie-talkie message sent' : 'Voice message sent', label(peer, contacts)));
     } catch (error) {
-      setNote(notSent(error));
+      // A walkie-talkie message is for now only.
+      if (!canWait(error) || talk || hiddenKey) {
+        setNote(notSent(error));
+        return;
+      }
+      if (!(await askToWait('voice message', waitingReason(error, peer, 'LoRa takes only text.')))) {
+        setNote('Not sent.');
+        return;
+      }
+      try {
+        addMessage(peer, '', true, newTag(), timerOf(peer), await saveClip(audio, ms), undefined, WAITING);
+        setNote('The voice message waits, and goes by itself once the relay or their phone nearby can take it.');
+      } catch (failed) {
+        setNote(`Not sent, and it could not wait. ${errorText(failed)}`);
+      }
     }
   }
 
@@ -1483,7 +1554,26 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       setNote(`${kind === 'photo' ? 'Photo' : 'File'} sent through the relay, end-to-end encrypted.`);
     } catch (error) {
       if (kept) await deleteChunks(kept.id, kept.count).catch(() => undefined);
-      setNote(error instanceof TooLargeError ? 'Not sent. Files can be 100 MB at most.' : notSent(error));
+      if (!canWait(error) || hiddenKey) {
+        setNote(error instanceof TooLargeError ? 'Not sent. Files can be 100 MB at most.' : notSent(error));
+        return;
+      }
+      // It waits, kept here only, and goes to the relay later (lib/waiting.ts).
+      const reason = `Photos and files go through the relay, which cannot be reached${nearby.hasSlow() ? ', and LoRa takes only text' : ''}.`;
+      if (!(await askToWait(what, reason))) {
+        setNote('Not sent.');
+        return;
+      }
+      try {
+        const size = picked.w && picked.h ? { w: picked.w, h: picked.h } : {};
+        const ref = await keepFile(picked.source, { name: picked.name, mime: picked.mime, kind, ...size }, (done, count) => {
+          if (count > 1) setNote(`Keeping the ${what}, ${Math.floor((done / count) * 100)}%`);
+        });
+        addMessage(peer, '', true, newTag(), timerOf(peer), undefined, ref, WAITING);
+        setNote(`The ${what} waits, and goes by itself once the relay can take it.`);
+      } catch (failed) {
+        setNote(`Not sent, and it could not wait. ${errorText(failed)}`);
+      }
     } finally {
       picked.close?.();
     }

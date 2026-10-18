@@ -69,7 +69,8 @@ export default function LoraScreen() {
         'its GPS off and removes a fixed position, and puts the role and GPS back when you turn LoRa off while it is ' +
         'linked. It still answers a radio that asks its name, so give it a name that says nothing of you, in the ' +
         'Meshtastic app.\n\n' +
-        'LoRa takes only text: photos, voice messages and files do not go over it.',
+        'LoRa takes only text. Photos, voice messages and files do not go over it: they wait in the chat, marked ' +
+        'Waiting, and go by themselves once the relay or the phone nearby can take them.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Find my radio', onPress: () => setFound([]) },
@@ -153,7 +154,8 @@ export default function LoraScreen() {
         <Text tone="muted">
           It is slow: a message takes seconds on the air, and the law allows a radio only so much air time. So LoRa takes
           a message only when the relay and the phones nearby cannot, and only text and deletes: not voice messages,
-          photos, files, read marks or calls. Hidden chats never go over it.
+          photos, files, read marks or calls. Voice messages, photos and files wait in the chat, marked Waiting, until
+          the relay or a phone nearby can take them. Hidden chats never go over it.
         </Text>
         <Text tone="muted">
           While Erevos is linked to the radio, the Meshtastic app cannot be: close it, or disconnect it there first.

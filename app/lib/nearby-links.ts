@@ -1,12 +1,13 @@
 import { nearby } from './nearby';
 import { HAS_LINKS, onLinkEvent, sendLink, setLanLinks, startLinks, stopLinks } from './radio';
-import { openNearby } from './receiver';
+import { nearbyChanged, openNearby } from './receiver';
 import { secureGet, secureSet } from './secure';
 
 // The links to phones nearby while a space is open, whatever screen shows: the radio (Bluetooth,
 // Wi-Fi Aware, and a LoRa radio when one is set) and the same Wi-Fi or hotspot (lib/radio.ts). So
 // a message, a group's message or a call from a phone nearby comes on the home screen and in the
-// group screens too, and while Erevos is in the background. The links belong to the phone, not to
+// group screens too, and while Erevos is in the background, and what waits for a contact goes
+// once their phone is near. The links belong to the phone, not to
 // a space: what comes on them opens only in the chats of the space open (lib/receiver.ts), and the
 // rest is kept a while for the others (lib/nearby.ts). Hidden chats never use them.
 
@@ -29,6 +30,8 @@ export function startNearbyLinks(): () => void {
       if (packet) void openNearby(peer, packet);
     }),
   ];
+  // A contact heard nearby, or a LoRa radio linked: what waits for them may go now (lib/waiting.ts).
+  const stopWatching = nearby.onChange(nearbyChanged);
   void nearbySettings().then(({ carrying, lan }) => {
     if (!active) return;
     nearby.setCarrying(carrying);
@@ -41,6 +44,7 @@ export function startNearbyLinks(): () => void {
   return () => {
     active = false;
     subscriptions.forEach((subscription) => subscription.remove());
+    stopWatching();
     stopNearby();
     stopLinks();
   };

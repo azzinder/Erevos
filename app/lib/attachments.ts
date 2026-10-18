@@ -169,6 +169,54 @@ export async function sendFile(
 }
 
 /**
+ * Encrypts a file and keeps its chunks here only, to put on the relay later (uploadFile): a photo
+ * or file that waits (lib/waiting.ts). If any of it cannot be kept, nothing is.
+ */
+export async function keepFile(source: Source, meta: Omit<FileMeta, 'size'>, progress?: Progress): Promise<FileRef> {
+  const size = source.size;
+  if (size > MAX_FILE) throw new FileTooLargeError();
+  const { chunk, count } = chunkPlan(size);
+  const key = randomBytes(32);
+  const id = newFileId();
+  try {
+    for (let n = 0; n < count; n++) {
+      const at = n * room(chunk);
+      await saveChunk(id, n, sealChunk(key, n, await source.read(at, Math.min(room(chunk), size - at)), chunk));
+      progress?.(n + 1, count);
+    }
+  } catch (error) {
+    await deleteChunks(id, count).catch(() => undefined);
+    throw error;
+  }
+  return { ...meta, name: cleanFileName(meta.name), mime: cleanMime(meta.mime), size, id, key: toHex(key), chunk, count };
+}
+
+/**
+ * Puts a file kept here (keepFile) on our relay (`own`). Returns the offer for the contact. If the
+ * relay cannot take all of it, what it took is deleted there; the chunks here stay.
+ */
+export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress): Promise<FileOffer> {
+  if (ref.from) throw new FileMissingError();
+  const ids: string[] = [];
+  const session = await RelaySession.open({ url: own.url, token: own.token });
+  try {
+    for (let n = 0; n < ref.count; n++) {
+      const sealed = await readChunk(ref.id, n);
+      if (!sealed) throw new FileMissingError();
+      ids.push(toHex(await putChunk(session, sealed)));
+      progress?.(n + 1, ref.count);
+    }
+  } catch (error) {
+    for (const put of ids) await deleteChunk(session, fromHex(put)).catch(() => undefined);
+    throw error;
+  } finally {
+    session.close();
+  }
+  const { id: _id, count: _count, ...shared } = ref;
+  return { ...shared, relay: own.url, ids: ids.join('') };
+}
+
+/**
  * Takes a file that came, through our relay (`own`), checks every chunk and keeps them here, then
  * deletes them from the relay. Returns where it is now kept. If any chunk is missing or was
  * changed, nothing is kept.

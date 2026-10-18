@@ -22,7 +22,7 @@ export type InboxMessage = {
   mine: boolean;
   at: number;
   until?: number;
-  mark?: 0 | 1 | 2;
+  mark?: -1 | 0 | 1 | 2;
   voice?: { ms: number };
   file?: { kind: 'photo' | 'file'; name: string };
 };
@@ -37,7 +37,7 @@ export type InboxRow = {
   last: string;
   /** Whether the last message is ours, and its mark. */
   mine: boolean;
-  mark: 0 | 1 | 2;
+  mark: -1 | 0 | 1 | 2;
   /** When the chat last moved, milliseconds, 0 if never. */
   at: number;
   /** Their messages not read yet. */

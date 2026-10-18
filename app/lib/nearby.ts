@@ -203,6 +203,11 @@ export class Nearby {
     return [...this.links].filter((link) => !isSlow(link)).length;
   }
 
+  /** Whether a slow link (a LoRa radio) is up. */
+  hasSlow(): boolean {
+    return [...this.links].some(isSlow);
+  }
+
   /** Whether a contact was heard on a link that is still up, and not a slow one. */
   isNear(identity: string): boolean {
     const link = this.heard.get(identity);

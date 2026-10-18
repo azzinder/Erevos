@@ -11,6 +11,7 @@ import { isGroupPacket } from './groups';
 import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-chats';
 import { lookAtSpare, spareBackup } from './spare';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
+import { sendWaiting, type SendPlace } from './waiting';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
 // itself while it is open, and holds this meanwhile (holdReceiver). Otherwise this looks at the
@@ -292,9 +293,31 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     return changed;
   }
   await answerInvites(chats.e2e, place.queue.senderHex, place.here, place.sends).catch(() => undefined);
+  // What waited to go, now that the relay answers (lib/waiting.ts).
+  if (!failed && (await sendWaiting(chats, sendPlace(place, true)).catch(() => [])).length > 0) changed = true;
   await sendReceipts(chats, place, state);
   await flushGroups().catch(() => undefined);
   return changed;
+}
+
+// Where what waits goes from, as the last look found it: with no relay, to phones nearby only.
+function sendPlace(place: Place | null, relayUp: boolean): SendPlace {
+  if (!place) return { sends: null, own: null, senderHex: '', here: { relay: '', relayKey: '' }, ownKey: '', relayUp: false };
+  return { sends: place.sends, own: place.own, senderHex: place.queue.senderHex, here: place.here, ownKey: place.here.relayKey, relayUp };
+}
+
+/**
+ * Sends what waits to contacts heard nearby, or over LoRa, as the links nearby change (lib/nearby-links.ts):
+ * unless the chat screen is open, which does it itself.
+ */
+export function nearbyChanged(): void {
+  if (nearbyTaker || !hasCore()) return;
+  void spaceChats()
+    .then((chats) => sendWaiting(chats, sendPlace(lastPlace, false)))
+    .then((went) => {
+      if (went.length > 0) listeners.forEach((listener) => listener());
+    })
+    .catch(() => undefined);
 }
 
 // Keeps what one message brought, as the chat's own handling does. Says whether anything changed.

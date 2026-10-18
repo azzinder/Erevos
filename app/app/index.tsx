@@ -337,7 +337,7 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
             ) : null}
             {row.last && row.mine && !row.lastSms ? (
               <Text variant="caption" color={row.mark === 2 ? colors.accentText : colors.textMuted}>
-                {MARKS[row.mark]}
+                {row.mark < 0 ? 'Waiting' : MARKS[row.mark]}
               </Text>
             ) : null}
             <Text

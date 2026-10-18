@@ -13,7 +13,8 @@ import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
 // (lib/nearby.ts): both are a contact's, end-to-end encrypted.
 //
 // Each message keeps its mark: ours, whether it came to their phone and was read there (lib/e2e.ts
-// carries what their phone says); theirs, whether it was read here.
+// carries what their phone says), or that it waits to go (lib/waiting.ts); theirs, whether it was
+// read here.
 //
 // A disappearing message (lib/e2e.ts carries the chat's timer) waits, with how long it lasts,
 // until it is read: theirs when it shows here, ours when their phone says it read it. From then
@@ -24,8 +25,13 @@ import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
 // chunks are (lock/attachment-files.ts). When a message leaves the history, however it goes, its
 // sound's file or its chunks are deleted.
 
-/** Ours: the relay took it (0), it came to their phone (1), they read it (2). Theirs: read here (2) or not (0). */
-export type Mark = 0 | 1 | 2;
+/**
+ * Ours: it waits, as nothing could take it yet (-1, WAITING), the relay or their phone nearby took
+ * it (0), it came to their phone (1), they read it (2). Theirs: read here (2) or not (0).
+ */
+export type Mark = -1 | 0 | 1 | 2;
+
+export const WAITING = -1;
 
 /**
  * One message: when (milliseconds), whether this phone sent it, its text, its tag, when it
@@ -101,7 +107,7 @@ function checkedKept(m: unknown): Kept | null {
   if (!Array.isArray(m) || m.length < 3 || typeof m[0] !== 'number' || (m[1] !== 0 && m[1] !== 1) || typeof m[2] !== 'string') {
     return null;
   }
-  const mark = m[6] === 1 || m[6] === 2 ? m[6] : 0;
+  const mark = m[6] === 1 || m[6] === 2 || (m[6] === WAITING && m[1] === 1) ? m[6] : 0;
   const voice = isVoiceRef(m[7]) ? m[7] : undefined;
   const file = isFileRef(m[8]) ? m[8] : undefined;
   return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark, voice, file });
@@ -174,6 +180,20 @@ export class History {
   add({ peer, ...message }: Message): Promise<void> {
     const list = [...(this.data.chats[peer] ?? []), pack(message)];
     return this.save(fitted({ chats: { ...this.data.chats, [peer]: list } }));
+  }
+
+  /** Our messages that wait to go, oldest first. */
+  waiting(): Message[] {
+    return this.messages().filter((m) => m.mine && m.mark === WAITING);
+  }
+
+  /** A message that waited went: as the relay took it, lasting `lasts` seconds once read. False if it is gone. */
+  async sent(peer: string, tag: string, lasts: number): Promise<boolean> {
+    const list = this.data.chats[peer];
+    if (!list?.some((m) => m[3] === tag && m[6] === WAITING)) return false;
+    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts }) : m));
+    await this.save(fitted({ chats: { ...this.data.chats, [peer]: changed } }));
+    return true;
   }
 
   /** Changes where a message's file is, once it is taken from the relay. False if the message is gone. */
