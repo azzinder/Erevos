@@ -323,7 +323,8 @@ a missed call.
   everywhere a message goes, Bluetooth included.
 
 > The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
-> kept in this space, sealed. About a thousand short messages fit; when it is full, the oldest go first. Deleted
+> kept in this space, sealed. History has no limit: it is kept in sealed pages of the same size, mixed with the pages
+> of the other spaces and hidden chats, so only how much they all take together shows, not whose they are. Deleted
 > messages can stay for a while in the phone's storage, sealed like the rest, until something is written over them.
 > Messages sent or received nearby are kept the same way.
 
@@ -721,7 +722,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
-| **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
+| **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
 | **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
 | **Photos and files** | End-to-end encrypted, through the relay's file store, in pieces of one size: the relay sees how many and when, so roughly how big. Your relay sees your address, as for messages; the contact takes them through their own relay. Photos lose their place, phone and time, unless sent as a file; a file keeps what it says inside. Sealed on the phone in their pieces, shown from memory. Saved copies are outside Erevos. Not in backups yet. | Backups that hold them. |

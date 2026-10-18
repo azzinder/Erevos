@@ -6,7 +6,7 @@ import { FILE as ARCHIVE } from './archive';
 import { ITER } from './config';
 import { FILE as E2E } from './e2e-data';
 import { FILE as GROUPS } from './group-data';
-import { FILE as HISTORY } from './history';
+import { FILE as HISTORY, PAGE_PREFIX as PAGE } from './history';
 import { POCKETS } from './sealed-file';
 import { PREFIX as AVATAR } from './avatar-photos';
 import { PREFIX as VOICE } from './voice-clips';
@@ -82,7 +82,7 @@ async function collect(): Promise<Entry[]> {
     const text = await readFile(name);
     if (text !== null) entries.push({ kind: KIND_TEXT, name, data: utf8Encode(text) });
   }
-  for (const name of [...(await listFiles(VOICE)), ...(await listFiles(AVATAR))].sort()) {
+  for (const name of [...(await listFiles(VOICE)), ...(await listFiles(AVATAR)), ...(await listFiles(PAGE))].sort()) {
     const bytes = await readBytes(name);
     if (bytes) entries.push({ kind: KIND_BYTES, name, data: bytes });
   }
@@ -111,7 +111,7 @@ function pack(entries: Entry[]): Uint8Array {
 function allowed(kind: number, name: string): boolean {
   if (kind === KIND_KEY) return KEYS.includes(name);
   if (kind === KIND_TEXT) return TEXT_FILES.includes(name);
-  return kind === KIND_BYTES && (name.startsWith(VOICE) || name.startsWith(AVATAR)) && /^[a-z0-9-]+$/.test(name);
+  return kind === KIND_BYTES && (name.startsWith(VOICE) || name.startsWith(AVATAR) || name.startsWith(PAGE)) && /^[a-z0-9-]+$/.test(name);
 }
 
 function unpack(bytes: Uint8Array): Entry[] {
@@ -175,7 +175,9 @@ export async function restoreBackup({ entries }: Backup): Promise<void> {
     if (entry.kind === KIND_TEXT) await writeFile(entry.name, utf8Decode(entry.data));
     if (entry.kind === KIND_BYTES) await writeBytes(entry.name, entry.data);
   }
-  for (const name of [...TEXT_FILES, ...(await listFiles(VOICE)), ...(await listFiles(AVATAR))]) if (!keep.has(name)) await deleteFile(name);
+  for (const name of [...TEXT_FILES, ...(await listFiles(VOICE)), ...(await listFiles(AVATAR)), ...(await listFiles(PAGE))]) {
+    if (!keep.has(name)) await deleteFile(name);
+  }
   for (const entry of entries) if (entry.kind === KIND_KEY) await secureSet(entry.name, utf8Decode(entry.data));
   for (const name of KEYS) if (!keep.has(name)) await secureDelete(name);
 }

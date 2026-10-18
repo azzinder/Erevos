@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
-import { FILE, fitted, History, newTag, SIZE, type HistoryData } from '../lock/history';
+import { FILE, History, newTag, PAGE, PAGE_PREFIX, SIZE } from '../lock/history';
 import { sealedFile } from '../lock/sealed-file';
 import { splitVoice, VoiceAssembler, PART_SIZE, MAX_PARTS } from '../lib/voice';
 import { loadClip, saveClip } from '../lock/voice-clips';
@@ -55,18 +55,53 @@ t('every value is the same size, used or not, whatever the text', async () => {
   assert.deepEqual([...sizes()], [size]);
 });
 
-t('the oldest messages go when a chat holds more than fits', async () => {
+t('keeps every message, however many, in pages of the same size', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 2, key);
   const text = 'κείμενο '.repeat(100);
-  for (let at = 0; at < 60; at++) await history.add({ peer: at % 2 ? 'contact:aa' : 'contact:bb', text, mine: true, at, tag: newTag() });
+  for (let at = 0; at < 300; at++) await history.add({ peer: at % 2 ? 'contact:aa' : 'contact:bb', text, mine: true, at, tag: newTag() });
   const kept = (await History.open('space', 2, key)).messages();
-  assert.ok(kept.length < 60 && kept.length > 30, `${kept.length}`);
-  assert.equal(kept[kept.length - 1].at, 59);
-  assert.equal(kept[0].at, 60 - kept.length);
+  assert.equal(kept.length, 300);
+  assert.deepEqual(kept.map((m) => m.at), [...Array(300).keys()]);
+  const pages = [...blobs.keys()].filter((name) => name.startsWith(PAGE_PREFIX));
+  assert.ok(pages.length > 5, `${pages.length}`);
+  // Every page is a whole PAGE once sealed, and nothing in it reads.
+  const sizes = new Set(pages.map((name) => blobs.get(name)!.length));
+  assert.equal(sizes.size, 1);
+  assert.ok([...sizes][0] > PAGE && [...sizes][0] < PAGE + 64);
+  assert.ok(pages.every((name) => !Buffer.from(blobs.get(name)!).toString('utf8').includes('κείμενο')));
+  // Another key finds none of them.
+  assert.deepEqual((await History.open('space', 2, randomBytes(32))).messages(), []);
+});
 
-  const data: HistoryData = { chats: { x: [[1, 1, 'z'.repeat(SIZE), newTag()]] } };
-  assert.deepEqual(fitted(data), { chats: {} });
+t('a change rewrites only its page, and a page left empty is deleted', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const text = 'x'.repeat(4000);
+  const tags: string[] = [];
+  for (let at = 0; at < 12; at++) {
+    tags.push(newTag());
+    await history.add({ peer: 'contact:aa', text, mine: false, at, tag: tags[at] });
+  }
+  const pages = () => [...blobs.keys()].filter((name) => name.startsWith(PAGE_PREFIX)).sort();
+  const before = new Map(pages().map((name) => [name, blobs.get(name)]));
+  await history.mark('contact:aa', false, 2, 100, [tags[0]]);
+  const changed = pages().filter((name) => blobs.get(name) !== before.get(name));
+  assert.equal(changed.length, 1);
+  // Four of these fill a page: the first page goes with its four.
+  for (const tag of tags.slice(0, 4)) await history.remove('contact:aa', tag);
+  assert.equal(pages().length, before.size - 1);
+  const again = await History.open('space', 0, key);
+  assert.equal(again.messages().length, 8);
+  assert.equal(again.messages()[0].at, 4);
+});
+
+t('a message too long for one page gets a page of its own, whole', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('hidden', 0, key);
+  await history.add({ peer: 'contact:aa', text: 'α'.repeat(12000), mine: true, at: 1, tag: newTag() });
+  await history.add({ peer: 'contact:aa', text: 'short', mine: true, at: 2, tag: newTag() });
+  assert.deepEqual((await History.open('hidden', 0, key)).messages().map((m) => m.text.length), [12000, 5]);
 });
 
 t('deletes one message by its tag, and gives messages kept before tags a tag of their own', async () => {
@@ -160,7 +195,7 @@ t('a voice message keeps its sound sealed in a file of its own, deleted with the
   const sound = randomBytes(25_000);
   const voice = await saveClip(sound, 7400.4);
   assert.equal(voice.ms, 7400);
-  const [name] = blobs.keys();
+  const [name] = [...blobs.keys()].filter((n) => !n.startsWith(PAGE_PREFIX));
   assert.ok(name.startsWith('erevos-voice-') && name.endsWith(voice.id));
   assert.notDeepEqual(blobs.get(name)!.slice(12, 40), sound.slice(0, 28));
   assert.deepEqual(await loadClip(voice), sound);
@@ -177,7 +212,7 @@ t('a voice message keeps its sound sealed in a file of its own, deleted with the
   // Read, its time runs out, and its sound goes with it.
   await history.mark('contact:aa', false, 2, 1000);
   await history.expire(61_000);
-  assert.equal(blobs.size, 0);
+  assert.deepEqual([...blobs.keys()].filter((n) => !n.startsWith(PAGE_PREFIX)), []);
   assert.equal(await loadClip(voice), null);
 
   // However a message goes: deleted by its tag, or with its chat.
@@ -188,7 +223,7 @@ t('a voice message keeps its sound sealed in a file of its own, deleted with the
   await history.remove('contact:aa', 'aaaaaaaaaaaa');
   assert.deepEqual([await loadClip(one), (await loadClip(two))?.length], [null, 10]);
   await history.clear('contact:bb');
-  assert.equal(blobs.size, 0);
+  assert.deepEqual([...blobs.keys()].filter((n) => !n.startsWith(PAGE_PREFIX)), []);
 });
 
 test('a voice message is cut in parts and put back together, whatever order they come in', () => {

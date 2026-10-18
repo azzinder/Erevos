@@ -1,13 +1,19 @@
-import { randomBytes, toHex } from '../lib/crypto';
+import { decryptBytes, encryptBytes, randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
+import { deleteFile, readBytes, writeBytes } from '../lib/files';
 
 import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
 import { sealedFile, sealedSize, type Holder } from './sealed-file';
 import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
 
-// The messages each chat keeps on the phone: a space's own chat, and its hidden chats, each in one
-// sealed value of FILE (sealed-file.ts). Every value is exactly SIZE bytes, used or not, so the
-// file tells neither which chats are used nor how much anyone writes. When a chat's messages no
-// longer fit, the oldest go: about a thousand short messages fit.
+// The messages each chat keeps on the phone, a space's own chat and its hidden chats, with no limit
+// but the phone's room. They are kept in pages: files of PAGE bytes (or a few PAGEs, for a page
+// with one very long message), each sealed with the key of the chat it belongs to and named by a
+// random id after PAGE_PREFIX. The pages of every space and every hidden chats lie together, alike,
+// so they tell how much the phone keeps in all, but not whose, nor whether any are hidden chats'.
+// Which pages are a chat's is kept in its sealed value of FILE (sealed-file.ts), exactly SIZE
+// bytes, used or not. A new message is written to the chat's last page, or a new one once that is
+// full; a change to an older message rewrites only its page, and a page left empty is deleted.
+// Messages kept in FILE itself, as before there were pages, move into pages when the chat opens.
 //
 // Only chats with contacts are kept, whether their messages came through the relay or nearby
 // (lib/nearby.ts): both are a contact's, end-to-end encrypted.
@@ -99,8 +105,18 @@ export const isTag = (value: unknown): value is string => typeof value === 'stri
 
 export const FILE = 'erevos-history';
 export const SIZE = 64 * 1024;
+export const PAGE = 16 * 1024;
+export const PAGE_PREFIX = 'erevos-page-';
 
-const EMPTY: HistoryData = { chats: {} };
+const PAGE_ID = /^[0-9a-f]{24}$/;
+
+/** A chat's value in FILE: its pages, in the order they were made, and messages kept before pages. */
+type Stored = { pages: string[]; chats: Record<string, Kept[]> };
+
+const EMPTY: Stored = { pages: [], chats: {} };
+
+/** One message in a page, with the chat it belongs to. */
+type Entry = [peer: string, kept: Kept];
 
 // A message kept before tags has none: it gets one here, known to this phone only.
 function checkedKept(m: unknown): Kept | null {
@@ -113,47 +129,157 @@ function checkedKept(m: unknown): Kept | null {
   return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark, voice, file });
 }
 
-function checked(value: unknown): HistoryData {
+function checkedChats(value: unknown): Record<string, Kept[]> {
   const chats: Record<string, Kept[]> = {};
-  const stored = (value as { chats?: unknown } | null)?.chats;
-  if (stored && typeof stored === 'object') {
-    for (const [peer, list] of Object.entries(stored)) {
+  if (value && typeof value === 'object') {
+    for (const [peer, list] of Object.entries(value)) {
       const kept = Array.isArray(list) ? list.map(checkedKept).filter((m): m is Kept => m !== null) : [];
       if (kept.length > 0) chats[peer] = kept;
     }
   }
-  return { chats };
+  return chats;
+}
+
+function checked(value: unknown): Stored {
+  const v = value as { pages?: unknown; chats?: unknown } | null;
+  const pages = Array.isArray(v?.pages) ? v.pages.filter((id): id is string => typeof id === 'string' && PAGE_ID.test(id)) : [];
+  return { pages, chats: checkedChats(v?.chats) };
+}
+
+function checkedPage(value: unknown): Entry[] {
+  const list = (value as { m?: unknown } | null)?.m;
+  if (!Array.isArray(list)) return [];
+  return list.flatMap((e): Entry[] => {
+    if (!Array.isArray(e) || typeof e[0] !== 'string') return [];
+    const kept = checkedKept(e[1]);
+    return kept ? [[e[0], kept]] : [];
+  });
 }
 
 const store = sealedFile({ name: FILE, empty: EMPTY, checked, block: SIZE, fixed: true });
 
-/** The data with its oldest messages left out until it fits in SIZE. */
-export function fitted(data: HistoryData): HistoryData {
-  const chats: Record<string, Kept[]> = {};
-  for (const [peer, list] of Object.entries(data.chats)) if (list.length > 0) chats[peer] = [...list];
-  while (sealedSize({ chats }) > SIZE) {
-    let oldest: string | null = null;
-    for (const peer of Object.keys(chats)) if (oldest === null || chats[peer][0][0] < chats[oldest][0][0]) oldest = peer;
-    if (oldest === null) break;
-    chats[oldest].shift();
-    if (chats[oldest].length === 0) delete chats[oldest];
-  }
-  return { chats };
+const pageSize = (entries: Entry[]) => sealedSize({ m: entries });
+
+function sealPage(key: Uint8Array, entries: Entry[]): Uint8Array {
+  const json = JSON.stringify({ m: entries });
+  const bytes = utf8Encode(json).length;
+  return encryptBytes(key, utf8Encode(json + ' '.repeat(Math.max(1, Math.ceil(bytes / PAGE)) * PAGE - bytes)));
 }
+
+// Names a message within its chat, to find it again in the pages after a change: its tag and time.
+const entryKey = (peer: string, kept: Kept) => `${peer}|${kept[3]}|${kept[0]}`;
 
 /** One chat's history, kept as messages come and go. */
 export class History {
-  private data: HistoryData;
-  private readonly store: (data: HistoryData) => Promise<void>;
+  private data: HistoryData = { chats: {} };
+  // The pages, in the order they were made, with what each holds.
+  private pages: { id: string; entries: Entry[] }[];
+  // Writes run one after another, each with the pages as they were when it was asked for.
+  private writes: Promise<void> = Promise.resolve();
 
-  private constructor(data: HistoryData, store: (data: HistoryData) => Promise<void>) {
-    this.data = data;
-    this.store = store;
+  private readonly holder: Holder;
+  private readonly space: number;
+  private readonly key: Uint8Array;
+
+  private constructor(holder: Holder, space: number, key: Uint8Array, pages: { id: string; entries: Entry[] }[]) {
+    this.holder = holder;
+    this.space = space;
+    this.key = key;
+    this.pages = pages;
+    const chats: Record<string, Kept[]> = {};
+    for (const page of pages) for (const [peer, kept] of page.entries) (chats[peer] ??= []).push(kept);
+    for (const list of Object.values(chats)) list.sort((a, b) => a[0] - b[0]);
+    this.data = { chats };
   }
 
   /** The space's own chat, or its hidden chats (`holder`), sealed with `key`. */
   static async open(holder: Holder, space: number, key: Uint8Array): Promise<History> {
-    return new History(await store.load(holder, space, key), (data) => store.save(holder, space, key, data));
+    const stored = await store.load(holder, space, key);
+    const pages: { id: string; entries: Entry[] }[] = [];
+    for (const id of stored.pages) {
+      const sealed = await readBytes(PAGE_PREFIX + id);
+      if (!sealed) continue;
+      try {
+        pages.push({ id, entries: checkedPage(JSON.parse(utf8Decode(decryptBytes(key, sealed)))) });
+      } catch {
+        // A damaged page: its messages are lost, the others stay.
+      }
+    }
+    const history = new History(holder, space, key, pages);
+    // Messages kept before there were pages go into them, and leave FILE.
+    if (Object.keys(stored.chats).length > 0 || pages.length !== stored.pages.length) {
+      const chats = { ...history.data.chats };
+      for (const [peer, list] of Object.entries(stored.chats)) chats[peer] = [...list, ...(chats[peer] ?? [])].sort((a, b) => a[0] - b[0]);
+      await history.persist({ chats }, true);
+    }
+    return history;
+  }
+
+  /**
+   * Puts `data` in the pages: each message stays in the page it is in, changed or not, and the new
+   * ones go after the last. Only the pages that changed are written, and FILE when the pages did.
+   */
+  private persist(data: HistoryData, indexChanged = false): Promise<void> {
+    this.data = data;
+    const wanted = new Map<string, Kept[]>();
+    const order: Entry[] = [];
+    for (const [peer, list] of Object.entries(data.chats)) {
+      for (const kept of list) {
+        const k = entryKey(peer, kept);
+        wanted.set(k, [...(wanted.get(k) ?? []), kept]);
+        order.push([peer, kept]);
+      }
+    }
+    const placed = new Set<Kept>();
+    const dirty = new Set<string>();
+    const pages = this.pages.map((page) => {
+      const entries: Entry[] = [];
+      for (const [peer, kept] of page.entries) {
+        const now = wanted.get(entryKey(peer, kept));
+        const next = now?.shift();
+        if (next === undefined) continue;
+        entries.push([peer, next]);
+        placed.add(next);
+      }
+      const changed = entries.length !== page.entries.length || entries.some((e, i) => e[1] !== page.entries[i][1]);
+      if (changed) dirty.add(page.id);
+      return { id: page.id, entries };
+    });
+    // A page a change made too large gives its last messages to the end.
+    const fresh: Entry[] = [];
+    for (const page of pages) {
+      if (!dirty.has(page.id)) continue;
+      const moved: Entry[] = [];
+      while (page.entries.length > 1 && pageSize(page.entries) > PAGE) moved.unshift(page.entries.pop()!);
+      fresh.push(...moved);
+    }
+    fresh.push(...order.filter(([, kept]) => !placed.has(kept)).sort((a, b) => a[1][0] - b[1][0]));
+    const kept = pages.filter((page) => page.entries.length > 0);
+    const gone = pages.filter((page) => page.entries.length === 0).map((page) => page.id);
+    for (const entry of fresh) {
+      const last = kept[kept.length - 1];
+      if (last && pageSize([...last.entries, entry]) <= PAGE) {
+        last.entries.push(entry);
+        dirty.add(last.id);
+      } else {
+        const id = toHex(randomBytes(12));
+        kept.push({ id, entries: [entry] });
+        dirty.add(id);
+      }
+    }
+    const index = kept.map((page) => page.id);
+    const reindex = indexChanged || gone.length > 0 || index.length !== this.pages.length || index.some((id, i) => id !== this.pages[i].id);
+    this.pages = kept;
+    const writes = kept.filter((page) => dirty.has(page.id)).map((page) => ({ id: page.id, sealed: sealPage(this.key, page.entries) }));
+    const run = this.writes
+      .catch(() => undefined)
+      .then(async () => {
+        for (const { id, sealed } of writes) await writeBytes(PAGE_PREFIX + id, sealed);
+        if (reindex) await store.save(this.holder, this.space, this.key, { pages: index, chats: {} });
+        for (const id of gone) await deleteFile(PAGE_PREFIX + id).catch(() => undefined);
+      });
+    this.writes = run;
+    return run;
   }
 
   /** Every message, oldest first. */
@@ -171,15 +297,14 @@ export class History {
     const gone = [...voiceIds(this.data)].filter((id) => !kept.has(id));
     const keptFiles = fileChunks(data);
     const goneFiles = [...fileChunks(this.data)].filter(([id]) => !keptFiles.has(id));
-    this.data = data;
-    await this.store(data);
+    await this.persist(data);
     await Promise.all(gone.map((id) => deleteClip(id).catch(() => undefined)));
     for (const [id, count] of goneFiles) await deleteChunks(id, count).catch(() => undefined);
   }
 
   add({ peer, ...message }: Message): Promise<void> {
     const list = [...(this.data.chats[peer] ?? []), pack(message)];
-    return this.save(fitted({ chats: { ...this.data.chats, [peer]: list } }));
+    return this.save({ chats: { ...this.data.chats, [peer]: list } });
   }
 
   /** Our messages that wait to go, oldest first. */
@@ -192,7 +317,7 @@ export class History {
     const list = this.data.chats[peer];
     if (!list?.some((m) => m[3] === tag && m[6] === WAITING)) return false;
     const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts }) : m));
-    await this.save(fitted({ chats: { ...this.data.chats, [peer]: changed } }));
+    await this.save({ chats: { ...this.data.chats, [peer]: changed } });
     return true;
   }
 
@@ -201,7 +326,7 @@ export class History {
     const list = this.data.chats[peer];
     if (!list?.some((m) => m[3] === tag)) return false;
     const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), file }) : m));
-    await this.save(fitted({ chats: { ...this.data.chats, [peer]: changed } }));
+    await this.save({ chats: { ...this.data.chats, [peer]: changed } });
     return true;
   }
 
@@ -250,8 +375,7 @@ export class History {
   async takeOut(peer: string): Promise<Message[]> {
     const taken = (this.data.chats[peer] ?? []).map((m) => ({ peer, ...unpack(m) }));
     const { [peer]: _gone, ...chats } = this.data.chats;
-    this.data = { chats };
-    await this.store(this.data);
+    await this.persist({ chats });
     return taken;
   }
 
@@ -259,7 +383,8 @@ export class History {
   putIn(messages: Message[]): Promise<void> {
     const chats = { ...this.data.chats };
     for (const { peer, ...message } of messages) chats[peer] = [...(chats[peer] ?? []), pack(message)];
-    return this.save(fitted({ chats }));
+    for (const list of Object.values(chats)) list.sort((a, b) => a[0] - b[0]);
+    return this.save({ chats });
   }
 
   /** Deletes one chat's messages from the phone. */
