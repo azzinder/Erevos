@@ -10,6 +10,7 @@
 // Everything here is plain data and CSS gradient strings; components/backdrop.tsx draws them.
 // Gradient strings carry explicit units everywhere (0px, not 0) and no min()/clamp()/calc():
 // React Native's own parser (Android) draws nothing for those, without an error.
+import type { Wallpaper } from './look';
 import {
   contrast,
   deepAccent,
@@ -93,6 +94,8 @@ export interface LookContext {
   scheme: 'light' | 'dark';
   palette: PaletteChoice;
   customAccent: string;
+  /** The wallpaper chosen in Appearance (the style's own unless given). */
+  wallpaper?: Wallpaper;
   /** The glass's kind (panes unless given). */
   glassKind?: GlassKind;
   /** Whether the engine blurs behind bars and sheets (CAN_BLUR unless given). */
@@ -188,7 +191,7 @@ function material(kind: GlassKind, side: GlassSide, ink: string): { card: string
  */
 export function withLook(c: Colors, ctx: LookContext): Colors {
   // Nocturne's glow and the scenes of the styles that have one (and take no glass) show through the screens.
-  if (ctx.look !== 'glass' || !takesGlass(ctx.style)) return backdropKind(ctx.style, 'flat') ? { ...c, ground: 'transparent' } : c;
+  if (ctx.look !== 'glass' || !takesGlass(ctx.style)) return backdropKind(ctx.style, 'flat', ctx.wallpaper) ? { ...c, ground: 'transparent' } : c;
   const side = glassSide(ctx.scheme);
   const g = GLASS[side];
   const kind = ctx.glassKind ?? 'cards';
@@ -455,8 +458,15 @@ export function glowLayer(width: number): string {
  * ruled lines, Aurora's light, or the
  * glass's wallpaper (with its haze or its pane).
  */
-export type BackdropKind = 'glow' | 'wall' | 'grid' | 'rain' | 'ruled' | 'aurora' | null;
-export function backdropKind(style: StyleName, look: LookName): BackdropKind {
+export type BackdropKind = 'glow' | 'wall' | 'grid' | 'rain' | 'ruled' | 'aurora' | 'pattern' | null;
+/**
+ * What lies behind the screens: a wallpaper chosen in Appearance, or else the style's own scene,
+ * Nocturne's glow or the glass's wallpaper. A plain one takes the style's scene or glow away, but
+ * the glass keeps its wallpaper, which its panes need to be glass at all.
+ */
+export function backdropKind(style: StyleName, look: LookName, wallpaper: Wallpaper = 'auto'): BackdropKind {
+  if (wallpaper === 'plain') return look === 'glass' && takesGlass(style) ? 'wall' : null;
+  if (wallpaper !== 'auto') return 'pattern';
   if (style === 'neon') return 'grid';
   if (style === 'matrix') return 'rain';
   if (style === 'paper') return 'ruled';

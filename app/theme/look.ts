@@ -25,7 +25,12 @@ export interface Look {
   bubbles: BubbleShape;
   /** The Custom style's background; its accent is customAccent. */
   customGround: string;
+  /** What lies behind the screens: the style's own, a plain ground, or a pattern (components/wallpapers.tsx). */
+  wallpaper: Wallpaper;
 }
+
+export type Wallpaper = 'auto' | 'plain' | 'dots' | 'grid' | 'stripes' | 'stars' | 'bokeh' | 'gradient';
+export const WALLPAPERS: Wallpaper[] = ['auto', 'plain', 'dots', 'grid', 'stripes', 'stars', 'bokeh', 'gradient'];
 
 export type BubbleShape = 'round' | 'square' | 'line';
 export const BUBBLE_SHAPES: BubbleShape[] = ['round', 'square', 'line'];
@@ -42,6 +47,7 @@ export const DEFAULT_LOOK: Look = {
   glassKind: 'cards',
   bubbles: 'round',
   customGround: DEFAULT_CUSTOM_GROUND,
+  wallpaper: 'auto',
 };
 
 const KEY = 'erevos.look';
@@ -65,6 +71,7 @@ export function checkedLook(value: unknown): Look {
     glassKind: pick(GLASS_KINDS, o.glassKind, DEFAULT_LOOK.glassKind),
     bubbles: pick(BUBBLE_SHAPES, o.bubbles, DEFAULT_LOOK.bubbles),
     customGround: hex(o.customGround, DEFAULT_LOOK.customGround),
+    wallpaper: pick(WALLPAPERS, o.wallpaper, DEFAULT_LOOK.wallpaper),
   };
 }
 

@@ -44,6 +44,7 @@ export function ThemeProvider({ look, onChange, children }: {
         scheme,
         palette: look.palette,
         customAccent: look.customAccent,
+        wallpaper: look.wallpaper,
       }),
       setLook: async (patch) => {
         if (patch.style) {

@@ -272,3 +272,22 @@ test('a kept look keeps the Custom background', () => {
   assert.equal(checkedLook({ ...DEFAULT_LOOK, customGround: '#0f1a24' }).customGround, '#0F1A24');
   assert.equal(checkedLook({ ...DEFAULT_LOOK, customGround: 'blue' }).customGround, DEFAULT_LOOK.customGround);
 });
+
+test('a wallpaper lies behind the screens of any style', () => {
+  for (const style of STYLES) {
+    assert.equal(backdropKind(style, 'flat', 'dots'), 'pattern', style);
+    const c = buildColors(style, 'dark', 'auto', { customAccent: '#D9A441', frameText: 'palette' });
+    const flat = withLook(c, { look: 'flat', style, scheme: 'dark', palette: 'auto', customAccent: '#D9A441', wallpaper: 'stars' });
+    assert.equal(flat.ground, 'transparent', style);
+    // The pattern lies on the style's own ground, so the text reads as it does there.
+    assert.equal(flat.background, c.background, style);
+  }
+  // Plain takes a style's scene or glow away, but the glass keeps its wallpaper.
+  assert.equal(backdropKind('neon', 'flat', 'plain'), null);
+  assert.equal(backdropKind('nocturne', 'flat', 'plain'), null);
+  assert.equal(backdropKind('classic', 'glass', 'plain'), 'wall');
+  assert.equal(backdropKind('paper', 'flat', 'auto'), 'ruled');
+  assert.equal(checkedLook({ ...DEFAULT_LOOK, wallpaper: 'bokeh' }).wallpaper, 'bokeh');
+  assert.equal(checkedLook({ ...DEFAULT_LOOK, wallpaper: 'photo' }).wallpaper, 'auto');
+  assert.equal(checkedLook({}).wallpaper, 'auto');
+});

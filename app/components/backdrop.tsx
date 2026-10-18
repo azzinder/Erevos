@@ -3,26 +3,29 @@ import { useContext, useState, type ReactNode } from 'react';
 import { Platform, StyleSheet, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { rawAccent } from '../theme/colors';
+import { isDarkGround, rawAccent, takesGlass } from '../theme/colors';
 import { useTheme } from '../theme/context';
 import { backdropKind, frostedWall, glassHaze, glassPane, glassSide, glowLayer, paneFrame, wallLayers, type GlassSide } from '../theme/glass';
 
 import { gradientStyle } from './glass';
 import { AuroraLight, MatrixRain, NeonGrid, RuledPaper } from './scenes';
+import { WallpaperView, type Pattern } from './wallpapers';
 
 // What is drawn behind the screens, as in LPHL FASOULI (src/components/backdrop.tsx there):
-// Nocturne's glow, Neon's grid, Matrix's rain (components/scenes.tsx), or the glass's wallpaper
-// with its haze or its one pane.
+// Nocturne's glow, Neon's grid, Matrix's rain (components/scenes.tsx), the glass's wallpaper
+// with its haze or its one pane, or a wallpaper chosen in Appearance (components/wallpapers.tsx).
 
 /**
  * What a backdrop draws: Nocturne's glow, Neon's grid, Matrix's rain, or the glass's wallpaper (on
  * its side, tinted with the accent), with one pane over it or not.
  */
 export interface BackdropSpec {
-  kind: 'glow' | 'wall' | 'grid' | 'rain' | 'ruled' | 'aurora';
+  kind: 'glow' | 'wall' | 'grid' | 'rain' | 'ruled' | 'aurora' | 'pattern';
   side: GlassSide;
   accent: string;
   sheet: boolean;
+  /** A wallpaper chosen in Appearance: which, on what ground, and whether glass lies over it. */
+  pattern?: { name: Pattern; ground: string; dark: boolean; glass: boolean };
 }
 
 /** The water lines: 1 px every 12 px over the lowest 38% of the wallpaper. */
@@ -72,7 +75,17 @@ export function Backdrop({ spec, paneTop = 0, contentTop = 0, children }: {
   };
   if (!spec) return <>{children}</>;
   const content = <View style={{ flex: 1, paddingTop: contentTop }}>{children}</View>;
-  if (spec.kind !== 'glow' && spec.kind !== 'wall') {
+  if (spec.kind === 'pattern' && spec.pattern) {
+    const { name, ground, dark, glass } = spec.pattern;
+    return (
+      <View style={{ flex: 1 }} onLayout={measure}>
+        <WallpaperView pattern={name} width={width} height={height} ground={ground} accent={spec.accent} dark={dark} />
+        {glass ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: glassHaze(spec.side) }]} /> : null}
+        {content}
+      </View>
+    );
+  }
+  if (spec.kind !== 'glow' && spec.kind !== 'wall' && spec.kind !== 'pattern') {
     const Scene = { grid: NeonGrid, rain: MatrixRain, ruled: RuledPaper, aurora: AuroraLight }[spec.kind];
     return (
       <View style={{ flex: 1 }} onLayout={measure}>
@@ -155,15 +168,19 @@ function Pane({ spec, top, width, height }: { spec: BackdropSpec; top: number; w
 
 /** The backdrop the open look asks for, or null (flat, not Nocturne). */
 export function useBackdropSpec(): BackdropSpec | null {
-  const { look, scheme } = useTheme();
-  const kind = backdropKind(look.style, look.look);
+  const { look, scheme, colors } = useTheme();
+  const kind = backdropKind(look.style, look.look, look.wallpaper);
   if (!kind) return null;
-  return {
-    kind,
-    side: glassSide(scheme),
-    accent: rawAccent(look.style, scheme, look.palette, look.customAccent),
-    sheet: kind === 'wall' && look.glassKind === 'sheet',
-  };
+  const side = glassSide(scheme);
+  const accent = rawAccent(look.style, scheme, look.palette, look.customAccent);
+  let pattern: BackdropSpec['pattern'];
+  if (kind === 'pattern') {
+    // Under glass the pattern lies where the glass's wallpaper would, on its ground; else on the style's.
+    const glass = look.look === 'glass' && takesGlass(look.style);
+    const ground = glass ? wallLayers(side, accent).base : colors.background;
+    pattern = { name: look.wallpaper as Pattern, ground, dark: isDarkGround(ground), glass };
+  }
+  return { kind, side, accent, sheet: kind === 'wall' && look.glassKind === 'sheet', pattern };
 }
 
 /**

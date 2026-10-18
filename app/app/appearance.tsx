@@ -26,7 +26,7 @@ import {
 import { bubbleStyles } from '../theme/bubbles';
 import { useStyles, useTheme } from '../theme/context';
 import { GLASS_KINDS, LOOK_NAMES, type GlassKind, type LookName } from '../theme/glass';
-import { BUBBLE_SHAPES, type BubbleShape } from '../theme/look';
+import { BUBBLE_SHAPES, WALLPAPERS, type BubbleShape, type Wallpaper } from '../theme/look';
 
 // Appearance, as in LPHL FASOULI's settings: flat or glass (as on lphl.nekten.eu), the style,
 // light or dark, the colours (the style's own, one of the twelve LPHL palettes, or a colour of
@@ -44,6 +44,16 @@ const STYLE_LABELS: Record<StyleName, string> = { classic: 'Classic', modernist:
   custom: 'Custom',
 };
 const BUBBLE_LABELS: Record<BubbleShape, string> = { round: 'Round', square: 'Square', line: 'Line' };
+const WALLPAPER_LABELS: Record<Wallpaper, string> = {
+  auto: 'Style default',
+  plain: 'Plain',
+  dots: 'Dots',
+  grid: 'Grid',
+  stripes: 'Stripes',
+  stars: 'Stars',
+  bokeh: 'Lights',
+  gradient: 'Gradient',
+};
 const THEME_LABELS: Record<ThemePref, string> = { system: 'System', light: 'Light', dark: 'Dark' };
 const FRAME_TEXT_LABELS: Record<FrameText, string> = { white: 'White', palette: 'As in the palette', custom: 'My color' };
 const PALETTE_LABELS: Record<PaletteChoice, string> = {
@@ -254,6 +264,16 @@ export default function Appearance() {
           {styleName} keeps its own colors here.
         </Text>
       ) : null}
+
+      <SectionTitle title="Wallpaper" />
+      <Row wrap>
+        {WALLPAPERS.map((w) => (
+          <Chip key={w} label={WALLPAPER_LABELS[w]} selected={look.wallpaper === w} onPress={() => setLook({ wallpaper: w })} />
+        ))}
+      </Row>
+      <Text variant="caption" tone="faint">
+        Drawn faintly in the accent, behind every screen. Style default keeps {styleName}'s own.
+      </Text>
 
       <SectionTitle title="Messages" />
       <Row wrap>
