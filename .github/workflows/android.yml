@@ -2,11 +2,9 @@ name: android
 
 # Builds the Android app the way the build computer does (expo prebuild, then Gradle), so a
 # native library that does not compile shows here before anyone builds it by hand. One ABI only,
-# the emulator's, to keep it quick.
+# the emulator's, to keep it quick. Main itself is built every night by release.yml.
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:

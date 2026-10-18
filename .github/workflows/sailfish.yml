@@ -1,12 +1,11 @@
 name: sailfish
 
 # Erevos for Sailfish OS (sailfish/): the web build with the core in WebAssembly, in Sailfish
-# WebView, packaged as an RPM with the Sailfish SDK's build image. Runs on main and by hand only:
-# the SDK image is large. The RPM is kept as the run's artifact.
+# WebView, packaged as an RPM with the Sailfish SDK's build image. Runs by hand only: the SDK image
+# is large, and main's RPM goes out with every release (release.yml). The RPM is kept as the run's
+# artifact.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:

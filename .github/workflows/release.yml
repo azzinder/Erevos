@@ -1,0 +1,377 @@
+name: release
+
+# Builds every Erevos package and publishes them together as a GitHub release, v0.1.<build>:
+# the Android APK (signed with the release key, see scripts/make-release-keystore.sh), Linux
+# (Arch package and AppImage), the macOS disk image and the Sailfish OS RPM. Each release
+# lists every file's SHA-256 in SHA256SUMS. A package whose job fails is left out; the others
+# still go out.
+#
+# When: every night, if main changed since the last release, and whenever started by hand
+# (Actions, release, Run workflow). Not on every push: a full build takes over an hour of
+# Actions minutes, and main moves many times a day.
+#
+# The jobs hand their files to the publish job through a draft release, build-<run number>:
+# artifacts would fill the account's Actions storage, release files do not count toward it.
+# The five newest releases stay.
+
+on:
+  schedule:
+    # 02:30 UTC, after the day's work.
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+# Each job asks for what it needs: contents: write where it uses gh release.
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  EREVOS_BUILD: ${{ github.run_number }}
+  EREVOS_VERSION: 0.1.${{ github.run_number }}
+  EXPO_NO_TELEMETRY: "1"
+
+jobs:
+  # Decides whether to build at all, then opens the draft release the jobs hand their files to.
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+    steps:
+      - name: Check the branch, and whether main changed since the last release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [ "$GITHUB_REF_NAME" != main ]; then
+            echo "::error::Releases are built only from main, not from $GITHUB_REF_NAME"; exit 1
+          fi
+          last=$(gh api "repos/$GH_REPO/releases/latest" --jq .target_commitish 2>/dev/null || true)
+          if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$last" = "$GITHUB_SHA" ]; then
+            echo "main has not changed since the last release (${GITHUB_SHA::7}): nothing to build."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Prepare the draft release the jobs hand their files to
+        if: ${{ steps.check.outputs.build == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Drafts of builds that never published (older than six hours). A cleanup that fails
+          # does not hold the build back.
+          gh release list --limit 100 --json tagName,isDraft,createdAt \
+            --jq '.[] | select(.isDraft and (.tagName | startswith("build-")) and ((.createdAt | fromdateiso8601) < (now - 21600))) | .tagName' |
+            xargs -r -n1 gh release delete --yes || echo "::warning::Old build drafts not deleted"
+          gh release create "build-$EREVOS_BUILD" --draft --target "$GITHUB_SHA" --title "Build $EREVOS_BUILD (in progress)" --notes ""
+
+  # The Android APK for 64-bit ARM phones (every phone of the last years), signed with the
+  # release key. Without the key's four secrets the job stops and the release goes out without
+  # an APK, rather than sign with the public debug key, which would let anyone's APK install
+  # over Erevos.
+  apk:
+    needs: version
+    if: ${{ needs.version.outputs.build == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the release signing key is there
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            [ -n "${!name}" ] || { echo "::error::The secret $name is missing. Make the release key with scripts/make-release-keystore.sh and add the four secrets it names under Settings → Secrets and variables → Actions."; exit 1; }
+          done
+
+      # The Rust core, Tor and the native modules need more disk than the runner leaves free.
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/share/powershell
+          sudo docker image prune --all --force
+          df -h /
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - run: cargo install cargo-ndk --version 4.1.2 --locked
+
+      - name: Generate the Android project
+        working-directory: app
+        run: |
+          npm ci
+          npx expo prebuild --platform android --no-install
+
+      - name: Set up the release signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/android/app/release.keystore
+          # The alias and password open it (a wrong one fails here, clearly, not inside Gradle);
+          # its fingerprint is what the APK must be signed with.
+          keytool -list -v -keystore app/android/app/release.keystore -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" |
+            sed -n 's/^[[:space:]]*SHA256: //p' | tr -d ':' | tr 'A-F' 'a-f' > release-fingerprint
+          [ -s release-fingerprint ] || { echo "::error::The release key's fingerprint could not be read"; exit 1; }
+          echo "Release key SHA-256: $(cat release-fingerprint)"
+
+      - name: Build the release APK
+        working-directory: app/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+
+      - name: Check the APK
+        run: |
+          cp app/android/app/build/outputs/apk/release/app-release.apk erevos-android.apk
+          rm -f app/android/app/release.keystore
+          # It carries the Rust core.
+          unzip -l erevos-android.apk 'lib/arm64-v8a/*' | grep -q 'erevos' \
+            || { echo "::error::The Erevos core is missing from the APK"; unzip -l erevos-android.apk 'lib/*'; exit 1; }
+          # Signed by the release key, never by the public debug key (SHA-1 5E:8F:16:06:2E:A3:…).
+          apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          "$apksigner" verify --print-certs erevos-android.apk | tee signature
+          if grep -i 'certificate SHA-1 digest' signature | tr -d ':' | grep -qi 5e8f16062ea3cd2c4a0d547876baa6f38cabf625; then
+            echo "::error::The APK is signed with the debug key"; exit 1
+          fi
+          grep -i 'certificate SHA-256 digest' signature | tr -d ':' | tr 'A-F' 'a-f' | grep -q "$(cat release-fingerprint)" \
+            || { echo "::error::The APK is not signed with the release key"; exit 1; }
+
+      - name: Hand the APK to the publish job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "build-$EREVOS_BUILD" erevos-android.apk --clobber
+
+  # Linux, and the web build with its core that the macOS and Sailfish jobs package too.
+  linux:
+    needs: version
+    if: ${{ needs.version.outputs.build == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            app/package-lock.json
+            desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Build the web app with its core
+        working-directory: app
+        env:
+          EXPO_PUBLIC_SHELL: electron
+        run: |
+          npm ci
+          node scripts/build-web-core.mjs
+          npx expo export --platform web --output-dir ../desktop/web
+          test -f ../desktop/web/core/erevos_ffi_bg.wasm
+
+      # Handed over before the Linux packages, so a failure there does not hold the Mac back.
+      - name: Hand the desktop web build to the macOS job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tar -czf desktop-web.tar.gz -C desktop web
+          gh release upload "build-$EREVOS_BUILD" desktop-web.tar.gz --clobber
+
+      - run: npm ci
+        working-directory: desktop
+      - name: Start it and wait for its first screen
+        working-directory: desktop
+        run: xvfb-run -a npx electron . --smoke --no-sandbox
+      - name: Build the Arch Linux package and AppImage
+        working-directory: desktop
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q libarchive-tools
+          npx electron-builder --linux pacman AppImage --x64 --publish never -c.extraMetadata.version=$EREVOS_VERSION
+      - name: Hand the packages to the publish job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir up
+          cp desktop/dist/*.pacman up/erevos-linux-x86_64.pacman
+          cp desktop/dist/*.AppImage up/erevos-linux-x86_64.AppImage
+          gh release upload "build-$EREVOS_BUILD" up/* --clobber
+
+  # One app for Apple silicon and Intel (macOS 13 or newer), signed ad hoc, not by Apple (that
+  # needs a paid Apple Developer ID). A Mac minute counts as ten, so none while the repository
+  # variable EREVOS_MACOS is "off".
+  macos:
+    needs: [version, linux]
+    if: ${{ !cancelled() && needs.version.outputs.build == 'true' && vars.EREVOS_MACOS != 'off' }}
+    runs-on: macos-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Take the desktop web build from the Linux job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release download "build-$EREVOS_BUILD" -p desktop-web.tar.gz
+          tar -xzf desktop-web.tar.gz -C desktop
+          test -f desktop/web/core/erevos_ffi_bg.wasm
+      - run: npm ci
+        working-directory: desktop
+      - name: Build the macOS disk image
+        working-directory: desktop
+        run: npx electron-builder --mac dmg --universal --publish never -c.extraMetadata.version=$EREVOS_VERSION
+      - name: Open the disk image and start the app
+        run: |
+          set -euo pipefail
+          dmg=$(ls desktop/dist/*.dmg)
+          mnt=$(mktemp -d)
+          hdiutil attach "$dmg" -nobrowse -readonly -noautoopen -mountpoint "$mnt"
+          app="$mnt/Erevos.app"
+          archs=$(lipo -archs "$app/Contents/MacOS/Erevos")
+          echo "Architectures: $archs"
+          case " $archs " in *" arm64 "*) ;; *) echo "::error::No Apple silicon code"; exit 1 ;; esac
+          case " $archs " in *" x86_64 "*) ;; *) echo "::error::No Intel code"; exit 1 ;; esac
+          codesign --verify --deep --strict --verbose=2 "$app"
+          keychain="$RUNNER_TEMP/erevos-check.keychain-db"
+          security create-keychain -p erevos-check "$keychain"
+          security set-keychain-settings "$keychain"
+          security unlock-keychain -p erevos-check "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security default-keychain -d user -s "$keychain"
+          "$app/Contents/MacOS/Erevos" --smoke | tee smoke.log
+          grep -q "SMOKE OK core=true secrets=encrypted" smoke.log
+          hdiutil detach "$mnt"
+      - name: Hand the disk image to the publish job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir up
+          cp desktop/dist/*.dmg up/erevos-macos.dmg
+          gh release upload "build-$EREVOS_BUILD" up/erevos-macos.dmg --clobber
+
+  sailfish:
+    needs: version
+    if: ${{ needs.version.outputs.build == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Build the web app with its core, and the icons
+        run: sailfish/build-web.sh
+      - name: Build the RPM for aarch64
+        working-directory: sailfish
+        run: |
+          sed -i "s/^Version:.*/Version:    $EREVOS_VERSION/" rpm/erevos.spec
+          # The SDK image builds as its own user.
+          chmod -R a+rwX .
+          docker run --rm -v "$PWD:/home/mersdk/src" -w /home/mersdk/src \
+            coderus/sailfishos-platform-sdk-aarch64:5.0.0.43 \
+            bash -lc 'mb2 -t SailfishOS-5.0.0.43-aarch64 build'
+          ls RPMS/*.aarch64.rpm
+      - name: Hand the RPM to the publish job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir up
+          for f in sailfish/RPMS/*.aarch64.rpm; do
+            case "$f" in *debug*) ;; *) cp "$f" up/erevos-sailfish-aarch64.rpm ;; esac
+          done
+          gh release upload "build-$EREVOS_BUILD" up/* --clobber
+
+  publish:
+    needs: [version, apk, linux, macos, sailfish]
+    if: ${{ !cancelled() && needs.version.outputs.build == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # What the jobs that succeeded handed over (not the web build the macOS job took).
+          gh release download "build-$EREVOS_BUILD" -D files -p 'erevos-*' || true
+          if ! ls files/erevos-* > /dev/null 2>&1; then
+            echo "::error::No job made a package: nothing to publish"; exit 1
+          fi
+          (cd files && sha256sum erevos-* > SHA256SUMS && cat SHA256SUMS)
+          : > packages.md
+          package() { if [ -f "files/$1" ]; then echo "- $2" >> packages.md; fi; }
+          package erevos-android.apk "**Android** 7 or newer (64-bit): open this page on the phone and tap erevos-android.apk. Allow installing from the browser once."
+          package erevos-linux-x86_64.pacman "**Arch Linux / CachyOS** (x86_64): \`sudo pacman -U erevos-linux-x86_64.pacman\`"
+          package erevos-linux-x86_64.AppImage "**Other Linux** (x86_64): make erevos-linux-x86_64.AppImage executable and run it (needs FUSE 2)."
+          package erevos-macos.dmg "**macOS** 13 or newer (Apple silicon and Intel): open erevos-macos.dmg and drag Erevos to Applications. It has no paid Apple signature: the first time, and after each update, allow it under System Settings → Privacy & Security → Open Anyway."
+          package erevos-sailfish-aarch64.rpm "**Sailfish OS** 5 (aarch64): install erevos-sailfish-aarch64.rpm."
+          missing=""
+          [ -f files/erevos-android.apk ] || missing="$missing Android,"
+          [ -f files/erevos-macos.dmg ] || missing="$missing macOS,"
+          [ -f files/erevos-linux-x86_64.AppImage ] || missing="$missing Linux,"
+          [ -f files/erevos-sailfish-aarch64.rpm ] || missing="$missing Sailfish OS,"
+          cat > notes.md <<NOTES
+          **Erevos $EREVOS_VERSION**, $(TZ=Europe/Athens date +%-d/%-m/%Y), from commit ${GITHUB_SHA::7}.
+
+          $(cat packages.md)
+
+          ${missing:+Not in this release:${missing%,} (its build failed or is switched off; the release before may have it).}
+
+          SHA256SUMS lists every file's SHA-256: \`sha256sum -c SHA256SUMS\`.
+          The web app is not here: it goes out signed from the release computer (deploy/web).
+          NOTES
+          cat notes.md
+          gh release create "v$EREVOS_VERSION" files/* --target "$GITHUB_SHA" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest
+          gh release delete "build-$EREVOS_BUILD" --yes
+          # The five newest releases stay.
+          gh release list --limit 100 --exclude-drafts --json tagName --jq '.[5:][].tagName' |
+            xargs -r -n1 gh release delete --cleanup-tag --yes

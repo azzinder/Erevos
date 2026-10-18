@@ -3,10 +3,10 @@ name: desktop
 # Erevos for Linux and macOS (desktop/): the web build with the core in WebAssembly, in Electron.
 # Nobody on the team has a Mac, so the Mac's disk image is opened and its app started here, on
 # GitHub's Mac runner, with --smoke (desktop/main.js): it waits for the first screen and the core.
-# The packages are kept as the run's artifacts.
+# The packages are kept as the run's artifacts. Main's packages go out with every release
+# (release.yml).
 
 on:
-  push:
   pull_request:
   workflow_dispatch:
 
@@ -58,11 +58,11 @@ jobs:
           name: desktop-web
           path: desktop/web
 
-  # A Mac minute counts as ten of the free ones, so the Mac build runs only for main, or when
-  # started by hand (Actions, desktop, Run workflow).
+  # A Mac minute counts as ten of the free ones, so the Mac build runs only when started by hand
+  # (Actions, desktop, Run workflow); release.yml builds main's.
   macos:
     needs: linux
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
