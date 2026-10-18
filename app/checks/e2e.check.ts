@@ -469,3 +469,28 @@ t('a contact link with its key fits a QR code', async () => {
   // Version 33 or below: 149 modules a side. The relay's key added one version.
   assert.ok(qrRows(link).length <= 149, `${qrRows(link).length}`);
 });
+
+t('a call is set up in sealed messages, and calling accepts a request', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('hidden', 0);
+  const added = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(added.identity);
+  assert.equal(bob.e2e.contacts()[0].request, true);
+
+  // Bob calls Alice back, who wrote first: that accepts her request.
+  const sdp = 'v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\n';
+  const offer = await bob.e2e.seal(hello.identity, '', bob.from, { call: { id: '0123456789abcdef', kind: 'offer', video: true, sdp, at: 5 } });
+  assert.equal(offer.tag, '');
+  assert.equal(bob.e2e.contacts()[0].request, false);
+  const rang = message(await alice.e2e.receive(offer.packet));
+  assert.equal(rang.text, '');
+  assert.deepEqual(rang.call, { id: '0123456789abcdef', kind: 'offer', video: true, sdp, at: 5 });
+
+  const end = await alice.e2e.seal(added.identity, '', alice.from, { call: { id: '0123456789abcdef', kind: 'end', reason: 'decline' } });
+  assert.deepEqual(message(await bob.e2e.receive(end.packet)).call, { id: '0123456789abcdef', kind: 'end', reason: 'decline' });
+
+  // A text never carries a call signal, and a plain message has none.
+  const text = await alice.e2e.seal(added.identity, 'hi', alice.from, { call: { id: '0123456789abcdef', kind: 'ringing' } });
+  assert.equal(message(await bob.e2e.receive(text.packet)).call, null);
+});

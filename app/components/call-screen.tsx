@@ -1,0 +1,159 @@
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Vibration, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import type { Call } from '../lib/call';
+import { callClock } from '../lib/calls';
+import type { CallEnd } from '../lib/call-signal';
+import { CallVideo } from './call-video';
+import { KeyFace } from './key-face';
+import { Text } from './ui';
+
+// A call over the whole chat, in every style: dark, as the picture shows best on it. Shows the other
+// phone's picture or their face drawn from their key, our own camera in a corner, how the call
+// stands, and its buttons. It closes itself a moment after the call ends.
+
+// Long buzz, pause, again, while a call rings here.
+const RING = [0, 900, 1100];
+// How long the screen stays after a call ends, milliseconds.
+const ENDED_SHOWN = 2500;
+
+const ENDS: Record<CallEnd, { ours: string; theirs: string }> = {
+  hangup: { ours: 'Call ended', theirs: 'They hung up' },
+  decline: { ours: 'Turned down', theirs: 'They turned it down' },
+  busy: { ours: 'Call ended', theirs: 'They are in another call' },
+  missed: { ours: 'Call ended', theirs: 'Not answered' },
+  failed: { ours: 'The call could not connect', theirs: 'The call could not connect on their phone' },
+};
+
+/** How a call stands, in a few words. */
+export function callStatus(call: Call, now: number): string {
+  const kind = call.video ? 'video call' : 'voice call';
+  switch (call.state) {
+    case 'calling':
+      return 'Calling…';
+    case 'ringing':
+      return 'Ringing…';
+    case 'incoming':
+      return `Incoming ${kind}`;
+    case 'connecting':
+      return 'Connecting…';
+    case 'connected':
+      return callClock(now - call.connectedAt);
+    case 'ended': {
+      const ended = call.ended ?? { reason: 'hangup', byUs: true };
+      // Theirs, not answered here.
+      if (ended.reason === 'missed' && !call.outgoing) return 'Missed call';
+      return ended.byUs ? ENDS[ended.reason].ours : ENDS[ended.reason].theirs;
+    }
+  }
+}
+
+export function CallScreen({ call, identity, name, speaker, onSpeaker, onAnswer, onClose }: {
+  call: Call;
+  /** The contact's identity key, hex, for their face. */
+  identity: string;
+  name: string;
+  speaker: boolean;
+  onSpeaker: (on: boolean) => void;
+  /** Answers the call that rings here, once the camera and microphone may be used. */
+  onAnswer: () => void;
+  onClose: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const [now, setNow] = useState(Date.now());
+  const { state } = call;
+
+  // The time shown while connected.
+  useEffect(() => {
+    if (state !== 'connected') return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [state]);
+
+  useEffect(() => {
+    if (state !== 'incoming') return;
+    Vibration.vibrate(RING, true);
+    return () => Vibration.cancel();
+  }, [state]);
+
+  useEffect(() => {
+    if (state !== 'ended') return;
+    const timer = setTimeout(onClose, ENDED_SHOWN);
+    return () => clearTimeout(timer);
+  }, [state]);
+
+  const theirs = call.video && call.remote && state === 'connected';
+  const ours = call.video && call.local && !call.cameraOff && state !== 'ended';
+
+  return (
+    <View style={styles.screen}>
+      {/* Their sound plays through this too in a browser, so it is there in a voice call as well. */}
+      {call.remote ? <CallVideo stream={call.remote} style={theirs ? StyleSheet.absoluteFill : styles.unseen} /> : null}
+      {ours ? (
+        <CallVideo stream={call.local!} mirror style={[styles.own, { top: insets.top + 16 }, theirs ? null : styles.ownWhole]} />
+      ) : null}
+      <View style={[styles.top, { paddingTop: insets.top + (theirs ? 16 : 72) }]} pointerEvents="none">
+        {theirs ? null : <KeyFace identity={identity} name={name} size={112} />}
+        <Text variant="title" color="#FFFFFF" style={styles.shadow} numberOfLines={1}>
+          {name}
+        </Text>
+        <Text variant="body" color="rgba(255,255,255,0.8)" style={styles.shadow}>
+          {callStatus(call, now)}
+        </Text>
+        {state === 'connected' || state === 'connecting' ? (
+          <Text variant="caption" color="rgba(255,255,255,0.6)" style={styles.shadow}>
+            End-to-end encrypted
+          </Text>
+        ) : null}
+      </View>
+      <View style={[styles.buttons, { paddingBottom: insets.bottom + 28 }]}>
+        {state === 'incoming' ? (
+          <>
+            <Round title="Decline" color="#C62828" onPress={() => call.decline()} />
+            <Round title="Answer" color="#2E7D32" onPress={onAnswer} />
+          </>
+        ) : state === 'ended' ? null : (
+          <>
+            <Round title={call.muted ? 'Unmute' : 'Mute'} on={call.muted} onPress={() => call.setMuted(!call.muted)} />
+            <Round title="Speaker" on={speaker} onPress={() => onSpeaker(!speaker)} />
+            {call.video ? <Round title={call.cameraOff ? 'Camera on' : 'Camera off'} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} /> : null}
+            {call.video ? <Round title="Flip" onPress={() => call.switchCamera()} /> : null}
+            <Round title="End" color="#C62828" onPress={() => call.hangUp()} />
+          </>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function Round({ title, onPress, on = false, color }: { title: string; onPress: () => void; on?: boolean; color?: string }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ selected: on }}
+      style={({ pressed }) => [
+        styles.round,
+        { backgroundColor: color ?? (on ? '#FFFFFF' : 'rgba(255,255,255,0.16)'), opacity: pressed ? 0.7 : 1 },
+      ]}
+    >
+      <Text variant="label" color={!color && on ? '#111111' : '#FFFFFF'} style={{ fontSize: 13, textAlign: 'center' }}>
+        {title}
+      </Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#0B0B0D', zIndex: 100, elevation: 100 },
+  unseen: { position: 'absolute', width: 1, height: 1, opacity: 0 },
+  own: { position: 'absolute', right: 16, width: 108, height: 160, borderRadius: 14, overflow: 'hidden', zIndex: 2 },
+  // Before their picture comes, ours fills the screen behind the name.
+  ownWhole: { top: 0, right: 0, left: 0, bottom: 0, width: undefined, height: undefined, borderRadius: 0, opacity: 0.55, zIndex: 0 },
+  top: { alignItems: 'center', gap: 8, paddingHorizontal: 24 },
+  shadow: { textShadowColor: 'rgba(0,0,0,0.6)', textShadowRadius: 6 },
+  buttons: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 14, paddingHorizontal: 16 },
+  round: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+});

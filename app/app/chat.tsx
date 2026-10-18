@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Image, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
+import { Alert, AppState, Image, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
+import { currentCall } from '../lib/call';
+import { callPermissions } from '../lib/call-permissions';
+import { CALL_LINE, callLineMessage, callSignal, endCallsOf, startCall as beginCall, type CallPlace } from '../lib/calls';
+import { onSpaceCallLine, spaceCalls } from '../lib/space-calls';
+import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
@@ -30,10 +35,10 @@ import { openHidden, setHiddenPassword } from '../lock/hidden';
 import { cleanName, MAX_NAME, type Avatar } from '../lock/e2e-data';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
-import { History, newTag, type Mark } from '../lock/history';
+import { History, newTag, type Mark, type Message as Kept } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
-import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type Relay } from '../lib/relay';
+import { callRelay, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type Relay } from '../lib/relay';
 import { answersAsk, appShown, holdReceiver } from '../lib/receiver';
 import { contactTarget, relayFor, spaceChats } from '../lib/space-chats';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
@@ -58,8 +63,10 @@ import { AppearanceEditor } from './appearance';
 // sealed file of its own (lock/voice-clips.ts). Photos and files go through the relay's file store
 // (lib/attachments.ts): ours are kept here as they went, theirs are taken from the relay at once
 // up to AUTO_TAKE, larger ones when tapped. A photo shows from memory only, never written out
-// unsealed; Save puts a copy outside Erevos. Messages over the radio link are kept in memory
-// only, so they are gone when the chat closes.
+// unsealed; Save puts a copy outside Erevos. Voice and video calls to a contact (lib/call.ts) are
+// set up with messages through the relay and then go between the phones, through the call relay
+// beside our relay when it has one; each call leaves a line in the chat. Messages over the radio
+// link are kept in memory only, so they are gone when the chat closes.
 //
 // Every space also has hidden chats (lock/hidden.ts), opened with their own password from the
 // Hidden chats button, which every space shows whether it has hidden chats or not. They are a
@@ -96,11 +103,12 @@ const MARKS = ['✓', '✓✓', '✓✓✓'];
 // What a phone still has to tell a contact's: which of their messages came, and were read.
 type Receipts = Record<string, { got: string[]; read: string[] }>;
 
-// What the chat will do and does not yet, said when tapped, in the order they come.
-const COMING = [
-  { title: 'Call', note: 'Voice calls are not built yet. A walkie-talkie comes first, then calls.' },
-  { title: 'Video', note: 'Video calls are not built yet. They come after voice calls, over Wi-Fi or the internet.' },
-];
+// A call's line in the chat is this phone's own note, so it has no marks.
+const isCallLine = (text: string) => text.startsWith(CALL_LINE);
+
+// How often the chat looks at the relay, milliseconds: more often during a call, so it sets up quickly.
+const LOOK_EVERY = 3000;
+const LOOK_IN_CALL = 700;
 
 // How long a note under the messages stays, milliseconds.
 const NOTE_SHOWN = 8000;
@@ -159,7 +167,7 @@ function disappearsAt(until: number): string {
 // Under a message to or from a contact: its mark if it is ours, and when it disappears.
 function caption(message: Message): string {
   const parts: string[] = [];
-  if (message.mine && message.tag) parts.push(MARKS[message.mark]);
+  if (message.mine && message.tag && !isCallLine(message.text)) parts.push(MARKS[message.mark]);
   if (message.until) parts.push(`Disappears ${disappearsAt(message.until)}`);
   else if (message.lasts) parts.push(`Disappears ${timerLabel(message.lasts).toLowerCase()} after it is read`);
   return parts.join('  ·  ');
@@ -349,6 +357,18 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   // How far the voice message playing has played, milliseconds.
   const [played, setPlayed] = useState(0);
   const stopPlaying = useRef<(() => void) | null>(null);
+  // Where this chat's calls belong (lib/calls.ts): the space's, or these hidden chats', which
+  // seal with this chat's own keys and keep their lines here. Its functions use this render's state.
+  const latest = useRef({ send: async (_identity: string, _extra: Extra) => undefined as unknown, line: (_message: Kept) => undefined as void, name: (peer: string) => peer, relay: () => Promise.resolve(null as CallRelay | null) });
+  const hiddenCalls = useRef<CallPlace>({
+    send: async (identity, signal) => {
+      await latest.current.send(identity, { call: signal });
+    },
+    callRelay: () => latest.current.relay(),
+    line: (peer, mine, text) => latest.current.line(callLineMessage(peer, mine, text, 0)),
+    name: (peer) => latest.current.name(peer),
+  });
+  const callPlace = hiddenKey ? hiddenCalls.current : spaceCalls;
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
@@ -612,6 +632,16 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
     return () => subscription.remove();
   }, []);
 
+  // A call in hidden chats ends when they close, as they do when Erevos goes to the background.
+  // The space's calls go on over the other screens.
+  useEffect(() => () => endCallsOf(hiddenCalls.current), []);
+
+  // The lines of the space's calls, kept by lib/space-calls.ts, show here as they come.
+  useEffect(() => {
+    if (hiddenKey) return;
+    return onSpaceCallLine((message) => showCallLine(message));
+  }, [hiddenKey]);
+
   // A contact's messages are read once their chat shows on the screen: their phone is told with
   // the next look at the relay, and the disappearing ones start their time.
   useEffect(() => {
@@ -673,8 +703,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
     let busy = false;
     // The note shown while the relay could not be reached, taken back once it answers again.
     let failed: string | null = null;
-    const timer = setInterval(async () => {
-      if (busy) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    async function look() {
+      if (busy || !e2e) return;
       busy = true;
       try {
         await sendPending(e2e, sends);
@@ -712,7 +743,14 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       } finally {
         busy = false;
       }
-    }, 3000);
+    }
+    function next() {
+      timer = setTimeout(async () => {
+        await look();
+        if (active) next();
+      }, currentCall() ? LOOK_IN_CALL : LOOK_EVERY);
+    }
+    next();
 
     // What one message from the relay brings.
     function handle(received: Awaited<ReturnType<E2E['receive']>>) {
@@ -724,6 +762,11 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       const peer = `${CONTACT_PREFIX}${received.identity}`;
       setContacts(e2e.contacts());
       setSelected((current) => current ?? peer);
+      if (received.call) {
+        void callSignal(callPlace, peer, received.call, received.request, rtc).then((said) => {
+          if (said) setNote(said);
+        });
+      }
       if (received.online) setNow(Date.now());
       const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
       if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
@@ -775,7 +818,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
     return () => {
       active = false;
-      clearInterval(timer);
+      if (timer) clearTimeout(timer);
     };
   }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e]);
 
@@ -876,6 +919,89 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
     // Writing to a message request accepts it.
     if (text) setContacts(e2e.contacts());
     return { tag: sealed.tag, timer: sealed.timer };
+  }
+
+  // A call's line in the chat, kept with its messages. It needs no read mark, and it disappears
+  // with the chat's timer from now.
+  // A call's line, kept already, shown in the thread.
+  function showCallLine({ peer, text, mine, at, tag, until = 0 }: Kept) {
+    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag, until, lasts: 0, mark: 2, at }]);
+  }
+
+  latest.current = {
+    send: async (identity, extra) => {
+      const target = relayTarget();
+      if (!target) throw new Error('No relay.');
+      await sendToContact(target, identity, '', extra);
+    },
+    line: (message) => {
+      const timer = e2e?.contacts().find((c) => `${CONTACT_PREFIX}${c.identity}` === message.peer)?.timer ?? 0;
+      const kept = { ...message, until: timer ? message.at + timer * 1000 : 0 };
+      showCallLine(kept);
+      history.current?.add(kept).catch(() => {
+        // Shown, but gone when the chat next opens.
+      });
+    },
+    name: (peer) => label(peer, e2e?.contacts() ?? []),
+    relay: () => ownCallRelay(),
+  };
+
+  // The call relay beside our relay, null if it has none.
+  function ownCallRelay(): Promise<CallRelay | null> {
+    return callRelay({ url: relayUrl.trim(), token: relayToken.trim() || undefined });
+  }
+
+  // Without a call relay, asks before a call that shows each phone's address to the other.
+  function callDirectly(): Promise<boolean> {
+    return new Promise((resolve) =>
+      Alert.alert(
+        'Call without a call relay?',
+        "Your relay has no call relay beside it, so the call would go straight between the phones. That only works on the same Wi-Fi, and each phone sees the other's address on it. With a call relay, neither does.",
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Call', onPress: () => resolve(true) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) },
+      ),
+    );
+  }
+
+  async function startCall(video: boolean) {
+    if (!selectedContact) {
+      setNote(`${video ? 'Video calls' : 'Calls'} go to contacts through the relay. Pick one first.`);
+      return;
+    }
+    const peer = selectedContact;
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    if (contacts.find((c) => c.identity === identity)?.request) {
+      setNote('Accept the message request first. Then you can call.');
+      return;
+    }
+    if (currentCall()) {
+      setNote('There is a call already.');
+      return;
+    }
+    if (!e2e || !ownQueue || !relayUrl.trim()) {
+      setNote(e2e ? 'Calls are set up through the relay. Type its address in Relay first.' : NO_CORE);
+      return;
+    }
+    if (!(await callPermissions(video))) {
+      setNote(video ? 'A video call needs the camera and the microphone.' : 'A call needs the microphone.');
+      return;
+    }
+    let relay: CallRelay | null;
+    try {
+      relay = await ownCallRelay();
+    } catch (error) {
+      setNote(`Could not call. ${errorText(error)}`);
+      return;
+    }
+    if (!relay && !(await callDirectly())) return;
+    try {
+      beginCall(callPlace, peer, video, relay, rtc);
+    } catch (error) {
+      setNote(errorText(error));
+    }
   }
 
   function notSent(error: unknown): string {
@@ -1915,9 +2041,8 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
             {selectedContact ? <Tool title="Disappear" on={vanishing} onPress={() => setVanishing((on) => !on)} /> : null}
             {selectedContact ? <Tool title="Attach" on={attaching} onPress={() => setAttaching(true)} /> : null}
             <Tool title={talking ? 'Let go to send' : 'Voice'} on={talking} onPressIn={startTalking} onPressOut={() => void stopTalking()} />
-            {COMING.map(({ title, note }) => (
-              <Tool key={title} title={title} onPress={() => setNote(note)} />
-            ))}
+            <Tool title="Call" onPress={() => void startCall(false)} />
+            <Tool title="Video" onPress={() => void startCall(true)} />
           </Row>
           <Button title="Send" compact disabled={!draft.trim() || !selected} onPress={() => void send()} style={styles.action} />
         </Row>

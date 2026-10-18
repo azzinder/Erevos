@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
 import { AlertHost } from '../components/alert-host';
+import { CallHost } from '../components/call-host';
 import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
 import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
@@ -210,6 +211,7 @@ function Shell({ phase, error, lockState, onUnlock }: {
         <Stack.Screen name="chat" options={{ headerShown: false }} />
       </Stack>
       <Receiver key={phase.space} />
+      <CallHost key={`call-${phase.space}`} />
       <AlertHost />
       {bar}
     </LockContext.Provider>

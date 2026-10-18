@@ -211,6 +211,27 @@ it. Photos and files have the same marks as the rest, and follow the chat's disa
 - **Saved** photos and files are outside Erevos, not sealed: anyone with the phone can open them.
 - **Through the relay only,** like voice messages. A relay older than this version cannot take files: update it.
 
+### Voice and video calls
+
+In a contact's chat, tap **Call** for a voice call or **Video** for a video call. The first time, Android asks whether
+Erevos may use the microphone, and the camera for video. Their phone rings while Erevos is open there, on any screen of
+the space: they tap **Answer** or **Decline**. During the call you can mute, switch the loudspeaker, turn your camera off, flip
+between the front and back camera, and **End**. Each call leaves a line in the chat, such as how long it lasted, or
+a missed call.
+
+- **End-to-end encrypted:** the call is set up with messages through the relay, encrypted like the rest. Those carry
+  the key that encrypts the call itself, so no one in between can listen, not even the call relay below.
+- **Through the call relay:** a relay set up with the kit in \`deploy/relay\` has a call relay beside it. The call
+  goes through it, so neither phone learns the other's IP address. Over Wi-Fi or mobile data, anywhere.
+- **Without a call relay** (a relay on your own computer, for example), Erevos asks first: the call then goes
+  straight between the phones, only works on the same Wi-Fi, and each phone sees the other's address on it.
+- **Ringing needs Erevos open** on their phone, in the space your chat is in: until Erevos can receive while closed,
+  a call to a phone where it is closed shows there as a missed call once they open it. A message request cannot call you until
+  you accept it.
+- **One call at a time.** A call goes on while you move between screens of the space. It ends when the space closes,
+  and a call in hidden chats when they close, as they do when Erevos goes to the background.
+- Not over a nearby phone or Bluetooth yet: a walkie-talkie that works there is still to come.
+
 > The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
 > kept in this space, sealed. About a thousand short messages fit; when it is full, the oldest go first. Deleted
 > messages can stay for a while in the phone's storage, sealed like the rest, until something is written over them.
@@ -245,7 +266,8 @@ has everything in \`deploy/relay\`.
   \`ws://<its address>:7879\` on every phone. Close the port again when you are done.
 - **On the internet:** a server (VPS) with Debian 12 or Ubuntu 22.04 or later, a domain name (or a free
   \`sslip.io\` name) and ports 80 and 443 open. One command installs the relay behind Caddy, with a certificate from
-  Let's Encrypt and a random token. Every phone then uses \`wss://<your domain>\` and that token.
+  Let's Encrypt and a random token. Every phone then uses \`wss://<your domain>\` and that token. The same command
+  sets up the call relay for calls, which needs port 3478 and the UDP ports 50000 to 50999 open too.
 
 Queues and waiting messages are kept on the server's disk, and so are the encrypted pieces of photos and files until
 they are taken (1024 MB together at most), so a restart loses nothing, and no request is logged.
@@ -447,6 +469,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring; a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay sees one more small message. | A switch to stop telling when you read. |
+| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing while Erevos is closed. A walkie-talkie over Bluetooth. |
 
 ## What is coming {#coming}
 
@@ -459,9 +482,8 @@ End-to-end encryption through the relay is here. The nearby link comes next, and
     it on, with privacy warnings first.
   - **SMS:** off unless you turn it on for a contact, with a warning first: the carrier sees who and when.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
-- **Calls:** walkie-talkie first (it works even over Bluetooth), then voice, then video. Their buttons, **Call** and
-  **Video**, are already under the message field: for now they say when each comes. **Voice** already sends voice
-  messages, see [Chat through a relay](#relay).
+- **Calls:** voice and video calls are here, see [Chat through a relay](#relay). Next: ringing while Erevos is
+  closed, and a walkie-talkie that works even over Bluetooth.
 - **Groups:** group chats, and group video calls. Up to four people connect directly; when more join, the call
   moves to a server by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come

@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Turning the screen off while the phone is at the ear during a call. -->
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+</manifest>

@@ -79,6 +79,11 @@ export function onReceived(listener: () => void): () => void {
   };
 }
 
+/** Tells the screens that listen (onReceived) that the space's chats changed, as when a call left its line. */
+export function announceReceived(): void {
+  listeners.forEach((listener) => listener());
+}
+
 /** Calls `listener` with each message the receiver opens, after it is kept; not those the chat screen opens itself. */
 export function onMessage(listener: (received: Extract<Received, { kind: 'message' }>) => void): () => void {
   messageListeners.add(listener);

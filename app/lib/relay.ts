@@ -24,6 +24,7 @@ const FILE_PUT = 8;
 const FILE_GET = 9;
 const FILE_DELETE = 10;
 const FILE_VIA = 11;
+const CALL_RELAY = 12;
 
 const OK = 0;
 const NOT_FOUND = 1;
@@ -342,4 +343,30 @@ export async function deleteChunk(session: RelaySession, id: Uint8Array, via?: s
   if (reply[0] === NOT_FOUND) return false;
   checkFile(reply, 'delete');
   return true;
+}
+
+/** A call relay (TURN server) and credentials for it, as WebRTC takes them. */
+export type CallRelay = { urls: string[]; username: string; credential: string };
+
+/** Credentials for the call relay beside the relay, or null if it has none. They last hours, so
+ *  they are fetched for each call. */
+export async function callRelay(relay: Relay): Promise<CallRelay | null> {
+  const reply = await request(relay, Uint8Array.of(CALL_RELAY));
+  if (reply[0] === NOT_FOUND) return null;
+  check(reply, 'call relay');
+  const view = new DataView(reply.buffer, reply.byteOffset, reply.byteLength);
+  let at = 1;
+  const short = () => {
+    if (at + 2 > reply.length) throw new RelayError('call relay: unexpected reply');
+    const length = view.getUint16(at);
+    if (at + 2 + length > reply.length) throw new RelayError('call relay: unexpected reply');
+    const text = utf8Decode(reply.slice(at + 2, at + 2 + length));
+    at += 2 + length;
+    return text;
+  };
+  const username = short();
+  const credential = short();
+  const count = reply[at++] ?? 0;
+  const urls = Array.from({ length: count }, short).filter((url) => /^turns?:/.test(url));
+  return urls.length > 0 ? { urls, username, credential } : null;
 }
