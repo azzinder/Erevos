@@ -501,8 +501,9 @@ export class E2E {
       if (identity === toHex(this.identity)) throw new OwnCodeError();
       const known = this.find(identity);
       if (known) {
-        // Already talking: only where to reach them changes. Adding their link accepts a request.
-        await this.save(this.withContact({ ...known, ...whereOf(code), sender: code.senderHex, request: false }));
+        // Already talking: only where to reach them changes, if the link says. Adding their link accepts a request.
+        const where = code.senderHex ? { ...whereOf(code), sender: code.senderHex } : {};
+        await this.save(this.withContact({ ...known, ...where, request: false }));
         return { identity, added: false };
       }
       const started = await core.startConversation(
@@ -542,7 +543,8 @@ export class E2E {
    * text, it tells them only those, and the chat's timer. `from` is this chat's relay sender id.
    * Returns where to send it, the packet, the message's tag and how long it lasts once read
    * (seconds), after the first packet of the conversation if the relay has not taken that yet.
-   * Send that one first, then call `firstSent`.
+   * Send that one first, then call `firstSent`. Where to send it has no sender id while the
+   * contact has said no relay queue: then it can only go to their phone nearby (lib/nearby.ts).
    */
   seal(
     identity: string,
@@ -553,7 +555,6 @@ export class E2E {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
-      if (!contact.sender) throw new Error('This contact has not said how to reach them yet.');
       const tag = text ? newTag() : '';
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
       const { timer, timerAt } = contact;
@@ -599,7 +600,6 @@ export class E2E {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
-      if (!contact.sender) throw new Error('This contact has not said how to reach them yet.');
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
       const tag = newTag();
       const { timer, timerAt } = contact;
@@ -638,7 +638,6 @@ export class E2E {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
-      if (!contact.sender) throw new Error('This contact has not said how to reach them yet.');
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
       const tag = newTag();
       const { timer, timerAt } = contact;

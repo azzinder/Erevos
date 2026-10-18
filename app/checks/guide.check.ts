@@ -133,14 +133,17 @@ test('the guide links only to sections that exist, the same ones in both languag
   assert.deepEqual(links(en), links(el));
 });
 
-test('the guide says plainly what is end-to-end encrypted, what is not yet, and that nothing is audited', () => {
+test('the guide says plainly what is end-to-end encrypted, and that nothing is audited', () => {
   const about = (sections: typeof el) => sections.find((s) => s.id === 'about')!.blocks.flatMap(blockTexts).join(' ');
-  assert.match(about(en), /through a relay are end-to-end encrypted/);
-  assert.match(about(en), /nearby phone are not encrypted yet/);
+  assert.match(about(en), /Messages are end-to-end encrypted, through a relay and nearby alike/);
   assert.match(about(en), /nothing has been audited/);
-  assert.match(about(el), /μέσω relay είναι κρυπτογραφημένα από άκρη σε άκρη/);
-  assert.match(about(el), /κοντινό τηλέφωνο δεν κρυπτογραφούνται ακόμα/);
+  assert.match(about(el), /Τα μηνύματα είναι κρυπτογραφημένα από άκρη σε άκρη, μέσω relay και από κοντά/);
   assert.match(about(el), /τίποτα δεν έχει ελεγχθεί/);
+  // Nowhere does either still say the nearby link is plain.
+  for (const sections of [en, el]) {
+    const all = sections.flatMap((s) => s.blocks.flatMap(blockTexts)).join(' ');
+    assert.doesNotMatch(all, /not encrypted yet|δεν κρυπτογραφούνται ακόμα|Χωρίς κρυπτογράφηση ακόμα/);
+  }
 });
 
 test('the guide is searched ignoring case and accents, titles first', () => {

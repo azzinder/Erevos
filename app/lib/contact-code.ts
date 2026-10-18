@@ -4,9 +4,10 @@
 // so the phone's own camera app can open Erevos with it. The keys are the chat's account bundle
 // (lib/e2e.ts) in base64url, about 1800 characters, which end-to-end encryption starts from.
 // `rk` is the relay's key for sealed sends (43 characters), so a phone on another relay can write
-// to this queue through its own relay; codes from before it have none. The relay token is never
-// part of it. Self-contained on purpose, so it can run under plain
-// Node for checks.
+// to this queue through its own relay; codes from before it have none. A code from a phone with
+// no relay queue yet has no id and no relay, only the keys: whoever adds it reaches that phone
+// nearby (lib/nearby.ts) until it says where its queue is. The relay token is never part of it.
+// Self-contained on purpose, so it can run under plain Node for checks.
 
 export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string };
 
@@ -18,14 +19,14 @@ export function contactLink({ senderHex, relayUrl, key, relayKey }: ContactCode)
   return `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}`;
 }
 
-/** Checks the parts of a code. The relay and the key may be empty, when the code has none. */
+/** Checks the parts of a code. The relay and the key may be empty, when the code has none, and the id too when it has the key. */
 export function checkContact(senderHex: unknown, relayUrl: unknown, key: unknown = '', relayKey: unknown = ''): ContactCode | null {
   if (typeof senderHex !== 'string' || typeof relayUrl !== 'string' || typeof key !== 'string') return null;
   if (typeof relayKey !== 'string' || (relayKey && !/^[A-Za-z0-9_-]{43}$/.test(relayKey))) return null;
   const id = senderHex.trim().toLowerCase();
   const relay = relayUrl.trim();
   const keys = key.trim();
-  if (!/^[0-9a-f]{48}$/.test(id)) return null;
+  if (!/^[0-9a-f]{48}$/.test(id) && !(id === '' && keys && !relay)) return null;
   if (relay && !/^wss?:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(relay)) return null;
   if (keys.length > MAX_KEY || !/^[A-Za-z0-9_-]*$/.test(keys)) return null;
   return relayKey ? { senderHex: id, relayUrl: relay, key: keys, relayKey } : { senderHex: id, relayUrl: relay, key: keys };

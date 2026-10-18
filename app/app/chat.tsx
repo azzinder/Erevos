@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
+import { nearby, type Delivery } from '../lib/nearby';
 import { currentCall } from '../lib/call';
 import { callPermissions } from '../lib/call-permissions';
 import { CALL_LINE, callLineMessage, callSignal, endCallsOf, startCall as beginCall, type CallPlace } from '../lib/calls';
@@ -54,8 +55,8 @@ import type { Look } from '../theme/look';
 import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
 
-// Chat with contacts through the relay, end-to-end encrypted (lib/e2e.ts), and with nearby phones
-// over the radio link, not encrypted yet. A contact is added from their contact link, which
+// Chat with contacts, end-to-end encrypted (lib/e2e.ts), through the relay and, while their phone
+// is near, over the radio link too (lib/nearby.ts). A contact is added from their contact link, which
 // carries their public keys: adding it starts the conversation, and they see the contact appear
 // when they next look at the relay. The contacts and their conversations are kept sealed
 // (lock/e2e-data.ts), with the names given to them, and so are the messages with them
@@ -70,14 +71,13 @@ import { AppearanceEditor } from './appearance';
 // up to AUTO_TAKE, larger ones when tapped. A photo shows from memory only, never written out
 // unsealed; Save puts a copy outside Erevos. Voice and video calls to a contact (lib/call.ts) are
 // set up with messages through the relay and then go between the phones, through the call relay
-// beside our relay when it has one; each call leaves a line in the chat. Messages over the radio
-// link are kept in memory only, so they are gone when the chat closes.
+// beside our relay when it has one; each call leaves a line in the chat.
 //
 // Every space also has hidden chats (lock/hidden.ts), opened with their own PIN typed in the home
 // screen's search, which every space takes whether it has hidden chats or not, and a chat can move
 // into them from its details (lock/move-chat.ts). They are a
 // second chat with their own relay queue, account and contacts, over the relay only (the radio
-// link is the phone's, and its chats are the open space's). The other chats stay open underneath and
+// link is the phone's, and only the space's own chats use it). The other chats stay open underneath and
 // keep receiving. Hidden chats close when the app goes to the background or this screen closes,
 // and their messages go with them.
 //
@@ -85,7 +85,7 @@ import { AppearanceEditor } from './appearance';
 // contacts: its messages show ahead of theirs, only to read, and a contact without a name takes
 // the imported chat's. They are never sent, and stay when this chat's messages are deleted.
 
-// `tag` names a message with a contact on both phones (lock/history.ts). Radio messages have none.
+// `tag` names a message with a contact on both phones (lock/history.ts).
 // `until`: when it disappears, milliseconds, or 0. `lasts`: seconds it lasts once read, while it
 // waits for that. `mark`: as lock/history.ts keeps it.
 // `at`: when it was sent or came, milliseconds. `voice`: where a voice message's sound is.
@@ -132,7 +132,7 @@ const AUTO_TAKE = 16 * 1000 * 1000;
 // others show when tapped. A computer has the memory for all of them.
 const SHOWN_PHOTOS = Platform.OS === 'web' ? 200 : 6;
 
-// Contacts are named by their identity key, after this prefix. Radio peers by their link id.
+// Contacts are named by their identity key, after this prefix.
 const CONTACT_PREFIX = 'contact:';
 
 const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
@@ -308,8 +308,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   /** Told the look of the chat in view while this one shows: its contact's own, or none. */
   onLook: (look: ChatLook | null) => void;
 }) {
-  // Nearby phones on the radio link.
-  const [peers, setPeers] = useState<string[]>([]);
+  // Bumped when a phone nearby links or goes, or a contact is heard nearby (lib/nearby.ts).
+  const [, setNearbyChanged] = useState(0);
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -416,7 +416,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   // Tells contacts' phones which of their messages came and were read here, and, while the app
   // shows, that this phone is open, as those who asked wait to hear. What the relay cannot take
   // now is told with the next look at it.
-  async function sendReceipts(target: Relay) {
+  async function sendReceipts(target: Relay | null) {
     for (const peer of new Set([...Object.keys(receipts.current), ...answers.current])) {
       const { got, read } = receipts.current[peer] ?? { got: [], read: [] };
       delete receipts.current[peer];
@@ -482,25 +482,27 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     const url = ours || code.relayUrl;
     if (code.relayUrl && !ours) setRelayUrl(code.relayUrl);
     const target = relayTarget(url);
-    if (!target) {
+    if (!target && !code.key) {
       setNote('Not added. Type the relay address in Relay first.');
       return;
     }
     try {
-      // The contact answers through our own queue, so there has to be one.
+      // The contact answers through our own queue, so there has to be one when there is a relay.
+      // Without one, they reach this phone nearby only, until it has a queue and tells them.
       let queue = ownQueue;
-      if (!queue) {
+      if (!queue && target) {
         const ids = await createQueue(target);
         queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
         setOwnQueue(queue);
       }
-      const { identity, added } = await e2e.addContact(code, queue.senderHex, here(url));
+      const { identity, added } = await e2e.addContact(code, queue?.senderHex ?? '', target ? here(url) : here(''));
       setContacts(e2e.contacts());
       setSelected(`${CONTACT_PREFIX}${identity}`);
-      await sendPending(e2e, target);
+      if (target) await sendPending(e2e, target);
+      const nearbyOnly = !target || !code.senderHex;
       setNote(
         added
-          ? 'Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.'
+          ? `Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.${nearbyOnly ? ' Until you both have a relay, you reach each other nearby only.' : ''}`
           : 'Already a contact. Where to reach them is updated.',
       );
     } catch (error) {
@@ -508,19 +510,21 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     }
   }
 
-  // The radio link belongs to the phone, not to a space: until messages are sealed for each
-  // space's own keys, a nearby phone's message shows in whichever space is open.
+  // The radio link belongs to the phone, not to a space: what comes on it is sealed for a contact
+  // (lib/nearby.ts), so it opens only in the chats of the space that has them. The rest is kept a
+  // while for the other spaces. Hidden chats use the relay only.
   useEffect(() => {
     if (Platform.OS !== 'android' || hiddenKey) return;
     let active = true;
+    const stopNearby = nearby.start(sendText);
+    const stopWatching = nearby.onChange(() => setNearbyChanged((n) => n + 1));
     const subscriptions = [
       onRadioEvent('onPeer', ({ id, kind }) => {
-        if (kind === 'ble') return; // presence only, not a data link
-        setPeers((list) => (list.includes(id) ? list : [...list, id]));
-        setSelected((current) => current ?? id);
+        if (kind !== 'ble') nearby.linkUp(id); // 'ble' is presence only, not a data link
       }),
       onRadioEvent('onText', ({ peer, text }) => {
-        addMessage(peer, text, false);
+        const packet = nearby.frameIn(peer, text);
+        if (packet) void nearbyCame.current(peer, packet);
       }),
     ];
     PermissionsAndroid.requestMultiple(PERMISSIONS).finally(() => {
@@ -529,9 +533,44 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     return () => {
       active = false;
       subscriptions.forEach((subscription) => subscription?.remove());
+      stopWatching();
+      stopNearby();
       stopRadio();
     };
   }, []);
+
+  // Opens a packet that came from a phone nearby (`link`), or was kept for this space (no link).
+  // One for none of this space's chats is kept for the others.
+  const nearbyCame = useRef(async (_link: string | null, _packet: Uint8Array) => undefined as void);
+  nearbyCame.current = async (link, packet) => {
+    if (!e2e) {
+      if (link) nearby.hold(packet);
+      return;
+    }
+    let received: Awaited<ReturnType<E2E['receive']>>;
+    try {
+      received = await e2e.receive(packet);
+    } catch {
+      if (!link) nearby.dropHeld(packet);
+      return;
+    }
+    if (received.kind === 'refused' && received.reason === 'unknown') {
+      if (link) nearby.hold(packet);
+      return;
+    }
+    if (!link) nearby.dropHeld(packet);
+    if (received.kind === 'message' && link) nearby.heardOn(received.identity, link);
+    handle(received);
+    await sendReceipts(relayTarget());
+  };
+
+  // What came nearby for this space while another was open, once its chats are.
+  useEffect(() => {
+    if (!e2e || hiddenKey) return;
+    void (async () => {
+      for (const packet of nearby.heldPackets()) await nearbyCame.current(null, packet);
+    })();
+  }, [e2e]);
 
   // Restores the relay settings and our queue this space keeps on the phone, sealed with its key
   // (lock/space-data.ts), and its account and contacts (lock/e2e-data.ts). Another space finds
@@ -672,16 +711,18 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   }, [shown, appActive, selected, messages]);
 
   // While a contact's chat shows, it asks now and then whether their phone is open, saying this
-  // one is. A chat that appears offline asks nothing, so it does not learn it either.
+  // one is. A chat that appears offline asks nothing, so it does not learn it either. It asks
+  // again when a phone links nearby: the answer says whether it is theirs (lib/nearby.ts).
   const selectedHidden = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && c.hide);
-  const selectedAccepted = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && !c.request && c.sender);
+  const selectedAccepted = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && !c.request);
+  const linked = hiddenKey ? 0 : nearby.count();
   useEffect(() => {
     if (!shown || !appActive || !e2e || !selected?.startsWith(CONTACT_PREFIX) || selectedHidden || !selectedAccepted) return;
     const identity = selected.slice(CONTACT_PREFIX.length);
     const ask = () => {
       const target = relayTarget();
       // Said a moment ago already: they know, and answer that.
-      if (!target || Date.now() - e2e.toldAt(identity) < (ONLINE * 1000) / 3) return;
+      if ((!target && linked === 0) || Date.now() - e2e.toldAt(identity) < (ONLINE * 1000) / 3) return;
       sendToContact(target, identity, '', { ask: true, on: ONLINE }).catch(() => {
         // Asked again in a while.
       });
@@ -689,7 +730,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     ask();
     const timer = setInterval(ask, ASK_EVERY);
     return () => clearInterval(timer);
-  }, [shown, appActive, e2e, selected, selectedHidden, selectedAccepted, relayUrl, relayToken, viaUrl, viaToken, ownQueue]);
+  }, [shown, appActive, e2e, selected, selectedHidden, selectedAccepted, relayUrl, relayToken, viaUrl, viaToken, ownQueue, linked]);
 
   // Asks our relay for its key once its address is known. A relay without one, or an app whose core
   // cannot seal, leaves the key out of our link: then only contacts on our relay can reach us.
@@ -784,75 +825,75 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     }
     next();
 
-    // What one message from the relay brings.
-    function handle(received: Awaited<ReturnType<E2E['receive']>>) {
-      if (!e2e) return;
-      if (received.kind === 'refused') {
-        if (received.reason === 'plain') setNote('A message that was not end-to-end encrypted came, and was not shown.');
-        return;
-      }
-      const peer = `${CONTACT_PREFIX}${received.identity}`;
-      setContacts(e2e.contacts());
-      setSelected((current) => current ?? peer);
-      if (received.call) {
-        void callSignal(callPlace, peer, received.call, received.request, rtc).then((said) => {
-          if (said) setNote(said);
-        });
-      }
-      if (received.online) setNow(Date.now());
-      const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
-      if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
-      if (received.voice) {
-        const whole = voiceParts.current.add(peer, received.voice);
-        const { tag, timer } = received;
-        if (whole) {
-          saveClip(whole.audio, whole.ms)
-            .then((voice) => {
-              addMessage(peer, '', false, tag, timer, voice);
-              if (tag) receipt(peer, 'got', [tag]);
-            })
-            .catch((error) => setNote(`A voice message came but could not be kept. ${errorText(error)}`));
-        }
-      }
-      if (received.file) {
-        // Taken from the relay by the effect that watches for files waiting.
-        const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file));
-        receipt(peer, 'got', [tag]);
-      }
-      if (received.text) {
-        addMessage(peer, received.text, false, received.tag, received.timer);
-        if (received.tag) receipt(peer, 'got', [received.tag]);
-      }
-      // Marked on the screen at once. A mark the history could not keep is the old one when the chat next opens.
-      if (received.got.length > 0) markMessages(peer, true, 1, received.got).catch(() => undefined);
-      if (received.read.length > 0) markMessages(peer, true, 2, received.read).catch(() => undefined);
-      const name = label(peer, e2e.contacts());
-      if (received.timerChanged) {
-        setNote(
-          received.timer
-            ? `${name} set new messages in this chat to disappear ${timerLabel(received.timer).toLowerCase()} after they are read.`
-            : `${name} turned disappearing messages off in this chat.`,
-        );
-      }
-      if (received.erase && 'all' in received.erase) {
-        forgetChat(peer);
-        setNote(`${name} deleted the messages of this chat on both phones.`);
-      } else if (received.erase) {
-        forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag, until: 0, lasts: 0, mark: 0, at: 0 });
-        setNote(`${name} deleted a message on both phones.`);
-      }
-      if (received.added && received.request) {
-        setNote(`Message request from ${name}: they have your contact link. Accept it to answer, or refuse it.`);
-      } else if (received.added) {
-        setNote(`New chat with ${name}: they added your contact link. Compare the safety number with theirs.`);
-      }
-    }
-
     return () => {
       active = false;
       if (timer) clearTimeout(timer);
     };
   }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e]);
+
+  // What one message from the relay, or from a phone nearby, brings.
+  function handle(received: Awaited<ReturnType<E2E['receive']>>) {
+    if (!e2e) return;
+    if (received.kind === 'refused') {
+      if (received.reason === 'plain') setNote('A message that was not end-to-end encrypted came, and was not shown.');
+      return;
+    }
+    const peer = `${CONTACT_PREFIX}${received.identity}`;
+    setContacts(e2e.contacts());
+    setSelected((current) => current ?? peer);
+    if (received.call) {
+      void callSignal(callPlace, peer, received.call, received.request, rtc).then((said) => {
+        if (said) setNote(said);
+      });
+    }
+    if (received.online) setNow(Date.now());
+    const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
+    if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
+    if (received.voice) {
+      const whole = voiceParts.current.add(peer, received.voice);
+      const { tag, timer } = received;
+      if (whole) {
+        saveClip(whole.audio, whole.ms)
+          .then((voice) => {
+            addMessage(peer, '', false, tag, timer, voice);
+            if (tag) receipt(peer, 'got', [tag]);
+          })
+          .catch((error) => setNote(`A voice message came but could not be kept. ${errorText(error)}`));
+      }
+    }
+    if (received.file) {
+      // Taken from the relay by the effect that watches for files waiting.
+      const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file));
+      receipt(peer, 'got', [tag]);
+    }
+    if (received.text) {
+      addMessage(peer, received.text, false, received.tag, received.timer);
+      if (received.tag) receipt(peer, 'got', [received.tag]);
+    }
+    // Marked on the screen at once. A mark the history could not keep is the old one when the chat next opens.
+    if (received.got.length > 0) markMessages(peer, true, 1, received.got).catch(() => undefined);
+    if (received.read.length > 0) markMessages(peer, true, 2, received.read).catch(() => undefined);
+    const name = label(peer, e2e.contacts());
+    if (received.timerChanged) {
+      setNote(
+        received.timer
+          ? `${name} set new messages in this chat to disappear ${timerLabel(received.timer).toLowerCase()} after they are read.`
+          : `${name} turned disappearing messages off in this chat.`,
+      );
+    }
+    if (received.erase && 'all' in received.erase) {
+      forgetChat(peer);
+      setNote(`${name} deleted the messages of this chat on both phones.`);
+    } else if (received.erase) {
+      forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag, until: 0, lasts: 0, mark: 0, at: 0 });
+      setNote(`${name} deleted a message on both phones.`);
+    }
+    if (received.added && received.request) {
+      setNote(`Message request from ${name}: they have your contact link. Accept it to answer, or refuse it.`);
+    } else if (received.added) {
+      setNote(`New chat with ${name}: they added your contact link. Compare the safety number with theirs.`);
+    }
+  }
 
   // Shows a message, and keeps it on the phone when it is with a contact, for `timer` seconds once
   // read if it disappears. A contact's message from an Erevos before tags gets one known to this
@@ -937,20 +978,36 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     setDraft('');
   }
 
-  // Seals a message for a contact and hands it to the relay, after the first packet of the
-  // conversation if the relay has not taken that yet. Returns the message's tag and how long it lasts.
-  async function sendToContact(target: Relay, identity: string, text: string, extra: Extra = {}): Promise<{ tag: string; timer: number }> {
+  // Seals a message for a contact and hands it to their phone (handOver). Returns the message's
+  // tag, how long it lasts, and how it went.
+  async function sendToContact(target: Relay | null, identity: string, text: string, extra: Extra = {}): Promise<{ tag: string; timer: number; way: Delivery }> {
     if (!e2e) throw new Error(NO_CORE);
     const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here() });
-    const to = contactTarget(target, sealed);
-    if (sealed.first) {
-      await sendMessage(to, fromHex(sealed.sender), sealed.first);
-      await e2e.firstSent(identity);
-    }
-    await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+    const way = await handOver(e2e, target, identity, sealed, [sealed.packet]);
     // Writing to a message request accepts it.
     if (text) setContacts(e2e.contacts());
-    return { tag: sealed.tag, timer: sealed.timer };
+    return { tag: sealed.tag, timer: sealed.timer, way };
+  }
+
+  // Hands a contact's packets to their phone, after the first packet of the conversation if the
+  // relay has not taken that yet: nearby when they are, and through the relay (lib/nearby.ts).
+  // Hidden chats go through the relay only.
+  function handOver(chats: E2E, target: Relay | null, identity: string, sealed: { sender: string; relay: string; relayKey: string; first: Uint8Array | null }, packets: Uint8Array[]): Promise<Delivery> {
+    const relay = target && sealed.sender
+      ? async () => {
+          const to = contactTarget(target, sealed);
+          if (sealed.first) {
+            await sendMessage(to, fromHex(sealed.sender), sealed.first);
+            await chats.firstSent(identity);
+          }
+          for (const packet of packets) await sendMessage(to, fromHex(sealed.sender), packet);
+        }
+      : null;
+    if (hiddenKey) {
+      if (!relay) return Promise.reject(new Error('Type the relay address in Relay first.'));
+      return relay().then(() => 'relay');
+    }
+    return nearby.deliver(identity, sealed.first ? [sealed.first, ...packets] : packets, relay);
   }
 
   // A call's line in the chat, kept with its messages. It needs no read mark, and it disappears
@@ -1035,6 +1092,13 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     }
   }
 
+  // What the note under the messages says once something went (`what`: Sent, Voice message sent…).
+  function sentNote(way: Delivery, what: string, name: string): string {
+    if (way === 'nearby') return `${what} nearby, end-to-end encrypted.`;
+    if (way === 'relay') return `${what} through the relay, end-to-end encrypted.`;
+    return `${what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. It comes only if ${name}'s is one of them.`;
+  }
+
   function notSent(error: unknown): string {
     return isQueueNotFound(error)
       ? "Not sent. The relay does not have this contact's queue any more. Ask them to write to you, or for their new contact link."
@@ -1044,34 +1108,17 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it is read.
   async function send(lasts = 0) {
     const text = draft.trim();
-    if (!text || !selected) return;
+    if (!text || !selected?.startsWith(CONTACT_PREFIX)) return;
     setVanishing(false);
-    if (!selected.startsWith(CONTACT_PREFIX)) {
-      if (sendText(selected, text)) {
-        keep(selected, text);
-        setNote('Sent over the radio link, not encrypted.');
-      } else {
-        setNote('Not sent. The link to this phone is not ready.');
-      }
-      return;
-    }
-    const target = relayTarget();
-    if (!target) {
-      setNote('Not sent. Type the relay address in Relay first.');
-      return;
-    }
     if (!e2e) {
       setNote(NO_CORE);
       return;
     }
     try {
-      const { tag, timer } = await sendToContact(target, selected.slice(CONTACT_PREFIX.length), text, { lasts });
+      const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts });
       keep(selected, text, tag, timer);
-      setNote(
-        timer
-          ? `Sent through the relay, end-to-end encrypted. It disappears from both phones ${timerLabel(timer).toLowerCase()} after it is read.`
-          : 'Sent through the relay, end-to-end encrypted.',
-      );
+      const sent = sentNote(way, 'Sent', label(selected, contacts));
+      setNote(timer ? `${sent} It disappears from both phones ${timerLabel(timer).toLowerCase()} after it is read.` : sent);
     } catch (error) {
       setNote(notSent(error));
     }
@@ -1203,15 +1250,11 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     }
   }
 
-  // Seals a voice message for the contact picked, hands its parts to the relay in turn, and keeps
-  // its sound sealed. If the relay cannot take all of it, it is not kept.
+  // Seals a voice message for the contact picked, hands its parts to their phone in turn (nearby,
+  // or through the relay), and keeps its sound sealed. If nothing took all of it, it is not kept.
   async function sendVoice(audio: Uint8Array, ms: number) {
     const peer = selectedContact;
-    const target = relayTarget();
-    if (!peer || !target) {
-      setNote('Not sent. Type the relay address in Relay first.');
-      return;
-    }
+    if (!peer) return;
     if (!e2e) {
       setNote(NO_CORE);
       return;
@@ -1219,16 +1262,11 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     const identity = peer.slice(CONTACT_PREFIX.length);
     try {
       const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here() });
-      const to = contactTarget(target, sealed);
-      if (sealed.first) {
-        await sendMessage(to, fromHex(sealed.sender), sealed.first);
-        await e2e.firstSent(identity);
-      }
-      for (const packet of sealed.packets) await sendMessage(to, fromHex(sealed.sender), packet);
+      const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets);
       addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms));
       // Writing to a message request accepts it.
       setContacts(e2e.contacts());
-      setNote('Voice message sent through the relay, end-to-end encrypted.');
+      setNote(sentNote(way, 'Voice message sent', label(peer, contacts)));
     } catch (error) {
       setNote(notSent(error));
     }
@@ -1350,12 +1388,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       kept = sent.ref;
       const identity = peer.slice(CONTACT_PREFIX.length);
       const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { at: here() });
-      const to = contactTarget(target, sealed);
-      if (sealed.first) {
-        await sendMessage(to, fromHex(sealed.sender), sealed.first);
-        await e2e.firstSent(identity);
-      }
-      await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+      await handOver(e2e, target, identity, sealed, [sealed.packet]);
       addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, sent.ref);
       kept = null;
       // Writing to a message request accepts it.
@@ -1656,24 +1689,33 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     () => contacts.map((c) => (c.name || !archive ? c : { ...c, name: cleanName(archive.linkedChats(c.identity)[0]?.title ?? '') })),
     [contacts, archive],
   );
-  const chips = [...peers, ...contacts.map((contact) => `${CONTACT_PREFIX}${contact.identity}`)];
+  const chips = contacts.map((contact) => `${CONTACT_PREFIX}${contact.identity}`);
   const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
   const selectedTimer = contacts.find((c) => c.identity === selectedIdentity)?.timer ?? 0;
   const firstImported = Math.max(0, imported.length - importedShown);
-  const ownLink =
-    ownQueue && e2e ? contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim(), key: toBase64Url(e2e.bundle), relayKey: ownRelayKey || undefined }) : null;
+  // Without a relay queue the link has only the keys: who adds it reaches this phone nearby.
+  const ownLink = !e2e
+    ? null
+    : ownQueue
+      ? contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim(), key: toBase64Url(e2e.bundle), relayKey: ownRelayKey || undefined })
+      : hiddenKey
+        ? null
+        : contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(e2e.bundle) });
 
   const selectedName = selected ? label(selected, shownContacts) : '';
   const selectedOnline = !!selectedIdentity && !selectedHidden && !!e2e && e2e.onlineUntil(selectedIdentity, now) > 0;
+  const selectedNearby = !!selectedIdentity && !hiddenKey && nearby.isNear(selectedIdentity);
   const subtitle = selectedContact
     ? selectedOnline
-      ? 'Online'
-      : selectedTimer
-      ? `End-to-end encrypted · ${timerLabel(selectedTimer).toLowerCase()} after read`
-      : 'End-to-end encrypted'
-    : selected
-      ? 'Nearby · not encrypted yet'
-      : '';
+      ? selectedNearby
+        ? 'Online · nearby'
+        : 'Online'
+      : selectedNearby
+        ? 'Nearby · end-to-end encrypted'
+        : selectedTimer
+          ? `End-to-end encrypted · ${timerLabel(selectedTimer).toLowerCase()} after read`
+          : 'End-to-end encrypted'
+    : '';
 
   const selectedLook = contacts.find((c) => c.identity === selectedIdentity)?.look ?? null;
   const selectedAvatar = contacts.find((c) => c.identity === selectedIdentity)?.avatar ?? null;
@@ -1751,9 +1793,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                 >
                   {selectedContact ? (
                     <KeyFace identity={selectedIdentity} name={contactName(selectedContact, shownContacts) ?? ''} size={104} avatar={selectedAvatar} />
-                  ) : (
-                    <NearbyFace size={104} />
-                  )}
+                  ) : null}
                   {selectedContact ? (
                     <View style={styles.badge}>
                       <Text style={styles.badgeText}>✎</Text>
@@ -1984,13 +2024,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                     />
                   </View>
                 </>
-              ) : (
-                <View style={styles.group}>
-                  <Text variant="caption" tone="muted">
-                    Nearby radio link: not end-to-end encrypted yet. Anyone nearby with the right tools could read it.
-                  </Text>
-                </View>
-              )}
+              ) : null}
             </ScrollView>
           </View>
         </ScreenBackdrop>
@@ -2031,11 +2065,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
             accessibilityRole="button"
             accessibilityLabel="Chat details"
           >
-            {selectedContact ? (
-              <KeyFace identity={selectedIdentity} name={contactName(selectedContact, shownContacts) ?? ''} size={42} avatar={selectedAvatar} />
-            ) : (
-              <NearbyFace size={42} />
-            )}
+            <KeyFace identity={selectedIdentity} name={contactName(selected, shownContacts) ?? ''} size={42} avatar={selectedAvatar} />
             <View style={styles.grow}>
               <Text variant="heading" numberOfLines={1} style={!contactName(selected, shownContacts) && styles.monoName}>
                 {selectedName}
@@ -2084,16 +2114,12 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                     style={styles.face}
                   >
                     <View style={styles.ring}>
-                      {peer.startsWith(CONTACT_PREFIX) ? (
-                        <KeyFace
-                          identity={peer.slice(CONTACT_PREFIX.length)}
-                          name={named ?? ''}
-                          size={48}
-                          avatar={contacts.find((c) => `${CONTACT_PREFIX}${c.identity}` === peer)?.avatar}
-                        />
-                      ) : (
-                        <NearbyFace size={48} />
-                      )}
+                      <KeyFace
+                        identity={peer.slice(CONTACT_PREFIX.length)}
+                        name={named ?? ''}
+                        size={48}
+                        avatar={contacts.find((c) => `${CONTACT_PREFIX}${c.identity}` === peer)?.avatar}
+                      />
                     </View>
                     <Text variant="caption" numberOfLines={1} style={[styles.faceName, !named && styles.monoSmall]}>
                       {named ?? label(peer, shownContacts).replace(/^contact /, '')}
@@ -2108,7 +2134,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                 ? 'No hidden chats yet. Add a contact through the relay below, or move a chat here from its details.'
                 : Platform.OS === 'web'
                   ? 'No chats yet. Add a contact through the relay, under Relay.'
-                  : 'Looking for a nearby Erevos phone. Contacts through the relay are under Relay.'}
+                  : 'No chats yet. Add a contact under Relay. Your contacts reach you nearby too, over Wi-Fi or Bluetooth, without the internet.'}
             </Text>
           )}
           <View style={styles.panel}>
@@ -2167,7 +2193,11 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                 <Button title="Create my relay queue" compact onPress={createOwnQueue} />
                 {ownLink ? (
                   <View style={styles.section}>
-                    <Text tone="muted">Your relay queue is ready. Give your contact link to whoever may write to you.</Text>
+                    <Text tone="muted">
+                      {ownQueue
+                        ? 'Your relay queue is ready. Give your contact link to whoever may write to you.'
+                        : 'No relay queue yet. Your contact link has only your keys: who adds it reaches you nearby, over Wi-Fi or Bluetooth, until you have a relay.'}
+                    </Text>
                     <Row wrap>
                       <Button title="Show my QR code" compact onPress={() => setShowQr(true)} />
                       <Button
@@ -2250,11 +2280,9 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
         ) : null}
         {selected && visible.length === 0 && imported.length === 0 ? (
           <View style={styles.hello}>
-            {selectedContact ? <ShieldIcon color={colors.textFaint} size={28} /> : <NearbyFace size={40} />}
+            <ShieldIcon color={colors.textFaint} size={28} />
             <Text variant="caption" tone="muted" style={styles.divider}>
-              {selectedContact
-                ? 'No messages yet. What you write here is end-to-end encrypted, and kept sealed on this phone.'
-                : 'No messages yet. Nearby messages are not encrypted yet, and go when the chat closes.'}
+              No messages yet. What you write here is end-to-end encrypted, and kept sealed on this phone.
             </Text>
           </View>
         ) : null}
@@ -2540,29 +2568,6 @@ function Toggle({ on }: { on: boolean }) {
       }}
     >
       <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: on ? colors.onPrimary : colors.surface }} />
-    </View>
-  );
-}
-
-// A nearby phone's picture: rings, for the radio.
-function NearbyFace({ size }: { size: number }) {
-  const colors = useColors();
-  return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
-      {[0.7, 0.42, 0.14].map((part) => (
-        <View
-          key={part}
-          style={{
-            position: 'absolute',
-            width: size * part,
-            height: size * part,
-            borderRadius: size,
-            borderWidth: part < 0.2 ? 0 : 1.5,
-            borderColor: colors.accentText,
-            backgroundColor: part < 0.2 ? colors.accentText : 'transparent',
-          }}
-        />
-      ))}
     </View>
   );
 }

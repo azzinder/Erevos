@@ -35,7 +35,7 @@ type Relay = 'ready' | 'no-queue' | 'none';
 
 // `phone`: only on a phone, as it needs its radio.
 const MENU: { title: string; detail: string; href: Href; phone?: boolean }[] = [
-  { title: 'Nearby phones', detail: 'Bluetooth and Wi-Fi, without internet', href: '/chat', phone: true },
+  { title: 'Nearby phones', detail: 'Your contacts over Bluetooth and Wi-Fi, without internet', href: '/chat', phone: true },
   { title: 'SMS', detail: 'Erevos as the SMS app, one list for all messages', href: '/sms-settings', phone: true },
   { title: 'Imported chats', detail: 'Telegram and WhatsApp exports', href: '/imported' },
   { title: 'Appearance', detail: 'Style, colours, glass', href: '/appearance' },
@@ -202,7 +202,7 @@ export default function Home() {
         }
         ListFooterComponent={
           <Text variant="caption" tone="faint" style={styles.footer}>
-            A test version: messages through a relay are end-to-end encrypted, nearby ones not yet, and nothing is audited.
+            A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.
           </Text>
         }
       />

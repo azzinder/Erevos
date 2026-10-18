@@ -6,14 +6,14 @@ Erevos is a messenger made for privacy. You need no account, no phone number and
 meant to keep working wherever you are: through a nearby phone with no network at all, over Wi-Fi, or over the
 internet.
 
-- **Nearby, without internet:** two Android phones talk directly over Bluetooth or Wi-Fi Aware.
+- **Nearby, without internet:** two Android phones talk directly over Bluetooth or Wi-Fi Aware, end-to-end encrypted.
 - **Through a relay:** over Wi-Fi or the internet, through a small server (a relay) that you can run yourself.
 - **Spaces:** a password lock, a second password that opens a separate, empty Erevos, and hidden chats in every
   space.
 - **Appearance:** the LPHL looks: Classic, Modernist and Nocturne, twelve palettes, and glass as on lphl.nekten.eu.
 
-> This is an early test version. Messages through a relay are **end-to-end encrypted**, but nothing has been
-> audited yet, and messages to a nearby phone are **not encrypted yet**. Do not rely on it to protect anyone yet.
+> This is an early test version. Messages are **end-to-end encrypted**, through a relay and nearby alike, but
+> nothing has been audited yet. Do not rely on it to protect anyone yet.
 > [What is protected today](#privacy) says exactly what is and is not.
 
 This guide opens from **User guide** in the home screen's menu (the three dots at the top). The search at its top finds any word in it, and the two
@@ -37,7 +37,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 
 | In the menu | What it opens |
 | --- | --- |
-| **Nearby phones** | Chat over Bluetooth and Wi-Fi Aware. See [Chat with a nearby phone](#nearby). |
+| **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, without internet. See [Chat with a nearby phone](#nearby). |
 | **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
 | **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
@@ -45,8 +45,8 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 | **User guide** | This guide. |
 | **Relay test**, **Radio test** | Tests of the connections. See [The test screens](#tests). |
 
-Inside a chat, its name and picture are at the top with how it travels: **End-to-end encrypted** through the relay,
-or **Nearby radio link, not encrypted yet**. Tap the name, or **⋯** beside it, for the chat's **Details**: its
+Inside a chat, its name and picture are at the top with how it travels: **End-to-end encrypted**, and **Nearby**
+while their phone is linked to yours over the radio. Tap the name, or **⋯** beside it, for the chat's **Details**: its
 picture (tap it to change it), **Call**, **Video**, **Rename** and **Picture**, then **Disappearing messages**,
 **Appear offline**, **Chat look**, the **Safety number**, **Move to hidden chats** and **Delete messages**. **Done**
 closes them.
@@ -55,28 +55,35 @@ A good first hour:
 
 1. Open **Lock and second password** and set a password, so nobody who picks up the phone can open Erevos.
 2. Open **Nearby phones** from the menu on two phones that are close to each other, and allow what Android asks for.
-3. When the other phone shows up, tap it and send a message.
+3. Add each other with **Show my QR code**, as in [Chat with a nearby phone](#nearby), and send a message: it goes
+   nearby, end-to-end encrypted, with no relay and no internet.
 4. To talk from further away, set up a relay as in [Chat through a relay](#relay).
 
 ## Chat with a nearby phone {#nearby}
 
 With **Chat** open, Erevos looks for other Erevos phones around it, over Bluetooth and, where the phone has it,
-Wi-Fi Aware. No internet, SIM or Wi-Fi network is needed.
+Wi-Fi Aware. No internet, SIM or Wi-Fi network is needed. It carries messages to your contacts, end-to-end encrypted
+like those through the relay.
 
 1. Open **Nearby phones** from the menu on both phones. The first time, Android asks to find nearby devices (on Android 12 and
    older, also for the location); allow it, or the phones cannot find each other.
-2. The chat shows **Looking for a nearby Erevos phone** until the link is ready. Then the other phone appears as a
-   button above the messages.
-3. Tap it, type in **Message** and tap **Send**.
+2. If you are not contacts yet, add each other: on one phone tap **Relay and new contacts**, then **Show my QR code**,
+   and scan it with the other, as in [Chat through a relay](#relay). Without a relay the code holds only your keys,
+   and you reach each other nearby only, until you have one.
+3. Pick the contact, type in **Message** and tap **Send**. Once their phone answers, the top of the chat says
+   **Nearby**.
 
 - **Both phones keep Chat open:** the radio starts when Chat opens and stops when you leave it.
 - **Range:** a few tens of metres in the open, less through walls.
 - **Wi-Fi Aware:** faster, but not every phone has it. Bluetooth works on all of them.
-- **Not encrypted yet:** messages over the nearby link are plain text, and the line above the messages says so. To
-  write encrypted, add them as a contact through the relay, as in [Chat through a relay](#relay).
+- **Other phones nearby** get only sealed bytes they cannot open, and only until your contact's phone is known: from
+  then on what you send goes to it alone. Voice messages go only to a contact known to be near. Photos and files need
+  the relay.
+- **With a relay as well,** each message also goes through it, so nothing is lost if the link drops; the copy that
+  comes second is not shown again. If the relay cannot be reached, the copy nearby is the one that counts.
 
-> Until messages are sealed with each space's own keys, a message from a nearby phone shows in whichever space is
-> open. Hidden chats never use the nearby link.
+> A message from nearby opens only in the space that has that contact. One for another space of this phone waits in
+> memory, six hours at most, until that space opens. Hidden chats never use the nearby link.
 
 ## Chat through a relay {#relay}
 
@@ -106,9 +113,9 @@ link again, scanned from their own phone.
 
 ### Sent, came and read
 
-Under each of your messages to a contact, **✓** says the relay took it, **✓✓** that it came to their phone, and
-**✓✓✓** that they read it. Their phone tells yours, inside the encryption, the next time each looks at the relay. A
-message counts as read once its chat shows on the screen. Messages to a nearby phone have no marks.
+Under each of your messages to a contact, **✓** says the relay or a phone nearby took it, **✓✓** that it came to
+their phone, and **✓✓✓** that they read it. Their phone tells yours, inside the encryption, the next time each looks
+at the relay, or at once when they are nearby. A message counts as read once its chat shows on the screen.
 
 - **They see when you read:** your phone tells theirs, as theirs tells yours, unless that chat appears offline (below).
 - **When messages come:** Erevos looks at the relay every few seconds while it is open and unlocked, on any screen,
@@ -174,8 +181,9 @@ first time, Android asks whether Erevos may use the microphone: it records only 
 message to play it, and tap it again to stop. Voice messages have the same marks as the rest, and follow the chat's
 disappearing setting.
 
-- **Through the relay only,** end-to-end encrypted like the words, in several pieces. The relay cannot hear them, but
-  from the pieces it can tell that something long was sent, and roughly how long. Nearby phones cannot get them yet.
+- **Through the relay, or nearby,** end-to-end encrypted like the words, in several pieces. No one in between can
+  hear them, but from the pieces the relay, or whoever listens nearby, can tell that something long was sent, and
+  roughly how long. Nearby they go only to a contact's phone known to be near.
 - **On the phone** each sound is kept in a file of its own, sealed with its own key, which only the chat's sealed
   history holds. When the message goes, deleted, disappeared or the oldest, its file goes too. How many of these files
   there are, and their sizes, show roughly how many voice messages the phone keeps, in all its spaces together, not
@@ -211,7 +219,8 @@ it. Photos and files have the same marks as the rest, and follow the chat's disa
   The phone's photo picker hands over a copy in Erevos's cache, deleted once read, and a photo taken here is not kept
   in the phone's photos.
 - **Saved** photos and files are outside Erevos, not sealed: anyone with the phone can open them.
-- **Through the relay only,** like voice messages. A relay older than this version cannot take files: update it.
+- **Through the relay only:** files need its file store, even when the contact is nearby. A relay older than this
+  version cannot take files: update it.
 
 ### Voice and video calls
 
@@ -243,25 +252,27 @@ a missed call.
 > The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
 > kept in this space, sealed. About a thousand short messages fit; when it is full, the oldest go first. Deleted
 > messages can stay for a while in the phone's storage, sealed like the rest, until something is written over them.
-> Messages to and from a nearby phone are not kept.
+> Messages sent or received nearby are kept the same way.
 
 ## How Erevos picks the path {#paths}
 
-When you tap **Send**, the chat you picked decides the path:
+When you tap **Send**, Erevos picks the path by itself:
 
-1. **A contact** goes through the relay, end-to-end encrypted.
-2. **A nearby phone** goes over the nearby link, if it is ready, not encrypted.
+1. **Their phone is near** (the top of the chat says **Nearby**): it goes over the nearby link, and through the relay
+   too when there is one.
+2. **Otherwise, with a relay:** it goes through the relay, and a short message also goes to the Erevos phones linked
+   nearby, so theirs can answer nearby if it is one of them. If the relay cannot be reached, that copy is the one
+   that counts.
 3. Otherwise the message is not sent, and a line under the chat says why.
 
-For now a nearby phone and a contact are two separate chats, even when they are the same person. Once the nearby
-link is encrypted too, one chat will move between the paths by itself.
+Every path is end-to-end encrypted: no relay and no phone in between can read what you send.
 
 | Line under the chat | What to do |
 | --- | --- |
+| **Sent nearby, end-to-end encrypted.** | Nothing: their phone is near and has it. |
 | **Sent through the relay, end-to-end encrypted.** | Nothing: it is on its way. |
-| **Sent over the radio link, not encrypted.** | Nothing, but anyone nearby could read it. |
-| **Not sent. Type the relay address in Relay first.** | Fill in the relay address, as in [Chat through a relay](#relay). |
-| **Not sent. The link to this phone is not ready.** | Move closer, or add them as a contact through the relay. |
+| **Sent to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached.** | It comes only if one of them is theirs: wait for **✓✓**, or check the relay. |
+| **Not sent. There is no relay, and no Erevos phone is linked nearby.** | Fill in the relay address, as in [Chat through a relay](#relay), or come near their phone. |
 | **Not sent. The relay does not have this contact's queue any more.** | Ask them to write to you, or for their new contact link. |
 | **This build cannot encrypt, so chats through the relay are off.** | Build the app again: this build is older than its encryption. |
 
@@ -497,8 +508,8 @@ send changed code. Erevos does not take that code on trust:
 Two screens in the home screen's menu are there to test the connections, step by step.
 
 - **Radio test (Android):** **Permissions** asks Android for what the radio needs, **Start** and **Stop** turn
-  Bluetooth and Wi-Fi Aware on and off, **Send hello** sends a test message to the nearby phone, and the **Log**
-  shows what happened.
+  Bluetooth and Wi-Fi Aware on and off, **Send hello** sends a plain test message to the nearby phone's Radio test (a
+  chat does not show it), and the **Log** shows what happened.
 - **Relay test (Wi-Fi):** **Create queue** makes a queue on a relay and shows two ids. Give the **sender id** to
   the phone that writes to you, and keep the **recipient id** private. **Send** and **Receive** move messages by hand.
 
@@ -515,21 +526,21 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Account, phone number, email** | None needed. Contacts are pairs of one-way relay queues. | |
 | **Contacts and their names, keys, relay settings, look** | Sealed on the phone with each space's key. | |
 | **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
-| **Messages to a nearby phone** | **Not encrypted yet.** Whoever listens to the nearby link could read them. | The same encryption as through the relay. |
+| **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | Wi-Fi Direct, and messages carried by other phones. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. | Two relays, so that none sees both ends. Tor, optional. |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
-| **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
-| **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
-| **Voice messages** | End-to-end encrypted through the relay, in pieces: the relay can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
+| **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
+| **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
+| **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
 | **Photos and files** | End-to-end encrypted, through the relay's file store, in pieces of one size: the relay sees how many and when, so roughly how big. Your relay sees your address, as for messages; the contact takes them through their own relay. Photos lose their place, phone and time, unless sent as a file; a file keeps what it says inside. Sealed on the phone in their pieces, shown from memory. Saved copies are outside Erevos. Not in backups yet. | Backups that hold them. |
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring; a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
-| **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay sees one more small message. | A switch to stop telling when you read. |
+| **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. A walkie-talkie over Bluetooth. |
 
 ## What is coming {#coming}
 
-End-to-end encryption through the relay is here. The nearby link comes next, and most of what follows is built on it.
+End-to-end encryption is here, through the relay and over the nearby link, and most of what follows is built on it.
 
 - **More ways to stay in touch:** the same Wi-Fi or a phone's hotspot without internet, Wi-Fi Direct, receiving
   while Erevos is closed, messages carried by other Erevos phones until they reach yours, and ways around censorship
@@ -553,8 +564,10 @@ End-to-end encryption through the relay is here. The nearby link comes next, and
 
 There is no way to recover it. Erevos keeps nothing that could open your data without it.
 
-### Chat stays on "Looking for a nearby Erevos phone".
+### A contact who is near never shows "Nearby".
 
+- Write to them: the phones learn which is which from the first message that
+  comes nearby. Only contacts are found, so add each other first.
 - Keep **Chat** open on both phones.
 - Check that Bluetooth is on (and, on Android 12 and older, the location), and that Erevos may find nearby devices
   (Android settings → Apps → Erevos → Permissions).

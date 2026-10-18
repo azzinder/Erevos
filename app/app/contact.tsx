@@ -25,12 +25,12 @@ export default function Contact() {
       <Text variant="title">Add a contact</Text>
       <Field label="Relay sender id">
         <Text selectable variant="mono" style={{ fontSize: 13 }}>
-          {code.senderHex}
+          {code.senderHex || 'None yet: their phone has no relay queue. You reach them nearby, over Wi-Fi or Bluetooth, until it has.'}
         </Text>
       </Field>
       <Field label="Relay">
         <Text selectable variant="mono" style={{ fontSize: 13 }}>
-          {code.relayUrl || 'Not given. The chat uses the relay this phone already has.'}
+          {code.relayUrl || (code.senderHex ? 'Not given. The chat uses the relay this phone already has.' : 'None yet.')}
         </Text>
       </Field>
       <Field label="Keys">
