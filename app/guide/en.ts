@@ -247,7 +247,7 @@ sealed with its own password, and the file is sealed again with a password of it
 home screen's menu.
 
 1. **Make a backup:** tap **Make a backup**, choose a folder (on the phone, a memory card, or a cloud app that shows
-   its folders there), type a password for the backup twice and tap **Save**.
+   its folders there; on a computer, any folder), type a password for the backup twice and tap **Save**.
 2. **Automatic backups:** choose **Every day** or **Every week**, then a folder and a password. Erevos makes one when
    it opens and the last one is older than that, and the folder keeps the 3 newest. Under them are **Back up now**,
    **Change folder** and **Change password**; **Off** stops them, and the ones made stay in the folder.
@@ -331,6 +331,27 @@ always reads well, on glass too.
 - **The password screen** shows the look last used. To do so it is kept outside the sealed data: it says nothing
   about your chats, but whoever opens the phone sees which look you use.
 
+## On a computer {#desktop}
+
+Erevos also runs on a computer, Linux or macOS, as an app of its own. It chats through a relay, end-to-end encrypted
+as on the phone, and keeps its contacts, messages and settings sealed the same way.
+
+1. Install it. On Linux: the package for Arch-based systems (\`erevos-x86_64.pacman\`, with \`sudo pacman -U\`) or the
+   AppImage. On a Mac: open the disk image and drag Erevos to Applications. It has no paid Apple signature, so the
+   first time allow it under **System Settings → Privacy & Security → Open Anyway**.
+2. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay). **Copy my contact link** copies
+   your link, to paste where it should go.
+
+- **What only the phone does:** the nearby link (Bluetooth and Wi-Fi Aware) and its tests. The rest is the same:
+  spaces and the second password, hidden chats, voice messages, imported chats and backups.
+- **Where it keeps things:** in its own folder (on Linux \`~/.config/Erevos\`, on a Mac
+  \`~/Library/Application Support/Erevos\`), sealed as on the phone. Its keystore is sealed with the system's keyring
+  (on a Mac the Keychain). A Linux system without a keyring keeps it as it is: set a password lock there.
+- **Voice messages** recorded on a computer are Opus, on a phone AAC. Both play on both.
+- **A computer and a phone are two devices:** they do not share contacts and chats yet. A backup moves everything
+  from one to the other, see [Backups](#backup), and from then on use only the one.
+- **Tested so far** on Linux. The Mac version is built and opened on GitHub's Mac computers, not yet by a person.
+
 ## The test screens {#tests}
 
 Two screens in the home screen's menu are there to test the connections, step by step.
@@ -360,6 +381,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
 | **Voice messages** | End-to-end encrypted through the relay, in pieces: the relay can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
+| **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring; a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay sees one more small message. | A switch to stop telling when you read. |
 
@@ -381,7 +403,8 @@ End-to-end encryption through the relay is here. The nearby link comes next, and
   moves to a server by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).
-- **More systems:** Linux, macOS, iOS and Sailfish OS, and more than one device for the same person. Backups are here, see [Backups](#backup).
+- **More systems:** iOS and Sailfish OS, and more than one device for the same person. Linux and macOS are here, see
+  [On a computer](#desktop), and so are backups, see [Backups](#backup).
 
 ## Questions {#faq}
 
@@ -414,5 +437,5 @@ whom.
 
 ### Does it work on an iPhone or a computer?
 
-Not yet. Chat runs on Android. The other screens open on a computer for testing. See [What is coming](#coming).
+On a computer, yes: Linux and macOS, see [On a computer](#desktop). On an iPhone not yet, see [What is coming](#coming).
 `;

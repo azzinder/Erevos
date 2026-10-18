@@ -8,3 +8,5 @@ expo-env.d.ts
 /checks/.core/
 # What the local modules build next to their sources.
 modules/*/android/build/
+# The core built for the web and desktop builds (scripts/build-web-core.mjs).
+/public/core/erevos_ffi*

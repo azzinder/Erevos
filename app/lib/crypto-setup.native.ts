@@ -31,3 +31,8 @@ export function setupCrypto(): void {
       }),
   );
 }
+
+/** The core is in the app itself, ready at once. */
+export function cryptoReady(): Promise<void> {
+  return Promise.resolve();
+}

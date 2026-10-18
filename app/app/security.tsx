@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import { View } from 'react-native';
 
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
+import { confirm } from '../lib/alert';
 import { loadLockConfig, lockWithPassword, removePasswordLock, removeSecondPassword, setLockPassword, type LockConfig } from '../lock/config';
 import { useLock } from '../lock/context';
 import { prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
@@ -186,14 +187,3 @@ export default function Security() {
 
 // Hints read better a little larger and looser than captions.
 const hint = { fontSize: 14, lineHeight: 20 };
-
-// Alert has no buttons on the web preview, where the browser's own dialog stands in.
-function confirm(title: string, message: string): Promise<boolean> {
-  if (Platform.OS === 'web') return Promise.resolve(globalThis.confirm?.(`${title}\n\n${message}`) ?? false);
-  return new Promise((resolve) => {
-    Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-      { text: title, style: 'destructive', onPress: () => resolve(true) },
-    ]);
-  });
-}

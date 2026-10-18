@@ -1,0 +1,65 @@
+{
+  "name": "erevos",
+  "productName": "Erevos",
+  "desktopName": "erevos.desktop",
+  "version": "0.0.1",
+  "description": "The ONE instant messenger focused in privacy, anonymity and functionality",
+  "homepage": "https://github.com/azzinder/Erevos",
+  "license": "AGPL-3.0-or-later",
+  "author": {
+    "name": "azzinder",
+    "email": "245667790+azzinder@users.noreply.github.com"
+  },
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --linux --x64 --publish never",
+    "dist:mac": "electron-builder --mac dmg --universal --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.4.5",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "app.erevos",
+    "productName": "Erevos",
+    "files": [
+      "main.js",
+      "web/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "linux": {
+      "target": [
+        "pacman",
+        "AppImage"
+      ],
+      "executableName": "erevos",
+      "artifactName": "erevos-${arch}.${ext}",
+      "category": "Network;InstantMessaging",
+      "synopsis": "Private messenger",
+      "description": "End-to-end encrypted chats through relays you choose, with no account, phone number or email.",
+      "maintainer": "azzinder",
+      "vendor": "azzinder"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "artifactName": "erevos-macos-${arch}.${ext}",
+      "category": "public.app-category.social-networking",
+      "minimumSystemVersion": "13.0",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Erevos uses the microphone for voice messages, only while you hold Voice.",
+        "NSLocalNetworkUsageDescription": "Erevos talks to the relay you set, which may be on your local network."
+      }
+    },
+    "dmg": {
+      "writeUpdateInfo": false
+    }
+  }
+}

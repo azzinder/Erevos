@@ -3,11 +3,12 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
+import { AlertHost } from '../components/alert-host';
 import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
 import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
 import { runAutoBackup } from '../lib/backup-folder';
-import { setupCrypto } from '../lib/crypto-setup';
+import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
 import { PasswordGate } from '../lock/gate';
@@ -80,6 +81,8 @@ export default function RootLayout() {
       hiddenPrepared = true;
       void prepareHidden().catch(() => undefined);
     }
+    // On a computer the core loads beside the app, and nothing that needs it opens before it.
+    await cryptoReady();
     const config = await loadLockConfig();
     if (config.direct !== null) {
       // The lock was turned off in a later space: that one opens directly, with its key from the keystore.
@@ -201,6 +204,7 @@ function Shell({ phase, error, lockState, onUnlock }: {
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
+      <AlertHost />
       {bar}
     </LockContext.Provider>
   );

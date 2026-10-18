@@ -1,12 +1,13 @@
-import { File } from 'expo-file-system';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
+import { ask } from '../lib/alert';
 import { canImport } from '../lib/core';
-import { fileName, mediaText, readExport, senders, shownTime, SOURCE_LABELS, toArchived, type ImportedChat } from '../lib/imports';
+import { pickFile, TooLargeError } from '../lib/pick-file';
+import { mediaText, readExport, senders, shownTime, SOURCE_LABELS, toArchived, type ImportedChat } from '../lib/imports';
 import { Archive, type ArchivedMessage, type ChatSummary } from '../lock/archive';
 import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
@@ -70,15 +71,10 @@ export default function ImportedScreen() {
     }
     setNote('');
     try {
-      const picked = await File.pickFileAsync({ mimeTypes: ['*/*'] });
-      if (picked.canceled) return;
+      const picked = await pickFile(MAX_BYTES);
+      if (!picked) return;
       setBusy(true);
-      const file = picked.result;
-      if (file.size > MAX_BYTES) {
-        setNote('That file is too large. Export the chat again without media.');
-        return;
-      }
-      const read = await readExport(fileName(file.uri), await file.bytes());
+      const read = await readExport(picked.name, picked.bytes);
       if (read.every((chat) => chat.messages.length === 0)) {
         setNote('There are no messages in that file.');
         return;
@@ -89,7 +85,7 @@ export default function ImportedScreen() {
       setMe(read.length > 1 ? (people[0] ?? '') : '');
       setTitle(read[0].title);
     } catch (error) {
-      setNote(`Not imported. ${errorText(error)}`);
+      setNote(error instanceof TooLargeError ? 'That file is too large. Export the chat again without media.' : `Not imported. ${errorText(error)}`);
     } finally {
       setBusy(false);
     }
@@ -116,7 +112,7 @@ export default function ImportedScreen() {
   }
 
   function remove(chat: ChatSummary) {
-    Alert.alert('Delete imported chat', `Delete "${chat.title || SOURCE_LABELS[chat.source]}" from this phone? It cannot be brought back.`, [
+    ask('Delete imported chat', `Delete "${chat.title || SOURCE_LABELS[chat.source]}" from this phone? It cannot be brought back.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',

@@ -1,10 +1,11 @@
-import { Directory, File } from 'expo-file-system';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import { Platform } from 'react-native';
 
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
+import { confirm } from '../lib/alert';
 import {
+  CAN_BACK_UP,
   changeAutoBackup,
   folderLabel,
   KEEP,
@@ -16,11 +17,12 @@ import {
   writeBackup,
   type AutoBackup,
 } from '../lib/backup-folder';
+import { pickFile, TooLargeError } from '../lib/pick-file';
 import { backupKey, makeBackup, openBackup, restoreBackup, WrongBackupPasswordError, type Backup } from '../lock/backup';
 import { useLock } from '../lock/context';
 import { useTheme } from '../theme/context';
 
-// Backups of everything Erevos keeps on the phone (lock/backup.ts): made by hand into a folder the
+// Backups of everything Erevos keeps on the phone or computer (lock/backup.ts): made by hand into a folder the
 // owner picks, made by themselves every day or week (lib/backup-folder.ts), and put back. Every
 // space shows the same screen and the same settings, and a backup holds every space, so nothing
 // here says how many there are.
@@ -39,11 +41,22 @@ const CHOICES = [
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
+// What Erevos runs on here: the desktop app is the web build.
+const DEVICE = Platform.OS === 'web' ? 'computer' : 'phone';
+const PLACES =
+  Platform.OS === 'web'
+    ? 'Choose a folder, on this computer, a USB stick or a folder a cloud app keeps in step, then a password for the backup.'
+    : 'Choose a folder, on the phone, a memory card or a cloud app that shows its folders, then a password for the backup.';
+
 export default function Backups() {
   const { lockNow } = useLock();
   const { colors } = useTheme();
   const [auto, setAuto] = useState<AutoBackup | null>(null);
   const [asking, setAsking] = useState<Asking>(null);
+  // What the sheet asked last, so its title stays while it closes.
+  const asked = useRef<Asking>(null);
+  if (asking) asked.current = asking;
+  const sheet = asking ?? asked.current;
   const [note, setNote] = useState('');
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -54,11 +67,11 @@ export default function Backups() {
     loadAutoBackup().then(setAuto);
   }, []);
 
-  if (Platform.OS === 'web') {
+  if (!CAN_BACK_UP) {
     return (
       <Page>
         <Text variant="title">Backups</Text>
-        <Text tone="muted">Backups work on Android for now.</Text>
+        <Text tone="muted">Backups work on Android and in the desktop app.</Text>
       </Page>
     );
   }
@@ -74,7 +87,7 @@ export default function Backups() {
     try {
       const folder = await pickFolder();
       if (!folder) say('No folder chosen.');
-      return folder?.uri ?? null;
+      return folder;
     } finally {
       picking.current = false;
     }
@@ -130,13 +143,11 @@ export default function Backups() {
     say('');
     picking.current = true;
     try {
-      const picked = await File.pickFileAsync({ mimeTypes: ['*/*'] });
-      if (picked.canceled) return;
-      const file = picked.result;
-      if (file.size > MAX_BYTES) return say('That file is not an Erevos backup.', true);
-      setAsking({ kind: 'open', bytes: await file.bytes(), name: file.name });
+      const picked = await pickFile(MAX_BYTES);
+      if (picked) setAsking({ kind: 'open', ...picked });
     } catch (error) {
-      say(`Could not read that file. ${errorText(error)}`, true);
+      if (error instanceof TooLargeError) say('That file is not an Erevos backup.', true);
+      else say(`Could not read that file. ${errorText(error)}`, true);
     } finally {
       picking.current = false;
     }
@@ -145,7 +156,7 @@ export default function Backups() {
   async function submit(password: string): Promise<boolean | void> {
     if (!asking) return;
     if (asking.kind === 'make') {
-      const { name, size } = writeBackup(new Directory(asking.folder), await makeBackup(await backupKey(password)));
+      const { name, size } = await writeBackup(asking.folder, await makeBackup(await backupKey(password)));
       setAsking(null);
       say(`Saved ${name} (${sizeText(size)}) in ${folderLabel(asking.folder)}. Keep its password: nothing opens the backup without it.`);
     } else if (asking.kind === 'auto') {
@@ -161,7 +172,7 @@ export default function Backups() {
         throw error;
       }
       setAsking(null);
-      if (await confirm('Replace everything', 'Every space on this phone, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.')) {
+      if (await confirm('Replace everything', `Every space on this ${DEVICE}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.`)) {
         await restoreBackup(backup);
         lockNow();
       }
@@ -177,7 +188,7 @@ export default function Backups() {
     <Page>
       <Text variant="title">Backups</Text>
       <Text variant="caption" tone="muted" style={hint}>
-        A backup is one file holding everything Erevos keeps on this phone: every space, with its contacts, messages, voice
+        A backup is one file holding everything Erevos keeps on this {DEVICE}: every space, with its contacts, messages, voice
         messages, imported chats and hidden chats, each still sealed with its own password. The backup has a password of its
         own too.
       </Text>
@@ -185,7 +196,7 @@ export default function Backups() {
       <SectionTitle title="Make a backup" />
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
-          Choose a folder, on the phone, a memory card or a cloud app that shows its folders, then a password for the backup.
+          {PLACES}
         </Text>
         <Row wrap>
           <Button title="Make a backup" compact onPress={make} disabled={busy} />
@@ -225,8 +236,8 @@ export default function Backups() {
       <SectionTitle title="Restore" />
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
-          Puts a backup in place of everything on this phone. Chats that went on after the backup was made may need their
-          contact links again. Use a backup on one phone at a time.
+          Puts a backup in place of everything on this {DEVICE}. Chats that went on after the backup was made may need
+          their contact links again. Use a backup on one device at a time.
         </Text>
         <Row wrap>
           <Button title="Restore a backup" kind="secondary" compact onPress={pickBackup} disabled={busy} />
@@ -241,9 +252,9 @@ export default function Backups() {
 
       <PasswordSheet
         visible={asking !== null}
-        title={asking?.kind === 'open' ? `Open ${asking.name}` : asking?.kind === 'auto' ? 'Password for automatic backups' : 'Password for this backup'}
-        repeat={asking?.kind !== 'open'}
-        submitLabel={asking?.kind === 'open' ? 'Open' : 'Save'}
+        title={sheet?.kind === 'open' ? `Open ${sheet.name}` : sheet?.kind === 'auto' ? 'Password for automatic backups' : 'Password for this backup'}
+        repeat={sheet?.kind !== 'open'}
+        submitLabel={sheet?.kind === 'open' ? 'Open' : 'Save'}
         onClose={() => setAsking(null)}
         onSubmit={submit}
       />
@@ -259,13 +270,4 @@ function sizeText(bytes: number): string {
 
 function whenText(ms: number): string {
   return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-}
-
-function confirm(title: string, message: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-      { text: title, style: 'destructive', onPress: () => resolve(true) },
-    ]);
-  });
 }

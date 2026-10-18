@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppState, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { AppState, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
@@ -12,6 +12,7 @@ import { QrCode } from '../components/QrCode';
 import { ShieldIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
+import { ask } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
 import { E2E, fromBase64Url, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
@@ -190,10 +191,10 @@ export default function ChatScreen() {
     return () => subscription.remove();
   }, []);
 
-  if (Platform.OS !== 'android') {
+  if (Platform.OS === 'ios') {
     return (
       <Page>
-        <Text tone="muted">Chat runs on Android only for now.</Text>
+        <Text tone="muted">Chat runs on Android and on a computer for now.</Text>
       </Page>
     );
   }
@@ -723,7 +724,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   function deleteMessages(peer: string) {
     const name = label(peer, shownContacts);
     const kept = archive && archive.linked(peer.slice(CONTACT_PREFIX.length)).length > 0 ? ' Imported messages stay: delete them in Imported chats.' : '';
-    Alert.alert('Delete messages', `Delete the messages with ${name}? They cannot be brought back.${kept}`, [
+    ask('Delete messages', `Delete the messages with ${name}? They cannot be brought back.${kept}`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'This phone', onPress: () => forgetChat(peer) },
       { text: 'Both phones', style: 'destructive', onPress: () => void eraseOnBoth(peer, { all: true }, () => forgetChat(peer)) },
@@ -732,7 +733,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
   function deleteMessage(message: Message) {
     const both = message.peer.startsWith(CONTACT_PREFIX) && message.tag;
-    Alert.alert('Delete message', 'Delete this message? It cannot be brought back.', [
+    ask('Delete message', 'Delete this message? It cannot be brought back.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'This phone', onPress: () => forgetMessage(message) },
       ...(both
@@ -806,6 +807,12 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
   async function shareLink(link: string) {
     try {
+      // A computer has no share sheet: the link is copied, to paste where it should go.
+      if (Platform.OS === 'web') {
+        await navigator.clipboard.writeText(link);
+        setNote('Contact link copied.');
+        return;
+      }
       await Share.share({ message: link });
     } catch (error) {
       setNote(errorText(error));
@@ -845,7 +852,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
   // Refusing forgets them and their messages here. Their phone is not told.
   function refuseRequest(peer: string) {
-    Alert.alert('Refuse request', `Refuse ${label(peer, contacts)}? Their messages go, and anything they send later is not shown.`, [
+    ask('Refuse request', `Refuse ${label(peer, contacts)}? Their messages go, and anything they send later is not shown.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Refuse',
@@ -1150,7 +1157,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
             <Text tone="muted">
               {hiddenKey
                 ? 'No hidden chats yet. Add a contact through the relay below.'
-                : 'Looking for a nearby Erevos phone. Contacts through the relay are under Relay.'}
+                : Platform.OS === 'web'
+                  ? 'No chats yet. Add a contact through the relay, under Relay.'
+                  : 'Looking for a nearby Erevos phone. Contacts through the relay are under Relay.'}
             </Text>
           )}
           {selectedContact && contacts.some((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === selectedContact) ? (
@@ -1289,7 +1298,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                     <Text tone="muted">Your relay queue is ready. Give your contact link to whoever may write to you.</Text>
                     <Row wrap>
                       <TextButton title={showQr ? 'Hide my QR code' : 'Show my QR code'} onPress={() => setShowQr((on) => !on)} />
-                      <TextButton title="Share my contact link" onPress={() => void shareLink(ownLink)} />
+                      <TextButton title={Platform.OS === 'web' ? 'Copy my contact link' : 'Share my contact link'} onPress={() => void shareLink(ownLink)} />
                     </Row>
                     {showQr ? (
                       <>

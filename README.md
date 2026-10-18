@@ -42,10 +42,19 @@ Early work, not audited. Do not rely on it to protect anyone yet.
   an optional journal on disk so queues survive a restart.
 - `deploy/relay`: scripts that run the relay on a Debian or Ubuntu server
   behind Caddy, with TLS from Let's Encrypt. See its README.
+- `desktop/`: Erevos for Linux and macOS, the app's web build (with the core in
+  WebAssembly) in Electron. `.github/workflows/desktop.yml` builds the Linux
+  packages and the Mac disk image, and starts each to check it opens.
 
 ## Build
 
     cargo test
+
+The desktop app, from `app/`:
+
+    node scripts/build-web-core.mjs
+    EXPO_PUBLIC_SHELL=electron npx expo export --platform web --output-dir ../desktop/web
+    cd ../desktop && npm ci && npx electron .
 
 ## Licence
 

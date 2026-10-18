@@ -1,0 +1,101 @@
+name: desktop
+
+# Erevos for Linux and macOS (desktop/): the web build with the core in WebAssembly, in Electron.
+# Nobody on the team has a Mac, so the Mac's disk image is opened and its app started here, on
+# GitHub's Mac runner, with --smoke (desktop/main.js): it waits for the first screen and the core.
+# The packages are kept as the run's artifacts.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            app/package-lock.json
+            desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Build the web app with its core
+        working-directory: app
+        env:
+          EXPO_NO_TELEMETRY: "1"
+          EXPO_PUBLIC_SHELL: electron
+        run: |
+          npm ci
+          node scripts/build-web-core.mjs
+          npx expo export --platform web --output-dir ../desktop/web
+          test -f ../desktop/web/core/erevos_ffi_bg.wasm
+      - run: npm ci
+        working-directory: desktop
+      - name: Start it and wait for its first screen
+        working-directory: desktop
+        run: xvfb-run -a npx electron . --smoke --no-sandbox
+      - name: Package for Linux
+        working-directory: desktop
+        run: npx electron-builder --linux pacman AppImage --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: erevos-linux
+          path: |
+            desktop/dist/*.pacman
+            desktop/dist/*.AppImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-web
+          path: desktop/web
+
+  macos:
+    needs: linux
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop-web
+          path: desktop/web
+      - run: npm ci
+        working-directory: desktop
+      - name: Package for macOS (Apple silicon and Intel)
+        working-directory: desktop
+        run: npx electron-builder --mac dmg --universal --publish never
+      - name: Open the disk image and start the app
+        run: |
+          set -euo pipefail
+          dmg=$(ls desktop/dist/*.dmg)
+          mnt=$(mktemp -d)
+          hdiutil attach "$dmg" -nobrowse -readonly -noautoopen -mountpoint "$mnt"
+          app="$mnt/Erevos.app"
+          archs=$(lipo -archs "$app/Contents/MacOS/Erevos")
+          echo "Architectures: $archs"
+          case " $archs " in *" arm64 "*) ;; *) echo "::error::No Apple silicon code"; exit 1 ;; esac
+          case " $archs " in *" x86_64 "*) ;; *) echo "::error::No Intel code"; exit 1 ;; esac
+          codesign --verify --deep --strict --verbose=2 "$app"
+          # A keychain of its own, unlocked, so the app's Keychain item is made without a prompt.
+          keychain="$RUNNER_TEMP/erevos-check.keychain-db"
+          security create-keychain -p erevos-check "$keychain"
+          security set-keychain-settings "$keychain"
+          security unlock-keychain -p erevos-check "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security default-keychain -d user -s "$keychain"
+          "$app/Contents/MacOS/Erevos" --smoke | tee smoke.log
+          grep -q "SMOKE OK core=true secrets=encrypted" smoke.log
+          hdiutil detach "$mnt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: erevos-macos
+          path: desktop/dist/*.dmg

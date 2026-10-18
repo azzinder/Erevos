@@ -1,13 +1,13 @@
-import { Directory, File } from 'expo-file-system';
+import { makeBackup, type BackupKey } from '../lock/backup';
 
-import { BACKUP_PREFIX, backupName, makeBackup, type BackupKey } from '../lock/backup';
-
+import { writeBackup } from './backup-place';
 import { fromBase64, toBase64 } from './crypto';
 import { secureDelete, secureGet, secureSet } from './secure';
 
-// Backups (lock/backup.ts) written to a folder the owner picks with Android's folder picker: on
-// the phone, a memory card, or a cloud app that offers its folders there. Android lets Erevos
-// write in that folder from then on.
+export { CAN_BACK_UP, folderLabel, pickFolder, writeBackup } from './backup-place';
+
+// Backups (lock/backup.ts) written to a folder the owner picks (lib/backup-place.ts): on the
+// phone with Android's folder picker, on a computer in the desktop app.
 //
 // Automatic backups are made when a space opens and the last one is older than the days chosen,
 // into the folder chosen, which keeps the KEEP newest. Their settings are kept in the keystore
@@ -23,46 +23,6 @@ const DAY = 24 * 3600 * 1000;
 export const KEEP = 3;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
-
-/** A folder picked by the owner, or null if they went back. */
-export async function pickFolder(): Promise<Directory | null> {
-  try {
-    return await Directory.pickDirectoryAsync();
-  } catch {
-    return null;
-  }
-}
-
-/** A folder's name as the owner knows it, like Download/Erevos. */
-export function folderLabel(uri: string): string {
-  const tree = uri.split('/tree/')[1];
-  if (!tree) return uri;
-  const path = decodeURIComponent(tree);
-  return path.replace(/^primary:/, '') || path;
-}
-
-/** Writes a backup into `folder`. Returns the file's name and size in bytes. */
-export function writeBackup(folder: Directory, bytes: Uint8Array, now = Date.now()): { name: string; size: number } {
-  const name = backupName(now);
-  const file = folder.createFile(name, 'application/octet-stream');
-  file.write(bytes);
-  return { name: file.name || name, size: bytes.length };
-}
-
-// Deletes the older backups in the folder, keeping the KEEP newest. Their names hold the date.
-function prune(folder: Directory) {
-  const backups = folder
-    .list()
-    .filter((entry): entry is File => entry instanceof File && entry.name.startsWith(BACKUP_PREFIX))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  for (const old of backups.slice(0, Math.max(0, backups.length - KEEP))) {
-    try {
-      old.delete();
-    } catch {
-      // Left for the owner to delete.
-    }
-  }
-}
 
 export async function loadAutoBackup(): Promise<AutoBackup | null> {
   try {
@@ -116,9 +76,7 @@ export function runAutoBackup(force = false, now = Date.now()): Promise<AutoBack
     if (!auto || !auto.every || (!force && now - auto.last < auto.every * DAY)) return auto;
     let next: AutoBackup;
     try {
-      const folder = new Directory(auto.folder);
-      writeBackup(folder, await makeBackup({ key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter }), now);
-      prune(folder);
+      await writeBackup(auto.folder, await makeBackup({ key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter }), now, KEEP);
       next = { ...auto, last: now, error: '' };
     } catch (error) {
       next = { ...auto, error: errorText(error) };

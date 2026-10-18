@@ -26,16 +26,17 @@ const MARKS = ['✓', '✓✓', '✓✓✓'];
 
 type Relay = 'ready' | 'no-queue' | 'none';
 
-const MENU: { title: string; detail: string; href: Href }[] = [
+// `phone`: only on a phone, as it needs its radio.
+const MENU: { title: string; detail: string; href: Href; phone?: boolean }[] = [
   { title: 'Hidden chats', detail: 'Open them with their own password', href: '/chat?hidden=1' },
-  { title: 'Nearby phones', detail: 'Bluetooth and Wi-Fi, without internet', href: '/chat' },
+  { title: 'Nearby phones', detail: 'Bluetooth and Wi-Fi, without internet', href: '/chat', phone: true },
   { title: 'Imported chats', detail: 'Telegram and WhatsApp exports', href: '/imported' },
   { title: 'Appearance', detail: 'Style, colours, glass', href: '/appearance' },
   { title: 'Lock and second password', detail: 'Password, second space', href: '/security' },
   { title: 'Backups', detail: 'Make one, automatic backups, restore', href: '/backup' },
   { title: 'User guide', detail: 'How Erevos works, and what is not protected yet', href: '/guide' },
   { title: 'Relay test', detail: 'For testing a relay', href: '/relay' },
-  { title: 'Radio test', detail: 'For testing the nearby link', href: '/radio' },
+  { title: 'Radio test', detail: 'For testing the nearby link', href: '/radio', phone: true },
 ];
 
 export default function Home() {
@@ -171,7 +172,7 @@ export default function Home() {
         </Text>
       </Pressable>
       <Sheet visible={menu} onClose={() => setMenu(false)}>
-        {MENU.map((item) => (
+        {MENU.filter((item) => !item.phone || Platform.OS !== 'web').map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"

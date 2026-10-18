@@ -1,8 +1,52 @@
+import { setCore, type Core } from './core';
 import { setPbkdf2, webCryptoPbkdf2 } from './crypto';
+import { setupShell } from './shell';
 
 // Browsers have Web Crypto randomness and a native PBKDF2, which keeps checking every password
 // slot quick. Without it the JavaScript PBKDF2 is used.
+//
+// The Erevos core (lib/core.ts) runs here as WebAssembly, the same build the checks use, made for
+// the browser by scripts/build-web-core.mjs into public/core/. It is loaded beside the bundle, by
+// public/core/load.js, so the bundle does not carry it; a web build made without it has no
+// encryption, and the chat says so.
+
+type WebCore = Record<string, unknown>;
+
+let ready: Promise<void> = Promise.resolve();
+
+// The core's calls return at once. The Android module's return promises, as Core says.
+function wrap(wasm: WebCore): Core {
+  const calls = Object.entries(wasm).filter(([name, call]) => typeof call === 'function' && name !== 'default' && name !== 'initSync');
+  return Object.fromEntries(calls.map(([name, call]) => [name, async (...args: unknown[]) => (call as (...a: unknown[]) => unknown)(...args)])) as unknown as Core;
+}
+
+function loadCore(): Promise<void> {
+  if (typeof document === 'undefined') return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      const wasm = (globalThis as { erevosCore?: WebCore }).erevosCore;
+      if (wasm) setCore(wrap(wasm));
+      resolve();
+    };
+    window.addEventListener('erevos-core', done, { once: true });
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = '/core/load.js';
+    script.onerror = () => resolve();
+    document.head.appendChild(script);
+    // A core that never answers: the app opens without it.
+    setTimeout(resolve, 15_000);
+  });
+}
+
 export function setupCrypto(): void {
+  setupShell();
   const pbkdf2 = webCryptoPbkdf2();
   if (pbkdf2) setPbkdf2(pbkdf2);
+  ready = loadCore();
+}
+
+/** Resolves once the core is loaded, or known to be missing. */
+export function cryptoReady(): Promise<void> {
+  return ready;
 }
