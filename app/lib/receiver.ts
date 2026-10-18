@@ -31,6 +31,9 @@ let holds = 0;
 let released = 0;
 let look: Promise<unknown> = Promise.resolve();
 const listeners = new Set<() => void>();
+const messageListeners = new Set<(received: Extract<Received, { kind: 'message' }>) => void>();
+// How long to wait before the next look, asked each time.
+let pace = () => EVERY;
 
 /**
  * Stops looking at the relay, once a look under way has ended, until the function it gives is
@@ -56,14 +59,30 @@ export function onReceived(listener: () => void): () => void {
   };
 }
 
-/** Looks at the open space's relay queue every `every` milliseconds until the function it gives is called. */
-export function startReceiver(every = EVERY): () => void {
+/** Calls `listener` with each message the receiver opens, after it is kept; not those the chat screen opens itself. */
+export function onMessage(listener: (received: Extract<Received, { kind: 'message' }>) => void): () => void {
+  messageListeners.add(listener);
+  return () => {
+    messageListeners.delete(listener);
+  };
+}
+
+/** Sets how long the receiver waits between looks, milliseconds, asked before each: shorter while something waits for an answer. */
+export function setReceiverPace(next: () => number): void {
+  pace = next;
+}
+
+/** Looks at the open space's relay queue every few seconds (or every `every` milliseconds) until the function it gives is called. */
+export function startReceiver(every?: number): () => void {
   const state: { place: Place | null; seen: number; receipts: Receipts } = { place: null, seen: -1, receipts: {} };
   let stopped = false;
-  let busy = false;
-  const timer = setInterval(() => {
-    if (stopped || busy || holds > 0) return;
-    busy = true;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const next = () => {
+    if (!stopped) timer = setTimeout(tick, every ?? pace());
+  };
+  const tick = () => {
+    if (stopped) return;
+    if (holds > 0) return next();
     look = lookOnce(state, () => stopped || holds > 0)
       .then((changed) => {
         if (changed && !stopped) listeners.forEach((listener) => listener());
@@ -71,13 +90,12 @@ export function startReceiver(every = EVERY): () => void {
       .catch(() => {
         // The relay could not be reached: tried again with the next look.
       })
-      .finally(() => {
-        busy = false;
-      });
-  }, every);
+      .finally(next);
+  };
+  next();
   return () => {
     stopped = true;
-    clearInterval(timer);
+    if (timer) clearTimeout(timer);
   };
 }
 
@@ -116,7 +134,9 @@ async function lookOnce(state: { place: Place | null; seen: number; receipts: Re
       if (!bytes) break;
       // Taken from the relay, so kept whatever happens meanwhile.
       try {
-        changed = (await keep(chats, await chats.e2e.receive(bytes), state.receipts)) || changed;
+        const received = await chats.e2e.receive(bytes);
+        changed = (await keep(chats, received, state.receipts)) || changed;
+        if (received.kind === 'message') messageListeners.forEach((listener) => listener(received));
       } catch {
         // This one is lost, as in the chat; the next ones still come.
       }
