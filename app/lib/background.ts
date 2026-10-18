@@ -1,15 +1,23 @@
-import { AppRegistry, PermissionsAndroid, Platform } from 'react-native';
+import { AppRegistry, AppState, PermissionsAndroid, Platform } from 'react-native';
 
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
+import type { Received } from './e2e';
+import { appShown, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
+import { onSpaceGroupMessage } from './space-groups';
 
-// Ringing while Erevos is in the background, on Android: while a space is open, Erevos keeps
-// running with a quiet notice that says no more than its name, so it keeps looking at the relay,
-// and a call rings with the phone's ringtone and a notice that says only "Incoming call", over the
-// lock screen. On by default; a switch on the Lock screen turns it off on this phone. Swiped away
-// from the recent apps, or stopped by Android, Erevos looks at nothing and cannot ring.
+// Receiving while Erevos is in the background, on Android: while a space is open, Erevos keeps
+// running with a quiet notice that says no more than its name, so it keeps waiting at the relay
+// (lib/receiver.ts) and on the links to phones nearby (lib/nearby-links.ts). A call rings with the
+// phone's ringtone and a notice that says only "Incoming call", over the lock screen, and messages
+// that came show a notice that says only how many, and on a locked phone only "Erevos". Only the
+// open space's chats and groups are looked at, never hidden chats, whose key is in memory only
+// while they are open. On by default; switches on the Lock screen turn it off on this phone, or
+// only the messages notice. Swiped away from the recent apps, or stopped by Android, Erevos
+// looks at nothing and cannot ring.
 
 const KEY = 'erevos.ring-background';
+const NOTICES_KEY = 'erevos.message-notices';
 
 /** Whether this phone can ring in the background at all: Android, in a build with the call module. */
 export const canRingInBackground = Platform.OS === 'android' && !!callAudio?.startReceiving;
@@ -34,6 +42,53 @@ const changes = new Set<() => void>();
 export async function saveRingInBackground(on: boolean): Promise<void> {
   await secureSet(KEY, on ? 'on' : 'off');
   changes.forEach((change) => change());
+}
+
+/** Whether a notice says that messages came while Erevos was in the background: on unless turned off. */
+export async function loadMessageNotices(): Promise<boolean> {
+  const kept = await secureGet(NOTICES_KEY).catch(() => null);
+  return kept !== 'off';
+}
+
+export async function saveMessageNotices(on: boolean): Promise<void> {
+  await secureSet(NOTICES_KEY, on ? 'on' : 'off');
+  changes.forEach((change) => change());
+}
+
+// While the receiving runs in the background with the messages notice on, how many messages came
+// since Erevos last showed.
+let telling = false;
+let unseen = 0;
+
+/** Whether what came is news to tell of: words, a voice message (once), a photo or file; not marks, deletes, calls or a group's setting up. */
+export function isNews(received: Extract<Received, { kind: 'message' }>): boolean {
+  if (received.erase || received.call || received.group) return false;
+  if (received.voice) return received.voice.part === 0;
+  return received.text.length > 0 || received.file !== null;
+}
+
+/**
+ * A message came in the open space, from a contact or in a group: while Erevos is in the
+ * background, the notice says one more came. The chat screen tells of what it opens itself.
+ */
+export function messageCame(): void {
+  if (!telling || appShown()) return;
+  unseen++;
+  try {
+    callAudio?.tellMessages?.(unseen);
+  } catch {
+    // A build from before the notice: nothing shows.
+  }
+}
+
+function clearMessages() {
+  if (unseen === 0) return;
+  unseen = 0;
+  try {
+    callAudio?.clearMessages?.();
+  } catch {
+    // As above.
+  }
 }
 
 /** What Android lets Erevos do for it, or null where it cannot ring in the background. */
@@ -63,17 +118,20 @@ export function startBackground(): () => void {
   let running = false;
   const stop = () => {
     running = false;
+    telling = false;
     callAudio!.stopReceiving!();
     keeping.forEach((done) => done());
     keeping.clear();
   };
   const follow = async () => {
-    const on = await loadRingInBackground();
+    const [on, notices] = await Promise.all([loadRingInBackground(), loadMessageNotices()]);
     if (stopped) return;
     if (!on) {
       if (running) stop();
       return;
     }
+    telling = notices;
+    if (!notices) clearMessages();
     if (running) return;
     await askNotices();
     if (stopped || running) return;
@@ -86,9 +144,22 @@ export function startBackground(): () => void {
   };
   void follow();
   changes.add(follow);
+  const told = [
+    onMessage((received) => {
+      if (isNews(received)) messageCame();
+    }),
+    onSpaceGroupMessage(messageCame),
+  ];
+  // Erevos shows again: what came shows there, so the notice goes.
+  const shown = AppState.addEventListener('change', (state) => {
+    if (state === 'active') clearMessages();
+  });
   return () => {
     stopped = true;
     changes.delete(follow);
+    told.forEach((stopTelling) => stopTelling());
+    shown.remove();
+    clearMessages();
     if (running) stop();
   };
 }

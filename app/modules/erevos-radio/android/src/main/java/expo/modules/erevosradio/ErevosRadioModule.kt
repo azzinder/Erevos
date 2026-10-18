@@ -16,6 +16,7 @@ class ErevosRadioModule : Module() {
   private var ble: BleLink? = null
   private var link: WifiAwareLink? = null
   private var lan: LanLink? = null
+  private var quiet = false
   private var mesh: MeshtasticLink? = null
 
   override fun definition() = ModuleDefinition {
@@ -52,7 +53,10 @@ class ErevosRadioModule : Module() {
           main.post { sendEvent("onText", mapOf("peer" to id, "text" to text)) }
         },
         onLog = log,
-      ).also { it.start() }
+      ).also {
+        it.start()
+        it.setQuiet(quiet)
+      }
       link = WifiAwareLink(
         context,
         onLink = { id ->
@@ -84,12 +88,23 @@ class ErevosRadioModule : Module() {
           main.post { sendEvent("onText", mapOf("peer" to id, "text" to text)) }
         },
         onLog = { text -> main.post { sendEvent("onStatus", mapOf("text" to text)) } },
-      ).also { it.start() }
+      ).also {
+        it.start()
+        it.setQuiet(quiet)
+      }
     }
 
     Function("stopLan") {
       lan?.stop()
       lan = null
+    }
+
+    // While Erevos is in the background: Bluetooth at low power, found with the screen off too,
+    // and the same Wi-Fi said less often. The links that are up stay up.
+    Function("setQuiet") { on: Boolean ->
+      quiet = on
+      ble?.setQuiet(on)
+      lan?.setQuiet(on)
     }
 
     // A Meshtastic LoRa radio (MeshtasticLink): bytes to and from it go as base64, on onMesh.

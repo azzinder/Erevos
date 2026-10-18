@@ -8,6 +8,7 @@ import {
   meshSend,
   onRadioEvent,
   sendText,
+  setRadioQuiet,
   startLan,
   startRadio,
   stopLan,
@@ -225,6 +226,11 @@ export function stopLinks(): void {
   setLanLinks(false);
   if (HAS_RADIO && started) stopRadio();
   started = false;
+}
+
+/** Keeps the links quieter while Erevos is in the background, on Android: Bluetooth at low power, the same Wi-Fi said less often. */
+export function setLinksQuiet(on: boolean): void {
+  if (HAS_RADIO) setRadioQuiet(on);
 }
 
 /** Starts the radio again if the links want it, as after the radio test screen stopped it (app/radio.tsx). */

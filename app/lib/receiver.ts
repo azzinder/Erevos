@@ -5,7 +5,19 @@ import { offerRef } from './attachments';
 import { canRelaySeal, hasCore } from './core';
 import { ONLINE, toBase64Url, type Extra, type Received, type Where } from './e2e';
 import { nearby } from './nearby';
-import { carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sendMessage, toHex, type Relay } from './relay';
+import {
+  canWaitAt,
+  carryTo,
+  createQueue,
+  fromHex,
+  isQueueNotFound,
+  receiveMessage,
+  relayKey,
+  sendMessage,
+  toHex,
+  waitForMessage,
+  type Relay,
+} from './relay';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
 import { isGroupPacket } from './groups';
 import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-chats';
@@ -27,14 +39,25 @@ import { sendWaiting, type SendPlace } from './waiting';
 // the space is open) is opened here the same way, one packet at a time, unless the chat screen
 // takes it itself (takeNearby). The marks go back to the contact's phone nearby when it is, as
 // with no internet, and through the relay too.
+//
+// While Erevos is in the background (lib/background.ts) it does not ask every few seconds: it
+// waits at the relay until something comes for the queue (waitForMessage), so the phone's radio
+// rests in between, and what comes is still taken at once. At a relay that cannot wait, it asks
+// every AWAY_EVERY; after a look that failed, it waits longer each time, AWAY_RETRY_MOST at most.
 
 const EVERY = 3000;
+// In the background: how long one wait at the relay lasts, seconds; how often a relay that cannot
+// wait is asked; and the first and longest wait after a look that failed, milliseconds.
+const WAIT_FOR = 45;
+const AWAY_EVERY = 20_000;
+const AWAY_RETRY = 5000;
+const AWAY_RETRY_MOST = 120_000;
 // Messages taken in one look, at most.
 const BATCH = 50;
 const CONTACT_PREFIX = 'contact:';
 
 type Receipts = Record<string, string[]>;
-type State = { place: Place | null; seen: number; receipts: Receipts; answers: Set<string> };
+type State = { place: Place | null; seen: number; receipts: Receipts; answers: Set<string>; waited: boolean; failures: number };
 
 // Where this space's messages come and go: our relay, the relay that sends (through the second
 // one when set), our queue, and where contacts reach us, said in every message.
@@ -47,10 +70,45 @@ let look: Promise<unknown> = Promise.resolve();
 const listeners = new Set<() => void>();
 // Whether the app shows on the screen: only then is a contact told this phone is open.
 let shows = true;
+// The waits at the relay under way, ended when the app shows or the chat opens, and how to look
+// again at once.
+const waits = new Set<AbortController>();
+let hurry: (() => void) | null = null;
 
-/** Says whether the app shows on the screen (AppState 'active'). */
+/** Says whether the app shows on the screen (AppState 'active'). Shown again, it looks at once. */
 export function setAppShown(shown: boolean): void {
   shows = shown;
+  if (!shown) return;
+  endWaits();
+  hurry?.();
+}
+
+function endWaits() {
+  waits.forEach((wait) => wait.abort());
+  waits.clear();
+}
+
+/**
+ * While Erevos is in the background, waits at the relay until something comes for the queue, or a
+ * while: then a look takes it. Says whether it waited; false at once while the app shows, at a
+ * relay that cannot wait, or once the wait was ended. Throws when the relay cannot be reached.
+ */
+export async function waitWhileAway(relay: Relay, recipient: Uint8Array): Promise<boolean> {
+  if (shows || !canWaitAt(relay)) return false;
+  const wait = new AbortController();
+  waits.add(wait);
+  try {
+    await waitForMessage(relay, recipient, WAIT_FOR, wait.signal);
+    return !wait.signal.aborted && canWaitAt(relay);
+  } finally {
+    waits.delete(wait);
+  }
+}
+
+/** How long to wait before the next look while Erevos is in the background: after a wait at the relay, a look that did not wait, or `failures` that failed in a row. */
+export function awayPace(waited: boolean, failures: number): number {
+  if (failures > 0) return Math.min(AWAY_RETRY_MOST, AWAY_RETRY * 2 ** (failures - 1));
+  return waited ? 500 : AWAY_EVERY;
 }
 
 /** Whether the app shows on the screen, as last said. */
@@ -70,7 +128,7 @@ let lastPlace: Place | null = null;
 type NearbyTaker = (link: string | null, packet: Uint8Array) => Promise<void>;
 let nearbyTaker: NearbyTaker | null = null;
 let nearbyTurn: Promise<unknown> = Promise.resolve();
-const nearbyState: State = { place: null, seen: -1, receipts: {}, answers: new Set() };
+const nearbyState: State = { place: null, seen: -1, receipts: {}, answers: new Set(), waited: false, failures: 0 };
 // How long to wait before the next look, asked each time.
 let pace = () => EVERY;
 
@@ -80,6 +138,7 @@ let pace = () => EVERY;
  */
 export async function holdReceiver(): Promise<() => void> {
   holds++;
+  endWaits();
   await look.catch(() => undefined);
   let held = true;
   return () => {
@@ -118,14 +177,15 @@ export function setReceiverPace(next: () => number): void {
 
 /** Looks at the open space's relay queue every few seconds (or every `every` milliseconds) until the function it gives is called. */
 export function startReceiver(every?: number): () => void {
-  const state: State = { place: null, seen: -1, receipts: {}, answers: new Set() };
+  const state: State = { place: null, seen: -1, receipts: {}, answers: new Set(), waited: false, failures: 0 };
   lastPlace = null;
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   const next = () => {
-    if (!stopped) timer = setTimeout(tick, every ?? pace());
+    if (!stopped) timer = setTimeout(tick, every ?? (shows ? pace() : awayPace(state.waited, state.failures)));
   };
   const tick = () => {
+    timer = null;
     if (stopped) return;
     if (holds > 0) return next();
     look = lookOnce(state, () => stopped || holds > 0)
@@ -138,9 +198,17 @@ export function startReceiver(every?: number): () => void {
       .finally(next);
   };
   next();
+  const now = () => {
+    if (stopped || !timer) return;
+    clearTimeout(timer);
+    timer = setTimeout(tick, 0);
+  };
+  hurry = now;
   return () => {
     stopped = true;
     if (timer) clearTimeout(timer);
+    if (hurry === now) hurry = null;
+    endWaits();
     lastPlace = null;
   };
 }
@@ -270,7 +338,9 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   };
   const recipient = fromHex(place.queue.recipientHex);
   let failed: unknown = null;
+  state.waited = false;
   try {
+    if (!stop()) state.waited = await waitWhileAway(place.own, recipient);
     for (let i = 0; i < BATCH && !stop(); i++) {
       const bytes = await receiveMessage(place.own, recipient);
       if (!bytes) break;
@@ -279,6 +349,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   } catch (error) {
     failed = error;
   }
+  state.failures = failed ? state.failures + 1 : 0;
   // What came to the backup queue, whether or not our relay answered.
   await lookAtSpare(chats.e2e, take, stop).catch(() => undefined);
   // Our relay could not be reached: tried again with the next look. What came to the backup

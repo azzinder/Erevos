@@ -5,7 +5,16 @@ import { IntegrityCard } from '../components/integrity-card';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
-import { askBattery, askFullScreen, backgroundState, canRingInBackground, loadRingInBackground, saveRingInBackground } from '../lib/background';
+import {
+  askBattery,
+  askFullScreen,
+  backgroundState,
+  canRingInBackground,
+  loadMessageNotices,
+  loadRingInBackground,
+  saveMessageNotices,
+  saveRingInBackground,
+} from '../lib/background';
 import { loadLockConfig, lockWithPassword, removePasswordLock, removeSecondPassword, setLockPassword, type LockConfig } from '../lock/config';
 import { useLock } from '../lock/context';
 import { prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
@@ -192,14 +201,16 @@ export default function Security() {
   );
 }
 
-// Ringing while Erevos is in the background (lib/background.ts), on this phone: the switch, and
-// what Android still has to allow, each with the way to allow it.
+// Receiving while Erevos is in the background (lib/background.ts), on this phone: the switch, the
+// messages notice, and what Android still has to allow, each with the way to allow it.
 function BackgroundCalls() {
   const [on, setOn] = useState<boolean | null>(null);
+  const [notices, setNotices] = useState(true);
   const [allowed, setAllowed] = useState(backgroundState);
 
   useEffect(() => {
     loadRingInBackground().then(setOn);
+    loadMessageNotices().then(setNotices);
     // Back from Android's settings: what it allows now.
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') setAllowed(backgroundState());
@@ -212,23 +223,34 @@ function BackgroundCalls() {
     void saveRingInBackground(next).then(() => setAllowed(backgroundState()));
   }
 
+  function chooseNotices(next: boolean) {
+    setNotices(next);
+    void saveMessageNotices(next);
+  }
+
   if (on === null) return null;
   return (
     <>
-      <SectionTitle title="Calls in the background" />
+      <SectionTitle title="In the background" />
       <Row wrap>
-        <Chip label="Ring" selected={on} onPress={() => choose(true)} />
+        <Chip label="Receive and ring" selected={on} onPress={() => choose(true)} />
         <Chip label="Only while Erevos shows" selected={!on} onPress={() => choose(false)} />
       </Row>
+      {on ? (
+        <Row wrap>
+          <Chip label="Say a message came" selected={notices} onPress={() => chooseNotices(true)} />
+          <Chip label="No notice" selected={!notices} onPress={() => chooseNotices(false)} />
+        </Row>
+      ) : null}
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
           {on
-            ? 'While a space is open, Erevos keeps running in the background and a call rings with the phone\'s ringtone, over the lock screen too. The notices say only "Erevos" and "Incoming call", never who calls. Swiped away from the recent apps, Erevos cannot ring.'
-            : 'A call rings only while Erevos shows. Otherwise it shows as a missed call once you open Erevos.'}
+            ? 'While a space is open, Erevos keeps running in the background: it waits at the relay and on the links to phones nearby, so messages come and a call rings with the phone\'s ringtone, over the lock screen too. Only that space\'s chats and groups, never hidden chats. The notices say only "Erevos", "Incoming call" and how many messages came, never who or what; on a locked phone the one for messages says only "Erevos". Swiped away from the recent apps, Erevos takes nothing and cannot ring.'
+            : 'Messages come, and a call rings, only while Erevos shows. A call shows as missed once you open Erevos.'}
         </Text>
         {on && allowed && !allowed.notices ? (
           <Text variant="caption" tone="muted" style={hint}>
-            Notices are off for Erevos in Android's settings: calls still ring, with no notice to tap.
+            Notices are off for Erevos in Android's settings: calls still ring, with no notice to tap, and no notice says a message came.
           </Text>
         ) : null}
         {on && allowed && (!allowed.battery || !allowed.fullScreen) ? (

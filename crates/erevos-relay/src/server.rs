@@ -12,6 +12,11 @@
 //! - `SEND`: sender id, then a 4-byte length and the message.
 //! - `RECEIVE`: recipient id. Reply: a 1-byte flag, then a length and the
 //!   message if one was waiting. The message is deleted from the relay.
+//! - `WAIT`: recipient id, then 1 byte: seconds to wait, at most `MAX_WAIT`.
+//!   Reply: `OK` and 1 as soon as a message waits in the queue, or `OK` and 0
+//!   when none came in that time. Nothing is taken: a `RECEIVE` takes it. A
+//!   phone in the background waits so instead of asking every few seconds,
+//!   and nothing is lost if its connection drops while it waits.
 //! - `DELETE`: recipient id.
 //! - `KEY`: no fields. Reply: the relay's public key (32 bytes) for sealed
 //!   sends, or `NOT_FOUND` if it has none.
@@ -69,9 +74,9 @@
 
 use std::io::{self, Cursor, ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream, ToSocketAddrs};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use erevos_core::relay_seal::{RelayKey, OVERHEAD};
 
@@ -85,8 +90,10 @@ use crate::turn::Turn;
 
 /// What every connection shares: the queues, the file store, the key for
 /// sealed sends if the relay has one, and the call relay if one runs beside it.
+/// `arrived` wakes the connections that wait for a message (`WAIT`).
 pub struct Shared {
     pub store: Mutex<Store>,
+    pub arrived: Condvar,
     pub files: Mutex<FileStore>,
     pub key: Option<RelayKey>,
     pub turn: Option<Turn>,
@@ -103,6 +110,7 @@ impl Shared {
     ) -> SharedStore {
         Arc::new(Shared {
             store: Mutex::new(store),
+            arrived: Condvar::new(),
             files: Mutex::new(files),
             key,
             turn,
@@ -134,6 +142,10 @@ pub const FILE_GET: u8 = 9;
 pub const FILE_DELETE: u8 = 10;
 pub const FILE_VIA: u8 = 11;
 pub const CALL_RELAY: u8 = 12;
+pub const WAIT: u8 = 13;
+
+/// The longest a `WAIT` lasts, seconds.
+pub const MAX_WAIT: u8 = 60;
 
 pub const OK: u8 = 0;
 pub const NOT_FOUND: u8 = 1;
@@ -289,7 +301,8 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         SEND => {
             let sender = read_id(r)?;
             let msg = read_message(r)?;
-            status(shared.store().send(&sender, msg))
+            let sent = shared.store().send(&sender, msg);
+            status(arrived(shared, sent))
         }
         RECEIVE => {
             let recipient = read_id(r)?;
@@ -303,6 +316,29 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
                 }
                 Ok(None) => vec![OK, 0],
                 Err(e) => vec![code(e)],
+            }
+        }
+        WAIT => {
+            let recipient = read_id(r)?;
+            let mut seconds = [0u8; 1];
+            r.read_exact(&mut seconds)?;
+            let until = Instant::now() + Duration::from_secs(u64::from(seconds[0].min(MAX_WAIT)));
+            let mut store = shared.store();
+            loop {
+                match store.has_waiting(&recipient) {
+                    Ok(true) => break vec![OK, 1],
+                    Ok(false) => {}
+                    Err(e) => break vec![code(e)],
+                }
+                let left = until.saturating_duration_since(Instant::now());
+                if left.is_zero() {
+                    break vec![OK, 0];
+                }
+                store = shared
+                    .arrived
+                    .wait_timeout(store, left)
+                    .expect("store lock")
+                    .0;
             }
         }
         DELETE => {
@@ -326,7 +362,8 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
             let sealed = read_sealed(r)?;
             match shared.key.as_ref().map(|key| key.open(&sealed)) {
                 Some(Ok((sender, msg))) if msg.len() <= MAX_MESSAGE => {
-                    status(shared.store().send(&sender, msg))
+                    let sent = shared.store().send(&sender, msg);
+                    status(arrived(shared, sent))
                 }
                 // Sealed for another key, changed on the way, or this relay has no key:
                 // to the sender it is the same as a queue that is not here.
@@ -391,6 +428,14 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         _ => return Err(io::Error::new(ErrorKind::InvalidData, "unknown opcode")),
     };
     Ok(Some(reply))
+}
+
+/// Wakes the connections waiting for a message once one was queued.
+fn arrived(shared: &Shared, sent: Result<(), QueueError>) -> Result<(), QueueError> {
+    if sent.is_ok() {
+        shared.arrived.notify_all();
+    }
+    sent
 }
 
 /// Bytes after their 2-byte length. Only short, known strings go out this way.
@@ -694,6 +739,49 @@ mod tests {
             return None;
         }
         Some(r[6..].to_vec())
+    }
+
+    fn wait(s: &mut TcpStream, recipient: &QueueId, seconds: u8) -> Vec<u8> {
+        let mut req = vec![WAIT];
+        req.extend_from_slice(recipient);
+        req.push(seconds);
+        s.write_all(&req).unwrap();
+        let mut status = [0u8; 1];
+        s.read_exact(&mut status).unwrap();
+        if status[0] != OK {
+            return status.to_vec();
+        }
+        let mut flag = [0u8; 1];
+        s.read_exact(&mut flag).unwrap();
+        vec![OK, flag[0]]
+    }
+
+    #[test]
+    fn a_wait_ends_once_a_message_comes_and_leaves_it_to_be_taken() {
+        let addr = start();
+        let mut s = TcpStream::connect(addr).unwrap();
+        let (recipient, sender) = create(&mut s);
+        // None comes: the wait ends after its time, with nothing.
+        let started = Instant::now();
+        assert_eq!(wait(&mut s, &recipient, 1), vec![OK, 0]);
+        assert!(started.elapsed() >= Duration::from_millis(900));
+        // One comes meanwhile: the wait ends at once.
+        let waiter = thread::spawn(move || {
+            let mut w = TcpStream::connect(addr).unwrap();
+            let started = Instant::now();
+            (wait(&mut w, &recipient, 30), started.elapsed())
+        });
+        thread::sleep(Duration::from_millis(300));
+        assert_eq!(send(&mut s, &sender, b"hello"), OK);
+        let (reply, took) = waiter.join().unwrap();
+        assert_eq!(reply, vec![OK, 1]);
+        assert!(took < Duration::from_secs(10));
+        // It is still there, so one waiting already ends at once, and it is taken once.
+        assert_eq!(wait(&mut s, &recipient, 30), vec![OK, 1]);
+        assert_eq!(receive(&mut s, &recipient), Some(b"hello".to_vec()));
+        assert_eq!(receive(&mut s, &recipient), None);
+        // A queue that is not here.
+        assert_eq!(wait(&mut s, &[9u8; 24], 30), vec![NOT_FOUND]);
     }
 
     #[test]

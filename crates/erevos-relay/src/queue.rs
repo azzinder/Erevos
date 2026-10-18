@@ -311,6 +311,13 @@ impl Store {
         Ok(msg)
     }
 
+    /// Whether a message waits in the queue. Nothing is taken.
+    pub fn has_waiting(&mut self, recipient_id: &QueueId) -> Result<bool, QueueError> {
+        self.expire_queue(recipient_id)?;
+        let q = self.queues.get(recipient_id).ok_or(QueueError::NotFound)?;
+        Ok(!q.messages.is_empty())
+    }
+
     pub fn delete(&mut self, recipient_id: &QueueId) -> Result<(), QueueError> {
         if !self.queues.contains_key(recipient_id) {
             return Err(QueueError::NotFound);

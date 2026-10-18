@@ -1,4 +1,4 @@
-// Two-hop sending and call relay credentials (lib/relay.ts) against two real relays (crates/erevos-relay) and the real core
+// Two-hop sending, call relay credentials and waiting for a message (lib/relay.ts) against two real relays (crates/erevos-relay) and the real core
 // built to WebAssembly by checks/build-core.mjs. Skipped, with a note, when either build is
 // missing: build the relay with `cargo build -p erevos-relay`.
 // Run with: npm run check
@@ -13,7 +13,18 @@ import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
-import { callRelay, createQueue, receiveMessage, relayKey, RelayError, sendMessage, type Relay } from '../lib/relay';
+import {
+  callRelay,
+  canWaitAt,
+  createQueue,
+  receiveMessage,
+  relayKey,
+  RelayError,
+  RelayUnreachableError,
+  sendMessage,
+  waitForMessage,
+  type Relay,
+} from '../lib/relay';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const binary = new URL('../../target/debug/erevos-relay', import.meta.url).pathname;
@@ -108,4 +119,50 @@ test('a relay hands out credentials for its call relay, and one without says so'
   assert.ok(Number(turn.username) > Date.now() / 1000 + 3600);
   assert.equal(turn.credential.length, 28);
   assert.equal(await callRelay({ url: near }), null);
+});
+
+test('a relay waits until a message comes, without taking it, and a wait can be ended', { skip: !ready }, async () => {
+  const own: Relay = { url: near };
+  const ids = await createQueue(own);
+  let started = Date.now();
+  assert.equal(await waitForMessage(own, ids.recipientId, 1), false);
+  assert.ok(Date.now() - started >= 900);
+  // One comes while it waits: the wait ends at once, and the message is still there to take.
+  started = Date.now();
+  const waiting = waitForMessage(own, ids.recipientId, 30);
+  await new Promise((r) => setTimeout(r, 200));
+  await sendMessage(own, ids.senderId, Uint8Array.of(7));
+  assert.equal(await waiting, true);
+  assert.ok(Date.now() - started < 10_000);
+  assert.deepEqual(await receiveMessage(own, ids.recipientId), Uint8Array.of(7));
+  // Ended from this side, as when Erevos shows again.
+  const ending = new AbortController();
+  started = Date.now();
+  const ended = waitForMessage(own, ids.recipientId, 30, ending.signal);
+  setTimeout(() => ending.abort(), 100);
+  assert.equal(await ended, false);
+  assert.ok(Date.now() - started < 5000);
+  assert.ok(canWaitAt(own));
+});
+
+test('a relay from before waiting is asked plainly from then on, and one not there throws', { skip: !ready }, async () => {
+  // As an older relay does: KEY is answered (it has none), anything it does not know closes the connection.
+  const { Server } = createRequire(import.meta.url)('ws') as {
+    Server: new (options: { port: number; host: string }) => {
+      on(event: 'connection', listener: (socket: { on(e: 'message', l: (data: Buffer) => void): void; send(d: Uint8Array): void; terminate(): void }) => void): void;
+      close(): void;
+    };
+  };
+  const port = await freePort();
+  const old = new Server({ port, host: '127.0.0.1' });
+  old.on('connection', (socket) => socket.on('message', (data) => (data[0] === 5 ? socket.send(Uint8Array.of(1)) : socket.terminate())));
+  try {
+    const relay: Relay = { url: `ws://127.0.0.1:${port}` };
+    assert.ok(canWaitAt(relay));
+    assert.equal(await waitForMessage(relay, new Uint8Array(24), 30), false);
+    assert.equal(canWaitAt(relay), false);
+  } finally {
+    old.close();
+  }
+  await assert.rejects(waitForMessage({ url: `ws://127.0.0.1:${await freePort()}` }, new Uint8Array(24), 5), RelayUnreachableError);
 });

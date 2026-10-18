@@ -78,7 +78,8 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
 
 - **While a space is open:** the links start when a space opens, whatever screen shows, and stop when it locks or
   another space opens. A message from nearby shows on the home screen as one through the relay does, and a call rings
-  there too. On Android they stay up with Erevos in the background, while **Calls in the background** is on **Ring**.
+  there too. On Android they stay up with Erevos in the background, while **In the background** is on **Receive and
+  ring**.
 - **Range:** a few tens of metres in the open, less through walls.
 - **Wi-Fi Aware:** faster, but not every phone has it. Bluetooth works on all of them.
 - **The same Wi-Fi or a hotspot:** phones on one Wi-Fi, or on one phone's hotspot, find each other and talk directly,
@@ -175,9 +176,11 @@ at the relay, or at once when they are nearby. A message counts as read once its
   waiting** or **Delete it**. A waiting message is deleted on this phone only. Hidden chats keep nothing waiting.
 - **They see when you read:** your phone tells theirs, as theirs tells yours, unless that chat appears offline (below).
 - **When messages come:** Erevos looks at the relay every few seconds while it is open and unlocked, on any screen,
-  and the home screen moves the chat to the top by itself. On Android it goes on in the background too, while
-  **Calls in the background** rings (below). Closed, locked, or long in the background otherwise, it does not:
-  messages wait on the relay, up to 14 days, and come once Erevos opens again. There are no message notifications yet.
+  and the home screen moves the chat to the top by itself. On Android it goes on in the background too, while **In
+  the background** is on **Receive and ring** (below): there it waits at the relay until something comes, instead of
+  asking every few seconds, so the battery lasts, and a notice says only how many messages came. Closed, locked, or
+  long in the background otherwise, it does not: messages wait on the relay, up to 14 days, and come once Erevos
+  opens again.
 
 ### Online, and appearing offline
 
@@ -295,12 +298,15 @@ a missed call.
 - **Without internet:** on the same Wi-Fi or a phone's hotspot, with a space open on both, a call needs no relay at
   all: it is set up over the nearby link and goes straight between the phones (or computers). The same goes for group
   messages and group calls.
-- **Ringing in the background (Android):** while a space is open, Erevos keeps running when you leave it, with a
-  quiet notice that says only "Erevos", and a call rings with the phone's ringtone and a notice that says only
-  "Incoming call", over the lock screen too. Tap it to answer. With the password lock on, a call that rings shows
-  before the password, and Erevos locks as soon as it ends. Set it under **Lock and second password** → **Calls in
-  the background**: **Ring** (the default) or **Only while Erevos shows**. There too, if Android asks for them,
-  **Keep running on battery** and **Show calls over the lock screen**.
+- **In the background (Android):** while a space is open, Erevos keeps running when you leave it, with a quiet
+  notice that says only "Erevos". It waits at the relay and on the links to phones nearby, so messages come: a notice
+  says only "New message", or how many came, and on a locked phone only "Erevos". A call rings with the phone's
+  ringtone and a notice that says only "Incoming call", over the lock screen too. Tap it to answer. With the password
+  lock on, a call that rings shows before the password, and Erevos locks as soon as it ends. Only that space's chats
+  and groups come so, never hidden chats. Set it under **Lock and second password** → **In the background**:
+  **Receive and ring** (the default) or **Only while Erevos shows**, and **Say a message came** (the default) or **No
+  notice**. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
+  screen**.
 - **Where it cannot ring:** swiped away from the recent apps, stopped by Android, in another space, or on a computer
   or in the web app while closed. A call there shows as a missed call once Erevos opens. A message request cannot
   call you until you accept it.
@@ -705,6 +711,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring; a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
+| **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". | |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Not audited. | Photos and voice messages in groups. |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. | Video with more than four people, through a server; more than eight people. |
@@ -713,7 +720,7 @@ Erevos says plainly what it protects and what it does not, yet.
 
 End-to-end encryption is here, through the relay and over the nearby link, and most of what follows is built on it.
 
-- **More ways to stay in touch:** Wi-Fi Direct, receiving while Erevos is closed, and ways around censorship (Tor bridges).
+- **More ways to stay in touch:** Wi-Fi Direct, and ways around censorship (Tor bridges).
   - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: setting the radio's name from Erevos.
   - **SMS:** Erevos as the SMS app is here, with MMS photos and two SIMs, see [SMS](#sms). Next: group MMS.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
@@ -737,8 +744,8 @@ There is no way to recover it. Erevos keeps nothing that could open your data wi
 
 - Write to them: the phones learn which is which from the first message that
   comes nearby. Only contacts are found, so add each other first.
-- Keep a space open on both phones: Erevos on the screen, or in the background with **Calls in the background** on
-  **Ring**.
+- Keep a space open on both phones: Erevos on the screen, or in the background with **In the background** on
+  **Receive and ring**.
 - Check that Bluetooth is on (and, on Android 12 and older, the location), and that Erevos may find nearby devices
   (Android settings → Apps → Erevos → Permissions).
 - Bring the phones closer. If one of them has no Wi-Fi Aware, they meet over Bluetooth, which is slower to start.

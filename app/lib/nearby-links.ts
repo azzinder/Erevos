@@ -1,7 +1,9 @@
+import { AppState } from 'react-native';
+
 import { currentSpace } from '../lock/keys';
 import { othersCarried, ownCarried } from './carried-store';
 import { nearby } from './nearby';
-import { HAS_LINKS, onLinkEvent, sendLink, setLanLinks, startLinks, stopLinks } from './radio';
+import { HAS_LINKS, onLinkEvent, sendLink, setLanLinks, setLinksQuiet, startLinks, stopLinks } from './radio';
 import { nearbyChanged, openNearby } from './receiver';
 import { secureGet, secureSet } from './secure';
 
@@ -13,7 +15,8 @@ import { secureGet, secureSet } from './secure';
 // a space: what comes on them opens only in the chats of the space open (lib/receiver.ts), and the
 // rest is kept a while for the others (lib/nearby.ts). Hidden chats never use them. What the phone
 // carries for relays stays when Erevos closes (lib/carried-store.ts): what it carries for others
-// from when the first space opens, and the open space's own while it is.
+// from when the first space opens, and the open space's own while it is. While Erevos is in the
+// background the links are kept quieter, to spare the battery (setLinksQuiet).
 
 // Whether this phone carries messages from phones nearby to their relays, and whether it looks
 // for Erevos on the same Wi-Fi: for the whole phone, on unless turned off.
@@ -40,6 +43,8 @@ export function startNearbyLinks(): () => void {
   ];
   // A contact heard nearby, or a LoRa radio linked: what waits for them may go now (lib/waiting.ts).
   const stopWatching = nearby.onChange(nearbyChanged);
+  setLinksQuiet(AppState.currentState !== 'active');
+  const quiet = AppState.addEventListener('change', (state) => setLinksQuiet(state !== 'active'));
   void nearbySettings().then(({ carrying, lan }) => {
     if (!active) return;
     nearby.setCarrying(carrying);
@@ -57,6 +62,8 @@ export function startNearbyLinks(): () => void {
     active = false;
     subscriptions.forEach((subscription) => subscription.remove());
     stopWatching();
+    quiet.remove();
+    setLinksQuiet(false);
     stopNearby();
     stopLinks();
     stopOwn();

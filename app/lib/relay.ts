@@ -33,6 +33,7 @@ const FILE_GET = 9;
 const FILE_DELETE = 10;
 const FILE_VIA = 11;
 const CALL_RELAY = 12;
+const WAIT = 13;
 
 const OK = 0;
 const NOT_FOUND = 1;
@@ -170,19 +171,44 @@ async function viaTor<T>(call: () => Promise<T>): Promise<T> {
   }
 }
 
-/** Opens a connection, sends one request, and returns the reply. Closes the connection. */
-function request(relay: Relay, bytes: Uint8Array): Promise<Uint8Array> {
-  if (throughTorOn) return viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
+// A request ended from this side (`signal`) before its reply came.
+class Ended extends Error {}
+
+/** Opens a connection, sends one request, and returns the reply. Closes the connection, also when `signal` ends it. */
+function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise<Uint8Array> {
+  if (signal?.aborted) return Promise.reject(new Ended());
+  if (throughTorOn) {
+    const reply = viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
+    if (!signal) return reply;
+    // Tor's request runs on until it ends; its reply is not waited for.
+    return new Promise((resolve, reject) => {
+      const end = () => reject(new Ended());
+      signal.addEventListener('abort', end);
+      reply.then(resolve, reject).finally(() => signal.removeEventListener('abort', end));
+    });
+  }
   return new Promise((resolve, reject) => {
     const socket = connect(relay);
+    const end = () => {
+      socket.close();
+      reject(new Ended());
+    };
+    signal?.addEventListener('abort', end);
+    const settled = () => signal?.removeEventListener('abort', end);
     socket.onopen = () => socket.send(bytes);
     socket.onmessage = (event) => {
+      settled();
       socket.close();
       resolve(new Uint8Array(event.data as ArrayBuffer));
     };
-    socket.onerror = () =>
+    socket.onerror = () => {
+      settled();
       reject(new RelayUnreachableError(`cannot reach the relay at ${relay.url}, or the token is wrong`));
-    socket.onclose = () => reject(new RelayUnreachableError('the relay closed the connection'));
+    };
+    socket.onclose = () => {
+      settled();
+      reject(new RelayUnreachableError('the relay closed the connection'));
+    };
   });
 }
 
@@ -308,6 +334,46 @@ export async function receiveMessage(relay: Relay, recipientId: Uint8Array): Pro
   if (reply[1] === 0) return null;
   const length = new DataView(reply.buffer, reply.byteOffset, reply.byteLength).getUint32(2);
   return reply.slice(6, 6 + length);
+}
+
+// Relays that cannot wait for a message (from before WAIT), by address, for this run.
+const cannotWait = new Set<string>();
+
+/** Whether the relay may be asked to wait for a message (`waitForMessage`), as far as this run knows. */
+export function canWaitAt(relay: Relay): boolean {
+  return !cannotWait.has(relay.url.trim().toLowerCase());
+}
+
+/**
+ * Waits until a message is in the queue, `seconds` at most (60), without taking it: true once
+ * one is, false when none came in that time, the wait was ended (`signal`), or the relay cannot
+ * wait. A relay from before it closes the connection, as for any request it does not know: then
+ * one that answers a plain request is not asked to wait again this run. Throws when the relay
+ * cannot be reached.
+ */
+export async function waitForMessage(relay: Relay, recipientId: Uint8Array, seconds: number, signal?: AbortSignal): Promise<boolean> {
+  const bytes = new Uint8Array(1 + 24 + 1);
+  bytes[0] = WAIT;
+  bytes.set(recipientId, 1);
+  bytes[25] = Math.max(0, Math.min(60, Math.round(seconds)));
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, bytes, signal);
+  } catch (error) {
+    if (error instanceof Ended) return false;
+    if (!(error instanceof RelayUnreachableError) || signal?.aborted) throw error;
+    // It answers a request any relay knows: it is there, and cannot wait.
+    try {
+      await request(relay, Uint8Array.of(KEY), signal);
+    } catch (again) {
+      if (again instanceof Ended) return false;
+      throw error;
+    }
+    cannotWait.add(relay.url.trim().toLowerCase());
+    return false;
+  }
+  check(reply, 'wait');
+  return reply[1] === 1;
 }
 
 /** Deletes the queue. Later sends to it fail. */

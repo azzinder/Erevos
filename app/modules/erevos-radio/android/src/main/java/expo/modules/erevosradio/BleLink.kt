@@ -61,6 +61,7 @@ class BleLink(
   private val lastPresence = HashMap<String, Long>()
   private val mtus = HashMap<String, Int>()
   private var beacon: BleBeacon? = null
+  private var quiet = false
   private var tx: BluetoothGattCharacteristic? = null
 
   @Volatile private var server: BluetoothGattServer? = null
@@ -71,6 +72,17 @@ class BleLink(
 
   fun stop() {
     main.post { stopOnMain() }
+  }
+
+  /** Advertises and scans at low power, as when Erevos is in the background (BleBeacon), or as before. Links stay up. */
+  fun setQuiet(on: Boolean) {
+    main.post {
+      if (quiet == on) return@post
+      quiet = on
+      val running = beacon ?: return@post
+      running.stop()
+      running.start(ownNonce, on)
+    }
   }
 
   /** Sends one payload over a link. Returns false if the link is unknown or the payload is too big. */
@@ -155,7 +167,7 @@ class BleLink(
       context,
       onScan = { device, nonce -> main.post { onScanned(device, nonce) } },
       onLog = { text -> main.post { onLog(text) } },
-    ).also { it.start(ownNonce) }
+    ).also { it.start(ownNonce, quiet) }
   }
 
   private fun onScanned(device: BluetoothDevice, nonce: Int?) {

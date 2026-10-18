@@ -17,6 +17,7 @@ import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import { FileGoneError, fileSize, keepFile, MAX_FILE, offerRef, readFile, sendFile, takeFile, bytesSource, type Source } from '../lib/attachments';
+import { isNews, messageCame } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
@@ -49,7 +50,7 @@ import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHid
 import { isGroupPacket } from '../lib/groups';
 import { takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
 import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type Relay } from '../lib/relay';
-import { answersAsk, appShown, holdReceiver, openNearby, takeNearby } from '../lib/receiver';
+import { answersAsk, appShown, awayPace, holdReceiver, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, relayFor, spaceChats } from '../lib/space-chats';
 import { lookAtSpare, spareBackup, spareCode } from '../lib/spare';
@@ -792,9 +793,13 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     // The note shown while the relay could not be reached, taken back once it answers again.
     let failed: string | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    // In the background: whether the last look waited at the relay, and how many failed in a row (lib/receiver.ts).
+    let waited = false;
+    let failures = 0;
     async function look() {
       if (busy || !e2e) return;
       busy = true;
+      waited = false;
       // Once the backup relay is ready, sends go through it when ours cannot be reached.
       const backup = hiddenKey ? undefined : spareBackup();
       if (backup && !sends.backup) sends = { ...sends, backup: { ...backup, via: sends.via } };
@@ -829,6 +834,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
         if (!hiddenKey) void nearby.uploadCarried((url, sealed) => carryTo(sends, url, sealed)).catch(() => undefined);
         // An SMS invite sent from the SMS screen since: its answer may be on its way.
         if (!hiddenKey) await refreshSmsLink().catch(() => undefined);
+        // In the background, out of a call: waits at the relay until something comes.
+        if (!hiddenKey && !currentCall() && !currentGroupCall()) waited = await waitWhileAway(own, recipient);
         for (let i = 0; i < RECEIVE_BATCH && active; i++) {
           const bytes = await receiveMessage(own, recipient);
           if (failed !== null && active) {
@@ -844,7 +851,9 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
         // What waited to go, now that the relay answers.
         sendWaitingNow.current(true);
         await sendReceipts(sends);
+        failures = 0;
       } catch (error) {
+        failures++;
         await spare();
         if (!active) return;
         if (!isQueueNotFound(error)) {
@@ -869,15 +878,28 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       }
     }
     function next() {
-      timer = setTimeout(async () => {
-        await look();
-        if (active) next();
-      }, currentCall() || currentGroupCall() ? LOOK_IN_CALL : LOOK_EVERY);
+      const inCall = currentCall() || currentGroupCall();
+      timer = setTimeout(
+        async () => {
+          timer = null;
+          await look();
+          if (active) next();
+        },
+        inCall ? LOOK_IN_CALL : appShown() ? LOOK_EVERY : awayPace(waited, failures),
+      );
     }
     next();
+    // Shown again: looks at once, not after a wait meant for the background.
+    const shown = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' || !timer) return;
+      clearTimeout(timer);
+      timer = null;
+      void look().finally(() => active && !timer && next());
+    });
 
     return () => {
       active = false;
+      shown.remove();
       if (timer) clearTimeout(timer);
     };
   }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e]);
@@ -890,6 +912,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       return;
     }
     const peer = `${CONTACT_PREFIX}${received.identity}`;
+    // Erevos in the background: the notice says one more came (lib/background.ts).
+    if (!hiddenKey && isNews(received)) messageCame();
     setContacts(e2e.contacts());
     setSelected((current) => current ?? peer);
     if (received.call) {

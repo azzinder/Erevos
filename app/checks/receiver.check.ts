@@ -13,7 +13,7 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { E2E, ONLINE, toBase64Url, type Received } from '../lib/e2e';
 import { nearby, Nearby } from '../lib/nearby';
-import { answersAsk, holdReceiver, onMessage, onReceived, openNearby, startReceiver, takeNearby } from '../lib/receiver';
+import { answersAsk, holdReceiver, onMessage, onReceived, openNearby, setAppShown, startReceiver, takeNearby } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
 import { setCurrentSpace } from '../lock/keys';
@@ -130,7 +130,21 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
     assert.equal(bob.history.messages()[3].text, 'held');
     // Each message opened is handed on too, the first packet (no text) with them.
     assert.deepEqual(opened.filter(Boolean), ['hi Bob', 'still there?', 'are you hiding?', 'held']);
+
+    // In the background it waits at the relay, and still takes what comes at once.
+    setAppShown(false);
+    await sleep(300);
+    const sent = Date.now();
+    await write('while away');
+    await until(() => bob.history.messages().length === 5);
+    assert.ok(Date.now() - sent < 3000);
+    // The chat opening ends a wait under way, and so does Erevos showing again.
+    await sleep(300);
+    const asked = Date.now();
+    (await holdReceiver())();
+    assert.ok(Date.now() - asked < 2000);
   } finally {
+    setAppShown(true);
     stop();
     // A look under way ends first: what it tells could go to the phones nearby of the next check.
     (await holdReceiver())();

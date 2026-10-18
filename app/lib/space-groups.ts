@@ -20,6 +20,15 @@ import { contactTarget, relayFor, spaceChats } from './space-chats';
 let opened: { of: object; groups: Promise<Groups> } | null = null;
 
 const callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
+const messageListeners = new Set<() => void>();
+
+/** Calls `listener` each time a member's message comes in one of the open space's groups. Returns how to stop. */
+export function onSpaceGroupMessage(listener: () => void): () => void {
+  messageListeners.add(listener);
+  return () => {
+    messageListeners.delete(listener);
+  };
+}
 
 /** Calls `listener` with each group call signal in the open space's groups. Returns how to stop. */
 export function onSpaceGroupCall(listener: (group: string, from: string, signal: GroupCallSignal) => void): () => void {
@@ -61,6 +70,7 @@ export function spaceGroups(): Promise<Groups> {
       };
       const made = new Groups(data, (next) => saveGroupData(current.space, current.key, next), me);
       made.onCall((group, from, signal) => callListeners.forEach((listener) => listener(group, from, signal)));
+      made.onMessage(() => messageListeners.forEach((listener) => listener()));
       return made;
     })();
     opened = { of: current, groups };

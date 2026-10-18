@@ -16,6 +16,9 @@ type CallAudio = {
   /** Plays the phone's ringtone; with `notice`, also shows the call notice, over the lock screen. */
   ring?(video: boolean, notice: boolean): void;
   stopRinging?(): void;
+  /** A notice that `count` messages came, no more; hidden on a locked phone. */
+  tellMessages?(count: number): void;
+  clearMessages?(): void;
   /** Lets Erevos show over the lock screen and wake the screen, while a call shows. */
   showOverLock?(on: boolean): void;
   backgroundState?(): BackgroundState;

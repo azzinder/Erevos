@@ -25,7 +25,8 @@ import expo.modules.kotlin.modules.ModuleDefinition
 // the earpiece or the loudspeaker, the screen off while the phone is at the ear, and on while a
 // call shows. Everything goes back as it was when the call ends. Also what lets a call ring while
 // Erevos is in the background: the service that keeps it running (ReceiveService), the ringtone,
-// the call notice over the lock screen (Notices), and the settings Android asks the user for.
+// the call notice over the lock screen and the notice that messages came (Notices), and the
+// settings Android asks the user for.
 class ErevosCallModule : Module() {
   private var modeBefore: Int? = null
   private var proximity: PowerManager.WakeLock? = null
@@ -104,6 +105,17 @@ class ErevosCallModule : Module() {
       ringtone?.stop()
       ringtone = null
       context?.let { Notices.stopRinging(it) }
+      null
+    }
+
+    // Messages came while Erevos was in the background: a notice that says how many, no more.
+    Function("tellMessages") { count: Int ->
+      context?.let { Notices.messages(it, count) }
+      null
+    }
+
+    Function("clearMessages") {
+      context?.let { Notices.clearMessages(it) }
       null
     }
 

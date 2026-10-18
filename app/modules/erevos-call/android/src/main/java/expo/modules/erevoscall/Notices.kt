@@ -9,14 +9,17 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.os.Build
 
-// The two notices Erevos shows: that it keeps receiving while in the background, and a call that
-// rings. Neither says who: no name, no message, only what kind of call. Tapping either opens
-// Erevos, which shows the rest only once it is open.
+// The notices Erevos shows: that it keeps receiving while in the background, a call that rings,
+// and that messages came while it was in the background. None says who: no name, no message,
+// only what kind of call, or how many messages. Tapping one opens Erevos, which shows the rest
+// only once it is open. On a locked phone the messages notice says only "Erevos".
 object Notices {
   const val RECEIVING_ID = 7101
   const val RINGING_ID = 7102
+  const val MESSAGES_ID = 7103
   private const val RECEIVING_CHANNEL = "erevos-receiving"
   private const val CALLS_CHANNEL = "erevos-calls"
+  private const val MESSAGES_CHANNEL = "erevos-messages"
 
   private fun manager(context: Context) = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -39,6 +42,14 @@ object Notices {
           setSound(null, null as AudioAttributes?)
           enableVibration(false)
           lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        },
+      )
+    }
+    if (manager.getNotificationChannel(MESSAGES_CHANNEL) == null) {
+      manager.createNotificationChannel(
+        NotificationChannel(MESSAGES_CHANNEL, "Messages", NotificationManager.IMPORTANCE_DEFAULT).apply {
+          setShowBadge(true)
+          lockscreenVisibility = Notification.VISIBILITY_PRIVATE
         },
       )
     }
@@ -91,5 +102,37 @@ object Notices {
 
   fun stopRinging(context: Context) {
     manager(context).cancel(RINGING_ID)
+  }
+
+  // `count` messages came while Erevos was in the background. Sounds once, as the channel says,
+  // and stays quiet as the count goes up.
+  fun messages(context: Context, count: Int) {
+    channels(context)
+    val text = if (count == 1) "New message" else "$count new messages"
+    @Suppress("DEPRECATION")
+    val locked = builder(context, MESSAGES_CHANNEL)
+      .setSmallIcon(context.applicationInfo.icon)
+      .setContentTitle("Erevos")
+      .setShowWhen(false)
+      .build()
+    @Suppress("DEPRECATION")
+    val notification = builder(context, MESSAGES_CHANNEL)
+      .setSmallIcon(context.applicationInfo.icon)
+      .setContentTitle("Erevos")
+      .setContentText(text)
+      .setNumber(count)
+      .setCategory(Notification.CATEGORY_MESSAGE)
+      .setPriority(Notification.PRIORITY_DEFAULT)
+      .setVisibility(Notification.VISIBILITY_PRIVATE)
+      .setPublicVersion(locked)
+      .setOnlyAlertOnce(true)
+      .setAutoCancel(true)
+      .setContentIntent(opening(context, 3))
+      .build()
+    manager(context).notify(MESSAGES_ID, notification)
+  }
+
+  fun clearMessages(context: Context) {
+    manager(context).cancel(MESSAGES_ID)
   }
 }

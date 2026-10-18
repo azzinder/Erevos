@@ -34,6 +34,7 @@ type NativeRadio = {
   stop(): void;
   startLan?(): void;
   stopLan?(): void;
+  setQuiet?(on: boolean): void;
   meshScan?(): void;
   meshConnect?(address: string): void;
   meshDisconnect?(): void;
@@ -63,6 +64,11 @@ export function startLan(): void {
 
 export function stopLan(): void {
   native?.stopLan?.();
+}
+
+/** Bluetooth at low power, found with the screen off too, and the same Wi-Fi said less often, as while Erevos is in the background; or as before. */
+export function setRadioQuiet(on: boolean): void {
+  native?.setQuiet?.(on);
 }
 
 /** Whether this build can link to a Meshtastic radio. */

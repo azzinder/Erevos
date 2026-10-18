@@ -68,6 +68,9 @@ class LanLink(
   private val lock = Any()
   @Volatile private var running = false
   @Volatile private var nonce = ""
+  // While Erevos is in the background, this phone says it is here less often (QUIET_EVERY_MS).
+  @Volatile private var quiet = false
+  @Volatile private var announcedAt = 0L
   private var io: ExecutorService? = null
   private var timer: ScheduledExecutorService? = null
   private var listener: DatagramSocket? = null
@@ -104,8 +107,20 @@ class LanLink(
       }
     }
     timer = Executors.newSingleThreadScheduledExecutor().also {
-      it.scheduleWithFixedDelay({ runCatching { announce(); sweep() } }, 500, ANNOUNCE_EVERY_MS, TimeUnit.MILLISECONDS)
+      it.scheduleWithFixedDelay({ runCatching { announceNow(); sweep() } }, 500, ANNOUNCE_EVERY_MS, TimeUnit.MILLISECONDS)
     }
+  }
+
+  /** Says it is here less often, as when Erevos is in the background, or as before. Links stay up. */
+  fun setQuiet(on: Boolean) {
+    quiet = on
+  }
+
+  private fun announceNow() {
+    val now = System.currentTimeMillis()
+    if (quiet && now - announcedAt < QUIET_EVERY_MS) return
+    announcedAt = now
+    announce()
   }
 
   fun stop() {
@@ -324,6 +339,7 @@ class LanLink(
     const val LINK_PREFIX = "lan-"
     const val PORT = 47905
     private const val ANNOUNCE_EVERY_MS = 3_000L
+    private const val QUIET_EVERY_MS = 15_000L
     private const val GONE_AFTER_MS = 15_000L
     private const val DIAL_ANYWAY_AFTER_MS = 6_000L
     private const val HELLO_WITHIN_MS = 5_000

@@ -106,6 +106,7 @@ export class Groups {
   private queue: Promise<unknown> = Promise.resolve();
   private readonly listeners = new Set<() => void>();
   private readonly callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
+  private readonly messageListeners = new Set<(group: string) => void>();
 
   constructor(data: GroupData, store: (data: GroupData) => Promise<void>, me: () => Promise<Me>) {
     this.data = data;
@@ -126,6 +127,14 @@ export class Groups {
     this.callListeners.add(listener);
     return () => {
       this.callListeners.delete(listener);
+    };
+  }
+
+  /** Calls `listener` with the group each time a member's message comes in one. Returns how to stop. */
+  onMessage(listener: (group: string) => void): () => void {
+    this.messageListeners.add(listener);
+    return () => {
+      this.messageListeners.delete(listener);
     };
   }
 
@@ -533,6 +542,7 @@ export class Groups {
         await this.save(this.withGroup({ ...now, name: said.name || now.name }));
       } else {
         await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: said.text, tag: said.tag }]) }));
+        this.messageListeners.forEach((listener) => listener(id));
       }
       this.changed();
     } else if (opened.kind === 'later') {
