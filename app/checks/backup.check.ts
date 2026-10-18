@@ -10,6 +10,7 @@ import { loadLockConfig, setLockPassword, unlock } from '../lock/config';
 import { History, newTag } from '../lock/history';
 import { EMPTY_SPACE, loadSpaceData, prepareSpaces, saveSpaceData } from '../lock/space-data';
 import { loadClip, saveClip } from '../lock/voice-clips';
+import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { blobs, files } from './files-memory';
 import { store } from './secure-memory';
 
@@ -38,11 +39,12 @@ async function phone() {
   const history = await History.open('space', 0, key);
   await history.add({ peer: 'contact:aa', text: 'γεια σου', mine: true, at: 1, tag: newTag() });
   const clip = await saveClip(new Uint8Array([1, 2, 3, 4]), 1500);
-  return { key, clip };
+  const photo = await savePhoto(new Uint8Array([5, 6, 7]));
+  return { key, clip, photo };
 }
 
 t('puts everything back: the lock opens the same space, with its relay, messages and voice', async () => {
-  const { key, clip } = await phone();
+  const { key, clip, photo } = await phone();
   // Everything but the wrong tries, which stay with the phone.
   const before = new Map([...store].filter(([name]) => name !== 'erevos.lock-tries'));
   const file = await makeBackup(await backupKey('backup-pass'));
@@ -51,11 +53,13 @@ t('puts everything back: the lock opens the same space, with its relay, messages
   store.set('erevos.space.7', 'left from before');
   files.set('erevos-archive', 'left from before');
   blobs.set('erevos-voice-ffffffffffffffffffffffffffffffff', new Uint8Array([9]));
+  blobs.set('erevos-avatar-ffffffffffffffffffffffffffffffff', new Uint8Array([9]));
 
   await restoreBackup(await openBackup(file, 'backup-pass'));
   assert.deepEqual(new Map(store), before);
   assert.equal(files.has('erevos-archive'), false);
   assert.equal(blobs.has('erevos-voice-ffffffffffffffffffffffffffffffff'), false);
+  assert.equal(blobs.has('erevos-avatar-ffffffffffffffffffffffffffffffff'), false);
 
   const opened = await unlock(await loadLockConfig(), 'real-1111');
   assert.equal(opened && toHex(opened.key), toHex(key));
@@ -63,6 +67,7 @@ t('puts everything back: the lock opens the same space, with its relay, messages
   const history = await History.open('space', 0, key);
   assert.deepEqual(history.messages().map((m) => m.text), ['γεια σου']);
   assert.deepEqual(await loadClip(clip), new Uint8Array([1, 2, 3, 4]));
+  assert.deepEqual(await loadPhoto(photo), new Uint8Array([5, 6, 7]));
 });
 
 t('shows nothing of what it holds, and leaves out the wrong tries and its own settings', async () => {

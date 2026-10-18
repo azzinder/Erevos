@@ -7,6 +7,7 @@ import { readOffer, type FileOffer } from './attachments';
 import { isVoicePart, splitVoice, type VoicePart } from './voice';
 import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import type { Look } from '../theme/look';
+import { deletePhoto } from '../lock/avatar-photos';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
 // so neither its contacts nor the relay can tie the two together. The account's public keys
@@ -374,7 +375,9 @@ export class E2E {
   /** Forgets a contact and every conversation with them. A message they send later is refused. */
   removeContact(identity: string): Promise<void> {
     return this.run(async () => {
+      const gone = this.find(identity)?.avatar;
       await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity) });
+      if (gone?.kind === 'photo') await deletePhoto(gone.id);
     });
   }
 
@@ -415,6 +418,8 @@ export class E2E {
       const contact = this.find(identity);
       if (!contact) throw new Error('No such contact.');
       await this.save(this.withContact({ ...contact, avatar: avatar && checkedAvatar(avatar) }));
+      // The photo it had, if another took its place.
+      if (contact.avatar?.kind === 'photo' && (avatar?.kind !== 'photo' || avatar.id !== contact.avatar.id)) await deletePhoto(contact.avatar.id);
     });
   }
 

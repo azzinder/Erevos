@@ -136,7 +136,9 @@ Open a chat, tap its name and then **Rename** to give it a name. The name stays 
 does not see it. An empty name brings back the start of their key.
 
 Tap its name and then **Picture** to give them a picture of your own choosing, a sign on a colour, instead of the one drawn
-from their key. It too stays on this phone; **Picture from their key** brings the drawn one back. A photo is not offered yet.
+from their key. Or tap **Photo** (or **Take photo**) for a photo: cut square, made small and drawn anew, so nothing it said besides its
+picture (a place, a phone) is kept, then sealed in a file of its own. It too stays on this phone, and goes into backups;
+**Picture from their key** brings the drawn one back.
 
 Each chat can also look its own way: tap its name and then **Chat look** for the same choices as **Appearance** (style, theme,
 colors, wallpaper, messages), for that chat only. Like the name, it stays on this phone, sealed with the chat. **Same as the app**
