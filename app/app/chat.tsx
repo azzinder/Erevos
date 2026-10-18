@@ -54,7 +54,7 @@ import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessa
 import { answersAsk, appShown, awayPace, holdReceiver, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, relayFor, spaceChats } from '../lib/space-chats';
-import { lookAtSpare, spareBackup, spareCode } from '../lib/spare';
+import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
@@ -425,6 +425,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   const { colors, look } = useTheme();
   // How messages are drawn: the look's bubbles (theme/bubbles.ts).
   const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
+  // Where this chat's home relay is kept (lib/spare.ts): the space's, or this hidden place's own.
+  const spareStore = useMemo(() => (hiddenKey ? hiddenSpare(currentSpace().space, pocket, hiddenKey) : spaceSpare()), [hiddenKey, pocket]);
+  const [homeUrl, setHomeUrl] = useState('');
+  const [homeToken, setHomeToken] = useState('');
+  const [homeNote, setHomeNote] = useState('');
+  // A hidden place's home relay is let go of when it closes.
+  useEffect(() => () => (hiddenKey ? forgetSpare(spareStore) : undefined), [spareStore]);
 
   // Where contacts reach this chat: our relay and its key, told to them in our link and messages.
   function here(url = relayUrl): Where {
@@ -433,7 +440,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
 
   // The space's chat sends through its backup relay (lib/spare.ts) when its own cannot be reached.
   function relayTarget(url = relayUrl): Relay | null {
-    return relayFor(url, relayToken, viaUrl, viaToken, hiddenKey ? undefined : spareBackup());
+    return relayFor(url, relayToken, viaUrl, viaToken, spareBackup(spareStore));
   }
 
   // Tells contacts' phones which of their messages came and were read here, and, while the app
@@ -633,6 +640,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         setRelayToken(data.token);
         setViaUrl(data.via);
         setViaToken(data.viaToken);
+        setHomeUrl(data.spare.url);
+        setHomeToken(data.spare.token);
         setOwnQueue(data.ownQueue);
       })
       .catch(() => {
@@ -816,7 +825,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       busy = true;
       waited = false;
       // Once the backup relay is ready, sends go through it when ours cannot be reached.
-      const backup = hiddenKey ? undefined : spareBackup();
+      const backup = spareBackup(spareStore);
       if (backup && !sends.backup) sends = { ...sends, backup: { ...backup, via: sends.via } };
       // One message from our queue, or from the backup queue.
       const take = async (bytes: Uint8Array) => {
@@ -842,7 +851,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         if (number && active) setNote(`${number} has Erevos and is now a contact. Messages to that number go through Erevos.`);
       };
       // What came to the backup queue, whether or not our relay answers.
-      const spare = () => (hiddenKey ? Promise.resolve() : lookAtSpare(e2e, take, () => !active).catch(() => undefined));
+      const spare = () => lookAtSpare(e2e, take, () => !active, spareStore).catch(() => undefined);
       try {
         await sendPending(e2e, sends);
         // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
@@ -1850,6 +1859,32 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     }
   }
 
+  // Saves this hidden place's home relay and makes its queue there, if it can be reached now.
+  async function saveHome() {
+    setHomeNote('');
+    const address = homeUrl.trim();
+    if (address && !/^wss?:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(address)) {
+      setHomeNote('A relay address starts with ws:// or wss://.');
+      return;
+    }
+    const space = await loadCurrentSpaceData().catch(() => null);
+    if (address && (sameRelay(address, relayUrl) || (space?.spare.url && sameRelay(address, space.spare.url)))) {
+      setHomeNote('Use another relay than this relay, and than the space’s home relay: one relay seeing both would tie them together.');
+      return;
+    }
+    try {
+      await setSpareRelay(address, homeToken, spareStore);
+      if (!address) {
+        setHomeNote('No home relay for these hidden chats.');
+        return;
+      }
+      await readySpare(spareStore);
+      setHomeNote('The queue on the home relay is ready. Contacts learn it from your next message, or from your contact link.');
+    } catch (error) {
+      setHomeNote(`Saved, but the home relay could not be reached: ${errorText(error)}. It is tried again with each look.`);
+    }
+  }
+
   async function createOwnQueue() {
     const target = relayTarget();
     if (!target) {
@@ -1922,7 +1957,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           relayUrl: relayUrl.trim(),
           key: toBase64Url(e2e.bundle),
           relayKey: ownRelayKey || undefined,
-          spare: spareCode(hiddenKey ? null : e2e.spare()),
+          spare: spareCode(e2e.spare()),
         })
       : hiddenKey
         ? null
@@ -2433,6 +2468,39 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                   straight to your relay.
                 </Text>
                 <Button title="Create my relay queue" compact onPress={createOwnQueue} />
+                {hiddenKey ? (
+                  <>
+                    <Field label="Home relay for these hidden chats (optional)">
+                      <Input
+                        value={homeUrl}
+                        onChangeText={setHomeUrl}
+                        placeholder="wss://relay.at-home.example"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        keyboardType="url"
+                      />
+                    </Field>
+                    {homeUrl.trim() ? (
+                      <Field label="Home relay token (optional)">
+                        <Input
+                          value={homeToken}
+                          onChangeText={setHomeToken}
+                          placeholder="Token, if the home relay needs one"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          secureTextEntry
+                        />
+                      </Field>
+                    ) : null}
+                    <Text variant="caption" tone="muted">
+                      A second relay with a queue of their own, which contacts write to while your relay cannot be reached.
+                      It is kept with these hidden chats only, so the space knows nothing of it, and it is looked at while
+                      they are open. Use another one than the space's home relay.
+                    </Text>
+                    <Button title="Save home relay" kind="secondary" compact onPress={() => void saveHome()} />
+                    {homeNote ? <Text variant="caption" tone="muted">{homeNote}</Text> : null}
+                  </>
+                ) : null}
                 {ownLink ? (
                   <View style={styles.section}>
                     <Text tone="muted">

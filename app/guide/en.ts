@@ -410,6 +410,10 @@ Raspberry Pi or an old computer, or any other relay you trust. It is optional.
   has one) and choose **Save**. Contacts learn it from your next message to them, or from your new contact link.
 - **What it sees:** what your relay sees, this phone's address when it takes messages, and when and how much comes.
   Hidden chats do not use it.
+- **For hidden chats:** each hidden place can have a home relay of its own, under **Relay and new contacts** while it
+  is open. It is kept with that place only, sealed with its PIN, so the space knows nothing of it, and it is looked
+  at while the place is open. Use another relay than the space's: one relay seeing both queues would tie them
+  together.
 
 ## Through Tor {#tor}
 

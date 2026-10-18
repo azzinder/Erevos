@@ -63,7 +63,7 @@ export default function HomeRelay() {
         </Text>
         <Text tone="muted">
           Whoever runs it sees what your relay sees: this phone's address when it takes messages, and when and how much
-          comes. Hidden chats do not use it.
+          comes. Hidden chats do not use it: each hidden place can have its own, set while it is open.
         </Text>
         <Field label="Home relay address">
           <Input value={url} onChangeText={setUrl} placeholder="wss://relay.at-home.example" autoCapitalize="none" autoCorrect={false} keyboardType="url" />

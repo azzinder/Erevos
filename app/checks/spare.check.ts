@@ -16,9 +16,9 @@ import { E2E, toBase64Url } from '../lib/e2e';
 import { startReceiver } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, relayKey, sendMessage, toHex } from '../lib/relay';
 import { contactTarget, forgetSpaceChats, relayFor, spaceChats } from '../lib/space-chats';
-import { forgetSpare, spareCode } from '../lib/spare';
+import { forgetSpare, hiddenSpare, readySpare, setSpareRelay, spareBackup, spareCode } from '../lib/spare';
 import { setCurrentSpace } from '../lock/keys';
-import { updateCurrentSpaceData } from '../lock/space-data';
+import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData } from '../lock/space-data';
 import { blobs, files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
 
@@ -141,4 +141,27 @@ test('while the main relay is down, messages come through the home relay, and re
     forgetSpaceChats();
     forgetSpare();
   }
+});
+
+test('a hidden place keeps its own home relay, sealed with its key, and the space knows nothing of it', { skip: !relayReady }, async () => {
+  files.clear();
+  blobs.clear();
+  forgetSpare();
+  const home = await startRelay();
+  setCurrentSpace(0, randomBytes(32));
+  const key = randomBytes(32);
+  const store = hiddenSpare(0, 2, key);
+  await setSpareRelay(home, '', store);
+  assert.equal(await readySpare(store), true);
+  const kept = await loadHiddenData(0, 2, key);
+  assert.equal(kept.spare.url, home);
+  assert.ok(kept.spare.queue);
+  assert.equal(spareBackup(store)?.url, home);
+  // The space, and another place, have none.
+  assert.deepEqual((await loadCurrentSpaceData()).spare, { url: '', token: '', queue: null });
+  assert.equal((await loadHiddenData(0, 1, key)).spare.url, '');
+  assert.equal(spareBackup(), undefined);
+  // Closing the place lets go of it.
+  forgetSpare(store);
+  assert.equal(spareBackup(store), undefined);
 });
