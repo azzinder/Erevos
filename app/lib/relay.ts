@@ -108,12 +108,23 @@ export function decodeEnvelope(bytes: Uint8Array): Envelope | null {
 // React Native's WebSocket takes a third argument with request headers. The DOM typings do not.
 type HeaderSocket = new (url: string, protocols: undefined, options: { headers: Record<string, string> }) => WebSocket;
 
+const IN_REACT_NATIVE = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+
+/** A browser cannot set headers on a WebSocket, so there the token goes as a subprotocol, in
+ * hex, next to the plain "erevos" one the relay answers with (crates/erevos-relay, serve_ws). */
+export function tokenProtocols(token: string): string[] {
+  const hex = Array.from(new TextEncoder().encode(token), (b) => b.toString(16).padStart(2, '0')).join('');
+  return ['erevos', `erevos-token.${hex}`];
+}
+
 function connect(relay: Relay): WebSocket {
-  const socket = relay.token
-    ? new (WebSocket as unknown as HeaderSocket)(relay.url, undefined, {
-        headers: { Authorization: `Bearer ${relay.token}` },
-      })
-    : new WebSocket(relay.url);
+  const socket = !relay.token
+    ? new WebSocket(relay.url)
+    : IN_REACT_NATIVE
+      ? new (WebSocket as unknown as HeaderSocket)(relay.url, undefined, {
+          headers: { Authorization: `Bearer ${relay.token}` },
+        })
+      : new WebSocket(relay.url, tokenProtocols(relay.token));
   socket.binaryType = 'arraybuffer';
   return socket;
 }

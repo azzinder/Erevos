@@ -6,8 +6,8 @@
 //! (`ws://`), so put the WebSocket behind a TLS proxy before it leaves the
 //! local network.
 //!
-//! Set `EREVOS_RELAY_TOKEN` to require `Authorization: Bearer <token>` on
-//! WebSocket connections. Without it, anyone who can reach the WebSocket port
+//! Set `EREVOS_RELAY_TOKEN` to require `Authorization: Bearer <token>` (or,
+//! from a browser, the token as a subprotocol) on WebSocket connections. Without it, anyone who can reach the WebSocket port
 //! can use the relay. The TCP front end has no token, so keep it on
 //! `127.0.0.1` anywhere others can reach the machine.
 //!
