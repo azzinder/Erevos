@@ -53,6 +53,8 @@ export default function Home() {
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState(false);
   const [now, setNow] = useState(Date.now());
+  // The contacts whose phones said they are open, and not long ago (lib/e2e.ts).
+  const [online, setOnline] = useState<Set<string>>(new Set());
 
   useFocusEffect(
     useCallback(() => {
@@ -77,11 +79,27 @@ export default function Home() {
           setRows(buildInbox(contacts, messages, imported, at));
           setRelay(!data?.url ? 'none' : data.ownQueue ? 'ready' : 'no-queue');
         });
+      // Who shows online, again every few seconds, as it lasts only a while. A chat that appears
+      // offline does not see it.
+      const lookOnline = () =>
+        void (hasCore() ? spaceChats() : Promise.reject())
+          .then(({ e2e }) => {
+            const at = Date.now();
+            const ids = e2e.contacts().filter((c) => !c.hide && e2e.onlineUntil(c.identity, at) > 0).map((c) => c.identity);
+            if (active) setOnline((before) => (before.size === ids.length && ids.every((id) => before.has(id)) ? before : new Set(ids)));
+          })
+          .catch(() => undefined);
       load();
+      lookOnline();
+      const every = setInterval(lookOnline, 5000);
       // What comes while this screen shows moves its chat to the top.
-      const stop = onReceived(load);
+      const stop = onReceived(() => {
+        load();
+        lookOnline();
+      });
       return () => {
         active = false;
+        clearInterval(every);
         stop();
       };
     }, []),
@@ -143,7 +161,8 @@ export default function Home() {
         ListHeaderComponent={header}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
-        renderItem={({ item }) => <ChatRow row={item} now={now} />}
+        renderItem={({ item }) => <ChatRow row={item} now={now} online={online.has(item.identity)} />}
+        extraData={online}
         ListEmptyComponent={
           rows === null ? null : query ? (
             <Text tone="muted" style={styles.emptyText}>
@@ -216,7 +235,7 @@ function IconButton({ label, onPress, children }: { label: string; onPress: () =
   );
 }
 
-function ChatRow({ row, now }: { row: InboxRow; now: number }) {
+function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; online?: boolean }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const name = shownName(row);
@@ -225,10 +244,13 @@ function ChatRow({ row, now }: { row: InboxRow; now: number }) {
     <Pressable
       onPress={() => router.push(`/chat?contact=${row.identity}`)}
       accessibilityRole="button"
-      accessibilityLabel={`${name}${row.unread ? `, ${row.unread} not read` : ''}`}
+      accessibilityLabel={`${name}${online ? ', online' : ''}${row.unread ? `, ${row.unread} not read` : ''}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      <KeyFace identity={row.identity} name={row.name} size={52} />
+      <View>
+        <KeyFace identity={row.identity} name={row.name} size={52} />
+        {online ? <View style={[styles.onlineDot, { backgroundColor: colors.success, borderColor: colors.background }]} /> : null}
+      </View>
       <View style={styles.rowBody}>
         <View style={styles.rowLine}>
           <Text variant="bodyStrong" numberOfLines={1} style={[styles.rowName, !row.name && styles.mono]}>
@@ -347,6 +369,15 @@ const makeStyles = (colors: Colors) =>
       width: 8,
       height: 8,
       borderRadius: 4,
+    },
+    onlineDot: {
+      position: 'absolute',
+      right: 0,
+      bottom: 0,
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 2,
     },
     row: {
       flexDirection: 'row',

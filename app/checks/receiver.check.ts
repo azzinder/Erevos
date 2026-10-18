@@ -11,8 +11,8 @@ import { test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
-import { E2E, toBase64Url, type Received } from '../lib/e2e';
-import { holdReceiver, onReceived, startReceiver } from '../lib/receiver';
+import { E2E, ONLINE, toBase64Url, type Received } from '../lib/e2e';
+import { answersAsk, holdReceiver, onReceived, startReceiver } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
 import { setCurrentSpace } from '../lock/keys';
@@ -95,14 +95,36 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
     await until(async () => !!(receipt = await toAlice()));
     assert.deepEqual(receipt!.got, [againTag]);
 
+    // Told while the app shows, so it says the phone is open; an ask so soon after needs no answer.
+    assert.ok(receipt!.online > Date.now());
+    assert.ok(bob.e2e.toldAt(bob.e2e.contacts()[0].identity) > 0);
+    assert.equal(answersAsk(bob.e2e.toldAt(bob.e2e.contacts()[0].identity)), false);
+    assert.equal(answersAsk(Date.now() - ONLINE * 1000), true);
+
+    // A chat that appears offline: nothing told, what came is held with the contact.
+    const aliceId = bob.e2e.contacts()[0].identity;
+    await bob.e2e.setHidden(aliceId, true);
+    const quietTag = await write('are you hiding?');
+    await until(() => bob.history.messages().length === 3);
+    const quietAsk = await alice.seal(bobId, '', aliceQueue.senderHex, { at: where, ask: true, on: ONLINE });
+    await sendMessage(relay, fromHex(quietAsk.sender), quietAsk.packet);
+    await sleep(200);
+    assert.equal(await toAlice(), null);
+    // Bob writes: what came goes with it.
+    const yes = await bob.e2e.seal(aliceId, 'yes', bobQueue.senderHex, { at: where });
+    await sendMessage(relay, fromHex(yes.sender), yes.packet);
+    const toldBack = await toAlice();
+    assert.deepEqual([toldBack!.text, toldBack!.got], ['yes', [quietTag]]);
+    await bob.e2e.setHidden(aliceId, false);
+
     // While the chat screen holds it, nothing is taken; once let go, it is.
     const release = await holdReceiver();
     await write('held');
     await sleep(200);
-    assert.equal(bob.history.messages().length, 2);
+    assert.equal(bob.history.messages().length, 3);
     release();
-    await until(() => bob.history.messages().length === 3);
-    assert.equal(bob.history.messages()[2].text, 'held');
+    await until(() => bob.history.messages().length === 4);
+    assert.equal(bob.history.messages()[3].text, 'held');
   } finally {
     stop();
     stopListening();

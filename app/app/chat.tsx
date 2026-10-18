@@ -23,7 +23,7 @@ import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '
 import { ask } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
-import { E2E, fromBase64Url, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
+import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
 import { openHidden, setHiddenPassword } from '../lock/hidden';
@@ -32,7 +32,7 @@ import { History, newTag, type Mark } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type Relay } from '../lib/relay';
-import { holdReceiver } from '../lib/receiver';
+import { answersAsk, appShown, holdReceiver } from '../lib/receiver';
 import { contactTarget, relayFor, spaceChats } from '../lib/space-chats';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
@@ -102,6 +102,9 @@ const COMING = [
 
 // How long a note under the messages stays, milliseconds.
 const NOTE_SHOWN = 8000;
+
+// How often an open chat asks a contact whether their phone is open, milliseconds.
+const ASK_EVERY = 60 * 1000;
 
 // Messages opened from the relay in one look at it, at most: a minute's voice message comes in one.
 const RECEIVE_BATCH = 50;
@@ -326,6 +329,10 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   // Choosing how long a single message lasts, before sending it.
   const [vanishing, setVanishing] = useState(false);
   const receipts = useRef<Receipts>({});
+  // Contacts who asked whether this phone is open, to answer with the next look at the relay.
+  const answers = useRef(new Set<string>());
+  // Now, a few seconds behind at most: until when a contact shows open is checked against it.
+  const [now, setNow] = useState(Date.now());
   const voiceParts = useRef(new VoiceAssembler());
   const recorder = useVoiceRecorder();
   // While Voice is held, and the recording it started.
@@ -370,14 +377,18 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
     return relayFor(url, relayToken, viaUrl, viaToken);
   }
 
-  // Tells contacts' phones which of their messages came and were read here. What the relay
-  // cannot take now is told with the next look at it.
+  // Tells contacts' phones which of their messages came and were read here, and, while the app
+  // shows, that this phone is open, as those who asked wait to hear. What the relay cannot take
+  // now is told with the next look at it.
   async function sendReceipts(target: Relay) {
-    for (const [peer, { got, read }] of Object.entries(receipts.current)) {
+    for (const peer of new Set([...Object.keys(receipts.current), ...answers.current])) {
+      const { got, read } = receipts.current[peer] ?? { got: [], read: [] };
       delete receipts.current[peer];
+      answers.current.delete(peer);
       try {
-        await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', { got, read });
+        await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', { got, read, on: appShown() ? ONLINE : 0 });
       } catch {
+        if (got.length + read.length === 0) continue;
         const now = receipts.current[peer] ?? { got: [], read: [] };
         receipts.current[peer] = { got: [...got, ...now.got], read: [...read, ...now.read] };
       }
@@ -386,8 +397,16 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
   function receipt(peer: string, kind: 'got' | 'read', tags: string[]) {
     if (tags.length === 0) return;
+    const contact = e2e?.contacts().find((c) => `${CONTACT_PREFIX}${c.identity}` === peer);
     // A message request hears nothing back, not even that its message came, until accepted.
-    if (e2e?.contacts().some((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === peer)) return;
+    if (contact?.request) return;
+    // A chat that appears offline holds it until it next writes to them.
+    if (contact?.hide) {
+      e2e!.hold(contact.identity, kind, tags).catch(() => {
+        // Not kept: their phone is never told.
+      });
+      return;
+    }
     const now = receipts.current[peer] ?? { got: [], read: [] };
     // A message read needs no word that it came.
     const got = kind === 'got' ? [...now.got, ...tags] : now.got.filter((tag) => !tags.includes(tag));
@@ -549,6 +568,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   useEffect(() => {
     const timer = setInterval(() => {
       const now = Date.now();
+      setNow(now);
       setMessages((list) => (list.some((m) => m.until && m.until <= now) ? list.filter((m) => !(m.until && m.until <= now)) : list));
       history.current?.expire(now).catch(() => {
         // Tried again on the next round.
@@ -600,6 +620,26 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         // Read here, but their phone is not told.
       });
   }, [shown, appActive, selected, messages]);
+
+  // While a contact's chat shows, it asks now and then whether their phone is open, saying this
+  // one is. A chat that appears offline asks nothing, so it does not learn it either.
+  const selectedHidden = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && c.hide);
+  const selectedAccepted = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && !c.request && c.sender);
+  useEffect(() => {
+    if (!shown || !appActive || !e2e || !selected?.startsWith(CONTACT_PREFIX) || selectedHidden || !selectedAccepted) return;
+    const identity = selected.slice(CONTACT_PREFIX.length);
+    const ask = () => {
+      const target = relayTarget();
+      // Said a moment ago already: they know, and answer that.
+      if (!target || Date.now() - e2e.toldAt(identity) < (ONLINE * 1000) / 3) return;
+      sendToContact(target, identity, '', { ask: true, on: ONLINE }).catch(() => {
+        // Asked again in a while.
+      });
+    };
+    ask();
+    const timer = setInterval(ask, ASK_EVERY);
+    return () => clearInterval(timer);
+  }, [shown, appActive, e2e, selected, selectedHidden, selectedAccepted, relayUrl, relayToken, viaUrl, viaToken, ownQueue]);
 
   // Asks our relay for its key once its address is known. A relay without one, or an app whose core
   // cannot seal, leaves the key out of our link: then only contacts on our relay can reach us.
@@ -680,6 +720,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       const peer = `${CONTACT_PREFIX}${received.identity}`;
       setContacts(e2e.contacts());
       setSelected((current) => current ?? peer);
+      if (received.online) setNow(Date.now());
+      const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
+      if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
       if (received.voice) {
         const whole = voiceParts.current.add(peer, received.voice);
         const { tag, timer } = received;
@@ -1253,6 +1296,31 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
   // Sets how long new messages with a contact last, and tells their phone at once. If the relay
   // cannot take that now, their phone learns it with the next message.
+  // Makes this chat appear offline to them, or not. Shown again, what was held goes to them now.
+  async function changeHidden(peer: string, hide: boolean) {
+    if (!e2e) return;
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    try {
+      await e2e.setHidden(identity, hide);
+      setContacts(e2e.contacts());
+    } catch (error) {
+      setNote(errorText(error));
+      return;
+    }
+    if (hide) {
+      setNote(`You appear offline to ${label(peer, shownContacts)}. They see that messages came and were read once you write to them.`);
+      return;
+    }
+    const target = relayTarget();
+    try {
+      if (!target) throw new Error('Type the relay address in Relay first.');
+      await sendToContact(target, identity, '', { on: appShown() ? ONLINE : 0 });
+      setNote(`${label(peer, shownContacts)} sees again when you are online, and which messages you read.`);
+    } catch {
+      setNote(`${label(peer, shownContacts)} sees again when you are online. What you read is told with your next message.`);
+    }
+  }
+
   async function changeTimer(peer: string, timer: number) {
     if (!e2e) return;
     const identity = peer.slice(CONTACT_PREFIX.length);
@@ -1342,8 +1410,11 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
     ownQueue && e2e ? contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim(), key: toBase64Url(e2e.bundle), relayKey: ownRelayKey || undefined }) : null;
 
   const selectedName = selected ? label(selected, shownContacts) : '';
+  const selectedOnline = !!selectedIdentity && !selectedHidden && !!e2e && e2e.onlineUntil(selectedIdentity, now) > 0;
   const subtitle = selectedContact
-    ? selectedTimer
+    ? selectedOnline
+      ? 'Online'
+      : selectedTimer
       ? `End-to-end encrypted · ${timerLabel(selectedTimer).toLowerCase()} after read`
       : 'End-to-end encrypted'
     : selected
@@ -1423,6 +1494,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
               <View style={styles.subtitle}>
                 {selectedContact ? <ShieldIcon color={colors.success} size={11} /> : null}
                 {selectedContact && selectedTimer ? <TimerIcon color={colors.textMuted} size={11} /> : null}
+                {selectedOnline ? <View style={[styles.onlineDot, { backgroundColor: colors.success }]} /> : null}
                 <Text variant="caption" tone="muted" numberOfLines={1} style={styles.grow}>
                   {subtitle}
                 </Text>
@@ -1513,7 +1585,18 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                   title={`Disappearing: ${timerLabel(selectedTimer)}`}
                   onPress={() => setTiming((current) => (current === selectedContact ? null : selectedContact))}
                 />
+                <TextButton
+                  title={selectedHidden ? 'Appear offline: on' : 'Appear offline: off'}
+                  onPress={() => void changeHidden(selectedContact, !selectedHidden)}
+                />
               </Row>
+              {selectedHidden ? (
+                <Text variant="caption" tone="muted">
+                  You appear offline to them: they do not see when you are online, nor that their messages came or were
+                  read, until you write. Then you show online for a while, and what you read shows read. You do not see
+                  when they are online either.
+                </Text>
+              ) : null}
               {timing === selectedContact ? (
                 <View style={styles.section}>
                   <Text variant="caption" tone="muted">
@@ -1976,6 +2059,11 @@ const makeStyles = (colors: Colors) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 5,
+    },
+    onlineDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
     },
     monoName: {
       fontFamily: 'monospace',

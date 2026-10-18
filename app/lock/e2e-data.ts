@@ -1,4 +1,5 @@
 import { checkedLook, type Look } from '../theme/look';
+import { isTag } from './history';
 import { sealedFile, type Holder } from './sealed-file';
 
 // What each space, and each space's hidden chats, keeps for end-to-end encryption (lib/e2e.ts):
@@ -33,6 +34,13 @@ export type Contact = {
   request: boolean;
   /** This chat's own look (Appearance, from its details), or null for the space's. Only this phone knows it. */
   look: Look | null;
+  /** This chat appears offline to them: nothing tells them this phone is open, and what came
+   *  and was read is held (`heldGot`, `heldRead`) until this chat next writes to them. */
+  hide: boolean;
+  /** Tags of their messages that came here, and that were read here, not told yet because the chat
+   *  appears offline. */
+  heldGot: string[];
+  heldRead: string[];
 };
 
 export type E2EData = {
@@ -70,6 +78,10 @@ export const isRelay = (v: unknown): v is string => isText(v) && v.length <= 512
 /** A relay's public key for sealed sends: 32 bytes, base64url without padding. */
 export const isRelayKey = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9_-]{43}$/.test(v);
 
+/** The most tags held for a contact, of each kind: the latest are kept. */
+export const MAX_HELD = 200;
+const heldTags = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isTag).slice(-MAX_HELD) : []);
+
 function checkedContact(value: unknown): Contact | null {
   const v = (value ?? {}) as Partial<Record<keyof Contact, unknown>>;
   if (!isHex(v.identity) || v.identity.length !== 64) return null;
@@ -86,6 +98,9 @@ function checkedContact(value: unknown): Contact | null {
     timerAt: isTime(v.timerAt) ? v.timerAt : 0,
     request: v.request === true,
     look: v.look && typeof v.look === 'object' ? checkedLook(v.look) : null,
+    hide: v.hide === true,
+    heldGot: heldTags(v.heldGot),
+    heldRead: heldTags(v.heldRead),
   };
 }
 
