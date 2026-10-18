@@ -289,6 +289,8 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const longest = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The voice message playing, and how to stop it.
   const [playingId, setPlayingId] = useState<number | null>(null);
+  // How far the voice message playing has played, milliseconds.
+  const [played, setPlayed] = useState(0);
   const stopPlaying = useRef<(() => void) | null>(null);
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   const [loaded, setLoaded] = useState(false);
@@ -964,10 +966,15 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         return;
       }
       setPlayingId(message.id);
-      stopPlaying.current = playVoice(audio, () => {
-        stopPlaying.current = null;
-        setPlayingId((current) => (current === message.id ? null : current));
-      });
+      setPlayed(0);
+      stopPlaying.current = playVoice(
+        audio,
+        () => {
+          stopPlaying.current = null;
+          setPlayingId((current) => (current === message.id ? null : current));
+        },
+        setPlayed,
+      );
     } catch (error) {
       setNote(`Cannot play it. ${errorText(error)}`);
     }
@@ -1384,7 +1391,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
               >
                 <Text style={ink}>
                   {message.voice
-                    ? `${playingId === message.id ? '■  Playing' : '▶  Voice message'}, ${voiceDuration(message.voice.ms)}`
+                    ? playingId === message.id
+                      ? `■  Playing, ${voiceDuration(Math.max(0, message.voice.ms - played))}`
+                      : `▶  Voice message, ${voiceDuration(message.voice.ms)}`
                     : message.text}
                 </Text>
                 <Text style={[ink, styles.time]}>{[message.at ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>

@@ -92,14 +92,15 @@ export function useVoiceRecorder() {
 let playing: (() => void) | null = null;
 
 /**
- * Plays a voice message's sound, stopping any other first. `onEnd` is called once it stops,
- * however. Returns a call that stops it.
+ * Plays a voice message's sound, stopping any other first. `onTime` is told how far it has
+ * played, milliseconds, a few times a second; `onEnd` is called once it stops, however. Returns a
+ * call that stops it.
  */
-export function playVoice(audio: Uint8Array, onEnd: () => void): () => void {
+export function playVoice(audio: Uint8Array, onEnd: () => void, onTime?: (ms: number) => void): () => void {
   playing?.();
   const file = new File(Paths.cache, `erevos-play-${toHex(randomBytes(8))}.m4a`);
   file.write(audio);
-  const player = createAudioPlayer({ uri: file.uri });
+  const player = createAudioPlayer({ uri: file.uri }, { updateInterval: 250 });
   let done = false;
   const stop = () => {
     if (done) return;
@@ -112,6 +113,7 @@ export function playVoice(audio: Uint8Array, onEnd: () => void): () => void {
   };
   const subscription = player.addListener('playbackStatusUpdate', (status) => {
     if (status.didJustFinish) stop();
+    else onTime?.(status.currentTime * 1000);
   });
   playing = stop;
   player.play();
