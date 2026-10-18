@@ -7,8 +7,8 @@ import { checkContact, offerContact } from '../lib/contact-code';
 // Nothing is added until the person confirms, because any link can open this screen.
 
 export default function Contact() {
-  const { id, relay, key } = useLocalSearchParams<{ id?: string; relay?: string; key?: string }>();
-  const code = checkContact(id, relay ?? '', key ?? '');
+  const { id, relay, key, rk } = useLocalSearchParams<{ id?: string; relay?: string; key?: string; rk?: string }>();
+  const code = checkContact(id, relay ?? '', key ?? '', rk ?? '');
 
   if (!code) {
     return (

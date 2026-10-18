@@ -42,7 +42,7 @@ export type QueueIds = { recipientId: Uint8Array; senderId: Uint8Array };
 
 /** Where the relay is. `token` is sent as a bearer token when the relay requires one. With
  *  `via`, messages for this relay go through that relay first (two-hop sending). */
-export type Relay = { url: string; token?: string; via?: Relay };
+export type Relay = { url: string; token?: string; via?: Relay; key?: Uint8Array };
 
 export class RelayError extends Error {
   /** The relay's status byte when it refused the request, such as NOT_FOUND. */
@@ -133,8 +133,10 @@ export async function createQueue(relay: Relay): Promise<QueueIds> {
 // Relay keys by address, fetched once per run.
 const keys = new Map<string, Uint8Array>();
 
-/** The relay's key for sealed sends, or null if it has none. */
+/** The relay's key for sealed sends, or null if it has none. A key given with the relay (from a
+ *  contact link) is used as it is, without asking that relay. */
 export async function relayKey(relay: Relay): Promise<Uint8Array | null> {
+  if (relay.key) return relay.key;
   const known = keys.get(relay.url);
   if (known) return known;
   const reply = await request(relay, Uint8Array.of(KEY));

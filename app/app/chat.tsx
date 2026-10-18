@@ -10,8 +10,8 @@ import { ShieldIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
-import { hasCore } from '../lib/core';
-import { E2E, toBase64Url, type ContactInfo, type Erase, type Extra } from '../lib/e2e';
+import { canRelaySeal, hasCore } from '../lib/core';
+import { E2E, fromBase64Url, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
 import { openHidden, setHiddenPassword } from '../lock/hidden';
@@ -19,7 +19,7 @@ import { cleanName, MAX_NAME } from '../lock/e2e-data';
 import { History, newTag, type Mark } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
-import { createQueue, fromHex, isQueueNotFound, receiveMessage, sendMessage, toHex, type Relay } from '../lib/relay';
+import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sendMessage, toHex, type Relay } from '../lib/relay';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
@@ -93,6 +93,14 @@ function relayFor(url: string, token: string, via: string, viaToken: string): Re
     token: token.trim() || undefined,
     via: second && !sameRelay(second, address) ? { url: second, token: viaToken.trim() || undefined } : undefined,
   };
+}
+
+/** Where to send to a contact: our own relay when they use it too, otherwise their relay,
+ *  reached through ours (or the second relay) so their relay never sees this phone's address. */
+function contactTarget(own: Relay, where: { relay: string; relayKey: string }): Relay {
+  if (!where.relay || sameRelay(where.relay, own.url)) return own;
+  if (!where.relayKey) throw new Error(`That contact uses the relay at ${where.relay}, and its link has no key for it. Ask them for a new link.`);
+  return { url: where.relay, key: fromBase64Url(where.relayKey), via: own.via ?? { url: own.url, token: own.token } };
 }
 
 function sameRelay(a: string, b: string): boolean {
@@ -233,6 +241,8 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const [details, setDetails] = useState(setup || !initial);
   const [relayUrl, setRelayUrl] = useState('');
   const [relayToken, setRelayToken] = useState('');
+  // Our relay's key for sealed sends, put in our link so contacts on other relays can reach us.
+  const [ownRelayKey, setOwnRelayKey] = useState('');
   // The second relay for two-hop sending (lib/relay.ts), empty when not used.
   const [viaUrl, setViaUrl] = useState('');
   const [viaToken, setViaToken] = useState('');
@@ -263,6 +273,11 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const { colors, look } = useTheme();
   // How messages are drawn: the look's bubbles (theme/bubbles.ts).
   const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
+
+  // Where contacts reach this chat: our relay and its key, told to them in our link and messages.
+  function here(url = relayUrl): Where {
+    return { relay: url.trim(), relayKey: url.trim() === relayUrl.trim() ? ownRelayKey : '' };
+  }
 
   function relayTarget(url = relayUrl): Relay | null {
     return relayFor(url, relayToken, viaUrl, viaToken);
@@ -295,9 +310,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   // Hands the relay the first packets of conversations started here that it has not taken yet:
   // until it does, the contact cannot read anything else from this chat.
   async function sendPending(chats: E2E, target: Relay) {
-    for (const { identity, sender, first } of chats.pending()) {
+    for (const { identity, sender, relay, relayKey: key, first } of chats.pending()) {
       try {
-        await sendMessage(target, fromHex(sender), first);
+        await sendMessage(contactTarget(target, { relay, relayKey: key }), fromHex(sender), first);
         await chats.firstSent(identity);
       } catch {
         // Tried again with the next message, or the next look at the relay.
@@ -316,9 +331,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       return;
     }
     const ours = relayUrl.trim();
-    if (code.relayUrl && ours && !sameRelay(code.relayUrl, ours)) {
+    if (code.relayUrl && ours && !sameRelay(code.relayUrl, ours) && !code.relayKey) {
       setNote(
-        `Not added. That contact uses the relay at ${code.relayUrl}, and this phone uses ${ours}. Both phones need the same relay for now.`,
+        `Not added. That contact uses the relay at ${code.relayUrl}, and its link has no key for that relay. Ask them for a new link from an updated Erevos.`,
       );
       return;
     }
@@ -337,7 +352,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
         setOwnQueue(queue);
       }
-      const { identity, added } = await e2e.addContact(code, queue.senderHex);
+      const { identity, added } = await e2e.addContact(code, queue.senderHex, here(url));
       setContacts(e2e.contacts());
       setSelected(`${CONTACT_PREFIX}${identity}`);
       await sendPending(e2e, target);
@@ -492,6 +507,21 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         // Read here, but their phone is not told.
       });
   }, [shown, appActive, selected, messages]);
+
+  // Asks our relay for its key once its address is known. A relay without one, or an app whose core
+  // cannot seal, leaves the key out of our link: then only contacts on our relay can reach us.
+  useEffect(() => {
+    const url = relayUrl.trim();
+    setOwnRelayKey('');
+    if (!url || !canRelaySeal()) return;
+    let active = true;
+    relayKey({ url, token: relayToken.trim() || undefined })
+      .then((key) => active && key && setOwnRelayKey(toBase64Url(key)))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [relayUrl, relayToken]);
 
   // Looks at our own relay queue every few seconds and opens what came. Without the core nothing
   // could open it, so the queue is left alone, and its messages wait on the relay.
@@ -680,12 +710,13 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   // conversation if the relay has not taken that yet. Returns the message's tag and how long it lasts.
   async function sendToContact(target: Relay, identity: string, text: string, extra: Extra = {}): Promise<{ tag: string; timer: number }> {
     if (!e2e) throw new Error(NO_CORE);
-    const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', extra);
+    const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here() });
+    const to = contactTarget(target, sealed);
     if (sealed.first) {
-      await sendMessage(target, fromHex(sealed.sender), sealed.first);
+      await sendMessage(to, fromHex(sealed.sender), sealed.first);
       await e2e.firstSent(identity);
     }
-    await sendMessage(target, fromHex(sealed.sender), sealed.packet);
+    await sendMessage(to, fromHex(sealed.sender), sealed.packet);
     // Writing to a message request accepts it.
     if (text) setContacts(e2e.contacts());
     return { tag: sealed.tag, timer: sealed.timer };
@@ -872,7 +903,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const selectedTimer = contacts.find((c) => c.identity === selectedIdentity)?.timer ?? 0;
   const firstImported = Math.max(0, imported.length - importedShown);
   const ownLink =
-    ownQueue && e2e ? contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim(), key: toBase64Url(e2e.bundle) }) : null;
+    ownQueue && e2e ? contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim(), key: toBase64Url(e2e.bundle), relayKey: ownRelayKey || undefined }) : null;
 
   const selectedName = selected ? label(selected, shownContacts) : '';
   const subtitle = selectedContact

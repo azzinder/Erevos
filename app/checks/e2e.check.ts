@@ -292,10 +292,39 @@ t('refuses plain messages, other accounts, its own link and links without keys',
   assert.deepEqual(alice.e2e.contacts(), []);
 });
 
+t('contacts on different relays learn where to reach each other', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const bobAt = { relay: 'wss://bob.example.org', relayKey: toBase64Url(randomBytes(32)) };
+  const aliceAt = { relay: 'wss://alice.example.org', relayKey: toBase64Url(randomBytes(32)) };
+  const code = parseContact(contactLink({ senderHex: bob.from, relayUrl: bobAt.relay, key: bob.code.key, relayKey: bobAt.relayKey }))!;
+  assert.equal(code.relayKey, bobAt.relayKey);
+
+  const { identity } = await alice.e2e.addContact(code, alice.from, aliceAt);
+  const [pending] = alice.e2e.pending();
+  assert.deepEqual([pending.relay, pending.relayKey], [bobAt.relay, bobAt.relayKey]);
+
+  // Bob's answer goes to Alice's relay, told to him in her first packet.
+  const hello = message(await bob.e2e.receive(pending.first));
+  const toAlice = await bob.e2e.seal(hello.identity, 'hi', bob.from, { at: bobAt });
+  assert.deepEqual([toAlice.relay, toAlice.relayKey], [aliceAt.relay, aliceAt.relayKey]);
+  await alice.e2e.firstSent(identity);
+
+  // Alice moves to another relay: her next message tells Bob.
+  message(await alice.e2e.receive(toAlice.packet));
+  const moved = { relay: 'wss://new.example.org', relayKey: toBase64Url(randomBytes(32)) };
+  message(await bob.e2e.receive((await alice.e2e.seal(identity, 'moved', alice.from, { at: moved })).packet));
+  const again = await bob.e2e.seal(hello.identity, '', bob.from);
+  assert.deepEqual([again.relay, again.relayKey], [moved.relay, moved.relayKey]);
+
+  // A link with a broken relay key is not a contact link.
+  assert.equal(parseContact(contactLink({ ...code, relayKey: 'short' })), null);
+});
+
 t('a contact link with its key fits a QR code', async () => {
   const { code } = await chat('space', 0);
-  const link = contactLink({ senderHex: code.senderHex, relayUrl: 'wss://relay.example.org/erevos', key: code.key });
+  const link = contactLink({ senderHex: code.senderHex, relayUrl: 'wss://relay.example.org/erevos', key: code.key, relayKey: toBase64Url(randomBytes(32)) });
   assert.ok(link.length < 2000, `${link.length}`);
-  // Version 32 or below: 145 modules a side.
-  assert.ok(qrRows(link).length <= 145, `${qrRows(link).length}`);
+  // Version 33 or below: 149 modules a side. The relay's key added one version.
+  assert.ok(qrRows(link).length <= 149, `${qrRows(link).length}`);
 });

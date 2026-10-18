@@ -12,6 +12,11 @@ export type Contact = {
   identity: string;
   /** The relay sender id that reaches them, hex. Empty until they say. */
   sender: string;
+  /** The relay their queue is on, when it is not this chat's own: ws:// or wss://. Empty for the
+   *  same relay as this chat, or when they have not said. */
+  relay: string;
+  /** That relay's key for sealed sends, base64url, so messages reach it through this chat's relay. */
+  relayKey: string;
   /** Conversations with them, base64, newest first: the first is the one to send in. */
   conversations: string[];
   /** The first packet of a conversation started here, base64, until the relay has taken it. */
@@ -57,6 +62,10 @@ export function cleanName(text: string): string {
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isBase64 = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9+/]*={0,2}$/.test(v);
 const isHex = (v: unknown): v is string => isText(v) && /^([0-9a-f]{2})*$/.test(v);
+/** A relay address as contact links give it. */
+export const isRelay = (v: unknown): v is string => isText(v) && v.length <= 512 && /^wss?:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(v);
+/** A relay's public key for sealed sends: 32 bytes, base64url without padding. */
+export const isRelayKey = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9_-]{43}$/.test(v);
 
 function checkedContact(value: unknown): Contact | null {
   const v = (value ?? {}) as Partial<Record<keyof Contact, unknown>>;
@@ -65,6 +74,8 @@ function checkedContact(value: unknown): Contact | null {
   return {
     identity: v.identity,
     sender: isHex(v.sender) && v.sender.length === 48 ? v.sender : '',
+    relay: isRelay(v.relay) ? v.relay : '',
+    relayKey: isRelayKey(v.relayKey) ? v.relayKey : '',
     conversations,
     first: isBase64(v.first) ? v.first : '',
     name: isText(v.name) ? cleanName(v.name) : '',
