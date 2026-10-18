@@ -18,6 +18,7 @@ import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
+import { forgetSpare } from '../lib/spare';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { applyTor } from '../lib/tor';
 import { loadLockConfig, type LockConfig } from '../lock/config';
@@ -92,6 +93,7 @@ export default function RootLayout() {
     forgetSpaceChats();
     forgetSpaceGroups();
     forgetSmsLink();
+    forgetSpare();
     setThroughTor(false);
     setPhase({ kind: 'loading' });
     // The keystore holds the same entries whatever is in use: made once per start, beside the

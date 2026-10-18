@@ -7,16 +7,33 @@
 // to this queue through its own relay; codes from before it have none. A code from a phone with
 // no relay queue yet has no id and no relay, only the keys: whoever adds it reaches that phone
 // nearby (lib/nearby.ts) until it says where its queue is. The relay token is never part of it.
+// A phone with a backup relay (lib/spare.ts) adds its queue there:
+//   &sid=<sender id there>&srelay=<backup relay address>&srk=<its key>
+// so a contact writes there while the first relay cannot be reached.
 // Self-contained on purpose, so it can run under plain Node for checks.
 
-export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string };
+export type SpareCode = { senderHex: string; relayUrl: string; relayKey?: string };
+export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string; spare?: SpareCode };
 
 const LINK = 'erevos://contact?';
 // A bundle is about 1800 characters. Anything far longer is not one.
 const MAX_KEY = 4096;
 
-export function contactLink({ senderHex, relayUrl, key, relayKey }: ContactCode): string {
-  return `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}`;
+export function contactLink({ senderHex, relayUrl, key, relayKey, spare }: ContactCode): string {
+  const backup = spare
+    ? `&sid=${spare.senderHex}&srelay=${encodeURIComponent(spare.relayUrl)}${spare.relayKey ? `&srk=${spare.relayKey}` : ''}`
+    : '';
+  return `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}${backup}`;
+}
+
+/** Checks a backup queue of a link: null when it is not one, as when a part is missing. */
+export function checkSpare(senderHex: unknown, relayUrl: unknown, relayKey: unknown = ''): SpareCode | null {
+  if (typeof senderHex !== 'string' || typeof relayUrl !== 'string' || typeof relayKey !== 'string') return null;
+  const id = senderHex.trim().toLowerCase();
+  const relay = relayUrl.trim();
+  if (!/^[0-9a-f]{48}$/.test(id) || !/^wss?:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(relay)) return null;
+  if (relayKey && !/^[A-Za-z0-9_-]{43}$/.test(relayKey)) return null;
+  return relayKey ? { senderHex: id, relayUrl: relay, relayKey } : { senderHex: id, relayUrl: relay };
 }
 
 /** Checks the parts of a code. The relay and the key may be empty, when the code has none, and the id too when it has the key. */
@@ -46,7 +63,10 @@ export function parseContact(text: string): ContactCode | null {
       return null;
     }
   }
-  return checkContact(fields.id, fields.relay ?? '', fields.key ?? '', fields.rk ?? '');
+  const code = checkContact(fields.id, fields.relay ?? '', fields.key ?? '', fields.rk ?? '');
+  // A backup queue that does not read is left out: the link still works without it.
+  const spare = code?.relayUrl && fields.sid ? checkSpare(fields.sid, fields.srelay ?? '', fields.srk ?? '') : null;
+  return code && spare ? { ...code, spare } : code;
 }
 
 // Hands a contact from the screen a scanned link opens to the chat screen, which owns the

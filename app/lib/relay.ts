@@ -61,7 +61,11 @@ export type QueueIds = { recipientId: Uint8Array; senderId: Uint8Array };
 
 /** Where the relay is. `token` is sent as a bearer token when the relay requires one. With
  *  `via`, messages for this relay go through that relay first (two-hop sending). */
-export type Relay = { url: string; token?: string; via?: Relay; key?: Uint8Array };
+// `fallback`: where a send goes next when this relay cannot take it (lib/spare.ts), each with the
+// sender id there, or the same one when it has none. `backup`: this phone's backup relay, which
+// sends to contacts go through when its own relay cannot be reached.
+export type Relay = { url: string; token?: string; via?: Relay; key?: Uint8Array; fallback?: Fallback[]; backup?: Relay };
+export type Fallback = { relay: Relay; senderId?: Uint8Array };
 
 export class RelayError extends Error {
   /** The relay's status byte when it refused the request, such as NOT_FOUND. */
@@ -245,10 +249,27 @@ export async function carryTo(own: Relay, url: string, sealed: Uint8Array): Prom
   }
 }
 
-/** Queues one message, through the relay's `via` if it has one. Throws if the sender id is
- *  unknown or the queue is full. */
+/** Queues one message, through the relay's `via` if it has one, or else where its `fallback` says,
+ *  in turn. Throws, with what the relay first said, if none takes it: the sender id is unknown,
+ *  the queue is full, or no relay can be reached. */
 export async function sendMessage(relay: Relay, senderId: Uint8Array, message: Uint8Array): Promise<void> {
   if (message.length > MAX_MESSAGE) throw new RelayError('message is too large');
+  try {
+    await sendOne(relay, senderId, message);
+  } catch (error) {
+    for (const next of relay.fallback ?? []) {
+      try {
+        await sendOne(next.relay, next.senderId ?? senderId, message);
+        return;
+      } catch {
+        // The next one, if any.
+      }
+    }
+    throw error;
+  }
+}
+
+async function sendOne(relay: Relay, senderId: Uint8Array, message: Uint8Array): Promise<void> {
   if (relay.via) {
     const key = await relayKey(relay);
     if (!key) throw new RelayError('your relay has no key for two-hop sending, so it was not sent through the second relay');

@@ -20,6 +20,9 @@ export type Contact = {
   relay: string;
   /** That relay's key for sealed sends, base64url, so messages reach it through this chat's relay. */
   relayKey: string;
+  /** Their backup queue, on another relay (one at home, say): where to write when their relay
+   *  cannot be reached. Null, or missing in what was kept before backup relays, when they have none. */
+  spare?: Spare | null;
   /** Conversations with them, base64, newest first: the first is the one to send in. */
   conversations: string[];
   /** The first packet of a conversation started here, base64, until the relay has taken it. */
@@ -52,6 +55,17 @@ export type Contact = {
    *  same. Empty for this account's own. */
   ownIdentity: string;
 };
+
+/** A queue on a backup relay: its sender id (hex), the relay, and the relay's key (base64url, or
+ *  empty when it has none). */
+export type Spare = { sender: string; relay: string; relayKey: string };
+
+/** A backup queue as said, checked: null when it is not one. */
+export function checkedSpare(value: unknown): Spare | null {
+  const v = (value ?? {}) as Partial<Record<keyof Spare, unknown>>;
+  if (!isHex(v.sender) || v.sender.length !== 48 || !isRelay(v.relay)) return null;
+  return { sender: v.sender, relay: v.relay, relayKey: isRelayKey(v.relayKey) ? v.relayKey : '' };
+}
 
 /** A contact's picture of this chat's choosing: a sign (an emoji) on a colour, or a photo (lock/avatar-photos.ts). */
 export type Avatar = { kind: 'emoji'; emoji: string; color: string } | ({ kind: 'photo' } & PhotoRef);
@@ -118,6 +132,7 @@ function checkedContact(value: unknown): Contact | null {
     sender: isHex(v.sender) && v.sender.length === 48 ? v.sender : '',
     relay: isRelay(v.relay) ? v.relay : '',
     relayKey: isRelayKey(v.relayKey) ? v.relayKey : '',
+    spare: checkedSpare(v.spare),
     conversations,
     first: isBase64(v.first) ? v.first : '',
     name: isText(v.name) ? cleanName(v.name) : '',

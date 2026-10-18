@@ -36,9 +36,15 @@ export type SpaceData = {
   look: Look | null;
   // Whether the space's relay requests go through Tor (lib/relay.ts setThroughTor). Off unless set.
   tor: boolean;
+  // A backup relay (one at home, say) with a queue of its own, which contacts write to while the
+  // relay cannot be reached (lib/spare.ts). Its address is empty when there is none.
+  spare: SpareRelay;
 };
 
-export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '', ownQueue: null, routes: {}, look: null, tor: false };
+export type SpareRelay = { url: string; token: string; queue: Queue | null };
+const NO_SPARE: SpareRelay = { url: '', token: '', queue: null };
+
+export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '', ownQueue: null, routes: {}, look: null, tor: false, spare: NO_SPARE };
 
 const BLOCK = 1024;
 const entry = (space: number) => `erevos.space.${space}`;
@@ -52,6 +58,17 @@ function seal(key: Uint8Array, data: SpaceData): string {
 }
 
 const isHex = (v: unknown, length: number): v is string => typeof v === 'string' && v.length === length && /^[0-9a-f]+$/.test(v);
+
+function checkedSpareRelay(value: unknown): SpareRelay {
+  const v = (value ?? {}) as Partial<Record<keyof SpareRelay, unknown>>;
+  const q = v.queue as Partial<Queue> | null | undefined;
+  if (typeof v.url !== 'string') return NO_SPARE;
+  return {
+    url: v.url,
+    token: typeof v.token === 'string' ? v.token : '',
+    queue: q && isHex(q.recipientHex, 48) && isHex(q.senderHex, 48) ? { recipientHex: q.recipientHex, senderHex: q.senderHex } : null,
+  };
+}
 
 /** What was stored, with anything of the wrong shape left out. */
 function checked(value: unknown): SpaceData {
@@ -70,6 +87,7 @@ function checked(value: unknown): SpaceData {
     routes,
     look: v.look ? checkedLook(v.look) : null,
     tor: v.tor === true,
+    spare: checkedSpareRelay(v.spare),
   };
 }
 

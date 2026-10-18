@@ -9,6 +9,7 @@ import { carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKe
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
 import { isGroupPacket } from './groups';
 import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-chats';
+import { lookAtSpare, spareBackup } from './spare';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
@@ -145,14 +146,23 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     state.place = await placeNow();
     state.seen = released;
   }
-  const place = state.place;
+  let place = state.place;
   if (!place) return false;
   const chats = await spaceChats();
-  // Contacts on other relays reach us through our relay's key, said with every message.
+  // Sends go through the space's backup relay when ours cannot be reached, once it is ready.
+  const backup = spareBackup();
+  if (backup && !place.sends.backup) {
+    place = { ...place, sends: { ...place.sends, backup: { ...backup, via: place.sends.via } } };
+    state.place = place;
+  }
+  // Contacts on other relays reach us through our relay's key, said with every message. Asked
+  // again with the next look when the relay cannot be reached.
   if (!place.keyAsked) {
-    const key = await relayKey(place.own);
-    place.here = { ...place.here, relayKey: key ? toBase64Url(key) : '' };
-    place.keyAsked = true;
+    const key = await relayKey(place.own).catch(() => undefined);
+    if (key !== undefined) {
+      place.here = { ...place.here, relayKey: key ? toBase64Url(key) : '' };
+      place.keyAsked = true;
+    }
   }
   await sendPending(chats, place.sends);
   // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
@@ -160,37 +170,49 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   // An SMS invite sent from the SMS screen since: its answer may be on its way.
   await refreshSmsLink().catch(() => undefined);
   let changed = false;
+  const here = place;
+  // One message from our queue, or from the backup queue.
+  const take = async (bytes: Uint8Array) => {
+    // A group's message (lib/groups.ts): the group screens hear of it themselves.
+    if (isGroupPacket(bytes)) {
+      await takeGroupPacket(bytes).catch(() => undefined);
+      return;
+    }
+    // Taken from the relay, so kept whatever happens meanwhile.
+    try {
+      // An answer to an SMS invite sent from here: a new contact, linked to the number.
+      if (await takeInviteAnswer(chats.e2e, bytes, here.queue.senderHex, here.here).catch(() => null)) {
+        changed = true;
+        return;
+      }
+      let received = await chats.e2e.receive(bytes);
+      // Someone whose SMS invite was answered here: no message request.
+      if (received.kind === 'message' && received.added && (await linkInviter(chats.e2e, received.identity).catch(() => null))) {
+        received = { ...received, request: false };
+      }
+      changed = (await keep(chats, received, state)) || changed;
+      if (received.kind === 'message') messageListeners.forEach((listener) => listener(received));
+      if (received.kind === 'message' && received.group) await takeGroupSignal(received.identity, received.group, received.request).catch(() => undefined);
+    } catch {
+      // This one is lost, as in the chat; the next ones still come.
+    }
+  };
   const recipient = fromHex(place.queue.recipientHex);
+  let failed: unknown = null;
   try {
     for (let i = 0; i < BATCH && !stop(); i++) {
       const bytes = await receiveMessage(place.own, recipient);
       if (!bytes) break;
-      // A group's message (lib/groups.ts): the group screens hear of it themselves.
-      if (isGroupPacket(bytes)) {
-        await takeGroupPacket(bytes).catch(() => undefined);
-        continue;
-      }
-      // Taken from the relay, so kept whatever happens meanwhile.
-      try {
-        // An answer to an SMS invite sent from here: a new contact, linked to the number.
-        if (await takeInviteAnswer(chats.e2e, bytes, place.queue.senderHex, place.here).catch(() => null)) {
-          changed = true;
-          continue;
-        }
-        let received = await chats.e2e.receive(bytes);
-        // Someone whose SMS invite was answered here: no message request.
-        if (received.kind === 'message' && received.added && (await linkInviter(chats.e2e, received.identity).catch(() => null))) {
-          received = { ...received, request: false };
-        }
-        changed = (await keep(chats, received, state)) || changed;
-        if (received.kind === 'message') messageListeners.forEach((listener) => listener(received));
-        if (received.kind === 'message' && received.group) await takeGroupSignal(received.identity, received.group, received.request).catch(() => undefined);
-      } catch {
-        // This one is lost, as in the chat; the next ones still come.
-      }
+      await take(bytes);
     }
   } catch (error) {
-    if (!isQueueNotFound(error)) throw error;
+    failed = error;
+  }
+  // What came to the backup queue, whether or not our relay answered.
+  await lookAtSpare(chats.e2e, take, stop).catch(() => undefined);
+  // Our relay could not be reached: tried again with the next look. What came to the backup
+  // queue still goes on, and so do the receipts, through the backup relay.
+  if (failed && isQueueNotFound(failed)) {
     // The relay no longer has our queue: a new one, which contacts learn from our next message.
     const ids = await createQueue(place.own);
     const queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };

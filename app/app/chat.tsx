@@ -50,6 +50,7 @@ import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessa
 import { answersAsk, appShown, holdReceiver } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, relayFor, spaceChats } from '../lib/space-chats';
+import { lookAtSpare, spareBackup, spareCode } from '../lib/spare';
 import { secureGet, secureSet } from '../lib/secure';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
@@ -424,8 +425,9 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     return { relay: url.trim(), relayKey: url.trim() === relayUrl.trim() ? ownRelayKey : '' };
   }
 
+  // The space's chat sends through its backup relay (lib/spare.ts) when its own cannot be reached.
   function relayTarget(url = relayUrl): Relay | null {
-    return relayFor(url, relayToken, viaUrl, viaToken);
+    return relayFor(url, relayToken, viaUrl, viaToken, hiddenKey ? undefined : spareBackup());
   }
 
   // Tells contacts' phones which of their messages came and were read here, and, while the app
@@ -805,7 +807,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     if (!url || !ownQueue || !e2e) return;
     // Taking messages goes straight to our relay; sending goes through the second relay if set.
     const own: Relay = { url, token: relayToken.trim() || undefined };
-    const sends = relayFor(url, relayToken, viaUrl, viaToken) ?? own;
+    let sends = relayFor(url, relayToken, viaUrl, viaToken) ?? own;
     const recipient = fromHex(ownQueue.recipientHex);
     const ownSender = ownQueue.senderHex;
     let active = true;
@@ -816,6 +818,34 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     async function look() {
       if (busy || !e2e) return;
       busy = true;
+      // Once the backup relay is ready, sends go through it when ours cannot be reached.
+      const backup = hiddenKey ? undefined : spareBackup();
+      if (backup && !sends.backup) sends = { ...sends, backup: { ...backup, via: sends.via } };
+      // One message from our queue, or from the backup queue.
+      const take = async (bytes: Uint8Array) => {
+        if (!e2e) return;
+        // A group's message (lib/groups.ts), to the space's queue only.
+        if (!hiddenKey && isGroupPacket(bytes)) {
+          await takeGroupPacket(bytes).catch(() => undefined);
+          return;
+        }
+        // An answer to an SMS invite sent from here: their contact link.
+        const invited = hiddenKey ? null : await takeInviteAnswer(e2e, bytes, ownSender, here()).catch(() => null);
+        if (invited) {
+          if (active) setContacts(e2e.contacts());
+          if (active) setNote(`${invited.number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.`);
+          return;
+        }
+        // Taken from the relay, so kept even if the chat closed meanwhile.
+        let received = await e2e.receive(bytes);
+        // Someone whose SMS invite was answered here: a contact at once, not a message request.
+        const number = !hiddenKey && received.kind === 'message' && received.added ? await linkInviter(e2e, received.identity).catch(() => null) : null;
+        if (number && received.kind === 'message') received = { ...received, request: false };
+        handle(received);
+        if (number && active) setNote(`${number} has Erevos and is now a contact. Messages to that number go through Erevos.`);
+      };
+      // What came to the backup queue, whether or not our relay answers.
+      const spare = () => (hiddenKey ? Promise.resolve() : lookAtSpare(e2e, take, () => !active).catch(() => undefined));
       try {
         await sendPending(e2e, sends);
         // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
@@ -830,29 +860,13 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
             failed = null;
           }
           if (!bytes) break;
-          // A group's message (lib/groups.ts), to the space's queue only.
-          if (!hiddenKey && isGroupPacket(bytes)) {
-            await takeGroupPacket(bytes).catch(() => undefined);
-            continue;
-          }
-          // An answer to an SMS invite sent from here: their contact link.
-          const invited = hiddenKey ? null : await takeInviteAnswer(e2e, bytes, ownSender, here()).catch(() => null);
-          if (invited) {
-            if (active) setContacts(e2e.contacts());
-            if (active) setNote(`${invited.number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.`);
-            continue;
-          }
-          // Taken from the relay, so kept even if the chat closed meanwhile.
-          let received = await e2e.receive(bytes);
-          // Someone whose SMS invite was answered here: a contact at once, not a message request.
-          const number = !hiddenKey && received.kind === 'message' && received.added ? await linkInviter(e2e, received.identity).catch(() => null) : null;
-          if (number && received.kind === 'message') received = { ...received, request: false };
-          handle(received);
-          if (number && active) setNote(`${number} has Erevos and is now a contact. Messages to that number go through Erevos.`);
+          await take(bytes);
         }
+        await spare();
         if (!hiddenKey) await answerInvites(e2e, ownSender, here(), sends).catch(() => undefined);
         await sendReceipts(sends);
       } catch (error) {
+        await spare();
         if (!active) return;
         if (!isQueueNotFound(error)) {
           failed = errorText(error);
@@ -1800,7 +1814,13 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   const ownLink = !e2e
     ? null
     : ownQueue
-      ? contactLink({ senderHex: ownQueue.senderHex, relayUrl: relayUrl.trim(), key: toBase64Url(e2e.bundle), relayKey: ownRelayKey || undefined })
+      ? contactLink({
+          senderHex: ownQueue.senderHex,
+          relayUrl: relayUrl.trim(),
+          key: toBase64Url(e2e.bundle),
+          relayKey: ownRelayKey || undefined,
+          spare: spareCode(hiddenKey ? null : e2e.spare()),
+        })
       : hiddenKey
         ? null
         : contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(e2e.bundle) });

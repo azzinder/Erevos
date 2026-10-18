@@ -379,6 +379,19 @@ they are taken (1024 MB together at most), so a restart loses nothing, and no re
 > Never post the token where others can read it. Whoever runs the server sees the IP addresses that connect, the
 > queue ids, and when and how much arrives. They cannot read the messages, which are end-to-end encrypted.
 
+## Home relay {#home-relay}
+
+Under **Home relay** in the menu, a space can have a second relay with a queue of its own: one at home, on a
+Raspberry Pi or an old computer, or any other relay you trust. It is optional.
+
+- **What it does:** your contact link and every message say that queue beside your relay. While your relay cannot be
+  reached, contacts write there, and Erevos takes what comes there with each look. What you send goes through it
+  when your own relay is down.
+- **How to set it up:** run a relay as in [Running your own relay](#own-relay), type its address (and token, if it
+  has one) and choose **Save**. Contacts learn it from your next message to them, or from your new contact link.
+- **What it sees:** what your relay sees, this phone's address when it takes messages, and when and how much comes.
+  Hidden chats do not use it.
+
 ## Through Tor {#tor}
 
 Under **Tor** in the menu, **Turn Tor on** sends every request of this space to its relays through the Tor network.

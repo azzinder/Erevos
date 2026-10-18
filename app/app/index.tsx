@@ -47,6 +47,7 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
     links: true,
   },
   { title: 'SMS', detail: 'Erevos as the SMS app, one list for all messages', href: '/sms-settings', phone: true },
+  { title: 'Home relay', detail: 'A second relay contacts write to while yours is down', href: '/home-relay' },
   { title: 'Tor', detail: 'Reach the relays through Tor, off unless turned on', href: '/tor', phone: true },
   { title: 'LoRa radio', detail: 'Text over a Meshtastic radio, kilometres away, without internet', href: '/lora', phone: true },
   { title: 'Imported chats', detail: 'Telegram and WhatsApp exports', href: '/imported' },

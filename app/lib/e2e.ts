@@ -1,4 +1,4 @@
-import { checkedAvatar, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, saveE2EData, type Avatar, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
+import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, saveE2EData, type Avatar, type Contact, type E2EData, type Holder, type Spare } from '../lock/e2e-data';
 
 import { isTag, newTag } from '../lock/history';
 
@@ -75,11 +75,13 @@ const MAX_ON = 600;
 // one message lasts, whatever the chat's timer, or 0. `got` and `read`: the tags of the other
 // phone's messages that came here, and that were read here.
 // `relay` and `relayKey`: the relay the sender's queue is on, and its key, so the other phone can
-// write to it when it is not its own relay. Empty when not said.
+// write to it when it is not its own relay. Empty when not said. `spare`: the sender's backup
+// queue (lib/spare.ts), said with `from`, so the other phone writes there when the relay is down.
 type Message = {
   from: string;
   relay: string;
   relayKey: string;
+  spare?: Spare | null;
   text: string;
   tag: string;
   erase: Erase | null;
@@ -128,12 +130,13 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
       ...(relay ? { relay } : {}),
       ...(relayKey ? { relayKey } : {}),
+      ...(spare ? { spare } : {}),
       text,
       ...(tag ? { tag } : {}),
       ...(erase ? { erase } : {}),
@@ -151,10 +154,20 @@ function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt
   );
 }
 
+/** Where a message from a contact says their queues are: the backup one goes, or changes, with it. */
+function placeOf(message: Message): Pick<Contact, 'relay' | 'relayKey' | 'spare'> {
+  return { ...whereOf(message), spare: message.spare ?? null };
+}
+
 /** Where a link or a message says a queue is. A queue said without a relay is on the same relay. */
 function whereOf(said: { relay?: string; relayUrl?: string; relayKey?: string }): Where {
   const relay = said.relay ?? said.relayUrl ?? '';
   return isRelay(relay) ? { relay, relayKey: isRelayKey(said.relayKey) ? said.relayKey : '' } : { relay: '', relayKey: '' };
+}
+
+/** A link's backup queue, as kept. */
+function spareOf(code: { spare?: { senderHex: string; relayUrl: string; relayKey?: string } }): Spare | null {
+  return code.spare ? checkedSpare({ sender: code.spare.senderHex, relay: code.spare.relayUrl, relayKey: code.spare.relayKey }) : null;
 }
 
 function decodeErase(value: unknown): Erase | null {
@@ -170,6 +183,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       from: typeof value.from === 'string' && /^[0-9a-f]{48}$/.test(value.from) ? value.from : '',
       relay: isRelay(value.relay) ? value.relay : '',
       relayKey: isRelayKey(value.relayKey) ? value.relayKey : '',
+      spare: checkedSpare(value.spare),
       text: typeof value.text === 'string' ? value.text : '',
       tag: isTag(value.tag) ? value.tag : '',
       erase: decodeErase(value.erase),
@@ -281,6 +295,8 @@ export class E2E {
   // Only in memory: none of it is kept.
   private readonly online = new Map<string, number>();
   private readonly told = new Map<string, number>();
+  // This chat's backup queue (lib/spare.ts), said in every message that says where its queue is.
+  private ownSpare: Spare | null = null;
 
   private constructor(data: E2EData, account: Uint8Array, identity: Uint8Array, bundle: Uint8Array, store: (data: E2EData) => Promise<void>) {
     this.data = data;
@@ -300,6 +316,16 @@ export class E2E {
     }
     const account = fromBase64(data.account);
     return new E2E(data, account, await core.accountIdentity(account), await core.accountBundle(account), store);
+  }
+
+  /** Says this backup queue from now on in what tells contacts where this chat's queue is, or none. */
+  setSpare(spare: Spare | null): void {
+    this.ownSpare = spare;
+  }
+
+  /** The backup queue this chat says, if any. */
+  spare(): Spare | null {
+    return this.ownSpare;
   }
 
   private run<T>(call: () => Promise<T>): Promise<T> {
@@ -497,7 +523,7 @@ export class E2E {
    * link has no key, or a key whose signatures do not hold, or is this chat's own.
    */
   addContact(
-    code: { senderHex: string; key: string; relayUrl?: string; relayKey?: string },
+    code: { senderHex: string; key: string; relayUrl?: string; relayKey?: string; spare?: { senderHex: string; relayUrl: string; relayKey?: string } },
     from: string,
     at: Where = { relay: '', relayKey: '' },
   ): Promise<{ identity: string; added: boolean }> {
@@ -509,20 +535,21 @@ export class E2E {
       const known = this.find(identity);
       if (known) {
         // Already talking: only where to reach them changes, if the link says. Adding their link accepts a request.
-        const where = code.senderHex ? { ...whereOf(code), sender: code.senderHex } : {};
+        const where = code.senderHex ? { ...whereOf(code), sender: code.senderHex, spare: spareOf(code) } : {};
         await this.save(this.withContact({ ...known, ...where, request: false }));
         return { identity, added: false };
       }
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ from, ...at, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null }),
+        encodeMessage({ from, ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null }),
       );
       await this.save(
         this.withContact({
           identity,
           sender: code.senderHex,
           ...whereOf(code),
+          spare: spareOf(code),
           conversations: [toBase64(started.conversation)],
           first: toBase64(started.packet),
           name: '',
@@ -558,7 +585,7 @@ export class E2E {
     text: string,
     from: string,
     { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null }: Extra = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
@@ -590,7 +617,7 @@ export class E2E {
       const [packet] = await this.sealFor(contact, [message], !!text || signal?.kind === 'offer');
       const first = contact.first ? fromBase64(contact.first) : null;
       const { sender, relay, relayKey } = contact;
-      return { sender, relay, relayKey, first, packet, tag, timer: once || timer };
+      return { sender, relay, relayKey, spare: contact.spare ?? null, first, packet, tag, timer: once || timer };
     });
   }
 
@@ -604,7 +631,7 @@ export class E2E {
     ms: number,
     from: string,
     { lasts = 0, at = { relay: '', relayKey: '' }, talk = false }: { lasts?: number; at?: Where; talk?: boolean } = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
@@ -629,7 +656,7 @@ export class E2E {
       const packets = await this.sealFor(contact, messages, true);
       const first = contact.first ? fromBase64(contact.first) : null;
       const { sender, relay, relayKey } = contact;
-      return { sender, relay, relayKey, first, packets, tag, timer: lasts || timer };
+      return { sender, relay, relayKey, spare: contact.spare ?? null, first, packets, tag, timer: lasts || timer };
     });
   }
 
@@ -642,7 +669,7 @@ export class E2E {
     offer: FileOffer,
     from: string,
     { lasts = 0, at = { relay: '', relayKey: '' } }: { lasts?: number; at?: Where } = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
@@ -653,7 +680,7 @@ export class E2E {
       const [packet] = await this.sealFor(contact, [message], true);
       const first = contact.first ? fromBase64(contact.first) : null;
       const { sender, relay, relayKey } = contact;
-      return { sender, relay, relayKey, first, packet, tag, timer: lasts || timer };
+      return { sender, relay, relayKey, spare: contact.spare ?? null, first, packet, tag, timer: lasts || timer };
     });
   }
 
@@ -665,10 +692,12 @@ export class E2E {
     const now = Date.now();
     const release = writes || !contact.hide;
     const said = messages.map((message, i) => {
+      const spare = message.from ? this.ownSpare : null;
       const on = writes ? Math.max(message.on, ONLINE_AFTER_WRITE) : contact.hide ? 0 : message.on;
       const first = i === 0 && release;
       return {
         ...message,
+        spare,
         on,
         onAt: on > 0 ? now : 0,
         ask: message.ask && !contact.hide,
@@ -691,10 +720,10 @@ export class E2E {
   }
 
   /** The first packet still waiting for the relay, if any, and where it goes. */
-  pending(): { identity: string; sender: string; relay: string; relayKey: string; first: Uint8Array }[] {
+  pending(): { identity: string; sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array }[] {
     return this.data.contacts
       .filter((contact) => contact.first && contact.sender)
-      .map(({ identity, sender, relay, relayKey, first }) => ({ identity, sender, relay, relayKey, first: fromBase64(first) }));
+      .map(({ identity, sender, relay, relayKey, spare, first }) => ({ identity, sender, relay, relayKey, spare: spare ?? null, first: fromBase64(first) }));
   }
 
   /** The relay took the first packet of the conversation with this contact. */
@@ -731,7 +760,7 @@ export class E2E {
     const contact: Contact = {
       identity,
       sender: message.from || known?.sender || '',
-      ...(message.from ? whereOf(message) : { relay: known?.relay ?? '', relayKey: known?.relayKey ?? '' }),
+      ...(message.from ? placeOf(message) : { relay: known?.relay ?? '', relayKey: known?.relayKey ?? '', spare: known?.spare ?? null }),
       conversations: [toBase64(opened.conversation), ...(known?.conversations ?? [])].slice(0, MAX_CONVERSATIONS),
       first: known?.first ?? '',
       name: known?.name ?? '',
@@ -780,7 +809,7 @@ export class E2E {
           this.withContact({
             ...contact,
             sender: message.from || contact.sender,
-            ...(message.from ? whereOf(message) : {}),
+            ...(message.from ? placeOf(message) : {}),
             // Send in the one they last sent in. Their answer also means they have the first packet.
             conversations: [toBase64(opened.conversation), ...others],
             first: '',
