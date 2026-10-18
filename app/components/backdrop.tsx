@@ -9,6 +9,7 @@ import { backdropKind, frostedWall, glassHaze, glassPane, glassSide, glowLayer, 
 
 import { gradientStyle } from './glass';
 import { AuroraLight, MatrixRain, NeonGrid, RuledPaper } from './scenes';
+import type { PhotoRef } from '../lock/avatar-photos';
 import { WallpaperView, type Pattern } from './wallpapers';
 
 // What is drawn behind the screens, as in LPHL FASOULI (src/components/backdrop.tsx there):
@@ -25,7 +26,7 @@ export interface BackdropSpec {
   accent: string;
   sheet: boolean;
   /** A wallpaper chosen in Appearance: which, on what ground, and whether glass lies over it. */
-  pattern?: { name: Pattern; ground: string; dark: boolean; glass: boolean };
+  pattern?: { name: Pattern; ground: string; dark: boolean; glass: boolean; photo: PhotoRef | null };
 }
 
 /** The water lines: 1 px every 12 px over the lowest 38% of the wallpaper. */
@@ -78,9 +79,9 @@ export function Backdrop({ spec, paneTop = 0, contentTop = 0, children }: {
   let ground: string | undefined;
   let layers: ReactNode[] = [];
   if (spec?.kind === 'pattern' && spec.pattern) {
-    const { name, ground: base, dark, glass } = spec.pattern;
+    const { name, ground: base, dark, glass, photo } = spec.pattern;
     layers = [
-      <WallpaperView key="pattern" pattern={name} width={width} height={height} ground={base} accent={spec.accent} dark={dark} />,
+      <WallpaperView key="pattern" pattern={name} width={width} height={height} ground={base} accent={spec.accent} dark={dark} photo={photo} />,
       glass ? <View key="haze" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: glassHaze(spec.side) }]} /> : null,
     ];
   } else if (spec?.kind === 'glow') {
@@ -171,7 +172,7 @@ export function useBackdropSpec(): BackdropSpec | null {
     // Under glass the pattern lies where the glass's wallpaper would, on its ground; else on the style's.
     const glass = look.look === 'glass' && takesGlass(look.style);
     const ground = glass ? wallLayers(side, accent).base : colors.background;
-    pattern = { name: look.wallpaper as Pattern, ground, dark: isDarkGround(ground), glass };
+    pattern = { name: look.wallpaper as Pattern, ground, dark: isDarkGround(ground), glass, photo: look.wallpaperPhoto };
   }
   return { kind, side, accent, sheet: kind === 'wall' && look.glassKind === 'sheet', pattern };
 }

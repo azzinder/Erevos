@@ -1,12 +1,11 @@
-import { useEffect, useState } from 'react';
 import { Image, View } from 'react-native';
 
-import { toBase64 } from '../lib/crypto';
-import { loadPhoto, type PhotoRef } from '../lock/avatar-photos';
+import type { PhotoRef } from '../lock/avatar-photos';
 import type { Avatar } from '../lock/e2e-data';
 import { readableOn, shape } from '../theme/colors';
 import { useTheme } from '../theme/context';
 
+import { useSealedPhoto } from './sealed-photo';
 import { Text } from './ui';
 
 // A contact's picture, drawn from their identity key: two colours and a moon of the second over the
@@ -107,30 +106,9 @@ export function KeyFace({ identity, name, size = 48, avatar = null }: { identity
   );
 }
 
-// Photos opened this time the app is open, by file id, so a list of chats does not open each again.
-const photos = new Map<string, string>();
-
 /** A contact's photo, opened from its sealed file; the picture from their key until it is, or if it is gone. */
 function PhotoFace({ photo, identity, name, size }: { photo: PhotoRef; identity: string; name?: string; size: number }) {
-  const [uri, setUri] = useState(() => photos.get(photo.id) ?? null);
-  useEffect(() => {
-    if (photos.has(photo.id)) {
-      setUri(photos.get(photo.id)!);
-      return;
-    }
-    let active = true;
-    loadPhoto(photo)
-      .then((bytes) => {
-        if (!bytes) return;
-        const opened = `data:image/jpeg;base64,${toBase64(bytes)}`;
-        photos.set(photo.id, opened);
-        if (active) setUri(opened);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [photo]);
+  const uri = useSealedPhoto(photo);
   if (!uri) return <KeyFace identity={identity} name={name} size={size} />;
   return (
     <Image

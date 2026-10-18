@@ -291,3 +291,18 @@ test('a wallpaper lies behind the screens of any style', () => {
   assert.equal(checkedLook({ ...DEFAULT_LOOK, wallpaper: 'photo' }).wallpaper, 'auto');
   assert.equal(checkedLook({}).wallpaper, 'auto');
 });
+
+test('a photo wallpaper keeps its photo in the space, and the password screen\'s copy leaves it out', async () => {
+  const photo = { id: 'ab'.repeat(16), key: 'cd'.repeat(32) };
+  const look = checkedLook({ ...DEFAULT_LOOK, wallpaper: 'photo', wallpaperPhoto: photo });
+  assert.equal(look.wallpaper, 'photo');
+  assert.deepEqual(look.wallpaperPhoto, photo);
+  assert.equal(backdropKind('classic', 'flat', 'photo'), 'pattern');
+  // Without its photo it is the style's own.
+  assert.equal(checkedLook({ ...DEFAULT_LOOK, wallpaper: 'photo' }).wallpaper, 'auto');
+  assert.equal(checkedLook({ ...DEFAULT_LOOK, wallpaper: 'photo', wallpaperPhoto: { id: 'x', key: 'y' } }).wallpaperPhoto, null);
+  await saveLockScreenLook(look);
+  const copy = await loadLockScreenLook();
+  assert.equal(copy.wallpaper, 'auto');
+  assert.equal(copy.wallpaperPhoto, null);
+});

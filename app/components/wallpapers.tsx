@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 
 import { withAlpha } from '../theme/colors';
+import type { PhotoRef } from '../lock/avatar-photos';
 import type { Wallpaper } from '../theme/look';
 
 import { gradientStyle } from './glass';
+import { useSealedPhoto } from './sealed-photo';
 
 // The wallpapers chosen in Appearance, drawn behind the screens of any style (components/backdrop.tsx):
 // dots, a grid, slanted stripes, stars, soft circles of light, or a gradient. Each lies on the
@@ -22,6 +24,8 @@ interface Props {
   ground: string;
   accent: string;
   dark: boolean;
+  /** The owner's photo, for the 'photo' wallpaper. */
+  photo?: PhotoRef | null;
 }
 
 /** Numbers from a seed, the same every time (mulberry32). */
@@ -150,7 +154,22 @@ function Bokeh({ width, height, accent, dark }: { width: number; height: number;
 }
 
 /** A wallpaper over the style's ground, filling its box. */
-export function WallpaperView({ pattern, width, height, ground, accent, dark }: Props) {
+/**
+ * The owner's photo, filling the screen, under a veil of the ground (dark or light as the look is)
+ * so the screens' text reads over it. The plain ground until it is open, or if it is gone.
+ */
+function Photo({ photo, ground, dark }: { photo: PhotoRef | null; ground: string; dark: boolean }) {
+  const uri = useSealedPhoto(photo);
+  if (!uri) return null;
+  return (
+    <>
+      <Image source={{ uri }} resizeMode="cover" style={StyleSheet.absoluteFill} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(ground, dark ? 0.7 : 0.72) }]} />
+    </>
+  );
+}
+
+export function WallpaperView({ pattern, width, height, ground, accent, dark, photo = null }: Props) {
   const ink = withAlpha(accent, pattern === 'grid' ? (dark ? 0.14 : 0.12) : pattern === 'stripes' ? (dark ? 0.07 : 0.06) : dark ? 0.32 : 0.28);
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: ground, overflow: 'hidden' }]}>
@@ -159,6 +178,7 @@ export function WallpaperView({ pattern, width, height, ground, accent, dark }: 
       {pattern === 'stripes' ? <Stripes width={width} height={height} ink={ink} /> : null}
       {pattern === 'stars' ? <Stars width={width} height={height} accent={accent} dark={dark} /> : null}
       {pattern === 'bokeh' ? <Bokeh width={width} height={height} accent={accent} dark={dark} /> : null}
+      {pattern === 'photo' ? <Photo photo={photo} ground={ground} dark={dark} /> : null}
       {pattern === 'gradient' ? (
         <View
           style={[

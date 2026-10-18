@@ -1,4 +1,5 @@
 import { secureGet, secureSet } from '../lib/secure';
+import { isPhotoRef, type PhotoRef } from '../lock/avatar-photos';
 
 import { DEFAULT_CUSTOM_GROUND, FRAME_TEXTS, isFixed, PALETTE_CHOICES, STYLES, THEMES, type FrameText, type PaletteChoice, type PaletteStyle, type StyleName, type ThemePref } from './colors';
 import { GLASS_KINDS, LOOK_NAMES, type GlassKind, type LookName } from './glass';
@@ -25,12 +26,14 @@ export interface Look {
   bubbles: BubbleShape;
   /** The Custom style's background; its accent is customAccent. */
   customGround: string;
-  /** What lies behind the screens: the style's own, a plain ground, or a pattern (components/wallpapers.tsx). */
+  /** What lies behind the screens: the style's own, a plain ground, a pattern (components/wallpapers.tsx) or a photo. */
   wallpaper: Wallpaper;
+  /** The photo of the 'photo' wallpaper, sealed in its own file (lock/avatar-photos.ts). */
+  wallpaperPhoto: PhotoRef | null;
 }
 
-export type Wallpaper = 'auto' | 'plain' | 'dots' | 'grid' | 'stripes' | 'stars' | 'bokeh' | 'gradient';
-export const WALLPAPERS: Wallpaper[] = ['auto', 'plain', 'dots', 'grid', 'stripes', 'stars', 'bokeh', 'gradient'];
+export type Wallpaper = 'auto' | 'plain' | 'dots' | 'grid' | 'stripes' | 'stars' | 'bokeh' | 'gradient' | 'photo';
+export const WALLPAPERS: Wallpaper[] = ['auto', 'plain', 'dots', 'grid', 'stripes', 'stars', 'bokeh', 'gradient', 'photo'];
 
 export type BubbleShape = 'round' | 'square' | 'line';
 export const BUBBLE_SHAPES: BubbleShape[] = ['round', 'square', 'line'];
@@ -48,6 +51,7 @@ export const DEFAULT_LOOK: Look = {
   bubbles: 'round',
   customGround: DEFAULT_CUSTOM_GROUND,
   wallpaper: 'auto',
+  wallpaperPhoto: null,
 };
 
 const KEY = 'erevos.look';
@@ -71,12 +75,17 @@ export function checkedLook(value: unknown): Look {
     glassKind: pick(GLASS_KINDS, o.glassKind, DEFAULT_LOOK.glassKind),
     bubbles: pick(BUBBLE_SHAPES, o.bubbles, DEFAULT_LOOK.bubbles),
     customGround: hex(o.customGround, DEFAULT_LOOK.customGround),
-    wallpaper: pick(WALLPAPERS, o.wallpaper, DEFAULT_LOOK.wallpaper),
+    // A photo wallpaper without its photo (as on the password screen's copy) is the style's own.
+    wallpaper: o.wallpaper === 'photo' && !isPhotoRef(o.wallpaperPhoto) ? 'auto' : pick(WALLPAPERS, o.wallpaper, DEFAULT_LOOK.wallpaper),
+    wallpaperPhoto: isPhotoRef(o.wallpaperPhoto) ? { id: o.wallpaperPhoto.id, key: o.wallpaperPhoto.key } : null,
   };
 }
 
 export async function saveLockScreenLook(look: Look): Promise<void> {
-  await secureSet(KEY, JSON.stringify(look));
+  // The copy is not sealed: a photo wallpaper's key stays in the space, and the password screen
+  // shows the style's own.
+  const shown = look.wallpaper === 'photo' ? { ...look, wallpaper: 'auto' as const } : look;
+  await secureSet(KEY, JSON.stringify({ ...shown, wallpaperPhoto: null }));
 }
 
 export async function loadLockScreenLook(): Promise<Look> {

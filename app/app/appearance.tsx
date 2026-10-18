@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 
-import { Button, Card, Chip, Page, Row, SectionTitle, Sheet, Text } from '../components/ui';
+import { Button, Card, Chip, Page, Row, SectionTitle, Sheet, Text, TextButton } from '../components/ui';
 import {
   buildColors,
   customAccentChoices,
@@ -26,6 +26,8 @@ import {
 import { bubbleStyles } from '../theme/bubbles';
 import { useStyles, useTheme } from '../theme/context';
 import { GLASS_KINDS, LOOK_NAMES, type GlassKind, type LookName } from '../theme/glass';
+import { pickWallpaper } from '../lib/pick-avatar';
+import { savePhoto } from '../lock/avatar-photos';
 import { BUBBLE_SHAPES, WALLPAPERS, type BubbleShape, type Wallpaper } from '../theme/look';
 
 // Appearance, as in LPHL FASOULI's settings: flat or glass (as on lphl.nekten.eu), the style,
@@ -54,6 +56,7 @@ const WALLPAPER_LABELS: Record<Wallpaper, string> = {
   stars: 'Stars',
   bokeh: 'Lights',
   gradient: 'Gradient',
+  photo: 'Photo',
 };
 const THEME_LABELS: Record<ThemePref, string> = { system: 'System', light: 'Light', dark: 'Dark' };
 const FRAME_TEXT_LABELS: Record<FrameText, string> = { white: 'White', palette: 'As in the palette', custom: 'My color' };
@@ -125,6 +128,19 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
   const styles = useStyles(makeStyles);
   const [pickColor, setPickColor] = useState(false);
   const [pickTextColor, setPickTextColor] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+
+  /** A photo of the owner's as the wallpaper, sealed in its own file. */
+  async function choosePhoto() {
+    setPhotoError('');
+    try {
+      const bytes = await pickWallpaper();
+      if (!bytes) return;
+      await setLook({ wallpaper: 'photo', wallpaperPhoto: await savePhoto(bytes) });
+    } catch (error) {
+      setPhotoError(error instanceof Error ? error.message : 'The photo could not be read.');
+    }
+  }
 
   // Nocturne, Neon, Matrix, Paper, Aurora and Custom have their own colours, light or dark as they
   // are: as on the LPHL site, the theme and the text on coloured areas wait, and a palette leaves
@@ -275,12 +291,29 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
       <SectionTitle title="Wallpaper" />
       <Row wrap>
         {WALLPAPERS.map((w) => (
-          <Chip key={w} label={WALLPAPER_LABELS[w]} selected={look.wallpaper === w} onPress={() => setLook({ wallpaper: w })} />
+          <Chip
+            key={w}
+            label={WALLPAPER_LABELS[w]}
+            selected={look.wallpaper === w}
+            onPress={() => (w === 'photo' && !look.wallpaperPhoto ? void choosePhoto() : setLook({ wallpaper: w }))}
+          />
         ))}
       </Row>
+      {look.wallpaper === 'photo' ? (
+        <Row wrap>
+          <TextButton title="Change photo" onPress={() => void choosePhoto()} />
+        </Row>
+      ) : null}
       <Text variant="caption" tone="faint">
-        Drawn faintly in the accent, behind every screen. Style default keeps {styleName}'s own.
+        {look.wallpaper === 'photo'
+          ? 'Your photo, made smaller and drawn anew so nothing it said besides its picture is kept, then sealed. A veil over it keeps the text readable.'
+          : `Drawn faintly in the accent, behind every screen. Style default keeps ${styleName}'s own.`}
       </Text>
+      {photoError ? (
+        <Text variant="caption" color={colors.danger}>
+          {photoError}
+        </Text>
+      ) : null}
 
       <SectionTitle title="Messages" />
       <Row wrap>

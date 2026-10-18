@@ -6,14 +6,26 @@ import { NoCameraError } from './pick-photo';
 
 // A photo for a contact's picture, from the phone's photos or its camera: cut square by the owner,
 // made 256 points wide and drawn anew as a JPEG, so nothing the photo said besides its picture
-// (a place, a phone) is kept. The picker's copy and ours are deleted once read. On a computer,
-// pick-avatar.web.ts.
+// (a place, a phone) is kept. A wallpaper's is drawn anew the same way, at most 1080 points wide.
+// The picker's copy and ours are deleted once read. On a computer, pick-avatar.web.ts.
 
 export const SIDE = 256;
+export const WALL = 1080;
 
 /** The photo's bytes, or null if the owner went back. */
-export async function pickAvatar(from: 'photos' | 'camera'): Promise<Uint8Array | null> {
-  const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1, exif: false, allowsEditing: true, aspect: [1, 1] };
+export function pickAvatar(from: 'photos' | 'camera'): Promise<Uint8Array | null> {
+  return pick(from, true);
+}
+
+/** A wallpaper's photo, from the phone's photos, or null if the owner went back. */
+export function pickWallpaper(): Promise<Uint8Array | null> {
+  return pick('photos', false);
+}
+
+async function pick(from: 'photos' | 'camera', square: boolean): Promise<Uint8Array | null> {
+  const options: ImagePicker.ImagePickerOptions = square
+    ? { mediaTypes: ['images'], quality: 1, exif: false, allowsEditing: true, aspect: [1, 1] }
+    : { mediaTypes: ['images'], quality: 1, exif: false, allowsEditing: false };
   let picked: ImagePicker.ImagePickerResult;
   if (from === 'camera') {
     const allowed = await ImagePicker.requestCameraPermissionsAsync();
@@ -25,8 +37,9 @@ export async function pickAvatar(from: 'photos' | 'camera'): Promise<Uint8Array 
   const asset = picked.canceled ? null : picked.assets[0];
   if (!asset) return null;
   try {
-    const image = await ImageManipulator.manipulate(asset.uri).resize({ width: SIDE, height: SIDE }).renderAsync();
-    const saved = await image.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
+    const width = square ? SIDE : Math.min(WALL, asset.width || WALL);
+    const image = await ImageManipulator.manipulate(asset.uri).resize(square ? { width, height: width } : { width }).renderAsync();
+    const saved = await image.saveAsync({ compress: square ? 0.85 : 0.8, format: SaveFormat.JPEG });
     const file = new File(saved.uri);
     try {
       return await file.bytes();

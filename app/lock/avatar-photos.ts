@@ -1,10 +1,12 @@
 import { decryptBytes, encryptBytes, fromHex, randomBytes, toHex } from '../lib/crypto';
 import { deleteFile, readBytes, writeBytes } from '../lib/files';
 
-// The photo given to a contact as their picture, in its own file in the app's folder, sealed with
-// a key of its own, as voice messages are (lock/voice-clips.ts). The key and the file's name are
-// kept only in the contact (lock/e2e-data.ts), itself sealed in its space: without them the file is
-// noise, and its name tells nothing. Changing the picture, or forgetting the contact, deletes it.
+// The photo given to a contact as their picture, or chosen as a wallpaper, in its own file in the
+// app's folder, sealed with a key of its own, as voice messages are (lock/voice-clips.ts). The key
+// and the file's name are kept only in the contact (lock/e2e-data.ts) or the look (theme/look.ts),
+// themselves sealed in their space: without them the file is noise, and its name tells nothing.
+// Changing a contact's picture, or forgetting the contact, deletes it. A wallpaper's stays while a
+// look may still name it (a chat's look starts as a copy of the space's).
 
 /** Where a contact's photo is: its file's id and key, hex. */
 export type PhotoRef = { id: string; key: string };
