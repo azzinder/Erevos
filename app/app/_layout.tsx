@@ -9,7 +9,7 @@ import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
 import { runAutoBackup } from '../lib/backup-folder';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
-import { startReceiver } from '../lib/receiver';
+import { setAppShown, startReceiver } from '../lib/receiver';
 import { forgetSpaceChats } from '../lib/space-chats';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
@@ -216,8 +216,14 @@ function Shell({ phase, error, lockState, onUnlock }: {
   );
 }
 
-// Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts).
+// Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), and tells
+// it whether the app shows: only then do contacts hear the phone is open.
 function Receiver() {
   useEffect(() => startReceiver(), []);
+  useEffect(() => {
+    setAppShown(AppState.currentState === 'active');
+    const subscription = AppState.addEventListener('change', (state) => setAppShown(state === 'active'));
+    return () => subscription.remove();
+  }, []);
   return null;
 }

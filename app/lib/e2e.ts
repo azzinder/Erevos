@@ -1,4 +1,4 @@
-import { checkedAvatar, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, saveE2EData, type Avatar, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
+import { checkedAvatar, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, saveE2EData, type Avatar, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
 
 import { isTag, newTag } from '../lock/history';
 
@@ -40,6 +40,12 @@ import { deletePhoto } from '../lock/avatar-photos';
 // and what came or was read. Their Erevos deletes the messages in time; nothing
 // makes a changed app do it, or stops a screenshot.
 //
+// A phone says it is open (`on`: for how many seconds from `onAt`, by its clock) in what it writes,
+// in answer to a contact whose chat is open and asks (`ask`), and with that asking. Nothing else
+// says it, so the relay sees no more than a message now and then between two people talking. A
+// chat set to appear offline (Contact.hide) says nothing of the kind, asks nothing, and holds what
+// came and was read until it next writes: then it shows open for ONLINE_AFTER_WRITE.
+//
 // Every call runs after the one before it ends, so two calls never move the same conversation
 // from the same state. A message key is never used twice: a packet is only handed back once the
 // conversation that sealed it has been saved past it.
@@ -54,6 +60,12 @@ export type Erase = { all: true } | { tag: string };
 
 // The most tags one message says came, or were read.
 const MAX_TAGS = 200;
+
+/** Seconds a chat shows open to a contact after writing to them, and after saying it is open. */
+export const ONLINE_AFTER_WRITE = 120;
+export const ONLINE = 75;
+// The longest a phone may say it stays open, seconds.
+const MAX_ON = 600;
 
 // `timer` is null in a message from an Erevos before disappearing messages. `lasts`: seconds this
 // one message lasts, whatever the chat's timer, or 0. `got` and `read`: the tags of the other
@@ -74,13 +86,22 @@ type Message = {
   read: string[];
   voice: VoicePart | null;
   file: FileOffer | null;
+  on: number;
+  onAt: number;
+  ask: boolean;
 };
 
 /** What else a message can carry. */
-export type Extra = { erase?: Erase | null; lasts?: number; got?: string[]; read?: string[]; at?: Where };
+// `on`: seconds this phone says it stays open (0: says nothing). `ask`: asks them to say whether theirs is.
+export type Extra = { erase?: Erase | null; lasts?: number; got?: string[]; read?: string[]; at?: Where; on?: number; ask?: boolean };
 
 /** Where a chat's own queue is: its relay and that relay's key for sealed sends (base64url). */
 export type Where = { relay: string; relayKey: string };
+
+const isOn = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v > 0 && v <= MAX_ON;
+const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+// Says nothing of being open.
+const SAYS_NOTHING = { on: 0, onAt: 0, ask: false };
 
 const tags = (value: unknown): string[] => (Array.isArray(value) ? value.filter(isTag).slice(0, MAX_TAGS) : []);
 
@@ -101,7 +122,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt, lasts, got, read, voice, file }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -116,6 +137,8 @@ function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt
       ...(read.length > 0 ? { read } : {}),
       ...(voice ? { voice: encodeVoice(voice) } : {}),
       ...(file ? { file } : {}),
+      ...(on > 0 ? { on, onAt } : {}),
+      ...(ask ? { ask } : {}),
     }),
   );
 }
@@ -149,9 +172,12 @@ function decodeMessage(bytes: Uint8Array): Message {
       read: tags(value.read),
       voice: decodeVoice(value.voice),
       file: readOffer(value.file),
+      on: isOn(value.on) ? value.on : 0,
+      onAt: isTime(value.onAt) ? value.onAt : 0,
+      ask: value.ask === true,
     };
   } catch {
-    return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null };
+    return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING };
   }
 }
 
@@ -177,7 +203,16 @@ export function fromBase64Url(text: string): Uint8Array {
 }
 
 /** A contact as the chat shows it. `name` is empty until this chat gives one. */
-export type ContactInfo = { identity: string; sender: string; name: string; timer: number; request: boolean; look: Look | null; avatar: Avatar | null };
+export type ContactInfo = {
+  identity: string;
+  sender: string;
+  name: string;
+  timer: number;
+  request: boolean;
+  look: Look | null;
+  avatar: Avatar | null;
+  hide: boolean;
+};
 
 export type Received =
   // `timer`: seconds this message lasts once read, 0 for ever. `timerChanged`: the other phone set
@@ -199,6 +234,10 @@ export type Received =
       voice: VoicePart | null;
       // A photo or file, still on the relay.
       file: FileOffer | null;
+      // Until when they said their phone is open, milliseconds on this phone's clock, or 0.
+      online: number;
+      // They ask whether this phone is open.
+      ask: boolean;
     }
   // Not encrypted (as messages before this version were), not for this account, or a replay.
   | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' };
@@ -224,6 +263,10 @@ export class E2E {
   private readonly account: Uint8Array;
   private readonly store: (data: E2EData) => Promise<void>;
   private queue: Promise<unknown> = Promise.resolve();
+  // Until when each contact said their phone is open, and when this one last said it to them.
+  // Only in memory: none of it is kept.
+  private readonly online = new Map<string, number>();
+  private readonly told = new Map<string, number>();
 
   private constructor(data: E2EData, account: Uint8Array, identity: Uint8Array, bundle: Uint8Array, store: (data: E2EData) => Promise<void>) {
     this.data = data;
@@ -270,7 +313,55 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, timer, request, look, avatar }) => ({ identity, sender, name, timer, request, look, avatar }));
+    return this.data.contacts.map(({ identity, sender, name, timer, request, look, avatar, hide }) => ({
+      identity,
+      sender,
+      name,
+      timer,
+      request,
+      look,
+      avatar,
+      hide,
+    }));
+  }
+
+  /** Until when a contact said their phone is open, milliseconds, or 0 if it is not known to be. */
+  onlineUntil(identity: string, now = Date.now()): number {
+    const until = this.online.get(identity) ?? 0;
+    return until > now ? until : 0;
+  }
+
+  /** When this phone last said to a contact that it is open, milliseconds, or 0. */
+  toldAt(identity: string): number {
+    return this.told.get(identity) ?? 0;
+  }
+
+  /**
+   * Makes the chat with a contact appear offline to them, or not. Shown again, what was held
+   * goes with the next message to them, whatever it is.
+   */
+  setHidden(identity: string, hide: boolean): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error('No such contact.');
+      await this.save(this.withContact({ ...contact, hide }));
+    });
+  }
+
+  /**
+   * Keeps, without telling them, that these messages of theirs came (`got`) or were read here,
+   * while their chat appears offline. Told with the next message this chat writes to them.
+   */
+  hold(identity: string, kind: 'got' | 'read', held: string[]): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact || held.length === 0) return;
+      const add = (list: string[]) => [...list.filter((tag) => !held.includes(tag)), ...held].slice(-MAX_HELD);
+      // A message read needs no word that it came.
+      const heldGot = kind === 'got' ? add(contact.heldGot) : contact.heldGot.filter((tag) => !held.includes(tag));
+      const heldRead = kind === 'read' ? add(contact.heldRead) : contact.heldRead;
+      await this.save(this.withContact({ ...contact, heldGot, heldRead }));
+    });
   }
 
   /** Accepts a message request: the chat with them is like any other from now on. */
@@ -361,7 +452,7 @@ export class E2E {
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ from, ...at, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null }),
+        encodeMessage({ from, ...at, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING }),
       );
       await this.save(
         this.withContact({
@@ -376,6 +467,9 @@ export class E2E {
           request: false,
           look: this.find(identity)?.look ?? null,
           avatar: this.find(identity)?.avatar ?? null,
+          hide: false,
+          heldGot: [],
+          heldRead: [],
         }),
       );
       return { identity, added: true };
@@ -395,7 +489,7 @@ export class E2E {
     identity: string,
     text: string,
     from: string,
-    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' } }: Extra = {},
+    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false }: Extra = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -405,7 +499,23 @@ export class E2E {
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
       const { timer, timerAt } = contact;
       const once = text ? lasts : 0;
-      const message = { from, ...at, text, tag, erase: text ? null : erase, timer, timerAt, lasts: once, got: tags(got), read: tags(read), voice: null, file: null };
+      const message = {
+        from,
+        ...at,
+        text,
+        tag,
+        erase: text ? null : erase,
+        timer,
+        timerAt,
+        lasts: once,
+        got: tags(got),
+        read: tags(read),
+        voice: null,
+        file: null,
+        on: isOn(on) ? on : 0,
+        onAt: 0,
+        ask,
+      };
       // Writing to them accepts a request; telling them only what came or was read never does.
       const [packet] = await this.sealFor(contact, [message], !!text);
       const first = contact.first ? fromBase64(contact.first) : null;
@@ -445,6 +555,7 @@ export class E2E {
         read: [],
         voice,
         file: null,
+        ...SAYS_NOTHING,
       }));
       const packets = await this.sealFor(contact, messages, true);
       const first = contact.first ? fromBase64(contact.first) : null;
@@ -470,7 +581,7 @@ export class E2E {
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
       const tag = newTag();
       const { timer, timerAt } = contact;
-      const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer };
+      const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...SAYS_NOTHING };
       const [packet] = await this.sealFor(contact, [message], true);
       const first = contact.first ? fromBase64(contact.first) : null;
       const { sender, relay, relayKey } = contact;
@@ -479,17 +590,35 @@ export class E2E {
   }
 
   // Seals messages in turn in the conversation to send in, and keeps it moved past them. Writing
-  // to them (`writes`) accepts their request, if they made one.
+  // to them (`writes`) accepts their request, if they made one, and says this phone is open for a
+  // while. A chat that appears offline says nothing else of being open; what it held goes with
+  // what it writes, and once it shows again with whatever goes next.
   private async sealFor(contact: Contact, messages: Message[], writes: boolean): Promise<Uint8Array[]> {
+    const now = Date.now();
+    const release = writes || !contact.hide;
+    const said = messages.map((message, i) => {
+      const on = writes ? Math.max(message.on, ONLINE_AFTER_WRITE) : contact.hide ? 0 : message.on;
+      const first = i === 0 && release;
+      return {
+        ...message,
+        on,
+        onAt: on > 0 ? now : 0,
+        ask: message.ask && !contact.hide,
+        got: first ? tags([...message.got, ...contact.heldGot.filter((tag) => !contact.heldRead.includes(tag))]) : message.got,
+        read: first ? tags([...message.read, ...contact.heldRead]) : message.read,
+      };
+    });
     let conversation = fromBase64(contact.conversations[0]);
     const packets: Uint8Array[] = [];
-    for (const message of messages) {
+    for (const message of said) {
       const sealed = await core.seal(conversation, encodeMessage(message));
       conversation = sealed.conversation;
       packets.push(sealed.packet);
     }
     const request = contact.request && !writes;
-    await this.save(this.withContact({ ...contact, request, conversations: [toBase64(conversation), ...contact.conversations.slice(1)] }));
+    const held = release ? { heldGot: [], heldRead: [] } : {};
+    await this.save(this.withContact({ ...contact, ...held, request, conversations: [toBase64(conversation), ...contact.conversations.slice(1)] }));
+    if (said.some((message) => message.on > 0)) this.told.set(contact.identity, now);
     return packets;
   }
 
@@ -544,11 +673,25 @@ export class E2E {
       request: known ? known.request : true,
       look: known?.look ?? null,
       avatar: known?.avatar ?? null,
+      hide: known?.hide ?? false,
+      heldGot: known?.heldGot ?? [],
+      heldRead: known?.heldRead ?? [],
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
-    const { text, tag, erase, got, read, voice, file } = message;
+    const { text, tag, erase, got, read, voice, file, ask } = message;
     const { request } = contact;
-    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, ...timing.received };
+    const online = this.heard(identity, message);
+    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, online, ask, ...timing.received };
+  }
+
+  // Keeps until when a contact said their phone is open. Counted from when they said it, so a message
+  // that waited on the relay says nothing any more; a clock ahead of this one's counts from now.
+  private heard(identity: string, { on, onAt }: Message): number {
+    if (on <= 0) return this.onlineUntil(identity);
+    const now = Date.now();
+    const until = Math.min(onAt || now, now) + on * 1000;
+    if (until > now) this.online.set(identity, Math.max(until, this.online.get(identity) ?? 0));
+    return this.onlineUntil(identity, now);
   }
 
   private async open(packet: Uint8Array): Promise<Received> {
@@ -576,8 +719,9 @@ export class E2E {
           }),
         );
         const { identity, request } = contact;
-        const { text, tag, erase, got, read, voice, file } = message;
-        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, file, ...timing.received };
+        const { text, tag, erase, got, read, voice, file, ask } = message;
+        const online = this.heard(identity, message);
+        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, file, online, ask, ...timing.received };
       }
     }
     return { kind: 'refused', reason: 'unknown' };

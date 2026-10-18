@@ -11,7 +11,7 @@ import { contactLink, parseContact } from '../lib/contact-code';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
-import { E2E, NoKeyError, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
+import { E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
 import { checkedAvatar, FILE, loadE2EData, MAX_NAME } from '../lock/e2e-data';
 import { DEFAULT_LOOK } from '../theme/look';
@@ -69,7 +69,7 @@ t('two chats add each other through a link and talk both ways', async () => {
   const hello = message(await bob.e2e.receive(pending.first));
   assert.equal(hello.added, true);
   assert.equal(hello.text, '');
-  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true, look: null, avatar: null }]);
+  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true, look: null, avatar: null, hide: false }]);
   await alice.e2e.firstSent(added.identity);
   assert.deepEqual(alice.e2e.pending(), []);
 
@@ -323,6 +323,62 @@ t('a chat timer travels with the messages, the later setting wins, and old messa
   await assert.rejects(alice.e2e.setTimer(identity, 1.5));
   await assert.rejects(alice.e2e.seal(identity, 'x', alice.from, { lasts: -5 }));
   await assert.rejects(alice.e2e.setTimer('00'.repeat(32), 60));
+});
+
+t('a phone says it is open when it writes or answers, and a chat that appears offline holds its marks', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  const aliceId = hello.identity;
+  await alice.e2e.firstSent(bobId);
+  await bob.e2e.acceptRequest(aliceId);
+  // Nothing said yet: not known to be open.
+  assert.equal(hello.online, 0);
+  assert.equal(bob.e2e.onlineUntil(aliceId), 0);
+
+  // Asking says this phone is open too.
+  const before = Date.now();
+  const asked = message(await bob.e2e.receive((await alice.e2e.seal(bobId, '', alice.from, { ask: true, on: ONLINE })).packet));
+  assert.equal(asked.ask, true);
+  assert.ok(asked.online >= before + ONLINE * 1000 - 50 && asked.online <= Date.now() + ONLINE * 1000);
+  assert.equal(bob.e2e.onlineUntil(aliceId), asked.online);
+  assert.ok(alice.e2e.toldAt(bobId) >= before);
+  // Gone by then.
+  assert.equal(bob.e2e.onlineUntil(aliceId, asked.online + 1), 0);
+
+  // Bob's chat with Alice appears offline: no word of being open, no asking, marks held.
+  await bob.e2e.setHidden(aliceId, true);
+  assert.equal(bob.e2e.contacts()[0].hide, true);
+  const one = await alice.e2e.seal(bobId, 'one', alice.from);
+  const two = await alice.e2e.seal(bobId, 'two', alice.from);
+  message(await bob.e2e.receive(one.packet));
+  message(await bob.e2e.receive(two.packet));
+  await bob.e2e.hold(aliceId, 'got', [one.tag, two.tag]);
+  await bob.e2e.hold(aliceId, 'read', [one.tag]);
+  const quiet = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, '', bob.from, { ask: true, on: ONLINE })).packet));
+  assert.deepEqual([quiet.ask, quiet.online, quiet.got, quiet.read], [false, 0, [], []]);
+  // Held across launches, sealed.
+  const again = await E2E.open('space', 1, bob.key);
+  assert.deepEqual(
+    [again.contacts()[0].hide, (await loadE2EData('space', 1, bob.key)).contacts[0].heldRead],
+    [true, [one.tag]],
+  );
+
+  // Bob writes: open for a while, and what was held goes with it, read beating came.
+  const reply = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'here', bob.from)).packet));
+  assert.equal(reply.text, 'here');
+  assert.ok(reply.online >= Date.now() + ONLINE_AFTER_WRITE * 1000 - 1000);
+  assert.deepEqual([reply.got, reply.read], [[two.tag], [one.tag]]);
+  // Told once only.
+  const after = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'and again', bob.from)).packet));
+  assert.deepEqual([after.got, after.read], [[], []]);
+
+  // Shown again, what is held goes with the next message, whatever it is.
+  await bob.e2e.hold(aliceId, 'read', [two.tag]);
+  await bob.e2e.setHidden(aliceId, false);
+  const shown = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, '', bob.from, { on: ONLINE })).packet));
+  assert.deepEqual([shown.read, shown.online > 0], [[two.tag], true]);
 });
 
 t('a voice message travels in parts, each with its tag, and comes back whole', async () => {

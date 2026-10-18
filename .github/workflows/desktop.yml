@@ -8,6 +8,7 @@ name: desktop
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   linux:
@@ -57,8 +58,11 @@ jobs:
           name: desktop-web
           path: desktop/web
 
+  # A Mac minute counts as ten of the free ones, so the Mac build runs only for main, or when
+  # started by hand (Actions, desktop, Run workflow).
   macos:
     needs: linux
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,6 +79,10 @@ jobs:
         working-directory: desktop
       - name: Package for macOS (Apple silicon and Intel)
         working-directory: desktop
+        # electron-builder leaves the app unsigned in a pull request's run unless told otherwise,
+        # and an unsigned app does not start on Apple silicon. The signature is ad hoc ("-").
+        env:
+          CSC_FOR_PULL_REQUEST: "true"
         run: npx electron-builder --mac dmg --universal --publish never
       - name: Open the disk image and start the app
         run: |

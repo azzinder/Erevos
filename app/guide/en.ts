@@ -109,10 +109,26 @@ Under each of your messages to a contact, **✓** says the relay took it, **✓�
 **✓✓✓** that they read it. Their phone tells yours, inside the encryption, the next time each looks at the relay. A
 message counts as read once its chat shows on the screen. Messages to a nearby phone have no marks.
 
-- **They see when you read:** your phone tells theirs, as theirs tells yours. There is no switch to stop it yet.
+- **They see when you read:** your phone tells theirs, as theirs tells yours, unless that chat appears offline (below).
 - **When messages come:** Erevos looks at the relay every few seconds while it is open and unlocked, on any screen,
   and the home screen moves the chat to the top by itself. Closed, locked, or long in the background, it does not:
   messages wait on the relay, up to 14 days, and come once Erevos opens again. There are no notifications yet.
+
+### Online, and appearing offline
+
+While a contact's chat is open on your screen, Erevos asks their phone now and then whether it is open, and says yours
+is. If theirs is, the chat says **Online** under their name with a green dot, and the home screen shows the dot on
+their picture. Writing to someone also shows you online to them for two minutes. All of it goes inside the encryption,
+only between you and that contact: the relay sees a message now and then, as with any chat. There is no "last seen".
+
+To hide it from one contact, open their chat, tap its name and then **Appear offline: off**. With it on:
+
+- **They do not see you online**, and your phone sends them nothing while you read.
+- **Their messages stay ✓** on their phone, not ✓✓ or ✓✓✓, while you read them.
+- **When you write to them**, you show online for two minutes, and every message of theirs you read turns ✓✓✓ at once.
+- **You do not see them online either**, since your phone does not ask.
+
+It is set for each chat, on this phone only. Turn it off again and they see what you read with your next look at the relay.
 
 ### Names and deleting
 
