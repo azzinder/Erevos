@@ -75,6 +75,10 @@ jobs:
         working-directory: desktop
       - name: Package for macOS (Apple silicon and Intel)
         working-directory: desktop
+        # electron-builder leaves the app unsigned in a pull request's run unless told otherwise,
+        # and an unsigned app does not start on Apple silicon. The signature is ad hoc ("-").
+        env:
+          CSC_FOR_PULL_REQUEST: "true"
         run: npx electron-builder --mac dmg --universal --publish never
       - name: Open the disk image and start the app
         run: |
