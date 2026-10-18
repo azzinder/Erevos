@@ -5,6 +5,7 @@ import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
 import {
+  CAN_AUTO_BACKUP,
   CAN_BACK_UP,
   changeAutoBackup,
   folderLabel,
@@ -18,6 +19,7 @@ import {
   type AutoBackup,
 } from '../lib/backup-folder';
 import { pickFile, TooLargeError } from '../lib/pick-file';
+import { SHELL } from '../lib/shell';
 import { holdReceiver } from '../lib/receiver';
 import { backupKey, makeBackup, openBackup, restoreBackup, WrongBackupPasswordError, type Backup } from '../lock/backup';
 import { useLock } from '../lock/context';
@@ -42,12 +44,15 @@ const CHOICES = [
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-// What Erevos runs on here: the desktop app is the web build.
-const DEVICE = Platform.OS === 'web' ? 'computer' : 'phone';
+// What Erevos runs on here: the desktop app is the web build, and so is the web app in a browser,
+// on an iPhone or a computer.
+const DEVICE = Platform.OS !== 'web' ? 'phone' : SHELL ? 'computer' : 'device';
 const PLACES =
-  Platform.OS === 'web'
-    ? 'Choose a folder, on this computer, a USB stick or a folder a cloud app keeps in step, then a password for the backup.'
-    : 'Choose a folder, on the phone, a memory card or a cloud app that shows its folders, then a password for the backup.';
+  Platform.OS !== 'web'
+    ? 'Choose a folder, on the phone, a memory card or a cloud app that shows its folders, then a password for the backup.'
+    : SHELL
+      ? 'Choose a folder, on this computer, a USB stick or a folder a cloud app keeps in step, then a password for the backup.'
+      : 'Choose a password for the backup, then where to save the file: on an iPhone in Files, iCloud Drive or another app, on a computer in its downloads.';
 
 export default function Backups() {
   const { lockNow } = useLock();
@@ -157,9 +162,14 @@ export default function Backups() {
   async function submit(password: string): Promise<boolean | void> {
     if (!asking) return;
     if (asking.kind === 'make') {
-      const { name, size } = await writeBackup(asking.folder, await makeBackup(await backupKey(password)));
+      const backup = await makeBackup(await backupKey(password));
       setAsking(null);
-      say(`Saved ${name} (${sizeText(size)}) in ${folderLabel(asking.folder)}. Keep its password: nothing opens the backup without it.`);
+      try {
+        const { name, size, where } = await writeBackup(asking.folder, backup);
+        say(`Saved ${name} (${sizeText(size)}) in ${where ?? folderLabel(asking.folder)}. Keep its password: nothing opens the backup without it.`);
+      } catch (error) {
+        say(errorText(error), true);
+      }
     } else if (asking.kind === 'auto') {
       await startAutoBackup(asking.every, asking.folder, await backupKey(password));
       setAsking(null);
@@ -211,35 +221,45 @@ export default function Backups() {
         </Row>
       </Card>
 
-      <SectionTitle title="Automatic backups" />
-      <Row wrap>
-        {CHOICES.map((choice) => (
-          <Chip key={choice.every} label={choice.label} selected={every === choice.every} onPress={() => void choose(choice.every)} disabled={busy} />
-        ))}
-      </Row>
-      {auto ? (
-        <Card>
-          <Text variant="bodyStrong">Into {folderLabel(auto.folder)}</Text>
-          <Text variant="caption" tone="muted" style={hint}>
-            {auto.last ? `Last one ${whenText(auto.last)}.` : 'None made yet.'} Made when Erevos opens and the last one is
-            older than that. The folder keeps the {KEEP} newest.
-          </Text>
-          {auto.error ? (
-            <Text variant="caption" color={colors.danger} style={hint}>
-              The last one failed: {auto.error} Erevos tries again next time it opens.
-            </Text>
-          ) : null}
-          <Row wrap>
-            <Button title={busy ? 'One moment…' : 'Back up now'} kind="secondary" compact onPress={backUpNow} disabled={busy} />
-            <Button title="Change folder" kind="secondary" compact onPress={moveAuto} disabled={busy} />
-            <Button title="Change password" kind="secondary" compact onPress={changePassword} disabled={busy} />
-          </Row>
-        </Card>
-      ) : (
+      {CAN_AUTO_BACKUP ? null : (
         <Text variant="caption" tone="muted" style={hint}>
-          Erevos can make a backup by itself every day or week, into a folder you choose, with a password you set once.
+          A browser saves a file only when you tap, so here Erevos makes no backups by itself. Make one now and then.
         </Text>
       )}
+
+      {CAN_AUTO_BACKUP ? (
+        <>
+          <SectionTitle title="Automatic backups" />
+          <Row wrap>
+            {CHOICES.map((choice) => (
+              <Chip key={choice.every} label={choice.label} selected={every === choice.every} onPress={() => void choose(choice.every)} disabled={busy} />
+            ))}
+          </Row>
+          {auto ? (
+            <Card>
+              <Text variant="bodyStrong">Into {folderLabel(auto.folder)}</Text>
+              <Text variant="caption" tone="muted" style={hint}>
+                {auto.last ? `Last one ${whenText(auto.last)}.` : 'None made yet.'} Made when Erevos opens and the last one is
+                older than that. The folder keeps the {KEEP} newest.
+              </Text>
+              {auto.error ? (
+                <Text variant="caption" color={colors.danger} style={hint}>
+                  The last one failed: {auto.error} Erevos tries again next time it opens.
+                </Text>
+              ) : null}
+              <Row wrap>
+                <Button title={busy ? 'One moment…' : 'Back up now'} kind="secondary" compact onPress={backUpNow} disabled={busy} />
+                <Button title="Change folder" kind="secondary" compact onPress={moveAuto} disabled={busy} />
+                <Button title="Change password" kind="secondary" compact onPress={changePassword} disabled={busy} />
+              </Row>
+            </Card>
+          ) : (
+            <Text variant="caption" tone="muted" style={hint}>
+              Erevos can make a backup by itself every day or week, into a folder you choose, with a password you set once.
+            </Text>
+          )}
+        </>
+      ) : null}
 
       <SectionTitle title="Restore" />
       <Card>

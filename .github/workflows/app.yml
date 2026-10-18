@@ -28,6 +28,18 @@ jobs:
       # The two-hop checks run two real relays.
       - run: cargo build -p erevos-relay
       - run: npm run check
+      - run: node scripts/build-web-core.mjs
       - run: npx expo export --platform web --output-dir dist
         env:
           EXPO_NO_TELEMETRY: "1"
+      # The web app (pwa/), made and signed with a key thrown away after, then checked as a
+      # server would give it out.
+      - name: Make, sign and check the web app
+        env:
+          EREVOS_RELEASE_PASSPHRASE: only-for-this-check
+        run: |
+          keys=$(mktemp -d)
+          node ../pwa/release.mjs keygen "$keys/release.key" "$keys/release.pub"
+          node ../pwa/build.mjs dist web-app --key "$keys/release.pub" --version 1
+          node ../pwa/release.mjs sign web-app "$keys/release.key"
+          node ../pwa/release.mjs verify web-app "$keys/release.pub"

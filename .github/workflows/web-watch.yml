@@ -1,0 +1,22 @@
+name: web-watch
+
+# Checks, every day, the Erevos web app as the server gives it out (pwa/): that its release is
+# signed with pwa/release-key.pub and every file matches. A server that gave out other code to
+# everyone would fail here; one that did so to a single person would not, which README.md in pwa/
+# says. Runs once the repository variable EREVOS_WEB_URL holds the address (https://…).
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    if: vars.EREVOS_WEB_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node pwa/release.mjs verify "${{ vars.EREVOS_WEB_URL }}"

@@ -7,10 +7,16 @@ import { Alert, Platform, type AlertButton } from 'react-native';
 export type Question = { title: string; message: string; buttons: AlertButton[] };
 
 let host: ((question: Question) => void) | null = null;
+// Asked while no sheet was shown (between screens): asked once one is.
+let waiting: Question | null = null;
 
 /** The sheet that asks on the web, set while it is shown. */
 export function setAlertHost(next: ((question: Question) => void) | null): void {
   host = next;
+  if (host && waiting) {
+    host(waiting);
+    waiting = null;
+  }
 }
 
 export function ask(title: string, message: string, buttons: AlertButton[]): void {
@@ -18,7 +24,8 @@ export function ask(title: string, message: string, buttons: AlertButton[]): voi
     Alert.alert(title, message, buttons);
     return;
   }
-  host?.({ title, message, buttons });
+  if (host) host({ title, message, buttons });
+  else waiting = { title, message, buttons };
 }
 
 /** Asks whether to go on with `action`, a destructive one. True if the owner chose it. */

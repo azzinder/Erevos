@@ -396,6 +396,47 @@ as on the phone, and keeps its contacts, messages and settings sealed the same w
   from one to the other, see [Backups](#backup), and from then on use only the one.
 - **Tested so far** on Linux. The Mac version is built and opened on GitHub's Mac computers, not yet by a person.
 
+## On an iPhone, from the browser {#iphone}
+
+Erevos has no App Store app. On an iPhone it runs as a web app, added to the home screen from Safari, with no Apple
+account. It chats through a relay, end-to-end encrypted as on the phone, and keeps its contacts, messages and settings
+sealed the same way, in Safari's storage for the app.
+
+1. Open the address of the Erevos server you were given in **Safari**. Erevos shows how to add it: tap **Share**,
+   then **Add to Home Screen**, then open Erevos from the home screen. Needs iOS 17 or later.
+2. In Erevos, open **Lock and second password**. Under **This web app** compare the release key's fingerprint with
+   the one you were given with the address, character by character. If it differs, delete the app and tell whoever
+   gave you the address.
+3. Set a password lock (**Lock and second password**). On the web it matters most: see below.
+4. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay).
+
+**How it checks itself.** A web app is code the server sends, so a server that is broken into, or ordered to, could
+send changed code. Erevos does not take that code on trust:
+
+- The first time it opens, it fetches its code with a list of every file and its fingerprint, signed with the
+  release key, which only the person who makes the releases holds; the server does not have it. It checks the
+  signature and every file, keeps them on the iPhone, and from then on runs only those. The server cannot change them.
+- An update is taken only if it is signed with the same key and newer than the one in use; it starts the next time
+  Erevos opens. An unsigned or older one is refused, and Erevos says so.
+- Whoever wants to can check the server: \`node pwa/release.mjs verify https://<address>\` checks the signature and
+  every file the server gives out.
+
+**What is left.** These are real limits; know them:
+
+- **The first time** you open it, you trust the server: it is the one that sends the checking part. Step 2 is how
+  you catch a wrong one.
+- **The checking part itself** (the service worker) is fetched again by Safari at least once a day, and Safari can
+  replace it without asking Erevos. Erevos then checks the new one against the signed release and warns you
+  (**Erevos was tampered with**), but a server that knows how could get past that check. If you see the warning, do
+  not open Erevos from that server again until it is explained. With a password lock your chats stay sealed.
+- **No Bluetooth or nearby link** and no SMS: Safari does not allow them.
+- **Only while it is open:** iOS stops web apps in the background, so messages arrive when you open Erevos; they wait
+  on the relay until then. Notifications come later, and they too would pass through Apple, encrypted.
+- **Backups** are made by hand: **Make a backup** saves the file through the share sheet (Files, iCloud Drive or
+  another app). A browser gives out a file only after a tap, so there are no automatic backups.
+- **Voice messages** recorded on an iPhone are AAC; they play everywhere.
+- **Apple** makes Safari and could change it, as with any app on an iPhone.
+
 ## The test screens {#tests}
 
 Two screens in the home screen's menu are there to test the connections, step by step.

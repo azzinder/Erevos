@@ -3,9 +3,10 @@ import { useRef } from 'react';
 
 import { MAX_VOICE_MS } from './voice';
 
-// Voice messages on a computer (the desktop app, lib/shell.ts), as lib/audio.ts does them on the
-// phone. The browser engine records Opus in WebM at 64 kbit/s, which the phones play too, and plays
-// the phones' AAC. Nothing is written to a file: a recording comes as a blob in memory, and a sound
+// Voice messages on a computer (the desktop app, lib/shell.ts) and in the web app, as lib/audio.ts
+// does them on the phone. The browser engine records Opus in WebM at 64 kbit/s, which the phones
+// play too, and plays the phones' AAC. Safari on an iPhone records AAC in MP4 instead (expo-audio
+// takes the browser's own kind when Opus is not offered), which every Erevos plays. Nothing is written to a file: a recording comes as a blob in memory, and a sound
 // plays from one, let go when it stops.
 
 const OPTIONS: RecordingOptions = {
@@ -51,12 +52,21 @@ export function useVoiceRecorder() {
   return { start, stop };
 }
 
+// Safari plays a sound from memory only when told its kind.
+function soundType(audio: Uint8Array): string {
+  const text = (from: number, to: number) => String.fromCharCode(...audio.subarray(from, to));
+  if (text(4, 8) === 'ftyp') return 'audio/mp4';
+  if (text(0, 4) === 'OggS') return 'audio/ogg';
+  if (audio[0] === 0x1a && audio[1] === 0x45 && audio[2] === 0xdf && audio[3] === 0xa3) return 'audio/webm';
+  return '';
+}
+
 let playing: (() => void) | null = null;
 
 /** As lib/audio.ts: plays a sound, stopping any other first, and returns a call that stops it. */
 export function playVoice(audio: Uint8Array, onEnd: () => void, onTime?: (ms: number) => void): () => void {
   playing?.();
-  const uri = URL.createObjectURL(new Blob([audio as BlobPart]));
+  const uri = URL.createObjectURL(new Blob([audio as BlobPart], { type: soundType(audio) }));
   const player = createAudioPlayer({ uri }, { updateInterval: 250 });
   let done = false;
   const stop = () => {
