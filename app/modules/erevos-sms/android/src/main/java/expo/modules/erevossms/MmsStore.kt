@@ -26,6 +26,7 @@ internal object MmsStore {
   private const val PREFS = "erevos-mms"
   private const val FETCHED = "fetched"
   private const val MAX_FETCHED = 100
+  private const val OWN = "own"
   private val MMS: Uri = Uri.parse("content://mms")
   private val PARTS: Uri = Uri.parse("content://mms/part")
   private const val FROM = 137
@@ -117,7 +118,14 @@ internal object MmsStore {
 
   /** Writes a message that came into Android's MMS store. Returns its row. */
   private fun keep(context: Context, message: MmsPdu.Message, sim: Int): Long {
-    val thread = Telephony.Threads.getOrCreateThreadId(context, message.from.ifEmpty { "Unknown" })
+    // A message to this phone alone says its number: kept, to tell this phone from the others in a group's.
+    if (message.to.size == 1) learnOwn(context, message.to[0])
+    val own = ownNumbers(context)
+    val others = (listOf(message.from) + message.to).filter { it.isNotEmpty() }
+      .filter { n -> own.none { SmsStore.sameNumber(it, n) } }
+      .fold(ArrayList<String>()) { kept, n -> if (kept.none { SmsStore.sameNumber(it, n) }) kept.add(n); kept }
+    val thread = if (others.size > 1) Telephony.Threads.getOrCreateThreadId(context, others.toSet())
+      else Telephony.Threads.getOrCreateThreadId(context, message.from.ifEmpty { "Unknown" })
     val now = System.currentTimeMillis() / 1000
     val values = ContentValues().apply {
       put(Telephony.Mms.THREAD_ID, thread)
@@ -171,7 +179,10 @@ internal object MmsStore {
   // --- Sending ---------------------------------------------------------------------------------
 
   /** Sends a picture, and text with it, to one number. Returns the MMS row, or -1. */
+  /** Sends to one number, or to a group's numbers given comma-separated. */
   fun send(context: Context, address: String, text: String, data: ByteArray?, type: String, sim: Int): Long {
+    val to = SmsStore.numbers(address)
+    if (to.isEmpty()) throw IllegalArgumentException("No number")
     val parts = ArrayList<MmsPdu.Part>()
     if (data != null && data.isNotEmpty()) {
       val ending = when (type) { "image/png" -> "png"; "image/gif" -> "gif"; else -> "jpg" }
@@ -181,11 +192,11 @@ internal object MmsStore {
     if (parts.isEmpty()) throw IllegalArgumentException("Nothing to send")
     val transaction = "T" + java.lang.Long.toHexString(System.currentTimeMillis())
     val name = "out-${System.currentTimeMillis()}.pdu"
-    File(folder(context), name).writeBytes(MmsPdu.sendReq(transaction, listOf(address), parts))
+    File(folder(context), name).writeBytes(MmsPdu.sendReq(transaction, to, parts))
     var id = -1L
     if (SmsStore.isDefault(context)) {
       val values = ContentValues().apply {
-        put(Telephony.Mms.THREAD_ID, Telephony.Threads.getOrCreateThreadId(context, address))
+        put(Telephony.Mms.THREAD_ID, SmsStore.threadId(context, address) ?: Telephony.Threads.getOrCreateThreadId(context, to[0]))
         put(Telephony.Mms.DATE, System.currentTimeMillis() / 1000)
         put(Telephony.Mms.MESSAGE_BOX, Telephony.Mms.MESSAGE_BOX_OUTBOX)
         put(Telephony.Mms.READ, 1)
@@ -198,7 +209,7 @@ internal object MmsStore {
       }
       id = context.contentResolver.insert(MMS, values)?.lastPathSegment?.toLongOrNull() ?: -1L
       if (id >= 0) {
-        address(context, id, address, TO)
+        to.forEach { address(context, id, it, TO) }
         parts.forEach { part(context, id, it) }
       }
     }
@@ -258,6 +269,8 @@ internal object MmsStore {
             },
             "read" to (c.getInt(3) != 0),
             "sim" to c.getInt(4).toDouble(),
+            // Who wrote it, for a group's conversation.
+            "from" to (if (box == Telephony.Mms.MESSAGE_BOX_INBOX) addressOf(context, id, false) else ""),
             "pictures" to pictures,
           ),
         )
@@ -281,6 +294,50 @@ internal object MmsStore {
       }
     }
     return texts.joinToString("\n") to pictures
+  }
+
+  /** The numbers of a conversation, as Android keeps them for its thread. */
+  fun recipients(context: Context, thread: Long): List<String> {
+    try {
+      val ids = context.contentResolver.query(Uri.parse("content://mms-sms/conversations?simple=true"), arrayOf("_id", "recipient_ids"), "_id=?", arrayOf(thread.toString()), null)?.use { c ->
+        if (c.moveToFirst()) (c.getString(1) ?: "").split(' ').mapNotNull { it.trim().toLongOrNull() } else emptyList()
+      } ?: return emptyList()
+      if (ids.isEmpty()) return emptyList()
+      val found = HashMap<Long, String>()
+      context.contentResolver.query(Uri.parse("content://mms-sms/canonical-addresses"), arrayOf("_id", "address"), "_id IN (${ids.joinToString(",")})", null, null)?.use { c ->
+        while (c.moveToNext()) found[c.getLong(0)] = c.getString(1) ?: ""
+      }
+      return ids.mapNotNull { found[it]?.takeIf { a -> a.isNotEmpty() } }
+    } catch (_: Exception) {
+      return emptyList()
+    }
+  }
+
+  // This phone's own numbers: what Android says, and what messages to it alone said.
+  private fun ownNumbers(context: Context): List<String> {
+    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    val own = (prefs.getString(OWN, "") ?: "").split('\n').filter { it.isNotEmpty() }.toMutableList()
+    try {
+      val phone = context.getSystemService(android.telephony.TelephonyManager::class.java)
+      @Suppress("DEPRECATION", "HardwareIds") phone?.line1Number?.let { if (it.isNotBlank()) own.add(it) }
+      for (sim in SmsStore.sims(context)) {
+        val id = (sim["id"] as Double).toInt()
+        @Suppress("DEPRECATION", "HardwareIds") phone?.createForSubscriptionId(id)?.line1Number?.let { if (it.isNotBlank()) own.add(it) }
+      }
+    } catch (_: Exception) {
+      // Android would not say: the numbers learnt from messages are enough.
+    }
+    return own
+  }
+
+  private fun learnOwn(context: Context, number: String) {
+    if (number.isBlank()) return
+    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    synchronized(this) {
+      val own = (prefs.getString(OWN, "") ?: "").split('\n').filter { it.isNotEmpty() }
+      if (own.any { SmsStore.sameNumber(it, number) }) return
+      prefs.edit().putString(OWN, (own.takeLast(3) + number).joinToString("\n")).apply()
+    }
   }
 
   /** The other side of an MMS: who sent it, or whom it went to. */

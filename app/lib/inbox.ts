@@ -78,7 +78,8 @@ export function buildInbox(
     const last = latest.get(contact.identity);
     const linked = imported.filter((chat) => chat.contact === contact.identity);
     const importedAt = linked.reduce((at, chat) => Math.max(at, chat.last), 0);
-    const texts = contact.phone ? sms.filter((t) => sameNumber(t.address, contact.phone!)) : [];
+    // A group's MMS conversation (numbers comma-separated) keeps a row of its own.
+    const texts = contact.phone ? sms.filter((t) => !/[,;]/.test(t.address) && sameNumber(t.address, contact.phone!)) : [];
     texts.forEach((t) => used.add(t));
     const text = texts.reduce<InboxSms | null>((a, t) => (!a || t.at > a.at ? t : a), null);
     const row: InboxRow = {

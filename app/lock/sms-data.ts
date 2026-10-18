@@ -11,7 +11,7 @@ export type { Holder };
 export type SentInvite = { number: string; secret: string; at: number };
 export type GotInvite = { number: string; sender: string; at: number };
 export type WaitingPiece = { from: string; data: string; at: number };
-/** The SIM (its subscription id) chosen for SMS to a number. */
+/** The SIM (its subscription id) chosen for SMS to a number, or a group's numbers comma-separated. */
 export type NumberSim = { number: string; sim: number };
 
 export type SmsData = {
@@ -50,7 +50,7 @@ function checked(value: unknown): SmsData {
     names: v.names === true,
     sims: (Array.isArray(v.sims) ? v.sims : [])
       .map((item) => (item ?? {}) as Record<string, unknown>)
-      .filter((n) => isNumber(n.number) && Number.isInteger(n.sim) && (n.sim as number) >= 0)
+      .filter((n) => isText(n.number) && n.number.length > 0 && n.number.length <= 400 && Number.isInteger(n.sim) && (n.sim as number) >= 0)
       .map((n) => ({ number: n.number as string, sim: n.sim as number }))
       .slice(-MAX_SIMS),
   };

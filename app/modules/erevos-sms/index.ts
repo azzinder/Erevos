@@ -28,6 +28,8 @@ export type SmsMessage = {
   read: boolean;
   sim?: number;
   pictures?: SmsPicture[];
+  /** Who wrote it, in a group's conversation (an MMS that came). */
+  from?: string;
 };
 
 /** A piece of an SMS invite that came, base64. */
@@ -94,10 +96,11 @@ export function mmsReady(): boolean {
   return typeof native?.sendMms === 'function';
 }
 
-/** Sends a picture as an MMS, with text if any; as plain as an SMS. Returns its row, or -1. */
-export function sendMms(address: string, text: string, picture: { bytes: Uint8Array; mime: string }, sim = -1): Promise<number> {
+/** Sends an MMS to one number, or to a group's numbers comma-separated: a picture with text, or
+ *  text alone (a group's). As plain as an SMS. Returns its row, or -1. */
+export function sendMms(address: string, text: string, picture: { bytes: Uint8Array; mime: string } | null, sim = -1): Promise<number> {
   if (!native?.sendMms) return Promise.reject(new Error('This build of Erevos cannot send MMS yet.'));
-  return native.sendMms(address, text, picture.bytes, picture.mime, sim);
+  return native.sendMms(address, text, picture?.bytes ?? new Uint8Array(0), picture?.mime ?? '', sim);
 }
 
 /** The SIMs in the phone, once Erevos may read the phone's state; else none. */

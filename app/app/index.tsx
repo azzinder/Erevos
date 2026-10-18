@@ -14,6 +14,7 @@ import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
 import { spaceGroups } from '../lib/space-groups';
+import { groupName, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { contactNames, smsStatus, smsThreads } from '../modules/erevos-sms';
 import { Archive } from '../lock/archive';
@@ -62,8 +63,13 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
 // The phone's SMS conversations, named as the phone's contacts name them when the owner turned that on.
 async function smsRows(space: number, key: Uint8Array): Promise<InboxSms[]> {
   const threads = await smsThreads();
-  const names = (await SmsLink.open(space, key).catch(() => null))?.names ? await contactNames(threads.map((t) => t.address)).catch(() => ({})) : {};
-  return threads.map((t) => ({ ...t, name: (names as Record<string, string>)[t.address] }));
+  const named = (await SmsLink.open(space, key).catch(() => null))?.names ?? false;
+  const names: Record<string, string> = named ? await contactNames(threads.flatMap((t) => smsNumbers(t.address))).catch(() => ({})) : {};
+  // A group's MMS conversation: named by all its numbers.
+  return threads.map((t) => {
+    const numbers = smsNumbers(t.address);
+    return { ...t, name: numbers.length > 1 ? groupName(numbers, names) : names[numbers[0] ?? t.address] };
+  });
 }
 
 export default function Home() {

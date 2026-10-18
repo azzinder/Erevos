@@ -119,7 +119,10 @@ internal object SmsStore {
       if (row == null || (row["at"] as Double) < at.toDouble()) {
         if (row == null && seen.size >= limit) continue
         val (text, pictures) = MmsStore.parts(context, id)
-        val address = (row?.get("address") as String?) ?: MmsStore.addressOf(context, id, mine == 1L)
+        // A group's conversation is named by all its numbers, comma-separated.
+        val address = MmsStore.recipients(context, thread).joinToString(",").ifEmpty {
+          (row?.get("address") as String?) ?: MmsStore.addressOf(context, id, mine == 1L)
+        }
         if (address.isEmpty()) continue
         seen[thread] = mutableMapOf(
           "thread" to thread.toDouble(),
@@ -169,12 +172,26 @@ internal object SmsStore {
     return out.sortedByDescending { it["at"] as Double }.take(limit).reversed()
   }
 
-  private fun threadId(context: Context, address: String): Long? =
+  /** The conversation with one number, or with a group's numbers given comma-separated. */
+  fun threadId(context: Context, address: String): Long? =
     try {
-      Telephony.Threads.getOrCreateThreadId(context, address)
+      val numbers = numbers(address)
+      if (numbers.size > 1) Telephony.Threads.getOrCreateThreadId(context, numbers.toSet())
+      else Telephony.Threads.getOrCreateThreadId(context, address)
     } catch (_: Exception) {
       null
     }
+
+  /** The numbers of an address: one, or a group's, comma-separated. */
+  fun numbers(address: String): List<String> = address.split(',', ';').map { it.trim() }.filter { it.isNotEmpty() }
+
+  /** Whether two numbers are the same phone: the same last ten digits, or the same digits when shorter. */
+  fun sameNumber(a: String, b: String): Boolean {
+    val da = a.filter { it.isDigit() }
+    val db = b.filter { it.isDigit() }
+    if (da.isEmpty() || db.isEmpty()) return false
+    return if (da.length >= 10 && db.length >= 10) da.takeLast(10) == db.takeLast(10) else da == db
+  }
 
   fun markRead(context: Context, address: String) {
     if (!isDefault(context)) return

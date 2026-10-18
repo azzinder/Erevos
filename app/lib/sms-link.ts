@@ -9,6 +9,7 @@ import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
 import { fresh, loadSmsData, saveSmsData, type SmsData } from '../lock/sms-data';
 import type { Sim } from '../modules/erevos-sms';
+import { sameAddress, smsAddress, smsNumbers } from './sms-group';
 
 /** Where this chat can be reached, for an invite. */
 export type Own = { senderHex: string; relay: string; relayKey: string };
@@ -58,15 +59,15 @@ export class SmsLink {
     return this.update((d) => ({ ...d, names: on }));
   }
 
-  /** The SIM chosen for `number`, or -1. */
+  /** The SIM chosen for `number` (or a group's numbers, comma-separated), or -1. */
   simFor(number: string): number {
-    return this.data.sims.find((s) => sameNumber(s.number, number))?.sim ?? -1;
+    return this.data.sims.find((s) => sameAddress(s.number, number))?.sim ?? -1;
   }
 
   /** Sends to `number` on `sim` from now on; -1 forgets the choice. */
   setSim(number: string, sim: number): Promise<void> {
-    const plain = plainNumber(number);
-    return this.update((d) => ({ ...d, sims: [...d.sims.filter((s) => !sameNumber(s.number, plain)), ...(sim >= 0 ? [{ number: plain, sim }] : [])] }));
+    const plain = smsAddress(smsNumbers(number));
+    return this.update((d) => ({ ...d, sims: [...d.sims.filter((s) => !sameAddress(s.number, plain)), ...(sim >= 0 ? [{ number: plain, sim }] : [])] }));
   }
 
   /** Whether the first SMS to `number` should carry an invite: invites are on, the core can open

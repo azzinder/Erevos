@@ -8,7 +8,8 @@ import { Button, Card, Chip, Input, Page, Row, Text } from '../components/ui';
 import { canRelaySeal } from '../lib/core';
 import { toBase64Url } from '../lib/e2e';
 import { relayKey } from '../lib/relay';
-import { plainNumber, sameNumber } from '../lib/sms-invite';
+import { groupName, smsAddress, smsNumbers } from '../lib/sms-group';
+import { sameNumber } from '../lib/sms-invite';
 import { pickMmsPhoto, type MmsPhoto } from '../lib/pick-mms-photo';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { cleanName, loadE2EData, type Contact } from '../lock/e2e-data';
@@ -24,10 +25,14 @@ import { useStyles, useTheme } from '../theme/context';
 // (lib/sms-invite.ts), when invites are on. A contact can be linked to the number by hand. A photo
 // goes as an MMS, as plain as an SMS. With two SIMs, the one to send on is chosen here, and kept
 // for the number. The number shows the name the phone's contacts give it, when that is turned on.
+// With several numbers (`to` comma-separated) it is a group's conversation: every message goes to
+// all of them as one MMS, text alone too, and each that comes says who wrote it.
 
 export default function Sms() {
   const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string }>();
-  const to = plainNumber(typeof params.to === 'string' ? params.to : '');
+  const numbers = smsNumbers(typeof params.to === 'string' ? params.to : '');
+  const to = smsAddress(numbers);
+  const group = numbers.length > 1;
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -40,7 +45,7 @@ export default function Sms() {
   const [photo, setPhoto] = useState<MmsPhoto | null>(null);
   const [sims, setSims] = useState<Sim[]>([]);
   const [sim, setSim] = useState(-1);
-  const [name, setName] = useState('');
+  const [names, setNames] = useState<Record<string, string>>({});
   const link = useRef<SmsLink | null>(null);
   const twoSims = (smsStatus()?.slots ?? 0) >= 2;
   const thread = useRef<ScrollView>(null);
@@ -60,7 +65,7 @@ export default function Sms() {
     load();
     loadE2EData('space', space, key)
       .then((data) => {
-        const linked = data.contacts.find((c) => c.phone && sameNumber(c.phone, to));
+        const linked = group ? undefined : data.contacts.find((c) => c.phone && sameNumber(c.phone, to));
         if (linked && params.plain !== '1') router.replace(`/chat?contact=${linked.identity}`);
         else setContacts(data.contacts);
       })
@@ -68,7 +73,7 @@ export default function Sms() {
     SmsLink.open(space, key)
       .then(async (opened) => {
         link.current = opened;
-        if (opened.names) setName((await contactNames([to]).catch(() => ({} as Record<string, string>)))[to] ?? '');
+        if (opened.names) setNames(await contactNames(numbers).catch(() => ({} as Record<string, string>)));
         if (!twoSims) return;
         const [found, loaded] = await Promise.all([smsSims(), smsMessages(to, 50).catch(() => [] as SmsMessage[])]);
         const lastCame = [...loaded].reverse().find((m) => !m.mine)?.sim ?? -1;
@@ -76,7 +81,7 @@ export default function Sms() {
         setSim(chooseSim(found, opened.simFor(to), lastCame));
       })
       .catch(() => undefined);
-    const subscriptions = [onSmsEvent('onSms', ({ address }) => sameNumber(address, to) && load()), onSmsEvent('onSmsSent', () => load())];
+    const subscriptions = [onSmsEvent('onSms', ({ address }) => numbers.some((n) => sameNumber(address, n)) && load()), onSmsEvent('onSmsSent', () => load())];
     return () => subscriptions.forEach((s) => s?.remove());
   }, [to, load, params.plain]);
 
@@ -99,6 +104,12 @@ export default function Sms() {
     setSims(found);
     const last = [...messages].reverse().find((m) => !m.mine)?.sim ?? -1;
     setSim(chooseSim(found, link.current?.simFor(to) ?? -1, last));
+  }
+
+  // Who wrote a message in a group's conversation: the group's number as the contacts name it.
+  function whose(from: string): string {
+    const number = numbers.find((n) => sameNumber(n, from)) ?? from;
+    return names[number] || number;
   }
 
   function pickSim(id: number) {
@@ -126,12 +137,14 @@ export default function Sms() {
         const answer = await PermissionsAndroid.request('android.permission.SEND_SMS');
         if (answer !== PermissionsAndroid.RESULTS.GRANTED) throw new Error('Erevos may not send SMS. Allow it, or make Erevos the SMS app.');
       }
-      if (photo) await sendMms(to, text, photo, sim);
+      if (group && !mmsReady()) throw new Error('This build of Erevos cannot send to several numbers yet.');
+      // A group's message goes to everyone as one MMS, even without a photo.
+      if (photo || group) await sendMms(to, text, photo, sim);
       else await sendSms(to, text, sim);
       setDraft('');
       setPhoto(null);
       load();
-      await invite();
+      if (!group) await invite();
     } catch (error) {
       setNote(`Not sent. ${error instanceof Error ? error.message : String(error)}`);
     } finally {
@@ -161,13 +174,13 @@ export default function Sms() {
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
       <ScrollView ref={thread} contentContainerStyle={styles.thread} onContentSizeChange={() => thread.current?.scrollToEnd({ animated: false })}>
-        <Text variant="title">{name || to}</Text>
-        {name ? <Text tone="muted">{to}</Text> : null}
+        <Text variant="title">{group ? groupName(numbers, names) : names[to] || to}</Text>
+        {group ? <Text tone="muted">Group MMS · {numbers.length} numbers</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
         <Card>
           <Text variant="caption" color={colors.warning}>
             Plain SMS: not encrypted. The phone company can read these messages.
           </Text>
-          {contacts.length > 0 ? (
+          {contacts.length > 0 && !group ? (
             choosing ? (
               <>
                 <Text tone="muted">Which contact is {to}? Messages to this number will go through Erevos.</Text>
@@ -191,6 +204,11 @@ export default function Sms() {
             {(m.pictures ?? []).map((p) => (
               <Image key={p.uri} source={{ uri: p.uri }} style={styles.picture} resizeMode="cover" accessibilityLabel="Picture" />
             ))}
+            {group && !m.mine && m.from ? (
+              <Text variant="caption" tone="muted">
+                {whose(m.from)}
+              </Text>
+            ) : null}
             {m.text ? <Text selectable>{m.text}</Text> : null}
             <Text variant="caption" tone="faint">
               {new Date(m.at).toLocaleString()}
@@ -213,7 +231,7 @@ export default function Sms() {
       ) : null}
       <View style={styles.composer}>
         {mmsReady() ? <Button title="Photo" kind="ghost" compact onPress={() => void addPhoto()} /> : null}
-        <Input value={draft} onChangeText={setDraft} placeholder={photo ? 'MMS text (not encrypted)' : 'SMS (not encrypted)'} multiline style={styles.input} />
+        <Input value={draft} onChangeText={setDraft} placeholder={photo || group ? 'MMS (not encrypted)' : 'SMS (not encrypted)'} multiline style={styles.input} />
         <Button title="Send" compact loading={sending} disabled={!draft.trim() && !photo} onPress={() => void send()} />
       </View>
     </KeyboardPaddedView>

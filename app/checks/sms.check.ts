@@ -13,6 +13,7 @@ import { fromHex, randomBytes, toHex } from '../lib/crypto';
 import { toBase64Url } from '../lib/e2e';
 import { buildInbox } from '../lib/inbox';
 import { collectInvites, inviteAnswer, invitePieces, PIECE, plainNumber, sameNumber, type SmsInvite } from '../lib/sms-invite';
+import { groupName, sameAddress, smsAddress, smsNumbers } from '../lib/sms-group';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { files } from './files-memory';
 
@@ -134,6 +135,40 @@ test('names from contacts start off, and the SIM chosen for a number is kept, se
   assert.equal((await SmsLink.open(0, key)).simFor('+306922222222'), 3);
   // Another space's key opens nothing of it.
   assert.equal((await SmsLink.open(0, randomBytes(32)).catch(() => null))?.names ?? false, false);
+});
+
+test('a group MMS: several numbers make one address, each number once, in any order', () => {
+  assert.deepEqual(smsNumbers('+30 691 111 1111, 6922222222;+306911111111, x, 12'), ['+306911111111', '6922222222']);
+  assert.equal(smsAddress(smsNumbers('+306911111111,+306922222222')), '+306911111111,+306922222222');
+  assert.ok(sameAddress('+306911111111,+306922222222', '6922222222, 6911111111'));
+  assert.ok(!sameAddress('+306911111111,+306922222222', '+306911111111'));
+  assert.ok(!sameAddress('+306911111111', '+306911111111,+306922222222'));
+  assert.equal(groupName(['+306911111111', '+306922222222'], { '+306922222222': 'Νίκος' }), '+306911111111, Νίκος');
+});
+
+test('a group MMS conversation keeps its own row, even with a contact\'s number in it', () => {
+  const A = 'aa'.repeat(32);
+  const rows = buildInbox(
+    [{ identity: A, name: 'Άννα', timer: 0, phone: '+306922222222' }],
+    [],
+    [],
+    100,
+    [{ address: '+306911111111,+306922222222', text: 'to all', at: 30, mine: false, unread: 1, name: '+306911111111, Άννα' }],
+  );
+  const group = rows.find((r) => r.sms);
+  assert.equal(group?.sms, '+306911111111,+306922222222');
+  assert.equal(group?.name, '+306911111111, Άννα');
+  assert.equal(rows.find((r) => r.identity.endsWith(A))?.lastSms ?? false, false);
+});
+
+test('the SIM chosen for a group is kept for the group, not for its numbers', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const link = await SmsLink.open(0, key);
+  await link.setSim('+306911111111,+306922222222', 7);
+  const again = await SmsLink.open(0, key);
+  assert.equal(again.simFor('6922222222,6911111111'), 7);
+  assert.equal(again.simFor('+306911111111'), -1);
 });
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);

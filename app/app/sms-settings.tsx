@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { AppState, PermissionsAndroid, Platform } from 'react-native';
 
 import { Button, Card, Field, Input, Page, SectionTitle, Text } from '../components/ui';
-import { plainNumber } from '../lib/sms-invite';
+import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
 import { requestDefaultSms, smsReady, smsStatus, type SmsStatus } from '../modules/erevos-sms';
@@ -81,13 +81,14 @@ export default function SmsSettings() {
   }
 
   function open() {
-    const to = plainNumber(number);
-    if (to.replace('+', '').length < 3) {
+    // Several numbers, separated by commas, make a group's conversation.
+    const numbers = smsNumbers(number);
+    if (numbers.length === 0) {
       setNote('Type a phone number.');
       return;
     }
     setNumber('');
-    router.push(`/sms?to=${encodeURIComponent(to)}`);
+    router.push(`/sms?to=${encodeURIComponent(smsAddress(numbers))}`);
   }
 
   return (
@@ -139,8 +140,8 @@ export default function SmsSettings() {
       ) : null}
 
       <SectionTitle title="New SMS" />
-      <Field label="Phone number">
-        <Input value={number} onChangeText={setNumber} keyboardType="phone-pad" placeholder="+30 69…" onSubmitEditing={open} />
+      <Field label="Phone number" hint="For a group MMS, several numbers separated by commas.">
+        <Input value={number} onChangeText={setNumber} keyboardType="phone-pad" placeholder="+30 69…, +30 69…" onSubmitEditing={open} />
       </Field>
       <Button title="Write" kind="secondary" onPress={open} />
       {note ? <Text tone="muted">{note}</Text> : null}
