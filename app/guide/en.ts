@@ -405,6 +405,14 @@ chats in one list.
   invite. A phone without Erevos shows nothing; a phone with Erevos answers through the relay and the two become
   contacts. Each number is asked once a month at most, and **Turn invites off** stops them.
 - **Everyone else:** a plain SMS, marked SMS. The phone company can read it, as it reads every SMS.
+- **Photos (MMS):** **Photo** beside the message field adds a photo, made smaller to fit one MMS (about 280 KB),
+  with nothing in it besides the picture. Photos that come by MMS show in the conversation. An MMS is as plain as an
+  SMS: the phone company can see it.
+- **Two SIMs:** the SIM to send on shows above the message field; tap **Choose the SIM** once to let Erevos see
+  them. Your choice is kept for that number; until then, Erevos answers on the SIM the last message came on. Each
+  message shows its SIM.
+- **Names from your contacts:** off at first. Under **SMS** in the menu, **Show names from my contacts** shows the
+  names your phone's contacts give SMS numbers. Erevos only reads them to show them, and keeps no copy.
 
 ## Password lock {#lock}
 
@@ -667,7 +675,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept in memory only, three days at most. Hidden chats are never carried. | Carried messages that stay when Erevos closes. |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
-| **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | MMS, and two SIM cards. |
+| **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | Group MMS (to several numbers at once). |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
@@ -687,7 +695,7 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
 - **More ways to stay in touch:** Wi-Fi Direct, receiving while Erevos is closed, and ways around censorship (Tor bridges).
   - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: photos and voice messages that wait,
     marked in the chat, while LoRa is the only way.
-  - **SMS:** Erevos as the SMS app is here, see [SMS](#sms). Next: MMS and two SIM cards.
+  - **SMS:** Erevos as the SMS app is here, with MMS photos and two SIMs, see [SMS](#sms). Next: group MMS.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
 - **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a
   relay](#relay), and so is a walkie-talkie that works even over Bluetooth.

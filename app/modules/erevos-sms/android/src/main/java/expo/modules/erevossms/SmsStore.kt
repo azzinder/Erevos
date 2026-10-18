@@ -1,5 +1,6 @@
 package expo.modules.erevossms
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,10 +8,14 @@ import android.app.PendingIntent
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.ContactsContract
 import android.provider.Telephony
 import android.telephony.SmsManager
+import android.telephony.SubscriptionManager
+import android.telephony.TelephonyManager
 import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
@@ -34,12 +39,53 @@ internal object SmsStore {
   fun isDefault(context: Context): Boolean =
     Telephony.Sms.getDefaultSmsPackage(context) == context.packageName
 
-  private fun manager(context: Context): SmsManager =
+  /** The SMS manager of one SIM (its subscription id), or of the phone's default one for -1. */
+  fun manager(context: Context, sim: Int = -1): SmsManager =
     if (Build.VERSION.SDK_INT >= 31) {
-      context.getSystemService(SmsManager::class.java) ?: throw IllegalStateException("This phone cannot send SMS")
+      val base = context.getSystemService(SmsManager::class.java) ?: throw IllegalStateException("This phone cannot send SMS")
+      if (sim >= 0) base.createForSubscriptionId(sim) else base
+    } else if (sim >= 0) {
+      @Suppress("DEPRECATION") SmsManager.getSmsManagerForSubscriptionId(sim)
     } else {
       @Suppress("DEPRECATION") SmsManager.getDefault()
     }
+
+  /** How many SIMs the phone can hold, without asking for any permission. */
+  fun slots(context: Context): Int {
+    val phone = context.getSystemService(TelephonyManager::class.java) ?: return 0
+    return if (Build.VERSION.SDK_INT >= 30) phone.activeModemCount else @Suppress("DEPRECATION") phone.phoneCount
+  }
+
+  /** The SIMs in the phone now: their subscription id, slot and name. Empty without READ_PHONE_STATE. */
+  fun sims(context: Context): List<Map<String, Any?>> {
+    if (context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) return emptyList()
+    val subscriptions = context.getSystemService(SubscriptionManager::class.java) ?: return emptyList()
+    return try {
+      (subscriptions.activeSubscriptionInfoList ?: emptyList()).sortedBy { it.simSlotIndex }.map {
+        mapOf("id" to it.subscriptionId.toDouble(), "slot" to it.simSlotIndex.toDouble(), "name" to (it.displayName?.toString() ?: ""))
+      }
+    } catch (_: SecurityException) {
+      emptyList()
+    }
+  }
+
+  /** Names the phone's contacts give these numbers. Empty without READ_CONTACTS. Nothing is kept. */
+  fun contactNames(context: Context, numbers: List<String>): Map<String, String> {
+    if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return emptyMap()
+    val names = HashMap<String, String>()
+    for (number in numbers.distinct().take(500)) {
+      if (number.isBlank()) continue
+      val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
+      try {
+        context.contentResolver.query(uri, arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME), null, null, null)?.use { c ->
+          if (c.moveToFirst()) c.getString(0)?.let { if (it.isNotBlank()) names[number] = it }
+        }
+      } catch (_: Exception) {
+        // Not a number the phone can look up.
+      }
+    }
+    return names
+  }
 
   /** The latest message of each conversation, newest first, with how many are not read. */
   fun threads(context: Context, limit: Int): List<Map<String, Any?>> {
@@ -66,7 +112,28 @@ internal object SmsStore {
         }
       }
     }
-    return seen.values.toList()
+    // MMS: a conversation whose newest message is one shows it, and its unread ones count.
+    for (latest in MmsStore.latest(context, 2000)) {
+      val (thread, id, at, mine, unread) = latest.toList()
+      val row = seen[thread]
+      if (row == null || (row["at"] as Double) < at.toDouble()) {
+        if (row == null && seen.size >= limit) continue
+        val (text, pictures) = MmsStore.parts(context, id)
+        val address = (row?.get("address") as String?) ?: MmsStore.addressOf(context, id, mine == 1L)
+        if (address.isEmpty()) continue
+        seen[thread] = mutableMapOf(
+          "thread" to thread.toDouble(),
+          "address" to address,
+          "text" to text.ifEmpty { if (pictures.isNotEmpty()) "Picture" else "MMS" },
+          "at" to at.toDouble(),
+          "mine" to (mine == 1L),
+          "unread" to ((row?.get("unread") as Int?) ?: 0) + unread.toInt(),
+        )
+      } else {
+        row["unread"] = (row["unread"] as Int) + unread.toInt()
+      }
+    }
+    return seen.values.sortedByDescending { it["at"] as Double }
   }
 
   /** A conversation's messages with one number, oldest first, the latest `limit` of them. */
@@ -75,13 +142,14 @@ internal object SmsStore {
     val (selection, args) = if (thread != null) "${Telephony.Sms.THREAD_ID}=?" to arrayOf(thread.toString())
       else "${Telephony.Sms.ADDRESS}=?" to arrayOf(address)
     val out = ArrayList<Map<String, Any?>>()
-    val projection = arrayOf(Telephony.Sms._ID, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.TYPE, Telephony.Sms.READ)
+    val projection = arrayOf(Telephony.Sms._ID, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.TYPE, Telephony.Sms.READ, Telephony.Sms.SUBSCRIPTION_ID)
     context.contentResolver.query(Telephony.Sms.CONTENT_URI, projection, selection, args, "${Telephony.Sms.DATE} DESC")?.use { c ->
       while (c.moveToNext() && out.size < limit) {
         val type = c.getInt(3)
         out.add(
           mapOf(
             "id" to c.getLong(0).toDouble(),
+            "kind" to "sms",
             "text" to (c.getString(1) ?: ""),
             "at" to c.getLong(2).toDouble(),
             "mine" to (type != Telephony.Sms.MESSAGE_TYPE_INBOX),
@@ -91,11 +159,14 @@ internal object SmsStore {
               else -> "done"
             },
             "read" to (c.getInt(4) != 0),
+            "sim" to c.getInt(5).toDouble(),
+            "pictures" to emptyList<Any>(),
           ),
         )
       }
     }
-    return out.reversed()
+    if (thread != null) out.addAll(MmsStore.messages(context, thread, limit))
+    return out.sortedByDescending { it["at"] as Double }.take(limit).reversed()
   }
 
   private fun threadId(context: Context, address: String): Long? =
@@ -113,13 +184,14 @@ internal object SmsStore {
       put(Telephony.Sms.SEEN, 1)
     }
     context.contentResolver.update(Telephony.Sms.CONTENT_URI, values, "${Telephony.Sms.THREAD_ID}=? AND ${Telephony.Sms.READ}=0", arrayOf(thread.toString()))
+    MmsStore.markRead(context, thread)
   }
 
   /**
    * Sends a text. As the default app, the message is written to the provider first and its row
    * says later whether it went; otherwise Android writes it. Returns the row's id, or -1.
    */
-  fun send(context: Context, address: String, text: String): Long {
+  fun send(context: Context, address: String, text: String, sim: Int = -1): Long {
     var id = -1L
     if (isDefault(context)) {
       val values = ContentValues().apply {
@@ -129,10 +201,11 @@ internal object SmsStore {
         put(Telephony.Sms.READ, 1)
         put(Telephony.Sms.SEEN, 1)
         put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_OUTBOX)
+        if (sim >= 0) put(Telephony.Sms.SUBSCRIPTION_ID, sim)
       }
       id = context.contentResolver.insert(Telephony.Sms.CONTENT_URI, values)?.lastPathSegment?.toLongOrNull() ?: -1L
     }
-    val sms = manager(context)
+    val sms = manager(context, sim)
     val parts = sms.divideMessage(text)
     val sent = Intent(context, SentReceiver::class.java).setAction(SENT_ACTION).putExtra("id", id)
     val last = PendingIntent.getBroadcast(context, (id and 0x7fffffff).toInt(), sent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -155,7 +228,7 @@ internal object SmsStore {
   }
 
   /** Keeps a text that came, as the default app must, and says so. */
-  fun received(context: Context, address: String, text: String, sentAt: Long) {
+  fun received(context: Context, address: String, text: String, sentAt: Long, sim: Int) {
     if (!isDefault(context)) return
     val values = ContentValues().apply {
       put(Telephony.Sms.ADDRESS, address)
@@ -165,6 +238,7 @@ internal object SmsStore {
       put(Telephony.Sms.READ, 0)
       put(Telephony.Sms.SEEN, 0)
       put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_INBOX)
+      if (sim >= 0) put(Telephony.Sms.SUBSCRIPTION_ID, sim)
     }
     context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
     val heard = listener

@@ -38,6 +38,7 @@ class ErevosSmsModule : Module() {
         "sdk" to Build.VERSION.SDK_INT,
         "phone" to (context?.packageManager?.hasSystemFeature("android.hardware.telephony") == true),
         "isDefault" to (context != null && SmsStore.isDefault(context)),
+        "slots" to (context?.let { SmsStore.slots(it) } ?: 0),
       )
     }
 
@@ -58,7 +59,12 @@ class ErevosSmsModule : Module() {
     AsyncFunction("threads") { limit: Int -> SmsStore.threads(context(), limit) }
     AsyncFunction("messages") { address: String, limit: Int -> SmsStore.messages(context(), address, limit) }
     AsyncFunction("markRead") { address: String -> SmsStore.markRead(context(), address) }
-    AsyncFunction("send") { address: String, text: String -> SmsStore.send(context(), address, text).toDouble() }
+    AsyncFunction("send") { address: String, text: String, sim: Int -> SmsStore.send(context(), address, text, sim).toDouble() }
+    AsyncFunction("sendMms") { address: String, text: String, data: ByteArray, type: String, sim: Int ->
+      MmsStore.send(context(), address, text, if (data.isEmpty()) null else data, type, sim).toDouble()
+    }
+    AsyncFunction("sims") { SmsStore.sims(context()) }
+    AsyncFunction("contactNames") { numbers: List<String> -> SmsStore.contactNames(context(), numbers) }
     AsyncFunction("sendData") { address: String, data: ByteArray -> SmsStore.sendData(context(), address, data) }
     AsyncFunction("takeInvites") { SmsStore.takeInvites(context()) }
   }

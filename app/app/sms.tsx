@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PermissionsAndroid, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, PermissionsAndroid, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardPaddedView } from '../components/keyboard';
@@ -9,18 +9,21 @@ import { canRelaySeal } from '../lib/core';
 import { toBase64Url } from '../lib/e2e';
 import { relayKey } from '../lib/relay';
 import { plainNumber, sameNumber } from '../lib/sms-invite';
-import { SmsLink } from '../lib/sms-link';
+import { pickMmsPhoto, type MmsPhoto } from '../lib/pick-mms-photo';
+import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { cleanName, loadE2EData, type Contact } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
-import { markSmsRead, onSmsEvent, sendSms, sendSmsData, smsMessages, smsStatus, type SmsMessage } from '../modules/erevos-sms';
+import { contactNames, markSmsRead, mmsReady, onSmsEvent, sendMms, sendSms, sendSmsData, smsMessages, smsSims, smsStatus, type Sim, type SmsMessage } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // One SMS conversation, with a number. A number linked to an Erevos contact opens that contact's
 // chat instead, unless `plain` asks for the SMS. Messages here are plain SMS: the phone company can
 // read them. The first one to a number that is no contact also carries a hidden invite
-// (lib/sms-invite.ts), when invites are on. A contact can be linked to the number by hand.
+// (lib/sms-invite.ts), when invites are on. A contact can be linked to the number by hand. A photo
+// goes as an MMS, as plain as an SMS. With two SIMs, the one to send on is chosen here, and kept
+// for the number. The number shows the name the phone's contacts give it, when that is turned on.
 
 export default function Sms() {
   const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string }>();
@@ -34,12 +37,20 @@ export default function Sms() {
   const [choosing, setChoosing] = useState(false);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
+  const [photo, setPhoto] = useState<MmsPhoto | null>(null);
+  const [sims, setSims] = useState<Sim[]>([]);
+  const [sim, setSim] = useState(-1);
+  const [name, setName] = useState('');
   const link = useRef<SmsLink | null>(null);
+  const twoSims = (smsStatus()?.slots ?? 0) >= 2;
   const thread = useRef<ScrollView>(null);
 
   const load = useCallback(() => {
     smsMessages(to)
-      .then(setMessages)
+      .then((loaded) => {
+        setMessages(loaded);
+        return loaded;
+      })
       .catch(() => setNote('The SMS on this phone could not be read. Make Erevos the SMS app under SMS in the menu.'));
     markSmsRead(to).catch(() => undefined);
   }, [to]);
@@ -55,7 +66,15 @@ export default function Sms() {
       })
       .catch(() => undefined);
     SmsLink.open(space, key)
-      .then((opened) => (link.current = opened))
+      .then(async (opened) => {
+        link.current = opened;
+        if (opened.names) setName((await contactNames([to]).catch(() => ({} as Record<string, string>)))[to] ?? '');
+        if (!twoSims) return;
+        const [found, loaded] = await Promise.all([smsSims(), smsMessages(to, 50).catch(() => [] as SmsMessage[])]);
+        const lastCame = [...loaded].reverse().find((m) => !m.mine)?.sim ?? -1;
+        setSims(found);
+        setSim(chooseSim(found, opened.simFor(to), lastCame));
+      })
       .catch(() => undefined);
     const subscriptions = [onSmsEvent('onSms', ({ address }) => sameNumber(address, to) && load()), onSmsEvent('onSmsSent', () => load())];
     return () => subscriptions.forEach((s) => s?.remove());
@@ -69,9 +88,37 @@ export default function Sms() {
     );
   }
 
+  // The SIMs show once Erevos may read the phone's state; it asks only when the owner taps.
+  async function askSims() {
+    const answer = await PermissionsAndroid.request('android.permission.READ_PHONE_STATE').catch(() => null);
+    if (answer !== PermissionsAndroid.RESULTS.GRANTED) {
+      setNote('Without that, SMS go on the phone\'s default SIM.');
+      return;
+    }
+    const found = await smsSims();
+    setSims(found);
+    const last = [...messages].reverse().find((m) => !m.mine)?.sim ?? -1;
+    setSim(chooseSim(found, link.current?.simFor(to) ?? -1, last));
+  }
+
+  function pickSim(id: number) {
+    setSim(id);
+    link.current?.setSim(to, id).catch(() => undefined);
+  }
+
+  async function addPhoto() {
+    setNote('');
+    try {
+      const picked = await pickMmsPhoto();
+      if (picked) setPhoto(picked);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
   async function send() {
     const text = draft.trim();
-    if (!text || sending) return;
+    if ((!text && !photo) || sending) return;
     setSending(true);
     setNote('');
     try {
@@ -79,8 +126,10 @@ export default function Sms() {
         const answer = await PermissionsAndroid.request('android.permission.SEND_SMS');
         if (answer !== PermissionsAndroid.RESULTS.GRANTED) throw new Error('Erevos may not send SMS. Allow it, or make Erevos the SMS app.');
       }
-      await sendSms(to, text);
+      if (photo) await sendMms(to, text, photo, sim);
+      else await sendSms(to, text, sim);
       setDraft('');
+      setPhoto(null);
       load();
       await invite();
     } catch (error) {
@@ -112,7 +161,8 @@ export default function Sms() {
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
       <ScrollView ref={thread} contentContainerStyle={styles.thread} onContentSizeChange={() => thread.current?.scrollToEnd({ animated: false })}>
-        <Text variant="title">{to}</Text>
+        <Text variant="title">{name || to}</Text>
+        {name ? <Text tone="muted">{to}</Text> : null}
         <Card>
           <Text variant="caption" color={colors.warning}>
             Plain SMS: not encrypted. The phone company can read these messages.
@@ -137,19 +187,34 @@ export default function Sms() {
           ) : null}
         </Card>
         {messages.map((m) => (
-          <View key={m.id} style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}>
-            <Text selectable>{m.text}</Text>
+          <View key={`${m.kind ?? 'sms'}${m.id}`} style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}>
+            {(m.pictures ?? []).map((p) => (
+              <Image key={p.uri} source={{ uri: p.uri }} style={styles.picture} resizeMode="cover" accessibilityLabel="Picture" />
+            ))}
+            {m.text ? <Text selectable>{m.text}</Text> : null}
             <Text variant="caption" tone="faint">
               {new Date(m.at).toLocaleString()}
+              {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}
               {m.state === 'failed' ? ' · not sent' : m.state === 'sending' ? ' · sending' : ''}
             </Text>
           </View>
         ))}
         {note ? <Text tone="muted">{note}</Text> : null}
       </ScrollView>
+      {sims.length > 1 || (twoSims && sims.length === 0) || photo ? (
+        <Row wrap style={styles.options}>
+          {sims.length > 1 ? (
+            sims.map((s) => <Chip key={s.id} label={`SIM ${s.slot + 1}${s.name ? ` · ${s.name}` : ''}`} selected={sim === s.id} onPress={() => pickSim(s.id)} />)
+          ) : twoSims && sims.length === 0 ? (
+            <Chip label="Choose the SIM" onPress={() => void askSims()} />
+          ) : null}
+          {photo ? <Chip label={`Picture · ${Math.ceil(photo.bytes.length / 1024)} KB · remove`} selected onPress={() => setPhoto(null)} /> : null}
+        </Row>
+      ) : null}
       <View style={styles.composer}>
-        <Input value={draft} onChangeText={setDraft} placeholder="SMS (not encrypted)" multiline style={styles.input} />
-        <Button title="Send" compact loading={sending} disabled={!draft.trim()} onPress={() => void send()} />
+        {mmsReady() ? <Button title="Photo" kind="ghost" compact onPress={() => void addPhoto()} /> : null}
+        <Input value={draft} onChangeText={setDraft} placeholder={photo ? 'MMS text (not encrypted)' : 'SMS (not encrypted)'} multiline style={styles.input} />
+        <Button title="Send" compact loading={sending} disabled={!draft.trim() && !photo} onPress={() => void send()} />
       </View>
     </KeyboardPaddedView>
   );
@@ -164,4 +229,6 @@ const makeStyles = (colors: Colors) =>
     theirs: { alignSelf: 'flex-start', backgroundColor: colors.surface },
     composer: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, padding: space.md, borderTopWidth: 1, borderTopColor: colors.border },
     input: { flex: 1, maxHeight: 140 },
+    options: { paddingHorizontal: space.md, paddingTop: space.sm },
+    picture: { width: 220, height: 220, borderRadius: radius.md, backgroundColor: colors.border },
   });

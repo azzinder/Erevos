@@ -8,6 +8,7 @@ import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
 import { fresh, loadSmsData, saveSmsData, type SmsData } from '../lock/sms-data';
+import type { Sim } from '../modules/erevos-sms';
 
 /** Where this chat can be reached, for an invite. */
 export type Own = { senderHex: string; relay: string; relayKey: string };
@@ -46,6 +47,26 @@ export class SmsLink {
 
   setInvites(on: boolean): Promise<void> {
     return this.update((d) => ({ ...d, invites: on }));
+  }
+
+  /** Whether SMS numbers show the names the phone's contacts give them. */
+  get names(): boolean {
+    return this.data.names;
+  }
+
+  setNames(on: boolean): Promise<void> {
+    return this.update((d) => ({ ...d, names: on }));
+  }
+
+  /** The SIM chosen for `number`, or -1. */
+  simFor(number: string): number {
+    return this.data.sims.find((s) => sameNumber(s.number, number))?.sim ?? -1;
+  }
+
+  /** Sends to `number` on `sim` from now on; -1 forgets the choice. */
+  setSim(number: string, sim: number): Promise<void> {
+    const plain = plainNumber(number);
+    return this.update((d) => ({ ...d, sims: [...d.sims.filter((s) => !sameNumber(s.number, plain)), ...(sim >= 0 ? [{ number: plain, sim }] : [])] }));
   }
 
   /** Whether the first SMS to `number` should carry an invite: invites are on, the core can open
@@ -113,4 +134,19 @@ export class SmsLink {
     }
     return null;
   }
+}
+
+/** The SIM an SMS to a number goes on: the one chosen for it, else the one its last message came
+ *  on, if still in the phone; else -1, the phone's default. With one SIM, always -1. */
+export function chooseSim(sims: Sim[], chosen: number, lastCame: number): number {
+  if (sims.length < 2) return -1;
+  if (sims.some((s) => s.id === chosen)) return chosen;
+  if (sims.some((s) => s.id === lastCame)) return lastCame;
+  return -1;
+}
+
+/** "SIM 1", "SIM 2", for a SIM's subscription id; empty when unknown. */
+export function simLabel(sims: Sim[], id: number | undefined): string {
+  const sim = sims.find((s) => s.id === id);
+  return sim ? `SIM ${sim.slot + 1}` : '';
 }

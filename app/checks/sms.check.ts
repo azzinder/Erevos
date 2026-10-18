@@ -13,7 +13,7 @@ import { fromHex, randomBytes, toHex } from '../lib/crypto';
 import { toBase64Url } from '../lib/e2e';
 import { buildInbox } from '../lib/inbox';
 import { collectInvites, inviteAnswer, invitePieces, PIECE, plainNumber, sameNumber, type SmsInvite } from '../lib/sms-invite';
-import { SmsLink } from '../lib/sms-link';
+import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { files } from './files-memory';
 
 const invite = (relay: string): SmsInvite => ({
@@ -86,6 +86,54 @@ test('SMS with a linked number go in the contact row, the others get rows of the
       ['Άννα', 'sms from Anna', 1, '', true],
     ],
   );
+});
+
+test('an SMS number with a name from the phone\'s contacts shows it, and keeps its number', () => {
+  const rows = buildInbox([], [], [], 100, [{ address: '+306911111111', text: 'hi', at: 30, mine: false, unread: 0, name: 'Γιώργος' }, { address: '+306922222222', text: 'yo', at: 20, mine: false, unread: 0 }]);
+  assert.deepEqual(
+    rows.map((r) => [r.name, r.sms]),
+    [
+      ['Γιώργος', '+306911111111'],
+      ['+306922222222', '+306922222222'],
+    ],
+  );
+});
+
+test('the SIM for a number: the one chosen, else the one its last message came on, else the default', () => {
+  const two = [
+    { id: 3, slot: 0, name: 'Vodafone' },
+    { id: 7, slot: 1, name: 'Cosmote' },
+  ];
+  assert.equal(chooseSim(two, 7, 3), 7);
+  assert.equal(chooseSim(two, -1, 3), 3);
+  // A SIM taken out of the phone is not chosen.
+  assert.equal(chooseSim(two, 9, -1), -1);
+  assert.equal(chooseSim(two, 9, 7), 7);
+  // With one SIM there is nothing to choose.
+  assert.equal(chooseSim([two[0]], 3, 3), -1);
+  assert.equal(simLabel(two, 7), 'SIM 2');
+  assert.equal(simLabel(two, -1), '');
+});
+
+test('names from contacts start off, and the SIM chosen for a number is kept, sealed in the space', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const link = await SmsLink.open(0, key);
+  assert.equal(link.names, false);
+  assert.equal(link.simFor('+306911111111'), -1);
+  await link.setNames(true);
+  await link.setSim('+30 691 111 1111', 7);
+  await link.setSim('6922222222', 3);
+  const again = await SmsLink.open(0, key);
+  assert.equal(again.names, true);
+  // The same number, written either way.
+  assert.equal(again.simFor('6911111111'), 7);
+  assert.equal(again.simFor('+306922222222'), 3);
+  await again.setSim('+306911111111', -1);
+  assert.equal((await SmsLink.open(0, key)).simFor('+306911111111'), -1);
+  assert.equal((await SmsLink.open(0, key)).simFor('+306922222222'), 3);
+  // Another space's key opens nothing of it.
+  assert.equal((await SmsLink.open(0, randomBytes(32)).catch(() => null))?.names ?? false, false);
 });
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);

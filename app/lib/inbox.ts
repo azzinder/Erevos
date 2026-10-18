@@ -12,8 +12,9 @@ import { voiceDuration } from './voice';
 
 export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null; phone?: string };
 
-/** The latest SMS of a conversation with one number. */
-export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number };
+/** The latest SMS of a conversation with one number. `name`: what the phone's contacts call the
+ *  number, when the owner lets Erevos show it. */
+export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number; name?: string };
 
 export type InboxMessage = {
   peer: string;
@@ -100,7 +101,7 @@ export function buildInbox(
   });
   for (const t of sms) {
     if (used.has(t)) continue;
-    rows.push({ identity: `sms:${t.address}`, name: t.address, last: t.text, mine: t.mine, mark: 0, at: t.at, unread: t.unread, timer: 0, imported: false, avatar: null, sms: t.address, lastSms: true });
+    rows.push({ identity: `sms:${t.address}`, name: t.name || t.address, last: t.text, mine: t.mine, mark: 0, at: t.at, unread: t.unread, timer: 0, imported: false, avatar: null, sms: t.address, lastSms: true });
   }
   return rows.sort((a, b) => b.at - a.at || shownName(a).localeCompare(shownName(b)));
 }

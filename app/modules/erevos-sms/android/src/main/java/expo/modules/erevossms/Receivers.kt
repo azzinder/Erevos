@@ -20,14 +20,7 @@ class SmsDeliverReceiver : BroadcastReceiver() {
     if (parts.isEmpty()) return
     val address = parts[0].originatingAddress ?: return
     val text = parts.joinToString("") { it.messageBody ?: "" }
-    SmsStore.received(context, address, text, parts[0].timestampMillis)
-  }
-}
-
-/** MMS are not handled yet. Android needs the receiver before it lets the app be the default. */
-class MmsDeliverReceiver : BroadcastReceiver() {
-  override fun onReceive(context: Context, intent: Intent) {
-    SmsStore.notifyNew(context)
+    SmsStore.received(context, address, text, parts[0].timestampMillis, simOf(intent))
   }
 }
 

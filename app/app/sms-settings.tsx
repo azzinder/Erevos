@@ -10,12 +10,14 @@ import { requestDefaultSms, smsReady, smsStatus, type SmsStatus } from '../modul
 
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
 // writing to a number that has Erevos goes through Erevos. Whether to look for Erevos on a number
-// with a hidden SMS invite, and a new SMS conversation.
+// with a hidden SMS invite, whether SMS numbers show the names the phone's contacts give them, and
+// a new SMS conversation.
 
 export default function SmsSettings() {
   const [status, setStatus] = useState<SmsStatus | null>(smsStatus());
   const [link, setLink] = useState<SmsLink | null>(null);
   const [invites, setInvites] = useState(true);
+  const [names, setNames] = useState(false);
   const [number, setNumber] = useState('');
   const [note, setNote] = useState('');
 
@@ -25,6 +27,7 @@ export default function SmsSettings() {
       .then((opened) => {
         setLink(opened);
         setInvites(opened.invites);
+        setNames(opened.names);
       })
       .catch(() => setNote('The SMS settings of this space could not open.'));
     // Android answers the question in its own screen: look again when the app comes back.
@@ -60,6 +63,21 @@ export default function SmsSettings() {
     const next = !invites;
     await link.setInvites(next);
     setInvites(next);
+  }
+
+  // Names from the phone's contacts: Android asks once, when the owner turns them on.
+  async function toggleNames() {
+    if (!link) return;
+    setNote('');
+    if (!names) {
+      const answer = await PermissionsAndroid.request('android.permission.READ_CONTACTS').catch(() => null);
+      if (answer !== PermissionsAndroid.RESULTS.GRANTED) {
+        setNote('Erevos may not read the phone\'s contacts, so numbers stay as they are.');
+        return;
+      }
+    }
+    await link.setNames(!names);
+    setNames(!names);
   }
 
   function open() {
@@ -98,6 +116,27 @@ export default function SmsSettings() {
           A number can also be linked by hand: open its SMS conversation and choose the contact.
         </Text>
       </Card>
+
+      <SectionTitle title="Names from your contacts" />
+      <Card>
+        <Text tone="muted">
+          SMS numbers that are no Erevos contact can show the names your phone's contacts give them. Erevos reads them
+          only to show them, keeps no copy, and sends them nowhere. Android asks first.
+        </Text>
+        <Button title={names ? 'Show numbers only' : 'Show names from my contacts'} kind="secondary" onPress={() => void toggleNames()} />
+      </Card>
+
+      {(status?.slots ?? 0) >= 2 ? (
+        <>
+          <SectionTitle title="Two SIMs" />
+          <Card>
+            <Text tone="muted">
+              In an SMS conversation, choose the SIM above the message field. Erevos keeps that choice for the number;
+              until then, it answers on the SIM the last message came on. Each message shows its SIM.
+            </Text>
+          </Card>
+        </>
+      ) : null}
 
       <SectionTitle title="New SMS" />
       <Field label="Phone number">

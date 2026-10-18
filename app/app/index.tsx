@@ -9,12 +9,13 @@ import { font, fontStyle, Sheet, Text } from '../components/ui';
 import { canGroup, hasCore } from '../lib/core';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
-import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type InboxGroup, type InboxRow } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type InboxGroup, type InboxRow, type InboxSms } from '../lib/inbox';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
 import { spaceGroups } from '../lib/space-groups';
-import { smsStatus, smsThreads } from '../modules/erevos-sms';
+import { SmsLink } from '../lib/sms-link';
+import { contactNames, smsStatus, smsThreads } from '../modules/erevos-sms';
 import { Archive } from '../lock/archive';
 import { useLock } from '../lock/context';
 import { loadE2EData } from '../lock/e2e-data';
@@ -56,6 +57,13 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
   { title: 'Relay test', detail: 'For testing a relay', href: '/relay' },
   { title: 'Radio test', detail: 'For testing the nearby link', href: '/radio', phone: true },
 ];
+
+// The phone's SMS conversations, named as the phone's contacts name them when the owner turned that on.
+async function smsRows(space: number, key: Uint8Array): Promise<InboxSms[]> {
+  const threads = await smsThreads();
+  const names = (await SmsLink.open(space, key).catch(() => null))?.names ? await contactNames(threads.map((t) => t.address)).catch(() => ({})) : {};
+  return threads.map((t) => ({ ...t, name: (names as Record<string, string>)[t.address] }));
+}
 
 export default function Home() {
   const styles = useStyles(makeStyles);
@@ -100,7 +108,7 @@ export default function Home() {
           quiet(Archive.open('space', current, key).then((a) => a.chats()), []),
           quiet(loadCurrentSpaceData(), null),
           // The phone's SMS show only once Erevos is its SMS app.
-          smsStatus()?.isDefault ? quiet(smsThreads(), []) : Promise.resolve([]),
+          smsStatus()?.isDefault ? quiet(smsRows(current, key), []) : Promise.resolve([]),
           canGroup() ? quiet(spaceGroups().then((g) => g.list() as InboxGroup[]), []) : Promise.resolve([] as InboxGroup[]),
         ]).then(([[contacts, messages], imported, data, sms, groups]) => {
           if (!active) return;

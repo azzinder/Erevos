@@ -7,6 +7,9 @@
   <uses-permission android:name="android.permission.RECEIVE_MMS" />
   <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- Asked for only when the owner turns them on: which SIM, and names from the phone's contacts. -->
+  <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+  <uses-permission android:name="android.permission.READ_CONTACTS" />
 
   <application>
     <!-- What Android asks of a default SMS app: these four parts. -->
@@ -73,5 +76,14 @@
     </receiver>
 
     <receiver android:name="expo.modules.erevossms.SentReceiver" android:exported="false" />
+    <receiver android:name="expo.modules.erevossms.MmsSentReceiver" android:exported="false" />
+    <receiver android:name="expo.modules.erevossms.MmsDownloadedReceiver" android:exported="false" />
+
+    <!-- MMS files, opened by the phone's MMS service for one call each (Android grants it). -->
+    <provider
+      android:name="expo.modules.erevossms.MmsFiles"
+      android:authorities="${applicationId}.erevossms.mms"
+      android:exported="false"
+      android:grantUriPermissions="true" />
   </application>
 </manifest>
