@@ -16,10 +16,10 @@ import {
   SLOTS,
   unlock,
 } from '../lock/config';
-import { openHidden, prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
+import { MIN_PIN, openHidden, prepareHidden, removeHiddenPassword, searchHidden, setHiddenPassword } from '../lock/hidden';
 import { loadOpenKey, saveOpenKey } from '../lock/keys';
 import { EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
-import { FREE_TRIES, LockedOutError } from '../lock/tries';
+import { assertNotLockedOut, FREE_TRIES, LockedOutError, SEARCH_TRIES } from '../lock/tries';
 import { store } from './secure-memory';
 
 setPbkdf2(webCryptoPbkdf2()!);
@@ -264,4 +264,23 @@ t('refuses the space\'s own password for its hidden chats', async () => {
   await setLockPassword(0, 'real-1111', real);
   await assert.rejects(setHiddenPassword(0, 'real-1111', null), SamePasswordError);
   await setHiddenPassword(0, 'other', null);
+});
+
+t('hidden chats open from a search with their PIN, and a wrong one is only a search', async () => {
+  await setLockPassword(0, 'real-1111', real);
+  await setLockPassword(1, 'decoy-2222', decoy);
+  await prepareHidden();
+  const key = await setHiddenPassword(0, 'pin-0', null);
+  assert.deepEqual(await searchHidden(0, 'pin-0'), key);
+  assert.equal(await searchHidden(1, 'pin-0'), null);
+  // Short searches are never tried.
+  assert.equal(await searchHidden(0, 'pin-0'.slice(0, MIN_PIN - 1)), null);
+  // Wrong searches count apart from the lock screen's tries: it never waits for them.
+  const now = Date.now();
+  for (let i = 0; i < FREE_TRIES + 1; i++) assert.equal(await searchHidden(0, `search ${i}`, now), null);
+  await assertNotLockedOut(now);
+  await assert.rejects(assertNotLockedOut(now, SEARCH_TRIES), LockedOutError);
+  // While searches wait, even the right PIN opens nothing, and says nothing.
+  assert.equal(await searchHidden(0, 'pin-0', now + 1), null);
+  assert.deepEqual(await searchHidden(0, 'pin-0', now + 7 * 24 * 3600_000), key);
 });

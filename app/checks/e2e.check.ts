@@ -16,6 +16,8 @@ import { PART_SIZE, VoiceAssembler } from '../lib/voice';
 import { checkedAvatar, FILE, loadE2EData, MAX_NAME } from '../lock/e2e-data';
 import { DEFAULT_LOOK } from '../theme/look';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
+import { History, newTag } from '../lock/history';
+import { moveChat } from '../lock/move-chat';
 import { files } from './files-memory';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -493,4 +495,41 @@ t('a call is set up in sealed messages, and calling accepts a request', async ()
   // A text never carries a call signal, and a plain message has none.
   const text = await alice.e2e.seal(added.identity, 'hi', alice.from, { call: { id: '0123456789abcdef', kind: 'ringing' } });
   assert.equal(message(await bob.e2e.receive(text.packet)).call, null);
+});
+
+t('a chat moves into the hidden chats whole, with the same safety number, and goes on there', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('hidden', 1);
+  const added = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(added.identity);
+  await alice.e2e.rename(added.identity, 'Bob');
+  const before = await alice.e2e.safetyNumber(added.identity);
+  const peer = `contact:${added.identity}`;
+  const history = await History.open('space', 0, key);
+  await history.add({ peer, text: 'γεια', mine: true, at: 1, tag: newTag() });
+  await history.add({ peer: 'contact:other', text: 'stays', mine: true, at: 2, tag: newTag() });
+
+  const hiddenKey = randomBytes(32);
+  const hidden = { e2e: await E2E.open('hidden', 0, hiddenKey), history: await History.open('hidden', 0, hiddenKey) };
+  await moveChat(added.identity, { e2e: alice.e2e, history, archive: null }, hidden);
+
+  // Nothing of it stays in the space, opened again from what it keeps.
+  assert.deepEqual((await E2E.open('space', 0, key)).contacts(), []);
+  assert.deepEqual((await History.open('space', 0, key)).messages().map((m) => m.text), ['stays']);
+  // The hidden chats have it all, and the safety number is the one Bob compared.
+  const reopened = await E2E.open('hidden', 0, hiddenKey);
+  assert.equal(reopened.contacts()[0].name, 'Bob');
+  assert.equal(await reopened.safetyNumber(added.identity), before);
+  assert.equal(await bob.e2e.safetyNumber(hello.identity), before);
+  assert.deepEqual((await History.open('hidden', 0, hiddenKey)).messages().map((m) => m.text), ['γεια']);
+
+  // Told from the hidden chats' queue, Bob writes there, and the hidden chats read it.
+  const queue = sender();
+  const told = await reopened.seal(added.identity, '', queue);
+  message(await bob.e2e.receive(told.packet));
+  const answer = await bob.e2e.seal(hello.identity, 'εδώ είμαι', bob.from);
+  assert.equal(answer.sender, queue);
+  assert.equal(message(await reopened.receive(answer.packet)).text, 'εδώ είμαι');
 });

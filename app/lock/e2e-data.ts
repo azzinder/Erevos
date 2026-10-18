@@ -47,6 +47,10 @@ export type Contact = {
   /** Their phone number, when this chat linked it to them (by hand, or through an SMS invite), so
    *  writing to the number goes through Erevos. Empty when not linked. Only this phone knows it. */
   phone: string;
+  /** The identity key, hex, they know this chat by, when it is not this account's: a chat moved
+   *  here from the space (into its hidden chats) keeps the space's, so the safety number stays the
+   *  same. Empty for this account's own. */
+  ownIdentity: string;
 };
 
 /** A contact's picture of this chat's choosing: a sign (an emoji) on a colour, or a photo (lock/avatar-photos.ts). */
@@ -122,6 +126,7 @@ function checkedContact(value: unknown): Contact | null {
     request: v.request === true,
     look: v.look && typeof v.look === 'object' ? checkedLook(v.look) : null,
     avatar: checkedAvatar(v.avatar),
+    ownIdentity: isHex(v.ownIdentity) && v.ownIdentity.length === 64 ? v.ownIdentity : '',
     hide: v.hide === true,
     heldGot: heldTags(v.heldGot),
     heldRead: heldTags(v.heldRead),

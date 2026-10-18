@@ -7,6 +7,7 @@ import { LockIcon, MoreIcon, PlusIcon, SearchIcon, TimerIcon } from '../componen
 import { KeyFace } from '../components/key-face';
 import { font, fontStyle, Sheet, Text } from '../components/ui';
 import { hasCore } from '../lib/core';
+import { handOverHidden } from '../lib/hidden-handoff';
 import { buildInbox, filterInbox, rowTime, shownName, type InboxRow } from '../lib/inbox';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
@@ -15,6 +16,7 @@ import { Archive } from '../lock/archive';
 import { useLock } from '../lock/context';
 import { loadE2EData } from '../lock/e2e-data';
 import { Logo } from '../lock/gate';
+import { searchHidden } from '../lock/hidden';
 import { History, type Message } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
@@ -25,7 +27,7 @@ import { useStyles, useTheme } from '../theme/context';
 // names and last messages, the relay's state, and the rest of the app behind the menu. It is read
 // again each time it comes back into view, so a chat just written in moves to the top, and each
 // time a message comes while it shows (lib/receiver.ts). Hidden
-// chats never show here; the menu offers them in every space alike.
+// chats never show here: their PIN, typed in the search, opens them, in every space alike.
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
 
@@ -33,7 +35,6 @@ type Relay = 'ready' | 'no-queue' | 'none';
 
 // `phone`: only on a phone, as it needs its radio.
 const MENU: { title: string; detail: string; href: Href; phone?: boolean }[] = [
-  { title: 'Hidden chats', detail: 'Open them with their own password', href: '/chat?hidden=1' },
   { title: 'Nearby phones', detail: 'Bluetooth and Wi-Fi, without internet', href: '/chat', phone: true },
   { title: 'SMS', detail: 'Erevos as the SMS app, one list for all messages', href: '/sms-settings', phone: true },
   { title: 'Imported chats', detail: 'Telegram and WhatsApp exports', href: '/imported' },
@@ -53,6 +54,16 @@ export default function Home() {
   const [rows, setRows] = useState<InboxRow[] | null>(null);
   const [relay, setRelay] = useState<Relay>('none');
   const [query, setQuery] = useState('');
+
+  // A search sent with the keyboard's search key is also tried as the hidden chats' PIN. A right
+  // one opens them and the search empties; a wrong one is a search like any other.
+  async function searchSubmitted() {
+    const key = await searchHidden(currentSpace().space, query).catch(() => null);
+    if (!key) return;
+    setQuery('');
+    handOverHidden(key);
+    router.push('/chat?hidden=open');
+  }
   const [menu, setMenu] = useState(false);
   const [now, setNow] = useState(Date.now());
   // The contacts whose phones said they are open, and not long ago (lib/e2e.ts).
@@ -140,6 +151,7 @@ export default function Home() {
         <TextInput
           value={query}
           onChangeText={setQuery}
+          onSubmitEditing={() => void searchSubmitted()}
           placeholder="Search chats"
           placeholderTextColor={colors.textFaint}
           style={styles.searchInput}

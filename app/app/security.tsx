@@ -57,7 +57,7 @@ export default function Security() {
 
   async function removeHidden() {
     const ok = await confirm(
-      'Remove hidden chats password',
+      'Remove hidden chats PIN',
       'The hidden chats will stop opening. They stay on the phone, and nothing opens them.',
     );
     if (!ok) return;
@@ -148,16 +148,17 @@ export default function Security() {
       <SectionTitle title="Hidden chats" />
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
-          Chats that open only with their own password, from Hidden chats in the chat screen. They have their own relay
-          queue, so while they are closed their messages wait on the relay and never show among your other chats.
+          Chats that open only with their own PIN: type it in the search on the home screen and press Enter. A wrong one is
+          just a search. A chat moves into them from its details. They have their own relay queue, so while they are closed
+          their messages wait on the relay and never show among your other chats.
         </Text>
         <Text variant="caption" tone="muted" style={hint}>
-          For privacy, the app never shows whether hidden chats are set. A new password here starts them empty and
-          replaces the ones before. To keep them and change only the password, open them and change it there.
+          For privacy, the app never shows whether hidden chats are set. A new PIN here starts them empty and
+          replaces the ones before. To keep them and change only the PIN, open them and change it there.
         </Text>
         <Row wrap>
-          <Button title="Set hidden chats password" kind="secondary" compact onPress={() => setEditing('hidden')} />
-          <Button title="Remove hidden chats password" kind="secondary" compact onPress={removeHidden} />
+          <Button title="Set hidden chats PIN" kind="secondary" compact onPress={() => setEditing('hidden')} />
+          <Button title="Remove hidden chats PIN" kind="secondary" compact onPress={removeHidden} />
         </Row>
       </Card>
 
@@ -175,7 +176,7 @@ export default function Security() {
         visible={editing !== null}
         title={
           editing === 'hidden'
-            ? 'Set hidden chats password'
+            ? 'Set hidden chats PIN'
             : editing === 'second'
               ? 'Set second password'
               : locked

@@ -7,6 +7,9 @@ import { secureGet, secureSet } from '../lib/secure';
 // password ends the wait.
 
 const KEY = 'erevos.lock-tries';
+/** Searches on the home screen are tried as the hidden chats' PIN (hidden.ts), counted apart, so
+ *  searching never makes the lock screen wait. */
+export const SEARCH_TRIES = 'erevos.search-tries';
 export const FREE_TRIES = 5;
 const FIRST_WAIT_MS = 30_000;
 const MAX_WAIT_MS = 3_600_000;
@@ -25,9 +28,9 @@ export class LockedOutError extends Error {
   }
 }
 
-async function load(): Promise<Tries> {
+async function load(entry = KEY): Promise<Tries> {
   try {
-    const raw = await secureGet(KEY);
+    const raw = await secureGet(entry);
     if (raw) {
       const data = JSON.parse(raw) as Partial<Tries>;
       if (typeof data.fails === 'number' && typeof data.until === 'number') return { fails: data.fails, until: data.until };
@@ -40,25 +43,25 @@ async function load(): Promise<Tries> {
 
 /** The count exists from the first start, so its entry does not show that a password was ever tried. */
 export async function prepareTries(): Promise<void> {
-  if (!(await secureGet(KEY))) await secureSet(KEY, JSON.stringify({ fails: 0, until: 0 }));
+  for (const entry of [KEY, SEARCH_TRIES]) if (!(await secureGet(entry))) await secureSet(entry, JSON.stringify({ fails: 0, until: 0 }));
 }
 
 /** Throws LockedOutError while a wait is on. */
-export async function assertNotLockedOut(now = Date.now()): Promise<void> {
-  const { until } = await load();
+export async function assertNotLockedOut(now = Date.now(), entry = KEY): Promise<void> {
+  const { until } = await load(entry);
   if (until > now) throw new LockedOutError(until);
 }
 
 /** Counts a wrong password; returns when the next check may run (now, while tries are free). */
-export async function recordWrongPassword(now = Date.now()): Promise<number> {
-  const fails = (await load()).fails + 1;
+export async function recordWrongPassword(now = Date.now(), entry = KEY): Promise<number> {
+  const fails = (await load(entry)).fails + 1;
   const until = fails < FREE_TRIES ? 0 : now + Math.min(MAX_WAIT_MS, FIRST_WAIT_MS * 2 ** (fails - FREE_TRIES));
-  await secureSet(KEY, JSON.stringify({ fails, until }));
+  await secureSet(entry, JSON.stringify({ fails, until }));
   return until;
 }
 
-export async function recordRightPassword(): Promise<void> {
-  await secureSet(KEY, JSON.stringify({ fails: 0, until: 0 }));
+export async function recordRightPassword(entry = KEY): Promise<void> {
+  await secureSet(entry, JSON.stringify({ fails: 0, until: 0 }));
 }
 
 /** "Try again in …", in seconds or minutes. */

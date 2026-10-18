@@ -436,6 +436,37 @@ export class E2E {
     });
   }
 
+  /** This account's identity key, hex. */
+  identityHex(): string {
+    return toHex(this.identity);
+  }
+
+  /** A contact as kept, conversations and all, or null. */
+  record(identity: string): Contact | null {
+    const contact = this.find(identity);
+    return contact ? { ...contact } : null;
+  }
+
+  /**
+   * Takes a contact out of this chat, conversations and all, to be put in another (moving a chat
+   * into hidden chats): what it holds (its photo) stays, as it goes with it. Null if there is none.
+   */
+  takeOut(identity: string): Promise<Contact | null> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) return null;
+      await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity) });
+      return contact;
+    });
+  }
+
+  /** Puts in a contact taken out of another chat, in place of any with the same key. */
+  putIn(contact: Contact): Promise<void> {
+    return this.run(async () => {
+      await this.save(this.withContact(contact));
+    });
+  }
+
   /** Gives a contact a picture of this chat's choosing, kept with it and sealed; null gives back the one drawn from their key. */
   setAvatar(identity: string, avatar: Avatar | null): Promise<void> {
     return this.run(async () => {
@@ -449,7 +480,8 @@ export class E2E {
 
   /** The 60-digit number both phones show for a contact: when they match, no one is in between. */
   safetyNumber(identity: string): Promise<string> {
-    return core.safetyNumber(this.identity, fromHex(identity));
+    const own = this.find(identity)?.ownIdentity;
+    return core.safetyNumber(own ? fromHex(own) : this.identity, fromHex(identity));
   }
 
   /**
@@ -491,6 +523,7 @@ export class E2E {
           request: false,
           look: this.find(identity)?.look ?? null,
           avatar: this.find(identity)?.avatar ?? null,
+          ownIdentity: this.find(identity)?.ownIdentity ?? '',
           hide: false,
           heldGot: [],
           heldRead: [],
@@ -701,6 +734,7 @@ export class E2E {
       request: known ? known.request : true,
       look: known?.look ?? null,
       avatar: known?.avatar ?? null,
+      ownIdentity: known?.ownIdentity ?? '',
       hide: known?.hide ?? false,
       heldGot: known?.heldGot ?? [],
       heldRead: known?.heldRead ?? [],

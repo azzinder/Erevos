@@ -223,6 +223,25 @@ export class History {
     return gone;
   }
 
+  /**
+   * Takes one chat's messages out, to be put in another history (moving a chat into hidden
+   * chats): the sounds and files they name stay on the phone, as they go with them.
+   */
+  async takeOut(peer: string): Promise<Message[]> {
+    const taken = (this.data.chats[peer] ?? []).map((m) => ({ peer, ...unpack(m) }));
+    const { [peer]: _gone, ...chats } = this.data.chats;
+    this.data = { chats };
+    await this.store(this.data);
+    return taken;
+  }
+
+  /** Puts in messages taken out of another history, after any already here for their chats. */
+  putIn(messages: Message[]): Promise<void> {
+    const chats = { ...this.data.chats };
+    for (const { peer, ...message } of messages) chats[peer] = [...(chats[peer] ?? []), pack(message)];
+    return this.save(fitted({ chats }));
+  }
+
   /** Deletes one chat's messages from the phone. */
   clear(peer: string): Promise<void> {
     const { [peer]: _gone, ...chats } = this.data.chats;

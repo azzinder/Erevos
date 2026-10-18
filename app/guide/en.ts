@@ -37,7 +37,6 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 
 | In the menu | What it opens |
 | --- | --- |
-| **Hidden chats** | The hidden chats, with their own password. See [Hidden chats](#hidden). |
 | **Nearby phones** | Chat over Bluetooth and Wi-Fi Aware. See [Chat with a nearby phone](#nearby). |
 | **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
@@ -47,8 +46,10 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 | **Relay test**, **Radio test** | Tests of the connections. See [The test screens](#tests). |
 
 Inside a chat, its name and picture are at the top with how it travels: **End-to-end encrypted** through the relay,
-or **Nearby radio link, not encrypted yet**. Tap the name, or **Details**, for the safety number, **Rename**,
-**Picture**, **Chat look**, **Delete messages**, **Disappearing**, your other chats and the relay; **Done** hides them again.
+or **Nearby radio link, not encrypted yet**. Tap the name, or **⋯** beside it, for the chat's **Details**: its
+picture (tap it to change it), **Call**, **Video**, **Rename** and **Picture**, then **Disappearing messages**,
+**Appear offline**, **Chat look**, the **Safety number**, **Move to hidden chats** and **Delete messages**. **Done**
+closes them.
 
 A good first hour:
 
@@ -83,12 +84,12 @@ A relay is a small server that keeps one-way queues: each phone has its own queu
 link** can drop messages into it. The relay holds no accounts, names or phone numbers, and cannot read the messages:
 they are end-to-end encrypted, and only the two phones have the keys. Both phones must use the same relay for now.
 
-1. On the home screen, tap **New chat**. The relay settings open (in a chat they are under **Details**, then
-   **Relay and new contacts**).
+1. On the home screen, tap **New chat**. The relay settings open (they are under **Relay and new contacts** in
+   a chat with no contact picked).
 2. Type the **Relay address**: \`ws://<computer address>:7879\` for a relay on your own network, or
    \`wss://relay.example.org\` for one on the internet. Add the **Token** if the relay needs one.
 3. Tap **Create my relay queue**. Erevos says **Your relay queue is ready**.
-4. Tap **Show my QR code** and let the other phone scan it with its camera, then open the link in Erevos. The
+4. Tap **Show my QR code**: it opens over the screen. Let the other phone scan it with its camera, then open the link in Erevos. The
    **Add a contact** screen shows what it holds: tap **Add to chat** only if you scanned it yourself.
 5. If their camera only shows the text, or they are far away, tap **Share my contact link** and send it to them.
    They paste it into **erevos://contact link** and tap **Add**.
@@ -312,19 +313,26 @@ exist.
 
 ## Hidden chats {#hidden}
 
-Every space can keep hidden chats: chats that open only with their own password, and never show among your other
-chats.
+Every space can keep hidden chats: chats that open only with their own PIN, and never show among your other
+chats. There is no button for them anywhere.
 
-1. In **Lock and second password**, under **Hidden chats**, tap **Set hidden chats password**, type it twice and
-   tap **Save**.
-2. To open them, tap **Hidden chats** in the home screen's menu, or at the top of a chat, and type that password.
-3. They open as their own chat, titled **Hidden chats**, with **Change password** and **Close** at the top.
+1. Start them in either of two ways: in **Lock and second password**, under **Hidden chats**, tap **Set hidden chats
+   PIN**, type it twice and tap **Save**; or open a chat's **Details**, tap **Move to hidden chats**, type a PIN of 4
+   characters or more and tap **New hidden chats**, then **Start and move**.
+2. To open them, type the PIN in **Search chats** on the home screen and press Enter (the keyboard's search key). A
+   wrong PIN is just a search: nothing happens.
+3. They open as their own chat, titled **Hidden chats**, with **Change PIN** at the top. The back arrow closes them.
+4. To move another chat there, open its **Details**, tap **Move to hidden chats**, type the PIN and tap **Move**. The
+   chat leaves your list with its messages, name, picture and look, and its safety number stays the same. Their phone
+   is told at once to write to the hidden chats from now on; a message they send in that very moment may not come.
 
 - **Relay only:** hidden chats have their own relay queue and their own keys, and never use the nearby link. While
   they are closed, their messages wait on the relay.
 - **They close by themselves** when Erevos goes to the background.
-- **A new password from Lock** starts them empty and replaces the ones before. To keep them and change only the
-  password, open them and use **Change password** there.
+- **A new PIN** (from Lock, or **New hidden chats**) starts them empty and replaces the ones before. To keep them
+  and change only the PIN, open them and use **Change PIN** there.
+- **Wrong PINs in the search** are counted apart from the lock screen's: after five, searches stop trying for a while,
+  silently, and the lock screen never waits because of them.
 - **Discretion:** the app never shows whether hidden chats are set, in any space.
 
 ## Backups {#backup}
