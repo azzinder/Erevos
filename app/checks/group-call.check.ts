@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { afterEach, mock, test } from 'node:test';
 
 import { RING_MS } from '../lib/call';
-import { currentGroupCall, MAX_GROUP_CALL } from '../lib/group-call';
+import { currentGroupCall, MAX_GROUP_CALL, MAX_VIDEO } from '../lib/group-call';
 import { decodeGroupCall, type GroupCallSignal } from '../lib/group-call-signal';
 import { closeGroupCall, endGroupCall, groupCallGoingOn, groupCallSignal, joinGroupCall, shownGroupCall, startGroupCall, type GroupCallPlace } from '../lib/group-calls';
 import { fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
@@ -44,7 +44,7 @@ afterEach(() => {
 test('whoever starts a call is in it, and offers to each member who joins', async () => {
   const { calls, sent, lines } = place();
   const { rtc, connections } = fakeRtc();
-  const call = await startGroupCall(calls, GROUP, null, rtc);
+  const call = await startGroupCall(calls, GROUP, false, null, rtc);
   assert.equal(call.state, 'in');
   assert.equal(sent[0].kind, 'start');
   assert.equal(shownGroupCall()?.call, call);
@@ -80,7 +80,7 @@ test('a call rings, joins, and takes the offers of those already in it', async (
   const { calls, sent } = place();
   const { rtc, connections } = fakeRtc();
   const id = 'cd'.repeat(8);
-  await groupCallSignal(calls, GROUP, BOB, { id, kind: 'start', at: Date.now() }, rtc);
+  await groupCallSignal(calls, GROUP, BOB, { id, kind: 'start', at: Date.now(), video: false }, rtc);
   const ringing = shownGroupCall()!.call;
   assert.equal(ringing.state, 'incoming');
   assert.equal(ringing.startedBy, BOB);
@@ -101,7 +101,7 @@ test('a call rings, joins, and takes the offers of those already in it', async (
 test('two joining at once: the lower identity’s offer counts', async () => {
   const { calls, sent } = place();
   const { rtc, connections } = fakeRtc();
-  const call = await startGroupCall(calls, GROUP, null, rtc);
+  const call = await startGroupCall(calls, GROUP, false, null, rtc);
   // Ada and Carol each joined; this phone offered to both.
   await groupCallSignal(calls, GROUP, ADA, { id: call.id, kind: 'join' }, rtc);
   await groupCallSignal(calls, GROUP, CAROL, { id: call.id, kind: 'join' }, rtc);
@@ -121,7 +121,7 @@ test('two joining at once: the lower identity’s offer counts', async () => {
 test('a call holds at most MAX_GROUP_CALL members', async () => {
   const { calls } = place();
   const { rtc } = fakeRtc();
-  const call = await startGroupCall(calls, GROUP, null, rtc);
+  const call = await startGroupCall(calls, GROUP, false, null, rtc);
   for (let i = 0; i < MAX_GROUP_CALL + 2; i++) {
     await groupCallSignal(calls, GROUP, (40 + i).toString(16).padStart(2, '0').repeat(32), { id: call.id, kind: 'join' }, rtc);
   }
@@ -132,7 +132,7 @@ test('a call going on shows until its members leave, and one this phone is busy 
   const { calls, lines } = place();
   const { rtc } = fakeRtc();
   const id = 'ef'.repeat(8);
-  await groupCallSignal(calls, GROUP, BOB, { id, kind: 'start', at: Date.now() }, rtc);
+  await groupCallSignal(calls, GROUP, BOB, { id, kind: 'start', at: Date.now(), video: false }, rtc);
   shownGroupCall()!.call.decline();
   closeGroupCall(shownGroupCall()!.call);
   assert.deepEqual(lines, ['📞 Group call, turned down']);
@@ -141,21 +141,21 @@ test('a call going on shows until its members leave, and one this phone is busy 
   // Phones that went quiet are taken as gone.
   assert.equal(groupCallGoingOn(GROUP, Date.now() + 10 * 60_000), null);
 
-  await groupCallSignal(calls, GROUP, CAROL, { id, kind: 'here' }, rtc);
+  await groupCallSignal(calls, GROUP, CAROL, { id, kind: 'here', video: false }, rtc);
   const joined = await joinGroupCall(calls, GROUP, null, rtc);
   assert.equal(joined.id, id);
   // Not shown as going on to the phone that is in it.
   assert.equal(groupCallGoingOn(GROUP), null);
 
   // Another group's call, while in this one.
-  await groupCallSignal(calls, 'cd'.repeat(16), BOB, { id: '12'.repeat(8), kind: 'start', at: Date.now() }, rtc);
+  await groupCallSignal(calls, 'cd'.repeat(16), BOB, { id: '12'.repeat(8), kind: 'start', at: Date.now(), video: false }, rtc);
   assert.equal(shownGroupCall()?.call, joined);
   assert.equal(lines[lines.length - 1], '📞 Missed group call, while in another call');
 
   // Started long ago: missed, not rung.
   joined.hangUp();
   closeGroupCall(joined);
-  await groupCallSignal(calls, GROUP, BOB, { id: '34'.repeat(8), kind: 'start', at: Date.now() - 5 * 60_000 }, rtc);
+  await groupCallSignal(calls, GROUP, BOB, { id: '34'.repeat(8), kind: 'start', at: Date.now() - 5 * 60_000, video: false }, rtc);
   assert.equal(shownGroupCall(), null);
   assert.equal(lines[lines.length - 1], '📞 Missed group call');
 });
@@ -163,7 +163,7 @@ test('a call going on shows until its members leave, and one this phone is busy 
 test('a call that rings unanswered is missed, and stops ringing once nobody is in it', async () => {
   const { calls, lines } = place();
   const { rtc } = fakeRtc();
-  await groupCallSignal(calls, GROUP, BOB, { id: '56'.repeat(8), kind: 'start', at: Date.now() }, rtc);
+  await groupCallSignal(calls, GROUP, BOB, { id: '56'.repeat(8), kind: 'start', at: Date.now(), video: false }, rtc);
   const first = shownGroupCall()!.call;
   await groupCallSignal(calls, GROUP, BOB, { id: '56'.repeat(8), kind: 'leave' }, rtc);
   assert.equal(first.state, 'ended');
@@ -172,7 +172,7 @@ test('a call that rings unanswered is missed, and stops ringing once nobody is i
 
   mock.timers.enable({ apis: ['setTimeout'] });
   try {
-    await groupCallSignal(calls, GROUP, BOB, { id: '78'.repeat(8), kind: 'start', at: Date.now() }, rtc);
+    await groupCallSignal(calls, GROUP, BOB, { id: '78'.repeat(8), kind: 'start', at: Date.now(), video: false }, rtc);
     const second = shownGroupCall()!.call;
     mock.timers.tick(RING_MS);
     assert.equal(second.ended, 'missed');
@@ -185,14 +185,55 @@ test('a call that rings unanswered is missed, and stops ringing once nobody is i
 test('two start a call in the same group at once: the lower id goes on', async () => {
   const { calls, sent } = place();
   const { rtc } = fakeRtc();
-  const ours = await startGroupCall(calls, GROUP, null, rtc);
+  const ours = await startGroupCall(calls, GROUP, false, null, rtc);
   const theirs = '00'.repeat(8);
-  await groupCallSignal(calls, GROUP, BOB, { id: theirs, kind: 'start', at: Date.now() }, rtc);
+  await groupCallSignal(calls, GROUP, BOB, { id: theirs, kind: 'start', at: Date.now(), video: false }, rtc);
   assert.equal(ours.state, 'ended');
   const now = shownGroupCall()!.call;
   assert.equal(now.id, theirs);
   assert.equal(now.state, 'in');
   assert.deepEqual(sent.map((s) => s.kind), ['start', 'leave', 'join']);
+});
+
+test('a video call: pictures pause with more than MAX_VIDEO in it, and come back', async () => {
+  const { calls, lines } = place();
+  const { rtc, streams } = fakeRtc();
+  const call = await startGroupCall(calls, GROUP, true, null, rtc);
+  const camera = streams[0].getVideoTracks()[0];
+  assert.ok(camera && camera.enabled);
+  call.setCameraOff(true);
+  assert.equal(camera.enabled, false);
+  call.setCameraOff(false);
+  const others = Array.from({ length: MAX_VIDEO }, (_, i) => (50 + i).toString(16).repeat(32));
+  for (const other of others.slice(0, MAX_VIDEO - 1)) await groupCallSignal(calls, GROUP, other, { id: call.id, kind: 'join' }, rtc);
+  assert.equal(call.videoPaused, false);
+  assert.ok(camera.enabled);
+  await groupCallSignal(calls, GROUP, others[MAX_VIDEO - 1], { id: call.id, kind: 'join' }, rtc);
+  assert.equal(call.videoPaused, true);
+  assert.equal(camera.enabled, false);
+  // Sound goes on.
+  assert.ok(streams[0].getAudioTracks()[0].enabled);
+  await groupCallSignal(calls, GROUP, others[0], { id: call.id, kind: 'leave' }, rtc);
+  assert.equal(call.videoPaused, false);
+  assert.ok(camera.enabled);
+  call.hangUp();
+  assert.match(lines[0], /^📞 Group video call, /);
+});
+
+test('a video call going on is joined as one', async () => {
+  const { calls, lines } = place();
+  const { rtc, streams } = fakeRtc();
+  const id = 'ba'.repeat(8);
+  // Heard only from a member still in it.
+  await groupCallSignal(calls, GROUP, BOB, { id, kind: 'here', video: true }, rtc);
+  assert.equal(groupCallGoingOn(GROUP)?.video, true);
+  const call = await joinGroupCall(calls, GROUP, null, rtc);
+  assert.equal(call.video, true);
+  assert.equal(streams[0].getVideoTracks().length, 1);
+  call.hangUp();
+  closeGroupCall(call);
+  await groupCallSignal(calls, GROUP, BOB, { id: 'bc'.repeat(8), kind: 'start', at: Date.now() - 5 * 60_000, video: true }, rtc);
+  assert.equal(lines[lines.length - 1], '📞 Missed group video call');
 });
 
 test('group call signals are checked as they come', () => {

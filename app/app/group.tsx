@@ -24,8 +24,8 @@ import { ContactPicker, groupableContacts } from '../components/contact-picker';
 
 // A group chat (lib/groups.ts): its messages, each of others' with the sender's name, notes of who
 // joined and left, and the field to write in. Its members sheet lists who is in it; the admin adds
-// contacts, takes members out and renames it, and anyone can leave. Its Call button starts a voice
-// call in the group (lib/group-calls.ts), or joins the one going on.
+// contacts, takes members out and renames it, and anyone can leave. Its Call and Video buttons start
+// a call in the group (lib/group-calls.ts); the call going on shows above the messages, to join.
 
 type Contact = { identity: string; name: string };
 
@@ -111,14 +111,17 @@ export default function GroupScreen() {
     }
   }
 
-  async function call() {
+  // Starts a call, or joins the one going on, as it is: voice or video.
+  async function call(asked: boolean) {
     setNote('');
     if (currentCall() || currentGroupCall()) {
       setNote('There is a call already.');
       return;
     }
-    if (!(await callPermissions(false))) {
-      setNote('A call needs the microphone.');
+    const going = groupCallGoingOn(id);
+    const video = going ? going.video : asked;
+    if (!(await callPermissions(video))) {
+      setNote(video ? 'A video call needs the camera and the microphone.' : 'A call needs the microphone.');
       return;
     }
     try {
@@ -126,8 +129,8 @@ export default function GroupScreen() {
       const direct =
         "Your relay has no call relay beside it, so the call would go straight between the phones. That only works on the same Wi-Fi, and each phone in the call sees the others' addresses on it. With a call relay, none does.";
       if (!relay && !(await confirm('Call without a call relay?', direct, 'Call'))) return;
-      if (groupCallGoingOn(id)) await joinGroupCall(spaceGroupCalls, id, relay, rtc);
-      else await startGroupCall(spaceGroupCalls, id, relay, rtc);
+      if (going) await joinGroupCall(spaceGroupCalls, id, relay, rtc);
+      else await startGroupCall(spaceGroupCalls, id, video, relay, rtc);
     } catch (error) {
       setNote(`Could not call. ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -157,12 +160,13 @@ export default function GroupScreen() {
             </Text>
           </View>
         </Pressable>
-        {out ? null : <TextButton title="Call" onPress={() => void call()} />}
+        {out ? null : <TextButton title="Call" onPress={() => void call(false)} />}
+        {out ? null : <TextButton title="Video" onPress={() => void call(true)} />}
       </Row>
       {going ? (
-        <Pressable onPress={() => void call()} accessibilityRole="button" style={({ pressed }) => [styles.going, pressed && styles.pressed]}>
+        <Pressable onPress={() => void call(going.video)} accessibilityRole="button" style={({ pressed }) => [styles.going, pressed && styles.pressed]}>
           <Text variant="bodyStrong" color={colors.accentText}>
-            A group call is going on · Join
+            {going.video ? 'A group video call' : 'A group call'} is going on · Join
           </Text>
           <Text variant="caption" tone="muted" numberOfLines={1}>
             {going.people.map(name).join(', ')}

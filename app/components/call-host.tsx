@@ -39,9 +39,9 @@ export function CallHost() {
       const call = shownGroupCall()?.call ?? null;
       if (call && call !== knownGroup.current) {
         knownGroup.current = call;
-        setSpeaker(false);
-        if (call.state === 'in') callAudio?.start(false);
-        else if (call.state === 'incoming') callAudio?.ring?.(false, AppState.currentState !== 'active');
+        setSpeaker(call.video);
+        if (call.state === 'in') callAudio?.start(call.video);
+        else if (call.state === 'incoming') callAudio?.ring?.(call.video, AppState.currentState !== 'active');
         void Promise.all([spaceGroups(), spaceChats()])
           .then(([groups, { e2e }]) =>
             setNames({
@@ -100,13 +100,14 @@ export function CallHost() {
   if (group) {
     const { call } = group;
     const joinCall = () => {
-      void callPermissions(false).then((granted) => {
+      void callPermissions(call.video).then((granted) => {
         if (!granted) {
           call.decline();
           return;
         }
         callAudio?.stopRinging?.();
-        callAudio?.start(false);
+        setSpeaker(call.video);
+        callAudio?.start(call.video);
         void call.answer();
       });
     };

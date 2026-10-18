@@ -2,10 +2,12 @@ import { connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, REC
 import type { GroupCallSignal } from './group-call-signal';
 import type { CallRelay } from './relay';
 
-// A group's voice call: a WebRTC connection between each two members in it (a mesh), each set up
-// as a call with a contact is (lib/call.ts), with signals sent in the group's own end-to-end
-// encrypted messages (lib/group-call-signal.ts). Each member's sound goes straight to each other
-// member, encrypted between the two (DTLS-SRTP), through the call relay when there is one.
+// A group's call, voice or video: a WebRTC connection between each two members in it (a mesh),
+// each set up as a call with a contact is (lib/call.ts), with signals sent in the group's own
+// end-to-end encrypted messages (lib/group-call-signal.ts). Each member's sound and picture go
+// straight to each other member, encrypted between the two (DTLS-SRTP), through the call relay
+// when there is one. Each phone sends its picture to every other one, which only a few phones'
+// uplinks carry: with more than MAX_VIDEO in a video call, the pictures pause and the sound goes on.
 //
 // Whoever starts it is in it at once, and it rings on the others' phones. Whoever joins says so to
 // the group, and each member already in it offers a connection to them: so two members never
@@ -14,6 +16,8 @@ import type { CallRelay } from './relay';
 
 /** The most members in a group call: each sends its sound to each other one. */
 export const MAX_GROUP_CALL = 8;
+/** The most members in a video call whose pictures show: each sends its picture to each other one. */
+export const MAX_VIDEO = 4;
 /** How often a member in a call says it still is, milliseconds. */
 export const HERE_EVERY = 60_000;
 
@@ -35,6 +39,7 @@ export type GroupCallEvents = {
 
 export type GroupCallOptions = {
   group: string;
+  video: boolean;
   /** This phone's identity, hex. */
   me: string;
   /** The call relay, or null to connect directly on the same network. */
@@ -63,11 +68,13 @@ export class GroupCall {
   readonly group: string;
   /** Who started it, hex: empty for this phone. */
   readonly startedBy: string;
+  readonly video: boolean;
   state: GroupCallState;
   /** Why it ended: hung up here, or it rang here without an answer or was turned down. */
   ended: 'hangup' | 'missed' | 'decline' | 'failed' | null = null;
   local: Stream | null = null;
   muted = false;
+  cameraOff = false;
   /** When this phone joined, milliseconds, or 0. */
   joinedAt = 0;
   private readonly peerMap = new Map<string, Peer>();
@@ -79,6 +86,7 @@ export class GroupCall {
     this.id = id;
     this.group = options.group;
     this.startedBy = startedBy;
+    this.video = options.video;
     this.state = state;
     this.options = options;
   }
@@ -88,7 +96,7 @@ export class GroupCall {
     busy();
     const call = new GroupCall(newCallId(), '', 'incoming', options);
     current = call;
-    await call.enter({ id: call.id, kind: 'start', at: Date.now() });
+    await call.enter({ id: call.id, kind: 'start', at: Date.now(), video: call.video });
     return call;
   }
 
@@ -145,6 +153,21 @@ export class GroupCall {
     this.changed();
   }
 
+  setCameraOff(off: boolean): void {
+    this.cameraOff = off;
+    this.changed();
+  }
+
+  /** Front camera to back, or back. */
+  switchCamera(): void {
+    this.local?.getVideoTracks().forEach((track) => track._switchCamera?.());
+  }
+
+  /** A video call with too many in it for pictures: only the sound goes on. */
+  get videoPaused(): boolean {
+    return this.video && this.peerMap.size + 1 > MAX_VIDEO;
+  }
+
   /** What a member said about this call. */
   receive(from: string, signal: GroupCallSignal): void {
     if (signal.id !== this.id || this.state !== 'in' || from === this.options.me) return;
@@ -179,7 +202,7 @@ export class GroupCall {
   // The microphone, then into the call, saying `signal` to the group.
   private async enter(signal: GroupCallSignal): Promise<void> {
     try {
-      const local = await this.options.rtc.media({ audio: true, video: false });
+      const local = await this.options.rtc.media({ audio: true, video: this.video });
       if (this.state === 'ended') {
         local.getTracks().forEach((track) => track.stop());
         return;
@@ -188,7 +211,7 @@ export class GroupCall {
       local.getAudioTracks().forEach((track) => (track.enabled = !this.muted));
       this.state = 'in';
       this.joinedAt = Date.now();
-      this.here = setInterval(() => this.say({ id: this.id, kind: 'here' }), HERE_EVERY);
+      this.here = setInterval(() => this.say({ id: this.id, kind: 'here', video: this.video }), HERE_EVERY);
       this.changed();
       await this.options.events.send(signal);
     } catch (error) {
@@ -299,6 +322,9 @@ export class GroupCall {
   }
 
   private changed() {
+    // Our picture goes out only while it shows.
+    const sends = !this.cameraOff && !this.videoPaused;
+    this.local?.getVideoTracks().forEach((track) => (track.enabled = sends));
     this.options.events.onChange(this);
   }
 }

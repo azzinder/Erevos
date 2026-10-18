@@ -1,6 +1,6 @@
 import { isCallId, MAX_SDP } from './call-signal';
 
-// What phones say to each other about a group's voice call (lib/group-call.ts), inside the group's
+// What phones say to each other about a group's call (lib/group-call.ts), inside the group's
 // own end-to-end encrypted messages (lib/groups.ts). A group call is a WebRTC connection between
 // each two members in it, as a call with a contact is (lib/call-signal.ts): the one already in the
 // call offers to the one joining, and the session descriptions carry the fingerprint of the key
@@ -10,12 +10,14 @@ import { isCallId, MAX_SDP } from './call-signal';
 // named in `to`, and are dropped by any other.
 
 export type GroupCallSignal =
-  // Someone started a call: it rings. `at`: when, milliseconds, so a phone that only sees it later does not ring.
-  | { id: string; kind: 'start'; at: number }
+  // Someone started a call, a video call or a voice one: it rings. `at`: when, milliseconds, so a
+  // phone that only sees it later does not ring.
+  | { id: string; kind: 'start'; at: number; video: boolean }
   // Someone is in the call now: those already in it offer to them.
   | { id: string; kind: 'join' }
-  // Still in the call: said now and then, so a call whose last member's phone went quiet stops showing.
-  | { id: string; kind: 'here' }
+  // Still in the call: said now and then, so a call whose last member's phone went quiet stops
+  // showing. Says whether it is a video call, for those who never saw it start.
+  | { id: string; kind: 'here'; video: boolean }
   | { id: string; kind: 'leave' }
   // `to`: the identity of the member it is for, hex.
   | { id: string; kind: 'offer'; to: string; sdp: string }
@@ -32,9 +34,10 @@ export function decodeGroupCall(value: unknown): GroupCallSignal | null {
   const id = v.id;
   switch (v.kind) {
     case 'start':
-      return typeof v.at === 'number' && Number.isFinite(v.at) && v.at > 0 ? { id, kind: 'start', at: v.at } : null;
-    case 'join':
+      return typeof v.at === 'number' && Number.isFinite(v.at) && v.at > 0 ? { id, kind: 'start', at: v.at, video: v.video === true } : null;
     case 'here':
+      return { id, kind: 'here', video: v.video === true };
+    case 'join':
     case 'leave':
       return { id, kind: v.kind };
     case 'offer':

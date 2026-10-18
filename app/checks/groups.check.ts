@@ -174,7 +174,7 @@ test('call signals go to the whole group, or only to the member named', { skip: 
   for (const p of [alice, bob, carol]) p.groups.onCall((group, from, signal) => heard[p.name].push(`${group === id}:${from.slice(0, 4)}:${signal.kind}`));
 
   const callId = 'ab'.repeat(8);
-  await bob.groups.call(id, { id: callId, kind: 'start', at: Date.now() }, bob.transport);
+  await bob.groups.call(id, { id: callId, kind: 'start', at: Date.now(), video: false }, bob.transport);
   await net.settle();
   await alice.groups.call(id, { id: callId, kind: 'offer', to: bob.identity, sdp: 'v=0\r\nx' }, alice.transport);
   await net.settle();

@@ -20,8 +20,9 @@ export type GroupCallPlace = {
   line(group: string, text: string): void;
 };
 
-/** A call going on in a group: its id, who started it, and who is in it, as their phones last said. */
-export type GoingOn = { id: string; startedBy: string; people: Map<string, number> };
+/** A call going on in a group: its id, who started it, whether it is a video call, and who is in
+ *  it, as their phones last said. */
+export type GoingOn = { id: string; startedBy: string; video: boolean; people: Map<string, number> };
 
 // A member whose phone said nothing for this long is taken as gone, milliseconds.
 const GONE_AFTER = HERE_EVERY * 2.5;
@@ -55,7 +56,7 @@ export function closeGroupCall(call: GroupCall): void {
 }
 
 /** The call going on in a group that this phone is not in, if any: who is in it, by identity. */
-export function groupCallGoingOn(group: string, now = Date.now()): { id: string; startedBy: string; people: string[] } | null {
+export function groupCallGoingOn(group: string, now = Date.now()): { id: string; startedBy: string; video: boolean; people: string[] } | null {
   const call = goingOn.get(group);
   if (!call) return null;
   for (const [identity, at] of call.people) if (now - at > GONE_AFTER) call.people.delete(identity);
@@ -64,14 +65,15 @@ export function groupCallGoingOn(group: string, now = Date.now()): { id: string;
     return null;
   }
   if (currentGroupCall()?.id === call.id) return null;
-  return { id: call.id, startedBy: call.startedBy, people: [...call.people.keys()] };
+  return { id: call.id, startedBy: call.startedBy, video: call.video, people: [...call.people.keys()] };
 }
 
 /** What the line in the group says about a call that ended. */
 export function groupCallLine(call: GroupCall, now = Date.now()): string {
-  if (call.joinedAt) return `${CALL_LINE}Group call, ${callClock(now - call.joinedAt)}`;
-  if (call.ended === 'decline') return `${CALL_LINE}Group call, turned down`;
-  return `${CALL_LINE}Missed group call`;
+  const kind = call.video ? 'Group video call' : 'Group call';
+  if (call.joinedAt) return `${CALL_LINE}${kind}, ${callClock(now - call.joinedAt)}`;
+  if (call.ended === 'decline') return `${CALL_LINE}${kind}, turned down`;
+  return `${CALL_LINE}Missed ${kind.toLowerCase()}`;
 }
 
 function show(call: GroupCall, place: GroupCallPlace) {
@@ -90,9 +92,9 @@ function events(place: GroupCallPlace, group: string) {
 }
 
 /** Starts a call in a group. Throws if a call is already in progress, or it could not start. */
-export async function startGroupCall(place: GroupCallPlace, group: string, relay: CallRelay | null, rtc: Rtc): Promise<GroupCall> {
+export async function startGroupCall(place: GroupCallPlace, group: string, video: boolean, relay: CallRelay | null, rtc: Rtc): Promise<GroupCall> {
   const me = await place.me();
-  const call = await GroupCall.start({ group, me, relay, rtc, events: events(place, group) });
+  const call = await GroupCall.start({ group, video, me, relay, rtc, events: events(place, group) });
   show(call, place);
   return call;
 }
@@ -102,7 +104,7 @@ export async function joinGroupCall(place: GroupCallPlace, group: string, relay:
   const going = groupCallGoingOn(group);
   if (!going) throw new Error('The call has ended.');
   const me = await place.me();
-  const call = await GroupCall.join(going.id, going.startedBy, { group, me, relay, rtc, events: events(place, group) });
+  const call = await GroupCall.join(going.id, going.startedBy, { group, video: going.video, me, relay, rtc, events: events(place, group) });
   show(call, place);
   return call;
 }
@@ -114,9 +116,10 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     let going = goingOn.get(group);
     if (going?.id !== signal.id) {
       // `here` and `join` of a call this phone never heard start: still one going on.
-      going = { id: signal.id, startedBy: signal.kind === 'start' ? from : '', people: new Map() };
+      going = { id: signal.id, startedBy: signal.kind === 'start' ? from : '', video: false, people: new Map() };
       goingOn.set(group, going);
     }
+    if (signal.kind !== 'join') going.video = signal.video;
     going.people.set(from, now);
     changed();
   } else if (signal.kind === 'leave') {
@@ -137,8 +140,9 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     return;
   }
   if (ours?.id === signal.id) return;
+  const kind = signal.video ? 'group video call' : 'group call';
   if (now - signal.at > OFFER_FRESH_MS) {
-    place.line(group, `${CALL_LINE}Missed group call`);
+    place.line(group, `${CALL_LINE}Missed ${kind}`);
     return;
   }
   // Two started a call in the group at once: the one with the lower id goes on, and the other's
@@ -149,16 +153,16 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     ours.hangUp();
     const relay = await place.callRelay().catch(() => null);
     const me = await place.me();
-    show(await GroupCall.join(signal.id, from, { group, me, relay, rtc, events: events(place, group) }), place);
+    show(await GroupCall.join(signal.id, from, { group, video: signal.video, me, relay, rtc, events: events(place, group) }), place);
     return;
   }
   if (ours || currentCall()) {
-    place.line(group, `${CALL_LINE}Missed group call, while in another call`);
+    place.line(group, `${CALL_LINE}Missed ${kind}, while in another call`);
     return;
   }
   const relay = await place.callRelay().catch(() => null);
   const me = await place.me();
-  const ringing = GroupCall.incoming(signal.id, from, { group, me, relay, rtc, events: events(place, group) });
+  const ringing = GroupCall.incoming(signal.id, from, { group, video: signal.video, me, relay, rtc, events: events(place, group) });
   if (ringing) show(ringing, place);
 }
 
