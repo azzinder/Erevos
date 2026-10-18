@@ -2080,13 +2080,19 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       <Modal visible={viewing !== null} animationType="fade" onRequestClose={() => setViewing(null)}>
         <View style={[styles.viewer, { paddingTop: Math.max(space.lg, insets.top), paddingBottom: Math.max(space.lg, insets.bottom) }]}>
           {viewing?.file?.kind === 'photo' ? (
-            photos[viewing.file.id] ? (
-              <Image source={{ uri: photos[viewing.file.id] }} style={styles.viewerPhoto} resizeMode="contain" accessibilityLabel="Photo" />
-            ) : (
-              <Text tone="muted" style={styles.viewerPhoto}>
-                Opening the photo…
+            <>
+              {photos[viewing.file.id] ? (
+                <Image source={{ uri: photos[viewing.file.id] }} style={styles.viewerPhoto} resizeMode="contain" accessibilityLabel="Photo" />
+              ) : (
+                <Text tone="muted" style={styles.viewerPhoto}>
+                  Opening the photo…
+                </Text>
+              )}
+              <Text tone="muted">
+                {viewing.file.w && viewing.file.h ? `${viewing.file.w} × ${viewing.file.h} · ` : ''}
+                {fileSize(viewing.file.size)}
               </Text>
-            )
+            </>
           ) : viewing?.file ? (
             <View style={styles.viewerFile}>
               <Text variant="heading">{viewing.file.name}</Text>

@@ -191,7 +191,7 @@ Erevos remembers it:
   picture is taken out: where it was taken, the phone, the time, thumbnails. Its name is just "photo".
 - **90%** and **75%:** a new, smaller photo, quicker to send, that says nothing but its picture.
 
-Their photos and files up to 16 MB come by themselves; tap a bigger one to take it. Tap a photo to see it whole, or a
+Their photos and files up to 16 MB come by themselves; tap a bigger one to take it. Tap a photo to see it whole, with its size, or a
 file to save it. **Save** puts a copy in a folder you choose the first time, and **Save in another folder** changes
 it. Photos and files have the same marks as the rest, and follow the chat's disappearing setting.
 
