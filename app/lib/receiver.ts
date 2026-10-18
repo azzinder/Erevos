@@ -7,7 +7,9 @@ import { ONLINE, toBase64Url, type Extra, type Received, type Where } from './e2
 import { nearby } from './nearby';
 import { carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sendMessage, toHex, type Relay } from './relay';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
+import { isGroupPacket } from './groups';
 import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-chats';
+import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
 // itself while it is open, and holds this meanwhile (holdReceiver). Otherwise this looks at the
@@ -163,6 +165,11 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     for (let i = 0; i < BATCH && !stop(); i++) {
       const bytes = await receiveMessage(place.own, recipient);
       if (!bytes) break;
+      // A group's message (lib/groups.ts): the group screens hear of it themselves.
+      if (isGroupPacket(bytes)) {
+        await takeGroupPacket(bytes).catch(() => undefined);
+        continue;
+      }
       // Taken from the relay, so kept whatever happens meanwhile.
       try {
         // An answer to an SMS invite sent from here: a new contact, linked to the number.
@@ -177,6 +184,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
         }
         changed = (await keep(chats, received, state)) || changed;
         if (received.kind === 'message') messageListeners.forEach((listener) => listener(received));
+        if (received.kind === 'message' && received.group) await takeGroupSignal(received.identity, received.group, received.request).catch(() => undefined);
       } catch {
         // This one is lost, as in the chat; the next ones still come.
       }
@@ -192,6 +200,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   }
   await answerInvites(chats.e2e, place.queue.senderHex, place.here, place.sends).catch(() => undefined);
   await sendReceipts(chats, place, state);
+  await flushGroups().catch(() => undefined);
   return changed;
 }
 

@@ -1,0 +1,97 @@
+import { loadGroupData, saveGroupData } from '../lock/group-data';
+import { currentSpace } from '../lock/keys';
+import { loadCurrentSpaceData } from '../lock/space-data';
+import { canGroup, canRelaySeal } from './core';
+import { toBase64Url } from './e2e';
+import type { GroupSignal } from './group-signal';
+import { Groups, type GroupTransport } from './groups';
+import { fromHex, relayKey, sendMessage, toHex } from './relay';
+import { contactTarget, relayFor, spaceChats } from './space-chats';
+
+// The open space's group chats (lib/groups.ts), opened once while the space is, as its chats are
+// (lib/space-chats.ts): the chat screen, the group screens and the receiver use the same ones.
+// Their messages go through the space's relay settings, read when sent.
+
+let opened: { of: object; groups: Promise<Groups> } | null = null;
+
+// Our relay's key, said to groups so members on other relays reach us: asked once.
+let ownKey: { url: string; key: string } | null = null;
+
+async function settings() {
+  const data = await loadCurrentSpaceData();
+  const url = data.url.trim();
+  if (!url || !data.ownQueue) throw new Error('Groups go through the relay. Type its address in Relay first.');
+  const own = { url, token: data.token.trim() || undefined };
+  if (ownKey?.url !== url && canRelaySeal()) {
+    const key = await relayKey(own).catch(() => null);
+    if (key) ownKey = { url, key: toBase64Url(key) };
+  }
+  return {
+    own,
+    sends: relayFor(url, data.token, data.via, data.viaToken) ?? own,
+    senderHex: data.ownQueue.senderHex,
+    relayKey: ownKey?.url === url ? ownKey.key : '',
+  };
+}
+
+/** The open space's groups, opened the first time they are asked for. */
+export function spaceGroups(): Promise<Groups> {
+  const current = currentSpace();
+  if (opened?.of !== current) {
+    const groups = (async () => {
+      const data = await loadGroupData(current.space, current.key);
+      const me = async () => {
+        const [{ e2e }, place] = await Promise.all([spaceChats(), settings()]);
+        return { id: toHex(e2e.identity), sender: place.senderHex, relay: place.own.url, relayKey: place.relayKey };
+      };
+      return new Groups(data, (next) => saveGroupData(current.space, current.key, next), me);
+    })();
+    opened = { of: current, groups };
+    groups.catch(() => {
+      if (opened?.groups === groups) opened = null;
+    });
+  }
+  return opened.groups;
+}
+
+/** Lets go of the space's groups when it closes. */
+export function forgetSpaceGroups(): void {
+  opened = null;
+}
+
+/** How the open space's group messages leave the phone. */
+export const spaceGroupTransport: GroupTransport = {
+  async post(to, packet) {
+    const { sends } = await settings();
+    await sendMessage(contactTarget(sends, to), fromHex(to.sender), packet);
+  },
+  async signal(identity, signal) {
+    const { e2e } = await spaceChats();
+    const { own, sends, senderHex, relayKey: key } = await settings();
+    const sealed = await e2e.seal(identity, '', senderHex, { group: signal, at: { relay: own.url, relayKey: key } });
+    const to = contactTarget(sends, sealed);
+    if (sealed.first) {
+      await sendMessage(to, fromHex(sealed.sender), sealed.first);
+      await e2e.firstSent(identity);
+    }
+    await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+  },
+};
+
+/** A group message from the space's relay queue. Says whether it was one. */
+export async function takeGroupPacket(packet: Uint8Array): Promise<boolean> {
+  if (!canGroup()) return false;
+  return (await spaceGroups()).receive(packet, spaceGroupTransport);
+}
+
+/** A group signal from a contact's chat in the space. */
+export async function takeGroupSignal(identity: string, signal: GroupSignal, request: boolean): Promise<void> {
+  if (!canGroup()) return;
+  await (await spaceGroups()).signal(identity, signal, request, spaceGroupTransport);
+}
+
+/** Sends again what the relay did not take. */
+export async function flushGroups(): Promise<void> {
+  if (!canGroup() || !opened) return;
+  await (await spaceGroups()).flush(spaceGroupTransport);
+}

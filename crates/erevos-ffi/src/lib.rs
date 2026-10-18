@@ -231,6 +231,136 @@ pub fn safety_number(ours: &[u8], theirs: &[u8]) -> Result<String> {
     Ok(conversation::safety_number(&key(ours)?, &key(theirs)?))
 }
 
+/// Group chats (crates/erevos-group): a member's state goes in and comes back out with every
+/// call that changes it, like a conversation's. A leaf is a 4-byte big-endian number.
+mod group {
+    use super::{parts, Result};
+    use erevos_group::{Member, Opened};
+
+    fn fail(e: erevos_group::Error) -> String {
+        e.to_string()
+    }
+
+    fn member(state: &[u8]) -> Result<Member> {
+        Member::from_bytes(state).map_err(fail)
+    }
+
+    fn leaf(bytes: &[u8]) -> Result<u32> {
+        Ok(u32::from_be_bytes(bytes.try_into().map_err(|_| "a leaf is 4 bytes".to_string())?))
+    }
+
+    /// A new member's state, saying `about` of itself.
+    pub fn group_new(about: &[u8]) -> Result<Vec<u8>> {
+        Ok(Member::new(about).map_err(fail)?.to_bytes())
+    }
+
+    /// The state, then a key package for an admin to add this member with.
+    pub fn group_key_package(state: &[u8]) -> Result<Vec<u8>> {
+        let member = member(state)?;
+        let package = member.key_package().map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &package]))
+    }
+
+    /// The state, with what this member says about itself in groups it joins from now on.
+    pub fn group_set_about(state: &[u8], about: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        member.set_about(about);
+        Ok(member.to_bytes())
+    }
+
+    /// The state, then the new group's id.
+    pub fn group_create(state: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let id = member.create().map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &id]))
+    }
+
+    /// The state, the commit for the members already in, and the welcome for the new one.
+    pub fn group_add(state: &[u8], id: &[u8], key_package: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let (commit, welcome) = member.add(id, &[key_package]).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &commit, &welcome]))
+    }
+
+    /// The state, then the commit that takes the member at `leaf` out.
+    pub fn group_remove(state: &[u8], id: &[u8], leaf_bytes: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let commit = member.remove(id, &[leaf(leaf_bytes)?]).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &commit]))
+    }
+
+    /// The state, then the commit for what members asked, empty when there is nothing to commit.
+    pub fn group_commit_pending(state: &[u8], id: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let commit = member.commit_pending(id).map_err(fail)?.unwrap_or_default();
+        Ok(parts(&[&member.to_bytes(), &commit]))
+    }
+
+    /// The state, then the id of the group the welcome joins.
+    pub fn group_join(state: &[u8], welcome: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let id = member.join(welcome).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &id]))
+    }
+
+    /// The state, then the sealed message.
+    pub fn group_seal(state: &[u8], id: &[u8], text: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let message = member.seal(id, text).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &message]))
+    }
+
+    /// The state, then the message asking the admin to take this member out.
+    pub fn group_leave(state: &[u8], id: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let message = member.leave(id).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &message]))
+    }
+
+    /// The state without the group.
+    pub fn group_forget(state: &[u8], id: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        member.forget(id).map_err(fail)?;
+        Ok(member.to_bytes())
+    }
+
+    /// The group's members as UTF-8 JSON: `{own, members: [{leaf, about}]}`, `about` as UTF-8.
+    pub fn group_members(state: &[u8], id: &[u8]) -> Result<Vec<u8>> {
+        let (seats, own) = member(state)?.members(id).map_err(fail)?;
+        let members: Vec<serde_json::Value> = seats
+            .iter()
+            .map(|seat| serde_json::json!({ "leaf": seat.leaf, "about": String::from_utf8_lossy(&seat.about) }))
+            .collect();
+        serde_json::to_vec(&serde_json::json!({ "own": own, "members": members })).map_err(|e| e.to_string())
+    }
+
+    /// The id of the group a message is for.
+    pub fn group_of(message: &[u8]) -> Result<Vec<u8>> {
+        Member::group_of(message).map_err(fail)
+    }
+
+    /// Opens a group message: the state, then one byte for what it was, the group's id, the
+    /// sender's leaf, what the sender says about itself, and the text. The byte: 1 a message,
+    /// 2 the group changed, 3 this member was taken out, 4 a member asks to leave, 5 to try again
+    /// after the next commit, 0 nothing to show.
+    pub fn group_open(state: &[u8], message: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let opened = member.open(message).map_err(fail)?;
+        let none: &[u8] = &[];
+        let (kind, id, sender, about, text) = match &opened {
+            Opened::Message { group, sender, about, text } => (1u8, group.as_slice(), *sender, about.as_slice(), text.as_slice()),
+            Opened::Changed { group } => (2, group.as_slice(), 0, none, none),
+            Opened::Removed { group } => (3, group.as_slice(), 0, none, none),
+            Opened::Leaving { group, sender } => (4, group.as_slice(), *sender, none, none),
+            Opened::Later { group } => (5, group.as_slice(), 0, none, none),
+            Opened::Nothing => (0, none, 0, none, none),
+        };
+        Ok(parts(&[&member.to_bytes(), &[kind], id, &sender.to_be_bytes(), about, text]))
+    }
+}
+
+pub use group::*;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -304,6 +434,38 @@ mod tests {
         let theirs = account_identity(&bob).unwrap();
         assert_eq!(safety_number(&ours, &theirs).unwrap(), safety_number(&theirs, &ours).unwrap());
         assert!(safety_number(&ours, &[0; 3]).is_err());
+    }
+
+    #[test]
+    fn a_group_talks_through_bytes_only() {
+        let alice = group_new(b"{\"a\":1}").unwrap();
+        let bob = group_new(b"bob").unwrap();
+        let [alice, id]: [Vec<u8>; 2] = split(&group_create(&alice).unwrap()).try_into().unwrap();
+        let [bob, package]: [Vec<u8>; 2] = split(&group_key_package(&bob).unwrap()).try_into().unwrap();
+        let [alice, _commit, welcome]: [Vec<u8>; 3] = split(&group_add(&alice, &id, &package).unwrap()).try_into().unwrap();
+        let [bob, joined]: [Vec<u8>; 2] = split(&group_join(&bob, &welcome).unwrap()).try_into().unwrap();
+        assert_eq!(joined, id);
+
+        let [_bob, message]: [Vec<u8>; 2] = split(&group_seal(&bob, &id, b"hi").unwrap()).try_into().unwrap();
+        assert_eq!(group_of(&message).unwrap(), id);
+        let opened = split(&group_open(&alice, &message).unwrap());
+        assert_eq!(opened[1], [1]);
+        assert_eq!(opened[2], id);
+        assert_eq!(opened[3], 1u32.to_be_bytes());
+        assert_eq!(opened[4], b"bob");
+        assert_eq!(opened[5], b"hi");
+
+        let members: serde_json::Value = serde_json::from_slice(&group_members(&opened[0], &id).unwrap()).unwrap();
+        assert_eq!(members["own"], 0);
+        assert_eq!(members["members"][0]["about"], "{\"a\":1}");
+        assert_eq!(members["members"][1]["leaf"], 1);
+
+        let [alice, commit]: [Vec<u8>; 2] = split(&group_remove(&opened[0], &id, &1u32.to_be_bytes()).unwrap()).try_into().unwrap();
+        assert!(!commit.is_empty());
+        assert!(group_remove(&alice, &id, &[1]).is_err());
+        let [alice, nothing]: [Vec<u8>; 2] = split(&group_commit_pending(&alice, &id).unwrap()).try_into().unwrap();
+        assert!(nothing.is_empty());
+        assert!(group_members(&group_forget(&alice, &id).unwrap(), &id).is_err());
     }
 
     #[test]

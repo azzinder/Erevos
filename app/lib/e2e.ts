@@ -5,6 +5,7 @@ import { isTag, newTag } from '../lock/history';
 import * as core from './core';
 import { readOffer, type FileOffer } from './attachments';
 import { decodeCall, type CallSignal } from './call-signal';
+import { decodeGroup, encodeGroup, type GroupSignal } from './group-signal';
 import { isVoicePart, splitVoice, type VoicePart } from './voice';
 import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import type { Look } from '../theme/look';
@@ -33,7 +34,8 @@ import { deletePhoto } from '../lock/avatar-photos';
 // sender's chat can mark them. A voice message travels in parts (lib/voice.ts), one in each
 // message, all with the voice message's tag. A photo or file travels on its own through the
 // relay's file store (lib/attachments.ts): its message carries where it is and its key. A call is
-// set up with messages too, each with a call signal and no text (lib/call-signal.ts).
+// set up with messages too, each with a call signal and no text (lib/call-signal.ts), and so is
+// bringing a contact into a group (lib/group-signal.ts).
 //
 // Every message also carries the chat's timer for disappearing messages and when it was set, so
 // each phone takes the later setting. A disappearing message lasts that long, or as long as its
@@ -92,11 +94,12 @@ type Message = {
   onAt: number;
   ask: boolean;
   call: CallSignal | null;
+  group: GroupSignal | null;
 };
 
 /** What else a message can carry. */
 // `on`: seconds this phone says it stays open (0: says nothing). `ask`: asks them to say whether theirs is.
-export type Extra = { erase?: Erase | null; lasts?: number; got?: string[]; read?: string[]; at?: Where; on?: number; ask?: boolean; call?: CallSignal | null };
+export type Extra = { erase?: Erase | null; lasts?: number; got?: string[]; read?: string[]; at?: Where; on?: number; ask?: boolean; call?: CallSignal | null; group?: GroupSignal | null };
 
 /** Where a chat's own queue is: its relay and that relay's key for sealed sends (base64url). */
 export type Where = { relay: string; relayKey: string };
@@ -125,7 +128,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -143,6 +146,7 @@ function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt
       ...(on > 0 ? { on, onAt } : {}),
       ...(ask ? { ask } : {}),
       ...(call ? { call } : {}),
+      ...(group ? { group: encodeGroup(group) } : {}),
     }),
   );
 }
@@ -180,9 +184,10 @@ function decodeMessage(bytes: Uint8Array): Message {
       onAt: isTime(value.onAt) ? value.onAt : 0,
       ask: value.ask === true,
       call: decodeCall(value.call),
+      group: decodeGroup(value.group),
     };
   } catch {
-    return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null };
+    return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null };
   }
 }
 
@@ -245,6 +250,8 @@ export type Received =
       ask: boolean;
       // Setting up or ending a call.
       call: CallSignal | null;
+      // Bringing a contact into a group (lib/groups.ts).
+      group: GroupSignal | null;
     }
   // Not encrypted (as messages before this version were), not for this account, or a replay.
   | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' };
@@ -509,7 +516,7 @@ export class E2E {
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ from, ...at, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null }),
+        encodeMessage({ from, ...at, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null }),
       );
       await this.save(
         this.withContact({
@@ -550,7 +557,7 @@ export class E2E {
     identity: string,
     text: string,
     from: string,
-    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null }: Extra = {},
+    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null }: Extra = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -577,6 +584,7 @@ export class E2E {
         onAt: 0,
         ask,
         call: signal,
+        group: text ? null : group,
       };
       // Writing or calling accepts a request; telling them only what came or was read never does.
       const [packet] = await this.sealFor(contact, [message], !!text || signal?.kind === 'offer');
@@ -616,7 +624,7 @@ export class E2E {
         read: [],
         voice,
         file: null,
-        ...SAYS_NOTHING, call: null,
+        ...SAYS_NOTHING, call: null, group: null,
       }));
       const packets = await this.sealFor(contact, messages, true);
       const first = contact.first ? fromBase64(contact.first) : null;
@@ -641,7 +649,7 @@ export class E2E {
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
       const tag = newTag();
       const { timer, timerAt } = contact;
-      const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...SAYS_NOTHING, call: null };
+      const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...SAYS_NOTHING, call: null, group: null };
       const [packet] = await this.sealFor(contact, [message], true);
       const first = contact.first ? fromBase64(contact.first) : null;
       const { sender, relay, relayKey } = contact;
@@ -740,10 +748,10 @@ export class E2E {
       phone: known?.phone ?? '',
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
-    const { text, tag, erase, got, read, voice, file, ask, call } = message;
+    const { text, tag, erase, got, read, voice, file, ask, call, group } = message;
     const { request } = contact;
     const online = this.heard(identity, message);
-    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, online, ask, call, ...timing.received };
+    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, online, ask, call, group, ...timing.received };
   }
 
   // Keeps until when a contact said their phone is open. Counted from when they said it, so a message
@@ -781,9 +789,9 @@ export class E2E {
           }),
         );
         const { identity, request } = contact;
-        const { text, tag, erase, got, read, voice, file, ask, call } = message;
+        const { text, tag, erase, got, read, voice, file, ask, call, group } = message;
         const online = this.heard(identity, message);
-        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, file, online, ask, call, ...timing.received };
+        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, file, online, ask, call, group, ...timing.received };
       }
     }
     return { kind: 'refused', reason: 'unknown' };

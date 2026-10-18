@@ -37,6 +37,21 @@ class ErevosCoreModule : Module() {
     }
     AsyncFunction("sealPublic") { secret: ByteArray -> ErevosCoreNative.sealPublic(secret) }
     AsyncFunction("sealOpen") { secret: ByteArray, sealed: ByteArray -> ErevosCoreNative.sealOpen(secret, sealed) }
+    // Group chats (crates/erevos-group).
+    AsyncFunction("groupNew") { about: ByteArray -> ErevosCoreNative.groupNew(about) }
+    AsyncFunction("groupKeyPackage") { state: ByteArray -> ErevosCoreNative.groupKeyPackage(state) }
+    AsyncFunction("groupSetAbout") { state: ByteArray, about: ByteArray -> ErevosCoreNative.groupSetAbout(state, about) }
+    AsyncFunction("groupCreate") { state: ByteArray -> ErevosCoreNative.groupCreate(state) }
+    AsyncFunction("groupAdd") { state: ByteArray, id: ByteArray, keyPackage: ByteArray -> ErevosCoreNative.groupAdd(state, id, keyPackage) }
+    AsyncFunction("groupRemove") { state: ByteArray, id: ByteArray, leaf: ByteArray -> ErevosCoreNative.groupRemove(state, id, leaf) }
+    AsyncFunction("groupCommitPending") { state: ByteArray, id: ByteArray -> ErevosCoreNative.groupCommitPending(state, id) }
+    AsyncFunction("groupJoin") { state: ByteArray, welcome: ByteArray -> ErevosCoreNative.groupJoin(state, welcome) }
+    AsyncFunction("groupSeal") { state: ByteArray, id: ByteArray, text: ByteArray -> ErevosCoreNative.groupSeal(state, id, text) }
+    AsyncFunction("groupLeave") { state: ByteArray, id: ByteArray -> ErevosCoreNative.groupLeave(state, id) }
+    AsyncFunction("groupForget") { state: ByteArray, id: ByteArray -> ErevosCoreNative.groupForget(state, id) }
+    AsyncFunction("groupMembers") { state: ByteArray, id: ByteArray -> ErevosCoreNative.groupMembers(state, id) }
+    AsyncFunction("groupOf") { message: ByteArray -> ErevosCoreNative.groupOf(message) }
+    AsyncFunction("groupOpen") { state: ByteArray, message: ByteArray -> ErevosCoreNative.groupOpen(state, message) }
 
     // Relay requests through Tor (crates/erevos-tor). Tor keeps its state in the app's own folders.
     AsyncFunction("torStart") {
@@ -88,6 +103,20 @@ internal object ErevosCoreNative {
   @JvmStatic external fun relaySeal(relayKey: ByteArray, senderId: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun sealPublic(secret: ByteArray): ByteArray
   @JvmStatic external fun sealOpen(secret: ByteArray, sealed: ByteArray): ByteArray
+  @JvmStatic external fun groupNew(about: ByteArray): ByteArray
+  @JvmStatic external fun groupKeyPackage(state: ByteArray): ByteArray
+  @JvmStatic external fun groupSetAbout(state: ByteArray, about: ByteArray): ByteArray
+  @JvmStatic external fun groupCreate(state: ByteArray): ByteArray
+  @JvmStatic external fun groupAdd(state: ByteArray, id: ByteArray, keyPackage: ByteArray): ByteArray
+  @JvmStatic external fun groupRemove(state: ByteArray, id: ByteArray, leaf: ByteArray): ByteArray
+  @JvmStatic external fun groupCommitPending(state: ByteArray, id: ByteArray): ByteArray
+  @JvmStatic external fun groupJoin(state: ByteArray, welcome: ByteArray): ByteArray
+  @JvmStatic external fun groupSeal(state: ByteArray, id: ByteArray, text: ByteArray): ByteArray
+  @JvmStatic external fun groupLeave(state: ByteArray, id: ByteArray): ByteArray
+  @JvmStatic external fun groupForget(state: ByteArray, id: ByteArray): ByteArray
+  @JvmStatic external fun groupMembers(state: ByteArray, id: ByteArray): ByteArray
+  @JvmStatic external fun groupOf(message: ByteArray): ByteArray
+  @JvmStatic external fun groupOpen(state: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun torStart(stateDir: ByteArray, cacheDir: ByteArray): ByteArray
   @JvmStatic external fun torStatus(): String
   @JvmStatic external fun torStop()

@@ -37,6 +37,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 
 | In the menu | What it opens |
 | --- | --- |
+| **New group** | A group chat with your contacts. See [Group chats](#groups). |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, without internet. See [Chat with a nearby phone](#nearby). |
 | **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
@@ -259,6 +260,25 @@ a missed call.
 > kept in this space, sealed. About a thousand short messages fit; when it is full, the oldest go first. Deleted
 > messages can stay for a while in the phone's storage, sealed like the rest, until something is written over them.
 > Messages sent or received nearby are kept the same way.
+
+## Group chats {#groups}
+
+From the home screen's menu, **New group**: give it a name, tick the contacts to ask, and tap **Make the group**.
+You are its admin. Each contact's phone answers by itself the next time Erevos is open there, and joins: the group
+then shows on their home screen, with a note of who added them. Groups go through the relay, so it has to be set.
+
+- **Who can be asked:** contacts you have accepted, in this space. Members who are not each other's contacts still
+  talk in the group, and show by the start of their key until a name is given in a chat with them.
+- **End-to-end encrypted for the group:** MLS (RFC 9420). Each message is encrypted once for the group, then sealed
+  again for each member, so what reaches each member's queue looks like nothing the others get, and no relay can tell
+  who is in a group. It goes straight to each member's queue, through your relay.
+- **Members:** tap the group's name at the top. The admin adds contacts, takes members out and renames the group. A
+  member taken out reads nothing the group says from then on, and the group stays on their phone, read only, until
+  they delete it.
+- **Leaving:** **Leave the group** asks the admin, whose phone takes you out the next time Erevos is open there. The
+  admin's own button is **Close the group**: it takes every member out.
+- **Not yet:** voice messages, photos, calls, marks and disappearing messages in groups, groups in hidden chats, and
+  groups over a nearby phone.
 
 ## How Erevos picks the path {#paths}
 
@@ -598,6 +618,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. A walkie-talkie over Bluetooth. |
+| **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Not audited. | Group voice and video calls, photos and voice messages in groups. |
 
 ## What is coming {#coming}
 
@@ -611,8 +632,8 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
 - **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a
   relay](#relay). Next: a walkie-talkie that works even over Bluetooth.
-- **Groups:** group chats, and group video calls. Up to four people connect directly; when more join, the call
-  moves to a server by itself, still encrypted end to end.
+- **Groups:** group chats are here, see [Group chats](#groups). Next: group voice, then group video calls. Up to
+  four people connect directly; when more join, the call moves to a server by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).
 - **More systems:** more than one device for the same person. Linux and macOS are here, see

@@ -87,3 +87,73 @@ pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>, JsError> {
 pub fn seal_open(secret: &[u8], sealed: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::seal_open(secret, sealed))
 }
+
+#[wasm_bindgen(js_name = groupNew)]
+pub fn group_new(about: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_new(about))
+}
+
+#[wasm_bindgen(js_name = groupKeyPackage)]
+pub fn group_key_package(state: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_key_package(state))
+}
+
+#[wasm_bindgen(js_name = groupSetAbout)]
+pub fn group_set_about(state: &[u8], about: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_set_about(state, about))
+}
+
+#[wasm_bindgen(js_name = groupCreate)]
+pub fn group_create(state: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_create(state))
+}
+
+#[wasm_bindgen(js_name = groupAdd)]
+pub fn group_add(state: &[u8], id: &[u8], key_package: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_add(state, id, key_package))
+}
+
+#[wasm_bindgen(js_name = groupRemove)]
+pub fn group_remove(state: &[u8], id: &[u8], leaf: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_remove(state, id, leaf))
+}
+
+#[wasm_bindgen(js_name = groupCommitPending)]
+pub fn group_commit_pending(state: &[u8], id: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_commit_pending(state, id))
+}
+
+#[wasm_bindgen(js_name = groupJoin)]
+pub fn group_join(state: &[u8], welcome: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_join(state, welcome))
+}
+
+#[wasm_bindgen(js_name = groupSeal)]
+pub fn group_seal(state: &[u8], id: &[u8], text: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_seal(state, id, text))
+}
+
+#[wasm_bindgen(js_name = groupLeave)]
+pub fn group_leave(state: &[u8], id: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_leave(state, id))
+}
+
+#[wasm_bindgen(js_name = groupForget)]
+pub fn group_forget(state: &[u8], id: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_forget(state, id))
+}
+
+#[wasm_bindgen(js_name = groupMembers)]
+pub fn group_members(state: &[u8], id: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_members(state, id))
+}
+
+#[wasm_bindgen(js_name = groupOf)]
+pub fn group_of(message: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_of(message))
+}
+
+#[wasm_bindgen(js_name = groupOpen)]
+pub fn group_open(state: &[u8], message: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_open(state, message))
+}

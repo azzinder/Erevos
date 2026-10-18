@@ -124,6 +124,43 @@ export function filterInbox(rows: InboxRow[], query: string): InboxRow[] {
   return rows.filter((row) => plain(shownName(row)).includes(q) || plain(row.last).includes(q));
 }
 
+/** A group as the list has it (lib/groups.ts). */
+export type InboxGroup = {
+  id: string;
+  name: string;
+  status: 'in' | 'leaving' | 'out';
+  last: { at: number; from: string; text: string; note?: boolean } | null;
+  unread: number;
+};
+
+/** The space's groups as rows, `group:` and their id in place of a contact's identity. `name`
+ *  gives a member's name by identity, and `note` a note's text. */
+export function groupRows(groups: InboxGroup[], name: (identity: string) => string, note: (text: string) => string): InboxRow[] {
+  return groups.map((g) => {
+    const last = g.last;
+    const text = !last ? '' : last.note ? note(last.text) : last.from ? `${name(last.from)}: ${last.text}` : `You: ${last.text}`;
+    return {
+      identity: `group:${g.id}`,
+      name: g.name || 'Group',
+      last: text,
+      mine: false,
+      mark: 0,
+      at: last?.at ?? 0,
+      unread: g.unread,
+      timer: 0,
+      imported: false,
+      avatar: null,
+      sms: '',
+      lastSms: false,
+    };
+  });
+}
+
+/** Rows merged and sorted as `buildInbox` sorts them. */
+export function mergeRows(rows: InboxRow[], more: InboxRow[]): InboxRow[] {
+  return [...rows, ...more].sort((a, b) => b.at - a.at || shownName(a).localeCompare(shownName(b)));
+}
+
 const pad = (n: number) => String(n).padStart(2, '0');
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 

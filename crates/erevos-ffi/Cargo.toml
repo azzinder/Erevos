@@ -10,12 +10,13 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 android = ["dep:jni"]
-web = ["dep:wasm-bindgen", "dep:getrandom02", "dep:getrandom04"]
+web = ["dep:wasm-bindgen", "dep:getrandom02", "dep:getrandom04", "erevos-group/js"]
 # Relay requests through Tor (erevos-tor), for the Android app.
 tor = ["dep:erevos-tor"]
 
 [dependencies]
 erevos-core = { path = "../erevos-core" }
+erevos-group = { path = "../erevos-group" }
 erevos-import = { path = "../erevos-import" }
 erevos-tor = { path = "../erevos-tor", optional = true }
 serde_json = "1"

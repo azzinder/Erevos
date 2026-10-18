@@ -43,6 +43,8 @@ import { takeHidden } from '../lib/hidden-handoff';
 import { History, newTag, type Mark, type Message as Kept } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
+import { isGroupPacket } from '../lib/groups';
+import { takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
 import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type Relay } from '../lib/relay';
 import { answersAsk, appShown, holdReceiver } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
@@ -801,6 +803,11 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
             failed = null;
           }
           if (!bytes) break;
+          // A group's message (lib/groups.ts), to the space's queue only.
+          if (!hiddenKey && isGroupPacket(bytes)) {
+            await takeGroupPacket(bytes).catch(() => undefined);
+            continue;
+          }
           // An answer to an SMS invite sent from here: their contact link.
           const invited = hiddenKey ? null : await takeInviteAnswer(e2e, bytes, ownSender, here()).catch(() => null);
           if (invited) {
@@ -870,6 +877,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
         if (said) setNote(said);
       });
     }
+    if (received.group && !hiddenKey) void takeGroupSignal(received.identity, received.group, received.request).catch(() => undefined);
     if (received.online) setNow(Date.now());
     const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
     if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);

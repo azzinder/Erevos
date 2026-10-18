@@ -6,11 +6,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LockIcon, MoreIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { font, fontStyle, Sheet, Text } from '../components/ui';
-import { hasCore } from '../lib/core';
+import { canGroup, hasCore } from '../lib/core';
+import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
-import { buildInbox, filterInbox, rowTime, shownName, type InboxRow } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type InboxGroup, type InboxRow } from '../lib/inbox';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
+import { spaceGroups } from '../lib/space-groups';
 import { smsStatus, smsThreads } from '../modules/erevos-sms';
 import { Archive } from '../lock/archive';
 import { useLock } from '../lock/context';
@@ -35,6 +37,7 @@ type Relay = 'ready' | 'no-queue' | 'none';
 
 // `phone`: only on a phone, as it needs its radio.
 const MENU: { title: string; detail: string; href: Href; phone?: boolean }[] = [
+  { title: 'New group', detail: 'A group chat with your contacts, end-to-end encrypted', href: '/new-group' },
   { title: 'Nearby phones', detail: 'Your contacts over Bluetooth and Wi-Fi, without internet', href: '/chat', phone: true },
   { title: 'SMS', detail: 'Erevos as the SMS app, one list for all messages', href: '/sms-settings', phone: true },
   { title: 'Tor', detail: 'Reach the relays through Tor, off unless turned on', href: '/tor', phone: true },
@@ -91,11 +94,13 @@ export default function Home() {
           quiet(loadCurrentSpaceData(), null),
           // The phone's SMS show only once Erevos is its SMS app.
           smsStatus()?.isDefault ? quiet(smsThreads(), []) : Promise.resolve([]),
-        ]).then(([[contacts, messages], imported, data, sms]) => {
+          canGroup() ? quiet(spaceGroups().then((g) => g.list() as InboxGroup[]), []) : Promise.resolve([] as InboxGroup[]),
+        ]).then(([[contacts, messages], imported, data, sms, groups]) => {
           if (!active) return;
           const at = Date.now();
           setNow(at);
-          setRows(buildInbox(contacts, messages, imported, at, sms));
+          const name = (identity: string) => memberName(identity, contacts);
+          setRows(mergeRows(buildInbox(contacts, messages, imported, at, sms), groupRows(groups, name, (text) => noteText(text, name))));
           setRelay(!data?.url ? 'none' : data.ownQueue ? 'ready' : 'no-queue');
         });
       // Who shows online, again every few seconds, as it lasts only a while. A chat that appears
@@ -116,10 +121,20 @@ export default function Home() {
         load();
         lookOnline();
       });
+      // And what comes in a group.
+      let stopGroups = () => undefined as void;
+      if (canGroup()) {
+        void spaceGroups()
+          .then((g) => {
+            if (active) stopGroups = g.onChange(load);
+          })
+          .catch(() => undefined);
+      }
       return () => {
         active = false;
         clearInterval(every);
         stop();
+        stopGroups();
       };
     }, []),
   );
@@ -225,7 +240,7 @@ export default function Home() {
         </Text>
       </Pressable>
       <Sheet visible={menu} onClose={() => setMenu(false)}>
-        {MENU.filter((item) => !item.phone || Platform.OS !== 'web').map((item) => (
+        {MENU.filter((item) => (!item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || canGroup())).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"
@@ -262,7 +277,15 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
   const preview = row.last || (row.imported ? 'Imported chat, goes on here' : 'No messages yet');
   return (
     <Pressable
-      onPress={() => router.push(row.sms ? `/sms?to=${encodeURIComponent(row.sms)}` : `/chat?contact=${row.identity}`)}
+      onPress={() =>
+        router.push(
+          row.sms
+            ? `/sms?to=${encodeURIComponent(row.sms)}`
+            : row.identity.startsWith('group:')
+              ? `/group?id=${row.identity.slice(6)}`
+              : `/chat?contact=${row.identity}`,
+        )
+      }
       accessibilityRole="button"
       accessibilityLabel={`${name}${online ? ', online' : ''}${row.unread ? `, ${row.unread} not read` : ''}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
@@ -275,7 +298,7 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
         </View>
       ) : (
         <View>
-          <KeyFace identity={row.identity} name={row.name} size={52} avatar={row.avatar} />
+          <KeyFace identity={row.identity.startsWith('group:') ? row.identity.slice(6) : row.identity} name={row.name} size={52} avatar={row.avatar} />
           {online ? <View style={[styles.onlineDot, { backgroundColor: colors.success, borderColor: colors.background }]} /> : null}
         </View>
       )}

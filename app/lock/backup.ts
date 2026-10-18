@@ -5,6 +5,7 @@ import { secureDelete, secureGet, secureSet } from '../lib/secure';
 import { FILE as ARCHIVE } from './archive';
 import { ITER } from './config';
 import { FILE as E2E } from './e2e-data';
+import { FILE as GROUPS } from './group-data';
 import { FILE as HISTORY } from './history';
 import { PREFIX as AVATAR } from './avatar-photos';
 import { PREFIX as VOICE } from './voice-clips';
@@ -34,7 +35,7 @@ const SLOTTED = Array.from({ length: MOST_SLOTS }, (_, n) => [`erevos.space.${n}
 const KEYS = [...FIXED, ...SLOTTED];
 
 // The sealed files that are text; voice messages' sounds are bytes.
-const TEXT_FILES = [E2E, HISTORY, ARCHIVE];
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS];
 
 const KIND_KEY = 0;
 const KIND_TEXT = 1;

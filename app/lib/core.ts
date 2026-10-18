@@ -23,6 +23,21 @@ export interface Core {
   relaySeal?(relayKey: Uint8Array, senderId: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   sealPublic?(secret: Uint8Array): Promise<Uint8Array>;
   sealOpen?(secret: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
+  /** Group chats (crates/erevos-group): missing in a build made before them. */
+  groupNew?(about: Uint8Array): Promise<Uint8Array>;
+  groupKeyPackage?(state: Uint8Array): Promise<Uint8Array>;
+  groupSetAbout?(state: Uint8Array, about: Uint8Array): Promise<Uint8Array>;
+  groupCreate?(state: Uint8Array): Promise<Uint8Array>;
+  groupAdd?(state: Uint8Array, id: Uint8Array, keyPackage: Uint8Array): Promise<Uint8Array>;
+  groupRemove?(state: Uint8Array, id: Uint8Array, leaf: Uint8Array): Promise<Uint8Array>;
+  groupCommitPending?(state: Uint8Array, id: Uint8Array): Promise<Uint8Array>;
+  groupJoin?(state: Uint8Array, welcome: Uint8Array): Promise<Uint8Array>;
+  groupSeal?(state: Uint8Array, id: Uint8Array, text: Uint8Array): Promise<Uint8Array>;
+  groupLeave?(state: Uint8Array, id: Uint8Array): Promise<Uint8Array>;
+  groupForget?(state: Uint8Array, id: Uint8Array): Promise<Uint8Array>;
+  groupMembers?(state: Uint8Array, id: Uint8Array): Promise<Uint8Array>;
+  groupOf?(message: Uint8Array): Promise<Uint8Array>;
+  groupOpen?(state: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   /** Relay requests through Tor: only in the Android app, and not in a build made before it. */
   torStart?(): Promise<void>;
   torStatus?(): Promise<string>;
@@ -175,3 +190,90 @@ export function canImport(): boolean {
 
 /** Reads another messenger's export: the chats in it as UTF-8 JSON (lib/imports.ts reads it). */
 export const importChats = (name: Uint8Array, data: Uint8Array) => need().importChats(name, data);
+
+/** Whether this build's core has group chats: one built before them has not. */
+export function canGroup(): boolean {
+  return typeof core?.groupOpen === 'function' && canSealOpen();
+}
+
+type GroupCalls = Required<Pick<Core, 'groupNew' | 'groupKeyPackage' | 'groupSetAbout' | 'groupCreate' | 'groupAdd' | 'groupRemove' | 'groupCommitPending' | 'groupJoin' | 'groupSeal' | 'groupLeave' | 'groupForget' | 'groupMembers' | 'groupOf' | 'groupOpen'>>;
+
+function groups(): GroupCalls {
+  const it = need();
+  if (!canGroup()) throw new NoCoreError();
+  return it as GroupCalls;
+}
+
+/** What a group message was, once opened (lib/groups.ts). */
+export type GroupOpened =
+  | { kind: 'message'; group: Uint8Array; sender: number; about: Uint8Array; text: Uint8Array }
+  | { kind: 'changed' | 'removed' | 'later'; group: Uint8Array }
+  | { kind: 'leaving'; group: Uint8Array; sender: number }
+  | { kind: 'nothing' };
+
+const leafBytes = (leaf: number) => {
+  const bytes = new Uint8Array(4);
+  new DataView(bytes.buffer).setUint32(0, leaf);
+  return bytes;
+};
+
+/** A member's MLS state: its signing key, what it says about itself, and its groups. The calls
+ *  that change it give it back first. */
+export const group = {
+  create: async (about: Uint8Array) => groups().groupNew(about),
+  keyPackage: async (state: Uint8Array) => {
+    const [next, keyPackage] = splitParts(await groups().groupKeyPackage(state), 2);
+    return { state: next, keyPackage };
+  },
+  setAbout: async (state: Uint8Array, about: Uint8Array) => groups().groupSetAbout(state, about),
+  newGroup: async (state: Uint8Array) => {
+    const [next, id] = splitParts(await groups().groupCreate(state), 2);
+    return { state: next, id };
+  },
+  add: async (state: Uint8Array, id: Uint8Array, keyPackage: Uint8Array) => {
+    const [next, commit, welcome] = splitParts(await groups().groupAdd(state, id, keyPackage), 3);
+    return { state: next, commit, welcome };
+  },
+  remove: async (state: Uint8Array, id: Uint8Array, leaf: number) => {
+    const [next, commit] = splitParts(await groups().groupRemove(state, id, leafBytes(leaf)), 2);
+    return { state: next, commit };
+  },
+  /** The commit is empty when there is nothing to commit. */
+  commitPending: async (state: Uint8Array, id: Uint8Array) => {
+    const [next, commit] = splitParts(await groups().groupCommitPending(state, id), 2);
+    return { state: next, commit };
+  },
+  join: async (state: Uint8Array, welcome: Uint8Array) => {
+    const [next, id] = splitParts(await groups().groupJoin(state, welcome), 2);
+    return { state: next, id };
+  },
+  seal: async (state: Uint8Array, id: Uint8Array, text: Uint8Array) => {
+    const [next, message] = splitParts(await groups().groupSeal(state, id, text), 2);
+    return { state: next, message };
+  },
+  leave: async (state: Uint8Array, id: Uint8Array) => {
+    const [next, message] = splitParts(await groups().groupLeave(state, id), 2);
+    return { state: next, message };
+  },
+  forget: async (state: Uint8Array, id: Uint8Array) => groups().groupForget(state, id),
+  /** UTF-8 JSON: `{own, members: [{leaf, about}]}`. */
+  members: async (state: Uint8Array, id: Uint8Array) => groups().groupMembers(state, id),
+  of: async (message: Uint8Array) => groups().groupOf(message),
+  open: async (state: Uint8Array, message: Uint8Array): Promise<{ state: Uint8Array; opened: GroupOpened }> => {
+    const [next, kind, id, sender, about, text] = splitParts(await groups().groupOpen(state, message), 6);
+    const leaf = sender.length === 4 ? new DataView(sender.buffer, sender.byteOffset, 4).getUint32(0) : 0;
+    const opened: GroupOpened =
+      kind[0] === 1
+        ? { kind: 'message', group: id, sender: leaf, about, text }
+        : kind[0] === 2
+          ? { kind: 'changed', group: id }
+          : kind[0] === 3
+            ? { kind: 'removed', group: id }
+            : kind[0] === 4
+              ? { kind: 'leaving', group: id, sender: leaf }
+              : kind[0] === 5
+                ? { kind: 'later', group: id }
+                : { kind: 'nothing' };
+    return { state: next, opened };
+  },
+};

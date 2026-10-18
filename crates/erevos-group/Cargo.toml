@@ -1,0 +1,18 @@
+[package]
+name = "erevos-group"
+description = "Group chats for Erevos: MLS (RFC 9420) through OpenMLS, with the state kept by the app between calls"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+# In a browser, the random numbers come from the browser.
+js = ["openmls/js"]
+
+[dependencies]
+openmls = "0.9.1"
+openmls_basic_credential = "0.6.0"
+openmls_memory_storage = "0.6.0"
+openmls_rust_crypto = "0.6.0"
+openmls_traits = "0.6.0"
+thiserror = "2"

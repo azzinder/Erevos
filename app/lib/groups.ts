@@ -1,0 +1,542 @@
+import {
+  checkedAbout,
+  EMPTY_GROUPS,
+  MAX_GIVEN,
+  MAX_GROUP_MESSAGES,
+  MAX_LATER,
+  MAX_ORPHANS,
+  MAX_OUTBOX,
+  type About,
+  type Group,
+  type GroupData,
+  type GroupMessage,
+} from '../lock/group-data';
+import { newTag } from '../lock/history';
+import * as core from './core';
+import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { fromBase64Url, toBase64Url } from './e2e';
+import { cleanGroupName, isGroupId, type GroupSignal } from './group-signal';
+
+// Group chats, MLS (RFC 9420) in the Rust core (crates/erevos-group). Whoever makes a group is its
+// admin: it adds contacts and takes members out, and is the only one whose changes count, so no
+// server has to put them in order. To add a contact, the admin asks for a key package in their
+// own chat; the contact's phone answers with one; the admin sends the welcome that joins the
+// group, in that chat too. From then on everything goes as group messages: each one sealed by MLS
+// for the whole group, and sealed again for each member (with the key it says about itself), so
+// what reaches each member's queue looks like nothing the others get, and no relay can tell who is
+// in a group. Each goes straight to each member's queue on its relay (through this phone's own),
+// like a message to a contact, whether or not the two are contacts.
+//
+// A member leaves by asking the admin, who takes it out. A member taken out reads nothing sent
+// after. A message from a member that comes before the admin's change it was written after waits
+// here (`later`) until the change comes.
+//
+// Every call runs after the one before it ends, as in lib/e2e.ts, and the MLS state is kept before
+// anything it made is handed back.
+
+/** The start of a group message, after which comes the message sealed for its member. A chat's
+ *  packets start with 1 then 1 or 2 (crates/erevos-core). */
+const GROUP_PACKET = [1, 3];
+// The sender id inside the per-member seal: not used, the MLS message says who sent it.
+const NO_SENDER = new Uint8Array(24);
+/** The longest text sent in a group. */
+export const MAX_GROUP_TEXT = 4000;
+
+/** How group messages leave this phone: to a member's queue, and to a contact inside their chat. */
+export type GroupTransport = {
+  post(to: About, packet: Uint8Array): Promise<void>;
+  signal(identity: string, signal: GroupSignal): Promise<void>;
+};
+
+/** Where this phone's group messages come to, and who it is: what it says about itself, but the seal key. */
+export type Me = Omit<About, 'seal'>;
+
+export type GroupMember = { leaf: number; about: About | null; me: boolean };
+
+/** A group as the screens show it. */
+export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
+  last: GroupMessage | null;
+  unread: number;
+  /** Contacts asked to join who have not answered yet. */
+  asked: string[];
+};
+
+// What members say inside the group's messages.
+type Said = { t: 'text'; text: string; tag: string } | { t: 'name'; name: string };
+
+function encodeSaid(said: Said): Uint8Array {
+  return utf8Encode(JSON.stringify(said));
+}
+
+function decodeSaid(bytes: Uint8Array): Said | null {
+  try {
+    const v = JSON.parse(utf8Decode(bytes)) as Record<string, unknown>;
+    if (v.t === 'text' && typeof v.text === 'string' && v.text.length > 0) {
+      return { t: 'text', text: v.text.slice(0, MAX_GROUP_TEXT), tag: typeof v.tag === 'string' ? v.tag : '' };
+    }
+    if (v.t === 'name' && typeof v.name === 'string') return { t: 'name', name: cleanGroupName(v.name) };
+  } catch {
+    // Not what an Erevos says.
+  }
+  return null;
+}
+
+function aboutOf(bytes: Uint8Array | string): About | null {
+  try {
+    return checkedAbout(JSON.parse(typeof bytes === 'string' ? bytes : utf8Decode(bytes)));
+  } catch {
+    return null;
+  }
+}
+
+/** Whether a packet from the relay is a group message. */
+export function isGroupPacket(packet: Uint8Array): boolean {
+  return packet.length > 2 && packet[0] === GROUP_PACKET[0] && packet[1] === GROUP_PACKET[1];
+}
+
+export class Groups {
+  private data: GroupData;
+  private readonly store: (data: GroupData) => Promise<void>;
+  private readonly me: () => Promise<Me>;
+  private queue: Promise<unknown> = Promise.resolve();
+  private readonly listeners = new Set<() => void>();
+
+  constructor(data: GroupData, store: (data: GroupData) => Promise<void>, me: () => Promise<Me>) {
+    this.data = data;
+    this.store = store;
+    this.me = me;
+  }
+
+  /** Calls `listener` each time a group, or its messages, change. Returns how to stop. */
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private changed() {
+    this.listeners.forEach((listener) => listener());
+  }
+
+  private run<T>(call: () => Promise<T>): Promise<T> {
+    const next = this.queue.catch(() => undefined).then(call);
+    this.queue = next;
+    return next;
+  }
+
+  private async save(data: GroupData): Promise<void> {
+    this.data = data;
+    await this.store(data);
+  }
+
+  private find(id: string): Group | undefined {
+    return this.data.groups.find((g) => g.id === id);
+  }
+
+  private withGroup(group: Group): GroupData {
+    const at = this.data.groups.findIndex((g) => g.id === group.id);
+    const groups = [...this.data.groups];
+    if (at < 0) groups.push(group);
+    else groups[at] = group;
+    return { ...this.data, groups };
+  }
+
+  // The MLS state, made the first time, saying where this phone's group messages come to now.
+  private async state(): Promise<Uint8Array> {
+    const me = await this.me();
+    let seal = this.data.seal ? fromBase64(this.data.seal) : null;
+    if (!seal) seal = randomBytes(32);
+    const about = utf8Encode(JSON.stringify({ ...me, seal: toBase64Url(await core.sealPublic(seal)) } satisfies About));
+    const state = this.data.state ? await core.group.setAbout(fromBase64(this.data.state), about) : await core.group.create(about);
+    await this.save({ ...this.data, state: toBase64(state), seal: toBase64(seal) });
+    return state;
+  }
+
+  private kept(): Uint8Array {
+    if (!this.data.state) throw new Error('No groups here yet.');
+    return fromBase64(this.data.state);
+  }
+
+  /** The groups, latest moved first. */
+  list(): GroupInfo[] {
+    return this.data.groups
+      .map((g) => {
+        const last = g.messages[g.messages.length - 1] ?? null;
+        const unread = g.messages.filter((m) => m.from && !m.note && m.at > g.readAt).length;
+        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked };
+      })
+      .sort((a, b) => (b.last?.at ?? 0) - (a.last?.at ?? 0));
+  }
+
+  /** A group's messages, oldest first. */
+  messages(id: string): GroupMessage[] {
+    return this.find(id)?.messages ?? [];
+  }
+
+  /** A group's members as its MLS state has them; none once out of it. */
+  async members(id: string): Promise<GroupMember[]> {
+    const group = this.find(id);
+    if (!group || group.status === 'out' || !this.data.state) return [];
+    return this.membersIn(id);
+  }
+
+  private async membersIn(id: string): Promise<GroupMember[]> {
+    const json = JSON.parse(utf8Decode(await core.group.members(this.kept(), fromHex(id)))) as {
+      own: number;
+      members: { leaf: number; about: string }[];
+    };
+    return json.members.map((m) => ({ leaf: m.leaf, about: aboutOf(m.about), me: m.leaf === json.own }));
+  }
+
+  /** Marks a group read up to now. */
+  markRead(id: string): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group) return;
+      await this.save(this.withGroup({ ...group, readAt: Date.now() }));
+      this.changed();
+    });
+  }
+
+  /** Makes a group named `name` and asks each contact (by identity) to join. Returns its id. */
+  create(name: string, identities: string[], transport: GroupTransport): Promise<string> {
+    return this.run(async () => {
+      const clean = cleanGroupName(name);
+      if (!clean) throw new Error('Give the group a name.');
+      const made = await core.group.newGroup(await this.state());
+      const id = toHex(made.id);
+      const group: Group = {
+        id,
+        name: clean,
+        admin: true,
+        status: 'in',
+        asked: [],
+        later: [],
+        outbox: [],
+        messages: [{ at: Date.now(), from: '', text: 'You made the group.', tag: '', note: true }],
+        readAt: Date.now(),
+      };
+      await this.save({ ...this.withGroup(group), state: toBase64(made.state) });
+      this.changed();
+      await this.askLocked(id, identities, transport);
+      return id;
+    });
+  }
+
+  /** Asks more contacts to join a group this phone is the admin of. */
+  add(id: string, identities: string[], transport: GroupTransport): Promise<void> {
+    return this.run(() => this.askLocked(id, identities, transport));
+  }
+
+  private async askLocked(id: string, identities: string[], transport: GroupTransport) {
+    const group = this.find(id);
+    if (!group?.admin || group.status !== 'in') throw new Error('Only the group’s admin adds members.');
+    const fresh = identities.filter((identity) => !group.asked.includes(identity));
+    await this.save(this.withGroup({ ...group, asked: [...group.asked, ...fresh] }));
+    this.changed();
+    for (const identity of fresh) await transport.signal(identity, { group: id, kind: 'ask' });
+  }
+
+  /** Sends a message to the group. */
+  send(id: string, text: string, transport: GroupTransport): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group || group.status !== 'in') throw new Error('You are not in this group any more.');
+      const said = text.trim().slice(0, MAX_GROUP_TEXT);
+      if (!said) return;
+      const tag = newTag();
+      await this.broadcast(id, encodeSaid({ t: 'text', text: said, tag }), transport);
+      const now = this.find(id)!;
+      await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: said, tag }]), readAt: Date.now() }));
+      this.changed();
+    });
+  }
+
+  /** Renames a group this phone is the admin of, for every member. */
+  rename(id: string, name: string, transport: GroupTransport): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group?.admin || group.status !== 'in') throw new Error('Only the group’s admin renames it.');
+      const clean = cleanGroupName(name);
+      if (!clean) throw new Error('Give the group a name.');
+      await this.broadcast(id, encodeSaid({ t: 'name', name: clean }), transport);
+      await this.save(this.withGroup({ ...this.find(id)!, name: clean }));
+      this.changed();
+    });
+  }
+
+  /** Takes a member out of a group this phone is the admin of. */
+  remove(id: string, leaf: number, transport: GroupTransport): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group?.admin || group.status !== 'in') throw new Error('Only the group’s admin takes members out.');
+      const before = await this.membersIn(id);
+      const removed = await core.group.remove(this.kept(), fromHex(id), leaf);
+      await this.save({ ...this.data, state: toBase64(removed.state) });
+      // Everyone who was in, the member taken out too, so its phone knows.
+      await this.deliver(id, before, removed.commit, transport);
+      const gone = before.find((m) => m.leaf === leaf)?.about?.id ?? '';
+      await this.note(id, 'left', gone);
+    });
+  }
+
+  /** Asks the admin to take this phone out of a group; the admin forgets it here once out. */
+  leave(id: string, transport: GroupTransport): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group || group.status !== 'in') return;
+      if (group.admin) {
+        // The admin cannot be taken out by anyone: the group ends for every member.
+        const before = await this.membersIn(id);
+        for (const member of before.filter((m) => !m.me)) {
+          const removed = await core.group.remove(this.kept(), fromHex(id), member.leaf);
+          await this.save({ ...this.data, state: toBase64(removed.state) });
+          await this.deliver(id, await this.membersIn(id).then((now) => [...now, member]), removed.commit, transport);
+        }
+        await this.out(id, 'You closed the group.');
+        return;
+      }
+      const left = await core.group.leave(this.kept(), fromHex(id));
+      await this.save({ ...this.withGroup({ ...group, status: 'leaving' }), state: toBase64(left.state) });
+      await this.deliver(id, await this.membersIn(id), left.message, transport);
+      await this.note(id, 'You asked to leave. The group closes here once the admin takes you out.');
+    });
+  }
+
+  /** Forgets a group on this phone, with its messages. */
+  forget(id: string): Promise<void> {
+    return this.run(async () => {
+      if (this.data.state) {
+        const state = await core.group.forget(this.kept(), fromHex(id));
+        this.data = { ...this.data, state: toBase64(state) };
+      }
+      await this.save({ ...this.data, groups: this.data.groups.filter((g) => g.id !== id) });
+      this.changed();
+    });
+  }
+
+  /** Tries again what the relay did not take. */
+  flush(transport: GroupTransport): Promise<void> {
+    return this.run(async () => {
+      for (const group of this.data.groups) {
+        if (group.outbox.length === 0) continue;
+        const left: Group['outbox'] = [];
+        for (const item of group.outbox) {
+          try {
+            await transport.post(item.to, fromBase64(item.packet));
+          } catch {
+            left.push(item);
+          }
+        }
+        if (left.length !== group.outbox.length) await this.save(this.withGroup({ ...this.find(group.id)!, outbox: left }));
+      }
+    });
+  }
+
+  // Seals `text` for the group and sends it to every other member.
+  private async broadcast(id: string, text: Uint8Array, transport: GroupTransport) {
+    const sealed = await core.group.seal(this.kept(), fromHex(id), text);
+    await this.save({ ...this.data, state: toBase64(sealed.state) });
+    await this.deliver(id, await this.membersIn(id), sealed.message, transport);
+  }
+
+  // Sends one MLS message to each of `members` but this phone, sealed for each. What the relay
+  // does not take waits in the group's outbox.
+  private async deliver(id: string, members: GroupMember[], message: Uint8Array, transport: GroupTransport) {
+    const failed: Group['outbox'] = [];
+    for (const member of members) {
+      if (member.me || !member.about) continue;
+      const packet = await this.sealFor(member.about, message);
+      try {
+        await transport.post(member.about, packet);
+      } catch {
+        failed.push({ to: member.about, packet: toBase64(packet) });
+      }
+    }
+    const group = this.find(id);
+    if (failed.length > 0 && group) await this.save(this.withGroup({ ...group, outbox: [...group.outbox, ...failed].slice(-MAX_OUTBOX) }));
+  }
+
+  private async sealFor(about: About, message: Uint8Array): Promise<Uint8Array> {
+    const sealed = await core.relaySeal(fromBase64Url(about.seal), NO_SENDER, message);
+    const packet = new Uint8Array(2 + sealed.length);
+    packet.set(GROUP_PACKET, 0);
+    packet.set(sealed, 2);
+    return packet;
+  }
+
+  private trimmed(messages: GroupMessage[]): GroupMessage[] {
+    return messages.slice(-MAX_GROUP_MESSAGES);
+  }
+
+  // Adds a note to a group: who joined or left (by identity), or a text of its own.
+  private async note(id: string, what: string, who?: string) {
+    const group = this.find(id);
+    if (!group || who === '') return;
+    const text = who === undefined ? what : `${who}|${what}`;
+    await this.save(this.withGroup({ ...group, messages: this.trimmed([...group.messages, { at: Date.now(), from: '', text, tag: '', note: true }]) }));
+    this.changed();
+  }
+
+  private async out(id: string, text: string) {
+    const group = this.find(id);
+    if (!group) return;
+    if (this.data.state) {
+      const state = await core.group.forget(this.kept(), fromHex(id));
+      this.data = { ...this.data, state: toBase64(state) };
+    }
+    await this.save(this.withGroup({ ...group, status: 'out', asked: [], later: [], outbox: [] }));
+    await this.note(id, text);
+  }
+
+  /**
+   * A group signal from a contact's chat. `request`: they are a message request, and get nothing.
+   */
+  signal(identity: string, signal: GroupSignal, request: boolean, transport: GroupTransport): Promise<void> {
+    return this.run(async () => {
+      if (request) return;
+      if (signal.kind === 'ask') {
+        const given = `${signal.group}:${identity}`;
+        if (this.find(signal.group) || this.data.given.includes(given) || this.data.given.length >= MAX_GIVEN) return;
+        const made = await core.group.keyPackage(await this.state());
+        await this.save({ ...this.data, state: toBase64(made.state), given: [...this.data.given, given].slice(-MAX_GIVEN) });
+        await transport.signal(identity, { group: signal.group, kind: 'keys', data: made.keyPackage });
+        return;
+      }
+      if (signal.kind === 'keys') {
+        const group = this.find(signal.group);
+        if (!group?.admin || group.status !== 'in' || !group.asked.includes(identity)) return;
+        const before = await this.membersIn(group.id);
+        const added = await core.group.add(this.kept(), fromHex(group.id), signal.data);
+        await this.save({ ...this.withGroup({ ...group, asked: group.asked.filter((i) => i !== identity) }), state: toBase64(added.state) });
+        // The welcome first: whatever the others then write comes after it.
+        await transport.signal(identity, { group: group.id, kind: 'welcome', data: added.welcome, name: group.name });
+        await this.deliver(group.id, before, added.commit, transport);
+        await this.note(group.id, 'joined', identity);
+        return;
+      }
+      // A welcome: only from the contact this phone gave a key package for the group.
+      if (this.find(signal.group)?.status === 'in' || !this.data.given.includes(`${signal.group}:${identity}`)) return;
+      const joined = await core.group.join(await this.state(), signal.data);
+      if (toHex(joined.id) !== signal.group || !isGroupId(signal.group)) return;
+      const group: Group = {
+        id: signal.group,
+        name: signal.name || 'Group',
+        admin: false,
+        status: 'in',
+        asked: [],
+        later: [],
+        outbox: [],
+        messages: [{ at: Date.now(), from: '', text: `${identity}|added you`, tag: '', note: true }],
+        readAt: 0,
+      };
+      await this.save({ ...this.withGroup(group), state: toBase64(joined.state), given: this.data.given.filter((g) => !g.startsWith(`${signal.group}:`)) });
+      this.changed();
+      // What came for it before the welcome.
+      const orphans = this.data.orphans;
+      await this.save({ ...this.data, orphans: [] });
+      for (const orphan of orphans) await this.openLocked(fromBase64(orphan), transport);
+    });
+  }
+
+  /** A group message from the relay. Says whether it was one for this phone. */
+  receive(packet: Uint8Array, transport: GroupTransport): Promise<boolean> {
+    return this.run(async () => {
+      if (!isGroupPacket(packet) || !this.data.seal) return false;
+      let message: Uint8Array;
+      try {
+        message = (await core.sealOpen(fromBase64(this.data.seal), packet.slice(2))).message;
+      } catch {
+        return false;
+      }
+      await this.openLocked(message, transport);
+      return true;
+    });
+  }
+
+  private async openLocked(message: Uint8Array, transport: GroupTransport): Promise<void> {
+    if (!this.data.state) return;
+    let id: string;
+    try {
+      id = toHex(await core.group.of(message));
+    } catch {
+      return;
+    }
+    const group = this.find(id);
+    if (!group || group.status === 'out') {
+      if (!group) await this.save({ ...this.data, orphans: [...this.data.orphans, toBase64(message)].slice(-MAX_ORPHANS) });
+      return;
+    }
+    const before = await this.membersIn(id).catch(() => [] as GroupMember[]);
+    let result: Awaited<ReturnType<typeof core.group.open>>;
+    try {
+      result = await core.group.open(this.kept(), message);
+    } catch {
+      // Not from the admin, damaged, or not for this phone: nothing to show.
+      return;
+    }
+    const { opened } = result;
+    await this.save({ ...this.data, state: toBase64(result.state) });
+    if (opened.kind === 'message') {
+      const said = decodeSaid(opened.text);
+      const from = aboutOf(opened.about)?.id;
+      if (!said || !from) return;
+      const now = this.find(id)!;
+      if (said.t === 'name') {
+        // Only the admin names the group.
+        if (opened.sender !== 0) return;
+        await this.save(this.withGroup({ ...now, name: said.name || now.name }));
+      } else {
+        await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: said.text, tag: said.tag }]) }));
+      }
+      this.changed();
+    } else if (opened.kind === 'later') {
+      const now = this.find(id)!;
+      await this.save(this.withGroup({ ...now, later: [...now.later, toBase64(message)].slice(-MAX_LATER) }));
+    } else if (opened.kind === 'changed') {
+      const after = await this.membersIn(id);
+      const ids = (list: GroupMember[]) => new Set(list.map((m) => m.about?.id ?? ''));
+      const had = ids(before);
+      const has = ids(after);
+      for (const m of after) if (m.about && !had.has(m.about.id) && !m.me) await this.note(id, 'joined', m.about.id);
+      for (const m of before) if (m.about && !has.has(m.about.id)) await this.note(id, 'left', m.about.id);
+      // What waited for this change.
+      const now = this.find(id)!;
+      await this.save(this.withGroup({ ...now, later: [] }));
+      for (const waiting of now.later) await this.openLocked(fromBase64(waiting), transport);
+    } else if (opened.kind === 'removed') {
+      const leaving = this.find(id)?.status === 'leaving';
+      // The core forgot the group already.
+      await this.save(this.withGroup({ ...this.find(id)!, status: 'out', asked: [], later: [], outbox: [] }));
+      await this.note(id, leaving ? 'You left the group.' : 'You are no longer in the group.');
+    } else if (opened.kind === 'leaving') {
+      const now = this.find(id)!;
+      if (!now.admin) return;
+      const pending = await core.group.commitPending(this.kept(), fromHex(id));
+      await this.save({ ...this.data, state: toBase64(pending.state) });
+      if (pending.commit.length === 0) return;
+      // Everyone who was in, the member leaving too.
+      await this.deliver(id, before, pending.commit, transport);
+      const gone = before.find((m) => m.leaf === opened.sender)?.about?.id ?? '';
+      await this.note(id, 'left', gone);
+    }
+  }
+}
+
+/** A member's name: the one its chat has here, or the start of its key, as a contact's or a member's. */
+export function memberName(identity: string, contacts: { identity: string; name: string }[]): string {
+  const contact = contacts.find((c) => c.identity === identity);
+  return contact?.name || `${contact ? 'contact' : 'member'} ${identity.slice(0, 8)}`;
+}
+
+/** A note's text as the group shows it, with `name` giving each identity's name. */
+export function noteText(text: string, name: (identity: string) => string): string {
+  const bar = text.indexOf('|');
+  if (bar !== 64) return text;
+  const who = name(text.slice(0, 64));
+  const what = text.slice(65);
+  return what === 'added you' ? `${who} added you to the group.` : what === 'joined' ? `${who} joined.` : what === 'left' ? `${who} left.` : `${who} ${what}`;
+}
+
+export { EMPTY_GROUPS };

@@ -18,6 +18,7 @@ import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
+import { forgetSpaceGroups } from '../lib/space-groups';
 import { applyTor } from '../lib/tor';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
@@ -89,6 +90,7 @@ export default function RootLayout() {
     // once a space opens (after a backup is restored too).
     setCurrentSpace(null);
     forgetSpaceChats();
+    forgetSpaceGroups();
     forgetSmsLink();
     setThroughTor(false);
     setPhase({ kind: 'loading' });

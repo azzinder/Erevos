@@ -36,6 +36,8 @@ Early work, not audited. Do not rely on it to protect anyone yet.
   and small radio writes.
 - `crates/erevos-core/src/wire.rs`: byte encodings for prekey bundles, handshake
   messages and packets, with one valid encoding per message.
+- `crates/erevos-group`: group chats, MLS (RFC 9420) through OpenMLS. The
+  group's maker is its admin and the only one who commits.
 - `crates/erevos-import`: reads chats exported from other apps. So far Telegram.
 - `crates/erevos-relay`: the relay server. One-way queues (create, send,
   receive, delete) over TCP and WebSocket, with an optional bearer token and
