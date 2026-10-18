@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, Image, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
+import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
+import { HAS_LINKS, HAS_RADIO, onLinkEvent, sendLink, setLanLinks, startLinks, stopLinks } from '../lib/radio';
 import { nearby, type Delivery } from '../lib/nearby';
 import { currentCall } from '../lib/call';
 import { callPermissions } from '../lib/call-permissions';
@@ -129,8 +129,10 @@ const ASK_EVERY = 60 * 1000;
 // Messages opened from the relay in one look at it, at most: a minute's voice message comes in one.
 const RECEIVE_BATCH = 50;
 
-// Where the phone keeps whether it carries messages for others (lib/secure.ts): 'off', or on.
+// Where the phone keeps whether it carries messages for others, and whether it looks for Erevos on
+// the same Wi-Fi (lib/secure.ts): 'off', or on.
 const CARRY_KEY = 'erevos.carry';
+const LAN_KEY = 'erevos.lan';
 
 // Their photos and files up to this size are taken from the relay as soon as they come.
 const AUTO_TAKE = 16 * 1000 * 1000;
@@ -141,14 +143,6 @@ const SHOWN_PHOTOS = Platform.OS === 'web' ? 200 : 6;
 
 // Contacts are named by their identity key, after this prefix.
 const CONTACT_PREFIX = 'contact:';
-
-const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
-  'android.permission.NEARBY_WIFI_DEVICES',
-  'android.permission.BLUETOOTH_SCAN',
-  'android.permission.BLUETOOTH_ADVERTISE',
-  'android.permission.BLUETOOTH_CONNECT',
-  'android.permission.ACCESS_FINE_LOCATION',
-];
 
 function contactName(peer: string, contacts: ContactInfo[]): string | null {
   const identity = peer.slice(CONTACT_PREFIX.length);
@@ -317,8 +311,10 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
 }) {
   // Bumped when a phone nearby links or goes, or a contact is heard nearby (lib/nearby.ts).
   const [, setNearbyChanged] = useState(0);
-  // Whether this phone carries messages from phones nearby to their relays (lib/nearby.ts).
+  // Whether this phone carries messages from phones nearby to their relays (lib/nearby.ts), and
+  // whether it looks for Erevos on the same Wi-Fi (lib/radio.ts).
   const [carrying, setCarrying] = useState(true);
+  const [lanOn, setLanOn] = useState(true);
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -478,6 +474,13 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     secureSet(CARRY_KEY, on ? 'on' : 'off').catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
   }
 
+  // Looks for Erevos on the same Wi-Fi or hotspot too, or no longer (lib/radio.ts).
+  function changeLan(on: boolean) {
+    setLanLinks(on);
+    setLanOn(on);
+    secureSet(LAN_KEY, on ? 'on' : 'off').catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
+  }
+
   // Adds a contact from a code: typed or pasted here, or scanned and opened on the contact screen.
   async function acceptContact(code: ContactCode) {
     if (!e2e) {
@@ -526,13 +529,14 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     }
   }
 
-  // The radio link belongs to the phone, not to a space: what comes on it is sealed for a contact
-  // (lib/nearby.ts), so it opens only in the chats of the space that has them. The rest is kept a
-  // while for the other spaces. Hidden chats use the relay only.
+  // The links nearby belong to the phone, not to a space: the radio, and the same Wi-Fi or hotspot
+  // (lib/radio.ts). What comes on them is sealed for a contact (lib/nearby.ts), so it opens only in
+  // the chats of the space that has them. The rest is kept a while for the other spaces. Hidden
+  // chats use the relay only.
   useEffect(() => {
-    if (Platform.OS !== 'android' || hiddenKey) return;
+    if (!HAS_LINKS || hiddenKey) return;
     let active = true;
-    const stopNearby = nearby.start(sendText);
+    const stopNearby = nearby.start(sendLink);
     secureGet(CARRY_KEY)
       .then((value) => {
         nearby.setCarrying(value !== 'off');
@@ -543,23 +547,27 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       });
     const stopWatching = nearby.onChange(() => setNearbyChanged((n) => n + 1));
     const subscriptions = [
-      onRadioEvent('onPeer', ({ id, kind }) => {
+      onLinkEvent('onPeer', ({ id, kind }) => {
         if (kind !== 'ble') nearby.linkUp(id); // 'ble' is presence only, not a data link
       }),
-      onRadioEvent('onText', ({ peer, text }) => {
+      onLinkEvent('onText', ({ peer, text }) => {
         const packet = nearby.frameIn(peer, text);
         if (packet) void nearbyCame.current(peer, packet);
       }),
     ];
-    PermissionsAndroid.requestMultiple(PERMISSIONS).finally(() => {
-      if (active) startRadio();
-    });
+    secureGet(LAN_KEY)
+      .catch(() => null)
+      .then((value) => {
+        if (!active) return;
+        setLanOn(value !== 'off');
+        startLinks({ lan: value !== 'off' });
+      });
     return () => {
       active = false;
-      subscriptions.forEach((subscription) => subscription?.remove());
+      subscriptions.forEach((subscription) => subscription.remove());
       stopWatching();
       stopNearby();
-      stopRadio();
+      stopLinks();
     };
   }, []);
 
@@ -2267,8 +2275,16 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                   />
                   <Button title="Add" compact onPress={addContact} />
                 </Row>
-                {Platform.OS === 'android' && !hiddenKey ? (
+                {HAS_LINKS && !hiddenKey ? (
                   <View>
+                    <DetailRow title="Find Erevos on the same Wi-Fi" right={<Toggle on={lanOn} />} onPress={() => changeLan(!lanOn)} />
+                    <Text variant="caption" tone="muted">
+                      {lanOn
+                        ? 'While Chat is open, Erevos phones and computers on the same Wi-Fi or hotspot find each other and talk directly, even with no internet. Anyone on that Wi-Fi can tell an Erevos app is there, not whose.'
+                        : HAS_RADIO
+                          ? 'Only Bluetooth and Wi-Fi Aware look for phones nearby.'
+                          : 'Nothing looks for Erevos nearby.'}
+                    </Text>
                     <DetailRow title="Carry messages for others" right={<Toggle on={carrying} />} onPress={() => changeCarrying(!carrying)} />
                     <Text variant="caption" tone="muted">
                       {carrying

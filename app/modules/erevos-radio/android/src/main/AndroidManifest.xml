@@ -7,6 +7,10 @@
   <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
   <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
   <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+  <!-- The same Wi-Fi or hotspot (LanLink): broadcasts, which many phones drop without it. -->
+  <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+  <!-- Android 17+: reaching other devices on the local network. -->
+  <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
   <!-- Android 13+: Wi-Fi Aware without location. -->
   <uses-permission

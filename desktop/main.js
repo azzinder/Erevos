@@ -12,6 +12,9 @@
  *   /__backup?folder=&name=&keep=  writes a backup there, deleting older ones but the newest `keep`
  *   /__pick?most=…             asks for a file to open (a backup, a chat export) and gives its bytes
  *   /__save?name=…             asks where to save a photo or file from a chat and writes it there
+ *   /__lan                     Erevos on the same Wi-Fi (lan.js): PUT ?on=1 or 0 starts or stops
+ *                              it, POST ?link=… sends the body on a link, GET ?after=… gives what
+ *                              happened since, waiting a while for something
  * The app's data is in the folder Electron gives it (~/.config/Erevos, on a Mac
  * ~/Library/Application Support/Erevos).
  *
@@ -22,6 +25,7 @@ const { app, BrowserWindow, dialog, protocol, safeStorage, session, shell } = re
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const { Lan } = require('./lan');
 
 const ORIGIN = 'app://erevos';
 const WEB = path.join(__dirname, 'web');
@@ -240,6 +244,56 @@ async function save(request, url) {
   return Response.json({ path: result.filePath });
 }
 
+// Erevos on the same Wi-Fi, while the page wants it: what happens waits here for the page to ask.
+let lan = null;
+let lanSeq = 0;
+let lanEvents = [];
+let lanWaiting = [];
+const LAN_KEPT = 500;
+const LAN_WAIT = 20_000;
+
+function lanEvent(event) {
+  lanEvents.push({ seq: ++lanSeq, ...event });
+  if (lanEvents.length > LAN_KEPT) lanEvents = lanEvents.slice(-LAN_KEPT);
+  const waiting = lanWaiting;
+  lanWaiting = [];
+  waiting.forEach((wake) => wake());
+}
+
+async function lanRequest(request, url) {
+  if (request.method === 'PUT') {
+    const on = url.searchParams.get('on') === '1';
+    if (on && !lan) {
+      lan = new Lan({
+        onLink: (link) => lanEvent({ kind: 'link', link }),
+        onGone: (link) => lanEvent({ kind: 'gone', link }),
+        onText: (link, text) => lanEvent({ kind: 'text', link, text }),
+      });
+      lan.start();
+    } else if (!on && lan) {
+      lan.stop();
+      lan = null;
+      lanEvents = [];
+    }
+    return Response.json({ after: lanSeq, links: lan ? [...lan.links.keys()] : [] });
+  }
+  if (request.method === 'POST') {
+    const sent = lan?.send(url.searchParams.get('link') ?? '', await request.text());
+    return new Response(null, { status: sent ? 204 : 404 });
+  }
+  const after = Number(url.searchParams.get('after') ?? 0);
+  if (!lanEvents.some((event) => event.seq > after)) {
+    await new Promise((resolve) => {
+      const timer = setTimeout(resolve, LAN_WAIT);
+      lanWaiting.push(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  }
+  return Response.json({ events: lanEvents.filter((event) => event.seq > after) });
+}
+
 function handle(request) {
   const url = new URL(request.url);
   if (url.pathname.startsWith('/__')) {
@@ -251,6 +305,7 @@ function handle(request) {
     if (url.pathname === '/__backup') return backup(request, url);
     if (url.pathname === '/__pick') return pick(url);
     if (url.pathname === '/__save') return save(request, url);
+    if (url.pathname === '/__lan') return lanRequest(request, url);
     return new Response('', { status: 404 });
   }
   return serveFile(url.pathname);
@@ -328,5 +383,8 @@ if (!app.requestSingleInstanceLock()) {
     protocol.handle('app', handle);
     createWindow();
   });
-  app.on('window-all-closed', () => app.quit());
+  app.on('window-all-closed', () => {
+    lan?.stop();
+    app.quit();
+  });
 }

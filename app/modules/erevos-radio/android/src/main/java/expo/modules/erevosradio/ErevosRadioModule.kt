@@ -14,6 +14,7 @@ class ErevosRadioModule : Module() {
   private val main = Handler(Looper.getMainLooper())
   private var ble: BleLink? = null
   private var link: WifiAwareLink? = null
+  private var lan: LanLink? = null
 
   override fun definition() = ModuleDefinition {
     Name("ErevosRadio")
@@ -26,6 +27,7 @@ class ErevosRadioModule : Module() {
         "wifiAware" to (context != null && WifiAwareLink.isAvailable(context)),
         "ble" to (context != null && BleBeacon.isAvailable(context)),
         "running" to (ble != null || link != null),
+        "lan" to (lan != null),
       )
     }
 
@@ -66,10 +68,34 @@ class ErevosRadioModule : Module() {
       stopRadio()
     }
 
+    // The same Wi-Fi or hotspot (LanLink), on its own: it needs no radio permission.
+    Function("startLan") {
+      val context = appContext.reactContext ?: throw IllegalStateException("No app context")
+      lan?.stop()
+      lan = LanLink(
+        context,
+        onLink = { id ->
+          main.post { sendEvent("onPeer", mapOf("id" to id, "kind" to "lan")) }
+        },
+        onFrame = { id, payload ->
+          val text = String(payload, Charsets.UTF_8)
+          main.post { sendEvent("onText", mapOf("peer" to id, "text" to text)) }
+        },
+        onLog = { text -> main.post { sendEvent("onStatus", mapOf("text" to text)) } },
+      ).also { it.start() }
+    }
+
+    Function("stopLan") {
+      lan?.stop()
+      lan = null
+    }
+
     Function("sendText") { peer: String, text: String ->
       val bytes = text.toByteArray(Charsets.UTF_8)
       if (peer.startsWith(BleLink.LINK_PREFIX)) {
         ble?.send(peer, bytes) ?: false
+      } else if (peer.startsWith(LanLink.LINK_PREFIX)) {
+        lan?.send(peer, bytes) ?: false
       } else {
         link?.send(peer, bytes) ?: false
       }
@@ -77,6 +103,8 @@ class ErevosRadioModule : Module() {
 
     OnDestroy {
       stopRadio()
+      lan?.stop()
+      lan = null
     }
   }
 

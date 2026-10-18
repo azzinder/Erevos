@@ -1,7 +1,7 @@
 # erevos-radio
 
-Expo native module for the phone radio. Android only. Written without an Android SDK,
-so it has not been compiled yet. The first build is on two phones.
+Expo native module for the phone radio. Android only. Built and run on the test phones since
+2026-10-16 (chat over BLE both ways); the same-Wi-Fi link has not run on a phone yet.
 
 ## What it does
 
@@ -19,11 +19,21 @@ so it has not been compiled yet. The first build is on two phones.
   one write or notification in flight at a time. Link ids start with `ble-link-`.
 - **BLE presence** advertises the service UUID and reports other phones that advertise it.
   The nonce is random for each start, so it does not identify a person or a phone for long.
+- **The same Wi-Fi or a hotspot** (`LanLink`, `startLan` and `stopLan`), apart from the radio:
+  each phone broadcasts `EVL1 <nonce> <port>` on UDP port 47905 every 3 seconds, the lower
+  nonce connects over TCP (either does after 6 seconds without a link), and each side's first
+  frame is `EVL1 <nonce>`. Then frames carry text, or `EVL1` alone every 3 seconds to say the link
+  is still there; a link silent for 15 seconds closes. Link ids start with `lan-`. The desktop app
+  speaks the same protocol (`desktop/lan.js`). Each socket goes on the Android network whose
+  addresses hold the other's, as Android sends to a Wi-Fi without internet only when told to.
+  `android/lan-check/run.sh` compiles `LanLink` with the Android classes and links it to
+  `desktop/lan.js` on a computer, without a phone; it passed on 2026-10-18.
 
 ## JS API
 
-See `index.ts`: `radioStatus()`, `startRadio()`, `stopRadio()`, `sendText(linkId, text)`,
-and `onRadioEvent(name, listener)` for `onStatus`, `onPeer` and `onText`.
+See `index.ts`: `radioStatus()`, `startRadio()`, `stopRadio()`, `startLan()`, `stopLan()`,
+`sendText(linkId, text)`, and `onRadioEvent(name, listener)` for `onStatus`, `onPeer` and `onText`.
+The app uses them through `lib/radio.ts`, which also has the desktop app's same-Wi-Fi links.
 
 ## Not done
 

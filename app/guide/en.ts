@@ -6,7 +6,8 @@ Erevos is a messenger made for privacy. You need no account, no phone number and
 meant to keep working wherever you are: through a nearby phone with no network at all, over Wi-Fi, or over the
 internet.
 
-- **Nearby, without internet:** two Android phones talk directly over Bluetooth or Wi-Fi Aware, end-to-end encrypted.
+- **Nearby, without internet:** two Android phones talk directly over Bluetooth or Wi-Fi Aware, end-to-end encrypted, and
+  phones and computers on the same Wi-Fi or a phone's hotspot do too.
 - **Through a relay:** over Wi-Fi or the internet, through a small server (a relay) that you can run yourself.
 - **Spaces:** a password lock, a second password that opens a separate, empty Erevos, and hidden chats in every
   space.
@@ -38,7 +39,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 | In the menu | What it opens |
 | --- | --- |
 | **New group** | A group chat with your contacts. See [Group chats](#groups). |
-| **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, without internet. See [Chat with a nearby phone](#nearby). |
+| **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
 | **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
 | **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
@@ -63,8 +64,8 @@ A good first hour:
 ## Chat with a nearby phone {#nearby}
 
 With **Chat** open, Erevos looks for other Erevos phones around it, over Bluetooth and, where the phone has it,
-Wi-Fi Aware. No internet, SIM or Wi-Fi network is needed. It carries messages to your contacts, end-to-end encrypted
-like those through the relay.
+Wi-Fi Aware, and on the Wi-Fi it is on, phones and computers alike. No internet, SIM or Wi-Fi network is needed. It
+carries messages to your contacts, end-to-end encrypted like those through the relay.
 
 1. Open **Nearby phones** from the menu on both phones. The first time, Android asks to find nearby devices (on Android 12 and
    older, also for the location); allow it, or the phones cannot find each other.
@@ -77,6 +78,11 @@ like those through the relay.
 - **Both phones keep Chat open:** the radio starts when Chat opens and stops when you leave it.
 - **Range:** a few tens of metres in the open, less through walls.
 - **Wi-Fi Aware:** faster, but not every phone has it. Bluetooth works on all of them.
+- **The same Wi-Fi or a hotspot:** phones on one Wi-Fi, or on one phone's hotspot, find each other and talk directly,
+  even when that Wi-Fi has no internet; the desktop app too. If Android asks whether to stay on a Wi-Fi with no
+  internet, stay. Anyone on that Wi-Fi can tell an Erevos app is there, not whose. A computer's firewall must let
+  port 47905 in (UDP and TCP). To stop it, turn off **Find Erevos on the same Wi-Fi** under **Relay and new
+  contacts**.
 - **Other phones nearby** get only sealed bytes they cannot open, and only until your contact's phone is known: from
   then on what you send goes to it alone. Voice messages go only to a contact known to be near. Photos and files need
   the relay.
@@ -506,8 +512,9 @@ as on the phone, and keeps its contacts, messages and settings sealed the same w
 2. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay). **Copy my contact link** copies
    your link, to paste where it should go.
 
-- **What only the phone does:** the nearby link (Bluetooth and Wi-Fi Aware) and its tests. The rest is the same:
-  spaces and the second password, hidden chats, voice messages, imported chats and backups.
+- **What only the phone does:** Bluetooth and Wi-Fi Aware, and their tests. Contacts on the same Wi-Fi it reaches
+  as a phone does, see [Chat with a nearby phone](#nearby). The rest is the same: spaces and the second password,
+  hidden chats, voice messages, imported chats and backups.
 - **Where it keeps things:** in its own folder (on Linux \`~/.config/Erevos\`, on a Mac
   \`~/Library/Application Support/Erevos\`), sealed as on the phone. Its keystore is sealed with the system's keyring
   (on a Mac the Keychain). A Linux system without a keyring keeps it as it is: set a password lock there.
@@ -605,7 +612,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Account, phone number, email** | None needed. Contacts are pairs of one-way relay queues. | |
 | **Contacts and their names, keys, relay settings, look** | Sealed on the phone with each space's key. | |
 | **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
-| **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | Wi-Fi Direct. |
+| **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | Wi-Fi Direct. |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept in memory only, three days at most. Hidden chats are never carried. | Carried messages that stay when Erevos closes. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | MMS, and two SIM cards. |
@@ -624,8 +631,7 @@ Erevos says plainly what it protects and what it does not, yet.
 
 End-to-end encryption is here, through the relay and over the nearby link, and most of what follows is built on it.
 
-- **More ways to stay in touch:** the same Wi-Fi or a phone's hotspot without internet, Wi-Fi Direct, receiving
-  while Erevos is closed, and ways around censorship (Tor bridges).
+- **More ways to stay in touch:** Wi-Fi Direct, receiving while Erevos is closed, and ways around censorship (Tor bridges).
   - **LoRa radios (Meshtastic):** kilometres of range for short texts, behind their own switch, off unless you turn
     it on, with privacy warnings first.
   - **SMS:** Erevos as the SMS app is here, see [SMS](#sms). Next: MMS and two SIM cards.
@@ -654,6 +660,8 @@ There is no way to recover it. Erevos keeps nothing that could open your data wi
 - Check that Bluetooth is on (and, on Android 12 and older, the location), and that Erevos may find nearby devices
   (Android settings → Apps → Erevos → Permissions).
 - Bring the phones closer. If one of them has no Wi-Fi Aware, they meet over Bluetooth, which is slower to start.
+- Or join both to one Wi-Fi, or one phone's hotspot, with **Find Erevos on the same Wi-Fi** on. Some public Wi-Fi
+  keeps the devices on it apart: there it cannot work.
 
 ### A contact code was not added.
 

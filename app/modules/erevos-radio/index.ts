@@ -1,7 +1,8 @@
 import { requireOptionalNativeModule, type EventSubscription } from 'expo-modules-core';
 
 // Phone radio for Android: Wi-Fi Aware for data when both phones support it, BLE GATT
-// for data otherwise, and BLE for presence.
+// for data otherwise, and BLE for presence. Apart from the radio, links to Erevos phones and
+// computers on the same Wi-Fi or hotspot (startLan, the protocol of desktop/lan.js).
 // On other platforms every function is a no-op, so the app still bundles for web.
 
 export type RadioStatus = {
@@ -9,11 +10,12 @@ export type RadioStatus = {
   wifiAware: boolean;
   ble: boolean;
   running: boolean;
+  lan?: boolean;
 };
 
 export type RadioEvents = {
   onStatus: (event: { text: string }) => void;
-  onPeer: (event: { id: string; kind: 'wifi-aware' | 'ble-link' | 'ble' }) => void;
+  onPeer: (event: { id: string; kind: 'wifi-aware' | 'ble-link' | 'ble' | 'lan' }) => void;
   onText: (event: { peer: string; text: string }) => void;
 };
 
@@ -22,6 +24,8 @@ type NativeRadio = {
   status(): RadioStatus;
   start(): void;
   stop(): void;
+  startLan?(): void;
+  stopLan?(): void;
   sendText(peer: string, text: string): boolean;
   addListener<Name extends keyof RadioEvents>(name: Name, listener: RadioEvents[Name]): EventSubscription;
 };
@@ -40,7 +44,16 @@ export function stopRadio(): void {
   native?.stop();
 }
 
-/** Sends text to a link id from an `onPeer` event with kind `wifi-aware` or `ble-link`. */
+/** Looks for Erevos on the same Wi-Fi or hotspot, and links to them (kind `lan`), until `stopLan`. */
+export function startLan(): void {
+  native?.startLan?.();
+}
+
+export function stopLan(): void {
+  native?.stopLan?.();
+}
+
+/** Sends text to a link id from an `onPeer` event with kind `wifi-aware`, `ble-link` or `lan`. */
 export function sendText(peer: string, text: string): boolean {
   return native ? native.sendText(peer, text) : false;
 }

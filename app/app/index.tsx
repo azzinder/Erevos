@@ -10,6 +10,7 @@ import { canGroup, hasCore } from '../lib/core';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type InboxGroup, type InboxRow } from '../lib/inbox';
+import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
 import { spaceGroups } from '../lib/space-groups';
@@ -35,10 +36,15 @@ const MARKS = ['✓', '✓✓', '✓✓✓'];
 
 type Relay = 'ready' | 'no-queue' | 'none';
 
-// `phone`: only on a phone, as it needs its radio.
-const MENU: { title: string; detail: string; href: Href; phone?: boolean }[] = [
+// `phone`: only on a phone, as it needs its radio. `links`: where there are links to phones nearby.
+const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean }[] = [
   { title: 'New group', detail: 'A group chat with your contacts, end-to-end encrypted', href: '/new-group' },
-  { title: 'Nearby phones', detail: 'Your contacts over Bluetooth and Wi-Fi, without internet', href: '/chat', phone: true },
+  {
+    title: 'Nearby phones',
+    detail: HAS_RADIO ? 'Your contacts over Bluetooth and Wi-Fi, without internet' : 'Your contacts on the same Wi-Fi, without internet',
+    href: '/chat',
+    links: true,
+  },
   { title: 'SMS', detail: 'Erevos as the SMS app, one list for all messages', href: '/sms-settings', phone: true },
   { title: 'Tor', detail: 'Reach the relays through Tor, off unless turned on', href: '/tor', phone: true },
   { title: 'Imported chats', detail: 'Telegram and WhatsApp exports', href: '/imported' },
@@ -240,7 +246,7 @@ export default function Home() {
         </Text>
       </Pressable>
       <Sheet visible={menu} onClose={() => setMenu(false)}>
-        {MENU.filter((item) => (!item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || canGroup())).map((item) => (
+        {MENU.filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || canGroup())).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"

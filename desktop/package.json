@@ -27,6 +27,7 @@
     "icon": "icon.png",
     "files": [
       "main.js",
+      "lan.js",
       "icon.png",
       "web/**/*"
     ],
@@ -57,7 +58,7 @@
       "hardenedRuntime": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Erevos uses the microphone for voice messages, only while you hold Voice.",
-        "NSLocalNetworkUsageDescription": "Erevos talks to the relay you set, which may be on your local network."
+        "NSLocalNetworkUsageDescription": "Erevos talks to the relay you set, which may be on your local network, and to Erevos phones and computers on the same Wi-Fi while Chat is open."
       }
     },
     "dmg": {
