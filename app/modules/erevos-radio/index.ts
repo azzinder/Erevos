@@ -2,7 +2,8 @@ import { requireOptionalNativeModule, type EventSubscription } from 'expo-module
 
 // Phone radio for Android: Wi-Fi Aware for data when both phones support it, BLE GATT
 // for data otherwise, and BLE for presence. Apart from the radio, links to Erevos phones and
-// computers on the same Wi-Fi or hotspot (startLan, the protocol of desktop/lan.js).
+// computers on the same Wi-Fi or hotspot (startLan, the protocol of desktop/lan.js), and to a
+// Meshtastic LoRa radio over Bluetooth (meshConnect; lib/lora.ts speaks to it).
 // On other platforms every function is a no-op, so the app still bundles for web.
 
 export type RadioStatus = {
@@ -17,7 +18,14 @@ export type RadioEvents = {
   onStatus: (event: { text: string }) => void;
   onPeer: (event: { id: string; kind: 'wifi-aware' | 'ble-link' | 'ble' | 'lan' }) => void;
   onText: (event: { peer: string; text: string }) => void;
+  onMesh: (event: MeshEvent) => void;
 };
+
+/** What the Meshtastic radio's Bluetooth link says: a radio found, how the link is, or a FromRadio (base64). */
+export type MeshEvent =
+  | { kind: 'found'; address: string; name: string }
+  | { kind: 'state'; state: 'connecting' | 'up' | 'down' | 'refused'; detail: string }
+  | { kind: 'data'; data: string };
 
 // Since Expo SDK 52 the native module object is itself the event emitter.
 type NativeRadio = {
@@ -26,6 +34,10 @@ type NativeRadio = {
   stop(): void;
   startLan?(): void;
   stopLan?(): void;
+  meshScan?(): void;
+  meshConnect?(address: string): void;
+  meshDisconnect?(): void;
+  meshSend?(data: string): boolean;
   sendText(peer: string, text: string): boolean;
   addListener<Name extends keyof RadioEvents>(name: Name, listener: RadioEvents[Name]): EventSubscription;
 };
@@ -51,6 +63,30 @@ export function startLan(): void {
 
 export function stopLan(): void {
   native?.stopLan?.();
+}
+
+/** Whether this build can link to a Meshtastic radio. */
+export function hasMesh(): boolean {
+  return !!native?.meshConnect;
+}
+
+/** Looks for Meshtastic radios for a few seconds: each found comes once, as an `onMesh` event. */
+export function meshScan(): void {
+  native?.meshScan?.();
+}
+
+/** Links to the Meshtastic radio at this Bluetooth address, pairing first if need be. */
+export function meshConnect(address: string): void {
+  native?.meshConnect?.(address);
+}
+
+export function meshDisconnect(): void {
+  native?.meshDisconnect?.();
+}
+
+/** Writes a ToRadio (base64) to the radio. False when it is not linked. */
+export function meshSend(data: string): boolean {
+  return native?.meshSend?.(data) ?? false;
 }
 
 /** Sends text to a link id from an `onPeer` event with kind `wifi-aware`, `ble-link` or `lan`. */

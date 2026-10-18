@@ -1,7 +1,8 @@
 # erevos-radio
 
 Expo native module for the phone radio. Android only. Built and run on the test phones since
-2026-10-16 (chat over BLE both ways); the same-Wi-Fi link has not run on a phone yet.
+2026-10-16 (chat over BLE both ways); the same-Wi-Fi link and the Meshtastic link have not run on
+a phone yet.
 
 ## What it does
 
@@ -28,12 +29,21 @@ Expo native module for the phone radio. Android only. Built and run on the test 
   addresses hold the other's, as Android sends to a Wi-Fi without internet only when told to.
   `android/lan-check/run.sh` compiles `LanLink` with the Android classes and links it to
   `desktop/lan.js` on a computer, without a phone; it passed on 2026-10-18.
+- **A Meshtastic LoRa radio** (`MeshtasticLink`, `meshScan`, `meshConnect`, `meshDisconnect`,
+  `meshSend`), over BLE as Meshtastic's own apps link to it: service
+  `6ba1b218-15a8-461f-9fa8-5dcae273eafd`, ToRadio written, FromRadio read until it comes empty after
+  each write and each FromNum notification (UUIDs from the firmware's `src/BluetoothCommon.h`). A
+  radio not paired yet is paired first, with Android's dialog for its PIN. The bytes go to and from
+  JS as base64 on `onMesh` events, and `lib/lora.ts` speaks the protocol (`lib/meshtastic.ts`).
+  `android/lora-check/run.sh` compiles `MeshtasticLink` with the Android classes and checks the order
+  of its Bluetooth operations (`MeshOps`); it passed on 2026-10-18. No radio was at hand to try it on.
 
 ## JS API
 
 See `index.ts`: `radioStatus()`, `startRadio()`, `stopRadio()`, `startLan()`, `stopLan()`,
-`sendText(linkId, text)`, and `onRadioEvent(name, listener)` for `onStatus`, `onPeer` and `onText`.
-The app uses them through `lib/radio.ts`, which also has the desktop app's same-Wi-Fi links.
+`sendText(linkId, text)`, `hasMesh()`, `meshScan()`, `meshConnect(address)`, `meshDisconnect()`,
+`meshSend(base64)`, and `onRadioEvent(name, listener)` for `onStatus`, `onPeer`, `onText` and
+`onMesh`. The app uses them through `lib/radio.ts`, which also has the desktop app's same-Wi-Fi links.
 
 ## Not done
 

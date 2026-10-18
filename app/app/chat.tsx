@@ -3,7 +3,7 @@ import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSh
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { HAS_LINKS, HAS_RADIO, onLinkEvent, sendLink, setLanLinks, startLinks, stopLinks } from '../lib/radio';
+import { canLora, HAS_LINKS, HAS_RADIO, lora, onLinkEvent, sendLink, setLanLinks, startLinks, stopLinks } from '../lib/radio';
 import { nearby, type Delivery } from '../lib/nearby';
 import { currentCall } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
@@ -133,6 +133,8 @@ const RECEIVE_BATCH = 50;
 // Where the phone keeps whether it carries messages for others, and whether it looks for Erevos on
 // the same Wi-Fi (lib/secure.ts): 'off', or on.
 const CARRY_KEY = 'erevos.carry';
+// How the LoRa radio is, in a word (lib/lora.ts).
+const LORA_SHOWN = { off: 'Off', connecting: 'Linking', starting: 'Linking', up: 'Linked', down: 'Not linked' } as const;
 const LAN_KEY = 'erevos.lan';
 
 // Their photos and files up to this size are taken from the relay as soon as they come.
@@ -554,6 +556,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
         // Carrying stays as it was.
       });
     const stopWatching = nearby.onChange(() => setNearbyChanged((n) => n + 1));
+    const stopWatchingLora = lora.onChange(() => setNearbyChanged((n) => n + 1));
     const subscriptions = [
       onLinkEvent('onPeer', ({ id, kind }) => {
         if (kind !== 'ble') nearby.linkUp(id); // 'ble' is presence only, not a data link
@@ -574,6 +577,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       active = false;
       subscriptions.forEach((subscription) => subscription.remove());
       stopWatching();
+      stopWatchingLora();
       stopNearby();
       stopLinks();
     };
@@ -1070,7 +1074,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     }
     const all = sealed.first ? [sealed.first, ...packets] : packets;
     const carry = carried ? () => carriedFor(sealed, all, { url: relayUrl, key: ownRelayKey }) : null;
-    return nearby.deliver(identity, all, relay, carry);
+    // What is worth carrying is worth LoRa's air time too, when it is small (lib/lora.ts).
+    return nearby.deliver(identity, all, relay, carry, carried);
   }
 
   // A call's line in the chat, kept with its messages. It needs no read mark, and it disappears
@@ -1159,6 +1164,9 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   function sentNote(way: Delivery, what: string, name: string): string {
     if (way === 'nearby') return `${what} nearby, end-to-end encrypted.`;
     if (way === 'relay') return `${what} through the relay, end-to-end encrypted.`;
+    if (way === 'lora') {
+      return `${what} over LoRa, end-to-end encrypted, as the relay could not be reached. It comes if ${name}'s Erevos has a radio on the same mesh, within reach.`;
+    }
     if (way === 'carried') {
       return `${what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. If ${name}'s is not one of them, they hand it to ${name}'s relay once they reach the internet, and so does this phone.`;
     }
@@ -2318,6 +2326,14 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                         ? "When the relay cannot be reached, Erevos phones nearby give each other what they could not send, sealed for the contact's relay. This phone keeps those it gets, three days at most, and hands them to that relay through yours. It cannot read them, nor tell who they are from or for: it sees only the relay's address."
                         : 'This phone keeps nothing for others. What it cannot send, phones nearby still carry for you.'}
                     </Text>
+                    {canLora() ? (
+                      <>
+                        <DetailRow title="LoRa radio" value={LORA_SHOWN[lora.state().status]} onPress={() => router.push('/lora')} />
+                        <Text variant="caption" tone="muted">
+                          With a Meshtastic radio, text goes kilometres with no internet, when nothing else takes it.
+                        </Text>
+                      </>
+                    ) : null}
                   </View>
                 ) : null}
               </View>

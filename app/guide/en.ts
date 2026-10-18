@@ -7,7 +7,7 @@ meant to keep working wherever you are: through a nearby phone with no network a
 internet.
 
 - **Nearby, without internet:** two Android phones talk directly over Bluetooth or Wi-Fi Aware, end-to-end encrypted, and
-  phones and computers on the same Wi-Fi or a phone's hotspot do too.
+  phones and computers on the same Wi-Fi or a phone's hotspot do too. With a LoRa radio, texts go kilometres.
 - **Through a relay:** over Wi-Fi or the internet, through a small server (a relay) that you can run yourself.
 - **Spaces:** a password lock, a second password that opens a separate, empty Erevos, and hidden chats in every
   space.
@@ -40,6 +40,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 | --- | --- |
 | **New group** | A group chat with your contacts. See [Group chats](#groups). |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
+| **LoRa radio** | Texts over a Meshtastic radio, kilometres away, without internet; off unless set. See [Over a LoRa radio](#lora). |
 | **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
 | **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
@@ -97,6 +98,35 @@ carries messages to your contacts, end-to-end encrypted like those through the r
 
 > A message from nearby opens only in the space that has that contact. One for another space of this phone waits in
 > memory, six hours at most, until that space opens. Hidden chats never use the nearby link.
+
+## Over a LoRa radio {#lora}
+
+With a Meshtastic LoRa radio linked to the phone by Bluetooth, Erevos reaches Erevos with a radio on the same mesh,
+kilometres away, with no internet: straight, or through the Meshtastic radios between. It is off unless you set a
+radio, and on Android only.
+
+1. Set up the radio in the Meshtastic app first, its **region** above all: without one it sends nothing. Then close
+   the Meshtastic app, or disconnect it there: a radio links to one app at a time.
+2. Open **LoRa radio** from the menu, tap **Find my radio**, read what it says, and tap your radio when it shows. A
+   radio not paired yet asks for its PIN: it shows on the radio's screen, or is 123456.
+3. Your contact does the same with theirs, on the same mesh: the same region and the same first channel.
+4. Write as always, with **Chat** open. When the relay cannot be reached and no phone is near, a text goes over LoRa,
+   and the line under the chat says so.
+
+- **Only text, and slowly:** a message goes in pieces of about 220 bytes, each a second or two on the air, and the law
+  allows a radio only so much air time (in the EU, a tenth of each hour). So LoRa takes only texts and deletes, and
+  only when nothing else does. Voice messages, photos, files and calls wait for the relay or a phone nearby. The first
+  message to a contact takes longer, as it holds the keys.
+- **Marks:** **✓✓** comes with their next message, as marks alone do not go over LoRa.
+- **To every radio in reach:** each message is heard by every radio around, and passed on by the Meshtastic radios, as
+  Meshtastic does. Every Erevos tries it; only your contact's opens it. Nothing is carried for others over LoRa.
+- **It stays linked** while Erevos runs, and links again by itself when the radio comes back in reach. **Turn LoRa
+  off** unlinks it and forgets it. Hidden chats never go over LoRa.
+
+> A LoRa radio is heard kilometres away, and its signal can be traced to where it is. What Erevos sends stays
+> end-to-end encrypted, but anyone with a radio can tell that yours sends, when and how much. Your radio also says its
+> own name to every radio in reach, and where it is if it has GPS or a fixed position, as Meshtastic does: turn those
+> off in the Meshtastic app if you do not want that.
 
 ## Chat through a relay {#relay}
 
@@ -304,8 +334,9 @@ When you tap **Send**, Erevos picks the path by itself:
 2. **Otherwise, with a relay:** it goes through the relay, and a short message also goes to the Erevos phones linked
    nearby, so theirs can answer nearby if it is one of them. If the relay cannot be reached, that copy is the one
    that counts, and those phones carry it to your contact's relay too, as in [Chat with a nearby phone](#nearby).
-3. **Otherwise, with no relay,** it goes to the Erevos phones linked nearby, as in 2. With none of them either, the
-   message is not sent, and a line under the chat says why.
+3. **Otherwise, with no relay,** it goes to the Erevos phones linked nearby, as in 2.
+4. **And over LoRa,** when a radio is set and the relay could not take a text, as in [Over a LoRa radio](#lora). With
+   no way at all, the message is not sent, and a line under the chat says why.
 
 Every path is end-to-end encrypted: no relay and no phone in between can read what you send.
 
@@ -315,7 +346,9 @@ Every path is end-to-end encrypted: no relay and no phone in between can read wh
 | **Sent through the relay, end-to-end encrypted.** | Nothing: it is on its way. |
 | **Sent to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached.** | It comes only if one of them is theirs: wait for **✓✓**, or check the relay. |
 | **… If their phone is not one of them, they hand it to their relay once they reach the internet, and so does this phone.** | Nothing: it comes once one of them, or this phone, reaches the internet. Wait for **✓✓**. |
+| **Sent over LoRa, end-to-end encrypted, as the relay could not be reached.** | It comes if their Erevos has a radio on the same mesh, within reach: wait for **✓✓**, or check the relay. |
 | **Not sent. There is no relay, and no Erevos phone is linked nearby.** | Fill in the relay address, as in [Chat through a relay](#relay), or come near their phone. |
+| **Not sent. Too large for LoRa, which takes only text.** | Send it once the relay can be reached, or near their phone. |
 | **Not sent. The relay does not have this contact's queue any more.** | Ask them to write to you, or for their new contact link. |
 | **This build cannot encrypt, so chats through the relay are off.** | Build the app again: this build is older than its encryption. |
 
@@ -521,7 +554,7 @@ as on the phone, and keeps its contacts, messages and settings sealed the same w
 2. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay). **Copy my contact link** copies
    your link, to paste where it should go.
 
-- **What only the phone does:** Bluetooth and Wi-Fi Aware, and their tests. Contacts on the same Wi-Fi it reaches
+- **What only the phone does:** Bluetooth, Wi-Fi Aware and LoRa, and their tests. Contacts on the same Wi-Fi it reaches
   as a phone does, see [Chat with a nearby phone](#nearby). The rest is the same: spaces and the second password,
   hidden chats, voice messages, imported chats and backups.
 - **Where it keeps things:** in its own folder (on Linux \`~/.config/Erevos\`, on a Mac
@@ -587,7 +620,7 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
 3. Set a password lock (**Lock and second password**). See below why it matters here.
 4. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay).
 
-- **What only Android does:** the nearby link (Bluetooth and Wi-Fi Aware) and SMS. The rest is the same: spaces and
+- **What only Android does:** the nearby link (Bluetooth and Wi-Fi Aware), LoRa and SMS. The rest is the same: spaces and
   the second password, hidden chats, voice messages, imported chats and backups.
 - **Where it keeps things:** in \`~/.local/share/erevos\` on the phone, sealed as on the phone. Sailfish has no
   keyring for apps, so the keystore is kept there as it is, readable by your user only: the password lock is what
@@ -623,6 +656,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | Wi-Fi Direct. |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept in memory only, three days at most. Hidden chats are never carried. | Carried messages that stay when Erevos closes. |
+| **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Your radio says its name, and where it is if it knows, as Meshtastic does, unless turned off in the Meshtastic app. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name and position from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | MMS, and two SIM cards. |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
@@ -642,8 +676,8 @@ Erevos says plainly what it protects and what it does not, yet.
 End-to-end encryption is here, through the relay and over the nearby link, and most of what follows is built on it.
 
 - **More ways to stay in touch:** Wi-Fi Direct, receiving while Erevos is closed, and ways around censorship (Tor bridges).
-  - **LoRa radios (Meshtastic):** kilometres of range for short texts, behind their own switch, off unless you turn
-    it on, with privacy warnings first.
+  - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: setting the radio's name and position
+    from Erevos.
   - **SMS:** Erevos as the SMS app is here, see [SMS](#sms). Next: MMS and two SIM cards.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
 - **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a
@@ -672,6 +706,14 @@ There is no way to recover it. Erevos keeps nothing that could open your data wi
 - Bring the phones closer. If one of them has no Wi-Fi Aware, they meet over Bluetooth, which is slower to start.
 - Or join both to one Wi-Fi, or one phone's hotspot, with **Find Erevos on the same Wi-Fi** on. Some public Wi-Fi
   keeps the devices on it apart: there it cannot work.
+
+### Nothing comes over LoRa.
+
+- Both radios need the same region and the same first channel (its name and key) in the Meshtastic app, and to be in
+  reach of each other, or of radios between.
+- **LoRa radio** must say **Linked**. If it does not, close the Meshtastic app: a radio links to one app at a time.
+- Only texts go, and only when the relay cannot be reached and no phone is near.
+- In the EU a radio may send only so much each hour: after many messages, it waits.
 
 ### A contact code was not added.
 

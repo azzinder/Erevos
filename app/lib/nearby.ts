@@ -21,12 +21,18 @@ import { fromBase64, randomBytes, sha256Bytes, toBase64, toHex } from './crypto'
 // it links with later (two more at most), and hands it to that relay through its own relay once it
 // can (carryTo in lib/relay.ts). It cannot open it, nor tell who it is from or for: it sees only
 // the relay's address. The phone that sent it keeps it too, and hands it over itself the same way.
+//
+// Slow links: a LoRa radio (lib/lora.ts) reaches phones kilometres away, but a few hundred bytes
+// take seconds on the air, and the law allows a radio only so much air time. So a slow link is the
+// last way: it takes a message only when the relay and the other links did not, only small ones
+// (text and deletes, not voice), and nothing carried for others.
 
 /**
  * How a message went: to the contact's phone nearby, through the relay, or to the phones nearby,
- * not knowing whether theirs is one; carried, when they also took it to hand to the contact's relay.
+ * not knowing whether theirs is one; carried, when they also took it to hand to the contact's relay;
+ * over LoRa, when only a slow link took it.
  */
-export type Delivery = 'nearby' | 'relay' | 'spread' | 'carried';
+export type Delivery = 'nearby' | 'relay' | 'spread' | 'carried' | 'lora';
 
 /** A packet sealed for the contact's relay (relaySeal), to hand to the relay at `url` from wherever there is internet. */
 export type Carried = { url: string; sealed: Uint8Array };
@@ -37,6 +43,9 @@ export type Upload = (url: string, sealed: Uint8Array) => Promise<boolean>;
 /** Sends a text frame on a link (sendText of modules/erevos-radio). False if the link is not up. */
 export type RadioSend = (link: string, text: string) => boolean;
 
+/** How the ids of slow links start (lib/lora.ts). */
+export const SLOW_PREFIX = 'lora-';
+
 const PREFIX = 'EVN1';
 const CARRY_PREFIX = 'EVC1';
 // A packet's bytes in one frame: as base64 with the frame's head, under the radio's 16 KB.
@@ -44,6 +53,8 @@ const PIECE = 12_000;
 const MAX_PIECES = 8;
 // The largest packet sent to every phone nearby; larger ones go to a contact heard nearby only.
 const MAX_SPREAD = 8 * 1024;
+// The most a slow link takes for one message, in all: a text with the conversation's first packet.
+const MAX_SLOW = 3 * 1024;
 // Packets for none of the open chats, kept for the other spaces: how many, and how long.
 const MAX_HELD = 200;
 const HELD_FOR = 6 * 3600 * 1000;
@@ -69,6 +80,7 @@ const RELAY_URL = /^wss?:\/\/[\x21-\x7e]{1,500}$/;
 const FRAME = /^(EVN1|EVC1):([0-9a-f]{8}):([0-9]):([1-9]):([A-Za-z0-9+/]+={0,2})$/;
 
 const digestOf = (packet: Uint8Array) => toHex(sha256Bytes(packet)).slice(0, 32);
+const isSlow = (link: string) => link.startsWith(SLOW_PREFIX);
 
 /** The frames a packet goes in, or null when it is too large for the radio. */
 export function framesOf(packet: Uint8Array, prefix = PREFIX): string[] | null {
@@ -123,6 +135,13 @@ export class NoWayError extends Error {
   }
 }
 
+/** Only a slow link was up, and it does not take something this large. */
+export class TooLargeForLoraError extends Error {
+  constructor() {
+    super('Too large for LoRa, which takes only text. It can go once the relay can be reached, or near their phone.');
+  }
+}
+
 /** The phone's radio links, and what goes over them. The app has one (`nearby`). */
 export class Nearby {
   private send: RadioSend = () => false;
@@ -170,6 +189,7 @@ export class Nearby {
     if (this.links.has(link)) return;
     this.links.add(link);
     this.changed();
+    if (isSlow(link)) return;
     // What this phone carries goes to the phone newly linked, which may reach the internet first:
     // the newest, in the order they were sent, as a contact's first packet must come first.
     const offered = this.carriedNow(now)
@@ -178,15 +198,15 @@ export class Nearby {
     for (const item of offered) if (!this.passOn(item, [link], now)) break;
   }
 
-  /** How many phones nearby are linked now. */
+  /** How many phones nearby are linked now, not counting slow links. */
   count(): number {
-    return this.links.size;
+    return [...this.links].filter((link) => !isSlow(link)).length;
   }
 
-  /** Whether a contact was heard on a link that is still up. */
+  /** Whether a contact was heard on a link that is still up, and not a slow one. */
   isNear(identity: string): boolean {
     const link = this.heard.get(identity);
-    return !!link && this.links.has(link);
+    return !!link && !isSlow(link) && this.links.has(link);
   }
 
   /** A contact's packet came on this link: what goes to them goes there from now on. */
@@ -220,17 +240,19 @@ export class Nearby {
     return true;
   }
 
-  // Sends packets over the radio: on the contact's link when they were heard on one, otherwise,
-  // when they are small, on every link. Says which, or null when none took them.
-  private toNearby(identity: string, packets: Uint8Array[]): 'direct' | 'spread' | null {
+  // Sends packets over the links, the slow ones or the others: on the contact's link when they were
+  // heard on one, otherwise, when they are small, on every link. Says which, or null when none took them.
+  private toLinks(identity: string, packets: Uint8Array[], slow: boolean): 'direct' | 'spread' | null {
+    if (slow && packets.reduce((sum, packet) => sum + packet.length, 0) > MAX_SLOW) return null;
     const frames = packets.map((packet) => framesOf(packet));
     if (frames.some((f) => f === null)) return null;
     const all = frames as string[][];
+    const links = [...this.links].filter((link) => isSlow(link) === slow);
     const link = this.heard.get(identity);
-    if (link && this.links.has(link) && this.sendOn(link, all)) return 'direct';
+    if (link && links.includes(link) && this.sendOn(link, all)) return 'direct';
     if (packets.some((packet) => packet.length > MAX_SPREAD)) return null;
     let reached = 0;
-    for (const other of [...this.links]) if (this.sendOn(other, all)) reached++;
+    for (const other of links) if (this.sendOn(other, all)) reached++;
     return reached > 0 ? 'spread' : null;
   }
 
@@ -239,33 +261,41 @@ export class Nearby {
    * is null when there is none. Sent to them nearby, the relay's copy goes too, unwaited.
    * Otherwise it waits for the relay, and if the relay fails, a copy that went to the phones
    * nearby will do: then `carry`, when given, seals them for the contact's relay, and the phones
-   * nearby take those too, to hand over. Throws the relay's error, or NoWayError, when nothing
-   * took them.
+   * nearby take those too, to hand over. With `slow`, the slow links take them too then, when
+   * they are small enough. Throws the relay's error, or NoWayError, when nothing took them.
    */
   async deliver(
     identity: string,
     packets: Uint8Array[],
     relay: (() => Promise<void>) | null,
     carry: (() => Promise<Carried[]>) | null = null,
+    slow = false,
   ): Promise<Delivery> {
-    const way = this.toNearby(identity, packets);
+    const way = this.toLinks(identity, packets, false);
     if (way === 'direct') {
       relay?.().catch(() => {
         // They have it from the radio; the relay's copy was only in case the link dropped.
       });
       return 'nearby';
     }
+    let failed: unknown = new NoWayError();
     if (relay) {
       try {
         await relay();
         return 'relay';
       } catch (error) {
-        if (way === 'spread') return this.carryOwn(carry);
-        throw error;
+        failed = error;
       }
     }
-    if (way === 'spread') return this.carryOwn(carry);
-    throw new NoWayError();
+    const far = slow && this.toLinks(identity, packets, true) !== null;
+    if (way === 'spread') {
+      const carried = await this.carryOwn(carry);
+      return carried === 'spread' && far ? 'lora' : carried;
+    }
+    if (far) return 'lora';
+    const total = packets.reduce((sum, packet) => sum + packet.length, 0);
+    if (slow && total > MAX_SLOW && [...this.links].some(isSlow)) throw new TooLargeForLoraError();
+    throw failed;
   }
 
   // Keeps this phone's own packets sealed for the contact's relay, and gives them to the phones
@@ -283,7 +313,7 @@ export class Nearby {
     if (items.length === 0) return 'spread';
     for (const item of items) this.keep(item);
     let reached = 0;
-    for (const link of [...this.links]) if (items.every((item) => this.passOn(item, [link], now))) reached++;
+    for (const link of [...this.links]) if (!isSlow(link) && items.every((item) => this.passOn(item, [link], now))) reached++;
     return reached > 0 ? 'carried' : 'spread';
   }
 
@@ -305,7 +335,7 @@ export class Nearby {
     if (!frames) return true;
     let all = true;
     for (const link of links) {
-      if (item.offered.has(link) || item.from === link) continue;
+      if (item.offered.has(link) || item.from === link || isSlow(link)) continue;
       if (this.sendOn(link, [frames])) item.offered.add(link);
       else all = false;
     }
@@ -320,7 +350,7 @@ export class Nearby {
 
   // A packet for someone's relay, from a phone nearby: kept, and passed on to the other phones linked.
   private carriedIn(link: string, bytes: Uint8Array, now: number) {
-    if (!this.carrying) return;
+    if (!this.carrying || isSlow(link)) return;
     const item = decodeItem(bytes, now);
     if (!item) return;
     const key = keyOf(item.url, item.sealed);

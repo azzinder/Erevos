@@ -3,6 +3,7 @@ package expo.modules.erevosradio
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -15,10 +16,11 @@ class ErevosRadioModule : Module() {
   private var ble: BleLink? = null
   private var link: WifiAwareLink? = null
   private var lan: LanLink? = null
+  private var mesh: MeshtasticLink? = null
 
   override fun definition() = ModuleDefinition {
     Name("ErevosRadio")
-    Events("onStatus", "onPeer", "onText")
+    Events("onStatus", "onPeer", "onText", "onMesh")
 
     Function("status") {
       val context = appContext.reactContext
@@ -90,6 +92,28 @@ class ErevosRadioModule : Module() {
       lan = null
     }
 
+    // A Meshtastic LoRa radio (MeshtasticLink): bytes to and from it go as base64, on onMesh.
+    Function("meshScan") {
+      meshLink().scan()
+    }
+
+    Function("meshConnect") { address: String ->
+      meshLink().connect(address)
+    }
+
+    Function("meshDisconnect") {
+      mesh?.disconnect()
+    }
+
+    Function("meshSend") { data: String ->
+      val bytes = try {
+        Base64.decode(data, Base64.NO_WRAP)
+      } catch (e: IllegalArgumentException) {
+        null
+      }
+      bytes != null && mesh?.send(bytes) == true
+    }
+
     Function("sendText") { peer: String, text: String ->
       val bytes = text.toByteArray(Charsets.UTF_8)
       if (peer.startsWith(BleLink.LINK_PREFIX)) {
@@ -105,7 +129,28 @@ class ErevosRadioModule : Module() {
       stopRadio()
       lan?.stop()
       lan = null
+      mesh?.disconnect()
+      mesh = null
     }
+  }
+
+  private fun meshLink(): MeshtasticLink {
+    mesh?.let { return it }
+    val context = appContext.reactContext ?: throw IllegalStateException("No app context")
+    return MeshtasticLink(
+      context,
+      onFound = { address, name ->
+        main.post { sendEvent("onMesh", mapOf("kind" to "found", "address" to address, "name" to name)) }
+      },
+      onState = { state, detail ->
+        main.post { sendEvent("onMesh", mapOf("kind" to "state", "state" to state, "detail" to detail)) }
+      },
+      onData = { bytes ->
+        val data = Base64.encodeToString(bytes, Base64.NO_WRAP)
+        main.post { sendEvent("onMesh", mapOf("kind" to "data", "data" to data)) }
+      },
+      onLog = { text -> main.post { sendEvent("onStatus", mapOf("text" to text)) } },
+    ).also { mesh = it }
   }
 
   private fun stopRadio() {

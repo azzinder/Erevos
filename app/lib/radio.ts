@@ -1,14 +1,31 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 
-import { onRadioEvent, sendText, startLan, startRadio, stopLan, stopRadio } from '../modules/erevos-radio';
+import {
+  hasMesh,
+  meshConnect,
+  meshDisconnect,
+  meshScan,
+  meshSend,
+  onRadioEvent,
+  sendText,
+  startLan,
+  startRadio,
+  stopLan,
+  stopRadio,
+} from '../modules/erevos-radio';
+import { fromBase64, toBase64 } from './crypto';
+import { Lora } from './lora';
+import { SLOW_PREFIX } from './nearby';
+import { secureDelete, secureGet, secureSet } from './secure';
 import { SHELL, shellFetch } from './shell';
 
 // The links to Erevos phones nearby that lib/nearby.ts sends over. On Android: the radio
-// (Bluetooth, Wi-Fi Aware) and the same Wi-Fi or a hotspot (modules/erevos-radio). In the desktop
-// app: the same Wi-Fi only, through the shell (desktop/lan.js), which tells what happens on
-// /__lan as the page asks. Elsewhere there are none.
+// (Bluetooth, Wi-Fi Aware), the same Wi-Fi or a hotspot (modules/erevos-radio), and a Meshtastic
+// LoRa radio when one is set (lib/lora.ts, app/lora.tsx). In the desktop app: the same Wi-Fi only,
+// through the shell (desktop/lan.js), which tells what happens on /__lan as the page asks.
+// Elsewhere there are none.
 
-export type LinkKind = 'wifi-aware' | 'ble-link' | 'ble' | 'lan';
+export type LinkKind = 'wifi-aware' | 'ble-link' | 'ble' | 'lan' | 'lora';
 
 type Events = {
   onPeer: (event: { id: string; kind: LinkKind }) => void;
@@ -19,6 +36,74 @@ type Events = {
 export const HAS_RADIO = Platform.OS === 'android';
 /** Whether this build has any link to phones nearby. */
 export const HAS_LINKS = HAS_RADIO || SHELL === 'electron';
+
+/** The phone's Meshtastic LoRa radio, off unless one is set (app/lora.tsx). */
+export const lora = new Lora({ connect: meshConnect, disconnect: meshDisconnect, write: (bytes) => meshSend(toBase64(bytes)) });
+
+/** A Meshtastic radio by its Bluetooth address, and the name it went by when found. */
+export type SavedRadio = { address: string; name: string };
+
+const LORA_KEY = 'erevos.lora';
+const foundListeners = new Set<(radio: SavedRadio) => void>();
+
+onRadioEvent('onMesh', (event) => {
+  if (event.kind === 'data') lora.meshData(fromBase64(event.data));
+  else if (event.kind === 'state') lora.meshState(event.state === 'refused' ? 'down' : event.state, event.detail, event.state !== 'refused');
+  else foundListeners.forEach((listener) => listener({ address: event.address, name: event.name }));
+});
+
+/** Whether this build can link to a Meshtastic radio: an Android build with it in its radio. */
+export function canLora(): boolean {
+  return HAS_RADIO && hasMesh();
+}
+
+/** The radio set for LoRa, or null when LoRa is off. */
+export async function savedRadio(): Promise<SavedRadio | null> {
+  const value = JSON.parse((await secureGet(LORA_KEY)) ?? 'null') as Partial<SavedRadio> | null;
+  return typeof value?.address === 'string' ? { address: value.address, name: typeof value.name === 'string' ? value.name : '' } : null;
+}
+
+/** Sets the radio for LoRa and links to it, or with null turns LoRa off. */
+export async function setRadio(radio: SavedRadio | null): Promise<void> {
+  if (radio) {
+    await secureSet(LORA_KEY, JSON.stringify(radio));
+    lora.turnOn(radio.address);
+  } else {
+    lora.turnOff();
+    await secureDelete(LORA_KEY);
+  }
+}
+
+/** Links to the radio set, if any, and not linked yet: LoRa stays on from then on while Erevos runs. */
+export function resumeLora(): void {
+  if (!canLora()) return;
+  savedRadio()
+    .then((radio) => {
+      if (radio && lora.state().status === 'off') lora.turnOn(radio.address);
+    })
+    .catch(() => {
+      // As if none was set.
+    });
+}
+
+const LORA_PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
+  'android.permission.BLUETOOTH_SCAN',
+  'android.permission.BLUETOOTH_CONNECT',
+  'android.permission.ACCESS_FINE_LOCATION',
+];
+
+/** Looks for Meshtastic radios for a few seconds, calling `listener` with each. Returns how to stop. */
+export function findRadios(listener: (radio: SavedRadio) => void): () => void {
+  foundListeners.add(listener);
+  PermissionsAndroid.requestMultiple(LORA_PERMISSIONS)
+    .catch(() => undefined)
+    .finally(() => {
+      if (foundListeners.has(listener)) meshScan();
+    });
+  return () => {
+    foundListeners.delete(listener);
+  };
+}
 
 const RADIO_PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.NEARBY_WIFI_DEVICES',
@@ -82,6 +167,7 @@ let started = false;
 export function startLinks({ lan }: { lan: boolean }): void {
   setLanLinks(lan);
   if (!HAS_RADIO) return;
+  resumeLora();
   started = true;
   PermissionsAndroid.requestMultiple(RADIO_PERMISSIONS)
     .catch(() => undefined)
@@ -110,6 +196,7 @@ export function stopLinks(): void {
 
 /** Sends text on a link from an onPeer event. False when the link is not up. */
 export function sendLink(link: string, text: string): boolean {
+  if (link.startsWith(SLOW_PREFIX)) return lora.sendFrame(link, text);
   if (HAS_RADIO) return sendText(link, text);
   if (!desk.up.has(link)) return false;
   shellFetch(`/__lan?link=${encodeURIComponent(link)}`, { method: 'POST', body: text })
@@ -124,7 +211,17 @@ export function sendLink(link: string, text: string): boolean {
 export function onLinkEvent<Name extends keyof Events>(name: Name, listener: Events[Name]): { remove(): void } {
   if (HAS_RADIO) {
     const subscription = onRadioEvent(name, listener as never);
-    return { remove: () => subscription?.remove() };
+    // The LoRa radio's link and what comes on it, with the others'.
+    const stopLora =
+      name === 'onPeer'
+        ? lora.onLink((id) => (listener as Events['onPeer'])({ id, kind: 'lora' }))
+        : lora.onText((peer, text) => (listener as Events['onText'])({ peer, text }));
+    return {
+      remove: () => {
+        subscription?.remove();
+        stopLora();
+      },
+    };
   }
   const listeners = deskListeners[name] as Set<Events[Name]>;
   listeners.add(listener);
