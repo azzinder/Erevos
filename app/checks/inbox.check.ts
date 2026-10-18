@@ -28,6 +28,8 @@ test('puts the chat that moved last first, and counts their messages not read ye
     [],
     100,
   );
+  const voice = buildInbox(contacts, [{ peer: `contact:${C}`, text: '', mine: false, at: 60, voice: { ms: 7400 } }], [], 100);
+  assert.equal(voice.find((r) => r.identity === C)?.last, 'Voice message, 0:07');
   assert.deepEqual(
     rows.map((r) => [r.identity, r.last, r.mine, r.mark, r.unread, r.at]),
     [

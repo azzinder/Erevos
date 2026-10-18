@@ -125,8 +125,8 @@ Either way Erevos asks where:
 ### Disappearing messages
 
 Open a chat, tap its name and then **Disappearing: Off** to choose how long its new messages last once read: 5 minutes, 1 hour,
-1 day or 1 week. To make only one message disappear, type it and tap **Disappear** beside **Send**, then pick how
-long. Its time starts when the other phone shows it on the screen, and your copy starts when their phone says so
+1 day or 1 week. To make only one message disappear, type it and tap **Disappear** under the message field, then pick
+how long. Its time starts when the other phone shows it on the screen, and your copy starts when their phone says so
 (**✓✓✓**). Each message says when it disappears. The other phone learns the chat's setting the next time it looks at
 the relay, and either phone can change it: the later change wins. Messages already in the chat stay.
 
@@ -135,6 +135,22 @@ the relay, and either phone can change it: the later change wins. Messages alrea
 - **While Erevos is closed:** a message whose time has come is deleted when the chat next opens. Until then it stays
   on the phone, sealed like the rest.
 - **Not a guarantee:** their Erevos deletes them, but a changed app, a screenshot or a copy can still keep them.
+
+### Voice messages
+
+In a contact's chat, press and hold **Voice** while you talk, and let go to send. After a minute it sends by itself. The
+first time, Android asks whether Erevos may use the microphone: it records only while you hold **Voice**. Tap a voice
+message to play it, and tap it again to stop. Voice messages have the same marks as the rest, and follow the chat's
+disappearing setting.
+
+- **Through the relay only,** end-to-end encrypted like the words, in several pieces. The relay cannot hear them, but
+  from the pieces it can tell that something long was sent, and roughly how long. Nearby phones cannot get them yet.
+- **On the phone** each sound is kept in a file of its own, sealed with its own key, which only the chat's sealed
+  history holds. When the message goes, deleted, disappeared or the oldest, its file goes too. How many of these files
+  there are, and their sizes, show roughly how many voice messages the phone keeps, in all its spaces together, not
+  in which.
+- **While it plays** the sound is unsealed in Erevos's cache, and deleted once it stops. If Erevos is closed while it
+  records or plays, what was left goes the next time a chat opens.
 
 > The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
 > kept in this space, sealed. About a thousand short messages fit; when it is full, the oldest go first. Deleted
@@ -312,6 +328,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
+| **Voice messages** | End-to-end encrypted through the relay, in pieces: the relay can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay sees one more small message. | A switch to stop telling when you read. |
 
 ## What is coming {#coming}
@@ -325,8 +342,9 @@ End-to-end encryption through the relay is here. The nearby link comes next, and
     it on, with privacy warnings first.
   - **SMS:** off unless you turn it on for a contact, with a warning first: the carrier sees who and when.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
-- **Calls:** walkie-talkie first (it works even over Bluetooth), then voice, then video. Their buttons, **Voice**,
-  **Call** and **Video**, are already under the message field: for now they say when each comes.
+- **Calls:** walkie-talkie first (it works even over Bluetooth), then voice, then video. Their buttons, **Call** and
+  **Video**, are already under the message field: for now they say when each comes. **Voice** already sends voice
+  messages, see [Chat through a relay](#relay).
 - **Groups:** group chats, and group video calls. Up to four people connect directly; when more join, the call
   moves to a server by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come

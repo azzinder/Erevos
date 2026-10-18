@@ -7,11 +7,14 @@ import { test } from 'node:test';
 import { randomBytes } from '../lib/crypto';
 import { FILE, fitted, History, newTag, SIZE, type HistoryData } from '../lock/history';
 import { sealedFile } from '../lock/sealed-file';
-import { files } from './files-memory';
+import { splitVoice, VoiceAssembler, PART_SIZE, MAX_PARTS } from '../lib/voice';
+import { loadClip, saveClip } from '../lock/voice-clips';
+import { blobs, files } from './files-memory';
 
 const t = (name: string, fn: () => Promise<void>) =>
   test(name, async () => {
     files.clear();
+    blobs.clear();
     await fn();
   });
 
@@ -150,4 +153,57 @@ t('marks what came and was read, and a disappearing message starts its time once
   const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
   await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'old', one, 0, 0, 7]] } });
   assert.deepEqual((await History.open('space', 1, key)).messages().map((m) => [m.mark, m.until, m.lasts]), [[0, 0, 0]]);
+});
+
+t('a voice message keeps its sound sealed in a file of its own, deleted with the message', async () => {
+  const key = randomBytes(32);
+  const sound = randomBytes(25_000);
+  const voice = await saveClip(sound, 7400.4);
+  assert.equal(voice.ms, 7400);
+  const [name] = blobs.keys();
+  assert.ok(name.startsWith('erevos-voice-') && name.endsWith(voice.id));
+  assert.notDeepEqual(blobs.get(name)!.slice(12, 40), sound.slice(0, 28));
+  assert.deepEqual(await loadClip(voice), sound);
+  await assert.rejects(loadClip({ ...voice, key: '00'.repeat(32) }));
+
+  const history = await History.open('space', 0, key);
+  const tag = newTag();
+  await history.add({ peer: 'contact:aa', text: '', mine: false, at: 1, tag, voice, lasts: 60 });
+  await history.add({ peer: 'contact:aa', text: 'text', mine: true, at: 2, tag: newTag() });
+  const [kept] = (await History.open('space', 0, key)).messages();
+  assert.deepEqual([kept.voice, kept.lasts, kept.mark], [voice, 60, 0]);
+  assert.ok(!files.get(FILE)!.includes(voice.key));
+
+  // Read, its time runs out, and its sound goes with it.
+  await history.mark('contact:aa', false, 2, 1000);
+  await history.expire(61_000);
+  assert.equal(blobs.size, 0);
+  assert.equal(await loadClip(voice), null);
+
+  // However a message goes: deleted by its tag, or with its chat.
+  const one = await saveClip(randomBytes(10), 1000);
+  const two = await saveClip(randomBytes(10), 1000);
+  await history.add({ peer: 'contact:aa', text: '', mine: true, at: 3, tag: 'aaaaaaaaaaaa', voice: one });
+  await history.add({ peer: 'contact:bb', text: '', mine: true, at: 4, tag: newTag(), voice: two });
+  await history.remove('contact:aa', 'aaaaaaaaaaaa');
+  assert.deepEqual([await loadClip(one), (await loadClip(two))?.length], [null, 10]);
+  await history.clear('contact:bb');
+  assert.equal(blobs.size, 0);
+});
+
+test('a voice message is cut in parts and put back together, whatever order they come in', () => {
+  const sound = randomBytes(PART_SIZE * 2 + 123);
+  const parts = splitVoice(sound, 5000);
+  assert.deepEqual(parts.map((p) => [p.part, p.parts, p.data.length]), [[0, 3, PART_SIZE], [1, 3, PART_SIZE], [2, 3, 123]]);
+  const assembler = new VoiceAssembler();
+  assert.equal(assembler.add('contact:aa', parts[2], 0), null);
+  // Another chat's parts with the same id are another message.
+  assert.equal(assembler.add('contact:bb', parts[0], 0), null);
+  assert.equal(assembler.add('contact:aa', parts[0], 0), null);
+  const whole = assembler.add('contact:aa', parts[1], 0)!;
+  assert.deepEqual([whole.audio, whole.ms], [sound, 5000]);
+  // Parts that stop coming are dropped after a while.
+  assert.equal(assembler.add('contact:bb', parts[1], 11 * 60_000), null);
+  assert.equal(assembler.add('contact:bb', parts[2], 11 * 60_000), null);
+  assert.throws(() => splitVoice(new Uint8Array(PART_SIZE * MAX_PARTS + 1), 1000), /too long/);
 });

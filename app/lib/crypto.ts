@@ -158,6 +158,16 @@ export function encryptText(key: Uint8Array, text: string): string {
   return PREFIX + toBase64(joined);
 }
 
+/** AES-256-GCM with a random 96-bit nonce, for bytes: the nonce, then what was sealed. */
+export function encryptBytes(key: Uint8Array, data: Uint8Array): Uint8Array {
+  const nonce = randomBytes(12);
+  const sealed = gcm(key, nonce).encrypt(data);
+  const joined = new Uint8Array(nonce.length + sealed.length);
+  joined.set(nonce);
+  joined.set(sealed, nonce.length);
+  return joined;
+}
+
 export class DecryptError extends Error {
   constructor() {
     super('decrypt');
@@ -170,6 +180,15 @@ export function decryptText(key: Uint8Array, blob: string): string {
   const joined = fromBase64(blob.slice(PREFIX.length));
   try {
     return utf8Decode(gcm(key, joined.slice(0, 12)).decrypt(joined.slice(12)));
+  } catch {
+    throw new DecryptError();
+  }
+}
+
+/** Throws DecryptError when the key is wrong or the data was changed. */
+export function decryptBytes(key: Uint8Array, joined: Uint8Array): Uint8Array {
+  try {
+    return gcm(key, joined.slice(0, 12)).decrypt(joined.slice(12));
   } catch {
     throw new DecryptError();
   }

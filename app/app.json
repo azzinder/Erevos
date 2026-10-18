@@ -16,7 +16,16 @@
         "backgroundColor": "#0D0B09"
       }
     },
-    "plugins": ["expo-router", "react-native-quick-crypto"],
+    "plugins": [
+      "expo-router",
+      "react-native-quick-crypto",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Erevos uses the microphone for voice messages, only while you hold Voice."
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
     }

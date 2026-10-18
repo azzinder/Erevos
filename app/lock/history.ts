@@ -1,6 +1,7 @@
 import { randomBytes, toHex } from '../lib/crypto';
 
 import { sealedFile, sealedSize, type Holder } from './sealed-file';
+import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
 
 // The messages each chat keeps on the phone: a space's own chat, and its hidden chats, each in one
 // sealed value of FILE (sealed-file.ts). Every value is exactly SIZE bytes, used or not, so the
@@ -17,6 +18,9 @@ import { sealedFile, sealedSize, type Holder } from './sealed-file';
 // until it is read: theirs when it shows here, ours when their phone says it read it. From then
 // on it is kept with the time it goes, and `expire` deletes it once that has passed: while the
 // chat is open, or when it next opens.
+//
+// A voice message keeps where its sound is (lock/voice-clips.ts). When a message leaves the
+// history, however it goes, its sound's file is deleted.
 
 /** Ours: the relay took it (0), it came to their phone (1), they read it (2). Theirs: read here (2) or not (0). */
 export type Mark = 0 | 1 | 2;
@@ -24,9 +28,10 @@ export type Mark = 0 | 1 | 2;
 /**
  * One message: when (milliseconds), whether this phone sent it, its text, its tag, when it
  * disappears (milliseconds, 0 if not, or not yet), how long it lasts once read (seconds, 0 if it
- * does not disappear or its time has started), and its mark. Zeros at the end are left out.
+ * does not disappear or its time has started), its mark, and where its sound is if it is a voice
+ * message. What is empty at the end is left out.
  */
-export type Kept = [at: number, mine: 0 | 1, text: string, tag: string, until?: number, lasts?: number, mark?: Mark];
+export type Kept = [at: number, mine: 0 | 1, text: string, tag: string, until?: number, lasts?: number, mark?: Mark, voice?: VoiceRef];
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -44,19 +49,23 @@ export type Message = {
   until?: number;
   lasts?: number;
   mark?: Mark;
+  voice?: VoiceRef;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
-function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0 }: Fields): Kept {
-  const kept: Kept = [at, mine ? 1 : 0, text, tag, until, until ? 0 : lasts, mark];
+function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice }: Fields): Kept {
+  const kept: Kept = [at, mine ? 1 : 0, text, tag, until, until ? 0 : lasts, mark, voice];
   while (kept.length > 4 && !kept[kept.length - 1]) kept.pop();
   return kept;
 }
 
-function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0]: Kept): Fields {
-  return { at, mine: mine === 1, text, tag, until, lasts, mark };
+function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice]: Kept): Fields {
+  return { at, mine: mine === 1, text, tag, until, lasts, mark, ...(voice ? { voice } : {}) };
 }
+
+const voiceIds = (data: HistoryData) =>
+  new Set(Object.values(data.chats).flatMap((list) => list.flatMap((m) => (m[7] ? [m[7].id] : []))));
 
 const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0);
 
@@ -76,7 +85,8 @@ function checkedKept(m: unknown): Kept | null {
     return null;
   }
   const mark = m[6] === 1 || m[6] === 2 ? m[6] : 0;
-  return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark });
+  const voice = isVoiceRef(m[7]) ? m[7] : undefined;
+  return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark, voice });
 }
 
 function checked(value: unknown): HistoryData {
@@ -130,10 +140,14 @@ export class History {
   }
 
   // Each change is made on what is in memory and saved in turn (sealed-file.ts writes one after
-  // another), so changes made close together all land, in order.
-  private save(data: HistoryData): Promise<void> {
+  // another), so changes made close together all land, in order. The sound of a voice message
+  // that left goes once the history without it is saved.
+  private async save(data: HistoryData): Promise<void> {
+    const kept = voiceIds(data);
+    const gone = [...voiceIds(this.data)].filter((id) => !kept.has(id));
     this.data = data;
-    return this.store(data);
+    await this.store(data);
+    await Promise.all(gone.map((id) => deleteClip(id).catch(() => undefined)));
   }
 
   add({ peer, ...message }: Message): Promise<void> {

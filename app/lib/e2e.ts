@@ -3,6 +3,7 @@ import { cleanName, isRelay, isRelayKey, isTimer, loadE2EData, saveE2EData, type
 import { isTag, newTag } from '../lock/history';
 
 import * as core from './core';
+import { isVoicePart, splitVoice, type VoicePart } from './voice';
 import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
@@ -25,7 +26,8 @@ import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './
 // makes a changed app do it.
 //
 // A phone says which messages came (`got`) and which were read (`read`), by their tags, so the
-// sender's chat can mark them.
+// sender's chat can mark them. A voice message travels in parts (lib/voice.ts), one in each
+// message, all with the voice message's tag.
 //
 // Every message also carries the chat's timer for disappearing messages and when it was set, so
 // each phone takes the later setting. A disappearing message lasts that long, or as long as its
@@ -66,6 +68,7 @@ type Message = {
   lasts: number;
   got: string[];
   read: string[];
+  voice: VoicePart | null;
 };
 
 /** What else a message can carry. */
@@ -76,7 +79,24 @@ export type Where = { relay: string; relayKey: string };
 
 const tags = (value: unknown): string[] => (Array.isArray(value) ? value.filter(isTag).slice(0, MAX_TAGS) : []);
 
-function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt, lasts, got, read }: Message): Uint8Array {
+function encodeVoice({ id, part, parts, ms, data }: VoicePart) {
+  return { id, part, parts, ms, data: toBase64(data) };
+}
+
+function decodeVoice(value: unknown): VoicePart | null {
+  const v = value as Record<string, unknown> | null;
+  if (typeof v?.data !== 'string') return null;
+  let data: Uint8Array;
+  try {
+    data = fromBase64(v.data);
+  } catch {
+    return null;
+  }
+  const part = { id: v.id, part: v.part, parts: v.parts, ms: v.ms, data } as Partial<VoicePart>;
+  return isVoicePart(part) ? part : null;
+}
+
+function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt, lasts, got, read, voice }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -89,6 +109,7 @@ function encodeMessage({ from, relay, relayKey, text, tag, erase, timer, timerAt
       ...(lasts ? { lasts } : {}),
       ...(got.length > 0 ? { got } : {}),
       ...(read.length > 0 ? { read } : {}),
+      ...(voice ? { voice: encodeVoice(voice) } : {}),
     }),
   );
 }
@@ -120,9 +141,10 @@ function decodeMessage(bytes: Uint8Array): Message {
       lasts: isTimer(value.lasts) ? value.lasts : 0,
       got: tags(value.got),
       read: tags(value.read),
+      voice: decodeVoice(value.voice),
     };
   } catch {
-    return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [] };
+    return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null };
   }
 }
 
@@ -166,6 +188,8 @@ export type Received =
       timerChanged: boolean;
       got: string[];
       read: string[];
+      // One part of a voice message, whose tag is `tag`.
+      voice: VoicePart | null;
     }
   // Not encrypted (as messages before this version were), not for this account, or a replay.
   | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' };
@@ -306,7 +330,7 @@ export class E2E {
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ from, ...at, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [] }),
+        encodeMessage({ from, ...at, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null }),
       );
       await this.save(
         this.withContact({
@@ -348,19 +372,66 @@ export class E2E {
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
       const { timer, timerAt } = contact;
       const once = text ? lasts : 0;
-      const sealed = await core.seal(
-        fromBase64(contact.conversations[0]),
-        encodeMessage({ from, ...at, text, tag, erase: text ? null : erase, timer, timerAt, lasts: once, got: tags(got), read: tags(read) }),
-      );
+      const message = { from, ...at, text, tag, erase: text ? null : erase, timer, timerAt, lasts: once, got: tags(got), read: tags(read), voice: null };
       // Writing to them accepts a request; telling them only what came or was read never does.
-      const request = contact.request && !text;
-      await this.save(
-        this.withContact({ ...contact, request, conversations: [toBase64(sealed.conversation), ...contact.conversations.slice(1)] }),
-      );
+      const [packet] = await this.sealFor(contact, [message], !!text);
       const first = contact.first ? fromBase64(contact.first) : null;
       const { sender, relay, relayKey } = contact;
-      return { sender, relay, relayKey, first, packet: sealed.packet, tag, timer: once || timer };
+      return { sender, relay, relayKey, first, packet, tag, timer: once || timer };
     });
+  }
+
+  /**
+   * Seals a voice message for a contact: its sound (`audio`, `ms` long) in parts, one packet
+   * each, to send in order. Otherwise as `seal`.
+   */
+  sealVoice(
+    identity: string,
+    audio: Uint8Array,
+    ms: number,
+    from: string,
+    { lasts = 0, at = { relay: '', relayKey: '' } }: { lasts?: number; at?: Where } = {},
+  ): Promise<{ sender: string; relay: string; relayKey: string; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number }> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
+      if (!contact.sender) throw new Error('This contact has not said how to reach them yet.');
+      if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
+      const tag = newTag();
+      const { timer, timerAt } = contact;
+      const messages = splitVoice(audio, ms).map((voice) => ({
+        from,
+        ...at,
+        text: '',
+        tag,
+        erase: null,
+        timer,
+        timerAt,
+        lasts,
+        got: [],
+        read: [],
+        voice,
+      }));
+      const packets = await this.sealFor(contact, messages, true);
+      const first = contact.first ? fromBase64(contact.first) : null;
+      const { sender, relay, relayKey } = contact;
+      return { sender, relay, relayKey, first, packets, tag, timer: lasts || timer };
+    });
+  }
+
+  // Seals messages in turn in the conversation to send in, and keeps it moved past them. Writing
+  // to them (`writes`) accepts their request, if they made one.
+  private async sealFor(contact: Contact, messages: Message[], writes: boolean): Promise<Uint8Array[]> {
+    let conversation = fromBase64(contact.conversations[0]);
+    const packets: Uint8Array[] = [];
+    for (const message of messages) {
+      const sealed = await core.seal(conversation, encodeMessage(message));
+      conversation = sealed.conversation;
+      packets.push(sealed.packet);
+    }
+    const request = contact.request && !writes;
+    await this.save(this.withContact({ ...contact, request, conversations: [toBase64(conversation), ...contact.conversations.slice(1)] }));
+    return packets;
   }
 
   /** The first packet still waiting for the relay, if any, and where it goes. */
@@ -414,9 +485,9 @@ export class E2E {
       request: known ? known.request : true,
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
-    const { text, tag, erase, got, read } = message;
+    const { text, tag, erase, got, read, voice } = message;
     const { request } = contact;
-    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, ...timing.received };
+    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, ...timing.received };
   }
 
   private async open(packet: Uint8Array): Promise<Received> {
@@ -444,8 +515,8 @@ export class E2E {
           }),
         );
         const { identity, request } = contact;
-        const { text, tag, erase, got, read } = message;
-        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, ...timing.received };
+        const { text, tag, erase, got, read, voice } = message;
+        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, ...timing.received };
       }
     }
     return { kind: 'refused', reason: 'unknown' };

@@ -12,6 +12,7 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
 import { E2E, NoKeyError, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
+import { PART_SIZE, VoiceAssembler } from '../lib/voice';
 import { FILE, loadE2EData, MAX_NAME } from '../lock/e2e-data';
 import { files } from './files-memory';
 
@@ -263,6 +264,31 @@ t('a chat timer travels with the messages, the later setting wins, and old messa
   await assert.rejects(alice.e2e.setTimer(identity, 1.5));
   await assert.rejects(alice.e2e.seal(identity, 'x', alice.from, { lasts: -5 }));
   await assert.rejects(alice.e2e.setTimer('00'.repeat(32), 60));
+});
+
+t('a voice message travels in parts, each with its tag, and comes back whole', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(identity);
+
+  const sound = randomBytes(PART_SIZE * 2 + 500);
+  const sealed = await alice.e2e.sealVoice(identity, sound, 9000, alice.from, { lasts: 300 });
+  assert.deepEqual([sealed.packets.length, sealed.timer], [3, 300]);
+  assert.match(sealed.tag, /^[0-9a-f]{12}$/);
+  const assembler = new VoiceAssembler();
+  let whole: { audio: Uint8Array; ms: number } | null = null;
+  for (const packet of sealed.packets) {
+    assert.ok(packet.length < 20_000);
+    const got = message(await bob.e2e.receive(packet));
+    assert.deepEqual([got.text, got.tag, got.timer, got.voice!.parts], ['', sealed.tag, 300, 3]);
+    whole = assembler.add(hello.identity, got.voice!) ?? whole;
+  }
+  assert.deepEqual([whole!.audio, whole!.ms], [sound, 9000]);
+  // The conversation goes on after it, both ways.
+  assert.equal(message(await bob.e2e.receive((await alice.e2e.seal(identity, 'after', alice.from)).packet)).text, 'after');
+  assert.equal(message(await alice.e2e.receive((await bob.e2e.seal(hello.identity, 'back', bob.from)).packet)).text, 'back');
 });
 
 t('every slot has a value of the same size, used or not', async () => {

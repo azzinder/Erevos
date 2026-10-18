@@ -3,6 +3,9 @@ import { Alert, AppState, PermissionsAndroid, Platform, Pressable, ScrollView, S
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
+import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
+import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
+import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
@@ -33,8 +36,10 @@ import { useColors, useStyles, useTheme } from '../theme/context';
 // (Erase in lib/e2e.ts). Our messages to a contact are marked ✓ once the relay took them, ✓✓ once
 // their phone says they came, and ✓✓✓ once it says they were read; theirs are read here while
 // their chat shows on the screen. A chat's new messages, or a single one, can disappear on both
-// phones a time after they are read (the timer in lib/e2e.ts). Messages over the radio link are
-// kept in memory only, so they are gone when the chat closes.
+// phones a time after they are read (the timer in lib/e2e.ts). Voice messages are recorded while
+// Voice is held (lib/audio.ts), travel in parts (lib/voice.ts), and each one's sound is kept in a
+// sealed file of its own (lock/voice-clips.ts). Messages over the radio link are kept in memory
+// only, so they are gone when the chat closes.
 //
 // Every space also has hidden chats (lock/hidden.ts), opened with their own password from the
 // Hidden chats button, which every space shows whether it has hidden chats or not. They are a
@@ -50,8 +55,19 @@ import { useColors, useStyles, useTheme } from '../theme/context';
 // `tag` names a message with a contact on both phones (lock/history.ts). Radio messages have none.
 // `until`: when it disappears, milliseconds, or 0. `lasts`: seconds it lasts once read, while it
 // waits for that. `mark`: as lock/history.ts keeps it.
-// `at`: when it was sent or came, milliseconds.
-type Message = { id: number; peer: string; text: string; mine: boolean; tag: string; until: number; lasts: number; mark: Mark; at: number };
+// `at`: when it was sent or came, milliseconds. `voice`: where a voice message's sound is.
+type Message = {
+  id: number;
+  peer: string;
+  text: string;
+  mine: boolean;
+  tag: string;
+  until: number;
+  lasts: number;
+  mark: Mark;
+  at: number;
+  voice?: VoiceRef;
+};
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
 
@@ -60,8 +76,7 @@ type Receipts = Record<string, { got: string[]; read: string[] }>;
 
 // What the chat will do and does not yet, said when tapped, in the order they come.
 const COMING = [
-  { title: 'Voice', note: 'Voice messages are not built yet. They come next: hold to talk, sent end-to-end encrypted, even over Bluetooth.' },
-  { title: 'Call', note: 'Voice calls are not built yet. They come after voice messages.' },
+  { title: 'Call', note: 'Voice calls are not built yet. A walkie-talkie comes first, then calls.' },
   { title: 'Video', note: 'Video calls are not built yet. They come after voice calls, over Wi-Fi or the internet.' },
 ];
 
@@ -135,6 +150,7 @@ function disappearsAt(until: number): string {
   return d.toDateString() === new Date().toDateString() ? `at ${time}` : `on ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}`;
 }
 
+// How long a voice message is: 0:07.
 // Under a message to or from a contact: its mark if it is ours, and when it disappears.
 function caption(message: Message): string {
   const parts: string[] = [];
@@ -264,6 +280,16 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   // Choosing how long a single message lasts, before sending it.
   const [vanishing, setVanishing] = useState(false);
   const receipts = useRef<Receipts>({});
+  const voiceParts = useRef(new VoiceAssembler());
+  const recorder = useVoiceRecorder();
+  // While Voice is held, and the recording it started.
+  const [talking, setTalking] = useState(false);
+  const holding = useRef(false);
+  const recording = useRef<Promise<boolean> | null>(null);
+  const longest = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The voice message playing, and how to stop it.
+  const [playingId, setPlayingId] = useState<number | null>(null);
+  const stopPlaying = useRef<(() => void) | null>(null);
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
@@ -589,6 +615,18 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       const peer = `${CONTACT_PREFIX}${received.identity}`;
       setContacts(e2e.contacts());
       setSelected((current) => current ?? peer);
+      if (received.voice) {
+        const whole = voiceParts.current.add(peer, received.voice);
+        const { tag, timer } = received;
+        if (whole) {
+          saveClip(whole.audio, whole.ms)
+            .then((voice) => {
+              addMessage(peer, '', false, tag, timer, voice);
+              if (tag) receipt(peer, 'got', [tag]);
+            })
+            .catch((error) => setNote(`A voice message came but could not be kept. ${errorText(error)}`));
+        }
+      }
       if (received.text) {
         addMessage(peer, received.text, false, received.tag, received.timer);
         if (received.tag) receipt(peer, 'got', [received.tag]);
@@ -627,14 +665,14 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   // Shows a message, and keeps it on the phone when it is with a contact, for `timer` seconds once
   // read if it disappears. A contact's message from an Erevos before tags gets one known to this
   // phone only.
-  function addMessage(peer: string, text: string, mine: boolean, tag = '', timer = 0) {
+  function addMessage(peer: string, text: string, mine: boolean, tag = '', timer = 0, voice?: VoiceRef) {
     const contact = peer.startsWith(CONTACT_PREFIX);
     const kept = contact ? tag || newTag() : '';
     const at = Date.now();
     const lasts = contact ? timer : 0;
-    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark: 0, at }]);
+    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark: 0, at, voice }]);
     if (contact) {
-      history.current?.add({ peer, text, mine, at, tag: kept, lasts }).catch(() => {
+      history.current?.add({ peer, text, mine, at, tag: kept, lasts, voice }).catch(() => {
         // Shown, but gone when the chat next opens.
       });
     }
@@ -835,6 +873,116 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       setNote(errorText(error));
     }
   }
+
+  // Starts recording while Voice is held. Letting go sends it; a minute sends it anyway.
+  function startTalking() {
+    if (!selectedContact) {
+      setNote('Voice messages go to contacts through the relay. Pick one first.');
+      return;
+    }
+    holding.current = true;
+    const started = recorder.start().then((ok) => {
+      if (!ok) {
+        setNote('Erevos may not use the microphone. Allow it in the phone settings to send voice messages.');
+        return false;
+      }
+      if (!holding.current) {
+        // Let go while the microphone was getting ready.
+        void recorder.stop().catch(() => undefined);
+        setNote('Hold Voice while you talk, and let go to send.');
+        return false;
+      }
+      setTalking(true);
+      longest.current = setTimeout(() => void stopTalking(), MAX_VOICE_MS);
+      return true;
+    });
+    recording.current = started.catch((error) => {
+      setNote(`Cannot record. ${errorText(error)}`);
+      return false;
+    });
+  }
+
+  async function stopTalking() {
+    holding.current = false;
+    if (longest.current) clearTimeout(longest.current);
+    longest.current = null;
+    const started = recording.current;
+    recording.current = null;
+    if (!started || !(await started)) return;
+    setTalking(false);
+    try {
+      const recorded = await recorder.stop();
+      if (!recorded) {
+        setNote('Hold Voice while you talk, and let go to send.');
+        return;
+      }
+      await sendVoice(recorded.audio, recorded.ms);
+    } catch (error) {
+      setNote(`Not sent. ${errorText(error)}`);
+    }
+  }
+
+  // Seals a voice message for the contact picked, hands its parts to the relay in turn, and keeps
+  // its sound sealed. If the relay cannot take all of it, it is not kept.
+  async function sendVoice(audio: Uint8Array, ms: number) {
+    const peer = selectedContact;
+    const target = relayTarget();
+    if (!peer || !target) {
+      setNote('Not sent. Type the relay address in Relay first.');
+      return;
+    }
+    if (!e2e) {
+      setNote(NO_CORE);
+      return;
+    }
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    try {
+      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here() });
+      const to = contactTarget(target, sealed);
+      if (sealed.first) {
+        await sendMessage(to, fromHex(sealed.sender), sealed.first);
+        await e2e.firstSent(identity);
+      }
+      for (const packet of sealed.packets) await sendMessage(to, fromHex(sealed.sender), packet);
+      addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms));
+      // Writing to a message request accepts it.
+      setContacts(e2e.contacts());
+      setNote('Voice message sent through the relay, end-to-end encrypted.');
+    } catch (error) {
+      setNote(notSent(error));
+    }
+  }
+
+  // Plays a voice message, or stops it if it is the one playing.
+  async function play(message: Message) {
+    stopPlaying.current?.();
+    if (playingId === message.id || !message.voice) return;
+    try {
+      const audio = await loadClip(message.voice);
+      if (!audio) {
+        setNote("This voice message's sound is gone.");
+        return;
+      }
+      setPlayingId(message.id);
+      stopPlaying.current = playVoice(audio, () => {
+        stopPlaying.current = null;
+        setPlayingId((current) => (current === message.id ? null : current));
+      });
+    } catch (error) {
+      setNote(`Cannot play it. ${errorText(error)}`);
+    }
+  }
+
+  // Nothing plays, or records, once the chat closes. Sound a closed Erevos left unsealed goes
+  // when it opens.
+  useEffect(() => {
+    clearLeftovers();
+    return () => {
+      stopPlaying.current?.();
+      holding.current = false;
+      if (longest.current) clearTimeout(longest.current);
+    };
+  }, []);
 
   // Sets how long new messages with a contact last, and tells their phone at once. If the relay
   // cannot take that now, their phone learns it with the next message.
@@ -1229,11 +1377,16 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                 </Text>
               ) : null}
               <Pressable
+                onPress={message.voice ? () => void play(message) : undefined}
                 onLongPress={() => deleteMessage(message)}
-                accessibilityHint="Long press to delete"
+                accessibilityHint={message.voice ? 'Tap to play, long press to delete' : 'Long press to delete'}
                 style={[styles.bubble, message.mine ? b.mine : b.theirs, tail && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail])]}
               >
-                <Text style={ink}>{message.text}</Text>
+                <Text style={ink}>
+                  {message.voice
+                    ? `${playingId === message.id ? '■  Playing' : '▶  Voice message'}, ${voiceDuration(message.voice.ms)}`
+                    : message.text}
+                </Text>
                 <Text style={[ink, styles.time]}>{[message.at ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>
               </Pressable>
             </View>
@@ -1253,6 +1406,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         <Row style={styles.tools}>
           <Row wrap style={[styles.grow, styles.toolsLeft]}>
             {selectedContact ? <Tool title="Disappear" on={vanishing} onPress={() => setVanishing((on) => !on)} /> : null}
+            <Tool title={talking ? 'Let go to send' : 'Voice'} on={talking} onPressIn={startTalking} onPressOut={() => void stopTalking()} />
             {COMING.map(({ title, note }) => (
               <Tool key={title} title={title} onPress={() => setNote(note)} />
             ))}
@@ -1275,12 +1429,16 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   );
 }
 
-// A button under the message field: small, so a row of them fits beside Send.
-function Tool({ title, on = false, onPress }: { title: string; on?: boolean; onPress: () => void }) {
+// A button under the message field: small, so a row of them fits beside Send. Voice is held, not tapped.
+type ToolProps = { title: string; on?: boolean; onPress?: () => void; onPressIn?: () => void; onPressOut?: () => void };
+
+function Tool({ title, on = false, onPress, onPressIn, onPressOut }: ToolProps) {
   const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
       style={({ pressed }) => ({

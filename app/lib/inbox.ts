@@ -4,6 +4,8 @@
 // them (lock/history.ts) and the chats imported into it (lock/archive.ts). Hidden chats are not in
 // it, and nothing about them is: the home screen looks the same whether a space has them or not.
 
+import { voiceDuration } from './voice';
+
 export type InboxContact = { identity: string; name: string; timer: number };
 
 export type InboxMessage = {
@@ -13,6 +15,7 @@ export type InboxMessage = {
   at: number;
   until?: number;
   mark?: 0 | 1 | 2;
+  voice?: { ms: number };
 };
 
 export type InboxImported = { title: string; contact: string; last: number };
@@ -21,7 +24,7 @@ export type InboxRow = {
   identity: string;
   /** The name given here, or the imported chat's that goes on with them; empty if neither. */
   name: string;
-  /** The last message's text, empty if there is none yet. */
+  /** The last message's text, or how long it is if it is a voice message; empty if there is none yet. */
   last: string;
   /** Whether the last message is ours, and its mark. */
   mine: boolean;
@@ -56,7 +59,7 @@ export function buildInbox(contacts: InboxContact[], messages: InboxMessage[], i
     return {
       identity: contact.identity,
       name: contact.name || linked[0]?.title.trim() || '',
-      last: last?.text ?? '',
+      last: last?.voice ? `Voice message, ${voiceDuration(last.voice.ms)}` : (last?.text ?? ''),
       mine: last?.mine ?? false,
       mark: last?.mark ?? 0,
       at: Math.max(last?.at ?? 0, importedAt),
