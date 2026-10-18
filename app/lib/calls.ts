@@ -1,5 +1,6 @@
 import { Call, currentCall, OFFER_FRESH_MS, type Rtc } from './call';
 import type { CallSignal } from './call-signal';
+import { currentGroupCall } from './group-call';
 import type { CallRelay } from './relay';
 import { newTag, type Message } from '../lock/history';
 
@@ -75,6 +76,7 @@ function events(place: CallPlace, identity: string) {
 
 /** Calls a contact. Throws if a call is already in progress. */
 export function startCall(place: CallPlace, peer: string, video: boolean, relay: CallRelay | null, rtc: Rtc): Call {
+  if (currentGroupCall()) throw new Error('There is a call already.');
   const call = Call.start({ peer, video, relay, rtc, events: events(place, peer.slice(CONTACT_PREFIX.length)) });
   shown = { call, place };
   changed();
@@ -101,7 +103,7 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     return null;
   }
   const identity = peer.slice(CONTACT_PREFIX.length);
-  if (ours) {
+  if (ours || currentGroupCall()) {
     place.send(identity, { id: signal.id, kind: 'end', reason: 'busy' }).catch(() => undefined);
     place.line(peer, false, `Missed ${kind}, while in another call`);
     return null;

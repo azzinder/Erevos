@@ -105,6 +105,22 @@ export function connectionConfig(relay: CallRelay | null): ConnectionConfig {
     : { iceServers: [], iceTransportPolicy: 'all' };
 }
 
+/** A connection's session description once the addresses to try are in it, or after GATHER_MS
+ *  with those found by then. */
+export function describedSdp(connection: Connection): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const done = () => {
+      clearTimeout(timer);
+      const sdp = connection.localDescription?.sdp ?? '';
+      if (!sdp || sdp.length > MAX_SDP) reject(new Error('No session description to send.'));
+      else resolve(sdp);
+    };
+    const timer = setTimeout(done, GATHER_MS);
+    if (connection.iceGatheringState === 'complete') done();
+    else connection.addEventListener('icegatheringstatechange', () => connection.iceGatheringState === 'complete' && done());
+  });
+}
+
 export class Call {
   readonly id: string;
   readonly peer: string;
@@ -162,7 +178,7 @@ export class Call {
       const connection = await this.connect();
       await connection.setRemoteDescription({ type: 'offer', sdp: this.offer });
       await connection.setLocalDescription(await connection.createAnswer());
-      const sdp = await this.described(connection);
+      const sdp = await describedSdp(connection);
       // Hung up while it connected.
       if ((this.state as CallState) === 'ended') return;
       await this.options.events.send({ id: this.id, kind: 'answer', sdp });
@@ -219,7 +235,7 @@ export class Call {
     try {
       const connection = await this.connect();
       await connection.setLocalDescription(await connection.createOffer());
-      const sdp = await this.described(connection);
+      const sdp = await describedSdp(connection);
       if (this.state === 'ended') return;
       await this.options.events.send({ id: this.id, kind: 'offer', video: this.video, sdp, at: Date.now() });
     } catch {
@@ -261,22 +277,6 @@ export class Call {
     } else if (state === 'failed') {
       this.end('failed', true);
     }
-  }
-
-  // The session description once the addresses to try are in it, or after GATHER_MS with those
-  // found by then.
-  private described(connection: Connection): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const done = () => {
-        clearTimeout(timer);
-        const sdp = connection.localDescription?.sdp ?? '';
-        if (!sdp || sdp.length > MAX_SDP) reject(new Error('No session description to send.'));
-        else resolve(sdp);
-      };
-      const timer = setTimeout(done, GATHER_MS);
-      if (connection.iceGatheringState === 'complete') done();
-      else connection.addEventListener('icegatheringstatechange', () => connection.iceGatheringState === 'complete' && done());
-    });
   }
 
   private end(reason: CallEnd, byUs: boolean): void {

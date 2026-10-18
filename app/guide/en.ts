@@ -283,7 +283,12 @@ then shows on their home screen, with a note of who added them. Groups go throug
   they delete it.
 - **Leaving:** **Leave the group** asks the admin, whose phone takes you out the next time Erevos is open there. The
   admin's own button is **Close the group**: it takes every member out.
-- **Not yet:** voice messages, photos, calls, marks and disappearing messages in groups, groups in hidden chats, and
+- **Group calls:** **Call** at the top of the group starts a voice call in it. It rings on the members' phones
+  where Erevos is open, and whoever answers is in it. A call going on shows at the top of the group, to join it
+  later. Up to eight people: each phone connects to each other one, through the call relay, so no phone sees another's
+  IP address; without a call relay, only on the same Wi-Fi. End-to-end encrypted between each two phones, their keys
+  sent in the group's encryption.
+- **Not yet:** voice messages, photos, video calls, marks and disappearing messages in groups, groups in hidden chats, and
   groups over a nearby phone.
 
 ## How Erevos picks the path {#paths}
@@ -625,7 +630,8 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. A walkie-talkie over Bluetooth. |
-| **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Not audited. | Group voice and video calls, photos and voice messages in groups. |
+| **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Not audited. | Group video calls, photos and voice messages in groups. |
+| **Group calls** | Voice only, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. | Group video calls; more than eight people. |
 
 ## What is coming {#coming}
 
@@ -638,7 +644,7 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
 - **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a
   relay](#relay). Next: a walkie-talkie that works even over Bluetooth.
-- **Groups:** group chats are here, see [Group chats](#groups). Next: group voice, then group video calls. Up to
+- **Groups:** group chats and group voice calls are here, see [Group chats](#groups). Next: group video calls. Up to
   four people connect directly; when more join, the call moves to a server by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).

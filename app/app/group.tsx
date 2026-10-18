@@ -7,19 +7,25 @@ import { KeyboardPaddedView } from '../components/keyboard';
 import { KeyFace } from '../components/key-face';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
+import { currentCall } from '../lib/call';
+import { callPermissions } from '../lib/call-permissions';
+import { currentGroupCall } from '../lib/group-call';
+import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
 import { MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
 import { spaceChats } from '../lib/space-chats';
-import { spaceGroups, spaceGroupTransport } from '../lib/space-groups';
+import { spaceGroupCalls, spaceGroups, spaceGroupTransport } from '../lib/space-groups';
+import { rtc } from '../lib/webrtc';
 import type { GroupMessage } from '../lock/group-data';
-import { radius, space, type Colors } from '../theme/colors';
+import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useStyles, useTheme } from '../theme/context';
 import { ContactPicker, groupableContacts } from '../components/contact-picker';
 
 // A group chat (lib/groups.ts): its messages, each of others' with the sender's name, notes of who
 // joined and left, and the field to write in. Its members sheet lists who is in it; the admin adds
-// contacts, takes members out and renames it, and anyone can leave.
+// contacts, takes members out and renames it, and anyone can leave. Its Call button starts a voice
+// call in the group (lib/group-calls.ts), or joins the one going on.
 
 type Contact = { identity: string; name: string };
 
@@ -41,7 +47,18 @@ export default function GroupScreen() {
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
   const [sheet, setSheet] = useState(false);
+  const [, setCalls] = useState(0);
   const scroll = useRef<ScrollView>(null);
+
+  // A call going on in the group shows, until its members' phones go quiet.
+  useEffect(() => {
+    const stop = onGroupCallChange(() => setCalls((n) => n + 1));
+    const timer = setInterval(() => setCalls((n) => n + 1), 30_000);
+    return () => {
+      stop();
+      clearInterval(timer);
+    };
+  }, []);
 
   const load = useCallback(async () => {
     const groups = await spaceGroups();
@@ -94,6 +111,28 @@ export default function GroupScreen() {
     }
   }
 
+  async function call() {
+    setNote('');
+    if (currentCall() || currentGroupCall()) {
+      setNote('There is a call already.');
+      return;
+    }
+    if (!(await callPermissions(false))) {
+      setNote('A call needs the microphone.');
+      return;
+    }
+    try {
+      const relay = await spaceGroupCalls.callRelay();
+      const direct =
+        "Your relay has no call relay beside it, so the call would go straight between the phones. That only works on the same Wi-Fi, and each phone in the call sees the others' addresses on it. With a call relay, none does.";
+      if (!relay && !(await confirm('Call without a call relay?', direct, 'Call'))) return;
+      if (groupCallGoingOn(id)) await joinGroupCall(spaceGroupCalls, id, relay, rtc);
+      else await startGroupCall(spaceGroupCalls, id, relay, rtc);
+    } catch (error) {
+      setNote(`Could not call. ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   if (!info) {
     return (
       <View style={[styles.screen, styles.center]}>
@@ -103,19 +142,33 @@ export default function GroupScreen() {
   }
 
   const out = info.status !== 'in';
+  const going = out ? null : groupCallGoingOn(id);
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
-      <Pressable onPress={() => setSheet(true)} accessibilityRole="button" accessibilityHint="Members and settings" style={({ pressed }) => [styles.top, pressed && styles.pressed]}>
-        <KeyFace identity={id} name={info.name} size={40} />
-        <View style={{ flex: 1 }}>
-          <Text variant="heading" numberOfLines={1}>
-            {info.name}
+      <Row style={styles.head}>
+        <Pressable onPress={() => setSheet(true)} accessibilityRole="button" accessibilityHint="Members and settings" style={({ pressed }) => [styles.top, pressed && styles.pressed]}>
+          <KeyFace identity={id} name={info.name} size={40} />
+          <View style={{ flex: 1 }}>
+            <Text variant="heading" numberOfLines={1}>
+              {info.name}
+            </Text>
+            <Text variant="caption" tone="muted">
+              {out ? (info.status === 'leaving' ? 'Leaving' : 'You are not in this group') : 'Group · end-to-end encrypted · tap for members'}
+            </Text>
+          </View>
+        </Pressable>
+        {out ? null : <TextButton title="Call" onPress={() => void call()} />}
+      </Row>
+      {going ? (
+        <Pressable onPress={() => void call()} accessibilityRole="button" style={({ pressed }) => [styles.going, pressed && styles.pressed]}>
+          <Text variant="bodyStrong" color={colors.accentText}>
+            A group call is going on · Join
           </Text>
-          <Text variant="caption" tone="muted">
-            {out ? (info.status === 'leaving' ? 'Leaving' : 'You are not in this group') : 'Group · end-to-end encrypted · tap for members'}
+          <Text variant="caption" tone="muted" numberOfLines={1}>
+            {going.people.map(name).join(', ')}
           </Text>
-        </View>
-      </Pressable>
+        </Pressable>
+      ) : null}
       <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={styles.list} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
         {messages.map((m, i) => {
           if (m.note) {
@@ -352,7 +405,19 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
       padding: space.xl,
     },
+    head: {
+      paddingRight: space.lg,
+    },
+    going: {
+      marginHorizontal: space.lg,
+      paddingHorizontal: space.md,
+      paddingVertical: space.sm,
+      borderRadius: radius.md,
+      backgroundColor: withAlpha(colors.primary, 0.16),
+      gap: 2,
+    },
     top: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       gap: space.md,

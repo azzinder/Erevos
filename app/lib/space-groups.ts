@@ -3,9 +3,11 @@ import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { canGroup, canRelaySeal } from './core';
 import { toBase64Url } from './e2e';
+import type { GroupCallSignal } from './group-call-signal';
+import type { GroupCallPlace } from './group-calls';
 import type { GroupSignal } from './group-signal';
 import { Groups, type GroupTransport } from './groups';
-import { fromHex, relayKey, sendMessage, toHex } from './relay';
+import { callRelay, fromHex, relayKey, sendMessage, toHex } from './relay';
 import { contactTarget, relayFor, spaceChats } from './space-chats';
 
 // The open space's group chats (lib/groups.ts), opened once while the space is, as its chats are
@@ -13,6 +15,16 @@ import { contactTarget, relayFor, spaceChats } from './space-chats';
 // Their messages go through the space's relay settings, read when sent.
 
 let opened: { of: object; groups: Promise<Groups> } | null = null;
+
+const callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
+
+/** Calls `listener` with each group call signal in the open space's groups. Returns how to stop. */
+export function onSpaceGroupCall(listener: (group: string, from: string, signal: GroupCallSignal) => void): () => void {
+  callListeners.add(listener);
+  return () => {
+    callListeners.delete(listener);
+  };
+}
 
 // Our relay's key, said to groups so members on other relays reach us: asked once.
 let ownKey: { url: string; key: string } | null = null;
@@ -44,7 +56,9 @@ export function spaceGroups(): Promise<Groups> {
         const [{ e2e }, place] = await Promise.all([spaceChats(), settings()]);
         return { id: toHex(e2e.identity), sender: place.senderHex, relay: place.own.url, relayKey: place.relayKey };
       };
-      return new Groups(data, (next) => saveGroupData(current.space, current.key, next), me);
+      const made = new Groups(data, (next) => saveGroupData(current.space, current.key, next), me);
+      made.onCall((group, from, signal) => callListeners.forEach((listener) => listener(group, from, signal)));
+      return made;
     })();
     opened = { of: current, groups };
     groups.catch(() => {
@@ -95,3 +109,23 @@ export async function flushGroups(): Promise<void> {
   if (!canGroup() || !opened) return;
   await (await spaceGroups()).flush(spaceGroupTransport);
 }
+
+/** Group calls in the open space's groups (lib/group-calls.ts). */
+export const spaceGroupCalls: GroupCallPlace = {
+  async send(group, signal) {
+    await (await spaceGroups()).call(group, signal, spaceGroupTransport);
+  },
+  async callRelay() {
+    const { own } = await settings();
+    return callRelay(own);
+  },
+  async me() {
+    const { e2e } = await spaceChats();
+    return toHex(e2e.identity);
+  },
+  line(group, text) {
+    void spaceGroups()
+      .then((groups) => groups.line(group, text))
+      .catch(() => undefined);
+  },
+};

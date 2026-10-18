@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HAS_LINKS, HAS_RADIO, onLinkEvent, sendLink, setLanLinks, startLinks, stopLinks } from '../lib/radio';
 import { nearby, type Delivery } from '../lib/nearby';
 import { currentCall } from '../lib/call';
+import { currentGroupCall } from '../lib/group-call';
 import { callPermissions } from '../lib/call-permissions';
 import { CALL_LINE, callLineMessage, callSignal, endCallsOf, startCall as beginCall, type CallPlace } from '../lib/calls';
 import { onSpaceCallLine, spaceCalls } from '../lib/space-calls';
@@ -860,7 +861,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       timer = setTimeout(async () => {
         await look();
         if (active) next();
-      }, currentCall() ? LOOK_IN_CALL : LOOK_EVERY);
+      }, currentCall() || currentGroupCall() ? LOOK_IN_CALL : LOOK_EVERY);
     }
     next();
 
@@ -1116,7 +1117,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       setNote('Accept the message request first. Then you can call.');
       return;
     }
-    if (currentCall()) {
+    if (currentCall() || currentGroupCall()) {
       setNote('There is a call already.');
       return;
     }

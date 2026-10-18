@@ -14,9 +14,9 @@ import { Text } from './ui';
 // stands, and its buttons. It closes itself a moment after the call ends.
 
 // Long buzz, pause, again, while a call rings here.
-const RING = [0, 900, 1100];
+export const RING = [0, 900, 1100];
 // How long the screen stays after a call ends, milliseconds.
-const ENDED_SHOWN = 2500;
+export const ENDED_SHOWN = 2500;
 
 const ENDS: Record<CallEnd, { ours: string; theirs: string }> = {
   hangup: { ours: 'Call ended', theirs: 'They hung up' },
@@ -127,7 +127,7 @@ export function CallScreen({ call, identity, name, speaker, onSpeaker, onAnswer,
   );
 }
 
-function Round({ title, onPress, on = false, color }: { title: string; onPress: () => void; on?: boolean; color?: string }) {
+export function Round({ title, onPress, on = false, color }: { title: string; onPress: () => void; on?: boolean; color?: string }) {
   return (
     <Pressable
       onPress={onPress}

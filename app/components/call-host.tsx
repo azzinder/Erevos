@@ -6,9 +6,15 @@ import { currentCall, type Call } from '../lib/call';
 import { callPermissions } from '../lib/call-permissions';
 import { callSignal, closeCall, CONTACT_PREFIX, endCall, onCallChange, shownCall } from '../lib/calls';
 import { onMessage, setReceiverPace } from '../lib/receiver';
+import { currentGroupCall, type GroupCall } from '../lib/group-call';
+import { closeGroupCall, endGroupCall, groupCallSignal, onGroupCallChange, shownGroupCall } from '../lib/group-calls';
+import { memberName } from '../lib/groups';
 import { learnSpaceNames, spaceCalls } from '../lib/space-calls';
+import { spaceChats } from '../lib/space-chats';
+import { onSpaceGroupCall, spaceGroupCalls, spaceGroups } from '../lib/space-groups';
 import { rtc } from '../lib/webrtc';
 import { CallScreen } from './call-screen';
+import { GroupCallScreen } from './group-call-screen';
 
 // How often the relay is looked at: often during a call, whose signals should not wait.
 const LOOK_EVERY = 3000;
@@ -18,14 +24,41 @@ const LOOK_IN_CALL = 700;
 // call that the receiver opens rings here; the chat screen hands over the ones it opens itself.
 // The call ends when the space closes. On Android a contact's call rings with the phone's
 // ringtone, and while Erevos is in the background (lib/background.ts) also with a notice that
-// says only "Incoming call", over the lock screen; tapping it brings Erevos up to answer.
+// says only "Incoming call", over the lock screen; tapping it brings Erevos up to answer. A group's
+// call (lib/group-calls.ts) shows and rings here the same way.
 export function CallHost() {
   const [, setShown] = useState(0);
   const [speaker, setSpeaker] = useState(false);
   const known = useRef<Call | null>(null);
+  const knownGroup = useRef<GroupCall | null>(null);
+  const [names, setNames] = useState<{ group: string; contacts: { identity: string; name: string }[] }>({ group: '', contacts: [] });
 
   useEffect(() => {
-    setReceiverPace(() => (currentCall() ? LOOK_IN_CALL : LOOK_EVERY));
+    setReceiverPace(() => (currentCall() || currentGroupCall() ? LOOK_IN_CALL : LOOK_EVERY));
+    const stopGroupChange = onGroupCallChange(() => {
+      const call = shownGroupCall()?.call ?? null;
+      if (call && call !== knownGroup.current) {
+        knownGroup.current = call;
+        setSpeaker(false);
+        if (call.state === 'in') callAudio?.start(false);
+        else if (call.state === 'incoming') callAudio?.ring?.(false, AppState.currentState !== 'active');
+        void Promise.all([spaceGroups(), spaceChats()])
+          .then(([groups, { e2e }]) =>
+            setNames({
+              group: groups.list().find((g) => g.id === call.group)?.name ?? 'Group',
+              contacts: e2e.contacts().map((c) => ({ identity: c.identity, name: c.name })),
+            }),
+          )
+          .catch(() => undefined);
+      }
+      if (call && call.state !== 'incoming' && !currentCall()) callAudio?.stopRinging?.();
+      if (call?.state === 'ended' && !currentCall()) {
+        callAudio?.stop();
+        callAudio?.showOverLock?.(false);
+      }
+      setShown((n) => n + 1);
+    });
+    const stopGroupSignals = onSpaceGroupCall((group, from, signal) => void groupCallSignal(spaceGroupCalls, group, from, signal, rtc).catch(() => undefined));
     const stopChange = onCallChange(() => {
       const shown = shownCall();
       const call = shown?.call ?? null;
@@ -52,13 +85,48 @@ export function CallHost() {
     return () => {
       stopChange();
       stopMessages();
+      stopGroupChange();
+      stopGroupSignals();
       setReceiverPace(() => LOOK_EVERY);
       endCall();
+      endGroupCall();
       callAudio?.stopRinging?.();
       callAudio?.stop();
       callAudio?.showOverLock?.(false);
     };
   }, []);
+
+  const group = shownGroupCall();
+  if (group) {
+    const { call } = group;
+    const joinCall = () => {
+      void callPermissions(false).then((granted) => {
+        if (!granted) {
+          call.decline();
+          return;
+        }
+        callAudio?.stopRinging?.();
+        callAudio?.start(false);
+        void call.answer();
+      });
+    };
+    return (
+      <Modal visible animationType="fade" statusBarTranslucent onRequestClose={() => undefined}>
+        <GroupCallScreen
+          call={call}
+          groupName={names.group || 'Group'}
+          name={(identity) => memberName(identity, names.contacts)}
+          speaker={speaker}
+          onSpeaker={(on) => {
+            setSpeaker(on);
+            callAudio?.setSpeaker(on);
+          }}
+          onAnswer={joinCall}
+          onClose={() => closeGroupCall(call)}
+        />
+      </Modal>
+    );
+  }
 
   const shown = shownCall();
   if (!shown) return null;

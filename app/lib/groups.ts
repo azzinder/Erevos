@@ -15,6 +15,7 @@ import { newTag } from '../lock/history';
 import * as core from './core';
 import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
+import { decodeGroupCall, type GroupCallSignal } from './group-call-signal';
 import { cleanGroupName, isGroupId, type GroupSignal } from './group-signal';
 
 // Group chats, MLS (RFC 9420) in the Rust core (crates/erevos-group). Whoever makes a group is its
@@ -62,7 +63,7 @@ export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
 };
 
 // What members say inside the group's messages.
-type Said = { t: 'text'; text: string; tag: string } | { t: 'name'; name: string };
+type Said = { t: 'text'; text: string; tag: string } | { t: 'name'; name: string } | { t: 'call'; call: GroupCallSignal };
 
 function encodeSaid(said: Said): Uint8Array {
   return utf8Encode(JSON.stringify(said));
@@ -75,6 +76,10 @@ function decodeSaid(bytes: Uint8Array): Said | null {
       return { t: 'text', text: v.text.slice(0, MAX_GROUP_TEXT), tag: typeof v.tag === 'string' ? v.tag : '' };
     }
     if (v.t === 'name' && typeof v.name === 'string') return { t: 'name', name: cleanGroupName(v.name) };
+    if (v.t === 'call') {
+      const call = decodeGroupCall(v.call);
+      if (call) return { t: 'call', call };
+    }
   } catch {
     // Not what an Erevos says.
   }
@@ -100,6 +105,7 @@ export class Groups {
   private readonly me: () => Promise<Me>;
   private queue: Promise<unknown> = Promise.resolve();
   private readonly listeners = new Set<() => void>();
+  private readonly callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
 
   constructor(data: GroupData, store: (data: GroupData) => Promise<void>, me: () => Promise<Me>) {
     this.data = data;
@@ -112,6 +118,14 @@ export class Groups {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
+    };
+  }
+
+  /** Calls `listener` with each group call signal for this phone, and who in which group said it. */
+  onCall(listener: (group: string, from: string, signal: GroupCallSignal) => void): () => void {
+    this.callListeners.add(listener);
+    return () => {
+      this.callListeners.delete(listener);
     };
   }
 
@@ -251,6 +265,30 @@ export class Groups {
       await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: said, tag }]), readAt: Date.now() }));
       this.changed();
     });
+  }
+
+  /** Says something about a group call: to the member `signal.to` names, or else to every member. */
+  call(id: string, signal: GroupCallSignal, transport: GroupTransport): Promise<void> {
+    return this.run(async () => {
+      if (this.find(id)?.status !== 'in') throw new Error('You are not in this group any more.');
+      const sealed = await core.group.seal(this.kept(), fromHex(id), encodeSaid({ t: 'call', call: signal }));
+      await this.save({ ...this.data, state: toBase64(sealed.state) });
+      const members = await this.membersIn(id);
+      const to = 'to' in signal ? members.filter((m) => m.about?.id === signal.to) : members;
+      // Only `start` and `leave` are worth sending again later: the rest is stale by then.
+      if (signal.kind === 'start' || signal.kind === 'leave') await this.deliver(id, to, sealed.message, transport);
+      else {
+        for (const member of to) {
+          if (member.me || !member.about) continue;
+          await transport.post(member.about, await this.sealFor(member.about, sealed.message)).catch(() => undefined);
+        }
+      }
+    });
+  }
+
+  /** Keeps a line in a group, such as how a call went. */
+  line(id: string, text: string): Promise<void> {
+    return this.run(() => this.note(id, text));
   }
 
   /** Renames a group this phone is the admin of, for every member. */
@@ -483,6 +521,12 @@ export class Groups {
       const from = aboutOf(opened.about)?.id;
       if (!said || !from) return;
       const now = this.find(id)!;
+      if (said.t === 'call') {
+        const signal = said.call;
+        if ('to' in signal && signal.to !== (await this.me()).id) return;
+        this.callListeners.forEach((listener) => listener(id, from, signal));
+        return;
+      }
       if (said.t === 'name') {
         // Only the admin names the group.
         if (opened.sender !== 0) return;

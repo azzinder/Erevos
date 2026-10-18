@@ -163,6 +163,34 @@ test('a member leaves through the admin, and only the admin renames', { skip: !e
   assert.equal(eve.groups.list().length, 0);
 });
 
+test('call signals go to the whole group, or only to the member named', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const alice = net.phone('alice');
+  const bob = net.phone('bob');
+  const carol = net.phone('carol');
+  const id = await alice.groups.create('g', [bob.identity, carol.identity], alice.transport);
+  await net.settle();
+  const heard: Record<string, string[]> = { bob: [], carol: [], alice: [] };
+  for (const p of [alice, bob, carol]) p.groups.onCall((group, from, signal) => heard[p.name].push(`${group === id}:${from.slice(0, 4)}:${signal.kind}`));
+
+  const callId = 'ab'.repeat(8);
+  await bob.groups.call(id, { id: callId, kind: 'start', at: Date.now() }, bob.transport);
+  await net.settle();
+  await alice.groups.call(id, { id: callId, kind: 'offer', to: bob.identity, sdp: 'v=0\r\nx' }, alice.transport);
+  await net.settle();
+  const b = bob.identity.slice(0, 4);
+  const a = alice.identity.slice(0, 4);
+  assert.deepEqual(heard.alice, [`true:${b}:start`]);
+  assert.deepEqual(heard.carol, [`true:${b}:start`]);
+  assert.deepEqual(heard.bob, [`true:${a}:offer`]);
+  // Calls leave no message behind.
+  assert.deepEqual(texts(carol, id), []);
+  // And the group's messages still open after them.
+  await carol.groups.send(id, 'after', carol.transport);
+  await net.settle();
+  assert.deepEqual(texts(bob, id), ['after']);
+});
+
 test('group signals travel as JSON and refuse what is not theirs', () => {
   const group = 'ab'.repeat(16);
   const keys = { group, kind: 'keys' as const, data: new Uint8Array([1, 2, 3]) };
