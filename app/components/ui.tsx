@@ -30,8 +30,9 @@ const webNoOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as 
 
 /** With a style's own font each weight is its own font file: picks it from the weight. */
 export function fontStyle(weight: TextStyle['fontWeight'] | undefined): TextStyle | null {
-  // Matrix: the platform's monospace in every weight.
-  if (shape.mono) return { fontFamily: Platform.OS === 'web' ? 'ui-monospace, Menlo, Consolas, monospace' : 'monospace', fontWeight: weight };
+  // Matrix: the platform's monospace in every weight; Paper: its serif.
+  if (shape.family === 'mono') return { fontFamily: Platform.OS === 'web' ? 'ui-monospace, Menlo, Consolas, monospace' : 'monospace', fontWeight: weight };
+  if (shape.family === 'serif') return { fontFamily: Platform.OS === 'web' ? 'Georgia, "Noto Serif", serif' : 'serif', fontWeight: weight };
   const fonts = shape.fonts;
   if (!fonts) return null;
   const w = Number(weight === 'bold' ? 700 : weight === 'normal' || weight === undefined ? 400 : weight);

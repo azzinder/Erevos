@@ -30,7 +30,7 @@ export function KeyFace({ identity, name, size = 48 }: { identity: string; name?
   useTheme(); // drawn again when the look changes
   const face = faceOf(identity);
   const moon = size * face.size;
-  const green = shape.mono;
+  const green = shape.family === 'mono';
   const ground = green ? hsl(135, 80, 12 + (face.hue / 360) * 18) : hsl(face.hue, 62, 46);
   const disc = green ? hsl(135, 100, 32 + (face.turn / 180) * 22) : hsl(face.hue + face.turn, 70, 62);
   const letter = [...(name ?? '').trim()][0]?.toUpperCase() ?? '';

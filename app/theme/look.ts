@@ -1,6 +1,6 @@
 import { secureGet, secureSet } from '../lib/secure';
 
-import { FRAME_TEXTS, isFixed, PALETTE_CHOICES, STYLES, THEMES, type FrameText, type PaletteChoice, type PaletteStyle, type StyleName, type ThemePref } from './colors';
+import { DEFAULT_CUSTOM_GROUND, FRAME_TEXTS, isFixed, PALETTE_CHOICES, STYLES, THEMES, type FrameText, type PaletteChoice, type PaletteStyle, type StyleName, type ThemePref } from './colors';
 import { GLASS_KINDS, LOOK_NAMES, type GlassKind, type LookName } from './glass';
 
 // How the app looks: what the Appearance screen sets. Each space keeps its own, sealed with its
@@ -23,6 +23,8 @@ export interface Look {
   glassKind: GlassKind;
   /** How messages are drawn in a chat: round bubbles, square ones, or a line beside the text. */
   bubbles: BubbleShape;
+  /** The Custom style's background; its accent is customAccent. */
+  customGround: string;
 }
 
 export type BubbleShape = 'round' | 'square' | 'line';
@@ -39,6 +41,7 @@ export const DEFAULT_LOOK: Look = {
   look: 'flat',
   glassKind: 'cards',
   bubbles: 'round',
+  customGround: DEFAULT_CUSTOM_GROUND,
 };
 
 const KEY = 'erevos.look';
@@ -61,6 +64,7 @@ export function checkedLook(value: unknown): Look {
     look: pick(LOOK_NAMES, o.look, DEFAULT_LOOK.look),
     glassKind: pick(GLASS_KINDS, o.glassKind, DEFAULT_LOOK.glassKind),
     bubbles: pick(BUBBLE_SHAPES, o.bubbles, DEFAULT_LOOK.bubbles),
+    customGround: hex(o.customGround, DEFAULT_LOOK.customGround),
   };
 }
 

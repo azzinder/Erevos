@@ -33,7 +33,7 @@ export function ThemeProvider({ look, onChange, children }: {
   applyStyle(look.style, styleFonts(look.style), look.look);
 
   const theme = useMemo<Theme>(() => {
-    const scheme = resolveScheme(look.style, look.theme, system);
+    const scheme = resolveScheme(look.style, look.theme, system, look.customGround);
     return {
       look,
       scheme,

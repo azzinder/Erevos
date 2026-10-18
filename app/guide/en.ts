@@ -265,13 +265,15 @@ To go on with the conversation in Erevos, the other person needs Erevos too:
 | Setting | Choices |
 | --- | --- |
 | **Look** | **Flat**, or **Glass** as on lphl.nekten.eu. Glass comes in two kinds: **Panes** (each card a pane of glass over the wallpaper) and **One pane** (each screen on one frosted pane). |
-| **Style** | **Classic** (Erevos's dark and gold), **Modernist** (Inter Tight), **Nocturne** (always dark, with its own colours), **Neon** (cyan and magenta LEDs that glow, over a grid running to a setting sun) and **Matrix** (green on black in monospace, with code raining behind). |
-| **Theme** | **System**, **Light** or **Dark**. Nocturne, Neon and Matrix are always dark. |
-| **Colors** | The style's own, one of the twelve LPHL palettes, or **My color**. Choosing a palette under Nocturne, Neon or Matrix goes back to the style chosen before. |
+| **Style** | **Classic** (Erevos's dark and gold), **Modernist** (Inter Tight), **Nocturne** (always dark, with its own colours), **Neon** (cyan and magenta LEDs that glow, over a grid running to a setting sun), **Matrix** (green on black in monospace, with code raining behind), **Paper** (fountain-pen blue on cream, in a serif, over ruled lines with a red margin), **Aurora** (violet on near-white, soft and round, over pools of mint, lilac and peach light) and **Custom** (your own background and accent). |
+| **Theme** | **System**, **Light** or **Dark**. Nocturne, Neon and Matrix are always dark, Paper and Aurora always light, and Custom is light or dark as its background is. |
+| **Colors** | The style's own, one of the twelve LPHL palettes, or **My color**. Choosing a palette under a style with its own colours goes back to the style chosen before. |
+| **Custom** | With **Custom** chosen: its **background** (eight light, eight dark) and its **accent**. The text and the surfaces are made from the background, and every color is checked to read on it. |
 | **Text on colored areas** | **White**, **As in the palette**, or **My color**. |
 | **Messages** | How a chat draws messages: **Round** bubbles, **Square** ones, or **Line**, no bubble but a line beside the text, as a log. |
 
-Neon and Matrix draw their own scene behind every screen, so **Glass** waits while they are chosen. The rain stands
+Neon, Matrix, Paper and Aurora draw their own scene behind every screen, and Custom keeps the background you chose,
+so **Glass** waits while they are chosen. The rain stands
 still when the phone is set to reduce motion.
 
 The **Preview** shows a few messages and buttons in the look you chose. Every combination is checked so that text

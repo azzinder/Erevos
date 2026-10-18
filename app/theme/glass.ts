@@ -13,8 +13,7 @@
 import {
   contrast,
   deepAccent,
-  isFixed,
-  isScene,
+  takesGlass,
   mixHex,
   NOCTURNE,
   rawAccent,
@@ -188,8 +187,8 @@ function material(kind: GlassKind, side: GlassSide, ink: string): { card: string
  * inks get deeper at noon, lighter at dusk.
  */
 export function withLook(c: Colors, ctx: LookContext): Colors {
-  // Nocturne's glow, and the scenes of Neon and Matrix (which take no glass), show through the screens.
-  if (ctx.look !== 'glass' || isScene(ctx.style)) return isFixed(ctx.style) ? { ...c, ground: 'transparent' } : c;
+  // Nocturne's glow and the scenes of the styles that have one (and take no glass) show through the screens.
+  if (ctx.look !== 'glass' || !takesGlass(ctx.style)) return backdropKind(ctx.style, 'flat') ? { ...c, ground: 'transparent' } : c;
   const side = glassSide(ctx.scheme);
   const g = GLASS[side];
   const kind = ctx.glassKind ?? 'cards';
@@ -452,13 +451,17 @@ export function glowLayer(width: number): string {
 }
 
 /**
- * What is drawn behind every screen: nothing, Nocturne's glow, Neon's grid, Matrix's rain, or the
+ * What is drawn behind every screen: nothing, Nocturne's glow, Neon's grid, Matrix's rain, Paper's
+ * ruled lines, Aurora's light, or the
  * glass's wallpaper (with its haze or its pane).
  */
-export type BackdropKind = 'glow' | 'wall' | 'grid' | 'rain' | null;
+export type BackdropKind = 'glow' | 'wall' | 'grid' | 'rain' | 'ruled' | 'aurora' | null;
 export function backdropKind(style: StyleName, look: LookName): BackdropKind {
   if (style === 'neon') return 'grid';
   if (style === 'matrix') return 'rain';
+  if (style === 'paper') return 'ruled';
+  if (style === 'aurora') return 'aurora';
+  if (style === 'custom') return null;
   if (look === 'glass') return 'wall';
   return style === 'nocturne' ? 'glow' : null;
 }

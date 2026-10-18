@@ -7,8 +7,10 @@ import {
   customAccentChoices,
   FRAME_TEXTS,
   frameTextChoices,
+  CUSTOM_GROUNDS,
   isFixed,
   isScene,
+  takesGlass,
   PALETTE_CHOICES,
   radius,
   resolveScheme,
@@ -34,7 +36,13 @@ import { BUBBLE_SHAPES, type BubbleShape } from '../theme/look';
 
 const LOOK_LABELS: Record<LookName, string> = { flat: 'Flat', glass: 'Glass' };
 const GLASS_KIND_LABELS: Record<GlassKind, string> = { cards: 'Panes', sheet: 'One pane' };
-const STYLE_LABELS: Record<StyleName, string> = { classic: 'Classic', modernist: 'Modernist', nocturne: 'Nocturne', neon: 'Neon', matrix: 'Matrix' };
+const STYLE_LABELS: Record<StyleName, string> = { classic: 'Classic', modernist: 'Modernist', nocturne: 'Nocturne',
+  neon: 'Neon',
+  matrix: 'Matrix',
+  paper: 'Paper',
+  aurora: 'Aurora',
+  custom: 'Custom',
+};
 const BUBBLE_LABELS: Record<BubbleShape, string> = { round: 'Round', square: 'Square', line: 'Line' };
 const THEME_LABELS: Record<ThemePref, string> = { system: 'System', light: 'Light', dark: 'Dark' };
 const FRAME_TEXT_LABELS: Record<FrameText, string> = { white: 'White', palette: 'As in the palette', custom: 'My color' };
@@ -102,10 +110,12 @@ export default function Appearance() {
   const [pickColor, setPickColor] = useState(false);
   const [pickTextColor, setPickTextColor] = useState(false);
 
-  // Nocturne, Neon and Matrix have their own colours and are always dark: as on the LPHL site, the
-  // theme and the text on coloured areas wait, and a palette leaves them for the style chosen before.
+  // Nocturne, Neon, Matrix, Paper, Aurora and Custom have their own colours, light or dark as they
+  // are: as on the LPHL site, the theme and the text on coloured areas wait, and a palette leaves
+  // them for the style chosen before. Custom's colours are its background and accent, chosen here.
   const nocturne = isFixed(look.style);
-  const scene = isScene(look.style);
+  const custom = look.style === 'custom';
+  const scene = !takesGlass(look.style);
   const styleName = STYLE_LABELS[look.style];
   const bubbles = bubbleStyles(look.bubbles, colors);
   const paletteStyle = nocturne ? look.prevStyle : look.style;
@@ -125,7 +135,9 @@ export default function Appearance() {
       </Row>
       {scene ? (
         <Text variant="caption" tone="faint">
-          {styleName} draws its own scene behind the screens, so it takes no glass.
+          {isScene(look.style)
+            ? `${styleName} draws its own scene behind the screens, so it takes no glass.`
+            : 'Custom takes no glass: its background is the one you chose.'}
         </Text>
       ) : null}
       {look.look === 'glass' && !scene ? (
@@ -150,6 +162,46 @@ export default function Appearance() {
         ))}
       </Row>
 
+      {custom ? (
+        <>
+          <SectionTitle title="Custom: background" />
+          <View style={styles.dots}>
+            {CUSTOM_GROUNDS.map((hex) => {
+              const selected = look.customGround.toUpperCase() === hex;
+              return (
+                <Pressable
+                  key={hex}
+                  onPress={() => setLook({ customGround: hex })}
+                  accessibilityRole="radio"
+                  accessibilityLabel={hex}
+                  accessibilityState={{ selected }}
+                  style={[styles.dot, { backgroundColor: hex, borderWidth: selected ? 3 : 1, borderColor: selected ? colors.primary : colors.border }]}
+                />
+              );
+            })}
+          </View>
+          <SectionTitle title="Custom: accent" />
+          <View style={styles.dots}>
+            {customAccentChoices().map((hex) => {
+              const selected = look.customAccent.toUpperCase() === hex;
+              return (
+                <Pressable
+                  key={hex}
+                  onPress={() => setLook({ customAccent: hex })}
+                  accessibilityRole="radio"
+                  accessibilityLabel={hex}
+                  accessibilityState={{ selected }}
+                  style={[styles.dot, { backgroundColor: hex, borderWidth: selected ? 3 : 0, borderColor: colors.text }]}
+                />
+              );
+            })}
+          </View>
+          <Text variant="caption" tone="faint">
+            The text and the surfaces are made from the background, and every color is checked to read on it.
+          </Text>
+        </>
+      ) : null}
+
       <SectionTitle title="Theme" />
       <Row wrap>
         {THEMES.map((th) => (
@@ -158,7 +210,7 @@ export default function Appearance() {
       </Row>
       {nocturne ? (
         <Text variant="caption" tone="faint">
-          {styleName} is always dark.
+          {custom ? 'Custom is light or dark as its background is.' : `${styleName} is always ${scheme}.`}
         </Text>
       ) : null}
 

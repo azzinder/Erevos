@@ -3,9 +3,10 @@ import { AccessibilityInfo, Animated, Easing, Platform, StyleSheet, View } from 
 
 import { gradientStyle } from './glass';
 
-// The scenes Neon and Matrix draw behind the screens (components/backdrop.tsx): a grid of light
-// running to a horizon under a setting sun, and code raining down in columns. Both stay faint, so
-// the screens' text reads over them, and the rain stands still when the phone asks for less motion.
+// The scenes some styles draw behind the screens (components/backdrop.tsx): Neon's grid of light
+// running to a horizon under a setting sun, Matrix's code raining down in columns, Paper's ruled
+// lines and margin, and Aurora's soft pools of light. All stay faint, so the screens' text reads
+// over them, and the rain stands still when the phone asks for less motion.
 
 const NEON_GROUND = '#07060F';
 const CYAN = '0, 229, 255';
@@ -155,6 +156,34 @@ export function MatrixRain({ width, height }: { width: number; height: number })
       {height > 0 ? columns.map((c) => <Column key={c.x} {...c} height={height} still={still} />) : null}
       {/* A veil, darker at the top where titles are, so text reads over the rain. */}
       <View style={[StyleSheet.absoluteFill, gradientStyle('linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.35) 100%)')]} />
+    </View>
+  );
+}
+
+const PAPER_GROUND = '#F5EFE3';
+const RULE = 28;
+
+/** Paper's ruled lines, in the pen's blue, and a red margin down the left. */
+export function RuledPaper({ height }: { width: number; height: number }) {
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: PAPER_GROUND, overflow: 'hidden' }]}>
+      {Array.from({ length: Math.ceil(height / RULE) }, (_, i) => (
+        <View key={i} style={{ position: 'absolute', left: 0, right: 0, top: (i + 1) * RULE, height: 1, backgroundColor: 'rgba(31, 79, 163, 0.1)' }} />
+      ))}
+      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 8, width: 1, backgroundColor: 'rgba(179, 38, 30, 0.35)' }} />
+    </View>
+  );
+}
+
+/** Aurora's light: soft pools of mint, lilac and peach on near-white. */
+export function AuroraLight({ width, height }: { width: number; height: number }) {
+  const pool = (x: string, y: string, color: string, scale: number) =>
+    `radial-gradient(ellipse ${Math.round(width * scale)}px ${Math.round(height * scale * 0.5)}px at ${x} ${y}, ${color} 0%, rgba(246, 247, 251, 0) 100%)`;
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: '#F6F7FB', overflow: 'hidden' }]}>
+      <View style={[StyleSheet.absoluteFill, gradientStyle(pool('10%', '8%', 'rgba(120, 230, 200, 0.45)', 0.9))]} />
+      <View style={[StyleSheet.absoluteFill, gradientStyle(pool('95%', '35%', 'rgba(170, 140, 255, 0.4)', 0.8))]} />
+      <View style={[StyleSheet.absoluteFill, gradientStyle(pool('25%', '92%', 'rgba(255, 170, 150, 0.38)', 0.9))]} />
     </View>
   );
 }

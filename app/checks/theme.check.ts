@@ -20,6 +20,8 @@ import {
   STYLES,
   isFixed,
   isScene,
+  takesGlass,
+  CUSTOM_GROUNDS,
 } from '../theme/colors';
 import { rawAccent, withAlpha } from '../theme/colors';
 import { backdropKind, GLASS_KINDS, glassSide, inkGround, paneFrame, withLook } from '../theme/glass';
@@ -168,7 +170,7 @@ test('glass turns surfaces, lines, bars and sheets to glass and keeps every fill
 
 test('under glass every ink reads on the wallpaper or the pane, in every kind, style, scheme and palette', () => {
   for (const glassKind of GLASS_KINDS) {
-    for (const style of STYLES.filter((st) => !isScene(st))) {
+    for (const style of STYLES.filter(takesGlass)) {
       for (const theme of SCHEMES) {
         const scheme = resolveScheme(style, theme, null);
         for (const palette of PALETTE_CHOICES) {
@@ -221,4 +223,52 @@ test('a kept look keeps how messages are drawn', () => {
   assert.equal(checkedLook({ ...DEFAULT_LOOK, bubbles: 'line' }).bubbles, 'line');
   assert.equal(checkedLook({ ...DEFAULT_LOOK, bubbles: 'blob' }).bubbles, 'round');
   assert.equal(checkedLook({ ...DEFAULT_LOOK, style: 'matrix' }).style, 'matrix');
+});
+
+test('Paper and Aurora are light in their own colours, with their scenes and no glass', () => {
+  for (const style of ['paper', 'aurora'] as const) {
+    assert.equal(resolveScheme(style, 'dark', 'dark'), 'light');
+    assert.ok(isScene(style) && !takesGlass(style));
+    const c = buildColors(style, 'light', 'kipos', { customAccent: '#2F7FC4', frameText: 'white' });
+    assert.deepEqual(c, buildColors(style, 'dark', 'auto'));
+    assert.ok(contrast(c.primary, c.onPrimary) >= 4.5, `${style}: text on the accent`);
+    assert.ok(contrast(c.textMuted, c.background) >= 4.5, `${style}: muted`);
+    assert.ok(contrast(c.textFaint, c.background) >= 3, `${style}: faint`);
+    assert.ok(contrast(c.text, c.surfaceAlt) >= 4.5, `${style}: their messages`);
+    for (const key of ['warning', 'danger'] as const) assert.ok(contrast(c[key], c.background) >= 4.5, `${style}: ${key}`);
+  }
+  assert.equal(backdropKind('paper', 'flat'), 'ruled');
+  assert.equal(backdropKind('aurora', 'glass'), 'aurora');
+});
+
+test('Custom reads on every background and accent offered, light or dark as its background', () => {
+  assert.equal(resolveScheme('custom', 'dark', 'dark', '#FFFFFF'), 'light');
+  assert.equal(resolveScheme('custom', 'light', 'light', '#0D0B09'), 'dark');
+  assert.ok(!takesGlass('custom'));
+  assert.equal(backdropKind('custom', 'glass'), null);
+  for (const customGround of CUSTOM_GROUNDS) {
+    for (const customAccent of customAccentChoices()) {
+      const c = buildColors('custom', 'light', 'auto', { customAccent, customGround, frameText: 'palette' });
+      const where = `custom ${customGround} ${customAccent}`;
+      assert.equal(c.background, customGround);
+      for (const [key, value] of Object.entries(c)) {
+        if (key !== 'overlay') assert.match(value, /^#[0-9A-F]{6}$/i, `${where}: ${key}`);
+      }
+      assert.ok(contrast(c.text, c.background) >= 7, `${where}: text`);
+      assert.ok(contrast(c.text, c.surfaceAlt) >= 4.5, `${where}: their messages`);
+      for (const key of ['textMuted', 'accentText', 'success', 'warning', 'danger'] as const) {
+        assert.ok(contrast(c[key], c.background) >= 4.5, `${where}: ${key}`);
+      }
+      assert.ok(contrast(c.textFaint, c.background) >= 3, `${where}: faint`);
+      assert.ok(contrast(c.primary, c.onPrimary) >= 3, `${where}: text on the accent`);
+    }
+  }
+  // Not a glass look: the screens are painted with the background itself.
+  const c = buildColors('custom', 'dark', 'auto', { customAccent: '#D9A441', customGround: '#0F1A24', frameText: 'palette' });
+  assert.equal(withLook(c, { look: 'glass', style: 'custom', scheme: 'dark', palette: 'auto', customAccent: '#D9A441' }).ground, '#0F1A24');
+});
+
+test('a kept look keeps the Custom background', () => {
+  assert.equal(checkedLook({ ...DEFAULT_LOOK, customGround: '#0f1a24' }).customGround, '#0F1A24');
+  assert.equal(checkedLook({ ...DEFAULT_LOOK, customGround: 'blue' }).customGround, DEFAULT_LOOK.customGround);
 });
