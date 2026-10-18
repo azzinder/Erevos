@@ -1,6 +1,7 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 
 import {
+  hasDirect,
   hasMesh,
   meshConnect,
   meshDisconnect,
@@ -9,8 +10,10 @@ import {
   onRadioEvent,
   sendText,
   setRadioQuiet,
+  startDirect,
   startLan,
   startRadio,
+  stopDirect,
   stopLan,
   stopRadio,
 } from '../modules/erevos-radio';
@@ -21,8 +24,9 @@ import { secureDelete, secureGet, secureSet } from './secure';
 import { SHELL, shellFetch } from './shell';
 
 // The links to Erevos phones nearby that lib/nearby.ts sends over. On Android: the radio
-// (Bluetooth, Wi-Fi Aware), the same Wi-Fi or a hotspot (modules/erevos-radio), and a Meshtastic
-// LoRa radio when one is set (lib/lora.ts, app/lora.tsx). In the desktop app: the same Wi-Fi only,
+// (Bluetooth, Wi-Fi Aware), the same Wi-Fi or a hotspot (modules/erevos-radio), a Wi-Fi of their
+// own made with Wi-Fi Direct, linked as the same Wi-Fi is, and a Meshtastic LoRa radio when one is
+// set (lib/lora.ts, app/lora.tsx). In the desktop app: the same Wi-Fi only,
 // through the shell (desktop/lan.js), which tells what happens on /__lan as the page asks.
 // Elsewhere there are none.
 
@@ -194,11 +198,19 @@ async function deskLan(on: boolean) {
 }
 
 let lanOn = false;
-// Whether the radio is wanted: it starts once Android has asked for its permissions.
+// Whether the radio is wanted: it starts once Android has asked for its permissions. Wi-Fi Direct
+// too, which needs the same Wi-Fi link on and the same permissions.
 let started = false;
+let asked = false;
+let directWanted = false;
+let directOn = false;
 
-/** Starts the links: the radio, and with `lan` the same Wi-Fi. They stay until `stopLinks`. */
-export function startLinks({ lan }: { lan: boolean }): void {
+/** Whether this phone can make a Wi-Fi of its own with Erevos phones nearby (Wi-Fi Direct). */
+export const CAN_DIRECT = HAS_RADIO && hasDirect();
+
+/** Starts the links: the radio, with `lan` the same Wi-Fi, and with `direct` Wi-Fi Direct too. They stay until `stopLinks`. */
+export function startLinks({ lan, direct }: { lan: boolean; direct: boolean }): void {
+  directWanted = direct;
   setLanLinks(lan);
   if (!HAS_RADIO) return;
   resumeLora();
@@ -206,7 +218,10 @@ export function startLinks({ lan }: { lan: boolean }): void {
   PermissionsAndroid.requestMultiple(RADIO_PERMISSIONS)
     .catch(() => undefined)
     .finally(() => {
-      if (started) startRadio();
+      if (!started) return;
+      asked = true;
+      startRadio();
+      followDirect();
     });
 }
 
@@ -217,15 +232,34 @@ export function setLanLinks(on: boolean): void {
   if (HAS_RADIO) {
     if (on) startLan();
     else stopLan();
+    // Stopped with the same Wi-Fi, started again after it.
+    directOn = false;
+    followDirect();
   } else if (SHELL === 'electron') {
     deskLan(on).catch(() => undefined);
   }
+}
+
+/** Makes a Wi-Fi with Erevos phones that share none, while the same Wi-Fi link is on; or no longer. */
+export function setDirectLinks(on: boolean): void {
+  directWanted = on;
+  followDirect();
+}
+
+function followDirect() {
+  const on = CAN_DIRECT && started && asked && lanOn && directWanted;
+  if (on === directOn) return;
+  directOn = on;
+  if (on) startDirect();
+  else stopDirect();
 }
 
 export function stopLinks(): void {
   setLanLinks(false);
   if (HAS_RADIO && started) stopRadio();
   started = false;
+  asked = false;
+  followDirect();
 }
 
 /** Keeps the links quieter while Erevos is in the background, on Android: Bluetooth at low power, the same Wi-Fi said less often. */

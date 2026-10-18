@@ -16,6 +16,7 @@ class ErevosRadioModule : Module() {
   private var ble: BleLink? = null
   private var link: WifiAwareLink? = null
   private var lan: LanLink? = null
+  private var direct: WifiDirectLink? = null
   private var quiet = false
   private var mesh: MeshtasticLink? = null
 
@@ -31,6 +32,7 @@ class ErevosRadioModule : Module() {
         "ble" to (context != null && BleBeacon.isAvailable(context)),
         "running" to (ble != null || link != null),
         "lan" to (lan != null),
+        "direct" to (direct != null),
       )
     }
 
@@ -95,8 +97,28 @@ class ErevosRadioModule : Module() {
     }
 
     Function("stopLan") {
+      direct?.stop()
+      direct = null
       lan?.stop()
       lan = null
+    }
+
+    // Wi-Fi Direct with Erevos phones that share no Wi-Fi (WifiDirectLink), on which the same
+    // Wi-Fi link (startLan) links them. False without it running.
+    Function("startDirect") {
+      val context = appContext.reactContext ?: throw IllegalStateException("No app context")
+      val sameWifi = lan ?: return@Function false
+      direct?.stop()
+      direct = WifiDirectLink(context, sameWifi) { text -> main.post { sendEvent("onStatus", mapOf("text" to text)) } }.also {
+        it.start()
+        it.setQuiet(quiet)
+      }
+      true
+    }
+
+    Function("stopDirect") {
+      direct?.stop()
+      direct = null
     }
 
     // While Erevos is in the background: Bluetooth at low power, found with the screen off too,
@@ -105,6 +127,7 @@ class ErevosRadioModule : Module() {
       quiet = on
       ble?.setQuiet(on)
       lan?.setQuiet(on)
+      direct?.setQuiet(on)
     }
 
     // A Meshtastic LoRa radio (MeshtasticLink): bytes to and from it go as base64, on onMesh.
@@ -142,6 +165,8 @@ class ErevosRadioModule : Module() {
 
     OnDestroy {
       stopRadio()
+      direct?.stop()
+      direct = null
       lan?.stop()
       lan = null
       mesh?.disconnect()

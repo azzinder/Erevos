@@ -1,9 +1,11 @@
 import { requireOptionalNativeModule, type EventSubscription } from 'expo-modules-core';
+import { Platform } from 'react-native';
 
 // Phone radio for Android: Wi-Fi Aware for data when both phones support it, BLE GATT
 // for data otherwise, and BLE for presence. Apart from the radio, links to Erevos phones and
-// computers on the same Wi-Fi or hotspot (startLan, the protocol of desktop/lan.js), and to a
-// Meshtastic LoRa radio over Bluetooth (meshConnect; lib/lora.ts speaks to it).
+// computers on the same Wi-Fi or hotspot (startLan, the protocol of desktop/lan.js), on a Wi-Fi
+// made with Wi-Fi Direct (startDirect), and to a Meshtastic LoRa radio over Bluetooth
+// (meshConnect; lib/lora.ts speaks to it).
 // On other platforms every function is a no-op, so the app still bundles for web.
 
 export type RadioStatus = {
@@ -12,6 +14,7 @@ export type RadioStatus = {
   ble: boolean;
   running: boolean;
   lan?: boolean;
+  direct?: boolean;
 };
 
 export type RadioEvents = {
@@ -35,6 +38,8 @@ type NativeRadio = {
   startLan?(): void;
   stopLan?(): void;
   setQuiet?(on: boolean): void;
+  startDirect?(): boolean;
+  stopDirect?(): void;
   meshScan?(): void;
   meshConnect?(address: string): void;
   meshDisconnect?(): void;
@@ -64,6 +69,20 @@ export function startLan(): void {
 
 export function stopLan(): void {
   native?.stopLan?.();
+}
+
+/** Whether this build can make a Wi-Fi of its own with Erevos phones nearby (Wi-Fi Direct, Android 10 and later). */
+export function hasDirect(): boolean {
+  return !!native?.startDirect && Platform.OS === 'android' && Number(Platform.Version) >= 29;
+}
+
+/** Wi-Fi Direct with Erevos phones that share no Wi-Fi, linked then as on the same Wi-Fi: after `startLan`, until `stopDirect` or `stopLan`. */
+export function startDirect(): void {
+  native?.startDirect?.();
+}
+
+export function stopDirect(): void {
+  native?.stopDirect?.();
 }
 
 /** Bluetooth at low power, found with the screen off too, and the same Wi-Fi said less often, as while Erevos is in the background; or as before. */

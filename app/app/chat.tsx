@@ -3,8 +3,8 @@ import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSh
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
-import { nearbySettings, setCarryingKept, setLanKept } from '../lib/nearby-links';
+import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
+import { nearbySettings, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
 import { canWait, sendWaiting, type SendPlace } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
@@ -317,6 +317,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   // whether it looks for Erevos on the same Wi-Fi (lib/radio.ts).
   const [carrying, setCarrying] = useState(true);
   const [lanOn, setLanOn] = useState(true);
+  const [directOn, setDirectOn] = useState(true);
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -489,6 +490,12 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     setLanKept(on).catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
   }
 
+  // Makes a Wi-Fi with Erevos phones nearby that share none (Wi-Fi Direct), or no longer.
+  function changeDirect(on: boolean) {
+    setDirectOn(on);
+    setDirectKept(on).catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
+  }
+
   // Adds a contact from a code: typed or pasted here, or scanned and opened on the contact screen.
   async function acceptContact(code: ContactCode) {
     if (!e2e) {
@@ -547,6 +554,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       if (!active) return;
       setCarrying(settings.carrying);
       setLanOn(settings.lan);
+      setDirectOn(settings.direct);
     });
     // A contact heard nearby, or a LoRa radio linked: what waits for them may go now.
     const stopWatching = nearby.onChange(() => {
@@ -2440,6 +2448,16 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                           ? 'Only Bluetooth and Wi-Fi Aware look for phones nearby.'
                           : 'Nothing looks for Erevos nearby.'}
                     </Text>
+                    {CAN_DIRECT && lanOn ? (
+                      <>
+                        <DetailRow title="Make a Wi-Fi with phones nearby" right={<Toggle on={directOn} />} onPress={() => changeDirect(!directOn)} />
+                        <Text variant="caption" tone="muted">
+                          {directOn
+                            ? 'With no Wi-Fi in common, two Erevos phones near each other make a small Wi-Fi of their own (Wi-Fi Direct): faster than Bluetooth, and calls go over it with no internet. Anyone near can tell an Erevos phone is there and could join that Wi-Fi, getting only sealed bytes.'
+                            : 'Erevos phones meet only on a Wi-Fi they share, or over Bluetooth and Wi-Fi Aware.'}
+                        </Text>
+                      </>
+                    ) : null}
                     <DetailRow title="Carry messages for others" right={<Toggle on={carrying} />} onPress={() => changeCarrying(!carrying)} />
                     <Text variant="caption" tone="muted">
                       {carrying

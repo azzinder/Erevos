@@ -111,6 +111,12 @@ class LanLink(
     }
   }
 
+  /** This phone's nonce while it runs, as its broadcasts say it. */
+  fun ownNonce(): String? = nonce.takeIf { running && it.isNotEmpty() }
+
+  /** Whether a link to the phone whose nonce this is is up. */
+  fun linkedTo(theirs: String): Boolean = linkTo(theirs) != null
+
   /** Says it is here less often, as when Erevos is in the background, or as before. Links stay up. */
   fun setQuiet(on: Boolean) {
     quiet = on

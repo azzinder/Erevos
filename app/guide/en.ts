@@ -6,8 +6,8 @@ Erevos is a messenger made for privacy. You need no account, no phone number and
 meant to keep working wherever you are: through a nearby phone with no network at all, over Wi-Fi, or over the
 internet.
 
-- **Nearby, without internet:** two Android phones talk directly over Bluetooth or Wi-Fi Aware, end-to-end encrypted, and
-  phones and computers on the same Wi-Fi or a phone's hotspot do too. With a LoRa radio, texts go kilometres.
+- **Nearby, without internet:** two Android phones talk directly over Bluetooth, Wi-Fi Aware or Wi-Fi Direct, end-to-end
+  encrypted, and phones and computers on the same Wi-Fi or a phone's hotspot do too. With a LoRa radio, texts go kilometres.
 - **Through a relay:** over Wi-Fi or the internet, through a small server (a relay) that you can run yourself.
 - **Spaces:** a password lock, a second password that opens a separate, empty Erevos, and hidden chats in every
   space.
@@ -87,6 +87,11 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
   internet, stay. Anyone on that Wi-Fi can tell an Erevos app is there, not whose. A computer's firewall must let
   port 47905 in (UDP and TCP). To stop it, turn off **Find Erevos on the same Wi-Fi** under **Relay and new
   contacts**.
+- **A Wi-Fi of their own (Android 10 and later):** with no Wi-Fi in common, two Erevos phones near each other make a
+  small Wi-Fi of their own (Wi-Fi Direct) and talk over it as on the same Wi-Fi: faster than Bluetooth, and a call
+  goes over it with no internet. It asks nothing; each phone stays on its own Wi-Fi too where it can. Anyone near can
+  tell an Erevos phone is there, and could join that small Wi-Fi, getting only sealed bytes. It needs **Find Erevos
+  on the same Wi-Fi** on; to stop it alone, turn off **Make a Wi-Fi with phones nearby** below it.
 - **Other phones nearby** get only sealed bytes they cannot open, and only until your contact's phone is known: from
   then on what you send goes to it alone. Voice messages go only to a contact known to be near. Photos and files need
   the relay.
@@ -295,8 +300,8 @@ a missed call.
   goes through it, so neither phone learns the other's IP address. Over Wi-Fi or mobile data, anywhere.
 - **Without a call relay** (a relay on your own computer, for example), Erevos asks first: the call then goes
   straight between the phones, only works on the same Wi-Fi, and each phone sees the other's address on it.
-- **Without internet:** on the same Wi-Fi or a phone's hotspot, with a space open on both, a call needs no relay at
-  all: it is set up over the nearby link and goes straight between the phones (or computers). The same goes for group
+- **Without internet:** on the same Wi-Fi, a phone's hotspot, or the Wi-Fi two phones make (Wi-Fi Direct), with a
+  space open on both, a call needs no relay at all: it is set up over the nearby link and goes straight between the phones (or computers). The same goes for group
   messages and group calls.
 - **In the background (Android):** while a space is open, Erevos keeps running when you leave it, with a quiet
   notice that says only "Erevos". It waits at the relay and on the links to phones nearby, so messages come: a notice
@@ -698,7 +703,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Account, phone number, email** | None needed. Contacts are pairs of one-way relay queues. | |
 | **Contacts and their names, keys, relay settings, look** | Sealed on the phone with each space's key. | |
 | **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
-| **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | Wi-Fi Direct. |
+| **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it, and over Wi-Fi Direct anyone who joins the phones' own Wi-Fi. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
@@ -720,7 +725,7 @@ Erevos says plainly what it protects and what it does not, yet.
 
 End-to-end encryption is here, through the relay and over the nearby link, and most of what follows is built on it.
 
-- **More ways to stay in touch:** Wi-Fi Direct, and ways around censorship (Tor bridges).
+- **More ways to stay in touch:** ways around censorship (Tor bridges).
   - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: setting the radio's name from Erevos.
   - **SMS:** Erevos as the SMS app is here, with MMS photos and two SIMs, see [SMS](#sms). Next: group MMS.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
@@ -750,7 +755,8 @@ There is no way to recover it. Erevos keeps nothing that could open your data wi
   (Android settings → Apps → Erevos → Permissions).
 - Bring the phones closer. If one of them has no Wi-Fi Aware, they meet over Bluetooth, which is slower to start.
 - Or join both to one Wi-Fi, or one phone's hotspot, with **Find Erevos on the same Wi-Fi** on. Some public Wi-Fi
-  keeps the devices on it apart: there it cannot work.
+  keeps the devices on it apart: there it cannot work. With no Wi-Fi in common, **Make a Wi-Fi with phones nearby**
+  lets them make one (Android 10 and later); give it up to a minute or two.
 
 ### Nothing comes over LoRa.
 

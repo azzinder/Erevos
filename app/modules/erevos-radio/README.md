@@ -1,8 +1,8 @@
 # erevos-radio
 
 Expo native module for the phone radio. Android only. Built and run on the test phones since
-2026-10-16 (chat over BLE both ways); the same-Wi-Fi link and the Meshtastic link have not run on
-a phone yet.
+2026-10-16 (chat over BLE both ways); the same-Wi-Fi link, Wi-Fi Direct, the quiet mode and the
+Meshtastic link have not run on a phone yet.
 
 ## What it does
 
@@ -14,7 +14,8 @@ a phone yet.
   the layout in `crates/erevos-core/src/frame.rs`.
 - **BLE GATT** carries data when Wi-Fi Aware is missing or does not start, as on two of the
   test phones. Each phone advertises the service UUID as connectable and puts a random nonce
-  in its scan response. The phone with the lower nonce dials, so each pair opens one link.
+  in its scan response, and in the advertisement too as manufacturer data under the test
+  company id 0xFFFF. The phone with the lower nonce dials, so each pair opens one link.
   The dialer writes frames to the RX characteristic. The other phone sends them back as TX
   notifications. Frames keep the same 4-byte length layout, cut into MTU-sized chunks, with
   one write or notification in flight at a time. Link ids start with `ble-link-`.
@@ -29,6 +30,18 @@ a phone yet.
   addresses hold the other's, as Android sends to a Wi-Fi without internet only when told to.
   `android/lan-check/run.sh` compiles `LanLink` with the Android classes and links it to
   `desktop/lan.js` on a computer, without a phone; it passed on 2026-10-18.
+- **Wi-Fi Direct** (`WifiDirectLink`, `startDirect` and `stopDirect`, Android 10+), on top of the
+  same-Wi-Fi link: each phone says by Wi-Fi Direct service discovery (`_erevos._tcp`, TXT `n` =
+  LanLink's nonce) that it is there. Of two not linked yet, the lower nonce makes a group with a
+  random name (`DIRECT-ev-` and 6 hex) and passphrase (24 hex) and adds them to its TXT (`g`, `p`);
+  the other joins with `WifiP2pConfig.Builder`, which shows no dialog. LanLink then finds the other
+  on the group's interface. A group no one is in for 90 seconds, or joined with no link after 60,
+  is removed, and that phone is left alone for 5 minutes. Only groups it made or joined are removed.
+  Compiled with the Android classes; not run on a phone yet.
+- **Quiet** (`setQuiet`), while Erevos is in the background: BLE advertises and scans at low power,
+  and scans with a filter on the service UUID, as Android stops unfiltered scans with the screen
+  off; the same Wi-Fi is announced every 15 seconds; Wi-Fi Direct looks every 2 minutes, not 30
+  seconds. Links that are up stay up.
 - **A Meshtastic LoRa radio** (`MeshtasticLink`, `meshScan`, `meshConnect`, `meshDisconnect`,
   `meshSend`), over BLE as Meshtastic's own apps link to it: service
   `6ba1b218-15a8-461f-9fa8-5dcae273eafd`, ToRadio written, FromRadio read until it comes empty after
@@ -41,6 +54,7 @@ a phone yet.
 ## JS API
 
 See `index.ts`: `radioStatus()`, `startRadio()`, `stopRadio()`, `startLan()`, `stopLan()`,
+`hasDirect()`, `startDirect()`, `stopDirect()`, `setRadioQuiet(on)`,
 `sendText(linkId, text)`, `hasMesh()`, `meshScan()`, `meshConnect(address)`, `meshDisconnect()`,
 `meshSend(base64)`, and `onRadioEvent(name, listener)` for `onStatus`, `onPeer`, `onText` and
 `onMesh`. The app uses them through `lib/radio.ts`, which also has the desktop app's same-Wi-Fi links.

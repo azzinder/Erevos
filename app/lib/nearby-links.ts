@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import { currentSpace } from '../lock/keys';
 import { othersCarried, ownCarried } from './carried-store';
 import { nearby } from './nearby';
-import { HAS_LINKS, onLinkEvent, sendLink, setLanLinks, setLinksQuiet, startLinks, stopLinks } from './radio';
+import { HAS_LINKS, onLinkEvent, sendLink, setDirectLinks, setLanLinks, setLinksQuiet, startLinks, stopLinks } from './radio';
 import { nearbyChanged, openNearby } from './receiver';
 import { secureGet, secureSet } from './secure';
 
@@ -18,10 +18,12 @@ import { secureGet, secureSet } from './secure';
 // from when the first space opens, and the open space's own while it is. While Erevos is in the
 // background the links are kept quieter, to spare the battery (setLinksQuiet).
 
-// Whether this phone carries messages from phones nearby to their relays, and whether it looks
-// for Erevos on the same Wi-Fi: for the whole phone, on unless turned off.
+// Whether this phone carries messages from phones nearby to their relays, whether it looks for
+// Erevos on the same Wi-Fi, and whether it makes one with Wi-Fi Direct: for the whole phone, on
+// unless turned off.
 const CARRY_KEY = 'erevos.carry';
 const LAN_KEY = 'erevos.lan';
+const DIRECT_KEY = 'erevos.direct';
 
 let othersKept = false;
 
@@ -45,14 +47,14 @@ export function startNearbyLinks(): () => void {
   const stopWatching = nearby.onChange(nearbyChanged);
   setLinksQuiet(AppState.currentState !== 'active');
   const quiet = AppState.addEventListener('change', (state) => setLinksQuiet(state !== 'active'));
-  void nearbySettings().then(({ carrying, lan }) => {
+  void nearbySettings().then(({ carrying, lan, direct }) => {
     if (!active) return;
     nearby.setCarrying(carrying);
     if (!othersKept) {
       othersKept = true;
       void nearby.keepOthersIn(othersCarried());
     }
-    startLinks({ lan });
+    startLinks({ lan, direct });
   });
   // What came nearby for this space while another was open.
   void (async () => {
@@ -70,10 +72,10 @@ export function startNearbyLinks(): () => void {
   };
 }
 
-/** Whether this phone carries for others, and looks on the same Wi-Fi, as last set. */
-export async function nearbySettings(): Promise<{ carrying: boolean; lan: boolean }> {
-  const [carry, lan] = await Promise.all([secureGet(CARRY_KEY).catch(() => null), secureGet(LAN_KEY).catch(() => null)]);
-  return { carrying: carry !== 'off', lan: lan !== 'off' };
+/** Whether this phone carries for others, looks on the same Wi-Fi, and makes one with Wi-Fi Direct, as last set. */
+export async function nearbySettings(): Promise<{ carrying: boolean; lan: boolean; direct: boolean }> {
+  const [carry, lan, direct] = await Promise.all([CARRY_KEY, LAN_KEY, DIRECT_KEY].map((key) => secureGet(key).catch(() => null)));
+  return { carrying: carry !== 'off', lan: lan !== 'off', direct: direct !== 'off' };
 }
 
 /** Carries messages from phones nearby to their relays, or no longer. Throws when the phone could not keep it: it holds until Erevos closes. */
@@ -86,4 +88,10 @@ export async function setCarryingKept(on: boolean): Promise<void> {
 export async function setLanKept(on: boolean): Promise<void> {
   setLanLinks(on);
   await secureSet(LAN_KEY, on ? 'on' : 'off');
+}
+
+/** Makes a Wi-Fi with Erevos phones nearby that share none (Wi-Fi Direct), or no longer. Throws as setCarryingKept. */
+export async function setDirectKept(on: boolean): Promise<void> {
+  setDirectLinks(on);
+  await secureSet(DIRECT_KEY, on ? 'on' : 'off');
 }
