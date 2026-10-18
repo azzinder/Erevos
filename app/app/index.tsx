@@ -248,7 +248,7 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <View>
-        <KeyFace identity={row.identity} name={row.name} size={52} />
+        <KeyFace identity={row.identity} name={row.name} size={52} avatar={row.avatar} />
         {online ? <View style={[styles.onlineDot, { backgroundColor: colors.success, borderColor: colors.background }]} /> : null}
       </View>
       <View style={styles.rowBody}>

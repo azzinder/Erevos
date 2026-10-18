@@ -1,4 +1,4 @@
-import { cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, saveE2EData, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
+import { checkedAvatar, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, saveE2EData, type Avatar, type Contact, type E2EData, type Holder } from '../lock/e2e-data';
 
 import { isTag, newTag } from '../lock/history';
 
@@ -202,7 +202,16 @@ export function fromBase64Url(text: string): Uint8Array {
 }
 
 /** A contact as the chat shows it. `name` is empty until this chat gives one. */
-export type ContactInfo = { identity: string; sender: string; name: string; timer: number; request: boolean; look: Look | null; hide: boolean };
+export type ContactInfo = {
+  identity: string;
+  sender: string;
+  name: string;
+  timer: number;
+  request: boolean;
+  look: Look | null;
+  avatar: Avatar | null;
+  hide: boolean;
+};
 
 export type Received =
   // `timer`: seconds this message lasts once read, 0 for ever. `timerChanged`: the other phone set
@@ -303,7 +312,16 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, timer, request, look, hide }) => ({ identity, sender, name, timer, request, look, hide }));
+    return this.data.contacts.map(({ identity, sender, name, timer, request, look, avatar, hide }) => ({
+      identity,
+      sender,
+      name,
+      timer,
+      request,
+      look,
+      avatar,
+      hide,
+    }));
   }
 
   /** Until when a contact said their phone is open, milliseconds, or 0 if it is not known to be. */
@@ -391,6 +409,15 @@ export class E2E {
     });
   }
 
+  /** Gives a contact a picture of this chat's choosing, kept with it and sealed; null gives back the one drawn from their key. */
+  setAvatar(identity: string, avatar: Avatar | null): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error('No such contact.');
+      await this.save(this.withContact({ ...contact, avatar: avatar && checkedAvatar(avatar) }));
+    });
+  }
+
   /** The 60-digit number both phones show for a contact: when they match, no one is in between. */
   safetyNumber(identity: string): Promise<string> {
     return core.safetyNumber(this.identity, fromHex(identity));
@@ -434,6 +461,7 @@ export class E2E {
           timerAt: 0,
           request: false,
           look: this.find(identity)?.look ?? null,
+          avatar: this.find(identity)?.avatar ?? null,
           hide: false,
           heldGot: [],
           heldRead: [],
@@ -639,6 +667,7 @@ export class E2E {
       // Someone new who has this chat's link writes first: a request until accepted.
       request: known ? known.request : true,
       look: known?.look ?? null,
+      avatar: known?.avatar ?? null,
       hide: known?.hide ?? false,
       heldGot: known?.heldGot ?? [],
       heldRead: known?.heldRead ?? [],

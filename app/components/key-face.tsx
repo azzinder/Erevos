@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 
-import { shape } from '../theme/colors';
+import type { Avatar } from '../lock/e2e-data';
+import { readableOn, shape } from '../theme/colors';
 import { useTheme } from '../theme/context';
 
 import { Text } from './ui';
@@ -9,7 +10,18 @@ import { Text } from './ui';
 // first, placed by the key's bytes, with the first letter of their name. The same key always gives
 // the same picture, on every phone and in every look, so a contact is known at a glance without a
 // photo leaving anyone's phone. It is not a check of the key: the safety number is. Under Matrix
-// the colours are greens, told apart by their depth instead of their hue.
+// the colours are greens, told apart by their depth instead of their hue. A contact can be given
+// a picture of one's own choosing instead (`avatar`): a sign on a colour, from the lists below.
+
+/** The signs offered for a contact's picture. */
+export const AVATAR_SIGNS = [
+  '😀', '😎', '🥳', '😺', '🐶', '🦊', '🐼', '🐸', '🦉', '🐙', '🦋', '🌻',
+  '🌙', '⭐', '🔥', '🌊', '⚡', '🍀', '🍕', '☕', '🎸', '⚽', '🚀', '🏔️',
+  '❤️', '💼', '🏠', '🎓', '🛡️', '🔑', '👻', '🤖',
+];
+
+/** The colours offered under a contact's sign. */
+export const AVATAR_COLORS = ['#E5484D', '#F76B15', '#FFC53D', '#46A758', '#12A594', '#0090FF', '#3E63DD', '#8E4EC6', '#D6409F', '#8D8D86', '#2B2B2B', '#F2EFE8'];
 
 /** The numbers a picture is drawn from: the key's first bytes, from its hex. */
 export function faceOf(identity: string): { hue: number; turn: number; x: number; y: number; size: number } {
@@ -26,8 +38,21 @@ export function faceOf(identity: string): { hue: number; turn: number; x: number
 
 const hsl = (hue: number, s: number, l: number) => `hsl(${Math.round(hue % 360)}, ${s}%, ${l}%)`;
 
-export function KeyFace({ identity, name, size = 48 }: { identity: string; name?: string; size?: number }) {
+export function KeyFace({ identity, name, size = 48, avatar = null }: { identity: string; name?: string; size?: number; avatar?: Avatar | null }) {
   useTheme(); // drawn again when the look changes
+  if (avatar) {
+    return (
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: avatar.color, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Text color={readableOn('#FFFFFF', avatar.color)} style={{ fontSize: size * 0.5, lineHeight: size * 0.62 }}>
+          {avatar.emoji}
+        </Text>
+      </View>
+    );
+  }
   const face = faceOf(identity);
   const moon = size * face.size;
   const green = shape.family === 'mono';
