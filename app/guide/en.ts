@@ -336,7 +336,7 @@ always reads well, on glass too.
 Erevos also runs on a computer, Linux or macOS, as an app of its own. It chats through a relay, end-to-end encrypted
 as on the phone, and keeps its contacts, messages and settings sealed the same way.
 
-1. Install it. On Linux: the package for Arch-based systems (\`erevos-x86_64.pacman\`, with \`sudo pacman -U\`) or the
+1. Install it. On Linux: the package for Arch-based systems (\`erevos-x64.pacman\`, with \`sudo pacman -U\`) or the
    AppImage. On a Mac: open the disk image and drag Erevos to Applications. It has no paid Apple signature, so the
    first time allow it under **System Settings → Privacy & Security → Open Anyway**.
 2. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay). **Copy my contact link** copies

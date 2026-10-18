@@ -42,7 +42,10 @@ jobs:
         run: xvfb-run -a npx electron . --smoke --no-sandbox
       - name: Package for Linux
         working-directory: desktop
-        run: npx electron-builder --linux pacman AppImage --x64 --publish never
+        run: |
+          # The Arch package is made with bsdtar.
+          sudo apt-get update -q && sudo apt-get install -y -q libarchive-tools
+          npx electron-builder --linux pacman AppImage --x64 --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: erevos-linux
