@@ -25,7 +25,7 @@ import {
 } from '../lib/attachments';
 import { randomBytes } from '../lib/crypto';
 import { cleanJpeg, cleanPng, photoSize } from '../lib/photo';
-import { cleanFileName, isFileRef, PREFIX } from '../lock/attachment-files';
+import { cleanFileName, freeName, isFileRef, PREFIX } from '../lock/attachment-files';
 import { History } from '../lock/history';
 import { RelaySession, getChunk } from '../lib/relay';
 
@@ -35,6 +35,13 @@ test('a file takes one small chunk, one middle one, or 1 MiB chunks', () => {
   assert.deepEqual(chunkPlan(room(64 * 1024) + 1), { chunk: 256 * 1024, count: 1 });
   assert.deepEqual(chunkPlan(room(256 * 1024) + 1), { chunk: 1024 * 1024, count: 1 });
   assert.deepEqual(chunkPlan(room(1024 * 1024) * 3 + 1), { chunk: 1024 * 1024, count: 4 });
+});
+
+test('a file saved beside one of the same name gets a number before its ending', () => {
+  assert.equal(freeName('photo.jpg', new Set()), 'photo.jpg');
+  assert.equal(freeName('photo.jpg', new Set(['photo.jpg', 'photo (1).jpg'])), 'photo (2).jpg');
+  assert.equal(freeName('notes', new Set(['notes'])), 'notes (1)');
+  assert.equal(freeName('.profile', new Set(['.profile'])), '.profile (1)');
 });
 
 test('a chunk opens only with its key, in its place, unchanged', () => {

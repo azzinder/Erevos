@@ -1,11 +1,30 @@
-import { File, FileMode } from 'expo-file-system';
+import { File, FileMode, Paths } from 'expo-file-system';
 
 import { type Source } from './attachments';
+import { randomBytes, toHex } from './crypto';
 import { fileName } from './imports';
 
 // A file the owner picks to open (a backup, a chat export), read whole into memory, or to send,
 // read a piece at a time. On the phone, with the system's file picker; on a computer, in the
 // desktop app (pick-file.web.ts).
+//
+// Android hands a picked file over by a descriptor that it may close while the file is still being
+// read, so a file to send is first copied into the app's own cache, read a piece at a time from
+// there, and the copy deleted once sent.
+
+const SENDING = 'erevos-send-';
+// The copies being read now; any other is left over from a send that never ended.
+const reading = new Set<string>();
+
+function clearLeftovers(): void {
+  try {
+    for (const entry of Paths.cache.list()) {
+      if (entry instanceof File && entry.name.startsWith(SENDING) && !reading.has(entry.uri)) entry.delete();
+    }
+  } catch {
+    // Tried again with the next file.
+  }
+}
 
 export class TooLargeError extends Error {}
 
@@ -18,12 +37,31 @@ export async function pickSource(most: number): Promise<PickedSource | null> {
   if (picked.canceled) return null;
   const file = picked.result;
   if (file.size > most) throw new TooLargeError();
-  const handle = file.open(FileMode.ReadOnly);
+  clearLeftovers();
+  const copy = new File(Paths.cache, `${SENDING}${toHex(randomBytes(8))}`);
+  reading.add(copy.uri);
+  const done = () => {
+    reading.delete(copy.uri);
+    if (copy.exists) copy.delete();
+  };
+  let handle: ReturnType<File['open']>;
+  try {
+    await file.copy(copy);
+    if (copy.size > most) throw new TooLargeError();
+    handle = copy.open(FileMode.ReadOnly);
+  } catch (error) {
+    done();
+    throw error;
+  }
   const read = async (at: number, length: number) => {
     if (handle.offset !== at) handle.offset = at;
     return handle.readBytes(length);
   };
-  return { name: fileName(file.uri), mime: file.type, source: { size: file.size, read }, close: () => handle.close() };
+  const close = () => {
+    handle.close();
+    done();
+  };
+  return { name: fileName(file.uri), mime: file.type, source: { size: copy.size, read }, close };
 }
 
 /** The file's name and bytes, or null if the owner went back. Throws TooLargeError above `most` bytes. */

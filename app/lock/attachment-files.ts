@@ -117,3 +117,14 @@ export async function deleteChunks(id: string, count: number): Promise<void> {
   if (!ID.test(id)) return;
   for (let n = 0; n < count; n++) await deleteFile(chunkName(id, n));
 }
+
+/** `name`, or `name (1)`, `name (2)`… before its ending, whichever is not in `taken`. */
+export function freeName(name: string, taken: Set<string>): string {
+  if (!taken.has(name)) return name;
+  const dot = name.lastIndexOf('.');
+  const [stem, ending] = dot > 0 ? [name.slice(0, dot), name.slice(dot)] : [name, ''];
+  for (let n = 1; ; n++) {
+    const next = `${stem} (${n})${ending}`;
+    if (!taken.has(next)) return next;
+  }
+}

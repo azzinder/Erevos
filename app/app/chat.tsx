@@ -147,7 +147,8 @@ function label(peer: string, contacts: ContactInfo[]): string {
   return contactName(peer, contacts) ?? `contact ${peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8)}`;
 }
 
-const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+// The first line only: Android's errors carry their whole stack after it.
+const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 
 const NO_CORE = 'This build cannot encrypt, so chats through the relay are off. Rebuild the app.';
 
