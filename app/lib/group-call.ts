@@ -1,4 +1,4 @@
-import { connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, RECONNECT_MS, RING_MS, type Connection, type Rtc, type Stream } from './call';
+import { connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, RECONNECT_MS, relayToAnswer, RING_MS, type Connection, type Rtc, type Stream } from './call';
 import type { GroupCallSignal } from './group-call-signal';
 import type { CallRelay } from './relay';
 
@@ -220,8 +220,9 @@ export class GroupCall {
     }
   }
 
-  private connect(identity: string, offered: boolean): Peer {
-    const connection = this.options.rtc.connect(connectionConfig(this.options.relay));
+  // A connection to a member: through our call relay, or direct when answering an offer without one.
+  private connect(identity: string, offered: boolean, offer = ''): Peer {
+    const connection = this.options.rtc.connect(connectionConfig(offered ? this.options.relay : relayToAnswer(offer, this.options.relay)));
     const peer: Peer = { identity, state: 'connecting', remote: null, connection, offered, answered: false, timer: null };
     this.peerMap.set(identity, peer);
     const local = this.local!;
@@ -251,7 +252,7 @@ export class GroupCall {
   }
 
   private async answerOffer(identity: string, offer: string): Promise<void> {
-    const peer = this.connect(identity, false);
+    const peer = this.connect(identity, false, offer);
     try {
       await peer.connection.setRemoteDescription({ type: 'offer', sdp: offer });
       await peer.connection.setLocalDescription(await peer.connection.createAnswer());

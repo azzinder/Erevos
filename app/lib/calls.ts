@@ -1,4 +1,4 @@
-import { Call, currentCall, OFFER_FRESH_MS, type Rtc } from './call';
+import { Call, currentCall, OFFER_FRESH_MS, relayToAnswer, type Rtc } from './call';
 import type { CallSignal } from './call-signal';
 import { currentGroupCall } from './group-call';
 import type { CallRelay } from './relay';
@@ -108,7 +108,7 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     place.line(peer, false, `Missed ${kind}, while in another call`);
     return null;
   }
-  const relay = await place.callRelay().catch(() => null);
+  const relay = relayToAnswer(signal.sdp, await place.callRelay().catch(() => null));
   const ringing = Call.incoming(signal, { peer, relay, rtc, events: events(place, identity) });
   if (!ringing) return null;
   shown = { call: ringing, place };

@@ -279,6 +279,9 @@ a missed call.
   goes through it, so neither phone learns the other's IP address. Over Wi-Fi or mobile data, anywhere.
 - **Without a call relay** (a relay on your own computer, for example), Erevos asks first: the call then goes
   straight between the phones, only works on the same Wi-Fi, and each phone sees the other's address on it.
+- **Without internet:** on the same Wi-Fi or a phone's hotspot, with the chat open on both, a call needs no relay at
+  all: it is set up over the nearby link and goes straight between the phones (or computers). The same goes for group
+  messages and group calls, while the members have a chat open.
 - **Ringing in the background (Android):** while a space is open, Erevos keeps running when you leave it, with a
   quiet notice that says only "Erevos", and a call rings with the phone's ringtone and a notice that says only
   "Incoming call", over the lock screen too. Tap it to answer. With the password lock on, a call that rings shows

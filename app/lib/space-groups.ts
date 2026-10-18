@@ -1,18 +1,21 @@
 import { loadGroupData, saveGroupData } from '../lock/group-data';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
+import { soon } from './call';
 import { canGroup, canRelaySeal } from './core';
 import { toBase64Url } from './e2e';
 import type { GroupCallSignal } from './group-call-signal';
 import type { GroupCallPlace } from './group-calls';
 import type { GroupSignal } from './group-signal';
 import { Groups, type GroupTransport } from './groups';
+import { nearby } from './nearby';
 import { callRelay, fromHex, relayKey, sendMessage, toHex } from './relay';
 import { contactTarget, relayFor, spaceChats } from './space-chats';
 
 // The open space's group chats (lib/groups.ts), opened once while the space is, as its chats are
 // (lib/space-chats.ts): the chat screen, the group screens and the receiver use the same ones.
-// Their messages go through the space's relay settings, read when sent.
+// Their messages go to each member's phone nearby when it is (lib/nearby.ts), as on the same Wi-Fi
+// with no internet, and through the space's relay settings, read when sent.
 
 let opened: { of: object; groups: Promise<Groups> } | null = null;
 
@@ -35,7 +38,7 @@ async function settings() {
   if (!url || !data.ownQueue) throw new Error('Groups go through the relay. Type its address in Relay first.');
   const own = { url, token: data.token.trim() || undefined };
   if (ownKey?.url !== url && canRelaySeal()) {
-    const key = await relayKey(own).catch(() => null);
+    const key = await soon(relayKey(own).catch(() => null), 4000, null);
     if (key) ownKey = { url, key: toBase64Url(key) };
   }
   return {
@@ -76,19 +79,27 @@ export function forgetSpaceGroups(): void {
 /** How the open space's group messages leave the phone. */
 export const spaceGroupTransport: GroupTransport = {
   async post(to, packet) {
-    const { sends } = await settings();
-    await sendMessage(contactTarget(sends, to), fromHex(to.sender), packet);
+    const place = await settings().catch(() => null);
+    const relay = place ? () => sendMessage(contactTarget(place.sends, to), fromHex(to.sender), packet) : null;
+    await nearby.deliver(to.id, [packet], relay);
   },
   async signal(identity, signal) {
     const { e2e } = await spaceChats();
-    const { own, sends, senderHex, relayKey: key } = await settings();
-    const sealed = await e2e.seal(identity, '', senderHex, { group: signal, at: { relay: own.url, relayKey: key } });
-    const to = contactTarget(sends, sealed);
-    if (sealed.first) {
-      await sendMessage(to, fromHex(sealed.sender), sealed.first);
-      await e2e.firstSent(identity);
-    }
-    await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+    const place = await settings().catch(() => null);
+    const at = place ? { relay: place.own.url, relayKey: place.relayKey } : { relay: '', relayKey: '' };
+    const sealed = await e2e.seal(identity, '', place?.senderHex ?? '', { group: signal, at });
+    const relay =
+      place && sealed.sender
+        ? async () => {
+            const to = contactTarget(place.sends, sealed);
+            if (sealed.first) {
+              await sendMessage(to, fromHex(sealed.sender), sealed.first);
+              await e2e.firstSent(identity);
+            }
+            await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+          }
+        : null;
+    await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
   },
 };
 
@@ -117,7 +128,7 @@ export const spaceGroupCalls: GroupCallPlace = {
   },
   async callRelay() {
     const { own } = await settings();
-    return callRelay(own);
+    return soon(callRelay(own), 4000, null);
   },
   async me() {
     const { e2e } = await spaceChats();

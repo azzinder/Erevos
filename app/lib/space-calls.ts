@@ -1,14 +1,18 @@
 import { loadCurrentSpaceData } from '../lock/space-data';
+import { soon } from './call';
 import { callLineMessage, CONTACT_PREFIX, type CallPlace } from './calls';
 import { callRelay, fromHex, relayKey, sendMessage } from './relay';
 import { canRelaySeal } from './core';
 import { toBase64Url } from './e2e';
+import { nearby } from './nearby';
 import { announceReceived } from './receiver';
 import { contactTarget, relayFor, spaceChats } from './space-chats';
 import type { Message } from '../lock/history';
 
 // Calls in the open space's chats (lib/calls.ts): their signals go through the space's own
-// encryption and relay settings, read when sent, and their lines are kept in its history. The
+// encryption, to the contact's phone nearby when it is (lib/nearby.ts), as on the same Wi-Fi with
+// no internet, and through the relay as its settings say, read when sent. Their lines are kept in
+// its history. The
 // chat screen, while open, shows a line as it comes (onSpaceCallLine); the home screen hears of
 // it as of a message.
 
@@ -21,6 +25,10 @@ export function onSpaceCallLine(listener: (message: Message) => void): () => voi
     lineListeners.delete(listener);
   };
 }
+
+// How long a call waits on the relay before going on without it, as on a Wi-Fi with no internet,
+// where reaching it can take long to fail, milliseconds.
+const RELAY_WAIT = 4000;
 
 // Our relay's key, said with every message so contacts on other relays reach us: asked once.
 let ownKey: { url: string; key: string } | null = null;
@@ -44,18 +52,26 @@ async function settings() {
 export const spaceCalls: CallPlace = {
   async send(identity, signal) {
     const { e2e } = await spaceChats();
-    const { own, sends, senderHex } = await settings();
-    const sealed = await e2e.seal(identity, '', senderHex, { call: signal, at: await where(own) });
-    const to = contactTarget(sends, sealed);
-    if (sealed.first) {
-      await sendMessage(to, fromHex(sealed.sender), sealed.first);
-      await e2e.firstSent(identity);
-    }
-    await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+    // No relay set: to a phone nearby only.
+    const place = await settings().catch(() => null);
+    const at = place ? await soon(where(place.own), RELAY_WAIT, { relay: place.own.url, relayKey: '' }) : { relay: '', relayKey: '' };
+    const sealed = await e2e.seal(identity, '', place?.senderHex ?? '', { call: signal, at });
+    const relay =
+      place && sealed.sender
+        ? async () => {
+            const to = contactTarget(place.sends, sealed);
+            if (sealed.first) {
+              await sendMessage(to, fromHex(sealed.sender), sealed.first);
+              await e2e.firstSent(identity);
+            }
+            await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+          }
+        : null;
+    await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
   },
   async callRelay() {
     const { own } = await settings();
-    return callRelay(own);
+    return soon(callRelay(own), RELAY_WAIT, null);
   },
   line(peer, mine, text) {
     void spaceChats()

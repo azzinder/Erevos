@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { canLora, HAS_LINKS, HAS_RADIO, lora, onLinkEvent, sendLink, setLanLinks, startLinks, stopLinks } from '../lib/radio';
 import { nearby, type Delivery } from '../lib/nearby';
-import { currentCall } from '../lib/call';
+import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { callPermissions } from '../lib/call-permissions';
 import { CALL_LINE, callLineMessage, callSignal, endCallsOf, startCall as beginCall, type CallPlace } from '../lib/calls';
@@ -591,6 +591,13 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       if (link) nearby.hold(packet);
       return;
     }
+    // A group's message (lib/groups.ts), as on the same Wi-Fi with no internet.
+    if (isGroupPacket(packet)) {
+      const ours = await takeGroupPacket(packet).catch(() => false);
+      if (!ours && link) nearby.hold(packet);
+      else if (!link) nearby.dropHeld(packet);
+      return;
+    }
     let received: Awaited<ReturnType<E2E['receive']>>;
     try {
       received = await e2e.receive(packet);
@@ -1137,20 +1144,27 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       setNote('There is a call already.');
       return;
     }
-    if (!e2e || !ownQueue || !relayUrl.trim()) {
-      setNote(e2e ? 'Calls are set up through the relay. Type its address in Relay first.' : NO_CORE);
+    // On the same Wi-Fi or a hotspot, with no internet, a call is set up over the link nearby and
+    // goes straight between the two: to the contact's link when heard on one, else to every link.
+    const near = nearby.isNear(identity) || nearby.count() > 0;
+    if (!e2e || ((!ownQueue || !relayUrl.trim()) && !near)) {
+      setNote(e2e ? 'Calls are set up through the relay, or with a contact on the same Wi-Fi. Type the relay address in Relay first.' : NO_CORE);
       return;
     }
     if (!(await callPermissions(video))) {
       setNote(video ? 'A video call needs the camera and the microphone.' : 'A call needs the microphone.');
       return;
     }
-    let relay: CallRelay | null;
-    try {
-      relay = await ownCallRelay();
-    } catch (error) {
-      setNote(`Could not call. ${errorText(error)}`);
-      return;
+    let relay: CallRelay | null = null;
+    if (ownQueue && relayUrl.trim()) {
+      try {
+        relay = near ? await soon(ownCallRelay(), 4000, null) : await ownCallRelay();
+      } catch (error) {
+        if (!near) {
+          setNote(`Could not call. ${errorText(error)}`);
+          return;
+        }
+      }
     }
     if (!relay && !(await callDirectly())) return;
     try {

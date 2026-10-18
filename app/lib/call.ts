@@ -94,6 +94,12 @@ export function currentCall(): Call | null {
   return current && current.state !== 'ended' ? current : null;
 }
 
+/** `promise`, or `fallback` if it has not settled within `ms`: for a relay that may take long to
+ *  fail, as on a Wi-Fi with no internet. */
+export function soon<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([promise, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
+}
+
 export function newCallId(): string {
   return toHex(randomBytes(8));
 }
@@ -119,6 +125,12 @@ export function describedSdp(connection: Connection): Promise<string> {
     if (connection.iceGatheringState === 'complete') done();
     else connection.addEventListener('icegatheringstatechange', () => connection.iceGatheringState === 'complete' && done());
   });
+}
+
+/** The call relay to answer an offer with: none when the offer has no call relay address, as
+ *  from a phone with no internet on the same Wi-Fi, where only a direct connection can work. */
+export function relayToAnswer(offer: string, relay: CallRelay | null): CallRelay | null {
+  return / typ relay/.test(offer) ? relay : null;
 }
 
 export class Call {

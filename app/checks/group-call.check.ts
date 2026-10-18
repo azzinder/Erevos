@@ -236,6 +236,19 @@ test('a video call going on is joined as one', async () => {
   assert.equal(lines[lines.length - 1], '📞 Missed group video call');
 });
 
+test('with a call relay, offers go through it, and an offer without one is answered direct', async () => {
+  const { calls } = place();
+  const { rtc, connections } = fakeRtc();
+  const turn = { urls: ['turn:relay.example.org:3478'], username: '1', credential: 'c' };
+  const call = await startGroupCall(calls, GROUP, false, turn, rtc);
+  await groupCallSignal(calls, GROUP, BOB, { id: call.id, kind: 'join' }, rtc);
+  assert.equal(connections[0].config.iceTransportPolicy, 'relay');
+  // Ada has no internet, only the same Wi-Fi: her offer has no call relay address.
+  await groupCallSignal(calls, GROUP, ADA, { id: call.id, kind: 'offer', to: ME, sdp: 'v=0\r\na=candidate:1 1 udp 1 192.168.1.20 5000 typ host' }, rtc);
+  assert.deepEqual(connections[1].config, { iceServers: [], iceTransportPolicy: 'all' });
+  call.hangUp();
+});
+
 test('group call signals are checked as they come', () => {
   const id = '9a'.repeat(8);
   assert.deepEqual(decodeGroupCall({ id, kind: 'offer', to: BOB, sdp: SDP }), { id, kind: 'offer', to: BOB, sdp: SDP });

@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, mock, test } from 'node:test';
 
-import { Call, connectionConfig, currentCall, RING_MS, type Rtc } from '../lib/call';
+import { Call, connectionConfig, currentCall, relayToAnswer, RING_MS, soon, type Rtc } from '../lib/call';
 import { decodeCall, MAX_SDP, type CallSignal } from '../lib/call-signal';
 import { callClock, callSignal, closeCall, endedLine, shownCall, startCall, type CallPlace } from '../lib/calls';
 import { fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
@@ -186,6 +186,27 @@ test('only well-formed call signals are taken', () => {
 test('without a call relay a call goes direct, with one only through it', () => {
   assert.equal(connectionConfig(null).iceTransportPolicy, 'all');
   assert.equal(connectionConfig(TURN).iceTransportPolicy, 'relay');
+});
+
+test('an offer with no call relay address is answered direct, as on a Wi-Fi with no internet', async () => {
+  const sdp = (candidate: string) => `v=0\r\na=candidate:1 1 udp 2122260223 192.168.1.20 50000 typ ${candidate}`;
+  assert.equal(relayToAnswer(sdp('host'), TURN), null);
+  assert.equal(relayToAnswer(sdp('relay'), TURN), TURN);
+  assert.equal(relayToAnswer(sdp('relay'), null), null);
+
+  const { rtc, connections } = fakeRtc();
+  const here = place();
+  await callSignal(here.calls, 'contact:a', { id: '0123456789abcdef', kind: 'offer', video: false, sdp: sdp('host'), at: Date.now() }, false, rtc);
+  const { call } = shownCall()!;
+  await call.answer();
+  assert.deepEqual(connections[0].config, { iceServers: [], iceTransportPolicy: 'all' });
+  call.hangUp();
+  closeCall(call);
+});
+
+test('soon gives up on what takes too long', async () => {
+  assert.equal(await soon(new Promise<string>(() => undefined), 20, 'late'), 'late');
+  assert.equal(await soon(Promise.resolve('now'), 1000, 'late'), 'now');
 });
 
 test('a call rings wherever it comes from, and leaves its line where it belongs', async () => {
