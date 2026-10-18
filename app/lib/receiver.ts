@@ -5,6 +5,7 @@ import { offerRef } from './attachments';
 import { canRelaySeal, hasCore } from './core';
 import { ONLINE, toBase64Url, type Extra, type Received, type Where } from './e2e';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sendMessage, toHex, type Relay } from './relay';
+import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
 import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-chats';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
@@ -151,6 +152,8 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     place.keyAsked = true;
   }
   await sendPending(chats, place.sends);
+  // An SMS invite sent from the SMS screen since: its answer may be on its way.
+  await refreshSmsLink().catch(() => undefined);
   let changed = false;
   const recipient = fromHex(place.queue.recipientHex);
   try {
@@ -159,7 +162,16 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
       if (!bytes) break;
       // Taken from the relay, so kept whatever happens meanwhile.
       try {
-        const received = await chats.e2e.receive(bytes);
+        // An answer to an SMS invite sent from here: a new contact, linked to the number.
+        if (await takeInviteAnswer(chats.e2e, bytes, place.queue.senderHex, place.here).catch(() => null)) {
+          changed = true;
+          continue;
+        }
+        let received = await chats.e2e.receive(bytes);
+        // Someone whose SMS invite was answered here: no message request.
+        if (received.kind === 'message' && received.added && (await linkInviter(chats.e2e, received.identity).catch(() => null))) {
+          received = { ...received, request: false };
+        }
         changed = (await keep(chats, received, state)) || changed;
         if (received.kind === 'message') messageListeners.forEach((listener) => listener(received));
       } catch {
@@ -175,6 +187,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     state.place = { ...place, queue };
     return changed;
   }
+  await answerInvites(chats.e2e, place.queue.senderHex, place.here, place.sends).catch(() => undefined);
   await sendReceipts(chats, place, state);
   return changed;
 }

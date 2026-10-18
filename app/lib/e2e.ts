@@ -371,6 +371,23 @@ export class E2E {
     });
   }
 
+  /** The phone numbers linked to contacts, by identity. */
+  phones(): { identity: string; phone: string }[] {
+    return this.data.contacts.filter((c) => c.phone).map(({ identity, phone }) => ({ identity, phone }));
+  }
+
+  /** Links a phone number to a contact, or unlinks it with ''. A number is linked to one contact only. */
+  linkPhone(identity: string, phone: string): Promise<void> {
+    return this.run(async () => {
+      if (phone && !/^\+?\d{3,20}$/.test(phone)) throw new Error('That is not a phone number.');
+      if (!this.find(identity)) return;
+      const contacts = this.data.contacts.map((c) =>
+        c.identity === identity ? { ...c, phone } : phone && c.phone === phone ? { ...c, phone: '' } : c,
+      );
+      await this.save({ ...this.data, contacts });
+    });
+  }
+
   /** Accepts a message request: the chat with them is like any other from now on. */
   acceptRequest(identity: string): Promise<void> {
     return this.run(async () => {
@@ -477,6 +494,7 @@ export class E2E {
           hide: false,
           heldGot: [],
           heldRead: [],
+          phone: '',
         }),
       );
       return { identity, added: true };
@@ -686,6 +704,7 @@ export class E2E {
       hide: known?.hide ?? false,
       heldGot: known?.heldGot ?? [],
       heldRead: known?.heldRead ?? [],
+      phone: known?.phone ?? '',
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
     const { text, tag, erase, got, read, voice, file, ask, call } = message;

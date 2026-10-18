@@ -3,11 +3,17 @@
 // first. Made from what the space keeps sealed: its contacts (lock/e2e-data.ts), the messages with
 // them (lock/history.ts) and the chats imported into it (lock/archive.ts). Hidden chats are not in
 // it, and nothing about them is: the home screen looks the same whether a space has them or not.
+// When Erevos is the phone's SMS app, the phone's SMS conversations are rows too: one with a
+// number linked to a contact goes into that contact's row, the others have rows of their own.
 
 import type { Avatar } from '../lock/e2e-data';
+import { sameNumber } from './sms-invite';
 import { voiceDuration } from './voice';
 
-export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null };
+export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null; phone?: string };
+
+/** The latest SMS of a conversation with one number. */
+export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number };
 
 export type InboxMessage = {
   peer: string;
@@ -41,12 +47,22 @@ export type InboxRow = {
   imported: boolean;
   /** The picture given to them here, or null for the one drawn from their key. */
   avatar: Avatar | null;
+  /** The number of an SMS conversation with no contact; empty for a contact's row. */
+  sms: string;
+  /** The last message is a plain SMS. */
+  lastSms: boolean;
 };
 
 const PREFIX = 'contact:';
 
 /** The rows, chats that moved latest first, then the rest by name. Messages gone by `now` are left out. */
-export function buildInbox(contacts: InboxContact[], messages: InboxMessage[], imported: InboxImported[], now: number): InboxRow[] {
+export function buildInbox(
+  contacts: InboxContact[],
+  messages: InboxMessage[],
+  imported: InboxImported[],
+  now: number,
+  sms: InboxSms[] = [],
+): InboxRow[] {
   const latest = new Map<string, InboxMessage>();
   const unread = new Map<string, number>();
   for (const m of messages) {
@@ -56,11 +72,15 @@ export function buildInbox(contacts: InboxContact[], messages: InboxMessage[], i
     if (!before || m.at >= before.at) latest.set(identity, m);
     if (!m.mine && !m.mark) unread.set(identity, (unread.get(identity) ?? 0) + 1);
   }
+  const used = new Set<InboxSms>();
   const rows = contacts.map((contact): InboxRow => {
     const last = latest.get(contact.identity);
     const linked = imported.filter((chat) => chat.contact === contact.identity);
     const importedAt = linked.reduce((at, chat) => Math.max(at, chat.last), 0);
-    return {
+    const texts = contact.phone ? sms.filter((t) => sameNumber(t.address, contact.phone!)) : [];
+    texts.forEach((t) => used.add(t));
+    const text = texts.reduce<InboxSms | null>((a, t) => (!a || t.at > a.at ? t : a), null);
+    const row: InboxRow = {
       identity: contact.identity,
       name: contact.name || linked[0]?.title.trim() || '',
       last: preview(last),
@@ -71,8 +91,17 @@ export function buildInbox(contacts: InboxContact[], messages: InboxMessage[], i
       timer: contact.timer,
       imported: linked.length > 0,
       avatar: contact.avatar ?? null,
+      sms: '',
+      lastSms: false,
     };
+    if (text && text.at > row.at) Object.assign(row, { last: text.text, mine: text.mine, mark: 0, at: text.at, lastSms: true });
+    row.unread += texts.reduce((n, t) => n + t.unread, 0);
+    return row;
   });
+  for (const t of sms) {
+    if (used.has(t)) continue;
+    rows.push({ identity: `sms:${t.address}`, name: t.address, last: t.text, mine: t.mine, mark: 0, at: t.at, unread: t.unread, timer: 0, imported: false, avatar: null, sms: t.address, lastSms: true });
+  }
   return rows.sort((a, b) => b.at - a.at || shownName(a).localeCompare(shownName(b)));
 }
 

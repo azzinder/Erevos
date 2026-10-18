@@ -40,6 +40,7 @@ import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { callRelay, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type Relay } from '../lib/relay';
 import { answersAsk, appShown, holdReceiver } from '../lib/receiver';
+import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { contactTarget, relayFor, spaceChats } from '../lib/space-chats';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
@@ -190,9 +191,11 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   // A contact to open with (from the home screen, or an imported chat that goes on with them),
   // the hidden chats' password to ask for at once, or the relay settings to show at once.
-  const { contact, hidden, setup } = useLocalSearchParams<{ contact?: string; hidden?: string; setup?: string }>();
+  const { contact, hidden, setup, phone } = useLocalSearchParams<{ contact?: string; hidden?: string; setup?: string; phone?: string }>();
   const [asking, setAsking] = useState<'open' | 'change' | null>(hidden === '1' ? 'open' : null);
   const initial = typeof contact === 'string' && /^[0-9a-f]{64}$/.test(contact) ? `${CONTACT_PREFIX}${contact}` : null;
+  // A number linked by hand from its SMS conversation (app/sms.tsx).
+  const linkNumber = initial && typeof phone === 'string' && /^\+?\d{3,20}$/.test(phone) ? phone : '';
   // The look of the chat in view (its own, or the space's), as the chat showing says.
   const [chatLook, setChatLook] = useState<ChatLook | null>(null);
 
@@ -226,7 +229,7 @@ export default function ChatScreen() {
         <ChatStatusBar />
         <KeyboardPaddedView bottom={insets.bottom} style={[layout.screen, { paddingTop: insets.top }]}>
           <View style={[layout.screen, hiddenKey && layout.gone]}>
-            <Chat hiddenKey={null} initial={initial} setup={setup === '1'} shown={!hiddenKey} onHidden={() => setAsking('open')} onLook={setChatLook} />
+            <Chat hiddenKey={null} initial={initial} linkNumber={linkNumber} setup={setup === '1'} shown={!hiddenKey} onHidden={() => setAsking('open')} onLook={setChatLook} />
           </View>
           {hiddenKey ? (
             <Chat hiddenKey={hiddenKey} shown onHidden={() => setHiddenKey(null)} onChangePassword={() => setAsking('change')} onLook={setChatLook} />
@@ -291,9 +294,11 @@ function BackButton() {
 }
 
 // One chat: the space's own (`hiddenKey` null), or its hidden chats, sealed with that key.
-function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   initial?: string | null;
+  /** A phone number to link to the `initial` contact. */
+  linkNumber?: string;
   /** Opens with the relay settings and adding a contact in view. */
   setup?: boolean;
   shown: boolean;
@@ -564,6 +569,10 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         ]);
         const chats = shared?.e2e ?? (await E2E.open('hidden', space, hiddenKey!));
         if (!active) return;
+        if (linkNumber && initial?.startsWith(CONTACT_PREFIX)) {
+          await chats.linkPhone(initial.slice(CONTACT_PREFIX.length), linkNumber);
+          setNote(`Messages to ${linkNumber} now go through Erevos, end-to-end encrypted.`);
+        }
         setE2E(chats);
         setContacts(chats.contacts());
         if (!hiddenKey) {
@@ -700,6 +709,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
     const own: Relay = { url, token: relayToken.trim() || undefined };
     const sends = relayFor(url, relayToken, viaUrl, viaToken) ?? own;
     const recipient = fromHex(ownQueue.recipientHex);
+    const ownSender = ownQueue.senderHex;
     let active = true;
     let busy = false;
     // The note shown while the relay could not be reached, taken back once it answers again.
@@ -710,6 +720,8 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       busy = true;
       try {
         await sendPending(e2e, sends);
+        // An SMS invite sent from the SMS screen since: its answer may be on its way.
+        if (!hiddenKey) await refreshSmsLink().catch(() => undefined);
         for (let i = 0; i < RECEIVE_BATCH && active; i++) {
           const bytes = await receiveMessage(own, recipient);
           if (failed !== null && active) {
@@ -718,9 +730,22 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
             failed = null;
           }
           if (!bytes) break;
+          // An answer to an SMS invite sent from here: their contact link.
+          const invited = hiddenKey ? null : await takeInviteAnswer(e2e, bytes, ownSender, here()).catch(() => null);
+          if (invited) {
+            if (active) setContacts(e2e.contacts());
+            if (active) setNote(`${invited.number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.`);
+            continue;
+          }
           // Taken from the relay, so kept even if the chat closed meanwhile.
-          handle(await e2e.receive(bytes));
+          let received = await e2e.receive(bytes);
+          // Someone whose SMS invite was answered here: a contact at once, not a message request.
+          const number = !hiddenKey && received.kind === 'message' && received.added ? await linkInviter(e2e, received.identity).catch(() => null) : null;
+          if (number && received.kind === 'message') received = { ...received, request: false };
+          handle(received);
+          if (number && active) setNote(`${number} has Erevos and is now a contact. Messages to that number go through Erevos.`);
         }
+        if (!hiddenKey) await answerInvites(e2e, ownSender, here(), sends).catch(() => undefined);
         await sendReceipts(sends);
       } catch (error) {
         if (!active) return;

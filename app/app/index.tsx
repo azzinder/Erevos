@@ -10,6 +10,7 @@ import { hasCore } from '../lib/core';
 import { buildInbox, filterInbox, rowTime, shownName, type InboxRow } from '../lib/inbox';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
+import { smsStatus, smsThreads } from '../modules/erevos-sms';
 import { Archive } from '../lock/archive';
 import { useLock } from '../lock/context';
 import { loadE2EData } from '../lock/e2e-data';
@@ -34,6 +35,7 @@ type Relay = 'ready' | 'no-queue' | 'none';
 const MENU: { title: string; detail: string; href: Href; phone?: boolean }[] = [
   { title: 'Hidden chats', detail: 'Open them with their own password', href: '/chat?hidden=1' },
   { title: 'Nearby phones', detail: 'Bluetooth and Wi-Fi, without internet', href: '/chat', phone: true },
+  { title: 'SMS', detail: 'Erevos as the SMS app, one list for all messages', href: '/sms-settings', phone: true },
   { title: 'Imported chats', detail: 'Telegram and WhatsApp exports', href: '/imported' },
   { title: 'Appearance', detail: 'Style, colours, glass', href: '/appearance' },
   { title: 'Lock and second password', detail: 'Password, second space', href: '/security' },
@@ -63,20 +65,25 @@ export default function Home() {
       const quiet = <T,>(promise: Promise<T>, fallback: T) => promise.catch(() => fallback);
       // The chats as the chat screen and the receiver have them (lib/space-chats.ts), or, in a
       // build that cannot encrypt, as kept on the phone.
-      const chats = (): Promise<[{ identity: string; name: string; timer: number }[], Message[]]> =>
+      const chats = (): Promise<[{ identity: string; name: string; timer: number; phone?: string }[], Message[]]> =>
         hasCore()
-          ? spaceChats().then(({ e2e, history }) => [e2e.contacts(), history.messages()])
+          ? spaceChats().then(({ e2e, history }) => {
+              const phones = new Map(e2e.phones().map((p) => [p.identity, p.phone]));
+              return [e2e.contacts().map((c) => ({ ...c, phone: phones.get(c.identity) })), history.messages()];
+            })
           : Promise.all([loadE2EData('space', current, key).then((d) => d.contacts), History.open('space', current, key).then((h) => h.messages())]);
       const load = () =>
         void Promise.all([
           quiet(chats(), [[], []]),
           quiet(Archive.open('space', current, key).then((a) => a.chats()), []),
           quiet(loadCurrentSpaceData(), null),
-        ]).then(([[contacts, messages], imported, data]) => {
+          // The phone's SMS show only once Erevos is its SMS app.
+          smsStatus()?.isDefault ? quiet(smsThreads(), []) : Promise.resolve([]),
+        ]).then(([[contacts, messages], imported, data, sms]) => {
           if (!active) return;
           const at = Date.now();
           setNow(at);
-          setRows(buildInbox(contacts, messages, imported, at));
+          setRows(buildInbox(contacts, messages, imported, at, sms));
           setRelay(!data?.url ? 'none' : data.ownQueue ? 'ready' : 'no-queue');
         });
       // Who shows online, again every few seconds, as it lasts only a while. A chat that appears
@@ -242,15 +249,23 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
   const preview = row.last || (row.imported ? 'Imported chat, goes on here' : 'No messages yet');
   return (
     <Pressable
-      onPress={() => router.push(`/chat?contact=${row.identity}`)}
+      onPress={() => router.push(row.sms ? `/sms?to=${encodeURIComponent(row.sms)}` : `/chat?contact=${row.identity}`)}
       accessibilityRole="button"
       accessibilityLabel={`${name}${online ? ', online' : ''}${row.unread ? `, ${row.unread} not read` : ''}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      <View>
-        <KeyFace identity={row.identity} name={row.name} size={52} avatar={row.avatar} />
-        {online ? <View style={[styles.onlineDot, { backgroundColor: colors.success, borderColor: colors.background }]} /> : null}
-      </View>
+      {row.sms ? (
+        <View style={styles.smsFace}>
+          <Text variant="label" tone="muted">
+            SMS
+          </Text>
+        </View>
+      ) : (
+        <View>
+          <KeyFace identity={row.identity} name={row.name} size={52} avatar={row.avatar} />
+          {online ? <View style={[styles.onlineDot, { backgroundColor: colors.success, borderColor: colors.background }]} /> : null}
+        </View>
+      )}
       <View style={styles.rowBody}>
         <View style={styles.rowLine}>
           <Text variant="bodyStrong" numberOfLines={1} style={[styles.rowName, !row.name && styles.mono]}>
@@ -263,7 +278,12 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
         <View style={styles.rowLine}>
           <View style={styles.previewLine}>
             {row.timer ? <TimerIcon color={colors.textMuted} size={13} /> : null}
-            {row.last && row.mine ? (
+            {row.lastSms ? (
+              <Text variant="caption" color={colors.warning}>
+                SMS
+              </Text>
+            ) : null}
+            {row.last && row.mine && !row.lastSms ? (
               <Text variant="caption" color={row.mark === 2 ? colors.accentText : colors.textMuted}>
                 {MARKS[row.mark]}
               </Text>
@@ -320,6 +340,16 @@ const makeStyles = (colors: Colors) =>
     tools: {
       flexDirection: 'row',
       gap: space.xs,
+    },
+    smsFace: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.border, 0.6),
     },
     iconButton: {
       width: 44,

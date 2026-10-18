@@ -1,0 +1,77 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-feature android:name="android.hardware.telephony" android:required="false" />
+
+  <uses-permission android:name="android.permission.SEND_SMS" />
+  <uses-permission android:name="android.permission.RECEIVE_SMS" />
+  <uses-permission android:name="android.permission.READ_SMS" />
+  <uses-permission android:name="android.permission.RECEIVE_MMS" />
+  <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+  <application>
+    <!-- What Android asks of a default SMS app: these four parts. -->
+    <receiver
+      android:name="expo.modules.erevossms.SmsDeliverReceiver"
+      android:exported="true"
+      android:permission="android.permission.BROADCAST_SMS">
+      <intent-filter>
+        <action android:name="android.provider.Telephony.SMS_DELIVER" />
+      </intent-filter>
+    </receiver>
+
+    <receiver
+      android:name="expo.modules.erevossms.MmsDeliverReceiver"
+      android:exported="true"
+      android:permission="android.permission.BROADCAST_WAP_PUSH">
+      <intent-filter>
+        <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
+        <data android:mimeType="application/vnd.wap.mms-message" />
+      </intent-filter>
+    </receiver>
+
+    <service
+      android:name="expo.modules.erevossms.RespondViaSmsService"
+      android:exported="true"
+      android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE">
+      <intent-filter>
+        <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:scheme="sms" />
+        <data android:scheme="smsto" />
+        <data android:scheme="mms" />
+        <data android:scheme="mmsto" />
+      </intent-filter>
+    </service>
+
+    <activity
+      android:name="expo.modules.erevossms.ComposeActivity"
+      android:exported="true"
+      android:excludeFromRecents="true"
+      android:noHistory="true"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter>
+        <action android:name="android.intent.action.SEND" />
+        <action android:name="android.intent.action.SENDTO" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="sms" />
+        <data android:scheme="smsto" />
+        <data android:scheme="mms" />
+        <data android:scheme="mmsto" />
+      </intent-filter>
+    </activity>
+
+    <!-- SMS invites between Erevos phones: data SMS to a port, which messaging apps do not show. -->
+    <receiver
+      android:name="expo.modules.erevossms.InviteReceiver"
+      android:exported="true"
+      android:permission="android.permission.BROADCAST_SMS">
+      <intent-filter>
+        <action android:name="android.intent.action.DATA_SMS_RECEIVED" />
+        <data android:scheme="sms" android:host="*" android:port="16180" />
+      </intent-filter>
+    </receiver>
+
+    <receiver android:name="expo.modules.erevossms.SentReceiver" android:exported="false" />
+  </application>
+</manifest>

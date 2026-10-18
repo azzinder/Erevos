@@ -162,6 +162,21 @@ pub fn relay_seal(relay_key: &[u8], sender_id: &[u8], message: &[u8]) -> Result<
     erevos_core::relay_seal::seal(&relay_key, &sender_id, message).map_err(fail)
 }
 
+/// The public key for a 32-byte secret, for others to seal to with `relay_seal`
+/// (an SMS invite's key, which opens the answer to it).
+pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>> {
+    let secret = <[u8; 32]>::try_from(secret).map_err(|_| "a secret key is 32 bytes".to_string())?;
+    Ok(erevos_core::relay_seal::RelayKey::from_secret_bytes(secret).public().to_vec())
+}
+
+/// Opens what `relay_seal` sealed to the public key of `secret`: the 24-byte
+/// sender id, then the message.
+pub fn seal_open(secret: &[u8], sealed: &[u8]) -> Result<Vec<u8>> {
+    let secret = <[u8; 32]>::try_from(secret).map_err(|_| "a secret key is 32 bytes".to_string())?;
+    let (sender, message) = erevos_core::relay_seal::RelayKey::from_secret_bytes(secret).open(sealed).map_err(fail)?;
+    Ok([sender.as_slice(), &message].concat())
+}
+
 /// The safety number of two identity keys.
 pub fn safety_number(ours: &[u8], theirs: &[u8]) -> Result<String> {
     let key = |b: &[u8]| <[u8; 32]>::try_from(b).map_err(|_| "an identity key is 32 bytes".to_string());
@@ -190,6 +205,15 @@ mod tests {
         assert_eq!(relay.open(&sealed).unwrap(), ([3; 24], b"hi".to_vec()));
         assert!(relay_seal(&[1; 31], &[3; 24], b"hi").is_err());
         assert!(relay_seal(&relay.public(), &[3; 23], b"hi").is_err());
+    }
+
+    #[test]
+    fn opens_what_was_sealed_to_a_secret() {
+        let secret = [9u8; 32];
+        let sealed = relay_seal(&seal_public(&secret).unwrap(), &[3; 24], b"hi").unwrap();
+        assert_eq!(seal_open(&secret, &sealed).unwrap(), [[3u8; 24].as_slice(), b"hi"].concat());
+        assert!(seal_open(&[8; 32], &sealed).is_err());
+        assert!(seal_public(&[1; 31]).is_err());
     }
 
     #[test]

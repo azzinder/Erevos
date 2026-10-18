@@ -44,6 +44,9 @@ export type Contact = {
    *  appears offline. */
   heldGot: string[];
   heldRead: string[];
+  /** Their phone number, when this chat linked it to them (by hand, or through an SMS invite), so
+   *  writing to the number goes through Erevos. Empty when not linked. Only this phone knows it. */
+  phone: string;
 };
 
 /** A contact's picture of this chat's choosing: a sign (an emoji) on a colour, or a photo (lock/avatar-photos.ts). */
@@ -122,6 +125,7 @@ function checkedContact(value: unknown): Contact | null {
     hide: v.hide === true,
     heldGot: heldTags(v.heldGot),
     heldRead: heldTags(v.heldRead),
+    phone: isText(v.phone) && /^\+?\d{3,20}$/.test(v.phone) ? v.phone : '',
   };
 }
 

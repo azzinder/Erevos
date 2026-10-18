@@ -77,3 +77,13 @@ pub fn import_chats(name: &[u8], data: &[u8]) -> Result<Vec<u8>, JsError> {
 pub fn relay_seal(relay_key: &[u8], sender_id: &[u8], message: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::relay_seal(relay_key, sender_id, message))
 }
+
+#[wasm_bindgen(js_name = sealPublic)]
+pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::seal_public(secret))
+}
+
+#[wasm_bindgen(js_name = sealOpen)]
+pub fn seal_open(secret: &[u8], sealed: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::seal_open(secret, sealed))
+}

@@ -12,6 +12,7 @@ import { runAutoBackup } from '../lib/backup-folder';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { setAppShown, startReceiver } from '../lib/receiver';
+import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
@@ -79,6 +80,7 @@ export default function RootLayout() {
     // once a space opens (after a backup is restored too).
     setCurrentSpace(null);
     forgetSpaceChats();
+    forgetSmsLink();
     setPhase({ kind: 'loading' });
     // The keystore holds the same entries whatever is in use: made once per start, beside the
     // rest, since the password screen need not wait for them.

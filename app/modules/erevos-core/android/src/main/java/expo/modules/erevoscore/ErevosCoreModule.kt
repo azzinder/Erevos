@@ -34,6 +34,8 @@ class ErevosCoreModule : Module() {
     AsyncFunction("relaySeal") { relayKey: ByteArray, senderId: ByteArray, message: ByteArray ->
       ErevosCoreNative.relaySeal(relayKey, senderId, message)
     }
+    AsyncFunction("sealPublic") { secret: ByteArray -> ErevosCoreNative.sealPublic(secret) }
+    AsyncFunction("sealOpen") { secret: ByteArray, sealed: ByteArray -> ErevosCoreNative.sealOpen(secret, sealed) }
   }
 }
 
@@ -58,4 +60,6 @@ internal object ErevosCoreNative {
   @JvmStatic external fun safetyNumber(ours: ByteArray, theirs: ByteArray): String
   @JvmStatic external fun importChats(name: ByteArray, data: ByteArray): ByteArray
   @JvmStatic external fun relaySeal(relayKey: ByteArray, senderId: ByteArray, message: ByteArray): ByteArray
+  @JvmStatic external fun sealPublic(secret: ByteArray): ByteArray
+  @JvmStatic external fun sealOpen(secret: ByteArray, sealed: ByteArray): ByteArray
 }

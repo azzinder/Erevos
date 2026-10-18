@@ -21,6 +21,8 @@ export interface Core {
   importChats(name: Uint8Array, data: Uint8Array): Promise<Uint8Array>;
   /** Missing in a build made before two-hop sending. */
   relaySeal?(relayKey: Uint8Array, senderId: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
+  sealPublic?(secret: Uint8Array): Promise<Uint8Array>;
+  sealOpen?(secret: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
 }
 
 let core: Core | null = null;
@@ -86,6 +88,26 @@ export function relaySeal(relayKey: Uint8Array, senderId: Uint8Array, message: U
   const it = need();
   if (!it.relaySeal) throw new NoCoreError();
   return it.relaySeal(relayKey, senderId, message);
+}
+
+/** Whether the core can make and open SMS invites (a core from before them cannot). */
+export function canSealOpen(): boolean {
+  return typeof core?.sealPublic === 'function' && typeof core?.sealOpen === 'function';
+}
+
+/** The public key for a 32-byte secret, for others to seal to with `relaySeal`. */
+export function sealPublic(secret: Uint8Array): Promise<Uint8Array> {
+  const it = need();
+  if (!it.sealPublic) throw new NoCoreError();
+  return it.sealPublic(secret);
+}
+
+/** Opens what `relaySeal` sealed to the public key of `secret`: the sender id, then the message. */
+export async function sealOpen(secret: Uint8Array, sealed: Uint8Array): Promise<{ senderId: Uint8Array; message: Uint8Array }> {
+  const it = need();
+  if (!it.sealOpen) throw new NoCoreError();
+  const plain = await it.sealOpen(secret, sealed);
+  return { senderId: plain.slice(0, 24), message: plain.slice(24) };
 }
 
 export async function packetKind(packet: Uint8Array): Promise<Kind> {
