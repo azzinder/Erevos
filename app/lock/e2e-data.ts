@@ -1,4 +1,5 @@
 import { checkedLook, type Look } from '../theme/look';
+import { isPhotoRef, type PhotoRef } from './avatar-photos';
 import { sealedFile, type Holder } from './sealed-file';
 
 // What each space, and each space's hidden chats, keeps for end-to-end encryption (lib/e2e.ts):
@@ -37,14 +38,15 @@ export type Contact = {
   avatar: Avatar | null;
 };
 
-/** A contact's picture of this chat's choosing: a sign (an emoji) on a colour. */
-export type Avatar = { kind: 'emoji'; emoji: string; color: string };
+/** A contact's picture of this chat's choosing: a sign (an emoji) on a colour, or a photo (lock/avatar-photos.ts). */
+export type Avatar = { kind: 'emoji'; emoji: string; color: string } | ({ kind: 'photo' } & PhotoRef);
 
 const HEX_COLOR = /^#[0-9A-F]{6}$/;
 
 /** A kept picture, checked: one this version does not know (written by a newer one, or damaged) is none. */
 export function checkedAvatar(value: unknown): Avatar | null {
-  const v = (value ?? {}) as Partial<Record<keyof Avatar, unknown>>;
+  const v = (value ?? {}) as Partial<Record<'kind' | 'emoji' | 'color' | 'id' | 'key', unknown>>;
+  if (v.kind === 'photo') return isPhotoRef(v) ? { kind: 'photo', id: v.id, key: v.key } : null;
   if (v.kind !== 'emoji' || !isText(v.emoji) || typeof v.color !== 'string') return null;
   const emoji = v.emoji.trim();
   const color = v.color.toUpperCase();

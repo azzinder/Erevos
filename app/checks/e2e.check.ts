@@ -15,6 +15,7 @@ import { E2E, NoKeyError, OwnCodeError, toBase64Url, type Received } from '../li
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
 import { checkedAvatar, FILE, loadE2EData, MAX_NAME } from '../lock/e2e-data';
 import { DEFAULT_LOOK } from '../theme/look';
+import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { files } from './files-memory';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -223,7 +224,28 @@ t('a contact keeps the picture this chat gives it, sealed, and a picture of the 
   assert.equal(checkedAvatar({ kind: 'emoji', emoji: 'way too long a sign', color: '#000000' }), null);
   assert.equal(checkedAvatar({ kind: 'emoji', emoji: '\u202e🦊', color: '#000000' }), null);
   assert.equal(checkedAvatar({ kind: 'photo', emoji: '🦊', color: '#000000' }), null);
+  assert.equal(checkedAvatar({ kind: 'photo', id: 'ab', key: 'cd' }), null);
   assert.equal(checkedAvatar({ kind: 'emoji', emoji: '🦊', color: 'orange' }), null);
+});
+
+t('a contact\'s photo is sealed in its own file, deleted when another picture or forgetting them takes its place', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const first = await savePhoto(new Uint8Array([1, 2, 3]));
+  await alice.e2e.setAvatar(identity, { kind: 'photo', ...first });
+  const again = await E2E.open('space', 0, key);
+  const kept = again.contacts()[0].avatar;
+  assert.ok(kept?.kind === 'photo' && kept.id === first.id);
+  assert.deepEqual(await loadPhoto(first), new Uint8Array([1, 2, 3]));
+  assert.ok(!files.get(FILE)!.includes(first.key));
+
+  const second = await savePhoto(new Uint8Array([4]));
+  await again.setAvatar(identity, { kind: 'photo', ...second });
+  assert.equal(await loadPhoto(first), null);
+  await again.removeContact(identity);
+  assert.equal(await loadPhoto(second), null);
 });
 
 t('a message carries its tag, and a request to delete one message or all of them', async () => {

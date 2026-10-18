@@ -28,6 +28,8 @@ import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
 import { openHidden, setHiddenPassword } from '../lock/hidden';
 import { cleanName, MAX_NAME, type Avatar } from '../lock/e2e-data';
+import { savePhoto } from '../lock/avatar-photos';
+import { pickAvatar } from '../lib/pick-avatar';
 import { History, newTag, type Mark } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
@@ -1265,6 +1267,18 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
     }
   }
 
+  /** Gives a contact a photo as their picture, from the phone's photos or its camera. */
+  async function choosePhoto(peer: string, from: 'photos' | 'camera') {
+    try {
+      const bytes = await pickAvatar(from);
+      if (!bytes) return;
+      const ref = await savePhoto(bytes);
+      await changeAvatar(peer, { kind: 'photo', ...ref });
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
   async function changeTimer(peer: string, timer: number) {
     if (!e2e) return;
     const identity = peer.slice(CONTACT_PREFIX.length);
@@ -1364,6 +1378,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
   const selectedLook = contacts.find((c) => c.identity === selectedIdentity)?.look ?? null;
   const selectedAvatar = contacts.find((c) => c.identity === selectedIdentity)?.avatar ?? null;
+  const signAvatar = selectedAvatar?.kind === 'emoji' ? selectedAvatar : null;
   useEffect(() => {
     if (!shown) return;
     if (!e2e || !selectedIdentity) {
@@ -1560,31 +1575,35 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                     {AVATAR_SIGNS.map((emoji) => (
                       <Pressable
                         key={emoji}
-                        onPress={() => void changeAvatar(selectedContact, { kind: 'emoji', emoji, color: selectedAvatar?.color ?? AVATAR_COLORS[5] })}
+                        onPress={() => void changeAvatar(selectedContact, { kind: 'emoji', emoji, color: signAvatar?.color ?? AVATAR_COLORS[5] })}
                         accessibilityRole="radio"
-                        accessibilityState={{ selected: selectedAvatar?.emoji === emoji }}
+                        accessibilityState={{ selected: signAvatar?.emoji === emoji }}
                         accessibilityLabel={emoji}
-                        style={[styles.sign, selectedAvatar?.emoji === emoji && styles.signOn]}
+                        style={[styles.sign, signAvatar?.emoji === emoji && styles.signOn]}
                       >
                         <Text style={styles.signText}>{emoji}</Text>
                       </Pressable>
                     ))}
                   </View>
-                  {selectedAvatar ? (
+                  {signAvatar ? (
                     <View style={styles.signs}>
                       {AVATAR_COLORS.map((color) => (
                         <Pressable
                           key={color}
-                          onPress={() => void changeAvatar(selectedContact, { ...selectedAvatar, color })}
+                          onPress={() => void changeAvatar(selectedContact, { ...signAvatar, color })}
                           accessibilityRole="radio"
-                          accessibilityState={{ selected: selectedAvatar.color === color }}
+                          accessibilityState={{ selected: signAvatar.color === color }}
                           accessibilityLabel={`Colour ${color}`}
-                          style={[styles.swatch, { backgroundColor: color }, selectedAvatar.color === color && styles.swatchOn]}
+                          style={[styles.swatch, { backgroundColor: color }, signAvatar.color === color && styles.swatchOn]}
                         />
                       ))}
                     </View>
                   ) : null}
-                  {selectedAvatar ? <TextButton title="Picture from their key" onPress={() => void changeAvatar(selectedContact, null)} /> : null}
+                  <Row wrap>
+                    <TextButton title="Photo" onPress={() => void choosePhoto(selectedContact, 'photos')} />
+                    {CAN_TAKE_PHOTOS ? <TextButton title="Take photo" onPress={() => void choosePhoto(selectedContact, 'camera')} /> : null}
+                    {selectedAvatar ? <TextButton title="Picture from their key" onPress={() => void changeAvatar(selectedContact, null)} /> : null}
+                  </Row>
                 </View>
               ) : null}
               {renaming === selectedContact ? (
