@@ -45,6 +45,11 @@ Early work, not audited. Do not rely on it to protect anyone yet.
 - `desktop/`: Erevos for Linux and macOS, the app's web build (with the core in
   WebAssembly) in Electron. `.github/workflows/desktop.yml` builds the Linux
   packages and the Mac disk image, and starts each to check it opens.
+- `pwa/`: the web app, for an iPhone without an Apple account and for any
+  browser: the same web build, kept on the device by a service worker that runs
+  only releases signed with a key the server does not have. `deploy/web`
+  serves it from your own server. See its README for what that protects and
+  what it does not.
 
 ## Build
 

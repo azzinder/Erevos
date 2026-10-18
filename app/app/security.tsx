@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { IntegrityCard } from '../components/integrity-card';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
@@ -158,6 +159,8 @@ export default function Security() {
           <Button title="Remove hidden chats password" kind="secondary" compact onPress={removeHidden} />
         </Row>
       </Card>
+
+      <IntegrityCard />
 
       {note ? (
         <Text variant="label" color={colors.success}>

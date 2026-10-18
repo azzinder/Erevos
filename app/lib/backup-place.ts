@@ -9,6 +9,9 @@ import { BACKUP_PREFIX, backupName } from '../lock/backup';
 /** Whether backups can be made here: always on the phone. */
 export const CAN_BACK_UP = true;
 
+/** Whether backups can be made by themselves, every day or week: on the phone, yes. */
+export const CAN_AUTO_BACKUP = true;
+
 /** A folder picked by the owner, or null if they went back. */
 export async function pickFolder(): Promise<string | null> {
   try {
@@ -27,7 +30,7 @@ export function folderLabel(uri: string): string {
 }
 
 /** Writes a backup into the folder. With `keep`, deletes the older ones there but the `keep` newest. */
-export async function writeBackup(folder: string, bytes: Uint8Array, now = Date.now(), keep = 0): Promise<{ name: string; size: number }> {
+export async function writeBackup(folder: string, bytes: Uint8Array, now = Date.now(), keep = 0): Promise<{ name: string; size: number; where?: string }> {
   const directory = new Directory(folder);
   const name = backupName(now);
   const file = directory.createFile(name, 'application/octet-stream');

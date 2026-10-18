@@ -1,11 +1,13 @@
 import { Platform } from 'react-native';
 
 import { SHELL, shellFetch } from './shell';
+import { webDeleteSecret, webGetSecret, webSetSecret } from './web-store';
 
 // Small secrets in the OS keystore (Android Keystore, iOS Keychain) through expo-secure-store,
-// and on a computer in the desktop app's keyring (lib/shell.ts). The plain web build is only a
-// preview and keeps them in localStorage. A phone build made without the secure store keeps them
-// in memory, so they are gone when the app closes.
+// and on a computer in the desktop app's keyring (lib/shell.ts). The web app, in a plain browser,
+// keeps them in the browser's storage, sealed with a key the browser will not give out
+// (lib/web-store.ts). A phone build made without the secure store keeps them in memory, so they
+// are gone when the app closes.
 
 type SecureStoreModule = typeof import('expo-secure-store');
 
@@ -29,7 +31,7 @@ export async function secureGet(key: string): Promise<string | null> {
     const response = await shellFetch(path(key));
     return response.status === 204 ? null : response.text();
   }
-  if (Platform.OS === 'web') return globalThis.localStorage?.getItem(key) ?? null;
+  if (Platform.OS === 'web') return webGetSecret(key);
   return memory.get(key) ?? null;
 }
 
@@ -40,7 +42,7 @@ export async function secureSet(key: string, value: string): Promise<void> {
     await shellFetch(path(key), { method: 'PUT', body: value });
     return;
   }
-  if (Platform.OS === 'web') globalThis.localStorage?.setItem(key, value);
+  if (Platform.OS === 'web') await webSetSecret(key, value);
   else memory.set(key, value);
 }
 
@@ -51,6 +53,6 @@ export async function secureDelete(key: string): Promise<void> {
     await shellFetch(path(key), { method: 'DELETE' });
     return;
   }
-  if (Platform.OS === 'web') globalThis.localStorage?.removeItem(key);
+  if (Platform.OS === 'web') await webDeleteSecret(key);
   else memory.delete(key);
 }

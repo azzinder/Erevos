@@ -10,6 +10,7 @@ import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
 import { runAutoBackup } from '../lib/backup-folder';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
+import { startIntegrityAlarm } from '../lib/integrity';
 import { setAppShown, startReceiver } from '../lib/receiver';
 import { forgetSpaceChats } from '../lib/space-chats';
 import { loadLockConfig, type LockConfig } from '../lock/config';
@@ -103,6 +104,9 @@ export default function RootLayout() {
     start().catch(fail);
   }, [start, fail]);
 
+  // The web app's service worker refused code from the server: said at once, locked or open.
+  useEffect(() => startIntegrityAlarm(), []);
+
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'background') backgroundAt.current = Date.now();
@@ -184,6 +188,7 @@ function Shell({ phase, error, lockState, onUnlock }: {
     return (
       <ScreenBackdrop>
         <PasswordGate config={phase.config} onUnlock={onUnlock} />
+        <AlertHost />
         {bar}
       </ScreenBackdrop>
     );

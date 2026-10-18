@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, AppState, Image, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
+import { AppState, Image, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -954,14 +954,13 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   // Without a call relay, asks before a call that shows each phone's address to the other.
   function callDirectly(): Promise<boolean> {
     return new Promise((resolve) =>
-      Alert.alert(
+      ask(
         'Call without a call relay?',
         "Your relay has no call relay beside it, so the call would go straight between the phones. That only works on the same Wi-Fi, and each phone sees the other's address on it. With a call relay, neither does.",
         [
           { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
           { text: 'Call', onPress: () => resolve(true) },
         ],
-        { cancelable: true, onDismiss: () => resolve(false) },
       ),
     );
   }
