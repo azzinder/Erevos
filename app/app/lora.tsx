@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 
 import { Button, Card, Chip, Page, Row, Text } from '../components/ui';
 import { ask } from '../lib/alert';
-import { canLora, findRadios, lora, resumeLora, savedRadio, setRadio, type SavedRadio } from '../lib/radio';
+import { canLora, findRadios, lora, resumeLora, savedRadio, setRadio, setSharing, type SavedRadio } from '../lib/radio';
 import type { LoraState } from '../lib/lora';
 
 // LoRa through a Meshtastic radio (lib/lora.ts), off unless a radio is set here: finding one,
-// what it means for privacy before it is on, and how the radio is.
+// what it means for privacy before it is on, whether the radio may say its name and where it is,
+// and how the radio is.
 
 // Meshtastic's regions by their code (config.proto, RegionCode), named as its app names them.
 const REGIONS = [
@@ -63,8 +64,12 @@ export default function LoraScreen() {
       'Before LoRa is on',
       'A LoRa radio is heard kilometres away, and it can be found by its signal. What Erevos sends stays ' +
         'end-to-end encrypted, but anyone with a radio can tell that yours sends, when and how much.\n\n' +
-        'Your radio also says its own name to every radio in reach, and where it is if it has GPS or a ' +
-        'fixed position, as Meshtastic does. Turn those off in the Meshtastic app if you do not want that.',
+        'Meshtastic radios also say their name to every radio in reach now and then, and where they are if they ' +
+        'have GPS or a fixed position. Erevos keeps yours from doing so: it sets its role to Client hidden, turns ' +
+        'its GPS off and removes a fixed position, and puts the role and GPS back when you turn LoRa off while it is ' +
+        'linked. It still answers a radio that asks its name, so give it a name that says nothing of you, in the ' +
+        'Meshtastic app.\n\n' +
+        'LoRa takes only text: photos, voice messages and files do not go over it.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Find my radio', onPress: () => setFound([]) },
@@ -83,6 +88,31 @@ export default function LoraScreen() {
     }
   }
 
+  function share(on: boolean) {
+    if (!radio || on === (radio.shares === true)) return;
+    const change = () => {
+      setNote('');
+      setSharing(on)
+        .then(() => setRadioShown({ ...radio, shares: on }))
+        .catch((error: unknown) => setNote(error instanceof Error ? error.message : String(error)));
+    };
+    if (!on) {
+      change();
+      return;
+    }
+    ask(
+      'Let the radio say where it is?',
+      'Your radio then says its name to every radio in reach now and then, kilometres away, and where it is if ' +
+        'its GPS is on. It says them in the clear, as Meshtastic does: anyone with a radio can read them, without ' +
+        'Erevos. They can show where you are, and tie the radio to you.\n\n' +
+        'Even with this off, a radio that sends can be found by its signal, by someone with the gear to look for it.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Let it say them', style: 'destructive', onPress: change },
+      ],
+    );
+  }
+
   async function turnOff() {
     setNote('');
     try {
@@ -93,7 +123,24 @@ export default function LoraScreen() {
     }
   }
 
-  const { status, detail, name, region, transmits, waiting } = state;
+  // Not linked, the radio cannot get back the settings Erevos changed: said first.
+  function askTurnOff() {
+    if (!radio?.kept || state.status === 'up') {
+      void turnOff();
+      return;
+    }
+    ask(
+      'The radio is not linked',
+      'So it keeps the settings Erevos gave it: role Client hidden, GPS off. Set them back in the Meshtastic app if ' +
+        'you want them, or turn LoRa off once the radio is linked.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Turn LoRa off', onPress: () => void turnOff() },
+      ],
+    );
+  }
+
+  const { status, detail, name, region, transmits, waiting, notQuiet } = state;
   return (
     <Page>
       <Text variant="title">LoRa radio</Text>
@@ -106,13 +153,13 @@ export default function LoraScreen() {
         <Text tone="muted">
           It is slow: a message takes seconds on the air, and the law allows a radio only so much air time. So LoRa takes
           a message only when the relay and the phones nearby cannot, and only text and deletes: not voice messages,
-          photos, read marks or calls. Hidden chats never go over it.
+          photos, files, read marks or calls. Hidden chats never go over it.
         </Text>
         <Text tone="muted">
           While Erevos is linked to the radio, the Meshtastic app cannot be: close it, or disconnect it there first.
         </Text>
         {radio === undefined ? null : radio ? (
-          <Button title="Turn LoRa off" kind="secondary" onPress={() => void turnOff()} />
+          <Button title="Turn LoRa off" kind="secondary" onPress={askTurnOff} />
         ) : found === null ? (
           <Button title="Find my radio" onPress={look} />
         ) : null}
@@ -142,6 +189,26 @@ export default function LoraScreen() {
           {region ? <Text variant="caption" tone="faint">{`Region: ${REGIONS[region] ?? region}`}</Text> : null}
           {!transmits ? <Text tone="muted">It does not send: Transmit enabled is off in its LoRa settings, in the Meshtastic app.</Text> : null}
           {waiting > 0 ? <Text variant="caption" tone="faint">{`${waiting} pieces waiting to go`}</Text> : null}
+        </Card>
+      ) : null}
+      {radio ? (
+        <Card>
+          <Text variant="bodyStrong">Its name and where it is</Text>
+          <Row wrap>
+            <Chip label="Kept quiet" selected={!radio.shares} onPress={() => share(false)} />
+            <Chip label="Said to all in reach" selected={radio.shares === true} onPress={() => share(true)} />
+          </Row>
+          <Text variant="caption" tone="muted">
+            {radio.shares
+              ? 'The radio says its name to every radio in reach now and then, and where it is if its GPS is on, in the clear, as Meshtastic does. A fixed position Erevos removed is set again in the Meshtastic app.'
+              : 'Erevos keeps the radio from saying its name and where it is to the radios in reach: role Client hidden, GPS off, no fixed position. It still answers a radio that asks its name, so give it a name that says nothing of you, in the Meshtastic app.'}
+          </Text>
+          {!radio.shares && notQuiet ? (
+            <Text tone="muted">
+              The radio did not keep these settings, so it may still say its name and where it is. Set them in the
+              Meshtastic app: Device role Client hidden, GPS off, no fixed position.
+            </Text>
+          ) : null}
         </Card>
       ) : null}
       {note ? <Text tone="muted">{note}</Text> : null}

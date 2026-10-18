@@ -8,6 +8,13 @@ import { utf8Decode, utf8Encode } from './crypto';
 
 /** Meshtastic's port for an app's own data, which other Meshtastic apps leave alone. */
 export const PRIVATE_APP = 256;
+/** Meshtastic's port for a radio's settings: to the phone's own radio, it needs no key. */
+export const ADMIN_APP = 6;
+// The role of a radio that says nothing of itself unless asked (Config.DeviceConfig.Role), and
+// GPS modes (Config.PositionConfig.GpsMode).
+const CLIENT_HIDDEN = 8;
+const GPS_ENABLED = 1;
+const GPS_NOT_PRESENT = 2;
 /** The node number a packet to every radio in reach goes to. */
 export const BROADCAST = 0xffffffff;
 /**
@@ -27,6 +34,8 @@ export type FromRadio =
   | { kind: 'myInfo'; node: number }
   | { kind: 'nodeInfo'; node: number; longName: string; shortName: string }
   | { kind: 'lora'; region: number; hopLimit: number; txEnabled: boolean }
+  | { kind: 'device'; bytes: Uint8Array; role: number }
+  | { kind: 'position'; bytes: Uint8Array; gpsMode: number; fixed: boolean }
   | { kind: 'configComplete'; id: number }
   | { kind: 'queue'; res: number; free: number; packetId: number }
   | { kind: 'packet'; from: number; to: number; channel: number; id: number; portnum: number; payload: Uint8Array }
@@ -73,12 +82,16 @@ export function wantConfig(id: number): Uint8Array {
 }
 
 /** ToRadio with a packet to every radio in reach (MeshPacket to BROADCAST, decoded Data). */
-export function toRadioPacket({ id, channel, portnum, payload, hopLimit, wantAck }: Outgoing): Uint8Array {
+export function toRadioPacket(outgoing: Outgoing): Uint8Array {
+  return toRadio(BROADCAST, outgoing);
+}
+
+function toRadio(to: number, { id, channel, portnum, payload, hopLimit, wantAck }: Outgoing): Uint8Array {
   const data: number[] = [];
   uintField(data, 1, portnum);
   bytesField(data, 2, payload);
   const packet: number[] = [];
-  fixed32Field(packet, 2, BROADCAST);
+  fixed32Field(packet, 2, to);
   uintField(packet, 3, channel);
   bytesField(packet, 4, data);
   fixed32Field(packet, 6, id);
@@ -103,6 +116,10 @@ class Reader {
 
   done() {
     return this.at >= this.bytes.length;
+  }
+
+  position() {
+    return this.at;
   }
 
   // A varint as a number: exact up to 2^53, which covers every field read here. A negative int32
@@ -184,12 +201,22 @@ export function readFromRadio(bytes: Uint8Array): FromRadio {
       return { kind: 'nodeInfo', node: first(info, 1)?.value ?? 0, longName: text(first(said, 2)), shortName: text(first(said, 3)) };
     }
     if (f.field === 5 && f.bytes) {
-      // Config: of its settings, only the LoRa ones (6).
-      const lora = first(fields(f.bytes), 6)?.bytes;
-      if (!lora) return { kind: 'other' };
-      const set = fields(lora);
-      // tx_enabled (9) is false unless set, and the Meshtastic app sets it when it sets the region.
-      return { kind: 'lora', region: first(set, 7)?.value ?? 0, hopLimit: first(set, 8)?.value ?? 0, txEnabled: first(set, 9)?.value === 1 };
+      // Config: of its settings, the LoRa ones (6), and those that say who and where it is.
+      const config = fields(f.bytes);
+      const lora = first(config, 6)?.bytes;
+      const device = first(config, 1)?.bytes;
+      const position = first(config, 2)?.bytes;
+      if (lora) {
+        const set = fields(lora);
+        // tx_enabled (9) is false unless set, and the Meshtastic app sets it when it sets the region.
+        return { kind: 'lora', region: first(set, 7)?.value ?? 0, hopLimit: first(set, 8)?.value ?? 0, txEnabled: first(set, 9)?.value === 1 };
+      }
+      if (device) return { kind: 'device', bytes: device.slice(), role: first(fields(device), 1)?.value ?? 0 };
+      if (position) {
+        const set = fields(position);
+        return { kind: 'position', bytes: position.slice(), gpsMode: first(set, 13)?.value ?? 0, fixed: first(set, 3)?.value === 1 };
+      }
+      return { kind: 'other' };
     }
     if (f.field === 7 && f.wire === 0) return { kind: 'configComplete', id: f.value };
     if (f.field === 8) return { kind: 'rebooted' };
@@ -200,6 +227,64 @@ export function readFromRadio(bytes: Uint8Array): FromRadio {
     }
   }
   return { kind: 'other' };
+}
+
+// The radio's own settings.
+
+// A message as it was, but with a varint field set anew: left out when 0, as protobuf has it.
+function withVarint(bytes: Uint8Array, field: number, value: number): Uint8Array {
+  const reader = new Reader(bytes);
+  const out: number[] = [];
+  while (!reader.done()) {
+    const start = reader.position();
+    const f = reader.next();
+    if (f.field !== field) for (const b of bytes.subarray(start, reader.position())) out.push(b);
+  }
+  uintField(out, field, value);
+  return Uint8Array.from(out);
+}
+
+/** A setting for the phone's own radio, in an AdminMessage. */
+export type Admin = { begin: true } | { commit: true } | { removeFixedPosition: true } | { device: Uint8Array } | { position: Uint8Array };
+
+/**
+ * The radio's device and position settings (Config.device, Config.position, as it sent them) made
+ * quiet: the role that says nothing of itself unless asked (Client hidden), its GPS off and no fixed
+ * position, the rest as it was. The settings to send, or null when it is quiet already.
+ */
+export function quieted(device: Uint8Array, position: Uint8Array): Admin[] | null {
+  const role = first(fields(device), 1)?.value ?? 0;
+  const set = fields(position);
+  const gps = first(set, 13)?.value ?? 0;
+  const fixed = first(set, 3)?.value === 1;
+  if (role === CLIENT_HIDDEN && gps !== GPS_ENABLED && !fixed) return null;
+  const quietPosition = withVarint(withVarint(position, 13, gps === GPS_NOT_PRESENT ? GPS_NOT_PRESENT : 0), 3, 0);
+  // Position first: the role's own defaults, set with it, then stay.
+  return [...(fixed ? [{ removeFixedPosition: true as const }] : []), { position: quietPosition }, { device: withVarint(device, 1, CLIENT_HIDDEN) }];
+}
+
+/**
+ * The settings to put back on a radio made quiet, as they were before (Config.device and
+ * Config.position). A fixed position was removed with its place, so it stays off: it is set again
+ * in the Meshtastic app.
+ */
+export function restored(device: Uint8Array, position: Uint8Array): Admin[] {
+  // Position first, as the role, set back, may change it.
+  return [{ position: withVarint(position, 3, 0) }, { device }];
+}
+
+/** ToRadio with a setting for the phone's own radio, node `node`, which takes it with no key. */
+export function toRadioAdmin(node: number, id: number, admin: Admin): Uint8Array {
+  const message: number[] = [];
+  if ('begin' in admin) uintField(message, 64, 1);
+  else if ('commit' in admin) uintField(message, 65, 1);
+  else if ('removeFixedPosition' in admin) uintField(message, 42, 1);
+  else {
+    const config: number[] = [];
+    bytesField(config, 'device' in admin ? 1 : 2, 'device' in admin ? admin.device : admin.position);
+    bytesField(message, 34, config);
+  }
+  return toRadio(node, { id, channel: 0, portnum: ADMIN_APP, payload: Uint8Array.from(message), hopLimit: 0, wantAck: false });
 }
 
 // The other side, for the checks: what the radio sends to the phone.
@@ -237,6 +322,40 @@ export const fromRadio = {
     bytesField(out, 5, config);
     return Uint8Array.from(out);
   },
+  /** Config.device with a role and node_info_broadcast_secs, and Config.position with GPS mode and a fixed position. */
+  device(role: number, nodeInfoSecs = 10800): Uint8Array {
+    const device: number[] = [];
+    uintField(device, 1, role);
+    uintField(device, 7, nodeInfoSecs);
+    const config: number[] = [];
+    bytesField(config, 1, device);
+    const out: number[] = [];
+    bytesField(out, 5, config);
+    return Uint8Array.from(out);
+  },
+  position(gpsMode: number, fixed: boolean, broadcastSecs = 900): Uint8Array {
+    const position: number[] = [];
+    uintField(position, 1, broadcastSecs);
+    if (fixed) uintField(position, 3, 1);
+    uintField(position, 13, gpsMode);
+    const config: number[] = [];
+    bytesField(config, 2, position);
+    const out: number[] = [];
+    bytesField(out, 5, config);
+    return Uint8Array.from(out);
+  },
+  /** FromRadio with Config.device (1) or Config.position (2) as these bytes say it. */
+  config(which: 1 | 2, bytes: Uint8Array): Uint8Array {
+    const config: number[] = [];
+    bytesField(config, which, bytes);
+    const out: number[] = [];
+    bytesField(out, 5, config);
+    return Uint8Array.from(out);
+  },
+  /** A varint field of a message, 0 when left out. */
+  field(bytes: Uint8Array, field: number): number {
+    return first(fields(bytes), field)?.value ?? 0;
+  },
   configComplete(id: number): Uint8Array {
     const out: number[] = [];
     key(out, 7, 0);
@@ -266,13 +385,14 @@ export const fromRadio = {
     return Uint8Array.from(out);
   },
   /** What the phone wrote: a want_config_id, or a packet's id and data. */
-  read(toRadio: Uint8Array): { wantConfig: number } | { id: number; channel: number; portnum: number; payload: Uint8Array; hopLimit: number; wantAck: boolean } {
+  read(toRadio: Uint8Array): { wantConfig: number } | { to: number; id: number; channel: number; portnum: number; payload: Uint8Array; hopLimit: number; wantAck: boolean } {
     const sent = fields(toRadio);
     const want = first(sent, 3);
     if (want) return { wantConfig: want.value };
     const packet = fields(first(sent, 1)?.bytes ?? new Uint8Array(0));
     const data = fields(first(packet, 4)?.bytes ?? new Uint8Array(0));
     return {
+      to: first(packet, 2)?.value ?? 0,
       id: first(packet, 6)?.value ?? 0,
       channel: first(packet, 3)?.value ?? 0,
       portnum: first(data, 1)?.value ?? 0,
@@ -280,5 +400,18 @@ export const fromRadio = {
       hopLimit: first(packet, 9)?.value ?? 0,
       wantAck: first(packet, 10)?.value === 1,
     };
+  },
+  /** What an AdminMessage the phone wrote sets: as `Admin`, the configs' role, GPS mode and fixed position read. */
+  admin(payload: Uint8Array): { begin?: true; commit?: true; removeFixedPosition?: true; role?: number; gpsMode?: number; fixed?: boolean; device?: Uint8Array; position?: Uint8Array } {
+    const message = fields(payload);
+    if (first(message, 64)) return { begin: true };
+    if (first(message, 65)) return { commit: true };
+    if (first(message, 42)) return { removeFixedPosition: true };
+    const config = fields(first(message, 34)?.bytes ?? new Uint8Array(0));
+    const device = first(config, 1)?.bytes;
+    if (device) return { device: device.slice(), role: first(fields(device), 1)?.value ?? 0 };
+    const position = first(config, 2)?.bytes ?? new Uint8Array(0);
+    const set = fields(position);
+    return { position: position.slice(), gpsMode: first(set, 13)?.value ?? 0, fixed: first(set, 3)?.value === 1 };
   },
 };

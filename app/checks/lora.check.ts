@@ -12,8 +12,8 @@ import { test } from 'node:test';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
-import { Lora, piecesOf, type LoraTiming } from '../lib/lora';
-import { CONFIG_ONLY, fromRadio, PRIVATE_APP, toRadioPacket } from '../lib/meshtastic';
+import { keepRadio, Lora, piecesOf, type LoraTiming, type RadioStore, type SavedRadio } from '../lib/lora';
+import { ADMIN_APP, CONFIG_ONLY, fromRadio, PRIVATE_APP, quieted, readFromRadio, toRadioPacket, type FromRadio } from '../lib/meshtastic';
 import { framesOf, Nearby, NoWayError, TooLargeForLoraError } from '../lib/nearby';
 import { files } from './files-memory';
 
@@ -42,7 +42,8 @@ const FAST: LoraTiming = { reconnectAfter: 30, answerWithin: 2000, retryAfter: 3
 /**
  * A Meshtastic radio as the phone sees it over Bluetooth: it tells its settings when asked, says
  * whether it took each packet (`answer`, Meshtastic's error code, or null for no word), and the
- * radios on the same air hear what it sends.
+ * radios on the same air hear what it sends. Given settings, it restarts, as Meshtastic radios do
+ * once the settings are committed; `takesSettings` false, it restarts without them.
  */
 class Radio {
   readonly air: Radio[];
@@ -52,6 +53,12 @@ class Radio {
   connects = 0;
   written: { id: number; payload: Uint8Array }[] = [];
   answer: (id: number) => number | null = () => 0;
+  // Its own settings, as Config.device and Config.position say them.
+  device = fromRadio.device(0, 900);
+  position = fromRadio.position(1, true, 600);
+  admin: ReturnType<typeof fromRadio.admin>[] = [];
+  takesSettings = true;
+  private staged: { device?: Uint8Array; position?: Uint8Array; removeFixed?: boolean } = {};
 
   constructor(air: Radio[], node: number) {
     this.air = air;
@@ -82,10 +89,17 @@ class Radio {
           fromRadio.nodeInfo(this.node, `Radio ${this.node}`, 'R'),
           fromRadio.nodeInfo(77, 'Someone else', 'S'),
           fromRadio.lora(3, 3),
+          this.device,
+          this.position,
           fromRadio.configComplete(said.wantConfig),
         ])
           lora.meshData(reply);
       }, 1);
+      return true;
+    }
+    if (said.portnum === ADMIN_APP) {
+      assert.equal(said.to, this.node, 'settings go to the own radio only');
+      this.settings(fromRadio.admin(said.payload));
       return true;
     }
     assert.equal(said.portnum, PRIVATE_APP);
@@ -99,6 +113,33 @@ class Radio {
     }, 1);
     return true;
   }
+
+  private settings(admin: ReturnType<typeof fromRadio.admin>) {
+    this.admin.push(admin);
+    if (admin.begin) this.staged = {};
+    else if (admin.removeFixedPosition) this.staged.removeFixed = true;
+    else if (admin.device) this.staged.device = admin.device;
+    else if (admin.position) this.staged.position = admin.position;
+    else if (admin.commit) {
+      if (this.takesSettings) {
+        if (this.staged.device) this.device = fromRadio.config(1, this.staged.device);
+        if (this.staged.position) this.position = fromRadio.config(2, this.staged.position);
+      }
+      // It restarts: the phone's Bluetooth link drops, and it is back a moment later.
+      setTimeout(() => {
+        this.up = false;
+        this.lora?.meshState('down', 'The radio is out of reach.');
+      }, 1);
+    }
+  }
+}
+
+// What a radio's own settings say (FromRadio with Config.device or Config.position).
+const deviceOf = (b: Uint8Array) => readFromRadio(b) as Extract<FromRadio, { kind: 'device' }>;
+const roleOf = (b: Uint8Array) => deviceOf(b).role;
+function positionOf(b: Uint8Array) {
+  const position = readFromRadio(b) as Extract<FromRadio, { kind: 'position' }>;
+  return { gpsMode: position.gpsMode, fixed: position.fixed, broadcastSecs: fromRadio.field(position.bytes, 1) };
 }
 
 /** A phone with a LoRa radio: its nearby messages over it, and what came. */
@@ -145,7 +186,7 @@ test('a radio turned on links, tells its name and region, and is one slow link',
   assert.equal(a.lora.state().status, 'connecting');
   await until('the link', () => a.links.length === 1);
   assert.equal(a.links[0], 'lora-0a0b0c0d');
-  assert.deepEqual(a.lora.state(), { status: 'up', detail: '', address: 'AA:BB', name: 'Radio 168496141', region: 3, transmits: true, waiting: 0 });
+  assert.deepEqual(a.lora.state(), { status: 'up', detail: '', address: 'AA:BB', name: 'Radio 168496141', region: 3, transmits: true, waiting: 0, notQuiet: false });
   // A slow link is not a phone nearby.
   assert.equal(a.nearby.count(), 0);
   // Gone, it links again a while later, as the same link.
@@ -350,4 +391,78 @@ test('a slow link gets nothing carried for others, and says when something is to
   only.linkUp('lora-00000001');
   await assert.rejects(only.deliver('someone', [randomBytes(4154)], null, null, true), TooLargeForLoraError);
   await assert.rejects(only.deliver('someone', [randomBytes(300)], null, null, false), NoWayError);
+});
+
+/** The radio set, kept in memory as the phone's secure store would. */
+function memoryStore(radio: SavedRadio): RadioStore & { radio: SavedRadio } {
+  const store = {
+    radio,
+    get: async () => store.radio,
+    set: async (next: SavedRadio) => {
+      store.radio = JSON.parse(JSON.stringify(next)) as SavedRadio;
+    },
+  };
+  return store;
+}
+
+test('Erevos keeps the radio from saying its name and where it is, unless it shares, and puts its settings back', async () => {
+  const air: Radio[] = [];
+  const a = phone(air, 1);
+  const store = memoryStore({ address: 'A', name: 'Radio 1' });
+  a.lora.onLink(() => void keepRadio(a.lora, store));
+  a.lora.turnOn('A');
+  // Linked, it is set quiet, restarts, and links again quiet.
+  await until('quiet', () => roleOf(a.radio.device) === 8 && a.links.length === 2 && a.lora.state().status === 'up');
+  assert.deepEqual(
+    a.radio.admin.map((x) => Object.keys(x).filter((k) => k !== 'device' && k !== 'position' && x[k as keyof typeof x] !== undefined)),
+    [['begin'], ['removeFixedPosition'], ['gpsMode', 'fixed'], ['role'], ['commit']],
+  );
+  assert.deepEqual(positionOf(a.radio.position), { gpsMode: 0, fixed: false, broadcastSecs: 600 });
+  assert.equal(fromRadio.field(deviceOf(a.radio.device).bytes, 7), 900, 'the rest stays as it was');
+  // What it was is kept, to put back.
+  assert.ok(store.radio.kept);
+  assert.equal(a.lora.state().notQuiet, false);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(a.radio.admin.length, 5, 'quiet already: nothing more');
+
+  // Sharing: its settings from before come back, once; the fixed position was removed with its place.
+  store.radio = { ...store.radio, shares: true };
+  await keepRadio(a.lora, store);
+  await until('back as it was', () => roleOf(a.radio.device) === 0 && a.links.length === 3 && a.lora.state().status === 'up');
+  assert.deepEqual(positionOf(a.radio.position), { gpsMode: 1, fixed: false, broadcastSecs: 600 });
+  assert.equal(store.radio.kept, undefined);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(a.radio.admin.length, 5 + 4);
+  a.lora.turnOff();
+});
+
+test('a radio quiet already is left as it is, and one that never takes the settings is tried twice', async () => {
+  const quiet = { device: deviceOf(fromRadio.device(8)).bytes, position: (readFromRadio(fromRadio.position(2, false)) as Extract<FromRadio, { kind: 'position' }>).bytes };
+  assert.equal(quieted(quiet.device, quiet.position), null);
+  assert.ok(quieted(quiet.device, (readFromRadio(fromRadio.position(1, false)) as Extract<FromRadio, { kind: 'position' }>).bytes), 'GPS on');
+  const air: Radio[] = [];
+  const a = phone(air, 1);
+  a.radio.device = fromRadio.device(8);
+  a.radio.position = fromRadio.position(2, false);
+  const store = memoryStore({ address: 'A', name: 'Radio 1' });
+  a.lora.onLink(() => void keepRadio(a.lora, store));
+  a.lora.turnOn('A');
+  await until('the link', () => a.links.length === 1);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(a.radio.admin.length, 0);
+  assert.equal(store.radio.kept, undefined);
+  a.lora.turnOff();
+
+  const b = phone(air, 2);
+  b.radio.takesSettings = false;
+  const other = memoryStore({ address: 'B', name: 'Radio 2' });
+  b.lora.onLink(() => void keepRadio(b.lora, other));
+  b.lora.turnOn('B');
+  await until('three links', () => b.links.length === 3);
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.equal(b.radio.admin.filter((x) => x.commit).length, 2);
+  assert.equal(b.links.length, 3);
+  assert.equal(b.lora.state().notQuiet, true, 'the LoRa screen says so');
+  b.lora.turnOff();
+  assert.equal(b.lora.state().notQuiet, false);
 });

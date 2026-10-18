@@ -1,6 +1,6 @@
-import { CONFIG_ONLY, MAX_PAYLOAD, PRIVATE_APP, readFromRadio, toRadioPacket, wantConfig } from './meshtastic';
+import { CONFIG_ONLY, MAX_PAYLOAD, PRIVATE_APP, quieted, readFromRadio, restored, toRadioAdmin, toRadioPacket, wantConfig, type Admin } from './meshtastic';
 import { framesOf, SLOW_PREFIX } from './nearby';
-import { fromBase64, randomBytes } from './crypto';
+import { fromBase64, randomBytes, toBase64 } from './crypto';
 
 // Erevos over a Meshtastic LoRa radio linked to the phone by Bluetooth (modules/erevos-radio), for
 // when there is no internet and no phone near: one slow link of lib/nearby.ts, to every Erevos
@@ -14,6 +14,11 @@ import { fromBase64, randomBytes } from './crypto';
 //
 // The radio stays linked while Erevos runs, chat open or not, until it is turned off. What comes
 // while no chat is open is kept a while for the next one.
+//
+// Unless asked to let it (`shares`), Erevos keeps the radio from saying its own name and where it
+// is, as Meshtastic radios do now and then to every radio in reach: it sets its role to the one
+// that says nothing of itself unless asked, turns its GPS off and removes a fixed position, and
+// keeps what they were to put back (keepRadio).
 
 /** The link to a radio, as the phone's Bluetooth does it (modules/erevos-radio). */
 export type Mesh = {
@@ -25,8 +30,20 @@ export type Mesh = {
 
 export type LoraStatus = 'off' | 'connecting' | 'starting' | 'up' | 'down';
 
-/** How the radio is, for the LoRa screen. `region` is Meshtastic's code (0 is not set yet), null until read. */
-export type LoraState = { status: LoraStatus; detail: string; address: string; name: string; region: number | null; transmits: boolean; waiting: number };
+/**
+ * How the radio is, for the LoRa screen. `region` is Meshtastic's code (0 is not set yet), null
+ * until read. `notQuiet`: it did not keep the settings that stop it saying its name and where it is.
+ */
+export type LoraState = {
+  status: LoraStatus;
+  detail: string;
+  address: string;
+  name: string;
+  region: number | null;
+  transmits: boolean;
+  waiting: number;
+  notQuiet: boolean;
+};
 
 /** How long things take, milliseconds; shorter in the checks. */
 export type LoraTiming = { reconnectAfter: number; answerWithin: number; retryAfter: number; dropAfter: number };
@@ -49,6 +66,8 @@ const MAX_KEPT = 50;
 const KEPT_FOR = 6 * 3600_000;
 // Meshtastic's error code for a packet that went to no radio, as one for this radio only would.
 const SHOULD_RELEASE = 35;
+
+const RESTARTING = 'The radio restarts with its new settings, and links again.';
 
 // A frame of nearby's with one whole packet (framesOf in lib/nearby.ts). Only those go over LoRa.
 const WHOLE = /^EVN1:[0-9a-f]{8}:0:1:([A-Za-z0-9+/]+={0,2})$/;
@@ -86,6 +105,9 @@ export class Lora {
   private name = '';
   private region: number | null = null;
   private transmits = true;
+  // Its settings that say who and where it is, as it sent them (Config.device, Config.position).
+  private device: Uint8Array | null = null;
+  private position: Uint8Array | null = null;
   // Pieces to send, oldest first, and the one the radio is asked to send now.
   private queue: { piece: Uint8Array; at: number }[] = [];
   private sending: { id: number; timer: Timer } | null = null;
@@ -93,6 +115,9 @@ export class Lora {
   private full = false;
   // Refused a packet as the queue was full: the link is told again once there is room.
   private refused = false;
+  // Given new settings, after which it restarts.
+  private restarting = false;
+  private notQuiet = false;
   private reconnect: Timer | null = null;
   private readonly gathering = new Map<string, { pieces: (Uint8Array | null)[]; at: number }>();
   private kept: { text: string; at: number }[] = [];
@@ -138,6 +163,9 @@ export class Lora {
     this.node = 0;
     this.name = '';
     this.region = null;
+    this.device = null;
+    this.position = null;
+    this.notQuiet = false;
   }
 
   private idle() {
@@ -157,8 +185,8 @@ export class Lora {
   }
 
   state(): LoraState {
-    const { status, detail, address, name, region, transmits } = this;
-    return { status, detail, address, name, region, transmits, waiting: this.queue.length };
+    const { status, detail, address, name, region, transmits, notQuiet } = this;
+    return { status, detail, address, name, region, transmits, waiting: this.queue.length, notQuiet };
   }
 
   /** The slow link to the mesh (lib/nearby.ts), while the radio is linked. */
@@ -169,6 +197,33 @@ export class Lora {
   // The link's id, once the radio said its node number: it stays the same for this radio.
   private linkId(): string | null {
     return this.node ? `${SLOW_PREFIX}${this.node.toString(16).padStart(8, '0')}` : null;
+  }
+
+  /** The radio's device and position settings, as it sent them, while it is linked. */
+  ownSettings(): { device: Uint8Array; position: Uint8Array } | null {
+    return this.status === 'up' && this.device && this.position ? { device: this.device, position: this.position } : null;
+  }
+
+  /**
+   * Sets the radio's own settings, together: it restarts with them if it needs to, and links again.
+   * False when it is not linked.
+   */
+  applySettings(settings: Admin[]): boolean {
+    if (this.status !== 'up' || settings.length === 0) return false;
+    for (const admin of [{ begin: true } as const, ...settings, { commit: true } as const]) {
+      if (!this.mesh.write(toRadioAdmin(this.node, newId(), admin))) return false;
+    }
+    this.restarting = true;
+    this.detail = RESTARTING;
+    this.changed();
+    return true;
+  }
+
+  /** Says whether the radio kept the settings that keep it quiet (keepRadio), for the LoRa screen. */
+  setNotQuiet(on: boolean): void {
+    if (this.notQuiet === on) return;
+    this.notQuiet = on;
+    this.changed();
   }
 
   /** Calls `listener` when the radio changes. Returns how to stop. */
@@ -267,7 +322,8 @@ export class Lora {
       this.mesh.write(wantConfig(CONFIG_ONLY));
     } else {
       this.status = 'down';
-      this.detail = detail;
+      this.detail = this.restarting ? RESTARTING : detail;
+      this.restarting = false;
       this.idle();
       if (again && !this.reconnect) this.reconnect = setTimeout(() => this.connect(), this.timing.reconnectAfter);
     }
@@ -289,9 +345,15 @@ export class Lora {
     } else if (said.kind === 'lora') {
       this.region = said.region;
       this.transmits = said.txEnabled;
+    } else if (said.kind === 'device') {
+      this.device = said.bytes;
+    } else if (said.kind === 'position') {
+      this.position = said.bytes;
     } else if (said.kind === 'configComplete') {
       if (this.status !== 'starting' || said.id !== CONFIG_ONLY) return;
       this.status = 'up';
+      this.detail = '';
+      this.restarting = false;
       this.changed();
       this.linkUp();
       this.pump();
@@ -353,4 +415,54 @@ export class Lora {
     if (this.kept.length > MAX_KEPT) this.kept.shift();
     this.textListeners.forEach((listener) => listener(link, text));
   }
+}
+
+/**
+ * A Meshtastic radio by its Bluetooth address, and the name it went by when found. `shares`: it
+ * says its own name and where it is, as Meshtastic does; otherwise Erevos keeps it quiet, and
+ * `kept` holds its device and position settings (base64) from before, to put back.
+ */
+export type SavedRadio = { address: string; name: string; shares?: boolean; kept?: { device: string; position: string } };
+
+/** Where the radio set is kept: the phone's secure store (lib/radio.ts). */
+export type RadioStore = { get(): Promise<SavedRadio | null>; set(radio: SavedRadio): Promise<void> };
+
+/** Gives the radio back the settings it had (`kept`). False when it is not linked. */
+export function putBack(lora: Lora, kept: { device: string; position: string }): boolean {
+  return lora.applySettings(restored(fromBase64(kept.device), fromBase64(kept.position)));
+}
+
+// Times in a row the radio was set quiet, and still was not when it linked again: then Erevos stops.
+const quietTries = new WeakMap<Lora, number>();
+const MAX_QUIET_TRIES = 2;
+
+/**
+ * Sets the radio linked as the one kept in `store` should be: quiet, keeping what it was to put
+ * back, unless it shares; sharing, with its settings from before put back, once. Called each
+ * time it links.
+ */
+export async function keepRadio(lora: Lora, store: RadioStore): Promise<void> {
+  const radio = await store.get();
+  const own = lora.ownSettings();
+  if (!radio || !own || radio.address !== lora.state().address) return;
+  if (radio.shares) {
+    quietTries.delete(lora);
+    lora.setNotQuiet(false);
+    if (radio.kept && putBack(lora, radio.kept)) await store.set({ ...radio, kept: undefined });
+    return;
+  }
+  const quiet = quieted(own.device, own.position);
+  if (!quiet) {
+    quietTries.delete(lora);
+    lora.setNotQuiet(false);
+    return;
+  }
+  const tries = (quietTries.get(lora) ?? 0) + 1;
+  quietTries.set(lora, tries);
+  if (tries > MAX_QUIET_TRIES) {
+    lora.setNotQuiet(true);
+    return;
+  }
+  if (!radio.kept) await store.set({ ...radio, kept: { device: toBase64(own.device), position: toBase64(own.position) } });
+  lora.applySettings(quiet);
 }

@@ -14,7 +14,7 @@ import {
   stopRadio,
 } from '../modules/erevos-radio';
 import { fromBase64, toBase64 } from './crypto';
-import { Lora } from './lora';
+import { keepRadio, Lora, putBack, type RadioStore, type SavedRadio } from './lora';
 import { SLOW_PREFIX } from './nearby';
 import { secureDelete, secureGet, secureSet } from './secure';
 import { SHELL, shellFetch } from './shell';
@@ -40,8 +40,7 @@ export const HAS_LINKS = HAS_RADIO || SHELL === 'electron';
 /** The phone's Meshtastic LoRa radio, off unless one is set (app/lora.tsx). */
 export const lora = new Lora({ connect: meshConnect, disconnect: meshDisconnect, write: (bytes) => meshSend(toBase64(bytes)) });
 
-/** A Meshtastic radio by its Bluetooth address, and the name it went by when found. */
-export type SavedRadio = { address: string; name: string };
+export type { SavedRadio };
 
 const LORA_KEY = 'erevos.lora';
 const foundListeners = new Set<(radio: SavedRadio) => void>();
@@ -60,19 +59,53 @@ export function canLora(): boolean {
 /** The radio set for LoRa, or null when LoRa is off. */
 export async function savedRadio(): Promise<SavedRadio | null> {
   const value = JSON.parse((await secureGet(LORA_KEY)) ?? 'null') as Partial<SavedRadio> | null;
-  return typeof value?.address === 'string' ? { address: value.address, name: typeof value.name === 'string' ? value.name : '' } : null;
+  if (typeof value?.address !== 'string') return null;
+  const kept = typeof value.kept?.device === 'string' && typeof value.kept.position === 'string' ? { kept: value.kept } : {};
+  return { address: value.address, name: typeof value.name === 'string' ? value.name : '', shares: value.shares === true, ...kept };
 }
 
-/** Sets the radio for LoRa and links to it, or with null turns LoRa off. */
+// The radio set, in the phone's secure store.
+const store: RadioStore = {
+  get: savedRadio,
+  set: (radio) => secureSet(LORA_KEY, JSON.stringify(radio)),
+};
+
+/**
+ * Sets the radio for LoRa and links to it, or with null turns LoRa off: then a radio linked gets
+ * back the settings Erevos changed, first.
+ */
 export async function setRadio(radio: SavedRadio | null): Promise<void> {
   if (radio) {
     await secureSet(LORA_KEY, JSON.stringify(radio));
     lora.turnOn(radio.address);
-  } else {
-    lora.turnOff();
-    await secureDelete(LORA_KEY);
+    return;
   }
+  const was = await savedRadio().catch(() => null);
+  await secureDelete(LORA_KEY);
+  if (was?.kept && putBack(lora, was.kept)) {
+    // Its Bluetooth sends them before it lets go.
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+  lora.turnOff();
 }
+
+/**
+ * Lets the radio say its own name and where it is, as Meshtastic does, putting back its settings
+ * from before; or keeps it quiet again.
+ */
+export async function setSharing(on: boolean): Promise<void> {
+  const radio = await savedRadio();
+  if (!radio) return;
+  await store.set({ ...radio, shares: on });
+  await keepRadio(lora, store);
+}
+
+// Each time the radio links, it is set as it should be: quiet, unless it shares.
+lora.onLink(() => {
+  keepRadio(lora, store).catch(() => {
+    // Tried again the next time it links.
+  });
+});
 
 /** Links to the radio set, if any, and not linked yet: LoRa stays on from then on while Erevos runs. */
 export function resumeLora(): void {

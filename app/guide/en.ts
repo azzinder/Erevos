@@ -120,13 +120,19 @@ radio, and on Android only.
 - **Marks:** **✓✓** comes with their next message, as marks alone do not go over LoRa.
 - **To every radio in reach:** each message is heard by every radio around, and passed on by the Meshtastic radios, as
   Meshtastic does. Every Erevos tries it; only your contact's opens it. Nothing is carried for others over LoRa.
+- **Its name and where it is:** Meshtastic radios say their name to every radio in reach now and then, and where they
+  are if they have GPS or a fixed position, in the clear. Erevos keeps yours from doing so (**Kept quiet**): it sets
+  its role to Client hidden, turns its GPS off and removes a fixed position. It still answers a radio that asks its
+  name, so give it a name that says nothing of you, in the Meshtastic app. **Said to all in reach** puts its role and
+  GPS back, after a warning; a fixed position is set again in the Meshtastic app. If the radio does not keep the
+  settings, the LoRa screen says so.
 - **It stays linked** while Erevos runs, and links again by itself when the radio comes back in reach. **Turn LoRa
-  off** unlinks it and forgets it. Hidden chats never go over LoRa.
+  off** gives the radio back its role and GPS, if it is linked, then unlinks it and forgets it. Hidden chats never go
+  over LoRa.
 
-> A LoRa radio is heard kilometres away, and its signal can be traced to where it is. What Erevos sends stays
-> end-to-end encrypted, but anyone with a radio can tell that yours sends, when and how much. Your radio also says its
-> own name to every radio in reach, and where it is if it has GPS or a fixed position, as Meshtastic does: turn those
-> off in the Meshtastic app if you do not want that.
+> A LoRa radio is heard kilometres away, and its signal can be traced to where it is, quiet or not. What Erevos sends
+> stays end-to-end encrypted, but anyone with a radio can tell that yours sends, when and how much. With
+> **Said to all in reach**, anyone with a radio can also read its name and where it is.
 
 ## Chat through a relay {#relay}
 
@@ -659,7 +665,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | Wi-Fi Direct. |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept in memory only, three days at most. Hidden chats are never carried. | Carried messages that stay when Erevos closes. |
-| **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Your radio says its name, and where it is if it knows, as Meshtastic does, unless turned off in the Meshtastic app. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name and position from Erevos. |
+| **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | MMS, and two SIM cards. |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
@@ -679,8 +685,8 @@ Erevos says plainly what it protects and what it does not, yet.
 End-to-end encryption is here, through the relay and over the nearby link, and most of what follows is built on it.
 
 - **More ways to stay in touch:** Wi-Fi Direct, receiving while Erevos is closed, and ways around censorship (Tor bridges).
-  - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: setting the radio's name and position
-    from Erevos.
+  - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: photos and voice messages that wait,
+    marked in the chat, while LoRa is the only way.
   - **SMS:** Erevos as the SMS app is here, see [SMS](#sms). Next: MMS and two SIM cards.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
 - **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a
