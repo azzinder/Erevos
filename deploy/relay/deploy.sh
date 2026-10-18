@@ -4,19 +4,21 @@
 #
 #   deploy/relay/deploy.sh user@server relay.example.org
 #
+# Leave out the domain to use <ip-with-dashes>.sslip.io.
+#
 # The server user must be root or able to use sudo.
 set -eu
 
 target=${1:-}
-domain=${2:-}
+domain=${2:-auto}
 case $domain in
 '' | *[!A-Za-z0-9.-]*)
-	echo "usage: deploy/relay/deploy.sh <user@server> <domain>" >&2
+	echo "usage: deploy/relay/deploy.sh <user@server> [domain]" >&2
 	exit 2
 	;;
 esac
 if [ -z "$target" ]; then
-	echo "usage: deploy/relay/deploy.sh <user@server> <domain>" >&2
+	echo "usage: deploy/relay/deploy.sh <user@server> [domain]" >&2
 	exit 2
 fi
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)

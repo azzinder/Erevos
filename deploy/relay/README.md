@@ -38,6 +38,21 @@ This copies the source to the server and runs `install.sh` there, which
 installs Caddy and Rust, builds the relay, creates the token and starts both
 services. Run it again to update. The token and the queues are kept.
 
+Without a domain, leave it out: the server then uses
+`<ip-with-dashes>.sslip.io` by itself.
+
+### From a phone, with no computer
+
+You need a way into the server's shell (an SSH app, or the provider's web
+console) and a GitHub token that can read this repository: on GitHub,
+Settings, Developer settings, Fine-grained tokens, Generate new token, only
+this repository, Contents read-only, expiring tomorrow. Then, as root on the
+server, paste this; it asks for the token without showing it:
+
+    read -rp 'GitHub token: ' -s t; echo; curl -fsSL -H "Authorization: Bearer $t" https://api.github.com/repos/azzinder/erevos/tarball/main -o /root/erevos.tgz && rm -rf /root/erevos-relay-src && mkdir /root/erevos-relay-src && tar -xzf /root/erevos.tgz -C /root/erevos-relay-src --strip-components=1 && sh /root/erevos-relay-src/deploy/relay/install.sh; unset t
+
+Delete the token on GitHub afterwards. Paste the same line again to update.
+
 Already on the server with the source? Run `sudo sh deploy/relay/install.sh
 relay.example.org` from the top of it instead.
 
