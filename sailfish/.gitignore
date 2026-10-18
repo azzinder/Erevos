@@ -1,0 +1,9 @@
+web/
+icons/
+RPMS/
+*.o
+Makefile
+/erevos
+moc_*
+.qmake.stash
+documentation.list

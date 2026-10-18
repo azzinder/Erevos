@@ -530,6 +530,30 @@ send changed code. Erevos does not take that code on trust:
 - **Voice messages** recorded on an iPhone are AAC; they play everywhere.
 - **Apple** makes Safari and could change it, as with any app on an iPhone.
 
+## On Sailfish OS {#sailfish}
+
+On a Sailfish OS phone Erevos is an app of its own: the same app as in the browser, shown by Sailfish's own browser
+engine inside a Sailfish window, with its code installed with the app and not fetched from a server. It chats through a
+relay, end-to-end encrypted as on the phone, and keeps its contacts, messages and settings sealed the same way.
+
+1. Allow apps from outside the Jolla Store: **Settings → Untrusted software → Allow untrusted software**.
+2. Copy \`erevos-<version>.aarch64.rpm\` to the phone (Downloads) and tap it in **Files**, then **Install**. From a
+   terminal (Developer mode) it is \`pkcon install-local erevos-<version>.aarch64.rpm\`. Needs Sailfish OS 5 in its
+   64-bit (aarch64) version.
+3. Set a password lock (**Lock and second password**). See below why it matters here.
+4. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay).
+
+- **What only Android does:** the nearby link (Bluetooth and Wi-Fi Aware) and SMS. The rest is the same: spaces and
+  the second password, hidden chats, voice messages, imported chats and backups.
+- **Where it keeps things:** in \`~/.local/share/erevos\` on the phone, sealed as on the phone. Sailfish has no
+  keyring for apps, so the keystore is kept there as it is, readable by your user only: the password lock is what
+  seals it.
+- **Backups** go to \`Documents/Erevos\` on the phone, by hand or every day; copy them from there to a memory card or
+  another device. **Save** puts a photo or file in Downloads.
+- **Only while it runs:** when Erevos is closed, messages wait on the relay until it opens.
+- **Tested so far** on Sailfish's browser engine (Gecko 91) on a computer, chatting with a browser through a relay.
+  Not yet on a Sailfish phone.
+
 ## The test screens {#tests}
 
 Two screens in the home screen's menu are there to test the connections, step by step.
@@ -583,8 +607,9 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   moves to a server by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).
-- **More systems:** iOS and Sailfish OS, and more than one device for the same person. Linux and macOS are here, see
-  [On a computer](#desktop), and so are backups, see [Backups](#backup).
+- **More systems:** more than one device for the same person. Linux and macOS are here, see
+  [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
+  [On Sailfish OS](#sailfish); and so are backups, see [Backups](#backup).
 
 ## Questions {#faq}
 
