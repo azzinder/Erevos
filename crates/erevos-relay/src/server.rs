@@ -61,7 +61,8 @@
 //! connection.
 //!
 //! The WebSocket front end can require a bearer token in the `Authorization`
-//! header (see `serve_ws`). Neither front end speaks TLS: put the WebSocket
+//! header, or, from a browser, which cannot set headers, as a subprotocol (see
+//! `serve_ws`). Neither front end speaks TLS: put the WebSocket
 //! behind a TLS proxy before it leaves the local network.
 //!
 //! Not audited.
@@ -178,7 +179,9 @@ pub fn serve(listener: TcpListener, store: SharedStore) -> io::Result<()> {
 /// Serves WebSocket connections until the listener fails. Each connection gets
 /// its own thread; all share the same store as the TCP front end. With a
 /// `token`, a connection must send `Authorization: Bearer <token>` during the
-/// handshake or it is refused with 401.
+/// handshake, or offer the subprotocols `erevos` and `erevos-token.<token in
+/// hex>` as a browser does, or it is refused with 401. A connection that offers
+/// `erevos` gets it as its subprotocol, which a browser needs to go on.
 pub fn serve_ws(
     listener: TcpListener,
     store: SharedStore,
@@ -205,7 +208,13 @@ fn handle_tcp(mut stream: TcpStream, store: &Shared) -> io::Result<()> {
 #[allow(clippy::result_large_err)]
 fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Result<()> {
     let mut access = Access::All;
-    let check = |request: &Request, response: Response| {
+    let check = |request: &Request, mut response: Response| {
+        if offered_protocols(request).any(|p| p == PROTOCOL) {
+            response.headers_mut().insert(
+                "sec-websocket-protocol",
+                PROTOCOL.parse().expect("a valid header value"),
+            );
+        }
         let path = request.uri().path();
         if path.ends_with(SEALED_PATH) {
             access = Access::Sealed;
@@ -532,13 +541,37 @@ fn to_io(e: impl std::fmt::Display) -> io::Error {
     io::Error::other(e.to_string())
 }
 
+/// The subprotocol the relay answers with, and the prefix of the one carrying
+/// the token in hex.
+const PROTOCOL: &str = "erevos";
+const TOKEN_PROTOCOL: &str = "erevos-token.";
+
+fn offered_protocols(request: &Request) -> impl Iterator<Item = &str> {
+    request
+        .headers()
+        .get_all("sec-websocket-protocol")
+        .into_iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|value| value.split(','))
+        .map(str::trim)
+}
+
 fn is_authorized(request: &Request, expected: &str) -> bool {
     let presented = request
         .headers()
         .get("authorization")
         .and_then(|value| value.to_str().ok());
-    let expected = format!("Bearer {expected}");
-    presented.is_some_and(|presented| constant_time_eq(presented.as_bytes(), expected.as_bytes()))
+    let bearer = format!("Bearer {expected}");
+    if presented.is_some_and(|presented| constant_time_eq(presented.as_bytes(), bearer.as_bytes()))
+    {
+        return true;
+    }
+    let hex: String = expected.bytes().map(|b| format!("{b:02x}")).collect();
+    offered_protocols(request)
+        .filter_map(|p| p.strip_prefix(TOKEN_PROTOCOL))
+        .any(|presented| {
+            constant_time_eq(presented.to_ascii_lowercase().as_bytes(), hex.as_bytes())
+        })
 }
 
 /// Compares without stopping at the first difference, so timing does not show
@@ -688,6 +721,26 @@ mod tests {
             .headers_mut()
             .insert("authorization", "Bearer s3cret".parse().unwrap());
         let (mut ws, _) = tungstenite::connect(right).unwrap();
+        let (recipient, sender) = ws_create(&mut ws);
+        assert_eq!(ws_send(&mut ws, &sender, b"hi"), OK);
+        assert_eq!(ws_receive(&mut ws, &recipient).as_deref(), Some(&b"hi"[..]));
+    }
+
+    #[test]
+    fn a_browser_gives_the_token_as_a_subprotocol() {
+        let addr = start_ws(Some("s3cret"));
+        let offer = |protocols: &str| {
+            let mut request = format!("ws://{addr}").into_client_request().unwrap();
+            request
+                .headers_mut()
+                .insert("sec-websocket-protocol", protocols.parse().unwrap());
+            tungstenite::connect(request)
+        };
+        // "s3cret" in hex is 733363726574.
+        assert!(offer("erevos, erevos-token.6e6f7065").is_err());
+        assert!(offer("erevos").is_err());
+        let (mut ws, response) = offer("erevos, erevos-token.733363726574").unwrap();
+        assert_eq!(response.headers()["sec-websocket-protocol"], "erevos");
         let (recipient, sender) = ws_create(&mut ws);
         assert_eq!(ws_send(&mut ws, &sender, b"hi"), OK);
         assert_eq!(ws_receive(&mut ws, &recipient).as_deref(), Some(&b"hi"[..]));
