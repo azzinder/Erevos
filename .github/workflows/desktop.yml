@@ -8,6 +8,7 @@ name: desktop
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   linux:
@@ -57,8 +58,11 @@ jobs:
           name: desktop-web
           path: desktop/web
 
+  # A Mac minute counts as ten of the free ones, so the Mac build runs only for main, or when
+  # started by hand (Actions, desktop, Run workflow).
   macos:
     needs: linux
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
