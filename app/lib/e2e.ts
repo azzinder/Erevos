@@ -131,7 +131,7 @@ export function fromBase64Url(text: string): Uint8Array {
 }
 
 /** A contact as the chat shows it. `name` is empty until this chat gives one. */
-export type ContactInfo = { identity: string; sender: string; name: string; timer: number };
+export type ContactInfo = { identity: string; sender: string; name: string; timer: number; request: boolean };
 
 export type Received =
   // `timer`: seconds this message lasts once read, 0 for ever. `timerChanged`: the other phone set
@@ -142,6 +142,8 @@ export type Received =
       text: string;
       tag: string;
       added: boolean;
+      // From a contact not accepted yet (see Contact.request).
+      request: boolean;
       erase: Erase | null;
       timer: number;
       timerChanged: boolean;
@@ -218,7 +220,22 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, timer }) => ({ identity, sender, name, timer }));
+    return this.data.contacts.map(({ identity, sender, name, timer, request }) => ({ identity, sender, name, timer, request }));
+  }
+
+  /** Accepts a message request: the chat with them is like any other from now on. */
+  acceptRequest(identity: string): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (contact?.request) await this.save(this.withContact({ ...contact, request: false }));
+    });
+  }
+
+  /** Forgets a contact and every conversation with them. A message they send later is refused. */
+  removeContact(identity: string): Promise<void> {
+    return this.run(async () => {
+      await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity) });
+    });
   }
 
   /**
@@ -261,8 +278,8 @@ export class E2E {
       if (identity === toHex(this.identity)) throw new OwnCodeError();
       const known = this.find(identity);
       if (known) {
-        // Already talking: only where to reach them changes.
-        await this.save(this.withContact({ ...known, sender: code.senderHex }));
+        // Already talking: only where to reach them changes. Adding their link accepts a request.
+        await this.save(this.withContact({ ...known, sender: code.senderHex, request: false }));
         return { identity, added: false };
       }
       const started = await core.startConversation(
@@ -279,6 +296,7 @@ export class E2E {
           name: '',
           timer: 0,
           timerAt: 0,
+          request: false,
         }),
       );
       return { identity, added: true };
@@ -312,7 +330,11 @@ export class E2E {
         fromBase64(contact.conversations[0]),
         encodeMessage({ from, text, tag, erase: text ? null : erase, timer, timerAt, lasts: once, got: tags(got), read: tags(read) }),
       );
-      await this.save(this.withContact({ ...contact, conversations: [toBase64(sealed.conversation), ...contact.conversations.slice(1)] }));
+      // Writing to them accepts a request; telling them only what came or was read never does.
+      const request = contact.request && !text;
+      await this.save(
+        this.withContact({ ...contact, request, conversations: [toBase64(sealed.conversation), ...contact.conversations.slice(1)] }),
+      );
       const first = contact.first ? fromBase64(contact.first) : null;
       return { sender: contact.sender, first, packet: sealed.packet, tag, timer: once || timer };
     });
@@ -364,10 +386,13 @@ export class E2E {
       name: known?.name ?? '',
       timer: timing.timer,
       timerAt: timing.timerAt,
+      // Someone new who has this chat's link writes first: a request until accepted.
+      request: known ? known.request : true,
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
     const { text, tag, erase, got, read } = message;
-    return { kind: 'message', identity, text, tag, added: !known, erase, got, read, ...timing.received };
+    const { request } = contact;
+    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, ...timing.received };
   }
 
   private async open(packet: Uint8Array): Promise<Received> {
@@ -393,9 +418,9 @@ export class E2E {
             timerAt: timing.timerAt,
           }),
         );
-        const { identity } = contact;
+        const { identity, request } = contact;
         const { text, tag, erase, got, read } = message;
-        return { kind: 'message', identity, text, tag, added: false, erase, got, read, ...timing.received };
+        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, ...timing.received };
       }
     }
     return { kind: 'refused', reason: 'unknown' };

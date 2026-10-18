@@ -284,6 +284,8 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
   function receipt(peer: string, kind: 'got' | 'read', tags: string[]) {
     if (tags.length === 0) return;
+    // A message request hears nothing back, not even that its message came, until accepted.
+    if (e2e?.contacts().some((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === peer)) return;
     const now = receipts.current[peer] ?? { got: [], read: [] };
     // A message read needs no word that it came.
     const got = kind === 'got' ? [...now.got, ...tags] : now.got.filter((tag) => !tags.includes(tag));
@@ -579,7 +581,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
         forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag, until: 0, lasts: 0, mark: 0, at: 0 });
         setNote(`${name} deleted a message on both phones.`);
       }
-      if (received.added) {
+      if (received.added && received.request) {
+        setNote(`Message request from ${name}: they have your contact link. Accept it to answer, or refuse it.`);
+      } else if (received.added) {
         setNote(`New chat with ${name}: they added your contact link. Compare the safety number with theirs.`);
       }
     }
@@ -682,6 +686,8 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       await e2e.firstSent(identity);
     }
     await sendMessage(target, fromHex(sealed.sender), sealed.packet);
+    // Writing to a message request accepts it.
+    if (text) setContacts(e2e.contacts());
     return { tag: sealed.tag, timer: sealed.timer };
   }
 
@@ -754,6 +760,38 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
     }
     setNameDraft(contactName(peer, contacts) ?? '');
     setRenaming(peer);
+  }
+
+  async function acceptRequest(peer: string) {
+    if (!e2e) return;
+    try {
+      await e2e.acceptRequest(peer.slice(CONTACT_PREFIX.length));
+      setContacts(e2e.contacts());
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  // Refusing forgets them and their messages here. Their phone is not told.
+  function refuseRequest(peer: string) {
+    Alert.alert('Refuse request', `Refuse ${label(peer, contacts)}? Their messages go, and anything they send later is not shown.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Refuse',
+        style: 'destructive',
+        onPress: async () => {
+          if (!e2e) return;
+          try {
+            await e2e.removeContact(peer.slice(CONTACT_PREFIX.length));
+            forgetChat(peer);
+            setContacts(e2e.contacts());
+            setSelected(null);
+          } catch (error) {
+            setNote(errorText(error));
+          }
+        },
+      },
+    ]);
   }
 
   async function rename(peer: string) {
@@ -929,6 +967,19 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                 : 'Looking for a nearby Erevos phone. Contacts through the relay are under Relay.'}
             </Text>
           )}
+          {selectedContact && contacts.some((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === selectedContact) ? (
+            <View style={styles.panel}>
+              <Text>Message request</Text>
+              <Text variant="caption" tone="muted">
+                Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages
+                came or were read. Writing to them accepts too.
+              </Text>
+              <Row wrap>
+                <TextButton title="Accept" onPress={() => void acceptRequest(selectedContact)} />
+                <TextButton title="Refuse" onPress={() => refuseRequest(selectedContact)} />
+              </Row>
+            </View>
+          ) : null}
           {selectedContact ? (
             <View style={styles.panel}>
               <Text variant="caption" tone="muted">

@@ -66,7 +66,7 @@ t('two chats add each other through a link and talk both ways', async () => {
   const hello = message(await bob.e2e.receive(pending.first));
   assert.equal(hello.added, true);
   assert.equal(hello.text, '');
-  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0 }]);
+  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true }]);
   await alice.e2e.firstSent(added.identity);
   assert.deepEqual(alice.e2e.pending(), []);
 
@@ -82,6 +82,38 @@ t('two chats add each other through a link and talk both ways', async () => {
   // Both see the same safety number.
   assert.equal(await alice.e2e.safetyNumber(added.identity), await bob.e2e.safetyNumber(hello.identity));
   assert.match(await alice.e2e.safetyNumber(added.identity), /^(\d{5} ){11}\d{5}$/);
+});
+
+t('someone new who writes first is a message request until accepted, refused or answered', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const carol = await chat('space', 2);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  assert.equal(alice.e2e.contacts()[0].request, false);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  assert.equal(hello.request, true);
+  // Receipts alone do not accept.
+  await bob.e2e.seal(hello.identity, '', bob.from, { got: [] });
+  assert.equal(bob.e2e.contacts()[0].request, true);
+  const later = message(await bob.e2e.receive((await alice.e2e.seal(bobId, 'hi', alice.from)).packet));
+  assert.equal(later.request, true);
+  // Answering accepts.
+  await bob.e2e.seal(hello.identity, 'hello', bob.from);
+  assert.equal(bob.e2e.contacts()[0].request, false);
+
+  // Carol writes to Bob too; Bob accepts with a tap, then another request is refused.
+  await carol.e2e.addContact(bob.code, carol.from);
+  const fromCarol = message(await bob.e2e.receive(carol.e2e.pending()[0].first));
+  assert.equal(fromCarol.request, true);
+  await bob.e2e.acceptRequest(fromCarol.identity);
+  assert.equal(bob.e2e.contacts().find((c) => c.identity === fromCarol.identity)!.request, false);
+  await bob.e2e.removeContact(fromCarol.identity);
+  assert.equal(bob.e2e.contacts().length, 1);
+  const { identity: toBob } = carol.e2e.contacts()[0];
+  assert.deepEqual(await bob.e2e.receive((await carol.e2e.seal(toBob, 'still there?', carol.from)).packet), {
+    kind: 'refused',
+    reason: 'unknown',
+  });
 });
 
 t('a first packet the relay did not take goes again before the next message', async () => {

@@ -22,6 +22,9 @@ export type Contact = {
   timer: number;
   /** When either phone last set the timer, milliseconds on that phone's clock: the later setting wins. */
   timerAt: number;
+  /** They wrote first, from this chat's link, and this chat has not accepted them yet: a message
+   *  request. Their phone hears nothing back (not even that a message came) until it does. */
+  request: boolean;
 };
 
 export type E2EData = {
@@ -67,6 +70,7 @@ function checkedContact(value: unknown): Contact | null {
     name: isText(v.name) ? cleanName(v.name) : '',
     timer: isTimer(v.timer) ? v.timer : 0,
     timerAt: isTime(v.timerAt) ? v.timerAt : 0,
+    request: v.request === true,
   };
 }
 
