@@ -92,7 +92,7 @@ The address needs its own DNS name (an A record to the server), apart from the r
 
 - `sw.js`: the service worker; `build.mjs` writes the public key into it.
 - `boot.js`, `boot.css`: the page's first script, and its screens before the app starts.
-- `build.mjs`: makes the web app from the web build; `icon.mjs` draws its icons.
+- `build.mjs`: makes the web app from the web build, with the icons from `brand/`.
 - `release.mjs`: `keygen`, `sign`, `verify`.
 - `release-key.pub`: the release key's public half (made by `keygen`).
 - `releases/`: the signed list of every release served.

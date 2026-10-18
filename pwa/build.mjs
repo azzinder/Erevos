@@ -14,8 +14,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { icon } from './icon.mjs';
-
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 function fail(text) {
@@ -60,7 +58,8 @@ const head = [
   '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />',
   '<meta name="apple-mobile-web-app-title" content="Erevos" />',
   '<link rel="manifest" href="/manifest.webmanifest" />',
-  '<link rel="icon" href="/icon-192.png" />',
+  '<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />',
+  '<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />',
   '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />',
   '<link rel="stylesheet" href="/boot.css" />',
 ].join('\n    ');
@@ -79,9 +78,13 @@ const worker = fs.readFileSync(path.join(here, 'sw.js'), 'utf8');
 if (!worker.includes('__EREVOS_PUBLIC_KEY__')) fail('pwa/sw.js has lost its key mark.');
 write('sw.js', worker.replace('__EREVOS_PUBLIC_KEY__', publicKey));
 
-write('icon-192.png', icon(192));
-write('icon-512.png', icon(512));
-write('apple-touch-icon.png', icon(180));
+// The icons are the artwork in brand/, as they are.
+const brand = (name) => fs.readFileSync(path.join(here, '..', 'brand', 'png', name));
+write('favicon.png', brand('web/icon-32.png'));
+write('icon-192.png', brand('web/icon-192.png'));
+write('icon-512.png', brand('web/icon-512.png'));
+write('apple-touch-icon.png', brand('ios/icon-180.png'));
+write('maskable-432.png', fs.readFileSync(path.join(here, '..', 'app', 'assets', 'icon', 'maskable.png')));
 write(
   'manifest.webmanifest',
   `${JSON.stringify(
@@ -96,8 +99,9 @@ write(
       background_color: '#0D0B09',
       theme_color: '#0D0B09',
       icons: [
-        { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-        { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+        { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: '/maskable-432.png', sizes: '432x432', type: 'image/png', purpose: 'maskable' },
       ],
     },
     null,

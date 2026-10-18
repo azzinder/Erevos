@@ -24,8 +24,10 @@
   "build": {
     "appId": "app.erevos",
     "productName": "Erevos",
+    "icon": "icon.png",
     "files": [
       "main.js",
+      "icon.png",
       "web/**/*"
     ],
     "directories": {

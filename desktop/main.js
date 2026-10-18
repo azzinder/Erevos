@@ -265,6 +265,8 @@ function createWindow() {
     title: 'Erevos',
     autoHideMenuBar: true,
     backgroundColor: '#0D0B09',
+    // On Linux the window shows this in the task bar; a Mac takes the app's own icon.
+    ...(MAC ? {} : { icon: path.join(__dirname, 'icon.png') }),
     show: !SMOKE,
     webPreferences: { contextIsolation: true, sandbox: true },
   });
