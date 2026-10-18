@@ -19,8 +19,8 @@ export function voiceDuration(ms: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-/** One part, as it travels. */
-export type VoicePart = { id: string; part: number; parts: number; ms: number; data: Uint8Array };
+/** One part, as it travels. `talk`: said walkie-talkie style, to play as it comes. */
+export type VoicePart = { id: string; part: number; parts: number; ms: number; data: Uint8Array; talk?: boolean };
 
 const ID = /^[0-9a-f]{16}$/;
 
@@ -43,7 +43,7 @@ export function isVoicePart(v: Partial<VoicePart> | null | undefined): v is Voic
 }
 
 /** The sound cut into parts. Throws when it is longer than a voice message can be. */
-export function splitVoice(audio: Uint8Array, ms: number): VoicePart[] {
+export function splitVoice(audio: Uint8Array, ms: number, talk = false): VoicePart[] {
   const parts = Math.max(1, Math.ceil(audio.length / PART_SIZE));
   if (parts > MAX_PARTS) throw new Error('That voice message is too long.');
   const id = toHex(randomBytes(8));
@@ -53,20 +53,22 @@ export function splitVoice(audio: Uint8Array, ms: number): VoicePart[] {
     parts,
     ms: Math.round(ms),
     data: audio.slice(part * PART_SIZE, (part + 1) * PART_SIZE),
+    ...(talk ? { talk } : {}),
   }));
 }
 
-type Gathering = { parts: (Uint8Array | null)[]; ms: number; at: number };
+type Gathering = { parts: (Uint8Array | null)[]; ms: number; at: number; talk: boolean };
 
 /** Puts the parts of voice messages back together, for each contact. */
 export class VoiceAssembler {
   private gathering = new Map<string, Gathering>();
 
-  /** Takes a part. Returns the whole sound and its length once the last part has come. */
-  add(peer: string, part: VoicePart, now = Date.now()): { audio: Uint8Array; ms: number } | null {
+  /** Takes a part. Returns the whole sound, its length and whether it was said walkie-talkie
+   *  style once the last part has come. */
+  add(peer: string, part: VoicePart, now = Date.now()): { audio: Uint8Array; ms: number; talk: boolean } | null {
     for (const [key, g] of this.gathering) if (now - g.at > STALE) this.gathering.delete(key);
     const key = `${peer} ${part.id}`;
-    const g = this.gathering.get(key) ?? { parts: new Array<Uint8Array | null>(part.parts).fill(null), ms: part.ms, at: now };
+    const g = this.gathering.get(key) ?? { parts: new Array<Uint8Array | null>(part.parts).fill(null), ms: part.ms, at: now, talk: part.talk === true };
     if (g.parts.length !== part.parts) return null;
     g.parts[part.part] = part.data;
     g.at = now;
@@ -80,6 +82,6 @@ export class VoiceAssembler {
       audio.set(p!, at);
       at += p!.length;
     }
-    return { audio, ms: g.ms };
+    return { audio, ms: g.ms, talk: g.talk };
   }
 }

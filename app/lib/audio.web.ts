@@ -19,15 +19,23 @@ const OPTIONS: RecordingOptions = {
   web: { mimeType: 'audio/webm;codecs=opus', bitsPerSecond: 64_000 },
 };
 
+// Walkie-talkie (useVoiceRecorder(true)): Opus at 24 kbit/s, quick to send even over Bluetooth.
+const TALK: RecordingOptions = {
+  ...OPTIONS,
+  sampleRate: 16_000,
+  bitRate: 24_000,
+  web: { mimeType: 'audio/webm;codecs=opus', bitsPerSecond: 24_000 },
+};
+
 /** A recording shorter than this was a tap, not a voice message, milliseconds. */
 export const MIN_VOICE_MS = 700;
 
 /** Nothing is left behind on a computer. */
 export function clearLeftovers() {}
 
-/** Records one voice message at a time. */
-export function useVoiceRecorder() {
-  const recorder = useAudioRecorder(OPTIONS);
+/** Records one voice message at a time: walkie-talkie style, smaller, with `talk`. */
+export function useVoiceRecorder(talk = false) {
+  const recorder = useAudioRecorder(talk ? TALK : OPTIONS);
   const started = useRef(0);
 
   async function start(): Promise<boolean> {

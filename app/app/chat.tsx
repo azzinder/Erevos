@@ -365,6 +365,13 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   const [now, setNow] = useState(Date.now());
   const voiceParts = useRef(new VoiceAssembler());
   const recorder = useVoiceRecorder();
+  // Walkie-talkie (Talkie): smaller recordings that play as they come where the chat is open.
+  const talkRecorder = useVoiceRecorder(true);
+  const [talkies, setTalkies] = useState<Set<string>>(new Set());
+  // Whether what is recording now is walkie-talkie.
+  const recordingTalk = useRef(false);
+  // The chat open and seen now, whose walkie-talkie messages play as they come.
+  const listening = useRef<string | null>(null);
   // While Voice is held, and the recording it started.
   const [talking, setTalking] = useState(false);
   const holding = useRef(false);
@@ -894,6 +901,10 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       const whole = voiceParts.current.add(peer, received.voice);
       const { tag, timer } = received;
       if (whole) {
+        if (whole.talk && listening.current === peer) {
+          stopPlaying.current?.();
+          stopPlaying.current = playVoice(whole.audio, () => undefined);
+        }
         saveClip(whole.audio, whole.ms)
           .then((voice) => {
             addMessage(peer, '', false, tag, timer, voice);
@@ -1264,14 +1275,16 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       return;
     }
     holding.current = true;
-    const started = recorder.start().then((ok) => {
+    const talk = talkies.has(selectedContact);
+    recordingTalk.current = talk;
+    const started = (talk ? talkRecorder : recorder).start().then((ok) => {
       if (!ok) {
         setNote('Erevos may not use the microphone. Allow it in the phone settings to send voice messages.');
         return false;
       }
       if (!holding.current) {
         // Let go while the microphone was getting ready.
-        void recorder.stop().catch(() => undefined);
+        void (talk ? talkRecorder : recorder).stop().catch(() => undefined);
         setNote('Hold Voice while you talk, and let go to send.');
         return false;
       }
@@ -1294,20 +1307,31 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     if (!started || !(await started)) return;
     setTalking(false);
     try {
-      const recorded = await recorder.stop();
+      const talk = recordingTalk.current;
+      const recorded = await (talk ? talkRecorder : recorder).stop();
       if (!recorded) {
         setNote('Hold Voice while you talk, and let go to send.');
         return;
       }
-      await sendVoice(recorded.audio, recorded.ms);
+      await sendVoice(recorded.audio, recorded.ms, talk);
     } catch (error) {
       setNote(`Not sent. ${errorText(error)}`);
     }
   }
 
+  // Walkie-talkie for a chat, on or off: what Voice records then plays on their phone as it comes,
+  // when the chat with this phone is open there.
+  function toggleTalkie(peer: string) {
+    const next = new Set(talkies);
+    if (next.has(peer)) next.delete(peer);
+    else next.add(peer);
+    setTalkies(next);
+    setNote(next.has(peer) ? 'Walkie-talkie: hold to talk. It plays on their phone as it comes, if this chat is open there.' : '');
+  }
+
   // Seals a voice message for the contact picked, hands its parts to their phone in turn (nearby,
   // or through the relay), and keeps its sound sealed. If nothing took all of it, it is not kept.
-  async function sendVoice(audio: Uint8Array, ms: number) {
+  async function sendVoice(audio: Uint8Array, ms: number, talk: boolean) {
     const peer = selectedContact;
     if (!peer) return;
     if (!e2e) {
@@ -1316,12 +1340,12 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     }
     const identity = peer.slice(CONTACT_PREFIX.length);
     try {
-      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here() });
+      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here(), talk });
       const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets, true);
       addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms));
       // Writing to a message request accepts it.
       setContacts(e2e.contacts());
-      setNote(sentNote(way, 'Voice message sent', label(peer, contacts)));
+      setNote(sentNote(way, talk ? 'Walkie-talkie message sent' : 'Voice message sent', label(peer, contacts)));
     } catch (error) {
       setNote(notSent(error));
     }
@@ -1746,6 +1770,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   );
   const chips = contacts.map((contact) => `${CONTACT_PREFIX}${contact.identity}`);
   const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
+  const talkie = selectedContact ? talkies.has(selectedContact) : false;
+  listening.current = shown && appActive ? selectedContact : null;
   const selectedTimer = contacts.find((c) => c.identity === selectedIdentity)?.timer ?? 0;
   const firstImported = Math.max(0, imported.length - importedShown);
   // Without a relay queue the link has only the keys: who adds it reaches this phone nearby.
@@ -2417,7 +2443,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
           <Row wrap style={[styles.grow, styles.toolsLeft]}>
             {selectedContact ? <Tool title="Disappear" on={vanishing} onPress={() => setVanishing((on) => !on)} /> : null}
             {selectedContact ? <Tool title="Attach" on={attaching} onPress={() => setAttaching(true)} /> : null}
-            <Tool title={talking ? 'Let go to send' : 'Voice'} on={talking} onPressIn={startTalking} onPressOut={() => void stopTalking()} />
+            <Tool title={talking ? 'Let go to send' : talkie ? 'Hold to talk' : 'Voice'} on={talking} onPressIn={startTalking} onPressOut={() => void stopTalking()} />
+            {selectedContact ? <Tool title="Talkie" on={talkie} onPress={() => toggleTalkie(selectedContact)} /> : null}
             <Tool title="Call" onPress={() => void startCall(false)} />
             <Tool title="Video" onPress={() => void startCall(true)} />
           </Row>

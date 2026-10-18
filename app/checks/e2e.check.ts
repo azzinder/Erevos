@@ -395,14 +395,18 @@ t('a voice message travels in parts, each with its tag, and comes back whole', a
   assert.deepEqual([sealed.packets.length, sealed.timer], [3, 300]);
   assert.match(sealed.tag, /^[0-9a-f]{12}$/);
   const assembler = new VoiceAssembler();
-  let whole: { audio: Uint8Array; ms: number } | null = null;
+  let whole: { audio: Uint8Array; ms: number; talk: boolean } | null = null;
   for (const packet of sealed.packets) {
     assert.ok(packet.length < 20_000);
     const got = message(await bob.e2e.receive(packet));
     assert.deepEqual([got.text, got.tag, got.timer, got.voice!.parts], ['', sealed.tag, 300, 3]);
     whole = assembler.add(hello.identity, got.voice!) ?? whole;
   }
-  assert.deepEqual([whole!.audio, whole!.ms], [sound, 9000]);
+  assert.deepEqual([whole!.audio, whole!.ms, whole!.talk], [sound, 9000, false]);
+  // Said walkie-talkie style, it comes back as such.
+  const talk = await alice.e2e.sealVoice(identity, sound.slice(0, 900), 1500, alice.from, { talk: true });
+  const heard = assembler.add(hello.identity, message(await bob.e2e.receive(talk.packets[0])).voice!);
+  assert.deepEqual([heard!.audio, heard!.talk], [sound.slice(0, 900), true]);
   // The conversation goes on after it, both ways.
   assert.equal(message(await bob.e2e.receive((await alice.e2e.seal(identity, 'after', alice.from)).packet)).text, 'after');
   assert.equal(message(await alice.e2e.receive((await bob.e2e.seal(hello.identity, 'back', bob.from)).packet)).text, 'back');

@@ -260,7 +260,10 @@ a missed call.
   call you until you accept it.
 - **One call at a time.** A call goes on while you move between screens of the space. It ends when the space closes,
   and a call in hidden chats when they close, as they do when Erevos goes to the background.
-- Not over a nearby phone or Bluetooth yet: a walkie-talkie that works there is still to come.
+- Calls do not go over a nearby phone or Bluetooth. There, **Talkie** under the message field turns the chat into a
+  walkie-talkie: hold **Hold to talk**, let go, and it plays on their phone as it comes, if the chat with you is open
+  there; if not, it waits as a voice message. It is a smaller voice message (about 3 KB a second), so it goes
+  everywhere a message goes, Bluetooth included.
 
 > The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
 > kept in this space, sealed. About a thousand short messages fit; when it is full, the oldest go first. Deleted
@@ -630,7 +633,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring; a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
-| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. A walkie-talkie over Bluetooth. |
+| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Not audited. | Photos and voice messages in groups. |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. | Video with more than four people, through a server; more than eight people. |
 
@@ -644,7 +647,7 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   - **SMS:** Erevos as the SMS app is here, see [SMS](#sms). Next: MMS and two SIM cards.
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
 - **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a
-  relay](#relay). Next: a walkie-talkie that works even over Bluetooth.
+  relay](#relay), and so is a walkie-talkie that works even over Bluetooth.
 - **Groups:** group chats and group voice and video calls are here, see [Group chats](#groups). Next: video with
   more than four people, through a server the call moves to by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come

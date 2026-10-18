@@ -28,6 +28,15 @@ const OPTIONS: RecordingOptions = {
   web: { mimeType: 'audio/webm', bitsPerSecond: 64_000 },
 };
 
+// Walkie-talkie (useVoiceRecorder(true)): AAC at 16 kHz and 24 kbit/s, about 3 KB a second, so ten
+// seconds go in a few parts even over Bluetooth, still clear enough for speech.
+const TALK: RecordingOptions = {
+  ...OPTIONS,
+  sampleRate: 16_000,
+  bitRate: 24_000,
+  web: { mimeType: 'audio/webm', bitsPerSecond: 24_000 },
+};
+
 /** A recording shorter than this was a tap, not a voice message, milliseconds. */
 export const MIN_VOICE_MS = 700;
 
@@ -56,9 +65,9 @@ export function clearLeftovers() {
   }
 }
 
-/** Records one voice message at a time. */
-export function useVoiceRecorder() {
-  const recorder = useAudioRecorder(OPTIONS);
+/** Records one voice message at a time: walkie-talkie style, smaller, with `talk`. */
+export function useVoiceRecorder(talk = false) {
+  const recorder = useAudioRecorder(talk ? TALK : OPTIONS);
   const started = useRef(0);
 
   /** Starts recording. False when the microphone is not allowed. */

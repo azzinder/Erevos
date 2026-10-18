@@ -111,8 +111,8 @@ const SAYS_NOTHING = { on: 0, onAt: 0, ask: false };
 
 const tags = (value: unknown): string[] => (Array.isArray(value) ? value.filter(isTag).slice(0, MAX_TAGS) : []);
 
-function encodeVoice({ id, part, parts, ms, data }: VoicePart) {
-  return { id, part, parts, ms, data: toBase64(data) };
+function encodeVoice({ id, part, parts, ms, data, talk }: VoicePart) {
+  return { id, part, parts, ms, data: toBase64(data), ...(talk ? { talk } : {}) };
 }
 
 function decodeVoice(value: unknown): VoicePart | null {
@@ -124,7 +124,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   } catch {
     return null;
   }
-  const part = { id: v.id, part: v.part, parts: v.parts, ms: v.ms, data } as Partial<VoicePart>;
+  const part = { id: v.id, part: v.part, parts: v.parts, ms: v.ms, data, ...(v.talk === true ? { talk: true } : {}) } as Partial<VoicePart>;
   return isVoicePart(part) ? part : null;
 }
 
@@ -603,7 +603,7 @@ export class E2E {
     audio: Uint8Array,
     ms: number,
     from: string,
-    { lasts = 0, at = { relay: '', relayKey: '' } }: { lasts?: number; at?: Where } = {},
+    { lasts = 0, at = { relay: '', relayKey: '' }, talk = false }: { lasts?: number; at?: Where; talk?: boolean } = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -611,7 +611,7 @@ export class E2E {
       if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
       const tag = newTag();
       const { timer, timerAt } = contact;
-      const messages = splitVoice(audio, ms).map((voice) => ({
+      const messages = splitVoice(audio, ms, talk).map((voice) => ({
         from,
         ...at,
         text: '',
