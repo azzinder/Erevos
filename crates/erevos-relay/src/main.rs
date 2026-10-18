@@ -23,7 +23,14 @@
 //! and must be kept: phones put the public key in their contact links.
 //! Without it, the relay still forwards for its own phones but cannot take
 //! sealed sends from other relays.
+//!
+//! Set `EREVOS_RELAY_FILES` to a folder to keep the chunks of files that
+//! phones send (see `files.rs`) there. Without it, they live in memory and are
+//! lost when the relay stops. `EREVOS_RELAY_FILES_MB` sets how much room they
+//! may take together: 1024 MB on disk unless set, 256 MB in memory. Chunks
+//! nobody takes expire like messages.
 
+mod files;
 mod journal;
 mod queue;
 mod server;
@@ -39,6 +46,7 @@ use std::thread;
 use std::time::Duration;
 
 use erevos_core::relay_seal::RelayKey;
+use files::FileStore;
 use queue::Store;
 use server::Shared;
 
@@ -137,12 +145,41 @@ fn main() -> ExitCode {
             None
         }
     };
+    let cap = match env::var("EREVOS_RELAY_FILES_MB") {
+        Ok(mb) if !mb.is_empty() => match mb.parse::<u64>() {
+            Ok(mb) => Some(mb << 20),
+            Err(_) => {
+                eprintln!("erevos-relay: EREVOS_RELAY_FILES_MB must be a whole number of megabytes");
+                return ExitCode::FAILURE;
+            }
+        },
+        _ => None,
+    };
+    let files = match env::var("EREVOS_RELAY_FILES") {
+        Ok(dir) if !dir.is_empty() => {
+            match FileStore::open(Path::new(&dir), cap.unwrap_or(files::DEFAULT_CAP), ttl) {
+                Ok(files) => {
+                    eprintln!("erevos-relay: keeping files in {dir}, {} MB now", files.used() >> 20);
+                    files
+                }
+                Err(e) => {
+                    eprintln!("erevos-relay: cannot open the file folder {dir}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+        _ => {
+            eprintln!("erevos-relay: no EREVOS_RELAY_FILES set, files are kept in memory and lost when the relay stops");
+            FileStore::in_memory(cap.unwrap_or(files::DEFAULT_MEMORY_CAP), ttl)
+        }
+    };
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
-    let store = Shared::new(store, key);
+    let store = Shared::new(store, files, key);
     let sweep_store = Arc::clone(&store);
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(60 * 60));
         sweep_store.store.lock().expect("store lock").expire();
+        sweep_store.files.lock().expect("files lock").expire();
     });
     let ws_store = Arc::clone(&store);
     thread::spawn(move || {

@@ -60,6 +60,11 @@ the install again, and type the new token into every phone.
   other relays (two-hop sending), made on first start, in the same private
   place. Keep it: phones that send through a second relay seal to it, and a
   new key only means they fetch it again.
+- `/var/lib/erevos-relay/files/`: the chunks of photos and files that phones
+  send, encrypted on the phone, one file per chunk, in the same private place.
+  The contact deletes them once it has them; the rest expire like messages.
+  They may take 1024 MB together (`EREVOS_RELAY_FILES_MB` in the service
+  changes that); past it, phones are told the relay is full.
 - `/etc/caddy/erevos-relay.caddy`: the Caddy site, imported from
   `/etc/caddy/Caddyfile`. If that file was the one the package ships, the
   original is kept as `Caddyfile.orig`.
@@ -70,10 +75,10 @@ the install again, and type the new token into every phone.
 ## What the server can see
 
 Whoever runs the server can see the IP addresses that connect, the queue ids,
-when messages arrive and how big they are. The chat does not encrypt messages
-end to end yet, so the server can also read them. Until it does, run the relay
-only on a server you control, and keep its disk encrypted if the provider
-offers it.
+when messages arrive and how big they are, and for files the number of chunks
+and their size class. Messages and files are encrypted end to end, so the
+server cannot read them, but it can see who connects and when. Keep its disk
+encrypted if the provider offers it.
 
 ## Remove
 

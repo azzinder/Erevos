@@ -27,10 +27,10 @@ pub const MAX_QUEUED: usize = 1000;
 
 /// How long a message waits for its recipient before it expires.
 pub const DEFAULT_TTL: u64 = 14 * 24 * 60 * 60;
-const HOUR: u64 = 60 * 60;
+pub(crate) const HOUR: u64 = 60 * 60;
 
 /// Unix seconds now. A clock before 1970 counts as 1970.
-fn system_now() -> u64 {
+pub(crate) fn system_now() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |d| d.as_secs())

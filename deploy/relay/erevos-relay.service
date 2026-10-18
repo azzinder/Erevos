@@ -14,6 +14,8 @@ EnvironmentFile=/etc/erevos-relay.env
 Environment=EREVOS_RELAY_JOURNAL=/var/lib/erevos-relay/queues.journal
 # Key for sealed sends from other relays (two-hop sending). Made on first start; keep it.
 Environment=EREVOS_RELAY_KEY=/var/lib/erevos-relay/relay.key
+# Encrypted chunks of the files phones send, until the contact takes them.
+Environment=EREVOS_RELAY_FILES=/var/lib/erevos-relay/files
 Restart=on-failure
 RestartSec=2
 
