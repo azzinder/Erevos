@@ -42,6 +42,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 | **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
 | **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
+| **Backups** | Backups of everything on the phone, made by hand or by themselves, and restoring one. See [Backups](#backup). |
 | **User guide** | This guide. |
 | **Relay test**, **Radio test** | Tests of the connections. See [The test screens](#tests). |
 
@@ -238,6 +239,36 @@ chats.
   password, open them and use **Change password** there.
 - **Discretion:** the app never shows whether hidden chats are set, in any space.
 
+## Backups {#backup}
+
+A backup is one file holding everything Erevos keeps on this phone: every space, with its contacts, the keys of its
+conversations, its messages, voice messages, imported chats and hidden chats, and the lock. Inside it each space stays
+sealed with its own password, and the file is sealed again with a password of its own. It is under **Backups** in the
+home screen's menu.
+
+1. **Make a backup:** tap **Make a backup**, choose a folder (on the phone, a memory card, or a cloud app that shows
+   its folders there), type a password for the backup twice and tap **Save**.
+2. **Automatic backups:** choose **Every day** or **Every week**, then a folder and a password. Erevos makes one when
+   it opens and the last one is older than that, and the folder keeps the 3 newest. Under them are **Back up now**,
+   **Change folder** and **Change password**; **Off** stops them, and the ones made stay in the folder.
+3. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, then puts the
+   backup in place of everything on the phone, and opens as it was when the backup was made, with the passwords used
+   then.
+
+- **Keep the backup's password:** nothing opens a backup without it, and no one can recover it. Without a password
+  lock, the backup's password is all that protects it.
+- **Automatic backups keep their password on the phone,** so they need no password each time. Whoever opens their
+  folder still needs the spaces' passwords to read the chats.
+- **Chats that went on after the backup:** restoring puts back each conversation's keys as they were then. Messages
+  that came after the backup and were already read are not in it, and a chat that went on may stop opening new
+  messages. Then ask the contact for their contact link again.
+- **One phone at a time:** a backup restored on a second phone reads the same relay queues as the first, and each
+  takes messages the other then never gets. Use it to move to a new phone, not to keep two.
+- **Discretion:** every space shows the same Backups screen, and a backup holds every space, so neither tells how
+  many spaces there are or whether hidden chats are set. The file's name says it is an Erevos backup, and its size
+  shows roughly how much is kept.
+- **Not in a backup:** the count of wrong passwords, and how automatic backups are set.
+
 ## Imported chats {#import}
 
 Your old chats from Telegram and WhatsApp can come into Erevos, to read. They stay on this phone, sealed in the
@@ -329,6 +360,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Message history** | Kept on the phone, sealed in its space: about a thousand short messages, the oldest go first. Every space's history takes the same room, used or not. Nearby messages are not kept. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Show in whichever space is open. | Each space with its own keys. |
 | **Voice messages** | End-to-end encrypted through the relay, in pieces: the relay can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
+| **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay sees one more small message. | A switch to stop telling when you read. |
 
 ## What is coming {#coming}
@@ -349,7 +381,7 @@ End-to-end encryption through the relay is here. The nearby link comes next, and
   moves to a server by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).
-- **More systems:** Linux, macOS, iOS and Sailfish OS, and more than one device for the same person, with backups.
+- **More systems:** Linux, macOS, iOS and Sailfish OS, and more than one device for the same person. Backups are here, see [Backups](#backup).
 
 ## Questions {#faq}
 

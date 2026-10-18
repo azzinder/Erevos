@@ -18,6 +18,10 @@ export async function writeBytes(name: string, bytes: Uint8Array): Promise<void>
   blobs.set(name, bytes);
 }
 
+export async function listFiles(prefix: string): Promise<string[]> {
+  return [...new Set([...files.keys(), ...blobs.keys()])].filter((name) => name.startsWith(prefix));
+}
+
 export async function deleteFile(name: string): Promise<void> {
   files.delete(name);
   blobs.delete(name);

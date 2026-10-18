@@ -32,6 +32,7 @@ const MENU: { title: string; detail: string; href: Href }[] = [
   { title: 'Imported chats', detail: 'Telegram and WhatsApp exports', href: '/imported' },
   { title: 'Appearance', detail: 'Style, colours, glass', href: '/appearance' },
   { title: 'Lock and second password', detail: 'Password, second space', href: '/security' },
+  { title: 'Backups', detail: 'Make one, automatic backups, restore', href: '/backup' },
   { title: 'User guide', detail: 'How Erevos works, and what is not protected yet', href: '/guide' },
   { title: 'Relay test', detail: 'For testing a relay', href: '/relay' },
   { title: 'Radio test', detail: 'For testing the nearby link', href: '/radio' },

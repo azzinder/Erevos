@@ -1,0 +1,181 @@
+import { decryptBytes, deriveKey, encryptBytes, randomBytes, sameBytes, utf8Decode, utf8Encode } from '../lib/crypto';
+import { deleteFile, listFiles, readBytes, readFile, writeBytes, writeFile } from '../lib/files';
+import { secureDelete, secureGet, secureSet } from '../lib/secure';
+
+import { FILE as ARCHIVE } from './archive';
+import { ITER } from './config';
+import { FILE as E2E } from './e2e-data';
+import { FILE as HISTORY } from './history';
+import { PREFIX as VOICE } from './voice-clips';
+
+// A backup: everything Erevos keeps on the phone, in one file sealed with a password of its own.
+// It holds the keystore entries and the files exactly as they are, each already sealed with its
+// space's key, so it is the same whichever spaces are in use and shows nothing more than the phone
+// does: not how many spaces there are, nor whether hidden chats are set. Restoring it puts all of
+// it back, in place of what the phone had, and the passwords of the spaces open them as before.
+//
+// The file: MAGIC, the salt (SALT bytes) and PBKDF2 rounds (4 bytes) the password's key comes from,
+// then, sealed with that key (AES-256-GCM, lib/crypto.ts), the entries one after another: their
+// kind (1 byte), name (2-byte length, then the name) and data (4-byte length, then the data).
+//
+// What it leaves out stays with the phone: how many wrong passwords were typed, and how automatic
+// backups are made (lib/backup-folder.ts).
+
+const MAGIC = utf8Encode('EREVOS BACKUP 1\n');
+const SALT = 16;
+
+// The keystore entries kept, in every space and slot whatever is in use: the lock, the spaces'
+// keys, the hidden chats' lock, the password screen's look, and each slot's space and hidden chats.
+const FIXED = ['erevos.lock', 'erevos.space-keys', 'erevos.hidden-lock', 'erevos.look'];
+// Slots looked for. There are never this many: SLOTS (slots.ts) unless more second passwords were set.
+const MOST_SLOTS = 32;
+const SLOTTED = Array.from({ length: MOST_SLOTS }, (_, n) => [`erevos.space.${n}`, `erevos.hidden.${n}`]).flat();
+const KEYS = [...FIXED, ...SLOTTED];
+
+// The sealed files that are text; voice messages' sounds are bytes.
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE];
+
+const KIND_KEY = 0;
+const KIND_TEXT = 1;
+const KIND_BYTES = 2;
+
+type Entry = { kind: number; name: string; data: Uint8Array };
+
+/** What a backup holds, opened: ready to restore. */
+export type Backup = { entries: Entry[]; size: number };
+
+/** The key a password gives for backups, with the salt and rounds it came from. */
+export type BackupKey = { key: Uint8Array; salt: Uint8Array; iter: number };
+
+export class NotABackupError extends Error {
+  constructor() {
+    super('That file is not an Erevos backup.');
+  }
+}
+
+export class WrongBackupPasswordError extends Error {
+  constructor() {
+    super('Wrong password for this backup.');
+  }
+}
+
+export async function backupKey(password: string, salt = randomBytes(SALT), iter = ITER): Promise<BackupKey> {
+  return { key: await deriveKey(password, salt, iter), salt, iter };
+}
+
+async function collect(): Promise<Entry[]> {
+  const entries: Entry[] = [];
+  for (const name of KEYS) {
+    const value = await secureGet(name);
+    if (value !== null) entries.push({ kind: KIND_KEY, name, data: utf8Encode(value) });
+  }
+  for (const name of TEXT_FILES) {
+    const text = await readFile(name);
+    if (text !== null) entries.push({ kind: KIND_TEXT, name, data: utf8Encode(text) });
+  }
+  for (const name of (await listFiles(VOICE)).sort()) {
+    const bytes = await readBytes(name);
+    if (bytes) entries.push({ kind: KIND_BYTES, name, data: bytes });
+  }
+  return entries;
+}
+
+function pack(entries: Entry[]): Uint8Array {
+  const names = entries.map((entry) => utf8Encode(entry.name));
+  const size = entries.reduce((sum, entry, i) => sum + 1 + 2 + names[i].length + 4 + entry.data.length, 0);
+  const out = new Uint8Array(size);
+  const view = new DataView(out.buffer);
+  let at = 0;
+  entries.forEach((entry, i) => {
+    out[at] = entry.kind;
+    view.setUint16(at + 1, names[i].length);
+    out.set(names[i], at + 3);
+    at += 3 + names[i].length;
+    view.setUint32(at, entry.data.length);
+    out.set(entry.data, at + 4);
+    at += 4 + entry.data.length;
+  });
+  return out;
+}
+
+// A name a backup may restore: one of the keystore entries above, or a file of Erevos's own.
+function allowed(kind: number, name: string): boolean {
+  if (kind === KIND_KEY) return KEYS.includes(name);
+  if (kind === KIND_TEXT) return TEXT_FILES.includes(name);
+  return kind === KIND_BYTES && name.startsWith(VOICE) && /^[a-z0-9-]+$/.test(name);
+}
+
+function unpack(bytes: Uint8Array): Entry[] {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const entries: Entry[] = [];
+  let at = 0;
+  while (at < bytes.length) {
+    if (at + 3 > bytes.length) throw new NotABackupError();
+    const kind = bytes[at];
+    const nameLength = view.getUint16(at + 1);
+    at += 3;
+    if (at + nameLength + 4 > bytes.length) throw new NotABackupError();
+    const name = utf8Decode(bytes.subarray(at, at + nameLength));
+    at += nameLength;
+    const length = view.getUint32(at);
+    at += 4;
+    if (at + length > bytes.length || !allowed(kind, name)) throw new NotABackupError();
+    entries.push({ kind, name, data: bytes.slice(at, at + length) });
+    at += length;
+  }
+  return entries;
+}
+
+/** A backup of everything on the phone, sealed with `key`: the bytes of the file. */
+export async function makeBackup({ key, salt, iter }: BackupKey): Promise<Uint8Array> {
+  const sealed = encryptBytes(key, pack(await collect()));
+  const out = new Uint8Array(MAGIC.length + SALT + 4 + sealed.length);
+  out.set(MAGIC);
+  out.set(salt, MAGIC.length);
+  new DataView(out.buffer).setUint32(MAGIC.length + SALT, iter);
+  out.set(sealed, MAGIC.length + SALT + 4);
+  return out;
+}
+
+/** Opens a backup file with its password. Throws NotABackupError or WrongBackupPasswordError. */
+export async function openBackup(bytes: Uint8Array, password: string): Promise<Backup> {
+  const head = MAGIC.length + SALT + 4;
+  if (bytes.length < head || !sameBytes(bytes.subarray(0, MAGIC.length), MAGIC)) throw new NotABackupError();
+  const salt = bytes.slice(MAGIC.length, MAGIC.length + SALT);
+  const iter = new DataView(bytes.buffer, bytes.byteOffset).getUint32(MAGIC.length + SALT);
+  if (iter < 1000 || iter > 10_000_000) throw new NotABackupError();
+  const { key } = await backupKey(password, salt, iter);
+  let packed: Uint8Array;
+  try {
+    packed = decryptBytes(key, bytes.subarray(head));
+  } catch {
+    throw new WrongBackupPasswordError();
+  }
+  const entries = unpack(packed);
+  if (!entries.some((entry) => entry.name === 'erevos.space-keys' || entry.name === 'erevos.lock')) throw new NotABackupError();
+  return { entries, size: bytes.length };
+}
+
+/**
+ * Puts a backup in place of everything Erevos keeps on the phone. What the phone had and the
+ * backup does not is deleted. Open again afterwards (the lock reads it all anew).
+ */
+export async function restoreBackup({ entries }: Backup): Promise<void> {
+  const keep = new Set(entries.map((entry) => entry.name));
+  for (const entry of entries) {
+    if (entry.kind === KIND_TEXT) await writeFile(entry.name, utf8Decode(entry.data));
+    if (entry.kind === KIND_BYTES) await writeBytes(entry.name, entry.data);
+  }
+  for (const name of [...TEXT_FILES, ...(await listFiles(VOICE))]) if (!keep.has(name)) await deleteFile(name);
+  for (const entry of entries) if (entry.kind === KIND_KEY) await secureSet(entry.name, utf8Decode(entry.data));
+  for (const name of KEYS) if (!keep.has(name)) await secureDelete(name);
+}
+
+/** The name a backup made at `now` gets: the date and time, on this phone's clock. */
+export function backupName(now = Date.now()): string {
+  const d = new Date(now);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `erevos-backup-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.erevos`;
+}
+
+export const BACKUP_PREFIX = 'erevos-backup-';

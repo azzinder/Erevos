@@ -10,7 +10,7 @@ import { deleteFile, readBytes, writeBytes } from '../lib/files';
 /** Where a voice message's sound is: its file's id and key, hex, and how long it lasts, milliseconds. */
 export type VoiceRef = { id: string; key: string; ms: number };
 
-const PREFIX = 'erevos-voice-';
+export const PREFIX = 'erevos-voice-';
 const ID = /^[0-9a-f]{32}$/;
 const KEY = /^[0-9a-f]{64}$/;
 

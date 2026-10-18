@@ -62,6 +62,19 @@ export async function writeBytes(name: string, bytes: Uint8Array): Promise<void>
   blobs.set(name, bytes);
 }
 
+/** The names of the files whose names start with `prefix`. */
+export async function listFiles(prefix: string): Promise<string[]> {
+  const fs = fileSystem();
+  if (fs) {
+    return new fs.Directory(fs.Paths.document)
+      .list()
+      .filter((entry) => entry instanceof fs.File && entry.name.startsWith(prefix) && !entry.name.endsWith('.new'))
+      .map((entry) => entry.name);
+  }
+  const stored = Platform.OS === 'web' ? Object.keys(globalThis.localStorage ?? {}) : [...memory.keys()];
+  return [...new Set([...stored, ...blobs.keys()])].filter((name) => name.startsWith(prefix));
+}
+
 export async function deleteFile(name: string): Promise<void> {
   const fs = fileSystem();
   if (fs) {

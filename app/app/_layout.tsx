@@ -6,6 +6,7 @@ import { AppState, View } from 'react-native';
 import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
 import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
+import { runAutoBackup } from '../lib/backup-folder';
 import { setupCrypto } from '../lib/crypto-setup';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
@@ -22,6 +23,8 @@ setupCrypto();
 
 // Lock again after the app has been in the background this long.
 const RELOCK_AFTER_MS = 30_000;
+// An automatic backup, when one is due, waits this long after a space opens, so the chats show first.
+const BACKUP_AFTER_MS = 10_000;
 
 // Whether this start made sure every space has its hidden chats slot and entry (lock/hidden.ts).
 let hiddenPrepared = false;
@@ -61,13 +64,16 @@ export default function RootLayout() {
       await show(kept);
       setPhase({ kind: 'open', space, passwordLock });
       saveLockScreenLook(kept).catch(() => undefined);
+      setTimeout(() => void runAutoBackup().catch(() => undefined), BACKUP_AFTER_MS);
     },
     [show],
   );
 
   const start = useCallback(async () => {
-    // Nothing of the space that was open stays in memory.
+    // Nothing of the space that was open stays in memory, nor its screens: they start afresh
+    // once a space opens (after a backup is restored too).
     setCurrentSpace(null);
+    setPhase({ kind: 'loading' });
     // The keystore holds the same entries whatever is in use: made once per start, beside the
     // rest, since the password screen need not wait for them.
     if (!hiddenPrepared) {
