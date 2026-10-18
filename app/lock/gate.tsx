@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 
 import { KeyboardAvoidingView } from '../components/keyboard';
 import { Button, Input, Text } from '../components/ui';
-import { useColors } from '../theme/context';
+import { useColors, useTheme } from '../theme/context';
 
 import { unlock, type LockConfig, type Unlocked } from './config';
 import { LockedOutError, lockedOutMessage } from './tries';
@@ -69,28 +69,21 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
   );
 }
 
-// The crescent from the design: a disc in the accent with its upper right cut away by a second disc.
+// The Erevos mark (brand/), white on a dark look and black on a light one.
+const MARK = {
+  dark: require('../assets/icon/mark-on-dark.png'),
+  light: require('../assets/icon/mark-on-light.png'),
+};
+
 export function Logo({ size = 56 }: { size?: number }) {
-  const colors = useColors();
-  const unit = size / 28;
-  // The crescent is the cutting disc's shadow, grown and moved onto the accent disc: a shadow is
-  // never drawn under its own view, so the cut is see-through and the glass or the glow shows through it.
+  const { scheme } = useTheme();
   return (
-    <View style={{ width: size, height: size }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <View
-        style={[
-          styles.disc,
-          {
-            left: 8 * unit,
-            top: 0,
-            width: 21 * unit,
-            height: 21 * unit,
-            borderRadius: 10.5 * unit,
-            boxShadow: `${-4.5 * unit}px ${3.5 * unit}px 0px ${1.5 * unit}px ${colors.primary}`,
-          },
-        ]}
-      />
-    </View>
+    <Image
+      source={MARK[scheme]}
+      style={{ width: size, height: size }}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    />
   );
 }
 
@@ -116,8 +109,5 @@ const styles = StyleSheet.create({
   },
   stretch: {
     alignSelf: 'stretch',
-  },
-  disc: {
-    position: 'absolute',
   },
 });
