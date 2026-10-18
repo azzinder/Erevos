@@ -12,8 +12,8 @@ import { fromBase64, randomBytes, toBase64 } from './crypto';
 // a packet does not say who it is for. A radio sends only so much a minute, as the law of its
 // region allows, so pieces go one at a time, each once the radio says it took the last.
 //
-// The radio stays linked while Erevos runs, chat open or not, until it is turned off. What comes
-// while no chat is open is kept a while for the next one.
+// The radio stays linked while Erevos runs, until it is turned off. What comes before the links are
+// listened to (lib/nearby-links.ts, once a space opens) is kept a while for then.
 //
 // Unless asked to let it (`shares`), Erevos keeps the radio from saying its own name and where it
 // is, as Meshtastic radios do now and then to every radio in reach: it sets its role to the one

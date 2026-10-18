@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 
 import { Button, Page, Row, SectionTitle, Text } from '../components/ui';
+import { resumeRadio } from '../lib/radio';
 import { onRadioEvent, radioStatus, sendText, startRadio, stopRadio, type RadioStatus } from '../modules/erevos-radio';
 
-// Test screen for two Android phones. Not part of the product.
+// Test screen for two Android phones. Not part of the product. The app's own links run meanwhile
+// (lib/nearby-links.ts): started or stopped here, the radio is left as they want it on leaving.
 
 const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.NEARBY_WIFI_DEVICES',
@@ -18,6 +20,7 @@ export default function RadioTest() {
   const [status, setStatus] = useState<RadioStatus | null>(null);
   const [peers, setPeers] = useState<string[]>([]);
   const [log, setLog] = useState<string[]>([]);
+  const touched = useRef(false);
 
   const add = (line: string) => setLog((lines) => [line, ...lines].slice(0, 80));
 
@@ -33,7 +36,9 @@ export default function RadioTest() {
     ];
     return () => {
       subscriptions.forEach((subscription) => subscription?.remove());
+      if (!touched.current) return;
       stopRadio();
+      resumeRadio();
     };
   }, []);
 
@@ -52,12 +57,14 @@ export default function RadioTest() {
   }
 
   function start() {
+    touched.current = true;
     add('starting');
     startRadio();
     setStatus(radioStatus());
   }
 
   function stop() {
+    touched.current = true;
     stopRadio();
     setPeers([]);
     setStatus(radioStatus());

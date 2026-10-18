@@ -3,7 +3,8 @@ import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSh
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { canLora, HAS_LINKS, HAS_RADIO, lora, onLinkEvent, sendLink, setLanLinks, startLinks, stopLinks } from '../lib/radio';
+import { canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
+import { nearbySettings, setCarryingKept, setLanKept } from '../lib/nearby-links';
 import { nearby, type Delivery } from '../lib/nearby';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
@@ -47,11 +48,10 @@ import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHid
 import { isGroupPacket } from '../lib/groups';
 import { takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
 import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type Relay } from '../lib/relay';
-import { answersAsk, appShown, holdReceiver } from '../lib/receiver';
+import { answersAsk, appShown, holdReceiver, openNearby, takeNearby } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, relayFor, spaceChats } from '../lib/space-chats';
 import { lookAtSpare, spareBackup, spareCode } from '../lib/spare';
-import { secureGet, secureSet } from '../lib/secure';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
@@ -131,12 +131,8 @@ const ASK_EVERY = 60 * 1000;
 // Messages opened from the relay in one look at it, at most: a minute's voice message comes in one.
 const RECEIVE_BATCH = 50;
 
-// Where the phone keeps whether it carries messages for others, and whether it looks for Erevos on
-// the same Wi-Fi (lib/secure.ts): 'off', or on.
-const CARRY_KEY = 'erevos.carry';
 // How the LoRa radio is, in a word (lib/lora.ts).
 const LORA_SHOWN = { off: 'Off', connecting: 'Linking', starting: 'Linking', up: 'Linked', down: 'Not linked' } as const;
-const LAN_KEY = 'erevos.lan';
 
 // Their photos and files up to this size are taken from the relay as soon as they come.
 const AUTO_TAKE = 16 * 1000 * 1000;
@@ -479,18 +475,16 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     }
   }
 
-  // Carries messages from phones nearby to their relays, or no longer (lib/nearby.ts).
+  // Carries messages from phones nearby to their relays, or no longer (lib/nearby-links.ts).
   function changeCarrying(on: boolean) {
-    nearby.setCarrying(on);
     setCarrying(on);
-    secureSet(CARRY_KEY, on ? 'on' : 'off').catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
+    setCarryingKept(on).catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
   }
 
-  // Looks for Erevos on the same Wi-Fi or hotspot too, or no longer (lib/radio.ts).
+  // Looks for Erevos on the same Wi-Fi or hotspot too, or no longer (lib/nearby-links.ts).
   function changeLan(on: boolean) {
-    setLanLinks(on);
     setLanOn(on);
-    secureSet(LAN_KEY, on ? 'on' : 'off').catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
+    setLanKept(on).catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
   }
 
   // Adds a contact from a code: typed or pasted here, or scanned and opened on the contact screen.
@@ -541,47 +535,25 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     }
   }
 
-  // The links nearby belong to the phone, not to a space: the radio, and the same Wi-Fi or hotspot
-  // (lib/radio.ts). What comes on them is sealed for a contact (lib/nearby.ts), so it opens only in
-  // the chats of the space that has them. The rest is kept a while for the other spaces. Hidden
-  // chats use the relay only.
+  // The links nearby are up while the space is open, whatever screen shows (lib/nearby-links.ts).
+  // What comes on them, this screen opens itself while it is open, as it shows it at once; the
+  // receiver beside the screens does meanwhile (lib/receiver.ts). Hidden chats use the relay only.
   useEffect(() => {
     if (!HAS_LINKS || hiddenKey) return;
     let active = true;
-    const stopNearby = nearby.start(sendLink);
-    secureGet(CARRY_KEY)
-      .then((value) => {
-        nearby.setCarrying(value !== 'off');
-        if (active) setCarrying(value !== 'off');
-      })
-      .catch(() => {
-        // Carrying stays as it was.
-      });
+    nearbySettings().then((settings) => {
+      if (!active) return;
+      setCarrying(settings.carrying);
+      setLanOn(settings.lan);
+    });
     const stopWatching = nearby.onChange(() => setNearbyChanged((n) => n + 1));
     const stopWatchingLora = lora.onChange(() => setNearbyChanged((n) => n + 1));
-    const subscriptions = [
-      onLinkEvent('onPeer', ({ id, kind }) => {
-        if (kind !== 'ble') nearby.linkUp(id); // 'ble' is presence only, not a data link
-      }),
-      onLinkEvent('onText', ({ peer, text }) => {
-        const packet = nearby.frameIn(peer, text);
-        if (packet) void nearbyCame.current(peer, packet);
-      }),
-    ];
-    secureGet(LAN_KEY)
-      .catch(() => null)
-      .then((value) => {
-        if (!active) return;
-        setLanOn(value !== 'off');
-        startLinks({ lan: value !== 'off' });
-      });
+    const release = takeNearby((link, packet) => nearbyCame.current(link, packet));
     return () => {
       active = false;
-      subscriptions.forEach((subscription) => subscription.remove());
       stopWatching();
       stopWatchingLora();
-      stopNearby();
-      stopLinks();
+      release();
     };
   }, []);
 
@@ -621,7 +593,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   useEffect(() => {
     if (!e2e || hiddenKey) return;
     void (async () => {
-      for (const packet of nearby.heldPackets()) await nearbyCame.current(null, packet);
+      for (const packet of nearby.heldPackets()) await openNearby(null, packet);
     })();
   }, [e2e]);
 
@@ -2349,7 +2321,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                     <DetailRow title="Find Erevos on the same Wi-Fi" right={<Toggle on={lanOn} />} onPress={() => changeLan(!lanOn)} />
                     <Text variant="caption" tone="muted">
                       {lanOn
-                        ? 'While Chat is open, Erevos phones and computers on the same Wi-Fi or hotspot find each other and talk directly, even with no internet. Anyone on that Wi-Fi can tell an Erevos app is there, not whose.'
+                        ? 'While a space is open, Erevos phones and computers on the same Wi-Fi or hotspot find each other and talk directly, even with no internet. Anyone on that Wi-Fi can tell an Erevos app is there, not whose.'
                         : HAS_RADIO
                           ? 'Only Bluetooth and Wi-Fi Aware look for phones nearby.'
                           : 'Nothing looks for Erevos nearby.'}

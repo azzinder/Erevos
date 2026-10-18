@@ -64,9 +64,9 @@ A good first hour:
 
 ## Chat with a nearby phone {#nearby}
 
-With **Chat** open, Erevos looks for other Erevos phones around it, over Bluetooth and, where the phone has it,
-Wi-Fi Aware, and on the Wi-Fi it is on, phones and computers alike. No internet, SIM or Wi-Fi network is needed. It
-carries messages to your contacts, end-to-end encrypted like those through the relay.
+While a space is open, on any screen, Erevos looks for other Erevos phones around it, over Bluetooth and, where the
+phone has it, Wi-Fi Aware, and on the Wi-Fi it is on, phones and computers alike. No internet, SIM or Wi-Fi network is
+needed. It carries messages to your contacts, end-to-end encrypted like those through the relay.
 
 1. Open **Nearby phones** from the menu on both phones. The first time, Android asks to find nearby devices (on Android 12 and
    older, also for the location); allow it, or the phones cannot find each other.
@@ -76,7 +76,9 @@ carries messages to your contacts, end-to-end encrypted like those through the r
 3. Pick the contact, type in **Message** and tap **Send**. Once their phone answers, the top of the chat says
    **Nearby**.
 
-- **Both phones keep Chat open:** the radio starts when Chat opens and stops when you leave it.
+- **While a space is open:** the links start when a space opens, whatever screen shows, and stop when it locks or
+  another space opens. A message from nearby shows on the home screen as one through the relay does, and a call rings
+  there too. On Android they stay up with Erevos in the background, while **Calls in the background** is on **Ring**.
 - **Range:** a few tens of metres in the open, less through walls.
 - **Wi-Fi Aware:** faster, but not every phone has it. Bluetooth works on all of them.
 - **The same Wi-Fi or a hotspot:** phones on one Wi-Fi, or on one phone's hotspot, find each other and talk directly,
@@ -110,7 +112,7 @@ radio, and on Android only.
 2. Open **LoRa radio** from the menu, tap **Find my radio**, read what it says, and tap your radio when it shows. A
    radio not paired yet asks for its PIN: it shows on the radio's screen, or is 123456.
 3. Your contact does the same with theirs, on the same mesh: the same region and the same first channel.
-4. Write as always, with **Chat** open. When the relay cannot be reached and no phone is near, a text goes over LoRa,
+4. Write as always. When the relay cannot be reached and no phone is near, a text goes over LoRa,
    and the line under the chat says so.
 
 - **Only text, and slowly:** a message goes in pieces of about 220 bytes, each a second or two on the air, and the law
@@ -285,9 +287,9 @@ a missed call.
   goes through it, so neither phone learns the other's IP address. Over Wi-Fi or mobile data, anywhere.
 - **Without a call relay** (a relay on your own computer, for example), Erevos asks first: the call then goes
   straight between the phones, only works on the same Wi-Fi, and each phone sees the other's address on it.
-- **Without internet:** on the same Wi-Fi or a phone's hotspot, with the chat open on both, a call needs no relay at
+- **Without internet:** on the same Wi-Fi or a phone's hotspot, with a space open on both, a call needs no relay at
   all: it is set up over the nearby link and goes straight between the phones (or computers). The same goes for group
-  messages and group calls, while the members have a chat open.
+  messages and group calls.
 - **Ringing in the background (Android):** while a space is open, Erevos keeps running when you leave it, with a
   quiet notice that says only "Erevos", and a call rings with the phone's ringtone and a notice that says only
   "Incoming call", over the lock screen too. Tap it to answer. With the password lock on, a call that rings shows
@@ -730,7 +732,8 @@ There is no way to recover it. Erevos keeps nothing that could open your data wi
 
 - Write to them: the phones learn which is which from the first message that
   comes nearby. Only contacts are found, so add each other first.
-- Keep **Chat** open on both phones.
+- Keep a space open on both phones: Erevos on the screen, or in the background with **Calls in the background** on
+  **Ring**.
 - Check that Bluetooth is on (and, on Android 12 and older, the location), and that Erevos may find nearby devices
   (Android settings → Apps → Erevos → Permissions).
 - Bring the phones closer. If one of them has no Wi-Fi Aware, they meet over Bluetooth, which is slower to start.

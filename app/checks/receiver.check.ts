@@ -1,7 +1,7 @@
 // Messages that come while a space is open but no chat is (lib/receiver.ts), through a real relay
 // and the real core: kept in the space's history, the sender told they came (not a message
-// request's), and nothing taken while the chat screen holds the receiver. Skipped, with a note,
-// when the core or the relay is not built.
+// request's), and nothing taken while the chat screen holds the receiver. The same from a phone
+// nearby, with no relay. Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -12,7 +12,8 @@ import { test } from 'node:test';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { E2E, ONLINE, toBase64Url, type Received } from '../lib/e2e';
-import { answersAsk, holdReceiver, onMessage, onReceived, startReceiver } from '../lib/receiver';
+import { nearby, Nearby } from '../lib/nearby';
+import { answersAsk, holdReceiver, onMessage, onReceived, openNearby, startReceiver, takeNearby } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
 import { setCurrentSpace } from '../lock/keys';
@@ -131,6 +132,84 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
     assert.deepEqual(opened.filter(Boolean), ['hi Bob', 'still there?', 'are you hiding?', 'held']);
   } finally {
     stop();
+    // A look under way ends first: what it tells could go to the phones nearby of the next check.
+    (await holdReceiver())();
+    stopListening();
+    stopOpened();
+    forgetSpaceChats();
+    setCurrentSpace(null);
+  }
+});
+
+test('what comes from a phone nearby while no chat is open is kept, and the mark goes back on that link', { skip: !coreReady }, async () => {
+  files.clear();
+  blobs.clear();
+  // Bob's space is open, on the home screen, with no relay: as on a Wi-Fi with no internet.
+  setCurrentSpace(0, randomBytes(32));
+  const bob = await spaceChats();
+  // Alice's phone, linked to Bob's: what one sends on the link comes out of the other.
+  const alice = await E2E.open('space', 1, randomBytes(32));
+  const aliceNearby = new Nearby();
+  const toAlice: Uint8Array[] = [];
+  const stopBob = nearby.start((link, text) => {
+    if (link !== 'ble-link-alice') return false;
+    const packet = aliceNearby.frameIn('ble-link-bob', text);
+    if (packet) toAlice.push(packet);
+    return true;
+  });
+  aliceNearby.start((link, text) => {
+    if (link !== 'ble-link-bob') return false;
+    const packet = nearby.frameIn('ble-link-alice', text);
+    if (packet) void openNearby('ble-link-alice', packet);
+    return true;
+  });
+  nearby.linkUp('ble-link-alice');
+  aliceNearby.linkUp('ble-link-bob');
+  const none = { relay: '', relayKey: '' };
+  const { identity: bobId } = await alice.addContact({ senderHex: '', key: toBase64Url(bob.e2e.bundle) }, '', none);
+  const write = async (text: string) => {
+    const sealed = await alice.seal(bobId, text, '', { at: none });
+    await aliceNearby.deliver(bobId, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], null);
+    return sealed.tag;
+  };
+
+  let told = 0;
+  const opened: string[] = [];
+  const stopListening = onReceived(() => told++);
+  const stopOpened = onMessage((received) => opened.push(received.text));
+  try {
+    await write('hi Bob');
+    await until(() => bob.history.messages().length === 1);
+    assert.equal(bob.history.messages()[0].text, 'hi Bob');
+    await until(() => told > 0);
+    // A message request: nothing back.
+    const aliceId = bob.e2e.contacts()[0].identity;
+    assert.equal(bob.e2e.contacts()[0].request, true);
+    await sleep(100);
+    assert.equal(toAlice.length, 0);
+
+    // Accepted: the next one is told as come, straight to Alice's phone, on the link it came on.
+    await bob.e2e.acceptRequest(aliceId);
+    const tag = await write('still near?');
+    await until(() => toAlice.length > 0);
+    const receipt = (await alice.receive(toAlice[0])) as Extract<Received, { kind: 'message' }>;
+    assert.deepEqual(receipt.got, [tag]);
+    assert.equal(nearby.isNear(aliceId), true);
+
+    // While the chat screen takes them, it opens them itself.
+    const taken: Uint8Array[] = [];
+    const release = takeNearby(async (_link, packet) => {
+      taken.push(packet);
+    });
+    await write('to the chat');
+    await until(() => taken.length === 1);
+    assert.equal(bob.history.messages().length, 2);
+    release();
+    await write('home again');
+    await until(() => bob.history.messages().length === 3);
+    assert.deepEqual(opened.filter(Boolean), ['hi Bob', 'still near?', 'home again']);
+  } finally {
+    stopBob();
     stopListening();
     stopOpened();
     forgetSpaceChats();

@@ -14,6 +14,7 @@ import { currentCall } from '../lib/call';
 import { onCallChange } from '../lib/calls';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { startIntegrityAlarm } from '../lib/integrity';
+import { startNearbyLinks } from '../lib/nearby-links';
 import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
 import { forgetSmsLink } from '../lib/sms-relay';
@@ -251,10 +252,12 @@ function Shell({ phase, error, lockState, onUnlock }: {
   );
 }
 
-// Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), and tells
-// it whether the app shows: only then do contacts hear the phone is open.
+// Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), from the
+// relay and from phones nearby (lib/nearby-links.ts), and tells it whether the app shows: only then
+// do contacts hear the phone is open.
 function Receiver() {
   useEffect(() => startReceiver(), []);
+  useEffect(() => startNearbyLinks(), []);
   // On Android, it goes on while Erevos is in the background, so a call rings (lib/background.ts).
   useEffect(() => startBackground(), []);
   useEffect(() => {

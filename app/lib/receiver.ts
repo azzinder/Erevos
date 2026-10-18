@@ -21,6 +21,11 @@ import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 // came waits with the contact (E2E.hold). Otherwise, while the app shows, what is told says the
 // phone is open, and so does an answer to a contact who asks. Hidden chats are not looked at: their key is in memory only
 // while they are open. What this phone carries from phones nearby goes to its relays meanwhile.
+//
+// What comes from phones nearby (lib/nearby.ts, on the links lib/nearby-links.ts keeps up while
+// the space is open) is opened here the same way, one packet at a time, unless the chat screen
+// takes it itself (takeNearby). The marks go back to the contact's phone nearby when it is, as
+// with no internet, and through the relay too.
 
 const EVERY = 3000;
 // Messages taken in one look, at most.
@@ -57,6 +62,14 @@ export function answersAsk(toldAt: number, now = Date.now()): boolean {
   return shows && now - toldAt > (ONLINE * 1000) / 2;
 }
 const messageListeners = new Set<(received: Extract<Received, { kind: 'message' }>) => void>();
+// Where the last look found the space's relay and queue, once it knew the relay's key: what the
+// marks for what came nearby say too.
+let lastPlace: Place | null = null;
+// The chat screen, while it takes what comes nearby itself, and what came nearby, one at a time.
+type NearbyTaker = (link: string | null, packet: Uint8Array) => Promise<void>;
+let nearbyTaker: NearbyTaker | null = null;
+let nearbyTurn: Promise<unknown> = Promise.resolve();
+const nearbyState: State = { place: null, seen: -1, receipts: {}, answers: new Set() };
 // How long to wait before the next look, asked each time.
 let pace = () => EVERY;
 
@@ -105,6 +118,7 @@ export function setReceiverPace(next: () => number): void {
 /** Looks at the open space's relay queue every few seconds (or every `every` milliseconds) until the function it gives is called. */
 export function startReceiver(every?: number): () => void {
   const state: State = { place: null, seen: -1, receipts: {}, answers: new Set() };
+  lastPlace = null;
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   const next = () => {
@@ -126,7 +140,62 @@ export function startReceiver(every?: number): () => void {
   return () => {
     stopped = true;
     if (timer) clearTimeout(timer);
+    lastPlace = null;
   };
+}
+
+/**
+ * Opens a packet from a phone nearby, on `link`, or one kept for this space (null): in the chat
+ * screen while it takes them, otherwise here, as one from the relay. One for none of the space's
+ * chats is kept for the others.
+ */
+export function openNearby(link: string | null, packet: Uint8Array): Promise<void> {
+  const next = nearbyTurn.catch(() => undefined).then(() => (nearbyTaker ? nearbyTaker(link, packet) : openHere(link, packet)));
+  nearbyTurn = next;
+  return next.catch(() => undefined);
+}
+
+/** Has the chat screen open what comes nearby itself (`taker`), until the function it gives is called. */
+export function takeNearby(taker: NearbyTaker): () => void {
+  nearbyTaker = taker;
+  return () => {
+    if (nearbyTaker === taker) nearbyTaker = null;
+  };
+}
+
+async function openHere(link: string | null, packet: Uint8Array): Promise<void> {
+  if (!hasCore()) {
+    if (link) nearby.hold(packet);
+    return;
+  }
+  // A group's message (lib/groups.ts), as on the same Wi-Fi with no internet.
+  if (isGroupPacket(packet)) {
+    const ours = await takeGroupPacket(packet).catch(() => false);
+    if (!ours && link) nearby.hold(packet);
+    else if (!link) nearby.dropHeld(packet);
+    return;
+  }
+  const chats = await spaceChats();
+  let received: Received;
+  try {
+    received = await chats.e2e.receive(packet);
+  } catch {
+    if (!link) nearby.dropHeld(packet);
+    return;
+  }
+  if (received.kind === 'refused' && received.reason === 'unknown') {
+    if (link) nearby.hold(packet);
+    return;
+  }
+  if (!link) nearby.dropHeld(packet);
+  if (received.kind === 'message' && link) nearby.heardOn(received.identity, link);
+  const changed = await keep(chats, received, nearbyState);
+  if (received.kind === 'message') {
+    messageListeners.forEach((listener) => listener(received));
+    if (received.group) await takeGroupSignal(received.identity, received.group, received.request).catch(() => undefined);
+  }
+  if (changed) listeners.forEach((listener) => listener());
+  await sendReceipts(chats, lastPlace, nearbyState);
 }
 
 async function placeNow(): Promise<Place | null> {
@@ -164,6 +233,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
       place.keyAsked = true;
     }
   }
+  if (place.keyAsked) lastPlace = place;
   await sendPending(chats, place.sends);
   // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
   void nearby.uploadCarried((url, sealed) => carryTo(place.sends, url, sealed)).catch(() => undefined);
@@ -218,6 +288,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     const queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
     await updateCurrentSpaceData({ ownQueue: queue });
     state.place = { ...place, queue };
+    if (state.place.keyAsked) lastPlace = state.place;
     return changed;
   }
   await answerInvites(chats.e2e, place.queue.senderHex, place.here, place.sends).catch(() => undefined);
@@ -263,22 +334,29 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   return changed;
 }
 
-// Seals word for a contact and hands it to the relay, after the first packet of the conversation
-// if the relay has not taken that yet.
-async function tell({ e2e }: SpaceChats, place: Place, identity: string, extra: Extra) {
-  const sealed = await e2e.seal(identity, '', place.queue.senderHex, { ...extra, at: place.here });
-  const to = contactTarget(place.sends, sealed);
-  if (sealed.first) {
-    await sendMessage(to, fromHex(sealed.sender), sealed.first);
-    await e2e.firstSent(identity);
-  }
-  await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+// Seals word for a contact and hands it to their phone nearby when it is, and to the relay, after
+// the first packet of the conversation if the relay has not taken that yet (lib/nearby.ts). With
+// no `place`, it says nothing of where this phone's queue is, and goes nearby only.
+async function tell({ e2e }: SpaceChats, place: Place | null, identity: string, extra: Extra) {
+  const sealed = await e2e.seal(identity, '', place?.queue.senderHex ?? '', { ...extra, at: place?.here ?? { relay: '', relayKey: '' } });
+  const relay =
+    place && sealed.sender
+      ? async () => {
+          const to = contactTarget(place.sends, sealed);
+          if (sealed.first) {
+            await sendMessage(to, fromHex(sealed.sender), sealed.first);
+            await e2e.firstSent(identity);
+          }
+          await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+        }
+      : null;
+  await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
 }
 
 // Tells contacts' phones which of their messages came, and, while the app shows, that this phone
 // is open, as the ones who asked wait to hear. What the relay cannot take now is told with the
 // next look.
-async function sendReceipts(chats: SpaceChats, place: Place, { receipts, answers }: State) {
+async function sendReceipts(chats: SpaceChats, place: Place | null, { receipts, answers }: State) {
   for (const peer of new Set([...Object.keys(receipts), ...answers])) {
     const got = receipts[peer] ?? [];
     delete receipts[peer];

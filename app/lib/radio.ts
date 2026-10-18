@@ -227,6 +227,11 @@ export function stopLinks(): void {
   started = false;
 }
 
+/** Starts the radio again if the links want it, as after the radio test screen stopped it (app/radio.tsx). */
+export function resumeRadio(): void {
+  if (HAS_RADIO && started) startRadio();
+}
+
 /** Sends text on a link from an onPeer event. False when the link is not up. */
 export function sendLink(link: string, text: string): boolean {
   if (link.startsWith(SLOW_PREFIX)) return lora.sendFrame(link, text);
