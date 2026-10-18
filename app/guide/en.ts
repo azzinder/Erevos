@@ -110,6 +110,9 @@ Under each of your messages to a contact, **✓** says the relay took it, **✓�
 message counts as read once its chat shows on the screen. Messages to a nearby phone have no marks.
 
 - **They see when you read:** your phone tells theirs, as theirs tells yours. There is no switch to stop it yet.
+- **When messages come:** Erevos looks at the relay every few seconds while it is open and unlocked, on any screen,
+  and the home screen moves the chat to the top by itself. Closed, locked, or long in the background, it does not:
+  messages wait on the relay, up to 14 days, and come once Erevos opens again. There are no notifications yet.
 
 ### Names and deleting
 

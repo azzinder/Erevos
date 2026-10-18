@@ -4,12 +4,10 @@
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
-import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { createServer } from 'node:net';
-import { after, before, test } from 'node:test';
+import { before, test } from 'node:test';
 
 import { blobs } from './files-memory';
+import { ready, relayNote, startRelay } from './real-relay';
 import {
   bytesSource,
   chunkPlan,
@@ -170,37 +168,7 @@ test('a message that leaves the history takes its file with it', async () => {
 });
 
 // Through real relays.
-const binary = new URL('../../target/debug/erevos-relay', import.meta.url).pathname;
-const ready = existsSync(binary) && typeof WebSocket === 'function';
-if (!ready) console.log('Skipping the file store checks: build the relay first (cargo build -p erevos-relay)');
-
-function freePort(): Promise<number> {
-  return new Promise((resolve) => {
-    const server = createServer().listen(0, '127.0.0.1', () => {
-      const { port } = server.address() as { port: number };
-      server.close(() => resolve(port));
-    });
-  });
-}
-
-const relays: ChildProcess[] = [];
-
-// Node's WebSocket cannot send the token header that React Native's does, so these relays take none.
-async function startRelay(): Promise<string> {
-  const [tcp, ws] = [await freePort(), await freePort()];
-  const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env: { ...process.env, EREVOS_RELAY_TOKEN: '' }, stdio: 'ignore' });
-  relays.push(child);
-  const url = `ws://127.0.0.1:${ws}`;
-  for (let i = 0; i < 50; i++) {
-    try {
-      (await RelaySession.open({ url })).close();
-      return url;
-    } catch {
-      await new Promise((r) => setTimeout(r, 100));
-    }
-  }
-  throw new Error(`the relay at ${url} did not start`);
-}
+relayNote('the file store checks');
 
 let mine = '';
 let theirs = '';
@@ -209,10 +177,6 @@ before(async () => {
   if (!ready) return;
   mine = await startRelay();
   theirs = await startRelay();
-});
-
-after(() => {
-  for (const relay of relays) relay.kill();
 });
 
 test('a file goes to our relay and comes through theirs, then leaves the relay', { skip: !ready }, async () => {

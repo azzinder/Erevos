@@ -31,6 +31,8 @@ import { History, newTag, type Mark } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type Relay } from '../lib/relay';
+import { holdReceiver } from '../lib/receiver';
+import { contactTarget, relayFor, spaceChats } from '../lib/space-chats';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
@@ -117,27 +119,6 @@ const PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.ACCESS_FINE_LOCATION',
 ];
 
-/** A relay to send to, with the second relay to go through when one is set. Null without an address. */
-function relayFor(url: string, token: string, via: string, viaToken: string): Relay | null {
-  const address = url.trim();
-  if (!address) return null;
-  const second = via.trim();
-  return {
-    url: address,
-    token: token.trim() || undefined,
-    via: second && !sameRelay(second, address) ? { url: second, token: viaToken.trim() || undefined } : undefined,
-  };
-}
-
-/** Where to send to a contact: our own relay when they use it too, otherwise their relay,
- *  reached through ours (or the second relay) so their relay never sees this phone's address. */
-function contactTarget(own: Relay, where: { relay: string; relayKey: string }): Relay {
-  if (!where.relay || sameRelay(where.relay, own.url)) return own;
-  if (!where.relayKey) throw new Error(`That contact uses the relay at ${where.relay}, and its link has no key for it. Ask them for a new link.`);
-  return { url: where.relay, key: fromBase64Url(where.relayKey), via: own.via ?? { url: own.url, token: own.token } };
-}
-
-// A contact's name if this chat gave it one, otherwise the start of their key.
 function contactName(peer: string, contacts: ContactInfo[]): string | null {
   const identity = peer.slice(CONTACT_PREFIX.length);
   return contacts.find((contact) => contact.identity === identity)?.name || null;
@@ -449,10 +430,12 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
 
   // Restores the relay settings and our queue this space keeps on the phone, sealed with its key
   // (lock/space-data.ts), and its account and contacts (lock/e2e-data.ts). Another space finds
-  // only its own.
+  // only its own. The space's own chat takes its messages itself while it is open, so the
+  // receiver beside the other screens (lib/receiver.ts) waits meanwhile, and shares its chats.
   useEffect(() => {
     let active = true;
     const { space, key } = currentSpace();
+    const held = hiddenKey ? null : holdReceiver();
     (hiddenKey ? loadHiddenData(space, hiddenKey) : loadCurrentSpaceData())
       .then((data) => {
         if (!active) return;
@@ -470,9 +453,12 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
           setNote(NO_CORE);
           return;
         }
-        const holder = hiddenKey ? 'hidden' : 'space';
-        const kept = await History.open(holder, space, hiddenKey ?? key);
+        await held;
         if (!active) return;
+        const shared = hiddenKey ? null : await spaceChats();
+        const kept = shared?.history ?? (await History.open('hidden', space, hiddenKey!));
+        if (!active) return;
+        if (shared) voiceParts.current = shared.voiceParts;
         history.current = kept;
         // What disappeared while the chat was closed goes first.
         await kept.expire(Date.now());
@@ -482,7 +468,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
           ...kept.messages().map((m) => ({ ...m, until: m.until ?? 0, lasts: m.lasts ?? 0, mark: m.mark ?? 0, id: nextId.current++ })),
           ...list,
         ]);
-        const chats = await E2E.open(holder, space, hiddenKey ?? key);
+        const chats = shared?.e2e ?? (await E2E.open('hidden', space, hiddenKey!));
         if (!active) return;
         setE2E(chats);
         setContacts(chats.contacts());
@@ -502,6 +488,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       });
     return () => {
       active = false;
+      void held?.then((release) => release());
     };
   }, []);
 
@@ -597,18 +584,16 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       busy = true;
       try {
         await sendPending(e2e, sends);
-        for (let i = 0; i < RECEIVE_BATCH; i++) {
+        for (let i = 0; i < RECEIVE_BATCH && active; i++) {
           const bytes = await receiveMessage(own, recipient);
-          if (!active) return;
-          if (failed !== null) {
+          if (failed !== null && active) {
             const shown = failed;
             setNote((current) => (current === shown ? 'The relay answers again.' : current));
             failed = null;
           }
           if (!bytes) break;
-          const received = await e2e.receive(bytes);
-          if (!active) return;
-          handle(received);
+          // Taken from the relay, so kept even if the chat closed meanwhile.
+          handle(await e2e.receive(bytes));
         }
         await sendReceipts(sends);
       } catch (error) {

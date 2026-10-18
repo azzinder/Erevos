@@ -6,12 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LockIcon, MoreIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { font, fontStyle, Sheet, Text } from '../components/ui';
+import { hasCore } from '../lib/core';
 import { buildInbox, filterInbox, rowTime, shownName, type InboxRow } from '../lib/inbox';
+import { onReceived } from '../lib/receiver';
+import { spaceChats } from '../lib/space-chats';
 import { Archive } from '../lock/archive';
 import { useLock } from '../lock/context';
 import { loadE2EData } from '../lock/e2e-data';
 import { Logo } from '../lock/gate';
-import { History } from '../lock/history';
+import { History, type Message } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
@@ -19,7 +22,8 @@ import { useStyles, useTheme } from '../theme/context';
 
 // The home screen: the space's chats, newest first, as a messenger shows them, with a search over
 // names and last messages, the relay's state, and the rest of the app behind the menu. It is read
-// again each time it comes back into view, so a chat just written in moves to the top. Hidden
+// again each time it comes back into view, so a chat just written in moves to the top, and each
+// time a message comes while it shows (lib/receiver.ts). Hidden
 // chats never show here; the menu offers them in every space alike.
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
@@ -55,20 +59,30 @@ export default function Home() {
       let active = true;
       const { space: current, key } = currentSpace();
       const quiet = <T,>(promise: Promise<T>, fallback: T) => promise.catch(() => fallback);
-      void Promise.all([
-        quiet(loadE2EData('space', current, key), null),
-        quiet(History.open('space', current, key).then((h) => h.messages()), []),
-        quiet(Archive.open('space', current, key).then((a) => a.chats()), []),
-        quiet(loadCurrentSpaceData(), null),
-      ]).then(([e2e, messages, imported, data]) => {
-        if (!active) return;
-        const at = Date.now();
-        setNow(at);
-        setRows(buildInbox(e2e?.contacts ?? [], messages, imported, at));
-        setRelay(!data?.url ? 'none' : data.ownQueue ? 'ready' : 'no-queue');
-      });
+      // The chats as the chat screen and the receiver have them (lib/space-chats.ts), or, in a
+      // build that cannot encrypt, as kept on the phone.
+      const chats = (): Promise<[{ identity: string; name: string; timer: number }[], Message[]]> =>
+        hasCore()
+          ? spaceChats().then(({ e2e, history }) => [e2e.contacts(), history.messages()])
+          : Promise.all([loadE2EData('space', current, key).then((d) => d.contacts), History.open('space', current, key).then((h) => h.messages())]);
+      const load = () =>
+        void Promise.all([
+          quiet(chats(), [[], []]),
+          quiet(Archive.open('space', current, key).then((a) => a.chats()), []),
+          quiet(loadCurrentSpaceData(), null),
+        ]).then(([[contacts, messages], imported, data]) => {
+          if (!active) return;
+          const at = Date.now();
+          setNow(at);
+          setRows(buildInbox(contacts, messages, imported, at));
+          setRelay(!data?.url ? 'none' : data.ownQueue ? 'ready' : 'no-queue');
+        });
+      load();
+      // What comes while this screen shows moves its chat to the top.
+      const stop = onReceived(load);
       return () => {
         active = false;
+        stop();
       };
     }, []),
   );

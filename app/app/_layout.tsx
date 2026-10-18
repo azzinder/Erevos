@@ -9,6 +9,8 @@ import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
 import { runAutoBackup } from '../lib/backup-folder';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
+import { startReceiver } from '../lib/receiver';
+import { forgetSpaceChats } from '../lib/space-chats';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
 import { PasswordGate } from '../lock/gate';
@@ -74,6 +76,7 @@ export default function RootLayout() {
     // Nothing of the space that was open stays in memory, nor its screens: they start afresh
     // once a space opens (after a backup is restored too).
     setCurrentSpace(null);
+    forgetSpaceChats();
     setPhase({ kind: 'loading' });
     // The keystore holds the same entries whatever is in use: made once per start, beside the
     // rest, since the password screen need not wait for them.
@@ -204,8 +207,15 @@ function Shell({ phase, error, lockState, onUnlock }: {
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
+      <Receiver key={phase.space} />
       <AlertHost />
       {bar}
     </LockContext.Provider>
   );
+}
+
+// Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts).
+function Receiver() {
+  useEffect(() => startReceiver(), []);
+  return null;
 }

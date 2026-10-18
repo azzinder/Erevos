@@ -18,6 +18,7 @@ import {
   type AutoBackup,
 } from '../lib/backup-folder';
 import { pickFile, TooLargeError } from '../lib/pick-file';
+import { holdReceiver } from '../lib/receiver';
 import { backupKey, makeBackup, openBackup, restoreBackup, WrongBackupPasswordError, type Backup } from '../lock/backup';
 import { useLock } from '../lock/context';
 import { useTheme } from '../theme/context';
@@ -173,8 +174,15 @@ export default function Backups() {
       }
       setAsking(null);
       if (await confirm('Replace everything', `Every space on this ${DEVICE}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.`)) {
-        await restoreBackup(backup);
-        lockNow();
+        // Nothing may keep what was here over what the backup brings: the receiver stops first,
+        // and starts again with the space as restored.
+        const release = await holdReceiver();
+        try {
+          await restoreBackup(backup);
+          lockNow();
+        } finally {
+          release();
+        }
       }
     }
   }
