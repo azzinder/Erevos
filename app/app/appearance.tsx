@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { Button, Card, Chip, Page, Row, SectionTitle, Sheet, Text } from '../components/ui';
@@ -32,7 +32,8 @@ import { BUBBLE_SHAPES, WALLPAPERS, type BubbleShape, type Wallpaper } from '../
 // light or dark, the colours (the style's own, one of the twelve LPHL palettes, or a colour of
 // your own) and the text on coloured areas; and how a chat draws its messages. Neon and Matrix
 // are styles of their own: always dark, in their own colours, with a scene behind the screens.
-// Each space keeps its own (theme/look.ts), and every space shows this same screen.
+// Each space keeps its own (theme/look.ts), and every space shows this same screen. A chat can
+// have its own too, chosen with the same choices from its details (app/chat.tsx).
 
 const LOOK_LABELS: Record<LookName, string> = { flat: 'Flat', glass: 'Glass' };
 const GLASS_KIND_LABELS: Record<GlassKind, string> = { cards: 'Panes', sheet: 'One pane' };
@@ -114,6 +115,11 @@ function PaletteTile({ choice, style, scheme, selected, onPress }: {
 }
 
 export default function Appearance() {
+  return <AppearanceEditor />;
+}
+
+/** The Appearance screen's choices: the space's look, or a chat's own (`title` and `top` then say whose). */
+export function AppearanceEditor({ title = 'Appearance', top }: { title?: string; top?: ReactNode }) {
   const { look, setLook, scheme, colors } = useTheme();
   const system = useColorScheme();
   const styles = useStyles(makeStyles);
@@ -135,7 +141,8 @@ export default function Appearance() {
 
   return (
     <Page>
-      <Text variant="title">Appearance</Text>
+      <Text variant="title">{title}</Text>
+      {top}
 
       <SectionTitle title="Look" />
       <Row wrap>
@@ -296,9 +303,11 @@ export default function Appearance() {
         </Row>
       </Card>
 
-      <Text variant="caption" tone="muted" style={styles.hint}>
-        Each space keeps its own look. The password screen shows the look last used.
-      </Text>
+      {top ? null : (
+        <Text variant="caption" tone="muted" style={styles.hint}>
+          Each space keeps its own look. The password screen shows the look last used.
+        </Text>
+      )}
 
       <Sheet visible={pickColor} onClose={() => setPickColor(false)} title="My color">
         <View style={styles.dots}>

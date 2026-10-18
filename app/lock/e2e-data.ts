@@ -1,3 +1,4 @@
+import { checkedLook, type Look } from '../theme/look';
 import { sealedFile, type Holder } from './sealed-file';
 
 // What each space, and each space's hidden chats, keeps for end-to-end encryption (lib/e2e.ts):
@@ -30,6 +31,8 @@ export type Contact = {
   /** They wrote first, from this chat's link, and this chat has not accepted them yet: a message
    *  request. Their phone hears nothing back (not even that a message came) until it does. */
   request: boolean;
+  /** This chat's own look (Appearance, from its details), or null for the space's. Only this phone knows it. */
+  look: Look | null;
 };
 
 export type E2EData = {
@@ -82,6 +85,7 @@ function checkedContact(value: unknown): Contact | null {
     timer: isTimer(v.timer) ? v.timer : 0,
     timerAt: isTime(v.timerAt) ? v.timerAt : 0,
     request: v.request === true,
+    look: v.look && typeof v.look === 'object' ? checkedLook(v.look) : null,
   };
 }
 

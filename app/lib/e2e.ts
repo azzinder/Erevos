@@ -5,6 +5,7 @@ import { isTag, newTag } from '../lock/history';
 import * as core from './core';
 import { isVoicePart, splitVoice, type VoicePart } from './voice';
 import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import type { Look } from '../theme/look';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
 // so neither its contacts nor the relay can tie the two together. The account's public keys
@@ -170,7 +171,7 @@ export function fromBase64Url(text: string): Uint8Array {
 }
 
 /** A contact as the chat shows it. `name` is empty until this chat gives one. */
-export type ContactInfo = { identity: string; sender: string; name: string; timer: number; request: boolean };
+export type ContactInfo = { identity: string; sender: string; name: string; timer: number; request: boolean; look: Look | null };
 
 export type Received =
   // `timer`: seconds this message lasts once read, 0 for ever. `timerChanged`: the other phone set
@@ -261,7 +262,7 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, timer, request }) => ({ identity, sender, name, timer, request }));
+    return this.data.contacts.map(({ identity, sender, name, timer, request, look }) => ({ identity, sender, name, timer, request, look }));
   }
 
   /** Accepts a message request: the chat with them is like any other from now on. */
@@ -298,6 +299,15 @@ export class E2E {
       const contact = this.find(identity);
       if (!contact) throw new Error('No such contact.');
       await this.save(this.withContact({ ...contact, name: cleanName(name) }));
+    });
+  }
+
+  /** Gives a chat its own look, kept with the contact and sealed; null gives it the space's again. */
+  setLook(identity: string, look: Look | null): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error('No such contact.');
+      await this.save(this.withContact({ ...contact, look }));
     });
   }
 
@@ -343,6 +353,7 @@ export class E2E {
           timer: 0,
           timerAt: 0,
           request: false,
+          look: this.find(identity)?.look ?? null,
         }),
       );
       return { identity, added: true };
@@ -483,6 +494,7 @@ export class E2E {
       timerAt: timing.timerAt,
       // Someone new who has this chat's link writes first: a request until accepted.
       request: known ? known.request : true,
+      look: known?.look ?? null,
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
     const { text, tag, erase, got, read, voice } = message;

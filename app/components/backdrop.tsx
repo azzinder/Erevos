@@ -73,48 +73,41 @@ export function Backdrop({ spec, paneTop = 0, contentTop = 0, children }: {
     const { width: w, height: h } = e.nativeEvent.layout;
     if (w > 0 && h > 0) setBox({ width: w, height: h });
   };
-  if (!spec) return <>{children}</>;
-  const content = <View style={{ flex: 1, paddingTop: contentTop }}>{children}</View>;
-  if (spec.kind === 'pattern' && spec.pattern) {
-    const { name, ground, dark, glass } = spec.pattern;
-    return (
-      <View style={{ flex: 1 }} onLayout={measure}>
-        <WallpaperView pattern={name} width={width} height={height} ground={ground} accent={spec.accent} dark={dark} />
-        {glass ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: glassHaze(spec.side) }]} /> : null}
-        {content}
-      </View>
-    );
-  }
-  if (spec.kind !== 'glow' && spec.kind !== 'wall' && spec.kind !== 'pattern') {
-    const Scene = { grid: NeonGrid, rain: MatrixRain, ruled: RuledPaper, aurora: AuroraLight }[spec.kind];
-    return (
-      <View style={{ flex: 1 }} onLayout={measure}>
-        <Scene width={width} height={height} />
-        {content}
-      </View>
-    );
-  }
-  if (spec.kind === 'glow') {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#161826' }} onLayout={measure}>
-        <View pointerEvents="none" style={[StyleSheet.absoluteFill, gradientStyle(glowLayer(width))]} />
-        {content}
-      </View>
-    );
-  }
-  const wall = wallLayers(spec.side, spec.accent);
-  return (
-    <View style={{ flex: 1, backgroundColor: wall.base }} onLayout={measure}>
-      {wall.layers.map((layer, i) => (
-        <View key={i} pointerEvents="none" style={[StyleSheet.absoluteFill, gradientStyle(layer)]} />
-      ))}
-      <WaterLines color={wall.lines} />
-      {spec.sheet ? (
-        <Pane spec={spec} top={paneTop} width={width} height={height} />
+  // One tree whatever the look draws, the screen keyed in it, so changing the look (a chat's own,
+  // from its details) keeps the screen and what it holds instead of building it anew.
+  let ground: string | undefined;
+  let layers: ReactNode[] = [];
+  if (spec?.kind === 'pattern' && spec.pattern) {
+    const { name, ground: base, dark, glass } = spec.pattern;
+    layers = [
+      <WallpaperView key="pattern" pattern={name} width={width} height={height} ground={base} accent={spec.accent} dark={dark} />,
+      glass ? <View key="haze" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: glassHaze(spec.side) }]} /> : null,
+    ];
+  } else if (spec?.kind === 'glow') {
+    ground = '#161826';
+    layers = [<View key="glow" pointerEvents="none" style={[StyleSheet.absoluteFill, gradientStyle(glowLayer(width))]} />];
+  } else if (spec?.kind === 'wall') {
+    const wall = wallLayers(spec.side, spec.accent);
+    ground = wall.base;
+    layers = [
+      ...wall.layers.map((layer, i) => <View key={`wall${i}`} pointerEvents="none" style={[StyleSheet.absoluteFill, gradientStyle(layer)]} />),
+      <WaterLines key="water" color={wall.lines} />,
+      spec.sheet ? (
+        <Pane key="pane" spec={spec} top={paneTop} width={width} height={height} />
       ) : (
-        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: glassHaze(spec.side) }]} />
-      )}
-      {content}
+        <View key="haze" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: glassHaze(spec.side) }]} />
+      ),
+    ];
+  } else if (spec && spec.kind !== 'pattern') {
+    const Scene = { grid: NeonGrid, rain: MatrixRain, ruled: RuledPaper, aurora: AuroraLight }[spec.kind];
+    layers = [<Scene key={spec.kind} width={width} height={height} />];
+  }
+  return (
+    <View style={{ flex: 1, backgroundColor: ground }} onLayout={measure}>
+      {layers}
+      <View key="screen" style={{ flex: 1, paddingTop: spec ? contentTop : 0 }}>
+        {children}
+      </View>
     </View>
   );
 }

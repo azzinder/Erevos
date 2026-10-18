@@ -189,7 +189,8 @@ function Shell({ phase, error, lockState, onUnlock }: {
     <LockContext.Provider value={lockState}>
       <Stack
         key={phase.space}
-        screenLayout={({ children }) => <ScreenBackdrop>{children}</ScreenBackdrop>}
+        // A chat draws its own backdrop, in its own look (theme/chat-theme.tsx).
+        screenLayout={({ children, route }) => (route.name === 'chat' ? children : <ScreenBackdrop>{children}</ScreenBackdrop>)}
         screenOptions={{
           title: '',
           headerStyle: { backgroundColor: headerColor },
@@ -200,6 +201,7 @@ function Shell({ phase, error, lockState, onUnlock }: {
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="chat" options={{ headerShown: false }} />
       </Stack>
       {bar}
     </LockContext.Provider>
