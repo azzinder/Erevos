@@ -33,7 +33,25 @@ export type Contact = {
   request: boolean;
   /** This chat's own look (Appearance, from its details), or null for the space's. Only this phone knows it. */
   look: Look | null;
+  /** The picture this chat gives them instead of the one drawn from their key, or null. Only this phone knows it. */
+  avatar: Avatar | null;
 };
+
+/** A contact's picture of this chat's choosing: a sign (an emoji) on a colour. */
+export type Avatar = { kind: 'emoji'; emoji: string; color: string };
+
+const HEX_COLOR = /^#[0-9A-F]{6}$/;
+
+/** A kept picture, checked: one this version does not know (written by a newer one, or damaged) is none. */
+export function checkedAvatar(value: unknown): Avatar | null {
+  const v = (value ?? {}) as Partial<Record<keyof Avatar, unknown>>;
+  if (v.kind !== 'emoji' || !isText(v.emoji) || typeof v.color !== 'string') return null;
+  const emoji = v.emoji.trim();
+  const color = v.color.toUpperCase();
+  // One sign: a few code points at most (a flag, a skin tone, a joined emoji).
+  if (!emoji || [...emoji].length > 8 || /[\u0000-\u001f\u202a-\u202e\u2066-\u2069]/.test(emoji) || !HEX_COLOR.test(color)) return null;
+  return { kind: 'emoji', emoji, color };
+}
 
 export type E2EData = {
   /** The account's secret keys, base64. Empty until the chat first opens. */
@@ -86,6 +104,7 @@ function checkedContact(value: unknown): Contact | null {
     timerAt: isTime(v.timerAt) ? v.timerAt : 0,
     request: v.request === true,
     look: v.look && typeof v.look === 'object' ? checkedLook(v.look) : null,
+    avatar: checkedAvatar(v.avatar),
   };
 }
 
