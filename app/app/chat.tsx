@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Image, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, Share, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onRadioEvent, sendText, startRadio, stopRadio } from '../modules/erevos-radio';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
@@ -36,6 +37,10 @@ import { contactTarget, relayFor, spaceChats } from '../lib/space-chats';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
+import { ChatTheme } from '../theme/chat-theme';
+import type { Look } from '../theme/look';
+import { ScreenBackdrop } from '../components/backdrop';
+import { AppearanceEditor } from './appearance';
 
 // Chat with contacts through the relay, end-to-end encrypted (lib/e2e.ts), and with nearby phones
 // over the radio link, not encrypted yet. A contact is added from their contact link, which
@@ -174,6 +179,8 @@ export default function ChatScreen() {
   const { contact, hidden, setup } = useLocalSearchParams<{ contact?: string; hidden?: string; setup?: string }>();
   const [asking, setAsking] = useState<'open' | 'change' | null>(hidden === '1' ? 'open' : null);
   const initial = typeof contact === 'string' && /^[0-9a-f]{64}$/.test(contact) ? `${CONTACT_PREFIX}${contact}` : null;
+  // The look of the chat in view (its own, or the space's), as the chat showing says.
+  const [chatLook, setChatLook] = useState<ChatLook | null>(null);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -187,51 +194,90 @@ export default function ChatScreen() {
 
   if (Platform.OS === 'ios') {
     return (
-      <Page>
-        <Text tone="muted">Chat runs on Android and on a computer for now.</Text>
-      </Page>
+      <ScreenBackdrop>
+        <Page>
+          <BackButton />
+          <Text tone="muted">Chat runs on Android and on a computer for now.</Text>
+        </Page>
+      </ScreenBackdrop>
     );
   }
 
   // The message field rises with the keyboard, and clears the phone's navigation bar without it.
+  // The chat has no header of its own: its top row has the back arrow, and it draws its backdrop
+  // in its own look from the status bar down.
   return (
-    <KeyboardPaddedView bottom={insets.bottom} style={layout.screen}>
-      <View style={[layout.screen, hiddenKey && layout.gone]}>
-        <Chat hiddenKey={null} initial={initial} setup={setup === '1'} shown={!hiddenKey} onHidden={() => setAsking('open')} />
-      </View>
-      {hiddenKey ? (
-        <Chat hiddenKey={hiddenKey} shown onHidden={() => setHiddenKey(null)} onChangePassword={() => setAsking('change')} />
-      ) : null}
-      <PasswordSheet
-        visible={asking === 'open'}
-        title="Hidden chats"
-        repeat={false}
-        submitLabel="Open"
-        onClose={() => setAsking(null)}
-        onSubmit={async (password) => {
-          const key = await openHidden(currentSpace().space, password);
-          if (!key) return false;
-          setAsking(null);
-          setHiddenKey(key);
-        }}
-      />
-      <PasswordSheet
-        visible={asking === 'change'}
-        title="Change hidden chats password"
-        repeat
-        submitLabel="Save"
-        onClose={() => setAsking(null)}
-        onSubmit={async (password) => {
-          await setHiddenPassword(currentSpace().space, password, hiddenKey);
-          setAsking(null);
-        }}
-      />
-    </KeyboardPaddedView>
+    <ChatTheme look={chatLook?.look ?? null} onChange={(look) => chatLook?.save(look)}>
+      <ScreenBackdrop>
+        <ChatStatusBar />
+        <KeyboardPaddedView bottom={insets.bottom} style={[layout.screen, { paddingTop: insets.top }]}>
+          <View style={[layout.screen, hiddenKey && layout.gone]}>
+            <Chat hiddenKey={null} initial={initial} setup={setup === '1'} shown={!hiddenKey} onHidden={() => setAsking('open')} onLook={setChatLook} />
+          </View>
+          {hiddenKey ? (
+            <Chat hiddenKey={hiddenKey} shown onHidden={() => setHiddenKey(null)} onChangePassword={() => setAsking('change')} onLook={setChatLook} />
+          ) : null}
+          <PasswordSheet
+            visible={asking === 'open'}
+            title="Hidden chats"
+            repeat={false}
+            submitLabel="Open"
+            onClose={() => setAsking(null)}
+            onSubmit={async (password) => {
+              const key = await openHidden(currentSpace().space, password);
+              if (!key) return false;
+              setAsking(null);
+              setHiddenKey(key);
+            }}
+          />
+          <PasswordSheet
+            visible={asking === 'change'}
+            title="Change hidden chats password"
+            repeat
+            submitLabel="Save"
+            onClose={() => setAsking(null)}
+            onSubmit={async (password) => {
+              await setHiddenPassword(currentSpace().space, password, hiddenKey);
+              setAsking(null);
+            }}
+          />
+        </KeyboardPaddedView>
+      </ScreenBackdrop>
+    </ChatTheme>
+  );
+}
+
+/** A chat's look, and how to keep a new one (null: the space's again). */
+interface ChatLook {
+  look: Look | null;
+  save: (look: Look | null) => Promise<void>;
+}
+
+/** The status bar's icons, light or dark as the chat's look is. */
+function ChatStatusBar() {
+  const { scheme } = useTheme();
+  return <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />;
+}
+
+/** Back to the screen before, or home when the chat was opened first. */
+function BackButton() {
+  const router = useRouter();
+  const colors = useColors();
+  return (
+    <Pressable
+      onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+      accessibilityRole="button"
+      accessibilityLabel="Back"
+      hitSlop={8}
+      style={({ pressed }) => [layout.back, pressed && { opacity: 0.6 }]}
+    >
+      <Text style={{ fontSize: 34, lineHeight: 36, color: colors.text, marginTop: -4 }}>‹</Text>
+    </Pressable>
   );
 }
 
 // One chat: the space's own (`hiddenKey` null), or its hidden chats, sealed with that key.
-function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onChangePassword }: {
+function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   initial?: string | null;
   /** Opens with the relay settings and adding a contact in view. */
@@ -239,6 +285,8 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   shown: boolean;
   onHidden: () => void;
   onChangePassword?: () => void;
+  /** Told the look of the chat in view while this one shows: its contact's own, or none. */
+  onLook: (look: ChatLook | null) => void;
 }) {
   // Nearby phones on the radio link.
   const [peers, setPeers] = useState<string[]>([]);
@@ -250,6 +298,9 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const [showRelay, setShowRelay] = useState(setup);
   // The chat's details above the messages: safety number, name, timer, deleting, other chats.
   const [details, setDetails] = useState(setup || !initial);
+  // The chat's own look being chosen, over the chat.
+  const [styling, setStyling] = useState(false);
+  const insets = useSafeAreaInsets();
   const [relayUrl, setRelayUrl] = useState('');
   const [relayToken, setRelayToken] = useState('');
   // Our relay's key for sealed sends, put in our link so contacts on other relays can reach us.
@@ -291,7 +342,6 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
   const history = useRef<History | null>(null);
-  const insets = useSafeAreaInsets();
   // The sheet for sending a photo or file, and how photos go.
   const [attaching, setAttaching] = useState(false);
   const [quality, setQuality] = useState<PhotoQuality>('original');
@@ -1300,14 +1350,60 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
       ? 'Nearby · not encrypted yet'
       : '';
 
+  const selectedLook = contacts.find((c) => c.identity === selectedIdentity)?.look ?? null;
+  useEffect(() => {
+    if (!shown) return;
+    if (!e2e || !selectedIdentity) {
+      onLook(null);
+      return;
+    }
+    onLook({
+      look: selectedLook,
+      save: async (look) => {
+        await e2e.setLook(selectedIdentity, look);
+        setContacts(e2e.contacts());
+      },
+    });
+  }, [shown, e2e, selectedIdentity, selectedLook, onLook]);
+
   return (
     <View style={styles.container}>
+      <Modal visible={styling && shown} animationType="slide" statusBarTranslucent onRequestClose={() => setStyling(false)}>
+        <ScreenBackdrop>
+          <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.ground }}>
+            <AppearanceEditor
+              title={`Look of ${selectedName || 'this chat'}`}
+              top={
+                <View style={styles.section}>
+                  <Text variant="caption" tone="muted">
+                    {selectedLook
+                      ? 'This chat has its own look, kept only on this phone. The rest of the app keeps its own.'
+                      : 'This chat follows the app\'s look. Change anything below to give it its own.'}
+                  </Text>
+                  <Row wrap>
+                    <Button title="Done" compact onPress={() => setStyling(false)} />
+                    {selectedLook && e2e ? (
+                      <TextButton
+                        title="Same as the app"
+                        onPress={() => {
+                          void e2e.setLook(selectedIdentity, null).then(() => setContacts(e2e.contacts()));
+                        }}
+                      />
+                    ) : null}
+                  </Row>
+                </View>
+              }
+            />
+          </View>
+        </ScreenBackdrop>
+      </Modal>
       {hiddenKey ? (
         <Text variant="overline" tone="muted" style={styles.kicker}>
           Hidden chats
         </Text>
       ) : null}
       <View style={styles.header}>
+        <BackButton />
         {selected ? (
           <Pressable
             style={({ pressed }) => [styles.who, pressed && styles.pressed]}
@@ -1411,6 +1507,7 @@ function Chat({ hiddenKey, initial = null, setup = false, shown, onHidden, onCha
                   onPress={() => void toggleSafety(selectedContact)}
                 />
                 <TextButton title="Rename" onPress={() => startRenaming(selectedContact)} />
+                <TextButton title="Chat look" onPress={() => setStyling(true)} />
                 <TextButton title="Delete messages" onPress={() => deleteMessages(selectedContact)} />
                 <TextButton
                   title={`Disappearing: ${timerLabel(selectedTimer)}`}
@@ -1835,6 +1932,12 @@ const layout = StyleSheet.create({
   },
   gone: {
     display: 'none',
+  },
+  back: {
+    width: 32,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

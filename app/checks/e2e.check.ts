@@ -14,6 +14,7 @@ import { qrRows } from '../lib/qr';
 import { E2E, NoKeyError, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
 import { FILE, loadE2EData, MAX_NAME } from '../lock/e2e-data';
+import { DEFAULT_LOOK } from '../theme/look';
 import { files } from './files-memory';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -67,7 +68,7 @@ t('two chats add each other through a link and talk both ways', async () => {
   const hello = message(await bob.e2e.receive(pending.first));
   assert.equal(hello.added, true);
   assert.equal(hello.text, '');
-  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true }]);
+  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true, look: null }]);
   await alice.e2e.firstSent(added.identity);
   assert.deepEqual(alice.e2e.pending(), []);
 
@@ -187,6 +188,25 @@ t('a contact keeps the name this chat gives it, sealed, through new messages and
   await again.rename(identity, '   ');
   assert.equal((await E2E.open('space', 0, key)).contacts()[0].name, '');
   await assert.rejects(again.rename('00'.repeat(32), 'nobody'));
+});
+
+t('a chat keeps its own look, sealed, until given the space\'s again', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  assert.equal(alice.e2e.contacts()[0].look, null);
+  await alice.e2e.setLook(identity, { ...DEFAULT_LOOK, style: 'matrix', wallpaper: 'stars' });
+  // A message from them keeps it, and so does opening the chat again.
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.receive((await bob.e2e.seal(hello.identity, 'hi', bob.from)).packet);
+  const again = await E2E.open('space', 0, key);
+  assert.equal(again.contacts()[0].look?.style, 'matrix');
+  assert.equal(again.contacts()[0].look?.wallpaper, 'stars');
+  assert.ok(!files.get(FILE)!.includes('matrix'));
+  await again.setLook(identity, null);
+  assert.equal((await E2E.open('space', 0, key)).contacts()[0].look, null);
+  await assert.rejects(again.setLook('00'.repeat(32), null));
 });
 
 t('a message carries its tag, and a request to delete one message or all of them', async () => {

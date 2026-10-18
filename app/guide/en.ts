@@ -48,7 +48,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 
 Inside a chat, its name and picture are at the top with how it travels: **End-to-end encrypted** through the relay,
 or **Nearby radio link, not encrypted yet**. Tap the name, or **Details**, for the safety number, **Rename**,
-**Delete messages**, **Disappearing**, your other chats and the relay; **Done** hides them again.
+**Chat look**, **Delete messages**, **Disappearing**, your other chats and the relay; **Done** hides them again.
 
 A good first hour:
 
@@ -118,6 +118,10 @@ message counts as read once its chat shows on the screen. Messages to a nearby p
 
 Open a chat, tap its name and then **Rename** to give it a name. The name stays on this phone, sealed with the chat: the other phone
 does not see it. An empty name brings back the start of their key.
+
+Each chat can also look its own way: tap its name and then **Chat look** for the same choices as **Appearance** (style, theme,
+colors, wallpaper, messages), for that chat only. Like the name, it stays on this phone, sealed with the chat. **Same as the app**
+gives it the app's look again.
 
 To delete one message, press and hold it. To delete all the messages of a chat, tap its name and then **Delete messages**.
 Either way Erevos asks where:
