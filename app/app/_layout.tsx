@@ -215,7 +215,7 @@ function Shell({ phase, error, lockState, onUnlock }: {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="chat" options={{ headerShown: false }} />
       </Stack>
-      <Receiver key={phase.space} />
+      <Receiver key={`receiver-${phase.space}`} />
       <CallHost key={`call-${phase.space}`} />
       <AlertHost />
       {bar}
