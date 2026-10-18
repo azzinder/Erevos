@@ -9,8 +9,8 @@ import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
 // file tells neither which chats are used nor how much anyone writes. When a chat's messages no
 // longer fit, the oldest go: about a thousand short messages fit.
 //
-// Only chats with contacts are kept. Messages over the radio link are not: a link's id lasts as
-// long as the link, and nothing is encrypted there yet.
+// Only chats with contacts are kept, whether their messages came through the relay or nearby
+// (lib/nearby.ts): both are a contact's, end-to-end encrypted.
 //
 // Each message keeps its mark: ours, whether it came to their phone and was read there (lib/e2e.ts
 // carries what their phone says); theirs, whether it was read here.

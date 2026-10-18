@@ -1,7 +1,9 @@
 import { History } from '../lock/history';
 import { currentSpace } from '../lock/keys';
+import { canRelaySeal, relaySeal } from './core';
 import { E2E, fromBase64Url } from './e2e';
-import { sameRelay, type Relay } from './relay';
+import type { Carried } from './nearby';
+import { fromHex, sameRelay, type Relay } from './relay';
 import { VoiceAssembler } from './voice';
 
 // The open space's chats through the relay, opened once while the space is: its account and
@@ -56,4 +58,22 @@ export function contactTarget(own: Relay, where: { relay: string; relayKey: stri
   if (!where.relay || sameRelay(where.relay, own.url)) return own;
   if (!where.relayKey) throw new Error(`That contact uses the relay at ${where.relay}, and its link has no key for it. Ask them for a new link.`);
   return { url: where.relay, key: fromBase64Url(where.relayKey), via: own.via ?? { url: own.url, token: own.token } };
+}
+
+/**
+ * A contact's packets sealed for their relay, for phones nearby to carry there (lib/nearby.ts):
+ * the relay their messages say, or our own (`own`, with its key) when they say none. Empty when
+ * that relay's key is not known, they have no relay queue, or the core cannot seal for a relay.
+ */
+export async function carriedFor(
+  contact: { sender: string; relay: string; relayKey: string },
+  packets: Uint8Array[],
+  own: { url: string; key: string },
+): Promise<Carried[]> {
+  const url = (contact.relay || own.url).trim();
+  const key = contact.relayKey || (url && sameRelay(url, own.url) ? own.key : '');
+  if (!contact.sender || !url || !key || !canRelaySeal()) return [];
+  const relayKey = fromBase64Url(key);
+  const sender = fromHex(contact.sender);
+  return Promise.all(packets.map(async (packet) => ({ url, sealed: await relaySeal(relayKey, sender, packet) })));
 }

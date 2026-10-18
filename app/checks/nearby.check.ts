@@ -1,8 +1,10 @@
 // Messages over the nearby radio link (lib/nearby.ts), with the real Rust core built to
-// WebAssembly by checks/build-core.mjs and two phones joined by a radio in memory: the same sealed
+// WebAssembly by checks/build-core.mjs and phones joined by a radio in memory: the same sealed
 // packets as through the relay, in frames the radio carries, to a contact heard nearby or to
-// every phone linked, and kept for another space when none of the open chats opens them. The
-// checks with the core are skipped, with a note, when that build is missing.
+// every phone linked, and kept for another space when none of the open chats opens them. When the
+// relay cannot be reached, the phones nearby carry them, sealed for the contact's relay, and hand
+// them over through their own, a real relay (crates/erevos-relay). The checks with the core or the
+// relay are skipped, with a note, when that build is missing.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -12,10 +14,13 @@ import { test } from 'node:test';
 
 import { contactLink, parseContact } from '../lib/contact-code';
 import { setCore, type Core } from '../lib/core';
-import { randomBytes } from '../lib/crypto';
+import { randomBytes, toBase64 } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
-import { framesOf, Nearby, NoWayError } from '../lib/nearby';
+import { framesOf, Nearby, NoWayError, type Carried } from '../lib/nearby';
+import { carryTo, createQueue, receiveMessage, relayKey, toHex } from '../lib/relay';
+import { carriedFor } from '../lib/space-chats';
 import { files } from './files-memory';
+import { ready as relayReady, relayNote, startRelay } from './real-relay';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const ready = existsSync(built);
@@ -27,6 +32,7 @@ if (ready) {
 } else {
   console.log('Skipping the nearby checks with the core: build it first with node checks/build-core.mjs');
 }
+relayNote('the checks of messages carried to a relay');
 
 /** Phones in one room: what one sends on a link comes out of the phone at its other end. */
 function room() {
@@ -47,14 +53,18 @@ function room() {
     });
     return kept;
   };
-  const link = (a: string, b: string) => {
-    const [ab, ba] = [`ble-link-${b}`, `ble-link-${a}`];
+  // `again` names the link anew, as when two phones link a second time.
+  const link = (a: string, b: string, again = '') => {
+    const [ab, ba] = [`ble-link-${b}${again}`, `ble-link-${a}${again}`];
     ends.set(`${a} ${ab}`, { to: b, as: ba });
     ends.set(`${b} ${ba}`, { to: a, as: ab });
     phones.get(a)!.nearby.linkUp(ab);
     phones.get(b)!.nearby.linkUp(ba);
   };
-  return { phone, link };
+  const drop = (name: string) => {
+    phones.get(name)!.up = false;
+  };
+  return { phone, link, drop };
 }
 
 const message = (r: Received) => {
@@ -223,4 +233,124 @@ test('a packet for another space waits on the phone until that space opens', { s
   }
   assert.deepEqual(texts, ['', 'for your second space']);
   assert.deepEqual(b.nearby.heldPackets(), []);
+});
+
+const DAY = 24 * 3600 * 1000;
+
+test('what could not go is carried by the phones nearby, two more at most, and handed to its relay in order', async () => {
+  const { phone, link } = room();
+  const [a, c, d, e] = ['A', 'C', 'D', 'E'].map(phone);
+  link('A', 'C');
+  const sealed = [randomBytes(300), randomBytes(300)];
+  const carry = async (): Promise<Carried[]> => sealed.map((s) => ({ url: 'ws://relay.example:7879', sealed: s }));
+  // No relay, and no contact heard nearby: it goes to every phone, and they carry it too.
+  assert.equal(await a.nearby.deliver('bb', [randomBytes(100), randomBytes(100)], null, carry), 'carried');
+  assert.deepEqual(a.nearby.carriedCount(), { own: 2, others: 0 });
+  assert.deepEqual(c.nearby.carriedCount(), { own: 0, others: 2 });
+  // A relay that answers needs no carrying; nor does a mark, which comes with no `carry`.
+  assert.equal(await a.nearby.deliver('bb', [randomBytes(100)], async () => undefined, carry), 'relay');
+  assert.equal(await a.nearby.deliver('bb', [randomBytes(100)], null), 'spread');
+  assert.deepEqual(c.nearby.carriedCount(), { own: 0, others: 2 });
+
+  // C meets D later: D takes them, and passes them on to nobody, as they have come far enough.
+  link('C', 'D');
+  assert.deepEqual(d.nearby.carriedCount(), { own: 0, others: 2 });
+  link('D', 'E');
+  assert.deepEqual(e.nearby.carriedCount(), { own: 0, others: 0 });
+  // The phone that sent them, linked again, does not take them back as someone else's.
+  link('C', 'A', '-again');
+  assert.deepEqual(a.nearby.carriedCount(), { own: 2, others: 0 });
+
+  // C reaches its relay: the first that cannot go holds the next one for that relay back, so they come in order.
+  const handed: string[] = [];
+  let up = false;
+  const upload = async (url: string, s: Uint8Array) => {
+    if (!up) throw new Error('cannot reach the relay');
+    handed.push(`${url} ${toBase64(s)}`);
+    return true;
+  };
+  assert.equal(await c.nearby.uploadCarried(upload, 1000), 0);
+  up = true;
+  assert.equal(await c.nearby.uploadCarried(upload, 30_000), 0, 'tried again only after a minute');
+  assert.equal(await c.nearby.uploadCarried(upload, 61_001), 2);
+  assert.deepEqual(handed, sealed.map((s) => `ws://relay.example:7879 ${toBase64(s)}`));
+  assert.deepEqual(c.nearby.carriedCount(), { own: 0, others: 0 });
+  // One its relay will never take is let go too.
+  assert.equal(await d.nearby.uploadCarried(async () => false), 0);
+  assert.deepEqual(d.nearby.carriedCount(), { own: 0, others: 0 });
+  // The sender's own go once it reaches the relay, or after three days, unless a carrier was first.
+  assert.deepEqual(a.nearby.carriedCount(Date.now() + 3 * DAY + 1000), { own: 0, others: 0 });
+});
+
+test('a phone that carries nothing for others takes nothing, and nonsense is not carried', async () => {
+  const { phone, link } = room();
+  const [a, c] = ['A', 'C'].map(phone);
+  c.nearby.setCarrying(false);
+  link('A', 'C');
+  const carry = async (): Promise<Carried[]> => [{ url: 'ws://relay.example:7879', sealed: randomBytes(200) }];
+  assert.equal(await a.nearby.deliver('bb', [randomBytes(100)], null, carry), 'carried');
+  assert.deepEqual(c.nearby.carriedCount(), { own: 0, others: 0 });
+  assert.deepEqual(a.nearby.carriedCount(), { own: 1, others: 0 }, 'its own still waits for the relay');
+  // Turned on again, it takes what comes from then on.
+  c.nearby.setCarrying(true);
+  for (const url of ['http://relay.example', 'ws://', 'ws://a b']) {
+    const bytes = new Uint8Array(7 + url.length + 10);
+    new DataView(bytes.buffer).setUint32(1, 3600);
+    new DataView(bytes.buffer).setUint16(5, url.length);
+    for (let i = 0; i < url.length; i++) bytes[7 + i] = url.charCodeAt(i);
+    for (const frame of framesOf(bytes, 'EVC1')!) assert.equal(c.nearby.frameIn('ble-link-A', frame), null);
+  }
+  assert.deepEqual(c.nearby.carriedCount(), { own: 0, others: 0 });
+  // One phone cannot fill another with what it carries.
+  const many = async (): Promise<Carried[]> => Array.from({ length: 40 }, () => ({ url: 'ws://relay.example:7879', sealed: randomBytes(50) }));
+  await a.nearby.deliver('bb', [randomBytes(100)], null, many);
+  assert.equal(c.nearby.carriedCount().others, 30);
+});
+
+test('with no relay to reach, a phone nearby carries the message to the contact\'s relay, end-to-end encrypted', { skip: !ready || !relayReady }, async () => {
+  files.clear();
+  // Bob's relay has a key, so it takes sealed sends from other relays; Carol's relay is another one.
+  const bobsRelay = await startRelay(true);
+  const carolsRelay = await startRelay();
+  const { phone, link } = room();
+  const a = phone('A');
+  const c = phone('C');
+  const alice = await E2E.open('space', 0, randomBytes(32));
+  const bob = await E2E.open('space', 1, randomBytes(32));
+  const queue = await createQueue({ url: bobsRelay });
+  const key = await relayKey({ url: bobsRelay });
+  assert.ok(key);
+  const code = parseContact(contactLink({ senderHex: toHex(queue.senderId), relayUrl: bobsRelay, key: toBase64Url(bob.bundle), relayKey: toBase64Url(key!) }))!;
+  const { identity: bobId } = await alice.addContact(code, '');
+
+  // Alice's relay does not answer, and Bob is not near: Carol's phone is.
+  link('A', 'C');
+  const sealed = await alice.seal(bobId, 'carried by Carol', '');
+  const all = [sealed.first!, sealed.packet];
+  const down = async () => {
+    throw new Error('cannot reach the relay');
+  };
+  const way = await a.nearby.deliver(bobId, all, down, () => carriedFor(sealed, all, { url: '', key: '' }));
+  assert.equal(way, 'carried');
+  assert.deepEqual(c.nearby.carriedCount(), { own: 0, others: 2 });
+
+  // Carol's phone reaches her relay, which passes them on to Bob's: her phone's address stays with hers.
+  assert.equal(await c.nearby.uploadCarried((url, s) => carryTo({ url: carolsRelay }, url, s)), 2);
+  const first = await receiveMessage({ url: bobsRelay }, queue.recipientId);
+  const second = await receiveMessage({ url: bobsRelay }, queue.recipientId);
+  assert.equal(message(await bob.receive(first!)).request, true);
+  assert.equal(message(await bob.receive(second!)).text, 'carried by Carol');
+
+  // Alice's phone reaches Bob's relay itself later, as his relay is hers too: that copy opens no second time.
+  assert.equal(await a.nearby.uploadCarried((url, s) => carryTo({ url: bobsRelay }, url, s)), 2);
+  for (let i = 0; i < 2; i++) {
+    const again = await receiveMessage({ url: bobsRelay }, queue.recipientId);
+    assert.equal((await bob.receive(again!)).kind, 'refused');
+  }
+  assert.equal(await receiveMessage({ url: bobsRelay }, queue.recipientId), null);
+
+  // Sealed for the wrong relay, or a queue that is not there: that relay never takes it, and it is let go.
+  assert.equal(await carryTo({ url: carolsRelay }, carolsRelay, randomBytes(120)), false);
+  // A contact whose link has no key for their relay cannot be carried for.
+  assert.deepEqual(await carriedFor({ ...sealed, relayKey: '' }, all, { url: '', key: '' }), []);
 });

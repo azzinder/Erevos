@@ -2,8 +2,10 @@
 // stopped when the checks end. `ready` is false, with a note, when the relay is not built.
 /// <reference types="node" />
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { createServer } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { after } from 'node:test';
 
 import { RelaySession } from '../lib/relay';
@@ -25,16 +27,21 @@ function freePort(): Promise<number> {
 }
 
 const relays: ChildProcess[] = [];
+let keys: string | null = null;
 
 after(() => {
   for (const relay of relays) relay.kill();
+  if (keys) rmSync(keys, { recursive: true, force: true });
 });
 
 /** Starts a relay and returns its address once it answers. Node's WebSocket cannot send the
- *  token header that React Native's does, so it takes none. */
-export async function startRelay(): Promise<string> {
+ *  token header that React Native's does, so it takes none. With `withKey`, it has a key for
+ *  sealed sends, as relays that take messages from other relays do. */
+export async function startRelay(withKey = false): Promise<string> {
   const [tcp, ws] = [await freePort(), await freePort()];
-  const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env: { ...process.env, EREVOS_RELAY_TOKEN: '' }, stdio: 'ignore' });
+  keys ??= withKey ? mkdtempSync(join(tmpdir(), 'erevos-relay-keys-')) : null;
+  const env = { ...process.env, EREVOS_RELAY_TOKEN: '', EREVOS_RELAY_KEY: withKey && keys ? join(keys, `key-${ws}`) : '' };
+  const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
   relays.push(child);
   const url = `ws://127.0.0.1:${ws}`;
   for (let i = 0; i < 50; i++) {

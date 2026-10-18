@@ -28,8 +28,9 @@ and `onRadioEvent(name, listener)` for `onStatus`, `onPeer` and `onText`.
 ## Not done
 
 - Payloads are UTF-8 text. The chat sends end-to-end encrypted packets over it as base64 text
-  frames that start with `EVN1:`, in pieces of 12 000 bytes (`lib/nearby.ts`). A `Uint8Array`
-  path would save the base64.
+  frames that start with `EVN1:`, in pieces of 12 000 bytes, and packets other phones carry to
+  a relay in frames that start with `EVC1:` (`lib/nearby.ts`). A `Uint8Array` path would save
+  the base64.
 - Nothing is encrypted at this layer, and it does not need to be: what goes over it is sealed by
   the ratchet in `erevos-core` already. The service name `erevos` and the BLE UUID are visible
   to anyone nearby, and so is when and how much two phones send.

@@ -4,7 +4,8 @@ import { saveClip } from '../lock/voice-clips';
 import { offerRef } from './attachments';
 import { canRelaySeal, hasCore } from './core';
 import { ONLINE, toBase64Url, type Extra, type Received, type Where } from './e2e';
-import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sendMessage, toHex, type Relay } from './relay';
+import { nearby } from './nearby';
+import { carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sendMessage, toHex, type Relay } from './relay';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
 import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-chats';
 
@@ -16,7 +17,7 @@ import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-ch
 // from the relay once its chat opens. A contact whose chat appears offline is told nothing: what
 // came waits with the contact (E2E.hold). Otherwise, while the app shows, what is told says the
 // phone is open, and so does an answer to a contact who asks. Hidden chats are not looked at: their key is in memory only
-// while they are open.
+// while they are open. What this phone carries from phones nearby goes to its relays meanwhile.
 
 const EVERY = 3000;
 // Messages taken in one look, at most.
@@ -152,6 +153,8 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     place.keyAsked = true;
   }
   await sendPending(chats, place.sends);
+  // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
+  void nearby.uploadCarried((url, sealed) => carryTo(place.sends, url, sealed)).catch(() => undefined);
   // An SMS invite sent from the SMS screen since: its answer may be on its way.
   await refreshSmsLink().catch(() => undefined);
   let changed = false;

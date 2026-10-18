@@ -14,14 +14,31 @@ import { fromBase64, randomBytes, sha256Bytes, toBase64, toHex } from './crypto'
 // A packet that opens in none of the open chats is kept in memory a while, for the other spaces
 // as they open; none of it is written to the phone. The radio carries text frames of up to 16 KB,
 // so a packet goes as base64, in pieces when it is long.
+//
+// Carried messages: when the relay cannot be reached and the contact is not near, what went to the
+// phones nearby also goes sealed for the contact's relay (relaySeal in lib/core.ts), in frames of
+// its own. A phone that takes it keeps it in memory, three days at most, passes it on to the phones
+// it links with later (two more at most), and hands it to that relay through its own relay once it
+// can (carryTo in lib/relay.ts). It cannot open it, nor tell who it is from or for: it sees only
+// the relay's address. The phone that sent it keeps it too, and hands it over itself the same way.
 
-/** How a message went: to the contact's phone nearby, through the relay, or to the phones nearby, not knowing whether theirs is one. */
-export type Delivery = 'nearby' | 'relay' | 'spread';
+/**
+ * How a message went: to the contact's phone nearby, through the relay, or to the phones nearby,
+ * not knowing whether theirs is one; carried, when they also took it to hand to the contact's relay.
+ */
+export type Delivery = 'nearby' | 'relay' | 'spread' | 'carried';
+
+/** A packet sealed for the contact's relay (relaySeal), to hand to the relay at `url` from wherever there is internet. */
+export type Carried = { url: string; sealed: Uint8Array };
+
+/** Hands a carried packet to its relay (carryTo): true when taken, false when it never will be. Throws to try again later. */
+export type Upload = (url: string, sealed: Uint8Array) => Promise<boolean>;
 
 /** Sends a text frame on a link (sendText of modules/erevos-radio). False if the link is not up. */
 export type RadioSend = (link: string, text: string) => boolean;
 
 const PREFIX = 'EVN1';
+const CARRY_PREFIX = 'EVC1';
 // A packet's bytes in one frame: as base64 with the frame's head, under the radio's 16 KB.
 const PIECE = 12_000;
 const MAX_PIECES = 8;
@@ -35,17 +52,68 @@ const PIECES_WITHIN = 60_000;
 const MAX_GATHERING = 32;
 // Packets taken already, by digest, so one that comes on two links is tried once.
 const MAX_SEEN = 500;
+// Packets carried for their relays: how many, how long at most, and how many more phones each
+// passes on to from the phone that sent it.
+const MAX_CARRIED = 100;
+const CARRY_FOR = 3 * 24 * 3600 * 1000;
+const MAX_HOPS = 2;
+// Carried packets offered to a phone newly linked, the newest, at most.
+const OFFER = 20;
+// Carried packets taken from one link, at most, so one phone cannot crowd out the others'.
+const TAKE_PER_LINK = 30;
+// A carried packet its relay did not take is tried again after this long, milliseconds.
+const RETRY_AFTER = 60_000;
+// A relay address, as the relay takes it in a forward: ws:// or wss://, plain ASCII, 512 at most.
+const RELAY_URL = /^wss?:\/\/[\x21-\x7e]{1,500}$/;
 
-const FRAME = /^EVN1:([0-9a-f]{8}):([0-9]):([1-9]):([A-Za-z0-9+/]+={0,2})$/;
+const FRAME = /^(EVN1|EVC1):([0-9a-f]{8}):([0-9]):([1-9]):([A-Za-z0-9+/]+={0,2})$/;
 
 const digestOf = (packet: Uint8Array) => toHex(sha256Bytes(packet)).slice(0, 32);
 
 /** The frames a packet goes in, or null when it is too large for the radio. */
-export function framesOf(packet: Uint8Array): string[] | null {
+export function framesOf(packet: Uint8Array, prefix = PREFIX): string[] | null {
   const count = Math.max(1, Math.ceil(packet.length / PIECE));
   if (count > MAX_PIECES) return null;
   const id = toHex(randomBytes(4));
-  return Array.from({ length: count }, (_, n) => `${PREFIX}:${id}:${n}:${count}:${toBase64(packet.subarray(n * PIECE, (n + 1) * PIECE))}`);
+  return Array.from({ length: count }, (_, n) => `${prefix}:${id}:${n}:${count}:${toBase64(packet.subarray(n * PIECE, (n + 1) * PIECE))}`);
+}
+
+// A carried packet kept on this phone. `hops`: how many more phones it may pass on to. `from`: the
+// link it came on, which is not offered it back; `offered`: the links it went to already.
+type Item = Carried & { key: string; hops: number; until: number; own: boolean; from: string | null; offered: Set<string>; triedAt: number };
+
+const keyOf = (url: string, sealed: Uint8Array) => digestOf(joined(Uint8Array.from(url, (char) => char.charCodeAt(0)), sealed));
+
+function joined(a: Uint8Array, b: Uint8Array): Uint8Array {
+  const out = new Uint8Array(a.length + b.length);
+  out.set(a, 0);
+  out.set(b, a.length);
+  return out;
+}
+
+// A carried packet as it goes on the radio: how many more phones it may pass on to (1 byte), how
+// many seconds it has left (4), the relay's address after its length (2), then the sealed packet.
+function encodeItem(item: Item, hops: number, now: number): Uint8Array {
+  const bytes = new Uint8Array(1 + 4 + 2 + item.url.length + item.sealed.length);
+  const view = new DataView(bytes.buffer);
+  bytes[0] = hops;
+  view.setUint32(1, Math.max(0, Math.floor((item.until - now) / 1000)));
+  view.setUint16(5, item.url.length);
+  for (let i = 0; i < item.url.length; i++) bytes[7 + i] = item.url.charCodeAt(i);
+  bytes.set(item.sealed, 7 + item.url.length);
+  return bytes;
+}
+
+function decodeItem(bytes: Uint8Array, now: number): { url: string; sealed: Uint8Array; hops: number; until: number } | null {
+  if (bytes.length < 7) return null;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const hops = Math.min(bytes[0], MAX_HOPS - 1);
+  const left = view.getUint32(1) * 1000;
+  const length = view.getUint16(5);
+  if (left <= 0 || bytes.length <= 7 + length) return null;
+  const url = String.fromCharCode(...bytes.subarray(7, 7 + length));
+  if (!RELAY_URL.test(url)) return null;
+  return { url, sealed: bytes.slice(7 + length), hops, until: now + Math.min(left, CARRY_FOR) };
 }
 
 /** Neither the relay nor a phone nearby took it. */
@@ -65,6 +133,11 @@ export class Nearby {
   private held: { packet: Uint8Array; digest: string; at: number }[] = [];
   private readonly seen: string[] = [];
   private readonly listeners = new Set<() => void>();
+  // Packets carried for their relays, oldest first; this phone's own among them.
+  private items: Item[] = [];
+  private readonly takenFrom = new Map<string, number>();
+  private carrying = true;
+  private uploading: Promise<number> | null = null;
 
   private changed() {
     this.listeners.forEach((listener) => listener());
@@ -76,6 +149,11 @@ export class Nearby {
       this.links.clear();
       this.heard.clear();
       this.gathering.clear();
+      this.takenFrom.clear();
+      for (const item of this.items) {
+        item.offered.clear();
+        item.from = null;
+      }
       this.changed();
     };
     this.send = radio;
@@ -88,10 +166,16 @@ export class Nearby {
   }
 
   /** A data link to a phone nearby is up (an onPeer event of kind wifi-aware or ble-link). */
-  linkUp(link: string): void {
+  linkUp(link: string, now = Date.now()): void {
     if (this.links.has(link)) return;
     this.links.add(link);
     this.changed();
+    // What this phone carries goes to the phone newly linked, which may reach the internet first:
+    // the newest, in the order they were sent, as a contact's first packet must come first.
+    const offered = this.carriedNow(now)
+      .filter((item) => item.hops > 0 && item.from !== link && !item.offered.has(link))
+      .slice(-OFFER);
+    for (const item of offered) if (!this.passOn(item, [link], now)) break;
   }
 
   /** How many phones nearby are linked now. */
@@ -139,7 +223,7 @@ export class Nearby {
   // Sends packets over the radio: on the contact's link when they were heard on one, otherwise,
   // when they are small, on every link. Says which, or null when none took them.
   private toNearby(identity: string, packets: Uint8Array[]): 'direct' | 'spread' | null {
-    const frames = packets.map(framesOf);
+    const frames = packets.map((packet) => framesOf(packet));
     if (frames.some((f) => f === null)) return null;
     const all = frames as string[][];
     const link = this.heard.get(identity);
@@ -154,9 +238,16 @@ export class Nearby {
    * Hands a contact's packets, in order, to their phone. `relay` sends them through the relay, or
    * is null when there is none. Sent to them nearby, the relay's copy goes too, unwaited.
    * Otherwise it waits for the relay, and if the relay fails, a copy that went to the phones
-   * nearby will do. Throws the relay's error, or NoWayError, when nothing took them.
+   * nearby will do: then `carry`, when given, seals them for the contact's relay, and the phones
+   * nearby take those too, to hand over. Throws the relay's error, or NoWayError, when nothing
+   * took them.
    */
-  async deliver(identity: string, packets: Uint8Array[], relay: (() => Promise<void>) | null): Promise<Delivery> {
+  async deliver(
+    identity: string,
+    packets: Uint8Array[],
+    relay: (() => Promise<void>) | null,
+    carry: (() => Promise<Carried[]>) | null = null,
+  ): Promise<Delivery> {
     const way = this.toNearby(identity, packets);
     if (way === 'direct') {
       relay?.().catch(() => {
@@ -169,30 +260,140 @@ export class Nearby {
         await relay();
         return 'relay';
       } catch (error) {
-        if (way === 'spread') return 'spread';
+        if (way === 'spread') return this.carryOwn(carry);
         throw error;
       }
     }
-    if (way === 'spread') return 'spread';
+    if (way === 'spread') return this.carryOwn(carry);
     throw new NoWayError();
+  }
+
+  // Keeps this phone's own packets sealed for the contact's relay, and gives them to the phones
+  // linked now. Says whether any took them.
+  private async carryOwn(carry: (() => Promise<Carried[]>) | null, now = Date.now()): Promise<Delivery> {
+    let made: Carried[];
+    try {
+      made = carry ? await carry() : [];
+    } catch {
+      return 'spread';
+    }
+    const items = made
+      .filter(({ url }) => RELAY_URL.test(url))
+      .map(({ url, sealed }) => ({ url, sealed, key: keyOf(url, sealed), hops: MAX_HOPS, until: now + CARRY_FOR, own: true, from: null, offered: new Set<string>(), triedAt: 0 }));
+    if (items.length === 0) return 'spread';
+    for (const item of items) this.keep(item);
+    let reached = 0;
+    for (const link of [...this.links]) if (items.every((item) => this.passOn(item, [link], now))) reached++;
+    return reached > 0 ? 'carried' : 'spread';
+  }
+
+  // Keeps a carried packet, after the others; the oldest of others' goes when there are too many.
+  private keep(item: Item) {
+    this.seen.push(item.key);
+    if (this.seen.length > MAX_SEEN) this.seen.shift();
+    this.items.push(item);
+    while (this.items.length > MAX_CARRIED) {
+      const others = this.items.findIndex((kept) => !kept.own);
+      this.items.splice(others >= 0 ? others : 0, 1);
+    }
+  }
+
+  // Gives a carried packet to the phones on `links`, with one hop fewer. False when a link dropped.
+  private passOn(item: Item, links: string[], now: number): boolean {
+    if (item.hops <= 0) return true;
+    const frames = framesOf(encodeItem(item, item.hops - 1, now), CARRY_PREFIX);
+    if (!frames) return true;
+    let all = true;
+    for (const link of links) {
+      if (item.offered.has(link) || item.from === link) continue;
+      if (this.sendOn(link, [frames])) item.offered.add(link);
+      else all = false;
+    }
+    return all;
+  }
+
+  // The carried packets still in time, oldest first.
+  private carriedNow(now: number): Item[] {
+    this.items = this.items.filter((item) => item.until > now);
+    return this.items;
+  }
+
+  // A packet for someone's relay, from a phone nearby: kept, and passed on to the other phones linked.
+  private carriedIn(link: string, bytes: Uint8Array, now: number) {
+    if (!this.carrying) return;
+    const item = decodeItem(bytes, now);
+    if (!item) return;
+    const key = keyOf(item.url, item.sealed);
+    if (this.seen.includes(key)) return;
+    const taken = this.takenFrom.get(link) ?? 0;
+    if (taken >= TAKE_PER_LINK) return;
+    this.takenFrom.set(link, taken + 1);
+    const kept: Item = { ...item, key, own: false, from: link, offered: new Set(), triedAt: 0 };
+    this.keep(kept);
+    this.passOn(kept, [...this.links], now);
+  }
+
+  /** Whether this phone takes packets from phones nearby to hand to their relays. Its own always go. */
+  setCarrying(on: boolean): void {
+    this.carrying = on;
+    if (!on) this.items = this.items.filter((item) => item.own);
+  }
+
+  /** How many packets this phone carries now: its own, and for others. */
+  carriedCount(now = Date.now()): { own: number; others: number } {
+    const items = this.carriedNow(now);
+    const own = items.filter((item) => item.own).length;
+    return { own, others: items.length - own };
+  }
+
+  /**
+   * Hands what this phone carries to the relays it is for, oldest first, with `upload` (carryTo
+   * through this phone's relay). One a relay did not take is tried again a minute later, and
+   * the rest for that relay wait with it, so they come in order. Says how many were taken.
+   */
+  uploadCarried(upload: Upload, now = Date.now()): Promise<number> {
+    if (this.uploading) return this.uploading;
+    const run = async () => {
+      let taken = 0;
+      const waiting = new Set<string>();
+      for (const item of [...this.carriedNow(now)]) {
+        if (waiting.has(item.url) || now - item.triedAt < RETRY_AFTER) {
+          waiting.add(item.url);
+          continue;
+        }
+        item.triedAt = now;
+        try {
+          if (await upload(item.url, item.sealed)) taken++;
+          this.items = this.items.filter((kept) => kept !== item);
+        } catch {
+          waiting.add(item.url);
+        }
+      }
+      return taken;
+    };
+    this.uploading = run().finally(() => {
+      this.uploading = null;
+    });
+    return this.uploading;
   }
 
   /**
    * The packet a frame from a link completes, or null: a piece of one still coming, one taken
-   * already, or not a sealed packet at all (as an older Erevos sent, plain).
+   * already, one carried for a relay (kept here, see `uploadCarried`), or not a sealed packet at
+   * all (as an older Erevos sent, plain).
    */
   frameIn(link: string, text: string, now = Date.now()): Uint8Array | null {
     const match = FRAME.exec(text);
     if (!match) return null;
-    const [, id, at, of, data] = match;
+    const [, prefix, id, at, of, data] = match;
     const n = Number(at);
     const count = Number(of);
     if (n >= count || count > MAX_PIECES) return null;
-    this.linkUp(link);
+    this.linkUp(link, now);
     let pieces: (string | null)[] = [data];
     if (count > 1) {
       for (const [key, g] of this.gathering) if (now - g.at > PIECES_WITHIN) this.gathering.delete(key);
-      const key = `${link} ${id}`;
+      const key = `${link} ${prefix}${id}`;
       const g = this.gathering.get(key) ?? { pieces: new Array<string | null>(count).fill(null), at: now };
       if (g.pieces.length !== count) return null;
       g.pieces[n] = data;
@@ -212,6 +413,10 @@ export class Nearby {
         offset += part.length;
       }
     } catch {
+      return null;
+    }
+    if (prefix === CARRY_PREFIX) {
+      this.carriedIn(link, packet, now);
       return null;
     }
     const digest = digestOf(packet);

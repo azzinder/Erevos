@@ -12,6 +12,9 @@
 // requests on one connection (RelaySession). A contact on another relay takes them through its
 // own relay (`via`), so the sender's relay never sees the contact's phone.
 //
+// Carried messages (lib/nearby.ts): a message sealed for a contact's relay, which a phone nearby
+// hands to that relay once it reaches the internet, through its own relay (carryTo).
+//
 // Through Tor (setThroughTor, off by default): every request goes through the core's Tor
 // (crates/erevos-tor) instead of the phone's own connection. There is no falling back to a direct
 // connection: when Tor cannot reach the relay, the request fails.
@@ -24,6 +27,7 @@ const RECEIVE = 3;
 const DELETE = 4;
 const KEY = 5;
 const FORWARD = 6;
+const SEALED_SEND = 7;
 const FILE_PUT = 8;
 const FILE_GET = 9;
 const FILE_DELETE = 10;
@@ -212,6 +216,33 @@ export async function forwardMessage(via: Relay, to: string, sealed: Uint8Array)
   view.setUint32(3 + address.length, sealed.length);
   bytes.set(sealed, 3 + address.length + 4);
   check(await request(via, bytes), 'send');
+}
+
+/**
+ * Hands a message sealed for the relay at `url` (relaySeal) to that relay, for the phone that
+ * carried it there (lib/nearby.ts): through our own relay, or the second one when set, as a
+ * two-hop send, so the relay at `url` never sees this phone's address. True when the relay took
+ * it, false when it never will: the queue is not there, or it was sealed for another key. Throws
+ * when a relay could not be reached or could not keep it now: try again later.
+ */
+export async function carryTo(own: Relay, url: string, sealed: Uint8Array): Promise<boolean> {
+  if (sealed.length > MAX_MESSAGE + 1024) return false;
+  const first = own.via ?? own;
+  try {
+    if (sameRelay(first.url, url)) {
+      const bytes = new Uint8Array(1 + 4 + sealed.length);
+      bytes[0] = SEALED_SEND;
+      new DataView(bytes.buffer).setUint32(1, sealed.length);
+      bytes.set(sealed, 5);
+      check(await request(first, bytes), 'send');
+    } else {
+      await forwardMessage(first, url.trim().replace(/\/+$/, ''), sealed);
+    }
+    return true;
+  } catch (error) {
+    if (isQueueNotFound(error)) return false;
+    throw error;
+  }
 }
 
 /** Queues one message, through the relay's `via` if it has one. Throws if the sender id is

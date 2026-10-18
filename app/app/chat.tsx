@@ -43,10 +43,11 @@ import { takeHidden } from '../lib/hidden-handoff';
 import { History, newTag, type Mark, type Message as Kept } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
-import { callRelay, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type Relay } from '../lib/relay';
+import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type Relay } from '../lib/relay';
 import { answersAsk, appShown, holdReceiver } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
-import { contactTarget, relayFor, spaceChats } from '../lib/space-chats';
+import { carriedFor, contactTarget, relayFor, spaceChats } from '../lib/space-chats';
+import { secureGet, secureSet } from '../lib/secure';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
@@ -56,7 +57,8 @@ import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
 
 // Chat with contacts, end-to-end encrypted (lib/e2e.ts), through the relay and, while their phone
-// is near, over the radio link too (lib/nearby.ts). A contact is added from their contact link, which
+// is near, over the radio link too (lib/nearby.ts), where phones nearby may also carry a message
+// to the contact's relay when ours cannot be reached. A contact is added from their contact link, which
 // carries their public keys: adding it starts the conversation, and they see the contact appear
 // when they next look at the relay. The contacts and their conversations are kept sealed
 // (lock/e2e-data.ts), with the names given to them, and so are the messages with them
@@ -124,6 +126,9 @@ const ASK_EVERY = 60 * 1000;
 
 // Messages opened from the relay in one look at it, at most: a minute's voice message comes in one.
 const RECEIVE_BATCH = 50;
+
+// Where the phone keeps whether it carries messages for others (lib/secure.ts): 'off', or on.
+const CARRY_KEY = 'erevos.carry';
 
 // Their photos and files up to this size are taken from the relay as soon as they come.
 const AUTO_TAKE = 16 * 1000 * 1000;
@@ -310,6 +315,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
 }) {
   // Bumped when a phone nearby links or goes, or a contact is heard nearby (lib/nearby.ts).
   const [, setNearbyChanged] = useState(0);
+  // Whether this phone carries messages from phones nearby to their relays (lib/nearby.ts).
+  const [carrying, setCarrying] = useState(true);
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -462,6 +469,13 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     }
   }
 
+  // Carries messages from phones nearby to their relays, or no longer (lib/nearby.ts).
+  function changeCarrying(on: boolean) {
+    nearby.setCarrying(on);
+    setCarrying(on);
+    secureSet(CARRY_KEY, on ? 'on' : 'off').catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
+  }
+
   // Adds a contact from a code: typed or pasted here, or scanned and opened on the contact screen.
   async function acceptContact(code: ContactCode) {
     if (!e2e) {
@@ -517,6 +531,14 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     if (Platform.OS !== 'android' || hiddenKey) return;
     let active = true;
     const stopNearby = nearby.start(sendText);
+    secureGet(CARRY_KEY)
+      .then((value) => {
+        nearby.setCarrying(value !== 'off');
+        if (active) setCarrying(value !== 'off');
+      })
+      .catch(() => {
+        // Carrying stays as it was.
+      });
     const stopWatching = nearby.onChange(() => setNearbyChanged((n) => n + 1));
     const subscriptions = [
       onRadioEvent('onPeer', ({ id, kind }) => {
@@ -767,6 +789,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       busy = true;
       try {
         await sendPending(e2e, sends);
+        // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
+        if (!hiddenKey) void nearby.uploadCarried((url, sealed) => carryTo(sends, url, sealed)).catch(() => undefined);
         // An SMS invite sent from the SMS screen since: its answer may be on its way.
         if (!hiddenKey) await refreshSmsLink().catch(() => undefined);
         for (let i = 0; i < RECEIVE_BATCH && active; i++) {
@@ -983,7 +1007,8 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   async function sendToContact(target: Relay | null, identity: string, text: string, extra: Extra = {}): Promise<{ tag: string; timer: number; way: Delivery }> {
     if (!e2e) throw new Error(NO_CORE);
     const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here() });
-    const way = await handOver(e2e, target, identity, sealed, [sealed.packet]);
+    // What is only a mark, or asks whether their phone is open, is not worth carrying for days.
+    const way = await handOver(e2e, target, identity, sealed, [sealed.packet], !!text || !!extra.erase);
     // Writing to a message request accepts it.
     if (text) setContacts(e2e.contacts());
     return { tag: sealed.tag, timer: sealed.timer, way };
@@ -991,8 +1016,16 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
 
   // Hands a contact's packets to their phone, after the first packet of the conversation if the
   // relay has not taken that yet: nearby when they are, and through the relay (lib/nearby.ts).
-  // Hidden chats go through the relay only.
-  function handOver(chats: E2E, target: Relay | null, identity: string, sealed: { sender: string; relay: string; relayKey: string; first: Uint8Array | null }, packets: Uint8Array[]): Promise<Delivery> {
+  // When neither, and they went to the phones nearby, those phones may carry them to the
+  // contact's relay too (`carried`). Hidden chats go through the relay only.
+  function handOver(
+    chats: E2E,
+    target: Relay | null,
+    identity: string,
+    sealed: { sender: string; relay: string; relayKey: string; first: Uint8Array | null },
+    packets: Uint8Array[],
+    carried = false,
+  ): Promise<Delivery> {
     const relay = target && sealed.sender
       ? async () => {
           const to = contactTarget(target, sealed);
@@ -1007,7 +1040,9 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
       if (!relay) return Promise.reject(new Error('Type the relay address in Relay first.'));
       return relay().then(() => 'relay');
     }
-    return nearby.deliver(identity, sealed.first ? [sealed.first, ...packets] : packets, relay);
+    const all = sealed.first ? [sealed.first, ...packets] : packets;
+    const carry = carried ? () => carriedFor(sealed, all, { url: relayUrl, key: ownRelayKey }) : null;
+    return nearby.deliver(identity, all, relay, carry);
   }
 
   // A call's line in the chat, kept with its messages. It needs no read mark, and it disappears
@@ -1096,6 +1131,9 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
   function sentNote(way: Delivery, what: string, name: string): string {
     if (way === 'nearby') return `${what} nearby, end-to-end encrypted.`;
     if (way === 'relay') return `${what} through the relay, end-to-end encrypted.`;
+    if (way === 'carried') {
+      return `${what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. If ${name}'s is not one of them, they hand it to ${name}'s relay once they reach the internet, and so does this phone.`;
+    }
     return `${what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. It comes only if ${name}'s is one of them.`;
   }
 
@@ -1262,7 +1300,7 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
     const identity = peer.slice(CONTACT_PREFIX.length);
     try {
       const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here() });
-      const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets);
+      const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets, true);
       addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms));
       // Writing to a message request accepts it.
       setContacts(e2e.contacts());
@@ -2221,6 +2259,16 @@ function Chat({ hiddenKey, initial = null, linkNumber = '', setup = false, shown
                   />
                   <Button title="Add" compact onPress={addContact} />
                 </Row>
+                {Platform.OS === 'android' && !hiddenKey ? (
+                  <View>
+                    <DetailRow title="Carry messages for others" right={<Toggle on={carrying} />} onPress={() => changeCarrying(!carrying)} />
+                    <Text variant="caption" tone="muted">
+                      {carrying
+                        ? "When the relay cannot be reached, Erevos phones nearby give each other what they could not send, sealed for the contact's relay. This phone keeps those it gets, three days at most, and hands them to that relay through yours. It cannot read them, nor tell who they are from or for: it sees only the relay's address."
+                        : 'This phone keeps nothing for others. What it cannot send, phones nearby still carry for you.'}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             ) : null}
           </View>
