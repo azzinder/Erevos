@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { ContactFace, forgetPhoneContactPhoto, usePhoneContactPhoto } from '../components/contact-face';
@@ -16,8 +16,10 @@ import {
   onContactsEvent,
   phoneContact,
   phoneGroups,
+  pickRingtone,
   removeFromPhoneGroup,
   removePhoneContacts,
+  ringtoneName,
   setPhoneContactPhoto,
   starPhoneContact,
   type PhoneGroup,
@@ -29,7 +31,7 @@ import { useStyles, useTheme } from '../theme/context';
 // note, and its groups. A number calls (Linking's tel: goes to the phone app) or writes an SMS in
 // Erevos. The star makes it a favourite, in Android's contacts, which every phone app lists. Its
 // photo, from the phone's photos or the camera, is kept there too, 720 points square, as Android
-// shows it large when they call.
+// shows it large when they call; and its own ringtone, picked in Android's picker.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 const PHOTO_SIDE = 720;
@@ -45,7 +47,20 @@ export default function ContactCardScreen() {
   const [choosingGroups, setChoosingGroups] = useState(false);
   const [choosingPhoto, setChoosingPhoto] = useState(false);
   const [note, setNote] = useState('');
+  const [tone, setTone] = useState('');
   const photo = usePhoneContactPhoto(card?.phone?.id ?? null, card?.phone?.photo ?? 0, true);
+  const ringtone = card?.phone?.ringtone ?? '';
+
+  useEffect(() => {
+    let active = true;
+    setTone('');
+    ringtoneName(ringtone)
+      .then((name) => active && setTone(name))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [ringtone]);
 
   const load = useCallback(() => {
     if (!(id > 0)) {
@@ -113,6 +128,16 @@ export default function ContactCardScreen() {
       forgetPhoneContactPhoto(card.phone.id);
       setChoosingPhoto(false);
       load();
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  async function chooseRingtone() {
+    if (!card?.phone) return;
+    setNote('');
+    try {
+      if ((await pickRingtone(card.phone.id)) !== null) load();
     } catch (error) {
       setNote(errorText(error));
     }
@@ -222,6 +247,14 @@ export default function ContactCardScreen() {
             .join(', ') || t('In no group')}
         </Text>
         <Button title={t('Choose groups')} kind="secondary" compact onPress={() => setChoosingGroups(true)} />
+      </Card>
+
+      <Card>
+        <Text variant="label" tone="muted">
+          {t('Ringtone')}
+        </Text>
+        <Text tone={ringtone ? undefined : 'muted'}>{ringtone ? tone || t('A ringtone of its own') : t("The phone's own")}</Text>
+        <Button title={t('Choose ringtone')} kind="secondary" compact onPress={() => void chooseRingtone()} />
       </Card>
 
       <Row wrap>

@@ -7,6 +7,7 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.RingtoneManager
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.ContactsContract.CommonDataKinds.Email
@@ -330,6 +331,28 @@ internal object ContactsStore {
     val values = ContentValues().apply { put(Contacts.STARRED, if (starred) 1 else 0) }
     context.contentResolver.update(ContentUris.withAppendedId(Contacts.CONTENT_URI, id), values, null, null)
   }
+
+  /** A contact's own ringtone, or null for the phone's. */
+  fun ringtone(context: Context, id: Long): String? {
+    context.contentResolver.query(ContentUris.withAppendedId(Contacts.CONTENT_URI, id), arrayOf(Contacts.CUSTOM_RINGTONE), null, null, null)?.use { c ->
+      if (c.moveToFirst()) return c.getString(0)?.takeIf { it.isNotEmpty() }
+    }
+    return null
+  }
+
+  /** Gives a contact its own ringtone, which the phone plays when it calls; '' for the phone's own. */
+  fun setRingtone(context: Context, id: Long, uri: String) {
+    val values = ContentValues().apply { if (uri.isEmpty()) putNull(Contacts.CUSTOM_RINGTONE) else put(Contacts.CUSTOM_RINGTONE, uri) }
+    context.contentResolver.update(ContentUris.withAppendedId(Contacts.CONTENT_URI, id), values, null, null)
+  }
+
+  /** A ringtone's name as the phone shows it, or '' when it cannot be read (a file since deleted). */
+  fun ringtoneName(context: Context, uri: String): String =
+    try {
+      RingtoneManager.getRingtone(context, Uri.parse(uri))?.getTitle(context) ?: ""
+    } catch (_: Exception) {
+      ""
+    }
 
   /** The account types whose contacts their app sends back to its server: a new contact can be kept there. */
   private fun writableTypes(): Set<String> =

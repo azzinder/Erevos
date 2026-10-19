@@ -54,6 +54,10 @@ export const contacts: Record<string, string> = {
   'Remove the photo': 'Αφαίρεση της φωτογραφίας',
   "The photo is kept with the contact in Android's contacts, where the phone shows it when they call, and its account (Google) syncs it.":
     'Η φωτογραφία φυλάγεται μαζί με την επαφή στις επαφές του Android, όπου το τηλέφωνο τη δείχνει όταν σε καλούν, και ο λογαριασμός της (Google) τη συγχρονίζει.',
+  'Ringtone': 'Ήχος κλήσης',
+  "The phone's own": 'Ο ήχος του τηλεφώνου',
+  'A ringtone of its own': 'Δικός της ήχος',
+  'Choose ringtone': 'Επιλογή ήχου κλήσης',
 
   // Writing a contact.
   'Edit contact': 'Επεξεργασία επαφής',

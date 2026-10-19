@@ -21,6 +21,9 @@ compiled against Android 16's framework classes, not built into the app or run y
 - **Photos.** `photo()` gives a contact's thumbnail or its large photo; `setPhoto()` writes the bytes in a Photo
   row of its main raw contact (the one its name is from), which Android turns into its large photo and thumbnail at
   once, and makes it the one shown (super primary). No bytes take away its photos in every account.
+- **Ringtones.** `pickRingtone()` opens Android's ringtone picker (RingtoneManager) for a contact and keeps what is
+  picked as its CUSTOM_RINGTONE at once, which the phone plays when it calls; the picker's Default clears it.
+  `ringtoneName()` is a ringtone's title.
 - **Changes elsewhere.** `watch()` sends `onContactsChanged` when Android's contacts change.
 
 ## JS API

@@ -529,6 +529,8 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
   with the camera, or **Remove the photo**. You cut it square, and Erevos draws it anew, so nothing the photo said
   besides its picture (a place, a phone) is kept. It is kept with the contact in Android's contacts, where the phone
   shows it when they call.
+- **Ringtone:** on a contact, **Choose ringtone** opens Android's own picker, with the phone's sounds and those you
+  added; the phone rings with it when that contact calls. **Default ringtone** there gives back the phone's own.
 - **Delete** takes the contact off the phone, from every account it is kept in.
 - **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
   Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,
