@@ -24,8 +24,9 @@ Early work, not audited. Do not rely on it to protect anyone yet.
   first contact.
 - One Rust core under one Expo/React Native app for Android, iOS, Linux,
   macOS and Sailfish OS, structured like LPHL FASOULI.
-- In English, Greek, German and French, the user guide in English and Greek: the
-  first start follows the phone's language, and Home → Menu → Language switches it.
+- In English, Greek, German, French and Spanish, the user guide in English and
+  Greek: the first start follows the phone's language, and Home → Menu → Language
+  switches it.
 
 ## Layout
 

@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 import { DE } from '../i18n/de/index';
 import { EL } from '../i18n/el/index';
+import { ES } from '../i18n/es/index';
 import { FR } from '../i18n/fr/index';
 import { secureGet, secureSet } from './secure';
 
@@ -15,17 +16,17 @@ import { secureGet, secureSet } from './secure';
  * these; the choice (Home → Menu → Language) is kept on the phone, outside every space, so the
  * password screen shows it too.
  */
-export type Lang = 'en' | 'el' | 'de' | 'fr';
+export type Lang = 'en' | 'el' | 'de' | 'es' | 'fr';
 
 /** As the language switch lists them: the two the guide is written in first, then the others. */
-export const LANGS: Lang[] = ['el', 'en', 'de', 'fr'];
+export const LANGS: Lang[] = ['el', 'en', 'de', 'es', 'fr'];
 /** Each language by its own name. */
-export const LANG_LABELS: Record<Lang, string> = { el: 'Ελληνικά', en: 'English', de: 'Deutsch', fr: 'Français' };
+export const LANG_LABELS: Record<Lang, string> = { el: 'Ελληνικά', en: 'English', de: 'Deutsch', es: 'Español', fr: 'Français' };
 
-const WORDS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { el: EL, de: DE, fr: FR };
+const WORDS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { el: EL, de: DE, es: ES, fr: FR };
 
 // How each writes dates and times, when the phone's own is another language.
-const LOCALES: Record<Exclude<Lang, 'en'>, string> = { el: 'el-GR', de: 'de-DE', fr: 'fr-FR' };
+const LOCALES: Record<Exclude<Lang, 'en'>, string> = { el: 'el-GR', de: 'de-DE', es: 'es-ES', fr: 'fr-FR' };
 
 // Which counts take a word's first form, as plural() is given it: 1 alone, unless the language
 // counts otherwise here. French says 0 and 1 alike ("0 message").
