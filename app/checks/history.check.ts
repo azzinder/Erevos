@@ -164,6 +164,21 @@ t('keeps when a message was pinned, until it is taken down', async () => {
   assert.equal((await History.open('space', 0, key)).messages()[0].pinned, undefined);
 });
 
+t('keeps a star on this phone, and a star of the wrong shape is none', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const tag = newTag();
+  await history.add({ peer: 'contact:aa', text: 'keep this', mine: true, at: 1, tag });
+  assert.equal(await history.star('contact:aa', tag, true), true);
+  assert.equal((await History.open('space', 0, key)).messages()[0].starred, true);
+  await history.star('contact:aa', tag, false);
+  assert.equal((await History.open('space', 0, key)).messages()[0].starred, undefined);
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', tag, 0, 0, 0, 0, 0, { f: true, n: -5 }]] } });
+  const [odd] = (await History.open('space', 1, key)).messages();
+  assert.deepEqual([odd.starred, odd.pinned], [undefined, undefined]);
+});
+
 t('deletes the messages of one chat and keeps the others', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);

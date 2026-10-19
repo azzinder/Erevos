@@ -44,6 +44,7 @@ type Relay = 'ready' | 'no-queue' | 'none';
 // `phone`: only on a phone, as it needs its radio. `links`: where there are links to phones nearby.
 const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean }[] = [
   { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group' },
+  { title: mark('Starred messages'), detail: mark('The messages you starred, in all your chats'), href: '/starred' },
   {
     title: mark('Nearby phones'),
     detail: HAS_RADIO ? mark('Your contacts over Bluetooth and Wi-Fi, without internet') : mark('Your contacts on the same Wi-Fi, without internet'),

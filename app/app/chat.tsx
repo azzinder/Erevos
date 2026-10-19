@@ -54,7 +54,7 @@ import { cleanName, MAX_NAME, type Avatar } from '../lock/e2e-data';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
-import { History, newTag, WAITING, type Mark, type Message as Kept, type Parts } from '../lock/history';
+import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { isGroupPacket } from '../lib/groups';
@@ -190,7 +190,7 @@ const scheduled = (message: Message) => message.mine && (message.mark === WAITIN
 // How long a voice message is: 0:07.
 // Under a message to or from a contact: its mark if it is ours, and when it disappears.
 function caption(message: Message): string {
-  const parts: string[] = [];
+  const parts: string[] = message.starred ? ['★'] : [];
   if (scheduled(message)) parts.push(t('Scheduled · {when}', { when: laterLabel(message.at) }));
   else if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? t('Waiting') : MARKS[message.mark]);
   if (message.until) parts.push(t('Disappears {when}', { when: disappearsAt(message.until) }));
@@ -251,8 +251,8 @@ export default function ChatScreen() {
   const router = useRouter();
   // A contact to open with (from the home screen, or an imported chat that goes on with them),
   // hidden chats opened from the home screen's search (their key handed over in memory), or the
-  // relay settings to show at once.
-  const { contact, hidden, setup, phone } = useLocalSearchParams<{ contact?: string; hidden?: string; setup?: string; phone?: string }>();
+  // relay settings to show at once. `at`: the tag of a message to go to, starred or found.
+  const { contact, hidden, setup, phone, at } = useLocalSearchParams<{ contact?: string; hidden?: string; setup?: string; phone?: string; at?: string }>();
   const fromSearch = hidden === 'open';
   const [hiddenPlace, setHiddenPlace] = useState<HiddenPlace | null>(() => (fromSearch ? takeHidden() : null));
   const hiddenKey = hiddenPlace?.key ?? null;
@@ -298,7 +298,7 @@ export default function ChatScreen() {
         <ChatStatusBar />
         <KeyboardPaddedView bottom={insets.bottom} style={[layout.screen, { paddingTop: insets.top }]}>
           <View style={[layout.screen, hiddenKey && layout.gone]}>
-            <Chat hiddenKey={null} initial={initial} linkNumber={linkNumber} setup={setup === '1'} shown={!hiddenKey} onLook={setChatLook} />
+            <Chat hiddenKey={null} initial={initial} at={initial && typeof at === 'string' && isTag(at) ? at : null} linkNumber={linkNumber} setup={setup === '1'} shown={!hiddenKey} onLook={setChatLook} />
           </View>
           {hiddenKey ? (
             <Chat hiddenKey={hiddenKey} pocket={hiddenPlace?.pocket ?? 0} shown onHidden={closeHidden} onChangePassword={() => setAsking(true)} onLook={setChatLook} />
@@ -351,10 +351,12 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
+  /** The tag of a message of the `initial` chat to go to once it shows. */
+  at?: string | null;
   /** A phone number to link to the `initial` contact. */
   linkNumber?: string;
   /** Opens with the relay settings and adding a contact in view. */
@@ -403,7 +405,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   const [renaming, setRenaming] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState('');
   // The part of the details opened under its row: the picture, the timer, or moving the chat.
-  const [opened, setOpened] = useState<'picture' | 'timer' | 'move' | null>(null);
+  const [opened, setOpened] = useState<'picture' | 'timer' | 'move' | 'starred' | null>(null);
   // Moving the chat into the hidden chats: the PIN typed, whether new hidden chats are being
   // started with it (asked a second time), what went wrong, and while it moves.
   const [pinDraft, setPinDraft] = useState('');
@@ -429,8 +431,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   const [lit, setLit] = useState<number | null>(null);
   // Which of the pinned messages shows over the thread, counted from the latest.
   const [pinShown, setPinShown] = useState(0);
-  // Where each message is in the thread, by id, to go to it.
+  // Where each message is in the thread, by id, to go to it, and the one to go to once it shows.
   const placed = useRef(new Map<number, number>());
+  const goal = useRef(at);
   const receipts = useRef<Receipts>({});
   // Contacts who asked whether this phone is open, to answer with the next look at the relay.
   const answers = useRef(new Set<string>());
@@ -1254,6 +1257,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     });
   }
 
+  // Stars a message, or takes the star off, on this phone only.
+  function star(message: Message) {
+    const on = !message.starred;
+    setMessages((list) => list.map((m) => (m.peer === message.peer && m.tag === message.tag ? { ...m, starred: on || undefined } : m)));
+    history.current?.star(message.peer, message.tag, on).catch(() => {
+      // Shown, but gone when the chat next opens.
+    });
+  }
+
   // Goes to one of the chat's messages, by its tag, and lights it a moment.
   function goTo(peer: string, tag: string) {
     const target = visible.find((m) => m.peer === peer && m.tag === tag);
@@ -1275,6 +1287,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     const actions: MenuAction[] = [];
     if (theyHave(message) || (message.mine && message.mark === WAITING)) actions.push({ title: t('Reply'), onPress: () => setReplying(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
+    if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
     if (CAN_COPY && message.text && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
@@ -2236,6 +2249,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // The messages pinned to the top, the latest first, and the one that shows.
   const pins = visible.filter((m) => m.pinned).sort((a, b) => b.pinned! - a.pinned!);
   const pinnedNow = pins.length > 0 ? pins[pinShown % pins.length] : null;
+  const starredHere = visible.filter((m) => m.starred).reverse();
   // The photos shown: the latest in the thread, and the one looked at on its own.
   const shownPhotos = visible
     .filter((m) => m.file?.kind === 'photo' && !m.file.from)
@@ -2499,6 +2513,38 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                         setStyling(true);
                       }}
                     />
+                    <View style={styles.rule} />
+                    <DetailRow
+                      title={t('Starred messages')}
+                      value={starredHere.length > 0 ? String(starredHere.length) : ''}
+                      open={opened === 'starred'}
+                      onPress={() => setOpened((now) => (now === 'starred' ? null : 'starred'))}
+                    />
+                    {opened === 'starred' ? (
+                      <View style={styles.rowMore}>
+                        {starredHere.length === 0 ? (
+                          <Text variant="caption" tone="muted">
+                            {t('No starred messages. Press and hold a message in a chat, then tap Star.')}
+                          </Text>
+                        ) : null}
+                        {starredHere.map((m) => (
+                          <Pressable
+                            key={m.id}
+                            onPress={() => {
+                              setDetails(false);
+                              setTimeout(() => goTo(m.peer, m.tag), 300);
+                            }}
+                            accessibilityRole="button"
+                            style={({ pressed }) => [styles.found, pressed && { opacity: 0.6 }]}
+                          >
+                            <Text numberOfLines={2}>{messageLine(m)}</Text>
+                            <Text variant="caption" tone="muted">
+                              {`${m.mine ? t('You') : selectedName} · ${dayLabel(m.at)} ${clock(m.at)}`}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    ) : null}
                   </View>
                   <Text variant="overline" tone="muted" style={styles.groupTitle}>
                     {t('Privacy')}
@@ -2959,7 +3005,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
           const quoted = message.re ? visible.find((m) => m.tag === message.re) : undefined;
           return (
-            <View key={message.id} onLayout={(event) => placed.current.set(message.id, event.nativeEvent.layout.y)}>
+            <View
+              key={message.id}
+              onLayout={(event) => {
+                placed.current.set(message.id, event.nativeEvent.layout.y);
+                // Opened at this message (a starred one, or one found): gone to once the thread has settled.
+                if (goal.current === message.tag) {
+                  goal.current = null;
+                  holdScroll.current = true;
+                  setTimeout(() => goTo(message.peer, message.tag), 400);
+                }
+              }}
+            >
               {newDay && message.at ? (
                 <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
                   {dayLabel(message.at)}
@@ -3389,6 +3446,11 @@ const makeStyles = (colors: Colors) =>
     // A message with reactions leaves room for them under it.
     reacted: {
       marginBottom: 0,
+    },
+    // A message found, or starred, in the chat's details.
+    found: {
+      gap: 2,
+      paddingVertical: space.sm,
     },
     // A message gone to, lit a moment.
     lit: {

@@ -22,4 +22,12 @@ export const messages: Record<string, string> = {
   Pinned: 'Καρφιτσωμένο',
   'Pinned, {n} of {count}': 'Καρφιτσωμένο, {n} από {count}',
   'Goes to the pinned message': 'Πηγαίνει στο καρφιτσωμένο μήνυμα',
+  // Starred messages (app/starred.tsx, and a chat's details).
+  Star: 'Αστέρι',
+  Unstar: 'Χωρίς αστέρι',
+  'Starred messages': 'Μηνύματα με αστέρι',
+  'The messages you starred, in all your chats': 'Τα μηνύματα που σημείωσες με αστέρι, σε όλες τις συνομιλίες σου',
+  'No starred messages. Press and hold a message in a chat, then tap Star.':
+    'Κανένα μήνυμα με αστέρι. Κράτα πατημένο ένα μήνυμα σε μια συνομιλία και πάτα Αστέρι.',
+  'You to {name}': 'Εσύ προς {name}',
 };
