@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { encryptBytes, randomBytes, setPbkdf2, toHex, utf8Encode, webCryptoPbkdf2 } from '../lib/crypto';
-import { backupKey, backupName, makeBackup, NotABackupError, openBackup, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
+import { SmsLink } from '../lib/sms-link';
+import { backupKey, backupName, backupPhoneSms, makeBackup, NotABackupError, openBackup, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
 import { loadLockConfig, setLockPassword, unlock } from '../lock/config';
 import { History, newTag } from '../lock/history';
 import { openHidden, prepareHidden, setHiddenPassword } from '../lock/hidden';
@@ -144,4 +145,53 @@ t('holds every place of hidden chats, and gives them back', async () => {
   const place = await openHidden(0, 'hidden-pin');
   assert.equal(place?.pocket, 3);
   assert.equal((await loadHiddenData(0, 3, place!.key)).token, 'place 4');
+});
+
+t('holds the phone\'s SMS when given them, sealed, and restoring writes them nowhere', async () => {
+  await phone();
+  const sms = utf8Encode('EREVOS SMS 1\n…+306911111111 see you at eight');
+  const file = await makeBackup(await backupKey('backup-pass'), sms);
+  assert.doesNotMatch(Buffer.from(file).toString('latin1'), /EREVOS SMS|6911111111|see you/);
+  const opened = await openBackup(file, 'backup-pass');
+  assert.deepEqual(backupPhoneSms(opened), sms);
+  const before = { files: new Map(files), blobs: new Map(blobs) };
+  wipe();
+  await restoreBackup(opened);
+  assert.deepEqual({ files: new Map(files), blobs: new Map(blobs) }, before);
+  // A backup made without them is as it was.
+  const without = await openBackup(await makeBackup(await backupKey('backup-pass')), 'backup-pass');
+  assert.equal(backupPhoneSms(without), null);
+  assert.deepEqual(
+    without.entries.map((entry) => entry.name),
+    opened.entries.map((entry) => entry.name).filter((name) => name !== 'phone-sms'),
+  );
+});
+
+t('holds each space\'s own order of its SMS, never the SMS it sends later', async () => {
+  const { key } = await phone();
+  const link = await SmsLink.open(0, key);
+  assert.equal(await link.pin('+306911111111', true), true);
+  await link.setDraft('+306922222222', 'half written');
+  await link.setUndo(10);
+  assert.equal(await link.addLater({ to: '+306933333333', text: 'at eight', at: 5, sim: -1 }), true);
+  const file = await makeBackup(await backupKey('backup-pass'));
+
+  // Restored on another phone, the order comes back, and no SMS for later goes again.
+  wipe();
+  await restoreBackup(await openBackup(file, 'backup-pass'));
+  const restored = await SmsLink.open(0, key);
+  assert.deepEqual(restored.state.pinned.map((p) => p.address), ['+306911111111']);
+  assert.equal(restored.draftFor('+306922222222'), 'half written');
+  assert.equal(restored.undo, 10);
+  assert.deepEqual(restored.later, []);
+
+  // A backup without the order, as an Erevos before made them, restores as ever, and the order
+  // starts empty.
+  files.delete('erevos-sms-order');
+  const older = await makeBackup(await backupKey('backup-pass'));
+  await restoreBackup(await openBackup(file, 'backup-pass'));
+  await restoreBackup(await openBackup(older, 'backup-pass'));
+  assert.equal(files.has('erevos-sms-order'), false);
+  assert.deepEqual((await SmsLink.open(0, key)).state.pinned, []);
+  assert.equal((await loadSpaceData(0, key)).url, 'wss://relay.example');
 });

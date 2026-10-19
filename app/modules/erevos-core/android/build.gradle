@@ -16,6 +16,24 @@ def abis = (findProperty('reactNativeArchitectures') ?: allAbis.join(','))
 def cargoHome = System.getenv('CARGO_HOME') ?: "${System.getProperty('user.home')}/.cargo"
 def cargo = new File(cargoHome, 'bin/cargo').canExecute() ? "${cargoHome}/bin/cargo" : 'cargo'
 
+// Tor bridges hide Tor with a pluggable transport: lyrebird, Tor's own (obfs4, Snowflake,
+// WebTunnel, meek), in Go, pinned in transports/go.mod at the top of the repository. It is a
+// program that Tor starts, and Android runs programs only from where it unpacks the native
+// libraries, so it is built for each ABI with the NDK's compiler and carried as liblyrebird.so
+// (plugins/with-native-programs.js has Android unpack it). It goes through the NDK, not plain
+// Go, so that it looks names up the phone's own way. Go is needed once (README.md).
+def ptLibs = layout.buildDirectory.dir('ptJniLibs').get().asFile
+def goAbis = [
+  'arm64-v8a': [arch: 'arm64', clang: 'aarch64-linux-android'],
+  'armeabi-v7a': [arch: 'arm', clang: 'armv7a-linux-androideabi'],
+  'x86': [arch: '386', clang: 'i686-linux-android'],
+  'x86_64': [arch: 'amd64', clang: 'x86_64-linux-android'],
+]
+def goRoot = System.getenv('GOROOT')
+def go = goRoot && new File(goRoot, 'bin/go').canExecute() ? "${goRoot}/bin/go" : 'go'
+def lyrebird = 'gitlab.torproject.org/tpo/anti-censorship/pluggable-transports/lyrebird/cmd/lyrebird'
+def lyrebirdVersion = '0.9.0'
+
 android {
   namespace 'expo.modules.erevoscore'
   if (rootProject.hasProperty('ndkVersion')) {
@@ -28,7 +46,7 @@ android {
   }
 
   sourceSets {
-    main.jniLibs.srcDirs += rustLibs
+    main.jniLibs.srcDirs += [rustLibs, ptLibs]
   }
 }
 
@@ -72,6 +90,52 @@ def buildRustCore = tasks.register('buildRustCore', Exec) {
   }
 }
 
+def buildTransports = abis.findAll { goAbis[it] }.collect { abi ->
+  tasks.register("buildTransports-${abi}", Exec) {
+    description = "Builds lyrebird (transports/go.mod) for ${abi}, as liblyrebird.so."
+    def module = new File(repoRoot, 'transports')
+    def program = new File(ptLibs, "${abi}/liblyrebird.so")
+    workingDir module
+    inputs.files(new File(module, 'go.mod'), new File(module, 'go.sum'))
+    outputs.file(program)
+    commandLine go, 'build', '-trimpath', '-buildvcs=false',
+      // anet, which Snowflake's WebRTC uses to list the phone's networks, reaches into Go's own
+      // net package, as Tor's builds of it allow.
+      "-ldflags=-s -w -buildid= -checklinkname=0 -X main.lyrebirdVersion=${lyrebirdVersion}",
+      '-o', program.path, lyrebird
+
+    doFirst {
+      def ready = false
+      try {
+        def check = [go, 'version'].execute()
+        check.waitFor()
+        ready = check.exitValue() == 0
+      } catch (IOException ignored) {
+        // No Go at all.
+      }
+      if (!ready) {
+        throw new GradleException('Tor bridges need Go to build lyrebird (transports/go.mod). See app/modules/erevos-core/README.md.')
+      }
+      // The NDK's compiler for API 24, as the core is built for (cargo ndk --platform 24).
+      def os = System.getProperty('os.name').toLowerCase()
+      def windows = os.contains('windows')
+      def hostTag = os.contains('mac') ? 'darwin-x86_64' : windows ? 'windows-x86_64' : 'linux-x86_64'
+      def clang = new File(android.ndkDirectory, "toolchains/llvm/prebuilt/${hostTag}/bin/${goAbis[abi].clang}24-clang${windows ? '.cmd' : ''}")
+      if (!clang.exists()) {
+        throw new GradleException("The NDK's compiler for ${abi} is not at ${clang}, which lyrebird is built with.")
+      }
+      program.parentFile.mkdirs()
+      environment 'GOOS', 'android'
+      environment 'GOARCH', goAbis[abi].arch
+      if (abi == 'armeabi-v7a') environment 'GOARM', '7'
+      environment 'CGO_ENABLED', '1'
+      environment 'CC', clang.path
+      environment 'GOFLAGS', '-mod=readonly'
+    }
+  }
+}
+
 tasks.named('preBuild') {
   dependsOn buildRustCore
+  dependsOn buildTransports
 }

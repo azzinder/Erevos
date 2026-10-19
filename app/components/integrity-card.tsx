@@ -4,7 +4,7 @@ import { loadCurrentSpaceData } from '../lock/space-data';
 import { checkForUpdate, integrityStatus, watchIntegrity, WEB_APP, type IntegrityStatus } from '../lib/integrity';
 import { PUSH_AVAILABLE, turnOffPush, turnOnPush } from '../lib/web-push';
 import { useTheme } from '../theme/context';
-import { t } from '../lib/i18n';
+import { locale, t } from '../lib/i18n';
 
 import { Button, Card, Row, SectionTitle, Text } from './ui';
 
@@ -12,7 +12,7 @@ import { Button, Card, Row, SectionTitle, Text } from './ui';
 // of the key that signed it, what waits for the next start, and what the service worker refused.
 // Nothing in the phone or desktop app.
 
-const when = (ms: number) => new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const when = (ms: number) => new Date(ms).toLocaleString(locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 export function IntegrityCard() {
   const { colors } = useTheme();

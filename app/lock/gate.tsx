@@ -1,22 +1,51 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { KeyboardAvoidingView } from '../components/keyboard';
 import { Button, Input, Text } from '../components/ui';
 import { useColors, useTheme } from '../theme/context';
 
+import { BiometricError, biometricOn, unlockWithBiometric } from './biometric';
 import { unlock, type LockConfig, type Unlocked } from './config';
 import { LockedOutError, lockedOutMessage } from './tries';
 import { t } from '../lib/i18n';
+import { biometricSealer } from '../modules/erevos-biometric';
 
 // The password screen shown before any space is opened. It looks the same whichever password is
 // typed, and the password decides which space opens. Wrong passwords are counted on the phone
 // (tries.ts): after a few, the next try must wait. It shows in the look last used (theme/look.ts).
+// Where unlocking with a fingerprint or face is on (biometric.ts), a button offers it too; it
+// opens only the first password's space, and the password field stays.
 export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnlock: (space: Unlocked) => Promise<void> }) {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [biometric, setBiometric] = useState(false);
   const colors = useColors();
+
+  useEffect(() => {
+    biometricOn(biometricSealer).then(setBiometric, () => setBiometric(false));
+  }, []);
+
+  async function fingerprint() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const space = await unlockWithBiometric(biometricSealer, { title: t('Unlock Erevos'), cancel: t('Use password') });
+      if (space) {
+        setPassword('');
+        await onUnlock(space);
+        return;
+      }
+      setBiometric(false);
+      setError(t('Unlocking with a fingerprint or face stopped working, so it is off now. Type your password, and turn it on again in Lock.'));
+    } catch (e) {
+      if (!(e instanceof BiometricError && e.reason === 'cancelled')) setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function submit() {
     if (!password || busy) return;
@@ -65,6 +94,9 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
           </Text>
         ) : null}
         <Button title={t('Unlock')} onPress={submit} disabled={!password} loading={busy} style={styles.stretch} />
+        {biometric ? (
+          <Button title={t('Fingerprint or face')} kind="secondary" onPress={fingerprint} disabled={busy} style={styles.stretch} />
+        ) : null}
       </View>
     </KeyboardAvoidingView>
   );

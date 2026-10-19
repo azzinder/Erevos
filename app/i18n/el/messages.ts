@@ -18,7 +18,6 @@ export const messages: Record<string, string> = {
   'Hold for more': 'Κράτα πατημένο για περισσότερα',
   // Pinned messages (components/message-parts.tsx, Pinned).
   Pin: 'Καρφίτσωμα',
-  Unpin: 'Ξεκαρφίτσωμα',
   Pinned: 'Καρφιτσωμένο',
   'Pinned, {n} of {count}': 'Καρφιτσωμένο, {n} από {count}',
   'Goes to the pinned message': 'Πηγαίνει στο καρφιτσωμένο μήνυμα',
@@ -79,11 +78,9 @@ export const messages: Record<string, string> = {
   // Searching the messages, in a chat and on the home screen (lib/message-search.ts).
   'Search in this chat': 'Αναζήτηση σε αυτή τη συνομιλία',
   '{n} of {count}': '{n} από {count}',
-  None: 'Κανένα',
   Earlier: 'Πιο πριν',
   Later: 'Πιο μετά',
   // Forwarding a message to another chat (lib/forward.ts).
-  Forward: 'Προώθηση',
   'Forward to': 'Προώθηση σε',
   Forwarded: 'Προωθημένο',
   'Forwarding…': 'Προώθηση…',

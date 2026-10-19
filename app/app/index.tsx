@@ -1,14 +1,18 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Image, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FoundRow } from '../components/found-row';
-import { LockIcon, MoreIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
+import { LockIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
-import { font, fontStyle, Sheet, Text } from '../components/ui';
+import { archiveConversation, SmsActions, trashConversation, type SmsTarget } from '../components/sms-actions';
+import { SwipeRow } from '../components/swipe-row';
+import { Chip, font, fontStyle, Row, Sheet, Text } from '../components/ui';
+import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
-import { canGroup, hasCore } from '../lib/core';
+import { canGroup, canPublicGroup, hasCore } from '../lib/core';
+import { linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
@@ -17,10 +21,12 @@ import { foundAt, foundName, groupFindables, searchMessages, type Findable } fro
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
-import { spaceGroups } from '../lib/space-groups';
+import { publicMemberName, spaceGroups } from '../lib/space-groups';
+import { arrangeRows, dueTrash, emptyTrash, onSmsOrderChanged, sortSms } from '../lib/sms-folders';
 import { groupName, smsNumbers } from '../lib/sms-group';
+import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
-import { contactNames, onSmsEvent, smsStatus, smsThreads } from '../modules/erevos-sms';
+import { blockedNumbers, contactCards, deleteSmsThread, onSmsEvent, smsStatus, smsThreads, smsToolsReady, type ContactCard } from '../modules/erevos-sms';
 import { Archive } from '../lock/archive';
 import { useLock } from '../lock/context';
 import { loadE2EData } from '../lock/e2e-data';
@@ -29,6 +35,7 @@ import { searchHidden } from '../lock/hidden';
 import { History, type Message } from '../lock/history';
 import { loadInboxCache, saveInboxCache } from '../lock/inbox-cache';
 import { currentSpace } from '../lock/keys';
+import type { SmsData } from '../lock/sms-data';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -47,6 +54,7 @@ type Relay = 'ready' | 'no-queue' | 'none';
 // `phone`: only on a phone, as it needs its radio. `links`: where there are links to phones nearby.
 const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean }[] = [
   { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group' },
+  { title: mark('Public groups'), detail: mark('Make a group anyone with its link can join, or join one by a link'), href: '/public-groups' },
   { title: mark('Starred messages'), detail: mark('The messages you starred, in all your chats'), href: '/starred' },
   {
     title: mark('Nearby phones'),
@@ -55,6 +63,8 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
     links: true,
   },
   { title: mark('SMS'), detail: mark('Erevos as the SMS app, one list for all messages'), href: '/sms-settings', phone: true },
+  { title: mark('Linked devices'), detail: mark('This account on a computer or in a browser too'), href: '/devices' },
+  { title: mark('Phone'), detail: mark('Erevos as the phone app: the keypad, the calls and the favourites'), href: '/phone', phone: true },
   { title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay' },
   { title: mark('Tor'), detail: mark('Reach the relays through Tor, off unless turned on'), href: '/tor', phone: true },
   { title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', phone: true },
@@ -68,17 +78,28 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
   { title: mark('Radio test'), detail: mark('For testing the nearby link'), href: '/radio', phone: true },
 ];
 
-// The phone's SMS conversations, named as the phone's contacts name them when the owner turned that on.
-async function smsRows(space: number, key: Uint8Array): Promise<InboxSms[]> {
+// The phone's SMS conversations, named as the phone's contacts name them, with their pictures,
+// when the owner turned that on; with the space's own order of them (lib/sms-folders.ts: pinned,
+// archived, in the Trash, spam) and the numbers Android blocks.
+type SmsList = { threads: InboxSms[]; order: SmsData | null; blocked: string[] };
+
+async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
   const threads = await smsThreads();
-  const named = (await SmsLink.open(space, key).catch(() => null))?.names ?? false;
-  const names: Record<string, string> = named ? await contactNames(threads.flatMap((t) => smsNumbers(t.address))).catch(() => ({})) : {};
+  const link = await SmsLink.open(space, key).catch(() => null);
+  const cards: Record<string, ContactCard> = link?.names ? await contactCards(threads.flatMap((t) => smsNumbers(t.address))).catch(() => ({})) : {};
+  const names = Object.fromEntries(Object.entries(cards).map(([number, card]) => [number, card.name]));
   // A group's MMS conversation: named by all its numbers.
-  return threads.map((t) => {
+  const rows = threads.map((t) => {
     const numbers = smsNumbers(t.address);
-    return { ...t, name: numbers.length > 1 ? groupName(numbers, names) : names[numbers[0] ?? t.address] };
+    const card = numbers.length > 1 ? undefined : cards[numbers[0] ?? t.address];
+    return { ...t, name: numbers.length > 1 ? groupName(numbers, names) : card?.name, photo: card?.photo || undefined };
   });
+  return { threads: rows, order: link?.state ?? null, blocked: await blockedNumbers() };
 }
+
+// The spaces whose Trash was looked at since Erevos started: what was there long enough goes from
+// the phone once each time.
+const trashLooked = new Set<number>();
 
 export default function Home() {
   const styles = useStyles(makeStyles);
@@ -101,11 +122,21 @@ export default function Home() {
     router.push('/chat?hidden=open');
   }
   const [menu, setMenu] = useState(false);
+  // The menu's first row turns it into the list of languages.
+  const [languages, setLanguages] = useState(false);
+  const closeMenu = () => {
+    setMenu(false);
+    setLanguages(false);
+  };
   const [now, setNow] = useState(Date.now());
   // The contacts whose phones said they are open, and not long ago (lib/e2e.ts).
   const [online, setOnline] = useState<Set<string>>(new Set());
   // The phone's SMS as last read: the list shows them while they are read again.
-  const smsShown = useRef<InboxSms[]>([]);
+  const smsShown = useRef<SmsList>({ threads: [], order: null, blocked: [] });
+  // How many SMS conversations are in the space's Archive, Spam and Trash.
+  const [folders, setFolders] = useState({ archived: 0, spam: 0, trash: 0 });
+  // The SMS conversation held down, whose actions show.
+  const [target, setTarget] = useState<SmsTarget | null>(null);
   const smsRead = useRef(false);
   // Whether the list read now shows, or still the copy kept from last time (lock/inbox-cache.ts).
   const readShown = useRef(false);
@@ -128,7 +159,7 @@ export default function Home() {
       // The chats show as soon as they are read; the phone's SMS, slower to read (a hundred
       // conversations), join them when they are.
       const load = () => {
-        let chatsRead: ((sms: InboxSms[]) => void) | null = null;
+        let chatsRead: ((sms: SmsList) => void) | null = null;
         // The phone's SMS show only once Erevos is its SMS app.
         let smsFirst = false;
         if (smsStatus()?.isDefault) {
@@ -140,7 +171,14 @@ export default function Home() {
             smsFirst = false;
             chatsRead?.(sms);
           });
-        } else smsShown.current = [];
+          if (smsToolsReady() && !trashLooked.has(current)) {
+            trashLooked.add(current);
+            void SmsLink.open(current, key)
+              .then((link) => emptyTrash(link, dueTrash(link.state.trash, Date.now()), deleteSmsThread))
+              .then((gone) => active && gone > 0 && load())
+              .catch(() => undefined);
+          }
+        } else smsShown.current = { threads: [], order: null, blocked: [] };
         void Promise.all([
           quiet(chats(), [[], []]),
           quiet(Archive.open('space', current, key).then((a) => a.chats()), []),
@@ -149,14 +187,21 @@ export default function Home() {
           canGroup() ? quiet(spaceGroups().then((g) => g.list().flatMap((group) => groupFindables(group.id, g.messages(group.id)))), []) : Promise.resolve([]),
         ]).then(([[contacts, messages], imported, data, groups, said]) => {
           if (!active) return;
-          const name = (identity: string) => memberName(identity, contacts);
+          const name = (identity: string) => publicMemberName(identity) ?? memberName(identity, contacts);
+          const phones = contacts.flatMap((c) => (c.phone ? [c.phone] : []));
           setSearched({
             messages: [...messages, ...said],
             names: new Map([...contacts.map((c): [string, string] => [`contact:${c.identity}`, shownName(c)]), ...groups.map((g): [string, string] => [`group:${g.id}`, g.name])]),
           });
           chatsRead = (sms) => {
             const at = Date.now();
-            const list = mergeRows(buildInbox(contacts, messages, imported, at, sms), groupRows(groups, name, (text) => noteText(text, name)));
+            // Archived, spam and those in the Trash are not in the list; pinned ones are at its top.
+            const order = sms.order;
+            const sorted = order ? sortSms(sms.threads, order, sms.blocked, (t) => !!t.name || phones.some((p) => sameNumber(p, t.address))) : null;
+            const merged = mergeRows(buildInbox(contacts, messages, imported, at, sorted?.list ?? sms.threads), groupRows(groups, name, (text) => noteText(text, name)));
+            const list = order ? arrangeRows(merged, order.pinned, order.drafts) : merged;
+            setFolders({ archived: sorted?.archived.length ?? 0, spam: sorted?.spam.length ?? 0, trash: order?.trash.length ?? 0 });
+            if (sorted && sorted.back.length > 0) void SmsLink.open(current, key).then((link) => link.unarchive(sorted.back)).catch(() => undefined);
             // Not "No chats yet", nor the kept copy without its SMS, while the SMS are still being
             // read the first time.
             if (smsFirst && (list.length === 0 || copyShown.current)) return;
@@ -200,8 +245,9 @@ export default function Home() {
         load();
         lookOnline();
       });
-      // And an SMS, as Erevos is the SMS app.
+      // And an SMS, as Erevos is the SMS app, and a change of the space's order of its SMS.
       const sms = onSmsEvent('onSms', load);
+      const stopOrder = onSmsOrderChanged(load);
       // And what comes in a group.
       let stopGroups = () => undefined as void;
       if (canGroup()) {
@@ -216,6 +262,7 @@ export default function Home() {
         clearInterval(every);
         stop();
         sms?.remove();
+        stopOrder();
         stopGroups();
       };
     }, []),
@@ -270,8 +317,23 @@ export default function Home() {
           {relayText}
         </Text>
       </Pressable>
+      {folders.archived + folders.spam + folders.trash > 0 ? (
+        <Row wrap>
+          {folders.archived ? <Chip label={t('Archived · {n}', { n: folders.archived })} onPress={() => router.push('/sms-folder?folder=archived')} /> : null}
+          {folders.spam ? <Chip label={t('Spam · {n}', { n: folders.spam })} onPress={() => router.push('/sms-folder?folder=spam')} /> : null}
+          {folders.trash ? <Chip label={t('Trash · {n}', { n: folders.trash })} onPress={() => router.push('/sms-folder?folder=trash')} /> : null}
+        </Row>
+      ) : null}
     </View>
   );
+
+  // A swipe to the right archives an SMS conversation, to the left puts it in the Trash. It leaves
+  // the list at once; Undo brings it back.
+  function swiped(row: InboxRow, archive: boolean) {
+    setRows((list) => list?.filter((r) => r.identity !== row.identity) ?? null);
+    if (archive) archiveConversation(row.sms, true);
+    else trashConversation(row.sms, row.at);
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -281,7 +343,19 @@ export default function Home() {
         ListHeaderComponent={header}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
-        renderItem={({ item }) => <ChatRow row={item} now={now} online={online.has(item.identity)} />}
+        renderItem={({ item }) =>
+          item.sms ? (
+            <SwipeRow
+              ground={colors.ground}
+              right={{ label: t('Archive'), color: colors.primary, ink: colors.onPrimary, run: () => swiped(item, true) }}
+              left={{ label: t('Delete'), color: colors.danger, ink: colors.ground, run: () => swiped(item, false) }}
+            >
+              <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />
+            </SwipeRow>
+          ) : (
+            <ChatRow row={item} now={now} online={online.has(item.identity)} />
+          )
+        }
         extraData={online}
         ListEmptyComponent={
           rows === null || hits.length > 0 ? null : query ? (
@@ -342,21 +416,36 @@ export default function Home() {
           {t('New chat')}
         </Text>
       </Pressable>
-      <Sheet visible={menu} onClose={() => setMenu(false)}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            setMenu(false);
-            chooseLanguage();
-          }}
-          style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-        >
-          <Text variant="bodyStrong">{lang() === 'el' ? 'Γλώσσα · Language' : 'Language · Γλώσσα'}</Text>
-          <Text variant="caption" tone="muted">
-            {LANG_LABELS[lang()]}
-          </Text>
-        </Pressable>
-        {MENU.filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || canGroup())).map((item) => (
+      <UndoBar bottom={insets.bottom + space.xl + 56 + space.md} />
+      <SmsActions target={target} onClose={() => setTarget(null)} />
+      <Sheet visible={menu} onClose={closeMenu} title={languages ? t('Language') : undefined}>
+        {languages ? (
+          // Each language by its own name, for the whole app (lib/i18n.ts). The screens start again in it, here.
+          LANGS.map((l) => (
+            <Pressable
+              key={l}
+              accessibilityRole="button"
+              accessibilityState={{ selected: l === lang() }}
+              onPress={() => {
+                closeMenu();
+                void setLang(l);
+              }}
+              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+            >
+              <Text variant="bodyStrong">{l === lang() ? `${LANG_LABELS[l]}  ✓` : LANG_LABELS[l]}</Text>
+            </Pressable>
+          ))
+        ) : (
+          // Named in English too, so it is found in a language one cannot read.
+          <Pressable accessibilityRole="button" onPress={() => setLanguages(true)} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
+            <Text variant="bodyStrong">{lang() === 'en' ? 'Language · Γλώσσα' : `${t('Language')} · Language`}</Text>
+            <Text variant="caption" tone="muted">
+              {LANG_LABELS[lang()]}
+            </Text>
+          </Pressable>
+        )}
+        {/* Groups stay on the phone that holds the account (lib/devices.ts). */}
+        {(languages ? [] : MENU).filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || canPublicGroup())).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"
@@ -377,14 +466,6 @@ export default function Home() {
   );
 }
 
-// English or Greek, for the whole app (lib/i18n.ts). The screens start again in it, here.
-function chooseLanguage() {
-  ask(t('Language'), '', [
-    ...LANGS.map((l) => ({ text: LANG_LABELS[l], onPress: () => void setLang(l) })),
-    { text: t('Cancel'), style: 'cancel' as const },
-  ]);
-}
-
 function IconButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {
   const styles = useStyles(makeStyles);
   return (
@@ -394,13 +475,15 @@ function IconButton({ label, onPress, children }: { label: string; onPress: () =
   );
 }
 
-function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; online?: boolean }) {
+function ChatRow({ row, now, online = false, onLong }: { row: InboxRow; now: number; online?: boolean; onLong?: () => void }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
+  const [photoFailed, setPhotoFailed] = useState(false);
   const name = shownName(row);
-  const preview = row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
+  const preview = row.draft || row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
   return (
     <Pressable
+      onLongPress={onLong}
       onPress={() =>
         router.push(
           row.sms
@@ -414,7 +497,10 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
       accessibilityLabel={`${name}${online ? t(', online') : ''}${row.unread ? t(', {n} not read', { n: row.unread }) : ''}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      {row.sms ? (
+      {row.sms && row.photo && !photoFailed ? (
+        // The picture the phone's contacts have for the number, read from them as it shows.
+        <Image source={{ uri: row.photo }} style={styles.smsFace} onError={() => setPhotoFailed(true)} accessibilityIgnoresInvertColors />
+      ) : row.sms ? (
         <View style={styles.smsFace}>
           <Text variant="label" tone="muted">
             SMS
@@ -431,6 +517,7 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
           <Text variant="bodyStrong" numberOfLines={1} style={[styles.rowName, !row.name && styles.mono]}>
             {name}
           </Text>
+          {row.pinned ? <PinIcon color={colors.textFaint} size={13} /> : null}
           <Text variant="caption" color={row.unread ? colors.accentText : colors.textFaint}>
             {rowTime(row.at, now)}
           </Text>
@@ -438,12 +525,16 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
         <View style={styles.rowLine}>
           <View style={styles.previewLine}>
             {row.timer ? <TimerIcon color={colors.textMuted} size={13} /> : null}
-            {row.lastSms ? (
+            {row.draft ? (
+              <Text variant="caption" color={colors.danger}>
+                {t('Draft')}
+              </Text>
+            ) : row.lastSms ? (
               <Text variant="caption" color={colors.warning}>
                 SMS
               </Text>
             ) : null}
-            {row.last && row.mine && !row.lastSms ? (
+            {row.last && row.mine && !row.lastSms && !row.draft ? (
               <Text variant="caption" color={row.mark === 2 ? colors.accentText : colors.textMuted}>
                 {row.mark < 0 ? t('Waiting') : MARKS[row.mark]}
               </Text>

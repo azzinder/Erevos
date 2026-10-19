@@ -1,12 +1,14 @@
 // What a chat's messages can do beyond words: what they carry (lib/chat-parts.ts), their line
 // (lib/message-line.ts), finding them again (lib/message-search.ts), writing a chat out
-// (lib/chat-export.ts) and what a link's preview reads from its page (lib/link-preview.ts).
+// (lib/chat-export.ts), what a link's preview reads from its page (lib/link-preview.ts), and a
+// group's message handed to a contact's chat to forward (lib/forward.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { chatText, exportName } from '../lib/chat-export';
+import { handForward, takeForward } from '../lib/forward';
 import { firstLink, fitPreview, pageInfo } from '../lib/link-preview';
 import { acts, carriedOf, checkedChoices, checkedPlace, checkedPoll, choose, contentOf, geoLink, placeWords, pollOf, pollWords, tally, toCarry } from '../lib/chat-parts';
 import { messageLine } from '../lib/message-line';
@@ -219,4 +221,13 @@ test('a preview goes whole when it fits, without its picture when only that is t
   assert.deepEqual(toCarry({ preview }, true), { preview });
   assert.deepEqual(toCarry({ preview }, false), {});
   assert.deepEqual(contentOf({ preview }), { preview });
+});
+
+test("a group's message to forward is handed to that contact's chat only, once, within a minute", () => {
+  const message = { text: 'pass it on' };
+  handForward(A, message, 1000);
+  assert.equal(takeForward(B, 1000), null);
+  assert.equal(takeForward(A, 61_000), null);
+  assert.equal(takeForward(A, 2000), message);
+  assert.equal(takeForward(A, 2000), null);
 });

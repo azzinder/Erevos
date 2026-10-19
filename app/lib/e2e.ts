@@ -328,8 +328,36 @@ export type Received =
       // What else it carries (lib/chat-parts.ts).
       more: Carried;
     }
-  // Not encrypted (as messages before this version were), not for this account, or a replay.
-  | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' };
+  // Not encrypted (as messages before this version were), not for this account, or a replay. Or
+  // `linked`: between this account's own devices, and taken by their link (lib/devices.ts).
+  | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' | 'linked' };
+
+/**
+ * How a chat reaches the other devices of its account (lib/devices.ts). A linked device seals
+ * nothing for a contact itself (`through`): each message goes sealed for its primary, the phone that
+ * holds the account, which seals it for the contact; what the primary passes on from a contact it
+ * opens as the contact's. The primary tells its linked devices what it opened from contacts and
+ * what it sealed for them. The chat calls each in turn with its own calls, and none of them calls
+ * the chat back.
+ */
+export interface Link {
+  readonly through: boolean;
+  /**
+   * Opens a packet between the account's devices: a contact's message the primary passed on, or
+   * `taken` for the link's own, with how the contacts change; null for a packet that is not one.
+   */
+  open(packet: Uint8Array): Promise<{ kind: 'message'; identity: string; plaintext: Uint8Array } | { kind: 'taken'; contacts?: (contacts: Contact[]) => Contact[] } | null>;
+  /** On a linked device: a message for a contact, sealed for the primary. */
+  wrap(identity: string, plaintext: Uint8Array): Promise<Uint8Array>;
+  /** On a linked device: asks the primary to add the contact of a link (`identity`), and gives the contact to keep meanwhile. */
+  add(code: Parameters<E2E['addContact']>[0], identity: string, known: Contact | undefined): Promise<Contact>;
+  /** On the primary: a contact's message, opened here. */
+  opened(identity: string, plaintext: Uint8Array): void;
+  /** On the primary: a message sealed here for a contact. */
+  sealed(identity: string, plaintext: Uint8Array): void;
+  /** The contacts as kept now, which may have changed. */
+  changed(contacts: readonly Contact[]): void;
+}
 
 export class OwnCodeError extends Error {
   constructor() {
@@ -358,6 +386,8 @@ export class E2E {
   private readonly told = new Map<string, number>();
   // This chat's backup queue (lib/spare.ts), said in every message that says where its queue is.
   private ownSpare: Spare | null = null;
+  // The account's other devices, for the space's own chat (lib/devices.ts).
+  private link: Link | null = null;
 
   private constructor(data: E2EData, account: Uint8Array, identity: Uint8Array, bundle: Uint8Array, store: (data: E2EData) => Promise<void>) {
     this.data = data;
@@ -389,6 +419,11 @@ export class E2E {
     return this.ownSpare;
   }
 
+  /** Reaches the account's other devices through `link` from now on, or no longer. */
+  useLink(link: Link | null): void {
+    this.link = link;
+  }
+
   private run<T>(call: () => Promise<T>): Promise<T> {
     const next = this.queue.catch(() => undefined).then(call);
     this.queue = next;
@@ -398,6 +433,7 @@ export class E2E {
   /** Keeps `data` in memory first, so even if saving fails no later call seals from the state before it. */
   private async save(data: E2EData): Promise<void> {
     this.data = data;
+    this.link?.changed(data.contacts);
     await this.store(data);
   }
 
@@ -600,6 +636,11 @@ export class E2E {
       const identity = toHex(await core.bundleIdentity(bundle));
       if (identity === toHex(this.identity)) throw new OwnCodeError();
       const known = this.find(identity);
+      // On a linked device the primary adds them and starts the conversation; the chat keeps them meanwhile.
+      if (this.link?.through) {
+        await this.save(this.withContact(await this.link.add(code, identity, known)));
+        return { identity, added: !known };
+      }
       if (known) {
         // Already talking: only where to reach them changes, if the link says. Adding their link accepts a request.
         const where = code.senderHex ? { ...whereOf(code), sender: code.senderHex, spare: spareOf(code) } : {};
@@ -759,10 +800,36 @@ export class E2E {
     });
   }
 
+  /**
+   * On the primary: seals for a contact a message one of the account's linked devices wrote
+   * (lib/devices.ts), as it wrote it, but saying where this chat's queue is (`from`, `at`), and with
+   * the chat's timer if the message's was set later. Returns where to send it, after the first
+   * packet of the conversation if the relay has not taken that yet.
+   */
+  sealAs(
+    identity: string,
+    plaintext: Uint8Array,
+    from: string,
+    at: Where,
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array }> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
+      const message = decodeMessage(plaintext);
+      const { timer, timerAt } = timerOf(message, contact);
+      const writes = !!message.text || !!message.voice || !!message.file || !!message.react || acts(message.more ?? {});
+      const [packet] = await this.sealFor({ ...contact, timer, timerAt }, [{ ...message, from, ...at, timer, timerAt }], writes);
+      const first = contact.first ? fromBase64(contact.first) : null;
+      const { sender, relay, relayKey } = contact;
+      return { sender, relay, relayKey, spare: contact.spare ?? null, first, packet };
+    });
+  }
+
   // Seals messages in turn in the conversation to send in, and keeps it moved past them. Writing
   // to them (`writes`) accepts their request, if they made one, and says this phone is open for a
   // while. A chat that appears offline says nothing else of being open; what it held goes with
-  // what it writes, and once it shows again with whatever goes next.
+  // what it writes, and once it shows again with whatever goes next. On a linked device each goes
+  // sealed for the primary instead, which seals it for the contact.
   private async sealFor(contact: Contact, messages: Message[], writes: boolean): Promise<Uint8Array[]> {
     const now = Date.now();
     const release = writes || !contact.hide;
@@ -782,8 +849,14 @@ export class E2E {
     });
     let conversation = fromBase64(contact.conversations[0]);
     const packets: Uint8Array[] = [];
-    for (const message of said) {
-      const sealed = await core.seal(conversation, encodeMessage(message));
+    const plaintexts = said.map(encodeMessage);
+    const through = this.link?.through === true;
+    for (const plaintext of plaintexts) {
+      if (through) {
+        packets.push(await this.link!.wrap(contact.identity, plaintext));
+        continue;
+      }
+      const sealed = await core.seal(conversation, plaintext);
       conversation = sealed.conversation;
       packets.push(sealed.packet);
     }
@@ -791,6 +864,7 @@ export class E2E {
     const held = release ? { heldGot: [], heldRead: [] } : {};
     await this.save(this.withContact({ ...contact, ...held, request, conversations: [toBase64(conversation), ...contact.conversations.slice(1)] }));
     if (said.some((message) => message.on > 0)) this.told.set(contact.identity, now);
+    if (!through) for (const plaintext of plaintexts) this.link?.sealed(contact.identity, plaintext);
     return packets;
   }
 
@@ -812,6 +886,14 @@ export class E2E {
   /** Opens a packet from the relay. */
   receive(packet: Uint8Array): Promise<Received> {
     return this.run(async () => {
+      // One between the account's devices, first (lib/devices.ts): what it says of the contacts
+      // changes them here, and a contact's message the primary passed on opens as theirs.
+      const linked = this.link ? await this.link.open(packet).catch(() => null) : null;
+      if (linked?.kind === 'taken') {
+        if (linked.contacts) await this.save({ ...this.data, contacts: linked.contacts(this.data.contacts) });
+        return { kind: 'refused', reason: 'linked' };
+      }
+      if (linked) return this.open(packet, linked);
       const kind = await core.packetKind(packet);
       if (kind === 'first') return this.accept(packet);
       if (kind === 'following') return this.open(packet);
@@ -852,6 +934,7 @@ export class E2E {
       phone: known?.phone ?? '',
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
+    this.link?.opened(identity, opened.plaintext);
     const { text, tag, erase, got, read, voice, file, ask, call, group } = message;
     const { request } = contact;
     const online = this.heard(identity, message);
@@ -873,12 +956,14 @@ export class E2E {
     return this.onlineUntil(identity, now);
   }
 
-  private async open(packet: Uint8Array): Promise<Received> {
+  // `given`: a contact's message the primary passed on, already opened (lib/devices.ts).
+  private async open(packet: Uint8Array, given: { identity: string; plaintext: Uint8Array } | null = null): Promise<Received> {
     for (const contact of this.data.contacts) {
+      if (given && contact.identity !== given.identity) continue;
       for (let i = 0; i < contact.conversations.length; i++) {
         let opened: core.Opened;
         try {
-          opened = await core.open(fromBase64(contact.conversations[i]), packet);
+          opened = given ? { conversation: fromBase64(contact.conversations[i]), plaintext: given.plaintext } : await core.open(fromBase64(contact.conversations[i]), packet);
         } catch {
           continue;
         }
@@ -897,6 +982,7 @@ export class E2E {
             timerAt: timing.timerAt,
           }),
         );
+        if (!given) this.link?.opened(contact.identity, opened.plaintext);
         const { identity, request } = contact;
         const { text, tag, erase, got, read, voice, file, ask, call, group } = message;
         const online = this.heard(identity, message);

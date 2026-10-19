@@ -84,6 +84,26 @@ export async function fetchLatestRelease(fetchImpl: typeof fetch = fetch): Promi
   return parseRelease(await res.text());
 }
 
+// The release's file for each package of the computer's shell (desktop/main.js system()), as the
+// release workflow names them.
+export const PACKAGE_FILES = new Map([
+  ['windows', 'erevos-windows-x64-setup.exe'],
+  ['windows-portable', 'erevos-windows-x64-portable.exe'],
+  ['macos', 'erevos-macos.dmg'],
+  ['linux', 'erevos-linux-x86_64.pacman'],
+  ['linux-appimage', 'erevos-linux-x86_64.AppImage'],
+]);
+
+/**
+ * The file of a release that updates this app where it installs from the download page: on Sailfish
+ * OS its RPM, on a computer the file of the package the shell says it is, else null.
+ */
+export function packageFile(shell: 'electron' | 'sailfish' | null, system: string): string | null {
+  if (shell === 'sailfish') return 'erevos-sailfish-aarch64.rpm';
+  if (shell === 'electron') return PACKAGE_FILES.get(system) ?? null;
+  return null;
+}
+
 /** "111 MB" */
 export function formatSize(bytes: number): string {
   return `${Math.round(bytes / 1_000_000)} MB`;

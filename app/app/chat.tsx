@@ -45,12 +45,13 @@ import { CAN_PLACE, findPlace } from '../lib/place';
 import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { searchMessages } from '../lib/message-search';
-import { canForward, forwardToGroup, takeForward, voiceCopy, type Forwardable } from '../lib/forward';
+import { canForward, forwardedTo, forwardToGroup, takeForward, voiceCopy, type Forwardable } from '../lib/forward';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
+import { accountLink, linkedRole, onLinked } from '../lib/devices';
 import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
@@ -207,7 +208,7 @@ function caption(message: Message): string {
   if (scheduled(message)) parts.push(t('Scheduled · {when}', { when: laterLabel(message.at) }));
   else if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? t('Waiting') : MARKS[message.mark]);
   if (message.until) parts.push(t('Disappears {when}', { when: disappearsAt(message.until) }));
-  else if (message.lasts) parts.push(t('Disappears {time} after it is read', { time: timerLabel(message.lasts).toLowerCase() }));
+  else if (message.lasts) parts.push(t('Disappears {time} after it is read', { time: timerLabel(message.lasts) }));
   return parts.join('  ·  ');
 }
 
@@ -264,15 +265,13 @@ export default function ChatScreen() {
   const router = useRouter();
   // A contact to open with (from the home screen, or an imported chat that goes on with them),
   // hidden chats opened from the home screen's search (their key handed over in memory), or the
-  // relay settings to show at once. `at`: the tag of a message to go to, starred or found;
-  // `forward`: a group's message to forward to the contact, handed over in memory (lib/forward.ts).
-  const { contact, hidden, setup, phone, at, forward } = useLocalSearchParams<{
+  // relay settings to show at once. `at`: the tag of a message to go to, starred or found.
+  const { contact, hidden, setup, phone, at } = useLocalSearchParams<{
     contact?: string;
     hidden?: string;
     setup?: string;
     phone?: string;
     at?: string;
-    forward?: string;
   }>();
   const fromSearch = hidden === 'open';
   const [hiddenPlace, setHiddenPlace] = useState<HiddenPlace | null>(() => (fromSearch ? takeHidden() : null));
@@ -323,7 +322,6 @@ export default function ChatScreen() {
               hiddenKey={null}
               initial={initial}
               at={initial && typeof at === 'string' && isTag(at) ? at : null}
-              forward={!!initial && forward === '1'}
               linkNumber={linkNumber}
               setup={setup === '1'}
               shown={!hiddenKey}
@@ -381,14 +379,12 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = false, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
   /** The tag of a message of the `initial` chat to go to once it shows. */
   at?: string | null;
-  /** A message handed over to forward to the `initial` contact (lib/forward.ts), once the chat can send. */
-  forward?: boolean;
   /** A phone number to link to the `initial` contact. */
   linkNumber?: string;
   /** Opens with the relay settings and adding a contact in view. */
@@ -414,7 +410,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = fals
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [draft, setDraft] = useState('');
+  // A message passed on from an SMS conversation (lib/forward.ts) starts in the field.
+  const [draft, setDraft] = useState(() => (initial ? (forwardedTo(initial)?.text ?? '') : ''));
   const [note, setNote] = useState('');
   const [showRelay, setShowRelay] = useState(setup);
   // The chat's details, over the chat: its picture, name, timer, look, safety number, moving it.
@@ -1152,7 +1149,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = fals
     if (received.timerChanged) {
       setNote(
         received.timer
-          ? t('{name} set new messages in this chat to disappear {time} after they are read.', { name, time: timerLabel(received.timer).toLowerCase() })
+          ? t('{name} set new messages in this chat to disappear {time} after they are read.', { name, time: timerLabel(received.timer) })
           : t('{name} turned disappearing messages off in this chat.', { name }),
       );
     }
@@ -1428,10 +1425,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = fals
     await send(0, false, { ...contentOf(message), forwarded: true, text: message.text }, peer);
   }
 
-  // A group's message handed over to forward here, once the chat can send.
+  // A group's message handed over to forward here (lib/forward.ts), once the chat can send.
   useEffect(() => {
-    if (!forward || !e2e || !initial) return;
-    const message = takeForward();
+    if (!e2e || !initial) return;
+    const message = takeForward(initial);
     if (message) void forwardTo(message, initial);
   }, [e2e]);
 
@@ -1607,6 +1604,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = fals
   }
 
   async function startCall(video: boolean) {
+    // The contact's answer would come to the phone that holds the account, which made no call.
+    if (!hiddenKey && linkedRole() === 'linked') {
+      setNote(t('Calls ring on the phone that holds this account, for now. Call from there.'));
+      return;
+    }
     if (!selectedContact) {
       setNote(video ? t('Video calls go to contacts through the relay. Pick one first.') : t('Calls go to contacts through the relay. Pick one first.'));
       return;
@@ -1698,7 +1700,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = fals
       const { tag, timer, way } = await sendToContact(relayTarget(), to.slice(CONTACT_PREFIX.length), text, { lasts, quiet, ...answer, more: carried });
       keep(to, text, tag, timer, parts, !content);
       const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(to, contacts));
-      setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer).toLowerCase() }) : sent);
+      setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer) }) : sent);
     } catch (error) {
       if (!canWait(error) || hiddenKey) {
         setNote(notSent(error));
@@ -2070,15 +2072,41 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = fals
     }
   }
 
-  // Their photos and files up to AUTO_TAKE are taken as soon as they come, or when the chat opens.
+  // Photos and files up to AUTO_TAKE still on the relay are taken as soon as they come, or when the
+  // chat opens: theirs, and on a linked device the copies of what the phone sent (lib/devices.ts).
   useEffect(() => {
     const own = ownRelay();
     if (!loaded || !own) return;
     for (const m of messages) {
-      if (m.mine || !m.file?.from || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
+      if (!m.file?.from || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
       void take(own, m.peer, m.tag, m.file);
     }
   }, [loaded, relayUrl, relayToken, messages]);
+
+  // What the account's other devices changed in the history while the chat is open (lib/devices.ts):
+  // messages brought over or written on another of them, marks raised there, messages deleted there.
+  useEffect(() => {
+    if (hiddenKey) return;
+    return onLinked(({ gone }) => {
+      const kept = history.current;
+      if (!kept) return;
+      const now = kept.messages();
+      const byTag = new Map(now.filter((m) => m.tag).map((m) => [`${m.peer}|${m.tag}`, m]));
+      setMessages((list) => {
+        const left = list.filter((m) => !gone.some((g) => g.peer === m.peer && (!g.tag || g.tag === m.tag)));
+        const shown = new Set(left.map((m) => `${m.peer}|${m.tag}`));
+        const marked = left.map((m) => {
+          const there = m.tag ? byTag.get(`${m.peer}|${m.tag}`) : undefined;
+          if (!there || (there.mark ?? 0) <= m.mark) return m;
+          return { ...m, mark: there.mark ?? 0, until: m.until || (there.until ?? 0), lasts: m.until ? m.lasts : (there.lasts ?? 0) };
+        });
+        const added = now
+          .filter((m) => m.peer.startsWith(CONTACT_PREFIX) && m.tag && !shown.has(`${m.peer}|${m.tag}`))
+          .map((m) => ({ ...m, until: m.until ?? 0, lasts: m.lasts ?? 0, mark: m.mark ?? 0, id: nextId.current++ }));
+        return added.length > 0 ? [...marked, ...added].sort((a, b) => a.at - b.at) : marked;
+      });
+    });
+  }, [hiddenKey]);
 
   useEffect(() => {
     loadPhotoQuality().then(setQuality, () => undefined);
@@ -2336,6 +2364,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = fals
   // hidden chats' relay queue from now on; what it sends before it hears that may not come.
   async function moveToHidden(peer: string, pin: string, fresh: number | null) {
     if (!e2e || !history.current || moving) return;
+    if (!hiddenKey && linkedRole() === 'linked') {
+      setMoveNote(t("This chat is the phone's: move it into hidden chats there."));
+      return;
+    }
     const identity = peer.slice(CONTACT_PREFIX.length);
     if (pin.length < MIN_PIN) {
       setMoveNote(t('The PIN needs {n} characters at least.', { n: MIN_PIN }));
@@ -2415,7 +2447,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = fals
       return;
     }
     const set = timer
-      ? t('New messages in this chat now disappear from both phones {time} after they are read.', { time: timerLabel(timer).toLowerCase() })
+      ? t('New messages in this chat now disappear from both phones {time} after they are read.', { time: timerLabel(timer) })
       : t('New messages in this chat no longer disappear.');
     const target = relayTarget();
     try {
@@ -2523,7 +2555,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = fals
   // Without a relay queue the link has only the keys: who adds it reaches this phone nearby.
   const ownLink = !e2e
     ? null
-    : ownQueue
+    : !hiddenKey && accountLink()
+      ? accountLink()
+      : ownQueue
       ? contactLink({
           senderHex: ownQueue.senderHex,
           relayUrl: relayUrl.trim(),
@@ -2549,7 +2583,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = fals
         : selectedNearby
           ? t('Nearby · end-to-end encrypted')
           : selectedTimer
-            ? t('End-to-end encrypted · {time} after read', { time: timerLabel(selectedTimer).toLowerCase() })
+            ? t('End-to-end encrypted · {time} after read', { time: timerLabel(selectedTimer) })
             : t('End-to-end encrypted')
     : '';
 

@@ -1,4 +1,4 @@
-import { lang, mark } from './i18n';
+import { locale, mark } from './i18n';
 
 // When a message or an SMS sent for later should go (app/chat.tsx, app/sms.tsx), as chosen with
 // components/later-picker.tsx: a time ahead, to the minute, the minutes in steps of five. Times are
@@ -65,7 +65,7 @@ export function stepLater(at: number, unit: 'day' | 'hour' | 'minute', by: numbe
 function shown(at: number, options: Intl.DateTimeFormatOptions): string {
   const date = new Date(at);
   try {
-    return date.toLocaleString(lang() === 'el' ? 'el-GR' : undefined, options);
+    return date.toLocaleString(locale(), options);
   } catch {
     return date.toLocaleString();
   }

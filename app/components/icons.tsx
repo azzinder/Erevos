@@ -105,3 +105,16 @@ export function ShieldIcon({ color, size = 14 }: Props) {
     </View>
   );
 }
+
+/** A pushpin, leaning: for a conversation pinned at the top of the list. */
+export function PinIcon({ color, size = 14 }: Props) {
+  const line = Math.max(1.5, size / 9);
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', transform: [{ rotate: '35deg' }] }}>
+      <View style={{ width: size * 0.56, height: size * 0.18, borderRadius: line, backgroundColor: color }} />
+      <View style={{ width: size * 0.34, height: size * 0.3, backgroundColor: color }} />
+      <View style={{ width: size * 0.7, height: size * 0.16, borderRadius: line, backgroundColor: color }} />
+      <View style={{ width: line, height: size * 0.36, backgroundColor: color }} />
+    </View>
+  );
+}

@@ -62,7 +62,7 @@ export function guideFor(lang: GuideLang): GuideSection[] {
   return sections;
 }
 
-/** The guide shows in the app's language (lib/i18n.ts). */
+/** The guide shows in the app's language (lib/i18n.ts), and in English in the languages it is not written in. */
 export function guideLang(): GuideLang {
-  return lang();
+  return lang() === 'el' ? 'el' : 'en';
 }

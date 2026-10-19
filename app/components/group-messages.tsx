@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Platform, Pressable, ScrollView, View, type LayoutChangeEvent, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { ask } from '../lib/alert';
@@ -9,7 +9,7 @@ import { choose as chooseOption, placeText, placeWords, pollWords, type Place, t
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canForward, forwardToGroup, handForward, type Forwardable } from '../lib/forward';
 import { asChatMessage, type Marked } from '../lib/group-parts';
-import type { GroupInfo } from '../lib/groups';
+import { memberName, type GroupInfo } from '../lib/groups';
 import { t } from '../lib/i18n';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
@@ -40,6 +40,17 @@ import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
 // where you are, a poll. Photos, files and voice messages themselves are components/group-media.tsx's.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
+
+type Asked = 'search' | 'export';
+
+// What a public group's own screen (app/public-group.tsx), which has its search and export, asked
+// of the group's thread it goes to.
+let askedOf: { id: string; what: Asked } | null = null;
+
+/** Has group `id`'s thread, as it shows next, open its search or write the group out. */
+export function askThread(id: string, what: Asked): void {
+  askedOf = { id, what };
+}
 
 type Target = { key: string; name: string; go: () => Promise<void> };
 
@@ -76,6 +87,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
   const [lit, setLit] = useState<string | null>(null);
   // Once a message was gone to, the thread stays there as it changes, until we write.
   const stays = useRef(false);
+  // What a public group's own screen asked, taken as the thread shows.
+  const [asked, setAsked] = useState<Asked | null>(null);
 
   const out = !info || info.status !== 'in';
 
@@ -85,6 +98,25 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
       () => setPreviews(false),
     );
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (askedOf?.id !== id) return;
+      setAsked(askedOf.what);
+      askedOf = null;
+    }, [id]),
+  );
+
+  useEffect(() => {
+    if (!asked) return;
+    setAsked(null);
+    if (asked === 'export') {
+      void exportGroup();
+      return;
+    }
+    setSearching('');
+    setSearchAt(0);
+  }, [asked]);
 
   useEffect(() => {
     if (!lit) return;
@@ -168,10 +200,10 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
       .filter((c) => !c.request)
       .map((c) => ({
         key: `contact:${c.identity}`,
-        name: name(c.identity),
+        name: memberName(c.identity, [c]),
         go: async () => {
-          handForward(forwardable(m));
-          router.push(`/chat?contact=${c.identity}&forward=1`);
+          handForward(`contact:${c.identity}`, forwardable(m));
+          router.push(`/chat?contact=${c.identity}`);
         },
       }));
     const others: Target[] = (groups?.list() ?? [])

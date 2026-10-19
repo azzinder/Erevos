@@ -471,7 +471,7 @@ export function backdropKind(style: StyleName, look: LookName, wallpaper: Wallpa
   if (style === 'matrix') return 'rain';
   if (style === 'paper') return 'ruled';
   if (style === 'aurora') return 'aurora';
-  if (style === 'custom') return null;
+  if (style === 'custom' || style === 'material') return null;
   if (look === 'glass') return 'wall';
   return style === 'nocturne' ? 'glow' : null;
 }

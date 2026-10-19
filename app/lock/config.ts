@@ -145,6 +145,14 @@ export async function unlock(config: LockConfig, password: string, now = Date.no
   return { space: index, key: openSlot(config, index, k) };
 }
 
+// The key of `space` when `password` is that space's own, else null: to make sure it is the owner
+// who turns on unlocking with a fingerprint (biometric.ts). Every slot is checked, and counted.
+export async function ownSpaceKey(space: number, password: string, now = Date.now()): Promise<Uint8Array | null> {
+  const config = await loadLockConfig();
+  const { index, k } = await countedMatch(config, password, now);
+  return index === space && k ? openSlot(config, index, k) : null;
+}
+
 export class SamePasswordError extends Error {
   constructor() {
     super('samePassword');
