@@ -174,6 +174,20 @@ test('a chat written out: each day, then each message with its time, who wrote i
   assert.equal(exportName('A/B: C', Date.UTC(2026, 9, 19)), 'Erevos - A-B C - 2026-10-19.txt');
 });
 
+test('a group written out names who wrote each message, and each reaction and vote', () => {
+  const at = Date.UTC(2026, 9, 18, 9, 15);
+  const text = chatText(
+    [
+      { mine: false, by: 'Bob', at, text: 'x', poll: { q: 'Tea?', o: ['Yes', 'No'] }, votedBy: [{ chose: [1], name: 'Bob' }, { chose: [1], name: 'You' }] },
+      { mine: true, at: at + 60_000, text: 'ok', reactedBy: [{ emoji: '👍', name: 'Carol' }, { emoji: '❤️', name: 'Bob' }] },
+    ],
+    'Friends',
+    at,
+  );
+  assert.deepEqual(text.split('\n').slice(3), ['2026-10-18', '09:15  Bob: [Poll: Tea?]', '         Yes', '         No: Bob, You', '09:16  You: ok', '       👍 Carol  ❤️ Bob', '']);
+  assert.ok(text.startsWith('Chat with Friends, written out of Erevos'));
+});
+
 test('a preview is of the first https link, from what its page says of itself', () => {
   assert.equal(firstLink('see http://a.example/x and https://b.example/y, then www.c.example'), 'https://b.example/y');
   assert.equal(firstLink('no link here'), null);
