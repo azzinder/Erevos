@@ -1,0 +1,50 @@
+// The SIM each number is called on, for one space: chosen at a call, and kept for the number,
+// sealed in the space (lock/phone-data.ts), so the next call to it goes on the same SIM. With one
+// SIM there is nothing to choose.
+
+import { loadPhoneData, MAX_SIMS, savePhoneData, type PhoneData } from '../lock/phone-data';
+import type { PhoneAccount } from '../modules/erevos-phone';
+import { plainNumber, sameNumber } from './sms-invite';
+
+export class PhoneSims {
+  private readonly space: number;
+  private readonly key: Uint8Array;
+  private data: PhoneData;
+
+  private constructor(space: number, key: Uint8Array, data: PhoneData) {
+    this.space = space;
+    this.key = key;
+    this.data = data;
+  }
+
+  static async open(space: number, key: Uint8Array): Promise<PhoneSims> {
+    return new PhoneSims(space, key, await loadPhoneData('space', space, key));
+  }
+
+  /** The account id chosen for `number`, or ''. */
+  accountFor(number: string): string {
+    return this.data.sims.find((s) => sameNumber(s.number, number))?.account ?? '';
+  }
+
+  /** Calls to `number` go on `account` from now on; '' forgets the choice. */
+  async remember(number: string, account: string): Promise<void> {
+    const plain = plainNumber(number);
+    if (!plain || this.accountFor(plain) === account) return;
+    const others = this.data.sims.filter((s) => !sameNumber(s.number, plain));
+    const data = { ...this.data, sims: [...others, ...(account ? [{ number: plain, account }] : [])].slice(-MAX_SIMS) };
+    await savePhoneData('space', this.space, this.key, data);
+    this.data = data;
+  }
+}
+
+/** The SIM a call to a number goes on: the one kept for it, if the phone still has it; '' for
+ *  the phone's default, with one SIM or none known; null when the owner should choose. */
+export function callAccount(accounts: PhoneAccount[], kept: string): string | null {
+  if (accounts.length < 2) return '';
+  return accounts.some((a) => a.id === kept) ? kept : null;
+}
+
+/** "SIM 1 · Cosmote": the SIM, and its network's name when it has one. */
+export function accountLabel(account: PhoneAccount): string {
+  return account.label && account.label !== account.name ? `${account.name} · ${account.label}` : account.name;
+}
