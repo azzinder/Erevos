@@ -38,6 +38,8 @@ export default function SmsSettings() {
   // Whether Android lets Erevos read the phone's SMS; null until known.
   const [canRead, setCanRead] = useState<boolean | null>(null);
   const [readNote, setReadNote] = useState('');
+  // Whether Android lets Erevos show a notice when an SMS comes (Android 13 and later ask); null until known.
+  const [canNotify, setCanNotify] = useState<boolean | null>(null);
   // Set once the owner asked Android to make Erevos the SMS app, until it is.
   const [asked, setAsked] = useState(false);
   // What reading the phone's SMS gave, as the SMS app: how many conversations, or why it failed.
@@ -62,6 +64,9 @@ export default function SmsSettings() {
       setStatus(now);
       if (Platform.OS !== 'android') return;
       void PermissionsAndroid.check('android.permission.READ_SMS').then(setCanRead, () => setCanRead(null));
+      if (Number(Platform.Version) >= 33) {
+        void PermissionsAndroid.check('android.permission.POST_NOTIFICATIONS').then(setCanNotify, () => setCanNotify(null));
+      } else setCanNotify(true);
       if (now?.isDefault) {
         smsThreads().then(
           (threads) => setReading({ count: threads.length }),
@@ -109,6 +114,13 @@ export default function SmsSettings() {
     const granted = answers?.['android.permission.READ_SMS'] === PermissionsAndroid.RESULTS.GRANTED;
     setCanRead(granted);
     if (!granted) setReadNote(t(RESTRICTED));
+  }
+
+  // Android asks only until it was refused twice; then only Erevos's App info turns them on.
+  async function allowNotices() {
+    const answer = await PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS').catch(() => null);
+    if (answer === PermissionsAndroid.RESULTS.GRANTED) setCanNotify(true);
+    else void Linking.openSettings();
   }
 
   async function toggleInvites() {
@@ -184,6 +196,13 @@ export default function SmsSettings() {
                 ? t('Erevos found no SMS on this phone.')
                 : plural(reading.count, 'Erevos reads {n} SMS conversation on this phone.', 'Erevos reads {n} SMS conversations on this phone.')}
           </Text>
+        ) : null}
+        {status?.isDefault && canNotify === false ? (
+          <>
+            <Text variant="bodyStrong">{t('Notifications are off')}</Text>
+            <Text tone="muted">{t('So nothing tells you when an SMS comes.')}</Text>
+            <Button title={t('Allow notifications')} onPress={() => void allowNotices()} />
+          </>
         ) : null}
         {status && !status.phone ? <Text tone="muted">{t('This device has no phone part, so it cannot send SMS.')}</Text> : null}
       </Card>

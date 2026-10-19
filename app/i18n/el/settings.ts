@@ -213,4 +213,7 @@ export const settings: Record<string, string> = {
   'Erevos found no SMS on this phone.': 'Το Erevos δεν βρήκε SMS σε αυτό το τηλέφωνο.',
   'Erevos reads {n} SMS conversation on this phone.': 'Το Erevos διαβάζει {n} συνομιλία SMS σε αυτό το τηλέφωνο.',
   'Erevos reads {n} SMS conversations on this phone.': 'Το Erevos διαβάζει {n} συνομιλίες SMS σε αυτό το τηλέφωνο.',
+  'Notifications are off': 'Οι ειδοποιήσεις είναι κλειστές',
+  'So nothing tells you when an SMS comes.': 'Γι’ αυτό τίποτα δεν σε ειδοποιεί όταν έρχεται SMS.',
+  'Allow notifications': 'Να επιτρέπονται οι ειδοποιήσεις',
 };

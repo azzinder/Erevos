@@ -454,6 +454,8 @@ chats in one list.
   browser. Under **SMS** in the menu, tap **Open Default apps** → **SMS app** → Erevos. If Android calls it a
   restricted setting, open **Erevos's App info**, tap **⋮** at the top right → **Allow restricted settings**, and
   choose Erevos again.
+- **When an SMS comes:** a notice says "New message", without who sent it or what it says. If none comes, the
+  **SMS** screen shows **Allow notifications** while Android holds them back.
 - **If no SMS show:** Android 15 and later hold the SMS permission back from an app installed from a browser.
   Under **SMS** in the menu, tap **Allow SMS**. If Android calls it a restricted setting, open **Erevos's App
   info**, tap **⋮** at the top right → **Allow restricted settings**, and allow SMS under **Permissions**. Chats

@@ -1,6 +1,7 @@
 package expo.modules.erevossms
 
 import android.Manifest
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -279,8 +280,20 @@ internal object SmsStore {
       if (sim >= 0) put(Telephony.Sms.SUBSCRIPTION_ID, sim)
     }
     context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
-    val heard = listener
-    if (heard != null) heard("onSms", mapOf("address" to address)) else notifyNew(context)
+    came(context, mapOf("address" to address))
+  }
+
+  /** Tells the open app that something came, and shows a notice unless Erevos is on the screen:
+   *  in the background its JS side still runs, but nobody looks at it. */
+  fun came(context: Context, body: Map<String, Any?>) {
+    listener?.invoke("onSms", body)
+    if (!onScreen()) notifyNew(context)
+  }
+
+  private fun onScreen(): Boolean {
+    val state = ActivityManager.RunningAppProcessInfo()
+    ActivityManager.getMyMemoryState(state)
+    return state.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
   }
 
   /** A notice that something came, without who sent it or what it says. */

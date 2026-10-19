@@ -76,8 +76,7 @@ internal object MmsStore {
       val id = keep(context, message, sim)
       val transaction = intent.getStringExtra("transaction") ?: message.transactionId
       if (transaction.isNotEmpty()) acknowledge(context, transaction, sim)
-      val heard = SmsStore.listener
-      if (heard != null) heard("onSms", mapOf("address" to message.from, "mms" to id.toDouble())) else SmsStore.notifyNew(context)
+      SmsStore.came(context, mapOf("address" to message.from, "mms" to id.toDouble()))
     } catch (_: Exception) {
       SmsStore.notifyNew(context)
     } finally {

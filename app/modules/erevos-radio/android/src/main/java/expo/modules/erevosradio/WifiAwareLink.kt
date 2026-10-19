@@ -169,15 +169,23 @@ class WifiAwareLink(
       return
     }
     val port = server.localPort
-    val spec = WifiAwareNetworkSpecifier.Builder(publisher, peer).setPort(port).build()
-    val callback = object : ConnectivityManager.NetworkCallback() {}
-    networkCallbacks.add(callback)
-    connectivity.requestNetwork(awareRequest(spec), callback)
-    publisher.sendMessage(
-      peer,
-      nextMessageId(),
-      byteArrayOf(READY, (port shr 8).toByte(), port.toByte()),
-    )
+    // The port goes to the subscriber in READY. Android takes a port in the network specifier only
+    // on a link with a passphrase, and throws on an open one.
+    try {
+      val spec = WifiAwareNetworkSpecifier.Builder(publisher, peer).build()
+      val callback = object : ConnectivityManager.NetworkCallback() {}
+      networkCallbacks.add(callback)
+      connectivity.requestNetwork(awareRequest(spec), callback)
+      publisher.sendMessage(
+        peer,
+        nextMessageId(),
+        byteArrayOf(READY, (port shr 8).toByte(), port.toByte()),
+      )
+    } catch (e: RuntimeException) {
+      onLog("Cannot answer a knock: ${e.message}")
+      runCatching { server.close() }
+      return
+    }
     onLog("Knock received, listening on port $port")
     io.execute { acceptOne(server) }
   }
@@ -211,9 +219,13 @@ class WifiAwareLink(
         }
       }
     }
-    networkCallbacks.add(callback)
-    val spec = WifiAwareNetworkSpecifier.Builder(subscriber, peer).build()
-    connectivity.requestNetwork(awareRequest(spec), callback)
+    try {
+      val spec = WifiAwareNetworkSpecifier.Builder(subscriber, peer).build()
+      networkCallbacks.add(callback)
+      connectivity.requestNetwork(awareRequest(spec), callback)
+    } catch (e: RuntimeException) {
+      onLog("Cannot reach a phone that answered: ${e.message}")
+    }
   }
 
   private fun startLink(socket: Socket) {

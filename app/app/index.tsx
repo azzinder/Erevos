@@ -18,7 +18,7 @@ import { spaceChats } from '../lib/space-chats';
 import { spaceGroups } from '../lib/space-groups';
 import { groupName, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
-import { contactNames, smsStatus, smsThreads } from '../modules/erevos-sms';
+import { contactNames, onSmsEvent, smsStatus, smsThreads } from '../modules/erevos-sms';
 import { Archive } from '../lock/archive';
 import { useLock } from '../lock/context';
 import { loadE2EData } from '../lock/e2e-data';
@@ -146,6 +146,8 @@ export default function Home() {
         load();
         lookOnline();
       });
+      // And an SMS, as Erevos is the SMS app.
+      const sms = onSmsEvent('onSms', load);
       // And what comes in a group.
       let stopGroups = () => undefined as void;
       if (canGroup()) {
@@ -159,6 +161,7 @@ export default function Home() {
         active = false;
         clearInterval(every);
         stop();
+        sms?.remove();
         stopGroups();
       };
     }, []),
