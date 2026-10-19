@@ -90,4 +90,16 @@ export const messages: Record<string, string> = {
   '{name} (group)': '{name} (ομάδα)',
   'It goes as a copy, sent anew and end-to-end encrypted, marked as forwarded but not from where.':
     'Πηγαίνει ως αντίγραφο, σταλμένο από την αρχή και κρυπτογραφημένο από άκρη σε άκρη, με την ένδειξη ότι προωθήθηκε αλλά όχι από πού.',
+  // Writing a chat out as text (lib/chat-export.ts).
+  'Export chat': 'Εξαγωγή συνομιλίας',
+  'Export this chat?': 'Εξαγωγή αυτής της συνομιλίας;',
+  Export: 'Εξαγωγή',
+  'Its messages are written to a text file, with their times and who wrote them, saved where you choose. The file is not encrypted: anyone who has it, or any app that reads where it is, can read the chat. Photos, files and voice messages are only named, and messages that disappear are left out.':
+    'Τα μηνύματά της γράφονται σε ένα αρχείο κειμένου, με την ώρα τους και ποιος τα έγραψε, και αποθηκεύεται όπου διαλέξεις. Το αρχείο δεν είναι κρυπτογραφημένο: όποιος το έχει, ή όποια εφαρμογή διαβάζει εκεί που είναι, μπορεί να διαβάσει τη συνομιλία. Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα μόνο αναφέρονται, και τα μηνύματα που εξαφανίζονται μένουν έξω.',
+  'Chat with {name}, written out of Erevos': 'Συνομιλία με {name}, εξαγωγή από το Erevos',
+  'Written out {when}. This file is not encrypted: anyone who has it can read it.':
+    'Εξαγωγή {when}. Αυτό το αρχείο δεν είναι κρυπτογραφημένο: όποιος το έχει μπορεί να το διαβάσει.',
+  'Photo: {name}': 'Φωτογραφία: {name}',
+  forwarded: 'προωθημένο',
+  'answering “{line}”': 'απάντηση στο «{line}»',
 };

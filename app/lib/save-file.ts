@@ -1,8 +1,8 @@
-import { Directory, File, FileMode, Paths } from 'expo-file-system';
+import { Directory, File, FileMode, Paths, type FileHandle } from 'expo-file-system';
 
 import { eachPiece } from './attachments';
 import { folderLabel, pickFolder } from './backup-place';
-import { randomBytes, toHex } from './crypto';
+import { randomBytes, toHex, utf8Encode } from './crypto';
 import { secureGet, secureSet } from './secure';
 import { freeName, type FileRef } from '../lock/attachment-files';
 
@@ -10,7 +10,8 @@ import { freeName, type FileRef } from '../lock/attachment-files';
 // Android's folder picker (as backups do, lib/backup-place.ts). It is written a piece at a time,
 // so a large file never sits whole in memory: into the app's own cache first, as Android may close
 // a folder's file while it is still being written, then copied into the folder in one go and the
-// cache's copy deleted. Once saved it is outside Erevos, not sealed. On a computer, save-file.web.ts.
+// cache's copy deleted. A chat written out as text (lib/chat-export.ts) goes the same way. Once
+// saved it is outside Erevos, not sealed. On a computer, save-file.web.ts.
 
 const FOLDER = 'erevos.save-folder';
 const SAVING = 'erevos-save-';
@@ -50,7 +51,16 @@ function namesIn(folder: string): Set<string> | null {
  * when there is none, or Android no longer lets Erevos see it). Returns where it went, or null if
  * the owner went back.
  */
-export async function saveFile(ref: FileRef, choose = false): Promise<string | null> {
+export function saveFile(ref: FileRef, choose = false): Promise<string | null> {
+  return save(ref.name, choose, (handle) => eachPiece(ref, (piece) => handle.writeBytes(piece)));
+}
+
+/** Saves words as a file named `name`, as saveFile does. */
+export function saveText(name: string, text: string, choose = false): Promise<string | null> {
+  return save(name, choose, (handle) => handle.writeBytes(utf8Encode(text)));
+}
+
+async function save(named: string, choose: boolean, write: (handle: FileHandle) => unknown): Promise<string | null> {
   let folder = choose ? null : await secureGet(FOLDER);
   let taken = folder ? namesIn(folder) : null;
   if (!folder || !taken) {
@@ -59,7 +69,7 @@ export async function saveFile(ref: FileRef, choose = false): Promise<string | n
     await secureSet(FOLDER, folder);
     taken = namesIn(folder) ?? new Set();
   }
-  const name = freeName(ref.name, taken);
+  const name = freeName(named, taken);
   clearLeftovers();
   const staging = new Directory(Paths.cache, `${SAVING}${toHex(randomBytes(8))}`);
   writing.add(staging.uri);
@@ -69,7 +79,7 @@ export async function saveFile(ref: FileRef, choose = false): Promise<string | n
     plain.create();
     const handle = plain.open(FileMode.Truncate);
     try {
-      await eachPiece(ref, (piece) => handle.writeBytes(piece));
+      await write(handle);
     } finally {
       handle.close();
     }

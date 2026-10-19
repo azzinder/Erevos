@@ -252,6 +252,12 @@ Each chat can also look its own way: tap its name and then **Chat look** for the
 colors, wallpaper, messages), for that chat only. Like the name, it stays on this phone, sealed with the chat. **Same as the app**
 gives it the app's look again.
 
+To keep a chat outside Erevos, tap its name and then **Export chat**: its messages go into a text file, each day under its
+date and each message with its time and who wrote it, saved in the folder you pick (on a computer, where you choose). The
+file is not encrypted: anyone who has it, or any app that reads that folder, can read it. Photos, files and voice messages
+are only named, messages that disappear are left out, and hidden chats are not exported, so that no file outside Erevos
+shows they are there.
+
 To delete one message, press and hold it and tap **Delete**. To delete all the messages of a chat, tap its name and then **Delete messages**.
 Either way Erevos asks where:
 

@@ -23,7 +23,8 @@ import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type Fil
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
-import { saveFile } from '../lib/save-file';
+import { saveFile, saveText } from '../lib/save-file';
+import { chatText, exportName } from '../lib/chat-export';
 import { AttachSheet, Attachment, FileViewer, SHOWN_PHOTOS, Tool, useShownPhotos } from '../components/attachment';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
@@ -2182,6 +2183,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     setViewing(message);
   }
 
+  // Writes the chat out as text where the owner picks (lib/chat-export.ts), once they say so.
+  // Hidden chats are not written out: a file outside Erevos would show they are there.
+  async function exportChat() {
+    if (!selectedContact || hiddenKey) return;
+    setDetails(false);
+    const them = selectedName;
+    const asked = t('Its messages are written to a text file, with their times and who wrote them, saved where you choose. The file is not encrypted: anyone who has it, or any app that reads where it is, can read the chat. Photos, files and voice messages are only named, and messages that disappear are left out.');
+    if (!(await choose(t('Export this chat?'), asked, t('Cancel'), t('Export')))) return;
+    const now = Date.now();
+    try {
+      const where = await saveText(exportName(them, now), chatText(messages.filter((m) => m.peer === selectedContact), them, now));
+      if (where) setNote(t('Saved in {where}. There it is outside Erevos, not sealed.', { where }));
+    } catch (error) {
+      setNote(t('Not saved. {error}', { error: errorText(error) }));
+    }
+  }
+
   async function saveAttachment(message: Message, choose: boolean) {
     if (!message.file) return;
     try {
@@ -2727,6 +2745,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
                           </Pressable>
                         ))}
                       </View>
+                    ) : null}
+                    {!hiddenKey ? (
+                      <>
+                        <View style={styles.rule} />
+                        <DetailRow title={t('Export chat')} onPress={() => void exportChat()} />
+                      </>
                     ) : null}
                   </View>
                   <Text variant="overline" tone="muted" style={styles.groupTitle}>

@@ -1,14 +1,19 @@
 // What a chat's messages can do beyond words: what they carry (lib/chat-parts.ts), their line
-// (lib/message-line.ts) and finding them again (lib/message-search.ts).
+// (lib/message-line.ts), finding them again (lib/message-search.ts) and writing a chat out
+// (lib/chat-export.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { chatText, exportName } from '../lib/chat-export';
 import { acts, carriedOf, checkedChoices, checkedPlace, checkedPoll, choose, contentOf, geoLink, placeWords, pollOf, pollWords, tally, toCarry } from '../lib/chat-parts';
 import { messageLine } from '../lib/message-line';
 import { searchMessages, starredOf } from '../lib/message-search';
 import { STICKERS, stickerOf } from '../lib/stickers';
+
+// The times written out are the phone's own: here, UTC.
+process.env.TZ = 'UTC';
 
 const A = `contact:${'aa'.repeat(32)}`;
 const B = `contact:${'bb'.repeat(32)}`;
@@ -124,4 +129,46 @@ test('a search finds messages by their words, ignoring case and Greek accents, t
   assert.deepEqual(searchMessages(messages, 'ΠΕΝΤΕ').map((m) => m.line), ['στις πέντε']);
   assert.deepEqual(searchMessages(messages, '  '), []);
   assert.equal(searchMessages(messages, 'e', 2).length, 2);
+});
+
+test('a chat written out: each day, then each message with its time, who wrote it and what it is', () => {
+  const day = Date.UTC(2026, 9, 18, 9, 15);
+  const minute = 60_000;
+  const text = chatText(
+    [
+      { mine: true, at: day + minute, tag: '000000000002', text: 'Morning!\nWhat now?', re: '000000000001', myReaction: '👍' },
+      { mine: false, at: day, tag: '000000000001', text: 'Good morning', theirReaction: '❤️' },
+      { mine: false, at: day + 2 * minute, text: '', file: { kind: 'photo', name: 'sea.jpg' }, forwarded: true },
+      { mine: false, at: day + 3 * minute, text: 'gone soon', lasts: 300 },
+      { mine: true, at: day + 4 * minute, text: '', voice: { ms: 7000 }, re: '000000000009' },
+      { mine: false, at: day + 24 * 60 * minute, text: '📍 1, 2', place: { lat: 37.97536, lon: 23.73495 } },
+      { mine: true, at: day + 24 * 60 * minute + minute, text: 'x', poll: { q: 'Tea?', o: ['Yes', 'No'] }, myVote: [0], theirVote: [0] },
+    ],
+    'Nekten',
+    Date.UTC(2026, 9, 19, 14, 3),
+  );
+  assert.equal(
+    text,
+    [
+      'Chat with Nekten, written out of Erevos',
+      'Written out 2026-10-19 14:03. This file is not encrypted: anyone who has it can read it.',
+      '',
+      '2026-10-18',
+      '09:15  Nekten: Good morning',
+      '       ❤️ Nekten',
+      '09:16  You (answering “Good morning”): Morning!',
+      '       What now?',
+      '       👍 You',
+      '09:17  Nekten (forwarded): [Photo: sea.jpg]',
+      '09:19  You: [Voice message, 0:07]',
+      '',
+      '2026-10-19',
+      '09:15  Nekten: [Location: 37.975360, 23.734950]',
+      '09:16  You: [Poll: Tea?]',
+      '         Yes: You, Nekten',
+      '         No',
+      '',
+    ].join('\n'),
+  );
+  assert.equal(exportName('A/B: C', Date.UTC(2026, 9, 19)), 'Erevos - A-B C - 2026-10-19.txt');
 });
