@@ -134,4 +134,17 @@ export const contacts: Record<string, string> = {
   '{n} contacts imported.': '{n} επαφές εισήχθησαν.',
   '{n} contact could not be saved.': '{n} επαφή δεν αποθηκεύτηκε.',
   '{n} contacts could not be saved.': '{n} επαφές δεν αποθηκεύτηκαν.',
+
+  // QR codes.
+  'This contact holds too much for a QR code. Save it as a .vcf file instead.': 'Αυτή η επαφή έχει πάρα πολλά για έναν κωδικό QR. Αποθήκευσέ την καλύτερα ως αρχείο .vcf.',
+  "Another phone's camera reads it as a contact to add: its name, numbers, emails, addresses and note, without its photo. Whoever sees the code can read it.":
+    'Η κάμερα ενός άλλου τηλεφώνου τον διαβάζει ως επαφή για προσθήκη: το όνομα, τους αριθμούς, τα email, τις διευθύνσεις και τη σημείωσή της, χωρίς τη φωτογραφία της. Όποιος βλέπει τον κωδικό μπορεί να τον διαβάσει.',
+  "Another phone's camera reads it as a contact to add, without its photo, and without its note or addresses, which do not fit. Whoever sees the code can read it.":
+    'Η κάμερα ενός άλλου τηλεφώνου τον διαβάζει ως επαφή για προσθήκη, χωρίς τη φωτογραφία της, και χωρίς τη σημείωση ή τις διευθύνσεις, που δεν χωράνε. Όποιος βλέπει τον κωδικό μπορεί να τον διαβάσει.',
+  "Read a contact's QR code": 'Ανάγνωση κωδικού QR επαφής',
+  'From a photo of it, read on the phone': 'Από μια φωτογραφία του, με ανάγνωση στο τηλέφωνο',
+  'Take a photo of the code, or choose one. It is read here and not kept; what it holds starts a new contact, saved only when you save it.':
+    'Τράβηξε μια φωτογραφία του κωδικού ή διάλεξε μία. Διαβάζεται εδώ και δεν κρατιέται· ό,τι έχει ξεκινά μια νέα επαφή, που αποθηκεύεται μόνο όταν την αποθηκεύσεις.',
+  'This QR code holds no contact.': 'Αυτός ο κωδικός QR δεν έχει επαφή.',
+  'No QR code was found in the photo. Take it again closer, with all of the code in it.': 'Δεν βρέθηκε κωδικός QR στη φωτογραφία. Τράβηξέ τη ξανά πιο κοντά, με όλο τον κωδικό μέσα.',
 };

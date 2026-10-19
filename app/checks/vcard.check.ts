@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { EMPTY_FIELDS, type Fields } from '../lib/contacts';
-import { contactFromQr, parseMeCard, parseVCards, qrBytes, writeVCard } from '../lib/vcard';
+import { contactFromQr, parseMeCard, parseVCards, QR_MOST, qrBytes, qrVCard, writeVCard } from '../lib/vcard';
 
 const bytes = (text: string) => Uint8Array.from([...text].map((c) => c.charCodeAt(0) & 255));
 const utf8 = (text: string) => [...new TextEncoder().encode(text)];
@@ -199,4 +199,18 @@ test('text for a QR code: its UTF-8, a character for each byte', () => {
   assert.equal(qrBytes('A'), 'A');
   assert.deepEqual([...qrBytes('Α')].map((c) => c.charCodeAt(0)), [0xce, 0x91]);
   assert.ok([...qrBytes('Μαρία €')].every((c) => c.charCodeAt(0) < 256));
+});
+
+test("a contact's QR code: shorter when it would be too long, and it reads back", () => {
+  const card: Fields = { ...EMPTY_FIELDS, given: 'Μαρία', family: 'Παπαδοπούλου', phones: [{ value: '+30 691 234 5678', kind: 'mobile', label: '' }], note: 'Σημείωση' };
+  const short = qrVCard({ ...card, groups: [3, 4], photo: Uint8Array.of(1) } as Fields)!;
+  assert.ok(short.text.length <= QR_MOST && short.whole);
+  const utf8Text = new TextDecoder().decode(Uint8Array.from([...short.text].map((c) => c.charCodeAt(0))));
+  assert.equal(contactFromQr(utf8Text)?.note, 'Σημείωση');
+  const long = qrVCard({ ...card, note: 'Μ'.repeat(3000), addresses: [{ value: 'Οδός '.repeat(100), kind: 'home', label: '' }] })!;
+  assert.equal(long.whole, false);
+  const back = contactFromQr(new TextDecoder().decode(Uint8Array.from([...long.text].map((c) => c.charCodeAt(0)))))!;
+  assert.equal(back.note, '');
+  assert.equal(back.given, 'Μαρία');
+  assert.equal(qrVCard({ ...card, given: 'Μ'.repeat(200), family: 'Π'.repeat(200), company: 'Ε'.repeat(200), title: 'Θ'.repeat(200) }), null);
 });

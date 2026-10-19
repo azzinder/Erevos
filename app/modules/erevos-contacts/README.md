@@ -24,6 +24,8 @@ compiled against Android 16's framework classes, not built into the app or run y
 - **Ringtones.** `pickRingtone()` opens Android's ringtone picker (RingtoneManager) for a contact and keeps what is
   picked as its CUSTOM_RINGTONE at once, which the phone plays when it calls; the picker's Default clears it.
   `ringtoneName()` is a ringtone's title.
+- **QR codes.** `readQr()` reads the QR code in a photo (a file:// or content:// address) with ZXing's core (the one
+  dependency), at most 1600 points wide, as UTF-8 when the code does not say; nothing leaves the phone.
 - **Changes elsewhere.** `watch()` sends `onContactsChanged` when Android's contacts change.
 
 ## JS API

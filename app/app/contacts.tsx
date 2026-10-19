@@ -8,8 +8,11 @@ import { MoreIcon, PlusIcon, SearchIcon } from '../components/icons';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
 import { groupsByTitle, groupTitles, phoneCards, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
-import { matches } from '../lib/contacts';
+import { fillText, matches } from '../lib/contacts';
 import { plural, t } from '../lib/i18n';
+import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
+import { readQrPhoto } from '../lib/read-qr';
+import { contactFromQr } from '../lib/vcard';
 import { contactsReady, contactsStatus, onContactsEvent, phoneGroups, watchContacts, type PhoneGroup } from '../modules/erevos-contacts';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -17,8 +20,9 @@ import { useStyles, useTheme } from '../theme/context';
 // Contacts: the phone's own contacts, from Android's contacts (modules/erevos-contacts), with a
 // search over every field, the favourites, each group's contacts, and a new contact. Read again
 // each time it comes back into view, and when Android's contacts change while it shows (another
-// app, a sync). The menu has the rest: groups (app/contact-groups.tsx), and .vcf files in
-// (app/contact-import.tsx) and out: the contacts shown, saved in a folder the owner picks.
+// app, a sync). The menu has the rest: groups (app/contact-groups.tsx), .vcf files in
+// (app/contact-import.tsx) and out: the contacts shown, saved in a folder the owner picks, and a
+// contact's QR code read from a photo of it, which starts a new contact.
 
 /** What the list shows: everyone, the favourites, or a group's contacts (its id). */
 type Filter = 'all' | 'starred' | number;
@@ -33,6 +37,7 @@ export default function Contacts() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [menu, setMenu] = useState(false);
+  const [readingQr, setReadingQr] = useState(false);
   const [note, setNote] = useState('');
   const active = useRef(true);
 
@@ -88,6 +93,21 @@ export default function Contacts() {
   function go(href: Parameters<typeof router.push>[0]) {
     setMenu(false);
     router.push(href);
+  }
+
+  async function readQr(from: 'photos' | 'camera') {
+    setNote('');
+    try {
+      const text = await readQrPhoto(from);
+      if (text === null) return;
+      setReadingQr(false);
+      const card = text ? contactFromQr(text) : null;
+      if (card) router.push(`/contact-edit?fill=${encodeURIComponent(fillText(card))}`);
+      else setNote(text ? t('This QR code holds no contact.') : t('No QR code was found in the photo. Take it again closer, with all of the code in it.'));
+    } catch (error) {
+      setReadingQr(false);
+      setNote(error instanceof Error ? error.message : String(error));
+    }
   }
 
   async function saveShown() {
@@ -205,6 +225,16 @@ export default function Contacts() {
       <Sheet visible={menu} onClose={() => setMenu(false)} title={t('Contacts')}>
         {allowed ? <MenuRow title={t('Groups')} detail={t('Family, Work, and your own: make, rename, who is in them')} onPress={() => go('/contact-groups')} /> : null}
         {allowed ? <MenuRow title={t('Import from a .vcf file')} detail={t('Contacts another phone or app saved as a vCard')} onPress={() => go('/contact-import')} /> : null}
+        {allowed ? (
+          <MenuRow
+            title={t("Read a contact's QR code")}
+            detail={t('From a photo of it, read on the phone')}
+            onPress={() => {
+              setMenu(false);
+              setReadingQr(true);
+            }}
+          />
+        ) : null}
         {allowed && shown.length > 0 ? (
           <MenuRow
             title={t('Save as a .vcf file')}
@@ -216,6 +246,14 @@ export default function Contacts() {
           {t("These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them.")}
         </Text>
         <Button title={t('Done')} kind="secondary" compact onPress={() => setMenu(false)} />
+      </Sheet>
+      <Sheet visible={readingQr} onClose={() => setReadingQr(false)} title={t("Read a contact's QR code")}>
+        <Text tone="muted">{t('Take a photo of the code, or choose one. It is read here and not kept; what it holds starts a new contact, saved only when you save it.')}</Text>
+        <View style={styles.qrButtons}>
+          {CAN_TAKE_PHOTOS ? <Button title={t('Take photo')} compact onPress={() => void readQr('camera')} /> : null}
+          <Button title={t('Choose a photo')} kind="secondary" compact onPress={() => void readQr('photos')} />
+        </View>
+        {note ? <Text tone="muted">{note}</Text> : null}
       </Sheet>
     </View>
   );
@@ -358,6 +396,11 @@ const makeStyles = (colors: Colors) =>
     },
     fabPressed: {
       backgroundColor: colors.primaryPressed,
+    },
+    qrButtons: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: space.sm,
     },
     menuRow: {
       gap: 2,

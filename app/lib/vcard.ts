@@ -406,3 +406,21 @@ export function writeVCard(card: Fields & { name?: string; photo?: Uint8Array | 
 export function qrBytes(text: string): string {
   return byteString(utf8Encode(text));
 }
+
+/** The most bytes of a contact's QR code: more, and its modules are too small to read off a screen. */
+export const QR_MOST = 1200;
+
+/**
+ * A contact as a QR code's text (lib/qr.ts takes its bytes): its vCard without its photo and
+ * groups; too long, without its note, then its addresses, then all but its first numbers and
+ * email (`whole` false). Null when even that is too long.
+ */
+export function qrVCard(card: Fields & { name?: string }): { text: string; whole: boolean } | null {
+  const shorter = [card, { ...card, note: '' }, { ...card, note: '', addresses: [] }, { ...card, note: '', addresses: [], phones: card.phones.slice(0, 3), emails: card.emails.slice(0, 1) }];
+  for (const [i, f] of shorter.entries()) {
+    // Whatever else the card carries (a phone contact's group ids) stays out.
+    const text = qrBytes(writeVCard({ ...f, photo: null, groups: [] }));
+    if (text.length <= QR_MOST) return { text, whole: i === 0 };
+  }
+  return null;
+}

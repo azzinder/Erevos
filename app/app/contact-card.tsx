@@ -1,8 +1,9 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { ContactFace, forgetPhoneContactPhoto, usePhoneContactPhoto } from '../components/contact-face';
+import { QrCode } from '../components/QrCode';
 import { Button, Card, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { groupsByTitle, phoneCard, type Card as ContactCard } from '../lib/contact-book';
@@ -12,6 +13,7 @@ import { t } from '../lib/i18n';
 import { pickAvatar } from '../lib/pick-avatar';
 import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
+import { qrVCard } from '../lib/vcard';
 import {
   addToPhoneGroup,
   onContactsEvent,
@@ -32,7 +34,8 @@ import { useStyles, useTheme } from '../theme/context';
 // note, and its groups. A number calls (Linking's tel: goes to the phone app) or writes an SMS in
 // Erevos. The star makes it a favourite, in Android's contacts, which every phone app lists. Its
 // photo, from the phone's photos or the camera, is kept there too, 720 points square, as Android
-// shows it large when they call; and its own ringtone, picked in Android's picker.
+// shows it large when they call; and its own ringtone, picked in Android's picker. Its QR code is
+// its vCard, which another phone's camera reads as a contact to add.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 const PHOTO_SIDE = 720;
@@ -47,6 +50,7 @@ export default function ContactCardScreen() {
   const [groups, setGroups] = useState<PhoneGroup[]>([]);
   const [choosingGroups, setChoosingGroups] = useState(false);
   const [choosingPhoto, setChoosingPhoto] = useState(false);
+  const [showingQr, setShowingQr] = useState(false);
   const [note, setNote] = useState('');
   const [tone, setTone] = useState('');
   const photo = usePhoneContactPhoto(card?.phone?.id ?? null, card?.phone?.photo ?? 0, true);
@@ -271,6 +275,7 @@ export default function ContactCardScreen() {
 
       <Row wrap>
         <Button title={t('Edit')} kind="secondary" compact onPress={() => router.push(`/contact-edit?id=${card.phone?.id ?? 0}`)} />
+        <Button title={t('QR code')} kind="secondary" compact onPress={() => setShowingQr(true)} />
         <Button title={t('Save as a .vcf file')} kind="secondary" compact onPress={() => void saveFile()} />
         <Button title={t('Delete')} kind="danger" compact onPress={() => void remove()} />
       </Row>
@@ -300,6 +305,11 @@ export default function ContactCardScreen() {
         <Button title={t('Done')} compact onPress={() => setChoosingGroups(false)} />
       </Sheet>
 
+      <Sheet visible={showingQr} onClose={() => setShowingQr(false)} title={card.name}>
+        {showingQr ? <ContactQr card={card} /> : null}
+        <Button title={t('Done')} compact onPress={() => setShowingQr(false)} />
+      </Sheet>
+
       <Sheet visible={choosingPhoto} onClose={() => setChoosingPhoto(false)} title={t('Photo')}>
         <Text tone="muted">{t("The photo is kept with the contact in Android's contacts, where the phone shows it when they call, and its account (Google) syncs it.")}</Text>
         <Row wrap>
@@ -310,6 +320,22 @@ export default function ContactCardScreen() {
         {note ? <Text tone="muted">{note}</Text> : null}
       </Sheet>
     </Page>
+  );
+}
+
+/** The contact's vCard as a QR code, shorter when it would be too long, or why there is none. */
+function ContactQr({ card }: { card: ContactCard }) {
+  const qr = useMemo(() => qrVCard(card), [card]);
+  if (!qr) return <Text tone="muted">{t('This contact holds too much for a QR code. Save it as a .vcf file instead.')}</Text>;
+  return (
+    <>
+      <QrCode text={qr.text} size={300} />
+      <Text variant="caption" tone="muted">
+        {qr.whole
+          ? t("Another phone's camera reads it as a contact to add: its name, numbers, emails, addresses and note, without its photo. Whoever sees the code can read it.")
+          : t("Another phone's camera reads it as a contact to add, without its photo, and without its note or addresses, which do not fit. Whoever sees the code can read it.")}
+      </Text>
+    </>
   );
 }
 

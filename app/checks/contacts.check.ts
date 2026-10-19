@@ -13,6 +13,7 @@ import {
   daysToBirthday,
   EMPTY_FIELDS,
   fieldsName,
+  fillText,
   findDuplicates,
   initials,
   kindOf,
@@ -253,6 +254,11 @@ test("another app's new contact is checked before it fills the form", () => {
   assert.equal(askedFields('not json'), null);
   assert.equal(askedFields(JSON.stringify({ note: 'only a note' })), null);
   assert.equal(birthdayText(parseBirthday('--12-24')!), '--12-24');
+  // A QR code's, as fillText writes it: its names, kinds, labels and birthday come through.
+  const custom = { ...maria, phones: [...maria.phones, { value: '210 000 0000', kind: 'custom' as const, label: 'Γιαγιά' }], birthday: '1990-05-04' };
+  assert.deepEqual(askedFields(fillText(custom)), cleanFields(custom));
+  assert.equal(askedFields(JSON.stringify({ given: 'Ελένη', birthday: 'soon', phones: [{ value: '1', kind: 'nonsense' }] }))?.birthday, '');
+  assert.equal(askedFields(JSON.stringify({ given: 'Ελένη', phones: [{ value: '1', kind: 'nonsense' }] }))?.phones[0].kind, 'mobile');
 });
 
 test('what is not on the phone yet, of a file or a SIM', () => {

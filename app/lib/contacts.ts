@@ -400,8 +400,9 @@ export function birthdayComing(b: Birthday, now: Date): string {
 }
 
 /**
- * The fields another app asks a new contact to have (Android's insert intent, as
- * modules/erevos-contacts hands it over), checked: anything of the wrong shape is left out.
+ * The fields a new contact starts with, as the contact screen is handed them (`fill`): another
+ * app's (Android's insert intent, as modules/erevos-contacts hands it over, with Android's types
+ * and the whole name), or a QR code's (fillText). Checked: anything of the wrong shape is left out.
  */
 export function askedFields(json: string): Fields | null {
   let v: Record<string, unknown>;
@@ -416,9 +417,10 @@ export function askedFields(json: string): Fields | null {
     (Array.isArray(x) ? x : []).slice(0, MAX_ENTRIES).map((item) => {
       const e = (item ?? {}) as Record<string, unknown>;
       const type = typeof e.type === 'number' && Number.isInteger(e.type) ? e.type : -1;
-      return { value: text(e.value), kind: type >= 0 ? kindOf(field, type) : field === 'phones' ? 'mobile' : 'home', label: text(e.label) };
+      const kind = KINDS.find((k) => k === e.kind) ?? (type >= 0 ? kindOf(field, type) : field === 'phones' ? 'mobile' : 'home');
+      return { value: text(e.value), kind, label: text(e.label) };
     });
-  const name = splitName(text(v.name));
+  const name = text(v.given) || text(v.family) ? { given: text(v.given), family: text(v.family) } : splitName(text(v.name));
   const fields = cleanFields({
     ...EMPTY_FIELDS,
     given: name.given,
@@ -429,6 +431,23 @@ export function askedFields(json: string): Fields | null {
     emails: entries(v.emails, 'emails'),
     addresses: entries(v.addresses, 'addresses'),
     note: text(v.note),
+    birthday: parseBirthday(text(v.birthday)) ? text(v.birthday) : '',
   });
   return fieldsName(fields) ? fields : null;
+}
+
+/** Fields as the contact screen's `fill` (askedFields reads them). */
+export function fillText(f: Fields): string {
+  const entries = (list: Entry[]) => list.map(({ value, kind, label }) => ({ value, kind, label }));
+  return JSON.stringify({
+    given: f.given,
+    family: f.family,
+    company: f.company,
+    title: f.title,
+    phones: entries(f.phones),
+    emails: entries(f.emails),
+    addresses: entries(f.addresses),
+    note: f.note,
+    birthday: f.birthday,
+  });
 }

@@ -536,6 +536,10 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
   groups, on this phone only or in an account. **Save as a .vcf file** there saves the contacts shown (all of them,
   the favourites, a group, or what the search found) as one file, in a folder you choose; on a contact, it saves
   that one. The file is outside Erevos and not sealed: anyone who has it can read the contacts.
+- **QR codes:** **QR code** on a contact shows its vCard as a QR code, which another phone's camera reads as a
+  contact to add: its name, numbers, emails, addresses and note, without its photo (a long note or many addresses
+  are left out to fit). Whoever sees it can read it. **Read a contact's QR code** in the menu reads one from a photo
+  you take or choose, here on the phone, and starts a new contact with it, saved only when you save it.
 - **Delete** takes the contact off the phone, from every account it is kept in.
 - **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
   Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,

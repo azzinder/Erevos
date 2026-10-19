@@ -30,9 +30,10 @@ export default function ContactEdit() {
   const id = Number(params.id ?? 0);
   const styles = useStyles(makeStyles);
   const [phone, setPhone] = useState<PhoneContact | null>(null);
-  const [fields, setFields] = useState<Fields>(() => (typeof params.fill === 'string' ? (askedFields(params.fill) ?? EMPTY_FIELDS) : EMPTY_FIELDS));
-  const [birthday, setBirthday] = useState('');
-  const [birthdayBefore, setBirthdayBefore] = useState('');
+  const [filled] = useState<Fields>(() => (typeof params.fill === 'string' ? (askedFields(params.fill) ?? EMPTY_FIELDS) : EMPTY_FIELDS));
+  const [fields, setFields] = useState<Fields>(filled);
+  const [birthday, setBirthday] = useState(() => typedBirthday(filled.birthday));
+  const [birthdayBefore, setBirthdayBefore] = useState(() => typedBirthday(filled.birthday));
   const [accounts, setAccounts] = useState<ContactAccount[]>([]);
   const [account, setAccount] = useState<ContactAccount | null>(null);
   const [ready, setReady] = useState(!(id > 0));
