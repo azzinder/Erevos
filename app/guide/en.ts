@@ -27,7 +27,10 @@ update it. It runs on Android, on a computer (Linux and macOS), on Sailfish OS a
 
 The home screen is the list of your chats, the one that moved last at the top. Each shows the contact's picture,
 the last message with its marks, when it came, and how many of their messages you have not read. A clock beside it
-means its messages disappear. **Search chats** finds a chat by its name or its last message.
+means its messages disappear. **Search chats** finds a chat by its name or its last message, and, under the chats,
+the messages that have what you type in them, in all the space's chats: tap one to open its chat at it. In a chat, its
+details have **Search in this chat**: ▲ and ▼ go to what it found earlier and later. Either looks only on this phone,
+in what it keeps sealed; hidden chats are searched only from inside them.
 
 - **The picture** is drawn from the contact's key: the same key always gives the same colours and moon (in greens under Matrix), so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.

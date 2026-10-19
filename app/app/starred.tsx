@@ -1,15 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
 
+import { FoundRow } from '../components/found-row';
 import { Page, Text } from '../components/ui';
 import { hasCore } from '../lib/core';
 import { t } from '../lib/i18n';
-import { rowTime, shownName } from '../lib/inbox';
+import { shownName } from '../lib/inbox';
 import { starredOf, type Found } from '../lib/message-search';
 import { spaceChats } from '../lib/space-chats';
-import { radius, space } from '../theme/colors';
-import { useColors } from '../theme/context';
 
 // The starred messages of the open space's chats, the latest first, from the home screen's menu: a
 // tap opens the chat at the message. A message is starred, or not, from its menu in the chat
@@ -18,7 +16,6 @@ import { useColors } from '../theme/context';
 const CONTACT_PREFIX = 'contact:';
 
 export default function StarredScreen() {
-  const colors = useColors();
   const [found, setFound] = useState<Found[] | null>(null);
   const [names, setNames] = useState<Map<string, string>>(new Map());
 
@@ -55,27 +52,15 @@ export default function StarredScreen() {
         <Text tone="muted">{t('No starred messages. Press and hold a message in a chat, then tap Star.')}</Text>
       ) : null}
       {(found ?? []).map((m) => (
-        <Pressable
+        <FoundRow
           key={`${m.peer}|${m.tag}`}
+          name={m.mine ? t('You to {name}', { name: nameOf(m.peer) }) : nameOf(m.peer)}
+          line={m.line}
+          at={m.at}
+          now={now}
+          starred
           onPress={() => open(m)}
-          accessibilityRole="button"
-          style={({ pressed }) => ({
-            gap: 2,
-            padding: space.md,
-            borderRadius: radius.md,
-            backgroundColor: pressed ? colors.surfacePressed : colors.surface,
-          })}
-        >
-          <View style={{ flexDirection: 'row', gap: space.sm }}>
-            <Text variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
-              {m.mine ? t('You to {name}', { name: nameOf(m.peer) }) : nameOf(m.peer)}
-            </Text>
-            <Text variant="caption" tone="muted">
-              {rowTime(m.at, now)}
-            </Text>
-          </View>
-          <Text numberOfLines={3}>★ {m.line}</Text>
-        </Pressable>
+        />
       ))}
     </Page>
   );

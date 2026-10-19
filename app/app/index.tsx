@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FoundRow } from '../components/found-row';
 import { LockIcon, MoreIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { font, fontStyle, Sheet, Text } from '../components/ui';
@@ -12,6 +13,7 @@ import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
 import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type InboxGroup, type InboxRow, type InboxSms } from '../lib/inbox';
+import { searchMessages, type Findable } from '../lib/message-search';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
@@ -32,7 +34,8 @@ import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // The home screen: the space's chats, newest first, as a messenger shows them, with a search over
-// names and last messages, the relay's state, and the rest of the app behind the menu. It is read
+// names and last messages, and the messages found under them, the relay's state, and the rest of
+// the app behind the menu. It is read
 // again each time it comes back into view, so a chat just written in moves to the top, and each
 // time a message comes while it shows (lib/receiver.ts). Hidden
 // chats never show here: their PIN, typed in the search, opens them, in every space alike.
@@ -85,6 +88,8 @@ export default function Home() {
   const [rows, setRows] = useState<InboxRow[] | null>(null);
   const [relay, setRelay] = useState<Relay>('none');
   const [query, setQuery] = useState('');
+  // The space's messages as last read, and its chats' names, for the search.
+  const [searched, setSearched] = useState<{ messages: Findable[]; names: Map<string, string> }>({ messages: [], names: new Map() });
 
   // A search sent with the keyboard's search key is also tried as a PIN of hidden chats. A right
   // one opens those and the search empties; a wrong one is a search like any other.
@@ -144,6 +149,7 @@ export default function Home() {
         ]).then(([[contacts, messages], imported, data, groups]) => {
           if (!active) return;
           const name = (identity: string) => memberName(identity, contacts);
+          setSearched({ messages, names: new Map(contacts.map((c) => [`contact:${c.identity}`, shownName(c)])) });
           chatsRead = (sms) => {
             const at = Date.now();
             const list = mergeRows(buildInbox(contacts, messages, imported, at, sms), groupRows(groups, name, (text) => noteText(text, name)));
@@ -212,6 +218,9 @@ export default function Home() {
   );
 
   const shown = useMemo(() => filterInbox(rows ?? [], query), [rows, query]);
+  // Messages with what is looked for in them, once it is two letters or more.
+  const hits = useMemo(() => (query.trim().length >= 2 ? searchMessages(searched.messages, query, 50) : []), [searched, query]);
+  const nameOf = (peer: string) => searched.names.get(peer) ?? shownName({ identity: peer.replace(/^contact:/, ''), name: '' });
 
   const relayText = relay === 'ready' ? t('Relay ready · end-to-end encrypted') : relay === 'no-queue' ? t('Relay set · no queue yet') : t('No relay yet · tap to set one');
 
@@ -271,7 +280,7 @@ export default function Home() {
         renderItem={({ item }) => <ChatRow row={item} now={now} online={online.has(item.identity)} />}
         extraData={online}
         ListEmptyComponent={
-          rows === null ? null : query ? (
+          rows === null || hits.length > 0 ? null : query ? (
             <Text tone="muted" style={styles.emptyText}>
               {t('No chat has “{query}” in it.', { query: query.trim() })}
             </Text>
@@ -288,9 +297,28 @@ export default function Home() {
           )
         }
         ListFooterComponent={
-          <Text variant="caption" tone="faint" style={styles.footer}>
-            {t('A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.')}
-          </Text>
+          <>
+            {hits.length > 0 ? (
+              <View style={styles.found}>
+                <Text variant="overline" tone="muted">
+                  {t('Messages')}
+                </Text>
+                {hits.map((hit) => (
+                  <FoundRow
+                    key={`${hit.peer}|${hit.tag}`}
+                    name={hit.mine ? t('You to {name}', { name: nameOf(hit.peer) }) : nameOf(hit.peer)}
+                    line={hit.line}
+                    at={hit.at}
+                    now={now}
+                    onPress={() => router.push(`/chat?contact=${hit.peer.replace(/^contact:/, '')}&at=${hit.tag}`)}
+                  />
+                ))}
+              </View>
+            ) : null}
+            <Text variant="caption" tone="faint" style={styles.footer}>
+              {t('A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.')}
+            </Text>
+          </>
         }
       />
       <Pressable
@@ -605,6 +633,12 @@ const makeStyles = (colors: Colors) =>
       textAlign: 'center',
       paddingTop: space.xl,
       paddingHorizontal: space.lg,
+    },
+    // The messages the search found, under the chats it found.
+    found: {
+      gap: space.sm,
+      paddingHorizontal: space.lg,
+      paddingTop: space.lg,
     },
     fab: {
       position: 'absolute',

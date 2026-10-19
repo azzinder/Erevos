@@ -7,7 +7,7 @@ import { test } from 'node:test';
 
 import { acts, carriedOf, checkedChoices, checkedPlace, checkedPoll, choose, contentOf, geoLink, placeWords, pollOf, pollWords, tally, toCarry } from '../lib/chat-parts';
 import { messageLine } from '../lib/message-line';
-import { starredOf } from '../lib/message-search';
+import { searchMessages, starredOf } from '../lib/message-search';
 import { STICKERS, stickerOf } from '../lib/stickers';
 
 const A = `contact:${'aa'.repeat(32)}`;
@@ -103,4 +103,25 @@ test('typing travels with no words, and does not say the phone is open as writin
   assert.deepEqual(toCarry({ typing: true }, true), {});
   assert.equal(acts({ typing: true }), false);
   assert.deepEqual(carriedOf({ typing: 'yes' }), {});
+});
+
+test('a search finds messages by their words, ignoring case and Greek accents, the latest first', () => {
+  const messages = [
+    { peer: A, tag: '000000000001', at: 1, mine: false, text: 'Πάμε για ΚΑΦΕ;\nστις πέντε' },
+    { peer: B, tag: '000000000002', at: 2, mine: true, text: 'no coffee here' },
+    { peer: B, tag: '000000000003', at: 3, mine: true, text: '', file: { kind: 'file' as const, name: 'καφές.pdf' } },
+    { peer: A, tag: '000000000004', at: 4, mine: false, text: 'x', poll: { q: 'Where?', o: ['Καφενείο', 'Home'] } },
+    { peer: A, tag: '000000000005', at: 5, mine: false, text: '', voice: { ms: 1000 } },
+  ];
+  assert.deepEqual(
+    searchMessages(messages, 'καφε').map((m) => [m.tag, m.line]),
+    [
+      ['000000000004', 'Καφενείο'],
+      ['000000000003', 'καφές.pdf'],
+      ['000000000001', 'Πάμε για ΚΑΦΕ;'],
+    ],
+  );
+  assert.deepEqual(searchMessages(messages, 'ΠΕΝΤΕ').map((m) => m.line), ['στις πέντε']);
+  assert.deepEqual(searchMessages(messages, '  '), []);
+  assert.equal(searchMessages(messages, 'e', 2).length, 2);
 });

@@ -41,6 +41,7 @@ import { acts, checkedChoices, choose as chooseOption, contentOf, placeText, pla
 import { CAN_PLACE, findPlace } from '../lib/place';
 import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
+import { searchMessages } from '../lib/message-search';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
@@ -439,6 +440,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   const [lit, setLit] = useState<number | null>(null);
   // Which of the pinned messages shows over the thread, counted from the latest.
   const [pinShown, setPinShown] = useState(0);
+  // What is looked for in the chat (null: no search), and which of what it found is gone to, from the latest.
+  const [searching, setSearching] = useState<string | null>(null);
+  const [searchAt, setSearchAt] = useState(0);
   // Where each message is in the thread, by id, to go to it, and the one to go to once it shows.
   const placed = useRef(new Map<number, number>());
   const goal = useRef(at);
@@ -784,6 +788,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     setImportedShown(IMPORTED_PAGE);
     setReplying(null);
     setPinShown(0);
+    setSearching(null);
   }, [selected]);
 
   // Typing shows only a few seconds after the last word that it does.
@@ -2357,6 +2362,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   const pins = visible.filter((m) => m.pinned).sort((a, b) => b.pinned! - a.pinned!);
   const pinnedNow = pins.length > 0 ? pins[pinShown % pins.length] : null;
   const starredHere = visible.filter((m) => m.starred).reverse();
+  const hits = searching ? searchMessages(visible, searching) : [];
+  // Goes to what the search found, the `n`th from the latest.
+  const goToHit = (n: number) => {
+    const hit = hits[n];
+    if (!hit) return;
+    setSearchAt(n);
+    holdScroll.current = true;
+    goTo(hit.peer, hit.tag);
+  };
   // The photos shown: the latest in the thread, and the one looked at on its own.
   const shownPhotos = visible
     .filter((m) => m.file?.kind === 'photo' && !m.file.from)
@@ -2585,6 +2599,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
                     {t('Chat')}
                   </Text>
                   <View style={styles.group}>
+                    <DetailRow
+                      title={t('Search in this chat')}
+                      onPress={() => {
+                        setDetails(false);
+                        setSearching('');
+                        setSearchAt(0);
+                      }}
+                    />
+                    <View style={styles.rule} />
                     <DetailRow
                       title={t('Disappearing messages')}
                       value={timerLabel(selectedTimer)}
@@ -3047,6 +3070,28 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
           </Row>
         </View>
       ) : null}
+      {searching !== null ? (
+        <Row style={styles.searchBar}>
+          <Input
+            value={searching}
+            onChangeText={(text) => {
+              setSearching(text);
+              setSearchAt(0);
+            }}
+            onSubmitEditing={() => goToHit(searchAt)}
+            placeholder={t('Search in this chat')}
+            autoFocus
+            returnKeyType="search"
+            style={styles.grow}
+          />
+          <Text variant="caption" tone="muted">
+            {searching.trim() ? (hits.length > 0 ? t('{n} of {count}', { n: searchAt + 1, count: hits.length }) : t('None')) : ''}
+          </Text>
+          <SearchStep sign="▲" label={t('Earlier')} onPress={() => goToHit(Math.min(hits.length - 1, searchAt + 1))} />
+          <SearchStep sign="▼" label={t('Later')} onPress={() => goToHit(Math.max(0, searchAt - 1))} />
+          <SearchStep sign="✕" label={t('Close')} onPress={() => setSearching(null)} />
+        </Row>
+      ) : null}
       {pinnedNow ? (
         <Pinned
           line={messageLine(pinnedNow)}
@@ -3407,6 +3452,16 @@ function DetailRow({ title, value, right, open, danger = false, onPress }: {
 }
 
 // A switch, drawn: on, it fills with the accent and its knob goes right.
+/** A step of the search in a chat: to what it found earlier or later, or closing it. */
+function SearchStep({ sign, label, onPress }: { sign: string; label: string; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} style={({ pressed }) => ({ padding: 6, opacity: pressed ? 0.6 : 1 })}>
+      <Text style={{ fontSize: 16, color: colors.accentText }}>{sign}</Text>
+    </Pressable>
+  );
+}
+
 function Toggle({ on }: { on: boolean }) {
   const colors = useColors();
   return (
@@ -3613,6 +3668,12 @@ const makeStyles = (colors: Colors) =>
       paddingHorizontal: 0,
       shadowOpacity: 0,
       elevation: 0,
+    },
+    // The search in the chat, over its thread.
+    searchBar: {
+      paddingHorizontal: space.lg,
+      paddingBottom: space.xs,
+      gap: space.xs,
     },
     // A message found, or starred, in the chat's details.
     found: {

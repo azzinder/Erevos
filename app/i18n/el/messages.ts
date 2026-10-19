@@ -76,4 +76,10 @@ export const messages: Record<string, string> = {
   'More than one answer': 'Πάνω από μία απάντηση',
   // Typing, under a contact's name in their chat.
   'typing…': 'γράφει…',
+  // Searching the messages, in a chat and on the home screen (lib/message-search.ts).
+  'Search in this chat': 'Αναζήτηση σε αυτή τη συνομιλία',
+  '{n} of {count}': '{n} από {count}',
+  None: 'Κανένα',
+  Earlier: 'Πιο πριν',
+  Later: 'Πιο μετά',
 };
