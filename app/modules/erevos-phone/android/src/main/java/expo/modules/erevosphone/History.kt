@@ -10,12 +10,14 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.CallLog
 import android.provider.ContactsContract
+import android.provider.ContactsContract.CommonDataKinds.GroupMembership
 import android.provider.ContactsContract.CommonDataKinds.Phone
+import android.provider.ContactsContract.Groups
 import android.telecom.TelecomManager
 
 /**
- * Android's call history (CallLog.Calls), which Telecom writes for every call, and the phone's
- * starred contacts, its favourites. Erevos only reads them, for the Phone screen, which is behind
+ * Android's call history (CallLog.Calls), which Telecom writes for every call, the phone's
+ * starred contacts, its favourites, and its contact groups. Erevos only reads them, for the Phone screen, which is behind
  * its password; it keeps no copy. Names come from the phone's contacts as they are now, and from
  * what Erevos knows of numbers while a space is open (Calls.knownName). Not compiled or run yet.
  */
@@ -106,6 +108,39 @@ internal object History {
       return emptyList()
     }
     return byContact.values.toList()
+  }
+
+  /** The phone's contact groups (its labels), by title, with how many contacts each has, for
+   *  blocking a group's calls for a while. Only read: groups are made and changed elsewhere. */
+  fun groups(context: Context): List<Map<String, Any?>> {
+    if (!contactsAllowed(context)) return emptyList()
+    val columns = arrayOf(Groups._ID, Groups.TITLE, Groups.ACCOUNT_NAME, Groups.SUMMARY_COUNT)
+    val groups = ArrayList<Map<String, Any?>>()
+    try {
+      context.contentResolver.query(Groups.CONTENT_SUMMARY_URI, columns, "${Groups.DELETED} = 0", null, "${Groups.TITLE} COLLATE LOCALIZED ASC")?.use { c ->
+        while (c.moveToNext()) {
+          val title = c.getString(1)?.takeIf { it.isNotBlank() } ?: continue
+          groups.add(mapOf("id" to c.getLong(0).toString(), "title" to title, "account" to (c.getString(2) ?: ""), "count" to c.getInt(3)))
+        }
+      }
+    } catch (_: SecurityException) {
+      return emptyList()
+    }
+    return groups
+  }
+
+  /** Whether the contact is in one of the groups. */
+  fun inGroups(context: Context, contact: Long, ids: List<String>): Boolean {
+    val plain = ids.filter { id -> id.isNotEmpty() && id.all { it.isDigit() } }
+    if (plain.isEmpty() || !contactsAllowed(context)) return false
+    val selection = "${ContactsContract.Data.CONTACT_ID} = ? AND ${ContactsContract.Data.MIMETYPE} = ? AND " +
+      "${GroupMembership.GROUP_ROW_ID} IN (${plain.joinToString(",") { "?" }})"
+    val args = arrayOf(contact.toString(), GroupMembership.CONTENT_ITEM_TYPE) + plain
+    return try {
+      context.contentResolver.query(ContactsContract.Data.CONTENT_URI, arrayOf(ContactsContract.Data._ID), selection, args, null)?.use { it.count > 0 } ?: false
+    } catch (_: SecurityException) {
+      false
+    }
   }
 
   /** Marks the missed calls as seen, which takes away Android's notice of them. Only the phone app may. */

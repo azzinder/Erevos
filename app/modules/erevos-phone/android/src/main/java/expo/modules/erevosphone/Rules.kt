@@ -8,8 +8,9 @@ import org.json.JSONObject
 /**
  * Which calls are blocked (lib/phone-rules.ts says what the rules are): a number starting with
  * one of the digits kept, after its + (`international`) or as the phone's country writes it
- * (`national`), unless it is in the phone's contacts or Erevos knows it while a space is open. Kept
- * in the module's own preferences, as the app wrote them: only prefixes, no names. Read by the
+ * (`national`), unless it is in the phone's contacts or Erevos knows it while a space is open; and
+ * the contacts of the contact groups blocked for now (`groups`). Kept in the module's own
+ * preferences, as the app wrote them: only prefixes, group ids and times, no names. Read by the
  * screening service (ScreeningService) and, for a call it did not see, by CallService. Not
  * compiled or run yet.
  */
@@ -33,7 +34,19 @@ internal object Rules {
   /** Whether there is anything to block at all, without looking at the number. */
   fun any(context: Context): Boolean {
     val rules = rules(context) ?: return false
-    return strings(rules.optJSONArray("international")).isNotEmpty() || strings(rules.optJSONArray("national")).isNotEmpty()
+    return strings(rules.optJSONArray("international")).isNotEmpty() || strings(rules.optJSONArray("national")).isNotEmpty() ||
+      groups(rules).isNotEmpty()
+  }
+
+  // The contact groups whose calls are blocked now: those until lifted (0), or until later.
+  private fun groups(rules: JSONObject): List<String> {
+    val array = rules.optJSONArray("groups") ?: return emptyList()
+    val now = System.currentTimeMillis()
+    return (0 until array.length()).mapNotNull { i ->
+      val group = array.optJSONObject(i) ?: return@mapNotNull null
+      val until = group.optLong("until", -1)
+      group.optString("id").takeIf { it.isNotEmpty() && (until == 0L || until > now) }
+    }
   }
 
   /** Whether a call from `number` is blocked. Looks in the phone's contacts: off the main thread. */
@@ -42,10 +55,12 @@ internal object Rules {
     if (number.none { it.isDigit() }) return false
     val international = strings(rules.optJSONArray("international"))
     val national = strings(rules.optJSONArray("national"))
-    if (international.isEmpty() && national.isEmpty()) return false
-    if (!prefixed(context, number, international, national)) return false
-    // A number of the contacts is never blocked by a prefix.
-    return Calls.knownName(number) == null && Callers.lookup(context, number) == null
+    val groups = groups(rules)
+    if (international.isEmpty() && national.isEmpty() && groups.isEmpty()) return false
+    val contact = Callers.lookup(context, number)
+    // A number of the contacts is never blocked by a prefix; one of a blocked group's contacts is.
+    if (contact == null && Calls.knownName(number) == null && prefixed(context, number, international, national)) return true
+    return contact != null && groups.isNotEmpty() && History.inGroups(context, contact.id, groups)
   }
 
   // Whether the number starts with one of the prefixes. The national ones are matched through the

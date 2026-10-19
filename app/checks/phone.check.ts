@@ -9,7 +9,23 @@ import { test } from 'node:test';
 import { randomBytes } from '../lib/crypto';
 import { callLength, cleanReplies, dialNumber, KEYS, knownNames, MAX_REPLIES, MAX_REPLY, typeKey } from '../lib/phone';
 import { callKind, callMarks, callWho, filterCalls, groupCalls, withDays } from '../lib/phone-log';
-import { addPrefix, blockedInternational, checkedRules, NO_RULES, ownPrefix, removePrefix, rulesFrom, rulesJson, storedRules, TELEMARKETING } from '../lib/phone-rules';
+import {
+  addPrefix,
+  blockedInternational,
+  blockedUntil,
+  blockGroup,
+  blockUntil,
+  checkedRules,
+  liftGroup,
+  liveGroups,
+  NO_RULES,
+  ownPrefix,
+  removePrefix,
+  rulesFrom,
+  rulesJson,
+  storedRules,
+  TELEMARKETING,
+} from '../lib/phone-rules';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
 import type { LoggedCall, PhoneAccount } from '../modules/erevos-phone';
 import { files } from './files-memory';
@@ -174,8 +190,8 @@ test("the owner's prefixes are kept with their country code, or as the phone's c
 });
 
 test('the telemarketing ranges and the own prefixes become the digits the phone matches', () => {
-  assert.deepEqual(storedRules(NO_RULES), { telemarketing: false, own: [], international: [], national: [] });
-  const all = storedRules({ telemarketing: true, own: ['+4420', '0162', '+33162'] });
+  assert.deepEqual(storedRules(NO_RULES), { telemarketing: false, own: [], groups: [], international: [], national: [] });
+  const all = storedRules({ telemarketing: true, own: ['+4420', '0162', '+33162'], groups: [] });
   for (const p of ['33162', '33949', '339475', '339479', '34400', '56809', '91140', '55303', '4420']) assert.ok(all.international.includes(p), p);
   assert.equal(all.international.filter((p) => p === '33162').length, 1);
   assert.deepEqual(all.national, ['0162']);
@@ -185,17 +201,42 @@ test('the telemarketing ranges and the own prefixes become the digits the phone 
   assert.ok(!blockedInternational(all, '33612345678'));
   assert.ok(!blockedInternational(all, '34600123456'));
   assert.ok(!blockedInternational(all, ''));
-  assert.ok(!blockedInternational(storedRules({ telemarketing: false, own: [] }), '33162123456'));
+  assert.ok(!blockedInternational(storedRules(NO_RULES), '33162123456'));
 });
 
 test('the rules kept are read back, and what is not understood is left out', () => {
-  const rules = addPrefix(addPrefix({ telemarketing: true, own: [] }, '+33162'), '0162');
+  const rules = addPrefix(addPrefix({ telemarketing: true, own: [], groups: [] }, '+33162'), '0162');
   assert.deepEqual(rulesFrom(rulesJson(rules)), rules);
   assert.deepEqual(addPrefix(rules, '0162'), rules);
   assert.deepEqual(removePrefix(rules, '+33162').own, ['0162']);
   assert.equal(rulesJson(NO_RULES), '');
   assert.deepEqual(rulesFrom(''), NO_RULES);
   assert.deepEqual(rulesFrom('{oops'), NO_RULES);
-  assert.deepEqual(checkedRules({ telemarketing: 'yes', own: ['+33 162', 7, 'x', '+33162'] }), { telemarketing: false, own: ['+33162'] });
+  assert.deepEqual(checkedRules({ telemarketing: 'yes', own: ['+33 162', 7, 'x', '+33162'] }), { telemarketing: false, own: ['+33162'], groups: [] });
   assert.ok(TELEMARKETING.every((r) => r.prefixes.length > 0 && /^\d+$/.test(r.code)));
+});
+
+test("a group's contacts are blocked for an hour, until tomorrow morning, or until lifted", () => {
+  const now = new Date(2026, 9, 19, 14, 5).getTime();
+  assert.equal(blockUntil('hour', now), now + 3600_000);
+  assert.equal(blockUntil('lifted', now), 0);
+  assert.equal(blockUntil('morning', now), new Date(2026, 9, 20, 7).getTime());
+  // After midnight, tomorrow morning is this morning.
+  const late = new Date(2026, 9, 20, 1, 30).getTime();
+  assert.equal(blockUntil('morning', late), new Date(2026, 9, 20, 7).getTime());
+  assert.equal(blockedUntil(blockUntil('hour', now), now), 'Blocked until 15:05');
+  assert.equal(blockedUntil(blockUntil('morning', now), now), 'Blocked until tomorrow, 07:00');
+  assert.equal(blockedUntil(0, now), 'Blocked until you lift it');
+
+  let rules = blockGroup(NO_RULES, '12', blockUntil('hour', now));
+  rules = blockGroup(rules, '7', 0);
+  rules = blockGroup(rules, '12', blockUntil('morning', now));
+  assert.deepEqual(rules.groups, [{ id: '7', until: 0 }, { id: '12', until: blockUntil('morning', now) }]);
+  assert.deepEqual(rulesFrom(rulesJson(rules, now)).groups, rules.groups);
+  // Over the next morning, only the one until lifted is left; lifted, nothing is.
+  const after = new Date(2026, 9, 20, 8).getTime();
+  assert.deepEqual(liveGroups(rules, after), [{ id: '7', until: 0 }]);
+  assert.deepEqual(rulesFrom(rulesJson(rules, after)).groups, [{ id: '7', until: 0 }]);
+  assert.equal(rulesJson(liftGroup(liftGroup(rules, '7'), '12'), now), '');
+  assert.deepEqual(checkedRules({ groups: [{ id: '3', until: 5 }, { id: 'x', until: 1 }, { id: '4', until: -1 }, { id: '3', until: 9 }, null] }).groups, [{ id: '3', until: 5 }]);
 });

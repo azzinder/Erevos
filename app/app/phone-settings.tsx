@@ -1,14 +1,32 @@
 import { startActivityAsync } from 'expo-intent-launcher';
 import { useEffect, useState } from 'react';
-import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
+import { AppState, Linking, PermissionsAndroid, Platform, View } from 'react-native';
 
-import { Button, Card, Input, Page, Row, Text } from '../components/ui';
+import { Button, Card, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { askFullScreen, backgroundState } from '../lib/background';
-import { mark, t } from '../lib/i18n';
+import { mark, plural, t } from '../lib/i18n';
 import { cleanReplies, MAX_REPLIES, MAX_REPLY } from '../lib/phone';
-import { addPrefix, MAX_OWN, ownPrefix, removePrefix, rulesFrom, rulesJson, shownPrefix, TELEMARKETING, type PhoneRules } from '../lib/phone-rules';
+import {
+  addPrefix,
+  BLOCK_FOR,
+  blockedUntil,
+  blockGroup,
+  blockUntil,
+  liftGroup,
+  liveGroups,
+  MAX_OWN,
+  ownPrefix,
+  removePrefix,
+  rulesFrom,
+  rulesJson,
+  shownPrefix,
+  TELEMARKETING,
+  type PhoneRules,
+} from '../lib/phone-rules';
 import {
   blockingRules,
+  onPhoneEvent,
+  phoneGroups,
   phoneReady,
   phoneStatus,
   quickReplies,
@@ -16,9 +34,11 @@ import {
   requestScreening,
   setBlockingRules,
   setQuickReplies,
+  type ContactGroup,
   type PhoneStatus,
 } from '../modules/erevos-phone';
 import { space } from '../theme/colors';
+import { useTheme } from '../theme/context';
 
 // Erevos as the phone's phone app (modules/erevos-phone): then a call, made or come, shows on
 // Erevos's own call screen, over the lock screen and with Erevos locked, and tel: links and the
@@ -167,19 +187,40 @@ export default function PhoneSettings() {
   );
 }
 
-// Which calls are blocked: the telemarketing ranges and the owner's prefixes (lib/phone-rules.ts).
-// The same in every space, so they tell nothing of another.
+// Which calls are blocked: the telemarketing ranges, the owner's prefixes, and a contact group's
+// contacts for a while (lib/phone-rules.ts). The same in every space, so they tell nothing of another.
 function Blocking({ screens }: { screens: boolean }) {
+  const { colors } = useTheme();
   const [rules, setRules] = useState<PhoneRules>(() => rulesFrom(blockingRules()));
   const [typed, setTyped] = useState('');
   const [note, setNote] = useState('');
-  const blocking = rules.telemarketing || rules.own.length > 0;
+  const [groups, setGroups] = useState<{ allowed: boolean; groups: ContactGroup[] } | null>(null);
+  // The group whose block's length is being chosen.
+  const [choosing, setChoosing] = useState<ContactGroup | null>(null);
+  // Read again each minute, so a block that is over shows so.
+  const [now, setNow] = useState(Date.now());
+  const live = liveGroups(rules, now);
+  const blocking = rules.telemarketing || rules.own.length > 0 || live.length > 0;
+
+  useEffect(() => {
+    const load = () => phoneGroups().then(setGroups, () => setGroups({ allowed: false, groups: [] }));
+    load();
+    const changed = onPhoneEvent('onHistory', () => void load());
+    const minute = setInterval(() => setNow(Date.now()), 60_000);
+    return () => {
+      changed?.remove();
+      clearInterval(minute);
+    };
+  }, []);
 
   function keep(next: PhoneRules) {
-    setBlockingRules(rulesJson(next));
-    setRules(next);
+    const at = Date.now();
+    const kept = { ...next, groups: liveGroups(next, at) };
+    setBlockingRules(rulesJson(kept, at));
+    setRules(kept);
+    setNow(at);
     // Turned away before they ring once Erevos screens calls; Android asks the owner once.
-    if (!screens && (next.telemarketing || next.own.length > 0)) askScreening();
+    if (!screens && (kept.telemarketing || kept.own.length > 0 || kept.groups.length > 0)) askScreening();
   }
 
   function askScreening() {
@@ -202,45 +243,90 @@ function Blocking({ screens }: { screens: boolean }) {
   }
 
   return (
-    <Card>
-      <Text variant="bodyStrong">{t('Blocking')}</Text>
-      <Text tone="muted">
-        {t("A blocked call does not ring and leaves no notice; it shows under Blocked in the calls. A number in the phone's contacts is never blocked. What is blocked is the same in every space, and keeps no names.")}
-      </Text>
-      <Button
-        title={rules.telemarketing ? t('Stop blocking telemarketing') : t('Block telemarketing')}
-        kind={rules.telemarketing ? 'secondary' : 'primary'}
-        onPress={() => keep({ ...rules, telemarketing: !rules.telemarketing })}
-      />
-      <Text variant="caption" tone="faint">
-        {t('The numbers these countries keep for telemarketing calls:')}
-      </Text>
-      {TELEMARKETING.map((range) => (
-        <Text key={range.code} variant="caption" tone="faint">
-          {`${t(range.country)} (+${range.code}): ${range.shown}${range.note ? ` (${t(range.note)})` : ''}`}
+    <>
+      <Card>
+        <Text variant="bodyStrong">{t('Blocking')}</Text>
+        <Text tone="muted">
+          {t("A blocked call does not ring and leaves no notice; it shows under Blocked in the calls. The telemarketing ranges and your prefixes never block a number in the phone's contacts. What is blocked is the same in every space, and keeps no names.")}
         </Text>
-      ))}
-      <Text variant="bodyStrong">{t('Numbers starting with')}</Text>
-      {rules.own.map((prefix) => (
-        <Row key={prefix} style={{ gap: space.sm }}>
-          <Text style={{ flex: 1 }}>{shownPrefix(prefix)}</Text>
-          <Button title={t('Remove')} kind="secondary" compact onPress={() => keep(removePrefix(rules, prefix))} />
-        </Row>
-      ))}
-      {rules.own.length < MAX_OWN ? (
-        <Row style={{ gap: space.sm }}>
-          <Input value={typed} onChangeText={setTyped} placeholder="+33 162" keyboardType="phone-pad" style={{ flex: 1 }} onSubmitEditing={add} />
-          <Button title={t('Block')} compact onPress={add} />
-        </Row>
-      ) : null}
-      {blocking && !screens ? (
-        <>
-          <Text tone="muted">{t('Erevos does not screen calls yet, so a blocked call rings a moment before Erevos ends it.')}</Text>
-          <Button title={t('Let Erevos screen calls')} kind="secondary" onPress={askScreening} />
-        </>
-      ) : null}
-      {note ? <Text tone="muted">{note}</Text> : null}
-    </Card>
+        <Button
+          title={rules.telemarketing ? t('Stop blocking telemarketing') : t('Block telemarketing')}
+          kind={rules.telemarketing ? 'secondary' : 'primary'}
+          onPress={() => keep({ ...rules, telemarketing: !rules.telemarketing })}
+        />
+        <Text variant="caption" tone="faint">
+          {t('The numbers these countries keep for telemarketing calls:')}
+        </Text>
+        {TELEMARKETING.map((range) => (
+          <Text key={range.code} variant="caption" tone="faint">
+            {`${t(range.country)} (+${range.code}): ${range.shown}${range.note ? ` (${t(range.note)})` : ''}`}
+          </Text>
+        ))}
+        <Text variant="bodyStrong">{t('Numbers starting with')}</Text>
+        {rules.own.map((prefix) => (
+          <Row key={prefix} style={{ gap: space.sm }}>
+            <Text style={{ flex: 1 }}>{shownPrefix(prefix)}</Text>
+            <Button title={t('Remove')} kind="secondary" compact onPress={() => keep(removePrefix(rules, prefix))} />
+          </Row>
+        ))}
+        {rules.own.length < MAX_OWN ? (
+          <Row style={{ gap: space.sm }}>
+            <Input value={typed} onChangeText={setTyped} placeholder="+33 162" keyboardType="phone-pad" style={{ flex: 1 }} onSubmitEditing={add} />
+            <Button title={t('Block')} compact onPress={add} />
+          </Row>
+        ) : null}
+        {blocking && !screens ? (
+          <>
+            <Text tone="muted">{t('Erevos does not screen calls yet, so a blocked call rings a moment before Erevos ends it.')}</Text>
+            <Button title={t('Let Erevos screen calls')} kind="secondary" onPress={askScreening} />
+          </>
+        ) : null}
+        {note ? <Text tone="muted">{note}</Text> : null}
+      </Card>
+
+      <Card>
+        <Text variant="bodyStrong">{t('Block a contact group')}</Text>
+        <Text tone="muted">
+          {t("The calls of a group's contacts, as your phone's contacts label them, are blocked for a while: for an hour, until tomorrow morning, or until you lift it.")}
+        </Text>
+        {groups && !groups.allowed ? <Text tone="muted">{t("Android does not let Erevos read the phone's contacts yet.")}</Text> : null}
+        {groups?.allowed && groups.groups.length === 0 ? <Text tone="muted">{t('Your phone has no contact groups yet.')}</Text> : null}
+        {(groups?.allowed ? groups.groups : []).map((group) => {
+          const block = live.find((b) => b.id === group.id);
+          // Two accounts can each have a group of the same name.
+          const twice = groups?.groups.some((g) => g.id !== group.id && g.title === group.title);
+          return (
+            <Row key={group.id} style={{ gap: space.sm }}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text>{twice && group.account ? `${group.title} · ${group.account}` : group.title}</Text>
+                <Text variant="caption" color={block ? colors.danger : colors.textFaint}>
+                  {block ? blockedUntil(block.until, now) : plural(group.count, '{n} contact', '{n} contacts')}
+                </Text>
+              </View>
+              {block ? (
+                <Button title={t('Lift')} kind="secondary" compact onPress={() => keep(liftGroup(rules, group.id))} />
+              ) : (
+                <Button title={t('Block')} kind="secondary" compact onPress={() => setChoosing(group)} />
+              )}
+            </Row>
+          );
+        })}
+      </Card>
+
+      <Sheet visible={choosing !== null} onClose={() => setChoosing(null)} title={choosing?.title}>
+        {BLOCK_FOR.map((choice) => (
+          <Button
+            key={choice.length}
+            title={t(choice.label)}
+            kind="secondary"
+            onPress={() => {
+              if (choosing) keep(blockGroup(rules, choosing.id, blockUntil(choice.length, Date.now())));
+              setChoosing(null);
+            }}
+          />
+        ))}
+      </Sheet>
+    </>
   );
 }
 

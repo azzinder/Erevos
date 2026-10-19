@@ -47,6 +47,10 @@ export type Favourite = {
   primary: string;
 };
 
+/** One of the phone's contact groups (labels): its id in the phone's contacts, its title, the
+ *  account it is in, and how many contacts it has. */
+export type ContactGroup = { id: string; title: string; account: string; count: number };
+
 export type PhoneEvents = {
   /** A call came, was made, or ended: how many are on now. */
   onCalls: (event: { count: number }) => void;
@@ -65,6 +69,7 @@ type NativePhone = {
   history(): Promise<{ allowed: boolean; calls: LoggedCall[] }>;
   favourites(): Promise<{ allowed: boolean; favourites: Favourite[] }>;
   seenMissed(): void;
+  groups(): Promise<{ allowed: boolean; groups: ContactGroup[] }>;
   quickReplies(): { replies: string[]; own: boolean };
   setQuickReplies(replies: string[]): void;
   showCall(): void;
@@ -98,7 +103,7 @@ export function requestScreening(): void {
 /**
  * The blocking rules (lib/phone-rules.ts), JSON, '' for none: kept in the module's own
  * preferences, the same for every space, as calls are screened with Erevos locked. Only
- * prefixes, never names.
+ * prefixes, group ids and times, never names.
  */
 export function blockingRules(): string {
   return native ? native.rules() : '';
@@ -130,6 +135,12 @@ export function callHistory(): Promise<{ allowed: boolean; calls: LoggedCall[] }
  *  read the contacts. */
 export function phoneFavourites(): Promise<{ allowed: boolean; favourites: Favourite[] }> {
   return native ? native.favourites() : Promise.resolve({ allowed: false, favourites: [] });
+}
+
+/** The phone's contact groups, by title, to block one's calls for a while; `allowed` is false
+ *  while Android does not let Erevos read the contacts. */
+export function phoneGroups(): Promise<{ allowed: boolean; groups: ContactGroup[] }> {
+  return native ? native.groups() : Promise.resolve({ allowed: false, groups: [] });
 }
 
 /** The missed calls were seen: Android's notice of them goes. */

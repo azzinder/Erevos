@@ -82,8 +82,8 @@ export const phone: Record<string, string> = {
 
   // Blocking calls (app/phone-settings.tsx, lib/phone-rules.ts).
   Blocking: 'Αποκλεισμός',
-  "A blocked call does not ring and leaves no notice; it shows under Blocked in the calls. A number in the phone's contacts is never blocked. What is blocked is the same in every space, and keeps no names.":
-    'Μια αποκλεισμένη κλήση δεν χτυπά και δεν αφήνει ειδοποίηση· φαίνεται στις «Αποκλεισμένες» των «Πρόσφατων». Ένας αριθμός από τις επαφές του τηλεφώνου δεν αποκλείεται ποτέ. Ό,τι αποκλείεται είναι το ίδιο σε κάθε χώρο, και δεν κρατά ονόματα.',
+  "A blocked call does not ring and leaves no notice; it shows under Blocked in the calls. The telemarketing ranges and your prefixes never block a number in the phone's contacts. What is blocked is the same in every space, and keeps no names.":
+    'Μια αποκλεισμένη κλήση δεν χτυπά και δεν αφήνει ειδοποίηση· φαίνεται στις «Αποκλεισμένες» των «Πρόσφατων». Οι αριθμοί τηλεμάρκετινγκ και οι αρχές αριθμών που προσθέτεις δεν αποκλείουν ποτέ έναν αριθμό από τις επαφές του τηλεφώνου. Ό,τι αποκλείεται είναι το ίδιο σε κάθε χώρο, και δεν κρατά ονόματα.',
   'Block telemarketing': 'Αποκλεισμός τηλεμάρκετινγκ',
   'Stop blocking telemarketing': 'Χωρίς αποκλεισμό τηλεμάρκετινγκ',
   'The numbers these countries keep for telemarketing calls:': 'Οι αριθμοί που κρατούν αυτές οι χώρες για κλήσεις τηλεμάρκετινγκ:',
@@ -100,4 +100,17 @@ export const phone: Record<string, string> = {
   'Erevos does not screen calls yet, so a blocked call rings a moment before Erevos ends it.':
     'Το Erevos δεν ελέγχει ακόμα τις κλήσεις, οπότε μια αποκλεισμένη κλήση χτυπά για λίγο πριν την τερματίσει το Erevos.',
   'Let Erevos screen calls': 'Να ελέγχει το Erevos τις κλήσεις',
+  'Block a contact group': 'Αποκλεισμός ομάδας επαφών',
+  "The calls of a group's contacts, as your phone's contacts label them, are blocked for a while: for an hour, until tomorrow morning, or until you lift it.":
+    'Οι κλήσεις από τις επαφές μιας ομάδας, όπως τις ομαδοποιούν οι επαφές του τηλεφώνου σου, αποκλείονται για λίγο: για μία ώρα, μέχρι αύριο το πρωί, ή μέχρι να τον άρεις.',
+  'Your phone has no contact groups yet.': 'Το τηλέφωνό σου δεν έχει ακόμα ομάδες επαφών.',
+  Lift: 'Άρση',
+  '{n} contact': '{n} επαφή',
+  '{n} contacts': '{n} επαφές',
+  'For an hour': 'Για μία ώρα',
+  'Until tomorrow morning': 'Μέχρι αύριο το πρωί',
+  'Until I lift it': 'Μέχρι να τον άρω',
+  'Blocked until you lift it': 'Αποκλεισμένη μέχρι να τον άρεις',
+  'Blocked until {time}': 'Αποκλεισμένη μέχρι τις {time}',
+  'Blocked until tomorrow, {time}': 'Αποκλεισμένη μέχρι αύριο, {time}',
 };

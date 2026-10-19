@@ -117,6 +117,12 @@ class ErevosPhoneModule : Module() {
       History.seenMissed(context())
     }
 
+    // The phone's contact groups, once Erevos may read the contacts.
+    AsyncFunction("groups") {
+      val context = context()
+      mapOf("allowed" to History.contactsAllowed(context), "groups" to History.groups(context))
+    }
+
     // The quick replies a call that rings can be declined with, and whether they are the owner's.
     Function("quickReplies") {
       val context = context()

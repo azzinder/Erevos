@@ -549,10 +549,15 @@ Erevos's keypad.
   and Brazil (0303, which callers there may leave out since August 2025). Other countries keep no such numbers, or
   Erevos is not sure they do, so nothing is blocked for them. Under **Numbers starting with**, type the start of more
   numbers to block, with the country code (+33 162) or as you dial it here (0162), and tap **Block**; **Remove**
-  takes one away. A number in your phone's contacts is never blocked. A blocked call does not ring and leaves no
+  takes one away. These never block a number in your phone's contacts. A blocked call does not ring and leaves no
   notice; it shows in **Recents**, under **Blocked**. Android asks once whether Erevos may screen calls
   (**Let Erevos screen calls**): without that, a blocked call rings a moment before Erevos ends it. What is blocked
   is the same in every space, so it tells nothing of another, and is kept on the phone with no names.
+- **A contact group for a while:** under **Phone** → **Settings**, **Block a contact group** lists the groups (the
+  labels) of your phone's contacts. **Block** beside one blocks its contacts' calls **For an hour**,
+  **Until tomorrow morning** (7:00) or **Until I lift it**; the line under the group says until when, and **Lift**
+  ends it sooner. Such a call is blocked like the others: it does not ring, and shows in **Recents**, under
+  **Blocked**. Erevos only reads the groups, and keeps the group's id and the time, not its name.
 - **Erevos's password:** the **Phone** screen, with the keypad, the calls and the favourites, is behind it like the
   rest of Erevos. Only the call screen is not.
 - **If Erevos does not become the phone app:** as with SMS, Android 15 and later can hold it back from an app
@@ -881,7 +886,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
-| **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos only reads it, and the favourites, to show them, and keeps no copy. The SIM chosen for each number is sealed in the space; the quick replies, and what is blocked (prefixes only, the same for every space), are kept on the phone, not sealed. | |
+| **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos only reads it, and the favourites, to show them, and keeps no copy. The SIM chosen for each number is sealed in the space; the quick replies, and what is blocked (prefixes, group ids and times only, the same for every space), are kept on the phone, not sealed. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
