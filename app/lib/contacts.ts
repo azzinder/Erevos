@@ -1,4 +1,4 @@
-import type { ContactAccount, ContactSave, PhoneContact, PhoneEntry } from '../modules/erevos-contacts';
+import type { ContactAccount, ContactSave, PhoneContact, PhoneEntry, SimContact } from '../modules/erevos-contacts';
 import { lang, mark, t } from './i18n';
 import { sameNumber } from './sms-invite';
 
@@ -138,6 +138,12 @@ export function phoneFields(c: PhoneContact): Fields {
     note: c.note?.value ?? '',
     birthday: c.birthday?.value ?? '',
   };
+}
+
+/** A SIM card's contact as fields: its name split as Android splits it, its number a mobile. */
+export function simFields(s: SimContact): Fields & { name: string } {
+  const fields = cleanFields({ ...EMPTY_FIELDS, ...splitName(s.name), phones: [{ value: s.number, kind: 'mobile', label: '' }] });
+  return { ...fields, name: fieldsName(fields) };
 }
 
 /** What saving `fields` as the phone contact `c` (null: a new one, in `account`) asks of Android. */

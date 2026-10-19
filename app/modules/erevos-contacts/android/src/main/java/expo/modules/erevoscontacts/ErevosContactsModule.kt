@@ -130,6 +130,7 @@ class ErevosContactsModule : Module() {
     AsyncFunction("ringtoneName") { uri: String -> ContactsStore.ringtoneName(context(), uri) }
     AsyncFunction("readQr") { uri: String -> QrReader.read(context(), uri) }
     AsyncFunction("setBirthdays") { on: Boolean -> Birthdays.setOn(context(), on) }
+    AsyncFunction("simContacts") { SimContacts.all(context()) }
     AsyncFunction("groups") { ContactsStore.groups(context()) }
     AsyncFunction("createGroup") { title: String, type: String, name: String -> ContactsStore.createGroup(context(), title, type, name).toDouble() }
     AsyncFunction("renameGroup") { id: Double, title: String -> ContactsStore.renameGroup(context(), id.toLong(), title) }

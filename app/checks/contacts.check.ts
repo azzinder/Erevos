@@ -15,6 +15,7 @@ import {
   fieldsName,
   fillText,
   findDuplicates,
+  simFields,
   initials,
   keeperFirst,
   kindOf,
@@ -292,4 +293,15 @@ test('merging keeps the fullest, or the first of the fullest', () => {
   assert.deepEqual(keeperFirst([a, b, c]), [b, a, c]);
   assert.deepEqual(keeperFirst([a]), [a]);
   assert.deepEqual(keeperFirst([]), []);
+});
+
+test("a SIM's contact as fields", () => {
+  const sim = simFields({ name: 'Νίκος Παππάς', number: '+306944000000', sim: 0 });
+  assert.equal(sim.given, 'Νίκος');
+  assert.equal(sim.family, 'Παππάς');
+  assert.deepEqual(sim.phones, [{ value: '+306944000000', kind: 'mobile', label: '' }]);
+  assert.equal(sim.name, 'Νίκος Παππάς');
+  // A number without a name is named by its number; a name without a number has none.
+  assert.equal(simFields({ name: '', number: '112', sim: 1 }).name, '112');
+  assert.deepEqual(simFields({ name: 'Ταξί', number: '', sim: 0 }).phones, []);
 });

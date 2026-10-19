@@ -32,6 +32,8 @@ compiled against Android 16's framework classes, not built into the app or run y
   morning at 9:00, set again on BOOT_COMPLETED, MY_PACKAGE_REPLACED, TIME_SET and TIMEZONE_CHANGED (BirthdayReceiver),
   and a notice names whose birthday it is (29 February on the 28th in other years), private on the lock screen; a
   morning missed with the phone off is told once it is on, that day. Only Android's contacts.
+- **The SIM.** `simContacts()` reads the SIM cards' phone books (ADN): every SIM's with its slot on Android 12 and
+  later (SimPhonebookContract), the main SIM's before (content://icc/adn).
 - **Changes elsewhere.** `watch()` sends `onContactsChanged` when Android's contacts change.
 
 ## JS API

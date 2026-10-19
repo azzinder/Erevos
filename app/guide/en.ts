@@ -548,6 +548,8 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
   with how many days are left and the age they turn. **Birthday reminders** in the menu (off at first) puts a notice
   on the morning of each one, from 9:00, even with Erevos closed; on the lock screen it says only that there is a
   birthday. They are the phone's contacts' birthdays only, never those of contacts kept only in Erevos.
+- **SIM contacts** in the menu reads the contacts on the phone's SIM cards and copies those not on the phone yet
+  (all chosen at first) into Android's contacts, on this phone only or in an account. The SIM keeps its own.
 - **Delete** takes the contact off the phone, from every account it is kept in.
 - **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
   Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,

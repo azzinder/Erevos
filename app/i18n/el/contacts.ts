@@ -177,4 +177,21 @@ export const contacts: Record<string, string> = {
   'Birthday reminders: on': 'Υπενθυμίσεις γενεθλίων: ναι',
   'Birthday reminders: off': 'Υπενθυμίσεις γενεθλίων: όχι',
   "A notice on the morning of each phone contact's birthday": 'Μια ειδοποίηση το πρωί των γενεθλίων κάθε επαφής του τηλεφώνου',
+
+  // The SIM.
+  'SIM contacts': 'Επαφές SIM',
+  'Copy the contacts on the SIM card to the phone': 'Αντιγραφή των επαφών της κάρτας SIM στο τηλέφωνο',
+  "The contacts kept on the phone's SIM cards. Copied, they are in Android's contacts like the others; the SIM keeps its own.":
+    'Οι επαφές που φυλάγονται στις κάρτες SIM του τηλεφώνου. Όταν αντιγραφούν, είναι στις επαφές του Android όπως οι άλλες· η SIM κρατά τις δικές της.',
+  'Reading the SIM…': 'Ανάγνωση της SIM…',
+  'No contacts on the SIM, or the phone does not let Erevos read it.': 'Δεν υπάρχουν επαφές στη SIM, ή το τηλέφωνο δεν αφήνει το Erevos να τη διαβάσει.',
+  'The SIM has {n} contact.': 'Η SIM έχει {n} επαφή.',
+  'The SIM has {n} contacts.': 'Η SIM έχει {n} επαφές.',
+  'Copying… {done} of {total}': 'Αντιγραφή… {done} από {total}',
+  'Copy {n} contact to the phone': 'Αντιγραφή {n} επαφής στο τηλέφωνο',
+  'Copy {n} contacts to the phone': 'Αντιγραφή {n} επαφών στο τηλέφωνο',
+  'Choose who to copy': 'Διάλεξε ποιες θα αντιγραφούν',
+  '{n} contact copied to the phone.': '{n} επαφή αντιγράφηκε στο τηλέφωνο.',
+  '{n} contacts copied to the phone.': '{n} επαφές αντιγράφηκαν στο τηλέφωνο.',
+  'SIM {n}': 'SIM {n}',
 };

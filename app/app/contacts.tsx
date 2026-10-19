@@ -23,7 +23,8 @@ import { useStyles, useTheme } from '../theme/context';
 // app, a sync). The menu has the rest: groups (app/contact-groups.tsx), duplicates to merge
 // (app/contact-duplicates.tsx), .vcf files in
 // (app/contact-import.tsx) and out: the contacts shown, saved in a folder the owner picks, and a
-// contact's QR code read from a photo of it, which starts a new contact. Birthdays shows who has
+// contact's QR code read from a photo of it, which starts a new contact, and the SIM's contacts
+// to copy (app/contact-sim.tsx). Birthdays shows who has
 // one, the next first; its reminders are a notice on the morning of each (modules/erevos-contacts).
 
 /** What the list shows: everyone, the favourites, the birthdays, or a group's contacts (its id). */
@@ -265,6 +266,7 @@ export default function Contacts() {
           />
         ) : null}
         {allowed ? <MenuRow title={t('Find duplicates')} detail={t('The same person kept twice, to merge into one')} onPress={() => go('/contact-duplicates')} /> : null}
+        {allowed ? <MenuRow title={t('SIM contacts')} detail={t("Copy the contacts on the SIM card to the phone")} onPress={() => go('/contact-sim')} /> : null}
         {allowed ? <MenuRow title={t('Import from a .vcf file')} detail={t('Contacts another phone or app saved as a vCard')} onPress={() => go('/contact-import')} /> : null}
         {allowed ? (
           <MenuRow
