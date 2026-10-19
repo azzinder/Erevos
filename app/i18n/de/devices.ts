@@ -18,6 +18,9 @@ export const devices: Record<string, string> = {
 
   // The menu, and the chat on a linked device (app/index.tsx, app/chat.tsx).
   'Linked devices': 'Verknüpfte Geräte',
+  'Not sent by the phone': 'Nicht vom Telefon gesendet',
+  'These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.':
+    'Diese Chats stammen aus der Sicherung eines verknüpften Geräts: Du kannst sie hier lesen, aber nicht darin schreiben. Um zu schreiben, verknüpfe dieses Gerät unter „Verknüpfte Geräte“ wieder mit dem Telefon.',
   'This account on a computer or in a browser too': 'Dieses Konto auch auf einem Computer oder im Browser',
   "This chat is the phone's: move it into hidden chats there.": 'Dieser Chat gehört dem Telefon: Verschiebe ihn dort in die versteckten Chats.',
 
