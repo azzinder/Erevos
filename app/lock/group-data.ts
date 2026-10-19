@@ -35,8 +35,9 @@ export type GroupParts = { re?: string; sticker?: string; place?: Place; poll?: 
 /** What was done to a message since: each member's reaction and vote, by identity ('' for this
  *  phone's), when it was pinned for everyone, and, on this phone only, its star. Of our own photo,
  *  file or voice message, `put` is its chunks' ids on our relay, to take them off when it is deleted
- *  for everyone. */
-export type GroupMarks = { reactions?: Record<string, string>; votes?: Record<string, number[]>; pinned?: number; starred?: true; put?: string };
+ *  for everyone. On a linked device (lib/devices.ts), `unsent` marks one of ours that the phone
+ *  could not send. */
+export type GroupMarks = { reactions?: Record<string, string>; votes?: Record<string, number[]>; pinned?: number; starred?: true; put?: string; unsent?: true };
 
 /** A photo or file in a group's message: where it is, or where to take it from. With `ms`, it is
  *  a voice message's sound, and lasts that long, milliseconds. */
@@ -142,6 +143,7 @@ function checkedParts(v: Record<string, unknown>, mine: boolean): GroupParts & G
     ...(isTime(v.pinned) && v.pinned > 0 ? { pinned: v.pinned } : {}),
     ...(v.starred === true ? { starred: true as const } : {}),
     ...(mine && isText(v.put) && /^(?:[0-9a-f]{48})+$/.test(v.put) ? { put: v.put } : {}),
+    ...(mine && v.unsent === true ? { unsent: true as const } : {}),
   };
 }
 

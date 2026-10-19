@@ -86,8 +86,8 @@ export type GroupMarked = Pick<GroupMarks, 'reactions' | 'votes' | 'pinned' | 's
 
 /**
  * What changed of a group's message the devices were told of, by its tag: each member's reactions
- * and votes, and its pin, as they are now (null: none any more); the primary's star; or that it is
- * gone there.
+ * and votes, and its pin, as they are now (null: none any more); the primary's star; that it is gone
+ * there; or, to the device that wrote it, that the primary could not send it (`unsent`).
  */
 export type GroupChange = {
   group: string;
@@ -97,6 +97,7 @@ export type GroupChange = {
   votes?: Record<string, number[]> | null;
   pinned?: number | null;
   starred?: boolean;
+  unsent?: true;
 };
 
 /** A group whose marks are said whole, with the tags of all its messages: a device lets go of the marks not said, and of the messages not among them. */
@@ -365,6 +366,7 @@ function checkedGroupChange(value: unknown): GroupChange | null {
   const v = value;
   const change: GroupChange = { group: v.group as string, tag: v.tag as string };
   if (v.gone === true) return { ...change, gone: true };
+  if (v.unsent === true) return { ...change, unsent: true };
   if (v.reactions === null || isObject(v.reactions)) change.reactions = byMember(v.reactions, reactionOf) ?? null;
   if (v.votes === null || isObject(v.votes)) change.votes = byMember(v.votes, voteOf) ?? null;
   if (v.pinned === null || (isTime(v.pinned) && v.pinned > 0)) change.pinned = v.pinned as number | null;
@@ -793,9 +795,14 @@ function withoutMarks(m: GroupMessage): GroupMessage {
   return rest;
 }
 
-// A message once `change` is made to it: a vote counts only on a poll, and only as the poll allows.
+// A message once `change` is made to it: a vote counts only on a poll, and only as the poll allows;
+// only one of this device's own is not sent.
 function withChange(m: GroupMessage, change: GroupChange): GroupMessage {
   const next: GroupMessage = { ...m };
+  if (change.unsent) {
+    if (!m.from) next.unsent = true;
+    return next;
+  }
   if (change.reactions !== undefined) {
     if (change.reactions) next.reactions = change.reactions;
     else delete next.reactions;
@@ -826,7 +833,7 @@ function withEntryMarks(m: GroupMessage, marks: GroupMarked): GroupMessage {
  * A linked device's groups once the primary said what changed in messages told already (`now`, this
  * device's clock): each change made to its message, by tag. A group said whole first lets go of what
  * was done to the messages not said, and of the messages the primary no longer has, but this
- * device's own of the last minutes, which may not have reached it yet.
+ * device's own it could not send, or wrote in the last minutes, which may not have reached it yet.
  */
 export function changedGroups(kept: Group[], said: { groups: GroupChange[]; whole: WholeGroup[] }, now: number): Group[] {
   const changes = new Map<string, GroupChange[]>();
@@ -840,7 +847,7 @@ export function changedGroups(kept: Group[], said: { groups: GroupChange[]; whol
     if (tags) {
       const marked = new Set(told.map((c) => c.tag));
       messages = messages
-        .filter((m) => m.note || !m.tag || tags.has(m.tag) || (!m.from && m.at > now - OWN_KEPT))
+        .filter((m) => m.note || !m.tag || tags.has(m.tag) || (!m.from && (m.unsent || m.at > now - OWN_KEPT)))
         .map((m) => (m.note || marked.has(m.tag) ? m : withoutMarks(m)));
     }
     for (const c of told) {

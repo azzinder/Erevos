@@ -1128,8 +1128,9 @@ The chats then come to the computer, and after them the messages chosen.
   react, vote, pin, delete your own for everyone, add and take out members, rename one or leave it, there as on the
   phone: the phone does it for the computer, as its own. A photo or file the phone keeps goes to the computer as a copy
   on the relay, deleted there once the computer took it. What the members do later to a message (react, vote, pin,
-  delete it for everyone) shows on the computer too, as does a star or deleting on **This phone** done on the phone.
-  Making a group, public groups and group calls stay on the phone for now.
+  delete it for everyone) shows on the computer too, as does a star or deleting on **This phone** done on the phone. A
+  message the phone could not send to the group (one closed meanwhile, say) shows on the computer as **Not sent by the
+  phone**. Making a group, public groups and group calls stay on the phone for now.
 - **Hidden chats and second passwords** are never linked. A chat moved into hidden chats on the phone leaves the
   computer. A space a second password opens links only from inside it, to devices of its own.
 - **Bring over messages again**, on the phone, sends a period of the history again, with its reactions, pins, votes

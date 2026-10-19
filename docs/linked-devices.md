@@ -200,7 +200,9 @@ What is written or done on a device goes to the phone, which does it as its own:
 the group from the account, with the tag the device kept it by, so the device does not keep it
 twice, and with what it answers or is beyond its words (lib/group-parts.ts); a reaction, a vote, a
 pin or deleting its own for everyone; adding and taking out members and renaming (when the account
-is the admin), leaving, deleting a closed group and reading. A photo, file or voice message the device sends stays where the device
+is the admin), leaving, deleting a closed group and reading. A message the phone could not send to
+the group (one it left or closed meanwhile) is said back to the device that wrote it, which shows it
+as not sent. A photo, file or voice message the device sends stays where the device
 put it, on its relay, as a member's does: the members, the phone among them, take it from there. One
 that came from a member goes to the devices as where it waits for the members; one the phone keeps
 (its own, or taken already) goes as a copy on the relay for the devices, deleted there once each

@@ -582,7 +582,7 @@ export class Links implements Link, TakenFiles {
         this.act(() => this.letGo(peer.id, said.ids));
         break;
       case 'group':
-        this.act(() => this.groupFor(said.id, said.ask));
+        this.act(() => this.groupFor(peer.id, said.id, said.ask));
         break;
       case 'bye':
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
@@ -1557,17 +1557,29 @@ export class Links implements Link, TakenFiles {
   }
 
   // On the primary: what a device asked to do in one of the groups that go to it, done here as this
-  // phone's own.
-  private async groupFor(id: string, ask: GroupAsk): Promise<void> {
+  // phone's own. A message that cannot go to the group, the device that wrote it shows as not sent.
+  private async groupFor(device: string, id: string, ask: GroupAsk): Promise<void> {
     const shared = this.groups;
-    if (!shared?.shared(id) || !shared.groups.all().some((g) => g.id === id)) return;
+    const there = !!shared?.shared(id) && shared.groups.all().some((g) => g.id === id);
+    if (ask.t === 'text' || ask.t === 'file') {
+      let went = false;
+      if (shared && there) {
+        const { groups, transport } = shared;
+        try {
+          if (ask.t === 'text') await groups.send(id, ask.text, transport, ask.parts, ask.tag);
+          // Left where the device put it, as a member's is: each member takes it from there, this phone too.
+          else await groups.sendFile(id, offerRef(ask.file), ask.file, ask.ms, transport, ask.parts, ask.tag);
+          went = true;
+        } catch {
+          // The device is told, below.
+        }
+      }
+      if (!went) await this.say({ k: 'changed', chats: [], groups: [{ group: id, tag: ask.tag, unsent: true }], whole: [] }, device);
+      return;
+    }
+    if (!shared || !there) return;
     const { groups, transport } = shared;
     switch (ask.t) {
-      case 'text':
-        return groups.send(id, ask.text, transport, ask.parts, ask.tag);
-      // Left where the device put it, as a member's is: each member takes it from there, this phone too.
-      case 'file':
-        return groups.sendFile(id, offerRef(ask.file), ask.file, ask.ms, transport, ask.parts, ask.tag);
       case 'mark':
         await groups.mark(id, ask.marked, transport);
         return;

@@ -342,8 +342,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
     },
     /** A link's preview, under the words. */
     preview: (m: GroupMessage, ink: StyleProp<TextStyle>): ReactNode => (m.preview && !m.file ? <PreviewCard preview={m.preview} ink={ink} /> : null),
-    /** What goes beside a message's time: that it was forwarded, and its star. */
-    caption: (m: GroupMessage): string => [m.forwarded ? t('Forwarded') : '', m.starred ? '★' : ''].filter(Boolean).join('  ·  '),
+    /** What goes beside a message's time: that it was forwarded, its star, and, on a linked device, that the phone could not send it. */
+    caption: (m: GroupMessage): string => [m.forwarded ? t('Forwarded') : '', m.starred ? '★' : '', m.unsent ? t('Not sent by the phone') : ''].filter(Boolean).join('  ·  '),
     /** The reactions under a bubble. */
     reactions: (m: GroupMessage): ReactNode => (
       <Reactions signs={Object.values(m.reactions ?? {})} mine={m.reactions?.['']} mineSide={!m.from} onPress={() => setMenuFor(m)} />

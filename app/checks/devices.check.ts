@@ -900,6 +900,11 @@ test('what changes later in messages told already: only what changed, or all of 
   assert.deepEqual([changed.messages[1].reactions, changed.messages[1].starred], [{ [alice]: '👍' }, true]);
   assert.deepEqual([changed.messages[2].votes, changed.messages[2].pinned], [{ [alice]: [1] }, 9]);
   assert.equal(changedGroups([group], { groups: [{ group: g, tag: '112233445566', votes: { [alice]: [5] } }], whole: [] }, 100)[0].messages[2].votes, undefined);
+  // To the computer that wrote it, that the phone could not send it: only its own is marked so.
+  const notSent: Envelope = { k: 'changed', chats: [], groups: [{ group: g, tag: '112233445566', unsent: true }, { group: g, tag: 'aabbccddeeff', unsent: true }], whole: [] };
+  assert.deepEqual(travel(notSent), notSent);
+  const unsent = changedGroups([group], notSent, 100)[0].messages;
+  assert.deepEqual([unsent[2].unsent, unsent[1].unsent], [true, undefined]);
   // Said whole: what was done to the messages not said goes, and the messages the phone no longer
   // has, but the computer's own of the last minutes, which may not have reached the phone yet.
   const NOW = 60 * 60_000;
@@ -1184,6 +1189,13 @@ test('groups on a linked computer: the phone\'s, read and written there through 
     [later],
   );
   assert.ok(onDell.messages(later).some((m) => m.note));
+  // Closed on the phone before the computer heard of it: what the computer wrote meanwhile shows
+  // there as not sent.
+  await onPixel.groups.leave(later, onPixel.transport);
+  await onDell.send(later, 'too late', nowhere);
+  await round();
+  assert.equal(onDell.list().find((x) => x.id === later)?.status, 'out');
+  assert.equal(onDell.messages(later).find((m) => m.text === 'too late')?.unsent, true);
   await pixel.links.unlink(pixel.links.devices()[0].id);
   await take(dell);
   await until(() => onDell.list().length === 0);
