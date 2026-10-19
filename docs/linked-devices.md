@@ -80,12 +80,14 @@ Linking, by QR code and a safety check:
   end-to-end encrypted in that device's link. The device opens it as if it came from the contact:
   the same tags, marks, timers and voice parts. Call signals and group signals are not passed on
   (calls and groups stay on the phone for now, see below).
-- **Written on the computer:** the device seals it for the phone. A text, voice message, photo or file
-  goes into the phone's history as the phone's own, marked Waiting, and goes to the contact as
-  everything that waits does (lib/waiting.ts), with the same tag, so both show the same marks. A photo
-  or file is first taken from the computer's relay to the phone, then sent on from the phone's. What
-  only says that messages were read, deletes messages on both phones, or sets the timer goes on as
-  it is, and the phone does the same in its own history.
+- **Written on the computer:** the device seals it for the phone, which seals it for the contact as
+  it came (whatever fields a later version adds go on with it), saying where its own queue is. A
+  text, voice message, photo or file also goes into the phone's history as the phone's own, with the
+  same tag, so both show the same marks; one the contact cannot be reached for now is marked Waiting
+  there and goes as everything that waits does (lib/waiting.ts). A photo or file is first taken from
+  the computer's relay to the phone, then sent on from the phone's. What only says that messages
+  were read, deletes messages on both phones, or sets the timer goes on as it is, and the phone does
+  the same in its own history. What only says that messages came is not sent on: the phone said it.
 - **Written on the phone:** once the phone has kept it as sent, each linked device is told, and shows
   it as its own. A photo or file goes to the devices as a copy on the relay of their own, since the
   contact deletes theirs once taken. That the phone read a chat, or deleted messages on both phones,
@@ -93,6 +95,11 @@ Linking, by QR code and a safety check:
 
 While devices are linked, photos and files that came are left on the relay when taken, as both the
 phone and the computer take them; the relay drops them after 14 days.
+
+What the phone seals for a device waits, sealed, in that device's outbox until the relay takes it,
+so nothing is sealed twice. When a device is away so long that its outbox is full (300 packets),
+nothing more is sealed for it, so its ratchet never has to skip more than it can; once the outbox
+drained, it is sent the contacts again and the history from when it fell behind.
 
 ### Contacts and settings
 
@@ -156,4 +163,6 @@ after restoring one, link the devices again.
   history.
 - `lib/e2e.ts`: a linked device's chat seals for its primary, and the primary's tells its devices
   what it opened and sealed (`Link`).
-- `app/app/devices.tsx`: Menu → Linked devices.
+- `app/app/devices.tsx`: Menu → Linked devices; `app/app/link.tsx` opens it from a scanned code.
+- `app/checks/devices.check.ts`: a phone, a computer and a contact on an older version, through a
+  real relay and the real core.

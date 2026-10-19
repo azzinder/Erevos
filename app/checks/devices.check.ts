@@ -8,11 +8,12 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { test } from 'node:test';
+import { afterEach, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
-import { Links } from '../lib/devices';
+import { bytesSource, offerRef, readFile, sendFile, takeFile } from '../lib/attachments';
+import { Links, type HistoryChoice } from '../lib/devices';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode } from '../lib/link-code';
 import { changedFields, encodeEnvelope, encodeOne, isKept, isSignal, isWorthTelling, mirrorOf, onlyCame, Parts, readPack, syncedOf, withoutPlace, writePack, type Synced } from '../lib/link-wire';
@@ -20,6 +21,7 @@ import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib
 import type { SpaceChats } from '../lib/space-chats';
 import { VoiceAssembler } from '../lib/voice';
 import { History } from '../lock/history';
+import { loadClip, saveClip } from '../lock/voice-clips';
 import { EMPTY_SPACE, saveSpaceData, type Queue } from '../lock/space-data';
 import { blobs, files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
@@ -126,7 +128,15 @@ test('what goes between devices: parts put together, messages sorted, contacts k
 
 type Phone = { chats: SpaceChats; queue: Queue; links: Links; space: number };
 
-test('a computer linked to the phone: codes, history, messages both ways, contacts, unlinking', { skip: !coreReady || !relayReady }, async () => {
+// Every link opened stops after its check, whatever happened in it.
+const opened: Links[] = [];
+afterEach(() => {
+  for (const links of opened.splice(0)) links.close();
+});
+type Opened = Extract<Received, { kind: 'message' }>;
+
+// A relay, and phones on it: each a space of its own with its relay and queue set, its chats and its links.
+async function setup() {
   files.clear();
   blobs.clear();
   const url = await startRelay();
@@ -136,16 +146,20 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
     const ids = await createQueue(relay);
     return { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
   };
-  const phone = async (space: number): Promise<Phone> => {
+  const phone = async (space: number, linking = true): Promise<Phone> => {
     const key = randomBytes(32);
     const own = await queue();
     await saveSpaceData(space, key, { ...EMPTY_SPACE, url, ownQueue: own });
     const chats = { e2e: await E2E.open('space', space, key), history: await History.open('space', space, key), voiceParts: new VoiceAssembler() };
-    return { chats, queue: own, links: await Links.open(space, key, chats, 60 * 60_000), space };
+    const links = await Links.open(space, key, chats, 60 * 60_000);
+    opened.push(links);
+    // A contact on an Erevos from before linked devices has none.
+    if (!linking) links.close();
+    return { chats, queue: own, links, space };
   };
   // What the chat or the receiver does with what comes to a space's queue, in short.
-  const take = async ({ chats, queue: own, links }: Phone): Promise<Extract<Received, { kind: 'message' }>[]> => {
-    const opened: Extract<Received, { kind: 'message' }>[] = [];
+  const take = async ({ chats, queue: own, links }: Phone): Promise<Opened[]> => {
+    const opened: Opened[] = [];
     for (;;) {
       const bytes = await receiveMessage(relay, fromHex(own.recipientHex));
       if (!bytes) break;
@@ -153,8 +167,13 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
       if (received.kind !== 'message') continue;
       opened.push(received);
       const peer = `contact:${received.identity}`;
-      if (received.text) await chats.history.add({ peer, text: received.text, mine: false, at: Date.now(), tag: received.tag });
+      const message = { peer, text: '', mine: false, at: Date.now(), tag: received.tag };
+      if (received.text) await chats.history.add({ ...message, text: received.text });
+      if (received.file) await chats.history.add({ ...message, file: offerRef(received.file) });
+      const voice = received.voice && chats.voiceParts.add(peer, received.voice);
+      if (voice) await chats.history.add({ ...message, voice: await saveClip(voice.audio, voice.ms) });
       if (received.read.length > 0) await chats.history.mark(peer, true, 2, Date.now(), received.read);
+      if (received.erase && 'tag' in received.erase) await chats.history.remove(peer, received.erase.tag);
     }
     await links.settled();
     return opened;
@@ -169,12 +188,25 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
     await chats.history.add({ peer: `contact:${identity}`, text, mine: true, at: Date.now(), tag: sealed.tag });
     return sealed.tag;
   };
+  // Links the computer to the phone, as the screens do once the codes match.
+  const linkUp = async (pixel: Phone, dell: Phone, history: HistoryChoice = { since: 0, files: true }) => {
+    const asked = await pixel.links.prepare(await dell.links.makeOffer('DELL'));
+    await pixel.links.link(history, 'Pixel');
+    await take(dell);
+    await dell.links.confirm(asked.code);
+    await take(pixel);
+    await take(dell);
+    return asked;
+  };
+  return { relay, url, where, phone, take, write, linkUp };
+}
 
+test('a computer linked to the phone: codes, history, messages both ways, contacts, unlinking', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { relay, url, where, phone, take, write } = await setup();
   const pixel = await phone(0);
   const dell = await phone(1);
   // Carol, on an Erevos from before linked devices, writes to the phone.
-  const carol = await phone(2);
-  carol.links.close();
+  const carol = await phone(2, false);
   const { identity: account } = await carol.chats.e2e.addContact({ senderHex: pixel.queue.senderHex, key: toBase64Url(pixel.chats.e2e.bundle), relayUrl: url }, carol.queue.senderHex, where);
   const carolId = carol.chats.e2e.identityHex();
   await write(carol, account, 'before the computer');
@@ -268,8 +300,7 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
   assert.equal(await receiveMessage(relay, fromHex(pixel.queue.recipientHex)), null);
 
   // A contact added on the computer is added by the phone, which starts the conversation.
-  const dave = await phone(3);
-  dave.links.close();
+  const dave = await phone(3, false);
   const daveId = dave.chats.e2e.identityHex();
   await dell.chats.e2e.addContact({ senderHex: dave.queue.senderHex, key: toBase64Url(dave.chats.e2e.bundle), relayUrl: url }, dell.queue.senderHex, where);
   await take(pixel);
@@ -292,6 +323,118 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
   await write(carol, account, 'after');
   assert.equal((await take(pixel)).length, 1);
   assert.deepEqual(await take(dell), []);
+
+  for (const p of [pixel, dell]) p.links.close();
+});
+
+test('photos, files and voice messages go through the phone both ways, and deleting goes to both phones', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { relay, url, where, phone, take, write, linkUp } = await setup();
+  const sendVoice = async ({ chats, queue: own }: Phone, identity: string, audio: Uint8Array) => {
+    const sealed = await chats.e2e.sealVoice(identity, audio, 3000, own.senderHex, { at: where });
+    if (sealed.first) {
+      await sendMessage(relay, fromHex(sealed.sender), sealed.first);
+      await chats.e2e.firstSent(identity);
+    }
+    for (const packet of sealed.packets) await sendMessage(relay, fromHex(sealed.sender), packet);
+    await chats.history.add({ peer: `contact:${identity}`, text: '', mine: true, at: Date.now(), tag: sealed.tag, voice: await saveClip(audio, 3000) });
+    return sealed.tag;
+  };
+  const sendPhoto = async ({ chats, queue: own }: Phone, identity: string, bytes: Uint8Array) => {
+    const { ref, offer } = await sendFile(relay, bytesSource(bytes), { name: 'photo.jpg', mime: 'image/jpeg', kind: 'photo' });
+    const sealed = await chats.e2e.sealFile(identity, offer, own.senderHex, { at: where });
+    if (sealed.first) {
+      await sendMessage(relay, fromHex(sealed.sender), sealed.first);
+      await chats.e2e.firstSent(identity);
+    }
+    await sendMessage(relay, fromHex(sealed.sender), sealed.packet);
+    await chats.history.add({ peer: `contact:${identity}`, text: '', mine: true, at: Date.now(), tag: sealed.tag, file: ref });
+    return sealed.tag;
+  };
+  // Takes a photo as the chat does, and keeps where it is now.
+  const fileOf = async (p: Phone, tag: string) => {
+    const m = p.chats.history.messages().find((x) => x.tag === tag);
+    if (!m?.file) return null;
+    const taken = await takeFile(relay, m.file);
+    await p.chats.history.setFile(m.peer, tag, taken);
+    return readFile(taken);
+  };
+
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const carol = await phone(2, false);
+  const { identity: account } = await carol.chats.e2e.addContact({ senderHex: pixel.queue.senderHex, key: toBase64Url(pixel.chats.e2e.bundle), relayUrl: url }, carol.queue.senderHex, where);
+  const carolId = carol.chats.e2e.identityHex();
+  // Before linking: a voice message and a photo from Carol, which the phone took.
+  const oldVoice = randomBytes(25_000);
+  const oldPhoto = randomBytes(70_000);
+  const oldVoiceTag = await sendVoice(carol, account, oldVoice);
+  const oldPhotoTag = await sendPhoto(carol, account, oldPhoto);
+  await take(pixel);
+  assert.deepEqual(await fileOf(pixel, oldPhotoTag), oldPhoto);
+
+  // The history comes with its sound and a copy of the photo.
+  await linkUp(pixel, dell);
+  await until(async () => {
+    await take(dell);
+    return dell.chats.history.messages().length === 2;
+  });
+  const voiceKept = dell.chats.history.messages().find((m) => m.tag === oldVoiceTag);
+  assert.deepEqual(await loadClip(voiceKept!.voice!), oldVoice);
+  assert.deepEqual(await fileOf(dell, oldPhotoTag), oldPhoto);
+
+  // A photo from Carol now: both the phone and the computer take it.
+  const photo = randomBytes(90_000);
+  const photoTag = await sendPhoto(carol, account, photo);
+  await take(pixel);
+  await take(dell);
+  assert.deepEqual(await fileOf(dell, photoTag), photo);
+  assert.deepEqual(await fileOf(pixel, photoTag), photo);
+
+  // The computer sends a photo and a voice message: the phone takes them on, and Carol gets both from the account.
+  const dellPhoto = randomBytes(80_000);
+  const dellVoice = randomBytes(31_000);
+  const dellPhotoTag = await sendPhoto(dell, carolId, dellPhoto);
+  const dellVoiceTag = await sendVoice(dell, carolId, dellVoice);
+  await take(pixel);
+  const toCarol = await take(carol);
+  assert.ok(toCarol.length > 0 && toCarol.every((m) => m.identity === account));
+  assert.deepEqual(await fileOf(carol, dellPhotoTag), dellPhoto);
+  assert.deepEqual(await loadClip(carol.chats.history.messages().find((m) => m.tag === dellVoiceTag)!.voice!), dellVoice);
+  // The phone keeps both as its own.
+  const onPixel = pixel.chats.history.messages().filter((m) => m.mine);
+  assert.deepEqual(
+    onPixel.map((m) => [m.tag, m.mark]),
+    [
+      [dellPhotoTag, 0],
+      [dellVoiceTag, 0],
+    ],
+  );
+  assert.deepEqual(await readFile(onPixel[0].file!), dellPhoto);
+  assert.deepEqual(await loadClip(onPixel[1].voice!), dellVoice);
+
+  // A photo the phone sends: the computer gets a copy of its own to take, whether or not Carol took hers.
+  const pixelPhoto = randomBytes(60_000);
+  const pixelPhotoTag = await sendPhoto(pixel, carolId, pixelPhoto);
+  await take(carol);
+  assert.deepEqual(await fileOf(carol, pixelPhotoTag), pixelPhoto);
+  await until(async () => {
+    await take(dell);
+    return dell.chats.history.messages().some((m) => m.tag === pixelPhotoTag);
+  });
+  assert.deepEqual(await fileOf(dell, pixelPhotoTag), pixelPhoto);
+
+  // Deleted on both phones from the computer: gone from the phone and from Carol's.
+  const gone = await write(dell, carolId, 'oops');
+  await take(pixel);
+  await take(carol);
+  assert.ok(carol.chats.history.messages().some((m) => m.tag === gone));
+  const erase = await dell.chats.e2e.seal(carolId, '', dell.queue.senderHex, { at: where, erase: { tag: gone } });
+  await sendMessage(relay, fromHex(erase.sender), erase.packet);
+  await dell.chats.history.remove(`contact:${carolId}`, gone);
+  await take(pixel);
+  await take(carol);
+  assert.equal(pixel.chats.history.messages().some((m) => m.tag === gone), false);
+  assert.equal(carol.chats.history.messages().some((m) => m.tag === gone), false);
 
   for (const p of [pixel, dell]) p.links.close();
 });

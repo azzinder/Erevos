@@ -37,6 +37,7 @@ import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
+import { accountLink, linkedRole, onLinked } from '../lib/devices';
 import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
@@ -1281,6 +1282,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   }
 
   async function startCall(video: boolean) {
+    // The contact's answer would come to the phone that holds the account, which made no call.
+    if (!hiddenKey && linkedRole() === 'linked') {
+      setNote(t('Calls ring on the phone that holds this account, for now. Call from there.'));
+      return;
+    }
     if (!selectedContact) {
       setNote(video ? t('Video calls go to contacts through the relay. Pick one first.') : t('Calls go to contacts through the relay. Pick one first.'));
       return;
@@ -1730,15 +1736,41 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     }
   }
 
-  // Their photos and files up to AUTO_TAKE are taken as soon as they come, or when the chat opens.
+  // Photos and files up to AUTO_TAKE still on the relay are taken as soon as they come, or when the
+  // chat opens: theirs, and on a linked device the copies of what the phone sent (lib/devices.ts).
   useEffect(() => {
     const own = ownRelay();
     if (!loaded || !own) return;
     for (const m of messages) {
-      if (m.mine || !m.file?.from || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
+      if (!m.file?.from || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
       void take(own, m.peer, m.tag, m.file);
     }
   }, [loaded, relayUrl, relayToken, messages]);
+
+  // What the account's other devices changed in the history while the chat is open (lib/devices.ts):
+  // messages brought over or written on another of them, marks raised there, messages deleted there.
+  useEffect(() => {
+    if (hiddenKey) return;
+    return onLinked(({ gone }) => {
+      const kept = history.current;
+      if (!kept) return;
+      const now = kept.messages();
+      const byTag = new Map(now.filter((m) => m.tag).map((m) => [`${m.peer}|${m.tag}`, m]));
+      setMessages((list) => {
+        const left = list.filter((m) => !gone.some((g) => g.peer === m.peer && (!g.tag || g.tag === m.tag)));
+        const shown = new Set(left.map((m) => `${m.peer}|${m.tag}`));
+        const marked = left.map((m) => {
+          const there = m.tag ? byTag.get(`${m.peer}|${m.tag}`) : undefined;
+          if (!there || (there.mark ?? 0) <= m.mark) return m;
+          return { ...m, mark: there.mark ?? 0, until: m.until || (there.until ?? 0), lasts: m.until ? m.lasts : (there.lasts ?? 0) };
+        });
+        const added = now
+          .filter((m) => m.peer.startsWith(CONTACT_PREFIX) && m.tag && !shown.has(`${m.peer}|${m.tag}`))
+          .map((m) => ({ ...m, until: m.until ?? 0, lasts: m.lasts ?? 0, mark: m.mark ?? 0, id: nextId.current++ }));
+        return added.length > 0 ? [...marked, ...added].sort((a, b) => a.at - b.at) : marked;
+      });
+    });
+  }, [hiddenKey]);
 
   useEffect(() => {
     loadPhotoQuality().then(setQuality, () => undefined);
@@ -1998,6 +2030,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // hidden chats' relay queue from now on; what it sends before it hears that may not come.
   async function moveToHidden(peer: string, pin: string, fresh: number | null) {
     if (!e2e || !history.current || moving) return;
+    if (!hiddenKey && linkedRole() === 'linked') {
+      setMoveNote(t("This chat is the phone's: move it into hidden chats there."));
+      return;
+    }
     const identity = peer.slice(CONTACT_PREFIX.length);
     if (pin.length < MIN_PIN) {
       setMoveNote(t('The PIN needs {n} characters at least.', { n: MIN_PIN }));
@@ -2185,7 +2221,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // Without a relay queue the link has only the keys: who adds it reaches this phone nearby.
   const ownLink = !e2e
     ? null
-    : ownQueue
+    : !hiddenKey && accountLink()
+      ? accountLink()
+      : ownQueue
       ? contactLink({
           senderHex: ownQueue.senderHex,
           relayUrl: relayUrl.trim(),

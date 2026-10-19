@@ -8,6 +8,7 @@ import { KeyFace } from '../components/key-face';
 import { font, fontStyle, Sheet, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { canGroup, hasCore } from '../lib/core';
+import { linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
@@ -51,6 +52,7 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
     links: true,
   },
   { title: mark('SMS'), detail: mark('Erevos as the SMS app, one list for all messages'), href: '/sms-settings', phone: true },
+  { title: mark('Linked devices'), detail: mark('This account on a computer or in a browser too'), href: '/devices' },
   { title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay' },
   { title: mark('Tor'), detail: mark('Reach the relays through Tor, off unless turned on'), href: '/tor', phone: true },
   { title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', phone: true },
@@ -323,7 +325,8 @@ export default function Home() {
             {LANG_LABELS[lang()]}
           </Text>
         </Pressable>
-        {MENU.filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || canGroup())).map((item) => (
+        {/* Groups stay on the phone that holds the account (lib/devices.ts). */}
+        {MENU.filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked'))).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"
