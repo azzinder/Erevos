@@ -275,6 +275,35 @@ t('a message carries its tag, and a request to delete one message or all of them
   assert.equal(message(await bob.e2e.receive(both.packet)).erase, null);
 });
 
+t('an answer says which message it answers, and a reaction travels with no words', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(identity);
+
+  const question = await alice.e2e.seal(identity, 'coffee?', alice.from);
+  assert.equal(message(await bob.e2e.receive(question.packet)).re, '');
+  const answer = await bob.e2e.seal(hello.identity, 'yes', bob.from, { re: question.tag });
+  const answered = message(await alice.e2e.receive(answer.packet));
+  assert.deepEqual([answered.text, answered.re], ['yes', question.tag]);
+  // A voice message and a file answer too.
+  const voice = await bob.e2e.sealVoice(hello.identity, new Uint8Array(10), 1000, bob.from, { re: question.tag });
+  assert.equal(message(await alice.e2e.receive(voice.packets[0])).re, question.tag);
+
+  const liked = await alice.e2e.seal(identity, '', alice.from, { react: { tag: answer.tag, emoji: '👍' } });
+  assert.equal(liked.tag, '');
+  const reaction = message(await bob.e2e.receive(liked.packet));
+  assert.deepEqual([reaction.text, reaction.tag, reaction.react], ['', '', { tag: answer.tag, emoji: '👍' }]);
+  const back = await alice.e2e.seal(identity, '', alice.from, { react: { tag: answer.tag, emoji: '' } });
+  assert.deepEqual(message(await bob.e2e.receive(back.packet)).react, { tag: answer.tag, emoji: '' });
+  // A reaction with words is none, and words never react.
+  const words = await alice.e2e.seal(identity, '', alice.from, { react: { tag: answer.tag, emoji: 'nice' } });
+  assert.equal(message(await bob.e2e.receive(words.packet)).react, null);
+  const both = await alice.e2e.seal(identity, 'text', alice.from, { react: { tag: answer.tag, emoji: '👍' } });
+  assert.equal(message(await bob.e2e.receive(both.packet)).react, null);
+});
+
 t('a message sent without sound says so inside the encryption, and one sent as usual says nothing', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

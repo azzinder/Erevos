@@ -125,6 +125,33 @@ t('deletes one message by its tag, and gives messages kept before tags a tag of 
   assert.match(old.tag, /^[0-9a-f]{12}$/);
 });
 
+t('keeps which message one answers, and the reactions to it, ours and theirs', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const first = newTag();
+  const answer = newTag();
+  await history.add({ peer: 'contact:aa', text: 'question?', mine: false, at: 1, tag: first });
+  await history.add({ peer: 'contact:aa', text: 'answer', mine: true, at: 2, tag: answer, re: first });
+  assert.equal(await history.react('contact:aa', first, true, '👍'), true);
+  assert.equal(await history.react('contact:aa', answer, false, '❤️'), true);
+  assert.equal(await history.react('contact:aa', newTag(), false, '😂'), false);
+  const kept = (await History.open('space', 0, key)).messages();
+  assert.deepEqual(
+    kept.map((m) => [m.text, m.re, m.myReaction, m.theirReaction]),
+    [
+      ['question?', undefined, '👍', undefined],
+      ['answer', first, undefined, '❤️'],
+    ],
+  );
+  // A reaction taken back is none; one that is words is never kept.
+  await history.react('contact:aa', first, true, '');
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', first, 0, 0, 0, 0, 0, { y: 'hello', o: '<b>', p: 'not a tag' }]] } });
+  const [odd] = (await History.open('space', 1, key)).messages();
+  assert.deepEqual([odd.myReaction, odd.theirReaction, odd.re], [undefined, undefined, undefined]);
+  assert.equal((await History.open('space', 0, key)).messages()[0].myReaction, undefined);
+});
+
 t('deletes the messages of one chat and keeps the others', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);

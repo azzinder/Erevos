@@ -245,12 +245,27 @@ Each chat can also look its own way: tap its name and then **Chat look** for the
 colors, wallpaper, messages), for that chat only. Like the name, it stays on this phone, sealed with the chat. **Same as the app**
 gives it the app's look again.
 
-To delete one message, press and hold it. To delete all the messages of a chat, tap its name and then **Delete messages**.
+To delete one message, press and hold it and tap **Delete**. To delete all the messages of a chat, tap its name and then **Delete messages**.
 Either way Erevos asks where:
 
 - **This phone:** only here. The other phone keeps its own.
 - **Both phones:** their phone deletes them too, the next time it looks at the relay. Their Erevos does so, but a
   changed app, a screenshot or a copy can still keep them.
+
+### A message's menu
+
+Press and hold a message for its menu: the reactions at the top, then what you can do with it.
+
+- **Reactions:** tap one, or **+** for more. It shows under the message on both phones, yours lit; tap it
+  again to take it back. Each of you has one reaction on a message. It goes at once, or not at all: when neither
+  the relay nor their phone nearby can take it, nothing changes.
+- **Reply:** your next message answers it, and shows it quoted above your words, on both phones. Tap the quote to go
+  to the message it answers; **✕** drops it. An Erevos from before this shows the answer without the quote.
+- **Copy:** puts its words on the clipboard, to paste in another app. On Android the copy is marked private, so the
+  phone's notice of it does not show the words, but any app that reads the clipboard can read them.
+- **Delete:** on this phone, or on both, as above.
+
+Reactions and replies travel inside the encryption, like the messages.
 
 ### Disappearing messages
 

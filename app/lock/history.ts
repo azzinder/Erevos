@@ -63,8 +63,8 @@ export type Kept = [
 /**
  * Of ours: `h`, the id a relay holds it by, sent for later, and `r` that relay (lib/relay.ts,
  * sendMessageLater), so it can still be taken back before it goes; `q` 1 when it goes without
- * sound, kept while it waits. Of either: `p`, the tag of the message it answers; `y`, our
- * reaction to it, and `o`, theirs.
+ * sound, kept while it waits. Of either, its Parts: `p`, the tag of the message it answers; `y`,
+ * our reaction to it, and `o`, theirs.
  */
 type More = { h?: string; r?: string; q?: 1; p?: string; y?: string; o?: string };
 
@@ -90,6 +90,10 @@ export type Message = {
   held?: HeldAt;
   /** Ours that waits, to go without sound. */
   quiet?: boolean;
+} & Parts;
+
+/** What else a message is or carries, beyond its words, on both phones or this one only. */
+export type Parts = {
   /** The tag of the message it answers. */
   re?: string;
   /** Our reaction to it, and theirs. */
@@ -99,13 +103,28 @@ export type Message = {
 
 type Fields = Omit<Message, 'peer'>;
 
-function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file, held, quiet, re, myReaction, theirReaction }: Fields): Kept {
-  const more: More = {
-    ...(held ? { h: held.id, r: held.relay } : {}),
-    ...(quiet ? { q: 1 as const } : {}),
+// A message's Parts as kept in More, and back.
+function moreOf({ re, myReaction, theirReaction }: Parts): More {
+  return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
     ...(theirReaction ? { o: theirReaction } : {}),
+  };
+}
+
+function partsOf(more: More | undefined): Parts {
+  return {
+    ...(more?.p ? { re: more.p } : {}),
+    ...(more?.y ? { myReaction: more.y } : {}),
+    ...(more?.o ? { theirReaction: more.o } : {}),
+  };
+}
+
+function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file, held, quiet, ...parts }: Fields): Kept {
+  const more: More = {
+    ...(held ? { h: held.id, r: held.relay } : {}),
+    ...(quiet ? { q: 1 as const } : {}),
+    ...moreOf(parts),
   };
   const kept: Kept = [at, mine ? 1 : 0, text, tag, until, until ? 0 : lasts, mark, voice ?? 0, file ?? 0, Object.keys(more).length > 0 ? more : undefined];
   while (kept.length > 4 && !kept[kept.length - 1]) kept.pop();
@@ -125,9 +144,7 @@ function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, fil
     ...(file ? { file } : {}),
     ...(more?.h && more.r ? { held: { id: more.h, relay: more.r } } : {}),
     ...(more?.q ? { quiet: true } : {}),
-    ...(more?.p ? { re: more.p } : {}),
-    ...(more?.y ? { myReaction: more.y } : {}),
-    ...(more?.o ? { theirReaction: more.o } : {}),
+    ...partsOf(more),
   };
 }
 
@@ -202,9 +219,7 @@ function checkedKept(m: unknown): Kept | null {
     file,
     held,
     quiet: !!more?.q,
-    re: more?.p,
-    myReaction: more?.y,
-    theirReaction: more?.o,
+    ...partsOf(more),
   });
 }
 
@@ -407,10 +422,15 @@ export class History {
    * Sets a reaction to a chat's message, by its tag: ours (`ours`) or theirs, an emoji, or none
    * (`''`). False if the message is gone.
    */
-  async react(peer: string, tag: string, ours: boolean, emoji: string): Promise<boolean> {
+  react(peer: string, tag: string, ours: boolean, emoji: string): Promise<boolean> {
+    return this.change(peer, tag, ours ? { myReaction: emoji } : { theirReaction: emoji });
+  }
+
+  // Changes what is kept of one message of a chat, by its tag. False if the message is gone.
+  private async change(peer: string, tag: string, fields: Partial<Fields>): Promise<boolean> {
     const list = this.data.chats[peer];
     if (!list?.some((m) => m[3] === tag)) return false;
-    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), ...(ours ? { myReaction: emoji } : { theirReaction: emoji }) }) : m));
+    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), ...fields }) : m));
     await this.save({ chats: { ...this.data.chats, [peer]: changed } });
     return true;
   }

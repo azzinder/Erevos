@@ -33,6 +33,10 @@ import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { LaterPicker } from '../components/later-picker';
 import { LinkedText } from '../components/linked-text';
+import { MessageMenu, type MenuAction } from '../components/message-menu';
+import { Quote, Reactions } from '../components/message-parts';
+import { CAN_COPY, copyText } from '../lib/clipboard';
+import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
@@ -49,7 +53,7 @@ import { cleanName, MAX_NAME, type Avatar } from '../lock/e2e-data';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
-import { History, newTag, WAITING, type Mark, type Message as Kept } from '../lock/history';
+import { History, newTag, WAITING, type Mark, type Message as Kept, type Parts } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { isGroupPacket } from '../lib/groups';
@@ -104,7 +108,8 @@ import { t, plural, mark } from '../lib/i18n';
 // waits for that. `mark`: as lock/history.ts keeps it.
 // `at`: when it was sent or came, milliseconds. `voice`: where a voice message's sound is.
 // `file`: where a photo or file is, or where to take it from. `held`: ours sent for later, the
-// relay that holds it till `at`. `quiet`: ours that waits, to go without sound.
+// relay that holds it till `at`. `quiet`: ours that waits, to go without sound. Its Parts: what
+// else it is or carries (lock/history.ts), such as the message it answers and the reactions to it.
 type Message = {
   id: number;
   peer: string;
@@ -119,7 +124,7 @@ type Message = {
   file?: FileRef;
   held?: HeldAt;
   quiet?: boolean;
-};
+} & Parts;
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
 
@@ -423,6 +428,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   const holdScroll = useRef(false);
   // Choosing how long a single message lasts, before sending it.
   const [vanishing, setVanishing] = useState(false);
+  // The message whose menu is open (held down), the one the next is an answer to, and the one just
+  // gone to, lit a moment.
+  const [menuFor, setMenuFor] = useState<Message | null>(null);
+  const [replying, setReplying] = useState<Message | null>(null);
+  const [lit, setLit] = useState<number | null>(null);
+  // Where each message is in the thread, by id, to go to it.
+  const placed = useRef(new Map<number, number>());
   const receipts = useRef<Receipts>({});
   // Contacts who asked whether this phone is open, to answer with the next look at the relay.
   const answers = useRef(new Set<string>());
@@ -757,8 +769,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     };
   }, []);
 
-  // Another chat starts with its latest imported messages.
-  useEffect(() => setImportedShown(IMPORTED_PAGE), [selected]);
+  // Another chat starts with its latest imported messages, and answers nothing yet.
+  useEffect(() => {
+    setImportedShown(IMPORTED_PAGE);
+    setReplying(null);
+  }, [selected]);
+
+  // A message gone to is lit a moment.
+  useEffect(() => {
+    if (lit === null) return;
+    const timer = setTimeout(() => setLit(null), 1600);
+    return () => clearTimeout(timer);
+  }, [lit]);
 
   // Disappearing messages go from the screen and the phone once their time has come.
   useEffect(() => {
@@ -1013,6 +1035,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     if (received.online) setNow(Date.now());
     const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
     if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
+    // What else it is: an answer to one of the chat's messages.
+    const parts: Parts = received.re ? { re: received.re } : {};
     if (received.voice) {
       const whole = voiceParts.current.add(peer, received.voice);
       const { tag, timer } = received;
@@ -1023,7 +1047,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         }
         saveClip(whole.audio, whole.ms)
           .then((voice) => {
-            addMessage(peer, '', false, tag, timer, voice, undefined, 0, shows);
+            addMessage(peer, '', false, tag, timer, voice, undefined, 0, shows, parts);
             if (tag) receipt(peer, 'got', [tag]);
           })
           .catch((error) => setNote(t('A voice message came but could not be kept. {error}', { error: errorText(error) })));
@@ -1031,16 +1055,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     }
     if (received.file) {
       // Taken from the relay by the effect that watches for files waiting.
-      const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file), 0, shows);
+      const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file), 0, shows, parts);
       receipt(peer, 'got', [tag]);
     }
     if (received.text) {
-      addMessage(peer, received.text, false, received.tag, received.timer, undefined, undefined, 0, shows);
+      addMessage(peer, received.text, false, received.tag, received.timer, undefined, undefined, 0, shows, parts);
       if (received.tag) receipt(peer, 'got', [received.tag]);
     }
     // Marked on the screen at once. A mark the history could not keep is the old one when the chat next opens.
     if (received.got.length > 0) markMessages(peer, true, 1, received.got).catch(() => undefined);
     if (received.read.length > 0) markMessages(peer, true, 2, received.read).catch(() => undefined);
+    // Their reaction to one of the chat's messages, or none any more.
+    if (received.react) {
+      const { tag, emoji } = received.react;
+      setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, theirReaction: emoji || undefined } : m)));
+      history.current?.react(peer, tag, false, emoji).catch(() => undefined);
+    }
     const name = label(peer, e2e.contacts());
     if (received.timerChanged) {
       setNote(
@@ -1069,7 +1099,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // A message of ours that waits to go is marked so (`mark`, lib/waiting.ts); one sent for later
   // has the time it should go (`at`), and shows after the others until then, as does theirs sent
   // for later that came before its time, which shows only then. `more`: of ours, the relay that
-  // holds it for later, or that it waits to go without sound.
+  // holds it for later, or that it waits to go without sound; of either, its Parts.
   function addMessage(
     peer: string,
     text: string,
@@ -1080,7 +1110,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     file?: FileRef,
     mark: Mark = 0,
     at = Date.now(),
-    more: { held?: HeldAt; quiet?: boolean } = {},
+    more: { held?: HeldAt; quiet?: boolean } & Parts = {},
   ): string {
     const contact = peer.startsWith(CONTACT_PREFIX);
     const kept = contact ? tag || newTag() : '';
@@ -1187,9 +1217,60 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     ]);
   }
 
-  function keep(peer: string, text: string, tag = '', timer = 0) {
-    addMessage(peer, text, true, tag, timer);
+  // Whether their phone has the message, so it can be answered there or reacted to: theirs, or ours
+  // that went. A call's line is this phone's own.
+  const theyHave = (m: Message) => m.peer.startsWith(CONTACT_PREFIX) && !!m.tag && !isCallLine(m.text) && (!m.mine || (m.mark !== WAITING && !scheduled(m)));
+
+  // Reacts to a message with an emoji, or takes the reaction back (the same one again), on both
+  // phones. It shows once their phone, or the relay, was handed it; if neither can be, nothing changes.
+  async function react(message: Message, emoji: string) {
+    const next = message.myReaction === emoji ? '' : emoji;
+    try {
+      await sendToContact(relayTarget(), message.peer.slice(CONTACT_PREFIX.length), '', { react: { tag: message.tag, emoji: next } });
+    } catch (error) {
+      setNote(notSent(error));
+      return;
+    }
+    setMessages((list) => list.map((m) => (m.peer === message.peer && m.tag === message.tag ? { ...m, myReaction: next || undefined } : m)));
+    history.current?.react(message.peer, message.tag, true, next).catch(() => {
+      // Shown, but gone when the chat next opens.
+    });
+  }
+
+  // Goes to one of the chat's messages, by its tag, and lights it a moment.
+  function goTo(peer: string, tag: string) {
+    const target = visible.find((m) => m.peer === peer && m.tag === tag);
+    const y = target ? placed.current.get(target.id) : undefined;
+    if (!target || y === undefined) {
+      setNote(t('That message is not on this phone.'));
+      return;
+    }
+    thread.current?.scrollTo({ y: Math.max(0, y - 96), animated: true });
+    setLit(target.id);
+  }
+
+  async function copy(message: Message) {
+    setNote((await copyText(shownLine(message.text))) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
+  }
+
+  // What can be done with a message, in its menu (held down).
+  function menuActions(message: Message): MenuAction[] {
+    const actions: MenuAction[] = [];
+    if (theyHave(message) || (message.mine && message.mark === WAITING)) actions.push({ title: t('Reply'), onPress: () => setReplying(message) });
+    if (CAN_COPY && message.text && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
+    actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
+    return actions;
+  }
+
+  function keep(peer: string, text: string, tag = '', timer = 0, parts: Parts = {}) {
+    addMessage(peer, text, true, tag, timer, undefined, undefined, 0, Date.now(), parts);
     setDraft('');
+    setReplying(null);
+  }
+
+  // What the next message in `peer`'s chat answers, if it answers one.
+  function answering(peer: string): Parts {
+    return replying && replying.peer === peer && replying.tag ? { re: replying.tag } : {};
   }
 
   // Seals a message for a contact and hands it to their phone (handOver). Returns the message's
@@ -1199,8 +1280,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here() });
     // What is only a mark, or asks whether their phone is open, is not worth carrying for days.
     const way = await handOver(e2e, target, identity, sealed, [sealed.packet], !!text || !!extra.erase);
-    // Writing to a message request accepts it.
-    if (text) setContacts(e2e.contacts());
+    // Writing or reacting to a message request accepts it.
+    if (text || extra.react) setContacts(e2e.contacts());
     return { tag: sealed.tag, timer: sealed.timer, way };
   }
 
@@ -1362,9 +1443,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       setNote(t(NO_CORE));
       return;
     }
+    const parts = answering(selected);
     try {
-      const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts, quiet });
-      keep(selected, text, tag, timer);
+      const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts, quiet, ...parts });
+      keep(selected, text, tag, timer, parts);
       const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(selected, contacts));
       setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer).toLowerCase() }) : sent);
     } catch (error) {
@@ -1373,8 +1455,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         return;
       }
       // Nothing could take it now: it waits, and goes by itself (lib/waiting.ts).
-      addMessage(selected, text, true, newTag(), lasts || timerOf(selected), undefined, undefined, WAITING, Date.now(), { quiet });
+      addMessage(selected, text, true, newTag(), lasts || timerOf(selected), undefined, undefined, WAITING, Date.now(), { quiet, ...parts });
       setDraft('');
+      setReplying(null);
       setNote(t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason: waitingReason(error, selected, t('It is too long for LoRa.')) }));
     }
   }
@@ -1408,12 +1491,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     const tag = newTag();
     const lasts = timerOf(peer);
     const when = laterLabel(at);
+    const parts = answering(peer);
     const heldNote = t('Scheduled for {when}. The relay sends it then, even if this phone is off. Until then you can delete it here.', { when });
     if (hiddenKey) {
       try {
-        const message: Kept = { peer, text, mine: true, at, tag, lasts, mark: WAITING, voice, file };
+        const message: Kept = { peer, text, mine: true, at, tag, lasts, mark: WAITING, voice, file, ...parts };
         const { held, lasts: kept } = await holdLater(e2e, waitingPlace(true), peer.slice(CONTACT_PREFIX.length), message);
-        addMessage(peer, text, true, tag, kept, voice, file, 0, at, { held });
+        addMessage(peer, text, true, tag, kept, voice, file, 0, at, { held, ...parts });
+        setReplying(null);
         setNote(heldNote);
         return true;
       } catch (error) {
@@ -1423,7 +1508,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         return false;
       }
     }
-    addMessage(peer, text, true, tag, lasts, voice, file, WAITING, at);
+    addMessage(peer, text, true, tag, lasts, voice, file, WAITING, at, parts);
+    setReplying(null);
     const went = await sendWaitingNow.current(true);
     setNote(
       went.some((w) => w.peer === peer && w.tag === tag && w.held)
@@ -1650,10 +1736,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       return;
     }
     const identity = peer.slice(CONTACT_PREFIX.length);
+    const parts = answering(peer);
     try {
-      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here(), talk });
+      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here(), talk, ...parts });
       const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets, true);
-      addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms));
+      addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms), undefined, 0, Date.now(), parts);
+      setReplying(null);
       // Writing to a message request accepts it.
       setContacts(e2e.contacts());
       setNote(sentNote(way, talk ? t('Walkie-talkie message sent') : t('Voice message sent'), label(peer, contacts)));
@@ -1668,7 +1756,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         return;
       }
       try {
-        addMessage(peer, '', true, newTag(), timerOf(peer), await saveClip(audio, ms), undefined, WAITING);
+        addMessage(peer, '', true, newTag(), timerOf(peer), await saveClip(audio, ms), undefined, WAITING, Date.now(), parts);
+        setReplying(null);
         setNote(t('The voice message waits, and goes by itself once the relay or their phone nearby can take it.'));
       } catch (failed) {
         setNote(t('Not sent, and it could not wait. {error}', { error: errorText(failed) }));
@@ -1806,6 +1895,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       return;
     }
     let kept: FileRef | null = null;
+    const parts = answering(peer);
     try {
       if (picked.source.size > MAX_FILE) throw new TooLargeError();
       setNote(what === 'photo' ? t('Sending the photo…') : t('Sending the file…'));
@@ -1818,9 +1908,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       });
       kept = sent.ref;
       const identity = peer.slice(CONTACT_PREFIX.length);
-      const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { at: here() });
+      const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { at: here(), ...parts });
       await handOver(e2e, target, identity, sealed, [sealed.packet]);
-      addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, sent.ref);
+      addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, sent.ref, 0, Date.now(), parts);
+      setReplying(null);
       kept = null;
       // Writing to a message request accepts it.
       setContacts(e2e.contacts());
@@ -1847,7 +1938,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
             setNote(what === 'photo' ? t('Keeping the photo, {percent}%', { percent }) : t('Keeping the file, {percent}%', { percent }));
           }
         });
-        addMessage(peer, '', true, newTag(), timerOf(peer), undefined, ref, WAITING);
+        addMessage(peer, '', true, newTag(), timerOf(peer), undefined, ref, WAITING, Date.now(), parts);
+        setReplying(null);
         setNote(what === 'photo' ? t('The photo waits, and goes by itself once the relay can take it.') : t('The file waits, and goes by itself once the relay can take it.'));
       } catch (failed) {
         setNote(t('Not sent, and it could not wait. {error}', { error: errorText(failed) }));
@@ -2868,8 +2960,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           // The last of a run from one side gets the bubble's tail, and room after it.
           const tail = !after || after.mine !== message.mine || dayOf(after.at) !== dayOf(message.at);
           const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
+          const quoted = message.re ? visible.find((m) => m.tag === message.re) : undefined;
           return (
-            <View key={message.id}>
+            <View key={message.id} onLayout={(event) => placed.current.set(message.id, event.nativeEvent.layout.y)}>
               {newDay && message.at ? (
                 <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
                   {dayLabel(message.at)}
@@ -2877,17 +2970,25 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
               ) : null}
               <Pressable
                 onPress={message.voice ? () => void play(message) : message.file ? () => openFile(message) : undefined}
-                onLongPress={() => deleteMessage(message)}
-                accessibilityHint={
-                  message.voice ? t('Tap to play, long press to delete') : message.file ? t('Tap to open, long press to delete') : t('Long press to delete')
-                }
+                onLongPress={() => setMenuFor(message)}
+                accessibilityHint={message.voice ? t('Tap to play, hold for more') : message.file ? t('Tap to open, hold for more') : t('Hold for more')}
                 style={[
                   styles.bubble,
                   message.mine ? b.mine : b.theirs,
                   message.file?.kind === 'photo' && styles.photoBubble,
                   tail && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+                  (message.myReaction || message.theirReaction) && styles.reacted,
+                  lit === message.id && styles.lit,
                 ]}
               >
+                {message.re ? (
+                  <Quote
+                    name={quoted ? (quoted.mine ? t('You') : selectedName) : ''}
+                    line={quoted ? messageLine(quoted) : ''}
+                    ink={ink}
+                    onPress={() => goTo(message.peer, message.re!)}
+                  />
+                ) : null}
                 {message.file ? (
                   <Attachment file={message.file} uri={photos[message.file.id]} state={taking[`${message.peer}|${message.tag}`]} ink={ink} />
                 ) : (
@@ -2901,12 +3002,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                 )}
                 <Text style={[ink, styles.time]}>{[message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>
               </Pressable>
+              <Reactions
+                signs={[message.theirReaction, message.myReaction].filter((sign): sign is string => !!sign)}
+                mine={message.myReaction}
+                mineSide={message.mine}
+                onPress={() => setMenuFor(message)}
+              />
             </View>
           );
         })}
       </ScrollView>
       {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
       <View style={styles.dock}>
+        {replying && replying.peer === selected ? (
+          <Quote
+            name={replying.mine ? t('You') : selectedName}
+            line={messageLine(replying)}
+            onPress={() => goTo(replying.peer, replying.tag)}
+            onClose={() => setReplying(null)}
+          />
+        ) : null}
         <Input
           value={draft}
           onChangeText={setDraft}
@@ -2953,6 +3068,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           </Row>
         ) : null}
       </View>
+      <MessageMenu
+        visible={menuFor !== null && shown}
+        onClose={() => setMenuFor(null)}
+        line={menuFor ? messageLine(menuFor) : ''}
+        reaction={menuFor?.myReaction}
+        onReact={menuFor && theyHave(menuFor) ? (emoji) => void react(menuFor, emoji) : undefined}
+        actions={menuFor ? menuActions(menuFor) : []}
+      />
       <Sheet visible={sendMenu} onClose={() => setSendMenu(false)} title={t('Send')}>
         {draft.trim() ? (
           <>
@@ -3363,6 +3486,15 @@ const makeStyles = (colors: Colors) =>
       paddingBottom: 6,
       paddingHorizontal: space.md,
       gap: 2,
+    },
+    // A message with reactions leaves room for them under it.
+    reacted: {
+      marginBottom: 0,
+    },
+    // A message gone to, lit a moment.
+    lit: {
+      borderWidth: 2,
+      borderColor: colors.primary,
     },
     // A photo fills its bubble, with a thin edge.
     photoBubble: {
