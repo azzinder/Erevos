@@ -1,10 +1,11 @@
 /**
- * Erevos on a computer (Linux and macOS): the app's web build in Electron, as LPHL FASOULI does it.
+ * Erevos on a computer (Linux, macOS and Windows): the app's web build in Electron, as LPHL FASOULI
+ * does it.
  *
  * The app is served from its own origin, app://erevos, which also answers the shell paths the app
  * uses (app/lib/shell.ts), only with the token the page was given in its address (#erevos-token=…):
  *   /__secret?key=…            the keystore: small values sealed with the system's keyring (on a
- *                              Mac the Keychain), in secrets.json
+ *                              Mac the Keychain, on Windows the user's own key), in secrets.json
  * Reading what is not there answers 204, no content.
  *   /__file?name=…             the app's own files, already sealed by the app, in the folder files/
  *   /__files?prefix=…          their names
@@ -18,7 +19,8 @@
  *   /__latest                  the latest release's version.json (app/lib/updates.ts), asked for
  *                              here: GitHub's downloads do not answer a page's own requests
  * The app's data is in the folder Electron gives it (~/.config/Erevos, on a Mac
- * ~/Library/Application Support/Erevos).
+ * ~/Library/Application Support/Erevos, on Windows %APPDATA%\Erevos). The page is also told, in its
+ * address, which package it runs from (#erevos-system=…), so Check for updates names the file to take.
  *
  * With --smoke the app opens, waits for its first screen, says so and quits: the check the GitHub
  * runners make of each build (.github/workflows/desktop.yml), where nobody can look.
@@ -32,12 +34,27 @@ const { Lan } = require('./lan');
 const ORIGIN = 'app://erevos';
 const WEB = path.join(__dirname, 'web');
 const MAC = process.platform === 'darwin';
+const WINDOWS = process.platform === 'win32';
 const SMOKE = process.argv.includes('--smoke');
 
 // Its data folder, its Keychain item ("Erevos Safe Storage") and its menu are named after it; the
 // name may never change, or it would start from an empty folder.
 app.setName('Erevos');
 app.setPath('userData', path.join(app.getPath('appData'), 'Erevos'));
+// On Windows the task bar keeps the window with the installer's shortcut by this id, the build's
+// appId (package.json); without it a pinned Erevos and the running one show as two.
+if (WINDOWS) app.setAppUserModelId('app.erevos');
+
+/**
+ * Which package this is, as app/lib/updates.ts packageFile names its file: the Windows installer or
+ * the portable .exe (which says so in its environment), the Mac's, the AppImage (likewise) or the
+ * Arch package.
+ */
+function system() {
+  if (WINDOWS) return process.env.PORTABLE_EXECUTABLE_FILE ? 'windows-portable' : 'windows';
+  if (MAC) return 'macos';
+  return process.env.APPIMAGE ? 'linux-appimage' : 'linux';
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -339,7 +356,7 @@ function createWindow() {
     title: 'Erevos',
     autoHideMenuBar: true,
     backgroundColor: '#0D0B09',
-    // On Linux the window shows this in the task bar; a Mac takes the app's own icon.
+    // On Linux and Windows the window shows this in the task bar; a Mac takes the app's own icon.
     ...(MAC ? {} : { icon: path.join(__dirname, 'icon.png') }),
     show: !SMOKE,
     webPreferences: { contextIsolation: true, sandbox: true },
@@ -355,11 +372,16 @@ function createWindow() {
       if (/^https?:/.test(url)) shell.openExternal(url);
     }
   });
-  window.loadURL(`${ORIGIN}/#erevos-token=${TOKEN}`);
+  window.loadURL(`${ORIGIN}/#erevos-token=${TOKEN}&erevos-system=${system()}`);
   window.on('closed', () => {
     window = null;
   });
   if (SMOKE) smoke(window);
+}
+
+/** Says how the smoke check went and quits once it is written: on Windows a pipe is written later. */
+function smokeDone(text, code) {
+  process.stdout.write(`${text}\n`, () => app.exit(code));
 }
 
 /** Waits for the app's first screen (the chats, or the password screen), says what it shows, and quits. */
@@ -369,11 +391,9 @@ function smoke(win) {
     const text = await win.webContents.executeJavaScript('document.body ? document.body.innerText : ""').catch(() => '');
     const core = await win.webContents.executeJavaScript('!!globalThis.erevosCore').catch(() => false);
     if (/Erevos/.test(text) && /relay|password/i.test(text)) {
-      console.log(`SMOKE OK core=${core} secrets=${secretStore()}\n${text.slice(0, 400)}`);
-      app.exit(core ? 0 : 2);
+      smokeDone(`SMOKE OK core=${core} secrets=${secretStore()}\n${text.slice(0, 400)}`, core ? 0 : 2);
     } else if (Date.now() - started > 60_000) {
-      console.log(`SMOKE FAILED: no first screen after 60 s\n${text.slice(0, 400)}`);
-      app.exit(1);
+      smokeDone(`SMOKE FAILED: no first screen after 60 s\n${text.slice(0, 400)}`, 1);
     } else {
       setTimeout(look, 1000);
     }

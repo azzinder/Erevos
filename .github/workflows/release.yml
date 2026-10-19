@@ -2,10 +2,10 @@ name: release
 
 # Builds every Erevos package and publishes them together as a GitHub release, v0.1.<build>:
 # the Android APK (signed with the release key, see scripts/make-release-keystore.sh), Linux
-# (Arch package and AppImage), the macOS disk image, the Sailfish OS RPM and the web app (to be
-# signed on the release computer, deploy/web/publish.sh). Each release
-# lists every file's SHA-256 in SHA256SUMS. A package whose job fails is left out; the others
-# still go out.
+# (Arch package and AppImage), the macOS disk image, Windows (installer and portable .exe), the
+# Sailfish OS RPM and the web app (to be signed on the release computer, deploy/web/publish.sh).
+# Each release lists every file's SHA-256 in SHA256SUMS. A package whose job fails is left out;
+# the others still go out.
 #
 # When: every night, if main changed since the last release, and whenever started by hand
 # (Actions, release, Run workflow). Not on every push: a full build takes over an hour of
@@ -169,7 +169,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: gh release upload "build-$EREVOS_BUILD" erevos-android.apk --clobber
 
-  # Linux, and the web build with its core that the macOS and Sailfish jobs package too.
+  # Linux, and the web build with its core that the macOS and Windows jobs package too.
   linux:
     needs: version
     if: ${{ needs.version.outputs.build == 'true' }}
@@ -200,8 +200,8 @@ jobs:
           npx expo export --clear --platform web --output-dir ../desktop/web
           test -f ../desktop/web/core/erevos_ffi_bg.wasm
 
-      # Handed over before the Linux packages, so a failure there does not hold the Mac back.
-      - name: Hand the desktop web build to the macOS job
+      # Handed over before the Linux packages, so a failure there does not hold the Mac and Windows back.
+      - name: Hand the desktop web build to the macOS and Windows jobs
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -305,6 +305,56 @@ jobs:
           cp desktop/dist/*.dmg up/erevos-macos.dmg
           gh release upload "build-$EREVOS_BUILD" up/erevos-macos.dmg --clobber
 
+  # Windows 10 and 11 (x64): an installer, which installs for this user without asking for an
+  # administrator, and a portable .exe that runs without installing. Neither is signed: that needs a
+  # code signing certificate, which costs money every year, so Windows' SmartScreen warns before
+  # the first start. A Windows minute counts as two, so none while the repository variable
+  # EREVOS_WINDOWS is "off".
+  windows:
+    needs: [version, linux]
+    if: ${{ !cancelled() && needs.version.outputs.build == 'true' && vars.EREVOS_WINDOWS != 'off' }}
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Take the desktop web build from the Linux job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release download "build-$EREVOS_BUILD" -p desktop-web.tar.gz
+          tar -xzf desktop-web.tar.gz -C desktop
+          test -f desktop/web/core/erevos_ffi_bg.wasm
+      - run: npm ci
+        working-directory: desktop
+      - name: Build the installer and the portable app
+        working-directory: desktop
+        run: npx electron-builder --win nsis portable --x64 --publish never -c.extraMetadata.version=$EREVOS_VERSION
+      # The app both of them hold, as it is before it is packed.
+      - name: Start the app and wait for its first screen
+        run: |
+          set -euo pipefail
+          desktop/dist/win-unpacked/Erevos.exe --smoke | tee smoke.log
+          grep -q "SMOKE OK core=true secrets=encrypted" smoke.log
+      - name: Hand the installer and the portable app to the publish job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir up
+          cp desktop/dist/erevos-windows-x64-setup.exe desktop/dist/erevos-windows-x64-portable.exe up/
+          gh release upload "build-$EREVOS_BUILD" up/* --clobber
+
   sailfish:
     needs: version
     if: ${{ needs.version.outputs.build == 'true' }}
@@ -347,7 +397,7 @@ jobs:
           gh release upload "build-$EREVOS_BUILD" up/* --clobber
 
   publish:
-    needs: [version, apk, linux, macos, sailfish]
+    needs: [version, apk, linux, macos, windows, sailfish]
     if: ${{ !cancelled() && needs.version.outputs.build == 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -387,12 +437,14 @@ jobs:
           package erevos-linux-x86_64.pacman "**Arch Linux / CachyOS** (x86_64): \`sudo pacman -U erevos-linux-x86_64.pacman\`"
           package erevos-linux-x86_64.AppImage "**Other Linux** (x86_64): make erevos-linux-x86_64.AppImage executable and run it (needs FUSE 2)."
           package erevos-macos.dmg "**macOS** 13 or newer (Apple silicon and Intel): open erevos-macos.dmg and drag Erevos to Applications. It has no paid Apple signature: the first time, and after each update, allow it under System Settings → Privacy & Security → Open Anyway."
+          package erevos-windows-x64-setup.exe "**Windows** 10 or 11 (x64): run erevos-windows-x64-setup.exe, or erevos-windows-x64-portable.exe to use Erevos without installing it. It has no paid signature: the first time, Windows says it protected your PC; tap More info, then Run anyway."
           package erevos-sailfish-aarch64.rpm "**Sailfish OS** 5 (aarch64): install erevos-sailfish-aarch64.rpm."
           package erevos-web.tar.gz "**Web app** (iPhone and any browser): erevos-web.tar.gz is not signed yet. It is served once signed on the release computer: \`deploy/web/publish.sh $EREVOS_VERSION <user@server> <address>\`."
           missing=""
           [ -f files/erevos-android.apk ] || missing="$missing Android,"
           [ -f files/erevos-macos.dmg ] || missing="$missing macOS,"
           [ -f files/erevos-linux-x86_64.AppImage ] || missing="$missing Linux,"
+          [ -f files/erevos-windows-x64-setup.exe ] || missing="$missing Windows,"
           [ -f files/erevos-sailfish-aarch64.rpm ] || missing="$missing Sailfish OS,"
           [ -f files/erevos-web.tar.gz ] || missing="$missing web app,"
           cat > notes.md <<NOTES

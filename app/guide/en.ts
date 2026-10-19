@@ -23,7 +23,8 @@ shows in the app's language, see [Language](#start).
 ## Getting started {#start}
 
 Erevos is downloaded from its releases page, one file for each system: see [Updates](#updates) for where, and how to
-update it. It runs on Android, on a computer (Linux and macOS), on Sailfish OS and, from the browser, on an iPhone.
+update it. It runs on Android, on a computer (Linux, macOS and Windows), on Sailfish OS and, from the browser, on an
+iPhone.
 
 The home screen is the list of your chats, the one that moved last at the top. Each shows the contact's picture,
 the last message with its marks, when it came, and how many of their messages you have not read. A clock beside it
@@ -663,12 +664,15 @@ always reads well, on glass too.
 
 ## On a computer {#desktop}
 
-Erevos also runs on a computer, Linux or macOS, as an app of its own. It chats through a relay, end-to-end encrypted
-as on the phone, and keeps its contacts, messages and settings sealed the same way.
+Erevos also runs on a computer, Linux, macOS or Windows, as an app of its own. It chats through a relay, end-to-end
+encrypted as on the phone, and keeps its contacts, messages and settings sealed the same way.
 
 1. Install it. On Linux: the package for Arch-based systems (\`erevos-linux-x86_64.pacman\`, with \`sudo pacman -U\`) or the
    AppImage. On a Mac: open the disk image and drag Erevos to Applications. It has no paid Apple signature, so the
-   first time allow it under **System Settings → Privacy & Security → Open Anyway**.
+   first time allow it under **System Settings → Privacy & Security → Open Anyway**. On Windows 10 or 11: run
+   \`erevos-windows-x64-setup.exe\`, which installs Erevos for you alone, with no administrator, and puts it in the
+   Start menu; or keep \`erevos-windows-x64-portable.exe\` where you like and run it, with nothing installed. Neither
+   has a paid signature, so the first time Windows says it protected your PC: tap **More info**, then **Run anyway**.
 2. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay). **Copy my contact link** copies
    your link, to paste where it should go.
 
@@ -676,13 +680,18 @@ as on the phone, and keeps its contacts, messages and settings sealed the same w
   as a phone does, see [Chat with a nearby phone](#nearby). The rest is the same: spaces and the second password,
   hidden chats, voice messages, imported chats and backups.
 - **Where it keeps things:** in its own folder (on Linux \`~/.config/Erevos\`, on a Mac
-  \`~/Library/Application Support/Erevos\`), sealed as on the phone. Its keystore is sealed with the system's keyring
-  (on a Mac the Keychain). A Linux system without a keyring keeps it as it is: set a password lock there.
+  \`~/Library/Application Support/Erevos\`, on Windows \`%APPDATA%\\Erevos\`), sealed as on the phone. Its keystore is
+  sealed with the system's keyring (on a Mac the Keychain, on Windows the key of your Windows account). A Linux system
+  without a keyring keeps it as it is: set a password lock there. The portable Windows app keeps its things in the
+  same folder as the installed one, and uninstalling leaves them there.
+- **Windows' firewall** asks, the first time Erevos opens, whether it may use the network. Allow it on private
+  networks, or phones and computers on the same Wi-Fi cannot reach it; relays work either way.
 - **Voice messages** recorded on a computer are Opus, on a phone AAC. Both play on both.
 - **Photos** come from the computer's files; there is no camera. **Save** asks where to put a photo or file.
 - **A computer and a phone are two devices:** they do not share contacts and chats yet. A backup moves everything
   from one to the other, see [Backups](#backup), and from then on use only the one.
-- **Tested so far** on Linux. The Mac version is built and opened on GitHub's Mac computers, not yet by a person.
+- **Tested so far** on Linux. The Mac and Windows versions are built and opened on GitHub's computers, not yet by a
+  person.
 
 ## On an iPhone, from the browser {#iphone}
 
@@ -765,8 +774,8 @@ or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI
    space, Erevos does not check, since that would go around Tor.
 3. When there is a new version: on Android tap **Install**. It downloads, is checked against the release (its size and
    SHA-256), and Android's installer opens: tap **Install** there. The first time, Android asks to allow installing
-   apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take the file as
-   in the table below.
+   apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take the file
+   Erevos names, the one of the package you have, and update as in the table below.
 
 The rest of this section is for updating by hand.
 
@@ -785,6 +794,8 @@ costs a minute and covers any surprise.
 | **Linux, Arch-based** | \`sudo pacman -U erevos-linux-x86_64.pacman\` |
 | **Linux, AppImage** | Replace the old \`erevos-linux-x86_64.AppImage\` with the new one and make it executable. |
 | **macOS** | Open \`erevos-macos.dmg\` and drag Erevos to Applications, **Replace**. Then allow it again under **System Settings → Privacy & Security → Open Anyway**. |
+| **Windows, installed** | Close Erevos and run the new \`erevos-windows-x64-setup.exe\`: it installs over the one you have. Windows may warn again: **More info**, then **Run anyway**. |
+| **Windows, portable** | Close Erevos and put the new \`erevos-windows-x64-portable.exe\` in the place of the old one. |
 | **Sailfish OS** | Tap \`erevos-sailfish-aarch64.rpm\` in **Files**, then **Install**, or \`pkcon install-local erevos-sailfish-aarch64.rpm\`. |
 | **iPhone, browser** | Nothing to do: the web app takes a new signed version by itself when it opens, see [On an iPhone](#iphone). |
 
@@ -829,7 +840,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
 | **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
 | **Photos and files** | End-to-end encrypted, through the relay's file store, in pieces of one size: the relay sees how many and when, so roughly how big. Your relay sees your address, as for messages; the contact takes them through their own relay. Photos lose their place, phone and time, unless sent as a file; a file keeps what it says inside. Sealed on the phone in their pieces, shown from memory. Saved copies are outside Erevos. Not in backups yet. | Backups that hold them. |
-| **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring; a Linux system without one keeps it as it is. | |
+| **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring (on Windows, your account's key); a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". | |
@@ -851,7 +862,7 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   more than four people, through a server the call moves to by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).
-- **More systems:** more than one device for the same person. Linux and macOS are here, see
+- **More systems:** more than one device for the same person. Linux, macOS and Windows are here, see
   [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
   [On Sailfish OS](#sailfish); and so are backups, see [Backups](#backup).
 
@@ -900,5 +911,6 @@ whom.
 
 ### Does it work on an iPhone or a computer?
 
-On a computer, yes: Linux and macOS, see [On a computer](#desktop). On an iPhone not yet, see [What is coming](#coming).
+On a computer, yes: Linux, macOS and Windows, see [On a computer](#desktop).
+On an iPhone not yet, see [What is coming](#coming).
 `;
