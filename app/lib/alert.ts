@@ -1,4 +1,5 @@
 import { Alert, Platform, type AlertButton } from 'react-native';
+import { t } from './i18n';
 
 // Questions with buttons, as Alert.alert asks them on the phone. The web build has no Alert with
 // buttons (react-native-web's does nothing), so there the app's own sheet asks them
@@ -32,7 +33,7 @@ export function ask(title: string, message: string, buttons: AlertButton[]): voi
 export function confirm(title: string, message: string, action = title): Promise<boolean> {
   return new Promise((resolve) => {
     ask(title, message, [
-      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+      { text: t('Cancel'), style: 'cancel', onPress: () => resolve(false) },
       { text: action, style: 'destructive', onPress: () => resolve(true) },
     ]);
   });

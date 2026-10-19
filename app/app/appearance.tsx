@@ -26,6 +26,7 @@ import {
 import { bubbleStyles } from '../theme/bubbles';
 import { useStyles, useTheme } from '../theme/context';
 import { GLASS_KINDS, LOOK_NAMES, type GlassKind, type LookName } from '../theme/glass';
+import { mark, t } from '../lib/i18n';
 import { pickWallpaper } from '../lib/pick-avatar';
 import { savePhoto } from '../lock/avatar-photos';
 import { BUBBLE_SHAPES, WALLPAPERS, type BubbleShape, type Wallpaper } from '../theme/look';
@@ -37,44 +38,45 @@ import { BUBBLE_SHAPES, WALLPAPERS, type BubbleShape, type Wallpaper } from '../
 // Each space keeps its own (theme/look.ts), and every space shows this same screen. A chat can
 // have its own too, chosen with the same choices from its details (app/chat.tsx).
 
-const LOOK_LABELS: Record<LookName, string> = { flat: 'Flat', glass: 'Glass' };
-const GLASS_KIND_LABELS: Record<GlassKind, string> = { cards: 'Panes', sheet: 'One pane' };
+// Proper names of styles and palettes stay as they are; the rest is translated where it is shown.
+const LOOK_LABELS: Record<LookName, string> = { flat: mark('Flat'), glass: 'Glass' };
+const GLASS_KIND_LABELS: Record<GlassKind, string> = { cards: mark('Panes'), sheet: mark('One pane') };
 const STYLE_LABELS: Record<StyleName, string> = { classic: 'Classic', modernist: 'Modernist', nocturne: 'Nocturne',
   neon: 'Neon',
   matrix: 'Matrix',
   paper: 'Paper',
   aurora: 'Aurora',
-  custom: 'Custom',
+  custom: mark('Custom'),
 };
-const BUBBLE_LABELS: Record<BubbleShape, string> = { round: 'Round', square: 'Square', line: 'Line' };
+const BUBBLE_LABELS: Record<BubbleShape, string> = { round: mark('Round'), square: mark('Square'), line: mark('Line') };
 const WALLPAPER_LABELS: Record<Wallpaper, string> = {
-  auto: 'Style default',
-  plain: 'Plain',
-  dots: 'Dots',
-  grid: 'Grid',
-  stripes: 'Stripes',
-  stars: 'Stars',
-  bokeh: 'Lights',
-  gradient: 'Gradient',
-  photo: 'Photo',
+  auto: mark('Style default'),
+  plain: mark('Plain'),
+  dots: mark('Dots'),
+  grid: mark('Grid'),
+  stripes: mark('Stripes'),
+  stars: mark('Stars'),
+  bokeh: mark('Lights'),
+  gradient: mark('Gradient'),
+  photo: mark('Photo'),
 };
-const THEME_LABELS: Record<ThemePref, string> = { system: 'System', light: 'Light', dark: 'Dark' };
-const FRAME_TEXT_LABELS: Record<FrameText, string> = { white: 'White', palette: 'As in the palette', custom: 'My color' };
+const THEME_LABELS: Record<ThemePref, string> = { system: mark('System'), light: mark('Light'), dark: mark('Dark') };
+const FRAME_TEXT_LABELS: Record<FrameText, string> = { white: mark('White'), palette: mark('As in the palette'), custom: mark('My color') };
 const PALETTE_LABELS: Record<PaletteChoice, string> = {
-  auto: 'Style default',
+  auto: mark('Style default'),
   house: 'LPHL House',
-  thermaikos: 'Thermaikos',
-  vardaris: 'Vardaris',
-  kipos: 'Garden',
-  keramidi: 'Terracotta',
-  lychnari: 'Oil lamp',
-  vesperi: 'Vesper',
+  thermaikos: mark('Thermaikos'),
+  vardaris: mark('Vardaris'),
+  kipos: mark('Garden'),
+  keramidi: mark('Terracotta'),
+  lychnari: mark('Oil lamp'),
+  vesperi: mark('Vesper'),
   modernist: 'Modernist',
-  rodakini: 'Peach',
-  fistiki: 'Pistachio',
-  galazio: 'Sky blue',
-  lila: 'Lilac',
-  custom: 'My color',
+  rodakini: mark('Peach'),
+  fistiki: mark('Pistachio'),
+  galazio: mark('Sky blue'),
+  lila: mark('Lilac'),
+  custom: mark('My color'),
 };
 
 /** A palette tile, in the given style and scheme: accent, background and text colour side by side, then the name. */
@@ -87,7 +89,7 @@ function PaletteTile({ choice, style, scheme, selected, onPress }: {
 }) {
   const { colors, look } = useTheme();
   const c = buildColors(style, scheme, choice, look);
-  const label = PALETTE_LABELS[choice];
+  const label = t(PALETTE_LABELS[choice]);
   return (
     <Pressable
       onPress={onPress}
@@ -122,7 +124,7 @@ export default function Appearance() {
 }
 
 /** The Appearance screen's choices: the space's look, or a chat's own (`title` and `top` then say whose). */
-export function AppearanceEditor({ title = 'Appearance', top }: { title?: string; top?: ReactNode }) {
+export function AppearanceEditor({ title, top }: { title?: string; top?: ReactNode }) {
   const { look, setLook, scheme, colors } = useTheme();
   const system = useColorScheme();
   const styles = useStyles(makeStyles);
@@ -138,7 +140,7 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
       if (!bytes) return;
       await setLook({ wallpaper: 'photo', wallpaperPhoto: await savePhoto(bytes) });
     } catch (error) {
-      setPhotoError(error instanceof Error ? error.message : 'The photo could not be read.');
+      setPhotoError(error instanceof Error ? error.message : t('The photo could not be read.'));
     }
   }
 
@@ -148,7 +150,7 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
   const nocturne = isFixed(look.style);
   const custom = look.style === 'custom';
   const scene = !takesGlass(look.style);
-  const styleName = STYLE_LABELS[look.style];
+  const styleName = t(STYLE_LABELS[look.style]);
   const bubbles = bubbleStyles(look.bubbles, colors);
   const paletteStyle = nocturne ? look.prevStyle : look.style;
   const paletteScheme = nocturne ? resolveScheme(look.prevStyle, look.theme, system) : scheme;
@@ -157,47 +159,46 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
 
   return (
     <Page>
-      <Text variant="title">{title}</Text>
+      <Text variant="title">{title ?? t('Appearance')}</Text>
       {top}
 
-      <SectionTitle title="Look" />
+      <SectionTitle title={t('Look')} />
       <Row wrap>
         {LOOK_NAMES.map((lk) => (
-          <Chip key={lk} label={LOOK_LABELS[lk]} selected={!scene && look.look === lk} disabled={scene} onPress={() => setLook({ look: lk })} />
+          <Chip key={lk} label={t(LOOK_LABELS[lk])} selected={!scene && look.look === lk} disabled={scene} onPress={() => setLook({ look: lk })} />
         ))}
       </Row>
       {scene ? (
         <Text variant="caption" tone="faint">
           {isScene(look.style)
-            ? `${styleName} draws its own scene behind the screens, so it takes no glass.`
-            : 'Custom takes no glass: its background is the one you chose.'}
+            ? t('{style} draws its own scene behind the screens, so it takes no glass.', { style: styleName })
+            : t('Custom takes no glass: its background is the one you chose.')}
         </Text>
       ) : null}
       {look.look === 'glass' && !scene ? (
         <>
-          <SectionTitle title="Kind of glass" />
+          <SectionTitle title={t('Kind of glass')} />
           <Row wrap>
             {GLASS_KINDS.map((k) => (
-              <Chip key={k} label={GLASS_KIND_LABELS[k]} selected={look.glassKind === k} onPress={() => setLook({ glassKind: k })} />
+              <Chip key={k} label={t(GLASS_KIND_LABELS[k])} selected={look.glassKind === k} onPress={() => setLook({ glassKind: k })} />
             ))}
           </Row>
           <Text variant="caption" tone="faint">
-            Panes: each card is a pane of glass over the wallpaper, as on the LPHL admin panel. One pane: each screen lies on
-            one frosted pane, as on lphl.nekten.eu.
+            {t('Panes: each card is a pane of glass over the wallpaper, as on the LPHL admin panel. One pane: each screen lies on one frosted pane, as on lphl.nekten.eu.')}
           </Text>
         </>
       ) : null}
 
-      <SectionTitle title="Style" />
+      <SectionTitle title={t('Style')} />
       <Row wrap>
         {STYLES.map((st) => (
-          <Chip key={st} label={STYLE_LABELS[st]} selected={look.style === st} onPress={() => (st !== look.style ? setLook({ style: st }) : undefined)} />
+          <Chip key={st} label={t(STYLE_LABELS[st])} selected={look.style === st} onPress={() => (st !== look.style ? setLook({ style: st }) : undefined)} />
         ))}
       </Row>
 
       {custom ? (
         <>
-          <SectionTitle title="Custom: background" />
+          <SectionTitle title={t('Custom: background')} />
           <View style={styles.dots}>
             {CUSTOM_GROUNDS.map((hex) => {
               const selected = look.customGround.toUpperCase() === hex;
@@ -213,7 +214,7 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
               );
             })}
           </View>
-          <SectionTitle title="Custom: accent" />
+          <SectionTitle title={t('Custom: accent')} />
           <View style={styles.dots}>
             {customAccentChoices().map((hex) => {
               const selected = look.customAccent.toUpperCase() === hex;
@@ -230,24 +231,28 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
             })}
           </View>
           <Text variant="caption" tone="faint">
-            The text and the surfaces are made from the background, and every color is checked to read on it.
+            {t('The text and the surfaces are made from the background, and every color is checked to read on it.')}
           </Text>
         </>
       ) : null}
 
-      <SectionTitle title="Theme" />
+      <SectionTitle title={t('Theme')} />
       <Row wrap>
         {THEMES.map((th) => (
-          <Chip key={th} label={THEME_LABELS[th]} selected={look.theme === th} disabled={nocturne} onPress={() => setLook({ theme: th })} />
+          <Chip key={th} label={t(THEME_LABELS[th])} selected={look.theme === th} disabled={nocturne} onPress={() => setLook({ theme: th })} />
         ))}
       </Row>
       {nocturne ? (
         <Text variant="caption" tone="faint">
-          {custom ? 'Custom is light or dark as its background is.' : `${styleName} is always ${scheme}.`}
+          {custom
+            ? t('Custom is light or dark as its background is.')
+            : scheme === 'dark'
+              ? t('{style} is always dark.', { style: styleName })
+              : t('{style} is always light.', { style: styleName })}
         </Text>
       ) : null}
 
-      <SectionTitle title="Colors" />
+      <SectionTitle title={t('Colors')} />
       <View style={styles.tiles}>
         {PALETTE_CHOICES.map((p) => (
           <PaletteTile
@@ -266,12 +271,12 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
         ))}
       </View>
 
-      <SectionTitle title="Text on colored areas" />
+      <SectionTitle title={t('Text on colored areas')} />
       <Row wrap>
         {FRAME_TEXTS.map((f) => (
           <Chip
             key={f}
-            label={FRAME_TEXT_LABELS[f]}
+            label={t(FRAME_TEXT_LABELS[f])}
             selected={look.frameText === f}
             disabled={nocturne}
             onPress={() => {
@@ -284,16 +289,16 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
       </Row>
       {nocturne ? (
         <Text variant="caption" tone="faint">
-          {styleName} keeps its own colors here.
+          {t('{style} keeps its own colors here.', { style: styleName })}
         </Text>
       ) : null}
 
-      <SectionTitle title="Wallpaper" />
+      <SectionTitle title={t('Wallpaper')} />
       <Row wrap>
         {WALLPAPERS.map((w) => (
           <Chip
             key={w}
-            label={WALLPAPER_LABELS[w]}
+            label={t(WALLPAPER_LABELS[w])}
             selected={look.wallpaper === w}
             onPress={() => (w === 'photo' && !look.wallpaperPhoto ? void choosePhoto() : setLook({ wallpaper: w }))}
           />
@@ -301,13 +306,13 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
       </Row>
       {look.wallpaper === 'photo' ? (
         <Row wrap>
-          <TextButton title="Change photo" onPress={() => void choosePhoto()} />
+          <TextButton title={t('Change photo')} onPress={() => void choosePhoto()} />
         </Row>
       ) : null}
       <Text variant="caption" tone="faint">
         {look.wallpaper === 'photo'
-          ? 'Your photo, made smaller and drawn anew so nothing it said besides its picture is kept, then sealed. A veil over it keeps the text readable.'
-          : `Drawn faintly in the accent, behind every screen. Style default keeps ${styleName}'s own.`}
+          ? t('Your photo, made smaller and drawn anew so nothing it said besides its picture is kept, then sealed. A veil over it keeps the text readable.')
+          : t("Drawn faintly in the accent, behind every screen. Style default keeps {style}'s own.", { style: styleName })}
       </Text>
       {photoError ? (
         <Text variant="caption" color={colors.danger}>
@@ -315,34 +320,34 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
         </Text>
       ) : null}
 
-      <SectionTitle title="Messages" />
+      <SectionTitle title={t('Messages')} />
       <Row wrap>
         {BUBBLE_SHAPES.map((b) => (
-          <Chip key={b} label={BUBBLE_LABELS[b]} selected={look.bubbles === b} onPress={() => setLook({ bubbles: b })} />
+          <Chip key={b} label={t(BUBBLE_LABELS[b])} selected={look.bubbles === b} onPress={() => setLook({ bubbles: b })} />
         ))}
       </Row>
 
-      <SectionTitle title="Preview" />
+      <SectionTitle title={t('Preview')} />
       <Card>
         <View style={[styles.bubble, bubbles.theirs, bubbles.theirsTail]}>
-          <Text style={[{ fontSize: 15 }, bubbles.theirsText]}>Καλημέρα! Are we still on for tonight?</Text>
+          <Text style={[{ fontSize: 15 }, bubbles.theirsText]}>{t('Καλημέρα! Are we still on for tonight?')}</Text>
         </View>
         <View style={[styles.bubble, bubbles.mine, bubbles.mineTail]}>
-          <Text style={[{ fontSize: 15 }, bubbles.mineText]}>Yes, see you at eight.</Text>
+          <Text style={[{ fontSize: 15 }, bubbles.mineText]}>{t('Yes, see you at eight.')}</Text>
         </View>
         <Row wrap>
-          <Button title="Send" compact onPress={() => undefined} />
-          <Button title="Hidden chats" kind="secondary" compact onPress={() => undefined} />
+          <Button title={t('Send')} compact onPress={() => undefined} />
+          <Button title={t('Hidden chats')} kind="secondary" compact onPress={() => undefined} />
         </Row>
       </Card>
 
       {top ? null : (
         <Text variant="caption" tone="muted" style={styles.hint}>
-          Each space keeps its own look. The password screen shows the look last used.
+          {t('Each space keeps its own look. The password screen shows the look last used.')}
         </Text>
       )}
 
-      <Sheet visible={pickColor} onClose={() => setPickColor(false)} title="My color">
+      <Sheet visible={pickColor} onClose={() => setPickColor(false)} title={t('My color')}>
         <View style={styles.dots}>
           {customAccentChoices().map((hex) => {
             const selected = look.customAccent.toUpperCase() === hex;
@@ -363,7 +368,7 @@ export function AppearanceEditor({ title = 'Appearance', top }: { title?: string
         </View>
       </Sheet>
 
-      <Sheet visible={pickTextColor} onClose={() => setPickTextColor(false)} title="Text color on colored areas">
+      <Sheet visible={pickTextColor} onClose={() => setPickTextColor(false)} title={t('Text color on colored areas')}>
         <View style={styles.dots}>
           {frameTextChoices().map((hex) => {
             const selected = look.frameTextColor.toUpperCase() === hex;

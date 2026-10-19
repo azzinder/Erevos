@@ -286,15 +286,17 @@ internal object SmsStore {
   /** A notice that something came, without who sent it or what it says. */
   fun notifyNew(context: Context) {
     val notifications = context.getSystemService(NotificationManager::class.java) ?: return
+    // In the app's language, as the call module keeps it (erevos-call Notices.kt).
+    val greek = context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null) == "el"
     if (Build.VERSION.SDK_INT >= 26) {
-      notifications.createNotificationChannel(NotificationChannel(CHANNEL, "Messages", NotificationManager.IMPORTANCE_HIGH))
+      notifications.createNotificationChannel(NotificationChannel(CHANNEL, if (greek) "Μηνύματα" else "Messages", NotificationManager.IMPORTANCE_HIGH))
     }
     val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
     val open = PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(context)
     val notice = builder
       .setSmallIcon(android.R.drawable.stat_notify_chat)
-      .setContentTitle("New message")
+      .setContentTitle(if (greek) "Νέο μήνυμα" else "New message")
       .setContentIntent(open)
       .setAutoCancel(true)
       .build()

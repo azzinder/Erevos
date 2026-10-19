@@ -1,4 +1,5 @@
 import { fromBase64, randomBytes, sha256Bytes, toBase64, toHex } from './crypto';
+import { t } from './i18n';
 
 // Messages to and from contacts over the nearby radio link (modules/erevos-radio): Wi-Fi Aware or
 // Bluetooth, phone to phone, with no internet. They are the same end-to-end encrypted packets as
@@ -147,14 +148,14 @@ function decodeItem(bytes: Uint8Array, now: number): { url: string; sealed: Uint
 /** Neither the relay nor a phone nearby took it. */
 export class NoWayError extends Error {
   constructor() {
-    super('There is no relay, and no Erevos phone is linked nearby. Type the relay address in Relay, or come near their phone.');
+    super(t('There is no relay, and no Erevos phone is linked nearby. Type the relay address in Relay, or come near their phone.'));
   }
 }
 
 /** Only a slow link was up, and it does not take something this large. */
 export class TooLargeForLoraError extends Error {
   constructor() {
-    super('Too large for LoRa, which takes only text. It can go once the relay can be reached, or near their phone.');
+    super(t('Too large for LoRa, which takes only text. It can go once the relay can be reached, or near their phone.'));
   }
 }
 

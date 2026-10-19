@@ -9,6 +9,8 @@
 import type { Avatar } from '../lock/e2e-data';
 import { sameNumber } from './sms-invite';
 import { voiceDuration } from './voice';
+import { shownLine } from './call-lines';
+import { t, mark } from './i18n';
 
 export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null; phone?: string };
 
@@ -108,14 +110,14 @@ export function buildInbox(
 }
 
 function preview(message: InboxMessage | undefined): string {
-  if (message?.voice) return `Voice message, ${voiceDuration(message.voice.ms)}`;
-  if (message?.file) return message.file.kind === 'photo' ? 'Photo' : `File: ${message.file.name}`;
-  return message?.text ?? '';
+  if (message?.voice) return t('Voice message, {time}', { time: voiceDuration(message.voice.ms) });
+  if (message?.file) return message.file.kind === 'photo' ? t('Photo') : t('File: {name}', { name: message.file.name });
+  return shownLine(message?.text ?? '');
 }
 
 /** A row's name, or the start of the contact's key when it has none. */
 export function shownName(row: { identity: string; name: string }): string {
-  return row.name || `contact ${row.identity.slice(0, 8)}`;
+  return row.name || t('contact {id}', { id: row.identity.slice(0, 8) });
 }
 
 /** Rows whose name or last message has `query` in it, ignoring case and Greek accents. */
@@ -140,10 +142,10 @@ export type InboxGroup = {
 export function groupRows(groups: InboxGroup[], name: (identity: string) => string, note: (text: string) => string): InboxRow[] {
   return groups.map((g) => {
     const last = g.last;
-    const text = !last ? '' : last.note ? note(last.text) : last.from ? `${name(last.from)}: ${last.text}` : `You: ${last.text}`;
+    const text = !last ? '' : last.note ? note(last.text) : last.from ? `${name(last.from)}: ${shownLine(last.text)}` : t('You: {text}', { text: shownLine(last.text) });
     return {
       identity: `group:${g.id}`,
-      name: g.name || 'Group',
+      name: g.name || t('Group'),
       last: text,
       mine: false,
       mark: 0,
@@ -164,7 +166,7 @@ export function mergeRows(rows: InboxRow[], more: InboxRow[]): InboxRow[] {
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = [mark('Sun'), mark('Mon'), mark('Tue'), mark('Wed'), mark('Thu'), mark('Fri'), mark('Sat')];
 
 /** When a row last moved: the time today, the weekday within a week, or the date. */
 export function rowTime(at: number, now: number): string {
@@ -173,6 +175,6 @@ export function rowTime(at: number, now: number): string {
   const today = new Date(now);
   if (d.toDateString() === today.toDateString()) return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   const midnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-  if (at > midnight - 6 * 24 * 3600 * 1000 && at < midnight) return DAYS[d.getDay()];
+  if (at > midnight - 6 * 24 * 3600 * 1000 && at < midnight) return t(DAYS[d.getDay()]);
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${String(d.getFullYear()).slice(2)}`;
 }

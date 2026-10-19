@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
 
 import { Button, Card, Field, Input, Page, SectionTitle, Text } from '../components/ui';
+import { mark, plural, t } from '../lib/i18n';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
@@ -25,12 +26,12 @@ const SMS_PERMISSIONS = [
 ] as const;
 // Android 15 and later also hold the SMS app role back from an app installed from a browser: its
 // question then does not come, or says the setting is restricted.
-const NOT_CHOSEN =
-  'Choose Erevos in Android\'s Default apps → SMS app. If Android says it is a restricted setting, open Erevos\'s ' +
-  'App info, tap ⋮ at the top right → Allow restricted settings, and choose Erevos again.';
-const RESTRICTED =
-  'Android did not allow it. In Erevos\'s App info, under Permissions → SMS, it may say Restricted setting: then go ' +
-  'back, tap ⋮ at the top right → Allow restricted settings, and allow SMS under Permissions.';
+const NOT_CHOSEN = mark(
+  "Choose Erevos in Android's Default apps → SMS app. If Android says it is a restricted setting, open Erevos's App info, tap ⋮ at the top right → Allow restricted settings, and choose Erevos again.",
+);
+const RESTRICTED = mark(
+  "Android did not allow it. In Erevos's App info, under Permissions → SMS, it may say Restricted setting: then go back, tap ⋮ at the top right → Allow restricted settings, and allow SMS under Permissions.",
+);
 
 export default function SmsSettings() {
   const [status, setStatus] = useState<SmsStatus | null>(smsStatus());
@@ -55,7 +56,7 @@ export default function SmsSettings() {
         setInvites(opened.invites);
         setNames(opened.names);
       })
-      .catch(() => setNote('The SMS settings of this space could not open.'));
+      .catch(() => setNote(t('The SMS settings of this space could not open.')));
     const look = () => {
       const now = smsStatus();
       setStatus(now);
@@ -80,8 +81,8 @@ export default function SmsSettings() {
         <Text variant="title">SMS</Text>
         <Text tone="muted">
           {Platform.OS === 'android'
-            ? 'This build of Erevos has no SMS part yet. It comes with the next build of the app.'
-            : 'Only Android lets another app be the SMS app.'}
+            ? t('This build of Erevos has no SMS part yet. It comes with the next build of the app.')
+            : t('Only Android lets another app be the SMS app.')}
         </Text>
       </Page>
     );
@@ -107,7 +108,7 @@ export default function SmsSettings() {
     const answers = await PermissionsAndroid.requestMultiple([...SMS_PERMISSIONS]).catch(() => null);
     const granted = answers?.['android.permission.READ_SMS'] === PermissionsAndroid.RESULTS.GRANTED;
     setCanRead(granted);
-    if (!granted) setReadNote(RESTRICTED);
+    if (!granted) setReadNote(t(RESTRICTED));
   }
 
   async function toggleInvites() {
@@ -124,7 +125,7 @@ export default function SmsSettings() {
     if (!names) {
       const answer = await PermissionsAndroid.request('android.permission.READ_CONTACTS').catch(() => null);
       if (answer !== PermissionsAndroid.RESULTS.GRANTED) {
-        setNote('Erevos may not read the phone\'s contacts, so numbers stay as they are.');
+        setNote(t("Erevos may not read the phone's contacts, so numbers stay as they are."));
         return;
       }
     }
@@ -136,7 +137,7 @@ export default function SmsSettings() {
     // Several numbers, separated by commas, make a group's conversation.
     const numbers = smsNumbers(number);
     if (numbers.length === 0) {
-      setNote('Type a phone number.');
+      setNote(t('Type a phone number.'));
       return;
     }
     setNumber('');
@@ -147,87 +148,81 @@ export default function SmsSettings() {
     <Page>
       <Text variant="title">SMS</Text>
       <Card>
-        <Text variant="bodyStrong">{status?.isDefault ? 'Erevos is the SMS app' : 'Erevos is not the SMS app'}</Text>
+        <Text variant="bodyStrong">{status?.isDefault ? t('Erevos is the SMS app') : t('Erevos is not the SMS app')}</Text>
         <Text tone="muted">
-          As the SMS app, Erevos shows SMS and Erevos chats in one list. Writing to a number that has Erevos goes
-          through Erevos, end-to-end encrypted. To everyone else it goes as a plain SMS, marked SMS: the phone company
-          can read it, as it reads every SMS.
+          {t('As the SMS app, Erevos shows SMS and Erevos chats in one list. Writing to a number that has Erevos goes through Erevos, end-to-end encrypted. To everyone else it goes as a plain SMS, marked SMS: the phone company can read it, as it reads every SMS.')}
         </Text>
         {status?.isDefault ? null : (
           <>
-            <Button title="Make Erevos the SMS app" onPress={() => void makeDefault()} />
+            <Button title={t('Make Erevos the SMS app')} onPress={() => void makeDefault()} />
             {asked ? (
               <>
-                <Text variant="bodyStrong">Android did not make Erevos the SMS app</Text>
-                <Text tone="muted">{NOT_CHOSEN}</Text>
-                <Button title="Open Default apps" kind="secondary" onPress={() => void openDefaultApps()} />
-                <Button title="Open Erevos's App info" kind="secondary" onPress={() => void Linking.openSettings()} />
+                <Text variant="bodyStrong">{t('Android did not make Erevos the SMS app')}</Text>
+                <Text tone="muted">{t(NOT_CHOSEN)}</Text>
+                <Button title={t('Open Default apps')} kind="secondary" onPress={() => void openDefaultApps()} />
+                <Button title={t("Open Erevos's App info")} kind="secondary" onPress={() => void Linking.openSettings()} />
               </>
             ) : null}
           </>
         )}
         {status?.isDefault && canRead === false ? (
           <>
-            <Text variant="bodyStrong">Android does not let Erevos read the SMS</Text>
+            <Text variant="bodyStrong">{t('Android does not let Erevos read the SMS')}</Text>
             <Text tone="muted">
-              So no SMS show yet. Android holds this back from an app installed from a browser, until you allow it.
+              {t('So no SMS show yet. Android holds this back from an app installed from a browser, until you allow it.')}
             </Text>
-            <Button title="Allow SMS" onPress={() => void allowSms()} />
-            <Button title="Open Erevos's App info" kind="secondary" onPress={() => void Linking.openSettings()} />
+            <Button title={t('Allow SMS')} onPress={() => void allowSms()} />
+            <Button title={t("Open Erevos's App info")} kind="secondary" onPress={() => void Linking.openSettings()} />
             {readNote ? <Text tone="muted">{readNote}</Text> : null}
           </>
         ) : null}
         {status?.isDefault && canRead !== false && reading ? (
           <Text tone="muted">
             {'error' in reading
-              ? `Erevos could not read the phone's SMS: ${reading.error}`
+              ? t("Erevos could not read the phone's SMS: {error}", { error: reading.error })
               : reading.count === 0
-                ? 'Erevos found no SMS on this phone.'
-                : `Erevos reads ${reading.count} SMS ${reading.count === 1 ? 'conversation' : 'conversations'} on this phone.`}
+                ? t('Erevos found no SMS on this phone.')
+                : plural(reading.count, 'Erevos reads {n} SMS conversation on this phone.', 'Erevos reads {n} SMS conversations on this phone.')}
           </Text>
         ) : null}
-        {status && !status.phone ? <Text tone="muted">This device has no phone part, so it cannot send SMS.</Text> : null}
+        {status && !status.phone ? <Text tone="muted">{t('This device has no phone part, so it cannot send SMS.')}</Text> : null}
       </Card>
 
-      <SectionTitle title="Find Erevos on a number" />
+      <SectionTitle title={t('Find Erevos on a number')} />
       <Card>
         <Text tone="muted">
-          With the first SMS to a number that is not a contact, Erevos also sends a hidden invite. A phone without
-          Erevos shows nothing. A phone with Erevos answers through the relay, and the two become contacts. The phone
-          company sees one more short SMS. Each number is asked once a month at most.
+          {t('With the first SMS to a number that is not a contact, Erevos also sends a hidden invite. A phone without Erevos shows nothing. A phone with Erevos answers through the relay, and the two become contacts. The phone company sees one more short SMS. Each number is asked once a month at most.')}
         </Text>
-        <Button title={invites ? 'Turn invites off' : 'Turn invites on'} kind="secondary" onPress={() => void toggleInvites()} />
+        <Button title={invites ? t('Turn invites off') : t('Turn invites on')} kind="secondary" onPress={() => void toggleInvites()} />
         <Text variant="caption" tone="faint">
-          A number can also be linked by hand: open its SMS conversation and choose the contact.
+          {t('A number can also be linked by hand: open its SMS conversation and choose the contact.')}
         </Text>
       </Card>
 
-      <SectionTitle title="Names from your contacts" />
+      <SectionTitle title={t('Names from your contacts')} />
       <Card>
         <Text tone="muted">
-          SMS numbers that are no Erevos contact can show the names your phone's contacts give them. Erevos reads them
-          only to show them, keeps no copy, and sends them nowhere. Android asks first.
+          {t("SMS numbers that are no Erevos contact can show the names your phone's contacts give them. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.")}
         </Text>
-        <Button title={names ? 'Show numbers only' : 'Show names from my contacts'} kind="secondary" onPress={() => void toggleNames()} />
+        <Button title={names ? t('Show numbers only') : t('Show names from my contacts')} kind="secondary" onPress={() => void toggleNames()} />
       </Card>
 
       {(status?.slots ?? 0) >= 2 ? (
         <>
-          <SectionTitle title="Two SIMs" />
+          <SectionTitle title={t('Two SIMs')} />
           <Card>
             <Text tone="muted">
-              In an SMS conversation, choose the SIM above the message field. Erevos keeps that choice for the number;
-              until then, it answers on the SIM the last message came on. Each message shows its SIM.
+              {t('In an SMS conversation, choose the SIM above the message field. Erevos keeps that choice for the number; until then, it answers on the SIM the last message came on. Each message shows its SIM.')}
             </Text>
           </Card>
         </>
       ) : null}
 
-      <SectionTitle title="New SMS" />
-      <Field label="Phone number" hint="For a group MMS, several numbers separated by commas.">
+      <SectionTitle title={t('New SMS')} />
+      <Field label={t('Phone number')} hint={t('For a group MMS, several numbers separated by commas.')}>
         <Input value={number} onChangeText={setNumber} keyboardType="phone-pad" placeholder="+30 69…, +30 69…" onSubmitEditing={open} />
       </Field>
-      <Button title="Write" kind="secondary" onPress={open} />
+      <Button title={t('Write')} kind="secondary" onPress={open} />
       {note ? <Text tone="muted">{note}</Text> : null}
     </Page>
   );

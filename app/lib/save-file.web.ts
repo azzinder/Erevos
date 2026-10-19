@@ -2,6 +2,7 @@ import { readFile } from './attachments';
 import { handOver } from './hand-over.web';
 import { SHELL, shellFetch } from './shell';
 import type { FileRef } from '../lock/attachment-files';
+import { t } from './i18n';
 
 // Saving a photo or file from a chat, as save-file.ts, on a computer: the desktop app asks where
 // (lib/shell.ts); a plain browser hands it over (lib/hand-over.web.ts): on a phone to the share
@@ -15,7 +16,7 @@ export async function saveFolderLabel(): Promise<string | null> {
 
 export async function saveFile(ref: FileRef): Promise<string | null> {
   const bytes = await readFile(ref);
-  if (!bytes) throw new Error('This file is not on this computer.');
+  if (!bytes) throw new Error(t('This file is not on this computer.'));
   if (SHELL) {
     const response = await shellFetch(`/__save?name=${encodeURIComponent(ref.name)}`, { method: 'POST', body: bytes as BodyInit });
     if (response.status === 404) return null;
@@ -23,5 +24,5 @@ export async function saveFile(ref: FileRef): Promise<string | null> {
   }
   const how = await handOver(ref.name, ref.mime, bytes);
   if (!how) return null;
-  return how === 'shared' ? 'the place you chose' : 'the downloads folder';
+  return how === 'shared' ? t('the place you chose') : t('the downloads folder');
 }

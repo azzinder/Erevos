@@ -1,4 +1,5 @@
 import { randomBytes, toHex } from './crypto';
+import { t } from './i18n';
 
 // A voice message travels in parts, each inside its own end-to-end encrypted message (lib/e2e.ts),
 // since one holds at most 16 KB. The parts share an id; the phone that gets them puts them back
@@ -45,7 +46,7 @@ export function isVoicePart(v: Partial<VoicePart> | null | undefined): v is Voic
 /** The sound cut into parts. Throws when it is longer than a voice message can be. */
 export function splitVoice(audio: Uint8Array, ms: number, talk = false): VoicePart[] {
   const parts = Math.max(1, Math.ceil(audio.length / PART_SIZE));
-  if (parts > MAX_PARTS) throw new Error('That voice message is too long.');
+  if (parts > MAX_PARTS) throw new Error(t('That voice message is too long.'));
   const id = toHex(randomBytes(8));
   return Array.from({ length: parts }, (_, part) => ({
     id,

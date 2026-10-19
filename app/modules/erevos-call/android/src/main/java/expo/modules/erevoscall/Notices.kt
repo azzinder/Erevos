@@ -21,14 +21,41 @@ object Notices {
   private const val CALLS_CHANNEL = "erevos-calls"
   private const val MESSAGES_CHANNEL = "erevos-messages"
 
+  // The app's language, as the app last set it: "el" for Greek, English otherwise. The SMS
+  // module reads the same (erevos-sms SmsStore.kt).
+  private const val LANG_PREFS = "erevos-lang"
+
+  fun setLanguage(context: Context, lang: String) {
+    context.getSharedPreferences(LANG_PREFS, Context.MODE_PRIVATE).edit().putString("lang", lang).apply()
+    // The channels' names follow, in the phone's notification settings.
+    named = null
+    channels(context)
+  }
+
+  private fun greek(context: Context) =
+    context.getSharedPreferences(LANG_PREFS, Context.MODE_PRIVATE).getString("lang", null) == "el"
+
+  private fun say(context: Context, en: String, el: String) = if (greek(context)) el else en
+
+  // The language the channels were named in at this start.
+  private var named: Boolean? = null
+
   private fun manager(context: Context) = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
   private fun channels(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
     val manager = manager(context)
+    val greek = greek(context)
+    if (named != greek) {
+      named = greek
+      // A channel made again under its id keeps its settings and takes the new name.
+      manager.getNotificationChannel(RECEIVING_CHANNEL)?.let { it.name = say(context, "Receiving in the background", "Λήψη στο παρασκήνιο"); manager.createNotificationChannel(it) }
+      manager.getNotificationChannel(CALLS_CHANNEL)?.let { it.name = say(context, "Calls", "Κλήσεις"); manager.createNotificationChannel(it) }
+      manager.getNotificationChannel(MESSAGES_CHANNEL)?.let { it.name = say(context, "Messages", "Μηνύματα"); manager.createNotificationChannel(it) }
+    }
     if (manager.getNotificationChannel(RECEIVING_CHANNEL) == null) {
       manager.createNotificationChannel(
-        NotificationChannel(RECEIVING_CHANNEL, "Receiving in the background", NotificationManager.IMPORTANCE_MIN).apply {
+        NotificationChannel(RECEIVING_CHANNEL, say(context, "Receiving in the background", "Λήψη στο παρασκήνιο"), NotificationManager.IMPORTANCE_MIN).apply {
           setShowBadge(false)
           lockscreenVisibility = Notification.VISIBILITY_SECRET
         },
@@ -38,7 +65,7 @@ object Notices {
       // The ringtone plays from the app itself (ErevosCallModule), so the channel stays silent and
       // the sound stops the moment the call is answered or ends.
       manager.createNotificationChannel(
-        NotificationChannel(CALLS_CHANNEL, "Calls", NotificationManager.IMPORTANCE_HIGH).apply {
+        NotificationChannel(CALLS_CHANNEL, say(context, "Calls", "Κλήσεις"), NotificationManager.IMPORTANCE_HIGH).apply {
           setSound(null, null as AudioAttributes?)
           enableVibration(false)
           lockscreenVisibility = Notification.VISIBILITY_PUBLIC
@@ -47,7 +74,7 @@ object Notices {
     }
     if (manager.getNotificationChannel(MESSAGES_CHANNEL) == null) {
       manager.createNotificationChannel(
-        NotificationChannel(MESSAGES_CHANNEL, "Messages", NotificationManager.IMPORTANCE_DEFAULT).apply {
+        NotificationChannel(MESSAGES_CHANNEL, say(context, "Messages", "Μηνύματα"), NotificationManager.IMPORTANCE_DEFAULT).apply {
           setShowBadge(true)
           lockscreenVisibility = Notification.VISIBILITY_PRIVATE
         },
@@ -72,7 +99,7 @@ object Notices {
     return builder(context, RECEIVING_CHANNEL)
       .setSmallIcon(context.applicationInfo.icon)
       .setContentTitle("Erevos")
-      .setContentText("Ready for calls and messages")
+      .setContentText(say(context, "Ready for calls and messages", "Έτοιμο για κλήσεις και μηνύματα"))
       .setOngoing(true)
       .setShowWhen(false)
       .setPriority(Notification.PRIORITY_MIN)
@@ -87,8 +114,8 @@ object Notices {
     @Suppress("DEPRECATION")
     val notification = builder(context, CALLS_CHANNEL)
       .setSmallIcon(context.applicationInfo.icon)
-      .setContentTitle(if (video) "Incoming video call" else "Incoming call")
-      .setContentText("Open Erevos to answer")
+      .setContentTitle(if (video) say(context, "Incoming video call", "Εισερχόμενη βιντεοκλήση") else say(context, "Incoming call", "Εισερχόμενη κλήση"))
+      .setContentText(say(context, "Open Erevos to answer", "Άνοιξε το Erevos για να απαντήσεις"))
       .setCategory(Notification.CATEGORY_CALL)
       .setPriority(Notification.PRIORITY_MAX)
       .setVisibility(Notification.VISIBILITY_PUBLIC)
@@ -108,7 +135,7 @@ object Notices {
   // and stays quiet as the count goes up.
   fun messages(context: Context, count: Int) {
     channels(context)
-    val text = if (count == 1) "New message" else "$count new messages"
+    val text = if (count == 1) say(context, "New message", "Νέο μήνυμα") else say(context, "$count new messages", "$count νέα μηνύματα")
     @Suppress("DEPRECATION")
     val locked = builder(context, MESSAGES_CHANNEL)
       .setSmallIcon(context.applicationInfo.icon)

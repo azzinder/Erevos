@@ -1,6 +1,7 @@
 import { connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, RECONNECT_MS, relayToAnswer, RING_MS, type Connection, type Rtc, type Stream } from './call';
 import type { GroupCallSignal } from './group-call-signal';
 import type { CallRelay } from './relay';
+import { t } from './i18n';
 
 // A group's call, voice or video: a WebRTC connection between each two members in it (a mesh),
 // each set up as a call with a contact is (lib/call.ts), with signals sent in the group's own
@@ -331,5 +332,5 @@ export class GroupCall {
 }
 
 function busy() {
-  if (currentCall() || currentGroupCall()) throw new Error('There is a call already.');
+  if (currentCall() || currentGroupCall()) throw new Error(t('There is a call already.'));
 }

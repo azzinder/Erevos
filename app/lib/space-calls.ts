@@ -8,6 +8,7 @@ import { nearby } from './nearby';
 import { announceReceived } from './receiver';
 import { contactTarget, relayFor, spaceChats } from './space-chats';
 import type { Message } from '../lock/history';
+import { t } from './i18n';
 
 // Calls in the open space's chats (lib/calls.ts): their signals go through the space's own
 // encryption, to the contact's phone nearby when it is (lib/nearby.ts), as on the same Wi-Fi with
@@ -44,7 +45,7 @@ async function where(own: { url: string; token?: string }) {
 async function settings() {
   const data = await loadCurrentSpaceData();
   const url = data.url.trim();
-  if (!url || !data.ownQueue) throw new Error('Calls are set up through the relay. Type its address in Relay first.');
+  if (!url || !data.ownQueue) throw new Error(t('Calls are set up through the relay. Type its address in Relay first.'));
   const own = { url, token: data.token.trim() || undefined };
   return { own, sends: relayFor(url, data.token, data.via, data.viaToken) ?? own, senderHex: data.ownQueue.senderHex };
 }
@@ -88,7 +89,7 @@ export const spaceCalls: CallPlace = {
   },
   name(peer) {
     // Filled in by the call screen from the space's contacts (see spaceCallName).
-    return spaceNames.get(peer) ?? `contact ${peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8)}`;
+    return spaceNames.get(peer) ?? t('contact {id}', { id: peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8) });
   },
 };
 

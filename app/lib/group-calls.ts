@@ -3,6 +3,7 @@ import { callClock, CALL_LINE } from './calls';
 import { GroupCall, currentGroupCall, HERE_EVERY } from './group-call';
 import type { GroupCallSignal } from './group-call-signal';
 import type { CallRelay } from './relay';
+import { t } from './i18n';
 
 // The group call on this phone, whatever screen shows (as lib/calls.ts is for a contact's call),
 // and the calls going on in this phone's groups, as their members say, so a group's screen can
@@ -102,7 +103,7 @@ export async function startGroupCall(place: GroupCallPlace, group: string, video
 /** Joins the call going on in a group. */
 export async function joinGroupCall(place: GroupCallPlace, group: string, relay: CallRelay | null, rtc: Rtc): Promise<GroupCall> {
   const going = groupCallGoingOn(group);
-  if (!going) throw new Error('The call has ended.');
+  if (!going) throw new Error(t('The call has ended.'));
   const me = await place.me();
   const call = await GroupCall.join(going.id, going.startedBy, { group, video: going.video, me, relay, rtc, events: events(place, group) });
   show(call, place);

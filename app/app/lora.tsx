@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { Button, Card, Chip, Page, Row, Text } from '../components/ui';
 import { ask } from '../lib/alert';
+import { mark, plural, t } from '../lib/i18n';
 import { canLora, findRadios, lora, resumeLora, savedRadio, setRadio, setSharing, type SavedRadio } from '../lib/radio';
 import type { LoraState } from '../lib/lora';
 
@@ -19,11 +20,11 @@ const REGIONS = [
 ];
 
 const SHOWN: Record<LoraState['status'], string> = {
-  off: 'Off',
-  connecting: 'Linking to the radio…',
-  starting: 'Linked, reading its settings…',
-  up: 'Linked',
-  down: 'Not linked',
+  off: mark('Off'),
+  connecting: mark('Linking to the radio…'),
+  starting: mark('Linked, reading its settings…'),
+  up: mark('Linked'),
+  down: mark('Not linked'),
 };
 
 export default function LoraScreen() {
@@ -53,27 +54,29 @@ export default function LoraScreen() {
   if (!canLora()) {
     return (
       <Page>
-        <Text variant="title">LoRa radio</Text>
-        <Text tone="muted">This build of Erevos has no LoRa yet. It comes with the next build of the app, on Android.</Text>
+        <Text variant="title">{t('LoRa radio')}</Text>
+        <Text tone="muted">{t('This build of Erevos has no LoRa yet. It comes with the next build of the app, on Android.')}</Text>
       </Page>
     );
   }
 
   function look() {
     ask(
-      'Before LoRa is on',
-      'A LoRa radio is heard kilometres away, and it can be found by its signal. What Erevos sends stays ' +
-        'end-to-end encrypted, but anyone with a radio can tell that yours sends, when and how much.\n\n' +
-        'Meshtastic radios also say their name to every radio in reach now and then, and where they are if they ' +
-        'have GPS or a fixed position. Erevos keeps yours from doing so: it sets its role to Client hidden, turns ' +
-        'its GPS off and removes a fixed position, and puts the role and GPS back when you turn LoRa off while it is ' +
-        'linked. It still answers a radio that asks its name, so give it a name that says nothing of you, in the ' +
-        'Meshtastic app.\n\n' +
-        'LoRa takes only text. Photos, voice messages and files do not go over it: they wait in the chat, marked ' +
-        'Waiting, and go by themselves once the relay or the phone nearby can take them.',
+      t('Before LoRa is on'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Find my radio', onPress: () => setFound([]) },
+        t(
+          'A LoRa radio is heard kilometres away, and it can be found by its signal. What Erevos sends stays end-to-end encrypted, but anyone with a radio can tell that yours sends, when and how much.',
+        ),
+        t(
+          'Meshtastic radios also say their name to every radio in reach now and then, and where they are if they have GPS or a fixed position. Erevos keeps yours from doing so: it sets its role to Client hidden, turns its GPS off and removes a fixed position, and puts the role and GPS back when you turn LoRa off while it is linked. It still answers a radio that asks its name, so give it a name that says nothing of you, in the Meshtastic app.',
+        ),
+        t(
+          'LoRa takes only text. Photos, voice messages and files do not go over it: they wait in the chat, marked Waiting, and go by themselves once the relay or the phone nearby can take them.',
+        ),
+      ].join('\n\n'),
+      [
+        { text: t('Cancel'), style: 'cancel' },
+        { text: t('Find my radio'), onPress: () => setFound([]) },
       ],
     );
   }
@@ -102,14 +105,15 @@ export default function LoraScreen() {
       return;
     }
     ask(
-      'Let the radio say where it is?',
-      'Your radio then says its name to every radio in reach now and then, kilometres away, and where it is if ' +
-        'its GPS is on. It says them in the clear, as Meshtastic does: anyone with a radio can read them, without ' +
-        'Erevos. They can show where you are, and tie the radio to you.\n\n' +
-        'Even with this off, a radio that sends can be found by its signal, by someone with the gear to look for it.',
+      t('Let the radio say where it is?'),
+      t(
+        'Your radio then says its name to every radio in reach now and then, kilometres away, and where it is if its GPS is on. It says them in the clear, as Meshtastic does: anyone with a radio can read them, without Erevos. They can show where you are, and tie the radio to you.',
+      ) +
+        '\n\n' +
+        t('Even with this off, a radio that sends can be found by its signal, by someone with the gear to look for it.'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Let it say them', style: 'destructive', onPress: change },
+        { text: t('Cancel'), style: 'cancel' },
+        { text: t('Let it say them'), style: 'destructive', onPress: change },
       ],
     );
   }
@@ -131,12 +135,11 @@ export default function LoraScreen() {
       return;
     }
     ask(
-      'The radio is not linked',
-      'So it keeps the settings Erevos gave it: role Client hidden, GPS off. Set them back in the Meshtastic app if ' +
-        'you want them, or turn LoRa off once the radio is linked.',
+      t('The radio is not linked'),
+      t('So it keeps the settings Erevos gave it: role Client hidden, GPS off. Set them back in the Meshtastic app if you want them, or turn LoRa off once the radio is linked.'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Turn LoRa off', onPress: () => void turnOff() },
+        { text: t('Cancel'), style: 'cancel' },
+        { text: t('Turn LoRa off'), onPress: () => void turnOff() },
       ],
     );
   }
@@ -144,71 +147,72 @@ export default function LoraScreen() {
   const { status, detail, name, region, transmits, waiting, notQuiet } = state;
   return (
     <Page>
-      <Text variant="title">LoRa radio</Text>
+      <Text variant="title">{t('LoRa radio')}</Text>
       <Card>
-        <Text variant="bodyStrong">{radio ? `LoRa: on, ${radio.name || radio.address}` : 'LoRa: off'}</Text>
+        <Text variant="bodyStrong">{radio ? t('LoRa: on, {name}', { name: radio.name || radio.address }) : t('LoRa: off')}</Text>
         <Text tone="muted">
-          With a Meshtastic LoRa radio linked to this phone by Bluetooth, Erevos reaches Erevos with a radio on the same
-          mesh, kilometres away, with no internet, through the Meshtastic radios between too.
+          {t(
+            'With a Meshtastic LoRa radio linked to this phone by Bluetooth, Erevos reaches Erevos with a radio on the same mesh, kilometres away, with no internet, through the Meshtastic radios between too.',
+          )}
         </Text>
         <Text tone="muted">
-          It is slow: a message takes seconds on the air, and the law allows a radio only so much air time. So LoRa takes
-          a message only when the relay and the phones nearby cannot, and only text and deletes: not voice messages,
-          photos, files, read marks or calls. Voice messages, photos and files wait in the chat, marked Waiting, until
-          the relay or a phone nearby can take them. Hidden chats never go over it.
+          {t(
+            'It is slow: a message takes seconds on the air, and the law allows a radio only so much air time. So LoRa takes a message only when the relay and the phones nearby cannot, and only text and deletes: not voice messages, photos, files, read marks or calls. Voice messages, photos and files wait in the chat, marked Waiting, until the relay or a phone nearby can take them. Hidden chats never go over it.',
+          )}
         </Text>
         <Text tone="muted">
-          While Erevos is linked to the radio, the Meshtastic app cannot be: close it, or disconnect it there first.
+          {t('While Erevos is linked to the radio, the Meshtastic app cannot be: close it, or disconnect it there first.')}
         </Text>
         {radio === undefined ? null : radio ? (
-          <Button title="Turn LoRa off" kind="secondary" onPress={askTurnOff} />
+          <Button title={t('Turn LoRa off')} kind="secondary" onPress={askTurnOff} />
         ) : found === null ? (
-          <Button title="Find my radio" onPress={look} />
+          <Button title={t('Find my radio')} onPress={look} />
         ) : null}
       </Card>
       {!radio && found !== null ? (
         <Card>
-          <Text variant="bodyStrong">{found.length > 0 ? 'Radios found' : 'Looking for Meshtastic radios…'}</Text>
-          <Text tone="muted">Turn the radio on and keep it near. A radio not paired yet asks for its PIN: it shows on its screen, or is 123456.</Text>
+          <Text variant="bodyStrong">{found.length > 0 ? t('Radios found') : t('Looking for Meshtastic radios…')}</Text>
+          <Text tone="muted">{t('Turn the radio on and keep it near. A radio not paired yet asks for its PIN: it shows on its screen, or is 123456.')}</Text>
           <Row wrap>
             {found.map((r) => (
               <Chip key={r.address} label={r.name || r.address} onPress={() => void use(r)} />
             ))}
           </Row>
           <Row wrap>
-            <Button title="Look again" kind="secondary" compact onPress={() => setRound((n) => n + 1)} />
-            <Button title="Cancel" kind="secondary" compact onPress={() => setFound(null)} />
+            <Button title={t('Look again')} kind="secondary" compact onPress={() => setRound((n) => n + 1)} />
+            <Button title={t('Cancel')} kind="secondary" compact onPress={() => setFound(null)} />
           </Row>
         </Card>
       ) : null}
       {radio ? (
         <Card>
-          <Text variant="bodyStrong">{SHOWN[status]}</Text>
-          {name ? <Text tone="muted">{`The radio: ${name}`}</Text> : null}
+          <Text variant="bodyStrong">{t(SHOWN[status])}</Text>
+          {name ? <Text tone="muted">{t('The radio: {name}', { name })}</Text> : null}
           {status === 'down' && detail ? <Text tone="muted">{detail}</Text> : null}
-          {status === 'down' ? <Text variant="caption" tone="faint">Erevos tries again every half a minute while it is open.</Text> : null}
-          {region === 0 ? <Text tone="muted">Its region is not set, so it sends nothing. Set it in the Meshtastic app.</Text> : null}
-          {region ? <Text variant="caption" tone="faint">{`Region: ${REGIONS[region] ?? region}`}</Text> : null}
-          {!transmits ? <Text tone="muted">It does not send: Transmit enabled is off in its LoRa settings, in the Meshtastic app.</Text> : null}
-          {waiting > 0 ? <Text variant="caption" tone="faint">{`${waiting} pieces waiting to go`}</Text> : null}
+          {status === 'down' ? <Text variant="caption" tone="faint">{t('Erevos tries again every half a minute while it is open.')}</Text> : null}
+          {region === 0 ? <Text tone="muted">{t('Its region is not set, so it sends nothing. Set it in the Meshtastic app.')}</Text> : null}
+          {region ? <Text variant="caption" tone="faint">{t('Region: {region}', { region: REGIONS[region] ?? region })}</Text> : null}
+          {!transmits ? <Text tone="muted">{t('It does not send: Transmit enabled is off in its LoRa settings, in the Meshtastic app.')}</Text> : null}
+          {waiting > 0 ? <Text variant="caption" tone="faint">{plural(waiting, '{n} piece waiting to go', '{n} pieces waiting to go')}</Text> : null}
         </Card>
       ) : null}
       {radio ? (
         <Card>
-          <Text variant="bodyStrong">Its name and where it is</Text>
+          <Text variant="bodyStrong">{t('Its name and where it is')}</Text>
           <Row wrap>
-            <Chip label="Kept quiet" selected={!radio.shares} onPress={() => share(false)} />
-            <Chip label="Said to all in reach" selected={radio.shares === true} onPress={() => share(true)} />
+            <Chip label={t('Kept quiet')} selected={!radio.shares} onPress={() => share(false)} />
+            <Chip label={t('Said to all in reach')} selected={radio.shares === true} onPress={() => share(true)} />
           </Row>
           <Text variant="caption" tone="muted">
             {radio.shares
-              ? 'The radio says its name to every radio in reach now and then, and where it is if its GPS is on, in the clear, as Meshtastic does. A fixed position Erevos removed is set again in the Meshtastic app.'
-              : 'Erevos keeps the radio from saying its name and where it is to the radios in reach: role Client hidden, GPS off, no fixed position. It still answers a radio that asks its name, so give it a name that says nothing of you, in the Meshtastic app.'}
+              ? t('The radio says its name to every radio in reach now and then, and where it is if its GPS is on, in the clear, as Meshtastic does. A fixed position Erevos removed is set again in the Meshtastic app.')
+              : t('Erevos keeps the radio from saying its name and where it is to the radios in reach: role Client hidden, GPS off, no fixed position. It still answers a radio that asks its name, so give it a name that says nothing of you, in the Meshtastic app.')}
           </Text>
           {!radio.shares && notQuiet ? (
             <Text tone="muted">
-              The radio did not keep these settings, so it may still say its name and where it is. Set them in the
-              Meshtastic app: Device role Client hidden, GPS off, no fixed position.
+              {t(
+                'The radio did not keep these settings, so it may still say its name and where it is. Set them in the Meshtastic app: Device role Client hidden, GPS off, no fixed position.',
+              )}
             </Text>
           ) : null}
         </Card>

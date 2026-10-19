@@ -4,6 +4,7 @@ import { loadCurrentSpaceData } from '../lock/space-data';
 import { checkForUpdate, integrityStatus, watchIntegrity, WEB_APP, type IntegrityStatus } from '../lib/integrity';
 import { PUSH_AVAILABLE, turnOffPush, turnOnPush } from '../lib/web-push';
 import { useTheme } from '../theme/context';
+import { t } from '../lib/i18n';
 
 import { Button, Card, Row, SectionTitle, Text } from './ui';
 
@@ -60,36 +61,37 @@ export function IntegrityCard() {
   const current = status?.current;
   return (
     <>
-      <SectionTitle title="This web app" />
+      <SectionTitle title={t('This web app')} />
       <Card>
         {current ? (
-          <Text variant="bodyStrong">Release {current.version}, checked</Text>
+          <Text variant="bodyStrong">{t('Release {version}, checked', { version: current.version })}</Text>
         ) : (
           <Text variant="bodyStrong" color={colors.danger}>
-            Not checked: no service worker runs Erevos here
+            {t('Not checked: no service worker runs Erevos here')}
           </Text>
         )}
         <Text variant="caption" tone="muted" style={hint}>
-          Erevos runs only code signed with its release key, kept on this device. The key's fingerprint is{' '}
+          {t("Erevos runs only code signed with its release key, kept on this device. The key's fingerprint is")}{' '}
           <Text variant="caption" style={mono}>
             {status?.key ?? '…'}
           </Text>
-          . It must match the one you were given with the address of this server.
+          {t('. It must match the one you were given with the address of this server.')}
         </Text>
         {status?.pending ? (
           <Text variant="caption" color={colors.success} style={hint}>
-            Release {status.pending.version} is checked and starts the next time Erevos opens.
+            {t('Release {version} is checked and starts the next time Erevos opens.', { version: status.pending.version })}
           </Text>
         ) : null}
         {status?.checked ? (
           <Text variant="caption" tone="muted" style={hint}>
-            Last looked for updates {when(status.checked)}.{status.error ? ` ${status.error}` : ''}
+            {t('Last looked for updates {when}.', { when: when(status.checked) })}
+            {status.error ? ` ${status.error}` : ''}
           </Text>
         ) : null}
         {status?.refused.length ? (
           <>
             <Text variant="caption" color={colors.danger} style={hint}>
-              Refused:
+              {t('Refused:')}
             </Text>
             {status.refused.map((refusal) => (
               <Text key={refusal.at} variant="caption" color={colors.danger} style={hint}>
@@ -99,20 +101,18 @@ export function IntegrityCard() {
           </>
         ) : null}
         <Row wrap>
-          <Button title={busy ? 'Looking…' : 'Look for an update'} kind="secondary" compact onPress={check} disabled={busy || !current} />
+          <Button title={busy ? t('Looking…') : t('Look for an update')} kind="secondary" compact onPress={check} disabled={busy || !current} />
         </Row>
       </Card>
       {PUSH_AVAILABLE ? (
         <>
-          <SectionTitle title="Notifications while closed" />
+          <SectionTitle title={t('Notifications while closed')} />
           <Card>
-            <Text variant="bodyStrong">{push ? 'On in this space' : 'Off in this space'}</Text>
+            <Text variant="bodyStrong">{push ? t('On in this space') : t('Off in this space')}</Text>
             <Text variant="caption" tone="muted" style={hint}>
-              When a message comes while Erevos is closed, your relay sends an empty push through this browser's push service
-              (Apple's on an iPhone), and Erevos shows "New message", nothing more. The push carries no message and no sender,
-              but the push service sees when something comes for this device, and that it uses Erevos. Hidden chats never
-              get notifications. Turned on in more than one space with the same relay, the relay can tell those spaces are on one
-              device.
+              {t(
+                'When a message comes while Erevos is closed, your relay sends an empty push through this browser\'s push service (Apple\'s on an iPhone), and Erevos shows "New message", nothing more. The push carries no message and no sender, but the push service sees when something comes for this device, and that it uses Erevos. Hidden chats never get notifications. Turned on in more than one space with the same relay, the relay can tell those spaces are on one device.',
+              )}
             </Text>
             {pushNote ? (
               <Text variant="caption" color={colors.danger} style={hint}>
@@ -120,7 +120,7 @@ export function IntegrityCard() {
               </Text>
             ) : null}
             <Row wrap>
-              <Button title={push ? 'Turn off' : 'Turn on'} kind="secondary" compact onPress={switchPush} disabled={busy || push === null} />
+              <Button title={push ? t('Turn off') : t('Turn on')} kind="secondary" compact onPress={switchPush} disabled={busy || push === null} />
             </Row>
           </Card>
         </>

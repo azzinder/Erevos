@@ -5,6 +5,7 @@
 import { gcm } from '@noble/ciphers/aes.js';
 import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import { t } from './i18n';
 
 export type RandomBytes = (length: number) => Uint8Array;
 
@@ -12,7 +13,7 @@ export type RandomBytes = (length: number) => Uint8Array;
 // lacks expo-crypto refuses to make keys rather than make weak ones.
 let random: RandomBytes = (length) => {
   if (!globalThis.crypto?.getRandomValues) {
-    throw new Error('This build has no secure random source. Rebuild the app so it includes expo-crypto.');
+    throw new Error(t('This build has no secure random source. Rebuild the app so it includes expo-crypto.'));
   }
   return globalThis.crypto.getRandomValues(new Uint8Array(length));
 };

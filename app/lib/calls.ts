@@ -3,6 +3,7 @@ import type { CallSignal } from './call-signal';
 import { currentGroupCall } from './group-call';
 import type { CallRelay } from './relay';
 import { newTag, type Message } from '../lock/history';
+import { t } from './i18n';
 
 // The call on this phone, whatever screen shows: the chat starts it, and a contact's call rings
 // from the chat or from the receiver beside the other screens (lib/receiver.ts), so it rings
@@ -76,7 +77,7 @@ function events(place: CallPlace, identity: string) {
 
 /** Calls a contact. Throws if a call is already in progress. */
 export function startCall(place: CallPlace, peer: string, video: boolean, relay: CallRelay | null, rtc: Rtc): Call {
-  if (currentGroupCall()) throw new Error('There is a call already.');
+  if (currentGroupCall()) throw new Error(t('There is a call already.'));
   const call = Call.start({ peer, video, relay, rtc, events: events(place, peer.slice(CONTACT_PREFIX.length)) });
   shown = { call, place };
   changed();
@@ -96,7 +97,7 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
   }
   if (ours?.id === signal.id) return null;
   const kind = signal.video ? 'video call' : 'voice call';
-  if (request) return `${place.name(peer)} tried to call. Accept their message request to take calls from them.`;
+  if (request) return t('{name} tried to call. Accept their message request to take calls from them.', { name: place.name(peer) });
   // Made while no space was open here: it has stopped ringing on their side.
   if (Date.now() - signal.at > OFFER_FRESH_MS) {
     place.line(peer, false, `Missed ${kind}`);

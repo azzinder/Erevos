@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Divider } from '../../components/guide';
-import { Card, Chip, Input, Page, Row, SectionTitle, Text } from '../../components/ui';
-import { GUIDE_LANG_LABELS, GUIDE_LANGS, GUIDE_UI, guideFor, guideLang, setGuideLang, type GuideLang } from '../../guide';
+import { Card, Input, Page, SectionTitle, Text } from '../../components/ui';
+import { GUIDE_UI, guideFor, guideLang } from '../../guide';
 import { searchGuide, type GuideSection } from '../../lib/guide';
 import { space, withAlpha } from '../../theme/colors';
 import { useColors } from '../../theme/context';
@@ -13,7 +13,7 @@ import { useColors } from '../../theme/context';
 /** The user guide, as in LPHL FASOULI: its sections, and a search through all of them. */
 export default function GuideScreen() {
   const colors = useColors();
-  const [lang, setLang] = useState<GuideLang>(guideLang);
+  const lang = guideLang();
   const ui = GUIDE_UI[lang];
   const sections = guideFor(lang);
   const [query, setQuery] = useState('');
@@ -25,19 +25,6 @@ export default function GuideScreen() {
   return (
     <Page>
       <Text variant="title">{ui.title}</Text>
-      <Row wrap>
-        {GUIDE_LANGS.map((l) => (
-          <Chip
-            key={l}
-            label={GUIDE_LANG_LABELS[l]}
-            selected={l === lang}
-            onPress={() => {
-              setGuideLang(l);
-              setLang(l);
-            }}
-          />
-        ))}
-      </Row>
       <Input
         value={query}
         onChangeText={setQuery}

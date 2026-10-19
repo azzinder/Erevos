@@ -7,6 +7,7 @@ import { KeyboardPaddedView } from '../components/keyboard';
 import { Button, Card, Chip, Input, Page, Row, Text } from '../components/ui';
 import { canRelaySeal } from '../lib/core';
 import { toBase64Url } from '../lib/e2e';
+import { lang, plural, t } from '../lib/i18n';
 import { relayKey } from '../lib/relay';
 import { groupName, smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
@@ -56,7 +57,7 @@ export default function Sms() {
         setMessages(loaded);
         return loaded;
       })
-      .catch(() => setNote('The SMS on this phone could not be read. Make Erevos the SMS app under SMS in the menu.'));
+      .catch(() => setNote(t('The SMS on this phone could not be read. Make Erevos the SMS app under SMS in the menu.')));
     markSmsRead(to).catch(() => undefined);
   }, [to]);
 
@@ -88,7 +89,7 @@ export default function Sms() {
   if (!to) {
     return (
       <Page>
-        <Text tone="muted">No phone number.</Text>
+        <Text tone="muted">{t('No phone number.')}</Text>
       </Page>
     );
   }
@@ -97,7 +98,7 @@ export default function Sms() {
   async function askSims() {
     const answer = await PermissionsAndroid.request('android.permission.READ_PHONE_STATE').catch(() => null);
     if (answer !== PermissionsAndroid.RESULTS.GRANTED) {
-      setNote('Without that, SMS go on the phone\'s default SIM.');
+      setNote(t("Without that, SMS go on the phone's default SIM."));
       return;
     }
     const found = await smsSims();
@@ -135,9 +136,9 @@ export default function Sms() {
     try {
       if (!smsStatus()?.isDefault && Platform.OS === 'android') {
         const answer = await PermissionsAndroid.request('android.permission.SEND_SMS');
-        if (answer !== PermissionsAndroid.RESULTS.GRANTED) throw new Error('Erevos may not send SMS. Allow it, or make Erevos the SMS app.');
+        if (answer !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(t('Erevos may not send SMS. Allow it, or make Erevos the SMS app.'));
       }
-      if (group && !mmsReady()) throw new Error('This build of Erevos cannot send to several numbers yet.');
+      if (group && !mmsReady()) throw new Error(t('This build of Erevos cannot send to several numbers yet.'));
       // A group's message goes to everyone as one MMS, even without a photo.
       if (photo || group) await sendMms(to, text, photo, sim);
       else await sendSms(to, text, sim);
@@ -146,7 +147,7 @@ export default function Sms() {
       load();
       if (!group) await invite();
     } catch (error) {
-      setNote(`Not sent. ${error instanceof Error ? error.message : String(error)}`);
+      setNote(t('Not sent. {error}', { error: error instanceof Error ? error.message : String(error) }));
     } finally {
       setSending(false);
     }
@@ -175,34 +176,34 @@ export default function Sms() {
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
       <ScrollView ref={thread} contentContainerStyle={styles.thread} onContentSizeChange={() => thread.current?.scrollToEnd({ animated: false })}>
         <Text variant="title">{group ? groupName(numbers, names) : names[to] || to}</Text>
-        {group ? <Text tone="muted">Group MMS · {numbers.length} numbers</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
+        {group ? <Text tone="muted">{plural(numbers.length, 'Group MMS · {n} number', 'Group MMS · {n} numbers')}</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
         <Card>
           <Text variant="caption" color={colors.warning}>
-            Plain SMS: not encrypted. The phone company can read these messages.
+            {t('Plain SMS: not encrypted. The phone company can read these messages.')}
           </Text>
           {contacts.length > 0 && !group ? (
             choosing ? (
               <>
-                <Text tone="muted">Which contact is {to}? Messages to this number will go through Erevos.</Text>
+                <Text tone="muted">{t('Which contact is {number}? Messages to this number will go through Erevos.', { number: to })}</Text>
                 <Row wrap>
                   {contacts.map((c) => (
                     <Chip
                       key={c.identity}
-                      label={c.name ? cleanName(c.name) : `contact ${c.identity.slice(0, 8)}`}
+                      label={c.name ? cleanName(c.name) : t('contact {id}', { id: c.identity.slice(0, 8) })}
                       onPress={() => router.replace(`/chat?contact=${c.identity}&phone=${encodeURIComponent(to)}`)}
                     />
                   ))}
                 </Row>
               </>
             ) : (
-              <Button title="This number has Erevos: link it to a contact" kind="ghost" compact onPress={() => setChoosing(true)} />
+              <Button title={t('This number has Erevos: link it to a contact')} kind="ghost" compact onPress={() => setChoosing(true)} />
             )
           ) : null}
         </Card>
         {messages.map((m) => (
           <View key={`${m.kind ?? 'sms'}${m.id}`} style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}>
             {(m.pictures ?? []).map((p) => (
-              <Image key={p.uri} source={{ uri: p.uri }} style={styles.picture} resizeMode="cover" accessibilityLabel="Picture" />
+              <Image key={p.uri} source={{ uri: p.uri }} style={styles.picture} resizeMode="cover" accessibilityLabel={t('Picture')} />
             ))}
             {group && !m.mine && m.from ? (
               <Text variant="caption" tone="muted">
@@ -211,9 +212,9 @@ export default function Sms() {
             ) : null}
             {m.text ? <Text selectable>{m.text}</Text> : null}
             <Text variant="caption" tone="faint">
-              {new Date(m.at).toLocaleString()}
+              {new Date(m.at).toLocaleString(lang() === 'el' ? 'el-GR' : undefined)}
               {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}
-              {m.state === 'failed' ? ' · not sent' : m.state === 'sending' ? ' · sending' : ''}
+              {m.state === 'failed' ? ` · ${t('not sent')}` : m.state === 'sending' ? ` · ${t('sending')}` : ''}
             </Text>
           </View>
         ))}
@@ -224,15 +225,15 @@ export default function Sms() {
           {sims.length > 1 ? (
             sims.map((s) => <Chip key={s.id} label={`SIM ${s.slot + 1}${s.name ? ` · ${s.name}` : ''}`} selected={sim === s.id} onPress={() => pickSim(s.id)} />)
           ) : twoSims && sims.length === 0 ? (
-            <Chip label="Choose the SIM" onPress={() => void askSims()} />
+            <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
           ) : null}
-          {photo ? <Chip label={`Picture · ${Math.ceil(photo.bytes.length / 1024)} KB · remove`} selected onPress={() => setPhoto(null)} /> : null}
+          {photo ? <Chip label={t('Picture · {size} KB · remove', { size: Math.ceil(photo.bytes.length / 1024) })} selected onPress={() => setPhoto(null)} /> : null}
         </Row>
       ) : null}
       <View style={styles.composer}>
-        {mmsReady() ? <Button title="Photo" kind="ghost" compact onPress={() => void addPhoto()} /> : null}
-        <Input value={draft} onChangeText={setDraft} placeholder={photo || group ? 'MMS (not encrypted)' : 'SMS (not encrypted)'} multiline style={styles.input} />
-        <Button title="Send" compact loading={sending} disabled={!draft.trim() && !photo} onPress={() => void send()} />
+        {mmsReady() ? <Button title={t('Photo')} kind="ghost" compact onPress={() => void addPhoto()} /> : null}
+        <Input value={draft} onChangeText={setDraft} placeholder={photo || group ? t('MMS (not encrypted)') : t('SMS (not encrypted)')} multiline style={styles.input} />
+        <Button title={t('Send')} compact loading={sending} disabled={!draft.trim() && !photo} onPress={() => void send()} />
       </View>
     </KeyboardPaddedView>
   );

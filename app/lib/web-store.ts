@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // What Erevos keeps in a plain browser (the web app, installed on an iPhone's home screen): the
 // browser's IndexedDB, in one database. lib/files.ts keeps its files there, text or bytes, and
 // lib/secure.ts its small secrets, each sealed with a key the browser made and will not give out
@@ -34,7 +35,7 @@ function database(): Promise<IDBDatabase> {
     };
     request.onerror = () => {
       opened = null;
-      reject(request.error ?? new Error('The browser did not open its storage.'));
+      reject(request.error ?? new Error(t('The browser did not open its storage.')));
     };
   });
   void keepData();

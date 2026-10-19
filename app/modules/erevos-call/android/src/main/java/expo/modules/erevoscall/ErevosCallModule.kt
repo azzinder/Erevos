@@ -114,6 +114,12 @@ class ErevosCallModule : Module() {
       null
     }
 
+    // The app's language (app/lib/i18n.ts), kept for the notices, which show while the app is closed.
+    Function("setLanguage") { lang: String ->
+      context?.let { Notices.setLanguage(it, lang) }
+      null
+    }
+
     Function("clearMessages") {
       context?.let { Notices.clearMessages(it) }
       null

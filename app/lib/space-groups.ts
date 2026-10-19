@@ -11,6 +11,7 @@ import { Groups, type GroupTransport } from './groups';
 import { nearby } from './nearby';
 import { callRelay, fromHex, relayKey, sendMessage, toHex } from './relay';
 import { contactTarget, relayFor, spaceChats } from './space-chats';
+import { t } from './i18n';
 
 // The open space's group chats (lib/groups.ts), opened once while the space is, as its chats are
 // (lib/space-chats.ts): the chat screen, the group screens and the receiver use the same ones.
@@ -44,7 +45,7 @@ let ownKey: { url: string; key: string } | null = null;
 async function settings() {
   const data = await loadCurrentSpaceData();
   const url = data.url.trim();
-  if (!url || !data.ownQueue) throw new Error('Groups go through the relay. Type its address in Relay first.');
+  if (!url || !data.ownQueue) throw new Error(t('Groups go through the relay. Type its address in Relay first.'));
   const own = { url, token: data.token.trim() || undefined };
   if (ownKey?.url !== url && canRelaySeal()) {
     const key = await soon(relayKey(own).catch(() => null), 4000, null);

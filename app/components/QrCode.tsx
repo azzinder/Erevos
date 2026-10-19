@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { qrRows } from '../lib/qr';
+import { t } from '../lib/i18n';
 
 // Dark modules on white with a quiet zone of four modules, as scanners expect, even in the
 // app's dark theme.
@@ -10,7 +11,7 @@ export function QrCode({ text, size = 260 }: { text: string; size?: number }) {
   const rows = useMemo(() => qrRows(text), [text]);
   const cell = Math.max(2, Math.floor(size / (rows.length + QUIET * 2)));
   return (
-    <View style={[styles.frame, { padding: cell * QUIET }]} accessibilityLabel="QR code">
+    <View style={[styles.frame, { padding: cell * QUIET }]} accessibilityLabel={t('QR code')}>
       {rows.map((runs, row) => (
         <View key={row} style={styles.row}>
           {runs.map((run, index) => (

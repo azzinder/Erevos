@@ -1,6 +1,7 @@
 import { File, Paths } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
+import { t } from './i18n';
 
 // A photo for an MMS, from the phone's photos: drawn anew as a JPEG, so nothing besides its picture
 // is kept, and made smaller until it fits what carriers take in one MMS. On a computer there is
@@ -38,7 +39,7 @@ export async function pickMmsPhoto(): Promise<MmsPhoto | null> {
         if (file.exists) file.delete();
       }
     }
-    throw new Error('This photo does not get small enough for an MMS.');
+    throw new Error(t('This photo does not get small enough for an MMS.'));
   } finally {
     const copy = new File(asset.uri);
     if (asset.uri.startsWith(Paths.cache.uri) && copy.exists) copy.delete();

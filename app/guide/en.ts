@@ -17,8 +17,8 @@ internet.
 > nothing has been audited yet. Do not rely on it to protect anyone yet.
 > [What is protected today](#privacy) says exactly what is and is not.
 
-This guide opens from **User guide** in the home screen's menu (the three dots at the top). The search at its top finds any word in it, and the two
-buttons above it switch between Greek and English.
+This guide opens from **User guide** in the home screen's menu (the three dots at the top). The search at its top finds any word in it. The guide
+shows in the app's language, see [Language](#start).
 
 ## Getting started {#start}
 
@@ -38,6 +38,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 
 | In the menu | What it opens |
 | --- | --- |
+| **Language · Γλώσσα** | English or Greek, for the whole app. See Language below. |
 | **New group** | A group chat with your contacts. See [Group chats](#groups). |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
 | **LoRa radio** | Texts over a Meshtastic radio, kilometres away, without internet; off unless set. See [Over a LoRa radio](#lora). |
@@ -62,6 +63,16 @@ A good first hour:
 3. Add each other with **Show my QR code**, as in [Chat with a nearby phone](#nearby), and send a message: it goes
    nearby, end-to-end encrypted, with no relay and no internet.
 4. To talk from further away, set up a relay as in [Chat through a relay](#relay).
+
+### Language
+
+Erevos is in English and in Greek. The first time it starts, it follows the phone's language. To change it, open the
+menu (the three dots) and tap its first row, **Language · Γλώσσα**, then **Ελληνικά** or **English**. The whole app
+changes at once, this guide too.
+
+- **Kept on the phone:** the choice is kept on this phone, outside every space, so the password screen shows in it
+  too, and every space opens in it. It is not sealed: whoever holds the phone can see which language you chose.
+- **Android's notices** (an incoming call, new messages, Erevos receiving in the background) follow it too.
 
 ## Chat with a nearby phone {#nearby}
 
@@ -574,7 +585,7 @@ Then:
 
 To go on with the conversation in Erevos, the other person needs Erevos too:
 
-1. In **Chat**, add them as a contact through the relay, as in [Chat through a relay](#relay).
+1. With **New chat**, add them as a contact through the relay, as in [Chat through a relay](#relay).
 2. Open the imported chat, tap **Continue in Erevos** and pick them.
 3. Their chat now shows the old messages ahead of the new ones, a little fainter, with **Continued in Erevos**
    between them. **Open the chat** takes you there, and a contact you have not named takes the imported chat's name.

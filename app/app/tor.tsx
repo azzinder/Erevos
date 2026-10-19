@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { Button, Card, Page, Text } from '../components/ui';
 import { canTor } from '../lib/core';
+import { t } from '../lib/i18n';
 import { applyTor, torStatus, type TorStatus } from '../lib/tor';
 import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 
@@ -17,7 +18,7 @@ export default function TorScreen() {
   useEffect(() => {
     loadCurrentSpaceData()
       .then((data) => setOn(data.tor))
-      .catch(() => setNote('The settings of this space could not open.'));
+      .catch(() => setNote(t('The settings of this space could not open.')));
   }, []);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function TorScreen() {
     return (
       <Page>
         <Text variant="title">Tor</Text>
-        <Text tone="muted">This build of Erevos has no Tor yet. It comes with the next build of the app.</Text>
+        <Text tone="muted">{t('This build of Erevos has no Tor yet. It comes with the next build of the app.')}</Text>
       </Page>
     );
   }
@@ -63,22 +64,22 @@ export default function TorScreen() {
     <Page>
       <Text variant="title">Tor</Text>
       <Card>
-        <Text variant="bodyStrong">{on ? 'Through Tor: on' : 'Through Tor: off'}</Text>
+        <Text variant="bodyStrong">{on ? t('Through Tor: on') : t('Through Tor: off')}</Text>
         <Text tone="muted">
-          Through Tor, this space reaches its relays through the Tor network. The relay then does not see this
-          phone's internet address, and the phone company or the Wi-Fi sees only that Tor is used, not which relay.
-          Messages come and go slower, and the first start of Tor takes a while.
+          {t(
+            "Through Tor, this space reaches its relays through the Tor network. The relay then does not see this phone's internet address, and the phone company or the Wi-Fi sees only that Tor is used, not which relay. Messages come and go slower, and the first start of Tor takes a while.",
+          )}
         </Text>
         <Text tone="muted">
-          While Tor is on, nothing goes to a relay without it: when Tor cannot reach the relay, the message waits.
-          Calls do not go through Tor: their sound and picture go straight between the phones, or through the call
-          relay. Nearby phones and SMS do not use the internet, so Tor has nothing to do with them.
+          {t(
+            'While Tor is on, nothing goes to a relay without it: when Tor cannot reach the relay, the message waits. Calls do not go through Tor: their sound and picture go straight between the phones, or through the call relay. Nearby phones and SMS do not use the internet, so Tor has nothing to do with them.',
+          )}
         </Text>
-        <Button title={on ? 'Turn Tor off' : 'Turn Tor on'} kind={on ? 'secondary' : 'primary'} onPress={() => void toggle()} />
+        <Button title={on ? t('Turn Tor off') : t('Turn Tor on')} kind={on ? 'secondary' : 'primary'} onPress={() => void toggle()} />
       </Card>
       {on && status ? (
         <Card>
-          <Text variant="bodyStrong">{status.ready ? 'Tor is ready' : 'Tor is starting'}</Text>
+          <Text variant="bodyStrong">{status.ready ? t('Tor is ready') : t('Tor is starting')}</Text>
           <Text variant="caption" tone="faint">
             {status.text}
           </Text>

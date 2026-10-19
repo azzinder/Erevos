@@ -1,4 +1,5 @@
 import type { E2E } from '../lib/e2e';
+import { t } from '../lib/i18n';
 
 import type { Archive } from './archive';
 import type { History } from './history';
@@ -14,7 +15,7 @@ const PREFIX = 'contact:';
 
 export async function moveChat(identity: string, from: { e2e: E2E; history: History; archive: Archive | null }, to: { e2e: E2E; history: History }): Promise<void> {
   const contact = from.e2e.record(identity);
-  if (!contact) throw new Error('No such contact.');
+  if (!contact) throw new Error(t('No such contact.'));
   const peer = PREFIX + identity;
   // Put in first and taken out after: a move cut short leaves the chat in both, never in neither.
   await to.e2e.putIn({ ...contact, ownIdentity: contact.ownIdentity || from.e2e.identityHex() });

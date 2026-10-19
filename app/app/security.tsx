@@ -5,6 +5,7 @@ import { IntegrityCard } from '../components/integrity-card';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
+import { t } from '../lib/i18n';
 import {
   askBattery,
   askFullScreen,
@@ -48,33 +49,33 @@ export default function Security() {
   const locked = config.slots.length > 0 && config.direct !== space;
 
   async function turnOff() {
-    const ok = await confirm('Turn off the lock', 'Erevos will open without a password. The second password stops working too.');
+    const ok = await confirm(t('Turn off the lock'), t('Erevos will open without a password. The second password stops working too.'));
     if (!ok) return;
     await removePasswordLock(space, currentSpace().key);
     setPasswordLock(false);
     await reload();
-    setNote('The lock is off.');
+    setNote(t('The lock is off.'));
   }
 
   async function removeSecond() {
     const ok = await confirm(
-      'Remove second password',
-      'The second password will stop working. What was in that space stays on the phone, and nothing opens it.',
+      t('Remove second password'),
+      t('The second password will stop working. What was in that space stays on the phone, and nothing opens it.'),
     );
     if (!ok) return;
     await removeSecondPassword(space);
     await reload();
-    setNote('Saved.');
+    setNote(t('Saved.'));
   }
 
   async function removeHidden() {
     const ok = await confirm(
-      'Remove hidden chats PIN',
-      `The hidden chats in place ${place + 1} will stop opening. They stay on the phone, and nothing opens them.`,
+      t('Remove hidden chats PIN'),
+      t('The hidden chats in place {place} will stop opening. They stay on the phone, and nothing opens them.', { place: place + 1 }),
     );
     if (!ok) return;
     await removeHiddenPassword(space, place);
-    setNote('Saved.');
+    setNote(t('Saved.'));
   }
 
   async function submit(password: string) {
@@ -109,74 +110,68 @@ export default function Security() {
     }
     setEditing(null);
     await reload();
-    setNote('Password saved.');
+    setNote(t('Password saved.'));
   }
 
   return (
     <Page>
-      <Text variant="title">Lock</Text>
+      <Text variant="title">{t('Lock')}</Text>
 
-      <SectionTitle title="Lock when Erevos opens" />
+      <SectionTitle title={t('Lock when Erevos opens')} />
       <Row wrap>
-        <Chip label="No lock" selected={!locked} onPress={() => (locked ? turnOff() : undefined)} />
-        <Chip label="Password" selected={locked} onPress={() => (locked ? undefined : setEditing('own'))} />
+        <Chip label={t('No lock')} selected={!locked} onPress={() => (locked ? turnOff() : undefined)} />
+        <Chip label={t('Password')} selected={locked} onPress={() => (locked ? undefined : setEditing('own'))} />
       </Row>
 
       {locked ? (
         <>
           <Card>
-            <Text variant="bodyStrong">Password lock is on</Text>
+            <Text variant="bodyStrong">{t('Password lock is on')}</Text>
             <Text variant="caption" tone="muted" style={hint}>
-              Erevos asks for the password every time it opens and after 30 seconds in the background.
+              {t('Erevos asks for the password every time it opens and after 30 seconds in the background.')}
             </Text>
             <Row wrap>
-              <Button title="Change password" kind="secondary" compact onPress={() => setEditing('own')} />
-              <Button title="Lock now" kind="secondary" compact onPress={lockNow} />
+              <Button title={t('Change password')} kind="secondary" compact onPress={() => setEditing('own')} />
+              <Button title={t('Lock now')} kind="secondary" compact onPress={lockNow} />
             </Row>
           </Card>
 
           <Card>
-            <Text variant="bodyStrong">Second password</Text>
+            <Text variant="bodyStrong">{t('Second password')}</Text>
             <Text variant="caption" tone="muted" style={hint}>
-              If someone forces you to open the app, type the second password instead. It opens a separate, empty Erevos with
-              its own contacts and relay. Your real chats stay hidden, and nothing in the app shows that they exist.
+              {t('If someone forces you to open the app, type the second password instead. It opens a separate, empty Erevos with its own contacts and relay. Your real chats stay hidden, and nothing in the app shows that they exist.')}
             </Text>
             <Text variant="caption" tone="muted" style={hint}>
-              For privacy, the app never shows whether a second password is set. Setting one replaces the one before.
+              {t('For privacy, the app never shows whether a second password is set. Setting one replaces the one before.')}
             </Text>
             <Row wrap>
-              <Button title="Set second password" kind="secondary" compact onPress={() => setEditing('second')} />
-              <Button title="Remove second password" kind="secondary" compact onPress={removeSecond} />
+              <Button title={t('Set second password')} kind="secondary" compact onPress={() => setEditing('second')} />
+              <Button title={t('Remove second password')} kind="secondary" compact onPress={removeSecond} />
             </Row>
           </Card>
         </>
       ) : (
         <Text variant="caption" tone="muted" style={hint}>
-          Anyone who opens this phone can open Erevos. With a password you can also set a second password that opens a
-          separate, empty space.
+          {t('Anyone who opens this phone can open Erevos. With a password you can also set a second password that opens a separate, empty space.')}
         </Text>
       )}
 
-      <SectionTitle title="Hidden chats" />
+      <SectionTitle title={t('Hidden chats')} />
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
-          Chats that open only with their own PIN: type it in the search on the home screen and press Enter. A wrong one is
-          just a search. A chat moves into them from its details. They have their own relay queue, so while they are closed
-          their messages wait on the relay and never show among your other chats.
+          {t('Chats that open only with their own PIN: type it in the search on the home screen and press Enter. A wrong one is just a search. A chat moves into them from its details. They have their own relay queue, so while they are closed their messages wait on the relay and never show among your other chats.')}
         </Text>
         <Text variant="caption" tone="muted" style={hint}>
-          Every space has {POCKETS} places for hidden chats, each with its own PIN. For privacy, the app never shows
-          whether any are set, so remember which places you use. A new PIN for a place starts it empty and replaces what
-          was there. To keep them and change only the PIN, open them and change it there.
+          {t('Every space has {n} places for hidden chats, each with its own PIN. For privacy, the app never shows whether any are set, so remember which places you use. A new PIN for a place starts it empty and replaces what was there. To keep them and change only the PIN, open them and change it there.', { n: POCKETS })}
         </Text>
         <Row wrap>
           {Array.from({ length: POCKETS }, (_, pocket) => (
-            <Chip key={pocket} label={`Place ${pocket + 1}`} selected={place === pocket} onPress={() => setPlace(pocket)} />
+            <Chip key={pocket} label={t('Place {n}', { n: pocket + 1 })} selected={place === pocket} onPress={() => setPlace(pocket)} />
           ))}
         </Row>
         <Row wrap>
-          <Button title="Set hidden chats PIN" kind="secondary" compact onPress={() => setEditing('hidden')} />
-          <Button title="Remove hidden chats PIN" kind="secondary" compact onPress={removeHidden} />
+          <Button title={t('Set hidden chats PIN')} kind="secondary" compact onPress={() => setEditing('hidden')} />
+          <Button title={t('Remove hidden chats PIN')} kind="secondary" compact onPress={removeHidden} />
         </Row>
       </Card>
 
@@ -194,15 +189,15 @@ export default function Security() {
         visible={editing !== null}
         title={
           editing === 'hidden'
-            ? `Set hidden chats PIN, place ${place + 1}`
+            ? t('Set hidden chats PIN, place {n}', { n: place + 1 })
             : editing === 'second'
-              ? 'Set second password'
+              ? t('Set second password')
               : locked
-                ? 'Change password'
-                : 'Set password'
+                ? t('Change password')
+                : t('Set password')
         }
         repeat
-        submitLabel="Save"
+        submitLabel={t('Save')}
         onClose={() => setEditing(null)}
         onSubmit={submit}
       />
@@ -240,37 +235,37 @@ function BackgroundCalls() {
   if (on === null) return null;
   return (
     <>
-      <SectionTitle title="In the background" />
+      <SectionTitle title={t('In the background')} />
       <Row wrap>
-        <Chip label="Receive and ring" selected={on} onPress={() => choose(true)} />
-        <Chip label="Only while Erevos shows" selected={!on} onPress={() => choose(false)} />
+        <Chip label={t('Receive and ring')} selected={on} onPress={() => choose(true)} />
+        <Chip label={t('Only while Erevos shows')} selected={!on} onPress={() => choose(false)} />
       </Row>
       {on ? (
         <Row wrap>
-          <Chip label="Say a message came" selected={notices} onPress={() => chooseNotices(true)} />
-          <Chip label="No notice" selected={!notices} onPress={() => chooseNotices(false)} />
+          <Chip label={t('Say a message came')} selected={notices} onPress={() => chooseNotices(true)} />
+          <Chip label={t('No notice')} selected={!notices} onPress={() => chooseNotices(false)} />
         </Row>
       ) : null}
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
           {on
-            ? 'While a space is open, Erevos keeps running in the background: it waits at the relay and on the links to phones nearby, so messages come and a call rings with the phone\'s ringtone, over the lock screen too. Only that space\'s chats and groups, never hidden chats. The notices say only "Erevos", "Incoming call" and how many messages came, never who or what; on a locked phone the one for messages says only "Erevos". Swiped away from the recent apps, Erevos takes nothing and cannot ring.'
-            : 'Messages come, and a call rings, only while Erevos shows. A call shows as missed once you open Erevos.'}
+            ? t('While a space is open, Erevos keeps running in the background: it waits at the relay and on the links to phones nearby, so messages come and a call rings with the phone\'s ringtone, over the lock screen too. Only that space\'s chats and groups, never hidden chats. The notices say only "Erevos", "Incoming call" and how many messages came, never who or what; on a locked phone the one for messages says only "Erevos". Swiped away from the recent apps, Erevos takes nothing and cannot ring.')
+            : t('Messages come, and a call rings, only while Erevos shows. A call shows as missed once you open Erevos.')}
         </Text>
         {on && allowed && !allowed.notices ? (
           <Text variant="caption" tone="muted" style={hint}>
-            Notices are off for Erevos in Android's settings: calls still ring, with no notice to tap, and no notice says a message came.
+            {t("Notices are off for Erevos in Android's settings: calls still ring, with no notice to tap, and no notice says a message came.")}
           </Text>
         ) : null}
         {on && allowed && (!allowed.battery || !allowed.fullScreen) ? (
           <Row wrap>
-            {!allowed.battery ? <Button title="Keep running on battery" kind="secondary" compact onPress={askBattery} /> : null}
-            {!allowed.fullScreen ? <Button title="Show calls over the lock screen" kind="secondary" compact onPress={askFullScreen} /> : null}
+            {!allowed.battery ? <Button title={t('Keep running on battery')} kind="secondary" compact onPress={askBattery} /> : null}
+            {!allowed.fullScreen ? <Button title={t('Show calls over the lock screen')} kind="secondary" compact onPress={askFullScreen} /> : null}
           </Row>
         ) : null}
         {on && allowed && !allowed.battery ? (
           <Text variant="caption" tone="muted" style={hint}>
-            Without it, Android's battery saving may stop Erevos after a while in the background.
+            {t("Without it, Android's battery saving may stop Erevos after a while in the background.")}
           </Text>
         ) : null}
       </Card>

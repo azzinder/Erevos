@@ -1,4 +1,5 @@
 import { cleanJpeg, cleanPng, isJpeg, isPng, photoSize } from './photo';
+import { t } from './i18n';
 
 // A photo to send, as pick-photo.ts, on a computer: from the computer's files, no camera. A new
 // JPEG at 90% or 75% is drawn by the browser, turned upright.
@@ -30,7 +31,7 @@ async function reencode(file: Blob, quality: number): Promise<PickedPhoto> {
   canvas.getContext('2d')!.drawImage(image, 0, 0);
   image.close();
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality / 100));
-  if (!blob) throw new Error('The photo could not be read.');
+  if (!blob) throw new Error(t('The photo could not be read.'));
   return { name: 'photo.jpg', mime: 'image/jpeg', bytes: new Uint8Array(await blob.arrayBuffer()), w: canvas.width, h: canvas.height };
 }
 

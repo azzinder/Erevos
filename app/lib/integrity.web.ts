@@ -1,6 +1,7 @@
 import { ask } from './alert';
 import type { IntegrityStatus } from './integrity';
 import { SHELL } from './shell';
+import { t } from './i18n';
 
 export type { IntegrityStatus, Release } from './integrity';
 
@@ -36,15 +37,14 @@ export function watchIntegrity(onNews: () => void): () => void {
   return () => window.removeEventListener('erevos-integrity', onNews);
 }
 
-const BAD_LOADER =
-  'The server sent this device a new service worker, the part of Erevos that checks its code, and no signed release lists it. ' +
-  'Erevos goes on with the checked code while it is open, but once it is closed the browser may start the new one, which could show a fake Erevos. ' +
-  'Do not open Erevos from this server again, and do not type your passwords into it, until whoever runs the server knows why. Your chats stay sealed with your password.';
-
 function alarm(news: News): void {
-  if (news.kind === 'bad-loader') ask('Erevos was tampered with', BAD_LOADER, [{ text: 'I understand' }]);
+  if (news.kind === 'bad-loader') ask(
+      t('Erevos was tampered with'),
+      t('The server sent this device a new service worker, the part of Erevos that checks its code, and no signed release lists it. Erevos goes on with the checked code while it is open, but once it is closed the browser may start the new one, which could show a fake Erevos. Do not open Erevos from this server again, and do not type your passwords into it, until whoever runs the server knows why. Your chats stay sealed with your password.'),
+      [{ text: t('I understand') }],
+    );
   else if (news.kind === 'refused')
-    ask('Update refused', `${news.reason ?? ''} Erevos keeps the release it has. Lock → This web app shows what was refused.`, [{ text: 'OK' }]);
+    ask(t('Update refused'), t('{reason} Erevos keeps the release it has. Lock → This web app shows what was refused.', { reason: news.reason ?? '' }).trim(), [{ text: 'OK' }]);
 }
 
 let started = false;

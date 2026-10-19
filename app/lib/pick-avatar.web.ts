@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // A photo for a contact's picture, as pick-avatar.ts, on a computer: from the computer's files,
 // cut square from its middle and drawn anew by the browser as a 256-point JPEG; a wallpaper's at
 // most 1080 points wide.
@@ -7,7 +8,7 @@ export const WALL = 1080;
 
 async function jpeg(canvas: HTMLCanvasElement, quality: number): Promise<Uint8Array> {
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
-  if (!blob) throw new Error('The photo could not be read.');
+  if (!blob) throw new Error(t('The photo could not be read.'));
   return new Uint8Array(await blob.arrayBuffer());
 }
 

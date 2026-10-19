@@ -1,0 +1,220 @@
+// Greek for parts (lib/i18n.ts).
+export const parts: Record<string, string> = {
+  // The password screen and the password sheet (lock/gate.tsx, components/PasswordSheet.tsx).
+  'Enter your password': 'Γράψε τον κωδικό σου',
+  Unlock: 'Ξεκλείδωμα',
+  'Wrong password': 'Λάθος κωδικός',
+  'Use at least 4 characters.': 'Χρησιμοποίησε τουλάχιστον 4 χαρακτήρες.',
+  'The passwords do not match.': 'Οι κωδικοί δεν ταιριάζουν.',
+  'Use a different password.': 'Χρησιμοποίησε άλλον κωδικό.',
+  'New password': 'Νέος κωδικός',
+  'Repeat password': 'Επανάληψη κωδικού',
+  'Too many attempts. Try again in {n} minute.': 'Πάρα πολλές προσπάθειες. Δοκίμασε ξανά σε {n} λεπτό.',
+  'Too many attempts. Try again in {n} minutes.': 'Πάρα πολλές προσπάθειες. Δοκίμασε ξανά σε {n} λεπτά.',
+  'Too many attempts. Try again in {n} second.': 'Πάρα πολλές προσπάθειες. Δοκίμασε ξανά σε {n} δευτερόλεπτο.',
+  'Too many attempts. Try again in {n} seconds.': 'Πάρα πολλές προσπάθειες. Δοκίμασε ξανά σε {n} δευτερόλεπτα.',
+
+  // Small parts of screens.
+  'QR code': 'Κωδικός QR',
+  Group: 'Ομάδα',
+
+  // Calls (components/call-screen.tsx, components/group-call-screen.tsx).
+  'Call ended': 'Η κλήση τελείωσε',
+  'They hung up': 'Έκλεισε τη γραμμή',
+  'Turned down': 'Απορρίφθηκε',
+  'They turned it down': 'Την απέρριψε',
+  'They are in another call': 'Είναι σε άλλη κλήση',
+  'Not answered': 'Δεν απάντησε',
+  'The call could not connect': 'Η κλήση δεν μπόρεσε να συνδεθεί',
+  'The call could not connect on their phone': 'Η κλήση δεν μπόρεσε να συνδεθεί στο τηλέφωνό του',
+  'Calling…': 'Κλήση…',
+  'Ringing…': 'Χτυπάει…',
+  'Incoming video call': 'Εισερχόμενη βιντεοκλήση',
+  'Incoming voice call': 'Εισερχόμενη φωνητική κλήση',
+  'Connecting…': 'Σύνδεση…',
+  'Missed call': 'Αναπάντητη κλήση',
+  Decline: 'Απόρριψη',
+  Answer: 'Απάντηση',
+  Unmute: 'Ήχος',
+  Mute: 'Σίγαση',
+  Speaker: 'Ηχείο',
+  'Camera on': 'Κάμερα ανοιχτή',
+  'Camera off': 'Κάμερα κλειστή',
+  Flip: 'Αλλαγή',
+  End: 'Τέλος',
+  'You started a group video call': 'Ξεκίνησες ομαδική βιντεοκλήση',
+  'You started a group call': 'Ξεκίνησες ομαδική κλήση',
+  '{name} started a group video call': '{name}: ξεκίνησε ομαδική βιντεοκλήση',
+  '{name} started a group call': '{name}: ξεκίνησε ομαδική κλήση',
+  'Waiting for others · {time}': 'Αναμονή για τους άλλους · {time}',
+  'Missed group call': 'Αναπάντητη ομαδική κλήση',
+  'Could not open the microphone': 'Το μικρόφωνο δεν άνοιξε',
+  'Pictures pause with more than {n} in the call': 'Η εικόνα σταματά με περισσότερους από {n} στην κλήση',
+  'Group video call · end-to-end encrypted': 'Ομαδική βιντεοκλήση · κρυπτογραφημένη από άκρη σε άκρη',
+  'Group voice call · end-to-end encrypted': 'Ομαδική φωνητική κλήση · κρυπτογραφημένη από άκρη σε άκρη',
+  'In the call': 'Στην κλήση',
+  Join: 'Συμμετοχή',
+  '{name} tried to call. Accept their message request to take calls from them.':
+    '{name}: προσπάθησε να σε καλέσει. Αποδέξου το αίτημα μηνυμάτων για να δέχεσαι κλήσεις από αυτή την επαφή.',
+  'The call ended.': 'Η κλήση τελείωσε.',
+  'The call has ended.': 'Η κλήση έχει τελειώσει.',
+  'Calls are set up through the relay. Type its address in Relay first.': 'Οι κλήσεις στήνονται μέσω του relay. Γράψε πρώτα τη διεύθυνσή του στο «Relay».',
+
+  // The web app's card (components/integrity-card.tsx, lib/integrity.web.ts).
+  'This web app': 'Αυτή η web εφαρμογή',
+  'Release {version}, checked': 'Έκδοση {version}, ελεγμένη',
+  'Not checked: no service worker runs Erevos here': 'Δεν ελέγχθηκε: κανένας service worker δεν τρέχει το Erevos εδώ',
+  "Erevos runs only code signed with its release key, kept on this device. The key's fingerprint is":
+    'Το Erevos τρέχει μόνο κώδικα υπογεγραμμένο με το κλειδί εκδόσεών του, που φυλάγεται σε αυτή τη συσκευή. Το αποτύπωμα του κλειδιού είναι',
+  '. It must match the one you were given with the address of this server.': '. Πρέπει να ταιριάζει με αυτό που σου δόθηκε μαζί με τη διεύθυνση αυτού του server.',
+  'Release {version} is checked and starts the next time Erevos opens.': 'Η έκδοση {version} ελέγχθηκε και ξεκινά την επόμενη φορά που θα ανοίξει το Erevos.',
+  'Last looked for updates {when}.': 'Τελευταίος έλεγχος για ενημερώσεις: {when}.',
+  'Refused:': 'Απορρίφθηκαν:',
+  'Looking…': 'Έλεγχος…',
+  'Look for an update': 'Έλεγχος για ενημέρωση',
+  'Notifications while closed': 'Ειδοποιήσεις όταν είναι κλειστό',
+  'On in this space': 'Ενεργές σε αυτόν τον χώρο',
+  'Off in this space': 'Ανενεργές σε αυτόν τον χώρο',
+  'When a message comes while Erevos is closed, your relay sends an empty push through this browser\'s push service (Apple\'s on an iPhone), and Erevos shows "New message", nothing more. The push carries no message and no sender, but the push service sees when something comes for this device, and that it uses Erevos. Hidden chats never get notifications. Turned on in more than one space with the same relay, the relay can tell those spaces are on one device.':
+    'Όταν έρχεται μήνυμα ενώ το Erevos είναι κλειστό, το relay σου στέλνει μια κενή ειδοποίηση push μέσω της υπηρεσίας push αυτού του browser (της Apple σε iPhone), και το Erevos γράφει «New message», τίποτα άλλο. Η ειδοποίηση δεν περιέχει ούτε μήνυμα ούτε αποστολέα, αλλά η υπηρεσία push βλέπει πότε έρχεται κάτι για αυτή τη συσκευή, και ότι χρησιμοποιεί το Erevos. Οι κρυφές συνομιλίες δεν παίρνουν ποτέ ειδοποιήσεις. Αν τις ενεργοποιήσεις σε περισσότερους από έναν χώρους με το ίδιο relay, το relay μπορεί να καταλάβει ότι αυτοί οι χώροι είναι στην ίδια συσκευή.',
+  'Turn off': 'Απενεργοποίηση',
+  'Turn on': 'Ενεργοποίηση',
+  'Erevos was tampered with': 'Κάποιος πείραξε το Erevos',
+  'The server sent this device a new service worker, the part of Erevos that checks its code, and no signed release lists it. Erevos goes on with the checked code while it is open, but once it is closed the browser may start the new one, which could show a fake Erevos. Do not open Erevos from this server again, and do not type your passwords into it, until whoever runs the server knows why. Your chats stay sealed with your password.':
+    'Ο server έστειλε σε αυτή τη συσκευή νέο service worker, το κομμάτι του Erevos που ελέγχει τον κώδικά του, και καμία υπογεγραμμένη έκδοση δεν τον αναφέρει. Το Erevos συνεχίζει με τον ελεγμένο κώδικα όσο είναι ανοιχτό, αλλά μόλις κλείσει ο browser μπορεί να ξεκινήσει τον νέο, που θα μπορούσε να δείξει ένα ψεύτικο Erevos. Μην ανοίξεις ξανά το Erevos από αυτόν τον server, και μη γράψεις εκεί τους κωδικούς σου, μέχρι να μάθει γιατί όποιος τρέχει τον server. Οι συνομιλίες σου μένουν σφραγισμένες με τον κωδικό σου.',
+  'I understand': 'Κατάλαβα',
+  'Update refused': 'Η ενημέρωση απορρίφθηκε',
+  '{reason} Erevos keeps the release it has. Lock → This web app shows what was refused.':
+    '{reason} Το Erevos κρατά την έκδοση που έχει. Στο Κλείδωμα → Αυτή η web εφαρμογή φαίνεται τι απορρίφθηκε.',
+
+  // Files and photos (lib/attachments.ts, lib/photo*.ts, lib/pick-*.ts, lib/save-file*.ts, lib/backup-place.web.ts).
+  'Files can be 100 MB at most.': 'Τα αρχεία μπορούν να είναι έως 100 MB.',
+  'The file was changed on the way, so it was not kept.': 'Το αρχείο άλλαξε στη διαδρομή, γι’ αυτό δεν κρατήθηκε.',
+  'The file is not on the relay any more. Files wait there 14 days.': 'Το αρχείο δεν είναι πια στο relay. Τα αρχεία περιμένουν εκεί 14 μέρες.',
+  'This file is not on this phone.': 'Αυτό το αρχείο δεν είναι σε αυτό το τηλέφωνο.',
+  'This file is not on this computer.': 'Αυτό το αρχείο δεν είναι σε αυτόν τον υπολογιστή.',
+  // Shown after "in", as «στο {folder}»: no article.
+  'the place you chose': 'σημείο που διάλεξες',
+  'the downloads folder': 'φάκελο λήψεων',
+  'Not saved: the share sheet was closed.': 'Δεν αποθηκεύτηκε: το παράθυρο κοινοποίησης έκλεισε.',
+  'That folder is not there any more. Choose it again.': 'Αυτός ο φάκελος δεν υπάρχει πια. Διάλεξέ τον ξανά.',
+  'Ready to save.': 'Έτοιμο για αποθήκευση.',
+  Original: 'Αρχική',
+  'Original: the photo as it was, full size, with only its place, phone and time taken out.':
+    'Αρχική: η φωτογραφία όπως ήταν, σε πλήρες μέγεθος, χωρίς μόνο το μέρος, το τηλέφωνο και την ώρα λήψης.',
+  '{quality}%: a new, smaller photo, quicker to send. It says nothing but its picture.':
+    '{quality}%: μια νέα, μικρότερη φωτογραφία, πιο γρήγορη στην αποστολή. Δεν λέει τίποτα πέρα από την εικόνα της.',
+  'This photo does not get small enough for an MMS.': 'Αυτή η φωτογραφία δεν μικραίνει αρκετά για MMS.',
+  'Erevos may not use the camera. Allow it in the phone settings to take photos.': 'Το Erevos δεν έχει άδεια για την κάμερα. Δώσε την άδεια στις ρυθμίσεις του τηλεφώνου για να βγάζεις φωτογραφίες.',
+  'Voice message': 'Φωνητικό μήνυμα',
+  Sticker: 'Αυτοκόλλητο',
+  'File: {name}': 'Αρχείο: {name}',
+  'That voice message is too long.': 'Αυτό το φωνητικό μήνυμα είναι πολύ μεγάλο.',
+
+  // The home screen's list (lib/inbox.ts).
+  'You: {text}': 'Εσύ: {text}',
+  Sun: 'Κυρ',
+  Mon: 'Δευ',
+  Tue: 'Τρί',
+  Wed: 'Τετ',
+  Thu: 'Πέμ',
+  Fri: 'Παρ',
+  Sat: 'Σάβ',
+
+  // Contacts and chats (lib/e2e.ts, lib/space-chats.ts, lock/).
+  "That is this chat's own contact link.": 'Αυτός είναι ο δικός σου σύνδεσμος επαφής.',
+  'That code has no key. Ask for their contact link or QR code from this version of Erevos.':
+    'Αυτός ο κωδικός δεν έχει κλειδί. Ζήτησε τον σύνδεσμο επαφής ή τον κωδικό QR από αυτή την έκδοση του Erevos.',
+  'No such contact.': 'Δεν υπάρχει τέτοια επαφή.',
+  'Not a contact.': 'Δεν είναι επαφή.',
+  'That is not a phone number.': 'Αυτός δεν είναι αριθμός τηλεφώνου.',
+  'Not a time Erevos keeps messages for.': 'Το Erevos δεν κρατά μηνύματα για τόσο χρόνο.',
+  'No conversation with this contact.': 'Δεν υπάρχει συνομιλία με αυτή την επαφή.',
+  'That contact uses the relay at {relay}, and its link has no key for it. Ask them for a new link.':
+    'Αυτή η επαφή χρησιμοποιεί το relay στο {relay}, και ο σύνδεσμός της δεν έχει κλειδί γι’ αυτό. Ζήτησέ της νέο σύνδεσμο.',
+  'Wrong password for this backup.': 'Λάθος κωδικός για αυτό το αντίγραφο ασφαλείας.',
+
+  // Groups (lib/groups.ts, lib/space-groups.ts).
+  'No groups here yet.': 'Δεν υπάρχουν ακόμα ομάδες εδώ.',
+  'Give the group a name.': 'Δώσε όνομα στην ομάδα.',
+  'You made the group.': 'Δημιούργησες την ομάδα.',
+  'Only the group’s admin adds members.': 'Μόνο ο διαχειριστής της ομάδας προσθέτει μέλη.',
+  'You are not in this group any more.': 'Δεν είσαι πια σε αυτή την ομάδα.',
+  'Only the group’s admin renames it.': 'Μόνο ο διαχειριστής της ομάδας αλλάζει το όνομά της.',
+  'Only the group’s admin takes members out.': 'Μόνο ο διαχειριστής της ομάδας αφαιρεί μέλη.',
+  'You closed the group.': 'Έκλεισες την ομάδα.',
+  'You asked to leave. The group closes here once the admin takes you out.': 'Ζήτησες να φύγεις. Η ομάδα κλείνει εδώ μόλις σε αφαιρέσει ο διαχειριστής.',
+  'You left the group.': 'Έφυγες από την ομάδα.',
+  'You are no longer in the group.': 'Δεν είσαι πια στην ομάδα.',
+  'member {id}': 'μέλος {id}',
+  '{who} added you to the group.': '{who}: σε πρόσθεσε στην ομάδα.',
+  '{who} joined.': '{who}: μπήκε στην ομάδα.',
+  '{who} left.': '{who}: έφυγε.',
+  'Groups go through the relay. Type its address in Relay first.': 'Οι ομάδες λειτουργούν μέσω του relay. Γράψε πρώτα τη διεύθυνσή του στο «Relay».',
+
+  // The build and updates (lib/core.ts, lib/crypto.ts, lib/install-update*.ts, lib/updates.ts, lib/shell.ts).
+  'This build has no Erevos core, so it cannot encrypt. Rebuild the app.': 'Αυτή η έκδοση δεν έχει τον πυρήνα του Erevos, οπότε δεν μπορεί να κρυπτογραφήσει. Φτιάξε ξανά την εφαρμογή.',
+  'The Erevos core gave back something unexpected.': 'Ο πυρήνας του Erevos επέστρεψε κάτι απρόσμενο.',
+  'This build of Erevos has no Tor.': 'Αυτή η έκδοση του Erevos δεν έχει Tor.',
+  'This build has no secure random source. Rebuild the app so it includes expo-crypto.':
+    'Αυτή η έκδοση δεν έχει ασφαλή πηγή τυχαίων αριθμών. Φτιάξε ξανά την εφαρμογή ώστε να περιέχει το expo-crypto.',
+  'This release has no Android package.': 'Αυτή η έκδοση δεν έχει πακέτο για Android.',
+  'The download was cut short.': 'Η λήψη διακόπηκε.',
+  'The downloaded package is not the one the release published. Nothing was installed.':
+    'Το πακέτο που κατέβηκε δεν είναι αυτό που δημοσίευσε η έκδοση. Δεν εγκαταστάθηκε τίποτα.',
+  'This version installs from the download page.': 'Αυτή η έκδοση εγκαθίσταται από τη σελίδα λήψης.',
+  'GitHub answered {status}.': 'Το GitHub απάντησε {status}.',
+  'The desktop app answered {status}.': 'Η εφαρμογή υπολογιστή απάντησε {status}.',
+  'The browser did not open its storage.': 'Ο browser δεν άνοιξε τον χώρο αποθήκευσής του.',
+
+  // LoRa and nearby phones (lib/lora.ts, lib/nearby.ts).
+  'The radio restarts with its new settings, and links again.': 'Ο ασύρματος ξεκινά ξανά με τις νέες ρυθμίσεις του και συνδέεται ξανά.',
+  'There is no relay, and no Erevos phone is linked nearby. Type the relay address in Relay, or come near their phone.':
+    'Δεν υπάρχει relay, ούτε κοντινό τηλέφωνο με Erevos συνδεδεμένο. Γράψε τη διεύθυνση του relay στο «Relay», ή έλα κοντά στο τηλέφωνό του.',
+  'Too large for LoRa, which takes only text. It can go once the relay can be reached, or near their phone.':
+    'Πολύ μεγάλο για LoRa, που παίρνει μόνο κείμενο. Μπορεί να φύγει μόλις το relay είναι προσβάσιμο, ή κοντά στο τηλέφωνό του.',
+
+  // The relay (lib/relay.ts, lib/sms-invite.ts); {what} is the request's name.
+  'An id is 48 hex characters.': 'Ένα id έχει 48 δεκαεξαδικούς χαρακτήρες.',
+  'Through Tor: {reason}': 'Μέσω Tor: {reason}',
+  'cannot reach the relay at {url}, or the token is wrong': 'δεν είναι δυνατή η σύνδεση με το relay στο {url}, ή το token είναι λάθος',
+  'the relay closed the connection': 'το relay έκλεισε τη σύνδεση',
+  'lost the connection to the relay': 'χάθηκε η σύνδεση με το relay',
+  '{what}: queue not found': '{what}: η ουρά δεν βρέθηκε',
+  '{what}: queue is full': '{what}: η ουρά είναι γεμάτη',
+  '{what}: the relay could not save it, try again later': '{what}: το relay δεν μπόρεσε να το αποθηκεύσει, δοκίμασε ξανά αργότερα',
+  '{what}: the second relay could not reach your relay, try again later': '{what}: το δεύτερο relay δεν μπόρεσε να φτάσει το relay σου, δοκίμασε ξανά αργότερα',
+  '{what}: the file is not on the relay any more': '{what}: το αρχείο δεν είναι πια στο relay',
+  '{what}: the relay has no room for files now, try again later': '{what}: το relay δεν έχει χώρο για αρχεία τώρα, δοκίμασε ξανά αργότερα',
+  '{what}: the relay could not keep it, try again later': '{what}: το relay δεν μπόρεσε να το κρατήσει, δοκίμασε ξανά αργότερα',
+  '{what}: your relay could not reach the relay the file is on': '{what}: το relay σου δεν μπόρεσε να φτάσει το relay όπου είναι το αρχείο',
+  '{reason}. A relay older than this app cannot take files: update it.': '{reason}. Ένα relay παλαιότερο από αυτή την εφαρμογή δεν δέχεται αρχεία: ενημέρωσέ το.',
+  'message is too large': 'το μήνυμα είναι πολύ μεγάλο',
+  'your relay has no key for two-hop sending, so it was not sent through the second relay':
+    'το relay σου δεν έχει κλειδί για αποστολή με δύο βήματα, οπότε δεν στάλθηκε μέσω του δεύτερου relay',
+  'The relay address is too long for an SMS invite.': 'Η διεύθυνση του relay είναι πολύ μεγάλη για πρόσκληση με SMS.',
+
+  // Notifications in the web app (lib/web-push*.ts).
+  'Notifications through the browser are for the web app.': 'Οι ειδοποιήσεις μέσω browser είναι για τη web εφαρμογή.',
+  'Your relay does not send notifications. It needs a newer version, set up with a push key.':
+    'Το relay σου δεν στέλνει ειδοποιήσεις. Χρειάζεται νεότερη έκδοση, ρυθμισμένη με κλειδί push.',
+  'This browser cannot show notifications for a closed web app. On an iPhone, add Erevos to the home screen first.':
+    'Αυτός ο browser δεν μπορεί να δείξει ειδοποιήσεις για κλειστή web εφαρμογή. Σε iPhone, πρόσθεσε πρώτα το Erevos στην αρχική οθόνη.',
+  'Notifications are not allowed for Erevos. Allow them in the settings of this browser or phone.':
+    'Οι ειδοποιήσεις δεν επιτρέπονται για το Erevos. Επίτρεψέ τες στις ρυθμίσεις αυτού του browser ή του τηλεφώνου.',
+  'Set up the relay first, under Relay.': 'Ρύθμισε πρώτα το relay, στο «Relay».',
+  'Notifications could not be turned on: {reason}': 'Οι ειδοποιήσεις δεν ενεργοποιήθηκαν: {reason}',
+  // Calls' lines in a chat (lib/call-lines.ts).
+  'Voice call': 'Φωνητική κλήση',
+  'Video call': 'Βιντεοκλήση',
+  'Group call': 'Ομαδική κλήση',
+  'Group video call': 'Ομαδική βιντεοκλήση',
+  'Missed voice call': 'Αναπάντητη φωνητική κλήση',
+  'Missed video call': 'Αναπάντητη βιντεοκλήση',
+  'Missed group video call': 'Αναπάντητη ομαδική βιντεοκλήση',
+  '{missed}, while in another call': '{missed}, ενώ μιλούσες σε άλλη κλήση',
+  'turned down': 'απορρίφθηκε',
+  'could not connect': 'δεν συνδέθηκε',
+  'they were in another call': 'μιλούσε σε άλλη κλήση',
+  'not answered': 'δεν απαντήθηκε',
+};

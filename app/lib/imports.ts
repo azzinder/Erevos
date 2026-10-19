@@ -2,6 +2,7 @@ import type { ArchivedChat, ArchivedMessage, Source } from '../lock/archive';
 
 import * as core from './core';
 import { utf8Decode, utf8Encode } from './crypto';
+import { t, mark } from './i18n';
 
 // Chats exported from other messengers, read by the Erevos core (crates/erevos-import): Telegram's
 // JSON export (result.json) and WhatsApp's exported chat (.txt, or .zip with the media). Nothing
@@ -13,7 +14,7 @@ export type ImportedChat = { source: Source; title: string; skipped: number; mes
 const SOURCES: Source[] = ['telegram', 'whatsapp', 'viber'];
 
 export const SOURCE_LABELS: Record<Source, string> = { telegram: 'Telegram', whatsapp: 'WhatsApp', viber: 'Viber' };
-const MEDIA_LABELS: Record<string, string> = { photo: 'Photo', video: 'Video', voice: 'Voice message', sticker: 'Sticker', file: 'File' };
+const MEDIA_LABELS: Record<string, string> = { photo: mark('Photo'), video: mark('Video'), voice: mark('Voice message'), sticker: mark('Sticker'), file: mark('File') };
 
 function checkedMessage(value: unknown): ImportedMessage | null {
   const m = (value ?? {}) as Record<string, unknown>;
@@ -102,7 +103,7 @@ export function mediaText(kinds: string): string {
   return kinds
     .split(',')
     .filter(Boolean)
-    .map((kind) => MEDIA_LABELS[kind] ?? 'File')
+    .map((kind) => t(MEDIA_LABELS[kind] ?? 'File'))
     .join(', ');
 }
 

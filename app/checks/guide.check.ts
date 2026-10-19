@@ -154,8 +154,12 @@ test('the guide is searched ignoring case and accents, titles first', () => {
   const deep = searchGuide(en, 'safety number');
   assert.ok(deep.map((h) => h.section.id).includes('relay'));
   assert.ok(deep.find((h) => h.section.id === 'faq')?.snippet?.toLowerCase().includes('safety number'));
-  for (const sections of [en, el]) {
-    for (const words of ['Delete messages', 'Rename', 'Both phones']) {
+  // Each guide names the buttons as the app shows them in its language.
+  for (const [sections, labels] of [
+    [en, ['Delete messages', 'Rename', 'Both phones']],
+    [el, ['Διαγραφή μηνυμάτων', 'Μετονομασία', 'Και τα δύο τηλέφωνα']],
+  ] as const) {
+    for (const words of labels) {
       assert.ok(searchGuide(sections, words).some((h) => h.section.id === 'relay'), words);
     }
   }

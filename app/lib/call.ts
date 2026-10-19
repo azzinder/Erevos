@@ -1,6 +1,7 @@
 import { MAX_SDP, type CallEnd, type CallSignal } from './call-signal';
 import { randomBytes, toHex } from './crypto';
 import type { CallRelay } from './relay';
+import { t } from './i18n';
 
 // One voice or video call with a contact, over WebRTC (lib/webrtc.ts on the phone). It is set up
 // with call signals sent in the chat's end-to-end encrypted messages (lib/call-signal.ts), and the
@@ -164,7 +165,7 @@ export class Call {
 
   /** Calls a contact. Throws if a call is already in progress. */
   static start(options: CallOptions): Call {
-    if (currentCall()) throw new Error('There is a call already.');
+    if (currentCall()) throw new Error(t('There is a call already.'));
     const call = new Call(newCallId(), true, '', options);
     current = call;
     void call.dial();
@@ -260,7 +261,7 @@ export class Call {
     const local = await this.options.rtc.media({ audio: true, video: this.video });
     if (this.state === 'ended') {
       local.getTracks().forEach((track) => track.stop());
-      throw new Error('The call ended.');
+      throw new Error(t('The call ended.'));
     }
     this.local = local;
     const connection = this.options.rtc.connect(connectionConfig(this.options.relay));

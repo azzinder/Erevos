@@ -15,6 +15,7 @@
 
 import { fromHex, toHex, utf8Decode, utf8Encode } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
+import { t } from './i18n';
 
 const MAGIC = 0x45;
 const VERSION = 1;
@@ -45,7 +46,7 @@ export function invitePieces(invite: SmsInvite, id: Uint8Array): Uint8Array[] {
   body.set(relay, 57 + relayKey.length);
   const room = PIECE - HEAD;
   const count = Math.ceil(body.length / room);
-  if (count > MAX_PIECES) throw new Error('The relay address is too long for an SMS invite.');
+  if (count > MAX_PIECES) throw new Error(t('The relay address is too long for an SMS invite.'));
   return Array.from({ length: count }, (_, index) => {
     const part = body.subarray(index * room, (index + 1) * room);
     const piece = new Uint8Array(HEAD + part.length);

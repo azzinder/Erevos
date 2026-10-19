@@ -1,4 +1,5 @@
 import { ask } from './alert';
+import { t } from './i18n';
 
 // Giving a file out of the web app, in a plain browser: on a phone or tablet the system's share
 // sheet (on an iPhone it saves to Files, or to any app), elsewhere the browser's downloads. The
@@ -32,10 +33,10 @@ export async function handOver(name: string, mime: string, bytes: Uint8Array): P
     if (failure(error) !== 'NotAllowedError') return download(file);
   }
   return new Promise((resolve) => {
-    ask(name, 'Ready to save.', [
-      { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+    ask(name, t('Ready to save.'), [
+      { text: t('Cancel'), style: 'cancel', onPress: () => resolve(null) },
       {
-        text: 'Save',
+        text: t('Save'),
         onPress: () => {
           navigator.share({ files: [file] }).then(
             () => resolve('shared'),

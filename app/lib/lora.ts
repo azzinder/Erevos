@@ -1,6 +1,7 @@
 import { CONFIG_ONLY, MAX_PAYLOAD, PRIVATE_APP, quieted, readFromRadio, restored, toRadioAdmin, toRadioPacket, wantConfig, type Admin } from './meshtastic';
 import { framesOf, SLOW_PREFIX } from './nearby';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
+import { t, mark } from './i18n';
 
 // Erevos over a Meshtastic LoRa radio linked to the phone by Bluetooth (modules/erevos-radio), for
 // when there is no internet and no phone near: one slow link of lib/nearby.ts, to every Erevos
@@ -67,7 +68,7 @@ const KEPT_FOR = 6 * 3600_000;
 // Meshtastic's error code for a packet that went to no radio, as one for this radio only would.
 const SHOULD_RELEASE = 35;
 
-const RESTARTING = 'The radio restarts with its new settings, and links again.';
+const RESTARTING = mark('The radio restarts with its new settings, and links again.');
 
 // A frame of nearby's with one whole packet (framesOf in lib/nearby.ts). Only those go over LoRa.
 const WHOLE = /^EVN1:[0-9a-f]{8}:0:1:([A-Za-z0-9+/]+={0,2})$/;
@@ -214,7 +215,7 @@ export class Lora {
       if (!this.mesh.write(toRadioAdmin(this.node, newId(), admin))) return false;
     }
     this.restarting = true;
-    this.detail = RESTARTING;
+    this.detail = t(RESTARTING);
     this.changed();
     return true;
   }
@@ -322,7 +323,7 @@ export class Lora {
       this.mesh.write(wantConfig(CONFIG_ONLY));
     } else {
       this.status = 'down';
-      this.detail = this.restarting ? RESTARTING : detail;
+      this.detail = this.restarting ? t(RESTARTING) : detail;
       this.restarting = false;
       this.idle();
       if (again && !this.reconnect) this.reconnect = setTimeout(() => this.connect(), this.timing.reconnectAfter);

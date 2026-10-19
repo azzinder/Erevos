@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // New versions, as in LPHL FASOULI. Every release (.github/workflows/release.yml) also goes to the
 // public repository RELEASES_REPO, one release per version (tag v0.1.<build>) with its packages
 // and version.json, which says what the release is. Erevos reads the latest version.json only when
@@ -79,7 +80,7 @@ export function isNewer(release: Release, currentBuild: number): boolean {
 export async function fetchLatestRelease(fetchImpl: typeof fetch = fetch): Promise<Release | null> {
   const res = await fetchImpl(LATEST_URL, { headers: { 'Cache-Control': 'no-cache' } });
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`GitHub answered ${res.status}.`);
+  if (!res.ok) throw new Error(t('GitHub answered {status}.', { status: res.status }));
   return parseRelease(await res.text());
 }
 

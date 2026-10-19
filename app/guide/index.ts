@@ -1,4 +1,5 @@
 import { parseGuide, type GuideSection } from '../lib/guide';
+import { lang } from '../lib/i18n';
 
 import { guide as el } from './el';
 import { guide as en } from './en';
@@ -11,7 +12,6 @@ import { guide as en } from './en';
 export type GuideLang = 'el' | 'en';
 
 export const GUIDE_LANGS: GuideLang[] = ['el', 'en'];
-export const GUIDE_LANG_LABELS: Record<GuideLang, string> = { el: 'Ελληνικά', en: 'English' };
 
 export const GUIDE_SOURCES: Record<GuideLang, string> = { el, en };
 
@@ -62,22 +62,7 @@ export function guideFor(lang: GuideLang): GuideSection[] {
   return sections;
 }
 
-/** The phone's language, if the guide has it; English otherwise. */
-function deviceLang(): GuideLang {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().startsWith('el') ? 'el' : 'en';
-  } catch {
-    return 'en';
-  }
-}
-
-// The language chosen on the guide's first screen, until Erevos closes; the phone's until then.
-let chosen: GuideLang | null = null;
-
+/** The guide shows in the app's language (lib/i18n.ts). */
 export function guideLang(): GuideLang {
-  return chosen ?? deviceLang();
-}
-
-export function setGuideLang(lang: GuideLang): void {
-  chosen = lang;
+  return lang();
 }

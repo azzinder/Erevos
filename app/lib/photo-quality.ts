@@ -1,5 +1,6 @@
 import { secureGet, secureSet } from './secure';
 import type { PhotoQuality } from './pick-photo';
+import { mark, t } from './i18n';
 
 // How photos go, chosen where they are sent and remembered on this phone: the original (the
 // default), or made smaller at 90% or 75%.
@@ -7,7 +8,7 @@ import type { PhotoQuality } from './pick-photo';
 const KEY = 'erevos.photo-quality';
 
 export const QUALITIES: { value: PhotoQuality; label: string }[] = [
-  { value: 'original', label: 'Original' },
+  { value: 'original', label: mark('Original') },
   { value: 90, label: '90%' },
   { value: 75, label: '75%' },
 ];
@@ -24,6 +25,6 @@ export function savePhotoQuality(quality: PhotoQuality): Promise<void> {
 /** What the quality means, for under the choice. */
 export function qualityNote(quality: PhotoQuality): string {
   return quality === 'original'
-    ? 'Original: the photo as it was, full size, with only its place, phone and time taken out.'
-    : `${quality}%: a new, smaller photo, quicker to send. It says nothing but its picture.`;
+    ? t('Original: the photo as it was, full size, with only its place, phone and time taken out.')
+    : t('{quality}%: a new, smaller photo, quicker to send. It says nothing but its picture.', { quality });
 }

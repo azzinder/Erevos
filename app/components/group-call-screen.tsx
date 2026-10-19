@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { callClock } from '../lib/calls';
 import { MAX_VIDEO, type GroupCall } from '../lib/group-call';
+import { t } from '../lib/i18n';
 import { CallVideo } from './call-video';
 import { ENDED_SHOWN, RING, Round } from './call-screen';
 import { KeyFace } from './key-face';
@@ -13,14 +14,15 @@ import { Text } from './ui';
 // group's name, who started it while it rings, then who is in it with this phone, each in a tile of
 // their picture in a video call, and its buttons. It closes itself a moment after the call ends.
 
-function status(call: GroupCall, now: number, starter: string): string {
+function status(call: GroupCall, now: number, starter: string | null): string {
   switch (call.state) {
     case 'incoming':
-      return `${starter} started a group ${call.video ? 'video ' : ''}call`;
+      if (starter === null) return call.video ? t('You started a group video call') : t('You started a group call');
+      return call.video ? t('{name} started a group video call', { name: starter }) : t('{name} started a group call', { name: starter });
     case 'in':
-      return call.peers().length === 0 ? `Waiting for others · ${callClock(now - call.joinedAt)}` : callClock(now - call.joinedAt);
+      return call.peers().length === 0 ? t('Waiting for others · {time}', { time: callClock(now - call.joinedAt) }) : callClock(now - call.joinedAt);
     case 'ended':
-      return call.ended === 'missed' ? 'Missed group call' : call.ended === 'failed' ? 'Could not open the microphone' : 'Call ended';
+      return call.ended === 'missed' ? t('Missed group call') : call.ended === 'failed' ? t('Could not open the microphone') : t('Call ended');
   }
 }
 
@@ -63,7 +65,7 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
     <View style={styles.screen}>
       {pictures ? (
         <View style={[styles.tiles, { paddingTop: insets.top, paddingBottom: insets.bottom + 200 }]}>
-          {[...peers.map((peer) => ({ key: peer.identity, stream: peer.remote, label: name(peer.identity), own: false })), { key: 'own', stream: call.cameraOff ? null : call.local, label: 'You', own: true }].map(
+          {[...peers.map((peer) => ({ key: peer.identity, stream: peer.remote, label: name(peer.identity), own: false })), { key: 'own', stream: call.cameraOff ? null : call.local, label: t('You'), own: true }].map(
             (tile, _, all) => (
               <View key={tile.key} style={[styles.tile, { width: all.length > 2 ? '50%' : '100%', height: all.length > 1 ? '50%' : '100%' }]}>
                 {tile.stream ? <CallVideo stream={tile.stream} mirror={tile.own} style={StyleSheet.absoluteFill} /> : <KeyFace identity={tile.own ? '' : tile.key} name={tile.label} size={64} />}
@@ -74,7 +76,7 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
             ),
           )}
           <Text variant="caption" color="rgba(255,255,255,0.8)" style={[styles.clock, { top: insets.top + 8 }]}>
-            {groupName} · {status(call, now, '')}
+            {groupName} · {status(call, now, null)}
           </Text>
         </View>
       ) : (
@@ -87,11 +89,15 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
               {groupName}
             </Text>
             <Text variant="body" color="rgba(255,255,255,0.8)">
-              {status(call, now, call.startedBy ? name(call.startedBy) : 'You')}
+              {status(call, now, call.startedBy ? name(call.startedBy) : null)}
             </Text>
             {state === 'in' ? (
               <Text variant="caption" color="rgba(255,255,255,0.6)">
-                {call.videoPaused ? `Pictures pause with more than ${MAX_VIDEO} in the call` : `Group ${call.video ? 'video' : 'voice'} call · end-to-end encrypted`}
+                {call.videoPaused
+                  ? t('Pictures pause with more than {n} in the call', { n: MAX_VIDEO })
+                  : call.video
+                    ? t('Group video call · end-to-end encrypted')
+                    : t('Group voice call · end-to-end encrypted')}
               </Text>
             ) : null}
           </View>
@@ -104,7 +110,7 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
                     {name(peer.identity)}
                   </Text>
                   <Text variant="caption" color="rgba(255,255,255,0.6)">
-                    {peer.state === 'connected' ? 'In the call' : 'Connecting…'}
+                    {peer.state === 'connected' ? t('In the call') : t('Connecting…')}
                   </Text>
                 </View>
               ))}
@@ -117,16 +123,16 @@ export function GroupCallScreen({ call, groupName, name, speaker, onSpeaker, onA
       <View style={[styles.buttons, { paddingBottom: insets.bottom + 28 }]}>
         {state === 'incoming' ? (
           <>
-            <Round title="Decline" color="#C62828" onPress={() => call.decline()} />
-            <Round title="Join" color="#2E7D32" onPress={onAnswer} />
+            <Round title={t('Decline')} color="#C62828" onPress={() => call.decline()} />
+            <Round title={t('Join')} color="#2E7D32" onPress={onAnswer} />
           </>
         ) : state === 'ended' ? null : (
           <>
-            <Round title={call.muted ? 'Unmute' : 'Mute'} on={call.muted} onPress={() => call.setMuted(!call.muted)} />
-            <Round title="Speaker" on={speaker} onPress={() => onSpeaker(!speaker)} />
-            {pictures ? <Round title={call.cameraOff ? 'Camera on' : 'Camera off'} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} /> : null}
-            {pictures ? <Round title="Flip" onPress={() => call.switchCamera()} /> : null}
-            <Round title="Leave" color="#C62828" onPress={() => call.hangUp()} />
+            <Round title={call.muted ? t('Unmute') : t('Mute')} on={call.muted} onPress={() => call.setMuted(!call.muted)} />
+            <Round title={t('Speaker')} on={speaker} onPress={() => onSpeaker(!speaker)} />
+            {pictures ? <Round title={call.cameraOff ? t('Camera on') : t('Camera off')} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} /> : null}
+            {pictures ? <Round title={t('Flip')} onPress={() => call.switchCamera()} /> : null}
+            <Round title={t('Leave')} color="#C62828" onPress={() => call.hangUp()} />
           </>
         )}
       </View>

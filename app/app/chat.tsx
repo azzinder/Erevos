@@ -11,6 +11,7 @@ import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { callPermissions } from '../lib/call-permissions';
 import { CALL_LINE, callLineMessage, callSignal, endCallsOf, startCall as beginCall, type CallPlace } from '../lib/calls';
+import { shownLine } from '../lib/call-lines';
 import { onSpaceCallLine, spaceCalls } from '../lib/space-calls';
 import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
@@ -62,6 +63,7 @@ import { ChatTheme } from '../theme/chat-theme';
 import type { Look } from '../theme/look';
 import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
+import { t, plural, mark } from '../lib/i18n';
 
 // Chat with contacts, end-to-end encrypted (lib/e2e.ts), through the relay and, while their phone
 // is near, over the radio link too (lib/nearby.ts), where phones nearby may also carry a message
@@ -135,7 +137,7 @@ const ASK_EVERY = 60 * 1000;
 const RECEIVE_BATCH = 50;
 
 // How the LoRa radio is, in a word (lib/lora.ts).
-const LORA_SHOWN = { off: 'Off', connecting: 'Linking', starting: 'Linking', up: 'Linked', down: 'Not linked' } as const;
+const LORA_SHOWN = { off: mark('Off'), connecting: mark('Linking'), starting: mark('Linking'), up: mark('Linked'), down: mark('Not linked') } as const;
 
 // Their photos and files up to this size are taken from the relay as soon as they come.
 const AUTO_TAKE = 16 * 1000 * 1000;
@@ -154,13 +156,13 @@ function contactName(peer: string, contacts: ContactInfo[]): string | null {
 
 function label(peer: string, contacts: ContactInfo[]): string {
   if (!peer.startsWith(CONTACT_PREFIX)) return peer;
-  return contactName(peer, contacts) ?? `contact ${peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8)}`;
+  return contactName(peer, contacts) ?? t('contact {id}', { id: peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8) });
 }
 
 // The first line only: Android's errors carry their whole stack after it.
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 
-const NO_CORE = 'This build cannot encrypt, so chats through the relay are off. Rebuild the app.';
+const NO_CORE = mark('This build cannot encrypt, so chats through the relay are off. Rebuild the app.');
 
 // The times a chat's messages can disappear after, seconds. 0 keeps them.
 const TIMERS = [0, 5 * 60, 3600, 24 * 3600, 7 * 24 * 3600];
@@ -171,25 +173,32 @@ const pad = (n: number) => String(n).padStart(2, '0');
 function disappearsAt(until: number): string {
   const d = new Date(until);
   const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  return d.toDateString() === new Date().toDateString() ? `at ${time}` : `on ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}`;
+  return d.toDateString() === new Date().toDateString()
+    ? t('at {time}', { time })
+    : t('on {date} {time}', { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, time });
 }
 
 // How long a voice message is: 0:07.
 // Under a message to or from a contact: its mark if it is ours, and when it disappears.
 function caption(message: Message): string {
   const parts: string[] = [];
-  if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? 'Waiting' : MARKS[message.mark]);
-  if (message.until) parts.push(`Disappears ${disappearsAt(message.until)}`);
-  else if (message.lasts) parts.push(`Disappears ${timerLabel(message.lasts).toLowerCase()} after it is read`);
+  if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? t('Waiting') : MARKS[message.mark]);
+  if (message.until) parts.push(t('Disappears {when}', { when: disappearsAt(message.until) }));
+  else if (message.lasts) parts.push(t('Disappears {time} after it is read', { time: timerLabel(message.lasts).toLowerCase() }));
   return parts.join('  ·  ');
 }
 
 function timerLabel(seconds: number): string {
-  const units: [number, string][] = [[7 * 24 * 3600, 'week'], [24 * 3600, 'day'], [3600, 'hour'], [60, 'minute'], [1, 'second']];
-  if (seconds <= 0) return 'Off';
-  const [size, unit] = units.find(([size]) => seconds % size === 0) ?? [1, 'second'];
-  const count = seconds / size;
-  return `${count} ${unit}${count === 1 ? '' : 's'}`;
+  const units: [number, (count: number) => string][] = [
+    [7 * 24 * 3600, (count) => plural(count, '{n} week', '{n} weeks')],
+    [24 * 3600, (count) => plural(count, '{n} day', '{n} days')],
+    [3600, (count) => plural(count, '{n} hour', '{n} hours')],
+    [60, (count) => plural(count, '{n} minute', '{n} minutes')],
+    [1, (count) => plural(count, '{n} second', '{n} seconds')],
+  ];
+  if (seconds <= 0) return t('Off');
+  const [size, unit] = units.find(([size]) => seconds % size === 0) ?? units[units.length - 1];
+  return unit(seconds / size);
 }
 
 // Imported messages shown at first, and added each time earlier ones are asked for.
@@ -264,7 +273,7 @@ export default function ChatScreen() {
       <ScreenBackdrop>
         <Page>
           <BackButton />
-          <Text tone="muted">Chat runs on Android and on a computer for now.</Text>
+          <Text tone="muted">{t('Chat runs on Android and on a computer for now.')}</Text>
         </Page>
       </ScreenBackdrop>
     );
@@ -286,9 +295,9 @@ export default function ChatScreen() {
           ) : null}
           <PasswordSheet
             visible={asking}
-            title="Change hidden chats PIN"
+            title={t('Change hidden chats PIN')}
             repeat
-            submitLabel="Save"
+            submitLabel={t('Save')}
             onClose={() => setAsking(false)}
             onSubmit={async (password) => {
               await setHiddenPassword(currentSpace().space, hiddenPlace?.pocket ?? 0, password, hiddenKey);
@@ -321,7 +330,7 @@ function BackButton({ onPress }: { onPress?: () => void }) {
     <Pressable
       onPress={onPress ?? (() => (router.canGoBack() ? router.back() : router.replace('/')))}
       accessibilityRole="button"
-      accessibilityLabel="Back"
+      accessibilityLabel={t('Back')}
       hitSlop={8}
       style={({ pressed }) => [layout.back, pressed && { opacity: 0.6 }]}
     >
@@ -531,35 +540,35 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // Carries messages from phones nearby to their relays, or no longer (lib/nearby-links.ts).
   function changeCarrying(on: boolean) {
     setCarrying(on);
-    setCarryingKept(on).catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
+    setCarryingKept(on).catch(() => setNote(t('Changed until Erevos closes: the phone could not keep it.')));
   }
 
   // Looks for Erevos on the same Wi-Fi or hotspot too, or no longer (lib/nearby-links.ts).
   function changeLan(on: boolean) {
     setLanOn(on);
-    setLanKept(on).catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
+    setLanKept(on).catch(() => setNote(t('Changed until Erevos closes: the phone could not keep it.')));
   }
 
   // Makes a Wi-Fi with Erevos phones nearby that share none (Wi-Fi Direct), or no longer.
   function changeDirect(on: boolean) {
     setDirectOn(on);
-    setDirectKept(on).catch(() => setNote('Changed until Erevos closes: the phone could not keep it.'));
+    setDirectKept(on).catch(() => setNote(t('Changed until Erevos closes: the phone could not keep it.')));
   }
 
   // Adds a contact from a code: typed or pasted here, or scanned and opened on the contact screen.
   async function acceptContact(code: ContactCode) {
     if (!e2e) {
-      setNote(NO_CORE);
+      setNote(t(NO_CORE));
       return;
     }
     if (code.senderHex === ownQueue?.senderHex) {
-      setNote("Not added. That is this chat's own code.");
+      setNote(t("Not added. That is this chat's own code."));
       return;
     }
     const ours = relayUrl.trim();
     if (code.relayUrl && ours && !sameRelay(code.relayUrl, ours) && !code.relayKey) {
       setNote(
-        `Not added. That contact uses the relay at ${code.relayUrl}, and its link has no key for that relay. Ask them for a new link from an updated Erevos.`,
+        t('Not added. That contact uses the relay at {url}, and its link has no key for that relay. Ask them for a new link from an updated Erevos.', { url: code.relayUrl }),
       );
       return;
     }
@@ -567,7 +576,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     if (code.relayUrl && !ours) setRelayUrl(code.relayUrl);
     const target = relayTarget(url);
     if (!target && !code.key) {
-      setNote('Not added. Type the relay address in Relay first.');
+      setNote(t('Not added. Type the relay address in Relay first.'));
       return;
     }
     try {
@@ -586,11 +595,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       const nearbyOnly = !target || !code.senderHex;
       setNote(
         added
-          ? `Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.${nearbyOnly ? ' Until you both have a relay, you reach each other nearby only.' : ''}`
-          : 'Already a contact. Where to reach them is updated.',
+          ? nearbyOnly
+            ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. Until you both have a relay, you reach each other nearby only.')
+            : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
+          : t('Already a contact. Where to reach them is updated.'),
       );
     } catch (error) {
-      setNote(`Not added. ${errorText(error)}`);
+      setNote(t('Not added. {error}', { error: errorText(error) }));
     }
   }
 
@@ -685,7 +696,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       })
       .then(async () => {
         if (!hasCore()) {
-          setNote(NO_CORE);
+          setNote(t(NO_CORE));
           return;
         }
         await held;
@@ -707,7 +718,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         if (!active) return;
         if (linkNumber && initial?.startsWith(CONTACT_PREFIX)) {
           await chats.linkPhone(initial.slice(CONTACT_PREFIX.length), linkNumber);
-          setNote(`Messages to ${linkNumber} now go through Erevos, end-to-end encrypted.`);
+          setNote(t('Messages to {number} now go through Erevos, end-to-end encrypted.', { number: linkNumber }));
         }
         setE2E(chats);
         setContacts(chats.contacts());
@@ -720,7 +731,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         }
       })
       .catch((error) => {
-        if (active) setNote(`Chats through the relay could not open. ${errorText(error)}`);
+        if (active) setNote(t('Chats through the relay could not open. {error}', { error: errorText(error) }));
       })
       .finally(() => {
         if (active) setLoaded(true);
@@ -875,7 +886,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         const invited = hiddenKey ? null : await takeInviteAnswer(e2e, bytes, ownSender, here()).catch(() => null);
         if (invited) {
           if (active) setContacts(e2e.contacts());
-          if (active) setNote(`${invited.number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.`);
+          if (active) setNote(t('{number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.', { number: invited.number }));
           return;
         }
         // Taken from the relay, so kept even if the chat closed meanwhile.
@@ -884,7 +895,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         const number = !hiddenKey && received.kind === 'message' && received.added ? await linkInviter(e2e, received.identity).catch(() => null) : null;
         if (number && received.kind === 'message') received = { ...received, request: false };
         handle(received);
-        if (number && active) setNote(`${number} has Erevos and is now a contact. Messages to that number go through Erevos.`);
+        if (number && active) setNote(t('{number} has Erevos and is now a contact. Messages to that number go through Erevos.', { number }));
       };
       // What came to the backup queue, whether or not our relay answers.
       const spare = () => lookAtSpare(e2e, take, () => !active, spareStore).catch(() => undefined);
@@ -900,7 +911,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           const bytes = await receiveMessage(own, recipient);
           if (failed !== null && active) {
             const shown = failed;
-            setNote((current) => (current === shown ? 'The relay answers again.' : current));
+            setNote((current) => (current === shown ? t('The relay answers again.') : current));
             failed = null;
           }
           if (!bytes) break;
@@ -928,7 +939,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           if (!active) return;
           setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
           setNote(
-            'The relay had lost your queue, so a new one was made. Your contacts learn it from your next message to them.',
+            t('The relay had lost your queue, so a new one was made. Your contacts learn it from your next message to them.'),
           );
         } catch (retry) {
           if (active) setNote(errorText(retry));
@@ -968,7 +979,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   function handle(received: Awaited<ReturnType<E2E['receive']>>) {
     if (!e2e) return;
     if (received.kind === 'refused') {
-      if (received.reason === 'plain') setNote('A message that was not end-to-end encrypted came, and was not shown.');
+      if (received.reason === 'plain') setNote(t('A message that was not end-to-end encrypted came, and was not shown.'));
       return;
     }
     const peer = `${CONTACT_PREFIX}${received.identity}`;
@@ -998,7 +1009,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
             addMessage(peer, '', false, tag, timer, voice);
             if (tag) receipt(peer, 'got', [tag]);
           })
-          .catch((error) => setNote(`A voice message came but could not be kept. ${errorText(error)}`));
+          .catch((error) => setNote(t('A voice message came but could not be kept. {error}', { error: errorText(error) })));
       }
     }
     if (received.file) {
@@ -1017,21 +1028,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     if (received.timerChanged) {
       setNote(
         received.timer
-          ? `${name} set new messages in this chat to disappear ${timerLabel(received.timer).toLowerCase()} after they are read.`
-          : `${name} turned disappearing messages off in this chat.`,
+          ? t('{name} set new messages in this chat to disappear {time} after they are read.', { name, time: timerLabel(received.timer).toLowerCase() })
+          : t('{name} turned disappearing messages off in this chat.', { name }),
       );
     }
     if (received.erase && 'all' in received.erase) {
       forgetChat(peer);
-      setNote(`${name} deleted the messages of this chat on both phones.`);
+      setNote(t('{name} deleted the messages of this chat on both phones.', { name }));
     } else if (received.erase) {
       forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag, until: 0, lasts: 0, mark: 0, at: 0 });
-      setNote(`${name} deleted a message on both phones.`);
+      setNote(t('{name} deleted a message on both phones.', { name }));
     }
     if (received.added && received.request) {
-      setNote(`Message request from ${name}: they have your contact link. Accept it to answer, or refuse it.`);
+      setNote(t('Message request from {name}: they have your contact link. Accept it to answer, or refuse it.', { name }));
     } else if (received.added) {
-      setNote(`New chat with ${name}: they added your contact link. Compare the safety number with theirs.`);
+      setNote(t('New chat with {name}: they added your contact link. Compare the safety number with theirs.', { name }));
     }
   }
 
@@ -1081,36 +1092,39 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   async function eraseOnBoth(peer: string, erase: Erase, here: () => void) {
     const target = relayTarget();
     if (!target) {
-      setNote('Not deleted. Type the relay address in Relay first.');
+      setNote(t('Not deleted. Type the relay address in Relay first.'));
       return;
     }
     try {
       await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', { erase });
       here();
-      setNote(`Deleted here. ${label(peer, shownContacts)}'s phone deletes them too when it next looks at the relay.`);
+      setNote(t("Deleted here. {name}'s phone deletes them too when it next looks at the relay.", { name: label(peer, shownContacts) }));
     } catch (error) {
-      setNote(notSent(error).replace('Not sent.', 'Not deleted.'));
+      setNote(t('Not deleted. {reason}', { reason: notSentReason(error) }));
     }
   }
 
   function deleteMessages(peer: string) {
     const name = label(peer, shownContacts);
-    const kept = archive && archive.linked(peer.slice(CONTACT_PREFIX.length)).length > 0 ? ' Imported messages stay: delete them in Imported chats.' : '';
-    ask('Delete messages', `Delete the messages with ${name}? They cannot be brought back.${kept}`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'This phone', onPress: () => forgetChat(peer) },
-      { text: 'Both phones', style: 'destructive', onPress: () => void eraseOnBoth(peer, { all: true }, () => forgetChat(peer)) },
+    const kept = !!archive && archive.linked(peer.slice(CONTACT_PREFIX.length)).length > 0;
+    const question = kept
+      ? t('Delete the messages with {name}? They cannot be brought back. Imported messages stay: delete them in Imported chats.', { name })
+      : t('Delete the messages with {name}? They cannot be brought back.', { name });
+    ask(t('Delete messages'), question, [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('This phone'), onPress: () => forgetChat(peer) },
+      { text: t('Both phones'), style: 'destructive', onPress: () => void eraseOnBoth(peer, { all: true }, () => forgetChat(peer)) },
     ]);
   }
 
   function deleteMessage(message: Message) {
     // One that waits never reached their phone.
     const both = message.peer.startsWith(CONTACT_PREFIX) && message.tag && message.mark !== WAITING;
-    ask('Delete message', 'Delete this message? It cannot be brought back.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'This phone', onPress: () => forgetMessage(message) },
+    ask(t('Delete message'), t('Delete this message? It cannot be brought back.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('This phone'), onPress: () => forgetMessage(message) },
       ...(both
-        ? [{ text: 'Both phones', style: 'destructive' as const, onPress: () => void eraseOnBoth(message.peer, { tag: message.tag }, () => forgetMessage(message)) }]
+        ? [{ text: t('Both phones'), style: 'destructive' as const, onPress: () => void eraseOnBoth(message.peer, { tag: message.tag }, () => forgetMessage(message)) }]
         : []),
     ]);
   }
@@ -1123,7 +1137,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // Seals a message for a contact and hands it to their phone (handOver). Returns the message's
   // tag, how long it lasts, and how it went.
   async function sendToContact(target: Relay | null, identity: string, text: string, extra: Extra = {}): Promise<{ tag: string; timer: number; way: Delivery }> {
-    if (!e2e) throw new Error(NO_CORE);
+    if (!e2e) throw new Error(t(NO_CORE));
     const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here() });
     // What is only a mark, or asks whether their phone is open, is not worth carrying for days.
     const way = await handOver(e2e, target, identity, sealed, [sealed.packet], !!text || !!extra.erase);
@@ -1155,7 +1169,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         }
       : null;
     if (hiddenKey) {
-      if (!relay) return Promise.reject(new Error('Type the relay address in Relay first.'));
+      if (!relay) return Promise.reject(new Error(t('Type the relay address in Relay first.')));
       return relay().then(() => 'relay');
     }
     const all = sealed.first ? [sealed.first, ...packets] : packets;
@@ -1174,7 +1188,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   latest.current = {
     send: async (identity, extra) => {
       const target = relayTarget();
-      if (!target) throw new Error('No relay.');
+      if (!target) throw new Error(t('No relay.'));
       await sendToContact(target, identity, '', extra);
     },
     line: (message) => {
@@ -1198,11 +1212,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   function callDirectly(): Promise<boolean> {
     return new Promise((resolve) =>
       ask(
-        'Call without a call relay?',
-        "Your relay has no call relay beside it, so the call would go straight between the phones. That only works on the same Wi-Fi, and each phone sees the other's address on it. With a call relay, neither does.",
+        t('Call without a call relay?'),
+        t("Your relay has no call relay beside it, so the call would go straight between the phones. That only works on the same Wi-Fi, and each phone sees the other's address on it. With a call relay, neither does."),
         [
-          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-          { text: 'Call', onPress: () => resolve(true) },
+          { text: t('Cancel'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('Call'), onPress: () => resolve(true) },
         ],
       ),
     );
@@ -1210,28 +1224,28 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
 
   async function startCall(video: boolean) {
     if (!selectedContact) {
-      setNote(`${video ? 'Video calls' : 'Calls'} go to contacts through the relay. Pick one first.`);
+      setNote(video ? t('Video calls go to contacts through the relay. Pick one first.') : t('Calls go to contacts through the relay. Pick one first.'));
       return;
     }
     const peer = selectedContact;
     const identity = peer.slice(CONTACT_PREFIX.length);
     if (contacts.find((c) => c.identity === identity)?.request) {
-      setNote('Accept the message request first. Then you can call.');
+      setNote(t('Accept the message request first. Then you can call.'));
       return;
     }
     if (currentCall() || currentGroupCall()) {
-      setNote('There is a call already.');
+      setNote(t('There is a call already.'));
       return;
     }
     // On the same Wi-Fi or a hotspot, with no internet, a call is set up over the link nearby and
     // goes straight between the two: to the contact's link when heard on one, else to every link.
     const near = nearby.isNear(identity) || nearby.count() > 0;
     if (!e2e || ((!ownQueue || !relayUrl.trim()) && !near)) {
-      setNote(e2e ? 'Calls are set up through the relay, or with a contact on the same Wi-Fi. Type the relay address in Relay first.' : NO_CORE);
+      setNote(e2e ? t('Calls are set up through the relay, or with a contact on the same Wi-Fi. Type the relay address in Relay first.') : t(NO_CORE));
       return;
     }
     if (!(await callPermissions(video))) {
-      setNote(video ? 'A video call needs the camera and the microphone.' : 'A call needs the microphone.');
+      setNote(video ? t('A video call needs the camera and the microphone.') : t('A call needs the microphone.'));
       return;
     }
     let relay: CallRelay | null = null;
@@ -1240,7 +1254,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         relay = near ? await soon(ownCallRelay(), 4000, null) : await ownCallRelay();
       } catch (error) {
         if (!near) {
-          setNote(`Could not call. ${errorText(error)}`);
+          setNote(t('Could not call. {error}', { error: errorText(error) }));
           return;
         }
       }
@@ -1255,21 +1269,29 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
 
   // What the note under the messages says once something went (`what`: Sent, Voice message sent…).
   function sentNote(way: Delivery, what: string, name: string): string {
-    if (way === 'nearby') return `${what} nearby, end-to-end encrypted.`;
-    if (way === 'relay') return `${what} through the relay, end-to-end encrypted.`;
+    if (way === 'nearby') return t('{what} nearby, end-to-end encrypted.', { what });
+    if (way === 'relay') return t('{what} through the relay, end-to-end encrypted.', { what });
     if (way === 'lora') {
-      return `${what} over LoRa, end-to-end encrypted, as the relay could not be reached. It comes if ${name}'s Erevos has a radio on the same mesh, within reach.`;
+      return t("{what} over LoRa, end-to-end encrypted, as the relay could not be reached. It comes if {name}'s Erevos has a radio on the same mesh, within reach.", { what, name });
     }
     if (way === 'carried') {
-      return `${what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. If ${name}'s is not one of them, they hand it to ${name}'s relay once they reach the internet, and so does this phone.`;
+      return t(
+        "{what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. If {name}'s is not one of them, they hand it to {name}'s relay once they reach the internet, and so does this phone.",
+        { what, name },
+      );
     }
-    return `${what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. It comes only if ${name}'s is one of them.`;
+    return t("{what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. It comes only if {name}'s is one of them.", { what, name });
+  }
+
+  // Why something could not go, without the words that say so.
+  function notSentReason(error: unknown): string {
+    return isQueueNotFound(error)
+      ? t("The relay does not have this contact's queue any more. Ask them to write to you, or for their new contact link.")
+      : errorText(error);
   }
 
   function notSent(error: unknown): string {
-    return isQueueNotFound(error)
-      ? "Not sent. The relay does not have this contact's queue any more. Ask them to write to you, or for their new contact link."
-      : `Not sent. ${errorText(error)}`;
+    return t('Not sent. {reason}', { reason: notSentReason(error) });
   }
 
   // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it is read.
@@ -1278,14 +1300,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     if (!text || !selected?.startsWith(CONTACT_PREFIX)) return;
     setVanishing(false);
     if (!e2e) {
-      setNote(NO_CORE);
+      setNote(t(NO_CORE));
       return;
     }
     try {
       const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts });
       keep(selected, text, tag, timer);
-      const sent = sentNote(way, 'Sent', label(selected, contacts));
-      setNote(timer ? `${sent} It disappears from both phones ${timerLabel(timer).toLowerCase()} after it is read.` : sent);
+      const sent = sentNote(way, t('Sent'), label(selected, contacts));
+      setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer).toLowerCase() }) : sent);
     } catch (error) {
       if (!canWait(error) || hiddenKey) {
         setNote(notSent(error));
@@ -1294,7 +1316,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       // Nothing could take it now: it waits, and goes by itself (lib/waiting.ts).
       addMessage(selected, text, true, newTag(), lasts || timerOf(selected), undefined, undefined, WAITING);
       setDraft('');
-      setNote(`Waiting. ${waitingReason(error, selected, 'It is too long for LoRa.')} It goes by itself once the relay or their phone nearby can take it.`);
+      setNote(t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason: waitingReason(error, selected, t('It is too long for LoRa.')) }));
     }
   }
 
@@ -1305,17 +1327,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
 
   // Why a message could not go now: `lora`, what LoRa says of it, when LoRa was the only way.
   function waitingReason(error: unknown, peer: string, lora: string): string {
-    if (error instanceof TooLargeForLoraError) return `${lora} ${relayTarget() ? 'The relay cannot be reached.' : 'There is no relay.'}`;
-    return `${relayTarget() ? 'The relay cannot be reached' : 'There is no relay'}, and ${label(peer, contacts)}'s phone is not near.`;
+    if (error instanceof TooLargeForLoraError) return `${lora} ${relayTarget() ? t('The relay cannot be reached.') : t('There is no relay.')}`;
+    const name = label(peer, contacts);
+    return relayTarget()
+      ? t("The relay cannot be reached, and {name}'s phone is not near.", { name })
+      : t("There is no relay, and {name}'s phone is not near.", { name });
   }
 
   // Asks whether a voice message, photo or file that nothing could take now waits to go by itself.
-  function askToWait(what: string, reason: string): Promise<boolean> {
+  function askToWait(what: 'voice' | 'photo' | 'file', reason: string): Promise<boolean> {
     return choose(
-      'Not sent yet',
-      `${reason} The ${what} can wait here, marked Waiting, and go by itself once the relay or their phone nearby can take it.`,
-      'Delete it',
-      'Keep it waiting',
+      t('Not sent yet'),
+      what === 'voice'
+        ? t('{reason} The voice message can wait here, marked Waiting, and go by itself once the relay or their phone nearby can take it.', { reason })
+        : what === 'photo'
+          ? t('{reason} The photo can wait here, marked Waiting, and go by itself once the relay or their phone nearby can take it.', { reason })
+          : t('{reason} The file can wait here, marked Waiting, and go by itself once the relay or their phone nearby can take it.', { reason }),
+      t('Delete it'),
+      t('Keep it waiting'),
     );
   }
 
@@ -1344,7 +1373,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       // A computer has no share sheet: the link is copied, to paste where it should go.
       if (Platform.OS === 'web') {
         await navigator.clipboard.writeText(link);
-        setNote('Contact link copied.');
+        setNote(t('Contact link copied.'));
         return;
       }
       await Share.share({ message: link });
@@ -1386,10 +1415,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
 
   // Refusing forgets them and their messages here. Their phone is not told.
   function refuseRequest(peer: string) {
-    ask('Refuse request', `Refuse ${label(peer, contacts)}? Their messages go, and anything they send later is not shown.`, [
-      { text: 'Cancel', style: 'cancel' },
+    ask(t('Refuse request'), t('Refuse {name}? Their messages go, and anything they send later is not shown.', { name: label(peer, contacts) }), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'Refuse',
+        text: t('Refuse'),
         style: 'destructive',
         onPress: async () => {
           if (!e2e) return;
@@ -1420,7 +1449,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // Starts recording while Voice is held. Letting go sends it; a minute sends it anyway.
   function startTalking() {
     if (!selectedContact) {
-      setNote('Voice messages go to contacts through the relay. Pick one first.');
+      setNote(t('Voice messages go to contacts through the relay. Pick one first.'));
       return;
     }
     holding.current = true;
@@ -1428,13 +1457,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     recordingTalk.current = talk;
     const started = (talk ? talkRecorder : recorder).start().then((ok) => {
       if (!ok) {
-        setNote('Erevos may not use the microphone. Allow it in the phone settings to send voice messages.');
+        setNote(t('Erevos may not use the microphone. Allow it in the phone settings to send voice messages.'));
         return false;
       }
       if (!holding.current) {
         // Let go while the microphone was getting ready.
         void (talk ? talkRecorder : recorder).stop().catch(() => undefined);
-        setNote('Hold Voice while you talk, and let go to send.');
+        setNote(t('Hold Voice while you talk, and let go to send.'));
         return false;
       }
       setTalking(true);
@@ -1442,7 +1471,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       return true;
     });
     recording.current = started.catch((error) => {
-      setNote(`Cannot record. ${errorText(error)}`);
+      setNote(t('Cannot record. {error}', { error: errorText(error) }));
       return false;
     });
   }
@@ -1459,12 +1488,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       const talk = recordingTalk.current;
       const recorded = await (talk ? talkRecorder : recorder).stop();
       if (!recorded) {
-        setNote('Hold Voice while you talk, and let go to send.');
+        setNote(t('Hold Voice while you talk, and let go to send.'));
         return;
       }
       await sendVoice(recorded.audio, recorded.ms, talk);
     } catch (error) {
-      setNote(`Not sent. ${errorText(error)}`);
+      setNote(t('Not sent. {reason}', { reason: errorText(error) }));
     }
   }
 
@@ -1475,7 +1504,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     if (next.has(peer)) next.delete(peer);
     else next.add(peer);
     setTalkies(next);
-    setNote(next.has(peer) ? 'Walkie-talkie: hold to talk. It plays on their phone as it comes, if this chat is open there.' : '');
+    setNote(next.has(peer) ? t('Walkie-talkie: hold to talk. It plays on their phone as it comes, if this chat is open there.') : '');
   }
 
   // Seals a voice message for the contact picked, hands its parts to their phone in turn (nearby,
@@ -1484,7 +1513,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     const peer = selectedContact;
     if (!peer) return;
     if (!e2e) {
-      setNote(NO_CORE);
+      setNote(t(NO_CORE));
       return;
     }
     const identity = peer.slice(CONTACT_PREFIX.length);
@@ -1494,22 +1523,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms));
       // Writing to a message request accepts it.
       setContacts(e2e.contacts());
-      setNote(sentNote(way, talk ? 'Walkie-talkie message sent' : 'Voice message sent', label(peer, contacts)));
+      setNote(sentNote(way, talk ? t('Walkie-talkie message sent') : t('Voice message sent'), label(peer, contacts)));
     } catch (error) {
       // A walkie-talkie message is for now only.
       if (!canWait(error) || talk || hiddenKey) {
         setNote(notSent(error));
         return;
       }
-      if (!(await askToWait('voice message', waitingReason(error, peer, 'LoRa takes only text.')))) {
-        setNote('Not sent.');
+      if (!(await askToWait('voice', waitingReason(error, peer, t('LoRa takes only text.'))))) {
+        setNote(t('Not sent.'));
         return;
       }
       try {
         addMessage(peer, '', true, newTag(), timerOf(peer), await saveClip(audio, ms), undefined, WAITING);
-        setNote('The voice message waits, and goes by itself once the relay or their phone nearby can take it.');
+        setNote(t('The voice message waits, and goes by itself once the relay or their phone nearby can take it.'));
       } catch (failed) {
-        setNote(`Not sent, and it could not wait. ${errorText(failed)}`);
+        setNote(t('Not sent, and it could not wait. {error}', { error: errorText(failed) }));
       }
     }
   }
@@ -1521,7 +1550,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     try {
       const audio = await loadClip(message.voice);
       if (!audio) {
-        setNote("This voice message's sound is gone.");
+        setNote(t("This voice message's sound is gone."));
         return;
       }
       setPlayingId(message.id);
@@ -1535,7 +1564,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         setPlayed,
       );
     } catch (error) {
-      setNote(`Cannot play it. ${errorText(error)}`);
+      setNote(t('Cannot play it. {error}', { error: errorText(error) }));
     }
   }
 
@@ -1562,7 +1591,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       setTaking(({ [key]: _done, ...rest }) => rest);
     } catch (error) {
       setTaking((now) => ({ ...now, [key]: error instanceof FileGoneError ? 'gone' : 'failed' }));
-      setNote(`${ref.kind === 'photo' ? 'A photo' : 'A file'} did not come. ${errorText(error)}`);
+      setNote(ref.kind === 'photo' ? t('A photo did not come. {error}', { error: errorText(error) }) : t('A file did not come. {error}', { error: errorText(error) }));
     } finally {
       takingNow.current.delete(key);
     }
@@ -1597,11 +1626,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     const target = relayTarget();
     const own = ownRelay();
     if (!peer || !target || !own) {
-      setNote('Photos and files go to contacts through the relay. Type its address in Relay, and pick a contact.');
+      setNote(t('Photos and files go to contacts through the relay. Type its address in Relay, and pick a contact.'));
       return;
     }
     if (!e2e) {
-      setNote(NO_CORE);
+      setNote(t(NO_CORE));
       return;
     }
     let picked: Picked | null;
@@ -1610,10 +1639,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     } catch (error) {
       setNote(
         error instanceof TooLargeError
-          ? 'Not sent. Files can be 100 MB at most.'
+          ? t('Not sent. Files can be 100 MB at most.')
           : error instanceof NoCameraError
             ? error.message
-            : `Cannot open it. ${errorText(error)}`,
+            : t('Cannot open it. {error}', { error: errorText(error) }),
       );
       return;
     }
@@ -1622,10 +1651,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     let kept: FileRef | null = null;
     try {
       if (picked.source.size > MAX_FILE) throw new TooLargeError();
-      setNote(`Sending the ${what}…`);
+      setNote(what === 'photo' ? t('Sending the photo…') : t('Sending the file…'));
       const size = picked.w && picked.h ? { w: picked.w, h: picked.h } : {};
       const sent = await sendFile(own, picked.source, { name: picked.name, mime: picked.mime, kind, ...size }, (done, count) => {
-        if (count > 1) setNote(`Sending the ${what}, ${Math.floor((done / count) * 100)}%`);
+        if (count > 1) {
+          const percent = Math.floor((done / count) * 100);
+          setNote(what === 'photo' ? t('Sending the photo, {percent}%', { percent }) : t('Sending the file, {percent}%', { percent }));
+        }
       });
       kept = sent.ref;
       const identity = peer.slice(CONTACT_PREFIX.length);
@@ -1635,28 +1667,33 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       kept = null;
       // Writing to a message request accepts it.
       setContacts(e2e.contacts());
-      setNote(`${kind === 'photo' ? 'Photo' : 'File'} sent through the relay, end-to-end encrypted.`);
+      setNote(kind === 'photo' ? t('Photo sent through the relay, end-to-end encrypted.') : t('File sent through the relay, end-to-end encrypted.'));
     } catch (error) {
       if (kept) await deleteChunks(kept.id, kept.count).catch(() => undefined);
       if (!canWait(error) || hiddenKey) {
-        setNote(error instanceof TooLargeError ? 'Not sent. Files can be 100 MB at most.' : notSent(error));
+        setNote(error instanceof TooLargeError ? t('Not sent. Files can be 100 MB at most.') : notSent(error));
         return;
       }
       // It waits, kept here only, and goes to the relay later (lib/waiting.ts).
-      const reason = `Photos and files go through the relay, which cannot be reached${nearby.hasSlow() ? ', and LoRa takes only text' : ''}.`;
+      const reason = nearby.hasSlow()
+        ? t('Photos and files go through the relay, which cannot be reached, and LoRa takes only text.')
+        : t('Photos and files go through the relay, which cannot be reached.');
       if (!(await askToWait(what, reason))) {
-        setNote('Not sent.');
+        setNote(t('Not sent.'));
         return;
       }
       try {
         const size = picked.w && picked.h ? { w: picked.w, h: picked.h } : {};
         const ref = await keepFile(picked.source, { name: picked.name, mime: picked.mime, kind, ...size }, (done, count) => {
-          if (count > 1) setNote(`Keeping the ${what}, ${Math.floor((done / count) * 100)}%`);
+          if (count > 1) {
+            const percent = Math.floor((done / count) * 100);
+            setNote(what === 'photo' ? t('Keeping the photo, {percent}%', { percent }) : t('Keeping the file, {percent}%', { percent }));
+          }
         });
         addMessage(peer, '', true, newTag(), timerOf(peer), undefined, ref, WAITING);
-        setNote(`The ${what} waits, and goes by itself once the relay can take it.`);
+        setNote(what === 'photo' ? t('The photo waits, and goes by itself once the relay can take it.') : t('The file waits, and goes by itself once the relay can take it.'));
       } catch (failed) {
-        setNote(`Not sent, and it could not wait. ${errorText(failed)}`);
+        setNote(t('Not sent, and it could not wait. {error}', { error: errorText(failed) }));
       }
     } finally {
       picked.close?.();
@@ -1697,7 +1734,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     if (file.from) {
       const own = ownRelay();
       if (own) void take(own, message.peer, message.tag, file);
-      else setNote('Type the relay address in Relay first.');
+      else setNote(t('Type the relay address in Relay first.'));
       return;
     }
     setViewing(message);
@@ -1709,10 +1746,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       const where = await saveFile(message.file, choose);
       if (!where) return;
       setViewing(null);
-      setNote(`Saved in ${where}. There it is outside Erevos, not sealed.`);
+      setNote(t('Saved in {where}. There it is outside Erevos, not sealed.', { where }));
     } catch (error) {
       setViewing(null);
-      setNote(`Not saved. ${errorText(error)}`);
+      setNote(t('Not saved. {error}', { error: errorText(error) }));
     }
   }
 
@@ -1726,7 +1763,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       .then((bytes) => {
         if (bytes) setPhotos((now) => ({ ...now, [ref.id]: photoUri(bytes, ref.mime) }));
       })
-      .catch((error) => setNote(`Cannot show the photo. ${errorText(error)}`))
+      .catch((error) => setNote(t('Cannot show the photo. {error}', { error: errorText(error) })))
       .finally(() => loadingPhotos.current.delete(ref.id));
   }
 
@@ -1763,16 +1800,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       return;
     }
     if (hide) {
-      setNote(`You appear offline to ${label(peer, shownContacts)}. They see that messages came and were read once you write to them.`);
+      setNote(t('You appear offline to {name}. They see that messages came and were read once you write to them.', { name: label(peer, shownContacts) }));
       return;
     }
     const target = relayTarget();
     try {
-      if (!target) throw new Error('Type the relay address in Relay first.');
+      if (!target) throw new Error(t('Type the relay address in Relay first.'));
       await sendToContact(target, identity, '', { on: appShown() ? ONLINE : 0 });
-      setNote(`${label(peer, shownContacts)} sees again when you are online, and which messages you read.`);
+      setNote(t('{name} sees again when you are online, and which messages you read.', { name: label(peer, shownContacts) }));
     } catch {
-      setNote(`${label(peer, shownContacts)} sees again when you are online. What you read is told with your next message.`);
+      setNote(t('{name} sees again when you are online. What you read is told with your next message.', { name: label(peer, shownContacts) }));
     }
   }
 
@@ -1806,7 +1843,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     if (!e2e || !history.current || moving) return;
     const identity = peer.slice(CONTACT_PREFIX.length);
     if (pin.length < MIN_PIN) {
-      setMoveNote(`The PIN needs ${MIN_PIN} characters at least.`);
+      setMoveNote(t('The PIN needs {n} characters at least.', { n: MIN_PIN }));
       return;
     }
     setMoving(true);
@@ -1815,7 +1852,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       const { space } = currentSpace();
       const place = fresh !== null ? { key: await setHiddenPassword(space, fresh, pin, null), pocket: fresh } : await openHidden(space, pin);
       if (!place) {
-        setMoveNote('Wrong PIN.');
+        setMoveNote(t('Wrong PIN.'));
         return;
       }
       const { key, pocket } = place;
@@ -1825,7 +1862,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         ? { url: data.url, token: data.token, via: data.via, viaToken: data.viaToken }
         : { url: relayUrl, token: relayToken, via: viaUrl, viaToken };
       const target = relayFor(settings.url, settings.token, settings.via, settings.viaToken);
-      if (!target) throw new Error('Type the relay address in Relay first.');
+      if (!target) throw new Error(t('Type the relay address in Relay first.'));
       let queue = data.ownQueue;
       if (!queue) {
         const ids = await createQueue(target);
@@ -1853,18 +1890,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           await hiddenChats.firstSent(identity);
         }
         await sendMessage(to, fromHex(sealed.sender), sealed.packet);
-        setNote('Moved to the hidden chats. Type their PIN in the search on the home screen to open them.');
+        setNote(t('Moved to the hidden chats. Type their PIN in the search on the home screen to open them.'));
       } catch {
-        setNote('Moved to the hidden chats. Their phone learns where to write when you next write to them from there.');
+        setNote(t('Moved to the hidden chats. Their phone learns where to write when you next write to them from there.'));
       }
       if (initial) router.canGoBack() ? router.back() : router.replace('/');
     } catch (error) {
       setMoveNote(
         error instanceof SamePasswordError
-          ? 'Use another PIN: this one opens Erevos, or other hidden chats.'
+          ? t('Use another PIN: this one opens Erevos, or other hidden chats.')
           : error instanceof LockedOutError
             ? lockedOutMessage(error.until)
-            : `Not moved. ${errorText(error)}`,
+            : t('Not moved. {error}', { error: errorText(error) }),
       );
     } finally {
       setMoving(false);
@@ -1883,15 +1920,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       return;
     }
     const set = timer
-      ? `New messages in this chat now disappear from both phones ${timerLabel(timer).toLowerCase()} after they are read.`
-      : 'New messages in this chat no longer disappear.';
+      ? t('New messages in this chat now disappear from both phones {time} after they are read.', { time: timerLabel(timer).toLowerCase() })
+      : t('New messages in this chat no longer disappear.');
     const target = relayTarget();
     try {
-      if (!target) throw new Error('Type the relay address in Relay first.');
+      if (!target) throw new Error(t('Type the relay address in Relay first.'));
       await sendToContact(target, identity, '');
       setNote(set);
     } catch (error) {
-      setNote(`${set} ${label(peer, shownContacts)}'s phone learns it with your next message. ${notSent(error).replace('Not sent. ', '')}`);
+      setNote(t("{set} {name}'s phone learns it with your next message. {reason}", { set, name: label(peer, shownContacts), reason: notSentReason(error) }));
     }
   }
 
@@ -1900,24 +1937,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     setHomeNote('');
     const address = homeUrl.trim();
     if (address && !/^wss?:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(address)) {
-      setHomeNote('A relay address starts with ws:// or wss://.');
+      setHomeNote(t('A relay address starts with ws:// or wss://.'));
       return;
     }
     const space = await loadCurrentSpaceData().catch(() => null);
     if (address && (sameRelay(address, relayUrl) || (space?.spare.url && sameRelay(address, space.spare.url)))) {
-      setHomeNote('Use another relay than this relay, and than the space’s home relay: one relay seeing both would tie them together.');
+      setHomeNote(t('Use another relay than this relay, and than the space’s home relay: one relay seeing both would tie them together.'));
       return;
     }
     try {
       await setSpareRelay(address, homeToken, spareStore);
       if (!address) {
-        setHomeNote('No home relay for these hidden chats.');
+        setHomeNote(t('No home relay for these hidden chats.'));
         return;
       }
       await readySpare(spareStore);
-      setHomeNote('The queue on the home relay is ready. Contacts learn it from your next message, or from your contact link.');
+      setHomeNote(t('The queue on the home relay is ready. Contacts learn it from your next message, or from your contact link.'));
     } catch (error) {
-      setHomeNote(`Saved, but the home relay could not be reached: ${errorText(error)}. It is tried again with each look.`);
+      setHomeNote(t('Saved, but the home relay could not be reached: {error}. It is tried again with each look.', { error: errorText(error) }));
     }
   }
 
@@ -1926,13 +1963,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     for (const field of [typedRelay, typedToken, typedVia, typedViaToken]) field.done();
     const target = relayFor(typedRelay.shown, typedToken.shown, typedVia.shown, typedViaToken.shown, spareBackup(spareStore));
     if (!target) {
-      setNote('Type the relay address first.');
+      setNote(t('Type the relay address first.'));
       return;
     }
     try {
       const ids = await createQueue(target);
       setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
-      setNote('Relay queue created.');
+      setNote(t('Relay queue created.'));
     } catch (error) {
       setNote(errorText(error));
     }
@@ -1941,7 +1978,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   function addContact() {
     const code = parseContact(contactDraft);
     if (!code) {
-      setNote('That is not an Erevos contact link.');
+      setNote(t('That is not an Erevos contact link.'));
       return;
     }
     setContactDraft('');
@@ -1972,7 +2009,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   }, [shownKey]);
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
   const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity]);
-  const importedFrom = [...new Set(imported.map((m) => SOURCE_LABELS[m.source]))].join(' and ');
+  const importedFrom = [...new Set(imported.map((m) => SOURCE_LABELS[m.source]))].join(` ${t('and')} `);
   // In an imported group, each message says who wrote it.
   const importedGroup = useMemo(() => new Set(imported.filter((m) => !m.mine && m.sender).map((m) => m.sender)).size > 1, [imported]);
   // A contact without a name shows as the imported chat that goes on with them.
@@ -2007,13 +2044,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   const subtitle = selectedContact
     ? selectedOnline
       ? selectedNearby
-        ? 'Online · nearby'
-        : 'Online'
+        ? t('Online · nearby')
+        : t('Online')
       : selectedNearby
-        ? 'Nearby · end-to-end encrypted'
+        ? t('Nearby · end-to-end encrypted')
         : selectedTimer
-          ? `End-to-end encrypted · ${timerLabel(selectedTimer).toLowerCase()} after read`
-          : 'End-to-end encrypted'
+          ? t('End-to-end encrypted · {time} after read', { time: timerLabel(selectedTimer).toLowerCase() })
+          : t('End-to-end encrypted')
     : '';
 
   const selectedLook = contacts.find((c) => c.identity === selectedIdentity)?.look ?? null;
@@ -2040,19 +2077,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         <ScreenBackdrop>
           <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.ground }}>
             <AppearanceEditor
-              title={`Look of ${selectedName || 'this chat'}`}
+              title={selectedName ? t('Look of {name}', { name: selectedName }) : t('Look of this chat')}
               top={
                 <View style={styles.section}>
                   <Text variant="caption" tone="muted">
                     {selectedLook
-                      ? 'This chat has its own look, kept only on this phone. The rest of the app keeps its own.'
-                      : 'This chat follows the app\'s look. Change anything below to give it its own.'}
+                      ? t('This chat has its own look, kept only on this phone. The rest of the app keeps its own.')
+                      : t("This chat follows the app's look. Change anything below to give it its own.")}
                   </Text>
                   <Row wrap>
-                    <Button title="Done" compact onPress={() => setStyling(false)} />
+                    <Button title={t('Done')} compact onPress={() => setStyling(false)} />
                     {selectedLook && e2e ? (
                       <TextButton
-                        title="Same as the app"
+                        title={t('Same as the app')}
                         onPress={() => {
                           void e2e.setLook(selectedIdentity, null).then(() => setContacts(e2e.contacts()));
                         }}
@@ -2076,9 +2113,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
             <View style={styles.sheetBar}>
               <BackButton onPress={() => setDetails(false)} />
               <Text variant="heading" style={styles.grow}>
-                Details
+                {t('Details')}
               </Text>
-              <TextButton title="Done" onPress={() => setDetails(false)} />
+              <TextButton title={t('Done')} onPress={() => setDetails(false)} />
             </View>
             <ScrollView
               contentContainerStyle={[styles.sheetContent, { paddingBottom: insets.bottom + space.xl }]}
@@ -2088,7 +2125,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                 <Pressable
                   onPress={selectedContact ? () => setOpened((now) => (now === 'picture' ? null : 'picture')) : undefined}
                   accessibilityRole={selectedContact ? 'button' : undefined}
-                  accessibilityLabel={selectedContact ? 'Change picture' : undefined}
+                  accessibilityLabel={selectedContact ? t('Change picture') : undefined}
                 >
                   {selectedContact ? (
                     <KeyFace identity={selectedIdentity} name={contactName(selectedContact, shownContacts) ?? ''} size={104} avatar={selectedAvatar} />
@@ -2113,40 +2150,40 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
               {selectedContact ? (
                 <>
                   <View style={styles.actions}>
-                    <QuickAction title="Call" sign="☏" onPress={() => {
+                    <QuickAction title={t('Call')} sign="☏" onPress={() => {
                       setDetails(false);
                       void startCall(false);
                     }} />
-                    <QuickAction title="Video" sign="▶" onPress={() => {
+                    <QuickAction title={t('Video')} sign="▶" onPress={() => {
                       setDetails(false);
                       void startCall(true);
                     }} />
-                    <QuickAction title="Rename" sign="✎" on={renaming === selectedContact} onPress={() => startRenaming(selectedContact)} />
-                    <QuickAction title="Picture" sign="☺" on={opened === 'picture'} onPress={() => setOpened((now) => (now === 'picture' ? null : 'picture'))} />
+                    <QuickAction title={t('Rename')} sign="✎" on={renaming === selectedContact} onPress={() => startRenaming(selectedContact)} />
+                    <QuickAction title={t('Picture')} sign="☺" on={opened === 'picture'} onPress={() => setOpened((now) => (now === 'picture' ? null : 'picture'))} />
                   </View>
                   {renaming === selectedContact ? (
                     <View style={styles.group}>
                       <Text variant="caption" tone="muted">
-                        A name for them, only on this phone.
+                        {t('A name for them, only on this phone.')}
                       </Text>
                       <Row>
                         <Input
                           value={nameDraft}
                           onChangeText={setNameDraft}
                           onSubmitEditing={() => void rename(selectedContact)}
-                          placeholder="Name"
+                          placeholder={t('Name')}
                           maxLength={MAX_NAME}
                           autoFocus
                           style={styles.grow}
                         />
-                        <Button title="Save" compact onPress={() => void rename(selectedContact)} />
+                        <Button title={t('Save')} compact onPress={() => void rename(selectedContact)} />
                       </Row>
                     </View>
                   ) : null}
                   {opened === 'picture' ? (
                     <View style={styles.group}>
                       <Text variant="caption" tone="muted">
-                        A picture for them, only on this phone. Without one, their picture is drawn from their key.
+                        {t('A picture for them, only on this phone. Without one, their picture is drawn from their key.')}
                       </Text>
                       <View style={styles.signs}>
                         {AVATAR_SIGNS.map((emoji) => (
@@ -2170,25 +2207,25 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                               onPress={() => void changeAvatar(selectedContact, { ...signAvatar, color })}
                               accessibilityRole="radio"
                               accessibilityState={{ selected: signAvatar.color === color }}
-                              accessibilityLabel={`Colour ${color}`}
+                              accessibilityLabel={t('Colour {color}', { color })}
                               style={[styles.swatch, { backgroundColor: color }, signAvatar.color === color && styles.swatchOn]}
                             />
                           ))}
                         </View>
                       ) : null}
                       <Row wrap>
-                        <Button title="Photo" kind="secondary" compact onPress={() => void choosePhoto(selectedContact, 'photos')} />
-                        {CAN_TAKE_PHOTOS ? <Button title="Take photo" kind="secondary" compact onPress={() => void choosePhoto(selectedContact, 'camera')} /> : null}
-                        {selectedAvatar ? <TextButton title="Picture from their key" onPress={() => void changeAvatar(selectedContact, null)} /> : null}
+                        <Button title={t('Photo')} kind="secondary" compact onPress={() => void choosePhoto(selectedContact, 'photos')} />
+                        {CAN_TAKE_PHOTOS ? <Button title={t('Take photo')} kind="secondary" compact onPress={() => void choosePhoto(selectedContact, 'camera')} /> : null}
+                        {selectedAvatar ? <TextButton title={t('Picture from their key')} onPress={() => void changeAvatar(selectedContact, null)} /> : null}
                       </Row>
                     </View>
                   ) : null}
                   <Text variant="overline" tone="muted" style={styles.groupTitle}>
-                    Chat
+                    {t('Chat')}
                   </Text>
                   <View style={styles.group}>
                     <DetailRow
-                      title="Disappearing messages"
+                      title={t('Disappearing messages')}
                       value={timerLabel(selectedTimer)}
                       open={opened === 'timer'}
                       onPress={() => setOpened((now) => (now === 'timer' ? null : 'timer'))}
@@ -2196,8 +2233,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                     {opened === 'timer' ? (
                       <View style={styles.rowMore}>
                         <Text variant="caption" tone="muted">
-                          New messages, sent or received, disappear from both phones this long after they are read.
-                          Messages already here stay.
+                          {t('New messages, sent or received, disappear from both phones this long after they are read. Messages already here stay.')}
                         </Text>
                         <Row wrap>
                           {TIMERS.map((timer) => (
@@ -2208,19 +2244,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                     ) : null}
                     <View style={styles.rule} />
                     <DetailRow
-                      title="Appear offline"
+                      title={t('Appear offline')}
                       right={<Toggle on={selectedHidden} />}
                       onPress={() => void changeHidden(selectedContact, !selectedHidden)}
                     />
                     <Text variant="caption" tone="muted" style={styles.rowMore}>
                       {selectedHidden
-                        ? 'They do not see when you are online, nor that their messages came or were read, until you write. You do not see when they are online either.'
-                        : 'They see when you are online, and which of their messages you read.'}
+                        ? t('They do not see when you are online, nor that their messages came or were read, until you write. You do not see when they are online either.')
+                        : t('They see when you are online, and which of their messages you read.')}
                     </Text>
                     <View style={styles.rule} />
                     <DetailRow
-                      title="Chat look"
-                      value={selectedLook ? 'Its own' : 'Same as the app'}
+                      title={t('Chat look')}
+                      value={selectedLook ? t('Its own') : t('Same as the app')}
                       onPress={() => {
                         setDetails(false);
                         setStyling(true);
@@ -2228,19 +2264,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                     />
                   </View>
                   <Text variant="overline" tone="muted" style={styles.groupTitle}>
-                    Privacy
+                    {t('Privacy')}
                   </Text>
                   <View style={styles.group}>
                     <DetailRow
-                      title="Safety number"
-                      value="End-to-end encrypted"
+                      title={t('Safety number')}
+                      value={t('End-to-end encrypted')}
                       open={safety?.peer === selectedContact}
                       onPress={() => void toggleSafety(selectedContact)}
                     />
                     {safety?.peer === selectedContact ? (
                       <View style={styles.rowMore}>
                         <Text variant="caption" tone="muted">
-                          Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.
+                          {t('Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.')}
                         </Text>
                         <Text selectable variant="mono" style={styles.safety}>
                           {safety.number.split(' ').reduce((lines, group, i) => lines + (i === 0 ? '' : i % 4 === 0 ? '\n' : '  ') + group, '')}
@@ -2251,7 +2287,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                       <>
                         <View style={styles.rule} />
                         <DetailRow
-                          title="Move to hidden chats"
+                          title={t('Move to hidden chats')}
                           open={opened === 'move'}
                           onPress={() => {
                             setOpened((now) => (now === 'move' ? null : 'move'));
@@ -2263,8 +2299,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                         {opened === 'move' ? (
                           <View style={styles.rowMore}>
                             <Text variant="caption" tone="muted">
-                              The chat leaves this list and goes into the hidden chats, sealed with their PIN. To open them,
-                              type the PIN in the search on the home screen and press Enter. Nothing shows that they exist.
+                              {t('The chat leaves this list and goes into the hidden chats, sealed with their PIN. To open them, type the PIN in the search on the home screen and press Enter. Nothing shows that they exist.')}
                             </Text>
                             <Input
                               value={pinDraft}
@@ -2272,7 +2307,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                                 setPinDraft(text);
                                 setMoveNote('');
                               }}
-                              placeholder={`PIN of the hidden chats, ${MIN_PIN} or more characters`}
+                              placeholder={t('PIN of the hidden chats, {n} or more characters', { n: MIN_PIN })}
                               secureTextEntry
                               autoCapitalize="none"
                               autoCorrect={false}
@@ -2281,17 +2316,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                             {startingNew ? (
                               <>
                                 <Text variant="caption" tone="muted">
-                                  Pick a place for them, 1 to {POCKETS}, and remember it: Erevos cannot tell which are used.
+                                  {t('Pick a place for them, 1 to {n}, and remember it: Erevos cannot tell which are used.', { n: POCKETS })}
                                 </Text>
                                 <Row wrap>
                                   {Array.from({ length: POCKETS }, (_, place) => (
-                                    <Chip key={place} label={`Place ${place + 1}`} selected={newPocket === place} onPress={() => setNewPocket(place)} />
+                                    <Chip key={place} label={t('Place {n}', { n: place + 1 })} selected={newPocket === place} onPress={() => setNewPocket(place)} />
                                   ))}
                                 </Row>
                                 {newPocket !== null ? (
                                   <Text variant="caption" style={{ color: colors.danger }}>
-                                    New hidden chats start in place {newPocket + 1} with this PIN. If that place held hidden chats,
-                                    they can no longer be opened.
+                                    {t('New hidden chats start in place {n} with this PIN. If that place held hidden chats, they can no longer be opened.', { n: newPocket + 1 })}
                                   </Text>
                                 ) : null}
                               </>
@@ -2303,14 +2337,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                             ) : null}
                             <Row wrap>
                               <Button
-                                title={startingNew ? 'Start and move' : 'Move'}
+                                title={startingNew ? t('Start and move') : t('Move')}
                                 compact
                                 loading={moving}
                                 disabled={pinDraft.length < MIN_PIN || (startingNew && newPocket === null)}
                                 onPress={() => void moveToHidden(selectedContact, pinDraft, startingNew ? newPocket : null)}
                               />
                               <Button
-                                title={startingNew ? 'Cancel' : 'New hidden chats'}
+                                title={startingNew ? t('Cancel') : t('New hidden chats')}
                                 kind="secondary"
                                 compact
                                 disabled={moving}
@@ -2321,7 +2355,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                               />
                             </Row>
                             <Text variant="caption" tone="muted">
-                              Their phone is told at once where to write from now on. A message they send in that moment may not come.
+                              {t('Their phone is told at once where to write from now on. A message they send in that moment may not come.')}
                             </Text>
                           </View>
                         ) : null}
@@ -2330,7 +2364,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                   </View>
                   <View style={[styles.group, styles.groupGap]}>
                     <DetailRow
-                      title="Delete messages"
+                      title={t('Delete messages')}
                       danger
                       onPress={() => {
                         setDetails(false);
@@ -2344,17 +2378,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           </View>
         </ScreenBackdrop>
       </Modal>
-      <Sheet visible={showQr && shown && !!ownLink} onClose={() => setShowQr(false)} title="My QR code">
+      <Sheet visible={showQr && shown && !!ownLink} onClose={() => setShowQr(false)} title={t('My QR code')}>
         {ownLink ? <QrCode text={ownLink} size={240} /> : null}
         <Text variant="caption" tone="muted">
-          Scan it with the other phone's camera and open the link in Erevos. If the camera only shows the text, copy it and
-          paste it in Relay and new contacts on that phone.
+          {t("Scan it with the other phone's camera and open the link in Erevos. If the camera only shows the text, copy it and paste it in Relay and new contacts on that phone.")}
         </Text>
         <Row wrap>
-          <Button title="Done" compact onPress={() => setShowQr(false)} />
+          <Button title={t('Done')} compact onPress={() => setShowQr(false)} />
           {ownLink ? (
             <Button
-              title={Platform.OS === 'web' ? 'Copy my contact link' : 'Share my contact link'}
+              title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
               kind="secondary"
               compact
               onPress={() => void shareLink(ownLink)}
@@ -2364,7 +2397,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       </Sheet>
       {hiddenKey ? (
         <Text variant="overline" tone="muted" style={styles.kicker}>
-          Hidden chats
+          {t('Hidden chats')}
         </Text>
       ) : null}
       <View style={styles.header}>
@@ -2378,7 +2411,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
             style={({ pressed }) => [styles.who, pressed && styles.pressed]}
             onPress={() => setDetails(true)}
             accessibilityRole="button"
-            accessibilityLabel="Chat details"
+            accessibilityLabel={t('Chat details')}
           >
             <KeyFace identity={selectedIdentity} name={contactName(selected, shownContacts) ?? ''} size={42} avatar={selectedAvatar} />
             <View style={styles.grow}>
@@ -2397,21 +2430,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           </Pressable>
         ) : (
           <Text variant="title" style={styles.grow}>
-            {hiddenKey ? 'Hidden chats' : 'Chat'}
+            {hiddenKey ? t('Hidden chats') : t('Chat')}
           </Text>
         )}
         {selected ? (
           <Pressable
             onPress={() => setDetails(true)}
             accessibilityRole="button"
-            accessibilityLabel="Chat details"
+            accessibilityLabel={t('Chat details')}
             hitSlop={6}
             style={({ pressed }) => [styles.more, pressed && styles.pressed]}
           >
             <Text style={styles.moreText}>⋯</Text>
           </Pressable>
         ) : hiddenKey && onChangePassword ? (
-          <TextButton title="Change PIN" onPress={onChangePassword} />
+          <TextButton title={t('Change PIN')} onPress={onChangePassword} />
         ) : null}
       </View>
       {!selected ? (
@@ -2437,7 +2470,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                       />
                     </View>
                     <Text variant="caption" numberOfLines={1} style={[styles.faceName, !named && styles.monoSmall]}>
-                      {named ?? label(peer, shownContacts).replace(/^contact /, '')}
+                      {named ?? peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8)}
                     </Text>
                   </Pressable>
                 );
@@ -2446,19 +2479,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           ) : (
             <Text tone="muted">
               {hiddenKey
-                ? 'No hidden chats yet. Add a contact through the relay below, or move a chat here from its details.'
+                ? t('No hidden chats yet. Add a contact through the relay below, or move a chat here from its details.')
                 : Platform.OS === 'web'
-                  ? 'No chats yet. Add a contact through the relay, under Relay.'
-                  : 'No chats yet. Add a contact under Relay. Your contacts reach you nearby too, over Wi-Fi or Bluetooth, without the internet.'}
+                  ? t('No chats yet. Add a contact through the relay, under Relay.')
+                  : t('No chats yet. Add a contact under Relay. Your contacts reach you nearby too, over Wi-Fi or Bluetooth, without the internet.')}
             </Text>
           )}
           <View style={styles.panel}>
             <Row wrap>
-              <TextButton title={showRelay ? 'Hide relay' : 'Relay and new contacts'} onPress={() => setShowRelay((on) => !on)} />
+              <TextButton title={showRelay ? t('Hide relay') : t('Relay and new contacts')} onPress={() => setShowRelay((on) => !on)} />
             </Row>
             {showRelay ? (
               <View style={styles.section}>
-                <Field label="Relay address">
+                <Field label={t('Relay address')}>
                   <Input
                     value={typedRelay.shown}
                     onChangeText={typedRelay.type}
@@ -2469,18 +2502,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                     keyboardType="url"
                   />
                 </Field>
-                <Field label="Token (optional)">
+                <Field label={t('Token (optional)')}>
                   <Input
                     value={typedToken.shown}
                     onChangeText={typedToken.type}
                     onBlur={typedToken.done}
-                    placeholder="Token, if the relay needs one"
+                    placeholder={t('Token, if the relay needs one')}
                     autoCapitalize="none"
                     autoCorrect={false}
                     secureTextEntry
                   />
                 </Field>
-                <Field label="Second relay (optional)">
+                <Field label={t('Second relay (optional)')}>
                   <Input
                     value={typedVia.shown}
                     onChangeText={typedVia.type}
@@ -2492,12 +2525,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                   />
                 </Field>
                 {typedVia.shown.trim() ? (
-                  <Field label="Second relay token (optional)">
+                  <Field label={t('Second relay token (optional)')}>
                     <Input
                       value={typedViaToken.shown}
                       onChangeText={typedViaToken.type}
                       onBlur={typedViaToken.done}
-                      placeholder="Token, if the second relay needs one"
+                      placeholder={t('Token, if the second relay needs one')}
                       autoCapitalize="none"
                       autoCorrect={false}
                       secureTextEntry
@@ -2505,14 +2538,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                   </Field>
                 ) : null}
                 <Text variant="caption" tone="muted">
-                  With a second relay, what you send goes through it first, sealed for your relay. Your relay then never sees
-                  your phone's address, and the second relay never sees who a message is for. Taking messages still goes
-                  straight to your relay.
+                  {t("With a second relay, what you send goes through it first, sealed for your relay. Your relay then never sees your phone's address, and the second relay never sees who a message is for. Taking messages still goes straight to your relay.")}
                 </Text>
-                <Button title="Create my relay queue" compact onPress={createOwnQueue} />
+                <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} />
                 {hiddenKey ? (
                   <>
-                    <Field label="Home relay for these hidden chats (optional)">
+                    <Field label={t('Home relay for these hidden chats (optional)')}>
                       <Input
                         value={homeUrl}
                         onChangeText={setHomeUrl}
@@ -2523,11 +2554,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                       />
                     </Field>
                     {homeUrl.trim() ? (
-                      <Field label="Home relay token (optional)">
+                      <Field label={t('Home relay token (optional)')}>
                         <Input
                           value={homeToken}
                           onChangeText={setHomeToken}
-                          placeholder="Token, if the home relay needs one"
+                          placeholder={t('Token, if the home relay needs one')}
                           autoCapitalize="none"
                           autoCorrect={false}
                           secureTextEntry
@@ -2535,11 +2566,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                       </Field>
                     ) : null}
                     <Text variant="caption" tone="muted">
-                      A second relay with a queue of their own, which contacts write to while your relay cannot be reached.
-                      It is kept with these hidden chats only, so the space knows nothing of it, and it is looked at while
-                      they are open. Use another one than the space's home relay.
+                      {t("A second relay with a queue of their own, which contacts write to while your relay cannot be reached. It is kept with these hidden chats only, so the space knows nothing of it, and it is looked at while they are open. Use another one than the space's home relay.")}
                     </Text>
-                    <Button title="Save home relay" kind="secondary" compact onPress={() => void saveHome()} />
+                    <Button title={t('Save home relay')} kind="secondary" compact onPress={() => void saveHome()} />
                     {homeNote ? <Text variant="caption" tone="muted">{homeNote}</Text> : null}
                   </>
                 ) : null}
@@ -2547,13 +2576,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                   <View style={styles.section}>
                     <Text tone="muted">
                       {ownQueue
-                        ? 'Your relay queue is ready. Give your contact link to whoever may write to you.'
-                        : 'No relay queue yet. Your contact link has only your keys: who adds it reaches you nearby, over Wi-Fi or Bluetooth, until you have a relay.'}
+                        ? t('Your relay queue is ready. Give your contact link to whoever may write to you.')
+                        : t('No relay queue yet. Your contact link has only your keys: who adds it reaches you nearby, over Wi-Fi or Bluetooth, until you have a relay.')}
                     </Text>
                     <Row wrap>
-                      <Button title="Show my QR code" compact onPress={() => setShowQr(true)} />
+                      <Button title={t('Show my QR code')} compact onPress={() => setShowQr(true)} />
                       <Button
-                        title={Platform.OS === 'web' ? 'Copy my contact link' : 'Share my contact link'}
+                        title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
                         kind="secondary"
                         compact
                         onPress={() => void shareLink(ownLink)}
@@ -2561,49 +2590,49 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                     </Row>
                   </View>
                 ) : null}
-                <Text tone="muted">Add a contact by the contact link they gave you:</Text>
+                <Text tone="muted">{t('Add a contact by the contact link they gave you:')}</Text>
                 <Row>
                   <Input
                     value={contactDraft}
                     onChangeText={setContactDraft}
-                    placeholder="erevos://contact link"
+                    placeholder={t('erevos://contact link')}
                     autoCapitalize="none"
                     autoCorrect={false}
                     style={styles.grow}
                   />
-                  <Button title="Add" compact onPress={addContact} />
+                  <Button title={t('Add')} compact onPress={addContact} />
                 </Row>
                 {HAS_LINKS && !hiddenKey ? (
                   <View>
-                    <DetailRow title="Find Erevos on the same Wi-Fi" right={<Toggle on={lanOn} />} onPress={() => changeLan(!lanOn)} />
+                    <DetailRow title={t('Find Erevos on the same Wi-Fi')} right={<Toggle on={lanOn} />} onPress={() => changeLan(!lanOn)} />
                     <Text variant="caption" tone="muted">
                       {lanOn
-                        ? 'While a space is open, Erevos phones and computers on the same Wi-Fi or hotspot find each other and talk directly, even with no internet. Anyone on that Wi-Fi can tell an Erevos app is there, not whose.'
+                        ? t('While a space is open, Erevos phones and computers on the same Wi-Fi or hotspot find each other and talk directly, even with no internet. Anyone on that Wi-Fi can tell an Erevos app is there, not whose.')
                         : HAS_RADIO
-                          ? 'Only Bluetooth and Wi-Fi Aware look for phones nearby.'
-                          : 'Nothing looks for Erevos nearby.'}
+                          ? t('Only Bluetooth and Wi-Fi Aware look for phones nearby.')
+                          : t('Nothing looks for Erevos nearby.')}
                     </Text>
                     {CAN_DIRECT && lanOn ? (
                       <>
-                        <DetailRow title="Make a Wi-Fi with phones nearby" right={<Toggle on={directOn} />} onPress={() => changeDirect(!directOn)} />
+                        <DetailRow title={t('Make a Wi-Fi with phones nearby')} right={<Toggle on={directOn} />} onPress={() => changeDirect(!directOn)} />
                         <Text variant="caption" tone="muted">
                           {directOn
-                            ? 'With no Wi-Fi in common, two Erevos phones near each other make a small Wi-Fi of their own (Wi-Fi Direct): faster than Bluetooth, and calls go over it with no internet. Anyone near can tell an Erevos phone is there and could join that Wi-Fi, getting only sealed bytes.'
-                            : 'Erevos phones meet only on a Wi-Fi they share, or over Bluetooth and Wi-Fi Aware.'}
+                            ? t('With no Wi-Fi in common, two Erevos phones near each other make a small Wi-Fi of their own (Wi-Fi Direct): faster than Bluetooth, and calls go over it with no internet. Anyone near can tell an Erevos phone is there and could join that Wi-Fi, getting only sealed bytes.')
+                            : t('Erevos phones meet only on a Wi-Fi they share, or over Bluetooth and Wi-Fi Aware.')}
                         </Text>
                       </>
                     ) : null}
-                    <DetailRow title="Carry messages for others" right={<Toggle on={carrying} />} onPress={() => changeCarrying(!carrying)} />
+                    <DetailRow title={t('Carry messages for others')} right={<Toggle on={carrying} />} onPress={() => changeCarrying(!carrying)} />
                     <Text variant="caption" tone="muted">
                       {carrying
-                        ? "When the relay cannot be reached, Erevos phones nearby give each other what they could not send, sealed for the contact's relay. This phone keeps those it gets, three days at most, and hands them to that relay through yours. It cannot read them, nor tell who they are from or for: it sees only the relay's address."
-                        : 'This phone keeps nothing for others. What it cannot send, phones nearby still carry for you.'}
+                        ? t("When the relay cannot be reached, Erevos phones nearby give each other what they could not send, sealed for the contact's relay. This phone keeps those it gets, three days at most, and hands them to that relay through yours. It cannot read them, nor tell who they are from or for: it sees only the relay's address.")
+                        : t('This phone keeps nothing for others. What it cannot send, phones nearby still carry for you.')}
                     </Text>
                     {canLora() ? (
                       <>
-                        <DetailRow title="LoRa radio" value={LORA_SHOWN[lora.state().status]} onPress={() => router.push('/lora')} />
+                        <DetailRow title={t('LoRa radio')} value={t(LORA_SHOWN[lora.state().status])} onPress={() => router.push('/lora')} />
                         <Text variant="caption" tone="muted">
-                          With a Meshtastic radio, text goes kilometres with no internet, when nothing else takes it.
+                          {t('With a Meshtastic radio, text goes kilometres with no internet, when nothing else takes it.')}
                         </Text>
                       </>
                     ) : null}
@@ -2615,14 +2644,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         </ScrollView>
       ) : selectedContact && contacts.some((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === selectedContact) ? (
         <View style={styles.panel}>
-          <Text>Message request</Text>
+          <Text>{t('Message request')}</Text>
           <Text variant="caption" tone="muted">
-            Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages
-            came or were read. Writing to them accepts too.
+            {t('Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages came or were read. Writing to them accepts too.')}
           </Text>
           <Row wrap>
-            <TextButton title="Accept" onPress={() => void acceptRequest(selectedContact)} />
-            <TextButton title="Refuse" onPress={() => refuseRequest(selectedContact)} />
+            <TextButton title={t('Accept')} onPress={() => void acceptRequest(selectedContact)} />
+            <TextButton title={t('Refuse')} onPress={() => refuseRequest(selectedContact)} />
           </Row>
         </View>
       ) : null}
@@ -2637,7 +2665,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       >
         {firstImported > 0 ? (
           <TextButton
-            title={`Show earlier imported messages (${firstImported} more)`}
+            title={t('Show earlier imported messages ({n} more)', { n: firstImported })}
             onPress={() => {
               holdScroll.current = true;
               setImportedShown((count) => count + IMPORTED_PAGE * 4);
@@ -2646,7 +2674,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         ) : null}
         {imported.length > 0 ? (
           <Text variant="caption" tone="muted" style={styles.divider}>
-            Imported from {importedFrom}: only on this phone, only to read.
+            {t('Imported from {from}: only on this phone, only to read.', { from: importedFrom })}
           </Text>
         ) : null}
         {imported.slice(firstImported).map((message, i) => {
@@ -2656,21 +2684,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
             <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? b.mine : b.theirs, styles.imported]}>
               {importedGroup && !message.mine && message.sender ? <Text style={[ink, styles.sender]}>{message.sender}</Text> : null}
               {message.text ? <Text style={ink}>{message.text}</Text> : null}
-              {files ? <Text style={[ink, styles.files]}>{`${files}, not imported`}</Text> : null}
+              {files ? <Text style={[ink, styles.files]}>{t('{files}, not imported', { files })}</Text> : null}
               {message.at ? <Text style={[ink, styles.time]}>{shownTime(message.at)}</Text> : null}
             </View>
           );
         })}
         {imported.length > 0 ? (
           <Text variant="caption" tone="muted" style={styles.divider}>
-            Continued in Erevos
+            {t('Continued in Erevos')}
           </Text>
         ) : null}
         {selected && visible.length === 0 && imported.length === 0 ? (
           <View style={styles.hello}>
             <ShieldIcon color={colors.textFaint} size={28} />
             <Text variant="caption" tone="muted" style={styles.divider}>
-              No messages yet. What you write here is end-to-end encrypted, and kept sealed on this phone.
+              {t('No messages yet. What you write here is end-to-end encrypted, and kept sealed on this phone.')}
             </Text>
           </View>
         ) : null}
@@ -2692,7 +2720,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                 onPress={message.voice ? () => void play(message) : message.file ? () => openFile(message) : undefined}
                 onLongPress={() => deleteMessage(message)}
                 accessibilityHint={
-                  message.voice ? 'Tap to play, long press to delete' : message.file ? 'Tap to open, long press to delete' : 'Long press to delete'
+                  message.voice ? t('Tap to play, long press to delete') : message.file ? t('Tap to open, long press to delete') : t('Long press to delete')
                 }
                 style={[
                   styles.bubble,
@@ -2707,9 +2735,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                   <Text style={ink}>
                     {message.voice
                       ? playingId === message.id
-                        ? `■  Playing, ${voiceDuration(Math.max(0, message.voice.ms - played))}`
-                        : `▶  Voice message, ${voiceDuration(message.voice.ms)}`
-                      : message.text}
+                        ? `■  ${t('Playing, {time}', { time: voiceDuration(Math.max(0, message.voice.ms - played)) })}`
+                        : `▶  ${t('Voice message, {time}', { time: voiceDuration(message.voice.ms) })}`
+                      : shownLine(message.text)}
                   </Text>
                 )}
                 <Text style={[ink, styles.time]}>{[message.at ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>
@@ -2724,51 +2752,50 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           value={draft}
           onChangeText={setDraft}
           onSubmitEditing={() => void send()}
-          placeholder={selected ? `Message ${selectedName}` : 'Message'}
+          placeholder={selected ? t('Message {name}', { name: selectedName }) : t('Message')}
           maxLength={4000}
           style={styles.field}
         />
         <Row style={styles.tools}>
           <Row wrap style={[styles.grow, styles.toolsLeft]}>
-            {selectedContact ? <Tool title="Disappear" on={vanishing} onPress={() => setVanishing((on) => !on)} /> : null}
-            {selectedContact ? <Tool title="Attach" on={attaching} onPress={() => setAttaching(true)} /> : null}
-            <Tool title={talking ? 'Let go to send' : talkie ? 'Hold to talk' : 'Voice'} on={talking} onPressIn={startTalking} onPressOut={() => void stopTalking()} />
-            {selectedContact ? <Tool title="Talkie" on={talkie} onPress={() => toggleTalkie(selectedContact)} /> : null}
-            <Tool title="Call" onPress={() => void startCall(false)} />
-            <Tool title="Video" onPress={() => void startCall(true)} />
+            {selectedContact ? <Tool title={t('Disappear')} on={vanishing} onPress={() => setVanishing((on) => !on)} /> : null}
+            {selectedContact ? <Tool title={t('Attach')} on={attaching} onPress={() => setAttaching(true)} /> : null}
+            <Tool title={talking ? t('Let go to send') : talkie ? t('Hold to talk') : t('Voice')} on={talking} onPressIn={startTalking} onPressOut={() => void stopTalking()} />
+            {selectedContact ? <Tool title={t('Talkie')} on={talkie} onPress={() => toggleTalkie(selectedContact)} /> : null}
+            <Tool title={t('Call')} onPress={() => void startCall(false)} />
+            <Tool title={t('Video')} onPress={() => void startCall(true)} />
           </Row>
-          <Button title="Send" compact disabled={!draft.trim() || !selected} onPress={() => void send()} style={styles.action} />
+          <Button title={t('Send')} compact disabled={!draft.trim() || !selected} onPress={() => void send()} style={styles.action} />
         </Row>
         {vanishing && selectedContact ? (
           <Row wrap>
             <Text variant="caption" tone="muted">
-              Disappears after it is read, in:
+              {t('Disappears after it is read, in:')}
             </Text>
             {TIMERS.slice(1).map((timer) => (
               <Chip key={timer} label={timerLabel(timer)} selected={false} onPress={() => void send(timer)} />
             ))}
-            <TextButton title="Cancel" onPress={() => setVanishing(false)} />
+            <TextButton title={t('Cancel')} onPress={() => setVanishing(false)} />
           </Row>
         ) : null}
       </View>
-      <Sheet visible={attaching} onClose={() => setAttaching(false)} title="Send a photo or file">
+      <Sheet visible={attaching} onClose={() => setAttaching(false)} title={t('Send a photo or file')}>
         <Row wrap>
-          <Button title="Photo" compact onPress={() => sendPhoto('photos')} />
-          {CAN_TAKE_PHOTOS ? <Button title="Take photo" compact onPress={() => sendPhoto('camera')} /> : null}
-          <Button title="File" kind="secondary" compact onPress={sendPickedFile} />
+          <Button title={t('Photo')} compact onPress={() => sendPhoto('photos')} />
+          {CAN_TAKE_PHOTOS ? <Button title={t('Take photo')} compact onPress={() => sendPhoto('camera')} /> : null}
+          <Button title={t('File')} kind="secondary" compact onPress={sendPickedFile} />
         </Row>
-        <Text variant="label">Photo quality</Text>
+        <Text variant="label">{t('Photo quality')}</Text>
         <Row wrap>
           {QUALITIES.map(({ value, label: shown }) => (
-            <Chip key={shown} label={shown} selected={quality === value} onPress={() => chooseQuality(value)} />
+            <Chip key={shown} label={t(shown)} selected={quality === value} onPress={() => chooseQuality(value)} />
           ))}
         </Row>
         <Text variant="caption" tone="muted">
           {qualityNote(quality)}
         </Text>
         <Text variant="caption" tone="muted">
-          A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until
-          {` ${selectedName} `}takes it, 14 days at most.
+          {t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
         </Text>
       </Sheet>
       <Modal visible={viewing !== null} animationType="fade" onRequestClose={() => setViewing(null)}>
@@ -2776,10 +2803,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           {viewing?.file?.kind === 'photo' ? (
             <>
               {photos[viewing.file.id] ? (
-                <Image source={{ uri: photos[viewing.file.id] }} style={styles.viewerPhoto} resizeMode="contain" accessibilityLabel="Photo" />
+                <Image source={{ uri: photos[viewing.file.id] }} style={styles.viewerPhoto} resizeMode="contain" accessibilityLabel={t('Photo')} />
               ) : (
                 <Text tone="muted" style={styles.viewerPhoto}>
-                  Opening the photo…
+                  {t('Opening the photo…')}
                 </Text>
               )}
               <Text tone="muted">
@@ -2794,11 +2821,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
             </View>
           ) : null}
           <Row wrap style={styles.viewerTools}>
-            <Button title="Save" compact onPress={() => viewing && void saveAttachment(viewing, false)} />
+            <Button title={t('Save')} compact onPress={() => viewing && void saveAttachment(viewing, false)} />
             {CAN_CHOOSE_FOLDER ? (
-              <Button title="Save in another folder" kind="secondary" compact onPress={() => viewing && void saveAttachment(viewing, true)} />
+              <Button title={t('Save in another folder')} kind="secondary" compact onPress={() => viewing && void saveAttachment(viewing, true)} />
             ) : null}
-            <Button title="Close" kind="secondary" compact onPress={() => setViewing(null)} />
+            <Button title={t('Close')} kind="secondary" compact onPress={() => setViewing(null)} />
           </Row>
         </View>
       </Modal>
@@ -2813,20 +2840,20 @@ function Attachment({ file, uri, state, ink }: { file: FileRef; uri?: string; st
   const status = !file.from
     ? null
     : state === 'gone'
-      ? 'No longer on the relay'
+      ? t('No longer on the relay')
       : state === 'failed'
-        ? 'Did not come · tap to try again'
+        ? t('Did not come · tap to try again')
         : state
-          ? `Coming, ${state}`
-          : `Tap to take it, ${fileSize(file.size)}`;
+          ? t('Coming, {progress}', { progress: state })
+          : t('Tap to take it, {size}', { size: fileSize(file.size) });
   if (file.kind === 'photo') {
     const width = 240;
     const height = Math.round(Math.min(320, Math.max(120, file.w && file.h ? (width * file.h) / file.w : 180)));
     return uri ? (
-      <Image source={{ uri }} style={{ width, height, borderRadius: radius.md }} resizeMode="cover" resizeMethod="resize" accessibilityLabel="Photo" />
+      <Image source={{ uri }} style={{ width, height, borderRadius: radius.md }} resizeMode="cover" resizeMethod="resize" accessibilityLabel={t('Photo')} />
     ) : (
       <View style={{ width, height, borderRadius: radius.md, backgroundColor: withAlpha(colors.text, 0.08), alignItems: 'center', justifyContent: 'center', padding: space.md }}>
-        <Text style={[ink, { textAlign: 'center' }]}>{status ?? 'Photo · tap to see it'}</Text>
+        <Text style={[ink, { textAlign: 'center' }]}>{status ?? t('Photo · tap to see it')}</Text>
       </View>
     );
   }
@@ -2835,7 +2862,7 @@ function Attachment({ file, uri, state, ink }: { file: FileRef; uri?: string; st
       <Text style={[ink, { fontWeight: '600' }]} numberOfLines={2}>
         {file.name}
       </Text>
-      <Text style={[ink, { fontSize: 13, opacity: 0.8 }]}>{status ?? `${fileSize(file.size)} · tap to save`}</Text>
+      <Text style={[ink, { fontSize: 13, opacity: 0.8 }]}>{status ?? t('{size} · tap to save', { size: fileSize(file.size) })}</Text>
     </View>
   );
 }
@@ -2972,8 +2999,8 @@ const clock = (at: number) => {
 function dayLabel(at: number): string {
   const d = new Date(at);
   const today = new Date();
-  if (d.toDateString() === today.toDateString()) return 'Today';
-  if (d.toDateString() === new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toDateString()) return 'Yesterday';
+  if (d.toDateString() === today.toDateString()) return t('Today');
+  if (d.toDateString() === new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toDateString()) return t('Yesterday');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 const layout = StyleSheet.create({

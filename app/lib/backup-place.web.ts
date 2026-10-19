@@ -2,6 +2,7 @@ import { backupName } from '../lock/backup';
 
 import { handOver } from './hand-over.web';
 import { SHELL, shellFetch } from './shell';
+import { t } from './i18n';
 
 // Where backups go on a computer (lib/backup-folder.ts): a folder the owner picks in the desktop
 // app (lib/shell.ts), which then writes there and nowhere else. A folder is known by its path.
@@ -28,7 +29,7 @@ export async function pickFolder(): Promise<string | null> {
 
 /** The folder's path, from the home folder on. */
 export function folderLabel(path: string): string {
-  if (path === HANDED) return 'the place you chose';
+  if (path === HANDED) return t('the place you chose');
   return path.replace(/^\/(home|Users)\/[^/]+/, '~');
 }
 
@@ -37,11 +38,11 @@ export async function writeBackup(folder: string, bytes: Uint8Array, now = Date.
   const name = backupName(now);
   if (!SHELL) {
     const how = await handOver(name, 'application/octet-stream', bytes);
-    if (!how) throw new Error('Not saved: the share sheet was closed.');
-    return { name, size: bytes.length, where: how === 'shared' ? 'the place you chose' : 'the downloads folder' };
+    if (!how) throw new Error(t('Not saved: the share sheet was closed.'));
+    return { name, size: bytes.length, where: how === 'shared' ? t('the place you chose') : t('the downloads folder') };
   }
   const query = `folder=${encodeURIComponent(folder)}&name=${encodeURIComponent(name)}&keep=${keep}`;
   const response = await shellFetch(`/__backup?${query}`, { method: 'PUT', body: bytes as BodyInit });
-  if (response.status === 404) throw new Error('That folder is not there any more. Choose it again.');
+  if (response.status === 404) throw new Error(t('That folder is not there any more. Choose it again.'));
   return { name, size: bytes.length };
 }

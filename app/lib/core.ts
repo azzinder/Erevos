@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // The Erevos core (Rust, crates/erevos-ffi): PQXDH to start a conversation and the double ratchet
 // for every message after it. The app plugs in the core at startup: the Android module
 // (modules/erevos-core), or for checks under Node the same core built to WebAssembly. The core
@@ -61,7 +62,7 @@ export function hasCore(): boolean {
 
 export class NoCoreError extends Error {
   constructor() {
-    super('This build has no Erevos core, so it cannot encrypt. Rebuild the app.');
+    super(t('This build has no Erevos core, so it cannot encrypt. Rebuild the app.'));
   }
 }
 
@@ -82,7 +83,7 @@ export function splitParts(bytes: Uint8Array, count: number): Uint8Array[] {
     out.push(bytes.slice(at + 4, at + 4 + length));
     at += 4 + length;
   }
-  if (out.length !== count || at !== bytes.length) throw new Error('The Erevos core gave back something unexpected.');
+  if (out.length !== count || at !== bytes.length) throw new Error(t('The Erevos core gave back something unexpected.'));
   return out;
 }
 
@@ -122,7 +123,7 @@ export function canTor(): boolean {
 export function tor(): Required<Pick<Core, 'torStart' | 'torStatus' | 'torStop' | 'torRequest' | 'torOpen' | 'torCall' | 'torClose'>> {
   const it = need();
   if (!it.torStart || !it.torStatus || !it.torStop || !it.torRequest || !it.torOpen || !it.torCall || !it.torClose) {
-    throw new Error('This build of Erevos has no Tor.');
+    throw new Error(t('This build of Erevos has no Tor.'));
   }
   return {
     torStart: it.torStart.bind(it),

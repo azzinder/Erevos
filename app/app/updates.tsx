@@ -5,6 +5,7 @@ import { Linking, Platform, View } from 'react-native';
 
 import { Button, Card, Page, Text } from '../components/ui';
 import { ask } from '../lib/alert';
+import { t } from '../lib/i18n';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
 import { SHELL, shellFetch } from '../lib/shell';
 import { buildOf, fetchLatestRelease, formatSize, isNewer, RELEASES_PAGE, type Release } from '../lib/updates';
@@ -47,7 +48,7 @@ export default function UpdatesScreen() {
     setProgress({ received: 0, total: release.apk?.size ?? 0 });
     try {
       await downloadAndInstall(release, (received, total) => setProgress({ received, total }), controller.signal);
-      setNote('Android shows its installer: tap Install. Erevos closes and opens as the new version, with everything kept.');
+      setNote(t('Android shows its installer: tap Install. Erevos closes and opens as the new version, with everything kept.'));
     } catch (error) {
       if (!controller.signal.aborted) setNote(error instanceof Error ? error.message : String(error));
     } finally {
@@ -63,8 +64,7 @@ export default function UpdatesScreen() {
     const data = await loadCurrentSpaceData().catch(() => null);
     if (data?.tor) {
       setNote(
-        'Tor is on in this space, and this check would go to GitHub without it, showing your internet address. ' +
-          'Turn Tor off for a moment to check, or open the releases page in Tor Browser.',
+        t('Tor is on in this space, and this check would go to GitHub without it, showing your internet address. Turn Tor off for a moment to check, or open the releases page in Tor Browser.'),
       );
       return;
     }
@@ -73,44 +73,44 @@ export default function UpdatesScreen() {
     try {
       release = await fetchLatestRelease(latestFrom);
     } catch {
-      setNote('GitHub could not be reached. Check the internet connection and try again.');
+      setNote(t('GitHub could not be reached. Check the internet connection and try again.'));
       return;
     } finally {
       setChecking(false);
     }
     if (!release) {
-      setNote('No release was found yet.');
+      setNote(t('No release was found yet.'));
       return;
     }
     if (!CURRENT_BUILD) {
-      setNote(`This Erevos was built on a computer, so it does not update itself. The newest release is ${release.version}: User guide → Updates says how to switch to it.`);
+      setNote(t('This Erevos was built on a computer, so it does not update itself. The newest release is {version}: User guide → Updates says how to switch to it.', { version: release.version }));
       return;
     }
     if (!isNewer(release, CURRENT_BUILD)) {
-      setNote(`Erevos is up to date (${VERSION}).`);
+      setNote(t('Erevos is up to date ({version}).', { version: VERSION }));
       return;
     }
     const found = release;
     const installable = canInstall && found.apk !== null;
     ask(
-      `Erevos ${found.version} is out`,
+      t('Erevos {version} is out', { version: found.version }),
       [
-        found.date ? `Released ${found.date}.` : '',
-        'Updating keeps your contacts, chats and settings. A backup first (Backups → Make a backup) covers any surprise.',
+        found.date ? t('Released {date}.', { date: found.date }) : '',
+        t('Updating keeps your contacts, chats and settings. A backup first (Backups → Make a backup) covers any surprise.'),
         installable
-          ? `It downloads (${formatSize(found.apk!.size)}), is checked against the release and installs over this one.`
-          : 'The download page opens: take the file for this system, see User guide → Updates.',
+          ? t('It downloads ({size}), is checked against the release and installs over this one.', { size: formatSize(found.apk!.size) })
+          : t('The download page opens: take the file for this system, see User guide → Updates.'),
       ]
         .filter(Boolean)
         .join('\n\n'),
       [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Backups', onPress: () => router.push('/backup') },
+        { text: t('Not now'), style: 'cancel' },
+        { text: t('Backups'), onPress: () => router.push('/backup') },
         {
-          text: installable ? 'Install' : 'Open download page',
+          text: installable ? t('Install') : t('Open download page'),
           onPress: () => {
             if (installable) void install(found);
-            else void Linking.openURL(RELEASES_PAGE).catch(() => setNote(`Open ${RELEASES_PAGE} in a browser.`));
+            else void Linking.openURL(RELEASES_PAGE).catch(() => setNote(t('Open {url} in a browser.', { url: RELEASES_PAGE })));
           },
         },
       ],
@@ -120,41 +120,40 @@ export default function UpdatesScreen() {
   const share = progress && progress.total > 0 ? Math.min(1, progress.received / progress.total) : 0;
   return (
     <Page>
-      <Text variant="title">Updates</Text>
+      <Text variant="title">{t('Updates')}</Text>
       <Card>
         <Text variant="caption" tone="muted">
-          Installed
+          {t('Installed')}
         </Text>
         <Text variant="heading">Erevos {VERSION}</Text>
       </Card>
       {supported ? (
         <Card>
           <Text tone="muted">
-            Erevos never looks for updates by itself: a regular check would tell GitHub that this device has Erevos.
-            It asks only when you tap the button, and GitHub then sees this device's internet address, nothing else.
+            {t("Erevos never looks for updates by itself: a regular check would tell GitHub that this device has Erevos. It asks only when you tap the button, and GitHub then sees this device's internet address, nothing else.")}
           </Text>
           {progress ? (
             <View style={{ gap: space.sm }}>
-              <Text variant="bodyStrong">Downloading…</Text>
+              <Text variant="bodyStrong">{t('Downloading…')}</Text>
               <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.border, overflow: 'hidden' }}>
                 <View style={{ width: `${Math.round(share * 100)}%`, height: 8, backgroundColor: colors.primary }} />
               </View>
               <Text variant="caption" tone="muted">
                 {formatSize(progress.received)} / {formatSize(progress.total)}
               </Text>
-              <Button title="Cancel" kind="secondary" onPress={() => abort.current?.abort()} />
+              <Button title={t('Cancel')} kind="secondary" onPress={() => abort.current?.abort()} />
             </View>
           ) : (
-            <Button title="Check for updates" onPress={() => void check()} loading={checking} />
+            <Button title={t('Check for updates')} onPress={() => void check()} loading={checking} />
           )}
           {note ? <Text tone="muted">{note}</Text> : null}
         </Card>
       ) : (
         <Card>
-          <Text tone="muted">This web app updates itself: a new signed version is taken the next time Erevos opens.</Text>
+          <Text tone="muted">{t('This web app updates itself: a new signed version is taken the next time Erevos opens.')}</Text>
         </Card>
       )}
-      <Button title="How updating works" kind="secondary" onPress={() => router.push({ pathname: '/guide/[id]', params: { id: 'updates' } })} />
+      <Button title={t('How updating works')} kind="secondary" onPress={() => router.push({ pathname: '/guide/[id]', params: { id: 'updates' } })} />
     </Page>
   );
 }

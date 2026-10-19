@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Call } from '../lib/call';
 import { callClock } from '../lib/calls';
 import type { CallEnd } from '../lib/call-signal';
+import { t, mark } from '../lib/i18n';
 import { CallVideo } from './call-video';
 import { KeyFace } from './key-face';
 import { Text } from './ui';
@@ -19,32 +20,31 @@ export const RING = [0, 900, 1100];
 export const ENDED_SHOWN = 2500;
 
 const ENDS: Record<CallEnd, { ours: string; theirs: string }> = {
-  hangup: { ours: 'Call ended', theirs: 'They hung up' },
-  decline: { ours: 'Turned down', theirs: 'They turned it down' },
-  busy: { ours: 'Call ended', theirs: 'They are in another call' },
-  missed: { ours: 'Call ended', theirs: 'Not answered' },
-  failed: { ours: 'The call could not connect', theirs: 'The call could not connect on their phone' },
+  hangup: { ours: mark('Call ended'), theirs: mark('They hung up') },
+  decline: { ours: mark('Turned down'), theirs: mark('They turned it down') },
+  busy: { ours: mark('Call ended'), theirs: mark('They are in another call') },
+  missed: { ours: mark('Call ended'), theirs: mark('Not answered') },
+  failed: { ours: mark('The call could not connect'), theirs: mark('The call could not connect on their phone') },
 };
 
 /** How a call stands, in a few words. */
 export function callStatus(call: Call, now: number): string {
-  const kind = call.video ? 'video call' : 'voice call';
   switch (call.state) {
     case 'calling':
-      return 'Calling…';
+      return t('Calling…');
     case 'ringing':
-      return 'Ringing…';
+      return t('Ringing…');
     case 'incoming':
-      return `Incoming ${kind}`;
+      return call.video ? t('Incoming video call') : t('Incoming voice call');
     case 'connecting':
-      return 'Connecting…';
+      return t('Connecting…');
     case 'connected':
       return callClock(now - call.connectedAt);
     case 'ended': {
       const ended = call.ended ?? { reason: 'hangup', byUs: true };
       // Theirs, not answered here.
-      if (ended.reason === 'missed' && !call.outgoing) return 'Missed call';
-      return ended.byUs ? ENDS[ended.reason].ours : ENDS[ended.reason].theirs;
+      if (ended.reason === 'missed' && !call.outgoing) return t('Missed call');
+      return t(ended.byUs ? ENDS[ended.reason].ours : ENDS[ended.reason].theirs);
     }
   }
 }
@@ -103,23 +103,23 @@ export function CallScreen({ call, identity, name, speaker, onSpeaker, onAnswer,
         </Text>
         {state === 'connected' || state === 'connecting' ? (
           <Text variant="caption" color="rgba(255,255,255,0.6)" style={styles.shadow}>
-            End-to-end encrypted
+            {t('End-to-end encrypted')}
           </Text>
         ) : null}
       </View>
       <View style={[styles.buttons, { paddingBottom: insets.bottom + 28 }]}>
         {state === 'incoming' ? (
           <>
-            <Round title="Decline" color="#C62828" onPress={() => call.decline()} />
-            <Round title="Answer" color="#2E7D32" onPress={onAnswer} />
+            <Round title={t('Decline')} color="#C62828" onPress={() => call.decline()} />
+            <Round title={t('Answer')} color="#2E7D32" onPress={onAnswer} />
           </>
         ) : state === 'ended' ? null : (
           <>
-            <Round title={call.muted ? 'Unmute' : 'Mute'} on={call.muted} onPress={() => call.setMuted(!call.muted)} />
-            <Round title="Speaker" on={speaker} onPress={() => onSpeaker(!speaker)} />
-            {call.video ? <Round title={call.cameraOff ? 'Camera on' : 'Camera off'} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} /> : null}
-            {call.video ? <Round title="Flip" onPress={() => call.switchCamera()} /> : null}
-            <Round title="End" color="#C62828" onPress={() => call.hangUp()} />
+            <Round title={call.muted ? t('Unmute') : t('Mute')} on={call.muted} onPress={() => call.setMuted(!call.muted)} />
+            <Round title={t('Speaker')} on={speaker} onPress={() => onSpeaker(!speaker)} />
+            {call.video ? <Round title={call.cameraOff ? t('Camera on') : t('Camera off')} on={call.cameraOff} onPress={() => call.setCameraOff(!call.cameraOff)} /> : null}
+            {call.video ? <Round title={t('Flip')} onPress={() => call.switchCamera()} /> : null}
+            <Round title={t('End')} color="#C62828" onPress={() => call.hangUp()} />
           </>
         )}
       </View>

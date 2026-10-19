@@ -17,6 +17,7 @@ import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode, utf8Enco
 import { fromBase64Url, toBase64Url } from './e2e';
 import { decodeGroupCall, type GroupCallSignal } from './group-call-signal';
 import { cleanGroupName, isGroupId, type GroupSignal } from './group-signal';
+import { t, mark } from './i18n';
 
 // Group chats, MLS (RFC 9420) in the Rust core (crates/erevos-group). Whoever makes a group is its
 // admin: it adds contacts and takes members out, and is the only one whose changes count, so no
@@ -177,7 +178,7 @@ export class Groups {
   }
 
   private kept(): Uint8Array {
-    if (!this.data.state) throw new Error('No groups here yet.');
+    if (!this.data.state) throw new Error(t('No groups here yet.'));
     return fromBase64(this.data.state);
   }
 
@@ -226,7 +227,7 @@ export class Groups {
   create(name: string, identities: string[], transport: GroupTransport): Promise<string> {
     return this.run(async () => {
       const clean = cleanGroupName(name);
-      if (!clean) throw new Error('Give the group a name.');
+      if (!clean) throw new Error(t('Give the group a name.'));
       const made = await core.group.newGroup(await this.state());
       const id = toHex(made.id);
       const group: Group = {
@@ -237,7 +238,7 @@ export class Groups {
         asked: [],
         later: [],
         outbox: [],
-        messages: [{ at: Date.now(), from: '', text: 'You made the group.', tag: '', note: true }],
+        messages: [{ at: Date.now(), from: '', text: mark('You made the group.'), tag: '', note: true }],
         readAt: Date.now(),
       };
       await this.save({ ...this.withGroup(group), state: toBase64(made.state) });
@@ -254,7 +255,7 @@ export class Groups {
 
   private async askLocked(id: string, identities: string[], transport: GroupTransport) {
     const group = this.find(id);
-    if (!group?.admin || group.status !== 'in') throw new Error('Only the group’s admin adds members.');
+    if (!group?.admin || group.status !== 'in') throw new Error(t('Only the group’s admin adds members.'));
     const fresh = identities.filter((identity) => !group.asked.includes(identity));
     await this.save(this.withGroup({ ...group, asked: [...group.asked, ...fresh] }));
     this.changed();
@@ -265,7 +266,7 @@ export class Groups {
   send(id: string, text: string, transport: GroupTransport): Promise<void> {
     return this.run(async () => {
       const group = this.find(id);
-      if (!group || group.status !== 'in') throw new Error('You are not in this group any more.');
+      if (!group || group.status !== 'in') throw new Error(t('You are not in this group any more.'));
       const said = text.trim().slice(0, MAX_GROUP_TEXT);
       if (!said) return;
       const tag = newTag();
@@ -279,7 +280,7 @@ export class Groups {
   /** Says something about a group call: to the member `signal.to` names, or else to every member. */
   call(id: string, signal: GroupCallSignal, transport: GroupTransport): Promise<void> {
     return this.run(async () => {
-      if (this.find(id)?.status !== 'in') throw new Error('You are not in this group any more.');
+      if (this.find(id)?.status !== 'in') throw new Error(t('You are not in this group any more.'));
       const sealed = await core.group.seal(this.kept(), fromHex(id), encodeSaid({ t: 'call', call: signal }));
       await this.save({ ...this.data, state: toBase64(sealed.state) });
       const members = await this.membersIn(id);
@@ -304,9 +305,9 @@ export class Groups {
   rename(id: string, name: string, transport: GroupTransport): Promise<void> {
     return this.run(async () => {
       const group = this.find(id);
-      if (!group?.admin || group.status !== 'in') throw new Error('Only the group’s admin renames it.');
+      if (!group?.admin || group.status !== 'in') throw new Error(t('Only the group’s admin renames it.'));
       const clean = cleanGroupName(name);
-      if (!clean) throw new Error('Give the group a name.');
+      if (!clean) throw new Error(t('Give the group a name.'));
       await this.broadcast(id, encodeSaid({ t: 'name', name: clean }), transport);
       await this.save(this.withGroup({ ...this.find(id)!, name: clean }));
       this.changed();
@@ -317,7 +318,7 @@ export class Groups {
   remove(id: string, leaf: number, transport: GroupTransport): Promise<void> {
     return this.run(async () => {
       const group = this.find(id);
-      if (!group?.admin || group.status !== 'in') throw new Error('Only the group’s admin takes members out.');
+      if (!group?.admin || group.status !== 'in') throw new Error(t('Only the group’s admin takes members out.'));
       const before = await this.membersIn(id);
       const removed = await core.group.remove(this.kept(), fromHex(id), leaf);
       await this.save({ ...this.data, state: toBase64(removed.state) });
@@ -341,13 +342,13 @@ export class Groups {
           await this.save({ ...this.data, state: toBase64(removed.state) });
           await this.deliver(id, await this.membersIn(id).then((now) => [...now, member]), removed.commit, transport);
         }
-        await this.out(id, 'You closed the group.');
+        await this.out(id, mark('You closed the group.'));
         return;
       }
       const left = await core.group.leave(this.kept(), fromHex(id));
       await this.save({ ...this.withGroup({ ...group, status: 'leaving' }), state: toBase64(left.state) });
       await this.deliver(id, await this.membersIn(id), left.message, transport);
-      await this.note(id, 'You asked to leave. The group closes here once the admin takes you out.');
+      await this.note(id, mark('You asked to leave. The group closes here once the admin takes you out.'));
     });
   }
 
@@ -563,7 +564,7 @@ export class Groups {
       const leaving = this.find(id)?.status === 'leaving';
       // The core forgot the group already.
       await this.save(this.withGroup({ ...this.find(id)!, status: 'out', asked: [], later: [], outbox: [] }));
-      await this.note(id, leaving ? 'You left the group.' : 'You are no longer in the group.');
+      await this.note(id, leaving ? mark('You left the group.') : mark('You are no longer in the group.'));
     } else if (opened.kind === 'leaving') {
       const now = this.find(id)!;
       if (!now.admin) return;
@@ -581,16 +582,16 @@ export class Groups {
 /** A member's name: the one its chat has here, or the start of its key, as a contact's or a member's. */
 export function memberName(identity: string, contacts: { identity: string; name: string }[]): string {
   const contact = contacts.find((c) => c.identity === identity);
-  return contact?.name || `${contact ? 'contact' : 'member'} ${identity.slice(0, 8)}`;
+  return contact?.name || (contact ? t('contact {id}', { id: identity.slice(0, 8) }) : t('member {id}', { id: identity.slice(0, 8) }));
 }
 
 /** A note's text as the group shows it, with `name` giving each identity's name. */
 export function noteText(text: string, name: (identity: string) => string): string {
   const bar = text.indexOf('|');
-  if (bar !== 64) return text;
+  if (bar !== 64) return t(text);
   const who = name(text.slice(0, 64));
   const what = text.slice(65);
-  return what === 'added you' ? `${who} added you to the group.` : what === 'joined' ? `${who} joined.` : what === 'left' ? `${who} left.` : `${who} ${what}`;
+  return what === 'added you' ? t('{who} added you to the group.', { who }) : what === 'joined' ? t('{who} joined.', { who }) : what === 'left' ? t('{who} left.', { who }) : `${who} ${what}`;
 }
 
 export { EMPTY_GROUPS };

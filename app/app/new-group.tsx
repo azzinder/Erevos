@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ContactPicker, groupableContacts, type Pick } from '../components/contact-picker';
 import { Button, Card, Field, Input, Page, Text } from '../components/ui';
 import { canGroup } from '../lib/core';
+import { t } from '../lib/i18n';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
 import { spaceGroups, spaceGroupTransport } from '../lib/space-groups';
 import { useTheme } from '../theme/context';
@@ -25,8 +26,8 @@ export default function NewGroup() {
   if (!canGroup()) {
     return (
       <Page>
-        <Text variant="title">New group</Text>
-        <Text tone="muted">This build of Erevos has no group chats yet. Update it to make one.</Text>
+        <Text variant="title">{t('New group')}</Text>
+        <Text tone="muted">{t('This build of Erevos has no group chats yet. Update it to make one.')}</Text>
       </Page>
     );
   }
@@ -55,24 +56,25 @@ export default function NewGroup() {
 
   return (
     <Page>
-      <Text variant="title">New group</Text>
-      <Field label="Name" hint="Every member sees it.">
-        <Input value={name} onChangeText={setName} placeholder="Group name" maxLength={MAX_GROUP_NAME} autoFocus />
+      <Text variant="title">{t('New group')}</Text>
+      <Field label={t('Name')} hint={t('Every member sees it.')}>
+        <Input value={name} onChangeText={setName} placeholder={t('Group name')} maxLength={MAX_GROUP_NAME} autoFocus />
       </Field>
       <Card>
-        <Text variant="bodyStrong">Who to ask</Text>
+        <Text variant="bodyStrong">{t('Who to ask')}</Text>
         {contacts === null ? null : contacts.length === 0 ? (
-          <Text tone="muted">No contacts yet. Add someone in a chat first, then make a group with them.</Text>
+          <Text tone="muted">{t('No contacts yet. Add someone in a chat first, then make a group with them.')}</Text>
         ) : (
           <ContactPicker contacts={contacts} chosen={chosen} onToggle={toggle} />
         )}
       </Card>
       <Text variant="caption" tone="muted">
-        You are the group&apos;s admin: you add and take out members. Each contact&apos;s phone joins by itself the next time
-        Erevos is open there. Messages are end-to-end encrypted for the whole group (MLS), and no relay learns who is in it.
+        {t(
+          "You are the group's admin: you add and take out members. Each contact's phone joins by itself the next time Erevos is open there. Messages are end-to-end encrypted for the whole group (MLS), and no relay learns who is in it.",
+        )}
       </Text>
       {note ? <Text color={colors.danger}>{note}</Text> : null}
-      <Button title="Make the group" onPress={make} disabled={busy || !name.trim()} loading={busy} />
+      <Button title={t('Make the group')} onPress={make} disabled={busy || !name.trim()} loading={busy} />
     </Page>
   );
 }

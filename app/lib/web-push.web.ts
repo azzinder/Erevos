@@ -2,6 +2,7 @@ import { loadCurrentSpaceData, updateCurrentSpaceData, type Queue } from '../loc
 
 import { WEB_APP } from './integrity';
 import { fromHex, pushKey, setPush, type Relay } from './relay';
+import { t } from './i18n';
 
 // Notifications for the web app while it is closed (an iPhone stops it as soon as it leaves the
 // screen). The browser makes a push address for the relay's key; the relay sends that address an
@@ -31,7 +32,7 @@ async function subscription(key: Uint8Array): Promise<PushSubscription> {
 
 async function register(own: Relay, queue: Queue): Promise<string | null> {
   const key = await pushKey(own);
-  if (!key) return 'Your relay does not send notifications. It needs a newer version, set up with a push key.';
+  if (!key) return t('Your relay does not send notifications. It needs a newer version, set up with a push key.');
   const sub = await subscription(key);
   await setPush(own, fromHex(queue.recipientHex), sub.endpoint);
   return null;
@@ -44,16 +45,16 @@ function spaceRelay(url: string, token: string): Relay {
 /** Turns notifications on for the open space. Call it straight from a tap: Safari asks for the
  *  permission only then. Says what went wrong, or null. */
 export async function turnOnPush(): Promise<string | null> {
-  if (!PUSH_AVAILABLE) return 'This browser cannot show notifications for a closed web app. On an iPhone, add Erevos to the home screen first.';
+  if (!PUSH_AVAILABLE) return t('This browser cannot show notifications for a closed web app. On an iPhone, add Erevos to the home screen first.');
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return 'Notifications are not allowed for Erevos. Allow them in the settings of this browser or phone.';
+  if (permission !== 'granted') return t('Notifications are not allowed for Erevos. Allow them in the settings of this browser or phone.');
   const data = await loadCurrentSpaceData();
-  if (!data.url.trim() || !data.ownQueue) return 'Set up the relay first, under Relay.';
+  if (!data.url.trim() || !data.ownQueue) return t('Set up the relay first, under Relay.');
   try {
     const problem = await register(spaceRelay(data.url, data.token), data.ownQueue);
     if (problem) return problem;
   } catch (error) {
-    return `Notifications could not be turned on: ${error instanceof Error ? error.message : String(error)}`;
+    return t('Notifications could not be turned on: {reason}', { reason: error instanceof Error ? error.message : String(error) });
   }
   await updateCurrentSpaceData({ push: true });
   return null;

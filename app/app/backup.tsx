@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
+import { mark, t } from '../lib/i18n';
 import {
   CAN_AUTO_BACKUP,
   CAN_BACK_UP,
@@ -37,9 +38,9 @@ type Asking = { kind: 'make'; folder: string } | { kind: 'auto'; every: number; 
 const MAX_BYTES = 200 * 1024 * 1024;
 
 const CHOICES = [
-  { label: 'Off', every: 0 },
-  { label: 'Every day', every: 1 },
-  { label: 'Every week', every: 7 },
+  { label: mark('Off'), every: 0 },
+  { label: mark('Every day'), every: 1 },
+  { label: mark('Every week'), every: 7 },
 ];
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -47,14 +48,16 @@ const errorText = (error: unknown) => (error instanceof Error ? error.message : 
 // What Erevos runs on here: the desktop app is the web build, and so are the Sailfish OS app and
 // the web app in a browser, on an iPhone or a computer.
 const DEVICE = Platform.OS !== 'web' || SHELL === 'sailfish' ? 'phone' : SHELL ? 'computer' : 'device';
+// The same, as the sentences below name it, translated where it is shown.
+const THIS_DEVICE = DEVICE === 'phone' ? mark('this phone') : DEVICE === 'computer' ? mark('this computer') : mark('this device');
 const PLACES =
   Platform.OS !== 'web'
-    ? 'Choose a folder, on the phone, a memory card or a cloud app that shows its folders, then a password for the backup.'
+    ? mark('Choose a folder, on the phone, a memory card or a cloud app that shows its folders, then a password for the backup.')
     : SHELL === 'sailfish'
-      ? 'Backups go to Documents/Erevos on the phone. Choose a password for the backup; then copy the file from there to a memory card or another device.'
+      ? mark('Backups go to Documents/Erevos on the phone. Choose a password for the backup; then copy the file from there to a memory card or another device.')
       : SHELL
-        ? 'Choose a folder, on this computer, a USB stick or a folder a cloud app keeps in step, then a password for the backup.'
-        : 'Choose a password for the backup, then where to save the file: on an iPhone in Files, iCloud Drive or another app, on a computer in its downloads.';
+        ? mark('Choose a folder, on this computer, a USB stick or a folder a cloud app keeps in step, then a password for the backup.')
+        : mark('Choose a password for the backup, then where to save the file: on an iPhone in Files, iCloud Drive or another app, on a computer in its downloads.');
 
 export default function Backups() {
   const { lockNow } = useLock();
@@ -78,8 +81,8 @@ export default function Backups() {
   if (!CAN_BACK_UP) {
     return (
       <Page>
-        <Text variant="title">Backups</Text>
-        <Text tone="muted">Backups work on Android and in the desktop app.</Text>
+        <Text variant="title">{t('Backups')}</Text>
+        <Text tone="muted">{t('Backups work on Android and in the desktop app.')}</Text>
       </Page>
     );
   }
@@ -94,7 +97,7 @@ export default function Backups() {
     picking.current = true;
     try {
       const folder = await pickFolder();
-      if (!folder) say('No folder chosen.');
+      if (!folder) say(t('No folder chosen.'));
       return folder;
     } finally {
       picking.current = false;
@@ -113,12 +116,12 @@ export default function Backups() {
     if (!every) {
       await stopAutoBackup();
       setAuto(null);
-      say('Automatic backups are off. The ones already made stay in their folder.');
+      say(t('Automatic backups are off. The ones already made stay in their folder.'));
       return;
     }
     if (auto) {
       setAuto(await changeAutoBackup({ every }));
-      say('Saved.');
+      say(t('Saved.'));
       return;
     }
     const folder = await chooseFolder();
@@ -139,8 +142,8 @@ export default function Backups() {
     try {
       const next = await runAutoBackup(true);
       setAuto(next);
-      if (next?.error) say(`Not made. ${next.error}`, true);
-      else if (next) say(`Made a backup in ${folderLabel(next.folder)}.`);
+      if (next?.error) say(t('Not made. {error}', { error: next.error }), true);
+      else if (next) say(t('Made a backup in {folder}.', { folder: folderLabel(next.folder) }));
     } finally {
       setBusy(false);
     }
@@ -154,8 +157,8 @@ export default function Backups() {
       const picked = await pickFile(MAX_BYTES);
       if (picked) setAsking({ kind: 'open', ...picked });
     } catch (error) {
-      if (error instanceof TooLargeError) say('That file is not an Erevos backup.', true);
-      else say(`Could not read that file. ${errorText(error)}`, true);
+      if (error instanceof TooLargeError) say(t('That file is not an Erevos backup.'), true);
+      else say(t('Could not read that file. {error}', { error: errorText(error) }), true);
     } finally {
       picking.current = false;
     }
@@ -168,7 +171,7 @@ export default function Backups() {
       setAsking(null);
       try {
         const { name, size, where } = await writeBackup(asking.folder, backup);
-        say(`Saved ${name} (${sizeText(size)}) in ${where ?? folderLabel(asking.folder)}. Keep its password: nothing opens the backup without it.`);
+        say(t('Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.', { name, size: sizeText(size), folder: where ?? folderLabel(asking.folder) }));
       } catch (error) {
         say(errorText(error), true);
       }
@@ -185,7 +188,7 @@ export default function Backups() {
         throw error;
       }
       setAsking(null);
-      if (await confirm('Replace everything', `Every space on this ${DEVICE}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.`)) {
+      if (await confirm(t('Replace everything'), t('Every space on {device}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.', { device: t(THIS_DEVICE) }))) {
         // Nothing may keep what was here over what the backup brings: the receiver stops first,
         // and starts again with the space as restored.
         const release = await holdReceiver();
@@ -206,71 +209,68 @@ export default function Backups() {
   const every = auto?.every ?? 0;
   return (
     <Page>
-      <Text variant="title">Backups</Text>
+      <Text variant="title">{t('Backups')}</Text>
       <Text variant="caption" tone="muted" style={hint}>
-        A backup is one file holding everything Erevos keeps on this {DEVICE}: every space, with its contacts, messages, voice
-        messages, imported chats and hidden chats, each still sealed with its own password. The backup has a password of its
-        own too.
+        {t('A backup is one file holding everything Erevos keeps on {device}: every space, with its contacts, messages, voice messages, imported chats and hidden chats, each still sealed with its own password. The backup has a password of its own too.', { device: t(THIS_DEVICE) })}
       </Text>
 
-      <SectionTitle title="Make a backup" />
+      <SectionTitle title={t('Make a backup')} />
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
-          {PLACES}
+          {t(PLACES)}
         </Text>
         <Row wrap>
-          <Button title="Make a backup" compact onPress={make} disabled={busy} />
+          <Button title={t('Make a backup')} compact onPress={make} disabled={busy} />
         </Row>
       </Card>
 
       {CAN_AUTO_BACKUP ? null : (
         <Text variant="caption" tone="muted" style={hint}>
-          A browser saves a file only when you tap, so here Erevos makes no backups by itself. Make one now and then.
+          {t('A browser saves a file only when you tap, so here Erevos makes no backups by itself. Make one now and then.')}
         </Text>
       )}
 
       {CAN_AUTO_BACKUP ? (
         <>
-          <SectionTitle title="Automatic backups" />
+          <SectionTitle title={t('Automatic backups')} />
           <Row wrap>
             {CHOICES.map((choice) => (
-              <Chip key={choice.every} label={choice.label} selected={every === choice.every} onPress={() => void choose(choice.every)} disabled={busy} />
+              <Chip key={choice.every} label={t(choice.label)} selected={every === choice.every} onPress={() => void choose(choice.every)} disabled={busy} />
             ))}
           </Row>
           {auto ? (
             <Card>
-              <Text variant="bodyStrong">Into {folderLabel(auto.folder)}</Text>
+              <Text variant="bodyStrong">{t('Into {folder}', { folder: folderLabel(auto.folder) })}</Text>
               <Text variant="caption" tone="muted" style={hint}>
-                {auto.last ? `Last one ${whenText(auto.last)}.` : 'None made yet.'} Made when Erevos opens and the last one is
-                older than that. The folder keeps the {KEEP} newest.
+                {auto.last ? t('Last one {when}.', { when: whenText(auto.last) }) : t('None made yet.')}{' '}
+                {t('Made when Erevos opens and the last one is older than that. The folder keeps the {n} newest.', { n: KEEP })}
               </Text>
               {auto.error ? (
                 <Text variant="caption" color={colors.danger} style={hint}>
-                  The last one failed: {auto.error} Erevos tries again next time it opens.
+                  {t('The last one failed: {error} Erevos tries again next time it opens.', { error: auto.error })}
                 </Text>
               ) : null}
               <Row wrap>
-                <Button title={busy ? 'One moment…' : 'Back up now'} kind="secondary" compact onPress={backUpNow} disabled={busy} />
-                {SHELL === 'sailfish' ? null : <Button title="Change folder" kind="secondary" compact onPress={moveAuto} disabled={busy} />}
-                <Button title="Change password" kind="secondary" compact onPress={changePassword} disabled={busy} />
+                <Button title={busy ? t('One moment…') : t('Back up now')} kind="secondary" compact onPress={backUpNow} disabled={busy} />
+                {SHELL === 'sailfish' ? null : <Button title={t('Change folder')} kind="secondary" compact onPress={moveAuto} disabled={busy} />}
+                <Button title={t('Change password')} kind="secondary" compact onPress={changePassword} disabled={busy} />
               </Row>
             </Card>
           ) : (
             <Text variant="caption" tone="muted" style={hint}>
-              Erevos can make a backup by itself every day or week, into a folder you choose, with a password you set once.
+              {t('Erevos can make a backup by itself every day or week, into a folder you choose, with a password you set once.')}
             </Text>
           )}
         </>
       ) : null}
 
-      <SectionTitle title="Restore" />
+      <SectionTitle title={t('Restore')} />
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
-          Puts a backup in place of everything on this {DEVICE}. Chats that went on after the backup was made may need
-          their contact links again. Use a backup on one device at a time.
+          {t('Puts a backup in place of everything on {device}. Chats that went on after the backup was made may need their contact links again. Use a backup on one device at a time.', { device: t(THIS_DEVICE) })}
         </Text>
         <Row wrap>
-          <Button title="Restore a backup" kind="secondary" compact onPress={pickBackup} disabled={busy} />
+          <Button title={t('Restore a backup')} kind="secondary" compact onPress={pickBackup} disabled={busy} />
         </Row>
       </Card>
 
@@ -282,9 +282,9 @@ export default function Backups() {
 
       <PasswordSheet
         visible={asking !== null}
-        title={sheet?.kind === 'open' ? `Open ${sheet.name}` : sheet?.kind === 'auto' ? 'Password for automatic backups' : 'Password for this backup'}
+        title={sheet?.kind === 'open' ? t('Open {name}', { name: sheet.name }) : sheet?.kind === 'auto' ? t('Password for automatic backups') : t('Password for this backup')}
         repeat={sheet?.kind !== 'open'}
-        submitLabel={sheet?.kind === 'open' ? 'Open' : 'Save'}
+        submitLabel={sheet?.kind === 'open' ? t('Open') : t('Save')}
         onClose={() => setAsking(null)}
         onSubmit={submit}
       />

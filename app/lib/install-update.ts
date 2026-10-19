@@ -4,6 +4,7 @@ import { startActivityAsync } from 'expo-intent-launcher';
 import { Platform } from 'react-native';
 
 import type { Release } from './updates';
+import { t } from './i18n';
 
 // Android installs the new APK itself, as in LPHL FASOULI; elsewhere the download page opens
 // instead (install-update.web.ts).
@@ -70,7 +71,7 @@ export async function downloadAndInstall(
   signal: AbortSignal,
 ): Promise<void> {
   const apk = release.apk;
-  if (!apk) throw new Error('This release has no Android package.');
+  if (!apk) throw new Error(t('This release has no Android package.'));
   const dir = folder();
   if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
   const target = new File(dir, `erevos-${release.version}.apk`);
@@ -82,12 +83,12 @@ export async function downloadAndInstall(
     });
     if (target.size !== apk.size) {
       target.delete();
-      throw new Error('The download was cut short.');
+      throw new Error(t('The download was cut short.'));
     }
   }
   if ((await fileSha256(target)) !== apk.sha256) {
     target.delete();
-    throw new Error('The downloaded package is not the one the release published. Nothing was installed.');
+    throw new Error(t('The downloaded package is not the one the release published. Nothing was installed.'));
   }
   await startActivityAsync('android.intent.action.VIEW', {
     data: target.contentUri,

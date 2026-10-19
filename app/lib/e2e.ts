@@ -10,6 +10,7 @@ import { isVoicePart, splitVoice, type VoicePart } from './voice';
 import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import type { Look } from '../theme/look';
 import { deletePhoto } from '../lock/avatar-photos';
+import { t } from './i18n';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
 // so neither its contacts nor the relay can tie the two together. The account's public keys
@@ -273,13 +274,13 @@ export type Received =
 
 export class OwnCodeError extends Error {
   constructor() {
-    super("That is this chat's own contact link.");
+    super(t("That is this chat's own contact link."));
   }
 }
 
 export class NoKeyError extends Error {
   constructor() {
-    super('That code has no key. Ask for their contact link or QR code from this version of Erevos.');
+    super(t('That code has no key. Ask for their contact link or QR code from this version of Erevos.'));
   }
 }
 
@@ -390,7 +391,7 @@ export class E2E {
   setHidden(identity: string, hide: boolean): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
-      if (!contact) throw new Error('No such contact.');
+      if (!contact) throw new Error(t('No such contact.'));
       await this.save(this.withContact({ ...contact, hide }));
     });
   }
@@ -419,7 +420,7 @@ export class E2E {
   /** Links a phone number to a contact, or unlinks it with ''. A number is linked to one contact only. */
   linkPhone(identity: string, phone: string): Promise<void> {
     return this.run(async () => {
-      if (phone && !/^\+?\d{3,20}$/.test(phone)) throw new Error('That is not a phone number.');
+      if (phone && !/^\+?\d{3,20}$/.test(phone)) throw new Error(t('That is not a phone number.'));
       if (!this.find(identity)) return;
       const contacts = this.data.contacts.map((c) =>
         c.identity === identity ? { ...c, phone } : phone && c.phone === phone ? { ...c, phone: '' } : c,
@@ -452,8 +453,8 @@ export class E2E {
   setTimer(identity: string, timer: number): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
-      if (!contact) throw new Error('No such contact.');
-      if (!isTimer(timer)) throw new Error('Not a time Erevos keeps messages for.');
+      if (!contact) throw new Error(t('No such contact.'));
+      if (!isTimer(timer)) throw new Error(t('Not a time Erevos keeps messages for.'));
       await this.save(this.withContact({ ...contact, timer, timerAt: Math.max(Date.now(), contact.timerAt + 1) }));
     });
   }
@@ -462,7 +463,7 @@ export class E2E {
   rename(identity: string, name: string): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
-      if (!contact) throw new Error('No such contact.');
+      if (!contact) throw new Error(t('No such contact.'));
       await this.save(this.withContact({ ...contact, name: cleanName(name) }));
     });
   }
@@ -471,7 +472,7 @@ export class E2E {
   setLook(identity: string, look: Look | null): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
-      if (!contact) throw new Error('No such contact.');
+      if (!contact) throw new Error(t('No such contact.'));
       await this.save(this.withContact({ ...contact, look }));
     });
   }
@@ -511,7 +512,7 @@ export class E2E {
   setAvatar(identity: string, avatar: Avatar | null): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
-      if (!contact) throw new Error('No such contact.');
+      if (!contact) throw new Error(t('No such contact.'));
       await this.save(this.withContact({ ...contact, avatar: avatar && checkedAvatar(avatar) }));
       // The photo it had, if another took its place.
       if (contact.avatar?.kind === 'photo' && (avatar?.kind !== 'photo' || avatar.id !== contact.avatar.id)) await deletePhoto(contact.avatar.id);
@@ -595,9 +596,9 @@ export class E2E {
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
-      if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
+      if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
       const tag = text ? (isTag(given) ? given : newTag()) : '';
-      if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
+      if (!isTimer(lasts)) throw new Error(t('Not a time Erevos keeps messages for.'));
       const { timer, timerAt } = contact;
       const once = text ? lasts : 0;
       const signal = text ? null : call;
@@ -641,8 +642,8 @@ export class E2E {
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
-      if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
-      if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
+      if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
+      if (!isTimer(lasts)) throw new Error(t('Not a time Erevos keeps messages for.'));
       const tag = isTag(given) ? given : newTag();
       const { timer, timerAt } = contact;
       const messages = splitVoice(audio, ms, talk).map((voice) => ({
@@ -679,8 +680,8 @@ export class E2E {
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
-      if (!contact || contact.conversations.length === 0) throw new Error('No conversation with this contact.');
-      if (!isTimer(lasts)) throw new Error('Not a time Erevos keeps messages for.');
+      if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
+      if (!isTimer(lasts)) throw new Error(t('Not a time Erevos keeps messages for.'));
       const tag = isTag(given) ? given : newTag();
       const { timer, timerAt } = contact;
       const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...SAYS_NOTHING, call: null, group: null };

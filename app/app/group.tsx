@@ -8,6 +8,7 @@ import { KeyFace } from '../components/key-face';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { currentCall } from '../lib/call';
+import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { currentGroupCall } from '../lib/group-call';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
@@ -15,6 +16,7 @@ import { MAX_GROUP_NAME } from '../lib/group-signal';
 import { MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
 import { spaceChats } from '../lib/space-chats';
 import { spaceGroupCalls, spaceGroups, spaceGroupTransport } from '../lib/space-groups';
+import { t } from '../lib/i18n';
 import { rtc } from '../lib/webrtc';
 import type { GroupMessage } from '../lock/group-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
@@ -115,31 +117,32 @@ export default function GroupScreen() {
   async function call(asked: boolean) {
     setNote('');
     if (currentCall() || currentGroupCall()) {
-      setNote('There is a call already.');
+      setNote(t('There is a call already.'));
       return;
     }
     const going = groupCallGoingOn(id);
     const video = going ? going.video : asked;
     if (!(await callPermissions(video))) {
-      setNote(video ? 'A video call needs the camera and the microphone.' : 'A call needs the microphone.');
+      setNote(video ? t('A video call needs the camera and the microphone.') : t('A call needs the microphone.'));
       return;
     }
     try {
       const relay = await spaceGroupCalls.callRelay();
-      const direct =
-        "Your relay has no call relay beside it, so the call would go straight between the phones. That only works on the same Wi-Fi, and each phone in the call sees the others' addresses on it. With a call relay, none does.";
-      if (!relay && !(await confirm('Call without a call relay?', direct, 'Call'))) return;
+      const direct = t(
+        "Your relay has no call relay beside it, so the call would go straight between the phones. That only works on the same Wi-Fi, and each phone in the call sees the others' addresses on it. With a call relay, none does.",
+      );
+      if (!relay && !(await confirm(t('Call without a call relay?'), direct, t('Call')))) return;
       if (going) await joinGroupCall(spaceGroupCalls, id, relay, rtc);
       else await startGroupCall(spaceGroupCalls, id, video, relay, rtc);
     } catch (error) {
-      setNote(`Could not call. ${error instanceof Error ? error.message : String(error)}`);
+      setNote(t('Could not call. {reason}', { reason: error instanceof Error ? error.message : String(error) }));
     }
   }
 
   if (!info) {
     return (
       <View style={[styles.screen, styles.center]}>
-        <Text tone="muted">{note || 'This group is not here.'}</Text>
+        <Text tone="muted">{note || t('This group is not here.')}</Text>
       </View>
     );
   }
@@ -149,24 +152,24 @@ export default function GroupScreen() {
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
       <Row style={styles.head}>
-        <Pressable onPress={() => setSheet(true)} accessibilityRole="button" accessibilityHint="Members and settings" style={({ pressed }) => [styles.top, pressed && styles.pressed]}>
+        <Pressable onPress={() => setSheet(true)} accessibilityRole="button" accessibilityHint={t('Members and settings')} style={({ pressed }) => [styles.top, pressed && styles.pressed]}>
           <KeyFace identity={id} name={info.name} size={40} />
           <View style={{ flex: 1 }}>
             <Text variant="heading" numberOfLines={1}>
               {info.name}
             </Text>
             <Text variant="caption" tone="muted">
-              {out ? (info.status === 'leaving' ? 'Leaving' : 'You are not in this group') : 'Group · end-to-end encrypted · tap for members'}
+              {out ? (info.status === 'leaving' ? t('Leaving') : t('You are not in this group')) : t('Group · end-to-end encrypted · tap for members')}
             </Text>
           </View>
         </Pressable>
-        {out ? null : <TextButton title="Call" onPress={() => void call(false)} />}
-        {out ? null : <TextButton title="Video" onPress={() => void call(true)} />}
+        {out ? null : <TextButton title={t('Call')} onPress={() => void call(false)} />}
+        {out ? null : <TextButton title={t('Video')} onPress={() => void call(true)} />}
       </Row>
       {going ? (
         <Pressable onPress={() => void call(going.video)} accessibilityRole="button" style={({ pressed }) => [styles.going, pressed && styles.pressed]}>
           <Text variant="bodyStrong" color={colors.accentText}>
-            {going.video ? 'A group video call' : 'A group call'} is going on · Join
+            {going.video ? t('A group video call is going on · Join') : t('A group call is going on · Join')}
           </Text>
           <Text variant="caption" tone="muted" numberOfLines={1}>
             {going.people.map(name).join(', ')}
@@ -194,7 +197,7 @@ export default function GroupScreen() {
                 </Text>
               ) : null}
               <Text style={ink} selectable>
-                {m.text}
+                {shownLine(m.text)}
               </Text>
               <Text style={[ink, styles.time]}>{clock(m.at)}</Text>
             </View>
@@ -208,8 +211,8 @@ export default function GroupScreen() {
       ) : null}
       {out ? null : (
         <Row style={styles.dock}>
-          <Input value={draft} onChangeText={setDraft} placeholder={`Message ${info.name}`} maxLength={MAX_GROUP_TEXT} multiline style={{ flex: 1 }} />
-          <Button title="Send" compact disabled={!draft.trim()} onPress={() => void send()} />
+          <Input value={draft} onChangeText={setDraft} placeholder={t('Message {name}', { name: info.name })} maxLength={MAX_GROUP_TEXT} multiline style={{ flex: 1 }} />
+          <Button title={t('Send')} compact disabled={!draft.trim()} onPress={() => void send()} />
         </Row>
       )}
       <MembersSheet visible={sheet} onClose={() => setSheet(false)} info={info} name={name} onNote={setNote} />
@@ -270,9 +273,9 @@ function MembersSheet({ visible, onClose, info, name, onNote }: {
       <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ gap: space.sm }}>
         {adding ? (
           <>
-            <Text variant="bodyStrong">Add to the group</Text>
+            <Text variant="bodyStrong">{t('Add to the group')}</Text>
             {adding.length === 0 ? (
-              <Text tone="muted">Every contact is in the group or asked already.</Text>
+              <Text tone="muted">{t('Every contact is in the group or asked already.')}</Text>
             ) : (
               <ContactPicker
                 contacts={adding}
@@ -289,7 +292,7 @@ function MembersSheet({ visible, onClose, info, name, onNote }: {
             )}
             <Row>
               <Button
-                title="Ask them"
+                title={t('Ask them')}
                 compact
                 disabled={busy || chosen.size === 0}
                 onPress={() =>
@@ -299,28 +302,30 @@ function MembersSheet({ visible, onClose, info, name, onNote }: {
                   })
                 }
               />
-              <TextButton title="Back" onPress={() => setAdding(null)} />
+              <TextButton title={t('Back')} onPress={() => setAdding(null)} />
             </Row>
           </>
         ) : (
           <>
             <Text variant="caption" tone="muted">
               {out
-                ? 'You are no longer in this group. Its messages stay here until you delete it.'
-                : `${members.length} in the group. Each has their own keys: the group's messages are end-to-end encrypted for those in it now.`}
+                ? t('You are no longer in this group. Its messages stay here until you delete it.')
+                : t("{n} in the group. Each has their own keys: the group's messages are end-to-end encrypted for those in it now.", {
+                    n: members.length,
+                  })}
             </Text>
             {members.map((m) => (
               <Row key={m.leaf}>
-                <KeyFace identity={m.about?.id ?? ''} name={m.me ? 'You' : name(m.about?.id ?? '')} size={36} />
+                <KeyFace identity={m.about?.id ?? ''} name={m.me ? t('You') : name(m.about?.id ?? '')} size={36} />
                 <Text style={{ flex: 1 }} numberOfLines={1}>
-                  {m.me ? 'You' : name(m.about?.id ?? '')}
-                  {m.leaf === 0 ? '  · admin' : ''}
+                  {m.me ? t('You') : name(m.about?.id ?? '')}
+                  {m.leaf === 0 ? t('  · admin') : ''}
                 </Text>
                 {info.admin && !m.me && !out ? (
                   <TextButton
-                    title="Take out"
+                    title={t('Take out')}
                     onPress={() =>
-                      void closeThenConfirm('Take out', `${name(m.about?.id ?? '')} will read nothing the group says from now on.`).then(
+                      void closeThenConfirm(t('Take out'), t('{name} will read nothing the group says from now on.', { name: name(m.about?.id ?? '') })).then(
                         (ok) => {
                           if (ok) void run(async () => (await spaceGroups()).remove(info.id, m.leaf, spaceGroupTransport));
                         },
@@ -332,32 +337,32 @@ function MembersSheet({ visible, onClose, info, name, onNote }: {
             ))}
             {info.asked.length > 0 ? (
               <Text variant="caption" tone="muted">
-                Asked, joining once Erevos is open on their phone: {info.asked.map(name).join(', ')}
+                {t('Asked, joining once Erevos is open on their phone: {names}', { names: info.asked.map(name).join(', ') })}
               </Text>
             ) : null}
             {info.admin && !out ? (
               <Card>
-                <Field label="Group name">
+                <Field label={t('Group name')}>
                   <Input value={rename} onChangeText={setRename} maxLength={MAX_GROUP_NAME} />
                 </Field>
                 <Row wrap>
                   <Button
-                    title="Rename"
+                    title={t('Rename')}
                     kind="secondary"
                     compact
                     disabled={busy || !rename.trim() || rename.trim() === info.name}
                     onPress={() => void run(async () => (await spaceGroups()).rename(info.id, rename, spaceGroupTransport))}
                   />
-                  <Button title="Add members" kind="secondary" compact disabled={busy} onPress={() => void startAdding()} />
+                  <Button title={t('Add members')} kind="secondary" compact disabled={busy} onPress={() => void startAdding()} />
                 </Row>
               </Card>
             ) : null}
             {out ? (
               <Button
-                title="Delete the group here"
+                title={t('Delete the group here')}
                 kind="secondary"
                 onPress={() =>
-                  void closeThenConfirm('Delete the group', 'Its messages are deleted from this phone.', 'Delete').then(
+                  void closeThenConfirm(t('Delete the group'), t('Its messages are deleted from this phone.'), t('Delete')).then(
                     (ok) => {
                       if (!ok) return;
                       void run(async () => {
@@ -370,16 +375,16 @@ function MembersSheet({ visible, onClose, info, name, onNote }: {
               />
             ) : (
               <Button
-                title={info.admin ? 'Close the group' : 'Leave the group'}
+                title={info.admin ? t('Close the group') : t('Leave the group')}
                 kind="secondary"
                 disabled={busy}
                 onPress={() =>
                   void closeThenConfirm(
-                    info.admin ? 'Close the group' : 'Leave the group',
+                    info.admin ? t('Close the group') : t('Leave the group'),
                     info.admin
-                      ? 'You are its admin: closing it takes every member out, and no one can write in it again.'
-                      : 'The admin takes you out the next time Erevos is open on their phone. You read nothing the group says after.',
-                    info.admin ? 'Close' : 'Leave',
+                      ? t('You are its admin: closing it takes every member out, and no one can write in it again.')
+                      : t('The admin takes you out the next time Erevos is open on their phone. You read nothing the group says after.'),
+                    info.admin ? t('Close') : t('Leave'),
                   ).then((ok) => {
                     if (ok) void run(async () => (await spaceGroups()).leave(info.id, spaceGroupTransport));
                   })
@@ -387,7 +392,7 @@ function MembersSheet({ visible, onClose, info, name, onNote }: {
               />
             )}
             <Text variant="caption" color={colors.textFaint}>
-              Members who are not your contacts show by the start of their key. Add them as contacts to give them names.
+              {t('Members who are not your contacts show by the start of their key. Add them as contacts to give them names.')}
             </Text>
           </>
         )}

@@ -6,6 +6,7 @@ import type { Carried } from './nearby';
 import type { Spare } from '../lock/e2e-data';
 import { fromHex, sameRelay, type Fallback, type Relay } from './relay';
 import { VoiceAssembler } from './voice';
+import { t } from './i18n';
 
 // The open space's chats through the relay, opened once while the space is: its account and
 // contacts (lib/e2e.ts), the messages it keeps (lock/history.ts), and the voice messages still
@@ -64,7 +65,7 @@ function reach(hop: Relay, where: { relay: string; relayKey: string }, home: str
   if (sameRelay(relay, hop.url)) return { url: hop.url, token: hop.token, via: hop.via };
   // Our own relay, through the backup: its key is the one it gave this run.
   if (sameRelay(relay, home) && !where.relayKey) return { url: relay, via: hop.via ?? { url: hop.url, token: hop.token } };
-  if (!where.relayKey) throw new Error(`That contact uses the relay at ${relay}, and its link has no key for it. Ask them for a new link.`);
+  if (!where.relayKey) throw new Error(t('That contact uses the relay at {relay}, and its link has no key for it. Ask them for a new link.', { relay }));
   return { url: relay, key: fromBase64Url(where.relayKey), via: hop.via ?? { url: hop.url, token: hop.token } };
 }
 

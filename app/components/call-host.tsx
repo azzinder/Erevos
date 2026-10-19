@@ -13,6 +13,7 @@ import { learnSpaceNames, spaceCalls } from '../lib/space-calls';
 import { spaceChats } from '../lib/space-chats';
 import { onSpaceGroupCall, spaceGroupCalls, spaceGroups } from '../lib/space-groups';
 import { rtc } from '../lib/webrtc';
+import { t } from '../lib/i18n';
 import { CallScreen } from './call-screen';
 import { GroupCallScreen } from './group-call-screen';
 
@@ -45,7 +46,7 @@ export function CallHost() {
         void Promise.all([spaceGroups(), spaceChats()])
           .then(([groups, { e2e }]) =>
             setNames({
-              group: groups.list().find((g) => g.id === call.group)?.name ?? 'Group',
+              group: groups.list().find((g) => g.id === call.group)?.name ?? t('Group'),
               contacts: e2e.contacts().map((c) => ({ identity: c.identity, name: c.name })),
             }),
           )
@@ -115,7 +116,7 @@ export function CallHost() {
       <Modal visible animationType="fade" statusBarTranslucent onRequestClose={() => undefined}>
         <GroupCallScreen
           call={call}
-          groupName={names.group || 'Group'}
+          groupName={names.group || t('Group')}
           name={(identity) => memberName(identity, names.contacts)}
           speaker={speaker}
           onSpeaker={(on) => {

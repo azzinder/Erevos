@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Button, Card, Field, Input, Page, Row, Text } from '../components/ui';
+import { t } from '../lib/i18n';
 import { createQueue, decodeEnvelope, encodeEnvelope, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import { useColors } from '../theme/context';
 
@@ -25,7 +26,7 @@ export default function Relay() {
   function target() {
     const relay = url.trim();
     if (!relay) {
-      note('Type the relay address first.');
+      note(t('Type the relay address first.'));
       return null;
     }
     return { url: relay, token: token.trim() || undefined };
@@ -45,7 +46,7 @@ export default function Relay() {
     attempt(async () => {
       const ids = await createQueue(relay);
       setQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
-      return 'Queue created.';
+      return t('Queue created.');
     });
   }
 
@@ -56,7 +57,7 @@ export default function Relay() {
     attempt(async () => {
       await sendMessage(relay, fromHex(sendTo), encodeEnvelope('', text));
       setDraft('');
-      return `Sent: ${text}`;
+      return t('Sent: {text}', { text });
     });
   }
 
@@ -64,22 +65,21 @@ export default function Relay() {
     const relay = target();
     if (!relay) return;
     if (!queue) {
-      note('Create a queue first.');
+      note(t('Create a queue first.'));
       return;
     }
     attempt(async () => {
       const bytes = await receiveMessage(relay, fromHex(queue.recipientHex));
       const envelope = bytes ? decodeEnvelope(bytes) : null;
-      return envelope ? `Received: ${envelope.text}` : 'Nothing waiting.';
+      return envelope ? t('Received: {text}', { text: envelope.text }) : t('Nothing waiting.');
     });
   }
 
   return (
     <Page>
-      <Text variant="title">Relay test (Wi-Fi)</Text>
+      <Text variant="title">{t('Relay test (Wi-Fi)')}</Text>
       <Text tone="muted">
-        Messages wait on the relay running on the computer. Both phones must be on the same Wi-Fi and use that
-        computer's address.
+        {t("Messages wait on the relay running on the computer. Both phones must be on the same Wi-Fi and use that computer's address.")}
       </Text>
       <Input
         value={url}
@@ -92,29 +92,29 @@ export default function Relay() {
       <Input
         value={token}
         onChangeText={setToken}
-        placeholder="Token, if the relay needs one"
+        placeholder={t('Token, if the relay needs one')}
         autoCapitalize="none"
         autoCorrect={false}
         secureTextEntry
       />
-      <Button title="Create queue" onPress={create} />
+      <Button title={t('Create queue')} onPress={create} />
       {queue ? (
         <Card>
-          <Field label="Sender id (give this to the phone that writes to you)">
+          <Field label={t('Sender id (give this to the phone that writes to you)')}>
             <Text selectable variant="mono">{queue.senderHex}</Text>
           </Field>
-          <Field label="Recipient id (keep private, used to receive)">
+          <Field label={t('Recipient id (keep private, used to receive)')}>
             <Text selectable variant="mono">{queue.recipientHex}</Text>
           </Field>
         </Card>
       ) : null}
-      <Field label="Send to a sender id">
-        <Input value={sendTo} onChangeText={setSendTo} placeholder="48 hex characters" autoCapitalize="none" autoCorrect={false} />
+      <Field label={t('Send to a sender id')}>
+        <Input value={sendTo} onChangeText={setSendTo} placeholder={t('48 hex characters')} autoCapitalize="none" autoCorrect={false} />
       </Field>
-      <Input value={draft} onChangeText={setDraft} placeholder="Message" />
+      <Input value={draft} onChangeText={setDraft} placeholder={t('Message')} />
       <Row>
-        <Button title="Send" onPress={send} style={{ flex: 1 }} />
-        <Button title="Receive" kind="secondary" onPress={receive} style={{ flex: 1 }} />
+        <Button title={t('Send')} onPress={send} style={{ flex: 1 }} />
+        <Button title={t('Receive')} kind="secondary" onPress={receive} style={{ flex: 1 }} />
       </Row>
       {log.map((line, index) => (
         <Text key={index} variant="caption" color={colors.accentText}>

@@ -6,6 +6,7 @@ import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForLoraError } from './nearby';
 import { canTryLater, fromHex, sendMessage, type Relay } from './relay';
 import { carriedFor, contactTarget, type SpaceChats } from './space-chats';
+import { t } from './i18n';
 
 type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 
@@ -114,7 +115,7 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
   let worthCarrying = true;
   if (message.voice) {
     const audio = await loadClip(message.voice);
-    if (!audio) throw new Error("This voice message's sound is gone.");
+    if (!audio) throw new Error(t("This voice message's sound is gone."));
     const voice = await e2e.sealVoice(identity, audio, message.voice.ms, place.senderHex, options);
     sealed = voice;
     packets = voice.packets;

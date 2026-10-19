@@ -7,6 +7,7 @@ import { useColors, useTheme } from '../theme/context';
 
 import { unlock, type LockConfig, type Unlocked } from './config';
 import { LockedOutError, lockedOutMessage } from './tries';
+import { t } from '../lib/i18n';
 
 // The password screen shown before any space is opened. It looks the same whichever password is
 // typed, and the password decides which space opens. Wrong passwords are counted on the phone
@@ -29,7 +30,7 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
         await onUnlock(space);
         return;
       }
-      setError('Wrong password');
+      setError(t('Wrong password'));
       setPassword('');
     } catch (e) {
       setError(e instanceof LockedOutError ? lockedOutMessage(e.until) : e instanceof Error ? e.message : String(e));
@@ -44,7 +45,7 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
         <Logo />
         <Text variant="title">Erevos</Text>
         <Text tone="muted" style={styles.body}>
-          Enter your password
+          {t('Enter your password')}
         </Text>
         <Input
           value={password}
@@ -54,8 +55,8 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
           autoFocus
           autoCapitalize="none"
           autoCorrect={false}
-          accessibilityLabel="Password"
-          placeholder="Password"
+          accessibilityLabel={t('Password')}
+          placeholder={t('Password')}
           style={styles.input}
         />
         {error ? (
@@ -63,7 +64,7 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
             {error}
           </Text>
         ) : null}
-        <Button title="Unlock" onPress={submit} disabled={!password} loading={busy} style={styles.stretch} />
+        <Button title={t('Unlock')} onPress={submit} disabled={!password} loading={busy} style={styles.stretch} />
       </View>
     </KeyboardAvoidingView>
   );

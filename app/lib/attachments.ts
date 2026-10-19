@@ -25,6 +25,7 @@ import {
   type FileMeta,
   type FileRef,
 } from '../lock/attachment-files';
+import { t } from './i18n';
 
 /** The largest file that can be sent. */
 export const MAX_FILE = 100 * 1000 * 1000;
@@ -49,21 +50,21 @@ export type FileOffer = FileMeta & { relay: string; ids: string; key: string; ch
 
 export class FileTooLargeError extends Error {
   constructor() {
-    super('Files can be 100 MB at most.');
+    super(t('Files can be 100 MB at most.'));
   }
 }
 
 /** A chunk that does not open with the file's key, or is not the one expected. */
 export class FileDamagedError extends Error {
   constructor() {
-    super('The file was changed on the way, so it was not kept.');
+    super(t('The file was changed on the way, so it was not kept.'));
   }
 }
 
 /** The file is not on the relay any more: taken already, or expired after 14 days. */
 export class FileGoneError extends Error {
   constructor() {
-    super('The file is not on the relay any more. Files wait there 14 days.');
+    super(t('The file is not on the relay any more. Files wait there 14 days.'));
   }
 }
 
@@ -252,7 +253,7 @@ export async function takeFile(own: Relay, ref: FileRef, progress?: Progress): P
 /** The file is not on this phone: not taken from the relay yet, or its chunks are gone. */
 export class FileMissingError extends Error {
   constructor() {
-    super('This file is not on this phone.');
+    super(t('This file is not on this phone.'));
   }
 }
 

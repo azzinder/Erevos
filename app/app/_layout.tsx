@@ -13,6 +13,7 @@ import { runAutoBackup } from '../lib/backup-folder';
 import { currentCall } from '../lib/call';
 import { onCallChange } from '../lib/calls';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
+import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
 import { setAppShown, startReceiver } from '../lib/receiver';
@@ -20,6 +21,7 @@ import { setThroughTor } from '../lib/relay';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
 import { forgetSpare } from '../lib/spare';
+import { callAudio } from '../modules/erevos-call';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { applyTor } from '../lib/tor';
 import { loadLockConfig, type LockConfig } from '../lock/config';
@@ -59,6 +61,7 @@ export default function RootLayout() {
   const phaseRef = useRef(phase);
   const backgroundAt = useRef<number | null>(null);
   const relockAfterCall = useRef(false);
+  const lang = useLang();
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -105,6 +108,7 @@ export default function RootLayout() {
     }
     // On a computer the core loads beside the app, and nothing that needs it opens before it.
     await cryptoReady();
+    await loadLang();
     const config = await loadLockConfig();
     if (config.direct !== null) {
       // The lock was turned off in a later space: that one opens directly, with its key from the keystore.
@@ -120,6 +124,11 @@ export default function RootLayout() {
   useEffect(() => {
     start().catch(fail);
   }, [start, fail]);
+
+  // Android's notices, shown while the app is closed, say it in the app's language too.
+  useEffect(() => {
+    callAudio?.setLanguage?.(lang);
+  }, [lang]);
 
   // The web app's service worker refused code from the server: said at once, locked or open.
   useEffect(() => startIntegrityAlarm(), []);
@@ -174,13 +183,14 @@ export default function RootLayout() {
   return (
     <KeyboardProvider>
       <ThemeProvider look={look} onChange={keepLook}>
-        <Shell phase={phase} error={error} lockState={lockState} onUnlock={({ space, key }) => openSpace(space, true, key)} />
+        <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={({ space, key }) => openSpace(space, true, key)} />
       </ThemeProvider>
     </KeyboardProvider>
   );
 }
 
-function Shell({ phase, error, lockState, onUnlock }: {
+function Shell({ lang, phase, error, lockState, onUnlock }: {
+  lang: Lang;
   phase: Phase;
   error: string | null;
   lockState: LockState;
@@ -195,7 +205,7 @@ function Shell({ phase, error, lockState, onUnlock }: {
       <ScreenBackdrop>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: gap.xl, gap: gap.sm, backgroundColor: colors.ground }}>
           <Text variant="heading" style={{ textAlign: 'center' }}>
-            Erevos could not open
+            {t('Erevos could not open')}
           </Text>
           <Text tone="muted" style={{ textAlign: 'center' }}>
             {error}
@@ -216,20 +226,21 @@ function Shell({ phase, error, lockState, onUnlock }: {
   if (phase.kind === 'locked') {
     return (
       <ScreenBackdrop>
-        <PasswordGate config={phase.config} onUnlock={onUnlock} />
+        <PasswordGate key={lang} config={phase.config} onUnlock={onUnlock} />
         <AlertHost />
         {bar}
       </ScreenBackdrop>
     );
   }
   // Each screen shows its own title, so the header only carries the back arrow. The home screen
-  // has no header. Under a backdrop (Nocturne's glow, the glass's wallpaper) every screen lies on
+  // has no header. The screens start afresh in a new language too (lib/i18n.ts), on the home
+  // screen, where its menu changes it. Under a backdrop (Nocturne's glow, the glass's wallpaper) every screen lies on
   // it, and the header is drawn over it: the glass's dense pane, or see-through.
   const headerColor = !spec ? colors.sheet : spec.kind === 'wall' ? colors.sheet : 'transparent';
   return (
     <LockContext.Provider value={lockState}>
       <Stack
-        key={phase.space}
+        key={`${phase.space}-${lang}`}
         // A chat draws its own backdrop, in its own look (theme/chat-theme.tsx).
         screenLayout={({ children, route }) => (route.name === 'chat' ? children : <ScreenBackdrop>{children}</ScreenBackdrop>)}
         screenOptions={{

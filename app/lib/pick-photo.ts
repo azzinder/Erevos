@@ -3,6 +3,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
 import { cleanJpeg, cleanPng, isJpeg, isPng, photoSize } from './photo';
+import { t } from './i18n';
 
 // A photo to send, from the phone's photos or its camera, at the quality chosen: the original,
 // with only what it says besides its picture taken out (lib/photo.ts), or a new JPEG at 90% or
@@ -18,7 +19,7 @@ export const CAN_TAKE_PHOTOS = true;
 
 export class NoCameraError extends Error {
   constructor() {
-    super('Erevos may not use the camera. Allow it in the phone settings to take photos.');
+    super(t('Erevos may not use the camera. Allow it in the phone settings to take photos.'));
   }
 }
 

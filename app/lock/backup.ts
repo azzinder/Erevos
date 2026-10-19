@@ -1,6 +1,7 @@
 import { decryptBytes, deriveKey, encryptBytes, randomBytes, sameBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { deleteFile, listFiles, readBytes, readFile, writeBytes, writeFile } from '../lib/files';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';
+import { t } from '../lib/i18n';
 
 import { FILE as ARCHIVE } from './archive';
 import { ITER } from './config';
@@ -58,13 +59,13 @@ export type BackupKey = { key: Uint8Array; salt: Uint8Array; iter: number };
 
 export class NotABackupError extends Error {
   constructor() {
-    super('That file is not an Erevos backup.');
+    super(t('That file is not an Erevos backup.'));
   }
 }
 
 export class WrongBackupPasswordError extends Error {
   constructor() {
-    super('Wrong password for this backup.');
+    super(t('Wrong password for this backup.'));
   }
 }
 

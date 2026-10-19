@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // Erevos on a computer (Linux and macOS) is the web build inside a small Electron shell
 // (desktop/main.js), and on Sailfish OS inside Sailfish WebView, served by a small server of the
 // app's own (sailfish/src/shellserver.cpp). The build says which (EXPO_PUBLIC_SHELL=electron or
@@ -50,6 +51,6 @@ export async function shellFetch(path: string, init: RequestInit = {}): Promise<
   const headers = new Headers(init.headers);
   headers.set('X-Erevos-Token', token);
   const response = await fetch(path, { ...init, headers });
-  if (!response.ok && !TOLD.includes(response.status)) throw new ShellError((await response.text()) || `The desktop app answered ${response.status}.`);
+  if (!response.ok && !TOLD.includes(response.status)) throw new ShellError((await response.text()) || t('The desktop app answered {status}.', { status: response.status }));
   return response;
 }

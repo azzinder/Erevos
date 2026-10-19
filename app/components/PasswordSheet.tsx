@@ -5,6 +5,7 @@ import { LockedOutError, lockedOutMessage } from '../lock/tries';
 import { useColors } from '../theme/context';
 
 import { Button, Field, Input, Row, Sheet, Text } from './ui';
+import { t } from '../lib/i18n';
 
 // A sheet that asks for a password: a new one, typed twice (`repeat`), or one to open something.
 // `onSubmit` returns false when the password opens nothing, and throws for the errors it shows.
@@ -35,21 +36,21 @@ export function PasswordSheet({ visible, title, repeat, submitLabel, onClose, on
 
   async function save() {
     if (busy) return;
-    if (repeat && first.length < 4) return setError('Use at least 4 characters.');
-    if (repeat && first !== second) return setError('The passwords do not match.');
+    if (repeat && first.length < 4) return setError(t('Use at least 4 characters.'));
+    if (repeat && first !== second) return setError(t('The passwords do not match.'));
     setBusy(true);
     setError(null);
     try {
       if ((await onSubmit(first)) === false) {
         setFirst('');
-        setError('Wrong password');
+        setError(t('Wrong password'));
       } else {
         clear();
       }
     } catch (e) {
       setError(
         e instanceof SamePasswordError
-          ? 'Use a different password.'
+          ? t('Use a different password.')
           : e instanceof LockedOutError
             ? lockedOutMessage(e.until)
             : e instanceof Error
@@ -64,7 +65,7 @@ export function PasswordSheet({ visible, title, repeat, submitLabel, onClose, on
   const ready = !!first && (!repeat || !!second) && !busy;
   return (
     <Sheet visible={visible} onClose={close} title={title}>
-      <Field label={repeat ? 'New password' : 'Password'}>
+      <Field label={repeat ? t('New password') : t('Password')}>
         <Input
           value={first}
           onChangeText={setFirst}
@@ -73,11 +74,11 @@ export function PasswordSheet({ visible, title, repeat, submitLabel, onClose, on
           autoFocus
           autoCapitalize="none"
           autoCorrect={false}
-          accessibilityLabel={repeat ? 'New password' : 'Password'}
+          accessibilityLabel={repeat ? t('New password') : t('Password')}
         />
       </Field>
       {repeat ? (
-        <Field label="Repeat password">
+        <Field label={t('Repeat password')}>
           <Input
             value={second}
             onChangeText={setSecond}
@@ -85,7 +86,7 @@ export function PasswordSheet({ visible, title, repeat, submitLabel, onClose, on
             secureTextEntry
             autoCapitalize="none"
             autoCorrect={false}
-            accessibilityLabel="Repeat password"
+            accessibilityLabel={t('Repeat password')}
           />
         </Field>
       ) : null}
@@ -95,8 +96,8 @@ export function PasswordSheet({ visible, title, repeat, submitLabel, onClose, on
         </Text>
       ) : null}
       <Row wrap>
-        <Button title={busy ? 'One moment…' : submitLabel} onPress={save} disabled={!ready} compact />
-        <Button title="Cancel" kind="secondary" onPress={close} disabled={busy} compact />
+        <Button title={busy ? t('One moment…') : submitLabel} onPress={save} disabled={!ready} compact />
+        <Button title={t('Cancel')} kind="secondary" onPress={close} disabled={busy} compact />
       </Row>
     </Sheet>
   );

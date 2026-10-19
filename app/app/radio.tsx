@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 
 import { Button, Page, Row, SectionTitle, Text } from '../components/ui';
+import { t } from '../lib/i18n';
 import { resumeRadio } from '../lib/radio';
 import { onRadioEvent, radioStatus, sendText, startRadio, stopRadio, type RadioStatus } from '../modules/erevos-radio';
 
@@ -45,7 +46,7 @@ export default function RadioTest() {
   if (Platform.OS !== 'android') {
     return (
       <Page>
-        <Text tone="muted">The radio test runs on Android only.</Text>
+        <Text tone="muted">{t('The radio test runs on Android only.')}</Text>
       </Page>
     );
   }
@@ -83,26 +84,26 @@ export default function RadioTest() {
 
   return (
     <Page>
-      <Text variant="title">Radio test</Text>
+      <Text variant="title">{t('Radio test')}</Text>
       {status ? (
         <Text tone="muted">
-          Android {status.sdk} · Wi-Fi Aware {status.wifiAware ? 'yes' : 'no'} · BLE {status.ble ? 'yes' : 'no'} ·{' '}
-          {status.running ? 'running' : 'stopped'}
+          Android {status.sdk} · Wi-Fi Aware {status.wifiAware ? t('yes') : t('no')} · BLE {status.ble ? t('yes') : t('no')} ·{' '}
+          {status.running ? t('running') : t('stopped')}
         </Text>
       ) : null}
       <Row wrap>
-        <Button title="Permissions" kind="secondary" compact onPress={askPermissions} />
-        <Button title="Start" kind="secondary" compact onPress={start} />
-        <Button title="Stop" kind="secondary" compact onPress={stop} />
-        <Button title="Send hello" kind="secondary" compact onPress={sendHello} />
+        <Button title={t('Permissions')} kind="secondary" compact onPress={askPermissions} />
+        <Button title={t('Start')} kind="secondary" compact onPress={start} />
+        <Button title={t('Stop')} kind="secondary" compact onPress={stop} />
+        <Button title={t('Send hello')} kind="secondary" compact onPress={sendHello} />
       </Row>
-      <SectionTitle title={`Peers (${peers.length})`} />
+      <SectionTitle title={t('Peers ({n})', { n: peers.length })} />
       {peers.map((peer) => (
         <Text key={peer} variant="mono" tone="muted" style={{ fontSize: 13 }}>
           {peer}
         </Text>
       ))}
-      <SectionTitle title="Log" />
+      <SectionTitle title={t('Log')} />
       {log.map((line, index) => (
         <Text key={`${index}-${line}`} variant="mono" tone="muted" style={{ fontSize: 13 }}>
           {line}

@@ -20,6 +20,7 @@
 // connection: when Tor cannot reach the relay, the request fails.
 
 import { relaySeal, tor } from './core';
+import { t } from './i18n';
 
 const CREATE = 1;
 const SEND = 2;
@@ -148,7 +149,7 @@ export function toHex(bytes: Uint8Array): string {
 /** Parses a 48-character hex id. Throws if the text is not one. */
 export function fromHex(hex: string): Uint8Array {
   const clean = hex.trim().toLowerCase();
-  if (!/^[0-9a-f]{48}$/.test(clean)) throw new RelayError('An id is 48 hex characters.');
+  if (!/^[0-9a-f]{48}$/.test(clean)) throw new RelayError(t('An id is 48 hex characters.'));
   const bytes = new Uint8Array(24);
   for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
   return bytes;
@@ -212,7 +213,7 @@ async function viaTor<T>(call: () => Promise<T>): Promise<T> {
   try {
     return await call();
   } catch (error) {
-    throw new RelayUnreachableError(`Through Tor: ${error instanceof Error ? error.message : String(error)}`);
+    throw new RelayUnreachableError(t('Through Tor: {reason}', { reason: error instanceof Error ? error.message : String(error) }));
   }
 }
 
@@ -249,22 +250,22 @@ function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise
     };
     socket.onerror = () => {
       settled();
-      reject(new RelayUnreachableError(`cannot reach the relay at ${relay.url}, or the token is wrong`));
+      reject(new RelayUnreachableError(t('cannot reach the relay at {url}, or the token is wrong', { url: relay.url })));
     };
     socket.onclose = () => {
       settled();
-      reject(new RelayUnreachableError('the relay closed the connection'));
+      reject(new RelayUnreachableError(t('the relay closed the connection')));
     };
   });
 }
 
 function check(reply: Uint8Array, what: string): void {
   if (reply[0] === OK) return;
-  if (reply[0] === NOT_FOUND) throw new RelayError(`${what}: queue not found`, NOT_FOUND);
-  if (reply[0] === FULL) throw new RelayError(`${what}: queue is full`, FULL);
-  if (reply[0] === FAILED) throw new RelayError(`${what}: the relay could not save it, try again later`, FAILED);
+  if (reply[0] === NOT_FOUND) throw new RelayError(t('{what}: queue not found', { what }), NOT_FOUND);
+  if (reply[0] === FULL) throw new RelayError(t('{what}: queue is full', { what }), FULL);
+  if (reply[0] === FAILED) throw new RelayError(t('{what}: the relay could not save it, try again later', { what }), FAILED);
   if (reply[0] === UNREACHABLE)
-    throw new RelayError(`${what}: the second relay could not reach your relay, try again later`, UNREACHABLE);
+    throw new RelayError(t('{what}: the second relay could not reach your relay, try again later', { what }), UNREACHABLE);
   throw new RelayError(`${what}: unexpected reply ${reply[0]}`, reply[0]);
 }
 
@@ -337,7 +338,7 @@ export async function carryTo(own: Relay, url: string, sealed: Uint8Array): Prom
  *  in turn. Throws, with what the relay first said, if none takes it: the sender id is unknown,
  *  the queue is full, or no relay can be reached. */
 export async function sendMessage(relay: Relay, senderId: Uint8Array, message: Uint8Array): Promise<void> {
-  if (message.length > MAX_MESSAGE) throw new RelayError('message is too large');
+  if (message.length > MAX_MESSAGE) throw new RelayError(t('message is too large'));
   try {
     await sendOne(relay, senderId, message);
   } catch (error) {
@@ -356,7 +357,7 @@ export async function sendMessage(relay: Relay, senderId: Uint8Array, message: U
 async function sendOne(relay: Relay, senderId: Uint8Array, message: Uint8Array): Promise<void> {
   if (relay.via) {
     const key = await relayKey(relay);
-    if (!key) throw new RelayError('your relay has no key for two-hop sending, so it was not sent through the second relay');
+    if (!key) throw new RelayError(t('your relay has no key for two-hop sending, so it was not sent through the second relay'));
     await forwardMessage(relay.via, relay.url, await relaySeal(key, senderId, message));
     return;
   }
@@ -456,11 +457,11 @@ export class RelaySession {
     };
     socket.onmessage = (event) => answer(new Uint8Array(event.data as ArrayBuffer));
     socket.onerror = () => {
-      this.ended ??= new RelayUnreachableError('lost the connection to the relay');
+      this.ended ??= new RelayUnreachableError(t('lost the connection to the relay'));
       answer(this.ended);
     };
     socket.onclose = () => {
-      this.ended ??= new RelayUnreachableError('the relay closed the connection');
+      this.ended ??= new RelayUnreachableError(t('the relay closed the connection'));
       answer(this.ended);
     };
   }
@@ -473,8 +474,8 @@ export class RelaySession {
     return new Promise((resolve, reject) => {
       const socket = connect(relay);
       socket.onopen = () => resolve(new RelaySession(socket));
-      socket.onerror = () => reject(new RelayUnreachableError(`cannot reach the relay at ${relay.url}, or the token is wrong`));
-      socket.onclose = () => reject(new RelayUnreachableError('the relay closed the connection'));
+      socket.onerror = () => reject(new RelayUnreachableError(t('cannot reach the relay at {url}, or the token is wrong', { url: relay.url })));
+      socket.onclose = () => reject(new RelayUnreachableError(t('the relay closed the connection')));
     });
   }
 
@@ -517,17 +518,17 @@ export class RelaySession {
 
 function checkFile(reply: Uint8Array, what: string): void {
   if (reply[0] === OK) return;
-  if (reply[0] === NOT_FOUND) throw new RelayError(`${what}: the file is not on the relay any more`, NOT_FOUND);
-  if (reply[0] === FULL) throw new RelayError(`${what}: the relay has no room for files now, try again later`, FULL);
-  if (reply[0] === FAILED) throw new RelayError(`${what}: the relay could not keep it, try again later`, FAILED);
-  if (reply[0] === UNREACHABLE) throw new RelayError(`${what}: your relay could not reach the relay the file is on`, UNREACHABLE);
+  if (reply[0] === NOT_FOUND) throw new RelayError(t('{what}: the file is not on the relay any more', { what }), NOT_FOUND);
+  if (reply[0] === FULL) throw new RelayError(t('{what}: the relay has no room for files now, try again later', { what }), FULL);
+  if (reply[0] === FAILED) throw new RelayError(t('{what}: the relay could not keep it, try again later', { what }), FAILED);
+  if (reply[0] === UNREACHABLE) throw new RelayError(t('{what}: your relay could not reach the relay the file is on', { what }), UNREACHABLE);
   throw new RelayError(`${what}: unexpected reply ${reply[0]}`, reply[0]);
 }
 
 // A relay from before files closes the connection at a file request.
 function older(error: unknown): unknown {
   if (error instanceof RelayError && error.status === undefined) {
-    return new RelayError(`${error.message}. A relay older than this app cannot take files: update it.`);
+    return new RelayError(t('{reason}. A relay older than this app cannot take files: update it.', { reason: error.message }));
   }
   return error;
 }

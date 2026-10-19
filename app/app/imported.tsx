@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
 import { ask } from '../lib/alert';
 import { canImport } from '../lib/core';
+import { plural, t } from '../lib/i18n';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { mediaText, readExport, senders, shownTime, SOURCE_LABELS, toArchived, type ImportedChat } from '../lib/imports';
 import { Archive, type ArchivedMessage, type ChatSummary } from '../lock/archive';
@@ -22,7 +23,7 @@ import { useStyles } from '../theme/context';
 type Contact = { identity: string; name: string };
 
 const contactLabel = (identity: string, contacts: Contact[]) =>
-  contacts.find((contact) => contact.identity === identity)?.name || `contact ${identity.slice(0, 8)}`;
+  contacts.find((contact) => contact.identity === identity)?.name || t('contact {id}', { id: identity.slice(0, 8) });
 
 // What the phone can hold in memory to read at once. A WhatsApp export with its media is larger.
 const MAX_BYTES = 100 * 1024 * 1024;
@@ -53,7 +54,7 @@ export default function ImportedScreen() {
         setArchive(opened);
         setChats(opened.chats());
       })
-      .catch((error) => active && setNote(`Imported chats could not open. ${errorText(error)}`));
+      .catch((error) => active && setNote(t('Imported chats could not open. {reason}', { reason: errorText(error) })));
     loadE2EData('space', current, key)
       .then((data) => active && setContacts(data.contacts.map(({ identity, name }) => ({ identity, name }))))
       .catch(() => {
@@ -66,7 +67,7 @@ export default function ImportedScreen() {
 
   async function pick() {
     if (!canImport()) {
-      setNote('This build cannot read exports yet. Rebuild the app.');
+      setNote(t('This build cannot read exports yet. Rebuild the app.'));
       return;
     }
     setNote('');
@@ -76,7 +77,7 @@ export default function ImportedScreen() {
       setBusy(true);
       const read = await readExport(picked.name, picked.bytes);
       if (read.every((chat) => chat.messages.length === 0)) {
-        setNote('There are no messages in that file.');
+        setNote(t('There are no messages in that file.'));
         return;
       }
       const people = senders(read);
@@ -85,7 +86,9 @@ export default function ImportedScreen() {
       setMe(read.length > 1 ? (people[0] ?? '') : '');
       setTitle(read[0].title);
     } catch (error) {
-      setNote(error instanceof TooLargeError ? 'That file is too large. Export the chat again without media.' : `Not imported. ${errorText(error)}`);
+      setNote(
+        error instanceof TooLargeError ? t('That file is too large. Export the chat again without media.') : t('Not imported. {reason}', { reason: errorText(error) }),
+      );
     } finally {
       setBusy(false);
     }
@@ -100,22 +103,26 @@ export default function ImportedScreen() {
       setChats(archive.chats());
       const count = named.reduce((sum, chat) => sum + chat.messages.length, 0);
       setNote(
-        `Imported ${named.length === 1 ? 'one chat' : `${named.length} chats`} with ${count} messages. ` +
-          'Delete the export file from the phone yourself: Erevos keeps its own sealed copy.',
+        t('Imported {chats} with {messages}.', {
+          chats: plural(named.length, 'one chat', '{n} chats'),
+          messages: plural(count, '{n} message', '{n} messages'),
+        }) +
+          ' ' +
+          t('Delete the export file from the phone yourself: Erevos keeps its own sealed copy.'),
       );
       setFound(null);
     } catch (error) {
-      setNote(`Not kept. ${errorText(error)}`);
+      setNote(t('Not kept. {reason}', { reason: errorText(error) }));
     } finally {
       setBusy(false);
     }
   }
 
   function remove(chat: ChatSummary) {
-    ask('Delete imported chat', `Delete "${chat.title || SOURCE_LABELS[chat.source]}" from this phone? It cannot be brought back.`, [
-      { text: 'Cancel', style: 'cancel' },
+    ask(t('Delete imported chat'), t('Delete “{title}” from this phone? It cannot be brought back.', { title: chat.title || SOURCE_LABELS[chat.source] }), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('Delete'),
         style: 'destructive',
         onPress: () => {
           archive
@@ -155,48 +162,54 @@ export default function ImportedScreen() {
 
   return (
     <Page>
-      <Text variant="title">Imported chats</Text>
+      <Text variant="title">{t('Imported chats')}</Text>
       <Text tone="muted">
-        Chats brought in from Telegram or WhatsApp, to read here. They stay on this phone, sealed in this space, and are
-        never sent anywhere. Only the words come in: photos and other files stay behind.
+        {t(
+          'Chats brought in from Telegram or WhatsApp, to read here. They stay on this phone, sealed in this space, and are never sent anywhere. Only the words come in: photos and other files stay behind.',
+        )}
       </Text>
 
       {found ? (
         <Card>
           <Text variant="bodyStrong">
             {found.chats.length === 1
-              ? `${SOURCE_LABELS[found.chats[0].source]}: ${found.chats[0].messages.length} messages`
-              : `${SOURCE_LABELS[found.chats[0].source]}: ${found.chats.length} chats, ${found.chats.reduce((sum, chat) => sum + chat.messages.length, 0)} messages`}
+              ? `${SOURCE_LABELS[found.chats[0].source]}: ${plural(found.chats[0].messages.length, '{n} message', '{n} messages')}`
+              : `${SOURCE_LABELS[found.chats[0].source]}: ${plural(found.chats.length, '{n} chat', '{n} chats')}, ${plural(
+                  found.chats.reduce((sum, chat) => sum + chat.messages.length, 0),
+                  '{n} message',
+                  '{n} messages',
+                )}`}
           </Text>
           {found.chats.length === 1 ? (
-            <Field label="Name of the chat">
-              <Input value={title} onChangeText={setTitle} placeholder="Name" maxLength={80} />
+            <Field label={t('Name of the chat')}>
+              <Input value={title} onChangeText={setTitle} placeholder={t('Name')} maxLength={80} />
             </Field>
           ) : null}
           <Text variant="caption" tone="muted">
-            Which one is you? Your messages then show on the right.
+            {t('Which one is you? Your messages then show on the right.')}
           </Text>
           <Row wrap>
             {found.people.slice(0, 8).map((person) => (
               <Chip key={person} label={person} selected={me === person} onPress={() => setMe(person)} />
             ))}
-            <Chip label="None of them" selected={me === ''} onPress={() => setMe('')} />
+            <Chip label={t('None of them')} selected={me === ''} onPress={() => setMe('')} />
           </Row>
           <Row wrap>
-            <Button title="Keep" compact loading={busy} onPress={() => void keep()} />
-            <Button title="Cancel" kind="secondary" compact onPress={() => setFound(null)} />
+            <Button title={t('Keep')} compact loading={busy} onPress={() => void keep()} />
+            <Button title={t('Cancel')} kind="secondary" compact onPress={() => setFound(null)} />
           </Row>
         </Card>
       ) : (
-        <Button title="Import a file" loading={busy} onPress={() => void pick()} />
+        <Button title={t('Import a file')} loading={busy} onPress={() => void pick()} />
       )}
 
       {note ? <Text variant="caption" style={{ fontSize: 14 }}>{note}</Text> : null}
 
       {chats.length === 0 && !found ? (
         <Text variant="caption" tone="muted">
-          Nothing imported yet. In Telegram Desktop: Export chat history, format JSON, and pick result.json here. In
-          WhatsApp: a chat, then More, Export chat, Without media, and save the file to the phone.
+          {t(
+            'Nothing imported yet. In Telegram Desktop: Export chat history, format JSON, and pick result.json here. In WhatsApp: a chat, then More, Export chat, Without media, and save the file to the phone.',
+          )}
         </Text>
       ) : null}
 
@@ -204,13 +217,13 @@ export default function ImportedScreen() {
         <Card key={chat.id}>
           <Text variant="bodyStrong">{chat.title || SOURCE_LABELS[chat.source]}</Text>
           <Text variant="caption" tone="muted">
-            {SOURCE_LABELS[chat.source]}, {chat.count} messages
-            {chat.last ? `, ${day(chat.first)} to ${day(chat.last)}` : ''}
-            {chat.contact ? `. Goes on in Erevos with ${contactLabel(chat.contact, contacts)}.` : ''}
+            {SOURCE_LABELS[chat.source]}, {plural(chat.count, '{n} message', '{n} messages')}
+            {chat.last ? t(', {from} to {to}', { from: day(chat.first), to: day(chat.last) }) : ''}
+            {chat.contact ? t('. Goes on in Erevos with {name}.', { name: contactLabel(chat.contact, contacts) }) : ''}
           </Text>
           <Row wrap>
-            <TextButton title="Read" onPress={() => setOpen(chat.id)} />
-            <TextButton title="Delete" onPress={() => remove(chat)} />
+            <TextButton title={t('Read')} onPress={() => setOpen(chat.id)} />
+            <TextButton title={t('Delete')} onPress={() => remove(chat)} />
           </Row>
         </Card>
       ))}
@@ -243,7 +256,7 @@ function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
       <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
         {group && !mine && sender ? <Text style={[styles.sender, mine ? styles.mineText : styles.theirsText]}>{sender}</Text> : null}
         {text ? <Text style={mine ? styles.mineText : styles.theirsText}>{text}</Text> : null}
-        {files ? <Text style={[styles.files, mine ? styles.mineText : styles.theirsText]}>{`${files}, not imported`}</Text> : null}
+        {files ? <Text style={[styles.files, mine ? styles.mineText : styles.theirsText]}>{t('{files}, not imported', { files })}</Text> : null}
         <Text style={[styles.time, mine ? styles.mineText : styles.theirsText]}>{shownTime(at)}</Text>
       </View>
     );
@@ -255,30 +268,31 @@ function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
         <Text variant="title" style={styles.grow} numberOfLines={1}>
           {title}
         </Text>
-        <TextButton title="Delete" onPress={onDelete} />
-        <TextButton title="All imported" onPress={onBack} />
+        <TextButton title={t('Delete')} onPress={onDelete} />
+        <TextButton title={t('All imported')} onPress={onBack} />
       </View>
       <Text variant="caption" tone="muted">
-        Imported from {SOURCE_LABELS[chat.source]}, only to read. Erevos cannot show who really wrote these.
-        {chat.skipped === 1 ? ' One notice or call was left out.' : chat.skipped ? ` ${chat.skipped} notices and calls were left out.` : ''}
+        {t('Imported from {source}, only to read. Erevos cannot show who really wrote these.', { source: SOURCE_LABELS[chat.source] })}
+        {chat.skipped === 1 ? t(' One notice or call was left out.') : chat.skipped ? t(' {n} notices and calls were left out.', { n: chat.skipped }) : ''}
       </Text>
       {chat.contact ? (
         <View style={styles.section}>
           <Text variant="caption" tone="muted">
-            Goes on in Erevos with {contactLabel(chat.contact, contacts)}: these messages show in that chat, ahead of
-            the new ones, only on this phone.
+            {t('Goes on in Erevos with {name}: these messages show in that chat, ahead of the new ones, only on this phone.', {
+              name: contactLabel(chat.contact, contacts),
+            })}
           </Text>
           <Row wrap>
-            <TextButton title="Open the chat" onPress={() => router.push({ pathname: '/chat', params: { contact: chat.contact } })} />
-            <TextButton title="Unlink" onPress={() => onLink('')} />
+            <TextButton title={t('Open the chat')} onPress={() => router.push({ pathname: '/chat', params: { contact: chat.contact } })} />
+            <TextButton title={t('Unlink')} onPress={() => onLink('')} />
           </Row>
         </View>
       ) : picking ? (
         <View style={styles.section}>
           <Text variant="caption" tone="muted">
             {contacts.length === 0
-              ? `There are no Erevos contacts in this space yet. In Chat, open Relay and add ${title}'s contact link, then come back here.`
-              : `Which Erevos contact is ${title}? These messages then show in the chat with them, ahead of the new ones, only on this phone.`}
+              ? t("There are no Erevos contacts in this space yet. In Chat, open Relay and add {name}'s contact link, then come back here.", { name: title })
+              : t('Which Erevos contact is {name}? These messages then show in the chat with them, ahead of the new ones, only on this phone.', { name: title })}
           </Text>
           <Row wrap>
             {contacts.map((contact) => (
@@ -293,11 +307,11 @@ function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
                 }}
               />
             ))}
-            <TextButton title="Cancel" onPress={() => setPicking(false)} />
+            <TextButton title={t('Cancel')} onPress={() => setPicking(false)} />
           </Row>
         </View>
       ) : (
-        <TextButton title="Continue in Erevos" onPress={() => setPicking(true)} />
+        <TextButton title={t('Continue in Erevos')} onPress={() => setPicking(true)} />
       )}
       <FlatList
         data={newestFirst}

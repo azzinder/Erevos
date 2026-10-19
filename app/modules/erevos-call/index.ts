@@ -19,6 +19,8 @@ type CallAudio = {
   /** A notice that `count` messages came, no more; hidden on a locked phone. */
   tellMessages?(count: number): void;
   clearMessages?(): void;
+  /** The app's language ('en' or 'el'), for the notices shown while the app is closed. */
+  setLanguage?(lang: string): void;
   /** Lets Erevos show over the lock screen and wake the screen, while a call shows. */
   showOverLock?(on: boolean): void;
   backgroundState?(): BackgroundState;

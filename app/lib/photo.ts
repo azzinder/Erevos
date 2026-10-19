@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // What a photo says besides its picture, taken out before it is sent: where it was taken, the
 // phone, the time, thumbnails, notes. A JPEG keeps its picture exactly as it was, byte for byte,
 // with only the segments that draw it (and its colour profile), and its turn (Orientation) in a
@@ -8,7 +9,7 @@
 
 export class NotCleanError extends Error {
   constructor() {
-    super('The photo could not be read.');
+    super(t('The photo could not be read.'));
   }
 }
 

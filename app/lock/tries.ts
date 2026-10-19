@@ -1,3 +1,4 @@
+import { plural } from '../lib/i18n';
 import { secureGet, secureSet } from '../lib/secure';
 
 // Wrong passwords are counted on the phone, across restarts, wherever a password is checked (the
@@ -68,6 +69,6 @@ export async function recordRightPassword(entry = KEY): Promise<void> {
 export function lockedOutMessage(until: number, now = Date.now()): string {
   const seconds = Math.max(1, Math.ceil((until - now) / 1000));
   return seconds >= 90
-    ? `Too many attempts. Try again in ${Math.ceil(seconds / 60)} minutes.`
-    : `Too many attempts. Try again in ${seconds} seconds.`;
+    ? plural(Math.ceil(seconds / 60), 'Too many attempts. Try again in {n} minute.', 'Too many attempts. Try again in {n} minutes.')
+    : plural(seconds, 'Too many attempts. Try again in {n} second.', 'Too many attempts. Try again in {n} seconds.');
 }

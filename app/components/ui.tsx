@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
+import { t } from '../lib/i18n';
 
 import { useGlassBlur, useGlassLift } from './glass';
 import { KeyboardAvoidingView, KeyboardAwareScrollView } from './keyboard';
@@ -341,7 +342,7 @@ export function Sheet({ visible, onClose, title, children }: {
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       {/* The sheet rises with the keyboard, so its fields stay in sight. */}
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}>
-        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
+        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel={t('Close')} />
         <View
           style={[
             {

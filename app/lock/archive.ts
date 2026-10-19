@@ -1,4 +1,5 @@
 import { randomBytes, toHex } from '../lib/crypto';
+import { t } from '../lib/i18n';
 
 import { sealedFile, type Holder } from './sealed-file';
 
@@ -137,7 +138,7 @@ export class Archive {
 
   /** Lets a chat go on with one of the space's contacts (its identity key, hex), or with none (empty). */
   link(id: string, contact: string): Promise<void> {
-    if (contact !== '' && !isIdentity(contact)) return Promise.reject(new Error('Not a contact.'));
+    if (contact !== '' && !isIdentity(contact)) return Promise.reject(new Error(t('Not a contact.')));
     return this.save({ chats: this.data.chats.map((chat) => (chat.id === id ? { ...chat, contact } : chat)) });
   }
 

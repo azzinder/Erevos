@@ -6,9 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LockIcon, MoreIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { font, fontStyle, Sheet, Text } from '../components/ui';
+import { ask } from '../lib/alert';
 import { canGroup, hasCore } from '../lib/core';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
+import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
 import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type InboxGroup, type InboxRow, type InboxSms } from '../lib/inbox';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
@@ -40,25 +42,25 @@ type Relay = 'ready' | 'no-queue' | 'none';
 
 // `phone`: only on a phone, as it needs its radio. `links`: where there are links to phones nearby.
 const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean }[] = [
-  { title: 'New group', detail: 'A group chat with your contacts, end-to-end encrypted', href: '/new-group' },
+  { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group' },
   {
-    title: 'Nearby phones',
-    detail: HAS_RADIO ? 'Your contacts over Bluetooth and Wi-Fi, without internet' : 'Your contacts on the same Wi-Fi, without internet',
+    title: mark('Nearby phones'),
+    detail: HAS_RADIO ? mark('Your contacts over Bluetooth and Wi-Fi, without internet') : mark('Your contacts on the same Wi-Fi, without internet'),
     href: '/chat',
     links: true,
   },
-  { title: 'SMS', detail: 'Erevos as the SMS app, one list for all messages', href: '/sms-settings', phone: true },
-  { title: 'Home relay', detail: 'A second relay contacts write to while yours is down', href: '/home-relay' },
-  { title: 'Tor', detail: 'Reach the relays through Tor, off unless turned on', href: '/tor', phone: true },
-  { title: 'LoRa radio', detail: 'Text over a Meshtastic radio, kilometres away, without internet', href: '/lora', phone: true },
-  { title: 'Imported chats', detail: 'Telegram and WhatsApp exports', href: '/imported' },
-  { title: 'Appearance', detail: 'Style, colours, glass', href: '/appearance' },
-  { title: 'Lock and second password', detail: 'Password, second space', href: '/security' },
-  { title: 'Backups', detail: 'Make one, automatic backups, restore', href: '/backup' },
-  { title: 'Updates', detail: 'This version, and Check for updates', href: '/updates' },
-  { title: 'User guide', detail: 'How Erevos works, and what is not protected yet', href: '/guide' },
-  { title: 'Relay test', detail: 'For testing a relay', href: '/relay' },
-  { title: 'Radio test', detail: 'For testing the nearby link', href: '/radio', phone: true },
+  { title: mark('SMS'), detail: mark('Erevos as the SMS app, one list for all messages'), href: '/sms-settings', phone: true },
+  { title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay' },
+  { title: mark('Tor'), detail: mark('Reach the relays through Tor, off unless turned on'), href: '/tor', phone: true },
+  { title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', phone: true },
+  { title: mark('Imported chats'), detail: mark('Telegram and WhatsApp exports'), href: '/imported' },
+  { title: mark('Appearance'), detail: mark('Style, colours, glass'), href: '/appearance' },
+  { title: mark('Lock and second password'), detail: mark('Password, second space'), href: '/security' },
+  { title: mark('Backups'), detail: mark('Make one, automatic backups, restore'), href: '/backup' },
+  { title: mark('Updates'), detail: mark('This version, and Check for updates'), href: '/updates' },
+  { title: mark('User guide'), detail: mark('How Erevos works, and what is not protected yet'), href: '/guide' },
+  { title: mark('Relay test'), detail: mark('For testing a relay'), href: '/relay' },
+  { title: mark('Radio test'), detail: mark('For testing the nearby link'), href: '/radio', phone: true },
 ];
 
 // The phone's SMS conversations, named as the phone's contacts name them when the owner turned that on.
@@ -164,7 +166,7 @@ export default function Home() {
 
   const shown = useMemo(() => filterInbox(rows ?? [], query), [rows, query]);
 
-  const relayText = relay === 'ready' ? 'Relay ready · end-to-end encrypted' : relay === 'no-queue' ? 'Relay set · no queue yet' : 'No relay yet · tap to set one';
+  const relayText = relay === 'ready' ? t('Relay ready · end-to-end encrypted') : relay === 'no-queue' ? t('Relay set · no queue yet') : t('No relay yet · tap to set one');
 
   const header = (
     <View style={styles.headerBlock}>
@@ -175,12 +177,12 @@ export default function Home() {
         </View>
         <View style={styles.tools}>
           <IconButton
-            label={lock.passwordLock ? 'Lock now' : 'Lock and second password'}
+            label={lock.passwordLock ? t('Lock now') : t('Lock and second password')}
             onPress={() => (lock.passwordLock ? lock.lockNow() : router.push('/security'))}
           >
             <LockIcon color={colors.text} />
           </IconButton>
-          <IconButton label="Menu" onPress={() => setMenu(true)}>
+          <IconButton label={t('Menu')} onPress={() => setMenu(true)}>
             <MoreIcon color={colors.text} />
           </IconButton>
         </View>
@@ -191,7 +193,7 @@ export default function Home() {
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={() => void searchSubmitted()}
-          placeholder="Search chats"
+          placeholder={t('Search chats')}
           placeholderTextColor={colors.textFaint}
           style={styles.searchInput}
           autoCorrect={false}
@@ -224,31 +226,30 @@ export default function Home() {
         ListEmptyComponent={
           rows === null ? null : query ? (
             <Text tone="muted" style={styles.emptyText}>
-              No chat has “{query.trim()}” in it.
+              {t('No chat has “{query}” in it.', { query: query.trim() })}
             </Text>
           ) : (
             <View style={styles.empty}>
               <Logo size={64} />
               <Text variant="heading" style={styles.emptyText}>
-                No chats yet
+                {t('No chats yet')}
               </Text>
               <Text tone="muted" style={styles.emptyText}>
-                No account and no phone number. Share your contact link or QR code, or add someone else&apos;s, to start
-                a chat.
+                {t("No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.")}
               </Text>
             </View>
           )
         }
         ListFooterComponent={
           <Text variant="caption" tone="faint" style={styles.footer}>
-            A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.
+            {t('A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.')}
           </Text>
         }
       />
       <Pressable
         onPress={() => router.push('/chat?setup=1')}
         accessibilityRole="button"
-        accessibilityLabel="New chat"
+        accessibilityLabel={t('New chat')}
         style={({ pressed }) => [
           styles.fab,
           { bottom: insets.bottom + space.xl },
@@ -259,10 +260,23 @@ export default function Home() {
       >
         <PlusIcon color={colors.onPrimary} size={20} />
         <Text variant="label" color={colors.onPrimary}>
-          New chat
+          {t('New chat')}
         </Text>
       </Pressable>
       <Sheet visible={menu} onClose={() => setMenu(false)}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setMenu(false);
+            chooseLanguage();
+          }}
+          style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+        >
+          <Text variant="bodyStrong">{lang() === 'el' ? 'Γλώσσα · Language' : 'Language · Γλώσσα'}</Text>
+          <Text variant="caption" tone="muted">
+            {LANG_LABELS[lang()]}
+          </Text>
+        </Pressable>
         {MENU.filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || canGroup())).map((item) => (
           <Pressable
             key={item.title}
@@ -273,15 +287,23 @@ export default function Home() {
             }}
             style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
           >
-            <Text variant="bodyStrong">{item.title}</Text>
+            <Text variant="bodyStrong">{t(item.title)}</Text>
             <Text variant="caption" tone="muted">
-              {item.detail}
+              {t(item.detail)}
             </Text>
           </Pressable>
         ))}
       </Sheet>
     </View>
   );
+}
+
+// English or Greek, for the whole app (lib/i18n.ts). The screens start again in it, here.
+function chooseLanguage() {
+  ask(t('Language'), '', [
+    ...LANGS.map((l) => ({ text: LANG_LABELS[l], onPress: () => void setLang(l) })),
+    { text: t('Cancel'), style: 'cancel' as const },
+  ]);
 }
 
 function IconButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {
@@ -297,7 +319,7 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const name = shownName(row);
-  const preview = row.last || (row.imported ? 'Imported chat, goes on here' : 'No messages yet');
+  const preview = row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
   return (
     <Pressable
       onPress={() =>
@@ -310,7 +332,7 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
         )
       }
       accessibilityRole="button"
-      accessibilityLabel={`${name}${online ? ', online' : ''}${row.unread ? `, ${row.unread} not read` : ''}`}
+      accessibilityLabel={`${name}${online ? t(', online') : ''}${row.unread ? t(', {n} not read', { n: row.unread }) : ''}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       {row.sms ? (
@@ -344,7 +366,7 @@ function ChatRow({ row, now, online = false }: { row: InboxRow; now: number; onl
             ) : null}
             {row.last && row.mine && !row.lastSms ? (
               <Text variant="caption" color={row.mark === 2 ? colors.accentText : colors.textMuted}>
-                {row.mark < 0 ? 'Waiting' : MARKS[row.mark]}
+                {row.mark < 0 ? t('Waiting') : MARKS[row.mark]}
               </Text>
             ) : null}
             <Text
