@@ -22,10 +22,12 @@ class ErevosSmsModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("ErevosSms")
-    Events("onSms", "onSmsSent", "onSmsDelivered", "onInvite")
+    Events("onSms", "onSmsSent", "onSmsDelivered", "onSmsLaterSent", "onInvite")
 
     OnCreate {
       SmsStore.listener = { name, body -> main.post { sendEvent(name, body) } }
+      // What is held for later and due goes now, and the alarm is set again, in case it was lost.
+      appContext.reactContext?.applicationContext?.let { app -> Thread { runCatching { LaterSms.sendDue(app) } }.start() }
     }
 
     OnDestroy {
@@ -67,5 +69,11 @@ class ErevosSmsModule : Module() {
     AsyncFunction("contactNames") { numbers: List<String> -> SmsStore.contactNames(context(), numbers) }
     AsyncFunction("sendData") { address: String, data: ByteArray -> SmsStore.sendData(context(), address, data) }
     AsyncFunction("takeInvites") { SmsStore.takeInvites(context()) }
+    // SMS sent for later, held by Android until their time (LaterSms.kt).
+    AsyncFunction("scheduleLater") { id: String, to: String, text: String, sim: Int, at: Double ->
+      LaterSms.schedule(context(), id, to, text, sim, at.toLong())
+    }
+    AsyncFunction("cancelLater") { id: String -> LaterSms.cancel(context(), id) }
+    AsyncFunction("laterState") { ids: List<String> -> LaterSms.state(context(), ids) }
   }
 }

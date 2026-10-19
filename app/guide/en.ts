@@ -495,11 +495,12 @@ chats in one list.
 - **Two SIMs:** the SIM to send on shows above the message field; tap **Choose the SIM** once to let Erevos see
   them. Your choice is kept for that number; until then, Erevos answers on the SIM the last message came on. Each
   message shows its SIM.
-- **SMS later:** hold **Send** down and choose a time, as in a chat. The SMS waits sealed in Erevos, not in the
-  phone's SMS where other apps would see it, and shows at the end of the conversation marked **Scheduled**; tap it to
-  cancel it. It goes at that time while Erevos runs, in the background too while **In the background** is on
-  **Receive and ring**; otherwise when Erevos next opens, and only then does the phone company get it. Text only, to
-  one number.
+- **SMS later:** hold **Send** down and choose a time, as in a chat. The SMS shows at the end of the conversation
+  marked **Scheduled**; tap it to cancel it. It goes at that time, with Erevos closed and locked too; if the phone is
+  off then, as soon as it is on and unlocked again. Until then it is not in the phone's SMS, where other apps would
+  see it, and the phone company does not have it. It waits locked with a key of the phone itself (Android
+  Keystore), not with your space's password, as Android has to send it while Erevos is locked: the protection every
+  SMS has once sent, as sent SMS stay in the phone's SMS. Text only, to one number.
 - **Names from your contacts:** off at first. Under **SMS** in the menu, **Show names from my contacts** shows the
   names your phone's contacts give SMS numbers. Erevos only reads them to show them, and keeps no copy.
 
