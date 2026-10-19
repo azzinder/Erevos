@@ -1,4 +1,117 @@
 // The Portuguese of what a chat's messages can do beyond words: replies, reactions, links, forwarding and the like (i18n/pt/index.ts).
 export const messages: Record<string, string> = {
   'Open this link?': 'Abrir este link?',
+  // A message's menu (components/message-menu.tsx), replies and reactions.
+  'Take back {emoji}': 'Remover {emoji}',
+  'React with {emoji}': 'Reagir com {emoji}',
+  'More reactions': 'Mais reações',
+  'Goes to the message it answers': 'Vai para a mensagem respondida',
+  'The message is not on this phone.': 'A mensagem não está neste celular.',
+  'Reactions: {list}': 'Reações: {list}',
+  'That message is not on this phone.': 'Essa mensagem não está neste celular.',
+  'Copied. Any app that reads the clipboard can read it now.': 'Copiado. Qualquer app que leia a área de transferência pode ler agora.',
+  'Not copied.': 'Não copiado.',
+  Reply: 'Responder',
+  Copy: 'Copiar',
+  'Tap to play, hold for more': 'Toque para ouvir, segure para mais opções',
+  'Tap to open, hold for more': 'Toque para abrir, segure para mais opções',
+  'Hold for more': 'Segure para mais opções',
+  // Pinned messages (components/message-parts.tsx, Pinned).
+  Pin: 'Fixar',
+  Pinned: 'Fixada',
+  'Pinned, {n} of {count}': 'Fixada, {n} de {count}',
+  'Goes to the pinned message': 'Vai para a mensagem fixada',
+  // Starred messages (app/starred.tsx, and a chat's details).
+  Star: 'Favoritar',
+  Unstar: 'Desfavoritar',
+  'Starred messages': 'Mensagens favoritas',
+  'The messages you starred, in all your chats': 'As mensagens que você favoritou, em todas as suas conversas',
+  'No starred messages. Press and hold a message in a chat, then tap Star.':
+    'Nenhuma mensagem favorita. Toque e segure uma mensagem numa conversa e toque em “Favoritar”.',
+  'You to {name}': 'Você para {name}',
+  // Stickers (lib/stickers.ts, components/stickers.tsx).
+  'Send a sticker': 'Enviar uma figurinha',
+  'Sticker: {name}': 'Figurinha: {name}',
+  'Smiling moon': 'Lua sorridente',
+  'Laughing moon': 'Lua rindo',
+  'Moon in love': 'Lua apaixonada',
+  'Winking moon': 'Lua piscando',
+  'Surprised moon': 'Lua surpresa',
+  'Sad moon': 'Lua triste',
+  'Angry moon': 'Lua brava',
+  'Sleeping moon': 'Lua dormindo',
+  Heart: 'Coração',
+  Sunshine: 'Dia de sol',
+  Coffee: 'Café',
+  'All good': 'Tudo certo',
+  // A place sent once (lib/place.ts, components/message-parts.tsx).
+  Location: 'Localização',
+  'Finding where you are…': 'Procurando onde você está…',
+  'Send where you are?': 'Enviar onde você está?',
+  'Within about {m} m': 'Precisão de cerca de {m} m',
+  '{name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.':
+    '{name} recebe este local uma vez, criptografado de ponta a ponta. O Erevos não acompanha para onde você vai depois.',
+  'Open in maps': 'Abrir no mapa',
+  'Open in maps?': 'Abrir no mapa?',
+  'Your maps app opens at this place. It may load its map from the internet, as it does.':
+    'O seu app de mapas abre neste local. Ele pode carregar o mapa pela internet, como sempre faz.',
+  'This build of Erevos cannot send a place.': 'Esta versão do Erevos não consegue enviar um local.',
+  "Erevos may not use the phone's location. Allow it in the phone settings to send where you are.":
+    'O Erevos não tem permissão para usar a localização do celular. Permita nas configurações do celular para enviar onde você está.',
+  "The phone's location is off. Turn it on to send where you are.": 'A localização do celular está desativada. Ative para enviar onde você está.',
+  'Where you are was not found in time. Try again outdoors, or in a while.':
+    'Não foi possível encontrar onde você está a tempo. Tente de novo ao ar livre, ou daqui a pouco.',
+  // Polls (components/poll.tsx).
+  Poll: 'Enquete',
+  'Poll: {question}': 'Enquete: {question}',
+  'Poll · choose one': 'Enquete · escolha uma',
+  'Poll · choose one or more': 'Enquete · escolha uma ou mais',
+  'New poll': 'Nova enquete',
+  Question: 'Pergunta',
+  'Ask something': 'Pergunte algo',
+  Options: 'Opções',
+  'Option {n}': 'Opção {n}',
+  'Add an option': 'Adicionar uma opção',
+  'More than one answer': 'Mais de uma resposta',
+  // Typing, under a contact's name in their chat.
+  'typing…': 'digitando…',
+  // Searching the messages, in a chat and on the home screen (lib/message-search.ts).
+  'Search in this chat': 'Buscar nesta conversa',
+  '{n} of {count}': '{n} de {count}',
+  Earlier: 'Anterior',
+  Later: 'Próxima',
+  // Forwarding a message to another chat (lib/forward.ts).
+  'Forward to': 'Encaminhar para',
+  Forwarded: 'Encaminhada',
+  'Forwarding…': 'Encaminhando…',
+  '{name} (group)': '{name} (grupo)',
+  'It goes as a copy, sent anew and end-to-end encrypted, marked as forwarded but not from where.':
+    'Ela vai como cópia, enviada de novo e criptografada de ponta a ponta, marcada como encaminhada, mas sem dizer de onde.',
+  // Writing a chat out as text (lib/chat-export.ts).
+  'Export chat': 'Exportar conversa',
+  'Export this chat?': 'Exportar esta conversa?',
+  Export: 'Exportar',
+  'Its messages are written to a text file, with their times and who wrote them, saved where you choose. The file is not encrypted: anyone who has it, or any app that reads where it is, can read the chat. Photos, files and voice messages are only named, and messages that disappear are left out.':
+    'As mensagens dela são gravadas num arquivo de texto, com os horários e quem as escreveu, e salvas onde você escolher. O arquivo não é criptografado: qualquer pessoa que o tenha, ou qualquer app que leia o local onde ele está, pode ler a conversa. Fotos, arquivos e mensagens de voz só aparecem pelo nome, e as mensagens temporárias ficam de fora.',
+  'Chat with {name}, written out of Erevos': 'Conversa com {name}, exportada do Erevos',
+  'Written out {when}. This file is not encrypted: anyone who has it can read it.':
+    'Exportada em {when}. Este arquivo não é criptografado: qualquer pessoa que o tenha pode lê-lo.',
+  'Photo: {name}': 'Foto: {name}',
+  forwarded: 'encaminhada',
+  'answering “{line}”': 'respondendo a “{line}”',
+  // Link previews, made by the sender's phone (lib/make-preview.ts).
+  'Link previews': 'Prévias de links',
+  'Making the link’s preview…': 'Criando a prévia do link…',
+  'None while this space goes through Tor: Erevos sends only relay requests through it.':
+    'Nenhuma enquanto este espaço passa pelo Tor: o Erevos só envia por ele as solicitações ao relay.',
+  "When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. In all chats of this space, not in hidden chats.":
+    'Quando você envia um link, este celular busca a página direto no site e envia o título, uma linha e uma imagem pequena dentro da mensagem. O site vê o endereço de internet deste celular. Em todas as conversas deste espaço, não nas conversas ocultas.',
+  "Links go as they are. Turned on, this phone fetches a link's page as you send it, and the site sees this phone's internet address. The phone that gets it fetches nothing.":
+    'Os links vão como estão. Com isto ativado, este celular busca a página de um link quando você o envia, e o site vê o endereço de internet deste celular. O celular que o recebe não busca nada.',
+  // A group's messages (components/group-messages.tsx).
+  Everyone: 'Para todos',
+  'Everyone in {name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.':
+    'Todos em {name} recebem este local uma vez, criptografado de ponta a ponta. O Erevos não acompanha para onde você vai depois.',
+  'You in {name}': 'Você em {name}',
+  'It went without the link’s preview, which is too much for LoRa.': 'Foi sem a prévia do link, que é grande demais para LoRa.',
 };
