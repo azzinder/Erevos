@@ -149,6 +149,10 @@ const NOTE_SHOWN = 8000;
 // How often an open chat asks a contact whether their phone is open, milliseconds.
 const ASK_EVERY = 60 * 1000;
 
+// How often, at most, typing is said to a contact, and how long it shows after the last word of it.
+const TYPING_EVERY = 4000;
+const TYPING_SHOWS = 6000;
+
 // Messages opened from the relay in one look at it, at most: a minute's voice message comes in one.
 const RECEIVE_BATCH = 50;
 
@@ -484,6 +488,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   // Where the phone was found, to send once it is looked at.
   const [placeFound, setPlaceFound] = useState<Place | null>(null);
   const [polling, setPolling] = useState(false);
+  // Until when each contact shows typing, and when this phone last said it is typing to each.
+  const [typing, setTyping] = useState<Record<string, number>>({});
+  const typingSaid = useRef(new Map<string, number>());
   // Send held down: later, or without sound.
   const [sendMenu, setSendMenu] = useState(false);
   // The time picked there for the next photo, file or voice message, when nothing was typed.
@@ -778,6 +785,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     setReplying(null);
     setPinShown(0);
   }, [selected]);
+
+  // Typing shows only a few seconds after the last word that it does.
+  useEffect(() => {
+    const until = Math.max(0, ...Object.values(typing));
+    if (until <= Date.now()) return;
+    const timer = setTimeout(() => setTyping((now) => Object.fromEntries(Object.entries(now).filter(([, at]) => at > Date.now()))), until - Date.now() + 50);
+    return () => clearTimeout(timer);
+  }, [typing]);
 
   // A message gone to is lit a moment.
   useEffect(() => {
@@ -1075,6 +1090,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
       setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, theirReaction: emoji || undefined } : m)));
       history.current?.react(peer, tag, false, emoji).catch(() => undefined);
     }
+    // They type to us now, or wrote: then they no longer do.
+    if (received.more.typing) setTyping((now) => ({ ...now, [peer]: Date.now() + TYPING_SHOWS }));
+    else if (received.text || received.voice || received.file) setTyping(({ [peer]: _done, ...others }) => others);
     // One of the chat's messages pinned to its top on their phone, or taken down; their vote on a poll.
     const { pin, vote } = received.more;
     if (pin) pinHere(peer, pin.tag, pin.on);
@@ -1316,6 +1334,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     addMessage(peer, text, true, tag, timer, undefined, undefined, 0, Date.now(), parts);
     if (typed) setDraft('');
     setReplying(null);
+  }
+
+  // Keeps what is typed, and tells a contact who shows online that this phone is typing to them,
+  // every few seconds at most. Never from a chat that appears offline, nor to a message request.
+  function typed(text: string) {
+    setDraft(text);
+    if (!text.trim() || !selected?.startsWith(CONTACT_PREFIX) || !selectedOnline || !selectedAccepted || !appActive) return;
+    const said = typingSaid.current.get(selected) ?? 0;
+    if (Date.now() - said < TYPING_EVERY) return;
+    typingSaid.current.set(selected, Date.now());
+    sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), '', { more: { typing: true } }).catch(() => {
+      // Said again with what is typed next.
+    });
   }
 
   // Opens what was picked in Attach once its sheet has gone: on the web, over it, a sheet would not show.
@@ -2368,16 +2399,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   const selectedName = selected ? label(selected, shownContacts) : '';
   const selectedOnline = !!selectedIdentity && !selectedHidden && !!e2e && e2e.onlineUntil(selectedIdentity, now) > 0;
   const selectedNearby = !!selectedIdentity && !hiddenKey && nearby.isNear(selectedIdentity);
+  const selectedTyping = !!selected && !selectedHidden && (typing[selected] ?? 0) > Date.now();
   const subtitle = selectedContact
-    ? selectedOnline
-      ? selectedNearby
-        ? t('Online · nearby')
-        : t('Online')
-      : selectedNearby
-        ? t('Nearby · end-to-end encrypted')
-        : selectedTimer
-          ? t('End-to-end encrypted · {time} after read', { time: timerLabel(selectedTimer).toLowerCase() })
-          : t('End-to-end encrypted')
+    ? selectedTyping
+      ? t('typing…')
+      : selectedOnline
+        ? selectedNearby
+          ? t('Online · nearby')
+          : t('Online')
+        : selectedNearby
+          ? t('Nearby · end-to-end encrypted')
+          : selectedTimer
+            ? t('End-to-end encrypted · {time} after read', { time: timerLabel(selectedTimer).toLowerCase() })
+            : t('End-to-end encrypted')
     : '';
 
   const selectedLook = contacts.find((c) => c.identity === selectedIdentity)?.look ?? null;
@@ -3172,7 +3206,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
         ) : null}
         <Input
           value={draft}
-          onChangeText={setDraft}
+          onChangeText={typed}
           onSubmitEditing={() => void send()}
           placeholder={selected ? t('Message {name}', { name: selectedName }) : t('Message')}
           maxLength={4000}

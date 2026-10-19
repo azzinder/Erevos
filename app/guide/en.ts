@@ -222,9 +222,13 @@ is. If theirs is, the chat says **Online** under their name with a green dot, an
 their picture. Writing to someone also shows you online to them for two minutes. All of it goes inside the encryption,
 only between you and that contact: the relay sees a message now and then, as with any chat. There is no "last seen".
 
+While you type to a contact who shows online, their chat shows **typing…** under your name for a few seconds, and
+yours under theirs when they type. It is said every few seconds at most, only while they show online, never to a
+message request, and not in groups.
+
 To hide it from one contact, open their chat, tap its name and then **Appear offline: off**. With it on:
 
-- **They do not see you online**, and your phone sends them nothing while you read.
+- **They do not see you online**, nor that you are typing, and your phone sends them nothing while you read.
 - **Their messages stay ✓** on their phone, not ✓✓ or ✓✓✓, while you read them.
 - **When you write to them**, you show online for two minutes, and every message of theirs you read turns ✓✓✓ at once.
 - **You do not see them online either**, since your phone does not ask.

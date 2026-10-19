@@ -74,4 +74,6 @@ export const messages: Record<string, string> = {
   'Option {n}': 'Επιλογή {n}',
   'Add an option': 'Προσθήκη επιλογής',
   'More than one answer': 'Πάνω από μία απάντηση',
+  // Typing, under a contact's name in their chat.
+  'typing…': 'γράφει…',
 };

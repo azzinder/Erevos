@@ -97,3 +97,10 @@ test('a vote travels with no words, says the phone is open, and one of the wrong
   assert.deepEqual(carriedOf({ vote: { tag: vote.tag, chose: [] } }), { vote: { tag: vote.tag, chose: [] } });
   assert.deepEqual(carriedOf({ vote: { tag: vote.tag, chose: ['0'] } }), {});
 });
+
+test('typing travels with no words, and does not say the phone is open as writing does', () => {
+  assert.deepEqual(toCarry({ typing: true }, false), { typing: true });
+  assert.deepEqual(toCarry({ typing: true }, true), {});
+  assert.equal(acts({ typing: true }), false);
+  assert.deepEqual(carriedOf({ typing: 'yes' }), {});
+});

@@ -25,9 +25,9 @@ export type Vote = { tag: string; chose: number[] };
  * that an Erevos from before leaves alone. With words, which say it to an Erevos from before and
  * show nowhere in this one: a sticker, whose words are its emoji (lib/stickers.ts), a place, whose
  * words are where it is, or a poll, whose words are its question and options. With no words: a
- * pin, or a vote.
+ * pin, a vote, or that they are typing to us now (`typing`).
  */
-export type Carried = { sticker?: string; place?: Place; poll?: Poll; pin?: Pin; vote?: Vote };
+export type Carried = { sticker?: string; place?: Place; poll?: Poll; pin?: Pin; vote?: Vote; typing?: true };
 
 /** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
 export type Content = Pick<Carried, 'sticker' | 'place' | 'poll'>;
@@ -64,6 +64,7 @@ export function carriedOf(value: Record<string, unknown>): Carried {
     ...(poll ? { poll } : {}),
     ...(isTag(pin?.tag) && typeof pin.on === 'boolean' ? { pin: { tag: pin.tag, on: pin.on } } : {}),
     ...(isTag(vote?.tag) && chose ? { vote: { tag: vote.tag, chose } } : {}),
+    ...(value.typing === true ? { typing: true as const } : {}),
   };
 }
 
@@ -74,9 +75,9 @@ export function contentOf({ sticker, place, poll }: Content): Content {
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, place, poll, pin, vote } = carriedOf(carried);
+  const { sticker, place, poll, pin, vote, typing } = carriedOf(carried);
   if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}) };
-  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}) };
+  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(typing ? { typing } : {}) };
 }
 
 /** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */

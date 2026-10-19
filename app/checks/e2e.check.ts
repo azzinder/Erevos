@@ -355,6 +355,19 @@ t('a poll travels with its words, and a vote on it with none', async () => {
   assert.deepEqual([vote.text, vote.more], ['', { vote: { tag: asked.tag, chose: [1] } }]);
 });
 
+t('typing travels with no words, and neither accepts a request nor says the phone is open', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(identity);
+  const typing = await bob.e2e.seal(hello.identity, '', bob.from, { more: { typing: true } });
+  assert.equal(typing.tag, '');
+  const said = message(await alice.e2e.receive(typing.packet));
+  assert.deepEqual([said.text, said.more, said.online], ['', { typing: true }, 0]);
+  assert.equal(bob.e2e.contacts()[0].request, true);
+});
+
 t('a message sent without sound says so inside the encryption, and one sent as usual says nothing', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);
