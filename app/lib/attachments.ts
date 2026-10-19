@@ -30,6 +30,9 @@ import { t } from './i18n';
 /** The largest file that can be sent. */
 export const MAX_FILE = 100 * 1000 * 1000;
 
+/** Photos and files that came, up to this size, are taken from the relay as soon as they come. */
+export const AUTO_TAKE = 16 * 1000 * 1000;
+
 // The nonce and tag AES-GCM adds, and the chunk's place and length.
 const SEALING = 12 + 16;
 const HEAD = 8;
@@ -221,9 +224,10 @@ export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress, 
 /**
  * Takes a file that came, through our relay (`own`), checks every chunk and keeps them here, then
  * deletes them from the relay. Returns where it is now kept. If any chunk is missing or was
- * changed, nothing is kept.
+ * changed, nothing is kept. With `shared`, a group's file the other members take too, the chunks
+ * stay on the relay, and expire there.
  */
-export async function takeFile(own: Relay, ref: FileRef, progress?: Progress): Promise<FileRef> {
+export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, shared = false): Promise<FileRef> {
   const { from, ...taken } = ref;
   if (!from) return ref;
   const via = sameRelay(from.relay, own.url) ? undefined : from.relay;
@@ -241,7 +245,7 @@ export async function takeFile(own: Relay, ref: FileRef, progress?: Progress): P
     }
     if (size !== ref.size) throw new FileDamagedError();
     // Taken: the relay need not keep it. One it cannot delete expires there.
-    for (const id of ids) await deleteChunk(session, id, via).catch(() => false);
+    if (!shared) for (const id of ids) await deleteChunk(session, id, via).catch(() => false);
   } catch (error) {
     await deleteChunks(ref.id, ref.count).catch(() => undefined);
     throw error;

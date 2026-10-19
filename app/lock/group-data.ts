@@ -1,3 +1,4 @@
+import { isFileRef, type FileRef } from './attachment-files';
 import { isRelay, isRelayKey } from './e2e-data';
 import { isTag } from './history';
 import { sealedFile, type Holder } from './sealed-file';
@@ -5,7 +6,8 @@ import { sealedFile, type Holder } from './sealed-file';
 // What each space keeps for its group chats (lib/groups.ts): its MLS state (the Rust core's, with
 // its signing key and every group it is in), the secret that opens group messages sealed to this
 // phone, and each group with its messages. Kept sealed in FILE, one value for each space
-// (sealed-file.ts), in blocks of BLOCK bytes. Hidden chats have no groups yet.
+// (sealed-file.ts), in blocks of BLOCK bytes. Hidden chats have no groups yet. A photo, file or
+// voice message keeps where its chunks are (lock/attachment-files.ts), as a chat's do.
 
 /** Where a member's group messages go, and the key they are sealed to: what it says about itself. */
 export type About = {
@@ -22,7 +24,11 @@ export type About = {
 
 /** A message in a group: `from` is the sender's identity, empty for this phone's own. A `note`
  *  says what happened in the group, such as who joined. */
-export type GroupMessage = { at: number; from: string; text: string; tag: string; note?: boolean };
+export type GroupMessage = { at: number; from: string; text: string; tag: string; note?: boolean } & GroupMedia;
+
+/** A photo or file in a group's message: where it is, or where to take it from. With `ms`, it is
+ *  a voice message's sound, and lasts that long, milliseconds. */
+export type GroupMedia = { file?: FileRef; ms?: number };
 
 export type Group = {
   /** The group's id, hex. */
@@ -82,7 +88,12 @@ export function checkedAbout(value: unknown): About | null {
 function checkedMessage(value: unknown): GroupMessage | null {
   const v = (value ?? {}) as Partial<Record<keyof GroupMessage, unknown>>;
   if (!isTime(v.at) || !isText(v.text) || !(v.from === '' || isHex(v.from, 64))) return null;
-  return { at: v.at, from: v.from as string, text: v.text, tag: isTag(v.tag) ? v.tag : '', ...(v.note === true ? { note: true } : {}) };
+  return { at: v.at, from: v.from as string, text: v.text, tag: isTag(v.tag) ? v.tag : '', ...(v.note === true ? { note: true } : {}), ...checkedMedia(v) };
+}
+
+function checkedMedia(v: { file?: unknown; ms?: unknown }): GroupMedia {
+  if (!isFileRef(v.file)) return {};
+  return { file: v.file, ...(isTime(v.ms) ? { ms: v.ms } : {}) };
 }
 
 function checkedGroup(value: unknown): Group | null {
