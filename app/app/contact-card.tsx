@@ -10,7 +10,7 @@ import { Button, Card, Page, Row, Sheet, Text, TextButton } from '../components/
 import { confirm } from '../lib/alert';
 import { byName, cardErevos, erevosCard, erevosPeople, groupsByTitle, phoneCard, sealedCard, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
-import { birthdayComing, birthdayLabel, fillText, historyLines, kindLabel, parseBirthday, phoneSave, whenText, type Entry, type ErevosPerson, type HistoryLine } from '../lib/contacts';
+import { birthdayComing, birthdayLabel, callsWith, fillText, historyLines, kindLabel, parseBirthday, phoneSave, whenText, type Entry, type ErevosPerson, type HistoryLine } from '../lib/contacts';
 import { fromBase64 } from '../lib/crypto';
 import { enterHiddenScreen, hiddenScreens, useOpenHiddenPlace, type OpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
@@ -25,11 +25,8 @@ import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import type { ContactLink } from '../lock/contacts-data';
 import {
   addToPhoneGroup,
-  contactsReady,
-  contactsStatus,
   onContactsEvent,
   phoneContact,
-  phoneCalls,
   phoneContactPhoto,
   phoneGroups,
   pickRingtone,
@@ -41,6 +38,7 @@ import {
   starPhoneContact,
   type PhoneGroup,
 } from '../modules/erevos-contacts';
+import { callHistory, phoneReady } from '../modules/erevos-phone';
 import { smsMessages, smsReady, smsThreads } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -593,14 +591,18 @@ function ContactHistory({ card, hiddenOpen, onCall, onSms, onErevos }: {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const [lines, setLines] = useState<HistoryLine[] | null>(null);
-  const [callsAllowed, setCallsAllowed] = useState(() => contactsStatus().calls);
+  // Whether Android lets Erevos read the call history, as the phone module said when it was read.
+  const [callsAllowed, setCallsAllowed] = useState(true);
+  const [askedCalls, setAskedCalls] = useState(0);
   const numbers = card.phones.map((p) => p.value);
   const asked = `${numbers.join('\n')}\n${card.erevos}`;
 
   useEffect(() => {
     let active = true;
     void (async () => {
-      const calls = await phoneCalls(numbers).catch(() => []);
+      // The phone's call history, as the Phone screen reads it (modules/erevos-phone), of its numbers only.
+      const history = numbers.length > 0 ? await callHistory().catch(() => ({ allowed: true, calls: [] })) : { allowed: true, calls: [] };
+      const calls = callsWith(history.calls, numbers).slice(0, 50);
       // Only conversations there are: asking for one by its number would start it.
       const threads = smsReady() && numbers.length > 0 ? await smsThreads(500).catch(() => []) : [];
       const own = threads.filter((th) => smsNumbers(th.address).length === 1 && numbers.some((n) => sameNumber(n, th.address)));
@@ -613,16 +615,18 @@ function ContactHistory({ card, hiddenOpen, onCall, onSms, onErevos }: {
           : await spaceChats()
               .then((chats) => chats.history.messages().filter((m) => m.peer === peer))
               .catch(() => []);
-      if (active) setLines(historyLines(calls, sms, erevos, Date.now()));
+      if (!active) return;
+      setCallsAllowed(history.allowed);
+      setLines(historyLines(calls, sms, erevos, Date.now()));
     })();
     return () => {
       active = false;
     };
-  }, [asked, callsAllowed, hiddenOpen]);
+  }, [asked, askedCalls, hiddenOpen]);
 
   async function allowCalls() {
-    const answer = await PermissionsAndroid.request('android.permission.READ_CALL_LOG').catch(() => null);
-    setCallsAllowed(answer === PermissionsAndroid.RESULTS.GRANTED || contactsStatus().calls);
+    await PermissionsAndroid.request('android.permission.READ_CALL_LOG').catch(() => null);
+    setAskedCalls((n) => n + 1);
   }
 
   if (!lines) return null;
@@ -648,7 +652,7 @@ function ContactHistory({ card, hiddenOpen, onCall, onSms, onErevos }: {
           </Text>
         </Pressable>
       ))}
-      {Platform.OS === 'android' && contactsReady() && !callsAllowed && numbers.length > 0 ? (
+      {Platform.OS === 'android' && phoneReady() && !callsAllowed && numbers.length > 0 ? (
         <>
           <Text variant="caption" tone="faint">
             {t("Its calls show here once Erevos may read the phone's call log. Erevos only shows them, and keeps no copy.")}

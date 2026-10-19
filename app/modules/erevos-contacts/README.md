@@ -34,8 +34,6 @@ compiled against Android 16's framework classes, not built into the app or run y
   morning missed with the phone off is told once it is on, that day. Only Android's contacts.
 - **The SIM.** `simContacts()` reads the SIM cards' phone books (ADN): every SIM's with its slot on Android 12 and
   later (SimPhonebookContract), the main SIM's before (content://icc/adn).
-- **Calls.** `calls()` gives the latest calls with a contact's numbers from the phone's call log (CallLog), the newest
-  first, a row matching by its last ten digits; it needs READ_CALL_LOG, asked for on a contact's card. Shown only.
 - **Other apps.** ContactIntentActivity takes INSERT (a new contact with the extras and DATA rows another app gives),
   INSERT_OR_EDIT (the contacts, to choose one to add them to), EDIT, VIEW and QUICK_CONTACT (a contact's address,
   by lookup key, id, raw contact or row), and opens the screen for it by an erevos:// link, behind the app's lock,

@@ -2,7 +2,7 @@ import { requireOptionalNativeModule, type EventSubscription } from 'expo-module
 
 // The phone's contacts, for Android: reading and changing Android's own contacts (ContactsContract),
 // so they stay where every other app finds them, their groups, photos and ringtones, the SIM's
-// contacts, the calls with a number, birthday reminders, and reading a QR code from a photo. Other
+// contacts, birthday reminders, and reading a QR code from a photo. Other
 // apps' requests to add, change, show or pick a contact come here too (the module's manifest).
 // On other platforms, and in an app built before this module, there are none: contactsReady() is false.
 
@@ -65,10 +65,7 @@ export type PhoneGroup = { id: number; title: string; account: ContactAccount; c
 /** A contact on a SIM card. */
 export type SimContact = { name: string; number: string; sim: number };
 
-/** A call with a number, from the phone's call log. `at` is milliseconds, `seconds` how long it lasted. */
-export type CallEntry = { number: string; at: number; seconds: number; kind: 'in' | 'out' | 'missed' | 'rejected' | 'blocked' | 'other' };
-
-export type ContactsStatus = { read: boolean; write: boolean; calls: boolean; birthdays: boolean };
+export type ContactsStatus = { read: boolean; write: boolean; birthdays: boolean };
 
 export type ContactsEvents = {
   /** Android's contacts changed, here or in another app. */
@@ -96,7 +93,6 @@ type NativeContacts = {
   removeFromGroup(group: number, contact: number): Promise<void>;
   takeOver(keeper: number, others: number[]): Promise<void>;
   simContacts(): Promise<SimContact[]>;
-  calls(numbers: string[], limit: number): Promise<CallEntry[]>;
   setBirthdays(on: boolean): Promise<void>;
   readQr(uri: string): Promise<string | null>;
   addListener<Name extends keyof ContactsEvents>(name: Name, listener: ContactsEvents[Name]): EventSubscription;
@@ -110,9 +106,9 @@ export function contactsReady(): boolean {
   return native !== null;
 }
 
-/** Whether Erevos may read and change the phone's contacts and read its calls, and whether birthday reminders are on. */
+/** Whether Erevos may read and change the phone's contacts, and whether birthday reminders are on. */
 export function contactsStatus(): ContactsStatus {
-  return native ? native.status() : { read: false, write: false, calls: false, birthdays: false };
+  return native ? native.status() : { read: false, write: false, birthdays: false };
 }
 
 /** Tells onContactsChanged from now on, once Erevos may read the contacts. */
@@ -204,11 +200,6 @@ export function takeOverContacts(keeper: number, others: number[]): Promise<void
 /** The contacts on the phone's SIM cards. */
 export function simContacts(): Promise<SimContact[]> {
   return native ? native.simContacts() : Promise.resolve([]);
-}
-
-/** The latest calls with these numbers, newest first, once Erevos may read the call log. */
-export function phoneCalls(numbers: string[], limit = 50): Promise<CallEntry[]> {
-  return native && numbers.length > 0 ? native.calls(numbers, limit) : Promise.resolve([]);
 }
 
 /** Turns birthday reminders on or off: a notice in the morning of each phone contact's birthday. */

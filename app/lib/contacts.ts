@@ -1,6 +1,8 @@
 import type { Message } from '../lock/history';
-import type { CallEntry, ContactAccount, ContactSave, PhoneContact, PhoneEntry, SimContact } from '../modules/erevos-contacts';
+import type { ContactAccount, ContactSave, PhoneContact, PhoneEntry, SimContact } from '../modules/erevos-contacts';
+import type { LoggedCall } from '../modules/erevos-phone';
 import type { SmsMessage } from '../modules/erevos-sms';
+import { callKind, KIND_LABELS as CALL_LABELS } from './phone-log';
 import { lang, mark, t } from './i18n';
 import { sameNumber } from './sms-invite';
 
@@ -484,16 +486,19 @@ export function erevosFor(linked: string, phones: Entry[], people: ErevosPerson[
 /** A line of a contact's history: a call in the phone's call log, an SMS, or a message in Erevos. */
 export type HistoryLine = { key: string; at: number; kind: 'call' | 'sms' | 'erevos'; mine: boolean; missed: boolean; text: string; number: string };
 
-/** What a call was: which way, and how long it lasted (0:42, 1:02:09). */
-export function callText(call: CallEntry): string {
-  const s = Math.max(0, Math.floor(call.seconds));
+/** What a call in the phone's call history (lib/phone-log.ts) was: which way, and how long it lasted (0:42, 1:02:09). */
+export function callText(call: Pick<LoggedCall, 'type' | 'duration'>): string {
+  const s = Math.max(0, Math.floor(call.duration));
   const time = s >= 3600 ? `${Math.floor(s / 3600)}:${two(Math.floor(s / 60) % 60)}:${two(s % 60)}` : `${Math.floor(s / 60)}:${two(s % 60)}`;
-  if (call.kind === 'in') return call.seconds > 0 ? t('Incoming call, {time}', { time }) : t('Incoming call');
-  if (call.kind === 'out') return call.seconds > 0 ? t('Outgoing call, {time}', { time }) : t('Outgoing call, no answer');
-  if (call.kind === 'missed') return t('Missed call');
-  if (call.kind === 'rejected') return t('Declined call');
-  if (call.kind === 'blocked') return t('Blocked call');
-  return t('Call');
+  const kind = callKind(call.type);
+  if (kind === 'incoming' && s > 0) return t('Incoming call, {time}', { time });
+  if (kind === 'outgoing') return s > 0 ? t('Outgoing call, {time}', { time }) : t('Outgoing call, no answer');
+  return t(CALL_LABELS[kind]);
+}
+
+/** A contact's calls among the phone's call history: those with one of its numbers, the newest first. */
+export function callsWith(calls: LoggedCall[], numbers: string[]): LoggedCall[] {
+  return calls.filter((c) => numbers.some((n) => sameNumber(n, c.number))).sort((a, b) => b.at - a.at);
 }
 
 /** What an Erevos message says, or what it holds. */
@@ -508,8 +513,11 @@ function erevosText(m: Message): string {
  * the newest first. Disappearing messages whose time has come are left out, and an SMS kept under
  * two of its numbers shows once.
  */
-export function historyLines(calls: CallEntry[], sms: { number: string; messages: SmsMessage[] }[], erevos: Message[], now: number, most = 30): HistoryLine[] {
-  const lines: HistoryLine[] = calls.map((c, i) => ({ key: `c${i}`, at: c.at, kind: 'call', mine: c.kind === 'out', missed: c.kind === 'missed' || c.kind === 'rejected', text: callText(c), number: c.number }));
+export function historyLines(calls: LoggedCall[], sms: { number: string; messages: SmsMessage[] }[], erevos: Message[], now: number, most = 30): HistoryLine[] {
+  const lines: HistoryLine[] = calls.map((c) => {
+    const kind = callKind(c.type);
+    return { key: `c${c.id}`, at: c.at, kind: 'call', mine: kind === 'outgoing', missed: kind === 'missed' || kind === 'declined', text: callText(c), number: c.number };
+  });
   const seen = new Set<number>();
   for (const { number, messages } of sms) {
     for (const m of messages) {

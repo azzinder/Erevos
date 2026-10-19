@@ -9,6 +9,7 @@ import {
   askedFields,
   birthdayComing,
   birthdayText,
+  callsWith,
   callText,
   cleanFields,
   daysToBirthday,
@@ -37,7 +38,8 @@ import {
 } from '../lib/contacts';
 import { setLang } from '../lib/i18n';
 import type { Message } from '../lock/history';
-import type { CallEntry, PhoneContact } from '../modules/erevos-contacts';
+import type { PhoneContact } from '../modules/erevos-contacts';
+import type { LoggedCall } from '../modules/erevos-phone';
 import type { SmsMessage } from '../modules/erevos-sms';
 
 const maria: Fields = {
@@ -328,11 +330,29 @@ test('the Erevos contact a contact is: linked by hand first, else by a number li
 
 test("a contact's calls, SMS and Erevos messages, as one history, the newest first", async () => {
   await setLang('en');
-  const calls: CallEntry[] = [
-    { number: '6912345678', at: 1000, seconds: 65, kind: 'in' },
-    { number: '6912345678', at: 4000, seconds: 0, kind: 'missed' },
-    { number: '+306912345678', at: 2000, seconds: 0, kind: 'out' },
-  ];
+  const call = (id: number, number: string, at: number, duration: number, type: number): LoggedCall => ({
+    id,
+    number,
+    shown: number,
+    name: '',
+    photo: '',
+    at,
+    duration,
+    type,
+    features: 0,
+    account: '',
+    presentation: 1,
+    isNew: false,
+    blocked: 0,
+  });
+  const calls = callsWith(
+    [call(1, '6912345678', 1000, 65, 1), call(2, '6912345678', 4000, 0, 3), call(3, '+306912345678', 2000, 0, 2), call(4, '2101234567', 4500, 30, 1)],
+    ['+30 691 234 5678'],
+  );
+  assert.deepEqual(
+    calls.map((c) => c.id),
+    [2, 3, 1],
+  );
   const sms = (id: number, at: number, text: string): SmsMessage => ({ id, text, at, mine: false, state: 'done', read: true });
   const lists = [
     { number: '6912345678', messages: [sms(1, 3000, 'Hi'), sms(2, 500, '')] },
@@ -357,8 +377,10 @@ test("a contact's calls, SMS and Erevos messages, as one history, the newest fir
   assert.equal(lines[0].missed, true);
   assert.equal(lines[1].mine, true);
   assert.equal(historyLines(calls, lists, erevos, 5000, 2).length, 2);
-  assert.equal(callText({ number: '1', at: 0, seconds: 3725, kind: 'out' }), 'Outgoing call, 1:02:05');
-  assert.equal(callText({ number: '1', at: 0, seconds: 0, kind: 'blocked' }), 'Blocked call');
+  assert.equal(callText({ type: 2, duration: 3725 }), 'Outgoing call, 1:02:05');
+  assert.equal(callText({ type: 6, duration: 0 }), 'Blocked call');
+  assert.equal(callText({ type: 5, duration: 0 }), 'Declined call');
+  assert.equal(callText({ type: 1, duration: 0 }), 'Incoming call');
 });
 
 test('when a line of history was', () => {
