@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useGroupMedia } from '../components/group-media';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { KeyFace } from '../components/key-face';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
@@ -28,6 +29,7 @@ import { ContactPicker, groupableContacts } from '../components/contact-picker';
 // joined and left, and the field to write in. Its members sheet lists who is in it; the admin adds
 // contacts, takes members out and renames it, and anyone can leave. Its Call and Video buttons start
 // a call in the group (lib/group-calls.ts); the call going on shows above the messages, to join.
+// Attach and Voice under the field send photos, files and voice messages (components/group-media.tsx).
 
 type Contact = { identity: string; name: string };
 
@@ -51,6 +53,8 @@ export default function GroupScreen() {
   const [sheet, setSheet] = useState(false);
   const [, setCalls] = useState(0);
   const scroll = useRef<ScrollView>(null);
+  // Photos, files and voice messages: their buttons, sheets, and their place in the bubbles.
+  const media = useGroupMedia(id, messages, setNote);
 
   // A call going on in the group shows, until its members' phones go quiet.
   useEffect(() => {
@@ -190,15 +194,17 @@ export default function GroupScreen() {
           const first = !before || before.note || before.from !== m.from;
           const ink = mine ? b.mineText : b.theirsText;
           return (
-            <View key={i} style={[styles.bubble, mine ? b.mine : b.theirs]}>
+            <View key={i} style={[styles.bubble, mine ? b.mine : b.theirs, m.file?.kind === 'photo' && (mine || !first) && styles.photoBubble]}>
               {!mine && first ? (
                 <Text variant="label" color={colors.accentText}>
                   {name(m.from)}
                 </Text>
               ) : null}
-              <Text style={ink} selectable>
-                {shownLine(m.text)}
-              </Text>
+              {media.content(m, ink) ?? (
+                <Text style={ink} selectable>
+                  {shownLine(m.text)}
+                </Text>
+              )}
               <Text style={[ink, styles.time]}>{clock(m.at)}</Text>
             </View>
           );
@@ -208,13 +214,23 @@ export default function GroupScreen() {
         <Text variant="caption" color={colors.danger} style={styles.noteText}>
           {note}
         </Text>
+      ) : media.said ? (
+        <Text variant="caption" tone="muted" style={styles.noteText}>
+          {media.said}
+        </Text>
       ) : null}
       {out ? null : (
-        <Row style={styles.dock}>
-          <Input value={draft} onChangeText={setDraft} placeholder={t('Message {name}', { name: info.name })} maxLength={MAX_GROUP_TEXT} multiline style={{ flex: 1 }} />
-          <Button title={t('Send')} compact disabled={!draft.trim()} onPress={() => void send()} />
-        </Row>
+        <View style={styles.dock}>
+          <Input value={draft} onChangeText={setDraft} placeholder={t('Message {name}', { name: info.name })} maxLength={MAX_GROUP_TEXT} multiline />
+          <Row>
+            <Row wrap style={{ flex: 1 }}>
+              {media.tools}
+            </Row>
+            <Button title={t('Send')} compact disabled={!draft.trim()} onPress={() => void send()} />
+          </Row>
+        </View>
       )}
+      {media.sheets}
       <MembersSheet visible={sheet} onClose={() => setSheet(false)} info={info} name={name} onNote={setNote} />
     </KeyboardPaddedView>
   );
@@ -450,6 +466,11 @@ const makeStyles = (colors: Colors) =>
       gap: 2,
       marginBottom: 3,
     },
+    // A photo fills its bubble, with a thin edge.
+    photoBubble: {
+      paddingTop: 4,
+      paddingHorizontal: 4,
+    },
     time: {
       fontSize: 11,
       opacity: 0.7,
@@ -464,8 +485,8 @@ const makeStyles = (colors: Colors) =>
       paddingHorizontal: space.lg,
     },
     dock: {
+      gap: space.sm,
       paddingHorizontal: space.lg,
       paddingVertical: space.sm,
-      alignItems: 'flex-end',
     },
   });

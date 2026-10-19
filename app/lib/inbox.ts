@@ -118,7 +118,7 @@ export function buildInbox(
   return rows.sort((a, b) => b.at - a.at || shownName(a).localeCompare(shownName(b)));
 }
 
-function preview(message: InboxMessage | undefined): string {
+function preview(message: Pick<InboxMessage, 'text' | 'voice' | 'file'> | undefined): string {
   if (message?.voice) return t('Voice message, {time}', { time: voiceDuration(message.voice.ms) });
   if (message?.file) return message.file.kind === 'photo' ? t('Photo') : t('File: {name}', { name: message.file.name });
   return shownLine(message?.text ?? '');
@@ -142,16 +142,19 @@ export type InboxGroup = {
   id: string;
   name: string;
   status: 'in' | 'leaving' | 'out';
-  last: { at: number; from: string; text: string; note?: boolean } | null;
+  last: { at: number; from: string; text: string; note?: boolean; file?: { kind: 'photo' | 'file'; name: string }; ms?: number } | null;
   unread: number;
 };
+
+// A group's photo, file or voice message (with `ms`) shows as a chat's does.
+const groupPreview = (last: NonNullable<InboxGroup['last']>) => preview(last.file && last.ms !== undefined ? { text: '', voice: { ms: last.ms } } : last);
 
 /** The space's groups as rows, `group:` and their id in place of a contact's identity. `name`
  *  gives a member's name by identity, and `note` a note's text. */
 export function groupRows(groups: InboxGroup[], name: (identity: string) => string, note: (text: string) => string): InboxRow[] {
   return groups.map((g) => {
     const last = g.last;
-    const text = !last ? '' : last.note ? note(last.text) : last.from ? `${name(last.from)}: ${shownLine(last.text)}` : t('You: {text}', { text: shownLine(last.text) });
+    const text = !last ? '' : last.note ? note(last.text) : last.from ? `${name(last.from)}: ${groupPreview(last)}` : t('You: {text}', { text: groupPreview(last) });
     return {
       identity: `group:${g.id}`,
       name: g.name || t('Group'),
