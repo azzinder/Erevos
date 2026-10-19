@@ -23,7 +23,7 @@ Early work, not audited. Do not rely on it to protect anyone yet.
   stripping on photos and video, a requests inbox and proof-of-work for
   first contact.
 - One Rust core under one Expo/React Native app for Android, iOS, Linux,
-  macOS and Sailfish OS, structured like LPHL FASOULI.
+  macOS, Windows and Sailfish OS, structured like LPHL FASOULI.
 - In English, Greek, German, French, Spanish, Italian and Portuguese, the user
   guide in English and Greek: the first start follows the phone's language, and
   Home → Menu → Language switches it.
@@ -47,9 +47,10 @@ Early work, not audited. Do not rely on it to protect anyone yet.
   an optional journal on disk so queues survive a restart.
 - `deploy/relay`: scripts that run the relay on a Debian or Ubuntu server
   behind Caddy, with TLS from Let's Encrypt. See its README.
-- `desktop/`: Erevos for Linux and macOS, the app's web build (with the core in
-  WebAssembly) in Electron. `.github/workflows/desktop.yml` builds the Linux
-  packages and the Mac disk image, and starts each to check it opens.
+- `desktop/`: Erevos for Linux, macOS and Windows, the app's web build (with
+  the core in WebAssembly) in Electron. `.github/workflows/desktop.yml` builds
+  the Linux packages, the Mac disk image and the Windows installer and portable
+  .exe, and starts each to check it opens.
 - `pwa/`: the web app, for an iPhone without an Apple account and for any
   browser: the same web build, kept on the device by a service worker that runs
   only releases signed with a key the server does not have. `deploy/web`
@@ -72,7 +73,8 @@ The desktop app, from `app/`:
 
 `.github/workflows/release.yml` builds every package and publishes them as a
 GitHub release, `v0.1.<build>`: the Android APK, Linux (Arch package and
-AppImage), the macOS disk image, the Sailfish OS RPM and the web app, with
+AppImage), the macOS disk image, Windows (installer and portable .exe), the
+Sailfish OS RPM and the web app, with
 `SHA256SUMS`. It runs every night when main has changed, and by hand (Actions,
 release, Run workflow). The five newest releases stay. The web app comes
 unsigned: the release computer signs it and serves it with
@@ -92,7 +94,9 @@ the app reads. The app never checks by itself; on Android it downloads the
 APK, checks its size and SHA-256 and opens Android's installer.
 
 The repository variable `EREVOS_MACOS` set to `off` leaves the Mac out (a Mac
-minute counts as ten).
+minute counts as ten), and `EREVOS_WINDOWS` set to `off` leaves Windows out (a
+Windows minute counts as two). The Windows files are not signed: that needs a
+code signing certificate, so Windows' SmartScreen warns before the first start.
 
 ## Licence
 

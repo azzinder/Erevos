@@ -23,7 +23,8 @@ is in English and Greek, and shows in English in the app's other languages, see 
 ## Getting started {#start}
 
 Erevos is downloaded from its releases page, one file for each system: see [Updates](#updates) for where, and how to
-update it. It runs on Android, on a computer (Linux and macOS), on Sailfish OS and, from the browser, on an iPhone.
+update it. It runs on Android, on a computer (Linux, macOS and Windows), on Sailfish OS and, from the browser, on an
+iPhone.
 
 The home screen is the list of your chats, the one that moved last at the top. Each shows the contact's picture,
 the last message with its marks, when it came, and how many of their messages you have not read. A clock beside it
@@ -477,6 +478,23 @@ It is off unless you turn it on, and each space has its own switch.
 > While Tor is on, nothing goes to a relay without it. When Tor cannot reach the relay, the message waits and is
 > tried again; Erevos never falls back to your own connection by itself.
 
+### Bridges
+
+Where Tor itself is blocked, **Bridges** on the same screen lets Tor reach its network through bridges instead. It
+is **No bridges** unless you choose, each space has its own, and it counts only while Tor is on.
+
+| Choice | What it is |
+| --- | --- |
+| **obfs4** | The obfs4 bridges Tor Browser comes with. To whoever watches the network, Tor looks like random bytes. A censor that knows them may block them. |
+| **Snowflake** | Through volunteers' browsers, over WebRTC, the way a video call goes. To find one, Erevos asks Snowflake's broker through a CDN, behind another site's name, and STUN servers tell the phone its own address: they see that address, never your messages. Slower, and hard to block. |
+| **My own** | Bridge lines from bridges.torproject.org, from bridges@torproject.org by email, or from @GetBridgesBot on Telegram, pasted one per line; then tap **Use these bridges**. obfs4, Snowflake, WebTunnel, meek and plain bridges work. |
+
+- **Only through them:** with bridges, Tor never goes straight to its relays. When no bridge answers, messages wait,
+  as they do when Tor cannot reach the relay. Lines that are not bridges are not taken, and Tor stays off.
+- **Changing them** while Tor runs closes its connections and makes them again the new way.
+- **On Android only:** the app carries lyrebird, Tor's own program for obfs4, Snowflake, WebTunnel and meek. A
+  computer and the web app have no Tor yet, so no bridges either.
+
 ## SMS {#sms}
 
 On Android, Erevos can be the phone's SMS app, under **SMS** in the menu. The home screen then shows SMS and Erevos
@@ -539,7 +557,32 @@ Under **Lock and second password**, **Lock when Erevos opens** has two choices: 
   opens and then updates. It is always the same size, so it tells no one how many chats there are or which spaces
   are used, and it never holds what a disappearing message said.
 
-> There is no way to recover a forgotten password: nothing is stored that could open the data without it.
+> There is no way to recover a forgotten password: nothing is stored that could open the data without it. Only a
+> fingerprint or face, while it is on, still opens the first space (see below).
+
+### Fingerprint or face
+
+On Android 11 and later, with a fingerprint or face set up in the phone's settings, Erevos can open with it too. It
+is off unless you turn it on.
+
+1. With the password lock on, under **Fingerprint or face**, tap **Turn on**.
+2. Type the password of the space you are in, tap **Turn on**, and touch the sensor (or look at the phone).
+3. From then on the password screen has a **Fingerprint or face** button. The password always works too, and
+   **Turn off** turns it off.
+
+- **Only the first password's space:** a fingerprint never opens the space of a second password, nor hidden chats.
+  Turned on in the space a second password opens, it opens nothing: the first time it is tried it turns itself off,
+  and the password opens Erevos. The setting looks the same in every space.
+- **Under pressure:** someone who holds you can press your finger to the phone, or hold it to your face. If that may
+  happen, keep it off: then they need a password, and you can give them the second one.
+- **How it is kept:** the first space's key is sealed by a key in the phone's secure hardware (the Android Keystore)
+  that works only right after a strong fingerprint or face check, once for each use. Adding or removing a
+  fingerprint or face makes Android drop that key: it is then off, and you turn it on again. Nothing leaves the
+  phone.
+- **Which face:** a face counts only where Android rates its face unlock as strong, as on the Pixel 8 and later;
+  elsewhere it is the fingerprint.
+- **Wrong passwords** are counted as before: a fingerprint does not change the count.
+- **Not on a computer or the web:** it is offered only on Android. Turning the lock off turns it off too.
 
 ## Second password {#second}
 
@@ -658,16 +701,16 @@ To go on with the conversation in Erevos, the other person needs Erevos too:
 | Setting | Choices |
 | --- | --- |
 | **Look** | **Flat**, or **Glass** as on lphl.nekten.eu. Glass comes in two kinds: **Panes** (each card a pane of glass over the wallpaper) and **One pane** (each screen on one frosted pane). |
-| **Style** | **Classic** (Erevos's dark and gold), **Modernist** (Inter Tight), **Nocturne** (always dark, with its own colours), **Neon** (cyan and magenta LEDs that glow, over a grid running to a setting sun), **Matrix** (green on black in monospace, with code raining behind), **Paper** (fountain-pen blue on cream, in a serif, over ruled lines with a red margin), **Aurora** (violet on near-white, soft and round, over pools of mint, lilac and peach light) and **Custom** (your own background and accent). |
-| **Theme** | **System**, **Light** or **Dark**. Nocturne, Neon and Matrix are always dark, Paper and Aurora always light, and Custom is light or dark as its background is. |
+| **Style** | **Classic** (Erevos's dark and gold), **Modernist** (Inter Tight), **Nocturne** (always dark, with its own colours), **Neon** (cyan and magenta LEDs that glow, over a grid running to a setting sun), **Matrix** (green on black in monospace, with code raining behind), **Paper** (fountain-pen blue on cream, in a serif, over ruled lines with a red margin), **Aurora** (violet on near-white, soft and round, over pools of mint, lilac and peach light), **Material You** (the phone's own colors, on Android 12 and later) and **Custom** (your own background and accent). |
+| **Theme** | **System**, **Light** or **Dark**. Nocturne, Neon and Matrix are always dark, Paper and Aurora always light, and Custom is light or dark as its background is. Material You follows it. |
 | **Colors** | The style's own, one of the twelve LPHL palettes, or **My color**. Choosing a palette under a style with its own colours goes back to the style chosen before. |
 | **Custom** | With **Custom** chosen: its **background** (eight light, eight dark) and its **accent**. The text and the surfaces are made from the background, and every color is checked to read on it. |
 | **Text on colored areas** | **White**, **As in the palette**, or **My color**. |
 | **Wallpaper** | What lies behind every screen: **Style default** (the style's own scene or glow), **Plain**, or a pattern drawn faintly in the accent: **Dots**, **Grid**, **Stripes**, **Stars**, **Lights** (soft circles of light) or **Gradient**; or **Photo**, a photo of your own, made smaller, drawn anew and sealed, under a veil so the text reads (**Change photo** picks another). The password screen shows the style's own instead. |
 | **Messages** | How a chat draws messages: **Round** bubbles, **Square** ones, or **Line**, no bubble but a line beside the text, as a log. |
 
-Neon, Matrix, Paper and Aurora draw their own scene behind every screen, and Custom keeps the background you chose,
-so **Glass** waits while they are chosen. The rain stands
+Neon, Matrix, Paper and Aurora draw their own scene behind every screen, Custom keeps the background you chose and
+Material You the phone's colors, so **Glass** waits while they are chosen. The rain stands
 still when the phone is set to reduce motion.
 
 The **Preview** shows a few messages and buttons in the look you chose. Every combination is checked so that text
@@ -676,15 +719,22 @@ always reads well, on glass too.
 - **Each space keeps its own look.**
 - **The password screen** shows the look last used. To do so it is kept outside the sealed data: it says nothing
   about your chats, but whoever opens the phone sees which look you use.
+- **Material You** takes the colors Android makes from your wallpaper (Android 12 and later), light or dark as
+  **Theme** says, with round buttons and softly rounded cards, in the phone's own font. A new wallpaper changes them
+  in Erevos too, once it shows again. They are read on the phone and go nowhere. On older Android and on a computer
+  it is not offered.
 
 ## On a computer {#desktop}
 
-Erevos also runs on a computer, Linux or macOS, as an app of its own. It chats through a relay, end-to-end encrypted
-as on the phone, and keeps its contacts, messages and settings sealed the same way.
+Erevos also runs on a computer, Linux, macOS or Windows, as an app of its own. It chats through a relay, end-to-end
+encrypted as on the phone, and keeps its contacts, messages and settings sealed the same way.
 
 1. Install it. On Linux: the package for Arch-based systems (\`erevos-linux-x86_64.pacman\`, with \`sudo pacman -U\`) or the
    AppImage. On a Mac: open the disk image and drag Erevos to Applications. It has no paid Apple signature, so the
-   first time allow it under **System Settings → Privacy & Security → Open Anyway**.
+   first time allow it under **System Settings → Privacy & Security → Open Anyway**. On Windows 10 or 11: run
+   \`erevos-windows-x64-setup.exe\`, which installs Erevos for you alone, with no administrator, and puts it in the
+   Start menu; or keep \`erevos-windows-x64-portable.exe\` where you like and run it, with nothing installed. Neither
+   has a paid signature, so the first time Windows says it protected your PC: tap **More info**, then **Run anyway**.
 2. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay). **Copy my contact link** copies
    your link, to paste where it should go.
 
@@ -692,14 +742,19 @@ as on the phone, and keeps its contacts, messages and settings sealed the same w
   as a phone does, see [Chat with a nearby phone](#nearby). The rest is the same: spaces and the second password,
   hidden chats, voice messages, imported chats and backups.
 - **Where it keeps things:** in its own folder (on Linux \`~/.config/Erevos\`, on a Mac
-  \`~/Library/Application Support/Erevos\`), sealed as on the phone. Its keystore is sealed with the system's keyring
-  (on a Mac the Keychain). A Linux system without a keyring keeps it as it is: set a password lock there.
+  \`~/Library/Application Support/Erevos\`, on Windows \`%APPDATA%\\Erevos\`), sealed as on the phone. Its keystore is
+  sealed with the system's keyring (on a Mac the Keychain, on Windows the key of your Windows account). A Linux system
+  without a keyring keeps it as it is: set a password lock there. The portable Windows app keeps its things in the
+  same folder as the installed one, and uninstalling leaves them there.
+- **Windows' firewall** asks, the first time Erevos opens, whether it may use the network. Allow it on private
+  networks, or phones and computers on the same Wi-Fi cannot reach it; relays work either way.
 - **Voice messages** recorded on a computer are Opus, on a phone AAC. Both play on both.
 - **Photos** come from the computer's files; there is no camera. **Save** asks where to put a photo or file.
 - **A computer and a phone can share an account:** link the computer to the phone, and both have the same chats and
   contacts, see [Linked devices](#devices). Or a backup moves everything from one to the other, see
   [Backups](#backup), and from then on use only the one.
-- **Tested so far** on Linux. The Mac version is built and opened on GitHub's Mac computers, not yet by a person.
+- **Tested so far** on Linux. The Mac and Windows versions are built and opened on GitHub's computers, not yet by a
+  person.
 
 ## Linked devices {#devices}
 
@@ -822,8 +877,8 @@ or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI
    space, Erevos does not check, since that would go around Tor.
 3. When there is a new version: on Android tap **Install**. It downloads, is checked against the release (its size and
    SHA-256), and Android's installer opens: tap **Install** there. The first time, Android asks to allow installing
-   apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take the file as
-   in the table below.
+   apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take the file
+   Erevos names, the one of the package you have, and update as in the table below.
 
 The rest of this section is for updating by hand.
 
@@ -842,6 +897,8 @@ costs a minute and covers any surprise.
 | **Linux, Arch-based** | \`sudo pacman -U erevos-linux-x86_64.pacman\` |
 | **Linux, AppImage** | Replace the old \`erevos-linux-x86_64.AppImage\` with the new one and make it executable. |
 | **macOS** | Open \`erevos-macos.dmg\` and drag Erevos to Applications, **Replace**. Then allow it again under **System Settings → Privacy & Security → Open Anyway**. |
+| **Windows, installed** | Close Erevos and run the new \`erevos-windows-x64-setup.exe\`: it installs over the one you have. Windows may warn again: **More info**, then **Run anyway**. |
+| **Windows, portable** | Close Erevos and put the new \`erevos-windows-x64-portable.exe\` in the place of the old one. |
 | **Sailfish OS** | Tap \`erevos-sailfish-aarch64.rpm\` in **Files**, then **Install**, or \`pkcon install-local erevos-sailfish-aarch64.rpm\`. |
 | **iPhone, browser** | Nothing to do: the web app takes a new signed version by itself when it opens, see [On an iPhone](#iphone). |
 
@@ -879,16 +936,17 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it, and over Wi-Fi Direct anyone who joins the phones' own Wi-Fi. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
-| **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
+| **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it, and with bridges, for where Tor is blocked, the network sees only a bridge. Snowflake's broker and STUN servers see your address. | Tor on a computer. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
 | **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
 | **Photos and files** | End-to-end encrypted, through the relay's file store, in pieces of one size: the relay sees how many and when, so roughly how big. Your relay sees your address, as for messages; the contact takes them through their own relay. Photos lose their place, phone and time, unless sent as a file; a file keeps what it says inside. Sealed on the phone in their pieces, shown from memory. Saved copies are outside Erevos. Not in backups yet. | Backups that hold them. |
-| **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring; a Linux system without one keeps it as it is. | |
+| **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring (on Windows, your account's key); a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
+| **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
 | **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". | |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |
@@ -898,7 +956,8 @@ Erevos says plainly what it protects and what it does not, yet.
 
 End-to-end encryption is here, through the relay and over the nearby link, and most of what follows is built on it.
 
-- **More ways to stay in touch:** ways around censorship (Tor bridges).
+- **More ways to stay in touch:** Tor bridges for where Tor is blocked are here, see [Through Tor](#tor). Next: Tor
+  on a computer.
   - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: setting the radio's name from Erevos.
   - **SMS:** Erevos as the SMS app is here, with MMS photos, group MMS and two SIMs, see [SMS](#sms).
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
@@ -909,14 +968,16 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).
 - **More systems:** calls and groups on linked devices too; the account itself is on a computer already, see
-  [Linked devices](#devices). Linux and macOS are here, see [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
+  [Linked devices](#devices). Linux, macOS and Windows are here, see [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
   [On Sailfish OS](#sailfish); and so are backups, see [Backups](#backup).
 
 ## Questions {#faq}
 
 ### I forgot my password.
 
-There is no way to recover it. Erevos keeps nothing that could open your data without it.
+There is no way to recover it. Erevos keeps nothing that could open your data without it. Only if unlocking with a
+[fingerprint or face](#lock) is on does it still open the first space: set a new password there with
+**Change password**.
 
 ### A contact who is near never shows "Nearby".
 
@@ -957,5 +1018,6 @@ whom.
 
 ### Does it work on an iPhone or a computer?
 
-On a computer, yes: Linux and macOS, see [On a computer](#desktop). On an iPhone not yet, see [What is coming](#coming).
+On a computer, yes: Linux, macOS and Windows, see [On a computer](#desktop).
+On an iPhone not yet, see [What is coming](#coming).
 `;

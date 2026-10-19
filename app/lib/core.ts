@@ -39,8 +39,8 @@ export interface Core {
   groupMembers?(state: Uint8Array, id: Uint8Array): Promise<Uint8Array>;
   groupOf?(message: Uint8Array): Promise<Uint8Array>;
   groupOpen?(state: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
-  /** Relay requests through Tor: only in the Android app, and not in a build made before it. */
-  torStart?(): Promise<void>;
+  /** Relay requests through Tor: only in the Android app, and not in a build made before it. Bridges one per line. */
+  torStart?(bridges: string): Promise<void>;
   torStatus?(): Promise<string>;
   torStop?(): Promise<void>;
   torRequest?(url: string, token: string, message: Uint8Array): Promise<Uint8Array>;

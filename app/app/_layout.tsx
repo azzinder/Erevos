@@ -81,8 +81,9 @@ export default function RootLayout() {
     async (space: number, passwordLock: boolean, key: Uint8Array) => {
       setCurrentSpace(space, key);
       const data = await loadSpaceData(space, key);
-      // Tor starts in the background; until it is ready, the space's requests wait for it.
-      applyTor(data.tor).catch(() => undefined);
+      // Tor starts in the background, through the space's bridges if it has any; until it is
+      // ready, the space's requests wait for it.
+      applyTor(data.tor, data.bridges).catch(() => undefined);
       const kept = data.look ?? (await loadLockScreenLook());
       await show(kept);
       setPhase({ kind: 'open', space, passwordLock });

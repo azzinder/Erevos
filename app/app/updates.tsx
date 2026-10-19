@@ -7,8 +7,8 @@ import { Button, Card, Page, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
-import { SHELL, shellFetch } from '../lib/shell';
-import { buildOf, fetchLatestRelease, formatSize, isNewer, RELEASES_PAGE, type Release } from '../lib/updates';
+import { SHELL, shellFetch, shellSystem } from '../lib/shell';
+import { buildOf, fetchLatestRelease, formatSize, isNewer, packageFile, RELEASES_PAGE, type Release } from '../lib/updates';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -16,7 +16,8 @@ import { useColors } from '../theme/context';
 // Updates (home menu → Updates), as in LPHL FASOULI: the installed version and Check for updates.
 // Erevos never looks by itself; only this button asks GitHub (lib/updates.ts). On Android the new
 // version downloads, is checked and installs over this one; on a computer and Sailfish OS the
-// download page opens. The web app updates itself (pwa/), so it has no button.
+// download page opens, and the note says which file there updates this one. The web app updates
+// itself (pwa/), so it has no button.
 
 const supported = Platform.OS === 'android' || SHELL !== null;
 // This app's version (app.config.js sets it for releases) and its build number.
@@ -92,6 +93,7 @@ export default function UpdatesScreen() {
     }
     const found = release;
     const installable = canInstall && found.apk !== null;
+    const file = packageFile(SHELL, shellSystem());
     ask(
       t('Erevos {version} is out', { version: found.version }),
       [
@@ -99,7 +101,9 @@ export default function UpdatesScreen() {
         t('Updating keeps your contacts, chats and settings. A backup first (Backups → Make a backup) covers any surprise.'),
         installable
           ? t('It downloads ({size}), is checked against the release and installs over this one.', { size: formatSize(found.apk!.size) })
-          : t('The download page opens: take the file for this system, see User guide → Updates.'),
+          : file
+            ? t('The download page opens: take {file}, see User guide → Updates.', { file })
+            : t('The download page opens: take the file for this system, see User guide → Updates.'),
       ]
         .filter(Boolean)
         .join('\n\n'),

@@ -16,21 +16,25 @@ import {
   saveMessageNotices,
   saveRingInBackground,
 } from '../lib/background';
+import { BiometricError, biometricOn, turnOffBiometric, turnOnBiometric } from '../lock/biometric';
 import { loadLockConfig, lockWithPassword, removePasswordLock, removeSecondPassword, setLockPassword, type LockConfig } from '../lock/config';
 import { useLock } from '../lock/context';
 import { prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
 import { POCKETS } from '../lock/sealed-file';
 import { currentSpace, newSpaceKey } from '../lock/keys';
 import { EMPTY_SPACE, prepareSpaces, saveSpaceData } from '../lock/space-data';
+import { biometricSealer } from '../modules/erevos-biometric';
 import { useTheme } from '../theme/context';
 
 // What the password sheet sets: this space's own password, its second password, or the
-// password of its hidden chats.
-type Editing = 'own' | 'second' | 'hidden' | null;
+// password of its hidden chats. Or it asks for this space's password, to turn on unlocking with
+// a fingerprint or face.
+type Editing = 'own' | 'second' | 'hidden' | 'biometric' | null;
 
 // Lock settings, as in LPHL FASOULI. Every space shows exactly the same screen, and nothing on it
 // says whether a second password or hidden chats are set (see lock/config.ts and
 // lock/hidden.ts), so the space a second password opens cannot be told apart from the real one.
+// Unlocking with a fingerprint or face shows the same in every space too (lock/biometric.ts).
 export default function Security() {
   const { space, setPasswordLock, lockNow, openSpace } = useLock();
   const { colors, look } = useTheme();
@@ -39,8 +43,13 @@ export default function Security() {
   const [note, setNote] = useState('');
   // Which of the space's places for hidden chats the PIN buttons below are for.
   const [place, setPlace] = useState(0);
+  // Whether a fingerprint or face opens Erevos: null where the phone cannot.
+  const [biometric, setBiometric] = useState<boolean | null>(null);
 
-  const reload = () => loadLockConfig().then(setConfig);
+  const reload = async () => {
+    setConfig(await loadLockConfig());
+    setBiometric(biometricSealer.available() ? await biometricOn(biometricSealer) : null);
+  };
   useEffect(() => {
     reload();
   }, []);
@@ -52,6 +61,7 @@ export default function Security() {
     const ok = await confirm(t('Turn off the lock'), t('Erevos will open without a password. The second password stops working too.'));
     if (!ok) return;
     await removePasswordLock(space, currentSpace().key);
+    await turnOffBiometric(biometricSealer);
     setPasswordLock(false);
     await reload();
     setNote(t('The lock is off.'));
@@ -78,8 +88,26 @@ export default function Security() {
     setNote(t('Saved.'));
   }
 
+  async function turnOffFingerprint() {
+    await turnOffBiometric(biometricSealer);
+    await reload();
+    setNote(t('Saved.'));
+  }
+
   async function submit(password: string) {
     const { key } = currentSpace();
+    if (editing === 'biometric') {
+      try {
+        const prompt = { title: t('Fingerprint or face for Erevos'), cancel: t('Cancel') };
+        if (!(await turnOnBiometric(biometricSealer, space, password, prompt))) return false;
+        setNote(t('Erevos opens with your fingerprint or face too.'));
+      } catch (e) {
+        if (!(e instanceof BiometricError && e.reason === 'cancelled')) throw e;
+      }
+      setEditing(null);
+      await reload();
+      return;
+    }
     if (editing === 'hidden') {
       await setHiddenPassword(space, place, password, null);
     } else if (editing === 'second') {
@@ -136,6 +164,27 @@ export default function Security() {
             </Row>
           </Card>
 
+          {biometric !== null ? (
+            <Card>
+              <Text variant="bodyStrong">{t('Fingerprint or face')}</Text>
+              <Text variant="caption" tone="muted" style={hint}>
+                {biometric
+                  ? t('On: Erevos opens with your fingerprint or face too. The password always works.')
+                  : t('Open Erevos with your fingerprint or face instead of typing the password. The password always works too.')}
+              </Text>
+              <Text variant="caption" tone="muted" style={hint}>
+                {t('It opens only what your first password opens, never the space of a second password or hidden chats. Someone who holds you can press your finger to the phone: if that may happen, keep it off.')}
+              </Text>
+              <Row wrap>
+                {biometric ? (
+                  <Button title={t('Turn off')} kind="secondary" compact onPress={turnOffFingerprint} />
+                ) : (
+                  <Button title={t('Turn on')} kind="secondary" compact onPress={() => setEditing('biometric')} />
+                )}
+              </Row>
+            </Card>
+          ) : null}
+
           <Card>
             <Text variant="bodyStrong">{t('Second password')}</Text>
             <Text variant="caption" tone="muted" style={hint}>
@@ -190,14 +239,16 @@ export default function Security() {
         title={
           editing === 'hidden'
             ? t('Set hidden chats PIN, place {n}', { n: place + 1 })
-            : editing === 'second'
-              ? t('Set second password')
-              : locked
-                ? t('Change password')
-                : t('Set password')
+            : editing === 'biometric'
+              ? t('Fingerprint or face')
+              : editing === 'second'
+                ? t('Set second password')
+                : locked
+                  ? t('Change password')
+                  : t('Set password')
         }
-        repeat
-        submitLabel={t('Save')}
+        repeat={editing !== 'biometric'}
+        submitLabel={editing === 'biometric' ? t('Turn on') : t('Save')}
         onClose={() => setEditing(null)}
         onSubmit={submit}
       />

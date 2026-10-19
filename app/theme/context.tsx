@@ -1,7 +1,9 @@
-import { createContext, useContext, useMemo, useRef, type ReactNode } from 'react';
-import { useColorScheme } from 'react-native';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AppState, useColorScheme } from 'react-native';
 
-import { applyStyle, buildColors, resolveScheme, type Colors } from './colors';
+import { phoneTones } from '../modules/erevos-look';
+
+import { applyStyle, buildColors, resolveScheme, setSystemTones, type Colors, type SystemTones } from './colors';
 import { ensureStyleFonts, styleFonts } from './fonts';
 import { withLook } from './glass';
 import { changeLook, type Look } from './look';
@@ -16,10 +18,25 @@ export interface Theme {
 
 const ThemeContext = createContext<Theme | null>(null);
 
+// The phone's own colours (Material You), read again whenever Erevos comes back to the screen, as
+// a new wallpaper may have changed them.
+function usePhoneTones(): SystemTones | null {
+  const [tones, setTones] = useState(phoneTones);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      const next = phoneTones();
+      setTones((old) => (JSON.stringify(old) === JSON.stringify(next) ? old : next));
+    });
+    return () => subscription.remove();
+  }, []);
+  return tones;
+}
+
 // Gives every screen the colours and shapes of `look`. `onChange` keeps a changed look (the root
-// layout saves it in the open space). The shape tokens are module-level (theme/colors.ts), set
-// here before anything renders, and every component that reads them takes the theme too, so it
-// renders again when they change.
+// layout saves it in the open space). The shape tokens and the phone's colours are module-level
+// (theme/colors.ts), set here before anything renders, and every component that reads them takes
+// the theme too, so it renders again when they change.
 export function ThemeProvider({ look, onChange, children }: {
   look: Look;
   onChange: (look: Look) => Promise<void> | void;
@@ -30,6 +47,8 @@ export function ThemeProvider({ look, onChange, children }: {
   current.current = look;
   // The last style asked for: one asked for while the fonts of another load wins.
   const asked = useRef(0);
+  const tones = usePhoneTones();
+  setSystemTones(tones);
   applyStyle(look.style, styleFonts(look.style), look.look);
 
   const theme = useMemo<Theme>(() => {
@@ -61,7 +80,7 @@ export function ThemeProvider({ look, onChange, children }: {
         await onChange(next);
       },
     };
-  }, [look, system, onChange]);
+  }, [look, system, onChange, tones]);
 
   return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;
 }
