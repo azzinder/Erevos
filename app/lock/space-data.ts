@@ -127,6 +127,18 @@ function write(name: string, key: Uint8Array, change: (data: SpaceData) => Space
 
 export const loadSpaceData = (space: number, key: Uint8Array) => load(entry(space), key);
 
+/** Whether `key` is the one a space's entry is sealed with (sealing is authenticated, so another key fails). */
+export async function opensSpace(space: number, key: Uint8Array): Promise<boolean> {
+  const raw = await secureGet(entry(space));
+  if (!raw) return false;
+  try {
+    decryptText(key, raw);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function saveSpaceData(space: number, key: Uint8Array, data: SpaceData): Promise<void> {
   return write(entry(space), key, () => data);
 }

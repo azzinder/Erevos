@@ -524,7 +524,32 @@ Under **Lock and second password**, **Lock when Erevos opens** has two choices: 
   opens and then updates. It is always the same size, so it tells no one how many chats there are or which spaces
   are used, and it never holds what a disappearing message said.
 
-> There is no way to recover a forgotten password: nothing is stored that could open the data without it.
+> There is no way to recover a forgotten password: nothing is stored that could open the data without it. Only a
+> fingerprint or face, while it is on, still opens the first space (see below).
+
+### Fingerprint or face
+
+On Android 11 and later, with a fingerprint or face set up in the phone's settings, Erevos can open with it too. It
+is off unless you turn it on.
+
+1. With the password lock on, under **Fingerprint or face**, tap **Turn on**.
+2. Type the password of the space you are in, tap **Turn on**, and touch the sensor (or look at the phone).
+3. From then on the password screen has a **Fingerprint or face** button. The password always works too, and
+   **Turn off** turns it off.
+
+- **Only the first password's space:** a fingerprint never opens the space of a second password, nor hidden chats.
+  Turned on in the space a second password opens, it opens nothing: the first time it is tried it turns itself off,
+  and the password opens Erevos. The setting looks the same in every space.
+- **Under pressure:** someone who holds you can press your finger to the phone, or hold it to your face. If that may
+  happen, keep it off: then they need a password, and you can give them the second one.
+- **How it is kept:** the first space's key is sealed by a key in the phone's secure hardware (the Android Keystore)
+  that works only right after a strong fingerprint or face check, once for each use. Adding or removing a
+  fingerprint or face makes Android drop that key: it is then off, and you turn it on again. Nothing leaves the
+  phone.
+- **Which face:** a face counts only where Android rates its face unlock as strong, as on the Pixel 8 and later;
+  elsewhere it is the fingerprint.
+- **Wrong passwords** are counted as before: a fingerprint does not change the count.
+- **Not on a computer or the web:** it is offered only on Android. Turning the lock off turns it off too.
 
 ## Second password {#second}
 
@@ -847,6 +872,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring (on Windows, your account's key); a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
+| **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
 | **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". | |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Not audited. | Photos and voice messages in groups. |
@@ -874,7 +900,9 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
 
 ### I forgot my password.
 
-There is no way to recover it. Erevos keeps nothing that could open your data without it.
+There is no way to recover it. Erevos keeps nothing that could open your data without it. Only if unlocking with a
+[fingerprint or face](#lock) is on does it still open the first space: set a new password there with
+**Change password**.
 
 ### A contact who is near never shows "Nearby".
 
