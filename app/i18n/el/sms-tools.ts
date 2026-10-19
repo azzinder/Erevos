@@ -95,7 +95,8 @@ export const smsTools: Record<string, string> = {
   'Blocked numbers': 'Αποκλεισμένοι αριθμοί',
   "These are Android's own blocked numbers: Android rejects their SMS, MMS and calls. Every space, and the phone app, sees the same list. Block one from its conversation, with ⋮, or here.":
     'Αυτοί είναι οι αποκλεισμένοι αριθμοί του ίδιου του Android: το Android απορρίπτει τα SMS, τα MMS και τις κλήσεις τους. Κάθε χώρος, και η εφαρμογή τηλεφώνου, βλέπει την ίδια λίστα. Απόκλεισε έναν από τη συνομιλία του, με το ⋮, ή εδώ.',
-  'Only the SMS app can see and change them: make Erevos the SMS app above.': 'Μόνο η εφαρμογή SMS μπορεί να τους δει και να τους αλλάξει: κάνε το Erevos εφαρμογή SMS παραπάνω.',
+  'Only the SMS app or the phone app can see and change them: make Erevos the SMS app above.':
+    'Μόνο η εφαρμογή SMS ή η εφαρμογή τηλεφώνου μπορεί να τους δει και να τους αλλάξει: κάνε το Erevos εφαρμογή SMS παραπάνω.',
   'This build of Erevos cannot block numbers yet.': 'Αυτή η έκδοση του Erevos δεν μπορεί ακόμα να αποκλείσει αριθμούς.',
   'No number is blocked.': 'Κανένας αριθμός δεν είναι αποκλεισμένος.',
   'Type one phone number.': 'Γράψε έναν αριθμό τηλεφώνου.',
@@ -122,5 +123,7 @@ export const smsTools: Record<string, string> = {
   'Without the SMS': 'Χωρίς τα SMS',
   'Putting the SMS back into the phone…': 'Τα SMS επιστρέφουν στο τηλέφωνο…',
   "{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.": '{sms} SMS και {mms} MMS επέστρεψαν στα SMS του τηλεφώνου. Όσα είχε ήδη έμειναν όπως ήταν.',
+  'A newer Erevos made this backup: what this one does not know yet stays out. Update Erevos first to restore all of it.':
+    'Αυτό το αντίγραφο το έφτιαξε ένα νεότερο Erevos: ό,τι δεν γνωρίζει ακόμα αυτό εδώ μένει έξω. Ενημέρωσε πρώτα το Erevos για να τα επαναφέρεις όλα.',
   "The SMS could not go back into the phone's SMS: {error}": 'Τα SMS δεν μπόρεσαν να επιστρέψουν στα SMS του τηλεφώνου: {error}',
 };

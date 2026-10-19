@@ -47,6 +47,7 @@ in what it keeps sealed; hidden chats are searched only from inside them.
 | **Public groups** | A group anyone with its link can ask to join, with an owner and admins. See [Public groups](#public-groups). |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
 | **LoRa radio** | Texts over a Meshtastic radio, kilometres away, without internet; off unless set. See [Over a LoRa radio](#lora). |
+| **Contacts** | The phone's contacts, with their groups and birthdays, and contacts kept only in Erevos. See [Contacts](#contacts). |
 | **Linked devices** | The same account on a computer or in a browser too. See [Linked devices](#devices). |
 | **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
@@ -691,7 +692,7 @@ chats in one list.
   before Erevos is opened.
 - **Block:** **Block** in the menu of a conversation, or **Blocked numbers** under **SMS** in the menu, puts a number
   in Android's own list of blocked numbers: Android rejects its SMS, MMS and calls, and every space and the phone app
-  see the same list. Only the SMS app may see and change it.
+  see the same list. Only the SMS app or the phone app may see and change it.
 - **Drafts:** what you type and do not send stays with that conversation, and the list shows it as **Draft**. An SMS
   that could not go stays there as the draft too.
 - **Taking an SMS back:** an SMS you send waits 5 seconds at the end of the conversation first: tap it then to take
@@ -714,7 +715,8 @@ phone app**. Every call then shows on Erevos's own call screen, and tel: links a
 Erevos's keypad.
 
 - **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them; while
-  Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them. It shows over the
+  Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them, and so does the
+  number of a contact kept only in Erevos; that of a contact of open hidden chats, only while they are open. It shows over the
   lock screen and needs no password, as a call has to be answered with Erevos locked. A call that comes shows
   **Answer**, **Decline** and **Message**, and Android rings with the contact's own ringtone; the volume keys quiet
   it. In a call: **Mute**, **Keypad** for the tones a menu asks for, **Speaker**, **Hold**, **Add call** and **End**.
@@ -739,6 +741,10 @@ Erevos's keypad.
   the same number show once, with how many. **☏** calls back; a tap on the row shows its calls, how long each lasted,
   and **Call** (with two SIMs, one for each), **Send an SMS** and **Change the number before calling**. Seen there,
   missed calls leave Android's notice, and that notice opens **Recents**.
+- **Deleting calls:** in the row's calls, **Delete this call** (or **Delete these 3 calls**, for a row of several)
+  deletes them from Android's call history, **Delete** beside one of several deletes only that one, and
+  **Delete every call with this number**, when it has more, deletes them all, the older ones too. **Undo** shows for
+  a few seconds first; until then they only hide.
 - **Favourites:** the contacts starred in your phone's contacts, with their photos. A tap calls the contact's
   default number, or asks which when there are several and none is the default; held down, it shows them all.
 - **Wi-Fi calling and HD voice:** the call screen says so under the name when a call goes over Wi-Fi or with HD
@@ -753,11 +759,16 @@ Erevos's keypad.
   notice; it shows in **Recents**, under **Blocked**. Android asks once whether Erevos may screen calls
   (**Let Erevos screen calls**): without that, a blocked call rings a moment before Erevos ends it. What is blocked
   is the same in every space, so it tells nothing of another, and is kept on the phone with no names.
+- **Blocked numbers:** under **Phone** → **Settings**, **Blocked numbers** is Android's own list, the same one as
+  under **SMS**: type a number and tap **Block**, or tap one to unblock it. In **Recents**, a row's calls show
+  **Block this number** or **Unblock this number**, with **Undo**. Android rejects their calls before they ring, and
+  their SMS and MMS. Every space sees the same list.
 - **A contact group for a while:** under **Phone** → **Settings**, **Block a contact group** lists the groups (the
   labels) of your phone's contacts. **Block** beside one blocks its contacts' calls **For an hour**,
   **Until tomorrow morning** (7:00) or **Until I lift it**; the line under the group says until when, and **Lift**
   ends it sooner. Such a call is blocked like the others: it does not ring, and shows in **Recents**, under
-  **Blocked**. Erevos only reads the groups, and keeps the group's id and the time, not its name.
+  **Blocked**. Erevos only reads the groups, and keeps the group's id and the time, not its name. While a group is
+  blocked, the **Phone** screen says so at the top, until when, with **Lift**.
 - **Erevos's password:** the **Phone** screen, with the keypad, the calls and the favourites, is behind it like the
   rest of Erevos. Only the call screen is not.
 - **If Erevos does not become the phone app:** as with SMS, Android 15 and later can hold it back from an app
@@ -768,6 +779,82 @@ Erevos's keypad.
 - **After the phone restarts:** until you unlock the phone for the first time, Android's own call screen answers.
 - **What a phone call is:** a plain phone call, as with every phone app: the phone company carries it and can
   listen. Calls to your Erevos contacts from a chat are another thing: end-to-end encrypted, through the internet.
+
+## Contacts {#contacts}
+
+On Android, **Contacts** in the menu shows the phone's contacts: the ones in Android's own contacts, which your
+other apps use too, so there is nothing to import. Android asks once whether Erevos may read and change them
+(**Allow contacts**). They have an icon of their own in the phone's apps too, **Contacts** with Erevos's icon,
+which opens them behind Erevos's lock.
+
+- **Finding someone:** **Search contacts** looks in every field: names, numbers (however they are written, with or
+  without the country code), emails, addresses, the company, the birthday and the note. **Favourites** shows only
+  the contacts with a star.
+- **A contact:** tap one to see all of it. Tap a number to call it, or **SMS** beside it to write to it in Erevos;
+  tap an email or an address to open it. **Add to favourites** at the top gives it a star, in Android's contacts,
+  so the phone app lists it among the favourites too.
+- **New contact** and **Edit:** first and last name, company and job title, as many numbers, emails and addresses
+  as you need, each with its kind (**Mobile**, **Home**, **Work**, **Other**), a birthday (day/month/year, or
+  day/month) and a note. A new contact is kept **On this phone only**, or in an account the phone syncs contacts
+  with (Google), as you choose. What Erevos does not show of a contact, such as another app's own details, stays as
+  it was.
+- **Photo:** tap the picture at the top of a contact to **Choose a photo** from the phone's photos, **Take photo**
+  with the camera, or **Remove the photo**. You cut it square, and Erevos draws it anew, so nothing the photo said
+  besides its picture (a place, a phone) is kept. It is kept with the contact in Android's contacts, where the phone
+  shows it when they call.
+- **Ringtone:** on a contact, **Choose ringtone** opens Android's own picker, with the phone's sounds and those you
+  added; the phone rings with it when that contact calls. **Default ringtone** there gives back the phone's own.
+- **.vcf files:** **Import from a .vcf file** in the menu of Contacts reads a vCard file that another phone or app
+  saved (any of its versions, old Greek phones' too) and saves those not on the phone yet, with their photos and
+  groups, on this phone only or in an account. **Save as a .vcf file** there saves the contacts shown (all of them,
+  the favourites, a group, or what the search found) as one file, in a folder you choose; on a contact, it saves
+  that one. The file is outside Erevos and not sealed: anyone who has it can read the contacts.
+- **QR codes:** **QR code** on a contact shows its vCard as a QR code, which another phone's camera reads as a
+  contact to add: its name, numbers, emails, addresses and note, without its photo (a long note or many addresses
+  are left out to fit). Whoever sees it can read it. **Read a contact's QR code** in the menu reads one from a photo
+  you take or choose, here on the phone, and starts a new contact with it, saved only when you save it.
+- **Duplicates:** **Find duplicates** in the menu lists the contacts that look like the same person kept twice: the
+  same name (its words in any order), number or email. **Merge** keeps the fullest of them, with every number, email
+  and address of the others, their notes, and their photo, ringtone, star and groups when it has none, and deletes
+  the others; **Merge all** does so for every set. **Not the same** hides a set until you open the list again.
+- **Birthdays:** the **Birthdays** chip under the search lists the contacts with a birthday, the next one first,
+  with how many days are left and the age they turn. **Birthday reminders** in the menu (off at first) puts a notice
+  on the morning of each one, from 9:00, even with Erevos closed; on the lock screen it says only that there is a
+  birthday. They are the phone's contacts' birthdays only, never those of contacts kept only in Erevos.
+- **SIM contacts** in the menu reads the contacts on the phone's SIM cards and copies those not on the phone yet
+  (all chosen at first) into Android's contacts, on this phone only or in an account. The SIM keeps its own.
+- **Only in Erevos:** under **Kept in**, a new contact can be kept **Only in Erevos** instead: sealed in this space
+  like its chats, never in Android's contacts, so no other app or account sees it, and other apps show only its
+  number; Erevos's call screen shows its name while Erevos is unlocked. It has a lock in the list, and the **Only in
+  Erevos** chip shows just those.
+  **Keep only in Erevos** on a phone contact moves it in, with its photo and star, and deletes it from the phone's
+  contacts; **Move to the phone's contacts** takes it back out. Its photo is sealed with it. Groups, ringtones and
+  birthday reminders are Android's, so it has none. A call or SMS to it still goes through the phone, and shows in
+  the phone's call log and SMS like any other. An Erevos backup holds these contacts, sealed.
+- **In hidden chats:** **Contacts** at the top of open hidden chats lists their own contacts, kept only there and
+  sealed with them: they show nowhere else, not even in the space's contacts, and the screen shows nothing once the
+  hidden chats close. A new contact there is always one of theirs. They take no photo, file or menu, as those leave
+  Erevos, which closes the hidden chats; so does calling one, which goes through the phone app and its call log.
+- **Erevos contacts:** a contact that is the same person as one of your chats' Erevos contacts shows as one card with
+  it: by a number linked to them in Erevos, or with **Link to an Erevos contact** on its card, a link sealed in the
+  space, never in Android's contacts (**Not this Erevos contact** undoes it). The card then has **Message**, **Call**
+  and **Video**, end-to-end encrypted through Erevos instead of the phone company. A chats' contact that no contact is
+  has a card of its own, with the shield, where **Add to contacts** makes one; the **Erevos contacts** chip lists them
+  all. In hidden chats, these are the hidden chats' own contacts, and their chat opens there.
+- **History:** a contact's card lists its latest calls in the phone's call log, its SMS and its messages in Erevos,
+  the newest first; tap one to call back, write an SMS or open the chat. The calls show once you let Erevos read the
+  call log (**Show calls**). Erevos only reads them to show them, and keeps no copy.
+- **Other apps:** another app's **Add to contacts** (a number in the phone app, an email in mail) can open in Erevos:
+  a new contact with what that app gave, or the list to tap the contact to add it to. An app that shows or changes a
+  contact can open it in Erevos too, behind Erevos's lock. Android asks which app to use; choose Erevos. An app that
+  asks you to pick a contact, or a number, email or address, gets only the one you tap, from the phone's contacts:
+  those kept only in Erevos never show there.
+- **Delete** takes the contact off the phone, from every account it is kept in; one kept only in Erevos, from Erevos.
+- **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
+  Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,
+  **Rename** it or **Delete group** (its contacts stay). On a contact, **Choose groups** puts it in groups or takes
+  it out. The chips under the search show one group's contacts. A group is kept in an account, as its contacts are:
+  a contact joins it only if it is kept in that account too.
 
 ## Password lock {#lock}
 
@@ -895,6 +982,8 @@ home screen's menu.
 - **Not in a backup:** photos and files, not yet: a backup is made in the phone's memory, and they would not fit. A
   backup restored on the same phone shows them again; on another phone they show as not on it. Also left out: the
   count of wrong passwords, and how automatic backups are set.
+- **A backup from a newer Erevos:** Erevos 0.1.8 and later open it too, and restore all of it they know; before
+  that, they say some of it stays out. Update Erevos first to restore all of it.
 
 ## Imported chats {#import}
 
@@ -1176,7 +1265,9 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it, and with bridges, for where Tor is blocked, the network sees only a bridge. Snowflake's broker and STUN servers see your address. | Tor on a computer. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
-| **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos only reads it, and the favourites, to show them, and keeps no copy. The SIM chosen for each number is sealed in the space; the quick replies, and what is blocked (prefixes, group ids and times only, the same for every space), are kept on the phone, not sealed. | |
+| **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. A contact's calls and SMS are read from the phone's own call log and SMS only to show its history, and kept nowhere. | |
+| **Contacts kept only in Erevos** | Sealed with the space's key, or with the hidden chats' for theirs, in one file for every space whose size shows roughly how many there are in all, not whose they are; their photos each in a file of its own. Never in Android's contacts. Calls and SMS to them go through the phone, and show in its call log and SMS. | |
+| **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos reads it, and the favourites, to show them, deletes from it only the calls you delete, and keeps no copy. The SIM chosen for each number is sealed in the space; the quick replies, and what is blocked (prefixes, group ids and times only, the same for every space), are kept on the phone, not sealed. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |

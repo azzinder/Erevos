@@ -1,11 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
-  <!-- What the phone app role gives: calling, the phone's state (its SIMs), the call history, and
-       names and photos from the phone's contacts. -->
+  <!-- What the phone app role gives: calling, the phone's state (its SIMs), the call history (to
+       read it and delete calls from it), and names and photos from the phone's contacts. -->
   <uses-permission android:name="android.permission.CALL_PHONE" />
   <uses-permission android:name="android.permission.READ_PHONE_STATE" />
   <uses-permission android:name="android.permission.READ_CALL_LOG" />
+  <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
   <uses-permission android:name="android.permission.READ_CONTACTS" />
   <!-- The call notices, the call screen over the lock screen, the screen off at the ear. -->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

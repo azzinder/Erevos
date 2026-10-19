@@ -1,0 +1,247 @@
+// The Greek of the Contacts screens: the phone's contacts, their groups, merging, vCards, QR codes,
+// birthdays and contacts kept only in Erevos (app/contacts.tsx and what goes with it) (i18n/el/index.ts).
+export const contacts: Record<string, string> = {
+  "The phone's contacts, their groups and birthdays": 'Οι επαφές του τηλεφώνου, οι ομάδες και τα γενέθλιά τους',
+  'This build of Erevos has no contacts part yet. It comes with the next build of the app.': 'Αυτή η έκδοση του Erevos δεν έχει ακόμα επαφές. Θα έρθουν με την επόμενη έκδοση της εφαρμογής.',
+  "Only Erevos on Android reads the phone's contacts.": 'Μόνο το Erevos σε Android διαβάζει τις επαφές του τηλεφώνου.',
+  'Search contacts': 'Αναζήτηση επαφών',
+  "Erevos may not read the phone's contacts yet": 'Το Erevos δεν έχει ακόμα άδεια να διαβάζει τις επαφές του τηλεφώνου',
+  "Erevos reads and changes them only in Android's own contacts, where they stay for your other apps. It sends them nowhere.":
+    'Το Erevos τις διαβάζει και τις αλλάζει μόνο στις επαφές του ίδιου του Android, όπου μένουν και για τις άλλες σου εφαρμογές. Δεν τις στέλνει πουθενά.',
+  'Allow contacts': 'Να επιτρέπονται οι επαφές',
+  "Without it, Erevos cannot show the phone's contacts. Allow Contacts in Erevos's App info.":
+    'Χωρίς αυτήν, το Erevos δεν μπορεί να δείξει τις επαφές του τηλεφώνου. Επίτρεψε τις Επαφές στις «Πληροφορίες εφαρμογής» του Erevos.',
+  "The phone's contacts could not be read: {error}": 'Οι επαφές του τηλεφώνου δεν διαβάστηκαν: {error}',
+  'No contact has “{query}” in it.': 'Καμία επαφή δεν περιέχει «{query}».',
+  'No favourites yet. Tap the star on a contact.': 'Καμία αγαπημένη ακόμα. Πάτα το αστέρι σε μια επαφή.',
+  'No contacts yet.': 'Καμία επαφή ακόμα.',
+  "These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them. Those with a lock are kept only in Erevos, sealed in this space.":
+    'Αυτές είναι οι επαφές του τηλεφώνου, στις επαφές του ίδιου του Android: τις βλέπει κάθε εφαρμογή που έχει άδεια να τις διαβάζει, και μπορεί να τις συγχρονίζει ένας λογαριασμός (Google). Όσες έχουν λουκέτο φυλάγονται μόνο στο Erevos, σφραγισμένες σε αυτόν τον χώρο.',
+  'New contact': 'Νέα επαφή',
+
+  // One contact.
+  'This contact is no longer on the phone.': 'Αυτή η επαφή δεν υπάρχει πια στο τηλέφωνο.',
+  'Delete contact': 'Διαγραφή επαφής',
+  'Delete {name} from the phone? It goes from every account it is kept in, and cannot be brought back.':
+    'Διαγραφή της επαφής {name} από το τηλέφωνο; Φεύγει από κάθε λογαριασμό όπου φυλάγεται, και δεν μπορεί να επανέλθει.',
+  'Remove from favourites': 'Αφαίρεση από τις αγαπημένες',
+  'Add to favourites': 'Προσθήκη στις αγαπημένες',
+  'Favourite': 'Αγαπημένη',
+  'Birthday': 'Γενέθλια',
+  'Note': 'Σημείωση',
+  'Edit': 'Επεξεργασία',
+  'Mobile': 'Κινητό',
+  'Home': 'Σπίτι',
+  'Work': 'Εργασία',
+  'Main': 'Κύριο',
+  'Fax': 'Φαξ',
+  'Pager': 'Βομβητής',
+  'Other': 'Άλλο',
+  'Birthday today, turns {age}': 'Γενέθλια σήμερα, κλείνει τα {age}',
+  'Birthday today': 'Γενέθλια σήμερα',
+  'Birthday tomorrow, turns {age}': 'Γενέθλια αύριο, κλείνει τα {age}',
+  'Birthday tomorrow': 'Γενέθλια αύριο',
+  'Birthday in {n} days, turns {age}': 'Γενέθλια σε {n} ημέρες, κλείνει τα {age}',
+  'Birthday in {n} days': 'Γενέθλια σε {n} ημέρες',
+  'Add a photo': 'Προσθήκη φωτογραφίας',
+  'Choose a photo': 'Επιλογή φωτογραφίας',
+  'Remove the photo': 'Αφαίρεση της φωτογραφίας',
+  "The photo is kept with the contact in Android's contacts, where the phone shows it when they call, and its account (Google) syncs it.":
+    'Η φωτογραφία φυλάγεται μαζί με την επαφή στις επαφές του Android, όπου το τηλέφωνο τη δείχνει όταν σε καλούν, και ο λογαριασμός της (Google) τη συγχρονίζει.',
+  'Ringtone': 'Ήχος κλήσης',
+  "The phone's own": 'Ο ήχος του τηλεφώνου',
+  'A ringtone of its own': 'Δικός της ήχος',
+  'Choose ringtone': 'Επιλογή ήχου κλήσης',
+
+  // Writing a contact.
+  'Edit contact': 'Επεξεργασία επαφής',
+  'First name': 'Όνομα',
+  'Last name': 'Επώνυμο',
+  'Company': 'Εταιρεία',
+  'Job title': 'Θέση',
+  'Phone numbers': 'Αριθμοί τηλεφώνου',
+  'Add a number': 'Προσθήκη αριθμού',
+  'Emails': 'Email',
+  'Add an email': 'Προσθήκη email',
+  'Addresses': 'Διευθύνσεις',
+  'Add an address': 'Προσθήκη διεύθυνσης',
+  'Day/month/year, or day/month without the year.': 'Ημέρα/μήνας/έτος, ή ημέρα/μήνας χωρίς το έτος.',
+  'Write the birthday as day/month/year, or day/month.': 'Γράψε τα γενέθλια ως ημέρα/μήνα/έτος, ή ημέρα/μήνα.',
+  'Give the contact a name, a number or an email.': 'Δώσε στην επαφή όνομα, αριθμό ή email.',
+  'Kept in': 'Φυλάγεται',
+  'On this phone only': 'Μόνο σε αυτό το τηλέφωνο',
+  "In Android's contacts, synced with {account}.": 'Στις επαφές του Android, συγχρονισμένη με το {account}.',
+  "In Android's contacts on this phone, synced nowhere.": 'Στις επαφές του Android σε αυτό το τηλέφωνο, χωρίς συγχρονισμό πουθενά.',
+
+  // Groups.
+  'Groups': 'Ομάδες',
+  'Family, Work, and your own: make, rename, who is in them': 'Οικογένεια, Εργασία, και δικές σου: δημιουργία, μετονομασία, ποιοι είναι μέσα',
+  "Android's own groups of contacts, such as Family or Work. Your other apps see them too, and an account (Google) syncs its own.":
+    'Οι ομάδες επαφών του ίδιου του Android, όπως Οικογένεια ή Εργασία. Τις βλέπουν και οι άλλες σου εφαρμογές, και ένας λογαριασμός (Google) συγχρονίζει τις δικές του.',
+  'No groups yet.': 'Καμία ομάδα ακόμα.',
+  'Group without a name': 'Ομάδα χωρίς όνομα',
+  'Family': 'Οικογένεια',
+  'A contact joins a group only in the account the group is kept in.': 'Μια επαφή μπαίνει σε μια ομάδα μόνο στον λογαριασμό όπου φυλάγεται η ομάδα.',
+  'The group could not be made. {error}': 'Η ομάδα δεν δημιουργήθηκε. {error}',
+  'This group is no longer on the phone.': 'Αυτή η ομάδα δεν υπάρχει πια στο τηλέφωνο.',
+  'Delete group': 'Διαγραφή ομάδας',
+  'Delete the group {name}? Its contacts stay on the phone.': 'Διαγραφή της ομάδας {name}; Οι επαφές της μένουν στο τηλέφωνο.',
+  'Add contacts': 'Προσθήκη επαφών',
+  'No one in this group yet.': 'Κανείς σε αυτή την ομάδα ακόμα.',
+  'Take {name} out of the group': 'Αφαίρεση της επαφής {name} από την ομάδα',
+  '{n} contact could not join: it is kept in another account than this group.': '{n} επαφή δεν μπήκε: φυλάγεται σε άλλον λογαριασμό από αυτή την ομάδα.',
+  '{n} contacts could not join: they are kept in another account than this group.': '{n} επαφές δεν μπήκαν: φυλάγονται σε άλλον λογαριασμό από αυτή την ομάδα.',
+  'Add {n} contact': 'Προσθήκη {n} επαφής',
+  'Add {n} contacts': 'Προσθήκη {n} επαφών',
+  'In no group': 'Σε καμία ομάδα',
+  'Choose groups': 'Επιλογή ομάδων',
+  'No groups yet. Make one under Groups in the menu of Contacts.': 'Καμία ομάδα ακόμα. Φτιάξε μία στις Ομάδες, στο μενού των Επαφών.',
+  '{name} is kept in another account than the group {group}, so it cannot join it.': 'Η επαφή {name} φυλάγεται σε άλλον λογαριασμό από την ομάδα {group}, οπότε δεν μπορεί να μπει σε αυτήν.',
+
+  // vCard files.
+  'Import from a .vcf file': 'Εισαγωγή από αρχείο .vcf',
+  'Contacts another phone or app saved as a vCard': 'Επαφές που αποθήκευσε άλλο τηλέφωνο ή εφαρμογή ως vCard',
+  'Save as a .vcf file': 'Αποθήκευση ως αρχείο .vcf',
+  'The {n} contact shown, in a folder you choose': 'Η {n} επαφή που φαίνεται, σε φάκελο που διαλέγεις',
+  'The {n} contacts shown, in a folder you choose': 'Οι {n} επαφές που φαίνονται, σε φάκελο που διαλέγεις',
+  'Saved as {name}. The file is outside Erevos: anyone who has it can read these contacts.':
+    'Αποθηκεύτηκε ως {name}. Το αρχείο είναι έξω από το Erevos: όποιος το έχει μπορεί να διαβάσει αυτές τις επαφές.',
+  'Saved as {name}. The file is outside Erevos: anyone who has it can read this contact.':
+    'Αποθηκεύτηκε ως {name}. Το αρχείο είναι έξω από το Erevos: όποιος το έχει μπορεί να διαβάσει αυτή την επαφή.',
+  'Import contacts': 'Εισαγωγή επαφών',
+  'Choose a .vcf file (a vCard), as other phones and apps save their contacts. Erevos reads it here and sends it nowhere.':
+    'Διάλεξε ένα αρχείο .vcf (vCard), όπως αποθηκεύουν τις επαφές τους άλλα τηλέφωνα και εφαρμογές. Το Erevos το διαβάζει εδώ και δεν το στέλνει πουθενά.',
+  'Choose a .vcf file': 'Επιλογή αρχείου .vcf',
+  'There are no contacts in {file}.': 'Δεν υπάρχουν επαφές στο {file}.',
+  'The file is larger than {n} MB.': 'Το αρχείο είναι μεγαλύτερο από {n} MB.',
+  'It has {n} contact.': 'Έχει {n} επαφή.',
+  'It has {n} contacts.': 'Έχει {n} επαφές.',
+  '{n} of them is on the phone already, and is left out.': '{n} από αυτές είναι ήδη στο τηλέφωνο, και παραλείπεται.',
+  '{n} of them are on the phone already, and are left out.': '{n} από αυτές είναι ήδη στο τηλέφωνο, και παραλείπονται.',
+  'Importing… {done} of {total}': 'Εισαγωγή… {done} από {total}',
+  'Import {n} contact': 'Εισαγωγή {n} επαφής',
+  'Import {n} contacts': 'Εισαγωγή {n} επαφών',
+  'Nothing new to import.': 'Τίποτα καινούργιο για εισαγωγή.',
+  '{n} contact imported.': '{n} επαφή εισήχθη.',
+  '{n} contacts imported.': '{n} επαφές εισήχθησαν.',
+  '{n} contact could not be saved.': '{n} επαφή δεν αποθηκεύτηκε.',
+  '{n} contacts could not be saved.': '{n} επαφές δεν αποθηκεύτηκαν.',
+
+  // QR codes.
+  'This contact holds too much for a QR code. Save it as a .vcf file instead.': 'Αυτή η επαφή έχει πάρα πολλά για έναν κωδικό QR. Αποθήκευσέ την καλύτερα ως αρχείο .vcf.',
+  "Another phone's camera reads it as a contact to add: its name, numbers, emails, addresses and note, without its photo. Whoever sees the code can read it.":
+    'Η κάμερα ενός άλλου τηλεφώνου τον διαβάζει ως επαφή για προσθήκη: το όνομα, τους αριθμούς, τα email, τις διευθύνσεις και τη σημείωσή της, χωρίς τη φωτογραφία της. Όποιος βλέπει τον κωδικό μπορεί να τον διαβάσει.',
+  "Another phone's camera reads it as a contact to add, without its photo, and without its note or addresses, which do not fit. Whoever sees the code can read it.":
+    'Η κάμερα ενός άλλου τηλεφώνου τον διαβάζει ως επαφή για προσθήκη, χωρίς τη φωτογραφία της, και χωρίς τη σημείωση ή τις διευθύνσεις, που δεν χωράνε. Όποιος βλέπει τον κωδικό μπορεί να τον διαβάσει.',
+  "Read a contact's QR code": 'Ανάγνωση κωδικού QR επαφής',
+  'From a photo of it, read on the phone': 'Από μια φωτογραφία του, με ανάγνωση στο τηλέφωνο',
+  'Take a photo of the code, or choose one. It is read here and not kept; what it holds starts a new contact, saved only when you save it.':
+    'Τράβηξε μια φωτογραφία του κωδικού ή διάλεξε μία. Διαβάζεται εδώ και δεν κρατιέται· ό,τι έχει ξεκινά μια νέα επαφή, που αποθηκεύεται μόνο όταν την αποθηκεύσεις.',
+  'This QR code holds no contact.': 'Αυτός ο κωδικός QR δεν έχει επαφή.',
+  'No QR code was found in the photo. Take it again closer, with all of the code in it.': 'Δεν βρέθηκε κωδικός QR στη φωτογραφία. Τράβηξέ τη ξανά πιο κοντά, με όλο τον κωδικό μέσα.',
+
+  // Duplicates.
+  'Find duplicates': 'Εύρεση διπλών',
+  'The same person kept twice, to merge into one': 'Το ίδιο άτομο αποθηκευμένο δύο φορές, για συγχώνευση σε ένα',
+  'There is nothing to merge.': 'Δεν υπάρχει τίποτα για συγχώνευση.',
+  'The same name': 'Ίδιο όνομα',
+  'The same number': 'Ίδιος αριθμός',
+  'The same email': 'Ίδιο email',
+  'Merge': 'Συγχώνευση',
+  'Merge these {n} into {name}? The others are deleted, from every account they are kept in.': 'Συγχώνευση αυτών των {n} στην επαφή {name}; Οι άλλες διαγράφονται, από κάθε λογαριασμό όπου φυλάγονται.',
+  'Merge all': 'Συγχώνευση όλων',
+  'Merge {n} set of contacts, each into its fullest? The others are deleted.': 'Συγχώνευση {n} σετ επαφών στην πιο πλήρη του; Οι άλλες διαγράφονται.',
+  'Merge {n} sets of contacts, each into its fullest? The others are deleted.': 'Συγχώνευση {n} σετ επαφών, του καθενός στην πιο πλήρη του; Οι άλλες διαγράφονται.',
+  '{n} set could not be merged.': '{n} σετ δεν συγχωνεύτηκε.',
+  '{n} sets could not be merged.': '{n} σετ δεν συγχωνεύτηκαν.',
+  'Duplicates': 'Διπλές επαφές',
+  'Contacts that look like the same person: the same name, number or email. Merging keeps the fullest, with every number, email and address of the others, and deletes the others.':
+    'Επαφές που μοιάζουν να είναι το ίδιο άτομο: ίδιο όνομα, αριθμός ή email. Η συγχώνευση κρατά την πιο πλήρη, με κάθε αριθμό, email και διεύθυνση των άλλων, και διαγράφει τις άλλες.',
+  'No duplicates found.': 'Δεν βρέθηκαν διπλές επαφές.',
+  'Not the same': 'Δεν είναι ίδιες',
+  'Kept, with the others in it': 'Μένει, με τις άλλες μέσα της',
+
+  // Birthdays.
+  'Birthdays': 'Γενέθλια',
+  "Without notices, Erevos cannot remind you of birthdays. Allow Notifications in Erevos's App info.":
+    'Χωρίς ειδοποιήσεις, το Erevos δεν μπορεί να σου θυμίζει γενέθλια. Επίτρεψε τις Ειδοποιήσεις στις «Πληροφορίες εφαρμογής» του Erevos.',
+  'No contact has a birthday yet. Add one in Edit.': 'Καμία επαφή δεν έχει ακόμα γενέθλια. Πρόσθεσε στην Επεξεργασία.',
+  'Birthday reminders: on': 'Υπενθυμίσεις γενεθλίων: ναι',
+  'Birthday reminders: off': 'Υπενθυμίσεις γενεθλίων: όχι',
+  "A notice on the morning of each phone contact's birthday": 'Μια ειδοποίηση το πρωί των γενεθλίων κάθε επαφής του τηλεφώνου',
+
+  // The SIM.
+  'SIM contacts': 'Επαφές SIM',
+  'Copy the contacts on the SIM card to the phone': 'Αντιγραφή των επαφών της κάρτας SIM στο τηλέφωνο',
+  "The contacts kept on the phone's SIM cards. Copied, they are in Android's contacts like the others; the SIM keeps its own.":
+    'Οι επαφές που φυλάγονται στις κάρτες SIM του τηλεφώνου. Όταν αντιγραφούν, είναι στις επαφές του Android όπως οι άλλες· η SIM κρατά τις δικές της.',
+  'Reading the SIM…': 'Ανάγνωση της SIM…',
+  'No contacts on the SIM, or the phone does not let Erevos read it.': 'Δεν υπάρχουν επαφές στη SIM, ή το τηλέφωνο δεν αφήνει το Erevos να τη διαβάσει.',
+  'The SIM has {n} contact.': 'Η SIM έχει {n} επαφή.',
+  'The SIM has {n} contacts.': 'Η SIM έχει {n} επαφές.',
+  'Copying… {done} of {total}': 'Αντιγραφή… {done} από {total}',
+  'Copy {n} contact to the phone': 'Αντιγραφή {n} επαφής στο τηλέφωνο',
+  'Copy {n} contacts to the phone': 'Αντιγραφή {n} επαφών στο τηλέφωνο',
+  'Choose who to copy': 'Διάλεξε ποιες θα αντιγραφούν',
+  '{n} contact copied to the phone.': '{n} επαφή αντιγράφηκε στο τηλέφωνο.',
+  '{n} contacts copied to the phone.': '{n} επαφές αντιγράφηκαν στο τηλέφωνο.',
+  'SIM {n}': 'SIM {n}',
+
+  // Kept only in Erevos, and in hidden chats.
+  'Only in Erevos': 'Μόνο στο Erevos',
+  "Sealed in this space, and not in the phone's contacts: no other app sees it, nor any account the phone syncs with.":
+    'Σφραγισμένη σε αυτόν τον χώρο, και όχι στις επαφές του τηλεφώνου: δεν τη βλέπει άλλη εφαρμογή, ούτε κάποιος λογαριασμός με τον οποίο συγχρονίζεται το τηλέφωνο.',
+  'No contact is kept only in Erevos yet. Choose Only in Erevos when you make one.':
+    'Καμία επαφή δεν φυλάγεται ακόμα μόνο στο Erevos. Διάλεξε «Μόνο στο Erevos» όταν φτιάχνεις μία.',
+  'Erevos keeps {n} contacts of its own at most.': 'Το Erevos κρατά το πολύ {n} δικές του επαφές.',
+  'This contact is no longer kept in Erevos.': 'Αυτή η επαφή δεν φυλάγεται πια στο Erevos.',
+  'Delete {name}? It is kept only in Erevos, and cannot be brought back.': 'Να διαγραφεί η επαφή {name}; Φυλάγεται μόνο στο Erevos, και δεν θα μπορεί να επανέλθει.',
+  'Keep only in Erevos': 'Κράτα τη μόνο στο Erevos',
+  "Move {name} into Erevos? It is sealed in this space and deleted from the phone's contacts, from every account it is kept in: other apps no longer see it, and the phone no longer shows its name when it calls.":
+    'Να μεταφερθεί η επαφή {name} στο Erevos; Σφραγίζεται σε αυτόν τον χώρο και διαγράφεται από τις επαφές του τηλεφώνου, από κάθε λογαριασμό όπου φυλάγεται: δεν τη βλέπουν πια άλλες εφαρμογές, και το τηλέφωνο δεν δείχνει πια το όνομά της όταν καλεί.',
+  "Move to the phone's contacts": 'Μεταφορά στις επαφές του τηλεφώνου',
+  "Move {name} to the phone's contacts? Every app allowed to read them sees it there, and it is no longer kept in Erevos.":
+    'Να μεταφερθεί η επαφή {name} στις επαφές του τηλεφώνου; Εκεί τη βλέπει κάθε εφαρμογή που έχει άδεια να τις διαβάζει, και δεν φυλάγεται πια στο Erevos.',
+  "Kept only in Erevos, sealed in this space. Not in the phone's contacts.": 'Φυλάγεται μόνο στο Erevos, σφραγισμένη σε αυτόν τον χώρο. Δεν είναι στις επαφές του τηλεφώνου.',
+  'The photo is sealed with the contact, in a file of its own: only Erevos shows it.':
+    'Η φωτογραφία σφραγίζεται μαζί με την επαφή, σε δικό της αρχείο: μόνο το Erevos τη δείχνει.',
+  'Hidden contacts': 'Κρυφές επαφές',
+  'The hidden chats are closed.': 'Οι κρυφές συνομιλίες έκλεισαν.',
+  "Kept only here, sealed with the hidden chats: they show nowhere else, not even in the space's contacts.":
+    'Φυλάγονται μόνο εδώ, σφραγισμένες μαζί με τις κρυφές συνομιλίες: δεν φαίνονται πουθενά αλλού, ούτε καν στις επαφές του χώρου.',
+  'Kept only in these hidden chats, sealed.': 'Φυλάγεται μόνο σε αυτές τις κρυφές συνομιλίες, σφραγισμένη.',
+  'favourite': 'αγαπημένη',
+  'only in Erevos': 'μόνο στο Erevos',
+
+  // Erevos contacts, and a contact's history.
+  'Erevos contacts': 'Επαφές Erevos',
+  'Erevos contact': 'Επαφή Erevos',
+  'with an Erevos chat': 'με συνομιλία στο Erevos',
+  'No Erevos contacts yet. Add one in Chat, with their link or QR code.':
+    'Καμία επαφή Erevos ακόμα. Πρόσθεσε μία στη Συνομιλία, με τον σύνδεσμο ή τον κωδικό QR της.',
+  'A contact of your Erevos chats. Add it to your contacts to give it numbers, an email and more.':
+    'Επαφή των συνομιλιών σου στο Erevos. Πρόσθεσέ τη στις επαφές σου για να της δώσεις αριθμούς, email και άλλα.',
+  'In Erevos': 'Στο Erevos',
+  'The Erevos contact {name}': 'Η επαφή Erevos {name}',
+  'End-to-end encrypted, through Erevos instead of the phone company.':
+    'Κρυπτογραφημένα από άκρη σε άκρη, μέσω Erevos αντί για την εταιρεία κινητής.',
+  'Not this Erevos contact': 'Όχι αυτή η επαφή Erevos',
+  'One of its numbers is linked to this Erevos contact, in its chat.':
+    'Ένας από τους αριθμούς της είναι συνδεδεμένος με αυτή την επαφή Erevos, στη συνομιλία της.',
+  'Link to an Erevos contact': 'Σύνδεση με επαφή Erevos',
+  "The same person in your Erevos chats: this card then shows their chat and calls. The link is sealed in Erevos, never in the phone's contacts.":
+    'Το ίδιο πρόσωπο στις συνομιλίες σου στο Erevos: αυτή η κάρτα δείχνει τότε τη συνομιλία και τις κλήσεις του. Η σύνδεση σφραγίζεται στο Erevos, ποτέ στις επαφές του τηλεφώνου.',
+  'Add to contacts': 'Προσθήκη στις επαφές',
+  'History': 'Ιστορικό',
+  'No calls or messages with this contact yet.': 'Καμία κλήση ή μήνυμα με αυτή την επαφή ακόμα.',
+  "Its calls show here once Erevos may read the phone's call log. Erevos only shows them, and keeps no copy.":
+    'Οι κλήσεις της φαίνονται εδώ μόλις το Erevos μπορεί να διαβάζει το αρχείο κλήσεων του τηλεφώνου. Το Erevos μόνο τις δείχνει, και δεν κρατά αντίγραφο.',
+  'Show calls': 'Εμφάνιση κλήσεων',
+  'Incoming call, {time}': 'Εισερχόμενη κλήση, {time}',
+  'Outgoing call, {time}': 'Εξερχόμενη κλήση, {time}',
+  'Outgoing call, no answer': 'Εξερχόμενη κλήση, χωρίς απάντηση',
+
+  // Other apps' contacts.
+  'Add {what} to a contact': 'Προσθήκη του {what} σε επαφή',
+  'Tap the contact to add it to, or make a new one.': 'Πάτα την επαφή όπου θα προστεθεί, ή φτιάξε μια νέα.',
+};
