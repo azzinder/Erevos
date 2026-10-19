@@ -3,17 +3,21 @@ import { useEffect, useState } from 'react';
 import { AppState, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Card, fontStyle, Page, Row, Text } from '../components/ui';
+import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text } from '../components/ui';
 import { t } from '../lib/i18n';
 import { dialNumber, KEYS, typeKey } from '../lib/phone';
-import { onPhoneEvent, phoneReady, phoneStatus, placeCall, showCall, type PhoneStatus } from '../modules/erevos-phone';
+import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
+import { currentSpace } from '../lock/keys';
+import { onPhoneEvent, phoneAccounts, phoneReady, phoneStatus, placeCall, showCall, type PhoneAccount, type PhoneStatus } from '../modules/erevos-phone';
 import { space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // The phone, with Erevos as Android's phone app (modules/erevos-phone): the keypad to call a
 // number. A call itself shows on the native call screen, which works with Erevos locked and over
 // the phone's lock screen; this screen is behind Erevos's password like the rest of the app. It
-// opens from tel: links and the phone's call button with the number typed in (`number`).
+// opens from tel: links and the phone's call button with the number typed in (`number`). With two
+// SIMs, each call goes on the one chosen for its number (lib/phone-sims.ts), else on the one
+// chosen now, which is then kept for the number.
 
 export default function Phone() {
   const params = useLocalSearchParams<{ number?: string; tab?: string }>();
@@ -23,6 +27,12 @@ export default function Phone() {
   const [status, setStatus] = useState<PhoneStatus | null>(phoneStatus());
   const [number, setNumber] = useState(dialNumber(typeof params.number === 'string' ? params.number : ''));
   const [note, setNote] = useState('');
+  const [accounts, setAccounts] = useState<PhoneAccount[]>([]);
+  const [sims, setSims] = useState<PhoneSims | null>(null);
+  // The SIM chosen on the keypad, '' until one is.
+  const [chosen, setChosen] = useState('');
+  // The number to call once its SIM is chosen.
+  const [choosing, setChoosing] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof params.number === 'string') setNumber(dialNumber(params.number));
@@ -30,14 +40,26 @@ export default function Phone() {
 
   useEffect(() => {
     // Android answers in its own screens, and calls come and go: look again then.
-    const look = () => setStatus(phoneStatus());
+    const look = () => {
+      setStatus(phoneStatus());
+      phoneAccounts().then(setAccounts, () => setAccounts([]));
+    };
+    look();
+    const { space: open, key } = currentSpace();
+    PhoneSims.open(open, key).then(setSims, () => setSims(null));
     const app = AppState.addEventListener('change', (state) => state === 'active' && look());
-    const calls = onPhoneEvent('onCalls', look);
+    const calls = onPhoneEvent('onCalls', () => setStatus(phoneStatus()));
     return () => {
       app.remove();
       calls?.remove();
     };
   }, []);
+
+  // A number with a SIM kept for it shows that SIM chosen.
+  useEffect(() => {
+    const kept = sims?.accountFor(number) ?? '';
+    if (kept && accounts.some((a) => a.id === kept)) setChosen(kept);
+  }, [number, sims, accounts]);
 
   if (Platform.OS !== 'android' || !phoneReady()) {
     return (
@@ -52,23 +74,41 @@ export default function Phone() {
     );
   }
 
-  async function call(to: string) {
+  // Calls `to` on `account`; without one, on the SIM kept for the number, or asks which. With two
+  // SIMs, the one it goes on is kept for the number.
+  async function call(to: string, account?: string) {
     const plain = dialNumber(to);
     if (!plain) {
       setNote(t('Type a phone number.'));
       return;
     }
     setNote('');
+    const on = account ?? callAccount(accounts, sims?.accountFor(plain) ?? '');
+    if (on === null) {
+      setChoosing(plain);
+      return;
+    }
     try {
       // The phone app may call; otherwise Android asks first.
       if (!phoneStatus()?.isDefault) {
         const answer = await PermissionsAndroid.request('android.permission.CALL_PHONE');
         if (answer !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(t('Erevos may not make calls. Make it the phone app under Settings.'));
       }
-      await placeCall(plain);
+      await placeCall(plain, on);
+      if (on && accounts.length >= 2) sims?.remember(plain, on).catch(() => undefined);
     } catch (error) {
       setNote(t('Not called. {error}', { error: error instanceof Error ? error.message : String(error) }));
     }
+  }
+
+  // The SIMs show once Erevos may read the phone's state; the phone app may, else it asks.
+  async function askSims() {
+    const answer = await PermissionsAndroid.request('android.permission.READ_PHONE_STATE').catch(() => null);
+    if (answer !== PermissionsAndroid.RESULTS.GRANTED) {
+      setNote(t("Without that, calls go on the phone's default SIM."));
+      return;
+    }
+    setAccounts(await phoneAccounts().catch(() => []));
   }
 
   return (
@@ -137,9 +177,20 @@ export default function Phone() {
             ))}
           </View>
         ))}
+        {accounts.length >= 2 ? (
+          <Row wrap style={styles.sims}>
+            {accounts.map((a) => (
+              <Chip key={a.id} label={accountLabel(a)} selected={chosen === a.id} onPress={() => setChosen(a.id)} />
+            ))}
+          </Row>
+        ) : (status?.slots ?? 0) >= 2 ? (
+          <Row wrap style={styles.sims}>
+            <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
+          </Row>
+        ) : null}
         <View style={styles.keys}>
           <Pressable
-            onPress={() => void call(number)}
+            onPress={() => void call(number, accounts.some((a) => a.id === chosen) ? chosen : undefined)}
             accessibilityRole="button"
             accessibilityLabel={t('Call')}
             style={({ pressed }) => [styles.callButton, { opacity: pressed ? 0.75 : 1 }]}
@@ -155,6 +206,24 @@ export default function Phone() {
           </Text>
         ) : null}
       </View>
+
+      <Sheet visible={choosing !== null} onClose={() => setChoosing(null)} title={t('Call on')}>
+        {accounts.map((a) => (
+          <Button
+            key={a.id}
+            title={accountLabel(a)}
+            kind="secondary"
+            onPress={() => {
+              const to = choosing;
+              setChoosing(null);
+              if (to) void call(to, a.id);
+            }}
+          />
+        ))}
+        <Text variant="caption" tone="faint">
+          {t('Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.')}
+        </Text>
+      </Sheet>
     </View>
   );
 }
@@ -224,6 +293,9 @@ const makeStyles = (colors: Colors) =>
     keyPlus: {
       position: 'absolute',
       bottom: 4,
+    },
+    sims: {
+      justifyContent: 'center',
     },
     callButton: {
       width: 76,

@@ -33,6 +33,12 @@ internal object Sims {
     }.sortedBy { if (it.slot < 0) Int.MAX_VALUE else it.slot }
   }
 
+  /** How many SIMs the phone can hold, without asking for any permission. */
+  fun slots(context: Context): Int {
+    val phone = context.getSystemService(TelephonyManager::class.java) ?: return 0
+    return if (Build.VERSION.SDK_INT >= 30) phone.activeModemCount else @Suppress("DEPRECATION") phone.phoneCount
+  }
+
   /** The account with this id, if the phone still has it. */
   fun find(context: Context, id: String): Account? = accounts(context).firstOrNull { it.id == id }
 

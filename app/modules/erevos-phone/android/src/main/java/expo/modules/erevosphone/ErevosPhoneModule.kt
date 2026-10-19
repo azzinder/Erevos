@@ -42,6 +42,7 @@ class ErevosPhoneModule : Module() {
         "phone" to (context?.packageManager?.hasSystemFeature("android.hardware.telephony") == true),
         "isDefault" to (context != null && isDefault(context)),
         "calls" to Calls.live().size,
+        "slots" to (context?.let { Sims.slots(it) } ?: 0),
       )
     }
 

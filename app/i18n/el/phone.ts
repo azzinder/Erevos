@@ -15,6 +15,10 @@ export const phone: Record<string, string> = {
   "Calls made here show on Android's own call screen until you make Erevos the phone app, under Settings.":
     'Οι κλήσεις από εδώ φαίνονται στην οθόνη κλήσης του ίδιου του Android, μέχρι να κάνεις το Erevos εφαρμογή τηλεφώνου, στις «Ρυθμίσεις».',
   Number: 'Αριθμός',
+  'Call on': 'Κλήση από',
+  "Without that, calls go on the phone's default SIM.": 'Χωρίς αυτό, οι κλήσεις γίνονται από την προεπιλεγμένη SIM του τηλεφώνου.',
+  'Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.':
+    'Το Erevos κρατά αυτή τη SIM για τον αριθμό, σφραγισμένη σε αυτόν τον χώρο, και την επόμενη φορά τον καλεί από την ίδια SIM.',
 
   // The phone's settings (app/phone-settings.tsx).
   'Phone settings': 'Ρυθμίσεις τηλεφώνου',

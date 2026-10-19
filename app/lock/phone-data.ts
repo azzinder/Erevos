@@ -1,0 +1,39 @@
+import { sealedFile, type Holder } from './sealed-file';
+
+// What each space keeps for the phone's calls (app/phone.tsx), sealed like its contacts
+// (sealed-file.ts): the SIM chosen for each number called. The calls themselves stay in the phone's
+// call history, where Android keeps them for every phone app; the rules that turn calls away stay
+// with Android too (lib/phone-rules.ts), as it applies them while Erevos is locked.
+
+export type { Holder };
+
+/** The SIM chosen for calls to a number: its account id (modules/erevos-phone PhoneAccount). */
+export type NumberAccount = { number: string; account: string };
+
+export type PhoneData = {
+  sims: NumberAccount[];
+};
+
+export const EMPTY_PHONE: PhoneData = { sims: [] };
+
+const FILE = 'erevos-phone';
+const BLOCK = 4 * 1024;
+export const MAX_SIMS = 300;
+
+const isText = (v: unknown): v is string => typeof v === 'string';
+
+function checked(value: unknown): PhoneData {
+  const v = (value ?? {}) as Partial<Record<keyof PhoneData, unknown>>;
+  return {
+    sims: (Array.isArray(v.sims) ? v.sims : [])
+      .map((item) => (item ?? {}) as Record<string, unknown>)
+      .filter((n) => isText(n.number) && n.number.length > 0 && n.number.length <= 32 && isText(n.account) && n.account.length > 0 && n.account.length <= 200)
+      .map((n) => ({ number: n.number as string, account: n.account as string }))
+      .slice(-MAX_SIMS),
+  };
+}
+
+const store = sealedFile({ name: FILE, empty: EMPTY_PHONE, checked, block: BLOCK });
+
+export const loadPhoneData = store.load;
+export const savePhoneData = store.save;

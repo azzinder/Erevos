@@ -5,8 +5,8 @@ import { requireOptionalNativeModule, type EventSubscription } from 'expo-module
 // a SIM. On other platforms, and in an app built before this module, there is no phone: phoneReady()
 // is false and everything here does nothing.
 
-/** `calls`: how many calls are on now. */
-export type PhoneStatus = { sdk: number; phone: boolean; isDefault: boolean; calls: number };
+/** `calls`: how many calls are on now; `slots`: how many SIMs the phone can hold. */
+export type PhoneStatus = { sdk: number; phone: boolean; isDefault: boolean; calls: number; slots: number };
 
 /** A way the phone can call: a SIM. `id` is what placeCall takes and the call history keeps;
  *  `slot` counts from 0, -1 for an account that is no SIM's; `name` is "SIM 1" or the account's. */
