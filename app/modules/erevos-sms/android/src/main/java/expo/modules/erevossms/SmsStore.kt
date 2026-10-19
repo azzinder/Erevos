@@ -5,6 +5,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.role.RoleManager
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -39,8 +40,15 @@ internal object SmsStore {
   /** Set while the JS side runs: tells it what changed, as an event name and its body. */
   @Volatile var listener: ((String, Map<String, Any?>) -> Unit)? = null
 
-  fun isDefault(context: Context): Boolean =
-    Telephony.Sms.getDefaultSmsPackage(context) == context.packageName
+  /** Whether Erevos holds the SMS role. Android's own answer (getDefaultSmsPackage) is null
+   *  whenever one of the SMS app's app ops is missing, so the role is asked first. */
+  fun isDefault(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT >= 29) {
+      val roles = context.getSystemService(RoleManager::class.java)
+      if (roles != null && roles.isRoleAvailable(RoleManager.ROLE_SMS)) return roles.isRoleHeld(RoleManager.ROLE_SMS)
+    }
+    return Telephony.Sms.getDefaultSmsPackage(context) == context.packageName
+  }
 
   /** The SMS manager of one SIM (its subscription id), or of the phone's default one for -1. */
   fun manager(context: Context, sim: Int = -1): SmsManager =
