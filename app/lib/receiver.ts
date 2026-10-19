@@ -446,6 +446,8 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   if (received.got.length > 0 && (await history.mark(peer, true, 1, at, received.got)).length > 0) changed = true;
   if (received.read.length > 0 && (await history.mark(peer, true, 2, at, received.read)).length > 0) changed = true;
   if (received.react && (await history.react(peer, received.react.tag, false, received.react.emoji))) changed = true;
+  const { pin } = received.more;
+  if (pin && (await history.pin(peer, pin.tag, pin.on ? at : 0))) changed = true;
   if (received.erase && 'all' in received.erase) {
     await history.clear(peer);
     changed = true;

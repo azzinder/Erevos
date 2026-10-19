@@ -4,6 +4,7 @@ import { isReactionEmoji, isTag, newTag } from '../lock/history';
 
 import * as core from './core';
 import { readOffer, type FileOffer } from './attachments';
+import { acts, carriedOf, toCarry, type Carried } from './chat-parts';
 import { decodeCall, type CallSignal } from './call-signal';
 import { decodeGroup, encodeGroup, type GroupSignal } from './group-signal';
 import { isVoicePart, splitVoice, type VoicePart } from './voice';
@@ -85,6 +86,7 @@ const MAX_ON = 600;
 // `due`: when one sent for later should show (milliseconds, the sender's clock), as a relay that
 // held it should send it then; a relay that sends it sooner does not make it show sooner.
 // `re`: the tag of the message this one answers. `react`: a reaction to one of the chat's messages.
+// `more`: what else it carries (lib/chat-parts.ts), each in a field of its own beside these.
 type Message = {
   from: string;
   relay: string;
@@ -109,13 +111,15 @@ type Message = {
   due?: number;
   re?: string;
   react?: Reaction | null;
+  more?: Carried;
 };
 
 /** What else a message can carry. */
 // `on`: seconds this phone says it stays open (0: says nothing). `ask`: asks them to say whether theirs is.
 // `tag`: the tag a message that waited was kept with (lib/waiting.ts), so it keeps it as it goes.
 // `quiet`: words that come without a sound. `due`: the time one sent for later should show.
-// `re`: the tag of the message words answer. `react`: a reaction, sent with no words.
+// `re`: the tag of the message words answer. `react`: a reaction, sent with no words. `more`:
+// what else it carries (lib/chat-parts.ts).
 export type Extra = {
   erase?: Erase | null;
   lasts?: number;
@@ -131,6 +135,7 @@ export type Extra = {
   due?: number;
   re?: string;
   react?: Reaction | null;
+  more?: Carried;
 };
 
 /** Where a chat's own queue is: its relay and that relay's key for sealed sends (base64url). */
@@ -160,7 +165,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -184,6 +189,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(due ? { due } : {}),
       ...(re ? { re } : {}),
       ...(react ? { react } : {}),
+      ...more,
     }),
   );
 }
@@ -243,6 +249,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       due: isTime(value.due) ? value.due : 0,
       re: isTag(value.re) ? value.re : '',
       react: decodeReaction(value.react),
+      more: carriedOf(value),
     };
   } catch {
     return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null };
@@ -318,6 +325,8 @@ export type Received =
       re: string;
       // Their reaction to one of the chat's messages.
       react: Reaction | null;
+      // What else it carries (lib/chat-parts.ts).
+      more: Carried;
     }
   // Not encrypted (as messages before this version were), not for this account, or a replay.
   | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' };
@@ -642,7 +651,7 @@ export class E2E {
     identity: string,
     text: string,
     from: string,
-    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false, due = 0, re = '', react = null }: Extra = {},
+    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false, due = 0, re = '', react = null, more = {} }: Extra = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -674,9 +683,10 @@ export class E2E {
         due: text ? due : 0,
         re: text && isTag(re) ? re : '',
         react: text ? null : react,
+        more: toCarry(more, !!text),
       };
-      // Writing, reacting or calling accepts a request; telling them only what came or was read never does.
-      const [packet] = await this.sealFor(contact, [message], !!text || !!message.react || signal?.kind === 'offer');
+      // Writing, reacting, pinning or calling accepts a request; telling them only what came or was read never does.
+      const [packet] = await this.sealFor(contact, [message], !!text || !!message.react || acts(message.more) || signal?.kind === 'offer');
       const first = contact.first ? fromBase64(contact.first) : null;
       const { sender, relay, relayKey } = contact;
       return { sender, relay, relayKey, spare: contact.spare ?? null, first, packet, tag, timer: once || timer };
@@ -848,7 +858,8 @@ export class E2E {
     const due = message.due ?? 0;
     const re = message.re ?? '';
     const react = message.react ?? null;
-    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, online, ask, call, group, quiet, due, re, react, ...timing.received };
+    const more = message.more ?? {};
+    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, online, ask, call, group, quiet, due, re, react, more, ...timing.received };
   }
 
   // Keeps until when a contact said their phone is open. Counted from when they said it, so a message
@@ -892,7 +903,8 @@ export class E2E {
         const due = message.due ?? 0;
         const re = message.re ?? '';
         const react = message.react ?? null;
-        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, file, online, ask, call, group, quiet, due, re, react, ...timing.received };
+        const more = message.more ?? {};
+        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, file, online, ask, call, group, quiet, due, re, react, more, ...timing.received };
       }
     }
     return { kind: 'refused', reason: 'unknown' };

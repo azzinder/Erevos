@@ -152,6 +152,18 @@ t('keeps which message one answers, and the reactions to it, ours and theirs', a
   assert.equal((await History.open('space', 0, key)).messages()[0].myReaction, undefined);
 });
 
+t('keeps when a message was pinned, until it is taken down', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const tag = newTag();
+  await history.add({ peer: 'contact:aa', text: 'the address', mine: false, at: 1, tag });
+  assert.equal(await history.pin('contact:aa', tag, 5000), true);
+  assert.equal(await history.pin('contact:aa', newTag(), 5000), false);
+  assert.equal((await History.open('space', 0, key)).messages()[0].pinned, 5000);
+  await history.pin('contact:aa', tag, 0);
+  assert.equal((await History.open('space', 0, key)).messages()[0].pinned, undefined);
+});
+
 t('deletes the messages of one chat and keeps the others', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);

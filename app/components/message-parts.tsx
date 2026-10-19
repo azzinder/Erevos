@@ -7,7 +7,8 @@ import { useColors } from '../theme/context';
 import { Text } from './ui';
 
 // What a message shows besides its words, in a contact's chat (app/chat.tsx) and in a group
-// (app/group.tsx), drawn the same in both: the message it answers, and the reactions to it.
+// (app/group.tsx), drawn the same in both: the message it answers, the reactions to it, and the
+// messages pinned to the top of the chat.
 
 /**
  * The message an answer is to, inside its bubble or over the message field: who wrote it and its
@@ -93,6 +94,36 @@ export function Reactions({ signs, mine, mineSide, onPress }: { signs: string[];
           ) : null}
         </View>
       ))}
+    </Pressable>
+  );
+}
+
+/**
+ * The messages pinned to the top of a chat, over its thread: one at a time, the latest first, with
+ * its place among them. Tapped, the chat goes to it, and the next one shows.
+ */
+export function Pinned({ line, index, count, onPress }: { line: string; index: number; count: number; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityHint={t('Goes to the pinned message')}
+      style={({ pressed }) => ({
+        marginHorizontal: space.lg,
+        marginBottom: space.xs,
+        paddingVertical: 6,
+        paddingHorizontal: space.md,
+        borderRadius: radius.md,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.primary,
+        backgroundColor: pressed ? colors.surfacePressed : colors.surface,
+      })}
+    >
+      <Text variant="caption" color={colors.accentText}>
+        {count > 1 ? t('Pinned, {n} of {count}', { n: index + 1, count }) : t('Pinned')}
+      </Text>
+      <Text numberOfLines={1}>{line || t('The message is not on this phone.')}</Text>
     </Pressable>
   );
 }

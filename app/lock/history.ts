@@ -64,9 +64,9 @@ export type Kept = [
  * Of ours: `h`, the id a relay holds it by, sent for later, and `r` that relay (lib/relay.ts,
  * sendMessageLater), so it can still be taken back before it goes; `q` 1 when it goes without
  * sound, kept while it waits. Of either, its Parts: `p`, the tag of the message it answers; `y`,
- * our reaction to it, and `o`, theirs.
+ * our reaction to it, and `o`, theirs; `n`, when it was pinned to the top of the chat.
  */
-type More = { h?: string; r?: string; q?: 1; p?: string; y?: string; o?: string };
+type More = { h?: string; r?: string; q?: 1; p?: string; y?: string; o?: string; n?: number };
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -99,16 +99,19 @@ export type Parts = {
   /** Our reaction to it, and theirs. */
   myReaction?: string;
   theirReaction?: string;
+  /** When it was pinned to the top of the chat, by either phone (milliseconds, this phone's clock). */
+  pinned?: number;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
     ...(theirReaction ? { o: theirReaction } : {}),
+    ...(pinned ? { n: pinned } : {}),
   };
 }
 
@@ -117,6 +120,7 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.p ? { re: more.p } : {}),
     ...(more?.y ? { myReaction: more.y } : {}),
     ...(more?.o ? { theirReaction: more.o } : {}),
+    ...(more?.n ? { pinned: more.n } : {}),
   };
 }
 
@@ -152,7 +156,7 @@ const HELD_ID = /^[0-9a-f]{32}(?:,[0-9a-f]{32}){0,63}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const held = mine && typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
   const more: More = {
@@ -161,6 +165,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(isTag(v.p) ? { p: v.p } : {}),
     ...(isReactionEmoji(v.y) ? { y: v.y } : {}),
     ...(isReactionEmoji(v.o) ? { o: v.o } : {}),
+    ...(count(v.n) ? { n: count(v.n) } : {}),
   };
   return Object.keys(more).length > 0 ? more : undefined;
 }
@@ -424,6 +429,11 @@ export class History {
    */
   react(peer: string, tag: string, ours: boolean, emoji: string): Promise<boolean> {
     return this.change(peer, tag, ours ? { myReaction: emoji } : { theirReaction: emoji });
+  }
+
+  /** Pins a chat's message to the top, by its tag, as of `at` (milliseconds), or takes it down (0). False if the message is gone. */
+  pin(peer: string, tag: string, at: number): Promise<boolean> {
+    return this.change(peer, tag, { pinned: at || undefined });
   }
 
   // Changes what is kept of one message of a chat, by its tag. False if the message is gone.

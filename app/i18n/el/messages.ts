@@ -16,4 +16,10 @@ export const messages: Record<string, string> = {
   'Tap to play, hold for more': 'Πάτα για αναπαραγωγή, κράτα πατημένο για περισσότερα',
   'Tap to open, hold for more': 'Πάτα για άνοιγμα, κράτα πατημένο για περισσότερα',
   'Hold for more': 'Κράτα πατημένο για περισσότερα',
+  // Pinned messages (components/message-parts.tsx, Pinned).
+  Pin: 'Καρφίτσωμα',
+  Unpin: 'Ξεκαρφίτσωμα',
+  Pinned: 'Καρφιτσωμένο',
+  'Pinned, {n} of {count}': 'Καρφιτσωμένο, {n} από {count}',
+  'Goes to the pinned message': 'Πηγαίνει στο καρφιτσωμένο μήνυμα',
 };

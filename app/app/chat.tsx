@@ -34,7 +34,8 @@ import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '
 import { LaterPicker } from '../components/later-picker';
 import { LinkedText } from '../components/linked-text';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
-import { Quote, Reactions } from '../components/message-parts';
+import { Pinned, Quote, Reactions } from '../components/message-parts';
+import { acts } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
@@ -426,6 +427,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   const [menuFor, setMenuFor] = useState<Message | null>(null);
   const [replying, setReplying] = useState<Message | null>(null);
   const [lit, setLit] = useState<number | null>(null);
+  // Which of the pinned messages shows over the thread, counted from the latest.
+  const [pinShown, setPinShown] = useState(0);
   // Where each message is in the thread, by id, to go to it.
   const placed = useRef(new Map<number, number>());
   const receipts = useRef<Receipts>({});
@@ -758,10 +761,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     };
   }, []);
 
-  // Another chat starts with its latest imported messages, and answers nothing yet.
+  // Another chat starts with its latest imported messages and pinned message, and answers nothing yet.
   useEffect(() => {
     setImportedShown(IMPORTED_PAGE);
     setReplying(null);
+    setPinShown(0);
   }, [selected]);
 
   // A message gone to is lit a moment.
@@ -1060,6 +1064,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, theirReaction: emoji || undefined } : m)));
       history.current?.react(peer, tag, false, emoji).catch(() => undefined);
     }
+    // One of the chat's messages pinned to its top on their phone, or taken down.
+    const { pin } = received.more;
+    if (pin) pinHere(peer, pin.tag, pin.on);
     const name = label(peer, e2e.contacts());
     if (received.timerChanged) {
       setNote(
@@ -1226,6 +1233,27 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     });
   }
 
+  // Pins a message to the top of the chat on both phones, or takes it down, as a reaction goes.
+  async function pin(message: Message) {
+    const on = !message.pinned;
+    try {
+      await sendToContact(relayTarget(), message.peer.slice(CONTACT_PREFIX.length), '', { more: { pin: { tag: message.tag, on } } });
+    } catch (error) {
+      setNote(notSent(error));
+      return;
+    }
+    pinHere(message.peer, message.tag, on);
+    if (on) setPinShown(0);
+  }
+
+  function pinHere(peer: string, tag: string, on: boolean) {
+    const at = on ? Date.now() : 0;
+    setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, pinned: at || undefined } : m)));
+    history.current?.pin(peer, tag, at).catch(() => {
+      // Shown, but gone when the chat next opens.
+    });
+  }
+
   // Goes to one of the chat's messages, by its tag, and lights it a moment.
   function goTo(peer: string, tag: string) {
     const target = visible.find((m) => m.peer === peer && m.tag === tag);
@@ -1246,6 +1274,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   function menuActions(message: Message): MenuAction[] {
     const actions: MenuAction[] = [];
     if (theyHave(message) || (message.mine && message.mark === WAITING)) actions.push({ title: t('Reply'), onPress: () => setReplying(message) });
+    if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
     if (CAN_COPY && message.text && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
@@ -1269,8 +1298,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here() });
     // What is only a mark, or asks whether their phone is open, is not worth carrying for days.
     const way = await handOver(e2e, target, identity, sealed, [sealed.packet], !!text || !!extra.erase);
-    // Writing or reacting to a message request accepts it.
-    if (text || extra.react) setContacts(e2e.contacts());
+    // Writing, reacting or pinning in a message request accepts it.
+    if (text || extra.react || acts(extra.more ?? {})) setContacts(e2e.contacts());
     return { tag: sealed.tag, timer: sealed.timer, way };
   }
 
@@ -2204,6 +2233,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // Theirs that came before the time it was sent for shows then (lib/later.ts, showsAt).
   const shownBy = Date.now();
   const visible = messages.filter((message) => message.peer === selected && (message.mine || message.at <= shownBy));
+  // The messages pinned to the top, the latest first, and the one that shows.
+  const pins = visible.filter((m) => m.pinned).sort((a, b) => b.pinned! - a.pinned!);
+  const pinnedNow = pins.length > 0 ? pins[pinShown % pins.length] : null;
   // The photos shown: the latest in the thread, and the one looked at on its own.
   const shownPhotos = visible
     .filter((m) => m.file?.kind === 'photo' && !m.file.from)
@@ -2858,6 +2890,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
             <TextButton title={t('Refuse')} onPress={() => refuseRequest(selectedContact)} />
           </Row>
         </View>
+      ) : null}
+      {pinnedNow ? (
+        <Pinned
+          line={messageLine(pinnedNow)}
+          index={pinShown % pins.length}
+          count={pins.length}
+          onPress={() => {
+            goTo(pinnedNow.peer, pinnedNow.tag);
+            setPinShown((n) => (n + 1) % pins.length);
+          }}
+        />
       ) : null}
       <ScrollView
         ref={thread}

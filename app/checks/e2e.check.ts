@@ -304,6 +304,29 @@ t('an answer says which message it answers, and a reaction travels with no words
   assert.equal(message(await bob.e2e.receive(both.packet)).react, null);
 });
 
+t('a pin travels with no words, and says the phone is open as writing does', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(identity);
+
+  const words = await alice.e2e.seal(identity, 'meet here', alice.from);
+  await bob.e2e.receive(words.packet);
+  const pinned = await bob.e2e.seal(hello.identity, '', bob.from, { more: { pin: { tag: words.tag, on: true } } });
+  assert.equal(pinned.tag, '');
+  const pin = message(await alice.e2e.receive(pinned.packet));
+  assert.deepEqual([pin.text, pin.more], ['', { pin: { tag: words.tag, on: true } }]);
+  assert.ok(pin.online > Date.now());
+  const down = await bob.e2e.seal(hello.identity, '', bob.from, { more: { pin: { tag: words.tag, on: false } } });
+  assert.deepEqual(message(await alice.e2e.receive(down.packet)).more, { pin: { tag: words.tag, on: false } });
+  // Words never pin, and a pin of no tag is none.
+  const both = await bob.e2e.seal(hello.identity, 'text', bob.from, { more: { pin: { tag: words.tag, on: true } } });
+  assert.deepEqual(message(await alice.e2e.receive(both.packet)).more, {});
+  const odd = await bob.e2e.seal(hello.identity, '', bob.from, { more: { pin: { tag: 'nope', on: true } } });
+  assert.deepEqual(message(await alice.e2e.receive(odd.packet)).more, {});
+});
+
 t('a message sent without sound says so inside the encryption, and one sent as usual says nothing', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

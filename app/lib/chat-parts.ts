@@ -14,6 +14,15 @@ export type Place = { lat: number; lon: number; acc?: number };
 /** A link's preview, made by the sender's phone: the page, its title and description, and a small picture (base64 JPEG). */
 export type Preview = { url: string; title: string; text: string; image?: string };
 
+/** A message pinned to the top of the chat, by its tag, or (`on` false) taken down. */
+export type Pin = { tag: string; on: boolean };
+
+/**
+ * What a contact's message carries beyond what lib/e2e.ts says itself, each in a field of its own
+ * that an Erevos from before leaves alone. With no words: a pin.
+ */
+export type Carried = { pin?: Pin };
+
 export const MAX_QUESTION = 300;
 export const MAX_OPTION = 100;
 export const MIN_OPTIONS = 2;
@@ -29,6 +38,26 @@ export const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 /** More reactions, behind the first ones. */
 export const MORE_REACTIONS = ['🔥', '🎉', '👏', '😍', '🤔', '😅', '🙌', '💪', '👎', '😡', '🤝', '✅', '👀', '💯', '🌙', '⭐'];
+
+// A message's tag, as lock/history.ts makes it.
+const isTag = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{12}$/.test(v);
+
+/** What a message carries, from the fields of the message as it came: each checked, or left out. */
+export function carriedOf(value: Record<string, unknown>): Carried {
+  const pin = value.pin as { tag?: unknown; on?: unknown } | null | undefined;
+  return {
+    ...(isTag(pin?.tag) && typeof pin.on === 'boolean' ? { pin: { tag: pin.tag, on: pin.on } } : {}),
+  };
+}
+
+/** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
+export function toCarry(carried: Carried, words: boolean): Carried {
+  const checked = carriedOf(carried);
+  return words ? {} : { ...(checked.pin ? { pin: checked.pin } : {}) };
+}
+
+/** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */
+export const acts = (carried: Carried) => !!carried.pin;
 
 const plainText = (v: unknown, most: number): string | null => {
   if (typeof v !== 'string') return null;
