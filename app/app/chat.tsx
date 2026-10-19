@@ -194,6 +194,38 @@ function timerLabel(seconds: number): string {
 
 // Imported messages shown at first, and added each time earlier ones are asked for.
 const IMPORTED_PAGE = 50;
+// How long typing in a relay field pauses before the chat takes what was typed and asks that relay.
+const TYPING_PAUSE = 1200;
+
+/**
+ * A relay field: what it shows at once, and what the chat takes once typing pauses or the field is
+ * left, so a relay is not asked at every letter of its address. A value set elsewhere shows as it is.
+ */
+function useTyped(value: string, take: (typed: string) => void): { shown: string; type: (text: string) => void; done: () => void } {
+  const [shown, setShown] = useState(value);
+  const typing = useRef(false);
+  useEffect(() => {
+    if (!typing.current) setShown(value);
+  }, [value]);
+  const done = () => {
+    if (!typing.current) return;
+    typing.current = false;
+    take(shown);
+  };
+  useEffect(() => {
+    if (!typing.current) return;
+    const timer = setTimeout(done, TYPING_PAUSE);
+    return () => clearTimeout(timer);
+  }, [shown]);
+  return {
+    shown,
+    type: (text) => {
+      typing.current = true;
+      setShown(text);
+    },
+    done,
+  };
+}
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
@@ -340,6 +372,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // The second relay for two-hop sending (lib/relay.ts), empty when not used.
   const [viaUrl, setViaUrl] = useState('');
   const [viaToken, setViaToken] = useState('');
+  const typedRelay = useTyped(relayUrl, setRelayUrl);
+  const typedToken = useTyped(relayToken, setRelayToken);
+  const typedVia = useTyped(viaUrl, setViaUrl);
+  const typedViaToken = useTyped(viaToken, setViaToken);
   const [ownQueue, setOwnQueue] = useState<Queue | null>(null);
   const [contactDraft, setContactDraft] = useState('');
   const [showQr, setShowQr] = useState(false);
@@ -1886,7 +1922,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   }
 
   async function createOwnQueue() {
-    const target = relayTarget();
+    // What was just typed counts, even before typing paused.
+    for (const field of [typedRelay, typedToken, typedVia, typedViaToken]) field.done();
+    const target = relayFor(typedRelay.shown, typedToken.shown, typedVia.shown, typedViaToken.shown, spareBackup(spareStore));
     if (!target) {
       setNote('Type the relay address first.');
       return;
@@ -2422,8 +2460,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
               <View style={styles.section}>
                 <Field label="Relay address">
                   <Input
-                    value={relayUrl}
-                    onChangeText={setRelayUrl}
+                    value={typedRelay.shown}
+                    onChangeText={typedRelay.type}
+                    onBlur={typedRelay.done}
                     placeholder="ws://computer-address:7879"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -2432,8 +2471,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                 </Field>
                 <Field label="Token (optional)">
                   <Input
-                    value={relayToken}
-                    onChangeText={setRelayToken}
+                    value={typedToken.shown}
+                    onChangeText={typedToken.type}
+                    onBlur={typedToken.done}
                     placeholder="Token, if the relay needs one"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -2442,19 +2482,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                 </Field>
                 <Field label="Second relay (optional)">
                   <Input
-                    value={viaUrl}
-                    onChangeText={setViaUrl}
+                    value={typedVia.shown}
+                    onChangeText={typedVia.type}
+                    onBlur={typedVia.done}
                     placeholder="wss://another-relay"
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="url"
                   />
                 </Field>
-                {viaUrl.trim() ? (
+                {typedVia.shown.trim() ? (
                   <Field label="Second relay token (optional)">
                     <Input
-                      value={viaToken}
-                      onChangeText={setViaToken}
+                      value={typedViaToken.shown}
+                      onChangeText={typedViaToken.type}
+                      onBlur={typedViaToken.done}
                       placeholder="Token, if the second relay needs one"
                       autoCapitalize="none"
                       autoCorrect={false}

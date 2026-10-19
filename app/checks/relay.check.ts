@@ -14,9 +14,12 @@ import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
 import {
+  BadRelayAddressError,
   callRelay,
+  canTryLater,
   canWaitAt,
   createQueue,
+  isRelayAddress,
   receiveMessage,
   relayKey,
   RelayError,
@@ -165,4 +168,50 @@ test('a relay from before waiting is asked plainly from then on, and one not the
     old.close();
   }
   await assert.rejects(waitForMessage({ url: `ws://127.0.0.1:${await freePort()}` }, new Uint8Array(24), 5), RelayUnreachableError);
+});
+
+test('only whole relay addresses are opened: the letters of one being typed are refused, never sent to the WebSocket', async () => {
+  for (const good of [
+    'ws://192.168.178.29:7879',
+    'wss://erevos.lphl.nekten.eu',
+    'wss://relay.example.org/erevos?x=1',
+    'ws://localhost:7879',
+    'ws://1',
+    'ws://[::1]:7879',
+    'ws://[2001:db8::7]',
+    'ws://[::ffff:192.168.1.10]:80',
+    'ws://[1:2:3:4:5:6:7:8]',
+  ]) {
+    assert.equal(isRelayAddress(good), true, good);
+  }
+  for (const bad of [
+    '',
+    'w',
+    'ws',
+    'ws:',
+    'ws:/',
+    'ws://',
+    'wss://erevos.',
+    'wss://erevos..eu',
+    'ws://-a',
+    'http://relay.example.org',
+    'WSS://relay.example.org',
+    ' ws://relay.example.org',
+    'ws://relay example.org',
+    'ws://user@relay.example.org',
+    'ws://relay.example.org:0',
+    'ws://relay.example.org:70000',
+    'ws://relay.example.org:',
+    'ws://[1:2:3]',
+    'ws://[::1',
+    'ws://[1::2::3]',
+    'ws://[::ffff:1.2.3]',
+    'ws://[::ffff:1.2.3.04]',
+    `ws://${'a'.repeat(64)}.org`,
+  ]) {
+    assert.equal(isRelayAddress(bad), false, bad);
+  }
+  // Refused before any connection, and what waits for it waits for a fixed address.
+  await assert.rejects(createQueue({ url: 'w' }), (error: unknown) => error instanceof BadRelayAddressError && canTryLater(error));
+  await assert.rejects(sendMessage({ url: 'ws:/' }, new Uint8Array(24), new Uint8Array([1])), BadRelayAddressError);
 });

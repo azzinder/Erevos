@@ -83,6 +83,49 @@ export class RelayError extends Error {
 /** The relay could not be reached, or the connection to it ended before it answered. */
 export class RelayUnreachableError extends RelayError {}
 
+/** The address is not one a connection can be opened to; what waits for it goes once it is fixed. */
+export class BadRelayAddressError extends RelayUnreachableError {
+  constructor(url: string) {
+    super(`"${url}" is not a relay address. One looks like wss://relay.example.org or ws://192.168.1.10:7879.`);
+  }
+}
+
+// ws:// or wss://, then a host (a name of dot-separated labels, or an IPv6 address in brackets), a
+// port maybe, and a path maybe.
+const LABEL = '[A-Za-z0-9_](?:[A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?';
+const RELAY_ADDRESS = new RegExp(`^wss?://(?:${LABEL}(?:\\.${LABEL})*|\\[([0-9A-Fa-f:.]+)\\])(?::(\\d{1,5}))?(?:/\\S*)?$`);
+const IPV4_PART = /^(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/;
+
+function isIpv6(text: string): boolean {
+  const halves = text.split('::');
+  if (halves.length > 2) return false;
+  let groups = halves.flatMap((half) => (half === '' ? [] : half.split(':')));
+  let count = groups.length;
+  // The last group may be four numbers, which count as two groups.
+  const last = groups[groups.length - 1];
+  if (last?.includes('.')) {
+    const parts = last.split('.');
+    if (parts.length !== 4 || !parts.every((part) => IPV4_PART.test(part))) return false;
+    groups = groups.slice(0, -1);
+    count += 1;
+  }
+  if (!groups.every((group) => /^[0-9A-Fa-f]{1,4}$/.test(group))) return false;
+  return halves.length === 2 ? count <= 7 : count === 8;
+}
+
+/**
+ * Whether `url` is an address a relay connection can be opened to. Android's WebSocket stops the
+ * whole app on an address it cannot read, such as the first letters of one being typed, so no other
+ * is ever opened.
+ */
+export function isRelayAddress(url: string): boolean {
+  const match = RELAY_ADDRESS.exec(url);
+  if (!match) return false;
+  const [, ipv6, port] = match;
+  if (ipv6 !== undefined && !isIpv6(ipv6)) return false;
+  return port === undefined || (Number(port) >= 1 && Number(port) <= 65535);
+}
+
 /**
  * Whether what failed may go later: the relay could not be reached, or said to try again later
  * (full, could not save it, or could not reach the next relay).
@@ -179,6 +222,7 @@ class Ended extends Error {}
 /** Opens a connection, sends one request, and returns the reply. Closes the connection, also when `signal` ends it. */
 function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise<Uint8Array> {
   if (signal?.aborted) return Promise.reject(new Ended());
+  if (!isRelayAddress(relay.url)) return Promise.reject(new BadRelayAddressError(relay.url));
   if (throughTorOn) {
     const reply = viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
     if (!signal) return reply;
