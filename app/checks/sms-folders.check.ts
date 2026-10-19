@@ -15,6 +15,7 @@ import type { InboxRow, InboxSms } from '../lib/inbox';
 import { arrangeRows, dueTrash, emptyTrash, isSpam, looksLikeSpam, plainText, shownMessages, smsFolder, sortSms, trashGoesAt } from '../lib/sms-folders';
 import { SmsLink } from '../lib/sms-link';
 import { kept } from '../lock/inbox-cache';
+import { sealedFile } from '../lock/sealed-file';
 import { EMPTY_SMS, MAX_PINS, MAX_TRASH, MAX_WORDS, TRASH_DAYS, type SmsData } from '../lock/sms-data';
 import { files } from './files-memory';
 
@@ -177,6 +178,26 @@ test('pins, the Archive, the Trash, drafts and spam rules are kept sealed in the
   assert.equal(last.draftFor('+306933333333'), '');
   assert.deepEqual(last.state.marks, []);
   assert.equal(last.undo, 10);
+});
+
+test('the order an Erevos before kept beside the SMS for later moves to a file of its own, and they stay', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const before = sealedFile<SmsData>({ name: 'erevos-sms', empty: EMPTY_SMS, checked: (value) => value as SmsData, block: 4096 });
+  const later = { id: 'a1', to: '+306922222222', text: 'at eight', at: 5, sim: -1 };
+  await before.save('space', 0, key, { ...EMPTY_SMS, pinned: [{ address: '+306911111111', at: 1 }], undo: 10, later: [later] });
+
+  const link = await SmsLink.open(0, key);
+  assert.deepEqual(link.state.pinned.map((p) => p.address), ['+306911111111']);
+  assert.equal(link.undo, 10);
+  await link.pin('+306933333333', true);
+  const again = await SmsLink.open(0, key);
+  assert.deepEqual(again.state.pinned.map((p) => p.address), ['+306911111111', '+306933333333']);
+  assert.equal(again.undo, 10);
+  assert.deepEqual(again.later, [later]);
+  // The SMS file keeps the rest, and no order now.
+  const left = await before.load('space', 0, key);
+  assert.deepEqual([left.pinned, left.undo, left.later], [[], 5, [later]]);
 });
 
 test('pins, the Trash and the owner\'s words have their limits, and none is dropped for a new one', async () => {

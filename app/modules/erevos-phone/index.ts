@@ -69,6 +69,8 @@ type NativePhone = {
   history(): Promise<{ allowed: boolean; calls: LoggedCall[] }>;
   favourites(): Promise<{ allowed: boolean; favourites: Favourite[] }>;
   seenMissed(): void;
+  deleteCalls(ids: number[]): Promise<number>;
+  deleteCallsOf(number: string, before: number): Promise<number>;
   groups(): Promise<{ allowed: boolean; groups: ContactGroup[] }>;
   quickReplies(): { replies: string[]; own: boolean };
   setQuickReplies(replies: string[]): void;
@@ -131,6 +133,17 @@ export function callHistory(): Promise<{ allowed: boolean; calls: LoggedCall[] }
   return native ? native.history() : Promise.resolve({ allowed: false, calls: [] });
 }
 
+/** Deletes calls from Android's call history, by their ids; how many went. The phone app may. */
+export function deleteCalls(ids: number[]): Promise<number> {
+  return native ? native.deleteCalls(ids) : Promise.resolve(0);
+}
+
+/** Deletes every call with this number from the call history up to `before` (when the owner
+ *  deleted them), the older ones too. */
+export function deleteCallsOf(number: string, before: number): Promise<number> {
+  return native ? native.deleteCallsOf(number, before) : Promise.resolve(0);
+}
+
 /** The phone's starred contacts, by name; `allowed` is false while Android does not let Erevos
  *  read the contacts. */
 export function phoneFavourites(): Promise<{ allowed: boolean; favourites: Favourite[] }> {
@@ -168,8 +181,8 @@ export function showCall(): void {
 /**
  * Names Erevos knows for phone numbers, `{ number: name }`, which the call screen and its notice
  * show for a call with one of them, before the phone's contacts: the names of contacts kept only
- * inside Erevos, sealed. Give them only while a space is open, and only the space's own, never a
- * hidden place's. They stay in the memory of Erevos's process only, never written anywhere, and
+ * inside Erevos, sealed. Give them only while a space is open, and only the space's own, with an
+ * open hidden place's only while it is open (lib/known-names.ts). They stay in the memory of Erevos's process only, never written anywhere, and
  * each call replaces the ones before; clearKnownNames() forgets them, which the app does whenever
  * the space locks (app/_layout.tsx), and forgetKnownNamesAfter() when it would, in the background.
  * With Erevos locked, a call shows the phone's contacts only.

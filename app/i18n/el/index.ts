@@ -12,5 +12,6 @@ import { more } from './more';
 import { groups } from './groups';
 import { devices } from './devices';
 import { publicGroups } from './public-groups';
+import { contacts } from './contacts';
 
-export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups };
+export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts };

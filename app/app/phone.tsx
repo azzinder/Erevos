@@ -1,16 +1,23 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppState, FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text } from '../components/ui';
-import { mark, t } from '../lib/i18n';
-import { callLength, dialNumber, KEYS, knownNames, typeKey } from '../lib/phone';
+import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text, TextButton } from '../components/ui';
+import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
+import { ask } from '../lib/alert';
+import { Held } from '../lib/held';
+import { mark, plural, t } from '../lib/i18n';
+import { refreshKnownNames } from '../lib/known-names';
+import { callLength, dialNumber, KEYS, typeKey } from '../lib/phone';
+import { isBlocked, onSmsOrderChanged, smsOrderChanged } from '../lib/sms-folders';
+import { sameNumber } from '../lib/sms-invite';
 import {
   CALL_FILTERS,
   callClock,
   callKind,
   callMarks,
+  callsWith,
   callWho,
   dayLabel,
   filterCalls,
@@ -18,39 +25,46 @@ import {
   hiddenNumber,
   KIND_LABELS,
   withDays,
+  withoutCalls,
   type CallFilter,
   type CallRow,
 } from '../lib/phone-log';
+import { blockedUntil, liftGroup, liveGroups, rulesFrom, rulesJson, type PhoneRules } from '../lib/phone-rules';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
-import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import {
+  blockingRules,
   callHistory,
+  deleteCalls,
+  deleteCallsOf,
   onPhoneEvent,
   phoneAccounts,
   phoneFavourites,
+  phoneGroups,
   phoneReady,
   phoneStatus,
   placeCall,
   seenMissedCalls,
-  setKnownNames,
+  setBlockingRules,
   showCall,
+  type ContactGroup,
   type Favourite,
   type LoggedCall,
   type PhoneAccount,
   type PhoneStatus,
 } from '../modules/erevos-phone';
+import { blockedNumbers, blockNumber, canBlockNumbers, unblockNumber } from '../modules/erevos-sms';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // The phone, with Erevos as Android's phone app (modules/erevos-phone): the keypad to call a
 // number, the calls (Android's call history, with filters) and the favourites (the phone's starred
-// contacts). A call itself shows on the native call screen, which works with Erevos locked and over
-// the phone's lock screen; this screen is behind Erevos's password like the rest of the app. It
-// opens from tel: links and the phone's call button with the number typed in (`number`), and from
-// Android's notice of a missed call on the calls (`tab`). With two SIMs, each call goes on the one
-// chosen for its number (lib/phone-sims.ts), else on the one chosen now, which is then kept for
-// the number.
+// contacts); above them, while a contact group's calls are blocked, a reminder with Lift. A call
+// itself shows on the native call screen, which works with Erevos locked and over the phone's lock
+// screen; this screen is behind Erevos's password like the rest of the app. It opens from tel:
+// links and the phone's call button with the number typed in (`number`), and from Android's notice
+// of a missed call on the calls (`tab`). With two SIMs, each call goes on the one chosen for its
+// number (lib/phone-sims.ts), else on the one chosen now, which is then kept for the number.
 
 type Tab = 'keypad' | 'recents' | 'favourites';
 
@@ -61,6 +75,30 @@ const TABS: { tab: Tab; label: string }[] = [
 ];
 
 const tabOf = (tab: unknown): Tab => (tab === 'recents' || tab === 'favourites' ? tab : 'keypad');
+
+const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+// Calls deleted from Recents hide at once, and leave Android's call history once Undo has shown
+// (lib/held.ts), whatever screen shows then, or at once when Erevos goes to the background. `calls`
+// are the ids that hide; with a `number`, every call with it up to `before` goes, the older ones too.
+type Deleting = { id: string; calls: number[]; number: string; before: number };
+const deleting = new Held<Deleting>();
+AppState.addEventListener('change', (state) => state === 'background' && deleting.flush());
+// The ids hidden: waiting to go, or gone and not yet read again without them.
+const hiding = new Set<number>();
+const hidingChanged = new Set<() => void>();
+const tellHiding = () => hidingChanged.forEach((listener) => listener());
+
+async function deleteNow(item: Deleting) {
+  try {
+    await (item.number ? deleteCallsOf(item.number, item.before) : deleteCalls(item.calls));
+  } catch (error) {
+    // They show again, and the owner hears why.
+    item.calls.forEach((id) => hiding.delete(id));
+    tellHiding();
+    ask(t('Not done'), t('The calls were not deleted. {error}', { error: errorText(error) }), [{ text: t('OK') }]);
+  }
+}
 
 export default function Phone() {
   const params = useLocalSearchParams<{ number?: string; tab?: string }>();
@@ -98,12 +136,7 @@ export default function Phone() {
     const { space: open, key } = currentSpace();
     PhoneSims.open(open, key).then(setSims, () => setSims(null));
     // A contact linked to a number since the space opened: its calls show its name too.
-    loadE2EData('space', open, key)
-      .then((e2e) => {
-        // Unless the space locked meanwhile: currentSpace() throws then.
-        if (currentSpace().key === key) setKnownNames(knownNames(e2e.contacts));
-      })
-      .catch(() => undefined);
+    void refreshKnownNames();
     const app = AppState.addEventListener('change', (state) => state === 'active' && look());
     const calls = onPhoneEvent('onCalls', () => setStatus(phoneStatus()));
     return () => {
@@ -185,6 +218,7 @@ export default function Phone() {
             <Text tone="muted">{t("Calls made here show on Android's own call screen until you make Erevos the phone app, under Settings.")}</Text>
           </Card>
         ) : null}
+        <GroupBlocks />
         <Row style={styles.tabs}>
           {TABS.map((each) => (
             <Chip key={each.tab} label={t(each.label)} selected={tab === each.tab} onPress={() => setTab(each.tab)} />
@@ -300,11 +334,77 @@ export default function Phone() {
           {t('Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.')}
         </Text>
       </Sheet>
+
+      <UndoBar bottom={insets.bottom + space.md} />
     </View>
   );
 }
 
-// Android's call history, read again whenever it changes, with filters; a row opens its calls.
+// A reminder while a contact group's calls are blocked (under Settings, lib/phone-rules.ts), each
+// with Lift; read again whenever the screen shows, and each minute, so a block that is over goes.
+function GroupBlocks() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const [rules, setRules] = useState<PhoneRules>(() => rulesFrom(blockingRules()));
+  const [groups, setGroups] = useState<ContactGroup[]>([]);
+  const [now, setNow] = useState(Date.now());
+  const live = liveGroups(rules, now);
+
+  useFocusEffect(
+    useCallback(() => {
+      const look = () => {
+        setRules(rulesFrom(blockingRules()));
+        setNow(Date.now());
+      };
+      look();
+      phoneGroups().then(
+        (found) => setGroups(found.groups),
+        () => setGroups([]),
+      );
+      const minute = setInterval(() => setNow(Date.now()), 60_000);
+      const app = AppState.addEventListener('change', (state) => state === 'active' && look());
+      return () => {
+        clearInterval(minute);
+        app.remove();
+      };
+    }, []),
+  );
+
+  function lift(id: string) {
+    const at = Date.now();
+    // As the settings keep them: without the blocks that are over.
+    const lifted = liftGroup(rulesFrom(blockingRules()), id);
+    const kept = { ...lifted, groups: liveGroups(lifted, at) };
+    setBlockingRules(rulesJson(kept, at));
+    setRules(kept);
+    setNow(at);
+  }
+
+  if (live.length === 0) return null;
+  return (
+    <Card>
+      {live.map((block) => {
+        const title = groups.find((g) => g.id === block.id)?.title;
+        return (
+          <Row key={block.id} style={styles.groupBlock}>
+            <View style={styles.rowBody}>
+              <Text variant="bodyStrong">
+                {title ? t('Calls from the group {group} are blocked', { group: title }) : t('Calls from a contact group are blocked')}
+              </Text>
+              <Text variant="caption" color={colors.danger}>
+                {blockedUntil(block.until, now)}
+              </Text>
+            </View>
+            <Button title={t('Lift')} kind="secondary" compact onPress={() => lift(block.id)} />
+          </Row>
+        );
+      })}
+    </Card>
+  );
+}
+
+// Android's call history, read again whenever it changes, with filters; a row opens its calls,
+// which can be deleted from there, with Undo for a few seconds.
 function Recents({ accounts, onCall, onEdit }: {
   accounts: PhoneAccount[];
   onCall: (number: string, account?: string) => void;
@@ -314,34 +414,102 @@ function Recents({ accounts, onCall, onEdit }: {
   const [history, setHistory] = useState<{ allowed: boolean; calls: LoggedCall[] } | null>(null);
   const [filter, setFilter] = useState<CallFilter>('all');
   const [account, setAccount] = useState('');
-  const [open, setOpen] = useState<CallRow | null>(null);
+  // The ids of the calls of the row that is open.
+  const [open, setOpen] = useState<number[] | null>(null);
   const [note, setNote] = useState('');
+  const [hidden, setHidden] = useState<ReadonlySet<number>>(() => new Set(hiding));
+  // Android's list of blocked numbers, the SMS screens' too; null while Erevos may not read it.
+  const [blocked, setBlocked] = useState<string[] | null>(null);
 
   useEffect(() => {
     const load = () => callHistory().then(setHistory, () => setHistory({ allowed: false, calls: [] }));
+    const lookBlocked = () => void canBlockNumbers().then((can) => (can ? blockedNumbers().then(setBlocked) : setBlocked(null)));
     load();
+    lookBlocked();
     // Seen here, the missed calls leave Android's notice.
     seenMissedCalls();
     const changed = onPhoneEvent('onHistory', () => void load());
     const app = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return;
       void load();
+      lookBlocked();
       seenMissedCalls();
     });
+    const hide = () => setHidden(new Set(hiding));
+    hidingChanged.add(hide);
+    // A number blocked or unblocked here, in the phone settings or under SMS.
+    const stopBlocked = onSmsOrderChanged(lookBlocked);
     return () => {
       changed?.remove();
       app.remove();
+      hidingChanged.delete(hide);
+      stopBlocked();
     };
   }, []);
 
-  const calls = history?.calls ?? [];
+  const calls = useMemo(() => withoutCalls(history?.calls ?? [], hidden), [history, hidden]);
   const items = useMemo(() => withDays(groupCalls(filterCalls(calls, filter, account)), Date.now()), [calls, filter, account]);
   const twoSims = accounts.length >= 2;
+  // The open row as it is now: without the calls deleted since, gone once they all are.
+  const row = useMemo<CallRow | null>(() => {
+    const shown = open ? calls.filter((c) => open.includes(c.id)) : [];
+    return shown.length ? { key: String(shown[0].id), kind: callKind(shown[0].type), calls: shown } : null;
+  }, [open, calls]);
+  const first = row?.calls[0] ?? null;
+  const ofNumber = first ? callsWith(calls, first) : [];
 
   async function allow() {
     const answer = await PermissionsAndroid.request('android.permission.READ_CALL_LOG').catch(() => null);
     if (answer === PermissionsAndroid.RESULTS.GRANTED) setHistory(await callHistory().catch(() => ({ allowed: false, calls: [] })));
     else setNote(t('Android did not allow it. Under Settings, Allow calls and contacts says how to.'));
+  }
+
+  // The phone app may change the call history; otherwise Android asks first.
+  async function mayChange(): Promise<boolean> {
+    const permission = 'android.permission.WRITE_CALL_LOG';
+    if (await PermissionsAndroid.check(permission).catch(() => false)) return true;
+    const answer = await PermissionsAndroid.request(permission).catch(() => null);
+    if (answer === PermissionsAndroid.RESULTS.GRANTED) return true;
+    setNote(t('Android did not allow it. Under Settings, Allow calls and contacts says how to.'));
+    return false;
+  }
+
+  // Deletes calls from the history after the seconds Undo shows; until then they only hide. With a
+  // `number`, every call with it goes, the older ones the list does not show too.
+  async function remove(ids: number[], number = '', who = '') {
+    if (ids.length === 0 || !(await mayChange())) return;
+    setNote('');
+    const id = `calls:${ids[0]}:${Date.now()}`;
+    ids.forEach((c) => hiding.add(c));
+    tellHiding();
+    deleting.hold({ id, calls: ids, number, before: Date.now() }, UNDO_SHOWS * 1000, deleteNow);
+    offerUndo({
+      text: number ? t('The calls with {who} were deleted.', { who }) : plural(ids.length, 'Call deleted.', '{n} calls deleted.'),
+      undo: () => {
+        if (!deleting.take(id)) return;
+        ids.forEach((c) => hiding.delete(c));
+        tellHiding();
+      },
+    });
+  }
+
+  // Puts the number in Android's list of blocked numbers, or takes it out as it was written there,
+  // with Undo.
+  async function setNumberBlocked(number: string, block: boolean, who: string, undoable = true) {
+    setNote('');
+    try {
+      if (block) await blockNumber(number);
+      else await unblockNumber(blocked?.find((b) => sameNumber(b, number)) ?? number);
+      smsOrderChanged();
+      if (undoable) {
+        offerUndo({
+          text: block ? t('Blocked {who}.', { who }) : t('Unblocked {who}.', { who }),
+          undo: () => setNumberBlocked(number, !block, who, false),
+        });
+      }
+    } catch (error) {
+      setNote(errorText(error));
+    }
   }
 
   if (history && !history.allowed) {
@@ -363,14 +531,17 @@ function Recents({ accounts, onCall, onEdit }: {
         keyExtractor={(item) => item.key}
         contentContainerStyle={styles.list}
         ListHeaderComponent={
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-            {CALL_FILTERS.filter((f) => f.filter !== 'blocked' || calls.some((c) => callKind(c.type) === 'blocked')).map((f) => (
-              <Chip key={f.filter} label={t(f.label)} selected={filter === f.filter} onPress={() => setFilter(f.filter)} />
-            ))}
-            {twoSims
-              ? accounts.map((a) => <Chip key={a.id} label={a.name} selected={account === a.id} onPress={() => setAccount(account === a.id ? '' : a.id)} />)
-              : null}
-          </ScrollView>
+          <View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+              {CALL_FILTERS.filter((f) => f.filter !== 'blocked' || calls.some((c) => callKind(c.type) === 'blocked')).map((f) => (
+                <Chip key={f.filter} label={t(f.label)} selected={filter === f.filter} onPress={() => setFilter(f.filter)} />
+              ))}
+              {twoSims
+                ? accounts.map((a) => <Chip key={a.id} label={a.name} selected={account === a.id} onPress={() => setAccount(account === a.id ? '' : a.id)} />)
+                : null}
+            </ScrollView>
+            {note ? <Text tone="muted">{note}</Text> : null}
+          </View>
         }
         ListEmptyComponent={
           history ? (
@@ -385,14 +556,33 @@ function Recents({ accounts, onCall, onEdit }: {
               {item.label}
             </Text>
           ) : (
-            <CallLine row={item.row} accounts={twoSims ? accounts : []} onOpen={() => setOpen(item.row)} onCall={() => onCall(item.row.calls[0].number)} />
+            <CallLine
+              row={item.row}
+              accounts={twoSims ? accounts : []}
+              onOpen={() => setOpen(item.row.calls.map((c) => c.id))}
+              onCall={() => onCall(item.row.calls[0].number)}
+            />
           )
         }
       />
 
-      <Sheet visible={open !== null} onClose={() => setOpen(null)} title={open ? callWho(open.calls[0]) : ''}>
-        {open ? <CallDetails row={open} accounts={twoSims ? accounts : []} /> : null}
-        {open && !hiddenNumber(open.calls[0]) ? (
+      <Sheet visible={row !== null} onClose={() => setOpen(null)} title={first ? callWho(first) : ''}>
+        {row ? (
+          <CallDetails
+            row={row}
+            accounts={twoSims ? accounts : []}
+            // One of several; the sheet closes so that Undo shows.
+            onDelete={
+              row.calls.length > 1
+                ? (call) => {
+                    setOpen(null);
+                    void remove([call.id]);
+                  }
+                : undefined
+            }
+          />
+        ) : null}
+        {row && first && !hiddenNumber(first) ? (
           <>
             {twoSims ? (
               accounts.map((a) => (
@@ -401,7 +591,7 @@ function Recents({ accounts, onCall, onEdit }: {
                   title={t('Call on {sim}', { sim: accountLabel(a) })}
                   onPress={() => {
                     setOpen(null);
-                    onCall(open.calls[0].number, a.id);
+                    onCall(first.number, a.id);
                   }}
                 />
               ))
@@ -410,7 +600,7 @@ function Recents({ accounts, onCall, onEdit }: {
                 title={t('Call')}
                 onPress={() => {
                   setOpen(null);
-                  onCall(open.calls[0].number);
+                  onCall(first.number);
                 }}
               />
             )}
@@ -419,7 +609,7 @@ function Recents({ accounts, onCall, onEdit }: {
               kind="secondary"
               onPress={() => {
                 setOpen(null);
-                router.push(`/sms?to=${encodeURIComponent(open.calls[0].number)}`);
+                router.push(`/sms?to=${encodeURIComponent(first.number)}`);
               }}
             />
             <Button
@@ -427,9 +617,45 @@ function Recents({ accounts, onCall, onEdit }: {
               kind="secondary"
               onPress={() => {
                 setOpen(null);
-                onEdit(open.calls[0].number);
+                onEdit(first.number);
               }}
             />
+            {blocked ? (
+              <Button
+                title={isBlocked(first.number, blocked) ? t('Unblock this number') : t('Block this number')}
+                kind="secondary"
+                onPress={() => {
+                  setOpen(null);
+                  void setNumberBlocked(first.number, !isBlocked(first.number, blocked), callWho(first));
+                }}
+              />
+            ) : null}
+          </>
+        ) : null}
+        {row && first ? (
+          <>
+            <Button
+              title={plural(row.calls.length, 'Delete this call', 'Delete these {n} calls')}
+              kind="danger"
+              onPress={() => {
+                setOpen(null);
+                void remove(row.calls.map((c) => c.id));
+              }}
+            />
+            {ofNumber.length > row.calls.length ? (
+              <Button
+                title={t('Delete every call with this number')}
+                kind="danger"
+                onPress={() => {
+                  setOpen(null);
+                  void remove(
+                    ofNumber.map((c) => c.id),
+                    first.number,
+                    callWho(first),
+                  );
+                }}
+              />
+            ) : null}
           </>
         ) : null}
       </Sheet>
@@ -489,16 +715,20 @@ function CallLine({ row, accounts, onOpen, onCall }: { row: CallRow; accounts: P
   );
 }
 
-// The calls of a row, one line each, under the number and the day.
-function CallDetails({ row, accounts }: { row: CallRow; accounts: PhoneAccount[] }) {
+// The calls of a row, one line each, under the number and the day; with `onDelete`, each can be
+// deleted on its own.
+function CallDetails({ row, accounts, onDelete }: { row: CallRow; accounts: PhoneAccount[]; onDelete?: (call: LoggedCall) => void }) {
   const first = row.calls[0];
   return (
     <View style={{ gap: space.xs }}>
       <Text tone="muted">{[first.name ? first.shown || first.number : '', dayLabel(first.at, Date.now())].filter(Boolean).join(' · ')}</Text>
       {row.calls.map((call) => (
-        <Text key={call.id} variant="caption" tone="muted">
-          {[callClock(call.at), callDetail(call, accounts), call.duration > 0 ? callLength(call.duration) : ''].filter(Boolean).join(' · ')}
-        </Text>
+        <Row key={call.id} style={{ gap: space.sm }}>
+          <Text variant="caption" tone="muted" style={{ flex: 1 }}>
+            {[callClock(call.at), callDetail(call, accounts), call.duration > 0 ? callLength(call.duration) : ''].filter(Boolean).join(' · ')}
+          </Text>
+          {onDelete ? <TextButton title={t('Delete')} onPress={() => onDelete(call)} /> : null}
+        </Row>
       ))}
     </View>
   );
@@ -662,6 +892,9 @@ const makeStyles = (colors: Colors) =>
     rowBody: {
       flex: 1,
       gap: 2,
+    },
+    groupBlock: {
+      gap: space.sm,
     },
     callBack: {
       width: 40,

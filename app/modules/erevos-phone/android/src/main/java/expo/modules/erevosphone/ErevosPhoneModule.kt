@@ -106,6 +106,15 @@ class ErevosPhoneModule : Module() {
       mapOf("allowed" to History.allowed(context), "calls" to History.calls(context))
     }
 
+    // Deletes calls from the history, by id, or every call with a number up to a time.
+    AsyncFunction("deleteCalls") { ids: List<Double> ->
+      History.delete(context(), ids.map { it.toLong() })
+    }
+
+    AsyncFunction("deleteCallsOf") { number: String, before: Double ->
+      History.deleteNumber(context(), number, before.toLong())
+    }
+
     // The phone's starred contacts, once Erevos may read the contacts.
     AsyncFunction("favourites") {
       val context = context()

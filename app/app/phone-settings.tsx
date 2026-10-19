@@ -2,6 +2,7 @@ import { startActivityAsync } from 'expo-intent-launcher';
 import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform, View } from 'react-native';
 
+import { BlockedNumbers } from '../components/blocked-numbers';
 import { Button, Card, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { askFullScreen, backgroundState } from '../lib/background';
 import { mark, plural, t } from '../lib/i18n';
@@ -37,6 +38,7 @@ import {
   type ContactGroup,
   type PhoneStatus,
 } from '../modules/erevos-phone';
+import { smsToolsReady } from '../modules/erevos-sms';
 import { space } from '../theme/colors';
 import { useTheme } from '../theme/context';
 
@@ -52,6 +54,7 @@ const PHONE_PERMISSIONS = [
   'android.permission.CALL_PHONE',
   'android.permission.READ_PHONE_STATE',
   'android.permission.READ_CALL_LOG',
+  'android.permission.WRITE_CALL_LOG',
   'android.permission.READ_CONTACTS',
 ] as const;
 const NOT_CHOSEN = mark(
@@ -282,6 +285,14 @@ function Blocking({ screens }: { screens: boolean }) {
           </>
         ) : null}
         {note ? <Text tone="muted">{note}</Text> : null}
+      </Card>
+
+      <Card>
+        <Text variant="bodyStrong">{t('Blocked numbers')}</Text>
+        <Text tone="muted">
+          {t("Android's own blocked numbers, the same list as under SMS: Android rejects their calls before they ring, and their SMS and MMS. Every space sees the same list.")}
+        </Text>
+        <BlockedNumbers cannot={smsToolsReady() ? t('Only the phone app or the SMS app may see them: make Erevos the phone app above.') : t('This build of Erevos cannot block numbers yet.')} />
       </Card>
 
       <Card>

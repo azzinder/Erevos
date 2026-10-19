@@ -48,6 +48,17 @@ export const phone: Record<string, string> = {
   'Call {name}': 'Κλήση: {name}',
   'Send an SMS': 'Αποστολή SMS',
   'Change the number before calling': 'Αλλαγή αριθμού πριν την κλήση',
+  'Block this number': 'Αποκλεισμός αυτού του αριθμού',
+  'Unblock this number': 'Άρση αποκλεισμού αυτού του αριθμού',
+  'Blocked {who}.': 'Αποκλείστηκε: {who}.',
+  'Unblocked {who}.': 'Άρση αποκλεισμού: {who}.',
+  'Delete this call': 'Διαγραφή αυτής της κλήσης',
+  'Delete these {n} calls': 'Διαγραφή αυτών των {n} κλήσεων',
+  'Delete every call with this number': 'Διαγραφή όλων των κλήσεων με αυτόν τον αριθμό',
+  'Call deleted.': 'Η κλήση διαγράφηκε.',
+  '{n} calls deleted.': 'Διαγράφηκαν {n} κλήσεις.',
+  'The calls with {who} were deleted.': 'Οι κλήσεις με {who} διαγράφηκαν.',
+  'The calls were not deleted. {error}': 'Οι κλήσεις δεν διαγράφηκαν. {error}',
   "Android does not let Erevos read the phone's contacts yet.": 'Το Android δεν αφήνει ακόμα το Erevos να διαβάσει τις επαφές του τηλεφώνου.',
   'Allow the contacts': 'Να επιτρέπονται οι επαφές',
   'No favourites yet. The contacts you star show here, to call at a tap.':
@@ -100,6 +111,10 @@ export const phone: Record<string, string> = {
   'Erevos does not screen calls yet, so a blocked call rings a moment before Erevos ends it.':
     'Το Erevos δεν ελέγχει ακόμα τις κλήσεις, οπότε μια αποκλεισμένη κλήση χτυπά για λίγο πριν την τερματίσει το Erevos.',
   'Let Erevos screen calls': 'Να ελέγχει το Erevos τις κλήσεις',
+  "Android's own blocked numbers, the same list as under SMS: Android rejects their calls before they ring, and their SMS and MMS. Every space sees the same list.":
+    'Οι αποκλεισμένοι αριθμοί του ίδιου του Android, η ίδια λίστα με αυτή στα SMS: το Android απορρίπτει τις κλήσεις τους πριν χτυπήσουν, και τα SMS και MMS τους. Κάθε χώρος βλέπει την ίδια λίστα.',
+  'Only the phone app or the SMS app may see them: make Erevos the phone app above.':
+    'Μόνο η εφαρμογή τηλεφώνου ή η εφαρμογή SMS μπορεί να τους δει: κάνε το Erevos εφαρμογή τηλεφώνου παραπάνω.',
   'Block a contact group': 'Αποκλεισμός ομάδας επαφών',
   "The calls of a group's contacts, as your phone's contacts label them, are blocked for a while: for an hour, until tomorrow morning, or until you lift it.":
     'Οι κλήσεις από τις επαφές μιας ομάδας, όπως τις ομαδοποιούν οι επαφές του τηλεφώνου σου, αποκλείονται για λίγο: για μία ώρα, μέχρι αύριο το πρωί, ή μέχρι να τον άρεις.',
@@ -113,4 +128,6 @@ export const phone: Record<string, string> = {
   'Blocked until you lift it': 'Αποκλεισμένη μέχρι να τον άρεις',
   'Blocked until {time}': 'Αποκλεισμένη μέχρι τις {time}',
   'Blocked until tomorrow, {time}': 'Αποκλεισμένη μέχρι αύριο, {time}',
+  'Calls from the group {group} are blocked': 'Οι κλήσεις από την ομάδα {group} αποκλείονται',
+  'Calls from a contact group are blocked': 'Οι κλήσεις από μια ομάδα επαφών αποκλείονται',
 };

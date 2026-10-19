@@ -12,17 +12,17 @@ import { NoCameraError } from './pick-photo';
 export const SIDE = 256;
 export const WALL = 1080;
 
-/** The photo's bytes, or null if the owner went back. */
-export function pickAvatar(from: 'photos' | 'camera'): Promise<Uint8Array | null> {
-  return pick(from, true);
+/** The photo's bytes, `side` points square (a phone contact's is larger), or null if the owner went back. */
+export function pickAvatar(from: 'photos' | 'camera', side = SIDE): Promise<Uint8Array | null> {
+  return pick(from, true, side);
 }
 
 /** A wallpaper's photo, from the phone's photos, or null if the owner went back. */
 export function pickWallpaper(): Promise<Uint8Array | null> {
-  return pick('photos', false);
+  return pick('photos', false, WALL);
 }
 
-async function pick(from: 'photos' | 'camera', square: boolean): Promise<Uint8Array | null> {
+async function pick(from: 'photos' | 'camera', square: boolean, side: number): Promise<Uint8Array | null> {
   const options: ImagePicker.ImagePickerOptions = square
     ? { mediaTypes: ['images'], quality: 1, exif: false, allowsEditing: true, aspect: [1, 1] }
     : { mediaTypes: ['images'], quality: 1, exif: false, allowsEditing: false };
@@ -37,7 +37,7 @@ async function pick(from: 'photos' | 'camera', square: boolean): Promise<Uint8Ar
   const asset = picked.canceled ? null : picked.assets[0];
   if (!asset) return null;
   try {
-    const width = square ? SIDE : Math.min(WALL, asset.width || WALL);
+    const width = square ? side : Math.min(side, asset.width || side);
     const image = await ImageManipulator.manipulate(asset.uri).resize(square ? { width, height: width } : { width }).renderAsync();
     const saved = await image.saveAsync({ compress: square ? 0.85 : 0.8, format: SaveFormat.JPEG });
     const file = new File(saved.uri);

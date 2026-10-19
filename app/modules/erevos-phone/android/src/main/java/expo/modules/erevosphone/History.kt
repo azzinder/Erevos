@@ -17,8 +17,9 @@ import android.telecom.TelecomManager
 
 /**
  * Android's call history (CallLog.Calls), which Telecom writes for every call, the phone's
- * starred contacts, its favourites, and its contact groups. Erevos only reads them, for the Phone screen, which is behind
- * its password; it keeps no copy. Names come from the phone's contacts as they are now, and from
+ * starred contacts, its favourites, and its contact groups. Erevos reads them for the Phone
+ * screen, which is behind its password, and keeps no copy; it changes only the history, when the
+ * owner deletes calls from it. Names come from the phone's contacts as they are now, and from
  * what Erevos knows of numbers while a space is open (Calls.knownName). Not compiled or run yet.
  */
 internal object History {
@@ -80,6 +81,32 @@ internal object History {
       return emptyList()
     }
     return calls
+  }
+
+  /** Deletes calls from the history, by their ids; how many went. The phone app may. */
+  fun delete(context: Context, ids: List<Long>): Int {
+    if (ids.isEmpty()) return 0
+    check(context.checkSelfPermission(Manifest.permission.WRITE_CALL_LOG) == PackageManager.PERMISSION_GRANTED) { "Android does not let Erevos change the call history" }
+    var gone = 0
+    // A few hundred at a time, as a query takes only so many arguments.
+    for (some in ids.chunked(200)) {
+      val selection = "${CallLog.Calls._ID} IN (${some.joinToString(",") { "?" }})"
+      gone += context.contentResolver.delete(CallLog.Calls.CONTENT_URI, selection, some.map { it.toString() }.toTypedArray())
+    }
+    return gone
+  }
+
+  /** Deletes every call with this number up to `before` (milliseconds), as far back as the history
+   *  goes; how many went. A call that came after, while Undo showed, stays. */
+  fun deleteNumber(context: Context, number: String, before: Long): Int {
+    val key = Calls.key(number) ?: return 0
+    if (!allowed(context)) return 0
+    val ids = ArrayList<Long>()
+    val columns = arrayOf(CallLog.Calls._ID, CallLog.Calls.NUMBER)
+    context.contentResolver.query(CallLog.Calls.CONTENT_URI, columns, "${CallLog.Calls.DATE} <= ?", arrayOf(before.toString()), null)?.use { c ->
+      while (c.moveToNext()) if (Calls.key(c.getString(1) ?: "") == key) ids.add(c.getLong(0))
+    }
+    return delete(context, ids)
   }
 
   /** The phone's starred contacts with their numbers, by name (index.ts's Favourite). */

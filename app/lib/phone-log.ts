@@ -79,6 +79,17 @@ function numberKey(call: LoggedCall): string {
   return call.number.replace(/\D/g, '').slice(-10) || call.number;
 }
 
+/** The calls with the same number as `call`, as deleting every call of a number matches them. */
+export function callsWith(calls: LoggedCall[], call: LoggedCall): LoggedCall[] {
+  if (hiddenNumber(call)) return [];
+  return calls.filter((c) => !hiddenNumber(c) && numberKey(c) === numberKey(call));
+}
+
+/** The calls without those being deleted. */
+export function withoutCalls(calls: LoggedCall[], gone: ReadonlySet<number>): LoggedCall[] {
+  return gone.size ? calls.filter((c) => !gone.has(c.id)) : calls;
+}
+
 const dayKey = (at: number) => new Date(at).toDateString();
 
 /** Calls one after another, newest first, with the same number, of the same kind, on the same day. */

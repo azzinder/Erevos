@@ -1,0 +1,56 @@
+package expo.modules.erevoscontacts
+
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.DecodeHintType
+import com.google.zxing.LuminanceSource
+import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.ReaderException
+import com.google.zxing.common.GlobalHistogramBinarizer
+import com.google.zxing.common.HybridBinarizer
+import com.google.zxing.qrcode.QRCodeReader
+
+/**
+ * The text of a QR code in a photo (a contact's vCard, taken or picked by the owner), read here
+ * with ZXing: nothing leaves the phone. The photo is read at most 1600 points wide; a code that
+ * does not read at first is tried with a plainer threshold, then light on dark.
+ */
+internal object QrReader {
+  private const val MOST = 1600
+
+  fun read(context: Context, address: String): String? {
+    val uri = Uri.parse(address)
+    val resolver = context.contentResolver
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) } ?: throw IllegalStateException("The photo could not be read")
+    var sample = 1
+    while (bounds.outWidth / sample > MOST || bounds.outHeight / sample > MOST) sample *= 2
+    val options = BitmapFactory.Options().apply { inSampleSize = sample }
+    val bitmap = resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) } ?: throw IllegalStateException("The photo could not be read")
+    val width = bitmap.width
+    val height = bitmap.height
+    val pixels = IntArray(width * height)
+    bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+    bitmap.recycle()
+    val source: LuminanceSource = RGBLuminanceSource(width, height, pixels)
+    // A code written in UTF-8 without saying so (as Erevos writes a vCard's) reads as UTF-8.
+    val hints = mapOf(
+      DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE),
+      DecodeHintType.TRY_HARDER to true,
+      DecodeHintType.CHARACTER_SET to "UTF-8",
+    )
+    for (luminance in listOf(source, source.invert())) {
+      for (binary in listOf(BinaryBitmap(HybridBinarizer(luminance)), BinaryBitmap(GlobalHistogramBinarizer(luminance)))) {
+        try {
+          return QRCodeReader().decode(binary, hints).text
+        } catch (_: ReaderException) {
+          // Tried the next way.
+        }
+      }
+    }
+    return null
+  }
+}
