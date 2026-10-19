@@ -7,7 +7,7 @@ import { useStyles } from '../theme/context';
 import { Text, TextButton } from './ui';
 
 // What was just done to an SMS conversation or message (archived, put in the Trash, deleted), or
-// to calls in the phone's Recents (deleted), with Undo for a few seconds, on
+// to calls in the phone's Recents (deleted, a number blocked), with Undo for a few seconds, on
 // whichever screen with the bar shows next: the one it was done on, or the list it goes back to.
 // One at a time; a new one takes the place of the last.
 

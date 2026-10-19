@@ -630,8 +630,9 @@ Erevos's keypad.
   (**Let Erevos screen calls**): without that, a blocked call rings a moment before Erevos ends it. What is blocked
   is the same in every space, so it tells nothing of another, and is kept on the phone with no names.
 - **Blocked numbers:** under **Phone** → **Settings**, **Blocked numbers** is Android's own list, the same one as
-  under **SMS**: type a number and tap **Block**, or tap one to unblock it. Android rejects their calls before they
-  ring, and their SMS and MMS. Every space sees the same list.
+  under **SMS**: type a number and tap **Block**, or tap one to unblock it. In **Recents**, a row's calls show
+  **Block this number** or **Unblock this number**, with **Undo**. Android rejects their calls before they ring, and
+  their SMS and MMS. Every space sees the same list.
 - **A contact group for a while:** under **Phone** → **Settings**, **Block a contact group** lists the groups (the
   labels) of your phone's contacts. **Block** beside one blocks its contacts' calls **For an hour**,
   **Until tomorrow morning** (7:00) or **Until I lift it**; the line under the group says until when, and **Lift**

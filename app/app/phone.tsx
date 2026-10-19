@@ -9,6 +9,8 @@ import { ask } from '../lib/alert';
 import { Held } from '../lib/held';
 import { mark, plural, t } from '../lib/i18n';
 import { callLength, dialNumber, KEYS, knownNames, typeKey } from '../lib/phone';
+import { isBlocked, onSmsOrderChanged, smsOrderChanged } from '../lib/sms-folders';
+import { sameNumber } from '../lib/sms-invite';
 import {
   CALL_FILTERS,
   callClock,
@@ -47,6 +49,7 @@ import {
   type PhoneAccount,
   type PhoneStatus,
 } from '../modules/erevos-phone';
+import { blockedNumbers, blockNumber, canBlockNumbers, unblockNumber } from '../modules/erevos-sms';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
@@ -352,24 +355,32 @@ function Recents({ accounts, onCall, onEdit }: {
   const [open, setOpen] = useState<number[] | null>(null);
   const [note, setNote] = useState('');
   const [hidden, setHidden] = useState<ReadonlySet<number>>(() => new Set(hiding));
+  // Android's list of blocked numbers, the SMS screens' too; null while Erevos may not read it.
+  const [blocked, setBlocked] = useState<string[] | null>(null);
 
   useEffect(() => {
     const load = () => callHistory().then(setHistory, () => setHistory({ allowed: false, calls: [] }));
+    const lookBlocked = () => void canBlockNumbers().then((can) => (can ? blockedNumbers().then(setBlocked) : setBlocked(null)));
     load();
+    lookBlocked();
     // Seen here, the missed calls leave Android's notice.
     seenMissedCalls();
     const changed = onPhoneEvent('onHistory', () => void load());
     const app = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return;
       void load();
+      lookBlocked();
       seenMissedCalls();
     });
     const hide = () => setHidden(new Set(hiding));
     hidingChanged.add(hide);
+    // A number blocked or unblocked here, in the phone settings or under SMS.
+    const stopBlocked = onSmsOrderChanged(lookBlocked);
     return () => {
       changed?.remove();
       app.remove();
       hidingChanged.delete(hide);
+      stopBlocked();
     };
   }, []);
 
@@ -417,6 +428,25 @@ function Recents({ accounts, onCall, onEdit }: {
         tellHiding();
       },
     });
+  }
+
+  // Puts the number in Android's list of blocked numbers, or takes it out as it was written there,
+  // with Undo.
+  async function setNumberBlocked(number: string, block: boolean, who: string, undoable = true) {
+    setNote('');
+    try {
+      if (block) await blockNumber(number);
+      else await unblockNumber(blocked?.find((b) => sameNumber(b, number)) ?? number);
+      smsOrderChanged();
+      if (undoable) {
+        offerUndo({
+          text: block ? t('Blocked {who}.', { who }) : t('Unblocked {who}.', { who }),
+          undo: () => setNumberBlocked(number, !block, who, false),
+        });
+      }
+    } catch (error) {
+      setNote(errorText(error));
+    }
   }
 
   if (history && !history.allowed) {
@@ -527,6 +557,16 @@ function Recents({ accounts, onCall, onEdit }: {
                 onEdit(first.number);
               }}
             />
+            {blocked ? (
+              <Button
+                title={isBlocked(first.number, blocked) ? t('Unblock this number') : t('Block this number')}
+                kind="secondary"
+                onPress={() => {
+                  setOpen(null);
+                  void setNumberBlocked(first.number, !isBlocked(first.number, blocked), callWho(first));
+                }}
+              />
+            ) : null}
           </>
         ) : null}
         {row && first ? (
