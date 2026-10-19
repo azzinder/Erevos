@@ -637,7 +637,8 @@ Erevos's keypad.
   labels) of your phone's contacts. **Block** beside one blocks its contacts' calls **For an hour**,
   **Until tomorrow morning** (7:00) or **Until I lift it**; the line under the group says until when, and **Lift**
   ends it sooner. Such a call is blocked like the others: it does not ring, and shows in **Recents**, under
-  **Blocked**. Erevos only reads the groups, and keeps the group's id and the time, not its name.
+  **Blocked**. Erevos only reads the groups, and keeps the group's id and the time, not its name. While a group is
+  blocked, the **Phone** screen says so at the top, until when, with **Lift**.
 - **Erevos's password:** the **Phone** screen, with the keypad, the calls and the favourites, is behind it like the
   rest of Erevos. Only the call screen is not.
 - **If Erevos does not become the phone app:** as with SMS, Android 15 and later can hold it back from an app

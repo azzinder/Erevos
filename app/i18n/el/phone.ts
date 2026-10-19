@@ -128,4 +128,6 @@ export const phone: Record<string, string> = {
   'Blocked until you lift it': 'Αποκλεισμένη μέχρι να τον άρεις',
   'Blocked until {time}': 'Αποκλεισμένη μέχρι τις {time}',
   'Blocked until tomorrow, {time}': 'Αποκλεισμένη μέχρι αύριο, {time}',
+  'Calls from the group {group} are blocked': 'Οι κλήσεις από την ομάδα {group} αποκλείονται',
+  'Calls from a contact group are blocked': 'Οι κλήσεις από μια ομάδα επαφών αποκλείονται',
 };

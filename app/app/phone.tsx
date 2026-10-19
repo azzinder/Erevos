@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppState, FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,22 +28,27 @@ import {
   type CallFilter,
   type CallRow,
 } from '../lib/phone-log';
+import { blockedUntil, liftGroup, liveGroups, rulesFrom, rulesJson, type PhoneRules } from '../lib/phone-rules';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
 import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import {
+  blockingRules,
   callHistory,
   deleteCalls,
   deleteCallsOf,
   onPhoneEvent,
   phoneAccounts,
   phoneFavourites,
+  phoneGroups,
   phoneReady,
   phoneStatus,
   placeCall,
   seenMissedCalls,
+  setBlockingRules,
   setKnownNames,
   showCall,
+  type ContactGroup,
   type Favourite,
   type LoggedCall,
   type PhoneAccount,
@@ -55,12 +60,12 @@ import { useStyles, useTheme } from '../theme/context';
 
 // The phone, with Erevos as Android's phone app (modules/erevos-phone): the keypad to call a
 // number, the calls (Android's call history, with filters) and the favourites (the phone's starred
-// contacts). A call itself shows on the native call screen, which works with Erevos locked and over
-// the phone's lock screen; this screen is behind Erevos's password like the rest of the app. It
-// opens from tel: links and the phone's call button with the number typed in (`number`), and from
-// Android's notice of a missed call on the calls (`tab`). With two SIMs, each call goes on the one
-// chosen for its number (lib/phone-sims.ts), else on the one chosen now, which is then kept for
-// the number.
+// contacts); above them, while a contact group's calls are blocked, a reminder with Lift. A call
+// itself shows on the native call screen, which works with Erevos locked and over the phone's lock
+// screen; this screen is behind Erevos's password like the rest of the app. It opens from tel:
+// links and the phone's call button with the number typed in (`number`), and from Android's notice
+// of a missed call on the calls (`tab`). With two SIMs, each call goes on the one chosen for its
+// number (lib/phone-sims.ts), else on the one chosen now, which is then kept for the number.
 
 type Tab = 'keypad' | 'recents' | 'favourites';
 
@@ -219,6 +224,7 @@ export default function Phone() {
             <Text tone="muted">{t("Calls made here show on Android's own call screen until you make Erevos the phone app, under Settings.")}</Text>
           </Card>
         ) : null}
+        <GroupBlocks />
         <Row style={styles.tabs}>
           {TABS.map((each) => (
             <Chip key={each.tab} label={t(each.label)} selected={tab === each.tab} onPress={() => setTab(each.tab)} />
@@ -337,6 +343,69 @@ export default function Phone() {
 
       <UndoBar bottom={insets.bottom + space.md} />
     </View>
+  );
+}
+
+// A reminder while a contact group's calls are blocked (under Settings, lib/phone-rules.ts), each
+// with Lift; read again whenever the screen shows, and each minute, so a block that is over goes.
+function GroupBlocks() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const [rules, setRules] = useState<PhoneRules>(() => rulesFrom(blockingRules()));
+  const [groups, setGroups] = useState<ContactGroup[]>([]);
+  const [now, setNow] = useState(Date.now());
+  const live = liveGroups(rules, now);
+
+  useFocusEffect(
+    useCallback(() => {
+      const look = () => {
+        setRules(rulesFrom(blockingRules()));
+        setNow(Date.now());
+      };
+      look();
+      phoneGroups().then(
+        (found) => setGroups(found.groups),
+        () => setGroups([]),
+      );
+      const minute = setInterval(() => setNow(Date.now()), 60_000);
+      const app = AppState.addEventListener('change', (state) => state === 'active' && look());
+      return () => {
+        clearInterval(minute);
+        app.remove();
+      };
+    }, []),
+  );
+
+  function lift(id: string) {
+    const at = Date.now();
+    // As the settings keep them: without the blocks that are over.
+    const lifted = liftGroup(rulesFrom(blockingRules()), id);
+    const kept = { ...lifted, groups: liveGroups(lifted, at) };
+    setBlockingRules(rulesJson(kept, at));
+    setRules(kept);
+    setNow(at);
+  }
+
+  if (live.length === 0) return null;
+  return (
+    <Card>
+      {live.map((block) => {
+        const title = groups.find((g) => g.id === block.id)?.title;
+        return (
+          <Row key={block.id} style={styles.groupBlock}>
+            <View style={styles.rowBody}>
+              <Text variant="bodyStrong">
+                {title ? t('Calls from the group {group} are blocked', { group: title }) : t('Calls from a contact group are blocked')}
+              </Text>
+              <Text variant="caption" color={colors.danger}>
+                {blockedUntil(block.until, now)}
+              </Text>
+            </View>
+            <Button title={t('Lift')} kind="secondary" compact onPress={() => lift(block.id)} />
+          </Row>
+        );
+      })}
+    </Card>
   );
 }
 
@@ -829,6 +898,9 @@ const makeStyles = (colors: Colors) =>
     rowBody: {
       flex: 1,
       gap: 2,
+    },
+    groupBlock: {
+      gap: space.sm,
     },
     callBack: {
       width: 40,
