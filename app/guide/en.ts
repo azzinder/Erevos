@@ -38,7 +38,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 
 | In the menu | What it opens |
 | --- | --- |
-| **Language · Γλώσσα** | The app's language: English, Greek or German. See Language below. |
+| **Language · Γλώσσα** | The app's language: English, Greek, German or French. See Language below. |
 | **New group** | A group chat with your contacts. See [Group chats](#groups). |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
 | **LoRa radio** | Texts over a Meshtastic radio, kilometres away, without internet; off unless set. See [Over a LoRa radio](#lora). |
@@ -66,11 +66,11 @@ A good first hour:
 
 ### Language
 
-Erevos is in English, Greek and German. The first time it starts, it follows the phone's language if it is one of
-these, and is in English otherwise. To change it, open the menu (the three dots) and tap its first row,
+Erevos is in English, Greek, German and French. The first time it starts, it follows the phone's language if it is
+one of these, and is in English otherwise. To change it, open the menu (the three dots) and tap its first row,
 **Language · Γλώσσα**: in the other languages it is named in that language and in English, such as
-**Sprache · Language**. Then tap the language, each named in its own words: **Ελληνικά**, **English** or
-**Deutsch**. The whole app changes at once.
+**Sprache · Language**. Then tap the language, each named in its own words: **Ελληνικά**, **English**, **Deutsch**
+or **Français**. The whole app changes at once.
 
 - **This guide** is in English and Greek only: in the other languages it shows in English, and names the buttons as
   the app does in English. A word new to the app may also show in English in those languages for a while, until it
