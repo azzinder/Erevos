@@ -108,9 +108,10 @@ class ErevosCallModule : Module() {
       null
     }
 
-    // Messages came while Erevos was in the background: a notice that says how many, no more.
-    Function("tellMessages") { count: Int ->
-      context?.let { Notices.messages(it, count) }
+    // Messages came while Erevos was in the background: a notice that says how many, no more,
+    // without sound when the last came without (`quiet`).
+    Function("tellMessages") { count: Int, quiet: Boolean? ->
+      context?.let { Notices.messages(it, count, quiet == true) }
       null
     }
 

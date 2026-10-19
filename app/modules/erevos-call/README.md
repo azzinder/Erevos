@@ -18,9 +18,10 @@ push service:
 - `ring()`: the phone's ringtone, and the call notice (`Notices`), shown over
   the lock screen with a full-screen intent. It names no one: "Incoming call" or
   "Incoming video call".
-- `tellMessages(count)`, `clearMessages()`: the notice that messages came while
-  Erevos was in the background. It says only "New message" or how many, and on a
-  locked phone only "Erevos".
+- `tellMessages(count, quiet)`, `clearMessages()`: the notice that messages came
+  while Erevos was in the background. It says only "New message" or how many, and
+  on a locked phone only "Erevos". While only messages sent without sound came
+  (`quiet`), it shows on a channel that never sounds or vibrates.
 - `backgroundState()`, `askBattery()`, `askFullScreen()`: what Android allows,
   and its own screens to change that.
 

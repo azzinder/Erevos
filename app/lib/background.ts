@@ -69,13 +69,14 @@ export function isNews(received: Extract<Received, { kind: 'message' }>): boolea
 
 /**
  * A message came in the open space, from a contact or in a group: while Erevos is in the
- * background, the notice says one more came. The chat screen tells of what it opens itself.
+ * background, the notice says one more came. One sent without sound (`quiet`) makes none: the
+ * notice shows or counts on silently. The chat screen tells of what it opens itself.
  */
-export function messageCame(): void {
+export function messageCame(quiet = false): void {
   if (!telling || appShown()) return;
   unseen++;
   try {
-    callAudio?.tellMessages?.(unseen);
+    callAudio?.tellMessages?.(unseen, quiet);
   } catch {
     // A build from before the notice: nothing shows.
   }
@@ -146,9 +147,9 @@ export function startBackground(): () => void {
   changes.add(follow);
   const told = [
     onMessage((received) => {
-      if (isNews(received)) messageCame();
+      if (isNews(received)) messageCame(received.quiet);
     }),
-    onSpaceGroupMessage(messageCame),
+    onSpaceGroupMessage(() => messageCame()),
   ];
   // Erevos shows again: what came shows there, so the notice goes.
   const shown = AppState.addEventListener('change', (state) => {

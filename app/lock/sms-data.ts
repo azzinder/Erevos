@@ -4,7 +4,8 @@ import { sealedFile, type Holder } from './sealed-file';
 // whether to send SMS invites, the invites sent and not answered yet with the keys that open
 // their answers, the invites that came from other Erevos phones, and invite pieces still waiting
 // for the rest; whether to show names from the phone's contacts, and the SIM chosen for each number.
-// The SMS themselves stay in the phone's SMS store, where every SMS app keeps them.
+// The SMS themselves stay in the phone's SMS store, where every SMS app keeps them; one sent for
+// later is kept here instead until it goes (lib/sms-later.ts), so no other app sees it before.
 
 export type { Holder };
 
@@ -13,6 +14,8 @@ export type GotInvite = { number: string; sender: string; at: number };
 export type WaitingPiece = { from: string; data: string; at: number };
 /** The SIM (its subscription id) chosen for SMS to a number, or a group's numbers comma-separated. */
 export type NumberSim = { number: string; sim: number };
+/** An SMS to one number, to go at `at` on `sim` (-1: the phone's default). */
+export type LaterSms = { id: string; to: string; text: string; at: number; sim: number };
 
 export type SmsData = {
   /** Send an invite with the first SMS to a number with no contact. */
@@ -23,9 +26,11 @@ export type SmsData = {
   /** Show the names the phone's contacts give SMS numbers. Off until the owner turns it on. */
   names: boolean;
   sims: NumberSim[];
+  /** SMS sent for later, until they go. */
+  later: LaterSms[];
 };
 
-export const EMPTY_SMS: SmsData = { invites: true, sent: [], got: [], waiting: [], names: false, sims: [] };
+export const EMPTY_SMS: SmsData = { invites: true, sent: [], got: [], waiting: [], names: false, sims: [], later: [] };
 
 const FILE = 'erevos-sms';
 const BLOCK = 4 * 1024;
@@ -33,6 +38,9 @@ const BLOCK = 4 * 1024;
 export const INVITE_DAYS = 30;
 const MAX = 50;
 const MAX_SIMS = 300;
+/** The SMS that can wait to go later at once, and the longest text of one: as long as a chat's. */
+export const MAX_LATER = MAX;
+export const LATER_TEXT = 4000;
 
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
@@ -53,6 +61,11 @@ function checked(value: unknown): SmsData {
       .filter((n) => isText(n.number) && n.number.length > 0 && n.number.length <= 400 && Number.isInteger(n.sim) && (n.sim as number) >= 0)
       .map((n) => ({ number: n.number as string, sim: n.sim as number }))
       .slice(-MAX_SIMS),
+    later: list(v.later, (l) =>
+      isText(l.id) && /^[A-Za-z0-9_-]{1,32}$/.test(l.id) && isNumber(l.to) && isText(l.text) && l.text.length > 0 && l.text.length <= LATER_TEXT && isTime(l.at) && Number.isInteger(l.sim) && (l.sim as number) >= -1
+        ? { id: l.id, to: l.to, text: l.text, at: l.at, sim: l.sim as number }
+        : null,
+    ),
   };
 }
 

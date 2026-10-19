@@ -275,6 +275,24 @@ t('a message carries its tag, and a request to delete one message or all of them
   assert.equal(message(await bob.e2e.receive(both.packet)).erase, null);
 });
 
+t('a message sent without sound says so inside the encryption, and one sent as usual says nothing', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  assert.equal(hello.quiet, false);
+  await alice.e2e.firstSent(identity);
+
+  const hush = await alice.e2e.seal(identity, 'hush', alice.from, { quiet: true });
+  const heard = message(await bob.e2e.receive(hush.packet));
+  assert.deepEqual([heard.text, heard.quiet], ['hush', true]);
+  const loud = await alice.e2e.seal(identity, 'loud', alice.from, { quiet: false });
+  assert.equal(message(await bob.e2e.receive(loud.packet)).quiet, false);
+  // Only words come quiet: what came or was read is no message to hear.
+  const marks = await bob.e2e.seal(hello.identity, '', bob.from, { got: [hush.tag], quiet: true });
+  assert.equal(message(await alice.e2e.receive(marks.packet)).quiet, false);
+});
+
 t('a chat timer travels with the messages, the later setting wins, and old messages keep theirs', async () => {
   const key = randomBytes(32);
   const alice = await chat('space', 0, key);

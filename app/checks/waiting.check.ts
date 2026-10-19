@@ -16,7 +16,8 @@ import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { nearby, Nearby } from '../lib/nearby';
 import { createQueue, toHex } from '../lib/relay';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
-import { sendWaiting, type SendPlace } from '../lib/waiting';
+import { firstLater, quickTimes, stepLater } from '../lib/later';
+import { nextDue, sendWaiting, type SendPlace } from '../lib/waiting';
 import { WAITING } from '../lock/history';
 import { setCurrentSpace } from '../lock/keys';
 import { blobs, files } from './files-memory';
@@ -123,6 +124,45 @@ test('one that fails waits longer before the next try, and holds the ones after 
   } finally {
     done();
   }
+});
+
+test('one sent for later goes only once its time came, and holds back none of the others meanwhile', { skip: !coreReady }, async () => {
+  const { bob, alice, peer, toAlice, link, done } = await twoPhones();
+  try {
+    const now = Date.now();
+    const later = now + 3600_000;
+    await bob.history.add({ peer, text: 'later', mine: true, at: later, tag: 'eeeeeeeeeeee', mark: WAITING });
+    await bob.history.add({ peer, text: 'now', mine: true, at: now - 1000, tag: 'ffffffffffff', mark: WAITING });
+    assert.equal(nextDue(bob.history, now), later);
+    // Near before its time: the other one goes, it stays, and is not tried.
+    link(true);
+    assert.deepEqual((await sendWaiting(bob, nowhere, now)).map((w) => w.tag), ['ffffffffffff']);
+    assert.deepEqual(await sendWaiting(bob, nowhere, later - 1), []);
+    assert.deepEqual(bob.history.waiting().map((m) => m.text), ['later']);
+    assert.equal(toAlice.length, 1);
+    // Its time came: it goes, with its tag, and nothing waits for its time any more.
+    assert.deepEqual((await sendWaiting(bob, nowhere, later)).map((w) => w.tag), ['eeeeeeeeeeee']);
+    assert.equal(nextDue(bob.history, later), 0);
+    const came = [];
+    for (const packet of toAlice) came.push(((await alice.receive(packet)) as Extract<Received, { kind: 'message' }>).text);
+    assert.deepEqual(came, ['now', 'later']);
+  } finally {
+    done();
+  }
+});
+
+test('the times to send later: ahead, to the minute, the hour and minutes going round on the same day', () => {
+  const at = (h: number, m: number, day = 20) => new Date(2026, 9, day, h, m).getTime();
+  // At 19:10: in an hour, tonight at 20:00, tomorrow at 09:00; at 21:00 tonight is gone.
+  assert.deepEqual(quickTimes(at(19, 10)).map((q) => q.at), [at(20, 10), at(20, 0), at(9, 0, 21)]);
+  assert.deepEqual(quickTimes(at(21, 0)).map((q) => q.label), ['In 1 hour', 'Tomorrow 09:00']);
+  assert.equal(firstLater(at(9, 2)), at(10, 5));
+  assert.equal(stepLater(at(23, 30), 'hour', 1), at(0, 30));
+  assert.equal(stepLater(at(0, 30), 'hour', -1), at(23, 30));
+  assert.equal(stepLater(at(9, 55), 'minute', 1), at(9, 0));
+  assert.equal(stepLater(at(9, 0), 'minute', -1), at(9, 55));
+  assert.equal(stepLater(at(9, 12), 'minute', 1), at(9, 15));
+  assert.equal(stepLater(at(9, 30, 31), 'day', 1), new Date(2026, 10, 1, 9, 30).getTime());
 });
 
 test('a voice message or photo does not wait for LoRa, and a photo goes once the relay answers', { skip: !coreReady || !relayReady }, async () => {

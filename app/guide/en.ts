@@ -191,6 +191,14 @@ at the relay, or at once when they are nearby. A message counts as read once its
   the chat marked **Waiting**, and goes by itself, in order, once the relay or their phone nearby can take it, while a
   space is open; then it shows **✓**. A text waits at once. A voice message, photo or file asks first: **Keep it
   waiting** or **Delete it**. A waiting message is deleted on this phone only. Hidden chats keep nothing waiting.
+- **Send later:** hold **Send** down and choose a time at a tap (**In 1 hour**, **Tonight 20:00**, **Tomorrow
+  09:00**) or the day, hour and minutes, then **Send later**. The message stays in the chat marked **Scheduled** with
+  its time, and nothing leaves the phone until then: it is encrypted only as it goes. It goes at that time while
+  Erevos runs, in the background too while **In the background** is on **Receive and ring** (below); otherwise when
+  Erevos next opens. Until then, delete it on this phone. Hidden chats do not have it.
+- **Send without sound:** hold **Send** down and choose **Send without sound**: their phone shows the notice without
+  a sound or vibration. An Erevos from before it does not know this and sounds as usual, and so does Erevos as a web
+  app, whose notice comes from the browser.
 - **They see when you read:** your phone tells theirs, as theirs tells yours, unless that chat appears offline (below).
 - **When messages come:** Erevos looks at the relay every few seconds while it is open and unlocked, on any screen,
   and the home screen moves the chat to the top by itself. On Android it goes on in the background too, while **In
@@ -479,6 +487,11 @@ chats in one list.
 - **Two SIMs:** the SIM to send on shows above the message field; tap **Choose the SIM** once to let Erevos see
   them. Your choice is kept for that number; until then, Erevos answers on the SIM the last message came on. Each
   message shows its SIM.
+- **SMS later:** hold **Send** down and choose a time, as in a chat. The SMS waits sealed in Erevos, not in the
+  phone's SMS where other apps would see it, and shows at the end of the conversation marked **Scheduled**; tap it to
+  cancel it. It goes at that time while Erevos runs, in the background too while **In the background** is on
+  **Receive and ring**; otherwise when Erevos next opens, and only then does the phone company get it. Text only, to
+  one number.
 - **Names from your contacts:** off at first. Under **SMS** in the menu, **Show names from my contacts** shows the
   names your phone's contacts give SMS numbers. Erevos only reads them to show them, and keeps no copy.
 

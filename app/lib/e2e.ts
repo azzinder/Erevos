@@ -78,6 +78,7 @@ const MAX_ON = 600;
 // `relay` and `relayKey`: the relay the sender's queue is on, and its key, so the other phone can
 // write to it when it is not its own relay. Empty when not said. `spare`: the sender's backup
 // queue (lib/spare.ts), said with `from`, so the other phone writes there when the relay is down.
+// `quiet`: sent without sound, so its notice on the other phone makes none (lib/background.ts).
 type Message = {
   from: string;
   relay: string;
@@ -98,12 +99,14 @@ type Message = {
   ask: boolean;
   call: CallSignal | null;
   group: GroupSignal | null;
+  quiet?: boolean;
 };
 
 /** What else a message can carry. */
 // `on`: seconds this phone says it stays open (0: says nothing). `ask`: asks them to say whether theirs is.
 // `tag`: the tag a message that waited was kept with (lib/waiting.ts), so it keeps it as it goes.
-export type Extra = { erase?: Erase | null; lasts?: number; got?: string[]; read?: string[]; at?: Where; on?: number; ask?: boolean; call?: CallSignal | null; group?: GroupSignal | null; tag?: string };
+// `quiet`: words that come without a sound.
+export type Extra = { erase?: Erase | null; lasts?: number; got?: string[]; read?: string[]; at?: Where; on?: number; ask?: boolean; call?: CallSignal | null; group?: GroupSignal | null; tag?: string; quiet?: boolean };
 
 /** Where a chat's own queue is: its relay and that relay's key for sealed sends (base64url). */
 export type Where = { relay: string; relayKey: string };
@@ -132,7 +135,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -152,6 +155,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(ask ? { ask } : {}),
       ...(call ? { call } : {}),
       ...(group ? { group: encodeGroup(group) } : {}),
+      ...(quiet ? { quiet } : {}),
     }),
   );
 }
@@ -201,6 +205,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       ask: value.ask === true,
       call: decodeCall(value.call),
       group: decodeGroup(value.group),
+      quiet: value.quiet === true,
     };
   } catch {
     return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null };
@@ -268,6 +273,8 @@ export type Received =
       call: CallSignal | null;
       // Bringing a contact into a group (lib/groups.ts).
       group: GroupSignal | null;
+      // Sent without sound: its notice makes none.
+      quiet: boolean;
     }
   // Not encrypted (as messages before this version were), not for this account, or a replay.
   | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' };
@@ -592,7 +599,7 @@ export class E2E {
     identity: string,
     text: string,
     from: string,
-    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given }: Extra = {},
+    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false }: Extra = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -620,6 +627,7 @@ export class E2E {
         ask,
         call: signal,
         group: text ? null : group,
+        quiet: !!text && quiet,
       };
       // Writing or calling accepts a request; telling them only what came or was read never does.
       const [packet] = await this.sealFor(contact, [message], !!text || signal?.kind === 'offer');
@@ -788,7 +796,8 @@ export class E2E {
     const { text, tag, erase, got, read, voice, file, ask, call, group } = message;
     const { request } = contact;
     const online = this.heard(identity, message);
-    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, online, ask, call, group, ...timing.received };
+    const quiet = message.quiet === true;
+    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, online, ask, call, group, quiet, ...timing.received };
   }
 
   // Keeps until when a contact said their phone is open. Counted from when they said it, so a message
@@ -828,7 +837,8 @@ export class E2E {
         const { identity, request } = contact;
         const { text, tag, erase, got, read, voice, file, ask, call, group } = message;
         const online = this.heard(identity, message);
-        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, file, online, ask, call, group, ...timing.received };
+        const quiet = message.quiet === true;
+        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, file, online, ask, call, group, quiet, ...timing.received };
       }
     }
     return { kind: 'refused', reason: 'unknown' };

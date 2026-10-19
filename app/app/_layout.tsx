@@ -18,6 +18,7 @@ import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
 import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
+import { startSmsLater } from '../lib/sms-later';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
 import { forgetSpare } from '../lib/spare';
@@ -265,10 +266,11 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
 
 // Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), from the
 // relay and from phones nearby (lib/nearby-links.ts), and tells it whether the app shows: only then
-// do contacts hear the phone is open.
+// do contacts hear the phone is open. SMS sent for later go from here too (lib/sms-later.ts).
 function Receiver() {
   useEffect(() => startReceiver(), []);
   useEffect(() => startNearbyLinks(), []);
+  useEffect(() => startSmsLater(), []);
   // On Android, it goes on while Erevos is in the background, so a call rings (lib/background.ts).
   useEffect(() => startBackground(), []);
   useEffect(() => {

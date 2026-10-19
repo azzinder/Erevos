@@ -20,6 +20,8 @@ object Notices {
   private const val RECEIVING_CHANNEL = "erevos-receiving"
   private const val CALLS_CHANNEL = "erevos-calls"
   private const val MESSAGES_CHANNEL = "erevos-messages"
+  // The same notice, for messages sent without sound: a channel that never sounds.
+  private const val QUIET_CHANNEL = "erevos-messages-quiet"
 
   // The app's language, as the app last set it: "el" for Greek, English otherwise. The SMS
   // module reads the same (erevos-sms SmsStore.kt).
@@ -52,6 +54,7 @@ object Notices {
       manager.getNotificationChannel(RECEIVING_CHANNEL)?.let { it.name = say(context, "Receiving in the background", "Λήψη στο παρασκήνιο"); manager.createNotificationChannel(it) }
       manager.getNotificationChannel(CALLS_CHANNEL)?.let { it.name = say(context, "Calls", "Κλήσεις"); manager.createNotificationChannel(it) }
       manager.getNotificationChannel(MESSAGES_CHANNEL)?.let { it.name = say(context, "Messages", "Μηνύματα"); manager.createNotificationChannel(it) }
+      manager.getNotificationChannel(QUIET_CHANNEL)?.let { it.name = say(context, "Messages without sound", "Μηνύματα χωρίς ήχο"); manager.createNotificationChannel(it) }
     }
     if (manager.getNotificationChannel(RECEIVING_CHANNEL) == null) {
       manager.createNotificationChannel(
@@ -75,6 +78,16 @@ object Notices {
     if (manager.getNotificationChannel(MESSAGES_CHANNEL) == null) {
       manager.createNotificationChannel(
         NotificationChannel(MESSAGES_CHANNEL, say(context, "Messages", "Μηνύματα"), NotificationManager.IMPORTANCE_DEFAULT).apply {
+          setShowBadge(true)
+          lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+        },
+      )
+    }
+    if (manager.getNotificationChannel(QUIET_CHANNEL) == null) {
+      manager.createNotificationChannel(
+        NotificationChannel(QUIET_CHANNEL, say(context, "Messages without sound", "Μηνύματα χωρίς ήχο"), NotificationManager.IMPORTANCE_LOW).apply {
+          setSound(null, null as AudioAttributes?)
+          enableVibration(false)
           setShowBadge(true)
           lockscreenVisibility = Notification.VISIBILITY_PRIVATE
         },
@@ -131,19 +144,31 @@ object Notices {
     manager(context).cancel(RINGING_ID)
   }
 
+  // Whether the messages notice that shows now has sounded.
+  private var sounded = false
+
   // `count` messages came while Erevos was in the background. Sounds once, as the channel says,
-  // and stays quiet as the count goes up.
-  fun messages(context: Context, count: Int) {
+  // and stays quiet as the count goes up. While only messages sent without sound (`quiet`) came,
+  // it shows on the silent channel; the first one that is not quiet then sounds once.
+  fun messages(context: Context, count: Int, quiet: Boolean) {
     channels(context)
+    val manager = manager(context)
+    // Swiped away, it shows anew, and sounds anew unless quiet.
+    val showing = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) manager.activeNotifications.any { it.id == MESSAGES_ID } else count > 1
+    if (!showing) sounded = false
+    val loud = !quiet || sounded
+    // A notice that showed silently is taken away first, or the one that should sound would not.
+    if (loud && !sounded && showing) manager.cancel(MESSAGES_ID)
+    val channel = if (loud) MESSAGES_CHANNEL else QUIET_CHANNEL
     val text = if (count == 1) say(context, "New message", "Νέο μήνυμα") else say(context, "$count new messages", "$count νέα μηνύματα")
     @Suppress("DEPRECATION")
-    val locked = builder(context, MESSAGES_CHANNEL)
+    val locked = builder(context, channel)
       .setSmallIcon(context.applicationInfo.icon)
       .setContentTitle("Erevos")
       .setShowWhen(false)
       .build()
     @Suppress("DEPRECATION")
-    val notification = builder(context, MESSAGES_CHANNEL)
+    val notification = builder(context, channel)
       .setSmallIcon(context.applicationInfo.icon)
       .setContentTitle("Erevos")
       .setContentText(text)
@@ -156,10 +181,12 @@ object Notices {
       .setAutoCancel(true)
       .setContentIntent(opening(context, 3))
       .build()
-    manager(context).notify(MESSAGES_ID, notification)
+    manager.notify(MESSAGES_ID, notification)
+    if (loud) sounded = true
   }
 
   fun clearMessages(context: Context) {
+    sounded = false
     manager(context).cancel(MESSAGES_ID)
   }
 }

@@ -1,21 +1,26 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, PermissionsAndroid, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardPaddedView } from '../components/keyboard';
-import { Button, Card, Chip, Input, Page, Row, Text } from '../components/ui';
+import { LaterPicker } from '../components/later-picker';
+import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
+import { ask } from '../lib/alert';
 import { canRelaySeal } from '../lib/core';
 import { toBase64Url } from '../lib/e2e';
 import { lang, plural, t } from '../lib/i18n';
+import { laterLabel } from '../lib/later';
 import { relayKey } from '../lib/relay';
 import { groupName, smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { pickMmsPhoto, type MmsPhoto } from '../lib/pick-mms-photo';
+import { laterChanged, onLaterSent } from '../lib/sms-later';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { cleanName, loadE2EData, type Contact } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
+import { LATER_TEXT, type LaterSms } from '../lock/sms-data';
 import { contactNames, markSmsRead, mmsReady, onSmsEvent, sendMms, sendSms, sendSmsData, smsMessages, smsSims, smsStatus, type Sim, type SmsMessage } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -28,7 +33,9 @@ import { useStyles, useTheme } from '../theme/context';
 // for the number. The number shows the name the phone's contacts give it, when that is turned on.
 // With several numbers (`to` comma-separated) it is a group's conversation: every message goes to
 // all of them as one MMS, text alone too, and each that comes says who wrote it. Ours are marked ✓
-// once they went and ✓✓✓ once the network's delivery report says they reached the phone.
+// once they went and ✓✓✓ once the network's delivery report says they reached the phone. Send held
+// down sends a text SMS later (lib/sms-later.ts), to one number only; it shows at the end, marked
+// Scheduled, until it goes.
 
 export default function Sms() {
   const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string }>();
@@ -48,6 +55,8 @@ export default function Sms() {
   const [sims, setSims] = useState<Sim[]>([]);
   const [sim, setSim] = useState(-1);
   const [names, setNames] = useState<Record<string, string>>({});
+  const [later, setLater] = useState<LaterSms[]>([]);
+  const [laterMenu, setLaterMenu] = useState(false);
   const link = useRef<SmsLink | null>(null);
   const twoSims = (smsStatus()?.slots ?? 0) >= 2;
   const thread = useRef<ScrollView>(null);
@@ -60,6 +69,14 @@ export default function Sms() {
       })
       .catch(() => setNote(t('The SMS on this phone could not be read. Make Erevos the SMS app under SMS in the menu.')));
     markSmsRead(to).catch(() => undefined);
+    // What waits to go later, as the phone has it now.
+    const sms = link.current;
+    if (sms) {
+      sms
+        .refresh()
+        .then(() => setLater(sms.later.filter((l) => sameNumber(l.to, to))))
+        .catch(() => undefined);
+    }
   }, [to]);
 
   useEffect(() => {
@@ -75,6 +92,7 @@ export default function Sms() {
     SmsLink.open(space, key)
       .then(async (opened) => {
         link.current = opened;
+        if (!group) setLater(opened.later.filter((l) => sameNumber(l.to, to)));
         if (opened.names) setNames(await contactNames(numbers).catch(() => ({} as Record<string, string>)));
         if (!twoSims) return;
         const [found, loaded] = await Promise.all([smsSims(), smsMessages(to, 50).catch(() => [] as SmsMessage[])]);
@@ -84,7 +102,11 @@ export default function Sms() {
       })
       .catch(() => undefined);
     const subscriptions = [onSmsEvent('onSms', ({ address }) => numbers.some((n) => sameNumber(address, n)) && load()), onSmsEvent('onSmsSent', () => load()), onSmsEvent('onSmsDelivered', () => load())];
-    return () => subscriptions.forEach((s) => s?.remove());
+    const stopLater = onLaterSent(load);
+    return () => {
+      subscriptions.forEach((s) => s?.remove());
+      stopLater();
+    };
   }, [to, load, params.plain]);
 
   if (!to) {
@@ -129,16 +151,21 @@ export default function Sms() {
     }
   }
 
+  // Erevos may send SMS: it is the SMS app, or the owner allows it now.
+  async function maySend() {
+    if (!smsStatus()?.isDefault && Platform.OS === 'android') {
+      const answer = await PermissionsAndroid.request('android.permission.SEND_SMS');
+      if (answer !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(t('Erevos may not send SMS. Allow it, or make Erevos the SMS app.'));
+    }
+  }
+
   async function send() {
     const text = draft.trim();
     if ((!text && !photo) || sending) return;
     setSending(true);
     setNote('');
     try {
-      if (!smsStatus()?.isDefault && Platform.OS === 'android') {
-        const answer = await PermissionsAndroid.request('android.permission.SEND_SMS');
-        if (answer !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(t('Erevos may not send SMS. Allow it, or make Erevos the SMS app.'));
-      }
+      await maySend();
       if (group && !mmsReady()) throw new Error(t('This build of Erevos cannot send to several numbers yet.'));
       // A group's message goes to everyone as one MMS, even without a photo.
       if (photo || group) await sendMms(to, text, photo, sim);
@@ -152,6 +179,48 @@ export default function Sms() {
     } finally {
       setSending(false);
     }
+  }
+
+  // Keeps the SMS typed to go at `at`, sealed in the space until then (lib/sms-later.ts). Asked
+  // now whether Erevos may send, as it cannot ask then.
+  async function sendLater(at: number) {
+    const text = draft.trim();
+    const sms = link.current;
+    setLaterMenu(false);
+    if (!text || !sms || group || photo || at <= Date.now()) return;
+    setNote('');
+    try {
+      if (text.length > LATER_TEXT) throw new Error(t('It is too long to send later.'));
+      await maySend();
+      if (!(await sms.addLater({ to, text, at, sim }))) throw new Error(t('{n} SMS already wait to go later.', { n: sms.later.length }));
+      setDraft('');
+      setLater(sms.later.filter((l) => sameNumber(l.to, to)));
+      laterChanged();
+      setNote(t('It goes on {when} if Erevos is running then, or else when Erevos next opens. Tap it to cancel it.', { when: laterLabel(at) }));
+    } catch (error) {
+      setNote(t('Not kept. {reason}', { reason: error instanceof Error ? error.message : String(error) }));
+    }
+  }
+
+  function cancelLater(sms: LaterSms) {
+    ask(t('SMS later'), t('Cancel this SMS? It has not gone, and will not.'), [
+      { text: t('Keep it'), style: 'cancel' },
+      {
+        text: t('Cancel it'),
+        style: 'destructive',
+        onPress: () => {
+          const kept = link.current;
+          if (!kept) return;
+          void kept
+            .removeLater(sms.id)
+            .then(() => {
+              setLater(kept.later.filter((l) => sameNumber(l.to, to)));
+              laterChanged();
+            })
+            .catch(() => undefined);
+        },
+      },
+    ]);
   }
 
   // With the first SMS to a number that is no contact: a hidden invite, answered through the relay
@@ -219,6 +288,15 @@ export default function Sms() {
             </Text>
           </View>
         ))}
+        {later.map((l) => (
+          <Pressable key={l.id} onPress={() => cancelLater(l)} accessibilityRole="button" style={[styles.bubble, styles.mine, styles.later]}>
+            <Text>{l.text}</Text>
+            <Text variant="caption" tone="faint">
+              {t('Scheduled · {when}', { when: laterLabel(l.at) })}
+              {sims.length > 1 && simLabel(sims, l.sim) ? ` · ${simLabel(sims, l.sim)}` : ''}
+            </Text>
+          </Pressable>
+        ))}
         {note ? <Text tone="muted">{note}</Text> : null}
       </ScrollView>
       {sims.length > 1 || (twoSims && sims.length === 0) || photo ? (
@@ -234,8 +312,21 @@ export default function Sms() {
       <View style={styles.composer}>
         {mmsReady() ? <Button title={t('Photo')} kind="ghost" compact onPress={() => void addPhoto()} /> : null}
         <Input value={draft} onChangeText={setDraft} placeholder={photo || group ? t('MMS (not encrypted)') : t('SMS (not encrypted)')} multiline style={styles.input} />
-        <Button title={t('Send')} compact loading={sending} disabled={!draft.trim() && !photo} onPress={() => void send()} />
+        <Button
+          title={t('Send')}
+          compact
+          loading={sending}
+          disabled={!draft.trim() && !photo}
+          onPress={() => void send()}
+          onLongPress={!group && !photo && draft.trim() ? () => setLaterMenu(true) : undefined}
+        />
       </View>
+      <Sheet visible={laterMenu} onClose={() => setLaterMenu(false)} title={t('SMS later')}>
+        {laterMenu ? <LaterPicker onPick={(at) => void sendLater(at)} /> : null}
+        <Text variant="caption" tone="muted">
+          {t('It waits sealed in Erevos, not in the phone\'s SMS, and goes at that time if Erevos is running, in the background too; if not, when Erevos next opens. Text only, to one number.')}
+        </Text>
+      </Sheet>
     </KeyboardPaddedView>
   );
 }
@@ -260,4 +351,5 @@ const makeStyles = (colors: Colors) =>
     input: { flex: 1, maxHeight: 140 },
     options: { paddingHorizontal: space.md, paddingTop: space.sm },
     picture: { width: 220, height: 220, borderRadius: radius.md, backgroundColor: colors.border },
+    later: { borderWidth: 1, borderStyle: 'dashed', borderColor: colors.border },
   });

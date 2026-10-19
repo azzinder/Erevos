@@ -111,6 +111,15 @@ export const parts: Record<string, string> = {
   'File: {name}': 'Αρχείο: {name}',
   'That voice message is too long.': 'Αυτό το φωνητικό μήνυμα είναι πολύ μεγάλο.',
 
+  // When a message or an SMS sent for later goes (components/later-picker.tsx, lib/later.ts).
+  'In 1 hour': 'Σε 1 ώρα',
+  'Tonight 20:00': 'Απόψε 20:00',
+  'Tomorrow 09:00': 'Αύριο 09:00',
+  Day: 'Ημέρα',
+  Hour: 'Ώρα',
+  Minutes: 'Λεπτά',
+  'Goes on {when}.': 'Θα σταλεί στις {when}.',
+  'That time has gone by. Choose one ahead.': 'Αυτή η ώρα πέρασε. Διάλεξε μια που έρχεται.',
   // The home screen's list (lib/inbox.ts).
   'You: {text}': 'Εσύ: {text}',
   Sun: 'Κυρ',

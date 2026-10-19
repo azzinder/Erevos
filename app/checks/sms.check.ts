@@ -14,7 +14,9 @@ import { toBase64Url } from '../lib/e2e';
 import { buildInbox } from '../lib/inbox';
 import { collectInvites, inviteAnswer, invitePieces, PIECE, plainNumber, sameNumber, type SmsInvite } from '../lib/sms-invite';
 import { groupName, sameAddress, smsAddress, smsNumbers } from '../lib/sms-group';
+import { sendDue } from '../lib/sms-later';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
+import { MAX_LATER } from '../lock/sms-data';
 import { files } from './files-memory';
 
 const invite = (relay: string): SmsInvite => ({
@@ -169,6 +171,47 @@ test('the SIM chosen for a group is kept for the group, not for its numbers', as
   const again = await SmsLink.open(0, key);
   assert.equal(again.simFor('6922222222,6911111111'), 7);
   assert.equal(again.simFor('+306911111111'), -1);
+});
+
+test('SMS sent for later are kept sealed in the space, the soonest first, and go once their time came', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const link = await SmsLink.open(0, key);
+  assert.deepEqual(link.later, []);
+  assert.ok(await link.addLater({ to: '+306911111111', text: 'second', at: 200, sim: -1 }));
+  assert.ok(await link.addLater({ to: '+306922222222', text: 'first', at: 100, sim: 3 }));
+  const again = await SmsLink.open(0, key);
+  assert.deepEqual(again.later.map((l) => [l.to, l.text, l.at, l.sim]), [['+306922222222', 'first', 100, 3], ['+306911111111', 'second', 200, -1]]);
+  assert.deepEqual((await SmsLink.open(0, randomBytes(32)).catch(() => null))?.later ?? [], []);
+
+  const sent: string[] = [];
+  const send = async (to: string, text: string, sim: number) => {
+    sent.push(`${to} ${text} ${sim}`);
+  };
+  // Not before its time; then only the one whose time came, forgotten once it went.
+  assert.deepEqual(await sendDue(again, send, 50), { went: [], next: 100 });
+  const first = await sendDue(again, send, 150);
+  assert.deepEqual([first.went.map((l) => l.text), first.next], [['first'], 200]);
+  assert.deepEqual(sent, ['+306922222222 first 3']);
+  assert.deepEqual((await SmsLink.open(0, key)).later.map((l) => l.text), ['second']);
+  // One that cannot go stays, and is tried again a while later.
+  const failing = await sendDue(again, async () => Promise.reject(new Error('no')), 250);
+  assert.deepEqual([failing.went, failing.next], [[], 250 + 5 * 60_000]);
+  assert.equal((await SmsLink.open(0, key)).later.length, 1);
+  // Cancelled, it is gone.
+  await again.removeLater(again.later[0].id);
+  assert.deepEqual((await SmsLink.open(0, key)).later, []);
+  assert.deepEqual(await sendDue(again, send, 1000), { went: [], next: 0 });
+});
+
+test('no more than MAX_LATER SMS wait to go later, and none is dropped for a new one', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const link = await SmsLink.open(0, key);
+  for (let i = 0; i < MAX_LATER; i++) assert.ok(await link.addLater({ to: '+306933333333', text: `n${i}`, at: 1000 + i, sim: -1 }));
+  assert.equal(await link.addLater({ to: '+306933333333', text: 'one more', at: 5, sim: -1 }), false);
+  const kept = (await SmsLink.open(0, key)).later;
+  assert.deepEqual([kept.length, kept[0].text], [MAX_LATER, 'n0']);
 });
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);

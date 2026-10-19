@@ -23,7 +23,7 @@ import { isGroupPacket } from './groups';
 import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-chats';
 import { lookAtSpare, spareBackup } from './spare';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
-import { sendWaiting, type SendPlace } from './waiting';
+import { nextDue, sendWaiting, type SendPlace } from './waiting';
 import { keepPush } from './web-push';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
@@ -87,6 +87,25 @@ export function setAppShown(shown: boolean): void {
 function endWaits() {
   waits.forEach((wait) => wait.abort());
   waits.clear();
+}
+
+// A look when the next message sent for later should go (lib/waiting.ts), the wait at the relay
+// ended first, so it goes on time while Erevos runs.
+let dueTimer: ReturnType<typeof setTimeout> | null = null;
+
+function lookWhenDue(at: number) {
+  if (dueTimer) clearTimeout(dueTimer);
+  dueTimer = null;
+  if (at <= 0) return;
+  // Timers longer than about 24 days go off at once: one that far looks again then, and waits on.
+  dueTimer = setTimeout(
+    () => {
+      dueTimer = null;
+      endWaits();
+      hurry?.();
+    },
+    Math.min(Math.max(0, at - Date.now()), 2 ** 31 - 1),
+  );
 }
 
 /**
@@ -210,6 +229,7 @@ export function startReceiver(every?: number): () => void {
     if (timer) clearTimeout(timer);
     if (hurry === now) hurry = null;
     endWaits();
+    lookWhenDue(0);
     lastPlace = null;
   };
 }
@@ -369,6 +389,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   await answerInvites(chats.e2e, place.queue.senderHex, place.here, place.sends).catch(() => undefined);
   // What waited to go, now that the relay answers (lib/waiting.ts).
   if (!failed && (await sendWaiting(chats, sendPlace(place, true)).catch(() => [])).length > 0) changed = true;
+  lookWhenDue(nextDue(chats.history));
   await sendReceipts(chats, place, state);
   await flushGroups().catch(() => undefined);
   return changed;

@@ -57,6 +57,15 @@ test('leaves out messages that have disappeared', () => {
   assert.equal(rows[0].unread, 0);
 });
 
+test('leaves out ours sent for later until their time, as nothing went yet', () => {
+  const messages = [
+    { peer: `contact:${A}`, text: 'said', mine: false, at: 1, mark: 2 as const },
+    { peer: `contact:${A}`, text: 'tomorrow', mine: true, at: 500, mark: -1 as const },
+  ];
+  assert.deepEqual(buildInbox(contacts.slice(0, 1), messages, [], 100).map((r) => [r.last, r.at]), [['said', 1]]);
+  assert.deepEqual(buildInbox(contacts.slice(0, 1), messages, [], 600).map((r) => [r.last, r.mark]), [['tomorrow', -1]]);
+});
+
 test('names a contact without a name after the imported chat that goes on with them', () => {
   const rows = buildInbox(contacts, [], [{ title: ' Telegram group ', contact: B, last: 5 }], 100);
   assert.equal(rows[0].identity, B);

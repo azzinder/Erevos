@@ -21,6 +21,11 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // Each try seals the message anew, which moves the conversation on, and a contact's phone can skip
 // only so many it never got. So a message is tried only when there is a way for it, and after a
 // failed try it waits longer each time before the next.
+//
+// A message sent for later waits the same way, kept with the time it should go as its time: it is
+// not tried before then, and holds back none of that contact's others meanwhile. It goes with the
+// first look once its time came, while Erevos runs (in the background too, while a space is open),
+// or when Erevos next opens.
 
 const CONTACT_PREFIX = 'contact:';
 // The first wait after a failed try, and the longest, milliseconds.
@@ -65,7 +70,7 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
   const stuck = new Set<string>();
   for (const message of history.waiting()) {
     const { peer, tag } = message;
-    if (stuck.has(peer) || !peer.startsWith(CONTACT_PREFIX)) continue;
+    if (stuck.has(peer) || !peer.startsWith(CONTACT_PREFIX) || message.at > now) continue;
     const identity = peer.slice(CONTACT_PREFIX.length);
     const tried = tries.get(tag);
     if ((tried && tried.next > now) || !canGo(e2e, place, identity, message)) {
@@ -83,6 +88,11 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
     }
   }
   return went;
+}
+
+/** When the next message sent for later should go, or 0 if none waits for its time. */
+export function nextDue(history: Pick<Chats['history'], 'waiting'>, now = Date.now()): number {
+  return history.waiting().reduce((next, m) => (m.at > now && (next === 0 || m.at < next) ? m.at : next), 0);
 }
 
 // Whether there is a way for it now, before sealing it: the relay answers and can reach their

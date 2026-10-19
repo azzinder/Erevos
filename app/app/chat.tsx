@@ -31,6 +31,8 @@ import { QrCode } from '../components/QrCode';
 import { ShieldIcon, TimerIcon } from '../components/icons';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '../components/ui';
+import { LaterPicker } from '../components/later-picker';
+import { laterLabel } from '../lib/later';
 import { ask, choose } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
@@ -178,11 +180,15 @@ function disappearsAt(until: number): string {
     : t('on {date} {time}', { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, time });
 }
 
+// A message of ours sent for later, whose time has not come: it waits, kept with that time.
+const scheduled = (message: Message) => message.mine && message.mark === WAITING && message.at > Date.now();
+
 // How long a voice message is: 0:07.
 // Under a message to or from a contact: its mark if it is ours, and when it disappears.
 function caption(message: Message): string {
   const parts: string[] = [];
-  if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? t('Waiting') : MARKS[message.mark]);
+  if (scheduled(message)) parts.push(t('Scheduled · {when}', { when: laterLabel(message.at) }));
+  else if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? t('Waiting') : MARKS[message.mark]);
   if (message.until) parts.push(t('Disappears {when}', { when: disappearsAt(message.until) }));
   else if (message.lasts) parts.push(t('Disappears {time} after it is read', { time: timerLabel(message.lasts).toLowerCase() }));
   return parts.join('  ·  ');
@@ -454,6 +460,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   const history = useRef<History | null>(null);
   // The sheet for sending a photo or file, and how photos go.
   const [attaching, setAttaching] = useState(false);
+  // Send held down: later, or without sound.
+  const [sendMenu, setSendMenu] = useState(false);
   const [quality, setQuality] = useState<PhotoQuality>('original');
   // How far each file being taken from the relay is, by `${peer}|${tag}`; 'failed' or 'gone' if it did not come.
   const [taking, setTaking] = useState<Record<string, string>>({});
@@ -984,7 +992,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     }
     const peer = `${CONTACT_PREFIX}${received.identity}`;
     // Erevos in the background: the notice says one more came (lib/background.ts).
-    if (!hiddenKey && isNews(received)) messageCame();
+    if (!hiddenKey && isNews(received)) messageCame(received.quiet);
     setContacts(e2e.contacts());
     setSelected((current) => current ?? peer);
     if (received.call) {
@@ -1049,13 +1057,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // Shows a message, and keeps it on the phone when it is with a contact, for `timer` seconds once
   // read if it disappears. A contact's message from an Erevos before tags gets one known to this
   // phone only. Returns its tag.
-  // A message of ours that waits to go is marked so (`mark`, lib/waiting.ts).
-  function addMessage(peer: string, text: string, mine: boolean, tag = '', timer = 0, voice?: VoiceRef, file?: FileRef, mark: Mark = 0): string {
+  // A message of ours that waits to go is marked so (`mark`, lib/waiting.ts); one sent for later
+  // has the time it should go (`at`), and shows after the others until then.
+  function addMessage(peer: string, text: string, mine: boolean, tag = '', timer = 0, voice?: VoiceRef, file?: FileRef, mark: Mark = 0, at = Date.now()): string {
     const contact = peer.startsWith(CONTACT_PREFIX);
     const kept = contact ? tag || newTag() : '';
-    const at = Date.now();
     const lasts = contact ? timer : 0;
-    setMessages((list) => [...list, { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark, at, voice, file }]);
+    const message = { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark, at, voice, file };
+    setMessages((list) => {
+      const later = list.findIndex((m) => m.at > at);
+      return later < 0 ? [...list, message] : [...list.slice(0, later), message, ...list.slice(later)];
+    });
     if (contact) {
       history.current?.add({ peer, text, mine, at, tag: kept, lasts, mark, voice, file }).catch(() => {
         // Shown, but gone when the chat next opens.
@@ -1294,8 +1306,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     return t('Not sent. {reason}', { reason: notSentReason(error) });
   }
 
-  // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it is read.
-  async function send(lasts = 0) {
+  // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it
+  // is read; `quiet`, it comes without sound (one that has to wait goes with sound, as any).
+  async function send(lasts = 0, quiet = false) {
     const text = draft.trim();
     if (!text || !selected?.startsWith(CONTACT_PREFIX)) return;
     setVanishing(false);
@@ -1304,9 +1317,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       return;
     }
     try {
-      const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts });
+      const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts, quiet });
       keep(selected, text, tag, timer);
-      const sent = sentNote(way, t('Sent'), label(selected, contacts));
+      const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(selected, contacts));
       setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer).toLowerCase() }) : sent);
     } catch (error) {
       if (!canWait(error) || hiddenKey) {
@@ -1318,6 +1331,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       setDraft('');
       setNote(t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason: waitingReason(error, selected, t('It is too long for LoRa.')) }));
     }
+  }
+
+  // Keeps the message typed to go at `at`, waiting as one nothing could take (lib/waiting.ts), so
+  // it is sealed only when it goes. Hidden chats keep nothing waiting.
+  function sendLater(at: number) {
+    const text = draft.trim();
+    setSendMenu(false);
+    if (!text || !selected?.startsWith(CONTACT_PREFIX) || hiddenKey || at <= Date.now()) return;
+    setVanishing(false);
+    addMessage(selected, text, true, newTag(), timerOf(selected), undefined, undefined, WAITING, at);
+    setDraft('');
+    setNote(t('It goes on {when} if Erevos is running then, or else when Erevos next opens. Until then you can delete it here.', { when: laterLabel(at) }));
   }
 
   // The chat's timer, seconds.
@@ -2740,7 +2765,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                       : shownLine(message.text)}
                   </Text>
                 )}
-                <Text style={[ink, styles.time]}>{[message.at ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>
+                <Text style={[ink, styles.time]}>{[message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>
               </Pressable>
             </View>
           );
@@ -2765,7 +2790,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
             <Tool title={t('Call')} onPress={() => void startCall(false)} />
             <Tool title={t('Video')} onPress={() => void startCall(true)} />
           </Row>
-          <Button title={t('Send')} compact disabled={!draft.trim() || !selected} onPress={() => void send()} style={styles.action} />
+          <Button
+            title={t('Send')}
+            compact
+            disabled={!draft.trim() || !selected}
+            onPress={() => void send()}
+            onLongPress={selectedContact ? () => setSendMenu(true) : undefined}
+            style={styles.action}
+          />
         </Row>
         {vanishing && selectedContact ? (
           <Row wrap>
@@ -2779,6 +2811,33 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
           </Row>
         ) : null}
       </View>
+      <Sheet visible={sendMenu} onClose={() => setSendMenu(false)} title={t('Send')}>
+        <Button
+          title={t('Send without sound')}
+          kind="secondary"
+          compact
+          onPress={() => {
+            setSendMenu(false);
+            void send(0, true);
+          }}
+        />
+        <Text variant="caption" tone="muted">
+          {t('Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, and sounds as usual.')}
+        </Text>
+        <Text variant="label">{t('Send later')}</Text>
+        {hiddenKey ? (
+          <Text variant="caption" tone="muted">
+            {t('Not in hidden chats: they keep nothing waiting to go.')}
+          </Text>
+        ) : (
+          <>
+            {sendMenu ? <LaterPicker onPick={sendLater} /> : null}
+            <Text variant="caption" tone="muted">
+              {t('It goes at that time if Erevos is running, in the background too; if not, when Erevos next opens.')}
+            </Text>
+          </>
+        )}
+      </Sheet>
       <Sheet visible={attaching} onClose={() => setAttaching(false)} title={t('Send a photo or file')}>
         <Row wrap>
           <Button title={t('Photo')} compact onPress={() => sendPhoto('photos')} />

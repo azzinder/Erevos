@@ -7,7 +7,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { fresh, loadSmsData, saveSmsData, type SmsData } from '../lock/sms-data';
+import { fresh, loadSmsData, MAX_LATER, saveSmsData, type LaterSms, type SmsData } from '../lock/sms-data';
 import type { Sim } from '../modules/erevos-sms';
 import { sameAddress, smsAddress, smsNumbers } from './sms-group';
 
@@ -68,6 +68,27 @@ export class SmsLink {
   setSim(number: string, sim: number): Promise<void> {
     const plain = smsAddress(smsNumbers(number));
     return this.update((d) => ({ ...d, sims: [...d.sims.filter((s) => !sameAddress(s.number, plain)), ...(sim >= 0 ? [{ number: plain, sim }] : [])] }));
+  }
+
+  /** The SMS sent for later that have not gone yet, the soonest first (lib/sms-later.ts). */
+  get later(): LaterSms[] {
+    return [...this.data.later].sort((a, b) => a.at - b.at);
+  }
+
+  /** Keeps an SMS to go later. False, and nothing kept, when MAX_LATER already wait. */
+  async addLater(sms: Omit<LaterSms, 'id'>): Promise<boolean> {
+    let kept = false;
+    const id = toBase64Url(randomBytes(9));
+    await this.update((d) => {
+      kept = d.later.length < MAX_LATER;
+      return kept ? { ...d, later: [...d.later, { ...sms, id }] } : d;
+    });
+    return kept;
+  }
+
+  /** Forgets an SMS sent for later: it went, or was cancelled. */
+  removeLater(id: string): Promise<void> {
+    return this.update((d) => ({ ...d, later: d.later.filter((l) => l.id !== id) }));
   }
 
   /** Whether the first SMS to `number` should carry an invite: invites are on, the core can open
