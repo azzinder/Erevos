@@ -74,6 +74,9 @@ type NativeSms = {
   cancelLater?(id: string): Promise<boolean>;
   laterState?(ids: string[]): Promise<Record<string, LaterSmsState>>;
   deleteThread?(address: string, upTo: number): Promise<number>;
+  deleteMessages?(ids: string[]): Promise<number>;
+  resend?(kind: string, id: number, sim: number): Promise<number>;
+  pictureBytes?(uri: string): Promise<Uint8Array>;
   canBlock?(): Promise<boolean>;
   blocked?(): Promise<string[]>;
   block?(number: string): Promise<boolean>;
@@ -153,7 +156,7 @@ export function laterSmsHolder(): LaterSmsHolder | null {
   };
 }
 
-/** Whether this build can delete SMS and block numbers. */
+/** Whether this build can delete SMS, send again and block numbers. */
 export function smsToolsReady(): boolean {
   return typeof native?.deleteThread === 'function';
 }
@@ -163,6 +166,21 @@ const notInBuild = () => Promise.reject(new Error('This build of Erevos cannot d
 /** Deletes from the phone a conversation's SMS and MMS up to `upTo` (milliseconds), as the SMS app. */
 export function deleteSmsThread(address: string, upTo: number): Promise<number> {
   return native?.deleteThread ? native.deleteThread(address, upTo) : notInBuild();
+}
+
+/** Deletes messages from the phone, each by its kind and row: "sms:12", "mms:3". */
+export function deleteSmsMessages(ids: string[]): Promise<number> {
+  return native?.deleteMessages ? native.deleteMessages(ids) : notInBuild();
+}
+
+/** Sends one of ours that did not go again, in its place, on `sim` (-1: the SIM it was for). */
+export function resendSms(message: Pick<SmsMessage, 'kind' | 'id'>, sim = -1): Promise<number> {
+  return native?.resend ? native.resend(message.kind ?? 'sms', message.id, sim) : notInBuild();
+}
+
+/** The bytes of an MMS's picture, by its address (SmsPicture.uri). */
+export function smsPictureBytes(uri: string): Promise<Uint8Array> {
+  return native?.pictureBytes ? native.pictureBytes(uri) : notInBuild();
 }
 
 /** Whether Erevos may block numbers in Android's own list: as the SMS app, in a build with it. */

@@ -9,7 +9,8 @@ import { sealedFile, type Holder } from './sealed-file';
 // Android holds a copy locked with this phone's own key, to send it then with the space locked.
 // The space's own order of its SMS is kept here too, never in the phone's store, so no other app
 // and no other space sees it (lib/sms-folders.ts): the conversations pinned, archived and put in
-// the Trash, the spam filter's rules and the numbers marked spam or not.
+// the Trash, what is typed in each and not sent, the spam filter's rules and the numbers marked
+// spam or not, and the seconds an SMS waits before it goes, to be taken back.
 
 export type { Holder };
 
@@ -25,6 +26,8 @@ export type SmsMark = { address: string; at: number };
 /** A conversation put in the Trash at `at`: its messages up to `upTo` show no more, and go from
  *  the phone TRASH_DAYS later. */
 export type Trashed = { address: string; upTo: number; at: number };
+/** What is typed in a conversation and not sent yet. */
+export type SmsDraft = { address: string; text: string; at: number };
 /** A number the owner said sends spam, or does not. */
 export type SpamMark = { number: string; spam: boolean; at: number };
 
@@ -44,12 +47,15 @@ export type SmsData = {
   /** Conversations out of the list, until a message comes after. */
   archived: SmsMark[];
   trash: Trashed[];
+  drafts: SmsDraft[];
   /** The spam filter: on unless turned off. With `spamLinks`, any number that is no contact and
    *  sends a link goes to Spam; with `spamWords`, any that writes one of them. */
   spam: boolean;
   spamLinks: boolean;
   spamWords: string[];
   marks: SpamMark[];
+  /** Seconds an SMS waits before it goes, to be taken back: 0, 5 or 10. */
+  undo: number;
 };
 
 export const EMPTY_SMS: SmsData = {
@@ -63,10 +69,12 @@ export const EMPTY_SMS: SmsData = {
   pinned: [],
   archived: [],
   trash: [],
+  drafts: [],
   spam: true,
   spamLinks: false,
   spamWords: [],
   marks: [],
+  undo: 5,
 };
 
 const FILE = 'erevos-sms';
@@ -78,16 +86,18 @@ const MAX_SIMS = 300;
 /** The SMS that can wait to go later at once, and the longest text of one: as long as a chat's. */
 export const MAX_LATER = MAX;
 export const LATER_TEXT = 4000;
-/** The conversations that can be pinned at once, and those kept archived and in the Trash, and
- *  numbers marked; the owner's spam words, each this long at most. */
+/** The conversations that can be pinned at once, and those kept archived, in the Trash, with a
+ *  draft, and numbers marked; the owner's spam words, each this long at most. */
 export const MAX_PINS = 10;
 const MAX_ARCHIVED = 500;
 export const MAX_TRASH = 300;
+const MAX_DRAFTS = 100;
 const MAX_MARKS = 500;
 export const MAX_WORDS = 50;
 export const WORD = 40;
 /** Days a conversation stays in the Trash before it goes from the phone. */
 export const TRASH_DAYS = 30;
+export const UNDO_SECONDS = [0, 5, 10];
 
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
@@ -118,10 +128,12 @@ function checked(value: unknown): SmsData {
     pinned: list(v.pinned, marked, MAX_PINS),
     archived: list(v.archived, marked, MAX_ARCHIVED),
     trash: list(v.trash, (t) => (isAddress(t.address) && isTime(t.upTo) && isTime(t.at) ? { address: t.address, upTo: t.upTo, at: t.at } : null), MAX_TRASH),
+    drafts: list(v.drafts, (d) => (isAddress(d.address) && isText(d.text) && d.text.length > 0 && d.text.length <= LATER_TEXT && isTime(d.at) ? { address: d.address, text: d.text, at: d.at } : null), MAX_DRAFTS),
     spam: v.spam !== false,
     spamLinks: v.spamLinks === true,
     spamWords: (Array.isArray(v.spamWords) ? v.spamWords : []).filter((w): w is string => isText(w) && w.trim().length > 0 && w.length <= WORD).slice(-MAX_WORDS),
     marks: list(v.marks, (m) => (isNumber(m.number) && typeof m.spam === 'boolean' && isTime(m.at) ? { number: m.number, spam: m.spam, at: m.at } : null), MAX_MARKS),
+    undo: UNDO_SECONDS.includes(v.undo as number) ? (v.undo as number) : EMPTY_SMS.undo,
   };
 }
 

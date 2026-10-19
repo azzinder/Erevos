@@ -2,7 +2,7 @@ import type { InboxRow, InboxSms } from './inbox';
 import { sameConversation, smsNumbers } from './sms-group';
 import { sameNumber } from './sms-invite';
 import { splitLinks } from './links';
-import { TRASH_DAYS, type SmsData, type SmsMark, type Trashed } from '../lock/sms-data';
+import { TRASH_DAYS, type SmsData, type SmsDraft, type SmsMark, type Trashed } from '../lock/sms-data';
 import type { SmsLink } from './sms-link';
 
 // The space's own order of its SMS conversations (lock/sms-data.ts), over the phone's SMS as every
@@ -138,9 +138,15 @@ export function trashGoesAt(trashed: Trashed): number {
   return trashed.at + TRASH_DAYS * DAY;
 }
 
-/** The list with its pinned SMS conversations at the top, each marked, the rest in their order. */
-export function arrangeRows(rows: InboxRow[], pinned: SmsMark[]): InboxRow[] {
-  const marked = rows.map((row) => (row.sms && pinned.some((p) => sameConversation(p.address, row.sms)) ? { ...row, pinned: true } : row));
+/** The list with its pinned SMS conversations at the top, each marked, the rest in their order;
+ *  and each SMS conversation with a draft shows it. */
+export function arrangeRows(rows: InboxRow[], pinned: SmsMark[], drafts: SmsDraft[]): InboxRow[] {
+  const marked = rows.map((row) => {
+    if (!row.sms) return row;
+    const pin = pinned.some((p) => sameConversation(p.address, row.sms));
+    const draft = drafts.find((d) => sameConversation(d.address, row.sms))?.text;
+    return pin || draft ? { ...row, pinned: pin || undefined, draft } : row;
+  });
   return [...marked.filter((row) => row.pinned), ...marked.filter((row) => !row.pinned)];
 }
 

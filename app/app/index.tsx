@@ -176,7 +176,7 @@ export default function Home() {
             const order = sms.order;
             const sorted = order ? sortSms(sms.threads, order, sms.blocked, (t) => !!t.name || phones.some((p) => sameNumber(p, t.address))) : null;
             const merged = mergeRows(buildInbox(contacts, messages, imported, at, sorted?.list ?? sms.threads), groupRows(groups, name, (text) => noteText(text, name)));
-            const list = order ? arrangeRows(merged, order.pinned) : merged;
+            const list = order ? arrangeRows(merged, order.pinned, order.drafts) : merged;
             setFolders({ archived: sorted?.archived.length ?? 0, spam: sorted?.spam.length ?? 0, trash: order?.trash.length ?? 0 });
             if (sorted && sorted.back.length > 0) void SmsLink.open(current, key).then((link) => link.unarchive(sorted.back)).catch(() => undefined);
             // Not "No chats yet", nor the kept copy without its SMS, while the SMS are still being
@@ -429,7 +429,7 @@ function ChatRow({ row, now, online = false, onLong }: { row: InboxRow; now: num
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const name = shownName(row);
-  const preview = row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
+  const preview = row.draft || row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
   return (
     <Pressable
       onLongPress={onLong}
@@ -471,12 +471,16 @@ function ChatRow({ row, now, online = false, onLong }: { row: InboxRow; now: num
         <View style={styles.rowLine}>
           <View style={styles.previewLine}>
             {row.timer ? <TimerIcon color={colors.textMuted} size={13} /> : null}
-            {row.lastSms ? (
+            {row.draft ? (
+              <Text variant="caption" color={colors.danger}>
+                {t('Draft')}
+              </Text>
+            ) : row.lastSms ? (
               <Text variant="caption" color={colors.warning}>
                 SMS
               </Text>
             ) : null}
-            {row.last && row.mine && !row.lastSms ? (
+            {row.last && row.mine && !row.lastSms && !row.draft ? (
               <Text variant="caption" color={row.mark === 2 ? colors.accentText : colors.textMuted}>
                 {row.mark < 0 ? t('Waiting') : MARKS[row.mark]}
               </Text>

@@ -67,6 +67,7 @@ import type { Look } from '../theme/look';
 import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
 import { t, plural, mark } from '../lib/i18n';
+import { forwardedTo } from '../lib/forward';
 
 // Chat with contacts, end-to-end encrypted (lib/e2e.ts), through the relay and, while their phone
 // is near, over the radio link too (lib/nearby.ts), where phones nearby may also carry a message
@@ -377,7 +378,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [draft, setDraft] = useState('');
+  // A message passed on from an SMS conversation (lib/forward.ts) starts in the field.
+  const [draft, setDraft] = useState(() => (initial ? (forwardedTo(initial)?.text ?? '') : ''));
   const [note, setNote] = useState('');
   const [showRelay, setShowRelay] = useState(setup);
   // The chat's details, over the chat: its picture, name, timer, look, safety number, moving it.

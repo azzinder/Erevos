@@ -4,6 +4,7 @@ export const smsTools: Record<string, string> = {
   'Archived · {n}': 'Αρχειοθετημένες · {n}',
   'Spam · {n}': 'Ανεπιθύμητα · {n}',
   'Trash · {n}': 'Κάδος · {n}',
+  'Draft': 'Πρόχειρο',
   'Archive': 'Αρχειοθέτηση',
   'Unarchive': 'Κατάργηση αρχειοθέτησης',
   'Archived conversations': 'Αρχειοθετημένες συνομιλίες',
@@ -58,7 +59,19 @@ export const smsTools: Record<string, string> = {
   'In the Trash': 'Στον κάδο',
   'More': 'Περισσότερα',
   'The messages before are in the Trash.': 'Τα προηγούμενα μηνύματα είναι στον κάδο.',
+  'Tap to send it again.': 'Πάτησε για να σταλεί ξανά.',
+  'Send it again?': 'Να σταλεί ξανά;',
+  'Send again': 'Αποστολή ξανά',
+  'This build of Erevos cannot send an MMS again yet.': 'Αυτή η έκδοση του Erevos δεν μπορεί ακόμα να στείλει ξανά MMS.',
+  'Message deleted.': 'Το μήνυμα διαγράφηκε.',
+  'Hold the words down to copy them.': 'Κράτα πατημένες τις λέξεις για να τις αντιγράψεις.',
+  'Goes in {n} s · tap to take it back': 'Φεύγει σε {n} δ. · πάτησε για να το πάρεις πίσω',
   'It writes with a name, not a number, so it cannot be answered.': 'Γράφει με όνομα, όχι με αριθμό, οπότε δεν μπορείς να του απαντήσεις.',
+  'Forward': 'Προώθηση',
+  'It opens in the conversation you choose, to read and send there. To a number its picture goes too, as an MMS; into a chat only its words.':
+    'Ανοίγει στη συνομιλία που διαλέγεις, για να το διαβάσεις και να το στείλεις εκεί. Σε αριθμό πηγαίνει και η εικόνα του, ως MMS· σε συνομιλία μόνο οι λέξεις του.',
+  'It opens in the conversation you choose, to read and send there.': 'Ανοίγει στη συνομιλία που διαλέγεις, για να το διαβάσεις και να το στείλεις εκεί.',
+  'Into an Erevos chat': 'Σε συνομιλία του Erevos',
 
   // The SMS settings (app/sms-settings.tsx).
   'Archived, Spam and Trash': 'Αρχειοθετημένες, ανεπιθύμητα και κάδος',
@@ -88,4 +101,7 @@ export const smsTools: Record<string, string> = {
   'Unblock {number}?': 'Άρση αποκλεισμού του {number};',
   'Its SMS, MMS and calls reach the phone again.': 'Τα SMS, τα MMS και οι κλήσεις του φτάνουν ξανά στο τηλέφωνο.',
   'Unblock': 'Άρση αποκλεισμού',
+  'Taking an SMS back': 'Ανάκληση SMS',
+  'An SMS you send waits this long at the end of the conversation before it goes: tap it then to take it back. When you leave Erevos, it goes at once.':
+    'Ένα SMS που στέλνεις περιμένει τόσο στο τέλος της συνομιλίας πριν φύγει: πάτησέ το τότε για να το πάρεις πίσω. Όταν βγαίνεις από το Erevos, φεύγει αμέσως.',
 };

@@ -10,14 +10,14 @@ import { smsOrderChanged } from '../lib/sms-folders';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
-import { MAX_WORDS, WORD } from '../lock/sms-data';
+import { MAX_WORDS, UNDO_SECONDS, WORD } from '../lock/sms-data';
 import { blockedNumbers, blockNumber, canBlockNumbers, requestDefaultSms, smsReady, smsStatus, smsThreads, smsToolsReady, unblockNumber, type SmsStatus } from '../modules/erevos-sms';
 
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
 // writing to a number that has Erevos goes through Erevos. Whether to look for Erevos on a number
 // with a hidden SMS invite, whether SMS numbers show the names the phone's contacts give them, and
-// a new SMS conversation. The space's SMS folders, its spam filter's rules, and the numbers blocked
-// in Android's own list.
+// a new SMS conversation. The space's SMS folders, its spam filter's rules, the seconds an SMS waits
+// to be taken back, and the numbers blocked in Android's own list.
 
 // What the SMS app needs from Android. Becoming the SMS app gives them, except to an app installed
 // from a browser on Android 15 and later, which Android holds them back from until its owner allows
@@ -53,9 +53,10 @@ export default function SmsSettings() {
   const [names, setNames] = useState(false);
   const [number, setNumber] = useState('');
   const [note, setNote] = useState('');
-  // The spam filter (lib/sms-folders.ts), as the space keeps it.
+  // The spam filter (lib/sms-folders.ts) and the seconds to take an SMS back, as the space keeps them.
   const [spam, setSpam] = useState({ on: true, links: false, words: [] as string[] });
   const [word, setWord] = useState('');
+  const [undo, setUndo] = useState(5);
   // Android's list of blocked numbers, or null when Erevos may not read it.
   const [blocked, setBlocked] = useState<string[] | null>(null);
   const [toBlock, setToBlock] = useState('');
@@ -69,6 +70,7 @@ export default function SmsSettings() {
         setInvites(opened.invites);
         setNames(opened.names);
         setSpam({ on: opened.state.spam, links: opened.state.spamLinks, words: [...opened.state.spamWords] });
+        setUndo(opened.undo);
       })
       .catch(() => setNote(t('The SMS settings of this space could not open.')));
     const look = () => {
@@ -174,6 +176,12 @@ export default function SmsSettings() {
     }
     setWord('');
     await changeSpam(async () => undefined);
+  }
+
+  async function chooseUndo(seconds: number) {
+    if (!link) return;
+    await link.setUndo(seconds);
+    setUndo(link.undo);
   }
 
   async function block() {
@@ -368,6 +376,18 @@ export default function SmsSettings() {
             ) : null}
           </>
         )}
+      </Card>
+
+      <SectionTitle title={t('Taking an SMS back')} />
+      <Card>
+        <Text tone="muted">
+          {t('An SMS you send waits this long at the end of the conversation before it goes: tap it then to take it back. When you leave Erevos, it goes at once.')}
+        </Text>
+        <Row wrap>
+          {UNDO_SECONDS.map((seconds) => (
+            <Chip key={seconds} label={seconds ? t('{n} seconds', { n: seconds }) : t('Off')} selected={undo === seconds} onPress={() => void chooseUndo(seconds)} />
+          ))}
+        </Row>
       </Card>
 
       {(status?.slots ?? 0) >= 2 ? (

@@ -399,7 +399,7 @@ internal object SmsStore {
     }
   }
 
-  // --- Deleting ------------------------------------------------------------------------------
+  // --- Deleting, sending again ---------------------------------------------------------------
 
   /** Deletes from the phone a conversation's SMS and MMS up to `upTo` (milliseconds), as only the
    *  default SMS app may. Android drops the conversation once nothing is left in it. Returns how
@@ -409,6 +409,42 @@ internal object SmsStore {
     val thread = threadId(context, address) ?: return 0
     val gone = context.contentResolver.delete(Telephony.Sms.CONTENT_URI, "${Telephony.Sms.THREAD_ID}=? AND ${Telephony.Sms.DATE}<=?", arrayOf(thread.toString(), upTo.toString()))
     return gone + MmsStore.deleteThread(context, thread, upTo)
+  }
+
+  /** Deletes messages from the phone, each named by its kind and row: "sms:12", "mms:3". */
+  fun deleteMessages(context: Context, ids: List<String>): Int {
+    check(isDefault(context)) { "Only the SMS app may delete SMS" }
+    var gone = 0
+    for (name in ids) {
+      val id = name.substringAfter(':').toLongOrNull() ?: continue
+      val uri = when (name.substringBefore(':')) {
+        "sms" -> Telephony.Sms.CONTENT_URI
+        "mms" -> Uri.parse("content://mms")
+        else -> continue
+      }
+      gone += context.contentResolver.delete(Uri.withAppendedPath(uri, id.toString()), null, null)
+    }
+    return gone
+  }
+
+  /** Sends again one of ours that did not go: the same text to the same number, on `sim` (or the
+   *  SIM it was to go on, for -1), as a new message in place of the old one. Returns the new row. */
+  fun resend(context: Context, id: Long, sim: Int): Long {
+    var address = ""
+    var body = ""
+    var was = -1
+    val row = Uri.withAppendedPath(Telephony.Sms.CONTENT_URI, id.toString())
+    context.contentResolver.query(row, arrayOf(Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.SUBSCRIPTION_ID), null, null, null)?.use { c ->
+      if (c.moveToFirst()) {
+        address = c.getString(0) ?: ""
+        body = c.getString(1) ?: ""
+        was = if (c.isNull(2)) -1 else c.getInt(2)
+      }
+    }
+    require(address.isNotEmpty() && body.isNotEmpty()) { "That SMS is no longer on the phone" }
+    val sent = send(context, address, body, if (sim >= 0) sim else was)
+    if (isDefault(context)) context.contentResolver.delete(row, null, null)
+    return sent
   }
 
   // --- Blocked numbers -------------------------------------------------------------------------

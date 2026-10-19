@@ -1,11 +1,15 @@
 // The space's own order of its SMS (lib/sms-folders.ts, lib/sms-link.ts): pins, the Archive, the
-// Trash, Spam and its rules, all sealed in the space.
+// Trash, Spam and its rules, drafts and the seconds to take an SMS back, all sealed in the space;
+// and what waits a few seconds to be taken back (lib/held.ts), a message passed on to another
+// conversation (lib/forward.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
+import { forwardedTo, forwardTo } from '../lib/forward';
+import { Held } from '../lib/held';
 import type { InboxRow, InboxSms } from '../lib/inbox';
 import { arrangeRows, dueTrash, emptyTrash, isSpam, looksLikeSpam, plainText, shownMessages, smsFolder, sortSms, trashGoesAt } from '../lib/sms-folders';
 import { SmsLink } from '../lib/sms-link';
@@ -93,14 +97,17 @@ test('each conversation shows in one folder: the Trash first, then Spam, then th
   assert.deepEqual(shownMessages(messages, null), messages);
 });
 
-test('pinned SMS conversations come first, in the list\'s order', () => {
+test('pinned SMS conversations come first, in the list\'s order, and a draft shows in its row', () => {
   const rows = [row('contact:aa', '', 50), row('sms:1', '+306911111111', 40), row('sms:2', '+306922222222', 30), row('sms:3', '+306933333333', 20)];
-  const arranged = arrangeRows(rows, [{ address: '6933333333', at: 1 }, { address: '+306922222222', at: 2 }]);
+  const arranged = arrangeRows(rows, [{ address: '6933333333', at: 1 }, { address: '+306922222222', at: 2 }], [{ address: '+306911111111', text: 'half written', at: 1 }]);
   assert.deepEqual(arranged.map((r) => r.identity), ['sms:2', 'sms:3', 'contact:aa', 'sms:1']);
   assert.deepEqual(arranged.map((r) => r.pinned ?? false), [true, true, false, false]);
+  assert.equal(arranged[3].draft, 'half written');
   assert.equal(arranged[2], rows[0]);
-  // The list kept for when Erevos opens keeps the pins.
-  assert.equal(kept([arranged[0]]).rows[0].pinned, true);
+  // The list kept for when Erevos opens keeps the pins, not the drafts.
+  const cached = kept([arranged[3], arranged[0]]);
+  assert.equal(cached.rows[0].draft, undefined);
+  assert.equal(cached.rows[1].pinned, true);
 });
 
 test('the Trash goes from the phone after its days, and what could not go stays to be tried again', async () => {
@@ -123,25 +130,30 @@ test('the Trash goes from the phone after its days, and what could not go stays 
   assert.deepEqual(link.state.trash.map((t) => t.address), ['+306922222222', '+306933333333']);
 });
 
-test('pins, the Archive, the Trash and spam rules are kept sealed in the space, and only there', async () => {
+test('pins, the Archive, the Trash, drafts and spam rules are kept sealed in the space, and only there', async () => {
   files.clear();
   const key = randomBytes(32);
   const link = await SmsLink.open(0, key);
+  assert.equal(link.undo, 5);
   assert.equal(await link.pin('+306911111111', true), true);
   await link.archive('+306922222222', true, 100);
+  await link.setDraft('+306933333333', 'see you at eight');
   await link.markSpam('+306944444444', true);
   assert.equal(await link.addSpamWord('  free   gift '), true);
   await link.setSpamLinks(true);
+  await link.setUndo(10);
 
   const again = await SmsLink.open(0, key);
   assert.deepEqual(again.state.pinned.map((p) => p.address), ['+306911111111']);
   assert.deepEqual(again.state.archived, [{ address: '+306922222222', at: 100 }]);
+  assert.equal(again.draftFor('6933333333'), 'see you at eight');
   assert.deepEqual(again.state.marks.map((m) => [m.number, m.spam]), [['+306944444444', true]]);
   assert.deepEqual(again.state.spamWords, ['free gift']);
   assert.equal(again.state.spamLinks, true);
+  assert.equal(again.undo, 10);
   // Nothing of it shows in the phone's files, and another space's key opens none of it.
   const written = [...files.values()].join('\n');
-  assert.doesNotMatch(written, /6911111111|6922222222|free gift/);
+  assert.doesNotMatch(written, /6911111111|6922222222|see you|free gift/);
   const other = await SmsLink.open(0, randomBytes(32)).catch(() => null);
   assert.deepEqual(other?.state.pinned ?? [], []);
 
@@ -155,9 +167,14 @@ test('pins, the Archive, the Trash and spam rules are kept sealed in the space, 
   assert.deepEqual(again.state.archived.map((a) => a.address), ['+306911111111']);
   await again.untrash('+306922222222');
   assert.deepEqual(again.state.trash.map((t) => t.address), ['+306955555555']);
-  // The owner's word on a number can be left to the filter again.
+  // Nothing typed forgets the draft; the owner's word on a number can be left to the filter again.
+  await again.setDraft('+306933333333', '   ');
   await again.markSpam('6944444444', null);
-  assert.deepEqual((await SmsLink.open(0, key)).state.marks, []);
+  await again.setUndo(7);
+  const last = await SmsLink.open(0, key);
+  assert.equal(last.draftFor('+306933333333'), '');
+  assert.deepEqual(last.state.marks, []);
+  assert.equal(last.undo, 10);
 });
 
 test('pins, the Trash and the owner\'s words have their limits, and none is dropped for a new one', async () => {
@@ -177,4 +194,37 @@ test('pins, the Trash and the owner\'s words have their limits, and none is drop
   assert.equal(await link.addSpamWord('WORD 1'), true);
   assert.equal(await link.addSpamWord('one more'), false);
   assert.equal(link.state.spamWords.length, MAX_WORDS);
+});
+
+test('what is held goes at its time, or at once when flushed, unless it was taken back', async () => {
+  const held = new Held<{ id: string; text: string }>();
+  const done: string[] = [];
+  let changes = 0;
+  const stop = held.onChange(() => changes++);
+  held.hold({ id: 'a', text: 'first' }, 5, (item) => done.push(item.text));
+  held.hold({ id: 'b', text: 'second' }, 60_000, (item) => done.push(item.text));
+  held.hold({ id: 'c', text: 'third' }, 60_000, (item) => done.push(item.text));
+  assert.deepEqual(held.list().map((w) => w.item.id), ['a', 'b', 'c']);
+  assert.equal(held.take('b')?.text, 'second');
+  assert.equal(held.take('b'), null);
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.deepEqual(done, ['first']);
+  held.flush();
+  assert.deepEqual(done, ['first', 'third']);
+  assert.deepEqual(held.list(), []);
+  stop();
+  assert.equal(changes, 6);
+});
+
+test('a message passed on waits for its own conversation, a minute at most, and is read once', async () => {
+  forwardTo('+306911111111', { text: 'pass it on', photo: null }, 1000);
+  assert.equal(forwardedTo('+306922222222', undefined, 1000), null);
+  assert.equal(forwardedTo('+306911111111', undefined, 61_000), null);
+  // Read twice in the same moment, as a screen drawn twice reads it, then gone.
+  assert.equal(forwardedTo('+306911111111', undefined, 2000)?.text, 'pass it on');
+  assert.equal(forwardedTo('+306911111111', undefined, 2000)?.text, 'pass it on');
+  await Promise.resolve();
+  assert.equal(forwardedTo('+306911111111', undefined, 2000), null);
+  forwardTo('contact:aa', { text: 'into a chat', photo: null });
+  assert.equal(forwardedTo('contact:aa')?.text, 'into a chat');
 });

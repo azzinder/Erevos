@@ -61,6 +61,8 @@ export type InboxRow = {
   fades?: boolean;
   /** An SMS conversation pinned at the top (lib/sms-folders.ts). */
   pinned?: boolean;
+  /** What is typed in an SMS conversation and not sent yet. */
+  draft?: string;
 };
 
 const PREFIX = 'contact:';

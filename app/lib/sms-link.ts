@@ -7,7 +7,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { fresh, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, WORD, type LaterSms, type SmsData } from '../lock/sms-data';
+import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, UNDO_SECONDS, WORD, type LaterSms, type SmsData } from '../lock/sms-data';
 import type { Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 
@@ -91,7 +91,7 @@ export class SmsLink {
     return this.update((d) => ({ ...d, later: d.later.filter((l) => l.id !== id) }));
   }
 
-  /** The space's SMS data as it is now: its folders and spam rules (lib/sms-folders.ts). */
+  /** The space's SMS data as it is now: its folders, drafts and spam rules (lib/sms-folders.ts). */
   get state(): Readonly<SmsData> {
     return this.data;
   }
@@ -142,6 +142,18 @@ export class SmsLink {
     return this.update((d) => ({ ...d, trash: d.trash.filter((t) => !sameConversation(t.address, address)) }));
   }
 
+  /** What is typed in a conversation and not sent, or nothing. */
+  draftFor(address: string): string {
+    return this.data.drafts.find((d) => sameConversation(d.address, address))?.text ?? '';
+  }
+
+  /** Keeps what is typed in a conversation; nothing typed forgets it. */
+  setDraft(address: string, text: string): Promise<void> {
+    const kept = text.trim() ? text.slice(0, LATER_TEXT) : '';
+    if (kept === this.draftFor(address)) return Promise.resolve();
+    return this.update((d) => ({ ...d, drafts: [...d.drafts.filter((x) => !sameConversation(x.address, address)), ...(kept ? [{ address, text: kept, at: Date.now() }] : [])] }));
+  }
+
   /** Says a number sends spam (true), or does not (false), whatever the filter thinks; null leaves
    *  it to the filter again. */
   markSpam(number: string, spam: boolean | null): Promise<void> {
@@ -171,6 +183,15 @@ export class SmsLink {
 
   removeSpamWord(word: string): Promise<void> {
     return this.update((d) => ({ ...d, spamWords: d.spamWords.filter((w) => w !== word) }));
+  }
+
+  /** Seconds an SMS waits before it goes, to be taken back. */
+  get undo(): number {
+    return this.data.undo;
+  }
+
+  setUndo(seconds: number): Promise<void> {
+    return this.update((d) => ({ ...d, undo: UNDO_SECONDS.includes(seconds) ? seconds : d.undo }));
   }
 
   /** Whether the first SMS to `number` should carry an invite: invites are on, the core can open

@@ -529,7 +529,18 @@ chats in one list.
 - **Block:** **Block** in the menu of a conversation, or **Blocked numbers** under **SMS** in the menu, puts a number
   in Android's own list of blocked numbers: Android rejects its SMS, MMS and calls, and every space and the phone app
   see the same list. Only the SMS app may see and change it.
-- **Each space its own:** pins, archived conversations, the Trash and spam marks belong to the space, sealed
+- **Drafts:** what you type and do not send stays with that conversation, and the list shows it as **Draft**. An SMS
+  that could not go stays there as the draft too.
+- **Taking an SMS back:** an SMS you send waits 5 seconds at the end of the conversation first: tap it then to take
+  it back into the message field. Under **SMS** in the menu, **Taking an SMS back** sets **Off**, 5 or 10 seconds.
+  When you leave Erevos, it goes at once.
+- **Send again:** one of yours that did not go, or was not delivered, says so: tap it to send it again. Hold any
+  message down for **Forward**, **Send again** and **Delete**, with its words to select and copy; a deleted message
+  has **Undo** too.
+- **Forward:** hold a message down → **Forward**, then type a number and tap **Write**, or choose a contact under
+  **Into an Erevos chat**. It opens in that conversation, to read and send there. To a number its picture goes too,
+  as an MMS; into a chat only its words.
+- **Each space its own:** pins, archived conversations, the Trash, spam marks and drafts belong to the space, sealed
   with its password. The SMS themselves stay in the phone's SMS: another space sees them as they are, and one in the
   Trash here shows there until it is deleted from the phone.
 

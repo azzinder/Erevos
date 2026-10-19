@@ -17,8 +17,9 @@ not been compiled yet.
 - **SMS invites.** Data SMS to port 16180, which messaging apps do not show. Pieces that come are
   kept in the app's preferences until `takeInvites()` takes them. The format is in
   `lib/sms-invite.ts`.
-- **Deleting.** As the default app, `deleteThread()` deletes a conversation's SMS and MMS up to a
-  time (the space's Trash, `lib/sms-folders.ts`).
+- **Deleting and sending again.** As the default app, `deleteThread()` deletes a conversation's SMS
+  and MMS up to a time (the space's Trash, `lib/sms-folders.ts`), `deleteMessages()` single ones,
+  and `resend()` sends one of ours that failed again, in place of the old row.
 - **Blocked numbers.** `blocked()`, `block()` and `unblock()` use Android's own list
   (`BlockedNumberContract`), which only the default SMS app (or dialer) may read and change.
   Android then rejects those numbers' SMS, MMS and calls itself.
