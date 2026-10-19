@@ -8,6 +8,7 @@ import { ITER } from './config';
 import { FILE as E2E } from './e2e-data';
 import { FILE as GROUPS } from './group-data';
 import { FILE as HISTORY, PAGE_PREFIX as PAGE } from './history';
+import { FILE as PUBLIC_GROUPS } from './public-group-data';
 import { POCKETS } from './sealed-file';
 import { PREFIX as AVATAR } from './avatar-photos';
 import { PREFIX as VOICE } from './voice-clips';
@@ -48,7 +49,7 @@ const SLOTTED = Array.from({ length: MOST_SLOTS }, (_, n) => [
 const KEYS = [...FIXED, ...OTHER_POCKETS.map((p) => `erevos.hidden-lock.${p}`), ...SLOTTED];
 
 // The sealed files that are text; voice messages' sounds are bytes.
-const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS];
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS];
 
 const KIND_KEY = 0;
 const KIND_TEXT = 1;
