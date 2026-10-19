@@ -25,6 +25,7 @@ type NativePhone = {
   showCall(): void;
   setKnownNames(names: Record<string, string>): void;
   clearKnownNames(): void;
+  forgetKnownNamesAfter(ms: number): void;
   addListener<Name extends keyof PhoneEvents>(name: Name, listener: PhoneEvents[Name]): EventSubscription;
 };
 
@@ -66,7 +67,8 @@ export function showCall(): void {
  * inside Erevos, sealed. Give them only while a space is open, and only the space's own, never a
  * hidden place's. They stay in the memory of Erevos's process only, never written anywhere, and
  * each call replaces the ones before; clearKnownNames() forgets them, which the app does whenever
- * the space locks (app/_layout.tsx). With Erevos locked, a call shows the phone's contacts only.
+ * the space locks (app/_layout.tsx), and forgetKnownNamesAfter() when it would, in the background.
+ * With Erevos locked, a call shows the phone's contacts only.
  */
 export function setKnownNames(names: Record<string, string>): void {
   native?.setKnownNames(names);
@@ -74,6 +76,13 @@ export function setKnownNames(names: Record<string, string>): void {
 
 export function clearKnownNames(): void {
   native?.clearKnownNames();
+}
+
+/** Erevos went to the background: the names are forgotten after `ms`, when the space would lock,
+ *  unless the app keeps them again first, with `ms` -1. The native side forgets them on its own,
+ *  as the app may not run in the background. */
+export function forgetKnownNamesAfter(ms: number): void {
+  native?.forgetKnownNamesAfter(ms);
 }
 
 export function onPhoneEvent<Name extends keyof PhoneEvents>(name: Name, listener: PhoneEvents[Name]): EventSubscription | null {

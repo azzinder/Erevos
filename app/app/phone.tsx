@@ -5,10 +5,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text } from '../components/ui';
 import { t } from '../lib/i18n';
-import { dialNumber, KEYS, typeKey } from '../lib/phone';
+import { dialNumber, KEYS, knownNames, typeKey } from '../lib/phone';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
+import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
-import { onPhoneEvent, phoneAccounts, phoneReady, phoneStatus, placeCall, showCall, type PhoneAccount, type PhoneStatus } from '../modules/erevos-phone';
+import { onPhoneEvent, phoneAccounts, phoneReady, phoneStatus, placeCall, setKnownNames, showCall, type PhoneAccount, type PhoneStatus } from '../modules/erevos-phone';
 import { space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
@@ -47,6 +48,13 @@ export default function Phone() {
     look();
     const { space: open, key } = currentSpace();
     PhoneSims.open(open, key).then(setSims, () => setSims(null));
+    // A contact linked to a number since the space opened: its calls show its name too.
+    loadE2EData('space', open, key)
+      .then((e2e) => {
+        // Unless the space locked meanwhile: currentSpace() throws then.
+        if (currentSpace().key === key) setKnownNames(knownNames(e2e.contacts));
+      })
+      .catch(() => undefined);
     const app = AppState.addEventListener('change', (state) => state === 'active' && look());
     const calls = onPhoneEvent('onCalls', () => setStatus(phoneStatus()));
     return () => {

@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.OutcomeReceiver
+import android.os.SystemClock
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.CallEndpoint
@@ -58,11 +59,24 @@ internal object Calls {
   // open, in memory only. Read by the call screen and the screening service.
   @Volatile private var known: Map<String, String> = emptyMap()
 
+  // When the names are forgotten (SystemClock.elapsedRealtime), with Erevos in the background:
+  // when its space would lock.
+  @Volatile private var knownUntil = Long.MAX_VALUE
+
   fun setKnownNames(names: Map<String, String>) {
     known = names.entries.mapNotNull { (number, name) -> key(number)?.let { it to name } }.toMap()
+    knownUntil = Long.MAX_VALUE
   }
 
-  fun knownName(number: String?): String? = number?.let(::key)?.let { known[it] }
+  /** Forgets the names after `ms`, unless the app keeps them again first (`ms` < 0). */
+  fun forgetKnownNamesAfter(ms: Long) {
+    knownUntil = if (ms < 0) Long.MAX_VALUE else SystemClock.elapsedRealtime() + ms
+  }
+
+  fun knownName(number: String?): String? {
+    if (SystemClock.elapsedRealtime() >= knownUntil) known = emptyMap()
+    return number?.let(::key)?.let { known[it] }
+  }
 
   /** How numbers are matched: their last ten digits, or all of them when shorter. */
   fun key(number: String): String? {

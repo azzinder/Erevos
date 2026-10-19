@@ -22,6 +22,15 @@ export function typeKey(number: string, key: string): string {
   return number + key;
 }
 
+/** The names a space gives the numbers linked to its contacts, `{ number: name }`, for the call
+ *  screen while the space is open (setKnownNames in modules/erevos-phone). A message request, not
+ *  accepted yet, gives none. */
+export function knownNames(contacts: { name: string; phone: string; request: boolean }[]): Record<string, string> {
+  const names: Record<string, string> = {};
+  for (const c of contacts) if (c.phone && c.name.trim() && !c.request) names[c.phone] = c.name.trim();
+  return names;
+}
+
 /** "0:42", "12:05", "1:02:03", for a call that lasted `seconds`. */
 export function callLength(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));

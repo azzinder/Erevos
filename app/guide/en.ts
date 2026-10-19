@@ -513,7 +513,8 @@ On Android, Erevos can be the phone's phone app: under **Phone** in the menu, ta
 phone app**. Every call then shows on Erevos's own call screen, and tel: links and the phone's call button open
 Erevos's keypad.
 
-- **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them. It shows
+- **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them; while
+  Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them. It shows
   over the lock screen and needs no password, as a call has to be answered with Erevos locked. A call that comes
   shows **Answer** and **Decline**, and Android rings with the contact's own ringtone; the volume keys quiet it.
   In a call: **Mute**, **Keypad** for the tones a menu asks for, **Speaker**, **Hold**, **Add call** and **End**.

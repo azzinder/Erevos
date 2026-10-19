@@ -16,6 +16,7 @@ import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
+import { knownNames } from '../lib/phone';
 import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
 import { startSmsLater } from '../lib/sms-later';
@@ -23,14 +24,15 @@ import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
-import { clearKnownNames } from '../modules/erevos-phone';
+import { clearKnownNames, forgetKnownNamesAfter, setKnownNames } from '../modules/erevos-phone';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { applyTor } from '../lib/tor';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
+import { loadE2EData } from '../lock/e2e-data';
 import { PasswordGate } from '../lock/gate';
 import { prepareHidden } from '../lock/hidden';
-import { loadOpenKey, setCurrentSpace } from '../lock/keys';
+import { currentSpace, loadOpenKey, setCurrentSpace } from '../lock/keys';
 import { firstSpaceKey, loadSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 import { space as gap } from '../theme/colors';
 import { ThemeProvider, useTheme } from '../theme/context';
@@ -87,6 +89,13 @@ export default function RootLayout() {
       await show(kept);
       setPhase({ kind: 'open', space, passwordLock });
       saveLockScreenLook(kept).catch(() => undefined);
+      // While the space is open, a call from a number linked to one of its contacts shows their name.
+      loadE2EData('space', space, key)
+        .then((e2e) => {
+          // Unless the space locked meanwhile: currentSpace() throws then, or is another's.
+          if (currentSpace().key === key) setKnownNames(knownNames(e2e.contacts));
+        })
+        .catch(() => undefined);
       setTimeout(() => void runAutoBackup().catch(() => undefined), BACKUP_AFTER_MS);
     },
     [show],
@@ -138,12 +147,20 @@ export default function RootLayout() {
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'background') backgroundAt.current = Date.now();
+      const current = phaseRef.current;
+      if (state === 'background') {
+        backgroundAt.current = Date.now();
+        // The names of the space's contacts go when it would lock, even if the app does not run then.
+        if (current.kind === 'open' && current.passwordLock) forgetKnownNamesAfter(RELOCK_AFTER_MS);
+      }
       if (state !== 'active' || backgroundAt.current === null) return;
       const away = Date.now() - backgroundAt.current;
       backgroundAt.current = null;
-      const current = phaseRef.current;
-      if (current.kind !== 'open' || !current.passwordLock || away <= RELOCK_AFTER_MS) return;
+      if (current.kind !== 'open' || !current.passwordLock) return;
+      if (away <= RELOCK_AFTER_MS) {
+        forgetKnownNamesAfter(-1);
+        return;
+      }
       // A call that rang in the background, or goes on, would end with the space: it locks once
       // the call ends.
       if (currentCall()) relockAfterCall.current = true;

@@ -88,6 +88,10 @@ class ErevosPhoneModule : Module() {
     Function("clearKnownNames") {
       Calls.setKnownNames(emptyMap())
     }
+
+    Function("forgetKnownNamesAfter") { ms: Double ->
+      Calls.forgetKnownNamesAfter(ms.toLong())
+    }
   }
 
   companion object {

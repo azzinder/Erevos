@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
-import { callLength, dialNumber, KEYS, typeKey } from '../lib/phone';
+import { callLength, dialNumber, KEYS, knownNames, typeKey } from '../lib/phone';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
 import type { PhoneAccount } from '../modules/erevos-phone';
 import { files } from './files-memory';
@@ -36,6 +36,18 @@ test('how long a call lasted reads as a clock', () => {
   assert.equal(callLength(725), '12:05');
   assert.equal(callLength(3723), '1:02:03');
   assert.equal(callLength(-5), '0:00');
+});
+
+test('the call screen knows the names of the contacts linked to a number, not of a request', () => {
+  assert.deepEqual(
+    knownNames([
+      { name: ' Maria ', phone: '+306911111111', request: false },
+      { name: 'Nikos', phone: '', request: false },
+      { name: '', phone: '+306922222222', request: false },
+      { name: 'Who', phone: '+306933333333', request: true },
+    ]),
+    { '+306911111111': 'Maria' },
+  );
 });
 
 const sim = (id: string, slot: number, label = ''): PhoneAccount => ({ id, slot, label, name: `SIM ${slot + 1}` });
