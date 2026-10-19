@@ -1,5 +1,7 @@
-import { Pressable, View, type StyleProp, type TextStyle } from 'react-native';
+import { Linking, Platform, Pressable, View, type StyleProp, type TextStyle } from 'react-native';
 
+import { ask } from '../lib/alert';
+import { geoLink, placeText, type Place } from '../lib/chat-parts';
 import { t } from '../lib/i18n';
 import { radius, space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -7,8 +9,8 @@ import { useColors } from '../theme/context';
 import { Text } from './ui';
 
 // What a message shows besides its words, in a contact's chat (app/chat.tsx) and in a group
-// (app/group.tsx), drawn the same in both: the message it answers, the reactions to it, and the
-// messages pinned to the top of the chat.
+// (app/group.tsx), drawn the same in both: the message it answers, the reactions to it, the
+// messages pinned to the top of the chat, and a place sent once.
 
 /**
  * The message an answer is to, inside its bubble or over the message field: who wrote it and its
@@ -125,5 +127,31 @@ export function Pinned({ line, index, count, onPress }: { line: string; index: n
       </Text>
       <Text numberOfLines={1}>{line || t('The message is not on this phone.')}</Text>
     </Pressable>
+  );
+}
+
+/** Asks, then hands the place to the phone's maps app (a geo: link). Erevos itself never draws a map. */
+export function openPlace(place: Place): void {
+  ask(t('Open in maps?'), t('Your maps app opens at this place. It may load its map from the internet, as it does.'), [
+    { text: t('Cancel'), style: 'cancel' },
+    { text: t('Open'), onPress: () => void Linking.openURL(geoLink(place)).catch(() => undefined) },
+  ]);
+}
+
+/** A place sent once, in its bubble: where it is, how near, and Open in maps on a phone. */
+export function PlaceCard({ place, ink }: { place: Place; ink?: StyleProp<TextStyle> }) {
+  return (
+    <View style={{ gap: 2 }}>
+      <Text style={[ink, { fontWeight: '700' }]}>{`📍 ${t('Location')}`}</Text>
+      <Text style={[ink, { fontSize: 13 }]} selectable>
+        {placeText(place)}
+      </Text>
+      {place.acc !== undefined ? <Text style={[ink, { fontSize: 12, opacity: 0.8 }]}>{t('Within about {m} m', { m: place.acc })}</Text> : null}
+      {Platform.OS === 'android' ? (
+        <Pressable onPress={() => openPlace(place)} accessibilityRole="link" hitSlop={6}>
+          <Text style={[ink, { textDecorationLine: 'underline' }]}>{t('Open in maps')}</Text>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }

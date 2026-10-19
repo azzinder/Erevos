@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { carriedOf, contentOf, toCarry } from '../lib/chat-parts';
+import { carriedOf, checkedPlace, contentOf, geoLink, placeWords, toCarry } from '../lib/chat-parts';
 import { messageLine } from '../lib/message-line';
 import { starredOf } from '../lib/message-search';
 import { STICKERS, stickerOf } from '../lib/stickers';
@@ -52,4 +52,18 @@ test('a sticker goes by its name, with words, and an Erevos from before reads it
   assert.equal(messageLine({ text: '💃', sticker: 'moon-dance' }), 'Sticker');
   assert.equal(new Set(STICKERS.map((s) => s.name)).size, STICKERS.length);
   assert.ok(STICKERS.every((s) => carriedOf({ sticker: s.name }).sticker === s.name && s.emoji));
+});
+
+test('a place goes with its coordinates as words, to six decimals, and opens as a geo: link', () => {
+  const place = checkedPlace({ lat: 37.97536123, lon: 23.7349512, acc: 12.4 })!;
+  assert.deepEqual(place, { lat: 37.975361, lon: 23.734951, acc: 12 });
+  assert.equal(placeWords(place), '📍 37.975361, 23.734951');
+  assert.equal(geoLink(place), 'geo:37.975361,23.734951?q=37.975361,23.734951');
+  assert.deepEqual(toCarry({ place }, true), { place });
+  assert.deepEqual(toCarry({ place }, false), {});
+  assert.deepEqual(contentOf({ place }), { place });
+  assert.equal(checkedPlace({ lat: 91, lon: 0 }), null);
+  assert.equal(checkedPlace({ lat: '1', lon: 0 }), null);
+  assert.deepEqual(checkedPlace({ lat: 1, lon: 2, acc: -3 }), { lat: 1, lon: 2 });
+  assert.equal(messageLine({ text: placeWords(place), place }), 'Location');
 });

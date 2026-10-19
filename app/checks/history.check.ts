@@ -179,6 +179,25 @@ t('keeps a star on this phone, and a star of the wrong shape is none', async () 
   assert.deepEqual([odd.starred, odd.pinned], [undefined, undefined]);
 });
 
+t('keeps the sticker or the place a message is, and drops one of the wrong shape', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  await history.add({ peer: 'contact:aa', text: '🌝', mine: true, at: 1, tag: newTag(), sticker: 'moon-smile' });
+  await history.add({ peer: 'contact:aa', text: 'here', mine: false, at: 2, tag: newTag(), place: { lat: 1.5, lon: -2.25, acc: 8 } });
+  const kept = (await History.open('space', 0, key)).messages();
+  assert.deepEqual(
+    kept.map((m) => [m.sticker, m.place]),
+    [
+      ['moon-smile', undefined],
+      [undefined, { lat: 1.5, lon: -2.25, acc: 8 }],
+    ],
+  );
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', newTag(), 0, 0, 0, 0, 0, { s: 'Big Sticker', l: { lat: 200, lon: 0 } }]] } });
+  const [odd] = (await History.open('space', 1, key)).messages();
+  assert.deepEqual([odd.sticker, odd.place], [undefined, undefined]);
+});
+
 t('deletes the messages of one chat and keeps the others', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);

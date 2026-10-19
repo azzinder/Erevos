@@ -12,6 +12,7 @@ export type LineOf = {
   voice?: { ms: number };
   file?: { kind: 'photo' | 'file'; name: string };
   sticker?: string;
+  place?: object;
 };
 
 /** The message in one line: the first of its words, or what it carries. */
@@ -22,5 +23,6 @@ export function messageLine(message: LineOf): string {
     const sticker = stickerOf(message.sticker);
     return sticker ? t('Sticker: {name}', { name: t(sticker.label) }) : t('Sticker');
   }
+  if (message.place) return t('Location');
   return shownLine(message.text).split('\n')[0].trim();
 }

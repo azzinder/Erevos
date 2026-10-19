@@ -3,7 +3,7 @@ import { PermissionsAndroid, Platform } from 'react-native';
 
 import { Button, Page, Row, SectionTitle, Text } from '../components/ui';
 import { t } from '../lib/i18n';
-import { resumeRadio } from '../lib/radio';
+import { radioPermissions, resumeRadio } from '../lib/radio';
 import { onRadioEvent, radioStatus, sendText, startRadio, stopRadio, type RadioStatus } from '../modules/erevos-radio';
 
 // Test screen for two Android phones. Not part of the product. The app's own links run meanwhile
@@ -52,7 +52,7 @@ export default function RadioTest() {
   }
 
   async function askPermissions() {
-    const result = await PermissionsAndroid.requestMultiple(PERMISSIONS);
+    const result = await PermissionsAndroid.requestMultiple(radioPermissions(PERMISSIONS));
     const granted = Object.values(result).filter((r) => r === PermissionsAndroid.RESULTS.GRANTED).length;
     add(`permissions granted: ${granted} of ${PERMISSIONS.length}`);
   }

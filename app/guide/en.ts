@@ -340,6 +340,12 @@ Under **Attach** there is more to send than photos and files:
 
 - **Sticker:** one of the stickers built into Erevos, drawn by each phone itself: only its name travels, so nothing is
   ever downloaded. An Erevos from before this shows its emoji instead.
+- **Location** (on Android): sends where you are, once, as a place. The first time, Android asks whether Erevos may use
+  the location. The phone finds where it is by satellite when you allowed the precise location and it is on, otherwise
+  as its location settings say, which on many phones asks Google or the phone's maker. Erevos looks only when you tap,
+  shows you the place before it goes, and does not follow you after. The message holds only the coordinates, end-to-end
+  encrypted; no map is loaded in Erevos. **Open in maps** hands the place to your maps app, which may load its map from
+  the internet. An Erevos from before this shows the coordinates as words.
 
 ### Voice and video calls
 

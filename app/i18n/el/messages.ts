@@ -45,4 +45,21 @@ export const messages: Record<string, string> = {
   Sunshine: 'Λιακάδα',
   Coffee: 'Καφές',
   'All good': 'Όλα καλά',
+  // A place sent once (lib/place.ts, components/message-parts.tsx).
+  Location: 'Τοποθεσία',
+  'Finding where you are…': 'Βρίσκω πού είσαι…',
+  'Send where you are?': 'Να σταλεί πού είσαι;',
+  'Within about {m} m': 'Με ακρίβεια περίπου {m} μ.',
+  '{name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.':
+    'Ο/η {name} παίρνει αυτό το σημείο μία φορά, κρυπτογραφημένο από άκρο σε άκρο. Το Erevos δεν ακολουθεί πού πας μετά.',
+  'Open in maps': 'Άνοιγμα στους χάρτες',
+  'Open in maps?': 'Άνοιγμα στους χάρτες;',
+  'Your maps app opens at this place. It may load its map from the internet, as it does.':
+    'Η εφαρμογή χαρτών σου ανοίγει σε αυτό το σημείο. Μπορεί να φορτώσει τον χάρτη της από το ίντερνετ, όπως κάνει πάντα.',
+  'This build of Erevos cannot send a place.': 'Αυτή η έκδοση του Erevos δεν μπορεί να στείλει τοποθεσία.',
+  "Erevos may not use the phone's location. Allow it in the phone settings to send where you are.":
+    'Το Erevos δεν έχει άδεια για την τοποθεσία του τηλεφώνου. Δώσε την άδεια στις ρυθμίσεις του τηλεφώνου για να στείλεις πού είσαι.',
+  "The phone's location is off. Turn it on to send where you are.": 'Η τοποθεσία του τηλεφώνου είναι κλειστή. Άνοιξέ την για να στείλεις πού είσαι.',
+  'Where you are was not found in time. Try again outdoors, or in a while.':
+    'Δεν βρέθηκε εγκαίρως πού είσαι. Δοκίμασε ξανά σε ανοιχτό χώρο, ή σε λίγο.',
 };

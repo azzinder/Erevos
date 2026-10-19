@@ -34,9 +34,10 @@ import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '
 import { LaterPicker } from '../components/later-picker';
 import { LinkedText } from '../components/linked-text';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
-import { Pinned, Quote, Reactions } from '../components/message-parts';
+import { openPlace, PlaceCard, Pinned, Quote, Reactions } from '../components/message-parts';
 import { StickerPicker, StickerView } from '../components/stickers';
-import { acts, contentOf, type Content } from '../lib/chat-parts';
+import { acts, contentOf, placeText, placeWords, type Content, type Place } from '../lib/chat-parts';
+import { CAN_PLACE, findPlace } from '../lib/place';
 import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { messageLine } from '../lib/message-line';
@@ -479,6 +480,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   // The sheet for sending a photo or file, and how photos go.
   const [attaching, setAttaching] = useState(false);
   const [stickering, setStickering] = useState(false);
+  // Where the phone was found, to send once it is looked at.
+  const [placeFound, setPlaceFound] = useState<Place | null>(null);
   // Send held down: later, or without sound.
   const [sendMenu, setSendMenu] = useState(false);
   // The time picked there for the next photo, file or voice message, when nothing was typed.
@@ -1291,7 +1294,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     if (theyHave(message) || (message.mine && message.mark === WAITING)) actions.push({ title: t('Reply'), onPress: () => setReplying(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
-    if (CAN_COPY && message.text && !message.sticker && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
+    if (CAN_COPY && message.text && !message.sticker && !message.place && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
   }
@@ -1307,6 +1310,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   function fromAttach(open: () => void) {
     setAttaching(false);
     setTimeout(open, Platform.OS === 'web' ? 0 : 300);
+  }
+
+  // Finds where the phone is, to show before it goes.
+  async function locate() {
+    setNote(t('Finding where you are…'));
+    try {
+      const place = await findPlace();
+      setNote('');
+      setPlaceFound(place);
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  // Sends the place found, with where it is as its words for an Erevos from before.
+  function sendPlace(place: Place) {
+    setPlaceFound(null);
+    void send(0, false, { text: placeWords(place), place });
   }
 
   // Sends a sticker: its name, with its emoji as its words for an Erevos from before.
@@ -1483,8 +1504,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
 
   // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it
   // is read; `quiet`, it comes without sound, also when it has to wait.
-  // Sends what is typed, or, given `content`, a sticker with its words (its emoji): then what is
-  // typed stays.
+  // Sends what is typed, or, given `content`, a sticker or a place with its words (its emoji, or
+  // where it is): then what is typed stays.
   async function send(lasts = 0, quiet = false, content?: Content & { text: string }) {
     const text = content ? content.text : draft.trim();
     if (!text || !selected?.startsWith(CONTACT_PREFIX)) return;
@@ -3067,6 +3088,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
                 ) : null}
                 {message.sticker ? (
                   <StickerView name={message.sticker} fallback={message.text} />
+                ) : message.place ? (
+                  <PlaceCard place={message.place} ink={ink} />
                 ) : message.file ? (
                   <Attachment file={message.file} uri={photos[message.file.id]} state={taking[`${message.peer}|${message.tag}`]} ink={ink} />
                 ) : (
@@ -3190,8 +3213,33 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
         quality={quality}
         onQuality={chooseQuality}
         note={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
-        more={<Button title={t('Sticker')} kind="secondary" compact onPress={() => fromAttach(() => setStickering(true))} />}
+        more={
+          <>
+            <Button title={t('Sticker')} kind="secondary" compact onPress={() => fromAttach(() => setStickering(true))} />
+            {CAN_PLACE ? <Button title={t('Location')} kind="secondary" compact onPress={() => fromAttach(() => void locate())} /> : null}
+          </>
+        }
       />
+      <Sheet visible={!!placeFound && shown} onClose={() => setPlaceFound(null)} title={t('Send where you are?')}>
+        {placeFound ? (
+          <>
+            <Text selectable>{placeText(placeFound)}</Text>
+            {placeFound.acc !== undefined ? (
+              <Text variant="caption" tone="muted">
+                {t('Within about {m} m', { m: placeFound.acc })}
+              </Text>
+            ) : null}
+            <Text variant="caption" tone="muted">
+              {t('{name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.', { name: selectedName })}
+            </Text>
+            <Row wrap>
+              <Button title={t('Send')} compact onPress={() => sendPlace(placeFound)} />
+              <TextButton title={t('Open in maps')} onPress={() => openPlace(placeFound)} />
+              <TextButton title={t('Cancel')} onPress={() => setPlaceFound(null)} />
+            </Row>
+          </>
+        ) : null}
+      </Sheet>
       <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
         <StickerPicker onPick={sendSticker} />
       </Sheet>

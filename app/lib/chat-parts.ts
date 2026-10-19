@@ -19,13 +19,14 @@ export type Pin = { tag: string; on: boolean };
 
 /**
  * What a contact's message carries beyond what lib/e2e.ts says itself, each in a field of its own
- * that an Erevos from before leaves alone. With words: a sticker, whose words are its emoji
- * (lib/stickers.ts), as an Erevos from before shows them and this one does not. With no words: a pin.
+ * that an Erevos from before leaves alone. With words, which say it to an Erevos from before and
+ * show nowhere in this one: a sticker, whose words are its emoji (lib/stickers.ts), or a place,
+ * whose words are where it is. With no words: a pin.
  */
-export type Carried = { sticker?: string; pin?: Pin };
+export type Carried = { sticker?: string; place?: Place; pin?: Pin };
 
 /** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
-export type Content = Pick<Carried, 'sticker'>;
+export type Content = Pick<Carried, 'sticker' | 'place'>;
 
 export const MAX_QUESTION = 300;
 export const MAX_OPTION = 100;
@@ -49,21 +50,23 @@ const isTag = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{1
 /** What a message carries, from the fields of the message as it came: each checked, or left out. */
 export function carriedOf(value: Record<string, unknown>): Carried {
   const pin = value.pin as { tag?: unknown; on?: unknown } | null | undefined;
+  const place = checkedPlace(value.place);
   return {
     ...(isStickerName(value.sticker) ? { sticker: value.sticker } : {}),
+    ...(place ? { place } : {}),
     ...(isTag(pin?.tag) && typeof pin.on === 'boolean' ? { pin: { tag: pin.tag, on: pin.on } } : {}),
   };
 }
 
 /** What a kept message carries with its words, as it goes again. */
-export function contentOf({ sticker }: Content): Content {
-  return carriedOf({ sticker });
+export function contentOf({ sticker, place }: Content): Content {
+  return carriedOf({ sticker, place });
 }
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, pin } = carriedOf(carried);
-  return words ? { ...(sticker ? { sticker } : {}) } : { ...(pin ? { pin } : {}) };
+  const { sticker, place, pin } = carriedOf(carried);
+  return words ? { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}) } : { ...(pin ? { pin } : {}) };
 }
 
 /** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */
@@ -134,6 +137,11 @@ export function geoLink({ lat, lon }: Place): string {
 /** A place as people read it: 37.975360, 23.734950. */
 export function placeText({ lat, lon }: Place): string {
   return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+}
+
+/** A place's words, for an Erevos from before: a pin and where it is. */
+export function placeWords(place: Place): string {
+  return `📍 ${placeText(place)}`;
 }
 
 /** Whether a sticker's name is one: the stickers themselves are drawn by components/stickers.tsx. */
