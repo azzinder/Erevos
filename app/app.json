@@ -16,11 +16,7 @@
     },
     "android": {
       "package": "app.erevos",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/icon/adaptive-foreground.png",
-        "backgroundImage": "./assets/icon/adaptive-background.png",
-        "backgroundColor": "#0D0B09"
-      },
+      "icon": "./assets/icon/android-square.png",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",

@@ -9,9 +9,10 @@ The Erevos mark (a white L with a red speech bubble holding a keyhole), as artwo
 
 Where they are used:
 
-- The phone app (`app/app.json`): `app/assets/icon/` holds `icon.png` (iOS and Android), the
-  Android adaptive icon's two layers, the web favicon, and `maskable.png` (the two layers together,
-  for the web app's maskable icon).
+- The phone app (`app/app.json`): `app/assets/icon/` holds `icon.png` (iOS), `android-square.png`
+  (Android: a square icon of its own, the mark at half of it, so launchers show it square, as Nekten
+  chose), the web favicon, and `maskable.png` (the two adaptive layers together, for the web app's
+  maskable icon).
 - The web app (`pwa/build.mjs`) takes its icons from `png/web/`, `png/ios/icon-180.png` and
   `app/assets/icon/maskable.png`.
 - The Sailfish OS app (`sailfish/build-web.sh`) takes `png/sailfish/`.
