@@ -28,6 +28,10 @@ compiled against Android 16's framework classes, not built into the app or run y
   dependency), at most 1600 points wide, as UTF-8 when the code does not say; nothing leaves the phone.
 - **Merging.** The fields are merged in JS and saved into the contact kept; `takeOver()` then gives it the others'
   photo and ringtone when it has none, their star and their groups (in its own accounts), and deletes the others.
+- **Birthday reminders.** `setBirthdays()` turns them on or off (off at first). An alarm (not exact) goes off each
+  morning at 9:00, set again on BOOT_COMPLETED, MY_PACKAGE_REPLACED, TIME_SET and TIMEZONE_CHANGED (BirthdayReceiver),
+  and a notice names whose birthday it is (29 February on the 28th in other years), private on the lock screen; a
+  morning missed with the phone off is told once it is on, that day. Only Android's contacts.
 - **Changes elsewhere.** `watch()` sends `onContactsChanged` when Android's contacts change.
 
 ## JS API

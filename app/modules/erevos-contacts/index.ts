@@ -97,7 +97,7 @@ type NativeContacts = {
   takeOver(keeper: number, others: number[]): Promise<void>;
   simContacts(): Promise<SimContact[]>;
   calls(numbers: string[], limit: number): Promise<CallEntry[]>;
-  setBirthdays(on: boolean): void;
+  setBirthdays(on: boolean): Promise<void>;
   readQr(uri: string): Promise<string | null>;
   addListener<Name extends keyof ContactsEvents>(name: Name, listener: ContactsEvents[Name]): EventSubscription;
 };
@@ -211,9 +211,9 @@ export function phoneCalls(numbers: string[], limit = 50): Promise<CallEntry[]> 
   return native && numbers.length > 0 ? native.calls(numbers, limit) : Promise.resolve([]);
 }
 
-/** Turns birthday reminders on or off: a notice in the morning of each contact's birthday. */
-export function setBirthdayReminders(on: boolean): void {
-  native?.setBirthdays(on);
+/** Turns birthday reminders on or off: a notice in the morning of each phone contact's birthday. */
+export function setBirthdayReminders(on: boolean): Promise<void> {
+  return native ? native.setBirthdays(on) : none();
 }
 
 /** The text of the QR code in a photo (a file:// or content:// address), or null if it has none. */

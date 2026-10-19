@@ -8,12 +8,12 @@ import { MoreIcon, PlusIcon, SearchIcon } from '../components/icons';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
 import { groupsByTitle, groupTitles, phoneCards, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
-import { fillText, matches } from '../lib/contacts';
+import { birthdayComing, daysToBirthday, fillText, matches, parseBirthday } from '../lib/contacts';
 import { plural, t } from '../lib/i18n';
 import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
 import { readQrPhoto } from '../lib/read-qr';
 import { contactFromQr } from '../lib/vcard';
-import { contactsReady, contactsStatus, onContactsEvent, phoneGroups, watchContacts, type PhoneGroup } from '../modules/erevos-contacts';
+import { contactsReady, contactsStatus, onContactsEvent, phoneGroups, setBirthdayReminders, watchContacts, type PhoneGroup } from '../modules/erevos-contacts';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
@@ -23,10 +23,11 @@ import { useStyles, useTheme } from '../theme/context';
 // app, a sync). The menu has the rest: groups (app/contact-groups.tsx), duplicates to merge
 // (app/contact-duplicates.tsx), .vcf files in
 // (app/contact-import.tsx) and out: the contacts shown, saved in a folder the owner picks, and a
-// contact's QR code read from a photo of it, which starts a new contact.
+// contact's QR code read from a photo of it, which starts a new contact. Birthdays shows who has
+// one, the next first; its reminders are a notice on the morning of each (modules/erevos-contacts).
 
-/** What the list shows: everyone, the favourites, or a group's contacts (its id). */
-type Filter = 'all' | 'starred' | number;
+/** What the list shows: everyone, the favourites, the birthdays, or a group's contacts (its id). */
+type Filter = 'all' | 'starred' | 'birthdays' | number;
 
 export default function Contacts() {
   const styles = useStyles(makeStyles);
@@ -39,6 +40,7 @@ export default function Contacts() {
   const [filter, setFilter] = useState<Filter>('all');
   const [menu, setMenu] = useState(false);
   const [readingQr, setReadingQr] = useState(false);
+  const [reminders, setReminders] = useState(() => contactsStatus().birthdays);
   const [note, setNote] = useState('');
   const active = useRef(true);
 
@@ -87,9 +89,36 @@ export default function Contacts() {
   }
 
   const shown = useMemo(() => {
+    if (filter === 'birthdays') {
+      const now = new Date();
+      const born = (cards ?? [])
+        .map((c) => ({ c, b: parseBirthday(c.birthday) }))
+        .filter((x): x is { c: ContactCard; b: NonNullable<typeof x.b> } => x.b !== null && (!query.trim() || matches(x.c, query, groupTitles(x.c, groups))))
+        .sort((x, y) => daysToBirthday(x.b, now) - daysToBirthday(y.b, now));
+      return born.map((x) => x.c);
+    }
     const list = (cards ?? []).filter((c) => (filter === 'all' ? true : filter === 'starred' ? c.starred : c.groups.includes(filter)));
     return query.trim() ? list.filter((c) => matches(c, query, groupTitles(c, groups))) : list;
   }, [cards, groups, query, filter]);
+
+  // A notice on the morning of each birthday: Android 13 and later ask first whether Erevos may show notices.
+  async function toggleReminders() {
+    setNote('');
+    const on = !reminders;
+    if (on && Number(Platform.Version) >= 33) {
+      const answer = await PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS').catch(() => null);
+      if (answer !== PermissionsAndroid.RESULTS.GRANTED) {
+        setNote(t("Without notices, Erevos cannot remind you of birthdays. Allow Notifications in Erevos's App info."));
+        return;
+      }
+    }
+    try {
+      await setBirthdayReminders(on);
+      setReminders(on);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
 
   function go(href: Parameters<typeof router.push>[0]) {
     setMenu(false);
@@ -158,6 +187,7 @@ export default function Contacts() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters} keyboardShouldPersistTaps="handled">
         <Chip label={t('All')} selected={filter === 'all'} onPress={() => setFilter('all')} />
         <Chip label={t('Favourites')} selected={filter === 'starred'} onPress={() => setFilter('starred')} />
+        <Chip label={t('Birthdays')} selected={filter === 'birthdays'} onPress={() => setFilter('birthdays')} />
         {groups.map((g) => (
           <Chip key={g.id} label={g.title || t('Group without a name')} selected={filter === g.id} onPress={() => setFilter(g.id)} />
         ))}
@@ -183,7 +213,7 @@ export default function Contacts() {
         ListHeaderComponent={header}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
-        renderItem={({ item }) => <ContactRow card={item} />}
+        renderItem={({ item }) => <ContactRow card={item} birthday={filter === 'birthdays'} />}
         initialNumToRender={20}
         windowSize={11}
         ListEmptyComponent={
@@ -193,6 +223,8 @@ export default function Contacts() {
                 ? t('No contact has “{query}” in it.', { query: query.trim() })
                 : filter === 'starred'
                   ? t('No favourites yet. Tap the star on a contact.')
+                  : filter === 'birthdays'
+                    ? t('No contact has a birthday yet. Add one in Edit.')
                   : filter === 'all'
                     ? t('No contacts yet.')
                     : t('No one in this group yet.')}
@@ -225,6 +257,13 @@ export default function Contacts() {
       </Pressable>
       <Sheet visible={menu} onClose={() => setMenu(false)} title={t('Contacts')}>
         {allowed ? <MenuRow title={t('Groups')} detail={t('Family, Work, and your own: make, rename, who is in them')} onPress={() => go('/contact-groups')} /> : null}
+        {allowed ? (
+          <MenuRow
+            title={reminders ? t('Birthday reminders: on') : t('Birthday reminders: off')}
+            detail={t("A notice on the morning of each phone contact's birthday")}
+            onPress={() => void toggleReminders()}
+          />
+        ) : null}
         {allowed ? <MenuRow title={t('Find duplicates')} detail={t('The same person kept twice, to merge into one')} onPress={() => go('/contact-duplicates')} /> : null}
         {allowed ? <MenuRow title={t('Import from a .vcf file')} detail={t('Contacts another phone or app saved as a vCard')} onPress={() => go('/contact-import')} /> : null}
         {allowed ? (
@@ -273,11 +312,12 @@ function MenuRow({ title, detail, onPress }: { title: string; detail: string; on
   );
 }
 
-function ContactRow({ card }: { card: ContactCard }) {
+function ContactRow({ card, birthday }: { card: ContactCard; birthday?: boolean }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const photo = usePhoneContactPhoto(card.phone?.id ?? null, card.phone?.photo ?? 0);
-  const detail = card.phones[0]?.value || card.emails[0]?.value || card.company;
+  const born = birthday ? parseBirthday(card.birthday) : null;
+  const detail = born ? birthdayComing(born, new Date()) : card.phones[0]?.value || card.emails[0]?.value || card.company;
   return (
     <Pressable
       onPress={() => router.push(`/contact-card?id=${card.phone?.id ?? 0}`)}

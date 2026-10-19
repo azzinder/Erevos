@@ -71,7 +71,7 @@ class ErevosContactsModule : Module() {
         "read" to granted(Manifest.permission.READ_CONTACTS),
         "write" to granted(Manifest.permission.WRITE_CONTACTS),
         "calls" to granted(Manifest.permission.READ_CALL_LOG),
-        "birthdays" to false,
+        "birthdays" to (context != null && Birthdays.isOn(context)),
       )
     }
 
@@ -129,6 +129,7 @@ class ErevosContactsModule : Module() {
     }
     AsyncFunction("ringtoneName") { uri: String -> ContactsStore.ringtoneName(context(), uri) }
     AsyncFunction("readQr") { uri: String -> QrReader.read(context(), uri) }
+    AsyncFunction("setBirthdays") { on: Boolean -> Birthdays.setOn(context(), on) }
     AsyncFunction("groups") { ContactsStore.groups(context()) }
     AsyncFunction("createGroup") { title: String, type: String, name: String -> ContactsStore.createGroup(context(), title, type, name).toDouble() }
     AsyncFunction("renameGroup") { id: Double, title: String -> ContactsStore.renameGroup(context(), id.toLong(), title) }

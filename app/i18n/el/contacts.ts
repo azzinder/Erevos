@@ -168,4 +168,13 @@ export const contacts: Record<string, string> = {
   'No duplicates found.': 'Δεν βρέθηκαν διπλές επαφές.',
   'Not the same': 'Δεν είναι ίδιες',
   'Kept, with the others in it': 'Μένει, με τις άλλες μέσα της',
+
+  // Birthdays.
+  'Birthdays': 'Γενέθλια',
+  "Without notices, Erevos cannot remind you of birthdays. Allow Notifications in Erevos's App info.":
+    'Χωρίς ειδοποιήσεις, το Erevos δεν μπορεί να σου θυμίζει γενέθλια. Επίτρεψε τις Ειδοποιήσεις στις «Πληροφορίες εφαρμογής» του Erevos.',
+  'No contact has a birthday yet. Add one in Edit.': 'Καμία επαφή δεν έχει ακόμα γενέθλια. Πρόσθεσε στην Επεξεργασία.',
+  'Birthday reminders: on': 'Υπενθυμίσεις γενεθλίων: ναι',
+  'Birthday reminders: off': 'Υπενθυμίσεις γενεθλίων: όχι',
+  "A notice on the morning of each phone contact's birthday": 'Μια ειδοποίηση το πρωί των γενεθλίων κάθε επαφής του τηλεφώνου',
 };
