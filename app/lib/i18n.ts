@@ -5,6 +5,7 @@ import { EL } from '../i18n/el/index';
 import { ES } from '../i18n/es/index';
 import { FR } from '../i18n/fr/index';
 import { IT } from '../i18n/it/index';
+import { PT } from '../i18n/pt/index';
 import { secureGet, secureSet } from './secure';
 
 /**
@@ -17,21 +18,31 @@ import { secureGet, secureSet } from './secure';
  * these; the choice (Home → Menu → Language) is kept on the phone, outside every space, so the
  * password screen shows it too.
  */
-export type Lang = 'en' | 'el' | 'de' | 'es' | 'fr' | 'it';
+export type Lang = 'en' | 'el' | 'de' | 'es' | 'fr' | 'it' | 'pt';
 
 /** As the language switch lists them: the two the guide is written in first, then the others. */
-export const LANGS: Lang[] = ['el', 'en', 'de', 'es', 'fr', 'it'];
+export const LANGS: Lang[] = ['el', 'en', 'de', 'es', 'fr', 'it', 'pt'];
 /** Each language by its own name. */
-export const LANG_LABELS: Record<Lang, string> = { el: 'Ελληνικά', en: 'English', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano' };
+export const LANG_LABELS: Record<Lang, string> = {
+  el: 'Ελληνικά',
+  en: 'English',
+  de: 'Deutsch',
+  es: 'Español',
+  fr: 'Français',
+  it: 'Italiano',
+  pt: 'Português',
+};
 
-const WORDS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { el: EL, de: DE, es: ES, fr: FR, it: IT };
+const WORDS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { el: EL, de: DE, es: ES, fr: FR, it: IT, pt: PT };
 
-// How each writes dates and times, when the phone's own is another language.
-const LOCALES: Record<Exclude<Lang, 'en'>, string> = { el: 'el-GR', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT' };
+// How each writes dates and times, when the phone's own is another language. Portuguese is
+// Brazilian, as its words are.
+const LOCALES: Record<Exclude<Lang, 'en'>, string> = { el: 'el-GR', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-BR' };
 
 // Which counts take a word's first form, as plural() is given it: 1 alone, unless the language
-// counts otherwise here. French says 0 and 1 alike ("0 message").
-const ONE: Partial<Record<Lang, (n: number) => boolean>> = { fr: (n) => Math.abs(n) < 2 };
+// counts otherwise here. French and Brazilian Portuguese say 0 and 1 alike ("0 message").
+const zeroAndOne = (n: number) => Math.abs(n) < 2;
+const ONE: Partial<Record<Lang, (n: number) => boolean>> = { fr: zeroAndOne, pt: zeroAndOne };
 
 const KEY = 'erevos.lang';
 
