@@ -13,7 +13,7 @@ import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
 import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type InboxGroup, type InboxRow, type InboxSms } from '../lib/inbox';
-import { searchMessages, type Findable } from '../lib/message-search';
+import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
@@ -146,10 +146,14 @@ export default function Home() {
           quiet(Archive.open('space', current, key).then((a) => a.chats()), []),
           quiet(loadCurrentSpaceData(), null),
           canGroup() ? quiet(spaceGroups().then((g) => g.list() as InboxGroup[]), []) : Promise.resolve([] as InboxGroup[]),
-        ]).then(([[contacts, messages], imported, data, groups]) => {
+          canGroup() ? quiet(spaceGroups().then((g) => g.list().flatMap((group) => groupFindables(group.id, g.messages(group.id)))), []) : Promise.resolve([]),
+        ]).then(([[contacts, messages], imported, data, groups, said]) => {
           if (!active) return;
           const name = (identity: string) => memberName(identity, contacts);
-          setSearched({ messages, names: new Map(contacts.map((c) => [`contact:${c.identity}`, shownName(c)])) });
+          setSearched({
+            messages: [...messages, ...said],
+            names: new Map([...contacts.map((c): [string, string] => [`contact:${c.identity}`, shownName(c)]), ...groups.map((g): [string, string] => [`group:${g.id}`, g.name])]),
+          });
           chatsRead = (sms) => {
             const at = Date.now();
             const list = mergeRows(buildInbox(contacts, messages, imported, at, sms), groupRows(groups, name, (text) => noteText(text, name)));
@@ -306,11 +310,11 @@ export default function Home() {
                 {hits.map((hit) => (
                   <FoundRow
                     key={`${hit.peer}|${hit.tag}`}
-                    name={hit.mine ? t('You to {name}', { name: nameOf(hit.peer) }) : nameOf(hit.peer)}
+                    name={foundName(hit, nameOf(hit.peer))}
                     line={hit.line}
                     at={hit.at}
                     now={now}
-                    onPress={() => router.push(`/chat?contact=${hit.peer.replace(/^contact:/, '')}&at=${hit.tag}`)}
+                    onPress={() => router.push(foundAt(hit))}
                   />
                 ))}
               </View>

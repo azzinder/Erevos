@@ -1,4 +1,7 @@
+import type { GroupMessage } from '../lock/group-data';
 import { shownLine } from './call-lines';
+import { asChatMessage } from './group-parts';
+import { t } from './i18n';
 import { messageLine, type LineOf } from './message-line';
 
 // Messages found again across the open space's chats: the starred ones (app/starred.tsx), and those
@@ -14,6 +17,24 @@ export type Findable = LineOf & { peer: string; tag: string; at: number; mine: b
 export type Found = { peer: string; tag: string; at: number; mine: boolean; line: string };
 
 const found = ({ peer, tag, at, mine, ...message }: Findable): Found => ({ peer, tag, at, mine, line: messageLine(message) });
+
+const GROUP = 'group:';
+
+/** A group's messages as they are looked through, its notes left out. */
+export function groupFindables(id: string, messages: GroupMessage[]): Findable[] {
+  return messages.filter((m) => !m.note).map((m) => ({ ...asChatMessage(m), peer: `${GROUP}${id}`, mine: !m.from }));
+}
+
+/** Where a message found opens: its chat, at it. */
+export function foundAt({ peer, tag }: Found): string {
+  return peer.startsWith(GROUP) ? `/group?id=${peer.slice(GROUP.length)}&at=${tag}` : `/chat?contact=${peer.replace(/^contact:/, '')}&at=${tag}`;
+}
+
+/** Whose a message found is, as its row names it: `name` is its chat's. */
+export function foundName({ peer, mine }: Found, name: string): string {
+  if (!mine) return name;
+  return peer.startsWith(GROUP) ? t('You in {name}', { name }) : t('You to {name}', { name });
+}
 
 /** The starred messages, the latest first. */
 export function starredOf(messages: Findable[]): Found[] {

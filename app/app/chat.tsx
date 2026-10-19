@@ -45,7 +45,7 @@ import { CAN_PLACE, findPlace } from '../lib/place';
 import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { searchMessages } from '../lib/message-search';
-import { canForward, forwardToGroup, voiceCopy } from '../lib/forward';
+import { canForward, forwardToGroup, takeForward, voiceCopy, type Forwardable } from '../lib/forward';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
@@ -264,8 +264,16 @@ export default function ChatScreen() {
   const router = useRouter();
   // A contact to open with (from the home screen, or an imported chat that goes on with them),
   // hidden chats opened from the home screen's search (their key handed over in memory), or the
-  // relay settings to show at once. `at`: the tag of a message to go to, starred or found.
-  const { contact, hidden, setup, phone, at } = useLocalSearchParams<{ contact?: string; hidden?: string; setup?: string; phone?: string; at?: string }>();
+  // relay settings to show at once. `at`: the tag of a message to go to, starred or found;
+  // `forward`: a group's message to forward to the contact, handed over in memory (lib/forward.ts).
+  const { contact, hidden, setup, phone, at, forward } = useLocalSearchParams<{
+    contact?: string;
+    hidden?: string;
+    setup?: string;
+    phone?: string;
+    at?: string;
+    forward?: string;
+  }>();
   const fromSearch = hidden === 'open';
   const [hiddenPlace, setHiddenPlace] = useState<HiddenPlace | null>(() => (fromSearch ? takeHidden() : null));
   const hiddenKey = hiddenPlace?.key ?? null;
@@ -311,7 +319,16 @@ export default function ChatScreen() {
         <ChatStatusBar />
         <KeyboardPaddedView bottom={insets.bottom} style={[layout.screen, { paddingTop: insets.top }]}>
           <View style={[layout.screen, hiddenKey && layout.gone]}>
-            <Chat hiddenKey={null} initial={initial} at={initial && typeof at === 'string' && isTag(at) ? at : null} linkNumber={linkNumber} setup={setup === '1'} shown={!hiddenKey} onLook={setChatLook} />
+            <Chat
+              hiddenKey={null}
+              initial={initial}
+              at={initial && typeof at === 'string' && isTag(at) ? at : null}
+              forward={!!initial && forward === '1'}
+              linkNumber={linkNumber}
+              setup={setup === '1'}
+              shown={!hiddenKey}
+              onLook={setChatLook}
+            />
           </View>
           {hiddenKey ? (
             <Chat hiddenKey={hiddenKey} pocket={hiddenPlace?.pocket ?? 0} shown onHidden={closeHidden} onChangePassword={() => setAsking(true)} onLook={setChatLook} />
@@ -364,12 +381,14 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, at = null, forward = false, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
   /** The tag of a message of the `initial` chat to go to once it shows. */
   at?: string | null;
+  /** A message handed over to forward to the `initial` contact (lib/forward.ts), once the chat can send. */
+  forward?: boolean;
   /** A phone number to link to the `initial` contact. */
   linkNumber?: string;
   /** Opens with the relay settings and adding a contact in view. */
@@ -1390,12 +1409,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   }
 
   // Forwards a message to a contact's chat, and shows that chat: its words, sticker, place or a new
-  // poll go anew, and a voice message's sound or a photo's or file's bytes are sent again.
-  async function forwardTo(message: Message, peer: string) {
+  // poll go anew, and a voice message's sound or a photo's or file's bytes are sent again. One from
+  // a group comes as `Forwardable`, its voice message a file that lasts `ms`.
+  async function forwardTo(message: Forwardable, peer: string) {
     setForwarding(null);
     setSelected(peer);
-    if (message.voice) {
-      const copy = await voiceCopy(message.voice);
+    if (message.voice || (message.file && message.ms)) {
+      const copy = await voiceCopy(message);
       if (!copy) setNote(t('This voice message\'s sound is gone.'));
       else await sendVoice(copy.audio, copy.ms, false, peer, true);
       return;
@@ -1407,6 +1427,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     }
     await send(0, false, { ...contentOf(message), forwarded: true, text: message.text }, peer);
   }
+
+  // A group's message handed over to forward here, once the chat can send.
+  useEffect(() => {
+    if (!forward || !e2e || !initial) return;
+    const message = takeForward();
+    if (message) void forwardTo(message, initial);
+  }, [e2e]);
 
   // Forwards a message to a group, then shows the group once it went.
   async function forwardToGroupChat(message: Message, id: string) {

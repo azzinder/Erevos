@@ -6,11 +6,13 @@ import { Page, Text } from '../components/ui';
 import { hasCore } from '../lib/core';
 import { t } from '../lib/i18n';
 import { shownName } from '../lib/inbox';
-import { starredOf, type Found } from '../lib/message-search';
+import { canGroup } from '../lib/core';
+import { foundAt, foundName, groupFindables, starredOf, type Found } from '../lib/message-search';
 import { spaceChats } from '../lib/space-chats';
+import { spaceGroups } from '../lib/space-groups';
 
-// The starred messages of the open space's chats, the latest first, from the home screen's menu: a
-// tap opens the chat at the message. A message is starred, or not, from its menu in the chat
+// The starred messages of the open space's chats and groups, the latest first, from the home
+// screen's menu: a tap opens the chat at the message. A message is starred, or not, from its menu in the chat
 // (held down), on this phone only. Hidden chats' starred messages are in each chat's details.
 
 const CONTACT_PREFIX = 'contact:';
@@ -26,11 +28,18 @@ export default function StarredScreen() {
         setFound([]);
         return;
       }
-      void spaceChats()
-        .then(({ e2e, history }) => {
+      void Promise.all([spaceChats(), canGroup() ? spaceGroups().catch(() => null) : null])
+        .then(([{ e2e, history }, groups]) => {
           if (!active) return;
-          setNames(new Map(e2e.contacts().map((c) => [`${CONTACT_PREFIX}${c.identity}`, shownName(c)])));
-          setFound(starredOf(history.messages()));
+          const listed = groups?.list() ?? [];
+          setNames(
+            new Map([
+              ...e2e.contacts().map((c): [string, string] => [`${CONTACT_PREFIX}${c.identity}`, shownName(c)]),
+              ...listed.map((g): [string, string] => [`group:${g.id}`, g.name]),
+            ]),
+          );
+          const said = listed.flatMap((g) => groupFindables(g.id, groups!.messages(g.id)));
+          setFound(starredOf([...history.messages(), ...said]));
         })
         .catch(() => active && setFound([]));
       return () => {
@@ -39,9 +48,6 @@ export default function StarredScreen() {
     }, []),
   );
 
-  const open = (m: Found) => {
-    if (m.peer.startsWith(CONTACT_PREFIX)) router.push(`/chat?contact=${m.peer.slice(CONTACT_PREFIX.length)}&at=${m.tag}`);
-  };
   const nameOf = (peer: string) => names.get(peer) ?? shownName({ identity: peer.slice(CONTACT_PREFIX.length), name: '' });
   const now = Date.now();
 
@@ -54,12 +60,12 @@ export default function StarredScreen() {
       {(found ?? []).map((m) => (
         <FoundRow
           key={`${m.peer}|${m.tag}`}
-          name={m.mine ? t('You to {name}', { name: nameOf(m.peer) }) : nameOf(m.peer)}
+          name={foundName(m, nameOf(m.peer))}
           line={m.line}
           at={m.at}
           now={now}
           starred
-          onPress={() => open(m)}
+          onPress={() => router.push(foundAt(m))}
         />
       ))}
     </Page>

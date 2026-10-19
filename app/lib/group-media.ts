@@ -1,5 +1,5 @@
 import { deleteChunks, type FileMeta, type FileRef } from '../lock/attachment-files';
-import type { GroupMessage } from '../lock/group-data';
+import type { GroupMessage, GroupParts } from '../lock/group-data';
 import { AUTO_TAKE, sendFile, takeFile, type Source } from './attachments';
 import type { GroupTransport, Groups } from './groups';
 import type { Relay } from './relay';
@@ -15,7 +15,8 @@ type Progress = (done: number, count: number) => void;
 
 /**
  * Sends a photo or file, or with `ms` a voice message, to a group: its chunks to our relay (`own`),
- * then where they are to every member. If any of it cannot go, nothing is kept here.
+ * then where they are to every member, with what it answers or that it is forwarded (`parts`). If
+ * any of it cannot go, nothing is kept here.
  */
 export async function sendGroupFile(
   groups: Groups,
@@ -26,10 +27,11 @@ export async function sendGroupFile(
   ms: number | undefined,
   transport: GroupTransport,
   progress?: Progress,
+  parts: GroupParts = {},
 ): Promise<void> {
   const { ref, offer } = await sendFile(own, source, meta, progress);
   try {
-    await groups.sendFile(id, ref, offer, ms, transport);
+    await groups.sendFile(id, ref, offer, ms, transport, parts);
   } catch (error) {
     await deleteChunks(ref.id, ref.count).catch(() => undefined);
     throw error;

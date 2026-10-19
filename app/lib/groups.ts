@@ -11,6 +11,7 @@ import {
   type Group,
   type GroupData,
   type GroupMessage,
+  type GroupParts,
 } from '../lock/group-data';
 import { newTag } from '../lock/history';
 import { offerRef, readOffer, type FileOffer } from './attachments';
@@ -18,6 +19,7 @@ import * as core from './core';
 import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { decodeGroupCall, type GroupCallSignal } from './group-call-signal';
+import { groupPartsOf, markedOf, withMarked, type Marked } from './group-parts';
 import { cleanGroupName, isGroupId, type GroupSignal } from './group-signal';
 import { t, mark } from './i18n';
 import { MAX_VOICE_MS } from './voice';
@@ -43,6 +45,10 @@ import { MAX_VOICE_MS } from './voice';
 // came before, its files neither. A phone from before these reads nothing in such a message (a kind
 // it does not know) and goes on with the next. When a message leaves the group here, however it
 // goes, its chunks on this phone go too.
+//
+// Replies, stickers, places, polls, link previews and forwarding ride in a message's own fields,
+// and reactions, votes, pins and deleting for everyone are kinds of their own (lib/group-parts.ts):
+// a phone from before shows the words and leaves the rest.
 //
 // Every call runs after the one before it ends, as in lib/e2e.ts, and the MLS state is kept before
 // anything it made is handed back.
@@ -76,10 +82,11 @@ export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
 
 // What members say inside the group's messages. A `file` with `ms` is a voice message's sound.
 type Said =
-  | { t: 'text'; text: string; tag: string }
+  | ({ t: 'text'; text: string; tag: string } & GroupParts)
   | { t: 'name'; name: string }
   | { t: 'call'; call: GroupCallSignal }
-  | { t: 'file'; file: FileOffer; tag: string; ms?: number };
+  | ({ t: 'file'; file: FileOffer; tag: string; ms?: number } & GroupParts)
+  | Marked;
 
 function encodeSaid(said: Said): Uint8Array {
   return utf8Encode(JSON.stringify(said));
@@ -89,7 +96,7 @@ function decodeSaid(bytes: Uint8Array): Said | null {
   try {
     const v = JSON.parse(utf8Decode(bytes)) as Record<string, unknown>;
     if (v.t === 'text' && typeof v.text === 'string' && v.text.length > 0) {
-      return { t: 'text', text: v.text.slice(0, MAX_GROUP_TEXT), tag: typeof v.tag === 'string' ? v.tag : '' };
+      return { t: 'text', text: v.text.slice(0, MAX_GROUP_TEXT), tag: typeof v.tag === 'string' ? v.tag : '', ...groupPartsOf(v, true) };
     }
     if (v.t === 'name' && typeof v.name === 'string') return { t: 'name', name: cleanGroupName(v.name) };
     if (v.t === 'call') {
@@ -99,8 +106,10 @@ function decodeSaid(bytes: Uint8Array): Said | null {
     if (v.t === 'file') {
       const file = readOffer(v.file);
       const voice = file?.kind === 'file' && typeof v.ms === 'number' && v.ms > 0 && v.ms <= MAX_VOICE_MS + 5000;
-      if (file) return { t: 'file', file, tag: typeof v.tag === 'string' ? v.tag : '', ...(voice ? { ms: Math.round(v.ms as number) } : {}) };
+      if (file) return { t: 'file', file, tag: typeof v.tag === 'string' ? v.tag : '', ...(voice ? { ms: Math.round(v.ms as number) } : {}), ...groupPartsOf(v, false) };
     }
+    const marked = markedOf(v);
+    if (marked) return marked;
   } catch {
     // Not what an Erevos says.
   }
@@ -286,34 +295,83 @@ export class Groups {
     for (const identity of fresh) await transport.signal(identity, { group: id, kind: 'ask' });
   }
 
-  /** Sends a message to the group. */
-  send(id: string, text: string, transport: GroupTransport): Promise<void> {
+  /** Sends a message to the group, with what it is or carries beyond its words (`parts`). */
+  send(id: string, text: string, transport: GroupTransport, parts: GroupParts = {}): Promise<void> {
     return this.run(async () => {
       const group = this.find(id);
       if (!group || group.status !== 'in') throw new Error(t('You are not in this group any more.'));
       const said = text.trim().slice(0, MAX_GROUP_TEXT);
       if (!said) return;
       const tag = newTag();
-      await this.broadcast(id, encodeSaid({ t: 'text', text: said, tag }), transport);
+      const carried = groupPartsOf(parts, true);
+      await this.broadcast(id, encodeSaid({ t: 'text', text: said, tag, ...carried }), transport);
       const now = this.find(id)!;
-      await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: said, tag }]), readAt: Date.now() }));
+      await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: said, tag, ...carried }]), readAt: Date.now() }));
+      this.changed();
+    });
+  }
+
+  /**
+   * Says something of a message, for every member: our reaction, a pin, our vote, or deleting our
+   * own. Returns the message as it was, or null when it changes nothing.
+   */
+  mark(id: string, marked: Marked, transport: GroupTransport): Promise<GroupMessage | null> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group || group.status !== 'in') throw new Error(t('You are not in this group any more.'));
+      const before = group.messages.find((m) => !m.note && m.tag === marked.tag) ?? null;
+      if (!withMarked(group.messages, '', marked, Date.now())) return null;
+      await this.broadcast(id, encodeSaid(marked), transport);
+      const now = this.find(id)!;
+      const messages = withMarked(now.messages, '', marked, Date.now());
+      if (messages) await this.save(this.withGroup({ ...now, messages }));
+      this.changed();
+      return before;
+    });
+  }
+
+  /** Stars a message, or takes the star off, on this phone only. */
+  star(id: string, tag: string, on: boolean): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group || !tag) return;
+      const messages = group.messages.map((m) => {
+        if (m.note || m.tag !== tag) return m;
+        const next: GroupMessage = { ...m, starred: true };
+        if (!on) delete next.starred;
+        return next;
+      });
+      await this.save(this.withGroup({ ...group, messages }));
+      this.changed();
+    });
+  }
+
+  /** Deletes a message on this phone only; the members keep theirs. */
+  deleteHere(id: string, tag: string): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group || !tag) return;
+      await this.save(this.withGroup({ ...group, messages: group.messages.filter((m) => m.note || m.tag !== tag) }));
       this.changed();
     });
   }
 
   /**
    * Sends a photo or file, or with `ms` a voice message, to the group: `offer` says where it is on
-   * our relay and its key, and `ref` where it is kept here.
+   * our relay and its key, and `ref` where it is kept here. With `parts`, what it answers, or that
+   * it is forwarded. Where it is on our relay is kept, to take it off when it is deleted for everyone.
    */
-  sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport): Promise<void> {
+  sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport, parts: GroupParts = {}): Promise<void> {
     return this.run(async () => {
       const group = this.find(id);
       if (!group || group.status !== 'in') throw new Error(t('You are not in this group any more.'));
       const tag = newTag();
       const voice = ms === undefined ? {} : { ms: Math.round(ms) };
-      await this.broadcast(id, encodeSaid({ t: 'file', file: offer, tag, ...voice }), transport);
+      const carried = groupPartsOf(parts, false);
+      await this.broadcast(id, encodeSaid({ t: 'file', file: offer, tag, ...voice, ...carried }), transport);
       const now = this.find(id)!;
-      await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: '', tag, file: ref, ...voice }]), readAt: Date.now() }));
+      const kept = { at: Date.now(), from: '', text: '', tag, file: ref, ...voice, ...carried, put: offer.ids };
+      await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, kept]), readAt: Date.now() }));
       this.changed();
     });
   }
@@ -592,8 +650,16 @@ export class Groups {
       if (said.t === 'file') {
         // Not taken yet: where to take it from.
         const media = { file: offerRef(said.file), ...(said.ms === undefined ? {} : { ms: said.ms }) };
-        await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: '', tag: said.tag, ...media }]) }));
+        const parts = groupPartsOf(said, false);
+        await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: '', tag: said.tag, ...media, ...parts }]) }));
         this.messageListeners.forEach((listener) => listener(id));
+        this.changed();
+        return;
+      }
+      if (said.t === 'react' || said.t === 'pin' || said.t === 'vote' || said.t === 'erase') {
+        const messages = withMarked(now.messages, from, said, Date.now());
+        if (!messages) return;
+        await this.save(this.withGroup({ ...now, messages }));
         this.changed();
         return;
       }
@@ -602,7 +668,8 @@ export class Groups {
         if (opened.sender !== 0) return;
         await this.save(this.withGroup({ ...now, name: said.name || now.name }));
       } else {
-        await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: said.text, tag: said.tag }]) }));
+        const parts = groupPartsOf(said, true);
+        await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: said.text, tag: said.tag, ...parts }]) }));
         this.messageListeners.forEach((listener) => listener(id));
       }
       this.changed();

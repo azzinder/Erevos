@@ -276,8 +276,8 @@ Press and hold a message for its menu: the reactions at the top, then what you c
   to the message it answers; **✕** drops it. An Erevos from before this shows the answer without the quote.
 - **Forward:** sends a copy of it to another chat: pick a contact, or a group. Its words, sticker or place go anew, a
   poll as a new one with no answers yet, and a voice message's sound or a photo's or file's bytes are sent again,
-  encrypted with a new key, so nothing ties the copy to the message it came from. In a contact's chat the copy says
-  **Forwarded** under it, not from where; an Erevos from before this shows it without that. A message that disappears
+  encrypted with a new key, so nothing ties the copy to the message it came from. The copy says **Forwarded** under
+  it, not from where; an Erevos from before this shows it without that. A message that disappears
   is not forwarded, and from hidden chats a message goes only to the same hidden chats.
 - **Star:** stars it, on this phone only, to find it again: **Starred messages** in the home screen's menu lists them
   from all your chats, and a chat's details list its own. A tap goes to the message. Hidden chats' starred messages
@@ -456,7 +456,16 @@ then shows on their home screen, with a note of who added them. Groups go throug
   - **A member who joins later** does not get what came before, as with the words. A member whose Erevos is from
     before this version sees nothing of it.
   - **On the phone** each is kept in its pieces, sealed, as in a contact's chat. Deleting the group here deletes them.
-- **Not yet:** marks and disappearing messages in groups, groups in hidden chats, and groups over a nearby phone.
+- **A message's menu,** held down, as in a contact's chat: the reactions, **Reply**, **Forward**, **Star**, **Pin**,
+  **Copy** and **Delete**. Each member has one reaction on a message, and a poll shows who chose what. A pin is for
+  everyone, and any member can **Unpin** it. **Delete** asks **This phone** or, for your own message, **Everyone**:
+  the members' Erevos delete it too, and a photo, file or voice message of yours leaves your relay at once instead of
+  in 14 days. **Attach** has **Sticker**, **Location** and **Poll** here too. Links are underlined and asked before
+  they open, and **Link previews**, when on, go with yours. In the members sheet, **Search in this chat** goes through the group's messages and **Export chat**
+  writes them out; **Starred messages** and the home screen's search take in the groups too. A member whose Erevos is
+  from before this version sees the words, a sticker's emoji, a place's coordinates and a poll's question, and
+  nothing of reactions, pins and deleting.
+- **Not yet:** marks, typing and disappearing messages in groups, groups in hidden chats, and groups over a nearby phone.
 
 ## How Erevos picks the path {#paths}
 

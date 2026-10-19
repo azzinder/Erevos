@@ -307,6 +307,19 @@ export function refSource(ref: FileRef): Source {
   };
 }
 
+/**
+ * Takes chunks off our relay before they expire, by their ids (hex, one after another): those of a
+ * group's file deleted for everyone. One it cannot take off expires there.
+ */
+export async function takeOffRelay(own: Relay, ids: string): Promise<void> {
+  const session = await RelaySession.open({ url: own.url, token: own.token });
+  try {
+    for (let at = 0; at + ID_HEX <= ids.length; at += ID_HEX) await deleteChunk(session, fromHex(ids.slice(at, at + ID_HEX))).catch(() => false);
+  } finally {
+    session.close();
+  }
+}
+
 /** The file's bytes, or null when it is not here (not taken yet, or its chunks are gone). */
 export async function readFile(ref: FileRef): Promise<Uint8Array | null> {
   const out = new Uint8Array(ref.size);

@@ -10,7 +10,7 @@ import { messageLine, type LineOf } from './message-line';
 // messages stay in Erevos and are only named. A message that disappears is left out, and so is a
 // quote of one, as whoever sent it meant it to go.
 
-/** A message to write out, as lock/history.ts keeps it. */
+/** A message to write out, as lock/history.ts keeps it, or a group's (lock/group-data.ts). */
 export type Written = LineOf & {
   mine: boolean;
   at: number;
@@ -25,6 +25,10 @@ export type Written = LineOf & {
   theirVote?: number[];
   lasts?: number;
   until?: number;
+  /** In a group: who wrote it, when not us, and each member's reaction and vote, by name. */
+  by?: string;
+  reactedBy?: { emoji: string; name: string }[];
+  votedBy?: { chose: number[]; name: string }[];
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -39,8 +43,15 @@ function linesOf(message: Written, them: string): string[] {
   if (message.voice || message.file || message.sticker) return [`[${messageLine(message)}]`];
   if (message.place) return [`[${t('Location')}: ${placeText(message.place)}]`];
   if (message.poll) {
+    const voted = message.votedBy ?? [
+      { chose: message.myVote ?? [], name: t('You') },
+      { chose: message.theirVote ?? [], name: them },
+    ];
     const chose = (option: number) =>
-      [message.myVote?.includes(option) ? t('You') : '', message.theirVote?.includes(option) ? them : ''].filter(Boolean).join(', ');
+      voted
+        .filter((v) => v.chose.includes(option))
+        .map((v) => v.name)
+        .join(', ');
     return [`[${messageLine(message)}]`, ...message.poll.o.map((option, i) => `  ${option}${chose(i) ? `: ${chose(i)}` : ''}`)];
   }
   return shownLine(message.text).split('\n');
@@ -65,8 +76,12 @@ export function chatText(messages: Written[], them: string, now: number): string
     }
     const quoted = message.re ? kept.find((m) => m.tag === message.re) : undefined;
     const about = [message.forwarded ? t('forwarded') : '', quoted ? t('answering “{line}”', { line: messageLine(quoted) }) : ''].filter(Boolean).join(', ');
-    lines.push(`${timeOf(d)}  ${message.mine ? t('You') : them}${about ? ` (${about})` : ''}: ${first}`, ...more.map((line) => UNDER + line));
-    const reactions = [message.theirReaction ? `${message.theirReaction} ${them}` : '', message.myReaction ? `${message.myReaction} ${t('You')}` : ''].filter(Boolean);
+    lines.push(`${timeOf(d)}  ${message.mine ? t('You') : (message.by ?? them)}${about ? ` (${about})` : ''}: ${first}`, ...more.map((line) => UNDER + line));
+    const reacted = message.reactedBy ?? [
+      { emoji: message.theirReaction ?? '', name: them },
+      { emoji: message.myReaction ?? '', name: t('You') },
+    ];
+    const reactions = reacted.filter((r) => r.emoji).map((r) => `${r.emoji} ${r.name}`);
     if (reactions.length > 0) lines.push(UNDER + reactions.join('  '));
   }
   return `${lines.join('\n')}\n`;
