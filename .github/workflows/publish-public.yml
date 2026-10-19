@@ -1,0 +1,47 @@
+name: publish-public
+
+# Copies a release that is already out (v0.1.<build>, with its version.json) to the public download
+# repository that Updates → Check for updates reads, without building anything again: for when the
+# release job's own last step could not (see release.yml). Actions, publish-public, Run workflow,
+# with the release's tag.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release to copy, e.g. v0.1.2
+        required: true
+
+permissions: {}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ inputs.tag }}
+      RELEASES_REPO: azzinder/erevos-releases
+    steps:
+      - name: Take the release's files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          [[ "$TAG" =~ ^v0\.[1-9][0-9]*\.[0-9]+$ ]] || { echo "::error::Not a release tag: $TAG"; exit 1; }
+          gh release download "$TAG" -D files
+          test -f files/version.json && jq -e . files/version.json
+          gh release view "$TAG" --json body --jq .body > notes.md
+          ls -la files
+      - name: Publish to the public download repository
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          [ -n "$GH_TOKEN" ] || { echo "::error::The secret RELEASES_TOKEN is missing"; exit 1; }
+          if gh release view "$TAG" --repo "$RELEASES_REPO" > /dev/null 2>&1; then
+            gh release upload "$TAG" files/* --repo "$RELEASES_REPO" --clobber
+          else
+            gh release create "$TAG" files/* --repo "$RELEASES_REPO" --title "Erevos ${TAG#v}" --notes-file notes.md --latest
+          fi
+          gh release list --repo "$RELEASES_REPO" --limit 100 --exclude-drafts --json tagName --jq '.[5:][].tagName' |
+            xargs -r -n1 gh release delete --repo "$RELEASES_REPO" --cleanup-tag --yes
