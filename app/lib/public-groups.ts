@@ -185,6 +185,12 @@ export class PublicGroups extends Groups {
     return publicName(this.record(id)?.names[key] ?? '', key);
   }
 
+  /** A member's name in whichever public group has its key, or null when none has: each key is made for one group. */
+  nameOf(key: string): string | null {
+    const group = this.pub.groups.find((g) => key in g.names);
+    return group ? publicName(group.names[key], key) : null;
+  }
+
   // What this phone says about itself in a public group: where it is reached, as in every group,
   // with the key made for this group as its id, and the name it chose. After `state`, which makes
   // the seal.
@@ -667,17 +673,18 @@ export class PublicGroups extends Groups {
     if (this.find(id)?.admin && (await this.seats(id)).some((s) => s.key === key)) await this.commitPublic(id, transport);
   }
 
-  // A message deleted for everyone: in its place, a note saying so. This phone's own are kept with no sender.
+  // A message deleted for everyone, and a note saying so. This phone's own are kept with no sender.
   private async deleteLocked(id: string, from: string, tag: string) {
     const kept = this.record(id)!;
     const group = this.find(id);
     if (!group) return;
     const sender = from === kept.me ? '' : from;
     const gone = (m: GroupMessage) => !m.note && m.tag === tag && m.from === sender;
-    const messages = group.messages.map((m) => (gone(m) ? { at: m.at, from: '', text: mark('A message was deleted for everyone.'), tag: '', note: true } : m));
-    await this.save(this.withGroup({ ...group, messages }));
     await this.keepGroup({ ...kept, deleted: [...kept.deleted.filter((d) => d !== `${from}|${tag}`), `${from}|${tag}`].slice(-MAX_DELETED) });
+    if (!group.messages.some(gone)) return;
+    await this.save(this.withGroup({ ...group, messages: group.messages.filter((m) => !gone(m)) }));
     this.changed();
+    await this.note(id, mark('A message was deleted for everyone.'));
   }
 
   // Says an admin's step in the group: to every member, or with `admins` to the owner and the admins only.

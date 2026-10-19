@@ -200,6 +200,8 @@ test('anyone with the link joins while the owner is away, and reads only from th
   const bobKey = members[1].key;
   assert.equal(alice.groups.messages(id).find((m) => m.text === 'thanks')?.from, bobKey);
   assert.equal(alice.groups.nameIn(id, bobKey), `Bob · ${bobKey.slice(0, 4)}`);
+  assert.equal(alice.groups.nameOf(bobKey), `Bob · ${bobKey.slice(0, 4)}`, 'as the home screen names him');
+  assert.equal(alice.groups.nameOf(bob.identity), null);
   assert.deepEqual(notes(alice, id), ['You made the group.', `Bob · ${bobKey.slice(0, 4)} joined.`]);
   assert.deepEqual(notes(bob, id), ['You joined the group.']);
   // Bob knows the group by the key made for it, not by who he is in his chats.

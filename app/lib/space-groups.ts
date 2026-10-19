@@ -23,6 +23,8 @@ import { t } from './i18n';
 // voice messages go through the space's relay only, straight (lib/group-media.ts).
 
 let opened: { of: object; groups: Promise<PublicGroups> } | null = null;
+// The same once open, for what cannot wait for them (publicMemberName).
+let shown: PublicGroups | null = null;
 
 const callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
 const messageListeners = new Set<() => void>();
@@ -77,6 +79,7 @@ export function spaceGroups(): Promise<PublicGroups> {
       const made = new PublicGroups(data, (next) => saveGroupData(current.space, current.key, next), me, pub, save, relayDoors(settings));
       made.onCall((group, from, signal) => callListeners.forEach((listener) => listener(group, from, signal)));
       made.onMessage(() => messageListeners.forEach((listener) => listener()));
+      if (opened?.of === current) shown = made;
       return made;
     })();
     opened = { of: current, groups };
@@ -89,7 +92,13 @@ export function spaceGroups(): Promise<PublicGroups> {
 
 /** Lets go of the space's groups when it closes. */
 export function forgetSpaceGroups(): void {
+  shown = null;
   opened = null;
+}
+
+/** A member of one of the open space's public groups, by its key there, once the groups are open; null for anyone else. */
+export function publicMemberName(key: string): string | null {
+  return shown?.nameOf(key) ?? null;
 }
 
 /** How the open space's group messages leave the phone. */

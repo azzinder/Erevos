@@ -15,7 +15,7 @@ import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
-import { spaceGroups } from '../lib/space-groups';
+import { publicMemberName, spaceGroups } from '../lib/space-groups';
 import { groupName, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { contactNames, onSmsEvent, smsStatus, smsThreads } from '../modules/erevos-sms';
@@ -143,7 +143,7 @@ export default function Home() {
           canGroup() ? quiet(spaceGroups().then((g) => g.list() as InboxGroup[]), []) : Promise.resolve([] as InboxGroup[]),
         ]).then(([[contacts, messages], imported, data, groups]) => {
           if (!active) return;
-          const name = (identity: string) => memberName(identity, contacts);
+          const name = (identity: string) => publicMemberName(identity) ?? memberName(identity, contacts);
           chatsRead = (sms) => {
             const at = Date.now();
             const list = mergeRows(buildInbox(contacts, messages, imported, at, sms), groupRows(groups, name, (text) => noteText(text, name)));
