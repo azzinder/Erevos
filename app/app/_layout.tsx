@@ -13,6 +13,7 @@ import { runAutoBackup } from '../lib/backup-folder';
 import { currentCall } from '../lib/call';
 import { onCallChange } from '../lib/calls';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
+import { forgetLinks } from '../lib/devices';
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
@@ -96,6 +97,7 @@ export default function RootLayout() {
     // once a space opens (after a backup is restored too).
     setCurrentSpace(null);
     forgetSpaceChats();
+    forgetLinks();
     forgetSpaceGroups();
     forgetSmsLink();
     forgetSpare();

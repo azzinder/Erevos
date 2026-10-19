@@ -42,6 +42,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 | **New group** | A group chat with your contacts. See [Group chats](#groups). |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
 | **LoRa radio** | Texts over a Meshtastic radio, kilometres away, without internet; off unless set. See [Over a LoRa radio](#lora). |
+| **Linked devices** | The same account on a computer or in a browser too. See [Linked devices](#devices). |
 | **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
 | **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
@@ -695,9 +696,50 @@ as on the phone, and keeps its contacts, messages and settings sealed the same w
   (on a Mac the Keychain). A Linux system without a keyring keeps it as it is: set a password lock there.
 - **Voice messages** recorded on a computer are Opus, on a phone AAC. Both play on both.
 - **Photos** come from the computer's files; there is no camera. **Save** asks where to put a photo or file.
-- **A computer and a phone are two devices:** they do not share contacts and chats yet. A backup moves everything
-  from one to the other, see [Backups](#backup), and from then on use only the one.
+- **A computer and a phone can share an account:** link the computer to the phone, and both have the same chats and
+  contacts, see [Linked devices](#devices). Or a backup moves everything from one to the other, see
+  [Backups](#backup), and from then on use only the one.
 - **Tested so far** on Linux. The Mac version is built and opened on GitHub's Mac computers, not yet by a person.
+
+## Linked devices {#devices}
+
+The same account on the phone and on a computer, or in a browser: the same chats, contacts and messages on both. The
+phone stays the account. It alone holds the keys of each conversation with a contact: it passes on to the computer,
+end-to-end encrypted, what comes and what it sent, and seals for the contact what the computer writes. Contacts see
+nothing new: the same account and the same safety number, whatever version of Erevos they have.
+
+To link a computer:
+
+1. On the computer, in a space with no chats of its own (a new install, or a space a new password opens), open
+   **Linked devices** in the menu. Fill in the relay if it asks, name the device, and tap **Link to my phone**. It
+   shows a QR code.
+2. On the phone, scan the code with the camera: Erevos opens on **Linked devices** with it. Or copy the code on the
+   computer, paste it on the phone under **Code from the computer**, and tap **Next**.
+3. The phone shows the computer's name and a code of four groups of five digits. Choose what of the history goes
+   (**All of it**, **The last month**, **The last week** or **None**) and whether **Photos and files too**, then tap
+   **Link**.
+4. The computer shows a code too. If it is the phone's, tap **They match**. If not, tap **They differ**: someone else
+   may have read its QR code, and nothing went to them.
+
+The chats then come to the computer, and after them the messages chosen.
+
+- **Messages** from contacts come to both. What you write on the computer goes through the phone: the phone shows it
+  as yours, and the contact gets it from the account. What you write on the phone shows on the computer too. Read
+  marks, deleting from both phones, names, timers, chat looks and pictures, appearing offline and accepting requests
+  go both ways.
+- **The phone has to be on** and reach the relay for the computer to send and receive. What the computer writes
+  meanwhile waits on the relay, and goes once the phone is back.
+- **Photos and files** that come stay on the relay while devices are linked, as both the phone and the computer take
+  them, until the relay drops them after 14 days.
+- **Calls and groups** stay on the phone for now: a call rings only there, and the computer starts none.
+- **Hidden chats and second passwords** are never linked. A chat moved into hidden chats on the phone leaves the
+  computer. A space a second password opens links only from inside it, to devices of its own.
+- **Bring over messages again**, on the phone, sends a period of the history again; what the computer has already is
+  not kept twice.
+- **Unlink**, on the phone, cuts a device off at once: nothing more goes to it, and nothing it sends is taken. That is
+  how to cut off a lost computer. If it is on, it is told, and the account's chats leave it. On the computer,
+  **Unlink this device** does the same from there.
+- **Up to four** devices link to one phone. A backup does not carry the links: after restoring one, link again.
 
 ## On an iPhone, from the browser {#iphone}
 
@@ -866,8 +908,8 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   more than four people, through a server the call moves to by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).
-- **More systems:** more than one device for the same person. Linux and macOS are here, see
-  [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
+- **More systems:** calls and groups on linked devices too; the account itself is on a computer already, see
+  [Linked devices](#devices). Linux and macOS are here, see [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
   [On Sailfish OS](#sailfish); and so are backups, see [Backups](#backup).
 
 ## Questions {#faq}

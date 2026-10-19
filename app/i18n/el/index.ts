@@ -10,5 +10,6 @@ import { messages } from './messages';
 import { smsTools } from './sms-tools';
 import { more } from './more';
 import { groups } from './groups';
+import { devices } from './devices';
 
-export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups };
+export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices };
