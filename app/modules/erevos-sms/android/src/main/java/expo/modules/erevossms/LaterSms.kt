@@ -25,7 +25,7 @@ import org.json.JSONObject
  * waits encrypted with a key that never leaves the phone's keystore, in a file of one size, and
  * an alarm goes off at the soonest one's time. With the phone off then, they go once it is on and
  * unlocked again. The space keeps its own record of what it sent for later (lock/sms-data.ts);
- * what went is noted here by id, so it can tell. Not compiled or run yet.
+ * what went is noted here by id, so it can tell.
  */
 internal object LaterSms {
   private const val TAG = "ErevosSms"
