@@ -40,12 +40,14 @@ export type SpaceData = {
   // A backup relay (one at home, say) with a queue of its own, which contacts write to while the
   // relay cannot be reached (lib/spare.ts). Its address is empty when there is none.
   spare: SpareRelay;
+  // Whether the web app asks the relay for a push when a message comes (lib/web-push.web.ts).
+  push: boolean;
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null };
 const NO_SPARE: SpareRelay = { url: '', token: '', queue: null };
 
-export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '', ownQueue: null, routes: {}, look: null, tor: false, spare: NO_SPARE };
+export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '', ownQueue: null, routes: {}, look: null, tor: false, spare: NO_SPARE, push: false };
 
 const BLOCK = 1024;
 const entry = (space: number) => `erevos.space.${space}`;
@@ -89,6 +91,7 @@ function checked(value: unknown): SpaceData {
     look: v.look ? checkedLook(v.look) : null,
     tor: v.tor === true,
     spare: checkedSpareRelay(v.spare),
+    push: v.push === true,
   };
 }
 

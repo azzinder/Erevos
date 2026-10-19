@@ -24,6 +24,7 @@ import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-ch
 import { lookAtSpare, spareBackup } from './spare';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 import { sendWaiting, type SendPlace } from './waiting';
+import { keepPush } from './web-push';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
 // itself while it is open, and holds this meanwhile (holdReceiver). Otherwise this looks at the
@@ -283,6 +284,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   if (state.seen !== released) {
     state.place = await placeNow();
     state.seen = released;
+    if (state.place) void keepPush(state.place.own, state.place.queue);
   }
   let place = state.place;
   if (!place) return false;
@@ -360,6 +362,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     const queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
     await updateCurrentSpaceData({ ownQueue: queue });
     state.place = { ...place, queue };
+    void keepPush(place.own, queue);
     if (state.place.keyAsked) lastPlace = state.place;
     return changed;
   }

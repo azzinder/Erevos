@@ -30,6 +30,12 @@
 //! may take together: 1024 MB on disk unless set, 256 MB in memory. Chunks
 //! nobody takes expire like messages.
 //!
+//! Set `EREVOS_RELAY_PUSH_KEY` to a file path to let web apps ask for an
+//! empty push when a message comes (Web Push, see `push.rs`). The key is made
+//! there on first start and must be kept; the push addresses are kept beside
+//! it, in `<file>.addresses`. `EREVOS_RELAY_PUSH_SUBJECT` is the `mailto:` or
+//! `https:` address push services may write to about the relay.
+//!
 //! Set `EREVOS_TURN_URLS` (comma-separated `turn:` addresses) and
 //! `EREVOS_TURN_SECRET` (the `static-auth-secret` of the coturn beside the
 //! relay) to hand phones credentials for calls through it (see `turn.rs`).
@@ -37,6 +43,7 @@
 
 mod files;
 mod journal;
+mod push;
 mod queue;
 mod server;
 mod turn;
@@ -204,6 +211,35 @@ fn main() -> ExitCode {
     };
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
     let store = Shared::new(store, files, key, turn);
+    match env::var("EREVOS_RELAY_PUSH_KEY") {
+        Ok(path) if !path.is_empty() => {
+            let key = match push::load_key(Path::new(&path)) {
+                Ok(key) => key,
+                Err(e) => {
+                    eprintln!("erevos-relay: cannot use the push key file {path}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            };
+            let subject = env::var("EREVOS_RELAY_PUSH_SUBJECT")
+                .ok()
+                .filter(|s| s.starts_with("mailto:") || s.starts_with("https://"))
+                .unwrap_or_else(|| "mailto:erevos-relay@invalid".to_string());
+            let allowed = push::PUSH_SERVICES.iter().map(|s| s.to_string()).collect();
+            let addresses = format!("{path}.addresses");
+            match push::Push::new(key, subject, allowed, Some(addresses.into())) {
+                Ok(push) => {
+                    let _ = store.push.set(push);
+                }
+                Err(e) => {
+                    eprintln!("erevos-relay: cannot read the push addresses beside {path}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+        _ => eprintln!(
+            "erevos-relay: no EREVOS_RELAY_PUSH_KEY set, web apps cannot ask for notifications"
+        ),
+    }
     let sweep_store = Arc::clone(&store);
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(60 * 60));

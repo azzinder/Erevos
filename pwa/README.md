@@ -62,7 +62,10 @@ app from a store is installed once and changes only when updated.
 - **The browser itself.** Apple makes Safari and could change what it does, as with any iPhone
   app.
 - **Not while closed.** iOS stops web apps in the background: messages wait on the relay until
-  the app opens. Push notifications (through Apple, encrypted) are not built yet.
+  the app opens. Notifications can say that one came (Lock → Notifications while closed, off
+  unless turned on): the relay sends an empty push through the browser's push service
+  (`crates/erevos-relay/src/push.rs`, `lib/web-push.web.ts`), and the service worker shows "New
+  message". The push service sees when, and that the device uses Erevos; never what or from whom.
 - **No Bluetooth, nearby link or SMS**, which Safari does not allow, and no automatic backups: a
   browser gives out a file only after a tap.
 

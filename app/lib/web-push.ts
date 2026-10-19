@@ -1,0 +1,19 @@
+import type { Queue } from '../lock/space-data';
+import type { Relay } from './relay';
+
+// Notifications through Web Push are for the web app only (web-push.web.ts). The phone app
+// receives in the background itself (background.ts).
+
+export const PUSH_AVAILABLE = false;
+
+export function turnOnPush(): Promise<string | null> {
+  return Promise.resolve('Notifications through the browser are for the web app.');
+}
+
+export function turnOffPush(): Promise<void> {
+  return Promise.resolve();
+}
+
+export function keepPush(_own: Relay, _queue: Queue): Promise<void> {
+  return Promise.resolve();
+}

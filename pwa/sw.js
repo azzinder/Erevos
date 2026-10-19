@@ -343,3 +343,21 @@ self.addEventListener('message', (event) => {
     );
   }
 });
+
+// A push from the relay (crates/erevos-relay/src/push.rs) carries nothing: it only says that a
+// message waits. A browser must show something for each push, and nothing more is known here.
+self.addEventListener('push', (event) => {
+  event.waitUntil(
+    self.registration.showNotification('Erevos', { body: 'New message', tag: 'erevos-new-message', icon: '/icon-192.png' }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((open) => {
+      const window = open.find((client) => 'focus' in client);
+      return window ? window.focus() : self.clients.openWindow('/');
+    }),
+  );
+});
