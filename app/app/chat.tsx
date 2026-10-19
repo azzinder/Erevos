@@ -32,6 +32,7 @@ import { ShieldIcon, TimerIcon } from '../components/icons';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { LaterPicker } from '../components/later-picker';
+import { LinkedText } from '../components/linked-text';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
@@ -2895,7 +2896,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
                       ? playingId === message.id
                         ? `■  ${t('Playing, {time}', { time: voiceDuration(Math.max(0, message.voice.ms - played)) })}`
                         : `▶  ${t('Voice message, {time}', { time: voiceDuration(message.voice.ms) })}`
-                      : shownLine(message.text)}
+                      : <LinkedText text={shownLine(message.text)} />}
                   </Text>
                 )}
                 <Text style={[ink, styles.time]}>{[message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>

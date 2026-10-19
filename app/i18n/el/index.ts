@@ -5,5 +5,9 @@ import { chat } from './chat';
 import { parts } from './parts';
 import { screens } from './screens';
 import { settings } from './settings';
+import { phone } from './phone';
+import { messages } from './messages';
+import { smsTools } from './sms-tools';
+import { more } from './more';
 
-export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts };
+export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more };

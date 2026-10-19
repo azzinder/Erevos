@@ -19,6 +19,7 @@ import { cancelLater as cancelSmsLater, laterChanged, onLaterSent } from '../lib
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { cleanName, loadE2EData, type Contact } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
+import { LinkedText } from '../components/linked-text';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { LATER_TEXT, type LaterSms } from '../lock/sms-data';
 import { contactNames, markSmsRead, mmsReady, onSmsEvent, sendMms, sendSms, sendSmsData, smsMessages, smsSims, smsStatus, type Sim, type SmsMessage } from '../modules/erevos-sms';
@@ -284,7 +285,11 @@ export default function Sms() {
                 {whose(m.from)}
               </Text>
             ) : null}
-            {m.text ? <Text selectable>{m.text}</Text> : null}
+            {m.text ? (
+              <Text selectable>
+                <LinkedText text={m.text} />
+              </Text>
+            ) : null}
             <Text variant="caption" tone="faint">
               {new Date(m.at).toLocaleString(lang() === 'el' ? 'el-GR' : undefined)}
               {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}

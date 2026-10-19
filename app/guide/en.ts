@@ -205,6 +205,8 @@ at the relay, or at once when they are nearby. A message counts as read once its
 - **Send without sound:** hold **Send** down and choose **Send without sound**: their phone shows the notice without
   a sound or vibration. An Erevos from before it does not know this and sounds as usual, and so does Erevos as a web
   app, whose notice comes from the browser.
+- **Links:** a web address in a message is underlined. Tap it and Erevos shows it whole, to open in the browser
+  only if it is where you want to go. Nothing is fetched before that.
 - **They see when you read:** your phone tells theirs, as theirs tells yours, unless that chat appears offline (below).
 - **When messages come:** Erevos looks at the relay every few seconds while it is open and unlocked, on any screen,
   and the home screen moves the chat to the top by itself. On Android it goes on in the background too, while **In
@@ -501,6 +503,7 @@ chats in one list.
   see it, and the phone company does not have it. It waits locked with a key of the phone itself (Android
   Keystore), not with your space's password, as Android has to send it while Erevos is locked: the protection every
   SMS has once sent, as sent SMS stay in the phone's SMS. Text only, to one number.
+- **Links:** a web address in an SMS is underlined, and opens as in a chat, once you have seen it whole.
 - **Names from your contacts:** off at first. Under **SMS** in the menu, **Show names from my contacts** shows the
   names your phone's contacts give SMS numbers. Erevos only reads them to show them, and keeps no copy.
 
