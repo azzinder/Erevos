@@ -63,9 +63,10 @@ export type Kept = [
 /**
  * Of ours: `h`, the id a relay holds it by, sent for later, and `r` that relay (lib/relay.ts,
  * sendMessageLater), so it can still be taken back before it goes; `q` 1 when it goes without
- * sound, kept while it waits.
+ * sound, kept while it waits. Of either: `p`, the tag of the message it answers; `y`, our
+ * reaction to it, and `o`, theirs.
  */
-type More = { h?: string; r?: string; q?: 1 };
+type More = { h?: string; r?: string; q?: 1; p?: string; y?: string; o?: string };
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -89,12 +90,23 @@ export type Message = {
   held?: HeldAt;
   /** Ours that waits, to go without sound. */
   quiet?: boolean;
+  /** The tag of the message it answers. */
+  re?: string;
+  /** Our reaction to it, and theirs. */
+  myReaction?: string;
+  theirReaction?: string;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
-function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file, held, quiet }: Fields): Kept {
-  const more: More = { ...(held ? { h: held.id, r: held.relay } : {}), ...(quiet ? { q: 1 as const } : {}) };
+function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file, held, quiet, re, myReaction, theirReaction }: Fields): Kept {
+  const more: More = {
+    ...(held ? { h: held.id, r: held.relay } : {}),
+    ...(quiet ? { q: 1 as const } : {}),
+    ...(re ? { p: re } : {}),
+    ...(myReaction ? { y: myReaction } : {}),
+    ...(theirReaction ? { o: theirReaction } : {}),
+  };
   const kept: Kept = [at, mine ? 1 : 0, text, tag, until, until ? 0 : lasts, mark, voice ?? 0, file ?? 0, Object.keys(more).length > 0 ? more : undefined];
   while (kept.length > 4 && !kept[kept.length - 1]) kept.pop();
   return kept;
@@ -113,16 +125,26 @@ function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, fil
     ...(file ? { file } : {}),
     ...(more?.h && more.r ? { held: { id: more.h, relay: more.r } } : {}),
     ...(more?.q ? { quiet: true } : {}),
+    ...(more?.p ? { re: more.p } : {}),
+    ...(more?.y ? { myReaction: more.y } : {}),
+    ...(more?.o ? { theirReaction: more.o } : {}),
   };
 }
 
 const HELD_ID = /^[0-9a-f]{32}(?:,[0-9a-f]{32}){0,63}$/;
 
-function checkedMore(value: unknown): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; q?: unknown } | null;
+// What is said of ours only is kept of ours only.
+function checkedMore(value: unknown, mine: boolean): More | undefined {
+  const v = value as { h?: unknown; r?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
-  const held = typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
-  const more: More = { ...(held ? { h: v.h as string, r: v.r as string } : {}), ...(v.q === 1 ? { q: 1 as const } : {}) };
+  const held = mine && typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
+  const more: More = {
+    ...(held ? { h: v.h as string, r: v.r as string } : {}),
+    ...(mine && v.q === 1 ? { q: 1 as const } : {}),
+    ...(isTag(v.p) ? { p: v.p } : {}),
+    ...(isReactionEmoji(v.y) ? { y: v.y } : {}),
+    ...(isReactionEmoji(v.o) ? { o: v.o } : {}),
+  };
   return Object.keys(more).length > 0 ? more : undefined;
 }
 
@@ -139,6 +161,9 @@ const TAG = /^[0-9a-f]{12}$/;
 
 export const newTag = () => toHex(randomBytes(6));
 export const isTag = (value: unknown): value is string => typeof value === 'string' && TAG.test(value);
+
+/** Whether this can be a reaction: one emoji or a few, no words. */
+export const isReactionEmoji = (value: unknown): value is string => typeof value === 'string' && /^[^\sA-Za-z0-9<>&"'`\\]{1,16}$/.test(value);
 
 export const FILE = 'erevos-history';
 export const SIZE = 64 * 1024;
@@ -163,9 +188,24 @@ function checkedKept(m: unknown): Kept | null {
   const mark = m[6] === 1 || m[6] === 2 || (m[6] === WAITING && m[1] === 1) ? m[6] : 0;
   const voice = isVoiceRef(m[7]) ? m[7] : undefined;
   const file = isFileRef(m[8]) ? m[8] : undefined;
-  const more = m[1] === 1 ? checkedMore(m[9]) : undefined;
+  const more = checkedMore(m[9], m[1] === 1);
   const held = more?.h && more.r ? { id: more.h, relay: more.r } : undefined;
-  return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark, voice, file, held, quiet: !!more?.q });
+  return pack({
+    at: m[0],
+    mine: m[1] === 1,
+    text: m[2],
+    tag: isTag(m[3]) ? m[3] : newTag(),
+    until: count(m[4]),
+    lasts: count(m[5]),
+    mark,
+    voice,
+    file,
+    held,
+    quiet: !!more?.q,
+    re: more?.p,
+    myReaction: more?.y,
+    theirReaction: more?.o,
+  });
 }
 
 function checkedChats(value: unknown): Record<string, Kept[]> {
@@ -359,6 +399,18 @@ export class History {
     const list = this.data.chats[peer];
     if (!list?.some((m) => m[3] === tag && m[6] === WAITING)) return false;
     const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, quiet: false }) : m));
+    await this.save({ chats: { ...this.data.chats, [peer]: changed } });
+    return true;
+  }
+
+  /**
+   * Sets a reaction to a chat's message, by its tag: ours (`ours`) or theirs, an emoji, or none
+   * (`''`). False if the message is gone.
+   */
+  async react(peer: string, tag: string, ours: boolean, emoji: string): Promise<boolean> {
+    const list = this.data.chats[peer];
+    if (!list?.some((m) => m[3] === tag)) return false;
+    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), ...(ours ? { myReaction: emoji } : { theirReaction: emoji }) }) : m));
     await this.save({ chats: { ...this.data.chats, [peer]: changed } });
     return true;
   }
