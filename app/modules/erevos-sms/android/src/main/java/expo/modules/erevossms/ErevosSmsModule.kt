@@ -75,5 +75,7 @@ class ErevosSmsModule : Module() {
     }
     AsyncFunction("cancelLater") { id: String -> LaterSms.cancel(context(), id) }
     AsyncFunction("laterState") { ids: List<String> -> LaterSms.state(context(), ids) }
+    // Deleting conversations from the phone (the space's Trash).
+    AsyncFunction("deleteThread") { address: String, upTo: Double -> SmsStore.deleteThread(context(), address, upTo.toLong()).toDouble() }
   }
 }

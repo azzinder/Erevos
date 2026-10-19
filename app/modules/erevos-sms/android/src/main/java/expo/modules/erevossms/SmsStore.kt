@@ -390,6 +390,18 @@ internal object SmsStore {
     }
   }
 
+  // --- Deleting ------------------------------------------------------------------------------
+
+  /** Deletes from the phone a conversation's SMS and MMS up to `upTo` (milliseconds), as only the
+   *  default SMS app may. Android drops the conversation once nothing is left in it. Returns how
+   *  many went. */
+  fun deleteThread(context: Context, address: String, upTo: Long): Int {
+    check(isDefault(context)) { "Only the SMS app may delete SMS" }
+    val thread = threadId(context, address) ?: return 0
+    val gone = context.contentResolver.delete(Telephony.Sms.CONTENT_URI, "${Telephony.Sms.THREAD_ID}=? AND ${Telephony.Sms.DATE}<=?", arrayOf(thread.toString(), upTo.toString()))
+    return gone + MmsStore.deleteThread(context, thread, upTo)
+  }
+
   fun sendData(context: Context, address: String, data: ByteArray) {
     manager(context).sendDataMessage(address, null, INVITE_PORT, data, null, null)
   }

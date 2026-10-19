@@ -42,6 +42,7 @@ function checkedRow(value: unknown): InboxRow | null {
     avatar: checkedAvatar(r.avatar),
     sms: r.sms,
     lastSms: r.lastSms === true,
+    ...(r.pinned === true ? { pinned: true } : {}),
   };
 }
 

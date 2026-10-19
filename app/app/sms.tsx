@@ -3,15 +3,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { MoreIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LaterPicker } from '../components/later-picker';
+import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
+import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
 import { canRelaySeal } from '../lib/core';
 import { toBase64Url } from '../lib/e2e';
 import { lang, plural, t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { relayKey } from '../lib/relay';
+import { onSmsOrderChanged, shownMessages, smsFolder, trashOf } from '../lib/sms-folders';
 import { groupName, sameConversation, smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { pickMmsPhoto, type MmsPhoto } from '../lib/pick-mms-photo';
@@ -21,7 +25,7 @@ import { cleanName, loadE2EData, type Contact } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import { LinkedText } from '../components/linked-text';
 import { loadCurrentSpaceData } from '../lock/space-data';
-import { LATER_TEXT, type LaterSms } from '../lock/sms-data';
+import { LATER_TEXT, type LaterSms, type SmsData } from '../lock/sms-data';
 import { contactNames, markSmsRead, mmsReady, onSmsEvent, sendMms, sendSms, sendSmsData, smsMessages, smsSims, smsStatus, type Sim, type SmsMessage } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -38,8 +42,9 @@ import { useStyles, useTheme } from '../theme/context';
 // down sends a text SMS later (lib/sms-later.ts), to one number only; it shows at the end, marked
 // Scheduled, until it goes.
 //
-// A sender that writes with a name instead of a number (a bank, say) shows its SMS, and cannot be
-// answered.
+// ⋮ pins, archives or deletes the conversation (components/sms-actions.tsx); the part of it in the
+// Trash does not show here. A sender that writes with a name instead of a number (a bank, say) shows
+// its SMS, and cannot be answered.
 
 export default function Sms() {
   const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string }>();
@@ -64,6 +69,10 @@ export default function Sms() {
   const [names, setNames] = useState<Record<string, string>>({});
   const [later, setLater] = useState<LaterSms[]>([]);
   const [laterMenu, setLaterMenu] = useState(false);
+  // The space's order of its SMS (lib/sms-folders.ts).
+  const [order, setOrder] = useState<SmsData | null>(null);
+  // The conversation's own actions (⋮).
+  const [menu, setMenu] = useState<SmsTarget | null>(null);
   const link = useRef<SmsLink | null>(null);
   const twoSims = (smsStatus()?.slots ?? 0) >= 2;
   const thread = useRef<ScrollView>(null);
@@ -76,12 +85,15 @@ export default function Sms() {
       })
       .catch(() => setNote(t('The SMS on this phone could not be read. Make Erevos the SMS app under SMS in the menu.')));
     markSmsRead(to).catch(() => undefined);
-    // What waits to go later, as the phone has it now.
+    // What waits to go later, and the space's order, as the phone has them now.
     const sms = link.current;
     if (sms) {
       sms
         .refresh()
-        .then(() => setLater(sms.later.filter((l) => sameNumber(l.to, to))))
+        .then(() => {
+          setLater(sms.later.filter((l) => sameNumber(l.to, to)));
+          setOrder(sms.state);
+        })
         .catch(() => undefined);
     }
   }, [to]);
@@ -99,6 +111,7 @@ export default function Sms() {
     SmsLink.open(space, key)
       .then(async (opened) => {
         link.current = opened;
+        setOrder(opened.state);
         if (!group) setLater(opened.later.filter((l) => sameNumber(l.to, to)));
         if (opened.names) setNames(await contactNames(numbers).catch(() => ({} as Record<string, string>)));
         if (!twoSims) return;
@@ -111,9 +124,11 @@ export default function Sms() {
     const ours = (address: string) => (numbers.length > 0 ? numbers.some((n) => sameNumber(address, n)) : sameConversation(address, to));
     const subscriptions = [onSmsEvent('onSms', ({ address }) => ours(address) && load()), onSmsEvent('onSmsSent', () => load()), onSmsEvent('onSmsDelivered', () => load())];
     const stopLater = onLaterSent(load);
+    const stopOrder = onSmsOrderChanged(load);
     return () => {
       subscriptions.forEach((s) => s?.remove());
       stopLater();
+      stopOrder();
     };
   }, [to, load, params.plain]);
 
@@ -125,6 +140,14 @@ export default function Sms() {
     );
   }
 
+  const trashed = order ? trashOf(to, order) : null;
+  const shown = shownMessages(messages, trashed);
+  const title = group ? groupName(numbers, names) : names[to] || to;
+  // Where the conversation is, by its latest message: in the list, archived, or in the Trash with
+  // nothing after.
+  const last = messages[messages.length - 1] ?? null;
+  const folder = order && last ? smsFolder({ address: to, text: last.text, at: last.at, mine: last.mine, unread: 0 }, order) : 'list';
+
   // The SIMs show once Erevos may read the phone's state; it asks only when the owner taps.
   async function askSims() {
     const answer = await PermissionsAndroid.request('android.permission.READ_PHONE_STATE').catch(() => null);
@@ -134,8 +157,8 @@ export default function Sms() {
     }
     const found = await smsSims();
     setSims(found);
-    const last = [...messages].reverse().find((m) => !m.mine)?.sim ?? -1;
-    setSim(chooseSim(found, link.current?.simFor(to) ?? -1, last));
+    const lastCame = [...messages].reverse().find((m) => !m.mine)?.sim ?? -1;
+    setSim(chooseSim(found, link.current?.simFor(to) ?? -1, lastCame));
   }
 
   // Who wrote a message in a group's conversation: the group's number as the contacts name it.
@@ -258,8 +281,26 @@ export default function Sms() {
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
       <ScrollView ref={thread} contentContainerStyle={styles.thread} onContentSizeChange={() => thread.current?.scrollToEnd({ animated: false })}>
-        <Text variant="title">{group ? groupName(numbers, names) : names[to] || to}</Text>
-        {group ? <Text tone="muted">{plural(numbers.length, 'Group MMS · {n} number', 'Group MMS · {n} numbers')}</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
+        <View style={styles.head}>
+          <View style={styles.headText}>
+            <Text variant="title">{title}</Text>
+            {group ? <Text tone="muted">{plural(numbers.length, 'Group MMS · {n} number', 'Group MMS · {n} numbers')}</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
+            {folder !== 'list' ? (
+              <Text variant="caption" color={colors.warning}>
+                {folder === 'archived' ? t('Archived') : t('In the Trash')}
+              </Text>
+            ) : null}
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('More')}
+            hitSlop={8}
+            onPress={() => setMenu({ address: to, name: title, at: last?.at ?? Date.now(), folder })}
+            style={({ pressed }) => [styles.more, pressed && styles.pressed]}
+          >
+            <MoreIcon color={colors.text} />
+          </Pressable>
+        </View>
         <Card>
           <Text variant="caption" color={colors.warning}>
             {t('Plain SMS: not encrypted. The phone company can read these messages.')}
@@ -283,7 +324,12 @@ export default function Sms() {
             )
           ) : null}
         </Card>
-        {messages.map((m) => (
+        {trashed && messages.length > shown.length ? (
+          <Text variant="caption" tone="faint">
+            {t('The messages before are in the Trash.')}
+          </Text>
+        ) : null}
+        {shown.map((m) => (
           <View key={`${m.kind ?? 'sms'}${m.id}`} style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}>
             {(m.pictures ?? []).map((p) => (
               <Image key={p.uri} source={{ uri: p.uri }} style={styles.picture} resizeMode="cover" accessibilityLabel={t('Picture')} />
@@ -346,12 +392,14 @@ export default function Sms() {
           </Text>
         </View>
       )}
+      <UndoBar bottom={84} />
       <Sheet visible={laterMenu} onClose={() => setLaterMenu(false)} title={t('SMS later')}>
         {laterMenu ? <LaterPicker onPick={(at) => void sendLater(at)} /> : null}
         <Text variant="caption" tone="muted">
           {t('It goes at that time, with Erevos closed and locked too; if the phone is off then, as soon as it is on again. Until then it is not in the phone\'s SMS: it waits locked with a key of this phone. Text only, to one number.')}
         </Text>
       </Sheet>
+      <SmsActions target={menu} onClose={() => setMenu(null)} onTrashed={() => router.canGoBack() && router.back()} />
     </KeyboardPaddedView>
   );
 }
@@ -369,6 +417,10 @@ const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.ground },
     thread: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.lg, gap: space.sm },
+    head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+    headText: { flex: 1, gap: 2 },
+    more: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    pressed: { backgroundColor: colors.surfacePressed },
     bubble: { maxWidth: '85%', padding: space.md, borderRadius: radius.lg, gap: 2 },
     mine: { alignSelf: 'flex-end', backgroundColor: colors.surfaceAlt },
     theirs: { alignSelf: 'flex-start', backgroundColor: colors.surface },

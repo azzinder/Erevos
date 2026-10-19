@@ -509,6 +509,22 @@ chats in one list.
 - **Senders with a name:** an SMS from a name instead of a number, like a bank's, opens to read, but cannot be
   answered.
 
+### Keeping the SMS in order
+
+- **Swipe:** in the list, swipe an SMS conversation to the right to archive it, or to the left to delete it.
+  **Undo** shows for a few seconds after. Hold a conversation down for the rest: **Pin to the top**, **Archive**
+  and **Delete**. In a conversation, **⋮** at the top shows the same.
+- **Pinned:** up to 10 SMS conversations stay at the top of the list, with a pin. **Unpin** lets one go back to its
+  place.
+- **Archived conversations:** out of the list, under **Archived** at the top of the home screen. One comes back to
+  the list by itself when a new SMS comes from them, or with **Unarchive**.
+- **Trash:** a deleted conversation waits in the **Trash** 30 days, then Erevos deletes it from the phone's SMS. Until
+  then **Bring back** puts it back in the list; **Delete now** and **Empty the Trash** delete at once, for good. An
+  SMS that comes after it went to the Trash shows in the list again. Only the SMS app may delete SMS.
+- **Each space its own:** pins, archived conversations and the Trash belong to the space, sealed
+  with its password. The SMS themselves stay in the phone's SMS: another space sees them as they are, and one in the
+  Trash here shows there until it is deleted from the phone.
+
 ## Password lock {#lock}
 
 Under **Lock and second password**, **Lock when Erevos opens** has two choices: **No lock** and **Password**.

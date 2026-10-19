@@ -372,6 +372,15 @@ internal object MmsStore {
     return out.values.toList()
   }
 
+  /** Deletes a conversation's MMS up to `upTo` (milliseconds; the store keeps seconds). */
+  fun deleteThread(context: Context, thread: Long, upTo: Long): Int =
+    try {
+      context.contentResolver.delete(MMS, "${Telephony.Mms.THREAD_ID}=? AND ${Telephony.Mms.DATE}<=?", arrayOf(thread.toString(), (upTo / 1000).toString()))
+    } catch (_: Exception) {
+      // No MMS store on this device.
+      0
+    }
+
   fun markRead(context: Context, thread: Long) {
     val values = ContentValues().apply {
       put(Telephony.Mms.READ, 1)

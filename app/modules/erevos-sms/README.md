@@ -17,6 +17,8 @@ not been compiled yet.
 - **SMS invites.** Data SMS to port 16180, which messaging apps do not show. Pieces that come are
   kept in the app's preferences until `takeInvites()` takes them. The format is in
   `lib/sms-invite.ts`.
+- **Deleting.** As the default app, `deleteThread()` deletes a conversation's SMS and MMS up to a
+  time (the space's Trash, `lib/sms-folders.ts`).
 
 ## JS API
 

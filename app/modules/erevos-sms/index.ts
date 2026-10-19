@@ -72,6 +72,7 @@ type NativeSms = {
   scheduleLater?(id: string, to: string, text: string, sim: number, at: number): Promise<void>;
   cancelLater?(id: string): Promise<boolean>;
   laterState?(ids: string[]): Promise<Record<string, LaterSmsState>>;
+  deleteThread?(address: string, upTo: number): Promise<number>;
   addListener<Name extends keyof SmsEvents>(name: Name, listener: SmsEvents[Name]): EventSubscription;
 };
 
@@ -145,6 +146,18 @@ export function laterSmsHolder(): LaterSmsHolder | null {
     cancel: (id) => sms.cancelLater!(id),
     state: (ids) => (ids.length > 0 ? sms.laterState!(ids) : Promise.resolve({})),
   };
+}
+
+/** Whether this build can delete SMS. */
+export function smsToolsReady(): boolean {
+  return typeof native?.deleteThread === 'function';
+}
+
+const notInBuild = () => Promise.reject(new Error('This build of Erevos cannot do this yet.'));
+
+/** Deletes from the phone a conversation's SMS and MMS up to `upTo` (milliseconds), as the SMS app. */
+export function deleteSmsThread(address: string, upTo: number): Promise<number> {
+  return native?.deleteThread ? native.deleteThread(address, upTo) : notInBuild();
 }
 
 /** The invite pieces that came since the last call. Each is given once. */

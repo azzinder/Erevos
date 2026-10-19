@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
 
-import { Button, Card, Field, Input, Page, SectionTitle, Text } from '../components/ui';
+import { Button, Card, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { mark, plural, t } from '../lib/i18n';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
@@ -13,7 +13,7 @@ import { requestDefaultSms, smsReady, smsStatus, smsThreads, type SmsStatus } fr
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
 // writing to a number that has Erevos goes through Erevos. Whether to look for Erevos on a number
 // with a hidden SMS invite, whether SMS numbers show the names the phone's contacts give them, and
-// a new SMS conversation.
+// a new SMS conversation, and the space's SMS folders.
 
 // What the SMS app needs from Android. Becoming the SMS app gives them, except to an app installed
 // from a browser on Android 15 and later, which Android holds them back from until its owner allows
@@ -224,6 +224,17 @@ export default function SmsSettings() {
           {t("SMS numbers that are no Erevos contact can show the names your phone's contacts give them. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.")}
         </Text>
         <Button title={names ? t('Show numbers only') : t('Show names from my contacts')} kind="secondary" onPress={() => void toggleNames()} />
+      </Card>
+
+      <SectionTitle title={t('Archived and Trash')} />
+      <Card>
+        <Text tone="muted">
+          {t("In the list, swipe an SMS conversation to the right to archive it, to the left to delete it, or hold it down to pin it at the top and more. This space keeps its own pins, archived conversations and Trash, sealed with its password; the SMS stay in the phone's SMS, where another space sees them as they are.")}
+        </Text>
+        <Row wrap>
+          <Button title={t('Archived conversations')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=archived')} />
+          <Button title={t('Trash')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=trash')} />
+        </Row>
       </Card>
 
       {(status?.slots ?? 0) >= 2 ? (

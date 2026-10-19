@@ -58,6 +58,8 @@ export type InboxRow = {
   lastSms: boolean;
   /** The last message disappears (or will, once read), so its text is never kept elsewhere. */
   fades?: boolean;
+  /** An SMS conversation pinned at the top (lib/sms-folders.ts). */
+  pinned?: boolean;
 };
 
 const PREFIX = 'contact:';
