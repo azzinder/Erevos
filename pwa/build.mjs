@@ -4,10 +4,11 @@
 // and release.json, which lists every file with its SHA-256. pwa/release.mjs then signs
 // release.json. See README.md.
 //
-//   node pwa/build.mjs <web build> <out> [--key <public key file>] [--version <n>]
+//   node pwa/build.mjs <web build> <out> [--key <public key file>] [--version <n>] [--label <0.1.N>]
 //
 // The key defaults to pwa/release-key.pub. The version, which must grow from one release to the
-// next, defaults to the time in seconds.
+// next, defaults to the time in seconds. The label names the GitHub release (v0.1.N) the web app
+// goes out with, so it carries the same number as the other packages; the app shows it.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
@@ -30,9 +31,11 @@ const option = (name, fallback) => {
 };
 const keyFile = option('--key', path.join(here, 'release-key.pub'));
 const version = Number(option('--version', String(Math.floor(Date.now() / 1000))));
+const label = option('--label', null);
 const [from, out] = args;
 if (!from || !out) fail('usage: node pwa/build.mjs <web build> <out> [--key <public key file>] [--version <n>]');
 if (!Number.isSafeInteger(version) || version < 1) fail('The version must be a whole number above 0.');
+if (label !== null && !/^\d+\.\d+\.\d+$/.test(label)) fail('The label must look like 0.1.7.');
 if (!fs.existsSync(keyFile)) fail(`No public key at ${keyFile}. Make the release key first: node pwa/release.mjs keygen <private key file>`);
 const publicKey = fs.readFileSync(keyFile, 'utf8').trim();
 if (Buffer.from(publicKey, 'base64').length !== 32) fail(`${keyFile} does not hold an Ed25519 public key (32 bytes, base64).`);
@@ -130,6 +133,6 @@ try {
 } catch {
   // Not built from a checkout.
 }
-const release = { app: 'erevos-web', version, created: new Date().toISOString(), commit, files };
+const release = { app: 'erevos-web', version, ...(label ? { label } : {}), created: new Date().toISOString(), commit, files };
 write('release.json', `${JSON.stringify(release, null, 1)}\n`);
-console.log(`Erevos web app, release ${version}, ${Object.keys(files).length} files, in ${out}. Sign it: node pwa/release.mjs sign ${out} <private key file>`);
+console.log(`Erevos web app, release ${version}${label ? ` (${label})` : ''}, ${Object.keys(files).length} files, in ${out}. Sign it: node pwa/release.mjs sign ${out} <private key file>`);

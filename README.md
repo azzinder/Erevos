@@ -71,10 +71,11 @@ The desktop app, from `app/`:
 
 `.github/workflows/release.yml` builds every package and publishes them as a
 GitHub release, `v0.1.<build>`: the Android APK, Linux (Arch package and
-AppImage), the macOS disk image and the Sailfish OS RPM, with `SHA256SUMS`. It
-runs every night when main has changed, and by hand (Actions, release, Run
-workflow). The five newest releases stay. The web app is not among them: it
-goes out signed from the release computer (`deploy/web`).
+AppImage), the macOS disk image, the Sailfish OS RPM and the web app, with
+`SHA256SUMS`. It runs every night when main has changed, and by hand (Actions,
+release, Run workflow). The five newest releases stay. The web app comes
+unsigned: the release computer signs it and serves it with
+`deploy/web/publish.sh` (see `pwa/README.md`).
 
 The APK is signed with Erevos's own release key, made once with
 `scripts/make-release-keystore.sh`, which names the four Actions secrets it

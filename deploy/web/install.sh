@@ -2,18 +2,26 @@
 # Serves the Erevos web app (pwa/) behind Caddy, which gets a TLS certificate from Let's Encrypt,
 # on a Debian or Ubuntu server. Run as root, with a signed release in a folder:
 #
-#   sh install.sh app.example.org /path/to/release
+#   sh install.sh [--files-only] app.example.org /path/to/release
+#
+# With --files-only it only puts the release in place, for a server whose own web server (Apache,
+# nginx) already serves /var/www/erevos-web/current for that address with the headers below.
 #
 # Each release goes to its own folder under /var/www/erevos-web, and a link, current, points at
 # the one served, so a release is switched whole. The server holds no key: it only gives out the
 # files and their signature, which every installed app checks.
 set -eu
 
+files_only=
+if [ "${1:-}" = --files-only ]; then
+	files_only=1
+	shift
+fi
 domain=${1:-}
 release=${2:-}
 case $domain in
 '' | *[!A-Za-z0-9.-]*)
-	echo "usage: sh install.sh <domain> <release folder>" >&2
+	echo "usage: sh install.sh [--files-only] <domain> <release folder>" >&2
 	exit 2
 	;;
 esac
@@ -34,10 +42,12 @@ case $version in
 	;;
 esac
 
-echo "== Caddy"
-if ! command -v caddy >/dev/null 2>&1; then
-	apt-get update -q
-	apt-get install -y -q caddy
+if [ -z "$files_only" ]; then
+	echo "== Caddy"
+	if ! command -v caddy >/dev/null 2>&1; then
+		apt-get update -q
+		apt-get install -y -q caddy
+	fi
 fi
 
 echo "== Release $version"
@@ -52,6 +62,11 @@ ln -sfn "$version" "$base/current.new"
 mv -T "$base/current.new" "$base/current"
 # The newest three are kept, to go back to by hand.
 ls -1 "$base" | grep -E '^[0-9]+$' | sort -n | head -n -3 | while read -r old; do rm -rf "${base:?}/$old"; done
+
+if [ -n "$files_only" ]; then
+	echo "== Done: $base/current is release $version; your web server serves it at https://$domain."
+	exit 0
+fi
 
 echo "== The site"
 site=/etc/caddy/erevos-web.caddy

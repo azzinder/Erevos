@@ -64,7 +64,7 @@ export function IntegrityCard() {
       <SectionTitle title={t('This web app')} />
       <Card>
         {current ? (
-          <Text variant="bodyStrong">{t('Release {version}, checked', { version: current.version })}</Text>
+          <Text variant="bodyStrong">{t('Release {version}, checked', { version: current.label ?? current.version })}</Text>
         ) : (
           <Text variant="bodyStrong" color={colors.danger}>
             {t('Not checked: no service worker runs Erevos here')}
@@ -79,7 +79,7 @@ export function IntegrityCard() {
         </Text>
         {status?.pending ? (
           <Text variant="caption" color={colors.success} style={hint}>
-            {t('Release {version} is checked and starts the next time Erevos opens.', { version: status.pending.version })}
+            {t('Release {version} is checked and starts the next time Erevos opens.', { version: status.pending.label ?? status.pending.version })}
           </Text>
         ) : null}
         {status?.checked ? (

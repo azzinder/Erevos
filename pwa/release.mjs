@@ -106,7 +106,7 @@ async function verifyRelease(from, keyFile = PUBLIC) {
     if (name === '/sw.js' && !bytes.toString().includes(`'${raw.toString('base64')}'`)) wrong.push('/sw.js (another key)');
   }
   if (wrong.length) fail(`Signed release ${release.version}, but these files differ from it:\n  ${wrong.join('\n  ')}`);
-  console.log(`OK: release ${release.version} from ${release.created} (commit ${release.commit ?? 'unknown'}), ${Object.keys(release.files).length} files, signed with ${fingerprint(raw)}.`);
+  console.log(`OK: release ${release.version}${release.label ? ` (${release.label})` : ''} from ${release.created} (commit ${release.commit ?? 'unknown'}), ${Object.keys(release.files).length} files, signed with ${fingerprint(raw)}.`);
   console.log(`SHA-256 of release.json: ${createHash('sha256').update(body).digest('hex')}`);
 }
 

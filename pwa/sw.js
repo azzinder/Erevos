@@ -306,7 +306,13 @@ self.addEventListener('fetch', (event) => {
 
 async function status() {
   const now = await readState();
-  const brief = (release) => release && { version: release.version, created: release.created ?? null, commit: release.commit ?? null };
+  const brief = (release) =>
+    release && {
+      version: release.version,
+      label: typeof release.label === 'string' ? release.label : null,
+      created: release.created ?? null,
+      commit: release.commit ?? null,
+    };
   return { current: brief(now.current), pending: brief(now.pending), refused: now.refused, checked: now.checked, error: now.error, key: await fingerprint() };
 }
 

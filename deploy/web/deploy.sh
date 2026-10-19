@@ -2,22 +2,29 @@
 # Puts a signed release of the Erevos web app on a server and serves it there (install.sh). Run it
 # from your own computer, after deploy/web/release.sh:
 #
-#   deploy/web/deploy.sh user@server app.example.org <release folder>
+#   deploy/web/deploy.sh [--files-only] user@server app.example.org <release folder>
+#
+# --files-only leaves the server's own web server as it is (install.sh says what it must serve).
 #
 # It checks the release against pwa/release-key.pub before sending it, and the server after.
 set -eu
 
+files_only=
+if [ "${1:-}" = --files-only ]; then
+	files_only=--files-only
+	shift
+fi
 target=${1:-}
 domain=${2:-}
 release=${3:-}
 case $domain in
 '' | *[!A-Za-z0-9.-]*)
-	echo "usage: deploy/web/deploy.sh <user@server> <domain> <release folder>" >&2
+	echo "usage: deploy/web/deploy.sh [--files-only] <user@server> <domain> <release folder>" >&2
 	exit 2
 	;;
 esac
 if [ -z "$target" ] || [ -z "$release" ]; then
-	echo "usage: deploy/web/deploy.sh <user@server> <domain> <release folder>" >&2
+	echo "usage: deploy/web/deploy.sh [--files-only] <user@server> <domain> <release folder>" >&2
 	exit 2
 fi
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
@@ -30,7 +37,7 @@ tar -C "$release" -c . | ssh "$target" 'rm -rf erevos-web-release && mkdir erevo
 cat "$root/deploy/web/install.sh" | ssh "$target" 'cat > erevos-web-install.sh'
 
 echo "== Serving it"
-ssh -t "$target" "if [ \"\$(id -u)\" -eq 0 ]; then sh erevos-web-install.sh $domain erevos-web-release; else sudo sh erevos-web-install.sh $domain erevos-web-release; fi"
+ssh -t "$target" "if [ \"\$(id -u)\" -eq 0 ]; then sh erevos-web-install.sh $files_only $domain erevos-web-release; else sudo sh erevos-web-install.sh $files_only $domain erevos-web-release; fi"
 
 echo "== Checking the server"
 sleep 3

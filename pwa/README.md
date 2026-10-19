@@ -80,14 +80,24 @@ Keep `~/.erevos/web-release.key` and its passphrase, and a copy of both offline.
 update can be signed, and every installed app would have to be removed and added again with a
 new key. The fingerprint it shows is the one people compare.
 
-Then, for each release, from a clean checkout of the commit to release:
+Then, for each release: every GitHub release `v0.1.N` (`.github/workflows/release.yml`) carries
+the web app built from the same commit as the other packages, numbered `0.1.N`, but not signed
+(`erevos-web.tar.gz`). On the computer with the key:
+
+    deploy/web/publish.sh 0.1.N root@<server> <app.example.org>
+
+It downloads it, checks it against the release's `SHA256SUMS` and its number, signs it, checks
+it, copies it to the server, serves it with Caddy (Let's Encrypt, HSTS, the headers above) and
+checks what the server then gives out. A server with its own web server (Apache, nginx) takes
+`--files-only` before the number: it then only switches `/var/www/erevos-web/current`, which
+that web server serves with the headers of `deploy/web/install.sh`. Commit
+`pwa/releases/<version>/` afterwards.
+
+Signing what GitHub built means trusting GitHub's build of that commit; the key never leaves your
+computer, so no one else can sign. To build it yourself instead, from a clean checkout:
 
     deploy/web/release.sh ~/.erevos/web-release.key /tmp/erevos-web
     deploy/web/deploy.sh root@<server> <app.example.org> /tmp/erevos-web
-
-The first builds the core, the web build and the web app, signs it and checks it. The second
-checks it again, copies it to the server, serves it with Caddy (Let's Encrypt, HSTS, the headers
-above) and checks what the server then gives out. Commit `pwa/releases/<version>/` afterwards.
 
 The address needs its own DNS name (an A record to the server), apart from the relay's.
 
