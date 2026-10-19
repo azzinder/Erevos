@@ -324,14 +324,89 @@ mod group {
         Ok(member.to_bytes())
     }
 
-    /// The group's members as UTF-8 JSON: `{own, members: [{leaf, about}]}`, `about` as UTF-8.
+    /// The group's members as UTF-8 JSON: `{own, members: [{leaf, about, key}]}`, `about` as
+    /// UTF-8, `key` (the key the member signs with) in hex.
     pub fn group_members(state: &[u8], id: &[u8]) -> Result<Vec<u8>> {
         let (seats, own) = member(state)?.members(id).map_err(fail)?;
+        let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
         let members: Vec<serde_json::Value> = seats
             .iter()
-            .map(|seat| serde_json::json!({ "leaf": seat.leaf, "about": String::from_utf8_lossy(&seat.about) }))
+            .map(|seat| serde_json::json!({ "leaf": seat.leaf, "about": String::from_utf8_lossy(&seat.about), "key": hex(&seat.key) }))
             .collect();
         serde_json::to_vec(&serde_json::json!({ "own": own, "members": members })).map_err(|e| e.to_string())
+    }
+
+    // Public groups (docs/public-groups.md).
+
+    // The values of an array of length-prefixed parts.
+    fn split(bytes: &[u8]) -> Result<Vec<&[u8]>> {
+        let mut out = Vec::new();
+        let mut rest = bytes;
+        while !rest.is_empty() {
+            let len = rest.get(..4).map(|l| u32::from_be_bytes(l.try_into().unwrap()) as usize).ok_or("damaged parts")?;
+            out.push(rest.get(4..4 + len).ok_or("damaged parts")?);
+            rest = &rest[4 + len..];
+        }
+        Ok(out)
+    }
+
+    /// The state, then a new key to sign with in one public group (its public half).
+    pub fn group_new_signer(state: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let key = member.new_signer().map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &key]))
+    }
+
+    /// The state, then a key package to ask to join a public group with, signed with `key` (from
+    /// `group_new_signer`) and saying `about`.
+    pub fn group_key_package_as(state: &[u8], key: &[u8], about: &[u8]) -> Result<Vec<u8>> {
+        let member = member(state)?;
+        let package = member.key_package_as(key, about).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &package]))
+    }
+
+    /// The state, then the id of a new public group, signed in with `key`, saying `about`, with
+    /// the app's first `rules`.
+    pub fn group_create_public(state: &[u8], key: &[u8], about: &[u8], rules: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let id = member.create_public(key, about, rules).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &id]))
+    }
+
+    /// The group's epoch now (8 bytes), its keeper's leaf, then its rules: empty for a private group.
+    pub fn group_rules(state: &[u8], id: &[u8]) -> Result<Vec<u8>> {
+        let rules = member(state)?.rules(id).map_err(fail)?;
+        Ok(parts(&[&rules.epoch.to_be_bytes(), &rules.keeper.to_be_bytes(), &rules.rules]))
+    }
+
+    /// The state, the commit, then the welcome (empty without adds): the keeper's one commit of
+    /// `key_packages` (as parts) to add, the leaves in `removes` (4 bytes each) to take out, and
+    /// with `rules` not empty, a keeper's leaf (4 bytes) and the rules after it.
+    pub fn group_commit(state: &[u8], id: &[u8], key_packages: &[u8], removes: &[u8], rules: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let packages = split(key_packages)?;
+        if removes.len() % 4 != 0 {
+            return Err("a leaf is 4 bytes".to_string());
+        }
+        let leaves: Vec<u32> = removes.chunks(4).map(|l| u32::from_be_bytes(l.try_into().unwrap())).collect();
+        let rules = match rules.len() {
+            0 => None,
+            1..=3 => return Err("a leaf is 4 bytes".to_string()),
+            _ => Some((leaf(&rules[..4])?, &rules[4..])),
+        };
+        let (commit, welcome) = member.commit(id, &packages, &leaves, rules).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &commit, &welcome]))
+    }
+
+    /// What a key package says about its member, then the key it signs with, once its signatures hold.
+    pub fn group_package_about(key_package: &[u8]) -> Result<Vec<u8>> {
+        let (about, key) = Member::package_about(key_package).map_err(fail)?;
+        Ok(parts(&[&about, &key]))
+    }
+
+    /// The epoch a group message was sent in (8 bytes), without opening it.
+    pub fn group_epoch(message: &[u8]) -> Result<Vec<u8>> {
+        Ok(Member::epoch_of(message).map_err(fail)?.to_be_bytes().to_vec())
     }
 
     /// The id of the group a message is for.
@@ -466,6 +541,31 @@ mod tests {
         let [alice, nothing]: [Vec<u8>; 2] = split(&group_commit_pending(&alice, &id).unwrap()).try_into().unwrap();
         assert!(nothing.is_empty());
         assert!(group_members(&group_forget(&alice, &id).unwrap(), &id).is_err());
+    }
+
+    #[test]
+    fn a_public_group_goes_through_bytes_only() {
+        let [alice, key]: [Vec<u8>; 2] = split(&group_new_signer(&group_new(b"a").unwrap()).unwrap()).try_into().unwrap();
+        let [alice, id]: [Vec<u8>; 2] = split(&group_create_public(&alice, &key, b"alice", b"{}").unwrap()).try_into().unwrap();
+        let [bob, bob_key]: [Vec<u8>; 2] = split(&group_new_signer(&group_new(b"b").unwrap()).unwrap()).try_into().unwrap();
+        let [bob, package]: [Vec<u8>; 2] = split(&group_key_package_as(&bob, &bob_key, b"bob").unwrap()).try_into().unwrap();
+        assert_eq!(split(&group_package_about(&package).unwrap()), [b"bob".to_vec(), bob_key.clone()]);
+
+        let rules = [&0u32.to_be_bytes()[..], b"{\"v\":1}"].concat();
+        let [alice, commit, welcome]: [Vec<u8>; 3] =
+            split(&group_commit(&alice, &id, &parts(&[&package]), &[], &rules).unwrap()).try_into().unwrap();
+        assert!(!commit.is_empty());
+        let [bob, _]: [Vec<u8>; 2] = split(&group_join(&bob, &welcome).unwrap()).try_into().unwrap();
+        assert_eq!(split(&group_rules(&bob, &id).unwrap()), [1u64.to_be_bytes().to_vec(), 0u32.to_be_bytes().to_vec(), b"{\"v\":1}".to_vec()]);
+        let members: serde_json::Value = serde_json::from_slice(&group_members(&bob, &id).unwrap()).unwrap();
+        assert_eq!(members["members"][1]["key"], bob_key.iter().map(|b| format!("{b:02x}")).collect::<String>());
+
+        let [_, message]: [Vec<u8>; 2] = split(&group_seal(&bob, &id, b"hi").unwrap()).try_into().unwrap();
+        assert_eq!(group_epoch(&message).unwrap(), 1u64.to_be_bytes());
+        // Taking out Bob, with no new rules and no welcome.
+        let [_, _, welcome]: [Vec<u8>; 3] = split(&group_commit(&alice, &id, &[], &1u32.to_be_bytes(), &[]).unwrap()).try_into().unwrap();
+        assert!(welcome.is_empty());
+        assert!(group_commit(&alice, &id, &[], &[1, 2], &[]).is_err());
     }
 
     #[test]

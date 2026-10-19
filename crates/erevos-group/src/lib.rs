@@ -13,6 +13,16 @@
 //! - A message from a later epoch than this member's (its commit has not come yet) is told apart,
 //!   so the app keeps it and tries it again once the commit comes.
 //!
+//! Public groups (docs/public-groups.md), which anyone with the group's link can ask to join, are
+//! the same but for three things:
+//! - Their group context has a `RULES` extension: the leaf of the group's keeper, the one member
+//!   whose commits count there (its owner, not always leaf 0), then what the app says of the
+//!   group (its admins, bans and link). Every member has the same rules in an epoch, as MLS binds
+//!   the group context to the epoch's keys; only the keeper changes them, by a commit.
+//! - Each member signs in a public group with a key made for that group alone, so the groups it
+//!   is in cannot be told apart by its key, and what it says of itself there is its own to choose.
+//! - The keeper commits adds, removals and new rules together (`commit`).
+//!
 //! Not audited.
 
 use std::collections::HashMap;
@@ -31,6 +41,9 @@ const STATE_VERSION: u8 = 1;
 const PAST_EPOCHS: usize = 5;
 /// The admin's leaf: the one who made the group, and the only one whose commits count.
 pub const ADMIN: u32 = 0;
+/// The group context extension of a public group: its keeper's leaf (4 bytes, big-endian), then
+/// the app's rules. In the range RFC 9420 leaves for private use.
+pub const RULES: u16 = 0xf001;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -40,6 +53,8 @@ pub enum Error {
     NoGroup,
     #[error("only the group's admin can do that")]
     NotAdmin,
+    #[error("the group's keeper cannot take itself out")]
+    OwnLeaf,
     #[error("not a group message")]
     Malformed,
     #[error("group: {0}")]
@@ -100,11 +115,21 @@ pub enum Opened {
     Nothing,
 }
 
-/// A group member as the app shows it: its leaf and what it says about itself.
+/// A group member as the app shows it: its leaf, what it says about itself, and the key it signs with.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Seat {
     pub leaf: u32,
     pub about: Vec<u8>,
+    pub key: Vec<u8>,
+}
+
+/// A group's rules as its group context has them, in its epoch now. A group made by an admin has
+/// none: its keeper is `ADMIN` and its rules are empty.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Rules {
+    pub epoch: u64,
+    pub keeper: u32,
+    pub rules: Vec<u8>,
 }
 
 fn create_config() -> MlsGroupCreateConfig {
@@ -122,6 +147,36 @@ fn join_config() -> MlsGroupJoinConfig {
         .max_past_epochs(PAST_EPOCHS)
         .use_ratchet_tree_extension(true)
         .build()
+}
+
+// What a public group's members can do beyond a private group's: hold its rules.
+fn public_capabilities() -> Capabilities {
+    Capabilities::new(None, Some(&[CIPHERSUITE]), Some(&[ExtensionType::Unknown(RULES)]), None, None)
+}
+
+fn rules_extension(keeper: u32, rules: &[u8]) -> Extension {
+    Extension::Unknown(RULES, UnknownExtension([&keeper.to_be_bytes(), rules].concat()))
+}
+
+// A public group's keeper and rules, from its group context; None for a private group.
+fn rules_in(extensions: &Extensions<GroupContext>) -> Option<(u32, Vec<u8>)> {
+    let bytes = &extensions.unknown(RULES)?.0;
+    let keeper = u32::from_be_bytes(bytes.get(..4)?.try_into().ok()?);
+    Some((keeper, bytes[4..].to_vec()))
+}
+
+// The leaf whose commits count in a group: its keeper's in a public group, the admin's otherwise.
+fn keeper_of(group: &MlsGroup) -> u32 {
+    rules_in(group.extensions()).map_or(ADMIN, |(keeper, _)| keeper)
+}
+
+// The key this member signs with in a group.
+fn own_key(group: &MlsGroup) -> Option<Vec<u8>> {
+    group.own_leaf_node().map(|leaf| leaf.signature_key().as_slice().to_vec())
+}
+
+fn credential_with(about: &[u8], signer: &SignatureKeyPair) -> CredentialWithKey {
+    CredentialWithKey { credential: BasicCredential::new(about.to_vec()).into(), signature_key: signer.to_public_vec().into() }
 }
 
 fn about_of(credential: &Credential) -> Vec<u8> {
@@ -210,14 +265,134 @@ impl Member {
     }
 
     fn credential(&self) -> CredentialWithKey {
-        CredentialWithKey {
-            credential: BasicCredential::new(self.about.clone()).into(),
-            signature_key: self.signer.to_public_vec().into(),
-        }
+        credential_with(&self.about, &self.signer)
     }
 
     fn group(&self, id: &[u8]) -> Result<MlsGroup> {
         MlsGroup::load(self.provider.storage(), &GroupId::from_slice(id)).map_err(mls)?.ok_or(Error::NoGroup)
+    }
+
+    // A key made for one public group, kept in the state.
+    fn signer_kept(&self, public: &[u8]) -> Result<SignatureKeyPair> {
+        SignatureKeyPair::read(self.provider.storage(), public, CIPHERSUITE.signature_algorithm()).ok_or(Error::State)
+    }
+
+    // The key this member signs with in a group when it is not its own one: the one made for it.
+    fn group_signer(&self, group: &MlsGroup) -> Result<Option<SignatureKeyPair>> {
+        let key = own_key(group).ok_or(Error::State)?;
+        if key == self.signer.public() {
+            return Ok(None);
+        }
+        self.signer_kept(&key).map(Some)
+    }
+
+    /// A new key to sign with in one public group. Returns its public half, which the app says of
+    /// itself there (`key_package_as`, `create_public`).
+    pub fn new_signer(&mut self) -> Result<Vec<u8>> {
+        let signer = SignatureKeyPair::new(CIPHERSUITE.signature_algorithm()).map_err(mls)?;
+        signer.store(self.provider.storage()).map_err(mls)?;
+        Ok(signer.to_public_vec())
+    }
+
+    /// A key package to ask to join a public group with: signed with the key made for it
+    /// (`new_signer`), saying `about`. Each is used once.
+    pub fn key_package_as(&self, public: &[u8], about: &[u8]) -> Result<Vec<u8>> {
+        let signer = self.signer_kept(public)?;
+        let bundle = KeyPackage::builder()
+            .leaf_node_capabilities(public_capabilities())
+            .build(CIPHERSUITE, &self.provider, &signer, credential_with(about, &signer))
+            .map_err(mls)?;
+        bundle.key_package().tls_serialize_detached().map_err(mls)
+    }
+
+    /// Makes a public group with this member as its keeper, at leaf 0, signing with the key made
+    /// for it, saying `about`, and with the app's first `rules`. Returns its id.
+    pub fn create_public(&mut self, public: &[u8], about: &[u8], rules: &[u8]) -> Result<Vec<u8>> {
+        let signer = self.signer_kept(public)?;
+        let required = Extension::RequiredCapabilities(RequiredCapabilitiesExtension::new(&[ExtensionType::Unknown(RULES)], &[], &[]));
+        let extensions = Extensions::from_vec(vec![required, rules_extension(ADMIN, rules)]).map_err(mls)?;
+        let group = MlsGroup::builder()
+            .ciphersuite(CIPHERSUITE)
+            .with_wire_format_policy(PURE_CIPHERTEXT_WIRE_FORMAT_POLICY)
+            .max_past_epochs(PAST_EPOCHS)
+            .use_ratchet_tree_extension(true)
+            .with_capabilities(public_capabilities())
+            .with_group_context_extensions(extensions)
+            .build(&self.provider, &signer, credential_with(about, &signer))
+            .map_err(mls)?;
+        Ok(group.group_id().as_slice().to_vec())
+    }
+
+    /// The group's rules in its epoch now.
+    pub fn rules(&self, id: &[u8]) -> Result<Rules> {
+        let group = self.group(id)?;
+        let (keeper, rules) = rules_in(group.extensions()).unwrap_or((ADMIN, Vec::new()));
+        Ok(Rules { epoch: group.epoch().as_u64(), keeper, rules })
+    }
+
+    /// One commit by the keeper of a public group: adds members by their key packages, takes
+    /// members out by their leaves, and with `rules` gives the group a keeper (by leaf) and rules.
+    /// Members who asked to leave go with it. Returns the commit, then the welcome for the new
+    /// members, empty when there are none. The keeper never takes itself out: it hands over first.
+    pub fn commit(&mut self, id: &[u8], key_packages: &[&[u8]], removes: &[u32], rules: Option<(u32, &[u8])>) -> Result<(Vec<u8>, Vec<u8>)> {
+        let mut group = self.keeper_group(id)?;
+        if removes.contains(&group.own_leaf_index().u32()) {
+            return Err(Error::OwnLeaf);
+        }
+        let packages = key_packages.iter().map(|bytes| self.checked_package(bytes)).collect::<Result<Vec<_>>>()?;
+        let extensions = match rules {
+            Some((keeper, rules)) => {
+                let mut extensions = group.extensions().clone();
+                extensions.add_or_replace(rules_extension(keeper, rules)).map_err(mls)?;
+                Some(extensions)
+            }
+            None => None,
+        };
+        let signer = self.group_signer(&group)?;
+        let signer = signer.as_ref().unwrap_or(&self.signer);
+        let mut builder = group
+            .commit_builder()
+            .propose_adds(packages)
+            .propose_removals(removes.iter().map(|&leaf| LeafNodeIndex::new(leaf)));
+        if let Some(extensions) = extensions {
+            builder = builder.propose_group_context_extensions(extensions).map_err(mls)?;
+        }
+        let bundle = builder
+            .load_psks(self.provider.storage())
+            .map_err(mls)?
+            .build(self.provider.rand(), self.provider.crypto(), signer, |_| true)
+            .map_err(mls)?
+            .stage_commit(&self.provider)
+            .map_err(mls)?;
+        let (commit, welcome, _) = bundle.into_messages();
+        group.merge_pending_commit(&self.provider).map_err(mls)?;
+        let welcome = welcome.map(|w| w.to_bytes()).transpose().map_err(mls)?.unwrap_or_default();
+        Ok((commit.to_bytes().map_err(mls)?, welcome))
+    }
+
+    fn checked_package(&self, bytes: &[u8]) -> Result<KeyPackage> {
+        KeyPackageIn::tls_deserialize_exact(bytes)
+            .map_err(mls)?
+            .validate(self.provider.crypto(), ProtocolVersion::Mls10)
+            .map_err(mls)
+    }
+
+    /// What a key package says about its member, then the key it signs with, once its signatures
+    /// hold: for the keeper to look at before letting it in.
+    pub fn package_about(bytes: &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
+        let package = KeyPackageIn::tls_deserialize_exact(bytes)
+            .map_err(|_| Error::Malformed)?
+            .validate(&RustCrypto::default(), ProtocolVersion::Mls10)
+            .map_err(mls)?;
+        let leaf = package.leaf_node();
+        Ok((about_of(leaf.credential()), leaf.signature_key().as_slice().to_vec()))
+    }
+
+    /// The epoch a group message was sent in, without opening it.
+    pub fn epoch_of(message: &[u8]) -> Result<u64> {
+        let message = MlsMessageIn::tls_deserialize_exact(message).map_err(|_| Error::Malformed)?;
+        let protocol = message.try_into_protocol_message().map_err(|_| Error::Malformed)?;
+        Ok(protocol.epoch().as_u64())
     }
 
     /// A key package, for an admin to add this member with. Each is used once.
@@ -237,44 +412,41 @@ impl Member {
     /// Adds members by their key packages: the commit for the members already in, then the
     /// welcome for the new ones. Admin only.
     pub fn add(&mut self, id: &[u8], key_packages: &[&[u8]]) -> Result<(Vec<u8>, Vec<u8>)> {
-        let mut group = self.admin_group(id)?;
-        let packages = key_packages
-            .iter()
-            .map(|bytes| {
-                KeyPackageIn::tls_deserialize_exact(bytes)
-                    .map_err(mls)?
-                    .validate(self.provider.crypto(), ProtocolVersion::Mls10)
-                    .map_err(mls)
-            })
-            .collect::<Result<Vec<_>>>()?;
-        let (commit, welcome, _) = group.add_members(&self.provider, &self.signer, &packages).map_err(mls)?;
+        let mut group = self.keeper_group(id)?;
+        let packages = key_packages.iter().map(|bytes| self.checked_package(bytes)).collect::<Result<Vec<_>>>()?;
+        let signer = self.group_signer(&group)?;
+        let (commit, welcome, _) = group.add_members(&self.provider, signer.as_ref().unwrap_or(&self.signer), &packages).map_err(mls)?;
         group.merge_pending_commit(&self.provider).map_err(mls)?;
         Ok((commit.to_bytes().map_err(mls)?, welcome.to_bytes().map_err(mls)?))
     }
 
     /// Takes members out by their leaves: the commit for everyone in the group before it. Admin only.
     pub fn remove(&mut self, id: &[u8], leaves: &[u32]) -> Result<Vec<u8>> {
-        let mut group = self.admin_group(id)?;
+        let mut group = self.keeper_group(id)?;
         let leaves: Vec<LeafNodeIndex> = leaves.iter().map(|&l| LeafNodeIndex::new(l)).collect();
-        let (commit, _, _) = group.remove_members(&self.provider, &self.signer, &leaves).map_err(mls)?;
+        let signer = self.group_signer(&group)?;
+        let (commit, _, _) = group.remove_members(&self.provider, signer.as_ref().unwrap_or(&self.signer), &leaves).map_err(mls)?;
         group.merge_pending_commit(&self.provider).map_err(mls)?;
         commit.to_bytes().map_err(mls)
     }
 
     /// Commits what members asked (leaving), if anything: the commit, or None. Admin only.
     pub fn commit_pending(&mut self, id: &[u8]) -> Result<Option<Vec<u8>>> {
-        let mut group = self.admin_group(id)?;
+        let mut group = self.keeper_group(id)?;
         if group.pending_proposals().next().is_none() {
             return Ok(None);
         }
-        let (commit, _, _) = group.commit_to_pending_proposals(&self.provider, &self.signer).map_err(mls)?;
+        let signer = self.group_signer(&group)?;
+        let (commit, _, _) = group.commit_to_pending_proposals(&self.provider, signer.as_ref().unwrap_or(&self.signer)).map_err(mls)?;
         group.merge_pending_commit(&self.provider).map_err(mls)?;
         Ok(Some(commit.to_bytes().map_err(mls)?))
     }
 
-    fn admin_group(&self, id: &[u8]) -> Result<MlsGroup> {
+    // The group, if this member is the one whose commits count there: its admin, or a public
+    // group's keeper.
+    fn keeper_group(&self, id: &[u8]) -> Result<MlsGroup> {
         let group = self.group(id)?;
-        if group.own_leaf_index().u32() != ADMIN {
+        if group.own_leaf_index().u32() != keeper_of(&group) {
             return Err(Error::NotAdmin);
         }
         Ok(group)
@@ -294,7 +466,8 @@ impl Member {
     /// Seals a message to the group.
     pub fn seal(&mut self, id: &[u8], text: &[u8]) -> Result<Vec<u8>> {
         let mut group = self.group(id)?;
-        let message = group.create_message(&self.provider, &self.signer, text).map_err(mls)?;
+        let signer = self.group_signer(&group)?;
+        let message = group.create_message(&self.provider, signer.as_ref().unwrap_or(&self.signer), text).map_err(mls)?;
         message.to_bytes().map_err(mls)
     }
 
@@ -302,22 +475,35 @@ impl Member {
     /// comes (`Opened::Removed`), or the app forgets it.
     pub fn leave(&mut self, id: &[u8]) -> Result<Vec<u8>> {
         let mut group = self.group(id)?;
-        let message = group.leave_group(&self.provider, &self.signer).map_err(mls)?;
+        let signer = self.group_signer(&group)?;
+        let message = group.leave_group(&self.provider, signer.as_ref().unwrap_or(&self.signer)).map_err(mls)?;
         message.to_bytes().map_err(mls)
     }
 
-    /// Forgets a group on this phone.
+    /// Forgets a group on this phone, and the key made for it, if it had one.
     pub fn forget(&mut self, id: &[u8]) -> Result<()> {
         if let Ok(mut group) = self.group(id) {
+            self.forget_signer(own_key(&group))?;
             group.delete(self.provider.storage()).map_err(mls)?;
         }
         Ok(())
     }
 
+    // Forgets a key made for one public group, once out of it; never this member's own.
+    fn forget_signer(&self, key: Option<Vec<u8>>) -> Result<()> {
+        match key.filter(|key| key.as_slice() != self.signer.public()) {
+            Some(key) => SignatureKeyPair::delete(self.provider.storage(), &key, CIPHERSUITE.signature_algorithm()).map_err(mls),
+            None => Ok(()),
+        }
+    }
+
     /// The group's members, and this member's own leaf.
     pub fn members(&self, id: &[u8]) -> Result<(Vec<Seat>, u32)> {
         let group = self.group(id)?;
-        let seats = group.members().map(|m| Seat { leaf: m.index.u32(), about: about_of(&m.credential) }).collect();
+        let seats = group
+            .members()
+            .map(|m| Seat { leaf: m.index.u32(), about: about_of(&m.credential), key: m.signature_key })
+            .collect();
         Ok((seats, group.own_leaf_index().u32()))
     }
 
@@ -341,6 +527,8 @@ impl Member {
         if epoch > group.epoch().as_u64() {
             return Ok(Opened::Later { group: id });
         }
+        // Who may commit, as the group was before this message.
+        let keeper = keeper_of(&group);
         let processed = match group.process_message(&self.provider, protocol) {
             Ok(processed) => processed,
             // From an epoch too old, or one before this member joined.
@@ -358,12 +546,14 @@ impl Member {
                 Ok(Opened::Message { group: id, sender, about, text: text.into_bytes() })
             }
             ProcessedMessageContent::StagedCommitMessage(staged) => {
-                if sender != ADMIN {
+                if sender != keeper {
                     return Err(Error::NotAdmin);
                 }
                 let removed = staged.self_removed();
+                let own = own_key(&group);
                 group.merge_staged_commit(&self.provider, *staged).map_err(mls)?;
                 if removed {
+                    self.forget_signer(own)?;
                     group.delete(self.provider.storage()).map_err(mls)?;
                     Ok(Opened::Removed { group: id })
                 } else {
@@ -489,4 +679,118 @@ mod tests {
         assert!(matches!(alice.open(b"nothing"), Err(Error::Malformed)));
         assert!(matches!(alice.seal(b"no group", b"x"), Err(Error::NoGroup)));
     }
+
+    // A member who asks to join a public group: a key of its own for it, and a key package with it.
+    fn asking(member: &mut Member, about: &[u8]) -> (Vec<u8>, Vec<u8>) {
+        let key = member.new_signer().unwrap();
+        (key.clone(), member.key_package_as(&key, about).unwrap())
+    }
+
+    #[test]
+    fn a_public_group_is_joined_by_key_packages_and_has_its_rules() {
+        let mut alice = Member::new(b"alice in chats").unwrap();
+        let mut bob = Member::new(b"bob in chats").unwrap();
+        let mut carol = Member::new(b"carol in chats").unwrap();
+        let key = alice.new_signer().unwrap();
+        let id = alice.create_public(&key, b"alice here", b"{\"v\":1}").unwrap();
+        let mut alice = kept(&alice);
+        assert_eq!(alice.rules(&id).unwrap(), Rules { epoch: 0, keeper: 0, rules: b"{\"v\":1}".to_vec() });
+
+        // Bob asks; the keeper looks at what he says, then lets him in with new rules.
+        let (bob_key, package) = asking(&mut bob, b"bob here");
+        assert_eq!(Member::package_about(&package).unwrap(), (b"bob here".to_vec(), bob_key.clone()));
+        let (_, welcome) = alice.commit(&id, &[&package], &[], Some((0, b"{\"v\":2}"))).unwrap();
+        assert_eq!(kept(&bob).join(&welcome).unwrap(), id);
+        bob.join(&welcome).unwrap();
+        assert_eq!(bob.rules(&id).unwrap(), Rules { epoch: 1, keeper: 0, rules: b"{\"v\":2}".to_vec() });
+
+        // Carol too; Bob gets the commit.
+        let (_, package) = asking(&mut carol, b"carol here");
+        let (commit, welcome) = alice.commit(&id, &[&package], &[], None).unwrap();
+        assert_eq!(bob.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
+        carol.join(&welcome).unwrap();
+        assert_eq!(carol.rules(&id).unwrap().rules, b"{\"v\":2}");
+
+        // Each signs with the key made for the group, and says there what it said when it asked.
+        let hello = carol.seal(&id, b"hello").unwrap();
+        assert_eq!(Member::epoch_of(&hello).unwrap(), 2);
+        assert!(matches!(bob.open(&hello).unwrap(), Opened::Message { sender: 2, about, .. } if about == b"carol here"));
+        let (seats, own) = bob.members(&id).unwrap();
+        assert_eq!(own, 1);
+        assert_eq!(seats[1].key, bob_key);
+        assert_ne!(seats[1].key, bob.signer.public());
+        assert_eq!(seats.iter().map(|s| s.about.clone()).collect::<Vec<_>>(), [b"alice here".to_vec(), b"bob here".to_vec(), b"carol here".to_vec()]);
+
+        // A member's own group still signs with its own key.
+        let private = bob.create().unwrap();
+        assert_eq!(bob.members(&private).unwrap().0[0].key, bob.signer.public());
+        assert_eq!(bob.rules(&private).unwrap(), Rules { epoch: 0, keeper: ADMIN, rules: Vec::new() });
+    }
+
+    #[test]
+    fn only_the_keeper_commits_and_it_hands_over() {
+        let mut alice = Member::new(b"a").unwrap();
+        let mut bob = Member::new(b"b").unwrap();
+        let mut carol = Member::new(b"c").unwrap();
+        let key = alice.new_signer().unwrap();
+        let id = alice.create_public(&key, b"alice", b"r").unwrap();
+        let (_, bob_package) = asking(&mut bob, b"bob");
+        let (_, carol_package) = asking(&mut carol, b"carol");
+        let (_, welcome) = alice.commit(&id, &[&bob_package, &carol_package], &[], None).unwrap();
+        bob.join(&welcome).unwrap();
+        carol.join(&welcome).unwrap();
+
+        // Bob is not the keeper: he cannot commit, and a commit he makes all the same is refused.
+        assert!(matches!(bob.commit(&id, &[], &[2], None), Err(Error::NotAdmin)));
+        let mut group = bob.group(&id).unwrap();
+        let signer = bob.group_signer(&group).unwrap().unwrap();
+        let (forged, _, _) = group.remove_members(&bob.provider, &signer, &[LeafNodeIndex::new(2)]).unwrap();
+        assert!(matches!(carol.open(&forged.to_bytes().unwrap()), Err(Error::NotAdmin)));
+        assert!(matches!(alice.open(&forged.to_bytes().unwrap()), Err(Error::NotAdmin)));
+        let mut bob = Member::from_bytes(&bob.to_bytes()).unwrap();
+        bob.group(&id).unwrap().clear_pending_commit(bob.provider.storage()).unwrap();
+
+        // The keeper does not take itself out, and hands the group over to Bob.
+        assert!(matches!(alice.commit(&id, &[], &[0], None), Err(Error::OwnLeaf)));
+        let (handed, _) = alice.commit(&id, &[], &[], Some((1, b"bob keeps it"))).unwrap();
+        for member in [&mut bob, &mut carol] {
+            assert_eq!(member.open(&handed).unwrap(), Opened::Changed { group: id.clone() });
+            assert_eq!(member.rules(&id).unwrap().keeper, 1);
+        }
+        assert!(matches!(alice.commit(&id, &[], &[2], None), Err(Error::NotAdmin)));
+        let removed = bob.commit(&id, &[], &[2], None).unwrap().0;
+        assert_eq!(alice.open(&removed).unwrap(), Opened::Changed { group: id.clone() });
+        assert_eq!(carol.open(&removed).unwrap(), Opened::Removed { group: id.clone() });
+        assert!(matches!(carol.seal(&id, b"x"), Err(Error::NoGroup)));
+        // A member who asks to leave goes with the keeper's next commit.
+        let leaving = alice.leave(&id).unwrap();
+        assert_eq!(bob.open(&leaving).unwrap(), Opened::Leaving { group: id.clone(), sender: 0 });
+        let commit = bob.commit(&id, &[], &[], Some((1, b"bob alone"))).unwrap().0;
+        assert_eq!(alice.open(&commit).unwrap(), Opened::Removed { group: id.clone() });
+        assert_eq!(bob.members(&id).unwrap().0.len(), 1);
+    }
+
+    #[test]
+    fn a_public_group_of_the_most_members_fits_its_welcome_in_one_message() {
+        // What a member says of itself there, as long as the app makes it.
+        let about = |n: usize| format!("{{\"id\":\"{}\",\"sender\":\"{}\",\"relay\":\"wss://relay.example.org/erevos\",\"relayKey\":\"{}\",\"seal\":\"{}\",\"name\":\"Member number {n:>20}\"}}", "a".repeat(64), "b".repeat(48), "c".repeat(43), "d".repeat(43));
+        let mut alice = Member::new(b"a").unwrap();
+        let key = alice.new_signer().unwrap();
+        let id = alice.create_public(&key, about(0).as_bytes(), &[b'r'; 4000]).unwrap();
+        let mut others: Vec<Member> = Vec::new();
+        let mut welcome = Vec::new();
+        for n in 1..MOST_MEMBERS {
+            let mut member = Member::new(b"m").unwrap();
+            let (_, package) = asking(&mut member, about(n).as_bytes());
+            welcome = alice.commit(&id, &[&package], &[], None).unwrap().1;
+            others.push(member);
+        }
+        assert_eq!(alice.members(&id).unwrap().0.len(), MOST_MEMBERS);
+        // A relay takes 64 KiB in one message: the welcome, sealed for its member, fits.
+        assert!(welcome.len() < 60_000, "{} bytes", welcome.len());
+        others.last_mut().unwrap().join(&welcome).unwrap();
+    }
 }
+
+/// The most members a public group has, so its welcome fits in one relay message.
+pub const MOST_MEMBERS: usize = 100;

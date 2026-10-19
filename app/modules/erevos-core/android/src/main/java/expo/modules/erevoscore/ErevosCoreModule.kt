@@ -52,6 +52,18 @@ class ErevosCoreModule : Module() {
     AsyncFunction("groupMembers") { state: ByteArray, id: ByteArray -> ErevosCoreNative.groupMembers(state, id) }
     AsyncFunction("groupOf") { message: ByteArray -> ErevosCoreNative.groupOf(message) }
     AsyncFunction("groupOpen") { state: ByteArray, message: ByteArray -> ErevosCoreNative.groupOpen(state, message) }
+    // Public groups (docs/public-groups.md).
+    AsyncFunction("groupNewSigner") { state: ByteArray -> ErevosCoreNative.groupNewSigner(state) }
+    AsyncFunction("groupKeyPackageAs") { state: ByteArray, key: ByteArray, about: ByteArray -> ErevosCoreNative.groupKeyPackageAs(state, key, about) }
+    AsyncFunction("groupCreatePublic") { state: ByteArray, key: ByteArray, about: ByteArray, rules: ByteArray ->
+      ErevosCoreNative.groupCreatePublic(state, key, about, rules)
+    }
+    AsyncFunction("groupRules") { state: ByteArray, id: ByteArray -> ErevosCoreNative.groupRules(state, id) }
+    AsyncFunction("groupCommit") { state: ByteArray, id: ByteArray, keyPackages: ByteArray, removes: ByteArray, rules: ByteArray ->
+      ErevosCoreNative.groupCommit(state, id, keyPackages, removes, rules)
+    }
+    AsyncFunction("groupPackageAbout") { keyPackage: ByteArray -> ErevosCoreNative.groupPackageAbout(keyPackage) }
+    AsyncFunction("groupEpoch") { message: ByteArray -> ErevosCoreNative.groupEpoch(message) }
 
     // Relay requests through Tor (crates/erevos-tor). Tor keeps its state in the app's own folders.
     AsyncFunction("torStart") {
@@ -117,6 +129,13 @@ internal object ErevosCoreNative {
   @JvmStatic external fun groupMembers(state: ByteArray, id: ByteArray): ByteArray
   @JvmStatic external fun groupOf(message: ByteArray): ByteArray
   @JvmStatic external fun groupOpen(state: ByteArray, message: ByteArray): ByteArray
+  @JvmStatic external fun groupNewSigner(state: ByteArray): ByteArray
+  @JvmStatic external fun groupKeyPackageAs(state: ByteArray, key: ByteArray, about: ByteArray): ByteArray
+  @JvmStatic external fun groupCreatePublic(state: ByteArray, key: ByteArray, about: ByteArray, rules: ByteArray): ByteArray
+  @JvmStatic external fun groupRules(state: ByteArray, id: ByteArray): ByteArray
+  @JvmStatic external fun groupCommit(state: ByteArray, id: ByteArray, keyPackages: ByteArray, removes: ByteArray, rules: ByteArray): ByteArray
+  @JvmStatic external fun groupPackageAbout(keyPackage: ByteArray): ByteArray
+  @JvmStatic external fun groupEpoch(message: ByteArray): ByteArray
   @JvmStatic external fun torStart(stateDir: ByteArray, cacheDir: ByteArray): ByteArray
   @JvmStatic external fun torStatus(): String
   @JvmStatic external fun torStop()

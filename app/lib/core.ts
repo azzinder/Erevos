@@ -39,6 +39,14 @@ export interface Core {
   groupMembers?(state: Uint8Array, id: Uint8Array): Promise<Uint8Array>;
   groupOf?(message: Uint8Array): Promise<Uint8Array>;
   groupOpen?(state: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
+  /** Public groups (docs/public-groups.md): missing in a build made before them. */
+  groupNewSigner?(state: Uint8Array): Promise<Uint8Array>;
+  groupKeyPackageAs?(state: Uint8Array, key: Uint8Array, about: Uint8Array): Promise<Uint8Array>;
+  groupCreatePublic?(state: Uint8Array, key: Uint8Array, about: Uint8Array, rules: Uint8Array): Promise<Uint8Array>;
+  groupRules?(state: Uint8Array, id: Uint8Array): Promise<Uint8Array>;
+  groupCommit?(state: Uint8Array, id: Uint8Array, keyPackages: Uint8Array, removes: Uint8Array, rules: Uint8Array): Promise<Uint8Array>;
+  groupPackageAbout?(keyPackage: Uint8Array): Promise<Uint8Array>;
+  groupEpoch?(message: Uint8Array): Promise<Uint8Array>;
   /** Relay requests through Tor: only in the Android app, and not in a build made before it. */
   torStart?(): Promise<void>;
   torStatus?(): Promise<string>;
@@ -277,4 +285,78 @@ export const group = {
                 : { kind: 'nothing' };
     return { state: next, opened };
   },
+};
+
+/** Whether this build's core has public groups (docs/public-groups.md): one built before them has not. */
+export function canPublicGroup(): boolean {
+  return canGroup() && typeof core?.groupCommit === 'function' && typeof core?.groupEpoch === 'function';
+}
+
+type PublicCalls = Required<Pick<Core, 'groupNewSigner' | 'groupKeyPackageAs' | 'groupCreatePublic' | 'groupRules' | 'groupCommit' | 'groupPackageAbout' | 'groupEpoch'>>;
+
+function publicCalls(): PublicCalls {
+  const it = need();
+  if (!canPublicGroup()) throw new NoCoreError();
+  return it as PublicCalls;
+}
+
+/** Values joined for a call that takes several in one: each a 4-byte big-endian length and its bytes. */
+export function joinParts(items: Uint8Array[]): Uint8Array {
+  const out = new Uint8Array(items.reduce((sum, item) => sum + 4 + item.length, 0));
+  const view = new DataView(out.buffer);
+  let at = 0;
+  for (const item of items) {
+    view.setUint32(at, item.length);
+    out.set(item, at + 4);
+    at += 4 + item.length;
+  }
+  return out;
+}
+
+const bigEndian = (bytes: Uint8Array) => bytes.reduce((value, byte) => value * 256 + byte, 0);
+
+/** A public group's rules as its group context has them now: its epoch, its keeper's leaf, then the app's rules. */
+export type PublicRules = { epoch: number; keeper: number; rules: Uint8Array };
+
+/** A public group's calls (lib/public-groups.ts), on the same state as `group`'s. Those that change it give it back first. */
+export const publicGroup = {
+  /** A key to sign with in one public group: its public half. */
+  newSigner: async (state: Uint8Array) => {
+    const [next, key] = splitParts(await publicCalls().groupNewSigner(state), 2);
+    return { state: next, key };
+  },
+  keyPackage: async (state: Uint8Array, key: Uint8Array, about: Uint8Array) => {
+    const [next, keyPackage] = splitParts(await publicCalls().groupKeyPackageAs(state, key, about), 2);
+    return { state: next, keyPackage };
+  },
+  create: async (state: Uint8Array, key: Uint8Array, about: Uint8Array, rules: Uint8Array) => {
+    const [next, id] = splitParts(await publicCalls().groupCreatePublic(state, key, about, rules), 2);
+    return { state: next, id };
+  },
+  rules: async (state: Uint8Array, id: Uint8Array): Promise<PublicRules> => {
+    const [epoch, keeper, rules] = splitParts(await publicCalls().groupRules(state, id), 3);
+    return { epoch: bigEndian(epoch), keeper: bigEndian(keeper), rules };
+  },
+  /**
+   * The keeper's one commit: who comes in (key packages), who goes (leaves), and with `rules`, the
+   * keeper's leaf and the rules from then on. The welcome is empty when no one comes in.
+   */
+  commit: async (state: Uint8Array, id: Uint8Array, add: Uint8Array[], remove: number[], rules?: { keeper: number; rules: Uint8Array }) => {
+    const leaves = new Uint8Array(remove.length * 4);
+    remove.forEach((leaf, i) => new DataView(leaves.buffer).setUint32(i * 4, leaf));
+    const ruled = new Uint8Array(rules ? 4 + rules.rules.length : 0);
+    if (rules) {
+      new DataView(ruled.buffer).setUint32(0, rules.keeper);
+      ruled.set(rules.rules, 4);
+    }
+    const [next, commit, welcome] = splitParts(await publicCalls().groupCommit(state, id, joinParts(add), leaves, ruled), 3);
+    return { state: next, commit, welcome };
+  },
+  /** What a key package says about its member, and the key it signs with. Throws when its signatures do not hold. */
+  packageAbout: async (keyPackage: Uint8Array) => {
+    const [about, key] = splitParts(await publicCalls().groupPackageAbout(keyPackage), 2);
+    return { about, key };
+  },
+  /** The epoch a group message was sent in. */
+  epoch: async (message: Uint8Array) => bigEndian(await publicCalls().groupEpoch(message)),
 };
