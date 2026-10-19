@@ -11,6 +11,7 @@
 //   /__folder         asks for a folder for backups (lib/backup-place.web.ts), and remembers it
 //   /__backup?…       writes a backup into such a folder, keeping the newest
 //   /__pick           asks for a file to open (lib/pick-file.web.ts), and gives its bytes
+//   /__latest         the latest release's version.json (lib/updates.ts), which a page cannot read
 
 const BUILT_FOR = process.env.EXPO_PUBLIC_SHELL;
 export const SHELL: 'electron' | 'sailfish' | null = BUILT_FOR === 'electron' || BUILT_FOR === 'sailfish' ? BUILT_FOR : null;

@@ -6,7 +6,7 @@ import { Linking, Platform, View } from 'react-native';
 import { Button, Card, Page, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
-import { SHELL } from '../lib/shell';
+import { SHELL, shellFetch } from '../lib/shell';
 import { buildOf, fetchLatestRelease, formatSize, isNewer, RELEASES_PAGE, type Release } from '../lib/updates';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { space } from '../theme/colors';
@@ -21,6 +21,8 @@ const supported = Platform.OS === 'android' || SHELL !== null;
 // This app's version (app.config.js sets it for releases) and its build number.
 const VERSION = Constants.expoConfig?.version ?? '0.0.0';
 const CURRENT_BUILD = buildOf(VERSION);
+// A page cannot read GitHub's downloads itself, so on a computer and Sailfish OS the shell asks.
+const latestFrom = (SHELL ? (_url: unknown, init?: RequestInit) => shellFetch('/__latest', init) : fetch) as typeof fetch;
 
 export default function UpdatesScreen() {
   const colors = useColors();
@@ -69,7 +71,7 @@ export default function UpdatesScreen() {
     setChecking(true);
     let release: Release | null;
     try {
-      release = await fetchLatestRelease();
+      release = await fetchLatestRelease(latestFrom);
     } catch {
       setNote('GitHub could not be reached. Check the internet connection and try again.');
       return;

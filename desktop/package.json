@@ -39,6 +39,7 @@
         "pacman",
         "AppImage"
       ],
+      "icon": "icons",
       "executableName": "erevos",
       "artifactName": "erevos-${arch}.${ext}",
       "category": "Network;InstantMessaging",

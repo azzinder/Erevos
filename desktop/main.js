@@ -15,13 +15,15 @@
  *   /__lan                     Erevos on the same Wi-Fi (lan.js): PUT ?on=1 or 0 starts or stops
  *                              it, POST ?link=… sends the body on a link, GET ?after=… gives what
  *                              happened since, waiting a while for something
+ *   /__latest                  the latest release's version.json (app/lib/updates.ts), asked for
+ *                              here: GitHub's downloads do not answer a page's own requests
  * The app's data is in the folder Electron gives it (~/.config/Erevos, on a Mac
  * ~/Library/Application Support/Erevos).
  *
  * With --smoke the app opens, waits for its first screen, says so and quits: the check the GitHub
  * runners make of each build (.github/workflows/desktop.yml), where nobody can look.
  */
-const { app, BrowserWindow, dialog, protocol, safeStorage, session, shell } = require('electron');
+const { app, BrowserWindow, dialog, net, protocol, safeStorage, session, shell } = require('electron');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -294,6 +296,22 @@ async function lanRequest(request, url) {
   return Response.json({ events: lanEvents.filter((event) => event.seq > after) });
 }
 
+// The one address /__latest reads, the same as app/lib/updates.ts LATEST_URL, and how much of it.
+const LATEST_URL = 'https://github.com/azzinder/erevos-releases/releases/latest/download/version.json';
+const LATEST_MOST = 64 * 1024;
+
+/** The latest release's version.json, only when the owner taps Check for updates; 502 when GitHub cannot be reached. */
+async function latest() {
+  try {
+    const answer = await net.fetch(LATEST_URL, { headers: { 'Cache-Control': 'no-cache' }, cache: 'no-store' });
+    const body = Buffer.from(await answer.arrayBuffer());
+    if (body.length > LATEST_MOST) return new Response('', { status: 502 });
+    return new Response(body, { status: answer.status, headers: { 'Content-Type': 'application/json' } });
+  } catch {
+    return new Response('', { status: 502 });
+  }
+}
+
 function handle(request) {
   const url = new URL(request.url);
   if (url.pathname.startsWith('/__')) {
@@ -306,6 +324,7 @@ function handle(request) {
     if (url.pathname === '/__pick') return pick(url);
     if (url.pathname === '/__save') return save(request, url);
     if (url.pathname === '/__lan') return lanRequest(request, url);
+    if (url.pathname === '/__latest') return latest();
     return new Response('', { status: 404 });
   }
   return serveFile(url.pathname);

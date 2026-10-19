@@ -437,6 +437,8 @@ It is off unless you turn it on, and each space has its own switch.
 On Android, Erevos can be the phone's SMS app, under **SMS** in the menu. The home screen then shows SMS and Erevos
 chats in one list.
 
+- **SMS from before:** nothing to import. Erevos shows the SMS and MMS already on the phone, from Android's own
+  store, where they stay for any other SMS app. Android keeps them, not sealed by Erevos, as with every SMS app.
 - **Writing to someone with Erevos:** it goes through Erevos, end-to-end encrypted, once their number is linked to
   their contact. Link it by hand in the SMS conversation, or let a hidden invite find it.
 - **Hidden invites:** with the first SMS to a number that is not a contact, Erevos also sends a short hidden

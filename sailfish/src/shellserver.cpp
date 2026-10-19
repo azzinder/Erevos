@@ -6,6 +6,9 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QPointer>
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
@@ -23,6 +26,10 @@ const QByteArray Csp =
     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
     "media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: ws: wss:; object-src 'none'; base-uri 'self'; "
     "frame-ancestors 'self'";
+
+// The one address /__latest reads, the same as app/lib/updates.ts LATEST_URL, and how much of it.
+const char LatestUrl[] = "https://github.com/azzinder/erevos-releases/releases/latest/download/version.json";
+const qint64 LatestMost = 64 * 1024;
 
 const QRegularExpression FileName(QStringLiteral("^erevos-[a-z0-9-]+$"));
 const QRegularExpression BackupName(QStringLiteral("^erevos-backup-[0-9-]+\\.erevos$"));
@@ -73,6 +80,7 @@ QByteArray statusText(int status)
     case 404: return "Not Found";
     case 405: return "Method Not Allowed";
     case 413: return "Payload Too Large";
+    case 502: return "Bad Gateway";
     default: return "Internal Server Error";
     }
 }
@@ -220,6 +228,7 @@ void ShellServer::shell(QTcpSocket *socket, const Request &request, const QUrlQu
         respond(socket, 200, QJsonDocument(answer).toJson(QJsonDocument::Compact), "application/json");
     } else if (path == "/__backup") backup(socket, request, query);
     else if (path == "/__save") save(socket, request, value("name"));
+    else if (path == "/__latest") latest(socket);
     else respond(socket, 404);
 }
 
@@ -339,4 +348,23 @@ void ShellServer::save(QTcpSocket *socket, const Request &request, const QString
     QJsonObject answer;
     answer.insert(QStringLiteral("path"), target);
     respond(socket, 200, QJsonDocument(answer).toJson(QJsonDocument::Compact), "application/json");
+}
+
+void ShellServer::latest(QTcpSocket *socket)
+{
+    // Only when the owner taps Check for updates; GitHub answers with a redirect to the file.
+    // FollowRedirectsAttribute: Sailfish OS has Qt 5.6, before RedirectPolicyAttribute.
+    QNetworkRequest request(QUrl(QString::fromLatin1(LatestUrl)));
+    request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+    request.setRawHeader("Cache-Control", "no-cache");
+    QNetworkReply *reply = m_net.get(request);
+    const QPointer<QTcpSocket> to(socket);
+    connect(reply, &QNetworkReply::finished, this, [reply, to]() {
+        reply->deleteLater();
+        if (!to) return;
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QByteArray body = reply->read(LatestMost + 1);
+        if (status == 0 || body.size() > LatestMost) respond(to, 502);
+        else respond(to, status, body, "application/json");
+    });
 }

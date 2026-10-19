@@ -4,6 +4,7 @@
 #include <QByteArray>
 #include <QDir>
 #include <QHash>
+#include <QNetworkAccessManager>
 #include <QObject>
 #include <QString>
 #include <QTcpServer>
@@ -20,6 +21,8 @@ class QUrlQuery;
 //   /__folder         the folder for backups: Documents/Erevos
 //   /__backup?…       writes a backup there, keeping the newest
 //   /__save?name=…    saves a photo or file from a chat in Downloads
+//   /__latest         the latest release's version.json (app/lib/updates.ts), asked for here:
+//                     GitHub's downloads do not answer a page's own requests
 class ShellServer : public QObject
 {
     Q_OBJECT
@@ -53,11 +56,13 @@ private:
     void files(QTcpSocket *socket, const QString &prefix);
     void backup(QTcpSocket *socket, const Request &request, const QUrlQuery &query);
     void save(QTcpSocket *socket, const Request &request, const QString &name);
+    void latest(QTcpSocket *socket);
 
     static void respond(QTcpSocket *socket, int status, const QByteArray &body = QByteArray(),
                         const QByteArray &type = QByteArray(), const QList<QPair<QByteArray, QByteArray>> &extra = {});
 
     QTcpServer m_server;
+    QNetworkAccessManager m_net;
     QDir m_web;
     QDir m_data;
     QByteArray m_token;
