@@ -41,6 +41,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 | --- | --- |
 | **Language · Γλώσσα** | The app's language: English, Greek, German, French, Spanish, Italian or Portuguese. See Language below. |
 | **New group** | A group chat with your contacts. See [Group chats](#groups). |
+| **Public groups** | A group anyone with its link can ask to join, with an owner and admins. See [Public groups](#public-groups). |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
 | **LoRa radio** | Texts over a Meshtastic radio, kilometres away, without internet; off unless set. See [Over a LoRa radio](#lora). |
 | **Linked devices** | The same account on a computer or in a browser too. See [Linked devices](#devices). |
@@ -397,6 +398,55 @@ then shows on their home screen, with a note of who added them. Groups go throug
     before this version sees nothing of it.
   - **On the phone** each is kept in its pieces, sealed, as in a contact's chat. Deleting the group here deletes them.
 - **Not yet:** marks and disappearing messages in groups, groups in hidden chats, and groups over a nearby phone.
+
+## Public groups {#public-groups}
+
+A public group is one anyone with its link, or its QR code, can ask to join: for a club, a street or a class, where
+not everyone is your contact. From the home screen's menu, **Public groups**: give it a name and the name you go by in
+it, choose who comes in, and tap **Make the public group**. You own it. Its messages are end-to-end encrypted with MLS
+and go to each member as in any group, and no relay learns who is in it.
+
+- **The link:** tap the group's name at the top for its link and QR code, and **Share the link**. Whoever opens it, or
+  scans the code with the phone's camera, chooses the name the group sees and taps **Ask to join**. A link can also be
+  pasted under **Join by a link**. Every member has the link, and can pass it on.
+- **Joining while you are away:** the request waits on your relay, sealed so that only your phone opens it, until
+  Erevos is open on your phone: it looks every few seconds while Erevos shows, and about every minute in the
+  background. Then it lets them in, and the group shows on their phone.
+- **Who comes in:** **Anyone with the link**, or **An admin lets them in**: then whoever asks waits under **Asking to
+  join**, for you or an admin to tap **Let in** or **Turn away**. Your phone still lets them in, once it hears.
+- **Admins:** under **Members**, tap **Moderate** beside a member, then **Make an admin**. Admins mute, take out and ban
+  members, let in who asks, and delete a message for everyone; only you moderate admins, and nobody moderates you.
+  - **Mute:** their phone sends nothing in the group, and no phone shows what theirs sends anyway. **Let them write**
+    undoes it.
+  - **Take out:** they read nothing the group says from then on, and can ask to join again by the link.
+  - **Ban:** taken out, and what their phone asks after is turned away. **Lift the ban**, under **Banned**, undoes it.
+    A ban stops the same phone, not someone who comes back with a new relay queue: against that, choose **An admin
+    lets them in**, or change the link.
+  - **Delete for everyone:** the latest messages are listed at the bottom; **Delete** takes one off every member's
+    phone. Whoever read it already may have kept a copy.
+- **Change the link:** the link and QR code shared so far stop working at once, and every member gets the new one.
+  Requests still waiting at the old one are lost.
+- **Hand the group over:** under a member's **Moderate**. Their phone owns it from then on and lets people in, so the
+  link changes to one on their relay; you stay an admin. If your phone is lost before you hand it over, no one can let
+  anyone in again, though the group goes on for those in it.
+- **Close the group** takes every member out. A member's **Leave the group** asks your phone to take them out.
+- **Up to 100 members,** as the whole group has to fit in the one message that lets someone in.
+- **Every phone in a public group needs this version of Erevos.** Groups made from contacts work as before.
+
+### What a public group gives away
+
+> Anyone with the link can read the group from when they are let in, never what was said before, and the link can be
+> passed on: change it to stop that.
+
+- **The link** shows the group's name and your relay's address to whoever sees it.
+- **Every member sees every member's** chosen name, a key made for this group alone, their relay's address and their
+  queue's sender id. The key says nothing of who they are in their chats, nor which other groups they are in; the
+  sender id is also in their contact link, so whoever has that can tell it is them.
+- **Names are chosen, not proven:** anyone can call themselves anything. The start of each member's key shows beside
+  the name, and the owner and the admins are marked.
+- **Whatever is said can be copied** by anyone in the group: end-to-end encryption keeps the relays out, not the members.
+- **The relays** read nothing and learn no one in the group. Yours sees requests come to the group's door, how many and
+  when, not from whom. Members can fill each other's queue with what cannot be read, up to what the relay takes.
 
 ## How Erevos picks the path {#paths}
 
@@ -767,11 +817,17 @@ home screen's menu.
   on, with up to 32 MB of their pictures, while Erevos is the SMS app. They are sealed with the backup's password like
   the rest. Restoring the backup puts back into the phone's SMS each message it does not have yet, and deletes none;
   Erevos has to be the SMS app then too, or the rest is restored without them. The SMS are the phone's, the same in
-  every space; each space's SMS settings, pins, Trash and drafts are not in backups yet. An older Erevos does not
-  open a backup that holds SMS.
+  every space. An older Erevos does not open a backup that holds SMS.
+- **The SMS in order:** each space's pins, archived conversations, Trash, drafts, spam filter and marks, and how long
+  an SMS waits to be taken back are in every backup, sealed with the space's password like the rest. The SMS sent
+  later (**SMS later**) are not, so a backup restored on another phone never sends one again; nor are invites, names
+  from your contacts and the SIM chosen for each number. An older Erevos does not open a backup that holds them; one
+  made by an older Erevos restores as ever, without them.
 - **Not in a backup:** photos and files, not yet: a backup is made in the phone's memory, and they would not fit. A
   backup restored on the same phone shows them again; on another phone they show as not on it. Also left out: the
   count of wrong passwords, and how automatic backups are set.
+- **A backup from a newer Erevos:** Erevos 0.1.8 and later open it too, and restore all of it they know; before
+  that, they say some of it stays out. Update Erevos first to restore all of it.
 
 ## Imported chats {#import}
 
@@ -1067,6 +1123,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. | Video with more than four people, through a server; more than eight people. |
+| **Public groups** | As group chats, and anyone with the link can ask to join and read from when let in. Requests come to the owner's relay sealed for the owner's phone: the relay sees how many and when, not from whom. Members see each other's chosen names, keys made for that group alone, relay addresses and queue sender ids. Not audited. | |
 
 ## What is coming {#coming}
 

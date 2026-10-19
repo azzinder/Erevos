@@ -11,5 +11,6 @@ import { smsTools } from './sms-tools';
 import { more } from './more';
 import { groups } from './groups';
 import { devices } from './devices';
+import { publicGroups } from './public-groups';
 
-export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices };
+export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups };

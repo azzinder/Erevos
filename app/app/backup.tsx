@@ -221,7 +221,9 @@ export default function Backups() {
         );
         if (!without) return;
       }
-      if (await confirm(t('Replace everything'), t('Every space on {device}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.', { device: t(THIS_DEVICE) }))) {
+      // One a newer Erevos made may hold what this one does not know yet: that stays out.
+      const newer = backup.unknown > 0 ? ` ${t('A newer Erevos made this backup: what this one does not know yet stays out. Update Erevos first to restore all of it.')}` : '';
+      if (await confirm(t('Replace everything'), t('Every space on {device}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.', { device: t(THIS_DEVICE) }) + newer)) {
         // Nothing may keep what was here over what the backup brings: the receiver stops first,
         // and starts again with the space as restored.
         const release = await holdReceiver();

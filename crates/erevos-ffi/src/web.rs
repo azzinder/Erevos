@@ -157,3 +157,38 @@ pub fn group_of(message: &[u8]) -> Result<Vec<u8>, JsError> {
 pub fn group_open(state: &[u8], message: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::group_open(state, message))
 }
+
+#[wasm_bindgen(js_name = groupNewSigner)]
+pub fn group_new_signer(state: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_new_signer(state))
+}
+
+#[wasm_bindgen(js_name = groupKeyPackageAs)]
+pub fn group_key_package_as(state: &[u8], key: &[u8], about: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_key_package_as(state, key, about))
+}
+
+#[wasm_bindgen(js_name = groupCreatePublic)]
+pub fn group_create_public(state: &[u8], key: &[u8], about: &[u8], rules: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_create_public(state, key, about, rules))
+}
+
+#[wasm_bindgen(js_name = groupRules)]
+pub fn group_rules(state: &[u8], id: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_rules(state, id))
+}
+
+#[wasm_bindgen(js_name = groupCommit)]
+pub fn group_commit(state: &[u8], id: &[u8], key_packages: &[u8], removes: &[u8], rules: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_commit(state, id, key_packages, removes, rules))
+}
+
+#[wasm_bindgen(js_name = groupPackageAbout)]
+pub fn group_package_about(key_package: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_package_about(key_package))
+}
+
+#[wasm_bindgen(js_name = groupEpoch)]
+pub fn group_epoch(message: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_epoch(message))
+}

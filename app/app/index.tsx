@@ -10,7 +10,7 @@ import { SwipeRow } from '../components/swipe-row';
 import { Chip, font, fontStyle, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
-import { canGroup, hasCore } from '../lib/core';
+import { canGroup, canPublicGroup, hasCore } from '../lib/core';
 import { linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
@@ -19,7 +19,7 @@ import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
-import { spaceGroups } from '../lib/space-groups';
+import { publicMemberName, spaceGroups } from '../lib/space-groups';
 import { arrangeRows, dueTrash, emptyTrash, onSmsOrderChanged, sortSms } from '../lib/sms-folders';
 import { groupName, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
@@ -51,6 +51,7 @@ type Relay = 'ready' | 'no-queue' | 'none';
 // `phone`: only on a phone, as it needs its radio. `links`: where there are links to phones nearby.
 const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean }[] = [
   { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group' },
+  { title: mark('Public groups'), detail: mark('Make a group anyone with its link can join, or join one by a link'), href: '/public-groups' },
   {
     title: mark('Nearby phones'),
     detail: HAS_RADIO ? mark('Your contacts over Bluetooth and Wi-Fi, without internet') : mark('Your contacts on the same Wi-Fi, without internet'),
@@ -179,7 +180,7 @@ export default function Home() {
           canGroup() ? quiet(spaceGroups().then((g) => g.list() as InboxGroup[]), []) : Promise.resolve([] as InboxGroup[]),
         ]).then(([[contacts, messages], imported, data, groups]) => {
           if (!active) return;
-          const name = (identity: string) => memberName(identity, contacts);
+          const name = (identity: string) => publicMemberName(identity) ?? memberName(identity, contacts);
           const phones = contacts.flatMap((c) => (c.phone ? [c.phone] : []));
           chatsRead = (sms) => {
             const at = Date.now();
@@ -411,7 +412,7 @@ export default function Home() {
           </Pressable>
         )}
         {/* Groups stay on the phone that holds the account (lib/devices.ts). */}
-        {(languages ? [] : MENU).filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked'))).map((item) => (
+        {(languages ? [] : MENU).filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || canPublicGroup())).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"
