@@ -439,6 +439,10 @@ chats in one list.
 
 - **SMS from before:** nothing to import. Erevos shows the SMS and MMS already on the phone, from Android's own
   store, where they stay for any other SMS app. Android keeps them, not sealed by Erevos, as with every SMS app.
+- **If no SMS show:** Android 15 and later hold the SMS permission back from an app installed from a browser.
+  Under **SMS** in the menu, tap **Allow SMS**. If Android calls it a restricted setting, open **Erevos's App
+  info**, tap **⋮** at the top right → **Allow restricted settings**, and allow SMS under **Permissions**. Chats
+  sent as RCS ("chat" in Google Messages) stay in that app and do not show.
 - **Writing to someone with Erevos:** it goes through Erevos, end-to-end encrypted, once their number is linked to
   their contact. Link it by hand in the SMS conversation, or let a hidden invite find it.
 - **Hidden invites:** with the first SMS to a number that is not a contact, Erevos also sends a short hidden

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { AppState, PermissionsAndroid, Platform } from 'react-native';
+import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
 
 import { Button, Card, Field, Input, Page, SectionTitle, Text } from '../components/ui';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
@@ -13,8 +13,24 @@ import { requestDefaultSms, smsReady, smsStatus, type SmsStatus } from '../modul
 // with a hidden SMS invite, whether SMS numbers show the names the phone's contacts give them, and
 // a new SMS conversation.
 
+// What the SMS app needs from Android. Becoming the SMS app gives them, except to an app installed
+// from a browser on Android 15 and later, which Android holds them back from until its owner allows
+// "restricted settings" for it.
+const SMS_PERMISSIONS = [
+  'android.permission.READ_SMS',
+  'android.permission.RECEIVE_SMS',
+  'android.permission.SEND_SMS',
+  'android.permission.RECEIVE_MMS',
+] as const;
+const RESTRICTED =
+  'Android did not allow it. In Erevos\'s App info, under Permissions → SMS, it may say Restricted setting: then go ' +
+  'back, tap ⋮ at the top right → Allow restricted settings, and allow SMS under Permissions.';
+
 export default function SmsSettings() {
   const [status, setStatus] = useState<SmsStatus | null>(smsStatus());
+  // Whether Android lets Erevos read the phone's SMS; null until known.
+  const [canRead, setCanRead] = useState<boolean | null>(null);
+  const [readNote, setReadNote] = useState('');
   const [link, setLink] = useState<SmsLink | null>(null);
   const [invites, setInvites] = useState(true);
   const [names, setNames] = useState(false);
@@ -30,8 +46,13 @@ export default function SmsSettings() {
         setNames(opened.names);
       })
       .catch(() => setNote('The SMS settings of this space could not open.'));
-    // Android answers the question in its own screen: look again when the app comes back.
-    const subscription = AppState.addEventListener('change', (state) => state === 'active' && setStatus(smsStatus()));
+    const look = () => {
+      setStatus(smsStatus());
+      if (Platform.OS === 'android') void PermissionsAndroid.check('android.permission.READ_SMS').then(setCanRead, () => setCanRead(null));
+    };
+    look();
+    // Android answers in its own screens: look again when the app comes back.
+    const subscription = AppState.addEventListener('change', (state) => state === 'active' && look());
     return () => subscription.remove();
   }, []);
 
@@ -56,6 +77,14 @@ export default function SmsSettings() {
       setNote(error instanceof Error ? error.message : String(error));
     }
     if (Number(Platform.Version) >= 33) await PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS').catch(() => undefined);
+  }
+
+  async function allowSms() {
+    setReadNote('');
+    const answers = await PermissionsAndroid.requestMultiple([...SMS_PERMISSIONS]).catch(() => null);
+    const granted = answers?.['android.permission.READ_SMS'] === PermissionsAndroid.RESULTS.GRANTED;
+    setCanRead(granted);
+    if (!granted) setReadNote(RESTRICTED);
   }
 
   async function toggleInvites() {
@@ -102,6 +131,17 @@ export default function SmsSettings() {
           can read it, as it reads every SMS.
         </Text>
         {status?.isDefault ? null : <Button title="Make Erevos the SMS app" onPress={() => void makeDefault()} />}
+        {status?.isDefault && canRead === false ? (
+          <>
+            <Text variant="bodyStrong">Android does not let Erevos read the SMS</Text>
+            <Text tone="muted">
+              So no SMS show yet. Android holds this back from an app installed from a browser, until you allow it.
+            </Text>
+            <Button title="Allow SMS" onPress={() => void allowSms()} />
+            <Button title="Open Erevos's App info" kind="secondary" onPress={() => void Linking.openSettings()} />
+            {readNote ? <Text tone="muted">{readNote}</Text> : null}
+          </>
+        ) : null}
         {status && !status.phone ? <Text tone="muted">This device has no phone part, so it cannot send SMS.</Text> : null}
       </Card>
 
