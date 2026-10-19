@@ -14,6 +14,10 @@ been compile-checked against Android 16's framework classes, not built or run.
   (earpiece, loudspeaker, Bluetooth, headset: call endpoints from Android 14, `CallAudioState`
   before), Hold, Add call, Merge, Swap, End. It shows over the lock screen and works with the app
   locked: it is its own task. The screen goes off at the ear.
+- **Decline with a message.** Message on a call that rings offers the quick replies (`Replies`, the
+  module's own preferences, set with `setQuickReplies()`) or one written then, and declines with
+  `Call.reject(true, text)`: Telecom sends the SMS itself (its `RespondViaSmsManager`, through
+  `SmsManager`), which writes it to the phone's SMS. The SMS app's `RespondViaSmsService` is not used.
 - **Notices.** `CallNotices`: a call that rings, with Answer and Decline and a full-screen intent,
   and one while a call is on, with End. Telecom rings itself, with each contact's own ringtone.
   Missed calls are Telecom's own notice.

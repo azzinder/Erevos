@@ -2,15 +2,17 @@ import { startActivityAsync } from 'expo-intent-launcher';
 import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
 
-import { Button, Card, Page, Text } from '../components/ui';
+import { Button, Card, Input, Page, Row, Text } from '../components/ui';
 import { askFullScreen, backgroundState } from '../lib/background';
 import { mark, t } from '../lib/i18n';
-import { phoneReady, phoneStatus, requestDefaultPhone, type PhoneStatus } from '../modules/erevos-phone';
+import { cleanReplies, MAX_REPLIES, MAX_REPLY } from '../lib/phone';
+import { phoneReady, phoneStatus, quickReplies, requestDefaultPhone, setQuickReplies, type PhoneStatus } from '../modules/erevos-phone';
+import { space } from '../theme/colors';
 
 // Erevos as the phone's phone app (modules/erevos-phone): then a call, made or come, shows on
 // Erevos's own call screen, over the lock screen and with Erevos locked, and tel: links and the
 // phone's call button open Erevos's keypad. What Android still holds back shows here, each with
-// the way to allow it.
+// the way to allow it; and the quick replies a call can be declined with.
 
 // What the phone app needs from Android. Becoming the phone app gives them, except to an app
 // installed from a browser on Android 15 and later, which Android holds back until its owner
@@ -148,6 +150,44 @@ export default function PhoneSettings() {
         {status && !status.phone ? <Text tone="muted">{t('This device has no phone part, so it cannot make calls.')}</Text> : null}
         {note ? <Text tone="muted">{note}</Text> : null}
       </Card>
+      {status?.isDefault ? <QuickReplies /> : null}
     </Page>
+  );
+}
+
+// The replies Message offers on the call screen, to decline a call with an SMS.
+function QuickReplies() {
+  const [kept, setKept] = useState(quickReplies());
+  const [replies, setReplies] = useState(kept.replies);
+  const changed = JSON.stringify(replies) !== JSON.stringify(kept.replies);
+
+  function keep(next: string[]) {
+    setQuickReplies(next);
+    const now = quickReplies();
+    setKept(now);
+    setReplies(now.replies);
+  }
+
+  return (
+    <Card>
+      <Text variant="bodyStrong">{t('Quick replies')}</Text>
+      <Text tone="muted">
+        {t('Message, on the call screen of a call that rings, declines it with one of these, which the phone sends the caller as an SMS. They are kept on the phone, not sealed, as the call screen shows them with Erevos locked.')}
+      </Text>
+      {replies.map((reply, i) => (
+        <Row key={i} style={{ gap: space.sm }}>
+          <Input
+            value={reply}
+            onChangeText={(text) => setReplies((all) => all.map((r, j) => (j === i ? text : r)))}
+            maxLength={MAX_REPLY}
+            style={{ flex: 1 }}
+          />
+          <Button title={t('Remove')} kind="secondary" compact onPress={() => setReplies((all) => all.filter((_, j) => j !== i))} />
+        </Row>
+      ))}
+      {replies.length < MAX_REPLIES ? <Button title={t('Add a reply')} kind="secondary" onPress={() => setReplies((all) => [...all, ''])} /> : null}
+      {changed ? <Button title={t('Save')} onPress={() => keep(cleanReplies(replies))} /> : null}
+      {kept.own ? <Button title={t('Use the usual replies')} kind="secondary" onPress={() => keep([])} /> : null}
+    </Card>
   );
 }

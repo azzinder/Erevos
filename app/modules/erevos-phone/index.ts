@@ -61,6 +61,8 @@ type NativePhone = {
   history(): Promise<{ allowed: boolean; calls: LoggedCall[] }>;
   favourites(): Promise<{ allowed: boolean; favourites: Favourite[] }>;
   seenMissed(): void;
+  quickReplies(): { replies: string[]; own: boolean };
+  setQuickReplies(replies: string[]): void;
   showCall(): void;
   setKnownNames(names: Record<string, string>): void;
   clearKnownNames(): void;
@@ -110,6 +112,18 @@ export function phoneFavourites(): Promise<{ allowed: boolean; favourites: Favou
 /** The missed calls were seen: Android's notice of them goes. */
 export function seenMissedCalls(): void {
   native?.seenMissed();
+}
+
+/** The quick replies the call screen's Message offers, to decline a call with an SMS: the owner's
+ *  own (`own`), else the usual ones in the app's language. Kept on the phone, not sealed, as the
+ *  call screen shows them with Erevos locked. */
+export function quickReplies(): { replies: string[]; own: boolean } {
+  return native ? native.quickReplies() : { replies: [], own: false };
+}
+
+/** Keeps the owner's quick replies; [] goes back to the usual ones. */
+export function setQuickReplies(replies: string[]): void {
+  native?.setQuickReplies(replies);
 }
 
 /** Brings the call screen back while a call is on. */

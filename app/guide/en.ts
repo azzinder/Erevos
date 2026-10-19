@@ -514,16 +514,20 @@ phone app**. Every call then shows on Erevos's own call screen, and tel: links a
 Erevos's keypad.
 
 - **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them; while
-  Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them. It shows
-  over the lock screen and needs no password, as a call has to be answered with Erevos locked. A call that comes
-  shows **Answer** and **Decline**, and Android rings with the contact's own ringtone; the volume keys quiet it.
-  In a call: **Mute**, **Keypad** for the tones a menu asks for, **Speaker**, **Hold**, **Add call** and **End**.
+  Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them. It shows over the
+  lock screen and needs no password, as a call has to be answered with Erevos locked. A call that comes shows
+  **Answer**, **Decline** and **Message**, and Android rings with the contact's own ringtone; the volume keys quiet
+  it. In a call: **Mute**, **Keypad** for the tones a menu asks for, **Speaker**, **Hold**, **Add call** and **End**.
   At your ear the screen goes off.
 - **Where the sound goes:** with a Bluetooth device or a headset, the button beside **Keypad** names where the sound
   goes, and a tap lets you choose: the phone, the speaker, the headset or the Bluetooth device.
 - **A second call:** one that comes during a call shows **Hold and answer**, **End and answer** and **Decline**.
   With a call on hold, the line under the name says so: tap it, or **Swap**, to talk with the other. **Merge** puts
   the two in one call, when your phone company allows it.
+- **Decline with a message:** **Message**, on a call that rings, declines it with a quick reply, or one you write,
+  which your phone sends the caller as an SMS; it shows among your SMS. Under **Phone** → **Settings**,
+  **Quick replies** changes them: **Add a reply**, **Remove**, **Save**, and **Use the usual replies**. They are kept
+  on the phone, not sealed, as the call screen shows them with Erevos locked.
 - **The keypad:** under **Phone**, type a number and tap **Call**; hold **0** for +. Held down, the number's field
   pastes one. **Add call**, during a call, opens it once Erevos is unlocked.
 - **Two SIMs:** above **Call**, tap the SIM to call on; the first time, **Choose the SIM** asks Android to let Erevos
@@ -867,7 +871,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
-| **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos only reads it, and the favourites, to show them, and keeps no copy. The SIM chosen for each number is sealed in the space. | |
+| **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos only reads it, and the favourites, to show them, and keeps no copy. The SIM chosen for each number is sealed in the space; the quick replies are kept on the phone, not sealed. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |

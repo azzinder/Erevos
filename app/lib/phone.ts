@@ -31,6 +31,20 @@ export function knownNames(contacts: { name: string; phone: string; request: boo
   return names;
 }
 
+/** The most quick replies the call screen offers, and the longest one. */
+export const MAX_REPLIES = 6;
+export const MAX_REPLY = 300;
+
+/** Quick replies as the owner typed them, to keep: each on one line, none empty or twice. */
+export function cleanReplies(replies: string[]): string[] {
+  const kept: string[] = [];
+  for (const reply of replies) {
+    const line = reply.replace(/\s+/g, ' ').trim().slice(0, MAX_REPLY);
+    if (line && !kept.includes(line)) kept.push(line);
+  }
+  return kept.slice(0, MAX_REPLIES);
+}
+
 /** "0:42", "12:05", "1:02:03", for a call that lasted `seconds`. */
 export function callLength(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));

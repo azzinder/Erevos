@@ -22,6 +22,7 @@ import android.telecom.Call
 import android.telecom.DisconnectCause
 import android.telecom.PhoneAccountHandle
 import android.telecom.TelecomManager
+import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.KeyEvent
@@ -31,6 +32,7 @@ import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.view.WindowInsets
 import android.view.WindowManager
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -38,8 +40,8 @@ import android.widget.TextView
 
 /**
  * The call screen of the phone's calls, built in code: who it is, with their photo, whether the
- * call goes over Wi-Fi or in HD, on which SIM; Answer and Decline while it rings, and Hold and
- * answer while another call is on; then Mute, the keypad, where the sound goes (the earpiece, the
+ * call goes over Wi-Fi or in HD, on which SIM; Answer, Decline and Message (decline with an SMS)
+ * while it rings, and Hold and answer while another call is on; then Mute, the keypad, where the sound goes (the earpiece, the
  * loudspeaker, a Bluetooth device, a headset), Hold, Add call, Merge or Swap, and End. It shows
  * over the phone's lock screen and turns the screen on, and needs no unlocking of Erevos: its own
  * task, apart from the app, which stays locked behind its password. While the phone is at the ear
@@ -331,15 +333,19 @@ class CallActivity : Activity() {
     val key = listOf(
       layout, Calls.id(shown), state, Calls.muted, route?.kind, route?.name, Calls.routes.size, Calls.canAdd,
       Calls.canHold(shown), Calls.canMerge(shown), second?.let { Calls.state(it) }, Words.greek(this),
+      shown.details.can(Call.Details.CAPABILITY_RESPOND_VIA_TEXT),
     ).joinToString("|")
     if (key != built) {
       built = key
       buttons.removeAllViews()
       when (layout) {
-        "ringing" -> row(declineButton(), answerButton(say("Answer", "Απάντηση")))
+        "ringing" -> {
+          row(declineButton(), answerButton(say("Answer", "Απάντηση")))
+          row(messageButton(shown))
+        }
         "waiting" -> {
           row(declineButton(), answerButton(say("Hold and answer", "Αναμονή και απάντηση")))
-          row(round(say("End and answer", "Τέλος και απάντηση"), Glyph.CALL, { Calls.ringing()?.let { Calls.endAndAnswer(it) } }))
+          row(messageButton(shown), round(say("End and answer", "Τέλος και απάντηση"), Glyph.CALL, { Calls.ringing()?.let { Calls.endAndAnswer(it) } }))
         }
         "sim" -> row(endButton())
         "keypad" -> keys()
@@ -393,6 +399,46 @@ class CallActivity : Activity() {
 
   private fun endButton() =
     round(say("End", "Τέλος"), Glyph.CALL, { (Calls.front() ?: Calls.ringing())?.disconnect() }, fill = END_FILL, turn = 135f)
+
+  // Declines with an SMS to the caller, when Telecom can send one: it sends it itself, from the
+  // phone's SMS, so it shows among the SMS too.
+  private fun messageButton(call: Call): View? {
+    if (!call.details.can(Call.Details.CAPABILITY_RESPOND_VIA_TEXT) || Callers.number(call).isEmpty()) return null
+    return round(say("Message", "Μήνυμα"), Glyph.MESSAGE, { declineWithMessage(call) })
+  }
+
+  private fun declineWithMessage(call: Call) {
+    val replies = Replies.list(this)
+    val choices = replies + say("Write your own…", "Γράψε δικό σου…")
+    AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+      .setTitle(say("Decline with a message", "Απόρριψη με μήνυμα"))
+      .setItems(choices.toTypedArray()) { _, which ->
+        if (which < replies.size) call.reject(true, replies[which]) else writeMessage(call)
+      }
+      .show()
+  }
+
+  private fun writeMessage(call: Call) {
+    val field = EditText(this).apply {
+      inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+      hint = say("Message", "Μήνυμα")
+    }
+    val frame = FrameLayout(this).apply {
+      setPadding(dp(20), dp(8), dp(20), 0)
+      addView(field)
+    }
+    val dialog = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+      .setTitle(say("Decline with a message", "Απόρριψη με μήνυμα"))
+      .setView(frame)
+      .setPositiveButton(say("Send", "Αποστολή")) { _, _ ->
+        field.text.toString().trim().takeIf { it.isNotEmpty() }?.let { call.reject(true, it) }
+      }
+      .setNegativeButton(say("Cancel", "Άκυρο"), null)
+      .create()
+    dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+    dialog.show()
+    field.requestFocus()
+  }
 
   private fun controls(call: Call, second: Call?) {
     val held = Calls.state(call) == Call.STATE_HOLDING

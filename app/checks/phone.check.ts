@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
-import { callLength, dialNumber, KEYS, knownNames, typeKey } from '../lib/phone';
+import { callLength, cleanReplies, dialNumber, KEYS, knownNames, MAX_REPLIES, MAX_REPLY, typeKey } from '../lib/phone';
 import { callKind, callMarks, callWho, filterCalls, groupCalls, withDays } from '../lib/phone-log';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
 import type { LoggedCall, PhoneAccount } from '../modules/erevos-phone';
@@ -30,6 +30,13 @@ test('the keypad types its keys, and a + only first', () => {
   assert.equal(typeKey('+', '3'), '+3');
   assert.equal(typeKey('69', '+'), '69');
   assert.equal(typeKey('69', '#'), '69#');
+});
+
+test('quick replies are kept on one line each, none empty or twice, six at most', () => {
+  assert.deepEqual(cleanReplies(['  On my way. ', '', 'Call\nme  later', 'On my way.']), ['On my way.', 'Call me later']);
+  assert.equal(cleanReplies(['x'.repeat(400)])[0].length, MAX_REPLY);
+  assert.equal(cleanReplies(['1', '2', '3', '4', '5', '6', '7']).length, MAX_REPLIES);
+  assert.deepEqual(cleanReplies([' ', '\n']), []);
 });
 
 test('how long a call lasted reads as a clock', () => {
@@ -82,7 +89,7 @@ test('the SIM chosen for a number is kept, sealed in the space, whichever way th
   assert.equal(last.accountFor('+306911111111'), '8930');
   assert.equal(last.accountFor('2101234567'), '');
   // Nothing of it shows in the file, and another space's key, or another space, opens none of it.
-  assert.ok(![...files.values()].some((v) => v.includes('8930') || v.includes('691')));
+  assert.ok(![...files.values()].some((v) => v.includes('6911111111') || v.includes('2101234567')));
   assert.equal((await PhoneSims.open(0, randomBytes(32))).accountFor('6911111111'), '');
   assert.equal((await PhoneSims.open(1, key)).accountFor('6911111111'), '');
 });

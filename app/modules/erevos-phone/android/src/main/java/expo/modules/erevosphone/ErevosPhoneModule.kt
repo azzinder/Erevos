@@ -95,6 +95,17 @@ class ErevosPhoneModule : Module() {
       History.seenMissed(context())
     }
 
+    // The quick replies a call that rings can be declined with, and whether they are the owner's.
+    Function("quickReplies") {
+      val context = context()
+      mapOf("replies" to Replies.list(context), "own" to (Replies.own(context) != null))
+    }
+
+    // The owner's quick replies; none goes back to the usual ones.
+    Function("setQuickReplies") { replies: List<String> ->
+      Replies.set(context(), replies)
+    }
+
     // Back to the call screen, while a call is on.
     Function("showCall") {
       val context = context()

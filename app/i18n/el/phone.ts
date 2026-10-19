@@ -73,4 +73,10 @@ export const phone: Record<string, string> = {
   'Android does not let Erevos show a call that comes over the lock screen: it shows as a notice only.':
     'Το Android δεν αφήνει το Erevos να δείχνει μια κλήση που έρχεται πάνω από την οθόνη κλειδώματος: φαίνεται μόνο ως ειδοποίηση.',
   'This device has no phone part, so it cannot make calls.': 'Αυτή η συσκευή δεν έχει τηλέφωνο, οπότε δεν μπορεί να κάνει κλήσεις.',
+  'Quick replies': 'Γρήγορες απαντήσεις',
+  'Message, on the call screen of a call that rings, declines it with one of these, which the phone sends the caller as an SMS. They are kept on the phone, not sealed, as the call screen shows them with Erevos locked.':
+    'Το «Μήνυμα», στην οθόνη μιας κλήσης που χτυπά, την απορρίπτει με μία από αυτές, που το τηλέφωνο στέλνει σε όποιον καλεί ως SMS. Φυλάγονται στο τηλέφωνο χωρίς σφράγισμα, γιατί η οθόνη κλήσης τις δείχνει με το Erevos κλειδωμένο.',
+  Remove: 'Αφαίρεση',
+  'Add a reply': 'Προσθήκη απάντησης',
+  'Use the usual replies': 'Οι συνηθισμένες απαντήσεις',
 };
