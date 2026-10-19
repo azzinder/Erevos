@@ -2,7 +2,8 @@
 // between the devices, alone; then a phone and a computer of one account and a contact on a
 // version from before linking, through a real relay and the real core: linking with the codes
 // compared, the history brought over, messages both ways and on both devices, contacts kept alike,
-// photos and files deleted from the relay once each took them, calls on either, and unlinking.
+// photos and files deleted from the relay once each took them, calls on either, the phone's groups
+// on the computer too, and unlinking.
 // Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
@@ -15,15 +16,44 @@ import { Call, currentCall } from '../lib/call';
 import type { CallSignal } from '../lib/call-signal';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
-import { bytesSource, FileGoneError, offerRef, readFile, sendFile, takeFile, watchTakenFiles } from '../lib/attachments';
+import { bytesSource, FileGoneError, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
 import { Links, type HistoryChoice } from '../lib/devices';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
+import { sendGroupFile, takeGroupFile } from '../lib/group-media';
+import type { GroupSignal } from '../lib/group-signal';
+import { Groups, type GroupTransport } from '../lib/groups';
 import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode } from '../lib/link-code';
-import { changedFields, encodeEnvelope, encodeOne, isKept, isSignal, isWorthTelling, mirrorOf, onlyCame, Parts, readPack, syncedOf, withoutPlace, writePack, type Synced } from '../lib/link-wire';
+import {
+  changedFields,
+  encodeEnvelope,
+  encodeOne,
+  groupEnvelopes,
+  groupMirror,
+  isKept,
+  isSignal,
+  isWorthTelling,
+  lastKey,
+  messagesAfter,
+  mirrorGroups,
+  mirrorMark,
+  mirrorOf,
+  onlyCame,
+  Parts,
+  readGroupEntries,
+  readPack,
+  syncedOf,
+  withoutPlace,
+  writePack,
+  type Envelope,
+  type GroupEntry,
+  type GroupMirror,
+  type Synced,
+} from '../lib/link-wire';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import type { SpaceChats } from '../lib/space-chats';
 import { VoiceAssembler } from '../lib/voice';
 import { newFileId, type FileRef } from '../lock/attachment-files';
+import { EMPTY_GROUPS, type Group } from '../lock/group-data';
 import { History } from '../lock/history';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { EMPTY_SPACE, saveSpaceData, type Queue } from '../lock/space-data';
@@ -588,6 +618,313 @@ test('a call rings on the phone and the computer, the first to answer takes it, 
     [{ id: out.id, kind: 'end', reason: 'hangup' }],
   );
   currentCall()?.hangUp();
+
+  for (const p of [pixel, dell]) p.links.close();
+});
+
+test('groups between devices: told as they change, each message once, and what a computer asks', () => {
+  const g = 'ab'.repeat(16);
+  const other = 'cd'.repeat(16);
+  const alice = 'a1'.repeat(32);
+  const me = 'e0'.repeat(32);
+  const group: Group = {
+    id: g,
+    name: 'Φίλοι',
+    admin: true,
+    status: 'in',
+    asked: [],
+    later: [],
+    outbox: [],
+    readAt: 1,
+    messages: [
+      { at: 1, from: '', text: 'You made the group.', tag: '', note: true },
+      { at: 2, from: alice, text: 'hi', tag: 'aabbccddeeff' },
+      { at: 3, from: '', text: 'yo', tag: '112233445566' },
+    ],
+  };
+  // A group as the phone tells it, told again only once that changed.
+  const mirror = groupMirror(group, [
+    { leaf: 0, about: { id: me }, me: true },
+    { leaf: 1, about: null, me: false },
+  ]);
+  assert.deepEqual(mirror, {
+    id: g,
+    name: 'Φίλοι',
+    admin: true,
+    status: 'in',
+    asked: [],
+    readAt: 1,
+    members: [
+      { leaf: 0, id: me, me: true },
+      { leaf: 1, id: '', me: false },
+    ],
+  });
+  assert.equal(mirrorMark(mirror), mirrorMark(JSON.parse(JSON.stringify(mirror)) as GroupMirror));
+  assert.notEqual(mirrorMark(mirror), mirrorMark({ ...mirror, readAt: 2 }));
+  // The messages after the last one told; all of them once that one is gone.
+  assert.deepEqual(messagesAfter(group.messages, lastKey({ messages: group.messages.slice(0, 2) })), group.messages.slice(2));
+  assert.deepEqual(messagesAfter(group.messages, lastKey(group)), []);
+  assert.deepEqual(messagesAfter(group.messages, 'not there'), group.messages);
+
+  // As they travel: checked, and many in several envelopes, the groups with the first.
+  const parts = new Parts();
+  const travel = (envelope: Envelope) => {
+    let out: unknown = null;
+    for (const bytes of encodeEnvelope(envelope, null)) out = parts.take('p', bytes);
+    return out;
+  };
+  const entries: GroupEntry[] = group.messages.map((m) => ({ group: g, at: m.at, from: m.from, text: m.text, tag: m.tag, ...(m.note ? { note: true } : {}) }));
+  const [one] = groupEnvelopes([mirror], [other], entries);
+  assert.deepEqual(travel(one), one);
+  const many = Array.from({ length: 200 }, (_, i) => ({ group: g, at: 10 + i, from: alice, text: 'x'.repeat(3000), tag: (0x100000 + i).toString(16).padStart(12, '0') }));
+  const split = groupEnvelopes([mirror], [other], many);
+  assert.ok(split.length > 1);
+  assert.deepEqual(
+    split.map(travel).flatMap((e) => ((e as Envelope).k === 'groups' ? (e as Extract<Envelope, { k: 'groups' }>).entries : [])),
+    many,
+  );
+  assert.deepEqual(
+    split.map((e) => (e.k === 'groups' ? e.list.length + e.gone.length : -1)),
+    [2, ...new Array<number>(split.length - 1).fill(0)],
+  );
+  // What is not one is left out.
+  const junk = { v: 1, k: 'groups', list: [{ id: 'x' }], gone: ['y'], entries: [{ group: g, at: 1, from: 'nobody', text: 'hi', tag: '' }, { group: g, at: 1, from: alice, text: '', tag: 't' }] };
+  assert.deepEqual(parts.take('p', utf8Encode(JSON.stringify(junk))), { k: 'groups', list: [], gone: [], entries: [] });
+  // What a computer asks the phone to do in a group, checked.
+  const ask: Envelope = { k: 'group', id: g, ask: { t: 'text', text: 'hi', tag: 'aabbccddeeff' } };
+  assert.deepEqual(travel(ask), ask);
+  for (const wrong of [{ t: 'text', text: ' ', tag: 'aabbccddeeff' }, { t: 'remove', leaf: 0 }, { t: 'add', identities: ['x'] }, { t: 'make' }]) {
+    assert.equal(parts.take('p', utf8Encode(JSON.stringify({ v: 1, k: 'group', id: g, ask: wrong }))), null);
+  }
+  // In a pack, with the chats' messages.
+  assert.deepEqual(readGroupEntries(writePack([], entries)), entries);
+  assert.deepEqual(readGroupEntries(writePack([])), []);
+
+  // On the computer: each group as said; those gone go; the messages put in by time, each once.
+  // One it kept already, said again with a photo, is one it takes no more.
+  const offer: FileOffer = { name: 'p.jpg', mime: 'image/jpeg', kind: 'photo', size: 10, key: 'cd'.repeat(32), chunk: 65536, relay: 'ws://127.0.0.1:1', ids: 'ab'.repeat(24) };
+  const kept: Group = { ...group, messages: [group.messages[0], { at: 4, from: '', text: 'mine', tag: 'ffeeddccbbaa' }] };
+  const made = mirrorGroups([kept, { ...kept, id: other }], {
+    list: [{ ...mirror, name: 'Νέο', readAt: 0 }],
+    gone: [other],
+    entries: [
+      ...entries,
+      { group: g, at: 9, from: '', text: '', tag: 'ffeeddccbbaa', file: offer },
+      { group: g, at: 5, from: alice, text: '', tag: 'abababababab', file: offer, ms: 1200 },
+      { group: other, at: 9, from: alice, text: 'lost', tag: 'abcdefabcdef' },
+    ],
+  });
+  assert.deepEqual(
+    made.groups.map((x) => [x.id, x.name, x.readAt]),
+    [[g, 'Νέο', 1]],
+  );
+  const shown = made.groups[0].messages;
+  assert.deepEqual(
+    shown.map((m) => m.text),
+    ['You made the group.', 'hi', 'yo', 'mine', ''],
+  );
+  assert.deepEqual([shown[4].file?.from, shown[4].ms], [{ relay: offer.relay, ids: offer.ids }, 1200]);
+  assert.deepEqual(made.came, [g]);
+  assert.deepEqual(made.again, [{ relay: offer.relay, ids: offer.ids }]);
+  // Read as late as either read it.
+  assert.equal(mirrorGroups([kept], { list: [{ ...mirror, readAt: 7 }], gone: [], entries: [] }).groups[0].readAt, 7);
+});
+
+// Group chats on an in-memory relay of their own, as checks/groups.check.ts has them: each member's
+// queue in order, and the chats' signals handed on.
+function groupNet() {
+  type Member = { identity: string; groups: Groups; queue: Uint8Array[]; transport: GroupTransport };
+  const members = new Map<string, Member>();
+  const signals: { from: string; to: string; signal: GroupSignal }[] = [];
+  const member = (identity: string): Member => {
+    const sender = toHex(randomBytes(24));
+    const groups = new Groups(EMPTY_GROUPS, async () => undefined, async () => ({ id: identity, sender, relay: 'wss://relay.example.org', relayKey: '' }));
+    const transport: GroupTransport = {
+      async post(to, packet) {
+        members.get(to.id)?.queue.push(packet);
+      },
+      async signal(to, signal) {
+        signals.push({ from: identity, to, signal });
+      },
+    };
+    const it: Member = { identity, groups, queue: [], transport };
+    members.set(identity, it);
+    return it;
+  };
+  const settle = async () => {
+    for (let round = 0; round < 20; round++) {
+      let moved = false;
+      while (signals.length > 0) {
+        const { from, to, signal } = signals.shift()!;
+        const target = members.get(to);
+        if (target) await target.groups.signal(from, signal, false, target.transport);
+        moved = true;
+      }
+      for (const m of members.values()) {
+        while (m.queue.length > 0) {
+          await m.groups.receive(m.queue.shift()!, m.transport);
+          moved = true;
+        }
+      }
+      if (!moved) return;
+    }
+  };
+  return { member, settle };
+}
+
+test('groups on a linked computer: the phone\'s, read and written there through it', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { relay, phone, take, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const net = groupNet();
+  const account = pixel.chats.e2e.identityHex();
+  const onPixel = net.member(account);
+  const bob = net.member(toHex(randomBytes(32)));
+  const carol = net.member(toHex(randomBytes(32)));
+  // The computer's groups are the phone's: it sends nothing to any member itself, and has no group state.
+  const nowhere: GroupTransport = {
+    post: async () => assert.fail('sent from the computer'),
+    signal: async () => assert.fail('sent from the computer'),
+  };
+  const onDell = new Groups(EMPTY_GROUPS, async () => undefined, async () => assert.fail('no group state on the computer'));
+  pixel.links.useGroups(onPixel.groups, onPixel.transport);
+  dell.links.useGroups(onDell, nowhere);
+  // Whether a file is still on the relay: taken by someone else, left there.
+  const onRelay = async (ref: FileRef) => {
+    try {
+      await takeFile(relay, { ...ref, id: newFileId() }, undefined, true);
+      return true;
+    } catch (error) {
+      if (error instanceof FileGoneError) return false;
+      throw error;
+    }
+  };
+  const photo = { name: 'photo.jpg', mime: 'image/jpeg', kind: 'photo' as const };
+  // What the computer did, through the phone, to the members, and what came of it back to the computer.
+  const round = async () => {
+    await dell.links.settled();
+    await take(pixel);
+    await pixel.links.settled();
+    await net.settle();
+    await pixel.links.settled();
+    await take(dell);
+  };
+
+  // A group from before linking, with a message from Bob.
+  const id = await onPixel.groups.create('Φίλοι', [bob.identity, carol.identity], onPixel.transport);
+  await net.settle();
+  await bob.groups.send(id, 'before the computer', bob.transport);
+  await net.settle();
+  // Linked: the group comes, then its messages with the history.
+  await linkUp(pixel, dell);
+  await until(async () => {
+    await take(dell);
+    return onDell.messages(id).some((m) => m.text === 'before the computer');
+  });
+  assert.deepEqual(
+    onDell.list().map((x) => [x.name, x.admin, x.status]),
+    [['Φίλοι', true, 'in']],
+  );
+  const seats = await onDell.members(id);
+  assert.deepEqual(
+    seats.filter((m) => m.me).map((m) => m.about?.id),
+    [account],
+  );
+  assert.deepEqual(
+    seats
+      .filter((m) => !m.me)
+      .map((m) => m.about?.id)
+      .sort(),
+    [bob.identity, carol.identity].sort(),
+  );
+
+  // Bob writes: the computer has it too, unread there until read, and read there is read on the phone.
+  await bob.groups.send(id, 'hello both', bob.transport);
+  await round();
+  assert.equal(onDell.messages(id)[onDell.messages(id).length - 1].text, 'hello both');
+  assert.equal(onDell.list()[0].unread, 2);
+  await onDell.markRead(id);
+  await round();
+  assert.equal(onPixel.groups.list()[0].unread, 0);
+
+  // The computer writes: the phone sends it to the group from the account, and the computer keeps it once.
+  await onDell.send(id, 'from the computer', nowhere);
+  await round();
+  const said = bob.groups.messages(id).find((m) => m.text === 'from the computer');
+  assert.equal(said?.from, account);
+  assert.equal(onPixel.groups.messages(id).find((m) => m.text === 'from the computer')?.tag, said?.tag);
+  assert.equal(onDell.messages(id).filter((m) => m.text === 'from the computer').length, 1);
+
+  // Renamed, and Carol taken out, on the computer, as the admin: the phone does it for everyone.
+  await onDell.rename(id, 'Νέο όνομα', nowhere);
+  await onDell.remove(id, seats.find((m) => m.about?.id === carol.identity)!.leaf, nowhere);
+  await round();
+  assert.equal(bob.groups.list()[0].name, 'Νέο όνομα');
+  assert.equal(carol.groups.list()[0].status, 'out');
+  assert.equal(onDell.list()[0].name, 'Νέο όνομα');
+  assert.deepEqual(
+    (await onDell.members(id)).map((m) => m.about?.id).sort(),
+    [account, bob.identity].sort(),
+  );
+
+  // Bob's photo comes to the computer as where it waits for the group, and stays there for the
+  // others once the computer took it.
+  const bobPhoto = randomBytes(50_000);
+  await sendGroupFile(bob.groups, id, relay, bytesSource(bobPhoto), photo, undefined, bob.transport);
+  await round();
+  const bobs = onDell.messages(id).find((m) => m.from === bob.identity && m.file)!.file!;
+  assert.deepEqual(await readFile((await takeGroupFile(onDell, id, relay, bobs))!), bobPhoto);
+  await round();
+  assert.equal(await onRelay(bobs), true);
+
+  // The computer's photo goes to the group from where it put it; the phone keeps it as its own, to
+  // take from there too, and the computer keeps it once.
+  const dellPhoto = randomBytes(40_000);
+  await sendGroupFile(onDell, id, relay, bytesSource(dellPhoto), photo, undefined, nowhere);
+  await round();
+  const toBob = bob.groups.messages(id).find((m) => m.from === account && m.file)!.file!;
+  assert.deepEqual(await readFile((await takeGroupFile(bob.groups, id, relay, toBob))!), dellPhoto);
+  assert.ok(onPixel.groups.messages(id).find((m) => m.from === '' && m.file)?.file?.from);
+  assert.equal(onDell.messages(id).filter((m) => m.from === '' && m.file).length, 1);
+
+  // The phone's own photo comes to the computer as a copy of its own, gone from the relay once the
+  // computer took it; the one for the members stays there for them.
+  const pixelPhoto = randomBytes(30_000);
+  await sendGroupFile(onPixel.groups, id, relay, bytesSource(pixelPhoto), photo, undefined, onPixel.transport);
+  await round();
+  const copy = onDell.messages(id).find((m) => m.from === '' && m.file?.from)!.file!;
+  const forMembers = bob.groups.messages(id).filter((m) => m.from === account && m.file).pop()!.file!;
+  assert.deepEqual(await readFile((await takeGroupFile(onDell, id, relay, copy))!), pixelPhoto);
+  await round();
+  assert.equal(await onRelay(copy), false);
+  assert.equal(await onRelay(forMembers), true);
+
+  // What stays on the phone: making a group, and group calls.
+  await assert.rejects(onDell.create('mine', [], nowhere));
+  await assert.rejects(onDell.call(id, { id: 'ab'.repeat(8), kind: 'start', at: Date.now(), video: false }, nowhere));
+
+  // Closed from the computer: the phone closes it for everyone. Then deleted on both.
+  await onDell.leave(id, nowhere);
+  await round();
+  assert.equal(bob.groups.list()[0].status, 'out');
+  assert.equal(onDell.list()[0].status, 'out');
+  await onDell.forget(id);
+  await round();
+  assert.deepEqual(onPixel.groups.list(), []);
+  assert.deepEqual(onDell.list(), []);
+
+  // A group made after linking comes whole; unlinked, the computer's groups go.
+  const later = await onPixel.groups.create('Μετά', [bob.identity], onPixel.transport);
+  await net.settle();
+  await round();
+  assert.deepEqual(
+    onDell.list().map((x) => x.id),
+    [later],
+  );
+  assert.ok(onDell.messages(later).some((m) => m.note));
+  await pixel.links.unlink(pixel.links.devices()[0].id);
+  await take(dell);
+  await until(() => onDell.list().length === 0);
 
   for (const p of [pixel, dell]) p.links.close();
 });

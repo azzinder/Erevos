@@ -814,14 +814,14 @@ export class PublicGroups extends Groups {
     return kept !== undefined && marked(kept.mutes, kept.me);
   }
 
-  send(id: string, text: string, transport: GroupTransport): Promise<void> {
+  send(id: string, text: string, transport: GroupTransport, tag?: string): Promise<void> {
     if (this.mutedHere(id)) return Promise.reject(new Error(t('An admin muted you in this group.')));
-    return super.send(id, text, transport);
+    return super.send(id, text, transport, tag);
   }
 
-  sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport): Promise<void> {
+  sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport, tag?: string): Promise<void> {
     if (this.mutedHere(id)) return Promise.reject(new Error(t('An admin muted you in this group.')));
-    return super.sendFile(id, ref, offer, ms, transport);
+    return super.sendFile(id, ref, offer, ms, transport, tag);
   }
 
   // A public group's members come through its link, not from contacts.

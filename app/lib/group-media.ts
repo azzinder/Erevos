@@ -48,9 +48,13 @@ export async function takeGroupFile(groups: Groups, id: string, own: Relay, ref:
   return null;
 }
 
-/** The files of others' messages to take by themselves: still on the relay, up to AUTO_TAKE, and not tried yet (by file id). */
+/**
+ * The files of messages to take by themselves: still on the relay, up to AUTO_TAKE, and not tried
+ * yet (by file id). One of this phone's own is there only when another device of the account sent
+ * it, or the phone put it there for this one (lib/devices.ts).
+ */
 export function filesToTake(messages: GroupMessage[], tried: Set<string>): FileRef[] {
-  return messages.flatMap((m) => (m.from && m.file?.from && m.file.size <= AUTO_TAKE && !tried.has(m.file.id) ? [m.file] : []));
+  return messages.flatMap((m) => (m.file?.from && m.file.size <= AUTO_TAKE && !tried.has(m.file.id) ? [m.file] : []));
 }
 
 /** The type of a voice message's sound, from how it starts: AAC from a phone, Opus from a computer. */

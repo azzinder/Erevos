@@ -1,5 +1,6 @@
 import { readOffer, type FileOffer } from '../lib/attachments';
-import { checkedPlace, checkedSynced, type Place, type Synced } from '../lib/link-wire';
+import { isGroupId } from '../lib/group-signal';
+import { checkedPlace, checkedSeat, checkedSynced, type GroupSeat, type Place, type Synced } from '../lib/link-wire';
 
 import { sealedFile } from './sealed-file';
 
@@ -12,6 +13,9 @@ import { sealedFile } from './sealed-file';
 
 /** What of the history still goes to a device: from `since` (milliseconds, 0 for all of it) up to `upTo`, photos and files too or not, and how many of those messages went. */
 export type Job = { since: number; files: boolean; upTo: number; done: number };
+
+/** On the primary: what a device was last told of a group: a mark of what it said of it (lib/link-wire.ts, mirrorMark), and its last message told. */
+export type Told = { meta: string; last: string };
 
 export type Peer = {
   /** The identity of its link key, hex. */
@@ -35,6 +39,8 @@ export type Peer = {
   history: Job | null;
   files: boolean;
   behind: number;
+  /** On the primary: what it was last told of each group, by id. */
+  groups: Record<string, Told>;
 };
 
 /**
@@ -67,9 +73,11 @@ export type DevicesData = {
   packs: FileOffer[];
   /** On the primary: photos and files left on the relay for devices still to take them. */
   left: Left[];
+  /** On a linked device: the members of each of the account's groups, by the group's id, as the phone said them. */
+  members: Record<string, GroupSeat[]>;
 };
 
-export const EMPTY_DEVICES: DevicesData = { devices: [], primary: null, account: '', link: '', offer: null, answer: null, synced: {}, packs: [], left: [] };
+export const EMPTY_DEVICES: DevicesData = { devices: [], primary: null, account: '', link: '', offer: null, answer: null, synced: {}, packs: [], left: [], members: {} };
 
 export const FILE = 'erevos-devices';
 const BLOCK = 16 * 1024;
@@ -96,6 +104,16 @@ function checkedLeft(value: unknown): Left | null {
   return { relay: v.relay, ids: v.ids, at: v.at, phone: v.phone === true, devices };
 }
 
+function checkedTold(value: unknown): Record<string, Told> {
+  const told: Record<string, Told> = {};
+  if (!value || typeof value !== 'object') return told;
+  for (const [id, t] of Object.entries(value)) {
+    const v = (t ?? {}) as Partial<Record<keyof Told, unknown>>;
+    if (isGroupId(id) && isText(v.meta) && isText(v.last)) told[id] = { meta: v.meta, last: v.last };
+  }
+  return told;
+}
+
 function checkedPeer(value: unknown): Peer | null {
   const v = (value ?? {}) as Partial<Record<keyof Peer, unknown>>;
   const at = checkedPlace(v.at);
@@ -113,6 +131,7 @@ function checkedPeer(value: unknown): Peer | null {
     history: checkedJob(v.history),
     files: v.files === true,
     behind: isTime(v.behind) ? v.behind : 0,
+    groups: checkedTold(v.groups),
   };
 }
 
@@ -128,6 +147,12 @@ function checked(value: unknown): DevicesData {
       if (one && one.identity === id) synced[id] = one;
     }
   }
+  const members: Record<string, GroupSeat[]> = {};
+  if (v.members && typeof v.members === 'object') {
+    for (const [id, seats] of Object.entries(v.members)) {
+      if (isGroupId(id) && Array.isArray(seats)) members[id] = seats.map(checkedSeat).filter((s): s is GroupSeat => s !== null);
+    }
+  }
   return {
     devices: Array.isArray(v.devices) ? v.devices.map(checkedPeer).filter((p): p is Peer => p !== null) : [],
     primary: checkedPeer(v.primary),
@@ -138,6 +163,7 @@ function checked(value: unknown): DevicesData {
     synced,
     packs: Array.isArray(v.packs) ? v.packs.map(readOffer).filter((o): o is FileOffer => o !== null) : [],
     left: Array.isArray(v.left) ? v.left.map(checkedLeft).filter((l): l is Left => l !== null).slice(-MAX_LEFT) : [],
+    members,
   };
 }
 

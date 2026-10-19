@@ -945,7 +945,11 @@ The chats then come to the computer, and after them the messages chosen.
 - **Calls** ring on the phone and on the computer. Answer on either: the other stops ringing, and says it was
   answered on another device. Turning a call down on one turns it down on both. The computer calls through the phone
   too; the call itself then goes straight between the computer and the contact, encrypted between them, and the phone
-  has to stay on only to set it up. **Groups** stay on the phone for now.
+  has to stay on only to set it up.
+- **Groups** are on the computer too, with their messages, photos, files and voice messages. Write in them, add and
+  take out members, rename one or leave it, there as on the phone: the phone does it for the computer, as its own. A
+  photo or file the phone keeps goes to the computer as a copy on the relay, deleted there once the computer took it.
+  Making a group, public groups and group calls stay on the phone for now.
 - **Hidden chats and second passwords** are never linked. A chat moved into hidden chats on the phone leaves the
   computer. A space a second password opens links only from inside it, to devices of its own.
 - **Bring over messages again**, on the phone, sends a period of the history again; what the computer has already is
@@ -1129,8 +1133,8 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   more than four people, through a server the call moves to by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).
-- **More systems:** groups on linked devices too; the account and its calls are on a computer already, see
-  [Linked devices](#devices). Linux, macOS and Windows are here, see [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
+- **More systems:** public groups and group calls on linked devices too; the account, its calls and its groups are on
+  a computer already, see [Linked devices](#devices). Linux, macOS and Windows are here, see [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
   [On Sailfish OS](#sailfish); and so are backups, see [Backups](#backup).
 
 ## Questions {#faq}

@@ -79,7 +79,8 @@ Linking, by QR code and a safety check:
 - **From a contact:** the phone opens it as always, keeps it, and passes it on to each linked device,
   end-to-end encrypted in that device's link. The device opens it as if it came from the contact:
   the same tags, marks, timers and voice parts. Call signals go as the phone decides for each call
-  (see Calls, below); group signals are not passed on (groups stay on the phone for now).
+  (see Calls, below); group signals (invitations, key packages, welcomes) are not passed on: the
+  phone is the group's member (see Groups, below).
 - **Written on the computer:** the device seals it for the phone, which seals it for the contact as
   it came (whatever fields a later version adds go on with it), saying where its own queue is. A
   text, voice message, photo or file also goes into the phone's history as the phone's own, with the
@@ -171,8 +172,26 @@ device ends a call it has.
 
 ### Groups
 
-Groups (MLS) stay on the phone for now: the phone is the group's member. Passing group messages on
-works the same way as a contact's, and is the next step.
+The phone stays the group's member (MLS): it alone holds the group's keys, and no member sees a new
+device, as no contact does. Each linked device keeps the account's groups as the phone tells it, in
+its link: a group as it is now (name, admin or not, in or leaving or out, who was asked, who is in
+it, until when it was read), whenever that changes, and each message the device was not told of yet,
+in order, told apart by sender and tag. When a device is linked, or caught up after its outbox was
+full, it is told every group first; their messages up to then go in the history packs with the
+chats', from the period chosen, and those after as they come.
+
+What is written or done on a device goes to the phone, which does it as its own: a message goes to
+the group from the account, with the tag the device kept it by, so the device does not keep it
+twice; adding and taking out members and renaming (when the account is the admin), leaving, deleting
+a closed group and reading. A photo, file or voice message the device sends stays where the device
+put it, on its relay, as a member's does: the members, the phone among them, take it from there. One
+that came from a member goes to the devices as where it waits for the members; one the phone keeps
+(its own, or taken already) goes as a copy on the relay for the devices, deleted there once each
+took it, as for a chat's.
+
+A device makes and joins no group: it has no MLS state of its own. New groups, public groups
+(lib/public-groups.ts: their keys made for each group, their doors and moderation) and group calls
+stay on the phone for now; public groups are not told to the devices at all.
 
 ### Older versions
 
@@ -185,6 +204,8 @@ after restoring one, link the devices again.
 - `lib/link-code.ts`: the QR code's link, and the safety code.
 - `lib/link-wire.ts`: what goes between the devices, and which messages are passed on.
 - `lib/linked-calls.ts`: on the phone, where each call signal goes: who rings, who has the call.
+- `lib/groups.ts`: on a linked device, the groups kept as the phone says them (`mirror`), and what
+  is done in them goes through it (`GroupLink`).
 - `lock/devices-data.ts`: each space's links, sealed with the space's key.
 - `lib/devices.ts`: linking, the link conversations, passing messages on, copying contacts and
   history.

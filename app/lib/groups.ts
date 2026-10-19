@@ -13,13 +13,14 @@ import {
   type GroupMessage,
 } from '../lock/group-data';
 import { newTag } from '../lock/history';
-import { offerRef, readOffer, type FileOffer } from './attachments';
+import { offerRef, readOffer, type FileFrom, type FileOffer } from './attachments';
 import * as core from './core';
 import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { decodeGroupCall, type GroupCallSignal } from './group-call-signal';
 import { cleanGroupName, isGroupId, type GroupSignal } from './group-signal';
 import { t, mark } from './i18n';
+import type { GroupAsk } from './link-wire';
 import { moderated } from './public-rules';
 import { MAX_VOICE_MS } from './voice';
 
@@ -47,6 +48,10 @@ import { MAX_VOICE_MS } from './voice';
 //
 // Every call runs after the one before it ends, as in lib/e2e.ts, and the MLS state is kept before
 // anything it made is handed back.
+//
+// On a device linked to the phone that holds the account (lib/devices.ts), the groups here are the
+// phone's, kept as it says them (`mirror`), and what is done in one, the phone does (`GroupLink`):
+// this device has no MLS state of its own, and makes and joins no group.
 
 /** The start of a group message, after which comes the message sealed for its member. A chat's
  *  packets start with 1 then 1 or 2 (crates/erevos-core). */
@@ -66,6 +71,18 @@ export type GroupTransport = {
 export type Me = Omit<About, 'seal'>;
 
 export type GroupMember = { leaf: number; about: About | null; me: boolean };
+
+/** On a linked device (lib/devices.ts): how the groups here are the phone's. */
+export type GroupLink = {
+  /** Whether the groups here are the phone's now. */
+  through(): boolean;
+  /** Has the phone do something in a group. */
+  ask(id: string, ask: GroupAsk): Promise<void>;
+  /** A group's members, as the phone said them. */
+  members(id: string): GroupMember[];
+  /** Says a photo, file or voice message of a group was taken here from where it waited. */
+  took(from: FileFrom): void;
+};
 
 /** A group as the screens show it. */
 export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
@@ -131,6 +148,7 @@ export class Groups {
   private readonly listeners = new Set<() => void>();
   private readonly callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
   private readonly messageListeners = new Set<(group: string) => void>();
+  private link: GroupLink | null = null;
 
   constructor(data: GroupData, store: (data: GroupData) => Promise<void>, me: () => Promise<Me>) {
     this.data = data;
@@ -166,6 +184,31 @@ export class Groups {
     this.listeners.forEach((listener) => listener());
   }
 
+  /** How the groups here are the phone's, on a linked device (lib/devices.ts), or none. */
+  useLink(link: GroupLink | null): void {
+    this.link = link;
+  }
+
+  // The link, while the groups here are the phone's.
+  private through(): GroupLink | null {
+    return this.link?.through() ? this.link : null;
+  }
+
+  /** Every group as kept, with its messages. */
+  all(): readonly Group[] {
+    return this.data.groups;
+  }
+
+  /** On a linked device: the groups as the phone said them, made by `update` from those here, with the groups where a member's message came. */
+  mirror(update: (groups: Group[]) => { groups: Group[]; came: string[] }): Promise<void> {
+    return this.run(async () => {
+      const { groups, came } = update(this.data.groups);
+      await this.save({ ...this.data, groups });
+      this.changed();
+      for (const id of came) this.messageListeners.forEach((listener) => listener(id));
+    });
+  }
+
   protected run<T>(call: () => Promise<T>): Promise<T> {
     const next = this.queue.catch(() => undefined).then(call);
     this.queue = next;
@@ -195,6 +238,7 @@ export class Groups {
 
   // The MLS state, made the first time, saying where this phone's group messages come to now.
   protected async state(): Promise<Uint8Array> {
+    if (this.through()) throw new Error(t('Make or join groups on the phone that holds this account.'));
     const me = await this.me();
     let seal = this.data.seal ? fromBase64(this.data.seal) : null;
     if (!seal) seal = randomBytes(32);
@@ -242,6 +286,8 @@ export class Groups {
 
   /** A group's members as its MLS state has them; none once out of it. */
   async members(id: string): Promise<GroupMember[]> {
+    const link = this.through();
+    if (link) return link.members(id);
     const group = this.find(id);
     if (!group || group.status === 'out' || !this.data.state) return [];
     return this.membersIn(id);
@@ -260,8 +306,11 @@ export class Groups {
     return this.run(async () => {
       const group = this.find(id);
       if (!group) return;
+      const unread = group.messages.some((m) => m.from && !m.note && m.at > group.readAt);
       await this.save(this.withGroup({ ...group, readAt: Date.now() }));
       this.changed();
+      // On a linked device, read on the phone too.
+      if (unread) await this.through()?.ask(id, { t: 'read' });
     });
   }
 
@@ -299,20 +348,26 @@ export class Groups {
     const group = this.find(id);
     if (!group?.admin || group.status !== 'in') throw new Error(t('Only the group’s admin adds members.'));
     const fresh = identities.filter((identity) => !group.asked.includes(identity));
+    const link = this.through();
+    if (link) {
+      if (fresh.length > 0) await link.ask(id, { t: 'add', identities: fresh });
+      return;
+    }
     await this.save(this.withGroup({ ...group, asked: [...group.asked, ...fresh] }));
     this.changed();
     for (const identity of fresh) await transport.signal(identity, { group: id, kind: 'ask' });
   }
 
-  /** Sends a message to the group. */
-  send(id: string, text: string, transport: GroupTransport): Promise<void> {
+  /** Sends a message to the group; with `tag`, the one a linked device kept it by. */
+  send(id: string, text: string, transport: GroupTransport, tag = newTag()): Promise<void> {
     return this.run(async () => {
       const group = this.find(id);
       if (!group || group.status !== 'in') throw new Error(t('You are not in this group any more.'));
       const said = text.trim().slice(0, MAX_GROUP_TEXT);
       if (!said) return;
-      const tag = newTag();
-      await this.broadcast(id, encodeSaid({ t: 'text', text: said, tag }), transport);
+      const link = this.through();
+      if (link) await link.ask(id, { t: 'text', text: said, tag });
+      else await this.broadcast(id, encodeSaid({ t: 'text', text: said, tag }), transport);
       const now = this.find(id)!;
       await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: said, tag }]), readAt: Date.now() }));
       this.changed();
@@ -321,15 +376,16 @@ export class Groups {
 
   /**
    * Sends a photo or file, or with `ms` a voice message, to the group: `offer` says where it is on
-   * our relay and its key, and `ref` where it is kept here.
+   * our relay and its key, and `ref` where it is kept here; with `tag`, the one a linked device kept it by.
    */
-  sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport): Promise<void> {
+  sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport, tag = newTag()): Promise<void> {
     return this.run(async () => {
       const group = this.find(id);
       if (!group || group.status !== 'in') throw new Error(t('You are not in this group any more.'));
-      const tag = newTag();
       const voice = ms === undefined ? {} : { ms: Math.round(ms) };
-      await this.broadcast(id, encodeSaid({ t: 'file', file: offer, tag, ...voice }), transport);
+      const link = this.through();
+      if (link) await link.ask(id, { t: 'file', file: offer, tag, ...voice });
+      else await this.broadcast(id, encodeSaid({ t: 'file', file: offer, tag, ...voice }), transport);
       const now = this.find(id)!;
       await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: '', tag, file: ref, ...voice }]), readAt: Date.now() }));
       this.changed();
@@ -340,9 +396,12 @@ export class Groups {
   setFile(id: string, file: FileRef): Promise<boolean> {
     return this.run(async () => {
       const group = this.find(id);
-      if (!group?.messages.some((m) => m.file?.id === file.id)) return false;
+      const was = group?.messages.find((m) => m.file?.id === file.id)?.file;
+      if (!group || !was) return false;
       await this.save(this.withGroup({ ...group, messages: group.messages.map((m) => (m.file?.id === file.id ? { ...m, file } : m)) }));
       this.changed();
+      // On a linked device the phone hears of it: a copy it put on the relay for this device goes then.
+      if (was.from) this.through()?.took(was.from);
       return true;
     });
   }
@@ -350,6 +409,7 @@ export class Groups {
   /** Says something about a group call: to the member `signal.to` names, or else to every member. */
   call(id: string, signal: GroupCallSignal, transport: GroupTransport): Promise<void> {
     return this.run(async () => {
+      if (this.through()) throw new Error(t('Group calls ring on the phone that holds this account, for now. Call from there.'));
       if (this.find(id)?.status !== 'in') throw new Error(t('You are not in this group any more.'));
       const sealed = await core.group.seal(this.kept(), fromHex(id), encodeSaid({ t: 'call', call: signal }));
       await this.save({ ...this.data, state: toBase64(sealed.state) });
@@ -378,6 +438,8 @@ export class Groups {
       if (!group?.admin || group.status !== 'in') throw new Error(t('Only the group’s admin renames it.'));
       const clean = cleanGroupName(name);
       if (!clean) throw new Error(t('Give the group a name.'));
+      const link = this.through();
+      if (link) return link.ask(id, { t: 'name', name: clean });
       await this.broadcast(id, encodeSaid({ t: 'name', name: clean }), transport);
       await this.save(this.withGroup({ ...this.find(id)!, name: clean }));
       this.changed();
@@ -389,6 +451,8 @@ export class Groups {
     return this.run(async () => {
       const group = this.find(id);
       if (!group?.admin || group.status !== 'in') throw new Error(t('Only the group’s admin takes members out.'));
+      const link = this.through();
+      if (link) return link.ask(id, { t: 'remove', leaf });
       const before = await this.membersIn(id);
       const removed = await core.group.remove(this.kept(), fromHex(id), leaf);
       await this.save({ ...this.data, state: toBase64(removed.state) });
@@ -404,6 +468,8 @@ export class Groups {
     return this.run(async () => {
       const group = this.find(id);
       if (!group || group.status !== 'in') return;
+      const link = this.through();
+      if (link) return link.ask(id, { t: 'leave' });
       if (group.admin) {
         // The admin cannot be taken out by anyone: the group ends for every member.
         const before = await this.membersIn(id);
@@ -425,6 +491,8 @@ export class Groups {
   /** Forgets a group on this phone, with its messages. */
   forget(id: string): Promise<void> {
     return this.run(async () => {
+      // On a linked device the phone forgets it too: else it would say it again.
+      await this.through()?.ask(id, { t: 'forget' });
       if (this.data.state) {
         const state = await core.group.forget(this.kept(), fromHex(id));
         this.data = { ...this.data, state: toBase64(state) };

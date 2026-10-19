@@ -184,7 +184,7 @@ test('a voice message is a small file, and what leaves the group here takes its 
   assert.ok(hasChunks(said(bob, id)[0].file!));
 });
 
-test('what is taken by itself: others\', still on the relay, small enough, not tried', () => {
+test('what is taken by itself: still on the relay, small enough, not tried', () => {
   const file = (size: number, from = true): FileRef => ({
     name: 'a',
     mime: 'image/jpeg',
@@ -200,8 +200,10 @@ test('what is taken by itself: others\', still on the relay, small enough, not t
   const someone = 'ab'.repeat(32);
   const small = file(1000);
   const tried = file(1000);
-  const list = [m(someone, small), m('', file(1000)), m(someone, file(AUTO_TAKE + 1)), m(someone, file(1000, false)), m(someone, tried), { at: 2, from: someone, text: 'hi', tag: '' }];
-  assert.deepEqual(filesToTake(list, new Set([tried.id])), [small]);
+  // One of this phone's own is on the relay when another device of the account sent it.
+  const own = file(1000);
+  const list = [m(someone, small), m('', own), m(someone, file(AUTO_TAKE + 1)), m(someone, file(1000, false)), m(someone, tried), { at: 2, from: someone, text: 'hi', tag: '' }];
+  assert.deepEqual(filesToTake(list, new Set([tried.id])), [small, own]);
   assert.equal(voiceMime(Uint8Array.from([0x1a, 0x45, 0xdf, 0xa3, 1])), 'audio/webm');
   assert.equal(voiceMime(new Uint8Array(8)), 'application/octet-stream');
 });

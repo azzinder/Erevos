@@ -411,8 +411,8 @@ export default function Home() {
             </Text>
           </Pressable>
         )}
-        {/* Groups stay on the phone that holds the account (lib/devices.ts). */}
-        {(languages ? [] : MENU).filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || canPublicGroup())).map((item) => (
+        {/* A linked device has the phone's groups, but makes and joins none (lib/devices.ts). */}
+        {(languages ? [] : MENU).filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"

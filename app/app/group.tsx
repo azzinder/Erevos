@@ -13,6 +13,7 @@ import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { currentGroupCall } from '../lib/group-call';
+import { linkedRole } from '../lib/devices';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
 import { MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
@@ -123,6 +124,11 @@ export default function GroupScreen() {
   // Starts a call, or joins the one going on, as it is: voice or video.
   async function call(asked: boolean) {
     setNote('');
+    // On a linked device the group is the phone's, and so are its calls (lib/devices.ts).
+    if (linkedRole() === 'linked') {
+      setNote(t('Group calls ring on the phone that holds this account, for now. Call from there.'));
+      return;
+    }
     if (currentCall() || currentGroupCall()) {
       setNote(t('There is a call already.'));
       return;
