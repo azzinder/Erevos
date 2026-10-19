@@ -209,6 +209,41 @@ export function matches(f: Fields & { name?: string }, query: string, extra: str
   });
 }
 
+/** A name as compared: its words in any order, without case or accents. */
+function nameKey(name: string): string {
+  return plain(name).split(/\s+/).filter((w) => /\p{L}/u.test(w)).sort().join(' ');
+}
+
+// Whether two contacts of the same name are one: alike in a number or an email, or neither has any.
+function sameReach(a: Fields, b: Fields): boolean {
+  if (a.phones.length + a.emails.length === 0 && b.phones.length + b.emails.length === 0) return true;
+  return (
+    a.phones.some((p) => b.phones.some((q) => sameNumber(p.value, q.value))) ||
+    a.emails.some((e) => b.emails.some((f) => e.value.trim().toLowerCase() === f.value.trim().toLowerCase()))
+  );
+}
+
+/**
+ * The contacts of `incoming` (a vCard file's, the SIM's) not kept already, in `kept` or earlier
+ * in `incoming` itself: one is kept when a contact has its name and a number or email alike, or
+ * neither has any.
+ */
+export function notKept<T extends Fields & { name: string }>(incoming: T[], kept: (Fields & { name: string })[]): T[] {
+  const known = new Map<string, Fields[]>();
+  const keep = (c: Fields & { name: string }) => {
+    const key = nameKey(c.name);
+    known.set(key, [...(known.get(key) ?? []), c]);
+  };
+  kept.forEach(keep);
+  const out: T[] = [];
+  for (const c of incoming) {
+    if ((known.get(nameKey(c.name)) ?? []).some((k) => sameReach(k, c))) continue;
+    out.push(c);
+    keep(c);
+  }
+  return out;
+}
+
 /** A contact, for finding the same person kept twice: its key, and its fields. */
 export type Comparable = { key: string; name: string; fields: Fields };
 
@@ -240,7 +275,7 @@ export function findDuplicates(contacts: Comparable[]): { keys: string[]; why: S
     else join(before, i, reason);
   };
   contacts.forEach((c, i) => {
-    const name = plain(c.name).split(/\s+/).filter((w) => /\p{L}/u.test(w)).sort().join(' ');
+    const name = nameKey(c.name);
     if (name) meet(`n:${name}`, i, 'name');
     for (const p of c.fields.phones) {
       const d = digits(p.value);

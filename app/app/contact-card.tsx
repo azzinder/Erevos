@@ -6,6 +6,7 @@ import { ContactFace, forgetPhoneContactPhoto, usePhoneContactPhoto } from '../c
 import { Button, Card, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { groupsByTitle, phoneCard, type Card as ContactCard } from '../lib/contact-book';
+import { saveVCards, vcfName } from '../lib/contact-files';
 import { birthdayComing, birthdayLabel, kindLabel, parseBirthday, type Entry } from '../lib/contacts';
 import { t } from '../lib/i18n';
 import { pickAvatar } from '../lib/pick-avatar';
@@ -143,6 +144,17 @@ export default function ContactCardScreen() {
     }
   }
 
+  async function saveFile() {
+    if (!card) return;
+    setNote('');
+    try {
+      const saved = await saveVCards([card], vcfName(card.name));
+      if (saved) setNote(t('Saved as {name}. The file is outside Erevos: anyone who has it can read this contact.', { name: saved }));
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
   // In a group, or out of it, in Android's contacts: in the contact's raw contact of the group's account.
   async function toggleGroup(group: PhoneGroup) {
     if (!card?.phone) return;
@@ -259,6 +271,7 @@ export default function ContactCardScreen() {
 
       <Row wrap>
         <Button title={t('Edit')} kind="secondary" compact onPress={() => router.push(`/contact-edit?id=${card.phone?.id ?? 0}`)} />
+        <Button title={t('Save as a .vcf file')} kind="secondary" compact onPress={() => void saveFile()} />
         <Button title={t('Delete')} kind="danger" compact onPress={() => void remove()} />
       </Row>
       {note ? <Text tone="muted">{note}</Text> : null}

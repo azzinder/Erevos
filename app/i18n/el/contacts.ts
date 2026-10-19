@@ -105,4 +105,33 @@ export const contacts: Record<string, string> = {
   'Choose groups': 'Επιλογή ομάδων',
   'No groups yet. Make one under Groups in the menu of Contacts.': 'Καμία ομάδα ακόμα. Φτιάξε μία στις Ομάδες, στο μενού των Επαφών.',
   '{name} is kept in another account than the group {group}, so it cannot join it.': 'Η επαφή {name} φυλάγεται σε άλλον λογαριασμό από την ομάδα {group}, οπότε δεν μπορεί να μπει σε αυτήν.',
+
+  // vCard files.
+  'Import from a .vcf file': 'Εισαγωγή από αρχείο .vcf',
+  'Contacts another phone or app saved as a vCard': 'Επαφές που αποθήκευσε άλλο τηλέφωνο ή εφαρμογή ως vCard',
+  'Save as a .vcf file': 'Αποθήκευση ως αρχείο .vcf',
+  'The {n} contact shown, in a folder you choose': 'Η {n} επαφή που φαίνεται, σε φάκελο που διαλέγεις',
+  'The {n} contacts shown, in a folder you choose': 'Οι {n} επαφές που φαίνονται, σε φάκελο που διαλέγεις',
+  'Saved as {name}. The file is outside Erevos: anyone who has it can read these contacts.':
+    'Αποθηκεύτηκε ως {name}. Το αρχείο είναι έξω από το Erevos: όποιος το έχει μπορεί να διαβάσει αυτές τις επαφές.',
+  'Saved as {name}. The file is outside Erevos: anyone who has it can read this contact.':
+    'Αποθηκεύτηκε ως {name}. Το αρχείο είναι έξω από το Erevos: όποιος το έχει μπορεί να διαβάσει αυτή την επαφή.',
+  'Import contacts': 'Εισαγωγή επαφών',
+  'Choose a .vcf file (a vCard), as other phones and apps save their contacts. Erevos reads it here and sends it nowhere.':
+    'Διάλεξε ένα αρχείο .vcf (vCard), όπως αποθηκεύουν τις επαφές τους άλλα τηλέφωνα και εφαρμογές. Το Erevos το διαβάζει εδώ και δεν το στέλνει πουθενά.',
+  'Choose a .vcf file': 'Επιλογή αρχείου .vcf',
+  'There are no contacts in {file}.': 'Δεν υπάρχουν επαφές στο {file}.',
+  'The file is larger than {n} MB.': 'Το αρχείο είναι μεγαλύτερο από {n} MB.',
+  'It has {n} contact.': 'Έχει {n} επαφή.',
+  'It has {n} contacts.': 'Έχει {n} επαφές.',
+  '{n} of them is on the phone already, and is left out.': '{n} από αυτές είναι ήδη στο τηλέφωνο, και παραλείπεται.',
+  '{n} of them are on the phone already, and are left out.': '{n} από αυτές είναι ήδη στο τηλέφωνο, και παραλείπονται.',
+  'Importing… {done} of {total}': 'Εισαγωγή… {done} από {total}',
+  'Import {n} contact': 'Εισαγωγή {n} επαφής',
+  'Import {n} contacts': 'Εισαγωγή {n} επαφών',
+  'Nothing new to import.': 'Τίποτα καινούργιο για εισαγωγή.',
+  '{n} contact imported.': '{n} επαφή εισήχθη.',
+  '{n} contacts imported.': '{n} επαφές εισήχθησαν.',
+  '{n} contact could not be saved.': '{n} επαφή δεν αποθηκεύτηκε.',
+  '{n} contacts could not be saved.': '{n} επαφές δεν αποθηκεύτηκαν.',
 };

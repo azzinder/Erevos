@@ -18,6 +18,7 @@ import {
   kindOf,
   matches,
   mergeFields,
+  notKept,
   parseBirthday,
   phoneFields,
   phoneSave,
@@ -252,4 +253,27 @@ test("another app's new contact is checked before it fills the form", () => {
   assert.equal(askedFields('not json'), null);
   assert.equal(askedFields(JSON.stringify({ note: 'only a note' })), null);
   assert.equal(birthdayText(parseBirthday('--12-24')!), '--12-24');
+});
+
+test('what is not on the phone yet, of a file or a SIM', () => {
+  const kept = [
+    { ...maria, name: 'Μαρία Παπαδοπούλου' },
+    { ...EMPTY_FIELDS, given: 'Γιώργος', name: 'Γιώργος' },
+  ];
+  const incoming = [
+    // The same name the other way round, and the same number written otherwise: kept already.
+    { ...EMPTY_FIELDS, name: 'Παπαδοπουλου Μαρια', phones: [{ value: '6912345678', kind: 'mobile' as const, label: '' }] },
+    // The same name, no number or email on either: kept already.
+    { ...EMPTY_FIELDS, name: 'γιώργος' },
+    // The same name, another number: someone else.
+    { ...EMPTY_FIELDS, name: 'Μαρία Παπαδοπούλου', phones: [{ value: '210 999 9999', kind: 'home' as const, label: '' }] },
+    { ...EMPTY_FIELDS, name: 'Ελένη', emails: [{ value: 'eleni@example.org', kind: 'home' as const, label: '' }] },
+    // Twice in the file: once.
+    { ...EMPTY_FIELDS, name: 'Ελένη', emails: [{ value: 'Eleni@Example.org', kind: 'work' as const, label: '' }] },
+  ];
+  assert.deepEqual(
+    notKept(incoming, kept).map((c) => c.name),
+    ['Μαρία Παπαδοπούλου', 'Ελένη'],
+  );
+  assert.deepEqual(notKept([], kept), []);
 });

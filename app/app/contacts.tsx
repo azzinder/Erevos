@@ -7,6 +7,7 @@ import { ContactFace, usePhoneContactPhoto } from '../components/contact-face';
 import { MoreIcon, PlusIcon, SearchIcon } from '../components/icons';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
 import { groupsByTitle, groupTitles, phoneCards, type Card as ContactCard } from '../lib/contact-book';
+import { saveVCards, vcfName } from '../lib/contact-files';
 import { matches } from '../lib/contacts';
 import { plural, t } from '../lib/i18n';
 import { contactsReady, contactsStatus, onContactsEvent, phoneGroups, watchContacts, type PhoneGroup } from '../modules/erevos-contacts';
@@ -16,7 +17,8 @@ import { useStyles, useTheme } from '../theme/context';
 // Contacts: the phone's own contacts, from Android's contacts (modules/erevos-contacts), with a
 // search over every field, the favourites, each group's contacts, and a new contact. Read again
 // each time it comes back into view, and when Android's contacts change while it shows (another
-// app, a sync). The menu has the rest: groups (app/contact-groups.tsx).
+// app, a sync). The menu has the rest: groups (app/contact-groups.tsx), and .vcf files in
+// (app/contact-import.tsx) and out: the contacts shown, saved in a folder the owner picks.
 
 /** What the list shows: everyone, the favourites, or a group's contacts (its id). */
 type Filter = 'all' | 'starred' | number;
@@ -86,6 +88,19 @@ export default function Contacts() {
   function go(href: Parameters<typeof router.push>[0]) {
     setMenu(false);
     router.push(href);
+  }
+
+  async function saveShown() {
+    setMenu(false);
+    setNote('');
+    const day = new Date();
+    const name = vcfName(`contacts-${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`);
+    try {
+      const saved = await saveVCards(shown, name);
+      if (saved) setNote(t('Saved as {name}. The file is outside Erevos: anyone who has it can read these contacts.', { name: saved }));
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
   }
 
   if (Platform.OS !== 'android' || !contactsReady()) {
@@ -189,6 +204,14 @@ export default function Contacts() {
       </Pressable>
       <Sheet visible={menu} onClose={() => setMenu(false)} title={t('Contacts')}>
         {allowed ? <MenuRow title={t('Groups')} detail={t('Family, Work, and your own: make, rename, who is in them')} onPress={() => go('/contact-groups')} /> : null}
+        {allowed ? <MenuRow title={t('Import from a .vcf file')} detail={t('Contacts another phone or app saved as a vCard')} onPress={() => go('/contact-import')} /> : null}
+        {allowed && shown.length > 0 ? (
+          <MenuRow
+            title={t('Save as a .vcf file')}
+            detail={plural(shown.length, 'The {n} contact shown, in a folder you choose', 'The {n} contacts shown, in a folder you choose')}
+            onPress={() => void saveShown()}
+          />
+        ) : null}
         <Text variant="caption" tone="muted">
           {t("These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them.")}
         </Text>

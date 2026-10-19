@@ -99,7 +99,6 @@ type NativeContacts = {
   calls(numbers: string[], limit: number): Promise<CallEntry[]>;
   setBirthdays(on: boolean): void;
   readQr(uri: string): Promise<string | null>;
-  saveText(name: string, mime: string, text: string): Promise<boolean>;
   addListener<Name extends keyof ContactsEvents>(name: Name, listener: ContactsEvents[Name]): EventSubscription;
 };
 
@@ -220,11 +219,6 @@ export function setBirthdayReminders(on: boolean): void {
 /** The text of the QR code in a photo (a file:// or content:// address), or null if it has none. */
 export function readQrCode(uri: string): Promise<string | null> {
   return native ? native.readQr(uri) : none();
-}
-
-/** Saves text in a file where the owner chooses, with Android's own picker. False if they went back. */
-export function saveTextFile(name: string, mime: string, text: string): Promise<boolean> {
-  return native ? native.saveText(name, mime, text) : none();
 }
 
 export function onContactsEvent<Name extends keyof ContactsEvents>(name: Name, listener: ContactsEvents[Name]): EventSubscription | null {

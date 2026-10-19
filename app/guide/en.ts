@@ -531,6 +531,11 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
   shows it when they call.
 - **Ringtone:** on a contact, **Choose ringtone** opens Android's own picker, with the phone's sounds and those you
   added; the phone rings with it when that contact calls. **Default ringtone** there gives back the phone's own.
+- **.vcf files:** **Import from a .vcf file** in the menu of Contacts reads a vCard file that another phone or app
+  saved (any of its versions, old Greek phones' too) and saves those not on the phone yet, with their photos and
+  groups, on this phone only or in an account. **Save as a .vcf file** there saves the contacts shown (all of them,
+  the favourites, a group, or what the search found) as one file, in a folder you choose; on a contact, it saves
+  that one. The file is outside Erevos and not sealed: anyone who has it can read the contacts.
 - **Delete** takes the contact off the phone, from every account it is kept in.
 - **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
   Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,
@@ -855,7 +860,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
-| **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. | |
+| **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
