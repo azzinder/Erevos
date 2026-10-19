@@ -9,7 +9,7 @@ import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components
 import { ask } from '../lib/alert';
 import { canRelaySeal } from '../lib/core';
 import { toBase64Url } from '../lib/e2e';
-import { lang, plural, t } from '../lib/i18n';
+import { locale, plural, t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { relayKey } from '../lib/relay';
 import { groupName, smsAddress, smsNumbers } from '../lib/sms-group';
@@ -291,7 +291,7 @@ export default function Sms() {
               </Text>
             ) : null}
             <Text variant="caption" tone="faint">
-              {new Date(m.at).toLocaleString(lang() === 'el' ? 'el-GR' : undefined)}
+              {new Date(m.at).toLocaleString(locale())}
               {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}
               {m.mine ? smsMark(m.state) : ''}
             </Text>

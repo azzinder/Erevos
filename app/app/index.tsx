@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LockIcon, MoreIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { font, fontStyle, Sheet, Text } from '../components/ui';
-import { ask } from '../lib/alert';
 import { canGroup, hasCore } from '../lib/core';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
@@ -95,6 +94,12 @@ export default function Home() {
     router.push('/chat?hidden=open');
   }
   const [menu, setMenu] = useState(false);
+  // The menu's first row turns it into the list of languages.
+  const [languages, setLanguages] = useState(false);
+  const closeMenu = () => {
+    setMenu(false);
+    setLanguages(false);
+  };
   const [now, setNow] = useState(Date.now());
   // The contacts whose phones said they are open, and not long ago (lib/e2e.ts).
   const [online, setOnline] = useState<Set<string>>(new Set());
@@ -309,21 +314,33 @@ export default function Home() {
           {t('New chat')}
         </Text>
       </Pressable>
-      <Sheet visible={menu} onClose={() => setMenu(false)}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            setMenu(false);
-            chooseLanguage();
-          }}
-          style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-        >
-          <Text variant="bodyStrong">{lang() === 'el' ? 'Γλώσσα · Language' : 'Language · Γλώσσα'}</Text>
-          <Text variant="caption" tone="muted">
-            {LANG_LABELS[lang()]}
-          </Text>
-        </Pressable>
-        {MENU.filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || canGroup())).map((item) => (
+      <Sheet visible={menu} onClose={closeMenu} title={languages ? t('Language') : undefined}>
+        {languages ? (
+          // Each language by its own name, for the whole app (lib/i18n.ts). The screens start again in it, here.
+          LANGS.map((l) => (
+            <Pressable
+              key={l}
+              accessibilityRole="button"
+              accessibilityState={{ selected: l === lang() }}
+              onPress={() => {
+                closeMenu();
+                void setLang(l);
+              }}
+              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+            >
+              <Text variant="bodyStrong">{l === lang() ? `${LANG_LABELS[l]}  ✓` : LANG_LABELS[l]}</Text>
+            </Pressable>
+          ))
+        ) : (
+          // Named in English too, so it is found in a language one cannot read.
+          <Pressable accessibilityRole="button" onPress={() => setLanguages(true)} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
+            <Text variant="bodyStrong">{lang() === 'en' ? 'Language · Γλώσσα' : `${t('Language')} · Language`}</Text>
+            <Text variant="caption" tone="muted">
+              {LANG_LABELS[lang()]}
+            </Text>
+          </Pressable>
+        )}
+        {(languages ? [] : MENU).filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || canGroup())).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"
@@ -342,14 +359,6 @@ export default function Home() {
       </Sheet>
     </View>
   );
-}
-
-// English or Greek, for the whole app (lib/i18n.ts). The screens start again in it, here.
-function chooseLanguage() {
-  ask(t('Language'), '', [
-    ...LANGS.map((l) => ({ text: LANG_LABELS[l], onPress: () => void setLang(l) })),
-    { text: t('Cancel'), style: 'cancel' as const },
-  ]);
 }
 
 function IconButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {

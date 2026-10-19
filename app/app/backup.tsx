@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
-import { mark, t } from '../lib/i18n';
+import { locale, mark, t } from '../lib/i18n';
 import {
   CAN_AUTO_BACKUP,
   CAN_BACK_UP,
@@ -299,5 +299,5 @@ function sizeText(bytes: number): string {
 }
 
 function whenText(ms: number): string {
-  return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return new Date(ms).toLocaleString(locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }

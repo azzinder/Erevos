@@ -18,7 +18,7 @@ internet.
 > [What is protected today](#privacy) says exactly what is and is not.
 
 This guide opens from **User guide** in the home screen's menu (the three dots at the top). The search at its top finds any word in it. The guide
-shows in the app's language, see [Language](#start).
+is in English and Greek, and shows in English in the app's other languages, see [Language](#start).
 
 ## Getting started {#start}
 
@@ -38,7 +38,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 
 | In the menu | What it opens |
 | --- | --- |
-| **Language · Γλώσσα** | English or Greek, for the whole app. See Language below. |
+| **Language · Γλώσσα** | The app's language: English, Greek, German, French, Spanish, Italian or Portuguese. See Language below. |
 | **New group** | A group chat with your contacts. See [Group chats](#groups). |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
 | **LoRa radio** | Texts over a Meshtastic radio, kilometres away, without internet; off unless set. See [Over a LoRa radio](#lora). |
@@ -66,13 +66,19 @@ A good first hour:
 
 ### Language
 
-Erevos is in English and in Greek. The first time it starts, it follows the phone's language. To change it, open the
-menu (the three dots) and tap its first row, **Language · Γλώσσα**, then **Ελληνικά** or **English**. The whole app
-changes at once, this guide too.
+Erevos is in English, Greek, German, French, Spanish, Italian and Portuguese. The first time it starts, it follows
+the phone's language if it is one of these, and is in English otherwise. To change it, open the menu (the three
+dots) and tap its first row, **Language · Γλώσσα**: in the other languages it is named in that language and in
+English, such as **Sprache · Language**. Then tap the language, each named in its own words: **Ελληνικά**,
+**English**, **Deutsch**, **Español**, **Français**, **Italiano** or **Português**. The whole app changes at once.
 
+- **This guide** is in English and Greek only: in the other languages it shows in English, and names the buttons as
+  the app does in English. A word new to the app may also show in English in those languages for a while, until it
+  is translated.
 - **Kept on the phone:** the choice is kept on this phone, outside every space, so the password screen shows in it
   too, and every space opens in it. It is not sealed: whoever holds the phone can see which language you chose.
-- **Android's notices** (an incoming call, new messages, Erevos receiving in the background) follow it too.
+- **Android's notices** (an incoming call, new messages, Erevos receiving in the background) are in Greek when Erevos
+  is, and in English in every other language.
 
 ## Chat with a nearby phone {#nearby}
 
