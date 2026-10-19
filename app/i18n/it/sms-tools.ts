@@ -1,3 +1,129 @@
 // The Italian of the SMS screen's own tools: pinning, archive, drafts, blocking and the like (i18n/it/index.ts).
 export const smsTools: Record<string, string> = {
+  // The list and its folders (app/index.tsx, app/sms-folder.tsx, components/sms-actions.tsx).
+  'Archived · {n}': 'Archiviate · {n}',
+  'Spam · {n}': 'Spam · {n}',
+  'Trash · {n}': 'Cestino · {n}',
+  'Draft': 'Bozza',
+  'Archive': 'Archivia',
+  'Unarchive': 'Annulla archiviazione',
+  'Archived conversations': 'Conversazioni archiviate',
+  'Spam': 'Spam',
+  'Trash': 'Cestino',
+  'Pin to the top': 'Fissa in alto',
+  'Unpin': 'Non fissare più',
+  'Mark as spam': 'Segna come spam',
+  'Not spam': 'Non è spam',
+  'Block {number}': 'Blocca {number}',
+  'Unblock {number}': 'Sblocca {number}',
+  'Undo': 'Annulla',
+  'Not done': 'Non riuscito',
+  'OK': 'OK',
+  'Archived. A new SMS from them brings it back.': 'Archiviata. Un nuovo SMS dallo stesso mittente la riporta nell’elenco.',
+  'Back in the list.': 'Di nuovo nell’elenco.',
+  'The Trash is full. Empty it first.': 'Il cestino è pieno. Prima svuotalo.',
+  'In the Trash. It goes from the phone in {days} days.': 'Nel cestino. Sarà eliminata dal telefono tra {days} giorni.',
+  'At most {n} conversations stay pinned. Unpin one first.': 'Al massimo {n} conversazioni restano fissate in alto. Prima togline una.',
+  'Not spam: back in the list.': 'Non è spam: di nuovo nell’elenco.',
+  'Marked as spam: it is in Spam.': 'Segnata come spam: è in «Spam».',
+  'Block {number}?': 'Bloccare {number}?',
+  "It goes into Android's own list of blocked numbers: Android rejects its SMS, MMS and calls, in every space and in the phone app too, until you unblock it. The conversation goes to Spam.":
+    'Finisce nell’elenco dei numeri bloccati di Android: Android rifiuta i suoi SMS, MMS e chiamate, in ogni spazio e anche nell’app Telefono, finché non lo sblocchi. La conversazione va in «Spam».',
+  'Blocked.': 'Bloccato.',
+  'Unblocked.': 'Sbloccato.',
+  'Empty the Trash': 'Svuota il cestino',
+  'Delete {n} conversation from the phone now? They cannot be brought back.': 'Eliminare ora {n} conversazione dal telefono? Non potrà essere recuperata.',
+  'Delete {n} conversations from the phone now? They cannot be brought back.': 'Eliminare ora {n} conversazioni dal telefono? Non potranno essere recuperate.',
+  'Delete the SMS with {name} from the phone now? They cannot be brought back.': 'Eliminare ora dal telefono gli SMS con {name}? Non potranno essere recuperati.',
+  'Delete for good': 'Elimina definitivamente',
+  'Some could not be deleted. Try again.': 'Alcune non sono state eliminate. Riprova.',
+  'Only the SMS app can delete SMS: make Erevos the SMS app under SMS in the menu.': 'Solo l’app per gli SMS può eliminare gli SMS: rendi Erevos l’app per gli SMS in «SMS» nel menu.',
+  'This build of Erevos cannot delete SMS yet.': 'Questa versione di Erevos non può ancora eliminare gli SMS.',
+  'Deleted on {when}. Goes from the phone on {then}.': 'Eliminata il {when}. Sparirà dal telefono il {then}.',
+  'Bring back': 'Recupera',
+  'Delete now': 'Elimina ora',
+  'The Trash is empty.': 'Il cestino è vuoto.',
+  'No spam.': 'Nessuno spam.',
+  'Nothing archived.': 'Niente di archiviato.',
+  "Conversations you deleted, kept {days} days in case you want them back, then deleted from the phone. Only this space hides them meanwhile: they are still in the phone's SMS.":
+    'Le conversazioni che hai eliminato, conservate {days} giorni nel caso le rivolessi, poi eliminate dal telefono. Nel frattempo le nasconde solo questo spazio: sono ancora negli SMS del telefono.',
+  'SMS from numbers you blocked or marked as spam, and those the spam filter caught. The filter works on this phone alone and sends nothing anywhere. Hold one down to say it is not spam.':
+    'Gli SMS dai numeri che hai bloccato o segnato come spam, e quelli fermati dal filtro antispam. Il filtro funziona solo su questo telefono e non invia nulla da nessuna parte. Tieni premuto su uno per dire che non è spam.',
+  'Conversations you archived. One comes back to the list when a new SMS comes from them. Hold one down for more.':
+    'Le conversazioni che hai archiviato. Una torna nell’elenco quando arriva un nuovo SMS dallo stesso mittente. Tieni premuto su una per altre opzioni.',
+
+  // A conversation (app/sms.tsx).
+  'In Spam': 'In «Spam»',
+  'Archived': 'Archiviata',
+  'In the Trash': 'Nel cestino',
+  'More': 'Altro',
+  'The messages before are in the Trash.': 'I messaggi precedenti sono nel cestino.',
+  'Tap to send it again.': 'Tocca per inviarlo di nuovo.',
+  'Send it again?': 'Inviarlo di nuovo?',
+  'Send again': 'Invia di nuovo',
+  'This build of Erevos cannot send an MMS again yet.': 'Questa versione di Erevos non può ancora inviare di nuovo un MMS.',
+  'Message deleted.': 'Messaggio eliminato.',
+  'Hold the words down to copy them.': 'Tieni premuto sul testo per copiarlo.',
+  'Goes in {n} s · tap to take it back': 'Parte tra {n} s · tocca per annullare l’invio',
+  'It writes with a name, not a number, so it cannot be answered.': 'Scrive con un nome, non con un numero, quindi non puoi rispondere.',
+  'Forward': 'Inoltra',
+  'It opens in the conversation you choose, to read and send there. To a number its picture goes too, as an MMS; into a chat only its words.':
+    'Si apre nella conversazione che scegli, per rileggerlo e inviarlo da lì. A un numero va anche la sua immagine, come MMS; in una chat solo il testo.',
+  'It opens in the conversation you choose, to read and send there.': 'Si apre nella conversazione che scegli, per rileggerlo e inviarlo da lì.',
+  'Into an Erevos chat': 'In una chat Erevos',
+
+  // The SMS settings (app/sms-settings.tsx).
+  'With the names come the pictures your contacts have, in the list and in the conversation. They too are read only to show them.':
+    'Insieme ai nomi arrivano anche le foto dei tuoi contatti, nell’elenco e nella conversazione. Anche queste vengono lette solo per mostrarle.',
+  'Archived, Spam and Trash': 'Archiviate, Spam e Cestino',
+  "In the list, swipe an SMS conversation to the right to archive it, to the left to delete it, or hold it down to pin it at the top and more. This space keeps its own pins, archived conversations, Trash and spam marks, sealed with its password; the SMS stay in the phone's SMS, where another space sees them as they are.":
+    'Nell’elenco, scorri una conversazione SMS verso destra per archiviarla, verso sinistra per eliminarla, o tienila premuta per fissarla in alto e altro ancora. Questo spazio ha le sue conversazioni fissate e archiviate, il suo cestino e i suoi segni di spam, sigillati con la sua password; gli SMS restano negli SMS del telefono, dove un altro spazio li vede come sono.',
+  'Spam filter': 'Filtro antispam',
+  'It works on this phone alone, by rules, and sends nothing anywhere. An SMS from a number that is no contact and was never answered goes to Spam when it has a link with words that try to fool, like a parcel held or a prize, or one of your words below. A number you marked as spam always goes there, one you marked not spam never does.':
+    'Funziona solo su questo telefono, con delle regole, e non invia nulla da nessuna parte. Un SMS da un numero che non è un contatto e a cui non hai mai risposto va in «Spam» quando contiene un link con parole che cercano di ingannare, come un pacco in giacenza o un premio, o una delle tue parole qui sotto. Un numero che hai segnato come spam ci va sempre, uno che hai segnato come non spam mai.',
+  'Turn the spam filter off': 'Disattiva il filtro antispam',
+  'Turn the spam filter on': 'Attiva il filtro antispam',
+  'Let links from unknown numbers through': 'Lascia passare i link dai numeri sconosciuti',
+  'Send every link from unknown numbers to Spam': 'Manda in «Spam» ogni link dai numeri sconosciuti',
+  'Your words': 'Le tue parole',
+  'An SMS with one of them goes to Spam, from any number or sender that is no contact. Tap a word to remove it.':
+    'Un SMS che ne contiene una va in «Spam», da qualsiasi numero o mittente che non sia un contatto. Tocca una parola per rimuoverla.',
+  'A word or a few': 'Una o più parole',
+  'At most {n} words, each up to {length} letters.': 'Al massimo {n} parole, ognuna fino a {length} lettere.',
+  'A notice still says "New message" when spam comes, as it shows before Erevos is opened. Block a number to hear nothing more from it.':
+    'Un avviso dice comunque «New message» quando arriva dello spam, perché appare prima che Erevos venga aperto. Blocca un numero per non sentirlo più.',
+  'Blocked numbers': 'Numeri bloccati',
+  "These are Android's own blocked numbers: Android rejects their SMS, MMS and calls. Every space, and the phone app, sees the same list. Block one from its conversation, with ⋮, or here.":
+    'Questi sono i numeri bloccati di Android: Android rifiuta i loro SMS, MMS e chiamate. Ogni spazio, e l’app Telefono, vede lo stesso elenco. Bloccane uno dalla sua conversazione, con ⋮, o da qui.',
+  'Only the SMS app or the phone app can see and change them: make Erevos the SMS app above.':
+    'Solo l’app per gli SMS o l’app Telefono possono vederli e cambiarli: rendi Erevos l’app per gli SMS qui sopra.',
+  'This build of Erevos cannot block numbers yet.': 'Questa versione di Erevos non può ancora bloccare i numeri.',
+  'No number is blocked.': 'Nessun numero bloccato.',
+  'Type one phone number.': 'Scrivi un solo numero di telefono.',
+  'Unblock {number}?': 'Sbloccare {number}?',
+  'Its SMS, MMS and calls reach the phone again.': 'I suoi SMS, MMS e chiamate arriveranno di nuovo al telefono.',
+  'Unblock': 'Sblocca',
+  'Taking an SMS back': 'Annullare l’invio di un SMS',
+  'An SMS you send waits this long at the end of the conversation before it goes: tap it then to take it back. When you leave Erevos, it goes at once.':
+    'Un SMS che invii aspetta questo tempo in fondo alla conversazione prima di partire: toccalo in quel momento per annullare l’invio. Quando esci da Erevos, parte subito.',
+
+  // The phone's SMS in backups (app/backup.tsx).
+  "The phone's SMS": 'Gli SMS del telefono',
+  "Backups can hold the phone's SMS and MMS too, with up to {mb} MB of their pictures, sealed with the backup's password. Restoring the backup puts back into the phone's SMS each one it does not have, and deletes none.":
+    'I backup possono contenere anche gli SMS e gli MMS del telefono, con fino a {mb} MB delle loro immagini, sigillati con la password del backup. Il ripristino del backup rimette negli SMS del telefono quelli che non ha, e non ne elimina nessuno.',
+  'Erevos reads them only while it is the SMS app: make it the SMS app under SMS in the menu.': 'Erevos li legge solo mentre è l’app per gli SMS: rendilo l’app per gli SMS in «SMS» nel menu.',
+  'Put the SMS in backups': 'Includi gli SMS nei backup',
+  'Leave the SMS out': 'Escludi gli SMS',
+  "It holds {sms} SMS and {mms} MMS of the phone's.": 'Contiene {sms} SMS e {mms} MMS del telefono.',
+  '{n} picture did not fit and stayed out.': '{n} immagine non ci stava ed è rimasta fuori.',
+  '{n} pictures did not fit and stayed out.': '{n} immagini non ci stavano e sono rimaste fuori.',
+  'SMS in this backup': 'SMS in questo backup',
+  "This backup also holds the phone's SMS. They go back into the phone's SMS only while Erevos is the SMS app: make it the SMS app under SMS in the menu, then restore again. Or restore the rest now, without them.":
+    'Questo backup contiene anche gli SMS del telefono. Tornano negli SMS del telefono solo mentre Erevos è l’app per gli SMS: rendilo l’app per gli SMS in «SMS» nel menu, poi ripristina di nuovo. Oppure ripristina ora il resto, senza gli SMS.',
+  'Without the SMS': 'Senza gli SMS',
+  'Putting the SMS back into the phone…': 'Ripristino degli SMS nel telefono…',
+  "{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.": '{sms} SMS e {mms} MMS sono tornati negli SMS del telefono. Quelli che c’erano già sono rimasti come erano.',
+  'A newer Erevos made this backup: what this one does not know yet stays out. Update Erevos first to restore all of it.':
+    'Questo backup è stato creato da un Erevos più recente: quello che questo non conosce ancora resta fuori. Aggiorna prima Erevos per ripristinarlo tutto.',
+  "The SMS could not go back into the phone's SMS: {error}": 'Gli SMS non sono potuti tornare negli SMS del telefono: {error}',
 };

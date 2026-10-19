@@ -1,3 +1,134 @@
 // The Italian of the Phone and Contacts screens (app/phone.tsx and what goes with it) (i18n/it/index.ts).
 export const phone: Record<string, string> = {
+  // The Phone screen (app/phone.tsx) and its place in the menu.
+  Phone: 'Telefono',
+  'Erevos as the phone app: the keypad, the calls and the favourites': 'Erevos come app Telefono: tastierino, chiamate e preferiti',
+  'This build of Erevos has no phone part yet. It comes with the next build of the app.':
+    'Questa versione di Erevos non ha ancora la parte telefono. Arriverà con la prossima versione dell’app.',
+  'Only Android lets another app be the phone app.': 'Solo Android permette a un’altra app di essere l’app Telefono.',
+  'Erevos may not make calls. Make it the phone app under Settings.': 'Erevos non ha il permesso di fare chiamate. Rendilo l’app Telefono in «Impostazioni».',
+  'Not called. {error}': 'Chiamata non avviata. {error}',
+  Contacts: 'Contatti',
+  Settings: 'Impostazioni',
+  'Back to the call': 'Torna alla chiamata',
+  'Erevos is not the phone app': 'Erevos non è l’app Telefono',
+  "Calls made here show on Android's own call screen until you make Erevos the phone app, under Settings.":
+    'Le chiamate fatte da qui appaiono sulla schermata di chiamata di Android finché non rendi Erevos l’app Telefono, in «Impostazioni».',
+  Number: 'Numero',
+  'Call on': 'Chiama con',
+  "Without that, calls go on the phone's default SIM.": 'Altrimenti le chiamate partono dalla SIM predefinita del telefono.',
+  'Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.':
+    'Erevos ricorda questa SIM per il numero, sigillata in questo spazio, e la prossima volta lo chiama con la stessa SIM.',
+  Keypad: 'Tastierino',
+  Recents: 'Recenti',
+  Favourites: 'Preferiti',
+
+  // The calls (Android's call history) and the favourites, on the Phone screen (lib/phone-log.ts).
+  // Also the first filter of Contacts, so it says neither calls nor contacts.
+  All: 'Tutto',
+  Missed: 'Perse',
+  Incoming: 'In arrivo',
+  Outgoing: 'In uscita',
+  Blocked: 'Bloccate',
+  'Incoming call': 'Chiamata in arrivo',
+  'Outgoing call': 'Chiamata in uscita',
+  'Declined call': 'Chiamata rifiutata',
+  'Blocked call': 'Chiamata bloccata',
+  'Private number': 'Numero privato',
+  Payphone: 'Telefono pubblico',
+  'Unknown number': 'Numero sconosciuto',
+  'Wi-Fi calling': 'Chiamata Wi-Fi',
+  'HD voice': 'Voce HD',
+  'Android does not let Erevos read the call history yet.': 'Android non consente ancora a Erevos di leggere la cronologia delle chiamate.',
+  'Allow the call history': 'Consenti la cronologia chiamate',
+  'Android did not allow it. Under Settings, Allow calls and contacts says how to.':
+    'Android non l’ha consentito. In «Impostazioni», «Consenti chiamate e contatti» spiega come fare.',
+  'No calls of this kind.': 'Nessuna chiamata di questo tipo.',
+  'No calls yet.': 'Ancora nessuna chiamata.',
+  'Call on {sim}': 'Chiama con {sim}',
+  'Call {name}': 'Chiama {name}',
+  'Send an SMS': 'Invia un SMS',
+  'Change the number before calling': 'Modifica il numero prima di chiamare',
+  'Block this number': 'Blocca questo numero',
+  'Unblock this number': 'Sblocca questo numero',
+  'Blocked {who}.': 'Bloccato: {who}.',
+  'Unblocked {who}.': 'Sbloccato: {who}.',
+  'Delete this call': 'Elimina questa chiamata',
+  'Delete these {n} calls': 'Elimina queste {n} chiamate',
+  'Delete every call with this number': 'Elimina tutte le chiamate con questo numero',
+  'Call deleted.': 'Chiamata eliminata.',
+  '{n} calls deleted.': '{n} chiamate eliminate.',
+  'The calls with {who} were deleted.': 'Le chiamate con {who} sono state eliminate.',
+  'The calls were not deleted. {error}': 'Le chiamate non sono state eliminate. {error}',
+  "Android does not let Erevos read the phone's contacts yet.": 'Android non consente ancora a Erevos di leggere i contatti del telefono.',
+  'Allow the contacts': 'Consenti i contatti',
+  'No favourites yet. The contacts you star show here, to call at a tap.':
+    'Ancora nessun preferito. I contatti che segni con la stella appaiono qui, da chiamare con un tocco.',
+
+  // The phone's settings (app/phone-settings.tsx).
+  'Phone settings': 'Impostazioni di Telefono',
+  'Erevos is the phone app': 'Erevos è l’app Telefono',
+  "As the phone app, Erevos shows every call on its own screen: who calls, with their photo, over the lock screen too, without unlocking Erevos. Its Phone screen, with the keypad, the calls and the favourites, stays behind Erevos's password. Phone calls are plain phone calls: the phone company carries them, as it carries every call.":
+    'Come app Telefono, Erevos mostra ogni chiamata sulla sua schermata: chi chiama, con la sua foto, anche sulla schermata di blocco, senza sbloccare Erevos. La sua schermata «Telefono», con tastierino, chiamate e preferiti, resta dietro la password di Erevos. Le chiamate telefoniche sono normali chiamate: le trasporta l’operatore, come ogni chiamata.',
+  'Make Erevos the phone app': 'Rendi Erevos l’app Telefono',
+  'Android did not make Erevos the phone app': 'Android non ha reso Erevos l’app Telefono',
+  "Choose Erevos in Android's Default apps → Phone app. If Android says it is a restricted setting, open Erevos's App info, tap ⋮ at the top right → Allow restricted settings, and choose Erevos again.":
+    'Scegli Erevos in «App predefinite → App Telefono» di Android. Se Android dice che è un’impostazione con limitazioni, apri Info app di Erevos, tocca ⋮ in alto a destra → «Consenti impostazioni con limitazioni», e scegli di nuovo Erevos.',
+  "Android did not allow it all. In Erevos's App info, under Permissions, call logs may say Restricted setting: then go back, tap ⋮ at the top right → Allow restricted settings, and allow Phone, Call logs and Contacts under Permissions.":
+    'Android non ha consentito tutto. In Info app di Erevos, in «Autorizzazioni», il registro chiamate potrebbe indicare «Impostazione con limitazioni»: allora torna indietro, tocca ⋮ in alto a destra → «Consenti impostazioni con limitazioni», e consenti Telefono, Registri chiamate e Contatti in «Autorizzazioni».',
+  'Android holds back part of what the phone app needs': 'Android nega una parte di quello che serve all’app Telefono',
+  'Calls, the SIMs, the call history or the names of your contacts may not show. Android holds this back from an app installed from a browser, until you allow it.':
+    'Chiamate, SIM, cronologia chiamate o nomi dei tuoi contatti potrebbero non apparire. Android lo nega a un’app installata da un browser, finché non lo consenti.',
+  'Allow calls and contacts': 'Consenti chiamate e contatti',
+  'So a call that comes shows no Answer and Decline outside the call screen.':
+    'Per questo una chiamata in arrivo non mostra «Answer» e «Decline» fuori dalla schermata di chiamata.',
+  'Android does not let Erevos show a call that comes over the lock screen: it shows as a notice only.':
+    'Android non consente a Erevos di mostrare una chiamata in arrivo sulla schermata di blocco: appare solo come avviso.',
+  'This device has no phone part, so it cannot make calls.': 'Questo dispositivo non ha la parte telefono, quindi non può fare chiamate.',
+  'Quick replies': 'Risposte rapide',
+  'Message, on the call screen of a call that rings, declines it with one of these, which the phone sends the caller as an SMS. They are kept on the phone, not sealed, as the call screen shows them with Erevos locked.':
+    '«Message», sulla schermata di una chiamata che squilla, la rifiuta con una di queste, che il telefono invia a chi chiama come SMS. Sono conservate sul telefono, non sigillate, perché la schermata di chiamata le mostra con Erevos bloccato.',
+  Remove: 'Rimuovi',
+  'Add a reply': 'Aggiungi una risposta',
+  'Use the usual replies': 'Usa le risposte predefinite',
+
+  // Blocking calls (app/phone-settings.tsx, lib/phone-rules.ts).
+  Blocking: 'Blocco chiamate',
+  "A blocked call does not ring and leaves no notice; it shows under Blocked in the calls. The telemarketing ranges and your prefixes never block a number in the phone's contacts. What is blocked is the same in every space, and keeps no names.":
+    'Una chiamata bloccata non squilla e non lascia avvisi; appare in «Bloccate» nei «Recenti». I numeri riservati al telemarketing e i prefissi che aggiungi non bloccano mai un numero presente nei contatti del telefono. Quello che è bloccato è lo stesso in ogni spazio, e non conserva nomi.',
+  'Block telemarketing': 'Blocca il telemarketing',
+  'Stop blocking telemarketing': 'Non bloccare più il telemarketing',
+  'The numbers these countries keep for telemarketing calls:': 'I numeri che questi paesi riservano alle chiamate di telemarketing:',
+  France: 'Francia',
+  Spain: 'Spagna',
+  Chile: 'Cile',
+  India: 'India',
+  Brazil: 'Brasile',
+  'optional for the callers since August 2025': 'facoltativo per chi chiama da agosto 2025',
+  'Numbers starting with': 'Numeri che iniziano con',
+  Block: 'Blocca',
+  'Type the start of the numbers to block, with the country code or as you dial it here: +33 162 or 0162.':
+    'Scrivi l’inizio dei numeri da bloccare, con il prefisso internazionale o come lo componi qui: +33 162 o 0162.',
+  'Erevos does not screen calls yet, so a blocked call rings a moment before Erevos ends it.':
+    'Erevos non filtra ancora le chiamate, quindi una chiamata bloccata squilla per un attimo prima che Erevos la chiuda.',
+  'Let Erevos screen calls': 'Lascia che Erevos filtri le chiamate',
+  "Android's own blocked numbers, the same list as under SMS: Android rejects their calls before they ring, and their SMS and MMS. Every space sees the same list.":
+    'I numeri bloccati di Android, lo stesso elenco di «SMS»: Android rifiuta le loro chiamate prima che squillino, e i loro SMS e MMS. Ogni spazio vede lo stesso elenco.',
+  'Only the phone app or the SMS app may see them: make Erevos the phone app above.':
+    'Solo l’app Telefono o l’app per gli SMS possono vederli: rendi Erevos l’app Telefono qui sopra.',
+  'Block a contact group': 'Blocca un gruppo di contatti',
+  "The calls of a group's contacts, as your phone's contacts label them, are blocked for a while: for an hour, until tomorrow morning, or until you lift it.":
+    'Le chiamate dei contatti di un gruppo, come li raggruppano i contatti del tuo telefono, vengono bloccate per un po’: per un’ora, fino a domani mattina, o finché non le sblocchi.',
+  'Your phone has no contact groups yet.': 'Il tuo telefono non ha ancora gruppi di contatti.',
+  Lift: 'Sblocca',
+  '{n} contact': '{n} contatto',
+  '{n} contacts': '{n} contatti',
+  'For an hour': 'Per un’ora',
+  'Until tomorrow morning': 'Fino a domani mattina',
+  'Until I lift it': 'Finché non lo sblocco',
+  'Blocked until you lift it': 'Bloccato finché non lo sblocchi',
+  'Blocked until {time}': 'Bloccato fino alle {time}',
+  'Blocked until tomorrow, {time}': 'Bloccato fino a domani alle {time}',
+  'Calls from the group {group} are blocked': 'Le chiamate dal gruppo {group} sono bloccate',
+  'Calls from a contact group are blocked': 'Le chiamate da un gruppo di contatti sono bloccate',
 };
