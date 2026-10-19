@@ -378,8 +378,17 @@ then shows on their home screen, with a note of who added them. Groups go throug
   IP address; without a call relay, only on the same Wi-Fi. End-to-end encrypted between each two phones, their keys
   sent in the group's encryption. In a video call each phone sends its picture to each other one, so pictures show
   for up to four people; with more, they pause and the sound goes on, until a server for bigger video calls is set up.
-- **Not yet:** voice messages, photos, marks and disappearing messages in groups, groups in hidden chats, and
-  groups over a nearby phone.
+- **Photos, files and voice messages:** **Attach** under the field sends a photo or a file, as in a contact's chat,
+  with the same **Photo quality**; hold **Voice** while you talk, and let go to send. Each is encrypted with a key of
+  its own and put on your relay once, and only where it is and its key go to the group, in its encryption. Each
+  member's phone takes it from there through its own relay: up to 16 MB by itself while the group is open, a bigger
+  one when tapped. Tap a photo to see it whole, a file to save it, a voice message to play it.
+  - **The relay keeps it 14 days,** encrypted, as it cannot know when every member has taken it.
+  - **Through the relay only,** even when members are nearby.
+  - **A member who joins later** does not get what came before, as with the words. A member whose Erevos is from
+    before this version sees nothing of it.
+  - **On the phone** each is kept in its pieces, sealed, as in a contact's chat. Deleting the group here deletes them.
+- **Not yet:** marks and disappearing messages in groups, groups in hidden chats, and groups over a nearby phone.
 
 ## How Erevos picks the path {#paths}
 
@@ -834,7 +843,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". | |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
-| **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Not audited. | Photos and voice messages in groups. |
+| **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. | Video with more than four people, through a server; more than eight people. |
 
 ## What is coming {#coming}
@@ -847,7 +856,7 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
 - **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a
   relay](#relay), and so is a walkie-talkie that works even over Bluetooth.
-- **Groups:** group chats and group voice and video calls are here, see [Group chats](#groups). Next: video with
+- **Groups:** group chats, with photos, files and voice messages, and group voice and video calls are here, see [Group chats](#groups). Next: video with
   more than four people, through a server the call moves to by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).

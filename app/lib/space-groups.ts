@@ -9,14 +9,15 @@ import type { GroupCallPlace } from './group-calls';
 import type { GroupSignal } from './group-signal';
 import { Groups, type GroupTransport } from './groups';
 import { nearby } from './nearby';
-import { callRelay, fromHex, relayKey, sendMessage, toHex } from './relay';
+import { callRelay, fromHex, relayKey, sendMessage, toHex, type Relay } from './relay';
 import { contactTarget, relayFor, spaceChats } from './space-chats';
 import { t } from './i18n';
 
 // The open space's group chats (lib/groups.ts), opened once while the space is, as its chats are
 // (lib/space-chats.ts): the chat screen, the group screens and the receiver use the same ones.
 // Their messages go to each member's phone nearby when it is (lib/nearby.ts), as on the same Wi-Fi
-// with no internet, and through the space's relay settings, read when sent.
+// with no internet, and through the space's relay settings, read when sent. Their photos, files and
+// voice messages go through the space's relay only, straight (lib/group-media.ts).
 
 let opened: { of: object; groups: Promise<Groups> } | null = null;
 
@@ -113,6 +114,11 @@ export const spaceGroupTransport: GroupTransport = {
     await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
   },
 };
+
+/** The space's relay, straight, not through its second relay: groups' files go to it and come through it. */
+export async function groupRelay(): Promise<Relay> {
+  return (await settings()).own;
+}
 
 /** A group message from the space's relay queue. Says whether it was one. */
 export async function takeGroupPacket(packet: Uint8Array): Promise<boolean> {

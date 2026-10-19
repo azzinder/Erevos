@@ -1,3 +1,4 @@
+import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import {
   checkedAbout,
   EMPTY_GROUPS,
@@ -12,12 +13,14 @@ import {
   type GroupMessage,
 } from '../lock/group-data';
 import { newTag } from '../lock/history';
+import { offerRef, readOffer, type FileOffer } from './attachments';
 import * as core from './core';
 import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { decodeGroupCall, type GroupCallSignal } from './group-call-signal';
 import { cleanGroupName, isGroupId, type GroupSignal } from './group-signal';
 import { t, mark } from './i18n';
+import { MAX_VOICE_MS } from './voice';
 
 // Group chats, MLS (RFC 9420) in the Rust core (crates/erevos-group). Whoever makes a group is its
 // admin: it adds contacts and takes members out, and is the only one whose changes count, so no
@@ -32,6 +35,14 @@ import { t, mark } from './i18n';
 // A member leaves by asking the admin, who takes it out. A member taken out reads nothing sent
 // after. A message from a member that comes before the admin's change it was written after waits
 // here (`later`) until the change comes.
+//
+// Photos, files and voice messages go as with a contact (lib/attachments.ts): encrypted with a key
+// of their own and put on the sender's relay, and only where they are and the key go in the
+// group's message. Each member takes them from there (lib/group-media.ts) and leaves them for the
+// others, so they expire on the relay after 14 days. A member who joins later reads none of what
+// came before, its files neither. A phone from before these reads nothing in such a message (a kind
+// it does not know) and goes on with the next. When a message leaves the group here, however it
+// goes, its chunks on this phone go too.
 //
 // Every call runs after the one before it ends, as in lib/e2e.ts, and the MLS state is kept before
 // anything it made is handed back.
@@ -63,8 +74,12 @@ export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
   asked: string[];
 };
 
-// What members say inside the group's messages.
-type Said = { t: 'text'; text: string; tag: string } | { t: 'name'; name: string } | { t: 'call'; call: GroupCallSignal };
+// What members say inside the group's messages. A `file` with `ms` is a voice message's sound.
+type Said =
+  | { t: 'text'; text: string; tag: string }
+  | { t: 'name'; name: string }
+  | { t: 'call'; call: GroupCallSignal }
+  | { t: 'file'; file: FileOffer; tag: string; ms?: number };
 
 function encodeSaid(said: Said): Uint8Array {
   return utf8Encode(JSON.stringify(said));
@@ -80,6 +95,11 @@ function decodeSaid(bytes: Uint8Array): Said | null {
     if (v.t === 'call') {
       const call = decodeGroupCall(v.call);
       if (call) return { t: 'call', call };
+    }
+    if (v.t === 'file') {
+      const file = readOffer(v.file);
+      const voice = file?.kind === 'file' && typeof v.ms === 'number' && v.ms > 0 && v.ms <= MAX_VOICE_MS + 5000;
+      if (file) return { t: 'file', file, tag: typeof v.tag === 'string' ? v.tag : '', ...(voice ? { ms: Math.round(v.ms as number) } : {}) };
     }
   } catch {
     // Not what an Erevos says.
@@ -149,9 +169,13 @@ export class Groups {
     return next;
   }
 
+  // The chunks of a file whose message left go once the groups without it are kept.
   private async save(data: GroupData): Promise<void> {
+    const kept = new Set(filesIn(data).map((file) => file.id));
+    const gone = filesIn(this.data).filter((file) => !kept.has(file.id));
     this.data = data;
     await this.store(data);
+    for (const file of gone) await deleteChunks(file.id, file.count).catch(() => undefined);
   }
 
   private find(id: string): Group | undefined {
@@ -274,6 +298,34 @@ export class Groups {
       const now = this.find(id)!;
       await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: said, tag }]), readAt: Date.now() }));
       this.changed();
+    });
+  }
+
+  /**
+   * Sends a photo or file, or with `ms` a voice message, to the group: `offer` says where it is on
+   * our relay and its key, and `ref` where it is kept here.
+   */
+  sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group || group.status !== 'in') throw new Error(t('You are not in this group any more.'));
+      const tag = newTag();
+      const voice = ms === undefined ? {} : { ms: Math.round(ms) };
+      await this.broadcast(id, encodeSaid({ t: 'file', file: offer, tag, ...voice }), transport);
+      const now = this.find(id)!;
+      await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: '', tag, file: ref, ...voice }]), readAt: Date.now() }));
+      this.changed();
+    });
+  }
+
+  /** Keeps where a file that came is, once it is taken from the relay. False if its message is gone. */
+  setFile(id: string, file: FileRef): Promise<boolean> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group?.messages.some((m) => m.file?.id === file.id)) return false;
+      await this.save(this.withGroup({ ...group, messages: group.messages.map((m) => (m.file?.id === file.id ? { ...m, file } : m)) }));
+      this.changed();
+      return true;
     });
   }
 
@@ -537,6 +589,14 @@ export class Groups {
         this.callListeners.forEach((listener) => listener(id, from, signal));
         return;
       }
+      if (said.t === 'file') {
+        // Not taken yet: where to take it from.
+        const media = { file: offerRef(said.file), ...(said.ms === undefined ? {} : { ms: said.ms }) };
+        await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: '', tag: said.tag, ...media }]) }));
+        this.messageListeners.forEach((listener) => listener(id));
+        this.changed();
+        return;
+      }
       if (said.t === 'name') {
         // Only the admin names the group.
         if (opened.sender !== 0) return;
@@ -578,6 +638,9 @@ export class Groups {
     }
   }
 }
+
+// Every photo, file and voice message the groups keep.
+const filesIn = (data: GroupData): FileRef[] => data.groups.flatMap((g) => g.messages.flatMap((m) => (m.file ? [m.file] : [])));
 
 /** A member's name: the one its chat has here, or the start of its key, as a contact's or a member's. */
 export function memberName(identity: string, contacts: { identity: string; name: string }[]): string {
