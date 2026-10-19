@@ -31,7 +31,6 @@ export const devices: Record<string, string> = {
   'The last week': 'Την τελευταία εβδομάδα',
   None: 'Κανένα',
   'Web browser': 'Browser',
-  Phone: 'Τηλέφωνο',
   'Code copied. Paste it on the phone in Menu → Linked devices.': 'Ο κωδικός αντιγράφηκε. Επικόλλησέ τον στο τηλέφωνο, στο Μενού → «Συνδεδεμένες συσκευές».',
   'Linked. The chats come from the phone, and with them the messages it chose to bring over.':
     'Συνδέθηκε. Οι συνομιλίες έρχονται από το τηλέφωνο, και μαζί τους τα μηνύματα που διάλεξε να φέρει.',

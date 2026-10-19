@@ -12,16 +12,24 @@
 //! runtime of their own. Tor starts on the first request, or with [`start`],
 //! and keeps its state (guards, the directory) in the folders given.
 //!
+//! Where Tor is blocked it can go through bridges instead ([`Bridges`]): plain
+//! ones, or ones a pluggable transport hides (obfs4, Snowflake, WebTunnel,
+//! meek), which the lyrebird program the app carries speaks. With bridges, Tor
+//! never connects to its relays straight: when no bridge answers, nothing goes.
+//!
 //! Not audited.
 
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
-use arti_client::config::TorClientConfigBuilder;
-use arti_client::TorClient;
+use arti_client::config::pt::TransportConfigBuilder;
+use arti_client::config::{
+    BoolOrAuto, BridgeConfigBuilder, CfgPath, PtTransportName, Reconfigure, TorClientConfig, TorClientConfigBuilder,
+};
+use arti_client::{DormantMode, TorClient};
 use futures_util::{SinkExt, StreamExt};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::runtime::Runtime;
@@ -45,7 +53,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin + Send> Io for T {}
 type Socket = WebSocketStream<Box<dyn Io>>;
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
-static CLIENT: Mutex<Option<Arc<TorClient<PreferredRuntime>>>> = Mutex::new(None);
+static CLIENT: Mutex<Option<Running>> = Mutex::new(None);
 static SESSIONS: OnceLock<Mutex<HashMap<u64, Arc<tokio::sync::Mutex<Socket>>>>> = OnceLock::new();
 static NEXT: AtomicU64 = AtomicU64::new(1);
 
@@ -66,27 +74,110 @@ fn sessions() -> &'static Mutex<HashMap<u64, Arc<tokio::sync::Mutex<Socket>>>> {
     SESSIONS.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+/// The running Tor, and the bridges it was started with.
+struct Running {
+    tor: Arc<TorClient<PreferredRuntime>>,
+    bridges: Bridges,
+}
+
+/// How Tor reaches its network: straight to its relays, or only through bridges.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Bridges {
+    /// Bridge lines, as bridges.torproject.org gives them, such as
+    /// `obfs4 192.0.2.1:443 <fingerprint> cert=… iat-mode=0`. None: no bridges.
+    pub lines: Vec<String>,
+    /// The lyrebird program, for the lines that name a pluggable transport.
+    pub transports: Option<PathBuf>,
+}
+
+/// The pluggable transports lyrebird speaks, as bridge lines name them.
+pub const TRANSPORTS: [&str; 4] = ["obfs4", "snowflake", "webtunnel", "meek_lite"];
+
+/// The pluggable transport a bridge line names, if any: its first word, unless that is the address.
+fn transport_of(line: &str) -> Option<&str> {
+    let first = line.split_whitespace().next()?;
+    let address = first.contains(':') || first.parse::<std::net::IpAddr>().is_ok();
+    (!address).then_some(first)
+}
+
+/// Arti's configuration: its folders, and the bridges if there are any.
+fn configure(state_dir: &Path, cache_dir: &Path, bridges: &Bridges) -> Result<TorClientConfig> {
+    let mut config = TorClientConfigBuilder::from_directories(state_dir, cache_dir);
+    // An app's own folders belong to it alone, but not in the way Arti checks for on a desktop.
+    config.storage().permissions().dangerously_trust_everyone();
+    if bridges.lines.is_empty() {
+        config.bridges().enabled(BoolOrAuto::Explicit(false));
+        return config.build().map_err(|e| e.to_string());
+    }
+    // Only through the bridges, never straight to Tor's relays, even when none of them answers.
+    config.bridges().enabled(BoolOrAuto::Explicit(true));
+    for line in &bridges.lines {
+        if let Some(name) = transport_of(line) {
+            if !TRANSPORTS.contains(&name) {
+                return Err(format!("Erevos has no {name} for its bridges"));
+            }
+            if bridges.transports.is_none() {
+                return Err("This build of Erevos has no obfs4, Snowflake, WebTunnel or meek: only plain bridges work in it".to_string());
+            }
+        }
+        let bridge: BridgeConfigBuilder = line.parse().map_err(|e| format!("not a bridge line: {e}"))?;
+        config.bridges().bridges().push(bridge);
+    }
+    if let Some(path) = &bridges.transports {
+        let protocols = TRANSPORTS.iter().map(|name| name.parse::<PtTransportName>()).collect::<std::result::Result<Vec<_>, _>>();
+        let mut transport = TransportConfigBuilder::default();
+        transport
+            .protocols(protocols.map_err(|e| e.to_string())?)
+            .path(CfgPath::new_literal(path.clone()))
+            // Started only when a bridge needs it.
+            .run_on_startup(false);
+        config.bridges().transports().push(transport);
+    }
+    config.build().map_err(|e| e.to_string())
+}
+
 /// Starts Tor, keeping its state in `state_dir` and what it downloads in
-/// `cache_dir`. Connecting to Tor goes on in the background; a request made
-/// meanwhile waits for it. Starting again does nothing.
-pub fn start(state_dir: &Path, cache_dir: &Path) -> Result<()> {
+/// `cache_dir`, through `bridges` if there are any. Connecting to Tor goes on
+/// in the background; a request made meanwhile waits for it. Starting again
+/// with the same bridges does nothing, and with others changes them in place:
+/// the circuits made before are dropped. If that fails, Tor stops, so nothing
+/// goes the way it went before.
+pub fn start(state_dir: &Path, cache_dir: &Path, bridges: Bridges) -> Result<()> {
     let mut client = CLIENT.lock().map_err(|_| "tor state lost".to_string())?;
-    if client.is_some() {
+    if client.as_ref().is_some_and(|running| running.bridges == bridges) {
         return Ok(());
     }
     let runtime = runtime()?;
     let _inside = runtime.enter();
-    let mut config = TorClientConfigBuilder::from_directories(state_dir, cache_dir);
-    // An app's own folders belong to it alone, but not in the way Arti checks for on a desktop.
-    config.storage().permissions().dangerously_trust_everyone();
-    let config = config.build().map_err(|e| e.to_string())?;
-    let tor = TorClient::builder().config(config).create_unbootstrapped().map_err(|e| e.to_string())?;
+    let config = configure(state_dir, cache_dir, &bridges);
+    // The connections open the way Tor went before are closed, and made again the new way.
+    if client.is_some() {
+        if let Ok(mut map) = sessions().lock() {
+            map.clear();
+        }
+    }
+    let tor = match (client.take(), config) {
+        (Some(running), Ok(config)) => match running.tor.reconfigure(&config, Reconfigure::AllOrNothing) {
+            Ok(()) => running.tor,
+            Err(e) => {
+                let_go(&running.tor);
+                return Err(e.to_string());
+            }
+        },
+        (None, Ok(config)) => TorClient::builder().config(config).create_unbootstrapped().map_err(|e| e.to_string())?,
+        (running, Err(e)) => {
+            if let Some(running) = running {
+                let_go(&running.tor);
+            }
+            return Err(e);
+        }
+    };
     let bootstrapping = tor.clone();
     runtime.spawn(async move {
         // Its progress shows in status(); a failure is tried again by the next request.
         let _ = bootstrapping.bootstrap().await;
     });
-    *client = Some(tor);
+    *client = Some(Running { tor, bridges });
     Ok(())
 }
 
@@ -96,13 +187,20 @@ pub fn stop() {
         map.clear();
     }
     if let Ok(mut client) = CLIENT.lock() {
-        *client = None;
+        if let Some(running) = client.take() {
+            let_go(&running.tor);
+        }
     }
+}
+
+/// A Tor no longer used: its background work sleeps, as a start still under way may keep it a while.
+fn let_go(tor: &TorClient<PreferredRuntime>) {
+    tor.set_dormant(DormantMode::Soft);
 }
 
 /// How far Tor is: "off", or Arti's own words for its progress, and whether it carries traffic.
 pub fn status() -> (String, bool) {
-    match CLIENT.lock().ok().and_then(|c| c.clone()) {
+    match CLIENT.lock().ok().and_then(|c| c.as_ref().map(|running| running.tor.clone())) {
         None => ("off".to_string(), false),
         Some(tor) => {
             let status = tor.bootstrap_status();
@@ -115,7 +213,8 @@ fn client() -> Result<Arc<TorClient<PreferredRuntime>>> {
     CLIENT
         .lock()
         .map_err(|_| "tor state lost".to_string())?
-        .clone()
+        .as_ref()
+        .map(|running| running.tor.clone())
         .ok_or_else(|| "Tor is not started".to_string())
 }
 
@@ -261,6 +360,53 @@ mod tests {
         assert!(parse("http://relay").is_err());
         assert!(parse("ws://:7879").is_err());
         assert!(parse("ws://relay:port").is_err());
+    }
+
+    const OBFS4: &str = "obfs4 192.0.2.10:443 0123456789ABCDEF0123456789ABCDEF01234567 cert=YXJlIGZyZXF1ZW50bHkgZnVsbCBvZiBsaXR0bGUgbWVzc2FnZXMgeW91IGNhbiBmaW5kLg iat-mode=0";
+    const PLAIN: &str = "192.0.2.20:9001 0123456789ABCDEF0123456789ABCDEF01234567";
+
+    fn configured(lines: &[&str], transports: Option<&str>) -> Result<TorClientConfig> {
+        let dir = std::env::temp_dir().join("erevos-tor-check");
+        let bridges = Bridges {
+            lines: lines.iter().map(|line| line.to_string()).collect(),
+            transports: transports.map(PathBuf::from),
+        };
+        configure(&dir.join("state"), &dir.join("cache"), &bridges)
+    }
+
+    #[test]
+    fn goes_through_bridges_only_when_given() {
+        assert!(configured(&[], None).is_ok());
+        assert!(configured(&[PLAIN], None).is_ok());
+        assert!(configured(&[OBFS4, PLAIN], Some("/data/app/lib/arm64/liblyrebird.so")).is_ok());
+        // A transport the app does not carry is never left to Tor to go around.
+        let err = configured(&[OBFS4], None).unwrap_err();
+        assert!(err.contains("no obfs4"), "{err}");
+        let err = configured(&["conjure 192.0.2.30:443 0123456789ABCDEF0123456789ABCDEF01234567"], Some("/x")).unwrap_err();
+        assert!(err.contains("no conjure"), "{err}");
+        assert!(configured(&["obfs4 not-a-bridge"], Some("/x")).is_err());
+        assert_eq!(transport_of(OBFS4), Some("obfs4"));
+        assert_eq!(transport_of(PLAIN), None);
+        assert_eq!(transport_of("[2001:db8::1]:443 0123456789ABCDEF0123456789ABCDEF01234567"), None);
+    }
+
+    #[test]
+    fn reads_the_bridges_the_app_comes_with() {
+        // app/lib/bridges.ts BUILT_IN, as the app sends them.
+        let app = include_str!("../../../app/lib/bridges.ts");
+        let stun = app.split("const STUN =\n  '").nth(1).and_then(|rest| rest.split('\'').next()).unwrap();
+        let lines: Vec<String> = app
+            .lines()
+            .map(|line| line.trim().trim_end_matches(','))
+            .filter(|line| line.starts_with("'obfs4 ") || line.starts_with("`snowflake "))
+            .map(|line| line.trim_matches(['\'', '`']).replace("${STUN}", stun))
+            .collect();
+        assert_eq!(lines.len(), 9);
+        let lines: Vec<&str> = lines.iter().map(String::as_str).collect();
+        assert!(configured(&lines, Some("/x")).is_ok());
+        for line in lines {
+            assert!(line.parse::<BridgeConfigBuilder>().is_ok(), "{line}");
+        }
     }
 
     #[test]

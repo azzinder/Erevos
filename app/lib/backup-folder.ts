@@ -1,6 +1,7 @@
 import { makeBackup, type BackupKey } from '../lock/backup';
 
 import { writeBackup } from './backup-place';
+import { phoneSmsForBackup } from './backup-sms';
 import { fromBase64, toBase64 } from './crypto';
 import { secureDelete, secureGet, secureSet } from './secure';
 
@@ -76,7 +77,9 @@ export function runAutoBackup(force = false, now = Date.now()): Promise<AutoBack
     if (!auto || !auto.every || (!force && now - auto.last < auto.every * DAY)) return auto;
     let next: AutoBackup;
     try {
-      await writeBackup(auto.folder, await makeBackup({ key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter }), now, KEEP);
+      // With the phone's SMS, when the owner wants them (lib/backup-sms.ts).
+      const sms = await phoneSmsForBackup();
+      await writeBackup(auto.folder, await makeBackup({ key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter }, sms), now, KEEP);
       next = { ...auto, last: now, error: '' };
     } catch (error) {
       next = { ...auto, error: errorText(error) };

@@ -26,6 +26,14 @@ export function sameAddress(a: string, b: string): boolean {
   return x.length > 0 && x.length === y.length && x.every((n) => y.some((m) => sameNumber(n, m)));
 }
 
+/** Whether two addresses are the same conversation: the same numbers, or the same name of a
+ *  sender that writes with a name instead of a number (a bank, say). */
+export function sameConversation(a: string, b: string): boolean {
+  if (smsNumbers(a).length > 0) return sameAddress(a, b);
+  const name = a.trim().toLowerCase();
+  return name.length > 0 && smsNumbers(b).length === 0 && name === b.trim().toLowerCase();
+}
+
 /** A group's name: its numbers, as the phone's contacts name them when allowed. */
 export function groupName(numbers: string[], names: Record<string, string> = {}): string {
   return numbers.map((n) => names[n] || n).join(', ');

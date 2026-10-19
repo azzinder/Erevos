@@ -1,5 +1,5 @@
 import { t } from './i18n';
-// Erevos on a computer (Linux and macOS) is the web build inside a small Electron shell
+// Erevos on a computer (Linux, macOS and Windows) is the web build inside a small Electron shell
 // (desktop/main.js), and on Sailfish OS inside Sailfish WebView, served by a small server of the
 // app's own (sailfish/src/shellserver.cpp). The build says which (EXPO_PUBLIC_SHELL=electron or
 // sailfish); the phone and the plain web builds have none. Both shells answer the same paths;
@@ -13,21 +13,27 @@ import { t } from './i18n';
 //   /__backup?…       writes a backup into such a folder, keeping the newest
 //   /__pick           asks for a file to open (lib/pick-file.web.ts), and gives its bytes
 //   /__latest         the latest release's version.json (lib/updates.ts), which a page cannot read
+// The computer's shell also says in the address which of its packages it runs from
+// (#erevos-system=…), so Check for updates can name the file to take (lib/updates.ts packageFile).
 
 const BUILT_FOR = process.env.EXPO_PUBLIC_SHELL;
 export const SHELL: 'electron' | 'sailfish' | null = BUILT_FOR === 'electron' || BUILT_FOR === 'sailfish' ? BUILT_FOR : null;
 
 const TOKEN_KEY = 'erevos-shell-token';
+const SYSTEM_KEY = 'erevos-shell-system';
 let token = '';
+let system = '';
 
-/** Takes the shell's token from the page's address, before anything asks the shell. */
+/** Takes the shell's token, and the package it says it is, from the page's address, before anything asks the shell. */
 export function setupShell(): void {
   if (!SHELL || typeof window === 'undefined') return;
   const match = /[#&]erevos-token=([\w-]+)/.exec(window.location.hash);
   if (match) {
     token = match[1];
+    system = /[#&]erevos-system=([\w-]+)/.exec(window.location.hash)?.[1] ?? '';
     try {
       sessionStorage.setItem(TOKEN_KEY, token);
+      sessionStorage.setItem(SYSTEM_KEY, system);
     } catch {
       // Kept in memory only: a reload then cannot reach the shell.
     }
@@ -35,10 +41,16 @@ export function setupShell(): void {
   } else {
     try {
       token = sessionStorage.getItem(TOKEN_KEY) ?? '';
+      system = sessionStorage.getItem(SYSTEM_KEY) ?? '';
     } catch {
       token = '';
     }
   }
+}
+
+/** Which package of the computer's shell this is ('windows', 'windows-portable', 'macos', 'linux', 'linux-appimage'), or '' when it does not say. */
+export function shellSystem(): string {
+  return system;
 }
 
 export class ShellError extends Error {}

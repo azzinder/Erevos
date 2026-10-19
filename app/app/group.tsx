@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGroupMedia } from '../components/group-media';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { KeyFace } from '../components/key-face';
+import { usePublicGroup } from '../components/public-group';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { currentCall } from '../lib/call';
@@ -55,6 +56,8 @@ export default function GroupScreen() {
   const scroll = useRef<ScrollView>(null);
   // Photos, files and voice messages: their buttons, sheets, and their place in the bubbles.
   const media = useGroupMedia(id, messages, setNote);
+  // A public group (app/public-group.tsx): its members by the names they chose, and its own screen for them.
+  const pub = usePublicGroup(id);
 
   // A call going on in the group shows, until its members' phones go quiet.
   useEffect(() => {
@@ -102,7 +105,7 @@ export default function GroupScreen() {
     };
   }, [id, load]);
 
-  const name = (identity: string) => memberName(identity, contacts);
+  const name = (identity: string) => (pub.isPublic ? pub.name(identity) : memberName(identity, contacts));
 
   async function send() {
     const text = draft.trim();
@@ -156,14 +159,14 @@ export default function GroupScreen() {
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
       <Row style={styles.head}>
-        <Pressable onPress={() => setSheet(true)} accessibilityRole="button" accessibilityHint={t('Members and settings')} style={({ pressed }) => [styles.top, pressed && styles.pressed]}>
+        <Pressable onPress={() => (pub.isPublic ? router.push(`/public-group?id=${id}`) : setSheet(true))} accessibilityRole="button" accessibilityHint={t('Members and settings')} style={({ pressed }) => [styles.top, pressed && styles.pressed]}>
           <KeyFace identity={id} name={info.name} size={40} />
           <View style={{ flex: 1 }}>
             <Text variant="heading" numberOfLines={1}>
               {info.name}
             </Text>
             <Text variant="caption" tone="muted">
-              {out ? (info.status === 'leaving' ? t('Leaving') : t('You are not in this group')) : t('Group · end-to-end encrypted · tap for members')}
+              {out ? (info.status === 'leaving' ? t('Leaving') : t('You are not in this group')) : (pub.caption ?? t('Group · end-to-end encrypted · tap for members'))}
             </Text>
           </View>
         </Pressable>

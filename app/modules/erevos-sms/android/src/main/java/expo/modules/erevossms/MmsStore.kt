@@ -33,6 +33,7 @@ internal object MmsStore {
   private const val TO = 151
   private const val M_SEND_REQ = 128
   private const val M_RETRIEVE_CONF = 132
+  const val MAX_PART_BYTES = 2 * 1024 * 1024
 
   fun folder(context: Context): File = File(context.cacheDir, "mms").apply { mkdirs() }
 
@@ -349,7 +350,8 @@ internal object MmsStore {
     return ""
   }
 
-  /** The newest MMS of each conversation, newest first: thread, row, time (ms), whether mine, read. */
+  /** The newest MMS of each conversation, newest first: thread, row, time (ms), whether mine, how
+   *  many are not read, and whether any is ours. */
   fun latest(context: Context, rows: Int): List<LongArray> {
     val out = LinkedHashMap<Long, LongArray>()
     val projection = arrayOf(Telephony.Mms.THREAD_ID, Telephony.Mms._ID, Telephony.Mms.DATE, Telephony.Mms.MESSAGE_BOX, Telephony.Mms.READ, Telephony.Mms.MESSAGE_TYPE)
@@ -362,14 +364,64 @@ internal object MmsStore {
           val inbox = c.getInt(3) == Telephony.Mms.MESSAGE_BOX_INBOX
           val unread = if (inbox && c.getInt(4) == 0) 1L else 0L
           val seen = out[thread]
-          if (seen == null) out[thread] = longArrayOf(thread, c.getLong(1), c.getLong(2) * 1000, if (inbox) 0 else 1, unread)
-          else seen[4] += unread
+          if (seen == null) out[thread] = longArrayOf(thread, c.getLong(1), c.getLong(2) * 1000, if (inbox) 0 else 1, unread, if (inbox) 0 else 1)
+          else {
+            seen[4] += unread
+            if (!inbox) seen[5] = 1
+          }
         }
       }
     } catch (_: Exception) {
       // No MMS store on this device.
     }
     return out.values.toList()
+  }
+
+  /** Deletes a conversation's MMS up to `upTo` (milliseconds; the store keeps seconds). */
+  fun deleteThread(context: Context, thread: Long, upTo: Long): Int =
+    try {
+      context.contentResolver.delete(MMS, "${Telephony.Mms.THREAD_ID}=? AND ${Telephony.Mms.DATE}<=?", arrayOf(thread.toString(), (upTo / 1000).toString()))
+    } catch (_: Exception) {
+      // No MMS store on this device.
+      0
+    }
+
+  /** Sends again one of ours that did not go: its text and first picture, to the numbers it was
+   *  for, as a new MMS in place of the old one. Returns the new row. */
+  fun resend(context: Context, id: Long, sim: Int): Long {
+    val to = ArrayList<String>()
+    context.contentResolver.query(Uri.parse("content://mms/$id/addr"), arrayOf(Telephony.Mms.Addr.ADDRESS), "${Telephony.Mms.Addr.TYPE}=?", arrayOf(TO.toString()), null)?.use { c ->
+      while (c.moveToNext()) c.getString(0)?.takeIf { it.isNotBlank() && it != "insert-address-token" }?.let { to.add(it) }
+    }
+    var was = -1
+    context.contentResolver.query(Uri.withAppendedPath(MMS, id.toString()), arrayOf(Telephony.Mms.SUBSCRIPTION_ID), null, null, null)?.use { c ->
+      if (c.moveToFirst() && !c.isNull(0)) was = c.getInt(0)
+    }
+    val (text, pictures) = parts(context, id)
+    val picture = pictures.firstOrNull()
+    val data = picture?.let { partBytes(context, it["uri"] as String) }
+    require(to.isNotEmpty() && (text.isNotEmpty() || data != null)) { "That MMS is no longer on the phone" }
+    val sent = send(context, to.joinToString(","), text, data, (picture?.get("type") as String?) ?: "", if (sim >= 0) sim else was)
+    if (SmsStore.isDefault(context)) context.contentResolver.delete(Uri.withAppendedPath(MMS, id.toString()), null, null)
+    return sent
+  }
+
+  /** The bytes of an MMS's part, by the address parts() gives it; at most MAX_PART_BYTES. */
+  fun partBytes(context: Context, uri: String): ByteArray {
+    val id = uri.removePrefix("content://mms/part/").toLongOrNull()
+    require(uri.startsWith("content://mms/part/") && id != null) { "Not a part of an MMS" }
+    val bytes = context.contentResolver.openInputStream(Uri.withAppendedPath(PARTS, id.toString()))?.use { input ->
+      val out = java.io.ByteArrayOutputStream()
+      val chunk = ByteArray(64 * 1024)
+      while (true) {
+        val n = input.read(chunk)
+        if (n < 0) break
+        out.write(chunk, 0, n)
+        require(out.size() <= MAX_PART_BYTES) { "That picture is too large" }
+      }
+      out.toByteArray()
+    }
+    return bytes ?: throw IllegalStateException("That picture is no longer on the phone")
   }
 
   fun markRead(context: Context, thread: Long) {

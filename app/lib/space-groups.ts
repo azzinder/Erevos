@@ -1,5 +1,6 @@
 import { loadGroupData, saveGroupData } from '../lock/group-data';
 import { currentSpace } from '../lock/keys';
+import { loadPublicGroupData, savePublicGroupData, type PublicData } from '../lock/public-group-data';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { soon } from './call';
 import { canGroup, canRelaySeal } from './core';
@@ -7,8 +8,10 @@ import { toBase64Url } from './e2e';
 import type { GroupCallSignal } from './group-call-signal';
 import type { GroupCallPlace } from './group-calls';
 import type { GroupSignal } from './group-signal';
-import { Groups, type GroupTransport } from './groups';
+import type { GroupTransport } from './groups';
 import { nearby } from './nearby';
+import { relayDoors } from './public-doors';
+import { PublicGroups } from './public-groups';
 import { callRelay, fromHex, relayKey, sendMessage, toHex, type Relay } from './relay';
 import { contactTarget, relayFor, spaceChats } from './space-chats';
 import { t } from './i18n';
@@ -19,7 +22,9 @@ import { t } from './i18n';
 // with no internet, and through the space's relay settings, read when sent. Their photos, files and
 // voice messages go through the space's relay only, straight (lib/group-media.ts).
 
-let opened: { of: object; groups: Promise<Groups> } | null = null;
+let opened: { of: object; groups: Promise<PublicGroups> } | null = null;
+// The same once open, for what cannot wait for them (publicMemberName).
+let shown: PublicGroups | null = null;
 
 const callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
 const messageListeners = new Set<() => void>();
@@ -61,18 +66,20 @@ async function settings() {
 }
 
 /** The open space's groups, opened the first time they are asked for. */
-export function spaceGroups(): Promise<Groups> {
+export function spaceGroups(): Promise<PublicGroups> {
   const current = currentSpace();
   if (opened?.of !== current) {
     const groups = (async () => {
-      const data = await loadGroupData(current.space, current.key);
+      const [data, pub] = await Promise.all([loadGroupData(current.space, current.key), loadPublicGroupData(current.space, current.key)]);
       const me = async () => {
         const [{ e2e }, place] = await Promise.all([spaceChats(), settings()]);
         return { id: toHex(e2e.identity), sender: place.senderHex, relay: place.own.url, relayKey: place.relayKey };
       };
-      const made = new Groups(data, (next) => saveGroupData(current.space, current.key, next), me);
+      const save = (next: PublicData) => savePublicGroupData(current.space, current.key, next);
+      const made = new PublicGroups(data, (next) => saveGroupData(current.space, current.key, next), me, pub, save, relayDoors(settings));
       made.onCall((group, from, signal) => callListeners.forEach((listener) => listener(group, from, signal)));
       made.onMessage(() => messageListeners.forEach((listener) => listener()));
+      if (opened?.of === current) shown = made;
       return made;
     })();
     opened = { of: current, groups };
@@ -85,7 +92,13 @@ export function spaceGroups(): Promise<Groups> {
 
 /** Lets go of the space's groups when it closes. */
 export function forgetSpaceGroups(): void {
+  shown = null;
   opened = null;
+}
+
+/** A member of one of the open space's public groups, by its key there, once the groups are open; null for anyone else. */
+export function publicMemberName(key: string): string | null {
+  return shown?.nameOf(key) ?? null;
 }
 
 /** How the open space's group messages leave the phone. */

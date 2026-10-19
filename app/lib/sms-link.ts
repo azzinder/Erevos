@@ -7,9 +7,9 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { fresh, loadSmsData, MAX_LATER, saveSmsData, type LaterSms, type SmsData } from '../lock/sms-data';
+import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, UNDO_SECONDS, WORD, type LaterSms, type SmsData } from '../lock/sms-data';
 import type { Sim } from '../modules/erevos-sms';
-import { sameAddress, smsAddress, smsNumbers } from './sms-group';
+import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 
 /** Where this chat can be reached, for an invite. */
 export type Own = { senderHex: string; relay: string; relayKey: string };
@@ -89,6 +89,109 @@ export class SmsLink {
   /** Forgets an SMS sent for later: it went, or was cancelled. */
   removeLater(id: string): Promise<void> {
     return this.update((d) => ({ ...d, later: d.later.filter((l) => l.id !== id) }));
+  }
+
+  /** The space's SMS data as it is now: its folders, drafts and spam rules (lib/sms-folders.ts). */
+  get state(): Readonly<SmsData> {
+    return this.data;
+  }
+
+  /** Pins a conversation at the top of the list, or takes the pin away. False, and nothing
+   *  changed, when MAX_PINS are pinned already. */
+  async pin(address: string, on: boolean): Promise<boolean> {
+    let done = true;
+    await this.update((d) => {
+      const others = d.pinned.filter((p) => !sameConversation(p.address, address));
+      done = !on || others.length < MAX_PINS;
+      return done ? { ...d, pinned: on ? [...others, { address, at: Date.now() }] : others } : d;
+    });
+    return done;
+  }
+
+  /** Takes a conversation out of the list, unpinned, until a message comes from them after `at`;
+   *  or puts it back. */
+  archive(address: string, on: boolean, at = Date.now()): Promise<void> {
+    return this.update((d) => ({
+      ...d,
+      pinned: on ? d.pinned.filter((p) => !sameConversation(p.address, address)) : d.pinned,
+      archived: [...d.archived.filter((a) => !sameConversation(a.address, address)), ...(on ? [{ address, at }] : [])],
+    }));
+  }
+
+  /** Forgets that these conversations were archived: a message brought them back. */
+  unarchive(addresses: string[]): Promise<void> {
+    return this.update((d) => ({ ...d, archived: d.archived.filter((a) => !addresses.some((address) => sameConversation(a.address, address))) }));
+  }
+
+  /** Puts a conversation in the Trash, its messages up to `upTo`, unpinned and out of the Archive.
+   *  False, and nothing changed, when MAX_TRASH are there already. */
+  async trash(address: string, upTo: number, at = Date.now()): Promise<boolean> {
+    let done = true;
+    await this.update((d) => {
+      const others = d.trash.filter((t) => !sameConversation(t.address, address));
+      done = others.length < MAX_TRASH;
+      if (!done) return d;
+      const other = (a: { address: string }) => !sameConversation(a.address, address);
+      return { ...d, trash: [...others, { address, upTo, at }], pinned: d.pinned.filter(other), archived: d.archived.filter(other) };
+    });
+    return done;
+  }
+
+  /** Takes a conversation out of the Trash: it is back, or it went from the phone. */
+  untrash(address: string): Promise<void> {
+    return this.update((d) => ({ ...d, trash: d.trash.filter((t) => !sameConversation(t.address, address)) }));
+  }
+
+  /** What is typed in a conversation and not sent, or nothing. */
+  draftFor(address: string): string {
+    return this.data.drafts.find((d) => sameConversation(d.address, address))?.text ?? '';
+  }
+
+  /** Keeps what is typed in a conversation; nothing typed forgets it. */
+  setDraft(address: string, text: string): Promise<void> {
+    const kept = text.trim() ? text.slice(0, LATER_TEXT) : '';
+    if (kept === this.draftFor(address)) return Promise.resolve();
+    return this.update((d) => ({ ...d, drafts: [...d.drafts.filter((x) => !sameConversation(x.address, address)), ...(kept ? [{ address, text: kept, at: Date.now() }] : [])] }));
+  }
+
+  /** Says a number sends spam (true), or does not (false), whatever the filter thinks; null leaves
+   *  it to the filter again. */
+  markSpam(number: string, spam: boolean | null): Promise<void> {
+    return this.update((d) => ({ ...d, marks: [...d.marks.filter((m) => !sameConversation(m.number, number)), ...(spam === null ? [] : [{ number, spam, at: Date.now() }])] }));
+  }
+
+  setSpam(on: boolean): Promise<void> {
+    return this.update((d) => ({ ...d, spam: on }));
+  }
+
+  setSpamLinks(on: boolean): Promise<void> {
+    return this.update((d) => ({ ...d, spamLinks: on }));
+  }
+
+  /** Adds a word that sends an SMS to Spam. False when it is no word, or MAX_WORDS are kept. */
+  async addSpamWord(word: string): Promise<boolean> {
+    const kept = word.trim().replace(/\s+/g, ' ');
+    if (!kept || kept.length > WORD) return false;
+    let done = true;
+    await this.update((d) => {
+      if (d.spamWords.some((w) => w.toLowerCase() === kept.toLowerCase())) return d;
+      done = d.spamWords.length < MAX_WORDS;
+      return done ? { ...d, spamWords: [...d.spamWords, kept] } : d;
+    });
+    return done;
+  }
+
+  removeSpamWord(word: string): Promise<void> {
+    return this.update((d) => ({ ...d, spamWords: d.spamWords.filter((w) => w !== word) }));
+  }
+
+  /** Seconds an SMS waits before it goes, to be taken back. */
+  get undo(): number {
+    return this.data.undo;
+  }
+
+  setUndo(seconds: number): Promise<void> {
+    return this.update((d) => ({ ...d, undo: UNDO_SECONDS.includes(seconds) ? seconds : d.undo }));
   }
 
   /** Whether the first SMS to `number` should carry an invite: invites are on, the core can open

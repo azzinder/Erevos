@@ -1,10 +1,10 @@
 name: desktop
 
-# Erevos for Linux and macOS (desktop/): the web build with the core in WebAssembly, in Electron.
-# Nobody on the team has a Mac, so the Mac's disk image is opened and its app started here, on
-# GitHub's Mac runner, with --smoke (desktop/main.js): it waits for the first screen and the core.
-# The packages are kept as the run's artifacts. Main's packages go out with every release
-# (release.yml).
+# Erevos for Linux, macOS and Windows (desktop/): the web build with the core in WebAssembly, in
+# Electron. Nobody on the team has a Mac, so the Mac's disk image is opened and its app started
+# here, on GitHub's Mac runner, with --smoke (desktop/main.js): it waits for the first screen and
+# the core. The Windows app is started the same way on GitHub's Windows runner. The packages are
+# kept as the run's artifacts. Main's packages go out with every release (release.yml).
 
 on:
   pull_request:
@@ -110,3 +110,37 @@ jobs:
         with:
           name: erevos-macos
           path: desktop/dist/*.dmg
+
+  # A Windows minute counts as two, so the Windows build too runs only when started by hand.
+  windows:
+    needs: linux
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop-web
+          path: desktop/web
+      - run: npm ci
+        working-directory: desktop
+      - name: Package for Windows (installer and portable)
+        working-directory: desktop
+        run: npx electron-builder --win nsis portable --x64 --publish never
+      - name: Start the app and wait for its first screen
+        run: |
+          set -euo pipefail
+          desktop/dist/win-unpacked/Erevos.exe --smoke | tee smoke.log
+          grep -q "SMOKE OK core=true secrets=encrypted" smoke.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: erevos-windows
+          path: desktop/dist/*.exe
