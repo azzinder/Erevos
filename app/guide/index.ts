@@ -25,6 +25,7 @@ export const GUIDE_UI: Record<GuideLang, {
   next: string;
   missing: string;
   version: (version: string) => string;
+  update: string;
 }> = {
   el: {
     title: 'Οδηγός χρήσης',
@@ -35,6 +36,7 @@ export const GUIDE_UI: Record<GuideLang, {
     next: 'Επόμενη',
     missing: 'Αυτό το κομμάτι του οδηγού δεν βρέθηκε.',
     version: (version) => `Erevos ${version}, δοκιμαστική έκδοση`,
+    update: 'Πώς το ενημερώνεις',
   },
   en: {
     title: 'User guide',
@@ -45,6 +47,7 @@ export const GUIDE_UI: Record<GuideLang, {
     next: 'Next',
     missing: 'This part of the guide was not found.',
     version: (version) => `Erevos ${version}, test version`,
+    update: 'How to update it',
   },
 };
 

@@ -22,8 +22,8 @@ buttons above it switch between Greek and English.
 
 ## Getting started {#start}
 
-For now Erevos is built from its source code; there is no download yet. Chat runs on Android. The other screens
-also open on a computer, for testing.
+Erevos is downloaded from its releases page, one file for each system: see [Updates](#updates) for where, and how to
+update it. It runs on Android, on a computer (Linux and macOS), on Sailfish OS and, from the browser, on an iPhone.
 
 The home screen is the list of your chats, the one that moved last at the top. Each shows the contact's picture,
 the last message with its marks, when it came, and how many of their messages you have not read. A clock beside it
@@ -610,7 +610,7 @@ always reads well, on glass too.
 Erevos also runs on a computer, Linux or macOS, as an app of its own. It chats through a relay, end-to-end encrypted
 as on the phone, and keeps its contacts, messages and settings sealed the same way.
 
-1. Install it. On Linux: the package for Arch-based systems (\`erevos-x64.pacman\`, with \`sudo pacman -U\`) or the
+1. Install it. On Linux: the package for Arch-based systems (\`erevos-linux-x86_64.pacman\`, with \`sudo pacman -U\`) or the
    AppImage. On a Mac: open the disk image and drag Erevos to Applications. It has no paid Apple signature, so the
    first time allow it under **System Settings → Privacy & Security → Open Anyway**.
 2. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay). **Copy my contact link** copies
@@ -676,8 +676,8 @@ engine inside a Sailfish window, with its code installed with the app and not fe
 relay, end-to-end encrypted as on the phone, and keeps its contacts, messages and settings sealed the same way.
 
 1. Allow apps from outside the Jolla Store: **Settings → Untrusted software → Allow untrusted software**.
-2. Copy \`erevos-<version>.aarch64.rpm\` to the phone (Downloads) and tap it in **Files**, then **Install**. From a
-   terminal (Developer mode) it is \`pkcon install-local erevos-<version>.aarch64.rpm\`. Needs Sailfish OS 5 in its
+2. Copy \`erevos-sailfish-aarch64.rpm\` to the phone (Downloads) and tap it in **Files**, then **Install**. From a
+   terminal (Developer mode) it is \`pkcon install-local erevos-sailfish-aarch64.rpm\`. Needs Sailfish OS 5 in its
    64-bit (aarch64) version.
 3. Set a password lock (**Lock and second password**). See below why it matters here.
 4. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay).
@@ -692,6 +692,40 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
 - **Only while it runs:** when Erevos is closed, messages wait on the relay until it opens.
 - **Tested so far** on Sailfish's browser engine (Gecko 91) on a computer, chatting with a browser through a relay.
   Not yet on a Sailfish phone.
+
+## Updates {#updates}
+
+Erevos does not update itself, and does not even look for updates on its own: a check like that would tell the place
+it asks, every day, that this phone or computer has Erevos. You update it by hand, when you choose.
+
+**Which version you have:** at the bottom of this guide's first screen, **Erevos 0.1.N**.
+
+**Where new versions are:** on Erevos's releases page, \`https://github.com/azzinder/Erevos/releases\` (for now only
+people the repository is shared with can open it). The newest is at the top, **Erevos 0.1.N**, with a file for each
+system. The five newest stay there.
+
+**Check the file** if you can, on a computer: each release has \`SHA256SUMS\`, and in the folder with the downloaded
+files \`sha256sum -c --ignore-missing SHA256SUMS\` must say **OK** for each.
+
+**Make a backup first** (**Backups → Make a backup**), see [Backups](#backup). An update keeps everything, but a backup
+costs a minute and covers any surprise.
+
+| On | How to update |
+| --- | --- |
+| **Android** | Open the releases page on the phone, tap \`erevos-android.apk\`, then **Install**. It installs over the one you have and keeps everything. Allow installing from the browser once, when Android asks. |
+| **Linux, Arch-based** | \`sudo pacman -U erevos-linux-x86_64.pacman\` |
+| **Linux, AppImage** | Replace the old \`erevos-linux-x86_64.AppImage\` with the new one and make it executable. |
+| **macOS** | Open \`erevos-macos.dmg\` and drag Erevos to Applications, **Replace**. Then allow it again under **System Settings → Privacy & Security → Open Anyway**. |
+| **Sailfish OS** | Tap \`erevos-sailfish-aarch64.rpm\` in **Files**, then **Install**, or \`pkcon install-local erevos-sailfish-aarch64.rpm\`. |
+| **iPhone, browser** | Nothing to do: the web app takes a new signed version by itself when it opens, see [On an iPhone](#iphone). |
+
+- **Contacts, chats and settings stay** on every system: they live in Erevos's own folder, not in the app.
+- **Android, the first time from the releases page:** an Erevos built on a computer for testing is signed with
+  another key, and Android refuses to install over it (**App not installed**). Make a backup, uninstall Erevos,
+  install the one from the releases page and restore the backup. After that, every update installs over it.
+- **Never older:** do not install an older version over a newer one. Its data may be in a form the older one cannot
+  read. Restore a backup made with that older version instead.
+- **A release that lacks your system** says so in its notes: that build failed, so take the release before.
 
 ## The test screens {#tests}
 

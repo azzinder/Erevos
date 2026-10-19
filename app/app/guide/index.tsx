@@ -12,6 +12,7 @@ import { useColors } from '../../theme/context';
 
 /** The user guide, as in LPHL FASOULI: its sections, and a search through all of them. */
 export default function GuideScreen() {
+  const colors = useColors();
   const [lang, setLang] = useState<GuideLang>(guideLang);
   const ui = GUIDE_UI[lang];
   const sections = guideFor(lang);
@@ -66,6 +67,12 @@ export default function GuideScreen() {
       <Text variant="caption" tone="muted" style={{ textAlign: 'center', paddingTop: space.md }}>
         {ui.version(Constants.expoConfig?.version ?? '')}
       </Text>
+      {/* Erevos never looks for updates by itself (that would tell someone it is here): this says how to, by hand. */}
+      <Pressable onPress={() => open('updates')} accessibilityRole="link" hitSlop={8} style={{ alignSelf: 'center' }}>
+        <Text variant="caption" color={colors.accentText}>
+          {ui.update}
+        </Text>
+      </Pressable>
     </Page>
   );
 }
