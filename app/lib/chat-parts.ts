@@ -88,6 +88,11 @@ export function toCarry(carried: Carried, words: boolean): Carried {
 /** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */
 export const acts = (carried: Carried) => !!carried.pin || !!carried.vote;
 
+/** What a message carries, but a link's preview: what goes over LoRa, which takes only a little (lib/lora.ts). */
+export function withoutPreview({ preview: _, ...rest }: Carried): Carried {
+  return rest;
+}
+
 const plainText = (v: unknown, most: number): string | null => {
   if (typeof v !== 'string') return null;
   // One line, without the marks that change how text runs.

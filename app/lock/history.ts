@@ -461,12 +461,13 @@ export class History {
 
   /**
    * A message that waited went: as the relay took it, lasting `lasts` seconds once read, or, sent
-   * for later, as a relay holds it till its time (`held`). False if it is gone.
+   * for later, as a relay holds it till its time (`held`). With `bare`, it went without its link's
+   * preview (over LoRa, lib/waiting.ts), which it no longer keeps. False if it is gone.
    */
-  async sent(peer: string, tag: string, lasts: number, held?: HeldAt): Promise<boolean> {
+  async sent(peer: string, tag: string, lasts: number, held?: HeldAt, bare = false): Promise<boolean> {
     const list = this.data.chats[peer];
     if (!list?.some((m) => m[3] === tag && m[6] === WAITING)) return false;
-    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, quiet: false }) : m));
+    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, quiet: false, ...(bare ? { preview: undefined } : {}) }) : m));
     await this.save({ chats: { ...this.data.chats, [peer]: changed } });
     return true;
   }

@@ -38,7 +38,7 @@ import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from '../components/message-parts';
 import { StickerPicker, StickerView } from '../components/stickers';
 import { PollCard, PollSheet } from '../components/poll';
-import { acts, checkedChoices, choose as chooseOption, contentOf, placeText, placeWords, pollWords, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
+import { acts, checkedChoices, choose as chooseOption, contentOf, placeText, placeWords, pollWords, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { CAN_PLACE, findPlace } from '../lib/place';
@@ -1684,6 +1684,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   // is read; `quiet`, it comes without sound, also when it has to wait. Given `content`, it sends
   // that instead, a sticker, a place or a poll with its words (its emoji, where it is, or what it
   // asks), or words forwarded, and what is typed stays; with `to`, to that chat, not the one shown.
+  // When only LoRa can take it, and it is too much for LoRa with its link's preview, the words go
+  // without the preview rather than wait.
   async function send(lasts = 0, quiet = false, content?: Content & { text: string }, to = selected) {
     const text = content ? content.text : draft.trim();
     if (!text || !to?.startsWith(CONTACT_PREFIX) || previewing.current) return;
@@ -1696,11 +1698,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     const answer = content?.forwarded ? {} : answering(to);
     const carried = content ? contentOf(content) : await previewOf(text);
     const parts = { ...answer, ...carried };
+    const identity = to.slice(CONTACT_PREFIX.length);
     try {
-      const { tag, timer, way } = await sendToContact(relayTarget(), to.slice(CONTACT_PREFIX.length), text, { lasts, quiet, ...answer, more: carried });
-      keep(to, text, tag, timer, parts, !content);
+      let bare = false;
+      const { tag, timer, way } = await sendToContact(relayTarget(), identity, text, { lasts, quiet, ...answer, more: carried }).catch((error: unknown) => {
+        if (!(error instanceof TooLargeForLoraError) || !carried.preview) throw error;
+        // Sealed anew without it, for LoRa only: the relay just failed.
+        bare = true;
+        return sendToContact(null, identity, text, { lasts, quiet, ...answer, more: withoutPreview(carried) });
+      });
+      keep(to, text, tag, timer, bare ? { ...answer, ...withoutPreview(carried) } : parts, !content);
       const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(to, contacts));
-      setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer) }) : sent);
+      const said = timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer) }) : sent;
+      setNote(bare ? `${said} ${t('It went without the link’s preview, which is too much for LoRa.')}` : said);
     } catch (error) {
       if (!canWait(error) || hiddenKey) {
         setNote(notSent(error));
@@ -1826,7 +1836,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
       setMessages((list) =>
         list.map((m) => {
           const sent = went.find((w) => w.peer === m.peer && w.tag === m.tag);
-          return sent ? { ...m, mark: 0, lasts: sent.lasts, held: sent.held, quiet: false } : m;
+          if (!sent) return m;
+          const gone: Message = { ...m, mark: 0, lasts: sent.lasts, held: sent.held, quiet: false };
+          if (sent.bare) delete gone.preview;
+          return gone;
         }),
       );
     }

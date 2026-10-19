@@ -113,4 +113,5 @@ export const messages: Record<string, string> = {
   'Everyone in {name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.':
     'Όλοι στην ομάδα {name} παίρνουν αυτό το σημείο μία φορά, κρυπτογραφημένο από άκρη σε άκρη. Το Erevos δεν σε ακολουθεί μετά.',
   'You in {name}': 'Εσύ στην ομάδα {name}',
+  'It went without the link’s preview, which is too much for LoRa.': 'Έφυγε χωρίς την προεπισκόπηση του συνδέσμου, που είναι πολύ μεγάλη για το LoRa.',
 };

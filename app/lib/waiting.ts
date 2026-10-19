@@ -2,7 +2,7 @@ import type { Spare } from '../lock/e2e-data';
 import type { Message } from '../lock/history';
 import { loadClip } from '../lock/voice-clips';
 import { uploadFile } from './attachments';
-import { contentOf } from './chat-parts';
+import { contentOf, withoutPreview } from './chat-parts';
 import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForLoraError } from './nearby';
 import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Relay } from './relay';
@@ -17,7 +17,8 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // first and each contact's in order, once the relay or the contact's phone nearby can take them:
 // with each look at the relay that answers (the chat screen's, or the receiver's beside the
 // screens), and when a contact is heard nearby. A waiting text goes over LoRa too, once a radio
-// is linked. Each keeps its tag, so it can still be deleted on both phones once it went.
+// is linked; one too much for LoRa with its link's preview goes there without the preview. Each
+// keeps its tag, so it can still be deleted on both phones once it went.
 //
 // Each try seals the message anew, which moves the conversation on, and a contact's phone can skip
 // only so many it never got. So a message is tried only when there is a way for it, and after a
@@ -48,8 +49,12 @@ export function canWait(error: unknown): boolean {
  */
 export type SendPlace = { sends: Relay | null; own: Relay | null; senderHex: string; here: Where; ownKey: string; relayUp: boolean };
 
-/** A message that waited and went: its chat, its tag, how long it lasts once read (seconds), and, sent for later, the relay that holds it till its time. */
-export type Went = { peer: string; tag: string; lasts: number; held?: HeldAt };
+/**
+ * A message that waited and went: its chat, its tag, how long it lasts once read (seconds), and,
+ * sent for later, the relay that holds it till its time. `bare`: it went over LoRa without its
+ * link's preview.
+ */
+export type Went = { peer: string; tag: string; lasts: number; held?: HeldAt; bare?: true };
 
 // Failed tries so far, by tag, and when the next may be.
 const tries = new Map<string, { count: number; next: number }>();
@@ -93,9 +98,9 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
       continue;
     }
     try {
-      const lasts = await sendOne(e2e, place, identity, message);
+      const { lasts, bare } = await sendOne(e2e, place, identity, message);
       tries.delete(tag);
-      if (await history.sent(peer, tag, lasts)) went.push({ peer, tag, lasts });
+      if (await history.sent(peer, tag, lasts, undefined, bare)) went.push({ peer, tag, lasts, ...(bare ? { bare: true as const } : {}) });
     } catch {
       const count = (tried?.count ?? 0) + 1;
       tries.set(tag, { count, next: now + Math.min(LONGEST_WAIT, FIRST_WAIT * 2 ** (count - 1)) });
@@ -188,8 +193,9 @@ function throughRelay(place: SendPlace, queue: { sender: string; relay: string; 
 
 // Seals the message, with its tag, and hands it on as the chat does: nearby when they are, and
 // through the relay, after the conversation's first packet if the relay has not taken that yet.
-// Returns how long it lasts once read.
-async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Message): Promise<number> {
+// A text only LoRa could take, but too much for it with its link's preview, is sealed again
+// without the preview, for LoRa. Returns how long it lasts once read, and whether it went so (`bare`).
+async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Message): Promise<{ lasts: number; bare: boolean }> {
   const options = { at: place.here, tag: message.tag, lasts: message.lasts ?? 0, re: message.re, forwarded: message.forwarded };
   let sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; tag: string; timer: number };
   let packets: Uint8Array[];
@@ -226,6 +232,14 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
       : null;
   const all = sealed.first ? [sealed.first, ...packets] : packets;
   const carry = worthCarrying ? () => carriedFor(sealed, all, { url: place.own?.url ?? '', key: place.ownKey }) : null;
-  await nearby.deliver(identity, all, relay, carry, worthCarrying);
-  return sealed.timer;
+  try {
+    await nearby.deliver(identity, all, relay, carry, worthCarrying);
+  } catch (error) {
+    if (!(error instanceof TooLargeForLoraError) || !message.preview || message.voice || message.file) throw error;
+    const bare = await e2e.seal(identity, message.text, place.senderHex, { ...options, quiet: message.quiet, more: withoutPreview(contentOf(message)) });
+    const again = bare.first ? [bare.first, bare.packet] : [bare.packet];
+    await nearby.deliver(identity, again, null, () => carriedFor(bare, again, { url: place.own?.url ?? '', key: place.ownKey }), true);
+    return { lasts: bare.timer, bare: true };
+  }
+  return { lasts: sealed.timer, bare: false };
 }

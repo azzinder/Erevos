@@ -389,6 +389,7 @@ nothing: it shows what came. It is off unless you turn it on, and then it is on 
   for. Through Tor, Erevos sends only its relay requests, not pages, so while the space goes through Tor no previews
   are made at all.
 - Hidden chats make none, nor Erevos on a computer, which shows those that come all the same.
+- **Over LoRa**, which takes only a little, a message goes without its preview rather than wait, and keeps none here.
 - A preview is what the page says of itself, true or not. An Erevos from before this shows the link without it.
 
 ### Voice and video calls
