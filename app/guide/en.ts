@@ -442,7 +442,8 @@ chats in one list.
 - **If no SMS show:** Android 15 and later hold the SMS permission back from an app installed from a browser.
   Under **SMS** in the menu, tap **Allow SMS**. If Android calls it a restricted setting, open **Erevos's App
   info**, tap **⋮** at the top right → **Allow restricted settings**, and allow SMS under **Permissions**. Chats
-  sent as RCS ("chat" in Google Messages) stay in that app and do not show.
+  sent as RCS ("chat" in Google Messages) stay in that app and do not show. The **SMS** screen says how many SMS
+  conversations Erevos reads, or why it could not read them.
 - **Writing to someone with Erevos:** it goes through Erevos, end-to-end encrypted, once their number is linked to
   their contact. Link it by hand in the SMS conversation, or let a hidden invite find it.
 - **Hidden invites:** with the first SMS to a number that is not a contact, Erevos also sends a short hidden

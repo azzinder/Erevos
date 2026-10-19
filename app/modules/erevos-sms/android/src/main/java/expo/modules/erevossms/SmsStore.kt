@@ -17,6 +17,7 @@ import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import android.util.Base64
+import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -26,6 +27,8 @@ import org.json.JSONObject
  * Not compiled or run yet.
  */
 internal object SmsStore {
+  private const val TAG = "ErevosSms"
+
   const val INVITE_PORT: Short = 16180
   const val SENT_ACTION = "expo.modules.erevossms.SENT"
   private const val CHANNEL = "sms"
@@ -112,31 +115,41 @@ internal object SmsStore {
         }
       }
     }
-    // MMS: a conversation whose newest message is one shows it, and its unread ones count.
+    // MMS: a conversation whose newest message is one shows it, and its unread ones count. One that
+    // cannot be read is left out, never the SMS with it.
     for (latest in MmsStore.latest(context, 2000)) {
-      val (thread, id, at, mine, unread) = latest.toList()
-      val row = seen[thread]
-      if (row == null || (row["at"] as Double) < at.toDouble()) {
-        if (row == null && seen.size >= limit) continue
-        val (text, pictures) = MmsStore.parts(context, id)
-        // A group's conversation is named by all its numbers, comma-separated.
-        val address = MmsStore.recipients(context, thread).joinToString(",").ifEmpty {
-          (row?.get("address") as String?) ?: MmsStore.addressOf(context, id, mine == 1L)
-        }
-        if (address.isEmpty()) continue
-        seen[thread] = mutableMapOf(
-          "thread" to thread.toDouble(),
-          "address" to address,
-          "text" to text.ifEmpty { if (pictures.isNotEmpty()) "Picture" else "MMS" },
-          "at" to at.toDouble(),
-          "mine" to (mine == 1L),
-          "unread" to ((row?.get("unread") as Int?) ?: 0) + unread.toInt(),
-        )
-      } else {
-        row["unread"] = (row["unread"] as Int) + unread.toInt()
+      try {
+        mmsInto(context, seen, latest, limit)
+      } catch (e: Exception) {
+        Log.w(TAG, "An MMS left out of the list", e)
       }
     }
     return seen.values.sortedByDescending { it["at"] as Double }
+  }
+
+  /** Puts a conversation's newest MMS in the list, when it is newer than its SMS. */
+  private fun mmsInto(context: Context, seen: LinkedHashMap<Long, MutableMap<String, Any?>>, latest: LongArray, limit: Int) {
+    val (thread, id, at, mine, unread) = latest.toList()
+    val row = seen[thread]
+    if (row == null || (row["at"] as Double) < at.toDouble()) {
+      if (row == null && seen.size >= limit) return
+      val (text, pictures) = MmsStore.parts(context, id)
+      // A group's conversation is named by all its numbers, comma-separated.
+      val address = MmsStore.recipients(context, thread).joinToString(",").ifEmpty {
+        (row?.get("address") as String?) ?: MmsStore.addressOf(context, id, mine == 1L)
+      }
+      if (address.isEmpty()) return
+      seen[thread] = mutableMapOf(
+        "thread" to thread.toDouble(),
+        "address" to address,
+        "text" to text.ifEmpty { if (pictures.isNotEmpty()) "Picture" else "MMS" },
+        "at" to at.toDouble(),
+        "mine" to (mine == 1L),
+        "unread" to ((row?.get("unread") as Int?) ?: 0) + unread.toInt(),
+      )
+    } else {
+      row["unread"] = (row["unread"] as Int) + unread.toInt()
+    }
   }
 
   /** A conversation's messages with one number, oldest first, the latest `limit` of them. */

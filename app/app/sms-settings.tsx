@@ -6,7 +6,7 @@ import { Button, Card, Field, Input, Page, SectionTitle, Text } from '../compone
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
-import { requestDefaultSms, smsReady, smsStatus, type SmsStatus } from '../modules/erevos-sms';
+import { requestDefaultSms, smsReady, smsStatus, smsThreads, type SmsStatus } from '../modules/erevos-sms';
 
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
 // writing to a number that has Erevos goes through Erevos. Whether to look for Erevos on a number
@@ -31,6 +31,8 @@ export default function SmsSettings() {
   // Whether Android lets Erevos read the phone's SMS; null until known.
   const [canRead, setCanRead] = useState<boolean | null>(null);
   const [readNote, setReadNote] = useState('');
+  // What reading the phone's SMS gave, as the SMS app: how many conversations, or why it failed.
+  const [reading, setReading] = useState<{ count: number } | { error: string } | null>(null);
   const [link, setLink] = useState<SmsLink | null>(null);
   const [invites, setInvites] = useState(true);
   const [names, setNames] = useState(false);
@@ -47,8 +49,16 @@ export default function SmsSettings() {
       })
       .catch(() => setNote('The SMS settings of this space could not open.'));
     const look = () => {
-      setStatus(smsStatus());
-      if (Platform.OS === 'android') void PermissionsAndroid.check('android.permission.READ_SMS').then(setCanRead, () => setCanRead(null));
+      const now = smsStatus();
+      setStatus(now);
+      if (Platform.OS !== 'android') return;
+      void PermissionsAndroid.check('android.permission.READ_SMS').then(setCanRead, () => setCanRead(null));
+      if (now?.isDefault) {
+        smsThreads().then(
+          (threads) => setReading({ count: threads.length }),
+          (error) => setReading({ error: error instanceof Error ? error.message : String(error) }),
+        );
+      } else setReading(null);
     };
     look();
     // Android answers in its own screens: look again when the app comes back.
@@ -141,6 +151,15 @@ export default function SmsSettings() {
             <Button title="Open Erevos's App info" kind="secondary" onPress={() => void Linking.openSettings()} />
             {readNote ? <Text tone="muted">{readNote}</Text> : null}
           </>
+        ) : null}
+        {status?.isDefault && canRead !== false && reading ? (
+          <Text tone="muted">
+            {'error' in reading
+              ? `Erevos could not read the phone's SMS: ${reading.error}`
+              : reading.count === 0
+                ? 'Erevos found no SMS on this phone.'
+                : `Erevos reads ${reading.count} SMS ${reading.count === 1 ? 'conversation' : 'conversations'} on this phone.`}
+          </Text>
         ) : null}
         {status && !status.phone ? <Text tone="muted">This device has no phone part, so it cannot send SMS.</Text> : null}
       </Card>
