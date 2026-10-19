@@ -369,6 +369,19 @@ Under **Attach** there is more to send than photos and files:
   the encryption, as reactions do. An Erevos from before this shows the question and its options as words, to answer in
   words.
 
+### Link previews
+
+A link in a message is underlined, and opens only once you tap it and say so. With **Link previews** on, in a chat's
+details, a link you send goes with its preview: as you send it, this phone fetches the page and takes its title, a line
+about it and a small picture, and they go inside the message, end-to-end encrypted. The phone that gets it fetches
+nothing: it shows what came. It is off unless you turn it on, and then it is on for all the chats of the space.
+
+- **The site sees this phone's internet address**, and when, as it would from a browser, but not who the message is
+  for. Through Tor, Erevos sends only its relay requests, not pages, so while the space goes through Tor no previews
+  are made at all.
+- Hidden chats make none, nor Erevos on a computer, which shows those that come all the same.
+- A preview is what the page says of itself, true or not. An Erevos from before this shows the link without it.
+
 ### Voice and video calls
 
 In a contact's chat, tap **Call** for a voice call or **Video** for a video call. The first time, Android asks whether
@@ -900,6 +913,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. | Video with more than four people, through a server; more than eight people. |
+| **Link previews** | Off unless turned on. Then, as you send a link, your phone fetches its page straight from the site, which sees your IP address and when, not who the message is for. The preview goes inside the encrypted message; the phone that gets it fetches nothing. None while the space goes through Tor, and none in hidden chats. | Previews through Tor. |
 
 ## What is coming {#coming}
 

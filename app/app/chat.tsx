@@ -35,10 +35,12 @@ import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '
 import { LaterPicker } from '../components/later-picker';
 import { LinkedText } from '../components/linked-text';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
-import { openPlace, PlaceCard, Pinned, Quote, Reactions } from '../components/message-parts';
+import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from '../components/message-parts';
 import { StickerPicker, StickerView } from '../components/stickers';
 import { PollCard, PollSheet } from '../components/poll';
-import { acts, checkedChoices, choose as chooseOption, contentOf, placeText, placeWords, pollWords, type Content, type Place, type Poll } from '../lib/chat-parts';
+import { acts, checkedChoices, choose as chooseOption, contentOf, placeText, placeWords, pollWords, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
+import { firstLink, fitPreview } from '../lib/link-preview';
+import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { CAN_PLACE, findPlace } from '../lib/place';
 import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
@@ -66,7 +68,7 @@ import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { isGroupPacket, type GroupInfo } from '../lib/groups';
 import { spaceGroups, takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
-import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type HeldAt, type Relay } from '../lib/relay';
+import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, throughTor, toHex, type CallRelay, type HeldAt, type Relay } from '../lib/relay';
 import { answersAsk, appShown, awayPace, holdReceiver, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, relayFor, spaceChats } from '../lib/space-chats';
@@ -385,6 +387,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   // whether it looks for Erevos on the same Wi-Fi (lib/radio.ts).
   const [carrying, setCarrying] = useState(true);
   const [lanOn, setLanOn] = useState(true);
+  // Whether this phone makes the preview of a link it sends, in the space's chats (SpaceData.previews).
+  const [previews, setPreviews] = useState(false);
+  // Set while a preview is being made, so the words do not go twice.
+  const previewing = useRef(false);
   const [directOn, setDirectOn] = useState(true);
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
@@ -590,6 +596,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   }
 
   // Looks for Erevos on the same Wi-Fi or hotspot too, or no longer (lib/nearby-links.ts).
+  // Makes link previews, or no longer, in the space's chats (lib/make-preview.ts).
+  function changePreviews(on: boolean) {
+    setPreviews(on);
+    updateCurrentSpaceData({ previews: on }).catch((error) => setNote(errorText(error)));
+  }
+
   function changeLan(on: boolean) {
     setLanOn(on);
     setLanKept(on).catch(() => setNote(t('Changed until Erevos closes: the phone could not keep it.')));
@@ -733,6 +745,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
         setRelayToken(data.token);
         setViaUrl(data.via);
         setViaToken(data.viaToken);
+        setPreviews(data.previews);
         setHomeUrl(data.spare.url);
         setHomeToken(data.spare.token);
         setOwnQueue(data.ownQueue);
@@ -1456,6 +1469,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     if (sticker) void send(0, false, { text: sticker.emoji, sticker: name });
   }
 
+  // The preview of the first link in words typed, when this phone makes them: never in hidden
+  // chats, nor while the space goes through Tor (lib/make-preview.ts). None if it takes too long.
+  async function previewOf(text: string): Promise<Carried> {
+    const link = previews && CAN_PREVIEW && !hiddenKey && !throughTor() ? firstLink(text) : null;
+    if (!link) return {};
+    previewing.current = true;
+    setNote(t('Making the link’s preview…'));
+    try {
+      const made = await makePreview(link);
+      const preview = made && fitPreview(text, made);
+      return preview ? { preview } : {};
+    } finally {
+      previewing.current = false;
+      setNote('');
+    }
+  }
+
   // What the next message in `peer`'s chat answers, if it answers one.
   function answering(peer: string): Parts {
     return replying && replying.peer === peer && replying.tag ? { re: replying.tag } : {};
@@ -1627,7 +1657,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   // asks), or words forwarded, and what is typed stays; with `to`, to that chat, not the one shown.
   async function send(lasts = 0, quiet = false, content?: Content & { text: string }, to = selected) {
     const text = content ? content.text : draft.trim();
-    if (!text || !to?.startsWith(CONTACT_PREFIX)) return;
+    if (!text || !to?.startsWith(CONTACT_PREFIX) || previewing.current) return;
     setVanishing(false);
     if (!e2e) {
       setNote(t(NO_CORE));
@@ -1635,7 +1665,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     }
     // A copy answers nothing.
     const answer = content?.forwarded ? {} : answering(to);
-    const carried = content ? contentOf(content) : {};
+    const carried = content ? contentOf(content) : await previewOf(text);
     const parts = { ...answer, ...carried };
     try {
       const { tag, timer, way } = await sendToContact(relayTarget(), to.slice(CONTACT_PREFIX.length), text, { lasts, quiet, ...answer, more: carried });
@@ -2705,6 +2735,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
                         ? t('They do not see when you are online, nor that their messages came or were read, until you write. You do not see when they are online either.')
                         : t('They see when you are online, and which of their messages you read.')}
                     </Text>
+                    {CAN_PREVIEW && !hiddenKey ? (
+                      <>
+                        <View style={styles.rule} />
+                        <DetailRow title={t('Link previews')} right={<Toggle on={previews} />} onPress={() => changePreviews(!previews)} />
+                        <Text variant="caption" tone="muted" style={styles.rowMore}>
+                          {throughTor()
+                            ? t('None while this space goes through Tor: Erevos sends only relay requests through it.')
+                            : previews
+                              ? t("When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. In all chats of this space, not in hidden chats.")
+                              : t("Links go as they are. Turned on, this phone fetches a link's page as you send it, and the site sees this phone's internet address. The phone that gets it fetches nothing.")}
+                        </Text>
+                      </>
+                    ) : null}
                     <View style={styles.rule} />
                     <DetailRow
                       title={t('Chat look')}
@@ -3299,6 +3342,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
                       : <LinkedText text={shownLine(message.text)} />}
                   </Text>
                 )}
+                {message.preview && !message.voice && !message.file ? <PreviewCard preview={message.preview} ink={ink} /> : null}
                 <Text style={[ink, styles.time, message.sticker && { color: colors.textMuted }]}>
                   {[message.forwarded ? t('Forwarded') : '', message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}
                 </Text>

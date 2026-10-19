@@ -198,15 +198,22 @@ t('keeps the sticker or the place a message is, and drops one of the wrong shape
   assert.deepEqual([odd.sticker, odd.place], [undefined, undefined]);
 });
 
-t('keeps that a message was forwarded', async () => {
+t('keeps that a message was forwarded, and the preview of its link', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);
+  const preview = { url: 'https://x.example/', title: 'T', text: 'About it', image: '/9j/AAAA' };
   await history.add({ peer: 'contact:aa', text: 'look', mine: true, at: 1, tag: newTag(), forwarded: true });
-  await history.add({ peer: 'contact:aa', text: 'mine', mine: true, at: 2, tag: newTag() });
+  await history.add({ peer: 'contact:aa', text: 'https://x.example/', mine: false, at: 2, tag: newTag(), preview });
   assert.deepEqual(
-    (await History.open('space', 0, key)).messages().map((m) => m.forwarded),
-    [true, undefined],
+    (await History.open('space', 0, key)).messages().map((m) => [m.forwarded, m.preview]),
+    [
+      [true, undefined],
+      [undefined, preview],
+    ],
   );
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', newTag(), 0, 0, 0, 0, 0, { w: { url: 'javascript:x', title: 'T', text: '' } }]] } });
+  assert.equal((await History.open('space', 1, key)).messages()[0].preview, undefined);
 });
 
 t('keeps a poll and the votes on it, ours and theirs, as the poll allows', async () => {

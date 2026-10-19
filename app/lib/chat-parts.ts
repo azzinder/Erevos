@@ -24,14 +24,15 @@ export type Vote = { tag: string; chose: number[] };
  * What a contact's message carries beyond what lib/e2e.ts says itself, each in a field of its own
  * that an Erevos from before leaves alone. With words, which say it to an Erevos from before and
  * show nowhere in this one: a sticker, whose words are its emoji (lib/stickers.ts), a place, whose
- * words are where it is, or a poll, whose words are its question and options. With words, a voice
- * message or a photo or file: that it was forwarded from another chat (`forwarded`). With no words:
- * a pin, a vote, or that they are typing to us now (`typing`).
+ * words are where it is, or a poll, whose words are its question and options; and the preview of
+ * a link in the words, which show as they are. With words, a voice message or a photo or file: that
+ * it was forwarded from another chat (`forwarded`). With no words: a pin, a vote, or that they are
+ * typing to us now (`typing`).
  */
-export type Carried = { sticker?: string; place?: Place; poll?: Poll; forwarded?: true; pin?: Pin; vote?: Vote; typing?: true };
+export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; typing?: true };
 
 /** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
-export type Content = Pick<Carried, 'sticker' | 'place' | 'poll'> & { forwarded?: boolean };
+export type Content = Pick<Carried, 'sticker' | 'place' | 'poll' | 'preview'> & { forwarded?: boolean };
 
 export const MAX_QUESTION = 300;
 export const MAX_OPTION = 100;
@@ -39,8 +40,8 @@ export const MIN_OPTIONS = 2;
 export const MAX_OPTIONS = 12;
 export const MAX_PREVIEW_TITLE = 200;
 export const MAX_PREVIEW_TEXT = 400;
-// The largest preview picture, as base64: a small JPEG fits well under it.
-export const MAX_PREVIEW_IMAGE = 24 * 1024;
+// The largest preview picture, as base64: a small JPEG fits under it, and the message in one.
+export const MAX_PREVIEW_IMAGE = 8 * 1024;
 const MAX_URL = 2000;
 
 /** The reactions offered at a tap; any other emoji can be one too (isReactionEmoji, lock/history.ts). */
@@ -58,11 +59,13 @@ export function carriedOf(value: Record<string, unknown>): Carried {
   const vote = value.vote as { tag?: unknown; chose?: unknown } | null | undefined;
   const place = checkedPlace(value.place);
   const poll = checkedPoll(value.poll);
+  const preview = checkedPreview(value.preview);
   const chose = checkedChoices(vote?.chose);
   return {
     ...(isStickerName(value.sticker) ? { sticker: value.sticker } : {}),
     ...(place ? { place } : {}),
     ...(poll ? { poll } : {}),
+    ...(preview ? { preview } : {}),
     ...(isTag(pin?.tag) && typeof pin.on === 'boolean' ? { pin: { tag: pin.tag, on: pin.on } } : {}),
     ...(isTag(vote?.tag) && chose ? { vote: { tag: vote.tag, chose } } : {}),
     ...(value.forwarded === true ? { forwarded: true as const } : {}),
@@ -71,14 +74,14 @@ export function carriedOf(value: Record<string, unknown>): Carried {
 }
 
 /** What a kept message carries with its words, as it goes again. */
-export function contentOf({ sticker, place, poll, forwarded }: Content): Carried {
-  return carriedOf({ sticker, place, poll, forwarded });
+export function contentOf({ sticker, place, poll, preview, forwarded }: Content): Carried {
+  return carriedOf({ sticker, place, poll, preview, forwarded });
 }
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, place, poll, forwarded, pin, vote, typing } = carriedOf(carried);
-  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(forwarded ? { forwarded } : {}) };
+  const { sticker, place, poll, preview, forwarded, pin, vote, typing } = carriedOf(carried);
+  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}) };
   return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(typing ? { typing } : {}) };
 }
 

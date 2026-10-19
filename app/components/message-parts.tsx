@@ -1,16 +1,17 @@
-import { Linking, Platform, Pressable, View, type StyleProp, type TextStyle } from 'react-native';
+import { Image, Linking, Platform, Pressable, View, type StyleProp, type TextStyle } from 'react-native';
 
 import { ask } from '../lib/alert';
-import { geoLink, placeText, type Place } from '../lib/chat-parts';
+import { geoLink, placeText, type Place, type Preview } from '../lib/chat-parts';
 import { t } from '../lib/i18n';
 import { radius, space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
 
+import { openLink } from './linked-text';
 import { Text } from './ui';
 
 // What a message shows besides its words, in a contact's chat (app/chat.tsx) and in a group
 // (app/group.tsx), drawn the same in both: the message it answers, the reactions to it, the
-// messages pinned to the top of the chat, and a place sent once.
+// messages pinned to the top of the chat, a place sent once, and a link's preview.
 
 /**
  * The message an answer is to, inside its bubble or over the message field: who wrote it and its
@@ -153,5 +154,49 @@ export function PlaceCard({ place, ink }: { place: Place; ink?: StyleProp<TextSt
         </Pressable>
       ) : null}
     </View>
+  );
+}
+
+/**
+ * A link's preview under a message's words, as the sender's phone made it (lib/link-preview.ts):
+ * its picture, title and line, and the site. Nothing is fetched to show it; tapped, it asks before
+ * the link opens, as the link does.
+ */
+export function PreviewCard({ preview, ink }: { preview: Preview; ink?: StyleProp<TextStyle> }) {
+  const colors = useColors();
+  const site = /^https?:\/\/([^/?#]+)/i.exec(preview.url)?.[1] ?? '';
+  return (
+    <Pressable
+      onPress={() => openLink(preview.url)}
+      accessibilityRole="link"
+      accessibilityLabel={preview.title || site}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        gap: space.sm,
+        marginTop: space.xs,
+        padding: space.sm,
+        borderRadius: radius.sm,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.primary,
+        backgroundColor: withAlpha(colors.text, pressed ? 0.14 : 0.07),
+      })}
+    >
+      {preview.image ? <Image source={{ uri: `data:image/jpeg;base64,${preview.image}` }} style={{ width: 56, height: 56, borderRadius: radius.sm }} /> : null}
+      <View style={{ flex: 1, flexShrink: 1, gap: 2 }}>
+        {preview.title ? (
+          <Text style={[ink, { fontSize: 14, fontWeight: '700' }]} numberOfLines={2}>
+            {preview.title}
+          </Text>
+        ) : null}
+        {preview.text ? (
+          <Text style={[ink, { fontSize: 13, opacity: 0.85 }]} numberOfLines={3}>
+            {preview.text}
+          </Text>
+        ) : null}
+        <Text style={[ink, { fontSize: 12, opacity: 0.7 }]} numberOfLines={1}>
+          {site}
+        </Text>
+      </View>
+    </Pressable>
   );
 }

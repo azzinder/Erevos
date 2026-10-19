@@ -1,12 +1,13 @@
 // What a chat's messages can do beyond words: what they carry (lib/chat-parts.ts), their line
-// (lib/message-line.ts), finding them again (lib/message-search.ts) and writing a chat out
-// (lib/chat-export.ts).
+// (lib/message-line.ts), finding them again (lib/message-search.ts), writing a chat out
+// (lib/chat-export.ts) and what a link's preview reads from its page (lib/link-preview.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { chatText, exportName } from '../lib/chat-export';
+import { firstLink, fitPreview, pageInfo } from '../lib/link-preview';
 import { acts, carriedOf, checkedChoices, checkedPlace, checkedPoll, choose, contentOf, geoLink, placeWords, pollOf, pollWords, tally, toCarry } from '../lib/chat-parts';
 import { messageLine } from '../lib/message-line';
 import { searchMessages, starredOf } from '../lib/message-search';
@@ -171,4 +172,37 @@ test('a chat written out: each day, then each message with its time, who wrote i
     ].join('\n'),
   );
   assert.equal(exportName('A/B: C', Date.UTC(2026, 9, 19)), 'Erevos - A-B C - 2026-10-19.txt');
+});
+
+test('a preview is of the first https link, from what its page says of itself', () => {
+  assert.equal(firstLink('see http://a.example/x and https://b.example/y, then www.c.example'), 'https://b.example/y');
+  assert.equal(firstLink('no link here'), null);
+  const page = `<!doctype html><html><head><title>Plain &amp; old</title>
+    <meta content="Sea &#x26; sun" property="og:title">
+    <meta name='description' content='A day&nbsp;out,   by the sea'>
+    <meta property="og:image" content="/pics/sea.jpg?w=1">
+    </head><body><meta property="og:description" content="not the head"></body></html>`;
+  assert.deepEqual(pageInfo(page, 'https://news.example/a/b.html'), { title: 'Sea & sun', text: 'A day out, by the sea', picture: 'https://news.example/pics/sea.jpg?w=1' });
+  assert.deepEqual(pageInfo('<title>Only a title</title><meta property="og:image" content="pic.png">', 'https://x.example/a/b'), {
+    title: 'Only a title',
+    text: '',
+    picture: 'https://x.example/a/pic.png',
+  });
+  assert.equal(pageInfo('<meta property="og:image" content="javascript:alert(1)"><title>t</title>', 'https://x.example/')?.picture, null);
+  assert.equal(pageInfo('<html><body>Nothing said</body></html>', 'https://x.example/'), null);
+});
+
+test('a preview goes whole when it fits, without its picture when only that is too much, and is checked as it comes', () => {
+  const preview = { url: 'https://x.example/', title: 'T', text: 'About it', image: `/9j/${'A'.repeat(4000)}` };
+  assert.deepEqual(fitPreview('look https://x.example/', preview), preview);
+  assert.deepEqual(fitPreview('x'.repeat(7000), preview), { url: preview.url, title: 'T', text: 'About it' });
+  assert.equal(fitPreview('x'.repeat(10_000), preview), null);
+  assert.equal(fitPreview('x', { ...preview, url: 'ftp://x.example/' }), null);
+  // Not a JPEG, or too large: the picture is left out; with nothing to show, there is none.
+  assert.deepEqual(carriedOf({ preview: { ...preview, image: 'iVBORw0KGgo=' } }), { preview: { url: preview.url, title: 'T', text: 'About it' } });
+  assert.deepEqual(carriedOf({ preview: { ...preview, image: `/9j/${'A'.repeat(9000)}` } }).preview?.image, undefined);
+  assert.deepEqual(carriedOf({ preview: { url: preview.url, title: ' ', text: '' } }), {});
+  assert.deepEqual(toCarry({ preview }, true), { preview });
+  assert.deepEqual(toCarry({ preview }, false), {});
+  assert.deepEqual(contentOf({ preview }), { preview });
 });

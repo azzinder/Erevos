@@ -42,12 +42,14 @@ export type SpaceData = {
   spare: SpareRelay;
   // Whether the web app asks the relay for a push when a message comes (lib/web-push.web.ts).
   push: boolean;
+  // Whether this phone makes the preview of a link it sends (lib/make-preview.ts). Off unless set.
+  previews: boolean;
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null };
 const NO_SPARE: SpareRelay = { url: '', token: '', queue: null };
 
-export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '', ownQueue: null, routes: {}, look: null, tor: false, spare: NO_SPARE, push: false };
+export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '', ownQueue: null, routes: {}, look: null, tor: false, spare: NO_SPARE, push: false, previews: false };
 
 const BLOCK = 1024;
 const entry = (space: number) => `erevos.space.${space}`;
@@ -92,6 +94,7 @@ function checked(value: unknown): SpaceData {
     tor: v.tor === true,
     spare: checkedSpareRelay(v.spare),
     push: v.push === true,
+    previews: v.previews === true,
   };
 }
 

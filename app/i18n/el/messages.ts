@@ -102,4 +102,13 @@ export const messages: Record<string, string> = {
   'Photo: {name}': 'Φωτογραφία: {name}',
   forwarded: 'προωθημένο',
   'answering “{line}”': 'απάντηση στο «{line}»',
+  // Link previews, made by the sender's phone (lib/make-preview.ts).
+  'Link previews': 'Προεπισκοπήσεις συνδέσμων',
+  'Making the link’s preview…': 'Φτιάχνεται η προεπισκόπηση του συνδέσμου…',
+  'None while this space goes through Tor: Erevos sends only relay requests through it.':
+    'Καμία όσο αυτός ο χώρος περνά μέσω Tor: το Erevos στέλνει μέσω αυτού μόνο τα αιτήματα προς το relay.',
+  "When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. In all chats of this space, not in hidden chats.":
+    'Όταν στέλνεις έναν σύνδεσμο, αυτό το τηλέφωνο φέρνει τη σελίδα του κατευθείαν από τον ιστότοπο και στέλνει τον τίτλο της, μια γραμμή και μια μικρή εικόνα μέσα στο μήνυμα. Ο ιστότοπος βλέπει τη διεύθυνση ίντερνετ αυτού του τηλεφώνου. Σε όλες τις συνομιλίες αυτού του χώρου, όχι στις κρυφές συνομιλίες.',
+  "Links go as they are. Turned on, this phone fetches a link's page as you send it, and the site sees this phone's internet address. The phone that gets it fetches nothing.":
+    'Οι σύνδεσμοι πηγαίνουν όπως είναι. Αν το ανοίξεις, αυτό το τηλέφωνο φέρνει τη σελίδα ενός συνδέσμου όταν τον στέλνεις, και ο ιστότοπος βλέπει τη διεύθυνση ίντερνετ αυτού του τηλεφώνου. Το τηλέφωνο που το λαμβάνει δεν φέρνει τίποτα.',
 };
