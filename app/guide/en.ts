@@ -42,6 +42,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 | **New group** | A group chat with your contacts. See [Group chats](#groups). |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
 | **LoRa radio** | Texts over a Meshtastic radio, kilometres away, without internet; off unless set. See [Over a LoRa radio](#lora). |
+| **Contacts** | The phone's contacts, with their groups and birthdays, and contacts kept only in Erevos. See [Contacts](#contacts). |
 | **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
 | **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
@@ -507,6 +508,25 @@ chats in one list.
 - **Names from your contacts:** off at first. Under **SMS** in the menu, **Show names from my contacts** shows the
   names your phone's contacts give SMS numbers. Erevos only reads them to show them, and keeps no copy.
 
+## Contacts {#contacts}
+
+On Android, **Contacts** in the menu shows the phone's contacts: the ones in Android's own contacts, which your
+other apps use too, so there is nothing to import. Android asks once whether Erevos may read and change them
+(**Allow contacts**).
+
+- **Finding someone:** **Search contacts** looks in every field: names, numbers (however they are written, with or
+  without the country code), emails, addresses, the company, the birthday and the note. **Favourites** shows only
+  the contacts with a star.
+- **A contact:** tap one to see all of it. Tap a number to call it, or **SMS** beside it to write to it in Erevos;
+  tap an email or an address to open it. **Add to favourites** at the top gives it a star, in Android's contacts,
+  so the phone app lists it among the favourites too.
+- **New contact** and **Edit:** first and last name, company and job title, as many numbers, emails and addresses
+  as you need, each with its kind (**Mobile**, **Home**, **Work**, **Other**), a birthday (day/month/year, or
+  day/month) and a note. A new contact is kept **On this phone only**, or in an account the phone syncs contacts
+  with (Google), as you choose. What Erevos does not show of a contact, such as another app's own details, stays as
+  it was.
+- **Delete** takes the contact off the phone, from every account it is kept in.
+
 ## Password lock {#lock}
 
 Under **Lock and second password**, **Lock when Erevos opens** has two choices: **No lock** and **Password**.
@@ -824,6 +844,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
+| **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
