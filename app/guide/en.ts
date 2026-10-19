@@ -494,6 +494,9 @@ Under **Lock and second password**, **Lock when Erevos opens** has two choices: 
   each time, up to an hour. The count survives a restart.
 - **What is sealed:** each space's contacts, the keys of its conversations, its messages, its relay settings and its
   look are kept on the phone sealed with a key that only its password opens.
+- **The list at once:** the home screen keeps a sealed copy of its first rows, so the list shows as soon as the space
+  opens and then updates. It is always the same size, so it tells no one how many chats there are or which spaces
+  are used, and it never holds what a disappearing message said.
 
 > There is no way to recover a forgotten password: nothing is stored that could open the data without it.
 

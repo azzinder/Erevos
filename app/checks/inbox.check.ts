@@ -5,6 +5,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buildInbox, filterInbox, rowTime, shownName } from '../lib/inbox';
+import { randomBytes } from '../lib/crypto';
+import { kept, LAST, loadInboxCache, ROWS, saveInboxCache } from '../lock/inbox-cache';
+import { files } from './files-memory';
 
 const A = 'aa'.repeat(32);
 const B = 'bb'.repeat(32);
@@ -76,4 +79,40 @@ test('says when a chat moved: the time today, the weekday this week, else the da
   assert.equal(rowTime(new Date(2026, 9, 15, 9, 5).getTime(), now), 'Thu');
   assert.equal(rowTime(new Date(2026, 8, 1).getTime(), now), '01/09/26');
   assert.equal(rowTime(0, now), '');
+});
+
+test('keeps the list as it showed, sealed, for the space whose key opens it', async () => {
+  const key = randomBytes(32);
+  const rows = buildInbox(contacts, [{ peer: `contact:${A}`, text: 'γεια', mine: false, at: 10 }], [], 100, [
+    { address: '+306900000001', text: 'SMS', at: 20, mine: true, unread: 0, name: 'Μαρία' },
+  ]);
+  await saveInboxCache(0, key, rows);
+  assert.deepEqual((await loadInboxCache(0, key)).rows, rows.map((r) => ({ ...r, fades: undefined })).map((r) => JSON.parse(JSON.stringify(r))));
+  assert.deepEqual((await loadInboxCache(0, randomBytes(32))).rows, []);
+  assert.deepEqual((await loadInboxCache(1, key)).rows, []);
+  assert.ok(!files.get('erevos-inbox')?.includes('γεια'));
+});
+
+test('keeps only the first rows, last lines cut short, and nothing a disappearing message said', () => {
+  const many = Array.from({ length: ROWS + 10 }, (_, i) => ({ identity: `${i}`.padStart(64, '0'), name: `n${i}`, timer: 0 }));
+  const rows = buildInbox(many, [{ peer: `contact:${many[0].identity}`, text: 'x'.repeat(500), mine: false, at: 50 }], [], 100);
+  const cache = kept(rows);
+  assert.equal(cache.rows.length, ROWS);
+  assert.equal(cache.rows[0].last, `${'x'.repeat(LAST)}…`);
+  const fading = buildInbox(contacts, [
+    { peer: `contact:${A}`, text: 'gone soon', mine: false, at: 10, lasts: 60 },
+    { peer: `contact:${C}`, text: 'read, going', mine: false, at: 10, until: 500 },
+  ], [], 100);
+  const kept2 = kept(fading).rows;
+  assert.equal(kept2.find((r) => r.identity === A)?.last, '');
+  assert.equal(kept2.find((r) => r.identity === C)?.last, '');
+  assert.equal(kept2.find((r) => r.identity === B)?.last, '');
+});
+
+test('a used list and an unused one take the same room in the file', async () => {
+  files.delete('erevos-inbox');
+  await saveInboxCache(2, randomBytes(32), buildInbox(contacts, [], [], 100));
+  const values = JSON.parse(files.get('erevos-inbox') ?? '{}') as Record<string, string[]>;
+  const sizes = new Set(Object.values(values).flat().map((v) => v.length));
+  assert.equal(sizes.size, 1);
 });

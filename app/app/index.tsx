@@ -25,6 +25,7 @@ import { loadE2EData } from '../lock/e2e-data';
 import { Logo } from '../lock/gate';
 import { searchHidden } from '../lock/hidden';
 import { History, type Message } from '../lock/history';
+import { loadInboxCache, saveInboxCache } from '../lock/inbox-cache';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
@@ -100,6 +101,9 @@ export default function Home() {
   // The phone's SMS as last read: the list shows them while they are read again.
   const smsShown = useRef<InboxSms[]>([]);
   const smsRead = useRef(false);
+  // Whether the list read now shows, or still the copy kept from last time (lock/inbox-cache.ts).
+  const readShown = useRef(false);
+  const copyShown = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -142,10 +146,15 @@ export default function Home() {
           chatsRead = (sms) => {
             const at = Date.now();
             const list = mergeRows(buildInbox(contacts, messages, imported, at, sms), groupRows(groups, name, (text) => noteText(text, name)));
-            // Not "No chats yet" while the SMS are still being read the first time.
-            if (list.length === 0 && smsFirst) return;
+            // Not "No chats yet", nor the kept copy without its SMS, while the SMS are still being
+            // read the first time.
+            if (smsFirst && (list.length === 0 || copyShown.current)) return;
             setNow(at);
             setRows(list);
+            readShown.current = true;
+            if (smsFirst) return;
+            copyShown.current = false;
+            void saveInboxCache(current, key, list).catch(() => undefined);
           };
           chatsRead(smsShown.current);
           setRelay(!data?.url ? 'none' : data.ownQueue ? 'ready' : 'no-queue');
@@ -161,6 +170,17 @@ export default function Home() {
             if (active) setOnline((before) => (before.size === ids.length && ids.every((id) => before.has(id)) ? before : new Set(ids)));
           })
           .catch(() => undefined);
+      // The list as it showed last time, at once, until the one read now replaces it.
+      if (!readShown.current) {
+        void loadInboxCache(current, key)
+          .then(({ rows: kept }) => {
+            if (!active || readShown.current || kept.length === 0) return;
+            copyShown.current = true;
+            setNow(Date.now());
+            setRows(kept);
+          })
+          .catch(() => undefined);
+      }
       load();
       lookOnline();
       const every = setInterval(lookOnline, 5000);

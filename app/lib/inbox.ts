@@ -24,6 +24,8 @@ export type InboxMessage = {
   mine: boolean;
   at: number;
   until?: number;
+  /** Seconds a disappearing message lasts once read, before its time starts. */
+  lasts?: number;
   mark?: -1 | 0 | 1 | 2;
   voice?: { ms: number };
   file?: { kind: 'photo' | 'file'; name: string };
@@ -54,6 +56,8 @@ export type InboxRow = {
   sms: string;
   /** The last message is a plain SMS. */
   lastSms: boolean;
+  /** The last message disappears (or will, once read), so its text is never kept elsewhere. */
+  fades?: boolean;
 };
 
 const PREFIX = 'contact:';
@@ -97,8 +101,9 @@ export function buildInbox(
       avatar: contact.avatar ?? null,
       sms: '',
       lastSms: false,
+      fades: !!(last?.until || last?.lasts),
     };
-    if (text && text.at > row.at) Object.assign(row, { last: text.text, mine: text.mine, mark: 0, at: text.at, lastSms: true });
+    if (text && text.at > row.at) Object.assign(row, { last: text.text, mine: text.mine, mark: 0, at: text.at, lastSms: true, fades: false });
     row.unread += texts.reduce((n, t) => n + t.unread, 0);
     return row;
   });
