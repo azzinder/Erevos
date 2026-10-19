@@ -199,12 +199,12 @@ export function smsPictureBytes(uri: string): Promise<Uint8Array> {
   return native?.pictureBytes ? native.pictureBytes(uri) : notInBuild();
 }
 
-/** Whether Erevos may block numbers in Android's own list: as the SMS app, in a build with it. */
+/** Whether Erevos may block numbers in Android's own list: as the SMS app or the phone app, in a build with it. */
 export function canBlockNumbers(): Promise<boolean> {
   return native?.canBlock ? native.canBlock().catch(() => false) : Promise.resolve(false);
 }
 
-/** The numbers in Android's list of blocked numbers, as the SMS app may read them; else none. */
+/** The numbers in Android's list of blocked numbers, as the SMS app or the phone app may read them; else none. */
 export function blockedNumbers(): Promise<string[]> {
   return native?.blocked ? native.blocked().catch(() => []) : Promise.resolve([]);
 }

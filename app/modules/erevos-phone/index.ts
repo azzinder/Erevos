@@ -69,6 +69,8 @@ type NativePhone = {
   history(): Promise<{ allowed: boolean; calls: LoggedCall[] }>;
   favourites(): Promise<{ allowed: boolean; favourites: Favourite[] }>;
   seenMissed(): void;
+  deleteCalls(ids: number[]): Promise<number>;
+  deleteCallsOf(number: string, before: number): Promise<number>;
   groups(): Promise<{ allowed: boolean; groups: ContactGroup[] }>;
   quickReplies(): { replies: string[]; own: boolean };
   setQuickReplies(replies: string[]): void;
@@ -129,6 +131,17 @@ export function placeCall(number: string, account = ''): Promise<void> {
  *  Erevos read it. Erevos keeps no copy. */
 export function callHistory(): Promise<{ allowed: boolean; calls: LoggedCall[] }> {
   return native ? native.history() : Promise.resolve({ allowed: false, calls: [] });
+}
+
+/** Deletes calls from Android's call history, by their ids; how many went. The phone app may. */
+export function deleteCalls(ids: number[]): Promise<number> {
+  return native ? native.deleteCalls(ids) : Promise.resolve(0);
+}
+
+/** Deletes every call with this number from the call history up to `before` (when the owner
+ *  deleted them), the older ones too. */
+export function deleteCallsOf(number: string, before: number): Promise<number> {
+  return native ? native.deleteCallsOf(number, before) : Promise.resolve(0);
 }
 
 /** The phone's starred contacts, by name; `allowed` is false while Android does not let Erevos

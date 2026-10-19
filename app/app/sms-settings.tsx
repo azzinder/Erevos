@@ -3,15 +3,15 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
 
+import { BlockedNumbers } from '../components/blocked-numbers';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
-import { ask } from '../lib/alert';
 import { mark, plural, t } from '../lib/i18n';
 import { smsOrderChanged } from '../lib/sms-folders';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
 import { MAX_WORDS, UNDO_SECONDS, WORD } from '../lock/sms-data';
-import { blockedNumbers, blockNumber, canBlockNumbers, requestDefaultSms, smsReady, smsStatus, smsThreads, smsToolsReady, unblockNumber, type SmsStatus } from '../modules/erevos-sms';
+import { requestDefaultSms, smsReady, smsStatus, smsThreads, smsToolsReady, type SmsStatus } from '../modules/erevos-sms';
 
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
 // writing to a number that has Erevos goes through Erevos. Whether to look for Erevos on a number
@@ -57,10 +57,6 @@ export default function SmsSettings() {
   const [spam, setSpam] = useState({ on: true, links: false, words: [] as string[] });
   const [word, setWord] = useState('');
   const [undo, setUndo] = useState(5);
-  // Android's list of blocked numbers, or null when Erevos may not read it.
-  const [blocked, setBlocked] = useState<string[] | null>(null);
-  const [toBlock, setToBlock] = useState('');
-  const [blockNote, setBlockNote] = useState('');
 
   useEffect(() => {
     const { space, key } = currentSpace();
@@ -81,7 +77,6 @@ export default function SmsSettings() {
       if (Number(Platform.Version) >= 33) {
         void PermissionsAndroid.check('android.permission.POST_NOTIFICATIONS').then(setCanNotify, () => setCanNotify(null));
       } else setCanNotify(true);
-      void canBlockNumbers().then((can) => (can ? blockedNumbers().then(setBlocked) : setBlocked(null)));
       if (now?.isDefault) {
         smsThreads().then(
           (threads) => setReading({ count: threads.length }),
@@ -182,39 +177,6 @@ export default function SmsSettings() {
     if (!link) return;
     await link.setUndo(seconds);
     setUndo(link.undo);
-  }
-
-  async function block() {
-    setBlockNote('');
-    const numbers = smsNumbers(toBlock);
-    if (numbers.length !== 1) {
-      setBlockNote(t('Type one phone number.'));
-      return;
-    }
-    try {
-      await blockNumber(numbers[0]);
-      setToBlock('');
-      setBlocked(await blockedNumbers());
-      smsOrderChanged();
-    } catch (error) {
-      setBlockNote(error instanceof Error ? error.message : String(error));
-    }
-  }
-
-  function unblock(number: string) {
-    ask(t('Unblock {number}?', { number }), t('Its SMS, MMS and calls reach the phone again.'), [
-      { text: t('Cancel'), style: 'cancel' },
-      {
-        text: t('Unblock'),
-        onPress: () =>
-          void unblockNumber(number)
-            .then(async () => {
-              setBlocked(await blockedNumbers());
-              smsOrderChanged();
-            })
-            .catch((error) => setBlockNote(error instanceof Error ? error.message : String(error))),
-      },
-    ]);
   }
 
   function open() {
@@ -352,33 +314,9 @@ export default function SmsSettings() {
         <Text tone="muted">
           {t("These are Android's own blocked numbers: Android rejects their SMS, MMS and calls. Every space, and the phone app, sees the same list. Block one from its conversation, with ⋮, or here.")}
         </Text>
-        {blocked === null ? (
-          <Text variant="caption" tone="faint">
-            {smsToolsReady() ? t('Only the SMS app can see and change them: make Erevos the SMS app above.') : t('This build of Erevos cannot block numbers yet.')}
-          </Text>
-        ) : (
-          <>
-            {blocked.length === 0 ? (
-              <Text variant="caption" tone="faint">
-                {t('No number is blocked.')}
-              </Text>
-            ) : null}
-            <Row wrap>
-              {blocked.map((b) => (
-                <Chip key={b} label={`${b} ×`} onPress={() => unblock(b)} />
-              ))}
-            </Row>
-            <Row>
-              <Input value={toBlock} onChangeText={setToBlock} keyboardType="phone-pad" placeholder={t('Phone number')} style={{ flex: 1 }} onSubmitEditing={() => void block()} />
-              <Button title={t('Block')} compact kind="secondary" onPress={() => void block()} />
-            </Row>
-            {blockNote ? (
-              <Text variant="caption" tone="muted">
-                {blockNote}
-              </Text>
-            ) : null}
-          </>
-        )}
+        <BlockedNumbers
+          cannot={smsToolsReady() ? t('Only the SMS app or the phone app can see and change them: make Erevos the SMS app above.') : t('This build of Erevos cannot block numbers yet.')}
+        />
       </Card>
 
       <SectionTitle title={t('Taking an SMS back')} />
