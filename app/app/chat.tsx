@@ -35,7 +35,9 @@ import { LaterPicker } from '../components/later-picker';
 import { LinkedText } from '../components/linked-text';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Pinned, Quote, Reactions } from '../components/message-parts';
-import { acts } from '../lib/chat-parts';
+import { StickerPicker, StickerView } from '../components/stickers';
+import { acts, contentOf, type Content } from '../lib/chat-parts';
+import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
@@ -476,6 +478,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   const history = useRef<History | null>(null);
   // The sheet for sending a photo or file, and how photos go.
   const [attaching, setAttaching] = useState(false);
+  const [stickering, setStickering] = useState(false);
   // Send held down: later, or without sound.
   const [sendMenu, setSendMenu] = useState(false);
   // The time picked there for the next photo, file or voice message, when nothing was typed.
@@ -1031,8 +1034,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     if (received.online) setNow(Date.now());
     const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
     if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
-    // What else it is: an answer to one of the chat's messages.
-    const parts: Parts = received.re ? { re: received.re } : {};
+    // What else it is: an answer to one of the chat's messages, a sticker.
+    const parts: Parts = { ...(received.re ? { re: received.re } : {}), ...contentOf(received.more) };
     if (received.voice) {
       const whole = voiceParts.current.add(peer, received.voice);
       const { tag, timer } = received;
@@ -1288,15 +1291,29 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     if (theyHave(message) || (message.mine && message.mark === WAITING)) actions.push({ title: t('Reply'), onPress: () => setReplying(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
-    if (CAN_COPY && message.text && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
+    if (CAN_COPY && message.text && !message.sticker && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
   }
 
-  function keep(peer: string, text: string, tag = '', timer = 0, parts: Parts = {}) {
+  // Shows what went, and empties the field when it was what is typed (`typed`).
+  function keep(peer: string, text: string, tag = '', timer = 0, parts: Parts = {}, typed = true) {
     addMessage(peer, text, true, tag, timer, undefined, undefined, 0, Date.now(), parts);
-    setDraft('');
+    if (typed) setDraft('');
     setReplying(null);
+  }
+
+  // Opens what was picked in Attach once its sheet has gone: on the web, over it, a sheet would not show.
+  function fromAttach(open: () => void) {
+    setAttaching(false);
+    setTimeout(open, Platform.OS === 'web' ? 0 : 300);
+  }
+
+  // Sends a sticker: its name, with its emoji as its words for an Erevos from before.
+  function sendSticker(name: string) {
+    setStickering(false);
+    const sticker = stickerOf(name);
+    if (sticker) void send(0, false, { text: sticker.emoji, sticker: name });
   }
 
   // What the next message in `peer`'s chat answers, if it answers one.
@@ -1466,18 +1483,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
 
   // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it
   // is read; `quiet`, it comes without sound, also when it has to wait.
-  async function send(lasts = 0, quiet = false) {
-    const text = draft.trim();
+  // Sends what is typed, or, given `content`, a sticker with its words (its emoji): then what is
+  // typed stays.
+  async function send(lasts = 0, quiet = false, content?: Content & { text: string }) {
+    const text = content ? content.text : draft.trim();
     if (!text || !selected?.startsWith(CONTACT_PREFIX)) return;
     setVanishing(false);
     if (!e2e) {
       setNote(t(NO_CORE));
       return;
     }
-    const parts = answering(selected);
+    const answer = answering(selected);
+    const carried = content ? contentOf(content) : {};
+    const parts = { ...answer, ...carried };
     try {
-      const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts, quiet, ...parts });
-      keep(selected, text, tag, timer, parts);
+      const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts, quiet, ...answer, more: carried });
+      keep(selected, text, tag, timer, parts, !content);
       const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(selected, contacts));
       setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer).toLowerCase() }) : sent);
     } catch (error) {
@@ -1487,7 +1508,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
       }
       // Nothing could take it now: it waits, and goes by itself (lib/waiting.ts).
       addMessage(selected, text, true, newTag(), lasts || timerOf(selected), undefined, undefined, WAITING, Date.now(), { quiet, ...parts });
-      setDraft('');
+      if (!content) setDraft('');
       setReplying(null);
       setNote(t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason: waitingReason(error, selected, t('It is too long for LoRa.')) }));
     }
@@ -3030,7 +3051,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
                   styles.bubble,
                   message.mine ? b.mine : b.theirs,
                   message.file?.kind === 'photo' && styles.photoBubble,
-                  tail && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+                  tail && !message.sticker && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+                  message.sticker && styles.stickerBubble,
                   (message.myReaction || message.theirReaction) && styles.reacted,
                   lit === message.id && styles.lit,
                 ]}
@@ -3043,7 +3065,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
                     onPress={() => goTo(message.peer, message.re!)}
                   />
                 ) : null}
-                {message.file ? (
+                {message.sticker ? (
+                  <StickerView name={message.sticker} fallback={message.text} />
+                ) : message.file ? (
                   <Attachment file={message.file} uri={photos[message.file.id]} state={taking[`${message.peer}|${message.tag}`]} ink={ink} />
                 ) : (
                   <Text style={ink}>
@@ -3054,7 +3078,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
                       : <LinkedText text={shownLine(message.text)} />}
                   </Text>
                 )}
-                <Text style={[ink, styles.time]}>{[message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}</Text>
+                <Text style={[ink, styles.time, message.sticker && { color: colors.textMuted }]}>
+                  {[message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}
+                </Text>
               </Pressable>
               <Reactions
                 signs={[message.theirReaction, message.myReaction].filter((sign): sign is string => !!sign)}
@@ -3164,7 +3190,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
         quality={quality}
         onQuality={chooseQuality}
         note={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
+        more={<Button title={t('Sticker')} kind="secondary" compact onPress={() => fromAttach(() => setStickering(true))} />}
       />
+      <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
+        <StickerPicker onPick={sendSticker} />
+      </Sheet>
       <FileViewer
         file={viewing?.file ?? null}
         uri={viewing?.file ? photos[viewing.file.id] : undefined}
@@ -3446,6 +3476,14 @@ const makeStyles = (colors: Colors) =>
     // A message with reactions leaves room for them under it.
     reacted: {
       marginBottom: 0,
+    },
+    // A sticker stands on its own, with no bubble behind it.
+    stickerBubble: {
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      paddingHorizontal: 0,
+      shadowOpacity: 0,
+      elevation: 0,
     },
     // A message found, or starred, in the chat's details.
     found: {

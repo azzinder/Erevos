@@ -30,4 +30,19 @@ export const messages: Record<string, string> = {
   'No starred messages. Press and hold a message in a chat, then tap Star.':
     'Κανένα μήνυμα με αστέρι. Κράτα πατημένο ένα μήνυμα σε μια συνομιλία και πάτα Αστέρι.',
   'You to {name}': 'Εσύ προς {name}',
+  // Stickers (lib/stickers.ts, components/stickers.tsx).
+  'Send a sticker': 'Αποστολή αυτοκόλλητου',
+  'Sticker: {name}': 'Αυτοκόλλητο: {name}',
+  'Smiling moon': 'Χαμογελαστό φεγγάρι',
+  'Laughing moon': 'Φεγγάρι που γελάει',
+  'Moon in love': 'Ερωτευμένο φεγγάρι',
+  'Winking moon': 'Φεγγάρι που κλείνει το μάτι',
+  'Surprised moon': 'Έκπληκτο φεγγάρι',
+  'Sad moon': 'Λυπημένο φεγγάρι',
+  'Angry moon': 'Θυμωμένο φεγγάρι',
+  'Sleeping moon': 'Φεγγάρι που κοιμάται',
+  Heart: 'Καρδιά',
+  Sunshine: 'Λιακάδα',
+  Coffee: 'Καφές',
+  'All good': 'Όλα καλά',
 };

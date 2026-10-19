@@ -5,9 +5,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { carriedOf, toCarry } from '../lib/chat-parts';
+import { carriedOf, contentOf, toCarry } from '../lib/chat-parts';
 import { messageLine } from '../lib/message-line';
 import { starredOf } from '../lib/message-search';
+import { STICKERS, stickerOf } from '../lib/stickers';
 
 const A = `contact:${'aa'.repeat(32)}`;
 const B = `contact:${'bb'.repeat(32)}`;
@@ -37,4 +38,18 @@ test('the starred messages, the latest first, from every chat', () => {
     { peer: B, tag: '000000000003', at: 3, mine: true, line: 'Voice message, 0:02' },
     { peer: A, tag: '000000000001', at: 1, mine: false, line: 'old' },
   ]);
+});
+
+test('a sticker goes by its name, with words, and an Erevos from before reads its emoji', () => {
+  assert.deepEqual(toCarry({ sticker: 'moon-smile' }, true), { sticker: 'moon-smile' });
+  assert.deepEqual(toCarry({ sticker: 'moon-smile' }, false), {});
+  assert.deepEqual(carriedOf({ sticker: 'Not A Name!' }), {});
+  assert.deepEqual(contentOf({ sticker: 'heart' }), { sticker: 'heart' });
+  // A later Erevos's sticker is still one, drawn as its emoji here.
+  assert.deepEqual(carriedOf({ sticker: 'moon-dance' }), { sticker: 'moon-dance' });
+  assert.equal(stickerOf('moon-dance'), null);
+  assert.equal(messageLine({ text: '🌝', sticker: 'moon-smile' }), 'Sticker: Smiling moon');
+  assert.equal(messageLine({ text: '💃', sticker: 'moon-dance' }), 'Sticker');
+  assert.equal(new Set(STICKERS.map((s) => s.name)).size, STICKERS.length);
+  assert.ok(STICKERS.every((s) => carriedOf({ sticker: s.name }).sticker === s.name && s.emoji));
 });

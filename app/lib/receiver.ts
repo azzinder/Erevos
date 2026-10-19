@@ -2,6 +2,7 @@ import { newTag, type Message } from '../lock/history';
 import { loadCurrentSpaceData, updateCurrentSpaceData, type Queue } from '../lock/space-data';
 import { saveClip } from '../lock/voice-clips';
 import { offerRef } from './attachments';
+import { contentOf } from './chat-parts';
 import { canRelaySeal, hasCore } from './core';
 import { ONLINE, toBase64Url, type Extra, type Received, type Where } from './e2e';
 import { nearby } from './nearby';
@@ -428,7 +429,7 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   // Their phone says it is open: the home screen shows it.
   let changed = received.added || received.timerChanged || received.online > 0;
   const add = async (message: Partial<Message>) => {
-    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...(received.re ? { re: received.re } : {}), ...message });
+    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...message });
     // A message request hears nothing back, not even that its message came, until accepted.
     if (tag && !received.request) {
       if (hidden) await e2e.hold(identity, 'got', [tag]);

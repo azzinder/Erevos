@@ -19,9 +19,13 @@ export type Pin = { tag: string; on: boolean };
 
 /**
  * What a contact's message carries beyond what lib/e2e.ts says itself, each in a field of its own
- * that an Erevos from before leaves alone. With no words: a pin.
+ * that an Erevos from before leaves alone. With words: a sticker, whose words are its emoji
+ * (lib/stickers.ts), as an Erevos from before shows them and this one does not. With no words: a pin.
  */
-export type Carried = { pin?: Pin };
+export type Carried = { sticker?: string; pin?: Pin };
+
+/** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
+export type Content = Pick<Carried, 'sticker'>;
 
 export const MAX_QUESTION = 300;
 export const MAX_OPTION = 100;
@@ -46,14 +50,20 @@ const isTag = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{1
 export function carriedOf(value: Record<string, unknown>): Carried {
   const pin = value.pin as { tag?: unknown; on?: unknown } | null | undefined;
   return {
+    ...(isStickerName(value.sticker) ? { sticker: value.sticker } : {}),
     ...(isTag(pin?.tag) && typeof pin.on === 'boolean' ? { pin: { tag: pin.tag, on: pin.on } } : {}),
   };
 }
 
+/** What a kept message carries with its words, as it goes again. */
+export function contentOf({ sticker }: Content): Content {
+  return carriedOf({ sticker });
+}
+
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const checked = carriedOf(carried);
-  return words ? {} : { ...(checked.pin ? { pin: checked.pin } : {}) };
+  const { sticker, pin } = carriedOf(carried);
+  return words ? { ...(sticker ? { sticker } : {}) } : { ...(pin ? { pin } : {}) };
 }
 
 /** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */

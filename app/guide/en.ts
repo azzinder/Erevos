@@ -334,6 +334,13 @@ it. Photos and files have the same marks as the rest, and follow the chat's disa
 - **Through the relay only:** files need its file store, even when the contact is nearby. A relay older than this
   version cannot take files: update it.
 
+### More under Attach
+
+Under **Attach** there is more to send than photos and files:
+
+- **Sticker:** one of the stickers built into Erevos, drawn by each phone itself: only its name travels, so nothing is
+  ever downloaded. An Erevos from before this shows its emoji instead.
+
 ### Voice and video calls
 
 In a contact's chat, tap **Call** for a voice call or **Video** for a video call. The first time, Android asks whether

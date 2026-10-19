@@ -2,6 +2,7 @@ import type { Spare } from '../lock/e2e-data';
 import type { Message } from '../lock/history';
 import { loadClip } from '../lock/voice-clips';
 import { uploadFile } from './attachments';
+import { contentOf } from './chat-parts';
 import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForLoraError } from './nearby';
 import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Relay } from './relay';
@@ -141,7 +142,7 @@ export async function holdLater(e2e: E2E, place: SendPlace, identity: string, me
     sealed = file;
     packets = [file.packet];
   } else {
-    const text = await e2e.seal(identity, message.text, '', { ...options, quiet: message.quiet });
+    const text = await e2e.seal(identity, message.text, '', { ...options, quiet: message.quiet, more: contentOf(message) });
     sealed = text;
     packets = [text.packet];
   }
@@ -207,7 +208,7 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     packets = [file.packet];
     worthCarrying = false;
   } else {
-    const text = await e2e.seal(identity, message.text, place.senderHex, { ...options, quiet: message.quiet });
+    const text = await e2e.seal(identity, message.text, place.senderHex, { ...options, quiet: message.quiet, more: contentOf(message) });
     sealed = text;
     packets = [text.packet];
   }

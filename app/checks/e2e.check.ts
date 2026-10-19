@@ -327,6 +327,18 @@ t('a pin travels with no words, and says the phone is open as writing does', asy
   assert.deepEqual(message(await alice.e2e.receive(odd.packet)).more, {});
 });
 
+t('a sticker travels by its name, with its emoji as its words', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  await bob.e2e.receive(alice.e2e.pending()[0].first);
+  await alice.e2e.firstSent(identity);
+  const sealed = await alice.e2e.seal(identity, '🌝', alice.from, { more: { sticker: 'moon-smile' } });
+  assert.notEqual(sealed.tag, '');
+  const sticker = message(await bob.e2e.receive(sealed.packet));
+  assert.deepEqual([sticker.text, sticker.tag, sticker.more], ['🌝', sealed.tag, { sticker: 'moon-smile' }]);
+});
+
 t('a message sent without sound says so inside the encryption, and one sent as usual says nothing', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);
