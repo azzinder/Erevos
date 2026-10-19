@@ -1,7 +1,9 @@
 name: app
 
+# Branch pushes are checked by their pull request, so push runs only for main: half the minutes.
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
