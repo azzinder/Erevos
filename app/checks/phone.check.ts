@@ -1,5 +1,6 @@
-// The Phone screen's numbers (lib/phone.ts) and the SIM kept for each (lib/phone-sims.ts). The
-// calls themselves are Android's, in modules/erevos-phone, and can only be tried on a phone.
+// The Phone screen's numbers (lib/phone.ts), the SIM kept for each (lib/phone-sims.ts) and the
+// call history (lib/phone-log.ts). The calls themselves are Android's, in modules/erevos-phone,
+// and can only be tried on a phone.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -7,8 +8,9 @@ import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
 import { callLength, dialNumber, KEYS, knownNames, typeKey } from '../lib/phone';
+import { callKind, callMarks, callWho, filterCalls, groupCalls, withDays } from '../lib/phone-log';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
-import type { PhoneAccount } from '../modules/erevos-phone';
+import type { LoggedCall, PhoneAccount } from '../modules/erevos-phone';
 import { files } from './files-memory';
 
 test('what is typed or pasted keeps only what can be called', () => {
@@ -83,4 +85,70 @@ test('the SIM chosen for a number is kept, sealed in the space, whichever way th
   assert.ok(![...files.values()].some((v) => v.includes('8930') || v.includes('691')));
   assert.equal((await PhoneSims.open(0, randomBytes(32))).accountFor('6911111111'), '');
   assert.equal((await PhoneSims.open(1, key)).accountFor('6911111111'), '');
+});
+
+let nextId = 1;
+const logged = (call: Partial<LoggedCall>): LoggedCall => ({
+  id: nextId++,
+  number: '+306911111111',
+  shown: '691 111 1111',
+  name: '',
+  photo: '',
+  at: new Date(2026, 9, 19, 12).getTime(),
+  duration: 0,
+  type: 1,
+  features: 0,
+  account: '8930',
+  presentation: 1,
+  isNew: false,
+  blocked: 0,
+  ...call,
+});
+
+test('what each call in the history was, and its marks', () => {
+  assert.deepEqual([1, 2, 3, 4, 5, 6, 7, 99].map(callKind), ['incoming', 'outgoing', 'missed', 'incoming', 'declined', 'blocked', 'incoming', 'incoming']);
+  assert.deepEqual(callMarks(0), { wifi: false, hd: false });
+  assert.deepEqual(callMarks(8 | 4 | 1), { wifi: true, hd: true });
+  assert.deepEqual(callMarks(4), { wifi: false, hd: true });
+  assert.equal(callWho(logged({ name: 'Maria' })), 'Maria');
+  assert.equal(callWho(logged({})), '691 111 1111');
+  assert.equal(callWho(logged({ number: '', presentation: 2 })), 'Private number');
+  assert.equal(callWho(logged({ number: '', presentation: 3 })), 'Unknown number');
+  assert.equal(callWho(logged({ number: '', presentation: 4 })), 'Payphone');
+});
+
+test('the filters keep missed, incoming (with the declined), outgoing or blocked calls, on one SIM or both', () => {
+  const calls = [1, 2, 3, 5, 6, 7].map((type, i) => logged({ type, account: i % 2 ? '8931' : '8930' }));
+  const types = (kept: LoggedCall[]) => kept.map((c) => c.type);
+  assert.deepEqual(types(filterCalls(calls, 'all')), [1, 2, 3, 5, 6, 7]);
+  assert.deepEqual(types(filterCalls(calls, 'missed')), [3]);
+  assert.deepEqual(types(filterCalls(calls, 'incoming')), [1, 5, 7]);
+  assert.deepEqual(types(filterCalls(calls, 'outgoing')), [2]);
+  assert.deepEqual(types(filterCalls(calls, 'blocked')), [6]);
+  assert.deepEqual(types(filterCalls(calls, 'all', '8931')), [2, 5, 7]);
+  assert.deepEqual(types(filterCalls(calls, 'incoming', '8930')), [1]);
+});
+
+test('calls one after another with the same number, kind and day are one row, under their day', () => {
+  const day = (d: number, h: number) => new Date(2026, 9, d, h).getTime();
+  const calls = [
+    logged({ type: 3, at: day(19, 12) }),
+    logged({ type: 3, at: day(19, 11), number: '6911111111' }),
+    logged({ type: 1, at: day(19, 10) }),
+    logged({ type: 1, at: day(18, 22) }),
+    logged({ type: 1, at: day(18, 21), number: '+302101234567' }),
+    logged({ type: 3, at: day(18, 20), number: '', presentation: 2 }),
+    logged({ type: 3, at: day(18, 19), number: '', presentation: 2 }),
+    logged({ type: 2, at: day(12, 9) }),
+  ];
+  const rows = groupCalls(calls);
+  assert.deepEqual(
+    rows.map((r) => [r.kind, r.calls.length]),
+    [['missed', 2], ['incoming', 1], ['incoming', 1], ['incoming', 1], ['missed', 2], ['outgoing', 1]],
+  );
+  const items = withDays(rows, day(19, 13));
+  assert.deepEqual(
+    items.map((i) => (i.kind === 'day' ? i.label : i.row.calls.length)),
+    ['Today', 2, 1, 'Yesterday', 1, 1, 2, '12/10/26', 1],
+  );
 });

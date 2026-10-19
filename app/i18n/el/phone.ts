@@ -19,6 +19,39 @@ export const phone: Record<string, string> = {
   "Without that, calls go on the phone's default SIM.": 'Χωρίς αυτό, οι κλήσεις γίνονται από την προεπιλεγμένη SIM του τηλεφώνου.',
   'Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.':
     'Το Erevos κρατά αυτή τη SIM για τον αριθμό, σφραγισμένη σε αυτόν τον χώρο, και την επόμενη φορά τον καλεί από την ίδια SIM.',
+  Keypad: 'Πληκτρολόγιο',
+  Recents: 'Πρόσφατα',
+  Favourites: 'Αγαπημένα',
+
+  // The calls (Android's call history) and the favourites, on the Phone screen (lib/phone-log.ts).
+  All: 'Όλες',
+  Missed: 'Αναπάντητες',
+  Incoming: 'Εισερχόμενες',
+  Outgoing: 'Εξερχόμενες',
+  Blocked: 'Αποκλεισμένες',
+  'Incoming call': 'Εισερχόμενη κλήση',
+  'Outgoing call': 'Εξερχόμενη κλήση',
+  'Declined call': 'Κλήση που απέρριψες',
+  'Blocked call': 'Αποκλεισμένη κλήση',
+  'Private number': 'Απόκρυψη αριθμού',
+  Payphone: 'Τηλέφωνο κοινού',
+  'Unknown number': 'Άγνωστος αριθμός',
+  'Wi-Fi calling': 'Κλήση μέσω Wi-Fi',
+  'HD voice': 'Φωνή HD',
+  'Android does not let Erevos read the call history yet.': 'Το Android δεν αφήνει ακόμα το Erevos να διαβάσει το ιστορικό κλήσεων.',
+  'Allow the call history': 'Να επιτρέπεται το ιστορικό κλήσεων',
+  'Android did not allow it. Under Settings, Allow calls and contacts says how to.':
+    'Το Android δεν το επέτρεψε. Στις «Ρυθμίσεις», το «Να επιτρέπονται κλήσεις και επαφές» λέει πώς.',
+  'No calls of this kind.': 'Καμία κλήση αυτού του είδους.',
+  'No calls yet.': 'Καμία κλήση ακόμα.',
+  'Call on {sim}': 'Κλήση από {sim}',
+  'Call {name}': 'Κλήση: {name}',
+  'Send an SMS': 'Αποστολή SMS',
+  'Change the number before calling': 'Αλλαγή αριθμού πριν την κλήση',
+  "Android does not let Erevos read the phone's contacts yet.": 'Το Android δεν αφήνει ακόμα το Erevos να διαβάσει τις επαφές του τηλεφώνου.',
+  'Allow the contacts': 'Να επιτρέπονται οι επαφές',
+  'No favourites yet. The contacts you star show here, to call at a tap.':
+    'Κανένα αγαπημένο ακόμα. Οι επαφές που σημειώνεις με αστέρι φαίνονται εδώ, για να τις καλείς με ένα πάτημα.',
 
   // The phone's settings (app/phone-settings.tsx).
   'Phone settings': 'Ρυθμίσεις τηλεφώνου',

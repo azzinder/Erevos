@@ -529,6 +529,16 @@ Erevos's keypad.
 - **Two SIMs:** above **Call**, tap the SIM to call on; the first time, **Choose the SIM** asks Android to let Erevos
   see them. A number you call without choosing asks **Call on** which. Erevos keeps the SIM you used for each number,
   sealed in the space, and calls it on the same one next time. The call screen names the SIM of each call.
+- **The calls:** under **Phone**, **Recents** lists Android's call history, newest first, under each day: who, what
+  the call was, on which SIM, and how. **All**, **Missed**, **Incoming**, **Outgoing** and, once a call was blocked,
+  **Blocked** filter it; with two SIMs, **SIM 1** or **SIM 2** keeps that SIM's calls. Calls one after another with
+  the same number show once, with how many. **☏** calls back; a tap on the row shows its calls, how long each lasted,
+  and **Call** (with two SIMs, one for each), **Send an SMS** and **Change the number before calling**. Seen there,
+  missed calls leave Android's notice, and that notice opens **Recents**.
+- **Favourites:** the contacts starred in your phone's contacts, with their photos. A tap calls the contact's
+  default number, or asks which when there are several and none is the default; held down, it shows them all.
+- **Wi-Fi calling and HD voice:** the call screen says so under the name when a call goes over Wi-Fi or with HD
+  voice, and **Recents** says it for each call.
 - **Erevos's password:** the **Phone** screen, with the keypad, the calls and the favourites, is behind it like the
   rest of Erevos. Only the call screen is not.
 - **If Erevos does not become the phone app:** as with SMS, Android 15 and later can hold it back from an app
@@ -857,7 +867,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
-| **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app. The SIM chosen for each number is sealed in the space. | |
+| **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos only reads it, and the favourites, to show them, and keeps no copy. The SIM chosen for each number is sealed in the space. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |

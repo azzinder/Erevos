@@ -19,7 +19,11 @@ been compile-checked against Android 16's framework classes, not built or run.
   Missed calls are Telecom's own notice.
 - **Calls.** `placeCall(number, account)` on a SIM (`PhoneAccountHandle`), `accounts()` lists them.
 - **Names.** The phone's contacts (`PhoneLookup`), and `setKnownNames()`: names the app knows while
-  a space is open, in memory only.
+  a space is open, in memory only; `forgetKnownNamesAfter()` lets them go when the space would lock.
+- **History.** `History`: `history()` reads Android's call history (`CallLog.Calls`, with
+  `FEATURES` for Wi-Fi calling and HD voice and `PHONE_ACCOUNT_ID` for the SIM), `favourites()` the
+  starred contacts with their numbers, `seenMissed()` takes away Telecom's missed-call notice. An
+  `onHistory` event follows changes to either. Nothing of it is kept.
 
 ## JS API
 

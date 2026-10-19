@@ -20,19 +20,23 @@ import expo.modules.kotlin.modules.ModuleDefinition
  */
 class ErevosPhoneModule : Module() {
   private val main = Handler(Looper.getMainLooper())
+  private var unwatch: (() -> Unit)? = null
 
   private fun context(): Context = appContext.reactContext ?: throw IllegalStateException("No app context")
 
   override fun definition() = ModuleDefinition {
     Name("ErevosPhone")
-    Events("onCalls")
+    Events("onCalls", "onHistory")
 
     OnCreate {
       Calls.onCount = { count -> main.post { sendEvent("onCalls", mapOf("count" to count)) } }
+      unwatch = appContext.reactContext?.let { context -> History.watch(context) { sendEvent("onHistory", emptyMap<String, Any>()) } }
     }
 
     OnDestroy {
       Calls.onCount = null
+      unwatch?.invoke()
+      unwatch = null
     }
 
     Function("status") {
@@ -72,6 +76,23 @@ class ErevosPhoneModule : Module() {
       val extras = Bundle()
       if (account.isNotEmpty()) Sims.find(context, account)?.let { extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it.handle) }
       telecom.placeCall(Uri.fromParts("tel", number, null), extras)
+    }
+
+    // The call history, newest first, once Erevos may read it.
+    AsyncFunction("history") {
+      val context = context()
+      mapOf("allowed" to History.allowed(context), "calls" to History.calls(context))
+    }
+
+    // The phone's starred contacts, once Erevos may read the contacts.
+    AsyncFunction("favourites") {
+      val context = context()
+      mapOf("allowed" to History.contactsAllowed(context), "favourites" to History.favourites(context))
+    }
+
+    // The missed calls were seen: Android's notice of them goes.
+    Function("seenMissed") {
+      History.seenMissed(context())
     }
 
     // Back to the call screen, while a call is on.

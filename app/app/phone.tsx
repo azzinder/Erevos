@@ -1,24 +1,66 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { AppState, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { AppState, FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text } from '../components/ui';
-import { t } from '../lib/i18n';
-import { dialNumber, KEYS, knownNames, typeKey } from '../lib/phone';
+import { mark, t } from '../lib/i18n';
+import { callLength, dialNumber, KEYS, knownNames, typeKey } from '../lib/phone';
+import {
+  CALL_FILTERS,
+  callClock,
+  callKind,
+  callMarks,
+  callWho,
+  dayLabel,
+  filterCalls,
+  groupCalls,
+  hiddenNumber,
+  KIND_LABELS,
+  withDays,
+  type CallFilter,
+  type CallRow,
+} from '../lib/phone-log';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
 import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
-import { onPhoneEvent, phoneAccounts, phoneReady, phoneStatus, placeCall, setKnownNames, showCall, type PhoneAccount, type PhoneStatus } from '../modules/erevos-phone';
-import { space, type Colors } from '../theme/colors';
+import {
+  callHistory,
+  onPhoneEvent,
+  phoneAccounts,
+  phoneFavourites,
+  phoneReady,
+  phoneStatus,
+  placeCall,
+  seenMissedCalls,
+  setKnownNames,
+  showCall,
+  type Favourite,
+  type LoggedCall,
+  type PhoneAccount,
+  type PhoneStatus,
+} from '../modules/erevos-phone';
+import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // The phone, with Erevos as Android's phone app (modules/erevos-phone): the keypad to call a
-// number. A call itself shows on the native call screen, which works with Erevos locked and over
+// number, the calls (Android's call history, with filters) and the favourites (the phone's starred
+// contacts). A call itself shows on the native call screen, which works with Erevos locked and over
 // the phone's lock screen; this screen is behind Erevos's password like the rest of the app. It
-// opens from tel: links and the phone's call button with the number typed in (`number`). With two
-// SIMs, each call goes on the one chosen for its number (lib/phone-sims.ts), else on the one
-// chosen now, which is then kept for the number.
+// opens from tel: links and the phone's call button with the number typed in (`number`), and from
+// Android's notice of a missed call on the calls (`tab`). With two SIMs, each call goes on the one
+// chosen for its number (lib/phone-sims.ts), else on the one chosen now, which is then kept for
+// the number.
+
+type Tab = 'keypad' | 'recents' | 'favourites';
+
+const TABS: { tab: Tab; label: string }[] = [
+  { tab: 'keypad', label: mark('Keypad') },
+  { tab: 'recents', label: mark('Recents') },
+  { tab: 'favourites', label: mark('Favourites') },
+];
+
+const tabOf = (tab: unknown): Tab => (tab === 'recents' || tab === 'favourites' ? tab : 'keypad');
 
 export default function Phone() {
   const params = useLocalSearchParams<{ number?: string; tab?: string }>();
@@ -26,6 +68,7 @@ export default function Phone() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [status, setStatus] = useState<PhoneStatus | null>(phoneStatus());
+  const [tab, setTab] = useState<Tab>(typeof params.number === 'string' ? 'keypad' : tabOf(params.tab));
   const [number, setNumber] = useState(dialNumber(typeof params.number === 'string' ? params.number : ''));
   const [note, setNote] = useState('');
   const [accounts, setAccounts] = useState<PhoneAccount[]>([]);
@@ -36,8 +79,14 @@ export default function Phone() {
   const [choosing, setChoosing] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof params.number === 'string') setNumber(dialNumber(params.number));
+    if (typeof params.number !== 'string') return;
+    setNumber(dialNumber(params.number));
+    setTab('keypad');
   }, [params.number]);
+
+  useEffect(() => {
+    if (typeof params.tab === 'string') setTab(tabOf(params.tab));
+  }, [params.tab]);
 
   useEffect(() => {
     // Android answers in its own screens, and calls come and go: look again then.
@@ -136,84 +185,103 @@ export default function Phone() {
             <Text tone="muted">{t("Calls made here show on Android's own call screen until you make Erevos the phone app, under Settings.")}</Text>
           </Card>
         ) : null}
+        <Row style={styles.tabs}>
+          {TABS.map((each) => (
+            <Chip key={each.tab} label={t(each.label)} selected={tab === each.tab} onPress={() => setTab(each.tab)} />
+          ))}
+        </Row>
+        {note && tab !== 'keypad' ? <Text tone="muted">{note}</Text> : null}
       </View>
 
-      <View style={styles.keypad}>
-        <View style={styles.numberLine}>
-          <TextInput
-            value={number}
-            onChangeText={(text) => setNumber(dialNumber(text))}
-            // The keys below type; held down, the field still pastes a number.
-            showSoftInputOnFocus={false}
-            style={[styles.number, { color: colors.text }, fontStyle('400')]}
-            placeholder={t('Number')}
-            placeholderTextColor={colors.textFaint}
-            textAlign="center"
-          />
-          <Pressable
-            onPress={() => setNumber((n) => n.slice(0, -1))}
-            onLongPress={() => setNumber('')}
-            disabled={!number}
-            accessibilityRole="button"
-            accessibilityLabel={t('Delete')}
-            hitSlop={10}
-            style={({ pressed }) => [styles.erase, { opacity: !number ? 0.3 : pressed ? 0.6 : 1 }]}
-          >
-            <Text variant="heading" tone="muted">
-              ⌫
-            </Text>
-          </Pressable>
-        </View>
-        {KEYS.map((keys) => (
-          <View key={keys.join('')} style={styles.keys}>
-            {keys.map((key) => (
-              <Pressable
-                key={key}
-                onPress={() => setNumber((n) => typeKey(n, key))}
-                onLongPress={key === '0' ? () => setNumber((n) => typeKey(n, '+')) : undefined}
-                accessibilityRole="button"
-                accessibilityLabel={key}
-                style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}
-              >
-                <Text style={styles.keyText}>{key}</Text>
-                {key === '0' ? (
-                  <Text variant="caption" tone="faint" style={styles.keyPlus}>
-                    +
-                  </Text>
-                ) : null}
-              </Pressable>
-            ))}
+      {tab === 'recents' ? (
+        <Recents
+          accounts={accounts}
+          onCall={(to, account) => void call(to, account)}
+          onEdit={(to) => {
+            setNumber(dialNumber(to));
+            setTab('keypad');
+          }}
+        />
+      ) : tab === 'favourites' ? (
+        <Favourites onCall={(to) => void call(to)} />
+      ) : (
+        <View style={styles.keypad}>
+          <View style={styles.numberLine}>
+            <TextInput
+              value={number}
+              onChangeText={(text) => setNumber(dialNumber(text))}
+              // The keys below type; held down, the field still pastes a number.
+              showSoftInputOnFocus={false}
+              style={[styles.number, { color: colors.text }, fontStyle('400')]}
+              placeholder={t('Number')}
+              placeholderTextColor={colors.textFaint}
+              textAlign="center"
+            />
+            <Pressable
+              onPress={() => setNumber((n) => n.slice(0, -1))}
+              onLongPress={() => setNumber('')}
+              disabled={!number}
+              accessibilityRole="button"
+              accessibilityLabel={t('Delete')}
+              hitSlop={10}
+              style={({ pressed }) => [styles.erase, { opacity: !number ? 0.3 : pressed ? 0.6 : 1 }]}
+            >
+              <Text variant="heading" tone="muted">
+                ⌫
+              </Text>
+            </Pressable>
           </View>
-        ))}
-        {accounts.length >= 2 ? (
-          <Row wrap style={styles.sims}>
-            {accounts.map((a) => (
-              <Chip key={a.id} label={accountLabel(a)} selected={chosen === a.id} onPress={() => setChosen(a.id)} />
-            ))}
-          </Row>
-        ) : (status?.slots ?? 0) >= 2 ? (
-          <Row wrap style={styles.sims}>
-            <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
-          </Row>
-        ) : null}
-        <View style={styles.keys}>
-          <Pressable
-            onPress={() => void call(number, accounts.some((a) => a.id === chosen) ? chosen : undefined)}
-            accessibilityRole="button"
-            accessibilityLabel={t('Call')}
-            style={({ pressed }) => [styles.callButton, { opacity: pressed ? 0.75 : 1 }]}
-          >
-            <Text variant="label" color="#FFFFFF" style={styles.callText}>
-              {t('Call')}
+          {KEYS.map((keys) => (
+            <View key={keys.join('')} style={styles.keys}>
+              {keys.map((key) => (
+                <Pressable
+                  key={key}
+                  onPress={() => setNumber((n) => typeKey(n, key))}
+                  onLongPress={key === '0' ? () => setNumber((n) => typeKey(n, '+')) : undefined}
+                  accessibilityRole="button"
+                  accessibilityLabel={key}
+                  style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}
+                >
+                  <Text style={styles.keyText}>{key}</Text>
+                  {key === '0' ? (
+                    <Text variant="caption" tone="faint" style={styles.keyPlus}>
+                      +
+                    </Text>
+                  ) : null}
+                </Pressable>
+              ))}
+            </View>
+          ))}
+          {accounts.length >= 2 ? (
+            <Row wrap style={styles.sims}>
+              {accounts.map((a) => (
+                <Chip key={a.id} label={accountLabel(a)} selected={chosen === a.id} onPress={() => setChosen(a.id)} />
+              ))}
+            </Row>
+          ) : (status?.slots ?? 0) >= 2 ? (
+            <Row wrap style={styles.sims}>
+              <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
+            </Row>
+          ) : null}
+          <View style={styles.keys}>
+            <Pressable
+              onPress={() => void call(number, accounts.some((a) => a.id === chosen) ? chosen : undefined)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Call')}
+              style={({ pressed }) => [styles.callButton, { opacity: pressed ? 0.75 : 1 }]}
+            >
+              <Text variant="label" color="#FFFFFF" style={styles.callText}>
+                {t('Call')}
+              </Text>
+            </Pressable>
+          </View>
+          {note ? (
+            <Text tone="muted" style={styles.note}>
+              {note}
             </Text>
-          </Pressable>
+          ) : null}
         </View>
-        {note ? (
-          <Text tone="muted" style={styles.note}>
-            {note}
-          </Text>
-        ) : null}
-      </View>
+      )}
 
       <Sheet visible={choosing !== null} onClose={() => setChoosing(null)} title={t('Call on')}>
         {accounts.map((a) => (
@@ -232,6 +300,307 @@ export default function Phone() {
           {t('Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.')}
         </Text>
       </Sheet>
+    </View>
+  );
+}
+
+// Android's call history, read again whenever it changes, with filters; a row opens its calls.
+function Recents({ accounts, onCall, onEdit }: {
+  accounts: PhoneAccount[];
+  onCall: (number: string, account?: string) => void;
+  onEdit: (number: string) => void;
+}) {
+  const styles = useStyles(makeStyles);
+  const [history, setHistory] = useState<{ allowed: boolean; calls: LoggedCall[] } | null>(null);
+  const [filter, setFilter] = useState<CallFilter>('all');
+  const [account, setAccount] = useState('');
+  const [open, setOpen] = useState<CallRow | null>(null);
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    const load = () => callHistory().then(setHistory, () => setHistory({ allowed: false, calls: [] }));
+    load();
+    // Seen here, the missed calls leave Android's notice.
+    seenMissedCalls();
+    const changed = onPhoneEvent('onHistory', () => void load());
+    const app = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      void load();
+      seenMissedCalls();
+    });
+    return () => {
+      changed?.remove();
+      app.remove();
+    };
+  }, []);
+
+  const calls = history?.calls ?? [];
+  const items = useMemo(() => withDays(groupCalls(filterCalls(calls, filter, account)), Date.now()), [calls, filter, account]);
+  const twoSims = accounts.length >= 2;
+
+  async function allow() {
+    const answer = await PermissionsAndroid.request('android.permission.READ_CALL_LOG').catch(() => null);
+    if (answer === PermissionsAndroid.RESULTS.GRANTED) setHistory(await callHistory().catch(() => ({ allowed: false, calls: [] })));
+    else setNote(t('Android did not allow it. Under Settings, Allow calls and contacts says how to.'));
+  }
+
+  if (history && !history.allowed) {
+    return (
+      <View style={styles.tabBody}>
+        <Card>
+          <Text tone="muted">{t('Android does not let Erevos read the call history yet.')}</Text>
+          <Button title={t('Allow the call history')} onPress={() => void allow()} />
+          {note ? <Text tone="muted">{note}</Text> : null}
+        </Card>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.key}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+            {CALL_FILTERS.filter((f) => f.filter !== 'blocked' || calls.some((c) => callKind(c.type) === 'blocked')).map((f) => (
+              <Chip key={f.filter} label={t(f.label)} selected={filter === f.filter} onPress={() => setFilter(f.filter)} />
+            ))}
+            {twoSims
+              ? accounts.map((a) => <Chip key={a.id} label={a.name} selected={account === a.id} onPress={() => setAccount(account === a.id ? '' : a.id)} />)
+              : null}
+          </ScrollView>
+        }
+        ListEmptyComponent={
+          history ? (
+            <Text tone="muted" style={styles.empty}>
+              {calls.length ? t('No calls of this kind.') : t('No calls yet.')}
+            </Text>
+          ) : null
+        }
+        renderItem={({ item }) =>
+          item.kind === 'day' ? (
+            <Text variant="caption" tone="faint" style={styles.day}>
+              {item.label}
+            </Text>
+          ) : (
+            <CallLine row={item.row} accounts={twoSims ? accounts : []} onOpen={() => setOpen(item.row)} onCall={() => onCall(item.row.calls[0].number)} />
+          )
+        }
+      />
+
+      <Sheet visible={open !== null} onClose={() => setOpen(null)} title={open ? callWho(open.calls[0]) : ''}>
+        {open ? <CallDetails row={open} accounts={twoSims ? accounts : []} /> : null}
+        {open && !hiddenNumber(open.calls[0]) ? (
+          <>
+            {twoSims ? (
+              accounts.map((a) => (
+                <Button
+                  key={a.id}
+                  title={t('Call on {sim}', { sim: accountLabel(a) })}
+                  onPress={() => {
+                    setOpen(null);
+                    onCall(open.calls[0].number, a.id);
+                  }}
+                />
+              ))
+            ) : (
+              <Button
+                title={t('Call')}
+                onPress={() => {
+                  setOpen(null);
+                  onCall(open.calls[0].number);
+                }}
+              />
+            )}
+            <Button
+              title={t('Send an SMS')}
+              kind="secondary"
+              onPress={() => {
+                setOpen(null);
+                router.push(`/sms?to=${encodeURIComponent(open.calls[0].number)}`);
+              }}
+            />
+            <Button
+              title={t('Change the number before calling')}
+              kind="secondary"
+              onPress={() => {
+                setOpen(null);
+                onEdit(open.calls[0].number);
+              }}
+            />
+          </>
+        ) : null}
+      </Sheet>
+    </>
+  );
+}
+
+// What a call was, on which SIM, and how: Wi-Fi calling, HD voice.
+function callDetail(call: LoggedCall, accounts: PhoneAccount[]): string {
+  const marks = callMarks(call.features);
+  const sim = accounts.find((a) => a.id === call.account);
+  return [t(KIND_LABELS[callKind(call.type)]), sim ? sim.name : '', marks.wifi ? t('Wi-Fi calling') : '', marks.hd ? t('HD voice') : '']
+    .filter(Boolean)
+    .join(' · ');
+}
+
+function CallLine({ row, accounts, onOpen, onCall }: { row: CallRow; accounts: PhoneAccount[]; onOpen: () => void; onCall: () => void }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const first = row.calls[0];
+  const who = callWho(first);
+  const detail = callDetail(first, accounts);
+  const missed = row.kind === 'missed';
+  return (
+    <Pressable
+      onPress={onOpen}
+      accessibilityRole="button"
+      accessibilityLabel={`${who}, ${detail}, ${callClock(first.at)}`}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      <Face name={first.name} photo={first.photo} size={44} />
+      <View style={styles.rowBody}>
+        <Text variant={first.isNew ? 'bodyStrong' : 'body'} numberOfLines={1} color={missed ? colors.danger : undefined}>
+          {row.calls.length > 1 ? `${who} (${row.calls.length})` : who}
+        </Text>
+        <Text variant="caption" tone="muted" numberOfLines={1}>
+          {detail}
+        </Text>
+      </View>
+      <Text variant="caption" tone="faint">
+        {callClock(first.at)}
+      </Text>
+      {hiddenNumber(first) ? null : (
+        <Pressable
+          onPress={onCall}
+          accessibilityRole="button"
+          accessibilityLabel={t('Call {name}', { name: who })}
+          hitSlop={6}
+          style={({ pressed }) => [styles.callBack, pressed && styles.pressed]}
+        >
+          <Text variant="heading" color={colors.success}>
+            ☏
+          </Text>
+        </Pressable>
+      )}
+    </Pressable>
+  );
+}
+
+// The calls of a row, one line each, under the number and the day.
+function CallDetails({ row, accounts }: { row: CallRow; accounts: PhoneAccount[] }) {
+  const first = row.calls[0];
+  return (
+    <View style={{ gap: space.xs }}>
+      <Text tone="muted">{[first.name ? first.shown || first.number : '', dayLabel(first.at, Date.now())].filter(Boolean).join(' · ')}</Text>
+      {row.calls.map((call) => (
+        <Text key={call.id} variant="caption" tone="muted">
+          {[callClock(call.at), callDetail(call, accounts), call.duration > 0 ? callLength(call.duration) : ''].filter(Boolean).join(' · ')}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
+// The phone's starred contacts, to call at a tap; one with several numbers and no default asks which.
+function Favourites({ onCall }: { onCall: (number: string) => void }) {
+  const styles = useStyles(makeStyles);
+  const [found, setFound] = useState<{ allowed: boolean; favourites: Favourite[] } | null>(null);
+  const [open, setOpen] = useState<Favourite | null>(null);
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    const load = () => phoneFavourites().then(setFound, () => setFound({ allowed: false, favourites: [] }));
+    load();
+    const changed = onPhoneEvent('onHistory', () => void load());
+    const app = AppState.addEventListener('change', (state) => state === 'active' && void load());
+    return () => {
+      changed?.remove();
+      app.remove();
+    };
+  }, []);
+
+  async function allow() {
+    const answer = await PermissionsAndroid.request('android.permission.READ_CONTACTS').catch(() => null);
+    if (answer === PermissionsAndroid.RESULTS.GRANTED) setFound(await phoneFavourites().catch(() => ({ allowed: false, favourites: [] })));
+    else setNote(t('Android did not allow it. Under Settings, Allow calls and contacts says how to.'));
+  }
+
+  function tap(favourite: Favourite) {
+    const only = favourite.primary || (favourite.numbers.length === 1 ? favourite.numbers[0].number : '');
+    if (only) onCall(only);
+    else setOpen(favourite);
+  }
+
+  if (found && !found.allowed) {
+    return (
+      <View style={styles.tabBody}>
+        <Card>
+          <Text tone="muted">{t("Android does not let Erevos read the phone's contacts yet.")}</Text>
+          <Button title={t('Allow the contacts')} onPress={() => void allow()} />
+          {note ? <Text tone="muted">{note}</Text> : null}
+        </Card>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <ScrollView contentContainerStyle={styles.list}>
+        {found && found.favourites.length === 0 ? (
+          <Text tone="muted" style={styles.empty}>
+            {t('No favourites yet. The contacts you star show here, to call at a tap.')}
+          </Text>
+        ) : null}
+        <View style={styles.favourites}>
+          {(found?.favourites ?? []).map((f) => (
+            <Pressable
+              key={f.id}
+              onPress={() => tap(f)}
+              onLongPress={() => setOpen(f)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Call {name}', { name: f.name })}
+              style={({ pressed }) => [styles.favourite, pressed && styles.pressed]}
+            >
+              <Face name={f.name} photo={f.photo} size={64} />
+              <Text variant="caption" numberOfLines={1} style={styles.favouriteName}>
+                {f.name}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </ScrollView>
+
+      <Sheet visible={open !== null} onClose={() => setOpen(null)} title={open?.name}>
+        {(open?.numbers ?? []).map((n) => (
+          <Button
+            key={n.number}
+            title={[n.label, n.shown || n.number].filter(Boolean).join(' · ')}
+            kind={n.number === open?.primary ? 'primary' : 'secondary'}
+            onPress={() => {
+              setOpen(null);
+              onCall(n.number);
+            }}
+          />
+        ))}
+      </Sheet>
+    </>
+  );
+}
+
+// A contact's photo, or the first letter of the name, or the phone's sign for a bare number.
+function Face({ name, photo, size }: { name: string; photo: string; size: number }) {
+  const styles = useStyles(makeStyles);
+  const round = { width: size, height: size, borderRadius: size / 2 };
+  if (photo) return <Image source={{ uri: photo }} style={round} accessibilityIgnoresInvertColors />;
+  const letter = [...name.trim()][0]?.toUpperCase() ?? '';
+  return (
+    <View style={[styles.face, round]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Text variant={letter ? 'bodyStrong' : 'body'} tone="muted" style={{ fontSize: size * 0.4, lineHeight: size * 0.5 }}>
+        {letter || '☏'}
+      </Text>
     </View>
   );
 }
@@ -255,6 +624,74 @@ const makeStyles = (colors: Colors) =>
     },
     title: {
       flex: 1,
+    },
+    tabs: {
+      gap: space.sm,
+    },
+    tabBody: {
+      paddingHorizontal: space.xl - 4,
+      paddingTop: space.md,
+    },
+    list: {
+      paddingHorizontal: space.lg,
+      paddingBottom: space.lg,
+    },
+    filters: {
+      gap: space.sm,
+      paddingVertical: space.md,
+    },
+    empty: {
+      paddingVertical: space.lg,
+    },
+    day: {
+      paddingTop: space.md,
+      paddingBottom: space.xs,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.md,
+      paddingVertical: space.sm,
+      paddingHorizontal: space.sm,
+      marginHorizontal: -space.sm,
+      borderRadius: radius.lg,
+    },
+    pressed: {
+      backgroundColor: colors.surfacePressed,
+    },
+    rowBody: {
+      flex: 1,
+      gap: 2,
+    },
+    callBack: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    favourites: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      paddingTop: space.md,
+    },
+    favourite: {
+      width: '33.33%',
+      alignItems: 'center',
+      gap: space.xs,
+      paddingVertical: space.md,
+      paddingHorizontal: space.xs,
+      borderRadius: radius.lg,
+    },
+    favouriteName: {
+      textAlign: 'center',
+    },
+    face: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.border, 0.6),
     },
     keypad: {
       flex: 1,

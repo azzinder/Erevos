@@ -12,9 +12,45 @@ export type PhoneStatus = { sdk: number; phone: boolean; isDefault: boolean; cal
  *  `slot` counts from 0, -1 for an account that is no SIM's; `name` is "SIM 1" or the account's. */
 export type PhoneAccount = { id: string; label: string; slot: number; name: string };
 
+/**
+ * A call in Android's call history. `type` is Android's: 1 came, 2 made, 3 missed, 5 declined,
+ * 6 blocked, 7 answered on another device (lib/phone-log.ts); `features` its marks, 4 for HD voice
+ * and 8 for Wi-Fi calling; `account` the SIM's id, as PhoneAccount's; `shown` the number as the
+ * phone's country writes it; `name` and `photo` (a content: address) from the phone's contacts, ''
+ * when it has none; `presentation` 1 when the number shows, 2 private, 3 unknown, 4 a payphone;
+ * `isNew` a missed call not seen yet; `blocked` why it was blocked, 0 when it was not. `at` and
+ * `duration` in milliseconds and seconds.
+ */
+export type LoggedCall = {
+  id: number;
+  number: string;
+  shown: string;
+  name: string;
+  photo: string;
+  at: number;
+  duration: number;
+  type: number;
+  features: number;
+  account: string;
+  presentation: number;
+  isNew: boolean;
+  blocked: number;
+};
+
+/** One of the phone's starred contacts, with its numbers: `primary` is its default number, or ''. */
+export type Favourite = {
+  id: string;
+  name: string;
+  photo: string;
+  numbers: { number: string; shown: string; label: string }[];
+  primary: string;
+};
+
 export type PhoneEvents = {
   /** A call came, was made, or ended: how many are on now. */
   onCalls: (event: { count: number }) => void;
+  /** The call history or the phone's contacts changed. */
+  onHistory: (event: Record<string, never>) => void;
 };
 
 type NativePhone = {
@@ -22,6 +58,9 @@ type NativePhone = {
   requestDefault(): void;
   accounts(): Promise<PhoneAccount[]>;
   placeCall(number: string, account: string): Promise<void>;
+  history(): Promise<{ allowed: boolean; calls: LoggedCall[] }>;
+  favourites(): Promise<{ allowed: boolean; favourites: Favourite[] }>;
+  seenMissed(): void;
   showCall(): void;
   setKnownNames(names: Record<string, string>): void;
   clearKnownNames(): void;
@@ -54,6 +93,23 @@ export function phoneAccounts(): Promise<PhoneAccount[]> {
 export function placeCall(number: string, account = ''): Promise<void> {
   if (!native) return Promise.reject(new Error('This app was built without the phone.'));
   return native.placeCall(number, account);
+}
+
+/** Android's call history, its newest 500 calls; `allowed` is false while Android does not let
+ *  Erevos read it. Erevos keeps no copy. */
+export function callHistory(): Promise<{ allowed: boolean; calls: LoggedCall[] }> {
+  return native ? native.history() : Promise.resolve({ allowed: false, calls: [] });
+}
+
+/** The phone's starred contacts, by name; `allowed` is false while Android does not let Erevos
+ *  read the contacts. */
+export function phoneFavourites(): Promise<{ allowed: boolean; favourites: Favourite[] }> {
+  return native ? native.favourites() : Promise.resolve({ allowed: false, favourites: [] });
+}
+
+/** The missed calls were seen: Android's notice of them goes. */
+export function seenMissedCalls(): void {
+  native?.seenMissed();
 }
 
 /** Brings the call screen back while a call is on. */

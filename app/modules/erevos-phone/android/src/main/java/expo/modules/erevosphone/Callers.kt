@@ -20,8 +20,8 @@ import java.util.Locale
  *  contact's photo. */
 internal class Caller(val number: String, val name: String?, val photo: Bitmap?)
 
-/** A number's contact in the phone's contacts: its name, photo and contact id. */
-internal class Contact(val id: Long, val name: String?, val photo: String?)
+/** A number's contact in the phone's contacts: its name, photo (and a small one) and contact id. */
+internal class Contact(val id: Long, val name: String?, val photo: String?, val thumb: String?)
 
 /**
  * Who calls, or is called: the name Erevos knows for the number while a space is open
@@ -74,10 +74,15 @@ internal object Callers {
     if (number.isBlank()) return null
     if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return null
     val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
-    val projection = arrayOf(ContactsContract.PhoneLookup._ID, ContactsContract.PhoneLookup.DISPLAY_NAME, ContactsContract.PhoneLookup.PHOTO_URI)
+    val projection = arrayOf(
+      ContactsContract.PhoneLookup._ID,
+      ContactsContract.PhoneLookup.DISPLAY_NAME,
+      ContactsContract.PhoneLookup.PHOTO_URI,
+      ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI,
+    )
     return try {
       context.contentResolver.query(uri, projection, null, null, null)?.use { c ->
-        if (c.moveToFirst()) Contact(c.getLong(0), c.getString(1), c.getString(2)) else null
+        if (c.moveToFirst()) Contact(c.getLong(0), c.getString(1), c.getString(2), c.getString(3)) else null
       }
     } catch (_: Exception) {
       null
