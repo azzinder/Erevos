@@ -118,6 +118,11 @@ jobs:
         with:
           targets: aarch64-linux-android
       - run: cargo install cargo-ndk --version 4.1.2 --locked
+      # Go builds lyrebird, Tor's pluggable transports for bridges (transports/go.mod).
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: transports/go.mod
+          cache-dependency-path: transports/go.sum
 
       - name: Generate the Android project
         working-directory: app
@@ -154,6 +159,10 @@ jobs:
           # It carries the Rust core.
           unzip -l erevos-android.apk 'lib/arm64-v8a/*' | grep -q 'erevos' \
             || { echo "::error::The Erevos core is missing from the APK"; unzip -l erevos-android.apk 'lib/*'; exit 1; }
+          # And lyrebird for Tor bridges, compressed, so Android unpacks it to where it may run
+          # (plugins/with-native-programs.js).
+          unzip -v erevos-android.apk 'lib/arm64-v8a/liblyrebird.so' | grep -q 'Defl.*liblyrebird' \
+            || { echo "::error::lyrebird (Tor bridges) is missing from the APK, or Android would not unpack it"; unzip -v erevos-android.apk 'lib/*'; exit 1; }
           # Signed by the release key, never by the public debug key (SHA-1 5E:8F:16:06:2E:A3:…).
           apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
           "$apksigner" verify --print-certs erevos-android.apk | tee signature

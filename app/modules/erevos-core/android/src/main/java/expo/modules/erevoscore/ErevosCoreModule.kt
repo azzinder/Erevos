@@ -53,12 +53,20 @@ class ErevosCoreModule : Module() {
     AsyncFunction("groupOf") { message: ByteArray -> ErevosCoreNative.groupOf(message) }
     AsyncFunction("groupOpen") { state: ByteArray, message: ByteArray -> ErevosCoreNative.groupOpen(state, message) }
 
-    // Relay requests through Tor (crates/erevos-tor). Tor keeps its state in the app's own folders.
-    AsyncFunction("torStart") {
+    // Relay requests through Tor (crates/erevos-tor), through the bridges given one per line, if
+    // any. Tor keeps its state in the app's own folders. The pluggable transports for bridges
+    // (lyrebird) come as a program named like a native library, as Android runs a program only
+    // from where it unpacks those (this module's build.gradle); a build without it has only
+    // plain bridges, and Tor says so rather than going without them.
+    AsyncFunction("torStart") { bridges: String ->
       val context = appContext.reactContext ?: throw IllegalStateException("No app context")
       val state = File(context.filesDir, "tor").apply { mkdirs() }
       val cache = File(context.cacheDir, "tor").apply { mkdirs() }
-      tor { ErevosCoreNative.torStart(state.path.toByteArray(), cache.path.toByteArray()) }
+      val lyrebird = File(context.applicationInfo.nativeLibraryDir, "liblyrebird.so")
+      val transports = if (lyrebird.canExecute()) lyrebird.path else ""
+      tor {
+        ErevosCoreNative.torStart(state.path.toByteArray(), cache.path.toByteArray(), bridges.toByteArray(), transports.toByteArray())
+      }
       Unit
     }
     AsyncFunction("torStatus") { tor { ErevosCoreNative.torStatus() } }
@@ -117,7 +125,7 @@ internal object ErevosCoreNative {
   @JvmStatic external fun groupMembers(state: ByteArray, id: ByteArray): ByteArray
   @JvmStatic external fun groupOf(message: ByteArray): ByteArray
   @JvmStatic external fun groupOpen(state: ByteArray, message: ByteArray): ByteArray
-  @JvmStatic external fun torStart(stateDir: ByteArray, cacheDir: ByteArray): ByteArray
+  @JvmStatic external fun torStart(stateDir: ByteArray, cacheDir: ByteArray, bridges: ByteArray, transports: ByteArray): ByteArray
   @JvmStatic external fun torStatus(): String
   @JvmStatic external fun torStop()
   @JvmStatic external fun torRequest(url: ByteArray, token: ByteArray, message: ByteArray): ByteArray

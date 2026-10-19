@@ -462,6 +462,23 @@ It is off unless you turn it on, and each space has its own switch.
 > While Tor is on, nothing goes to a relay without it. When Tor cannot reach the relay, the message waits and is
 > tried again; Erevos never falls back to your own connection by itself.
 
+### Bridges
+
+Where Tor itself is blocked, **Bridges** on the same screen lets Tor reach its network through bridges instead. It
+is **No bridges** unless you choose, each space has its own, and it counts only while Tor is on.
+
+| Choice | What it is |
+| --- | --- |
+| **obfs4** | The obfs4 bridges Tor Browser comes with. To whoever watches the network, Tor looks like random bytes. A censor that knows them may block them. |
+| **Snowflake** | Through volunteers' browsers, over WebRTC, the way a video call goes. To find one, Erevos asks Snowflake's broker through a CDN, behind another site's name, and STUN servers tell the phone its own address: they see that address, never your messages. Slower, and hard to block. |
+| **My own** | Bridge lines from bridges.torproject.org, from bridges@torproject.org by email, or from @GetBridgesBot on Telegram, pasted one per line; then tap **Use these bridges**. obfs4, Snowflake, WebTunnel, meek and plain bridges work. |
+
+- **Only through them:** with bridges, Tor never goes straight to its relays. When no bridge answers, messages wait,
+  as they do when Tor cannot reach the relay. Lines that are not bridges are not taken, and Tor stays off.
+- **Changing them** while Tor runs closes its connections and makes them again the new way.
+- **On Android only:** the app carries lyrebird, Tor's own program for obfs4, Snowflake, WebTunnel and meek. A
+  computer and the web app have no Tor yet, so no bridges either.
+
 ## SMS {#sms}
 
 On Android, Erevos can be the phone's SMS app, under **SMS** in the menu. The home screen then shows SMS and Erevos
@@ -862,7 +879,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it, and over Wi-Fi Direct anyone who joins the phones' own Wi-Fi. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
-| **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
+| **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it, and with bridges, for where Tor is blocked, the network sees only a bridge. Snowflake's broker and STUN servers see your address. | Tor on a computer. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
@@ -882,7 +899,8 @@ Erevos says plainly what it protects and what it does not, yet.
 
 End-to-end encryption is here, through the relay and over the nearby link, and most of what follows is built on it.
 
-- **More ways to stay in touch:** ways around censorship (Tor bridges).
+- **More ways to stay in touch:** Tor bridges for where Tor is blocked are here, see [Through Tor](#tor). Next: Tor
+  on a computer.
   - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: setting the radio's name from Erevos.
   - **SMS:** Erevos as the SMS app is here, with MMS photos, group MMS and two SIMs, see [SMS](#sms).
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.

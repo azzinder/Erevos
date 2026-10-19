@@ -1,14 +1,16 @@
 // The "Through Tor" switch (lib/relay.ts setThroughTor, lib/tor.ts): while it is on, every relay
 // request goes to the core's Tor and never to a WebSocket of the phone's own, and a build without
-// Tor fails the request rather than going around it. Tor itself (crates/erevos-tor) is not run here.
+// Tor fails the request rather than going around it. With bridges (lib/bridges.ts), Tor is given
+// them, or stopped when none is usable. Tor itself (crates/erevos-tor) is not run here.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 
+import { BUILT_IN, bridgeLines, bridgeProblem, checkedBridges, NO_BRIDGES, readBridgeLines } from '../lib/bridges';
 import { setCore, type Core } from '../lib/core';
 import { createQueue, RelayError, RelaySession, setThroughTor } from '../lib/relay';
-import { torStatus } from '../lib/tor';
+import { applyTor, NoBridgesError, torStatus } from '../lib/tor';
 
 type Seen = { what: string; url?: string; token?: string; bytes?: Uint8Array };
 
@@ -17,9 +19,9 @@ function fakeCore(seen: Seen[], tor: boolean): Core {
   const core: Partial<Core> = {};
   if (tor) {
     Object.assign(core, {
-      torStart: async () => void seen.push({ what: 'start' }),
+      torStart: async (bridges: string) => void seen.push({ what: 'start', url: bridges }),
       torStatus: async () => JSON.stringify({ text: 'done', ready: true }),
-      torStop: async () => undefined,
+      torStop: async () => void seen.push({ what: 'stop' }),
       torRequest: async (url: string, token: string, bytes: Uint8Array) => {
         seen.push({ what: 'request', url, token, bytes });
         return reply;
@@ -95,4 +97,58 @@ test('with Tor on, a build without Tor fails the request and does not go around 
   });
   await assert.rejects(RelaySession.open({ url: 'ws://relay:7879' }), /no Tor/);
   assert.equal(await torStatus(), null);
+});
+
+const FINGERPRINT = '0123456789ABCDEF0123456789ABCDEF01234567';
+const OBFS4 = `obfs4 192.0.2.10:443 ${FINGERPRINT} cert=YXJlIGZyZXF1ZW50bHkgZnVsbCBvZiBsaXR0bGUgbWVzc2FnZXMgeW91IGNhbiBmaW5kLg iat-mode=0`;
+const WEBTUNNEL = `webtunnel [2001:db8::1]:443 ${FINGERPRINT} url=https://example.org/secret-path ver=0.0.3`;
+const PLAIN = `192.0.2.20:9001 ${FINGERPRINT}`;
+
+test("Tor Browser's bridges, and one's own, are taken only as lines the app can use", () => {
+  for (const line of [...BUILT_IN.obfs4, ...BUILT_IN.snowflake, OBFS4, WEBTUNNEL, PLAIN]) assert.equal(bridgeProblem(line), null, line);
+  assert.equal(BUILT_IN.obfs4.length, 7);
+  assert.ok(BUILT_IN.obfs4.every((line) => line.startsWith('obfs4 ')) && BUILT_IN.snowflake.every((line) => line.startsWith('snowflake ')));
+  assert.equal(bridgeProblem(`conjure 192.0.2.30:443 ${FINGERPRINT}`), 'transport');
+  assert.equal(bridgeProblem(`obfs4 bridge.example.org:443 ${FINGERPRINT} cert=x`), 'address');
+  assert.equal(bridgeProblem(`obfs4 192.0.2.10:70000 ${FINGERPRINT}`), 'address');
+  assert.equal(bridgeProblem('obfs4 192.0.2.10:443 cert=x iat-mode=0'), 'fingerprint');
+  assert.equal(bridgeProblem(`obfs4 192.0.2.10:443 ${FINGERPRINT} cert`), 'setting');
+  assert.equal(bridgeProblem(`snowflake 192.0.2.3:80 ${FINGERPRINT} ice=${'x'.repeat(600)}`), 'long');
+
+  const pasted = `Bridge ${OBFS4}\r\n\n  ${WEBTUNNEL}  \n${OBFS4}\nnot a bridge\n${PLAIN}`;
+  assert.deepEqual(readBridgeLines(pasted), { lines: [OBFS4, WEBTUNNEL, PLAIN], wrong: ['not a bridge'] });
+
+  assert.deepEqual(bridgeLines(NO_BRIDGES), []);
+  assert.deepEqual(bridgeLines({ use: 'snowflake', own: OBFS4 }), BUILT_IN.snowflake);
+  assert.deepEqual(bridgeLines({ use: 'own', own: `${OBFS4}\n${PLAIN}` }), [OBFS4, PLAIN]);
+  assert.deepEqual(bridgeLines({ use: 'own', own: 'not a bridge' }), []);
+  assert.deepEqual(checkedBridges({ use: 'obfs4', own: 3 }), { use: 'obfs4', own: '' });
+  assert.deepEqual(checkedBridges({ use: 'meek', own: PLAIN }), { use: 'none', own: PLAIN });
+  assert.deepEqual(checkedBridges(undefined), NO_BRIDGES);
+});
+
+test('Tor is started through the chosen bridges, and stopped rather than started without them', async () => {
+  const seen: Seen[] = [];
+  setCore(fakeCore(seen, true));
+  await applyTor(true, NO_BRIDGES);
+  await applyTor(true, { use: 'obfs4', own: '' });
+  await applyTor(true, { use: 'own', own: `Bridge ${PLAIN}` });
+  assert.deepEqual(
+    seen.map((s) => [s.what, s.url]),
+    [
+      ['start', ''],
+      ['start', BUILT_IN.obfs4.join('\n')],
+      ['start', PLAIN],
+    ],
+  );
+  seen.length = 0;
+  await assert.rejects(applyTor(true, { use: 'own', own: 'not a bridge' }), NoBridgesError);
+  assert.deepEqual(seen.map((s) => s.what), ['stop']);
+  // The space's requests still go to Tor, which is stopped, never around it.
+  await createQueue({ url: 'wss://relay.example.org' });
+  assert.deepEqual(seen.map((s) => s.what), ['stop', 'request']);
+  // Off, Tor is left alone.
+  seen.length = 0;
+  await applyTor(false, { use: 'own', own: 'not a bridge' });
+  assert.deepEqual(seen, []);
 });

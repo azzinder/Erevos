@@ -179,7 +179,8 @@ pub fn seal_open(secret: &[u8], sealed: &[u8]) -> Result<Vec<u8>> {
 
 /// Relay requests through Tor (erevos_tor), with byte arrays in and out as
 /// the JNI calls take them: paths and addresses are UTF-8, a connection's
-/// handle is 8 bytes, big-endian.
+/// handle is 8 bytes, big-endian. Bridges come one per line, and the
+/// pluggable transports program as its path, empty when there is none.
 #[cfg(feature = "tor")]
 pub mod tor {
     use super::Result;
@@ -192,8 +193,12 @@ pub mod tor {
         Ok(u64::from_be_bytes(bytes.try_into().map_err(|_| "a handle is 8 bytes".to_string())?))
     }
 
-    pub fn start(state_dir: &[u8], cache_dir: &[u8]) -> Result<Vec<u8>> {
-        erevos_tor::start(text(state_dir)?.as_ref(), text(cache_dir)?.as_ref())?;
+    pub fn start(state_dir: &[u8], cache_dir: &[u8], bridges: &[u8], transports: &[u8]) -> Result<Vec<u8>> {
+        let bridges = erevos_tor::Bridges {
+            lines: text(bridges)?.lines().map(str::trim).filter(|line| !line.is_empty()).map(String::from).collect(),
+            transports: Some(text(transports)?).filter(|path| !path.is_empty()).map(std::path::PathBuf::from),
+        };
+        erevos_tor::start(text(state_dir)?.as_ref(), text(cache_dir)?.as_ref(), bridges)?;
         Ok(Vec::new())
     }
 

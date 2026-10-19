@@ -1,3 +1,4 @@
+import { checkedBridges, NO_BRIDGES, type Bridges } from '../lib/bridges';
 import { decryptText, encryptText, randomBytes } from '../lib/crypto';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';
 
@@ -37,6 +38,8 @@ export type SpaceData = {
   look: Look | null;
   // Whether the space's relay requests go through Tor (lib/relay.ts setThroughTor). Off unless set.
   tor: boolean;
+  // The bridges Tor goes through, for where it is blocked (lib/bridges.ts). None unless chosen.
+  bridges: Bridges;
   // A backup relay (one at home, say) with a queue of its own, which contacts write to while the
   // relay cannot be reached (lib/spare.ts). Its address is empty when there is none.
   spare: SpareRelay;
@@ -47,7 +50,19 @@ export type SpaceData = {
 export type SpareRelay = { url: string; token: string; queue: Queue | null };
 const NO_SPARE: SpareRelay = { url: '', token: '', queue: null };
 
-export const EMPTY_SPACE: SpaceData = { url: '', token: '', via: '', viaToken: '', ownQueue: null, routes: {}, look: null, tor: false, spare: NO_SPARE, push: false };
+export const EMPTY_SPACE: SpaceData = {
+  url: '',
+  token: '',
+  via: '',
+  viaToken: '',
+  ownQueue: null,
+  routes: {},
+  look: null,
+  tor: false,
+  bridges: NO_BRIDGES,
+  spare: NO_SPARE,
+  push: false,
+};
 
 const BLOCK = 1024;
 const entry = (space: number) => `erevos.space.${space}`;
@@ -90,6 +105,7 @@ function checked(value: unknown): SpaceData {
     routes,
     look: v.look ? checkedLook(v.look) : null,
     tor: v.tor === true,
+    bridges: checkedBridges(v.bridges),
     spare: checkedSpareRelay(v.spare),
     push: v.push === true,
   };

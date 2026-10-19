@@ -1,5 +1,28 @@
 // The Greek of settings that stand apart: Tor bridges, unlocking with a fingerprint, colors, languages (i18n/el/index.ts).
 export const more: Record<string, string> = {
+  // Tor bridges (the Tor screen).
+  Bridges: 'Γέφυρες',
+  'No bridges': 'Χωρίς γέφυρες',
+  'My own': 'Δικές μου',
+  'None of these is a bridge Erevos can use, so Tor stays off and messages wait.':
+    'Καμία από αυτές δεν είναι γέφυρα που μπορεί να χρησιμοποιήσει το Erevos, οπότε το Tor μένει κλειστό και τα μηνύματα περιμένουν.',
+  'Tor goes straight to its relays. Where Tor is blocked, choose bridges: Tor then reaches its network only through them.':
+    'Το Tor πηγαίνει κατευθείαν στους αναμεταδότες του. Όπου το Tor είναι μπλοκαρισμένο, διάλεξε γέφυρες: τότε το Tor φτάνει στο δίκτυό του μόνο μέσα από αυτές.',
+  'The obfs4 bridges Tor Browser comes with: to whoever watches the network, Tor looks like random bytes. Where a censor blocks these too, choose Snowflake or bridges of your own.':
+    'Οι γέφυρες obfs4 που έχει ο Tor Browser: σε όποιον παρακολουθεί το δίκτυο, το Tor μοιάζει με τυχαία bytes. Όπου ένας λογοκριτής μπλοκάρει κι αυτές, διάλεξε Snowflake ή δικές σου γέφυρες.',
+  "Snowflake goes through volunteers' browsers, over WebRTC, the way a video call does. To find one, Erevos asks Snowflake's broker through a CDN, behind another site's name, and STUN servers tell the phone its own address: they see that address, never your messages. Slower, and hard to block.":
+    'Το Snowflake περνά μέσα από browsers εθελοντών, με WebRTC, όπως μια βιντεοκλήση. Για να βρει έναν, το Erevos ρωτά τον broker του Snowflake μέσω ενός CDN, πίσω από το όνομα άλλου site, και διακομιστές STUN λένε στο τηλέφωνο τη δική του διεύθυνση: βλέπουν αυτή τη διεύθυνση, ποτέ τα μηνύματά σου. Πιο αργό, και δύσκολο να μπλοκαριστεί.',
+  'Bridge lines from bridges.torproject.org, from bridges@torproject.org by email, or from @GetBridgesBot on Telegram, one per line. obfs4, Snowflake, WebTunnel, meek and plain bridges work.':
+    'Γραμμές γεφυρών από το bridges.torproject.org, από το bridges@torproject.org με email, ή από το @GetBridgesBot στο Telegram, μία ανά γραμμή. Δουλεύουν obfs4, Snowflake, WebTunnel, meek και απλές γέφυρες.',
+  'Bridge lines': 'Γραμμές γεφυρών',
+  'Not a bridge line Erevos can use: {line}': 'Δεν είναι γραμμή γέφυρας που μπορεί να χρησιμοποιήσει το Erevos: {line}',
+  '{n} bridge': '{n} γέφυρα',
+  '{n} bridges': '{n} γέφυρες',
+  'Use these bridges': 'Χρήση αυτών των γεφυρών',
+  'Not in use until you tap Use these bridges.': 'Δεν χρησιμοποιούνται μέχρι να πατήσεις «Χρήση αυτών των γεφυρών».',
+  'With bridges, Tor never goes straight to its relays: when no bridge answers, messages wait. Bridges count only while Tor is on.':
+    'Με γέφυρες, το Tor δεν πηγαίνει ποτέ κατευθείαν στους αναμεταδότες του: όταν καμία γέφυρα δεν απαντά, τα μηνύματα περιμένουν. Οι γέφυρες μετράνε μόνο όσο το Tor είναι ενεργό.',
+
   // Updates on Windows, and on every computer: the file to take.
   'The download page opens: take {file}, see User guide → Updates.': 'Ανοίγει η σελίδα λήψης: πάρε το {file}, δες «Οδηγός χρήσης → Ενημερώσεις».',
 

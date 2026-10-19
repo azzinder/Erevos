@@ -31,6 +31,11 @@ jobs:
         with:
           targets: x86_64-linux-android
       - run: cargo install cargo-ndk --version 4.1.2 --locked
+      # Go builds lyrebird, Tor's pluggable transports for bridges (transports/go.mod).
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: transports/go.mod
+          cache-dependency-path: transports/go.sum
       - run: npm ci
       - run: npx expo prebuild --platform android --no-install
       - name: Gradle
