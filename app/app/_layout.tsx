@@ -23,6 +23,7 @@ import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
+import { clearKnownNames } from '../modules/erevos-phone';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { applyTor } from '../lib/tor';
 import { loadLockConfig, type LockConfig } from '../lock/config';
@@ -99,6 +100,7 @@ export default function RootLayout() {
     forgetSpaceGroups();
     forgetSmsLink();
     forgetSpare();
+    clearKnownNames();
     setThroughTor(false);
     setPhase({ kind: 'loading' });
     // The keystore holds the same entries whatever is in use: made once per start, beside the

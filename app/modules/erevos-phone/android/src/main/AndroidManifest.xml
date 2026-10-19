@@ -1,0 +1,70 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-feature android:name="android.hardware.telephony" android:required="false" />
+
+  <!-- What the phone app role gives: calling, the phone's state (its SIMs), the call history, and
+       names and photos from the phone's contacts. -->
+  <uses-permission android:name="android.permission.CALL_PHONE" />
+  <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+  <uses-permission android:name="android.permission.READ_CALL_LOG" />
+  <uses-permission android:name="android.permission.READ_CONTACTS" />
+  <!-- The call notices, the call screen over the lock screen, the screen off at the ear. -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+  <application>
+    <!-- What Android asks of a phone app: a call screen Telecom binds (it rings itself), and an
+         activity for DIAL and tel: links. -->
+    <service
+      android:name="expo.modules.erevosphone.CallService"
+      android:exported="true"
+      android:permission="android.permission.BIND_INCALL_SERVICE">
+      <meta-data android:name="android.telecom.IN_CALL_SERVICE_UI" android:value="true" />
+      <intent-filter>
+        <action android:name="android.telecom.InCallService" />
+      </intent-filter>
+    </service>
+
+    <activity
+      android:name="expo.modules.erevosphone.DialActivity"
+      android:exported="true"
+      android:excludeFromRecents="true"
+      android:noHistory="true"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter>
+        <action android:name="android.intent.action.DIAL" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.DIAL" />
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="tel" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.dir/calls" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.CALL_BUTTON" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+    </activity>
+
+    <!-- The call screen: its own task, over the lock screen, outside the app and its password. -->
+    <activity
+      android:name="expo.modules.erevosphone.CallActivity"
+      android:exported="false"
+      android:launchMode="singleTask"
+      android:taskAffinity="expo.modules.erevosphone.call"
+      android:excludeFromRecents="true"
+      android:showWhenLocked="true"
+      android:turnScreenOn="true"
+      android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|uiMode"
+      android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+
+    <receiver android:name="expo.modules.erevosphone.CallActionReceiver" android:exported="false" />
+  </application>
+</manifest>

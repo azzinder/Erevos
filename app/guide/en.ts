@@ -507,6 +507,35 @@ chats in one list.
 - **Names from your contacts:** off at first. Under **SMS** in the menu, **Show names from my contacts** shows the
   names your phone's contacts give SMS numbers. Erevos only reads them to show them, and keeps no copy.
 
+## Phone {#phone}
+
+On Android, Erevos can be the phone's phone app: under **Phone** in the menu, tap **Settings** → **Make Erevos the
+phone app**. Every call then shows on Erevos's own call screen, and tel: links and the phone's call button open
+Erevos's keypad.
+
+- **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them. It shows
+  over the lock screen and needs no password, as a call has to be answered with Erevos locked. A call that comes
+  shows **Answer** and **Decline**, and Android rings with the contact's own ringtone; the volume keys quiet it.
+  In a call: **Mute**, **Keypad** for the tones a menu asks for, **Speaker**, **Hold**, **Add call** and **End**.
+  At your ear the screen goes off.
+- **Where the sound goes:** with a Bluetooth device or a headset, the button beside **Keypad** names where the sound
+  goes, and a tap lets you choose: the phone, the speaker, the headset or the Bluetooth device.
+- **A second call:** one that comes during a call shows **Hold and answer**, **End and answer** and **Decline**.
+  With a call on hold, the line under the name says so: tap it, or **Swap**, to talk with the other. **Merge** puts
+  the two in one call, when your phone company allows it.
+- **The keypad:** under **Phone**, type a number and tap **Call**; hold **0** for +. Held down, the number's field
+  pastes one. **Add call**, during a call, opens it once Erevos is unlocked.
+- **Erevos's password:** the **Phone** screen, with the keypad, the calls and the favourites, is behind it like the
+  rest of Erevos. Only the call screen is not.
+- **If Erevos does not become the phone app:** as with SMS, Android 15 and later can hold it back from an app
+  installed from a browser. Under **Settings**, tap **Open Default apps** → **Phone app** → Erevos. If Android calls
+  it a restricted setting, open **Erevos's App info**, tap **⋮** at the top right → **Allow restricted settings**,
+  and choose Erevos again. **Allow calls and contacts** shows while Android still holds back calls, the call history
+  or the contacts.
+- **After the phone restarts:** until you unlock the phone for the first time, Android's own call screen answers.
+- **What a phone call is:** a plain phone call, as with every phone app: the phone company carries it and can
+  listen. Calls to your Erevos contacts from a chat are another thing: end-to-end encrypted, through the internet.
+
 ## Password lock {#lock}
 
 Under **Lock and second password**, **Lock when Erevos opens** has two choices: **No lock** and **Password**.
@@ -824,6 +853,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
+| **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
@@ -832,7 +862,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring; a Linux system without one keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
-| **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". | |
+| **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does. | |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Not audited. | Photos and voice messages in groups. |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. | Video with more than four people, through a server; more than eight people. |
@@ -844,6 +874,7 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
 - **More ways to stay in touch:** ways around censorship (Tor bridges).
   - **LoRa radios (Meshtastic):** here, see [Over a LoRa radio](#lora). Next: setting the radio's name from Erevos.
   - **SMS:** Erevos as the SMS app is here, with MMS photos, group MMS and two SIMs, see [SMS](#sms).
+  - **Phone:** Erevos as the phone app is here, with its own call screen, see [Phone](#phone).
   - **Email, QR codes, USB, NFC:** for when nothing else gets through.
 - **Calls:** voice and video calls are here, and on Android they ring in the background, see [Chat through a
   relay](#relay), and so is a walkie-talkie that works even over Bluetooth.

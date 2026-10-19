@@ -51,6 +51,7 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
     links: true,
   },
   { title: mark('SMS'), detail: mark('Erevos as the SMS app, one list for all messages'), href: '/sms-settings', phone: true },
+  { title: mark('Phone'), detail: mark('Erevos as the phone app: the keypad, the calls and the favourites'), href: '/phone', phone: true },
   { title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay' },
   { title: mark('Tor'), detail: mark('Reach the relays through Tor, off unless turned on'), href: '/tor', phone: true },
   { title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', phone: true },
