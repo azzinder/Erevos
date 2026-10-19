@@ -135,5 +135,6 @@ class ErevosContactsModule : Module() {
     AsyncFunction("deleteGroup") { id: Double -> ContactsStore.deleteGroup(context(), id.toLong()) }
     AsyncFunction("addToGroup") { group: Double, contact: Double -> ContactsStore.addToGroup(context(), group.toLong(), contact.toLong()) }
     AsyncFunction("removeFromGroup") { group: Double, contact: Double -> ContactsStore.removeFromGroup(context(), group.toLong(), contact.toLong()) }
+    AsyncFunction("takeOver") { keeper: Double, others: List<Double> -> ContactsStore.takeOver(context(), keeper.toLong(), others.map { it.toLong() }) }
   }
 }

@@ -147,4 +147,25 @@ export const contacts: Record<string, string> = {
     'Τράβηξε μια φωτογραφία του κωδικού ή διάλεξε μία. Διαβάζεται εδώ και δεν κρατιέται· ό,τι έχει ξεκινά μια νέα επαφή, που αποθηκεύεται μόνο όταν την αποθηκεύσεις.',
   'This QR code holds no contact.': 'Αυτός ο κωδικός QR δεν έχει επαφή.',
   'No QR code was found in the photo. Take it again closer, with all of the code in it.': 'Δεν βρέθηκε κωδικός QR στη φωτογραφία. Τράβηξέ τη ξανά πιο κοντά, με όλο τον κωδικό μέσα.',
+
+  // Duplicates.
+  'Find duplicates': 'Εύρεση διπλών',
+  'The same person kept twice, to merge into one': 'Το ίδιο άτομο αποθηκευμένο δύο φορές, για συγχώνευση σε ένα',
+  'There is nothing to merge.': 'Δεν υπάρχει τίποτα για συγχώνευση.',
+  'The same name': 'Ίδιο όνομα',
+  'The same number': 'Ίδιος αριθμός',
+  'The same email': 'Ίδιο email',
+  'Merge': 'Συγχώνευση',
+  'Merge these {n} into {name}? The others are deleted, from every account they are kept in.': 'Συγχώνευση αυτών των {n} στην επαφή {name}; Οι άλλες διαγράφονται, από κάθε λογαριασμό όπου φυλάγονται.',
+  'Merge all': 'Συγχώνευση όλων',
+  'Merge {n} set of contacts, each into its fullest? The others are deleted.': 'Συγχώνευση {n} σετ επαφών στην πιο πλήρη του; Οι άλλες διαγράφονται.',
+  'Merge {n} sets of contacts, each into its fullest? The others are deleted.': 'Συγχώνευση {n} σετ επαφών, του καθενός στην πιο πλήρη του; Οι άλλες διαγράφονται.',
+  '{n} set could not be merged.': '{n} σετ δεν συγχωνεύτηκε.',
+  '{n} sets could not be merged.': '{n} σετ δεν συγχωνεύτηκαν.',
+  'Duplicates': 'Διπλές επαφές',
+  'Contacts that look like the same person: the same name, number or email. Merging keeps the fullest, with every number, email and address of the others, and deletes the others.':
+    'Επαφές που μοιάζουν να είναι το ίδιο άτομο: ίδιο όνομα, αριθμός ή email. Η συγχώνευση κρατά την πιο πλήρη, με κάθε αριθμό, email και διεύθυνση των άλλων, και διαγράφει τις άλλες.',
+  'No duplicates found.': 'Δεν βρέθηκαν διπλές επαφές.',
+  'Not the same': 'Δεν είναι ίδιες',
+  'Kept, with the others in it': 'Μένει, με τις άλλες μέσα της',
 };

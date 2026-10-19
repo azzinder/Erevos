@@ -20,7 +20,8 @@ import { useStyles, useTheme } from '../theme/context';
 // Contacts: the phone's own contacts, from Android's contacts (modules/erevos-contacts), with a
 // search over every field, the favourites, each group's contacts, and a new contact. Read again
 // each time it comes back into view, and when Android's contacts change while it shows (another
-// app, a sync). The menu has the rest: groups (app/contact-groups.tsx), .vcf files in
+// app, a sync). The menu has the rest: groups (app/contact-groups.tsx), duplicates to merge
+// (app/contact-duplicates.tsx), .vcf files in
 // (app/contact-import.tsx) and out: the contacts shown, saved in a folder the owner picks, and a
 // contact's QR code read from a photo of it, which starts a new contact.
 
@@ -224,6 +225,7 @@ export default function Contacts() {
       </Pressable>
       <Sheet visible={menu} onClose={() => setMenu(false)} title={t('Contacts')}>
         {allowed ? <MenuRow title={t('Groups')} detail={t('Family, Work, and your own: make, rename, who is in them')} onPress={() => go('/contact-groups')} /> : null}
+        {allowed ? <MenuRow title={t('Find duplicates')} detail={t('The same person kept twice, to merge into one')} onPress={() => go('/contact-duplicates')} /> : null}
         {allowed ? <MenuRow title={t('Import from a .vcf file')} detail={t('Contacts another phone or app saved as a vCard')} onPress={() => go('/contact-import')} /> : null}
         {allowed ? (
           <MenuRow

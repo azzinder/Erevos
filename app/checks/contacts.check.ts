@@ -16,6 +16,7 @@ import {
   fillText,
   findDuplicates,
   initials,
+  keeperFirst,
   kindOf,
   matches,
   mergeFields,
@@ -282,4 +283,13 @@ test('what is not on the phone yet, of a file or a SIM', () => {
     ['Μαρία Παπαδοπούλου', 'Ελένη'],
   );
   assert.deepEqual(notKept([], kept), []);
+});
+
+test('merging keeps the fullest, or the first of the fullest', () => {
+  const a = { ...EMPTY_FIELDS, given: 'Α' };
+  const b = { ...maria };
+  const c = { ...maria, given: 'Γ' };
+  assert.deepEqual(keeperFirst([a, b, c]), [b, a, c]);
+  assert.deepEqual(keeperFirst([a]), [a]);
+  assert.deepEqual(keeperFirst([]), []);
 });

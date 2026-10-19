@@ -296,6 +296,15 @@ export function fullness(f: Fields): number {
   return [f.given, f.family, f.company, f.title, f.note, f.birthday].filter(Boolean).length + f.phones.length + f.emails.length + f.addresses.length;
 }
 
+/** Contacts to merge, the one kept first: the fullest, or the first of the fullest. */
+export function keeperFirst<T extends Fields>(list: T[]): T[] {
+  let best = 0;
+  list.forEach((f, i) => {
+    if (fullness(f) > fullness(list[best])) best = i;
+  });
+  return [list[best], ...list.filter((_, i) => i !== best)].filter((f) => f !== undefined);
+}
+
 /**
  * The fields of contacts merged into the first: its names, company and birthday, else the next
  * one's; every number, email and address once; their notes one after another. What came from the

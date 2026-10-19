@@ -26,6 +26,8 @@ compiled against Android 16's framework classes, not built into the app or run y
   `ringtoneName()` is a ringtone's title.
 - **QR codes.** `readQr()` reads the QR code in a photo (a file:// or content:// address) with ZXing's core (the one
   dependency), at most 1600 points wide, as UTF-8 when the code does not say; nothing leaves the phone.
+- **Merging.** The fields are merged in JS and saved into the contact kept; `takeOver()` then gives it the others'
+  photo and ringtone when it has none, their star and their groups (in its own accounts), and deletes the others.
 - **Changes elsewhere.** `watch()` sends `onContactsChanged` when Android's contacts change.
 
 ## JS API

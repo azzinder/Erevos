@@ -1,6 +1,6 @@
-import { fieldsName, phoneFields, plain, type Fields } from './contacts';
-import { lang } from './i18n';
-import { phoneContacts, type PhoneContact, type PhoneGroup } from '../modules/erevos-contacts';
+import { fieldsName, keeperFirst, mergeFields, phoneFields, phoneSave, plain, type Fields } from './contacts';
+import { lang, t } from './i18n';
+import { phoneContacts, savePhoneContact, takeOverContacts, type PhoneContact, type PhoneGroup } from '../modules/erevos-contacts';
 
 // The contacts screen's book (app/contacts.tsx): the phone's contacts, from Android's contacts
 // (modules/erevos-contacts), as cards the screens show alike.
@@ -48,4 +48,21 @@ export function groupTitles(card: Card, groups: PhoneGroup[]): string[] {
 /** The phone's contacts as cards, by name. None until Erevos may read them. */
 export async function phoneCards(): Promise<Card[]> {
   return byName((await phoneContacts()).map(phoneCard));
+}
+
+/**
+ * Merges phone contacts into the fullest of them: it gets every number, email and address of the
+ * others, and their note, then their photo and ringtone when it has none, their star and their
+ * groups; the others are deleted. Returns the one kept.
+ */
+export async function mergePhoneCards(cards: Card[]): Promise<Card> {
+  const [keeper, ...others] = keeperFirst(cards.filter((c) => c.phone));
+  if (!keeper?.phone) throw new Error(t('There is nothing to merge.'));
+  const merged = mergeFields([keeper, ...others]);
+  await savePhoneContact(phoneSave(merged, keeper.phone, null, keeper.starred));
+  await takeOverContacts(
+    keeper.phone.id,
+    others.map((o) => o.phone!.id),
+  );
+  return keeper;
 }

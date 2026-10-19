@@ -524,6 +524,49 @@ internal object ContactsStore {
     if (ops.isNotEmpty()) resolver.applyBatch(ContactsContract.AUTHORITY, ops)
   }
 
+  /** The groups a contact is in, by id. */
+  private fun groupsOf(resolver: ContentResolver, contact: Long): Set<Long> {
+    val groups = LinkedHashSet<Long>()
+    resolver.query(Data.CONTENT_URI, arrayOf(GroupMembership.GROUP_ROW_ID), "${Data.MIMETYPE}=? AND ${Data.CONTACT_ID}=?", arrayOf(GroupMembership.CONTENT_ITEM_TYPE, contact.toString()), null)?.use { c ->
+      while (c.moveToNext()) if (!c.isNull(0)) groups.add(c.getLong(0))
+    }
+    return groups
+  }
+
+  /** A contact's star and whether it has a photo; null when it is gone. */
+  private fun looks(resolver: ContentResolver, contact: Long): Pair<Boolean, Boolean>? {
+    resolver.query(ContentUris.withAppendedId(Contacts.CONTENT_URI, contact), arrayOf(Contacts.STARRED, Contacts.PHOTO_ID), null, null, null)?.use { c ->
+      if (c.moveToFirst()) return (c.getInt(0) != 0) to !c.isNull(1)
+    }
+    return null
+  }
+
+  /**
+   * After merging (its fields saved into `keeper` already): the keeper takes the others' photo
+   * and ringtone when it has none, their star, and their groups in the accounts it is kept in too;
+   * then the others are deleted.
+   */
+  fun takeOver(context: Context, keeper: Long, others: List<Long>) {
+    val resolver = context.contentResolver
+    val (starred, hasPhoto) = looks(resolver, keeper) ?: throw IllegalStateException("That contact is gone")
+    val rest = others.filter { it != keeper && looks(resolver, it) != null }
+    if (!hasPhoto) {
+      for (other in rest) {
+        val bytes = Contacts.openContactPhotoInputStream(resolver, ContentUris.withAppendedId(Contacts.CONTENT_URI, other), true)?.use { it.readBytes() } ?: continue
+        try {
+          setPhoto(context, keeper, bytes)
+          break
+        } catch (_: Exception) {
+          // One Android cannot read again: the next one's.
+        }
+      }
+    }
+    if (ringtone(context, keeper) == null) rest.firstNotNullOfOrNull { ringtone(context, it) }?.let { setRingtone(context, keeper, it) }
+    if (!starred && rest.any { looks(resolver, it)?.first == true }) setStarred(context, keeper, true)
+    for (group in rest.flatMap { groupsOf(resolver, it) }.toSet()) addToGroup(context, group, keeper)
+    remove(context, rest)
+  }
+
   /** The contact a content:// address of Android's contacts names (a contact, a lookup, a raw contact or one of its rows). */
   fun contactFor(context: Context, uri: Uri): Long? {
     val resolver = context.contentResolver

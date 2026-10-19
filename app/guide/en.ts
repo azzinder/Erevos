@@ -540,6 +540,10 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
   contact to add: its name, numbers, emails, addresses and note, without its photo (a long note or many addresses
   are left out to fit). Whoever sees it can read it. **Read a contact's QR code** in the menu reads one from a photo
   you take or choose, here on the phone, and starts a new contact with it, saved only when you save it.
+- **Duplicates:** **Find duplicates** in the menu lists the contacts that look like the same person kept twice: the
+  same name (its words in any order), number or email. **Merge** keeps the fullest of them, with every number, email
+  and address of the others, their notes, and their photo, ringtone, star and groups when it has none, and deletes
+  the others; **Merge all** does so for every set. **Not the same** hides a set until you open the list again.
 - **Delete** takes the contact off the phone, from every account it is kept in.
 - **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
   Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,
