@@ -29,6 +29,13 @@ export type CallPlace = {
 
 let shown: { call: Call; place: CallPlace } | null = null;
 const listeners = new Set<() => void>();
+// Whether another device of the account has a call, but the one `id` names (lib/devices.ts): to a contact who calls, the account is in one.
+let elsewhere: (id?: string) => boolean = () => false;
+
+/** How to know whether another device of the account has a call. */
+export function callsElsewhere(busy: (id?: string) => boolean): void {
+  elsewhere = busy;
+}
 
 function changed() {
   listeners.forEach((listener) => listener());
@@ -59,6 +66,7 @@ export function endedLine(ended: Call, now = Date.now()): string {
   const kind = ended.video ? 'Video call' : 'Voice call';
   const reason = ended.ended?.reason;
   if (ended.connectedAt) return `${kind}, ${callClock(now - ended.connectedAt)}`;
+  if (ended.ended?.elsewhere) return reason === 'decline' ? `${kind}, turned down` : `${kind}, answered on another device`;
   if (reason === 'decline') return `${kind}, turned down`;
   if (reason === 'failed') return `${kind}, could not connect`;
   if (ended.outgoing) return reason === 'busy' ? `${kind}, they were in another call` : `${kind}, not answered`;
@@ -77,7 +85,7 @@ function events(place: CallPlace, identity: string) {
 
 /** Calls a contact. Throws if a call is already in progress. */
 export function startCall(place: CallPlace, peer: string, video: boolean, relay: CallRelay | null, rtc: Rtc): Call {
-  if (currentGroupCall()) throw new Error(t('There is a call already.'));
+  if (currentGroupCall() || elsewhere()) throw new Error(t('There is a call already.'));
   const call = Call.start({ peer, video, relay, rtc, events: events(place, peer.slice(CONTACT_PREFIX.length)) });
   shown = { call, place };
   changed();
@@ -104,7 +112,7 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     return null;
   }
   const identity = peer.slice(CONTACT_PREFIX.length);
-  if (ours || currentGroupCall()) {
+  if (ours || currentGroupCall() || elsewhere(signal.id)) {
     place.send(identity, { id: signal.id, kind: 'end', reason: 'busy' }).catch(() => undefined);
     place.line(peer, false, `Missed ${kind}, while in another call`);
     return null;

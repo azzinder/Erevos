@@ -767,7 +767,8 @@ export class E2E {
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
       const message = decodeMessage(plaintext);
       const { timer, timerAt } = timerOf(message, contact);
-      const writes = !!message.text || !!message.voice || !!message.file;
+      // Writing or calling accepts a request, as from this phone.
+      const writes = !!message.text || !!message.voice || !!message.file || message.call?.kind === 'offer';
       const [packet] = await this.sealFor({ ...contact, timer, timerAt }, [{ ...message, from, ...at, timer, timerAt }], writes);
       const first = contact.first ? fromBase64(contact.first) : null;
       const { sender, relay, relayKey } = contact;

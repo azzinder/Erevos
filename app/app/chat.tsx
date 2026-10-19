@@ -1271,11 +1271,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   }
 
   async function startCall(video: boolean) {
-    // The contact's answer would come to the phone that holds the account, which made no call.
-    if (!hiddenKey && linkedRole() === 'linked') {
-      setNote(t('Calls ring on the phone that holds this account, for now. Call from there.'));
-      return;
-    }
     if (!selectedContact) {
       setNote(video ? t('Video calls go to contacts through the relay. Pick one first.') : t('Calls go to contacts through the relay. Pick one first.'));
       return;

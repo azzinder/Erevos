@@ -19,16 +19,21 @@ import {
   type FileOffer,
   type TakenFiles,
 } from './attachments';
+import { currentCall } from './call';
+import { decodeCall } from './call-signal';
+import { callsElsewhere, onCallChange } from './calls';
 import { contactLink, type ContactCode } from './contact-code';
 import * as core from './core';
 import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { fromBase64Url, OwnCodeError, toBase64Url, type Link, type Where } from './e2e';
+import { currentGroupCall } from './group-call';
 import { t } from './i18n';
 import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode, type LinkCode } from './link-code';
 import {
   changedFields,
   encodeEnvelope,
   encodeOne,
+  isCall,
   isKept,
   isSignal,
   isWorthTelling,
@@ -45,6 +50,7 @@ import {
   type Place,
   type Synced,
 } from './link-wire';
+import { LinkedCalls, type CallStep } from './linked-calls';
 import { nearby } from './nearby';
 import { announceReceived } from './receiver';
 import { fromHex, relayKey, sendMessage, type Relay } from './relay';
@@ -77,9 +83,14 @@ import { sendWaiting, type SendPlace } from './waiting';
 // still to: whichever comes last, the primary has it deleted there. A device unlinked takes nothing
 // more, so what waited only for it goes then. What no one takes expires on the relay after 14 days.
 //
+// A contact's call rings on the phone and on each linked device, and a device calls through the
+// account: lib/linked-calls.ts decides on the primary where each call signal goes. A call answered
+// or turned down on one device stops ringing on the others, quietly.
+//
 // Three turns keep it straight: the chat's own (E2E), which may wait for this file's; this file's
 // (`run`), for the links and their keys, which never waits for the chat; and the work a message
 // brings (`act`: the history, sealing for contacts, the relay's file store), which waits for both.
+// A call's signals are work of their own (`ring`), which cannot wait behind the history.
 
 /** The most devices one account links. */
 export const MAX_DEVICES = 4;
@@ -99,6 +110,8 @@ const MAX_LATER = 50;
 const LATER_TRIES = 5;
 // How long a photo or file left on the relay for devices is kept track of: the relay drops it after 14 days.
 const LEFT_LASTS = 15 * 24 * 60 * 60_000;
+// How long a call answered or turned down on another device is remembered, should it ring here only after.
+const ENDED_LASTS = 2 * 60_000;
 const CONTACT_PREFIX = 'contact:';
 // What a message a device wrote may say that need not be tried again: where it reads, that it is
 // open, the timer (which went with the contact here), and what came or was read (held for the next).
@@ -184,6 +197,11 @@ export class Links implements Link, TakenFiles {
   private readonly echoes = new Map<string, { c: string; tag: string; m: Json; at: number }>();
   private echoTimer: ReturnType<typeof setTimeout> | null = null;
   private later: { c: string; m: Json; tries: number }[] = [];
+  // On the primary: where each call goes. On either: calls answered or turned down on another device, should they ring here after.
+  private readonly calls = new LinkedCalls();
+  private readonly endedThere = new Map<string, { declined: boolean; at: number }>();
+  private rings: Promise<unknown> = Promise.resolve();
+  private stopCalls: (() => void) | null = null;
   // Where this side reads, as last found, said with what goes; and the relay's key, asked once for each relay.
   private at: Place | null = null;
   private keyOf: { url: string; key: string } | null = null;
@@ -208,6 +226,7 @@ export class Links implements Link, TakenFiles {
   static async open(space: number, key: Uint8Array, chats: SpaceChats, tick = TICK): Promise<Links> {
     const links = new Links(space, key, chats, await loadDevicesData(space, key));
     chats.e2e.useLink(links);
+    links.stopCalls = onCallChange(() => links.callChanged());
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
     return links;
@@ -219,6 +238,7 @@ export class Links implements Link, TakenFiles {
     if (this.tickTimer) clearInterval(this.tickTimer);
     if (this.retryTimer) clearTimeout(this.retryTimer);
     if (this.echoTimer) clearTimeout(this.echoTimer);
+    this.stopCalls?.();
     this.chats.e2e.useLink(null);
   }
 
@@ -236,12 +256,20 @@ export class Links implements Link, TakenFiles {
       .catch(() => undefined);
   }
 
+  // A call's signal, one after another, apart from other work: a call cannot wait for the history to go.
+  private ring(call: () => Promise<unknown>): void {
+    this.rings = this.rings
+      .catch(() => undefined)
+      .then(call)
+      .catch(() => undefined);
+  }
+
   /** Waits for the work under way, as the checks do. */
   async settled(): Promise<void> {
     for (let i = 0; i < 20; i++) {
-      const [turn, acts, flushing] = [this.turn, this.acts, this.flushing];
-      await Promise.all([turn.catch(() => undefined), acts, flushing?.catch(() => undefined)]);
-      if (turn === this.turn && acts === this.acts && flushing === this.flushing) return;
+      const [turn, acts, rings, flushing] = [this.turn, this.acts, this.rings, this.flushing];
+      await Promise.all([turn.catch(() => undefined), acts, rings, flushing?.catch(() => undefined)]);
+      if (turn === this.turn && acts === this.acts && rings === this.rings && flushing === this.flushing) return;
     }
   }
 
@@ -460,7 +488,8 @@ export class Links implements Link, TakenFiles {
     else if (said.k === 'ready' && said.name) await this.keepPeer({ ...peer, name: cleanDeviceName(said.name) || peer.name });
     switch (said.k) {
       case 'send':
-        this.act(() => this.sendFor(said.c, said.m));
+        if (isCall(said.m)) this.callFor(peer.id, said.c, said.m);
+        else this.act(() => this.sendFor(said.c, said.m));
         break;
       case 'add':
         this.act(() => this.addFor(said.code));
@@ -474,6 +503,7 @@ export class Links implements Link, TakenFiles {
       case 'bye':
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
         this.act(() => this.letGo(peer.id, null));
+        this.callSteps(this.calls.unlinked(peer.id));
         announce();
         break;
       default:
@@ -519,6 +549,9 @@ export class Links implements Link, TakenFiles {
         await this.save({ ...this.data, packs: [...this.data.packs, said.offer] });
         this.act(() => this.takePacks());
         break;
+      case 'call':
+        this.endElsewhere(said.id, said.done === 'declined');
+        break;
       case 'bye':
         this.act(() => this.forget());
         break;
@@ -556,6 +589,8 @@ export class Links implements Link, TakenFiles {
   opened(identity: string, plaintext: Uint8Array): void {
     if (this.data.primary || !this.data.devices.some((d) => d.linked)) return;
     const m = parse(plaintext);
+    const call = m && isCall(m) ? decodeCall(m.call) : null;
+    if (call) this.callSteps(this.calls.contact(identity, call, this.linked().map((d) => d.id), !!(currentCall() || currentGroupCall())));
     if (!m || isSignal(m)) return;
     // Their photo or file stays on the relay until each device took it, and this phone too.
     const offer = isObject(m.file) ? readOffer(m.file) : null;
@@ -565,6 +600,8 @@ export class Links implements Link, TakenFiles {
   sealed(identity: string, plaintext: Uint8Array): void {
     if (this.data.primary || !this.data.devices.some((d) => d.linked)) return;
     const m = parse(plaintext);
+    const call = m && isCall(m) ? decodeCall(m.call) : null;
+    if (call) this.callSteps(this.calls.phone(identity, call));
     if (!m || isSignal(m)) return;
     if (isKept(m)) {
       // Told once the chat keeps it as sent: one that waits is sealed again when it goes.
@@ -633,6 +670,8 @@ export class Links implements Link, TakenFiles {
       { k: 'contacts', all: true, list: contacts, gone: [], link },
     );
     await this.save({ ...this.data, devices: this.data.devices.map((d) => (d.id === peer.id ? linked : d)), link });
+    // The contacts go now, with no history to wait for.
+    void this.flush().catch(() => undefined);
     this.act(() => this.bringHistory(peer.id));
     announce();
   }
@@ -786,8 +825,9 @@ export class Links implements Link, TakenFiles {
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
       });
       announce();
-      // What was left on the relay only for it.
+      // What was left on the relay only for it, and a call it has.
       this.act(() => this.letGo(peer.id, null));
+      this.callSteps(this.calls.unlinked(peer.id));
     }
     return told;
   }
@@ -949,6 +989,8 @@ export class Links implements Link, TakenFiles {
         const history = { since: now.behind, files: now.files, upTo: Date.now(), done: 0 };
         await this.keepPeer({ ...said, history });
       });
+      // The contacts go with this flush.
+      this.again = true;
       this.act(() => this.bringHistory(d.id));
     }
   }
@@ -1158,6 +1200,60 @@ export class Links implements Link, TakenFiles {
     announce();
   }
 
+  // ---- Calls (lib/linked-calls.ts) ----
+
+  /** On the primary: whether a linked device, or the phone, has a call it took or made through here, but the one `id` names. */
+  inCall(id?: string): boolean {
+    return this.calls.busy(Date.now(), id);
+  }
+
+  // On the primary: a call signal a device wrote to a contact (`m`, as it came).
+  private callFor(device: string, c: string, m: Json): void {
+    const signal = decodeCall(m.call);
+    if (!signal || !this.chats.e2e.record(c)) return;
+    this.callSteps(this.calls.device(device, c, signal, !!(currentCall() || currentGroupCall())), m);
+  }
+
+  // Does what lib/linked-calls.ts said: `m` is the device's message a step to the contact sends on.
+  private callSteps(steps: CallStep[], m?: Json): void {
+    for (const step of steps) {
+      if (step.to === 'phone') this.endElsewhere(step.id, step.declined);
+      else if (step.to === 'done') {
+        for (const id of step.ids) void this.say({ k: 'call', id: step.id, done: step.declined ? 'declined' : 'answered' }, id).catch(() => undefined);
+      } else if (step.to === 'devices') {
+        for (const id of step.ids) void this.say({ k: 'in', c: step.c, m: { text: '', call: step.signal } }, id).catch(() => undefined);
+      } else {
+        const said = m ?? { text: '', call: step.signal };
+        this.ring(() => this.callTo(step.c, said));
+      }
+    }
+  }
+
+  // Seals a device's call signal for the contact, as it came, from the account.
+  private async callTo(c: string, m: Json): Promise<void> {
+    const here = await this.here().catch(() => null);
+    if (!here) return;
+    await this.deliver(c, await this.chats.e2e.sealAs(c, utf8Encode(JSON.stringify(m)), here.place.sender, here.where), here);
+  }
+
+  // A call answered or turned down on another device: it stops ringing here, now or as soon as it rings.
+  private endElsewhere(id: string, declined: boolean): void {
+    const now = Date.now();
+    for (const [old, { at }] of this.endedThere) if (now - at > ENDED_LASTS) this.endedThere.delete(old);
+    const call = currentCall();
+    if (call?.id === id) call.endedElsewhere(declined);
+    else this.endedThere.set(id, { declined, at: now });
+  }
+
+  private callChanged(): void {
+    const call = currentCall();
+    const there = call && this.endedThere.get(call.id);
+    if (!call || !there) return;
+    this.endedThere.delete(call.id);
+    // After the screens heard it ring, so they hear it stop too.
+    setTimeout(() => call.endedElsewhere(there.declined), 0);
+  }
+
   // ---- On the primary: what it sealed itself ----
 
   private watchEchoes(): void {
@@ -1358,6 +1454,9 @@ export class Links implements Link, TakenFiles {
 // ---- The open space's links ----
 
 let current: Links | null = null;
+
+// To a contact who calls while a linked device has a call, the account is in one.
+callsElsewhere((id) => current?.inCall(id) ?? false);
 
 joinSpaceChats(async (chats, space, key) => {
   current?.close();

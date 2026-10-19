@@ -2,8 +2,8 @@
 // between the devices, alone; then a phone and a computer of one account and a contact on a
 // version from before linking, through a real relay and the real core: linking with the codes
 // compared, the history brought over, messages both ways and on both devices, contacts kept alike,
-// photos and files deleted from the relay once each took them, and unlinking. Skipped, with a
-// note, when the core or the relay is not built.
+// photos and files deleted from the relay once each took them, calls on either, and unlinking.
+// Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -11,6 +11,8 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { afterEach, test } from 'node:test';
 
+import { Call, currentCall } from '../lib/call';
+import type { CallSignal } from '../lib/call-signal';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { bytesSource, FileGoneError, offerRef, readFile, sendFile, takeFile, watchTakenFiles } from '../lib/attachments';
@@ -25,6 +27,7 @@ import { newFileId, type FileRef } from '../lock/attachment-files';
 import { History } from '../lock/history';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { EMPTY_SPACE, saveSpaceData, type Queue } from '../lock/space-data';
+import { fakeRtc } from './fake-rtc';
 import { blobs, files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
 
@@ -483,6 +486,108 @@ test('photos, files and voice messages go through the phone both ways, and delet
   await pixel.links.unlink(pixel.links.devices()[0].id);
   await pixel.links.settled();
   assert.equal(await onRelay(lasts), false);
+
+  for (const p of [pixel, dell]) p.links.close();
+});
+
+test('a call rings on the phone and the computer, the first to answer takes it, and the computer calls through the phone', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { relay, url, where, phone, take, write, linkUp } = await setup();
+  // A call signal, sealed in the chat as lib/space-calls.ts does.
+  const signal = async ({ chats, queue: own }: Phone, identity: string, call: CallSignal) => {
+    const sealed = await chats.e2e.seal(identity, '', own.senderHex, { at: where, call });
+    if (sealed.first) {
+      await sendMessage(relay, fromHex(sealed.sender), sealed.first);
+      await chats.e2e.firstSent(identity);
+    }
+    await sendMessage(relay, fromHex(sealed.sender), sealed.packet);
+  };
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const carol = await phone(2, false);
+  const { identity: account } = await carol.chats.e2e.addContact({ senderHex: pixel.queue.senderHex, key: toBase64Url(pixel.chats.e2e.bundle), relayUrl: url }, carol.queue.senderHex, where);
+  const carolId = carol.chats.e2e.identityHex();
+  await write(carol, account, 'hi');
+  await take(pixel);
+  await pixel.chats.e2e.acceptRequest(carolId);
+  await linkUp(pixel, dell, { since: null, files: false });
+  await until(async () => {
+    await take(dell);
+    return dell.chats.e2e.contacts().length === 1;
+  });
+
+  // Carol calls: the phone passes her offer on, and the computer opens it as hers.
+  const offer: CallSignal = { id: '0123456789abcdef', kind: 'offer', video: false, sdp: 'v=0\r\noffer', at: Date.now() };
+  await signal(carol, account, offer);
+  assert.deepEqual((await take(pixel)).map((m) => m.call), [offer]);
+  const rang = await take(dell);
+  assert.deepEqual(
+    rang.map((m) => [m.identity, m.call]),
+    [[carolId, offer]],
+  );
+  // The computer answers: Carol gets its answer, from the account; the account is in a call.
+  const answer: CallSignal = { id: offer.id, kind: 'answer', sdp: 'v=0\r\nanswer' };
+  await signal(dell, carolId, answer);
+  await take(pixel);
+  assert.deepEqual(
+    (await take(carol)).map((m) => [m.identity, m.call]),
+    [[account, answer]],
+  );
+  assert.equal(pixel.links.inCall(), true);
+  // Carol hangs up: the computer hears it.
+  const hangUp: CallSignal = { id: offer.id, kind: 'end', reason: 'hangup' };
+  await signal(carol, account, hangUp);
+  await take(pixel);
+  assert.deepEqual(
+    (await take(dell)).map((m) => m.call),
+    [hangUp],
+  );
+  assert.equal(pixel.links.inCall(), false);
+
+  // She calls again, and the phone answers first: on the computer it stops ringing, quietly.
+  const again: CallSignal = { ...offer, id: '1111111111111111', at: Date.now() };
+  await signal(carol, account, again);
+  await take(pixel);
+  await take(dell);
+  const sent: CallSignal[] = [];
+  const ringing = Call.incoming(again, { peer: `contact:${carolId}`, relay: null, rtc: fakeRtc().rtc, events: { onChange: () => undefined, send: async (s) => void sent.push(s) } })!;
+  const answered: CallSignal = { id: again.id, kind: 'answer', sdp: 'v=0\r\nphone' };
+  await signal(pixel, carolId, answered);
+  await pixel.links.settled();
+  await take(dell);
+  assert.deepEqual(ringing.ended, { reason: 'hangup', byUs: true, elsewhere: true });
+  // The computer's answer, too late, goes to no one.
+  await signal(dell, carolId, { ...answer, id: again.id });
+  await take(pixel);
+  assert.deepEqual(
+    (await take(carol)).map((m) => m.call),
+    [answered],
+  );
+  await signal(pixel, carolId, { id: again.id, kind: 'end', reason: 'hangup' });
+  await take(carol);
+
+  // The computer calls Carol through the phone, and hears her answer.
+  const out: CallSignal = { id: 'fedcba9876543210', kind: 'offer', video: true, sdp: 'v=0\r\ncomputer', at: Date.now() };
+  await signal(dell, carolId, out);
+  await take(pixel);
+  assert.deepEqual(
+    (await take(carol)).map((m) => [m.identity, m.call]),
+    [[account, out]],
+  );
+  const herAnswer: CallSignal = { id: out.id, kind: 'answer', sdp: 'v=0\r\ncarol' };
+  await signal(carol, account, herAnswer);
+  assert.deepEqual((await take(pixel)).map((m) => m.call), [herAnswer]);
+  assert.deepEqual(
+    (await take(dell)).map((m) => [m.identity, m.call]),
+    [[carolId, herAnswer]],
+  );
+  // Unlinked during the call: it ends for Carol.
+  await pixel.links.unlink(pixel.links.devices()[0].id);
+  await pixel.links.settled();
+  assert.deepEqual(
+    (await take(carol)).map((m) => m.call),
+    [{ id: out.id, kind: 'end', reason: 'hangup' }],
+  );
+  currentCall()?.hangUp();
 
   for (const p of [pixel, dell]) p.links.close();
 });

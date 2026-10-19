@@ -69,8 +69,8 @@ export type CallState =
   | 'connected'
   | 'ended';
 
-/** How a call ended, and who ended it. */
-export type Ended = { reason: CallEnd; byUs: boolean };
+/** How a call ended, and who ended it. `elsewhere`: another device of the account answered it, or turned it down (lib/devices.ts). */
+export type Ended = { reason: CallEnd; byUs: boolean; elsewhere?: boolean };
 
 export type CallEvents = {
   /** Something about the call changed: its state, its streams, mute or camera. */
@@ -205,6 +205,15 @@ export class Call {
     if (this.state === 'incoming') this.end('decline', true);
   }
 
+  /**
+   * Stops a call that rings here, or was just answered here, as another device of the account
+   * answered it first, or turned it down (`declined`). Nothing is said to the contact: that device did.
+   */
+  endedElsewhere(declined: boolean): void {
+    if (this.outgoing || (this.state !== 'incoming' && this.state !== 'connecting')) return;
+    this.end(declined ? 'decline' : 'hangup', true, true);
+  }
+
   /** Ends the call from here. */
   hangUp(): void {
     if (this.state === 'ended') return;
@@ -292,10 +301,10 @@ export class Call {
     }
   }
 
-  private end(reason: CallEnd, byUs: boolean): void {
+  private end(reason: CallEnd, byUs: boolean, elsewhere = false): void {
     if (this.state === 'ended') return;
     this.stopWaiting();
-    this.ended = { reason, byUs };
+    this.ended = { reason, byUs, ...(elsewhere ? { elsewhere } : {}) };
     this.state = 'ended';
     this.local?.getTracks().forEach((track) => track.stop());
     try {
@@ -304,7 +313,7 @@ export class Call {
       // Closed already.
     }
     if (current === this) current = null;
-    if (byUs) this.say({ id: this.id, kind: 'end', reason });
+    if (byUs && !elsewhere) this.say({ id: this.id, kind: 'end', reason });
     this.changed();
   }
 

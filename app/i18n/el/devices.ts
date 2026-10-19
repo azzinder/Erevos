@@ -19,8 +19,11 @@ export const devices: Record<string, string> = {
   // The menu, and the chat on a linked device (app/index.tsx, app/chat.tsx).
   'Linked devices': 'Συνδεδεμένες συσκευές',
   'This account on a computer or in a browser too': 'Αυτός ο λογαριασμός και σε υπολογιστή ή σε browser',
-  'Calls ring on the phone that holds this account, for now. Call from there.': 'Οι κλήσεις χτυπούν στο τηλέφωνο που έχει αυτόν τον λογαριασμό, προς το παρόν. Κάλεσε από εκεί.',
   "This chat is the phone's: move it into hidden chats there.": 'Αυτή η συνομιλία είναι του τηλεφώνου: μετέφερέ την στις κρυφές συνομιλίες από εκεί.',
+
+  // A call answered on another device of the account (components/call-screen.tsx, lib/call-lines.ts).
+  'Answered on another device': 'Απαντήθηκε σε άλλη συσκευή',
+  'answered on another device': 'απαντήθηκε σε άλλη συσκευή',
 
   // Linked devices (app/devices.tsx).
   'All of it': 'Όλα',
@@ -48,8 +51,8 @@ export const devices: Record<string, string> = {
   'Photos and files too': 'Και φωτογραφίες και αρχεία',
   'Linked to {name}': 'Συνδεδεμένη με: {name}',
   'Since {when}. Last heard from {last}.': 'Από {when}. Τελευταία επαφή {last}.',
-  'This device has the chats of the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay. Calls and groups stay on the phone for now.':
-    'Αυτή η συσκευή έχει τις συνομιλίες του τηλεφώνου που έχει τον λογαριασμό. Ό,τι γράφεις εδώ περνά από το τηλέφωνο, που πρέπει να είναι ανοιχτό και να φτάνει στο relay. Οι κλήσεις και οι ομάδες μένουν στο τηλέφωνο προς το παρόν.',
+  'This device has the chats of the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay. Calls ring here too. Groups stay on the phone for now.':
+    'Αυτή η συσκευή έχει τις συνομιλίες του τηλεφώνου που έχει τον λογαριασμό. Ό,τι γράφεις εδώ περνά από το τηλέφωνο, που πρέπει να είναι ανοιχτό και να φτάνει στο relay. Οι κλήσεις χτυπούν κι εδώ. Οι ομάδες μένουν στο τηλέφωνο προς το παρόν.',
   'The same account on a computer or in a browser. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Hidden chats and what a second password opens never go.':
     'Ο ίδιος λογαριασμός σε υπολογιστή ή σε browser. Ο λογαριασμός μένει στο τηλέφωνο: αυτό περνά, κρυπτογραφημένα από άκρη σε άκρη, ό,τι έρχεται κι ό,τι γράφει ο υπολογιστής, οπότε οι επαφές δεν βλέπουν τίποτα καινούργιο. Οι κρυφές συνομιλίες κι ό,τι ανοίγει ένας δεύτερος κωδικός δεν πηγαίνουν ποτέ.',
   'Link {name}': 'Σύνδεση: {name}',

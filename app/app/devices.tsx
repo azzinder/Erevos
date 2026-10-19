@@ -237,7 +237,7 @@ export default function Devices() {
           {phone ? <Text tone="muted">{t('Since {when}. Last heard from {last}.', { when: whenText(phone.since), last: whenText(phone.heard) })}</Text> : null}
           <Text tone="muted">
             {t(
-              "This device has the chats of the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay. Calls and groups stay on the phone for now.",
+              "This device has the chats of the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay. Calls ring here too. Groups stay on the phone for now.",
             )}
           </Text>
           {phone ? <Button title={t('Unlink this device')} kind="danger" disabled={busy} onPress={() => unlink(phone)} /> : null}

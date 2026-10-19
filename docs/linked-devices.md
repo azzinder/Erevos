@@ -78,8 +78,8 @@ Linking, by QR code and a safety check:
 
 - **From a contact:** the phone opens it as always, keeps it, and passes it on to each linked device,
   end-to-end encrypted in that device's link. The device opens it as if it came from the contact:
-  the same tags, marks, timers and voice parts. Call signals and group signals are not passed on
-  (calls and groups stay on the phone for now, see below).
+  the same tags, marks, timers and voice parts. Call signals go as the phone decides for each call
+  (see Calls, below); group signals are not passed on (groups stay on the phone for now).
 - **Written on the computer:** the device seals it for the phone, which seals it for the contact as
   it came (whatever fields a later version adds go on with it), saying where its own queue is. A
   text, voice message, photo or file also goes into the phone's history as the phone's own, with the
@@ -143,14 +143,36 @@ computer, moving a chat into hidden chats is not offered (the chat is the phone'
 a second password has its own devices or none, and links only when its owner links it, from inside
 it.
 
-### Calls and groups
+### Calls
 
-Calls ring and are answered on the phone. A call from a contact is not passed on, and the computer
-does not start calls: the contact's answer would come to the phone, which made no call. Relaying a
-call's signals both ways, and stopping the other device ringing once one answers, is the next step.
+A contact's call rings on the phone and on every linked device: the phone passes its offer on to
+each, in their links, and rings itself. Whichever answers first takes the call. A device's answer
+goes to the phone, which seals it for the contact as the account's own, as long as no one answered
+before; the phone and the other devices then stop ringing, quietly, and show the call was answered
+on another device. If another was first, the device is told so, and stops. Turning a call down on
+one turns it down for the account, and the others stop too; a device that only stops ringing (no
+answer there, or in a call of its own) leaves the others ringing. A device calls a contact the same
+way: its offer goes to the phone, which seals it for the contact as the account's, and passes on to
+that device alone what the contact says of that call. lib/linked-calls.ts decides, on the phone,
+where each call signal goes.
 
-Groups (MLS) stay on the phone too: the phone is the group's member. Passing group messages on
-works the same way as a contact's, and is the step after calls.
+This is sound end to end. A call's sound and picture go straight between the contact and the device
+that has the call (WebRTC, through the call relays as any call does), encrypted between the two with
+the key the device's answer or offer names (DTLS-SRTP). That answer or offer reaches the contact
+sealed in the account's own conversation with them, after reaching the phone sealed in the device's
+link, which the safety code checked at linking: no one in between, the relays included, can put a key
+of their own in its place. The contact learns nothing new but that the call came from the account.
+The phone sees the signals, as it holds the account, but never the call itself. While a device has a
+call, a contact who calls the account hears it is in another one, as from a phone in a call.
+
+Once the call is set up the phone is not needed for it; ending it goes through the phone, and if
+the phone is off then, the contact's side ends by itself as the connection closes. Unlinking a
+device ends a call it has.
+
+### Groups
+
+Groups (MLS) stay on the phone for now: the phone is the group's member. Passing group messages on
+works the same way as a contact's, and is the next step.
 
 ### Older versions
 
@@ -162,6 +184,7 @@ after restoring one, link the devices again.
 
 - `lib/link-code.ts`: the QR code's link, and the safety code.
 - `lib/link-wire.ts`: what goes between the devices, and which messages are passed on.
+- `lib/linked-calls.ts`: on the phone, where each call signal goes: who rings, who has the call.
 - `lock/devices-data.ts`: each space's links, sealed with the space's key.
 - `lib/devices.ts`: linking, the link conversations, passing messages on, copying contacts and
   history.

@@ -731,7 +731,10 @@ The chats then come to the computer, and after them the messages chosen.
   meanwhile waits on the relay, and goes once the phone is back.
 - **Photos and files** that come stay on the relay until both the phone and the computer took them; then the phone
   deletes them there. One the computer never takes goes when it is unlinked, or after 14 days, as any not taken.
-- **Calls and groups** stay on the phone for now: a call rings only there, and the computer starts none.
+- **Calls** ring on the phone and on the computer. Answer on either: the other stops ringing, and says it was
+  answered on another device. Turning a call down on one turns it down on both. The computer calls through the phone
+  too; the call itself then goes straight between the computer and the contact, encrypted between them, and the phone
+  has to stay on only to set it up. **Groups** stay on the phone for now.
 - **Hidden chats and second passwords** are never linked. A chat moved into hidden chats on the phone leaves the
   computer. A space a second password opens links only from inside it, to devices of its own.
 - **Bring over messages again**, on the phone, sends a period of the history again; what the computer has already is
@@ -908,7 +911,7 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   more than four people, through a server the call moves to by itself, still encrypted end to end.
 - **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
   in, see [Imported chats](#import).
-- **More systems:** calls and groups on linked devices too; the account itself is on a computer already, see
+- **More systems:** groups on linked devices too; the account and its calls are on a computer already, see
   [Linked devices](#devices). Linux and macOS are here, see [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
   [On Sailfish OS](#sailfish); and so are backups, see [Backups](#backup).
 

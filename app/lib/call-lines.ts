@@ -12,7 +12,7 @@ const MISSED: Record<string, string> = {
   'group call': mark('Missed group call'),
   'group video call': mark('Missed group video call'),
 };
-const ENDINGS: string[] = [mark('turned down'), mark('could not connect'), mark('they were in another call'), mark('not answered')];
+const ENDINGS: string[] = [mark('turned down'), mark('could not connect'), mark('they were in another call'), mark('not answered'), mark('answered on another device')];
 
 /** `text` of a message in the app's language, if it is a call's line; as it is otherwise. */
 export function shownLine(text: string): string {

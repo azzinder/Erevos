@@ -10,7 +10,8 @@ import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from
 // reads (`at`), so the other learns a new queue with the next one. From the primary (the phone that
 // holds the account): its first message (`hello`), the contacts (`contacts`), a contact's message it
 // opened (`in`), one it sealed for a contact (`out`), a pack of the history on the relay's file store
-// (`history`), where it is now (`here`) and that it unlinked the device (`bye`). From a linked
+// (`history`), that a call was answered or turned down on another device (`call`), where it is now
+// (`here`) and that it unlinked the device (`bye`). From a linked
 // device: that the codes match (`ready`), a message for a contact (`send`), a contact to add (`add`),
 // a change to a contact (`set`), the photos and files it took (`took`), where it is (`here`) and
 // that it unlinked itself (`bye`). An envelope too large for one packet goes in parts (`part`).
@@ -18,7 +19,7 @@ import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from
 // A contact's message travels as the JSON lib/e2e.ts makes of it (`m`), without where the contact's
 // queue is, which only the primary needs. Which messages go on, and which are worth telling the
 // other devices, is decided from that JSON alone, so what a later version adds to a message goes on
-// unread.
+// unread. A call's signals go too, as lib/linked-calls.ts decides on the primary.
 // Self-contained on purpose, so it can run under plain Node for checks.
 
 /** Where a device reads: the sender id of its queue, the relay (ws:// or wss://), that relay's key (base64url, or empty), and its backup queue. */
@@ -50,6 +51,7 @@ export type Envelope =
   | { k: 'set'; c: string; change: Partial<Omit<Synced, 'identity'>>; remove?: boolean }
   | { k: 'history'; offer: FileOffer; last: boolean }
   | { k: 'took'; ids: string[] }
+  | { k: 'call'; id: string; done: 'answered' | 'declined' }
   | { k: 'here' }
   | { k: 'bye' };
 
@@ -180,6 +182,8 @@ function checkedEnvelope(v: Json): Envelope | null {
       const ids = Array.isArray(v.ids) ? v.ids.filter((i): i is string => isText(i) && /^(?:[0-9a-f]{48})+$/.test(i)).slice(0, MAX_TOOK) : [];
       return ids.length > 0 ? { k: 'took', ids } : null;
     }
+    case 'call':
+      return isHex(v.id, 16) && (v.done === 'answered' || v.done === 'declined') ? { k: 'call', id: v.id, done: v.done } : null;
     case 'here':
     case 'bye':
       return { k: v.k };
@@ -278,9 +282,14 @@ const PLACE_KEYS = ['from', 'relay', 'relayKey', 'spare'];
 // that messages came, that a phone is open, or asks, with the chat's timer, which the contacts carry.
 const QUIET_KEYS = new Set([...PLACE_KEYS, 'text', 'tag', 'timer', 'timerAt', 'lasts', 'got', 'on', 'onAt', 'ask', 'quiet', 'due']);
 
-/** Whether a message is a call's or a group's signal: those stay on the primary. */
+/** Whether a message is a call's or a group's signal: not kept in the history, and not told of as other messages are. */
 export function isSignal(m: Json): boolean {
   return m.call !== undefined || m.group !== undefined;
+}
+
+/** Whether a message is a call's signal: those go as lib/linked-calls.ts says. */
+export function isCall(m: Json): boolean {
+  return m.call !== undefined && m.group === undefined;
 }
 
 /** A contact's message without where their queue is. */

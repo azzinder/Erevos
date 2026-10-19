@@ -42,6 +42,8 @@ export function callStatus(call: Call, now: number): string {
       return callClock(now - call.connectedAt);
     case 'ended': {
       const ended = call.ended ?? { reason: 'hangup', byUs: true };
+      // Answered, or turned down, on another device of the account (lib/devices.ts).
+      if (ended.elsewhere) return ended.reason === 'decline' ? t('Turned down') : t('Answered on another device');
       // Theirs, not answered here.
       if (ended.reason === 'missed' && !call.outgoing) return t('Missed call');
       return t(ended.byUs ? ENDS[ended.reason].ours : ENDS[ended.reason].theirs);
