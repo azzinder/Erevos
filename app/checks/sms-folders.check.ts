@@ -1,12 +1,13 @@
 // The space's own order of its SMS (lib/sms-folders.ts, lib/sms-link.ts): pins, the Archive, the
 // Trash, Spam and its rules, drafts and the seconds to take an SMS back, all sealed in the space;
 // and what waits a few seconds to be taken back (lib/held.ts), a message passed on to another
-// conversation (lib/forward.ts).
+// conversation (lib/forward.ts), and the phone's SMS a backup holds (lib/backup-sms.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { smsCounts } from '../lib/backup-sms';
 import { randomBytes } from '../lib/crypto';
 import { forwardedTo, forwardTo } from '../lib/forward';
 import { Held } from '../lib/held';
@@ -228,4 +229,17 @@ test('a message passed on waits for its own conversation, a minute at most, and 
   assert.equal(forwardedTo('+306911111111', undefined, 2000), null);
   forwardTo('contact:aa', { text: 'into a chat', photo: null });
   assert.equal(forwardedTo('contact:aa')?.text, 'into a chat');
+});
+
+test('the phone\'s SMS in a backup say how many they are, and other bytes say nothing', () => {
+  const head = new TextEncoder().encode('EREVOS SMS 1\n');
+  const bytes = new Uint8Array(head.length + 12 + 4);
+  bytes.set(head);
+  const counts = new DataView(bytes.buffer, head.length, 12);
+  counts.setUint32(0, 1234);
+  counts.setUint32(4, 56);
+  counts.setUint32(8, 7);
+  assert.deepEqual(smsCounts(bytes), { sms: 1234, mms: 56, left: 7 });
+  assert.equal(smsCounts(bytes.subarray(0, 10)), null);
+  assert.equal(smsCounts(new TextEncoder().encode('EREVOS BACKUP 1\n0123456789ab')), null);
 });

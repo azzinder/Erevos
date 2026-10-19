@@ -86,6 +86,8 @@ type NativeSms = {
   blocked?(): Promise<string[]>;
   block?(number: string): Promise<boolean>;
   unblock?(number: string): Promise<boolean>;
+  exportSms?(): Promise<Uint8Array>;
+  importSms?(data: Uint8Array): Promise<{ sms: number; mms: number }>;
   addListener<Name extends keyof SmsEvents>(name: Name, listener: SmsEvents[Name]): EventSubscription;
 };
 
@@ -170,7 +172,7 @@ export async function contactCards(numbers: string[]): Promise<Record<string, Co
   return Object.fromEntries(Object.entries(names).map(([number, name]) => [number, { name, photo: '' }]));
 }
 
-/** Whether this build can delete SMS, send again and block numbers. */
+/** Whether this build can delete SMS, send again, block numbers and back up the phone's SMS. */
 export function smsToolsReady(): boolean {
   return typeof native?.deleteThread === 'function';
 }
@@ -214,6 +216,17 @@ export function blockNumber(number: string): Promise<boolean> {
 
 export function unblockNumber(number: string): Promise<boolean> {
   return native?.unblock ? native.unblock(number) : notInBuild();
+}
+
+/** Every SMS and MMS on the phone, for a backup (lib/backup-sms.ts reads them); null in a build
+ *  without it. */
+export function exportPhoneSms(): Promise<Uint8Array | null> {
+  return native?.exportSms ? native.exportSms() : Promise.resolve(null);
+}
+
+/** Puts the SMS and MMS of a backup into the phone's, those it does not have yet, as the SMS app. */
+export function importPhoneSms(data: Uint8Array): Promise<{ sms: number; mms: number }> {
+  return native?.importSms ? native.importSms(data) : notInBuild();
 }
 
 /** The invite pieces that came since the last call. Each is given once. */

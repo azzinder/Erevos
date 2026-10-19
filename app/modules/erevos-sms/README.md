@@ -23,6 +23,9 @@ not been compiled yet.
 - **Blocked numbers.** `blocked()`, `block()` and `unblock()` use Android's own list
   (`BlockedNumberContract`), which only the default SMS app (or dialer) may read and change.
   Android then rejects those numbers' SMS, MMS and calls itself.
+- **Backups.** `exportSms()` reads the phone's SMS and MMS into one byte array for Erevos's sealed
+  backups (`SmsBackup.kt`, format there), with up to 32 MB of MMS pictures; it never touches a
+  file. `importSms()` puts back each message the phone does not have yet, and deletes none.
 - **Contact photos.** `contactCards()` gives the phone contacts' names with their thumbnail
   addresses (`content://`), shown as they are and kept nowhere.
 

@@ -88,5 +88,8 @@ class ErevosSmsModule : Module() {
     AsyncFunction("blocked") { SmsStore.blocked(context()) }
     AsyncFunction("block") { number: String -> SmsStore.block(context(), number) }
     AsyncFunction("unblock") { number: String -> SmsStore.unblock(context(), number) }
+    // The phone's SMS and MMS for a backup, and put back from one (SmsBackup.kt).
+    AsyncFunction("exportSms") { SmsBackup.export(context()) }
+    AsyncFunction("importSms") { data: ByteArray -> SmsBackup.import(context(), data) }
   }
 }

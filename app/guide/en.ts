@@ -633,6 +633,12 @@ home screen's menu.
 - **Discretion:** every space shows the same Backups screen, and a backup holds every space, so neither tells how
   many spaces there are or whether hidden chats are set. The file's name says it is an Erevos backup, and its size
   shows roughly how much is kept.
+- **The phone's SMS:** on Android, **Put the SMS in backups** adds the phone's SMS and MMS to each backup from then
+  on, with up to 32 MB of their pictures, while Erevos is the SMS app. They are sealed with the backup's password like
+  the rest. Restoring the backup puts back into the phone's SMS each message it does not have yet, and deletes none;
+  Erevos has to be the SMS app then too, or the rest is restored without them. The SMS are the phone's, the same in
+  every space; each space's SMS settings, pins, Trash and drafts are not in backups yet. An older Erevos does not
+  open a backup that holds SMS.
 - **Not in a backup:** photos and files, not yet: a backup is made in the phone's memory, and they would not fit. A
   backup restored on the same phone shows them again; on another phone they show as not on it. Also left out: the
   count of wrong passwords, and how automatic backups are set.

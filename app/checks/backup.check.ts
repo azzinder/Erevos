@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { encryptBytes, randomBytes, setPbkdf2, toHex, utf8Encode, webCryptoPbkdf2 } from '../lib/crypto';
-import { backupKey, backupName, makeBackup, NotABackupError, openBackup, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
+import { backupKey, backupName, backupPhoneSms, makeBackup, NotABackupError, openBackup, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
 import { loadLockConfig, setLockPassword, unlock } from '../lock/config';
 import { History, newTag } from '../lock/history';
 import { openHidden, prepareHidden, setHiddenPassword } from '../lock/hidden';
@@ -144,4 +144,24 @@ t('holds every place of hidden chats, and gives them back', async () => {
   const place = await openHidden(0, 'hidden-pin');
   assert.equal(place?.pocket, 3);
   assert.equal((await loadHiddenData(0, 3, place!.key)).token, 'place 4');
+});
+
+t('holds the phone\'s SMS when given them, sealed, and restoring writes them nowhere', async () => {
+  await phone();
+  const sms = utf8Encode('EREVOS SMS 1\n…+306911111111 see you at eight');
+  const file = await makeBackup(await backupKey('backup-pass'), sms);
+  assert.doesNotMatch(Buffer.from(file).toString('latin1'), /EREVOS SMS|6911111111|see you/);
+  const opened = await openBackup(file, 'backup-pass');
+  assert.deepEqual(backupPhoneSms(opened), sms);
+  const before = { files: new Map(files), blobs: new Map(blobs) };
+  wipe();
+  await restoreBackup(opened);
+  assert.deepEqual({ files: new Map(files), blobs: new Map(blobs) }, before);
+  // A backup made without them is as it was.
+  const without = await openBackup(await makeBackup(await backupKey('backup-pass')), 'backup-pass');
+  assert.equal(backupPhoneSms(without), null);
+  assert.deepEqual(
+    without.entries.map((entry) => entry.name),
+    opened.entries.map((entry) => entry.name).filter((name) => name !== 'phone-sms'),
+  );
 });

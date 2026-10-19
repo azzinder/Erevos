@@ -106,4 +106,22 @@ export const smsTools: Record<string, string> = {
   'Taking an SMS back': 'Ανάκληση SMS',
   'An SMS you send waits this long at the end of the conversation before it goes: tap it then to take it back. When you leave Erevos, it goes at once.':
     'Ένα SMS που στέλνεις περιμένει τόσο στο τέλος της συνομιλίας πριν φύγει: πάτησέ το τότε για να το πάρεις πίσω. Όταν βγαίνεις από το Erevos, φεύγει αμέσως.',
+
+  // The phone's SMS in backups (app/backup.tsx).
+  "The phone's SMS": 'Τα SMS του τηλεφώνου',
+  "Backups can hold the phone's SMS and MMS too, with up to {mb} MB of their pictures, sealed with the backup's password. Restoring the backup puts back into the phone's SMS each one it does not have, and deletes none.":
+    'Τα αντίγραφα μπορούν να έχουν και τα SMS και τα MMS του τηλεφώνου, με έως {mb} MB από τις εικόνες τους, σφραγισμένα με τον κωδικό του αντιγράφου. Η επαναφορά του αντιγράφου βάζει πίσω στα SMS του τηλεφώνου όσα δεν έχει, και δεν διαγράφει κανένα.',
+  'Erevos reads them only while it is the SMS app: make it the SMS app under SMS in the menu.': 'Το Erevos τα διαβάζει μόνο όσο είναι η εφαρμογή SMS: κάνε το εφαρμογή SMS από το SMS στο μενού.',
+  'Put the SMS in backups': 'Να μπαίνουν τα SMS στα αντίγραφα',
+  'Leave the SMS out': 'Να μη μπαίνουν τα SMS',
+  "It holds {sms} SMS and {mms} MMS of the phone's.": 'Έχει {sms} SMS και {mms} MMS του τηλεφώνου.',
+  '{n} picture did not fit and stayed out.': '{n} εικόνα δεν χώρεσε και έμεινε έξω.',
+  '{n} pictures did not fit and stayed out.': '{n} εικόνες δεν χώρεσαν και έμειναν έξω.',
+  'SMS in this backup': 'SMS σε αυτό το αντίγραφο',
+  "This backup also holds the phone's SMS. They go back into the phone's SMS only while Erevos is the SMS app: make it the SMS app under SMS in the menu, then restore again. Or restore the rest now, without them.":
+    'Αυτό το αντίγραφο έχει και τα SMS του τηλεφώνου. Επιστρέφουν στα SMS του τηλεφώνου μόνο όσο το Erevos είναι η εφαρμογή SMS: κάνε το εφαρμογή SMS από το SMS στο μενού, και μετά κάνε ξανά επαναφορά. Ή επανάφερε τώρα τα υπόλοιπα, χωρίς αυτά.',
+  'Without the SMS': 'Χωρίς τα SMS',
+  'Putting the SMS back into the phone…': 'Τα SMS επιστρέφουν στο τηλέφωνο…',
+  "{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.": '{sms} SMS και {mms} MMS επέστρεψαν στα SMS του τηλεφώνου. Όσα είχε ήδη έμειναν όπως ήταν.',
+  "The SMS could not go back into the phone's SMS: {error}": 'Τα SMS δεν μπόρεσαν να επιστρέψουν στα SMS του τηλεφώνου: {error}',
 };
