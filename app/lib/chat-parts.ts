@@ -17,16 +17,20 @@ export type Preview = { url: string; title: string; text: string; image?: string
 /** A message pinned to the top of the chat, by its tag, or (`on` false) taken down. */
 export type Pin = { tag: string; on: boolean };
 
+/** A vote on the poll with this tag: the options chosen, by number; none takes the vote back. */
+export type Vote = { tag: string; chose: number[] };
+
 /**
  * What a contact's message carries beyond what lib/e2e.ts says itself, each in a field of its own
  * that an Erevos from before leaves alone. With words, which say it to an Erevos from before and
- * show nowhere in this one: a sticker, whose words are its emoji (lib/stickers.ts), or a place,
- * whose words are where it is. With no words: a pin.
+ * show nowhere in this one: a sticker, whose words are its emoji (lib/stickers.ts), a place, whose
+ * words are where it is, or a poll, whose words are its question and options. With no words: a
+ * pin, or a vote.
  */
-export type Carried = { sticker?: string; place?: Place; pin?: Pin };
+export type Carried = { sticker?: string; place?: Place; poll?: Poll; pin?: Pin; vote?: Vote };
 
 /** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
-export type Content = Pick<Carried, 'sticker' | 'place'>;
+export type Content = Pick<Carried, 'sticker' | 'place' | 'poll'>;
 
 export const MAX_QUESTION = 300;
 export const MAX_OPTION = 100;
@@ -50,27 +54,33 @@ const isTag = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{1
 /** What a message carries, from the fields of the message as it came: each checked, or left out. */
 export function carriedOf(value: Record<string, unknown>): Carried {
   const pin = value.pin as { tag?: unknown; on?: unknown } | null | undefined;
+  const vote = value.vote as { tag?: unknown; chose?: unknown } | null | undefined;
   const place = checkedPlace(value.place);
+  const poll = checkedPoll(value.poll);
+  const chose = checkedChoices(vote?.chose);
   return {
     ...(isStickerName(value.sticker) ? { sticker: value.sticker } : {}),
     ...(place ? { place } : {}),
+    ...(poll ? { poll } : {}),
     ...(isTag(pin?.tag) && typeof pin.on === 'boolean' ? { pin: { tag: pin.tag, on: pin.on } } : {}),
+    ...(isTag(vote?.tag) && chose ? { vote: { tag: vote.tag, chose } } : {}),
   };
 }
 
 /** What a kept message carries with its words, as it goes again. */
-export function contentOf({ sticker, place }: Content): Content {
-  return carriedOf({ sticker, place });
+export function contentOf({ sticker, place, poll }: Content): Content {
+  return carriedOf({ sticker, place, poll });
 }
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, place, pin } = carriedOf(carried);
-  return words ? { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}) } : { ...(pin ? { pin } : {}) };
+  const { sticker, place, poll, pin, vote } = carriedOf(carried);
+  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}) };
+  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}) };
 }
 
 /** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */
-export const acts = (carried: Carried) => !!carried.pin;
+export const acts = (carried: Carried) => !!carried.pin || !!carried.vote;
 
 const plainText = (v: unknown, most: number): string | null => {
   if (typeof v !== 'string') return null;
@@ -103,6 +113,11 @@ export function checkedChoices(value: unknown, count = MAX_OPTIONS, multiple = t
   if (!value.every((c) => typeof c === 'number' && Number.isInteger(c) && c >= 0 && c < count)) return null;
   const chosen = [...new Set(value as number[])].sort((a, b) => a - b);
   return multiple ? chosen : chosen.slice(0, 1);
+}
+
+/** A poll's words, for an Erevos from before: its question, then its options, numbered. */
+export function pollWords({ q, o }: Poll): string {
+  return [`📊 ${q}`, ...o.map((option, i) => `${i + 1}. ${option}`)].join('\n');
 }
 
 /** What choosing `option` makes of `before`: on a poll of one choice, only it, or none if it was it. */

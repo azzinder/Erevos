@@ -198,6 +198,21 @@ t('keeps the sticker or the place a message is, and drops one of the wrong shape
   assert.deepEqual([odd.sticker, odd.place], [undefined, undefined]);
 });
 
+t('keeps a poll and the votes on it, ours and theirs, as the poll allows', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const tag = newTag();
+  await history.add({ peer: 'contact:aa', text: 'q', mine: true, at: 1, tag, poll: { q: 'Which?', o: ['a', 'b', 'c'] } });
+  assert.equal(await history.vote('contact:aa', tag, true, [2]), true);
+  assert.equal(await history.vote('contact:aa', tag, false, [0, 1]), true);
+  assert.equal(await history.vote('contact:aa', tag, false, [5]), false);
+  assert.equal(await history.vote('contact:aa', newTag(), false, [0]), false);
+  const [poll] = (await History.open('space', 0, key)).messages();
+  assert.deepEqual([poll.poll, poll.myVote, poll.theirVote], [{ q: 'Which?', o: ['a', 'b', 'c'] }, [2], [0]]);
+  await history.vote('contact:aa', tag, true, []);
+  assert.equal((await History.open('space', 0, key)).messages()[0].myVote, undefined);
+});
+
 t('deletes the messages of one chat and keeps the others', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);

@@ -36,7 +36,8 @@ import { LinkedText } from '../components/linked-text';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { openPlace, PlaceCard, Pinned, Quote, Reactions } from '../components/message-parts';
 import { StickerPicker, StickerView } from '../components/stickers';
-import { acts, contentOf, placeText, placeWords, type Content, type Place } from '../lib/chat-parts';
+import { PollCard, PollSheet } from '../components/poll';
+import { acts, checkedChoices, choose as chooseOption, contentOf, placeText, placeWords, pollWords, type Content, type Place, type Poll } from '../lib/chat-parts';
 import { CAN_PLACE, findPlace } from '../lib/place';
 import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
@@ -482,6 +483,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   const [stickering, setStickering] = useState(false);
   // Where the phone was found, to send once it is looked at.
   const [placeFound, setPlaceFound] = useState<Place | null>(null);
+  const [polling, setPolling] = useState(false);
   // Send held down: later, or without sound.
   const [sendMenu, setSendMenu] = useState(false);
   // The time picked there for the next photo, file or voice message, when nothing was typed.
@@ -1073,9 +1075,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
       setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, theirReaction: emoji || undefined } : m)));
       history.current?.react(peer, tag, false, emoji).catch(() => undefined);
     }
-    // One of the chat's messages pinned to its top on their phone, or taken down.
-    const { pin } = received.more;
+    // One of the chat's messages pinned to its top on their phone, or taken down; their vote on a poll.
+    const { pin, vote } = received.more;
     if (pin) pinHere(peer, pin.tag, pin.on);
+    if (vote) {
+      setMessages((list) =>
+        list.map((m) => {
+          if (m.peer !== peer || m.tag !== vote.tag || !m.poll) return m;
+          const chose = checkedChoices(vote.chose, m.poll.o.length, !!m.poll.m);
+          return chose ? { ...m, theirVote: chose } : m;
+        }),
+      );
+      history.current?.vote(peer, vote.tag, false, vote.chose).catch(() => undefined);
+    }
     const name = label(peer, e2e.contacts());
     if (received.timerChanged) {
       setNote(
@@ -1294,7 +1306,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     if (theyHave(message) || (message.mine && message.mark === WAITING)) actions.push({ title: t('Reply'), onPress: () => setReplying(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
-    if (CAN_COPY && message.text && !message.sticker && !message.place && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
+    if (CAN_COPY && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
   }
@@ -1322,6 +1334,28 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     } catch (error) {
       setNote(errorText(error));
     }
+  }
+
+  // Sends a poll, with its question and options as its words for an Erevos from before.
+  function sendPoll(poll: Poll) {
+    setPolling(false);
+    void send(0, false, { text: pollWords(poll), poll });
+  }
+
+  // Chooses an option of a poll, or takes the choice back, on both phones, as a reaction goes.
+  async function vote(message: Message, option: number) {
+    if (!message.poll) return;
+    const chose = chooseOption(message.myVote ?? [], option, !!message.poll.m);
+    try {
+      await sendToContact(relayTarget(), message.peer.slice(CONTACT_PREFIX.length), '', { more: { vote: { tag: message.tag, chose } } });
+    } catch (error) {
+      setNote(notSent(error));
+      return;
+    }
+    setMessages((list) => list.map((m) => (m.peer === message.peer && m.tag === message.tag ? { ...m, myVote: chose } : m)));
+    history.current?.vote(message.peer, message.tag, true, chose).catch(() => {
+      // Shown, but gone when the chat next opens.
+    });
   }
 
   // Sends the place found, with where it is as its words for an Erevos from before.
@@ -1504,8 +1538,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
 
   // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it
   // is read; `quiet`, it comes without sound, also when it has to wait.
-  // Sends what is typed, or, given `content`, a sticker or a place with its words (its emoji, or
-  // where it is): then what is typed stays.
+  // Sends what is typed, or, given `content`, a sticker, a place or a poll with its words (its
+  // emoji, where it is, or what it asks): then what is typed stays.
   async function send(lasts = 0, quiet = false, content?: Content & { text: string }) {
     const text = content ? content.text : draft.trim();
     if (!text || !selected?.startsWith(CONTACT_PREFIX)) return;
@@ -3090,6 +3124,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
                   <StickerView name={message.sticker} fallback={message.text} />
                 ) : message.place ? (
                   <PlaceCard place={message.place} ink={ink} />
+                ) : message.poll ? (
+                  <PollCard
+                    poll={message.poll}
+                    voters={[
+                      { name: t('You'), chose: message.myVote ?? [] },
+                      { name: selectedName, chose: message.theirVote ?? [] },
+                    ]}
+                    mine={message.myVote ?? []}
+                    onChoose={theyHave(message) ? (option) => void vote(message, option) : undefined}
+                    ink={ink}
+                  />
                 ) : message.file ? (
                   <Attachment file={message.file} uri={photos[message.file.id]} state={taking[`${message.peer}|${message.tag}`]} ink={ink} />
                 ) : (
@@ -3217,9 +3262,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
           <>
             <Button title={t('Sticker')} kind="secondary" compact onPress={() => fromAttach(() => setStickering(true))} />
             {CAN_PLACE ? <Button title={t('Location')} kind="secondary" compact onPress={() => fromAttach(() => void locate())} /> : null}
+            <Button title={t('Poll')} kind="secondary" compact onPress={() => fromAttach(() => setPolling(true))} />
           </>
         }
       />
+      <PollSheet visible={polling && shown} onClose={() => setPolling(false)} onSend={sendPoll} />
       <Sheet visible={!!placeFound && shown} onClose={() => setPlaceFound(null)} title={t('Send where you are?')}>
         {placeFound ? (
           <>

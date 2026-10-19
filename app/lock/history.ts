@@ -1,4 +1,4 @@
-import { checkedPlace, isStickerName, type Place } from '../lib/chat-parts';
+import { checkedChoices, checkedPlace, checkedPoll, isStickerName, type Place, type Poll } from '../lib/chat-parts';
 import { decryptBytes, encryptBytes, randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
 import { deleteFile, readBytes, writeBytes } from '../lib/files';
 import { isRelayAddress, type HeldAt } from '../lib/relay';
@@ -67,9 +67,10 @@ export type Kept = [
  * sound, kept while it waits. Of either, its Parts: `p`, the tag of the message it answers; `y`,
  * our reaction to it, and `o`, theirs; `n`, when it was pinned to the top of the chat; `f` 1 when it
  * is starred, on this phone only; `s`, the name of the sticker it is (its text is the sticker's emoji);
- * `l`, the place it is (its text says where).
+ * `l`, the place it is (its text says where); `k`, the poll it is (its text asks it), with `a`, the
+ * options we chose, and `b`, theirs.
  */
-type More = { h?: string; r?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place };
+type More = { h?: string; r?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[] };
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -110,12 +111,16 @@ export type Parts = {
   sticker?: string;
   /** The place it is, sent once (lib/chat-parts.ts). */
   place?: Place;
+  /** The poll it is, and the options we chose on it, and they did. */
+  poll?: Poll;
+  myVote?: number[];
+  theirVote?: number[];
 };
 
 type Fields = Omit<Message, 'peer'>;
 
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
@@ -124,6 +129,9 @@ function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place
     ...(starred ? { f: 1 as const } : {}),
     ...(sticker ? { s: sticker } : {}),
     ...(place ? { l: place } : {}),
+    ...(poll ? { k: poll } : {}),
+    ...(poll && myVote?.length ? { a: myVote } : {}),
+    ...(poll && theirVote?.length ? { b: theirVote } : {}),
   };
 }
 
@@ -136,6 +144,9 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.f ? { starred: true } : {}),
     ...(more?.s ? { sticker: more.s } : {}),
     ...(more?.l ? { place: more.l } : {}),
+    ...(more?.k ? { poll: more.k } : {}),
+    ...(more?.a ? { myVote: more.a } : {}),
+    ...(more?.b ? { theirVote: more.b } : {}),
   };
 }
 
@@ -171,9 +182,12 @@ const HELD_ID = /^[0-9a-f]{32}(?:,[0-9a-f]{32}){0,63}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
+  const poll = checkedPoll(v.k);
+  const votes = (chose: unknown) => (poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null);
+  const [ours, theirs] = [votes(v.a), votes(v.b)];
   const held = mine && typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
   const more: More = {
     ...(held ? { h: v.h as string, r: v.r as string } : {}),
@@ -185,6 +199,9 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(v.f === 1 ? { f: 1 as const } : {}),
     ...(isStickerName(v.s) ? { s: v.s } : {}),
     ...(place ? { l: place } : {}),
+    ...(poll ? { k: poll } : {}),
+    ...(ours?.length ? { a: ours } : {}),
+    ...(theirs?.length ? { b: theirs } : {}),
   };
   return Object.keys(more).length > 0 ? more : undefined;
 }
@@ -453,6 +470,18 @@ export class History {
   /** Pins a chat's message to the top, by its tag, as of `at` (milliseconds), or takes it down (0). False if the message is gone. */
   pin(peer: string, tag: string, at: number): Promise<boolean> {
     return this.change(peer, tag, { pinned: at || undefined });
+  }
+
+  /**
+   * Keeps a vote on a chat's poll, by its tag: ours (`ours`) or theirs, the options chosen; none
+   * takes it back. False if the poll is gone, or the vote is not one on it.
+   */
+  vote(peer: string, tag: string, ours: boolean, chose: number[]): Promise<boolean> {
+    const kept = this.data.chats[peer]?.find((m) => m[3] === tag);
+    const poll = kept ? unpack(kept).poll : undefined;
+    const checked = poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null;
+    if (!checked) return Promise.resolve(false);
+    return this.change(peer, tag, ours ? { myVote: checked } : { theirVote: checked });
   }
 
   /** Stars a chat's message, by its tag, or takes the star off. False if the message is gone. */

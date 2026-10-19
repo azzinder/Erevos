@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { carriedOf, checkedPlace, contentOf, geoLink, placeWords, toCarry } from '../lib/chat-parts';
+import { acts, carriedOf, checkedChoices, checkedPlace, checkedPoll, choose, contentOf, geoLink, placeWords, pollOf, pollWords, tally, toCarry } from '../lib/chat-parts';
 import { messageLine } from '../lib/message-line';
 import { starredOf } from '../lib/message-search';
 import { STICKERS, stickerOf } from '../lib/stickers';
@@ -66,4 +66,34 @@ test('a place goes with its coordinates as words, to six decimals, and opens as 
   assert.equal(checkedPlace({ lat: '1', lon: 0 }), null);
   assert.deepEqual(checkedPlace({ lat: 1, lon: 2, acc: -3 }), { lat: 1, lon: 2 });
   assert.equal(messageLine({ text: placeWords(place), place }), 'Location');
+});
+
+test('a poll is checked, said in words for an Erevos from before, and counted', () => {
+  const poll = pollOf('  Where   do we meet? ', ['Here', ' ', 'There\n'], false)!;
+  assert.deepEqual(poll, { q: 'Where do we meet?', o: ['Here', 'There'] });
+  assert.equal(pollOf('Only one?', ['Yes'], false), null);
+  assert.equal(pollWords(poll), '📊 Where do we meet?\n1. Here\n2. There');
+  assert.equal(messageLine({ text: pollWords(poll), poll }), 'Poll: Where do we meet?');
+  assert.deepEqual(checkedPoll({ q: 'q', o: ['a', 'b'], m: true }), { q: 'q', o: ['a', 'b'], m: true });
+  assert.equal(checkedPoll({ q: 'q', o: ['a', 7] }), null);
+  assert.deepEqual(toCarry({ poll }, true), { poll });
+  assert.deepEqual(toCarry({ poll }, false), {});
+  // Choosing: one, another instead, or the same again to take it back; more than one when it allows.
+  assert.deepEqual(choose([], 1, false), [1]);
+  assert.deepEqual(choose([1], 0, false), [0]);
+  assert.deepEqual(choose([0], 0, false), []);
+  assert.deepEqual(choose([2], 0, true), [0, 2]);
+  assert.deepEqual(checkedChoices([3, 1, 1], 4), [1, 3]);
+  assert.deepEqual(checkedChoices([3, 1], 4, false), [1]);
+  assert.equal(checkedChoices([4], 4), null);
+  assert.deepEqual(tally({ q: 'q', o: ['a', 'b', 'c'] }, [[0], [0, 2], undefined]), [2, 0, 1]);
+});
+
+test('a vote travels with no words, says the phone is open, and one of the wrong shape is none', () => {
+  const vote = { tag: '0123456789ab', chose: [0] };
+  assert.deepEqual(toCarry({ vote }, false), { vote });
+  assert.deepEqual(toCarry({ vote }, true), {});
+  assert.equal(acts({ vote }), true);
+  assert.deepEqual(carriedOf({ vote: { tag: vote.tag, chose: [] } }), { vote: { tag: vote.tag, chose: [] } });
+  assert.deepEqual(carriedOf({ vote: { tag: vote.tag, chose: ['0'] } }), {});
 });

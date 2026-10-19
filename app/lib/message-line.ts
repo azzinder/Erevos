@@ -13,6 +13,7 @@ export type LineOf = {
   file?: { kind: 'photo' | 'file'; name: string };
   sticker?: string;
   place?: object;
+  poll?: { q: string };
 };
 
 /** The message in one line: the first of its words, or what it carries. */
@@ -24,5 +25,6 @@ export function messageLine(message: LineOf): string {
     return sticker ? t('Sticker: {name}', { name: t(sticker.label) }) : t('Sticker');
   }
   if (message.place) return t('Location');
+  if (message.poll) return t('Poll: {question}', { question: message.poll.q });
   return shownLine(message.text).split('\n')[0].trim();
 }

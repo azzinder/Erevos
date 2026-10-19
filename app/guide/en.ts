@@ -346,6 +346,10 @@ Under **Attach** there is more to send than photos and files:
   shows you the place before it goes, and does not follow you after. The message holds only the coordinates, end-to-end
   encrypted; no map is loaded in Erevos. **Open in maps** hands the place to your maps app, which may load its map from
   the internet. An Erevos from before this shows the coordinates as words.
+- **Poll:** a question with two options or more, up to 12, and, with **More than one answer**, more than one to choose.
+  Tap an option to choose it, again to take it back; each option shows how many chose it, and who. Votes travel inside
+  the encryption, as reactions do. An Erevos from before this shows the question and its options as words, to answer in
+  words.
 
 ### Voice and video calls
 

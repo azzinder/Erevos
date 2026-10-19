@@ -339,6 +339,22 @@ t('a sticker travels by its name, with its emoji as its words', async () => {
   assert.deepEqual([sticker.text, sticker.tag, sticker.more], ['🌝', sealed.tag, { sticker: 'moon-smile' }]);
 });
 
+t('a poll travels with its words, and a vote on it with none', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(identity);
+  const poll = { q: 'Tea or coffee?', o: ['Tea', 'Coffee'] };
+  const asked = await alice.e2e.seal(identity, '📊 Tea or coffee?\n1. Tea\n2. Coffee', alice.from, { more: { poll } });
+  const came = message(await bob.e2e.receive(asked.packet));
+  assert.deepEqual([came.tag, came.more], [asked.tag, { poll }]);
+  const voted = await bob.e2e.seal(hello.identity, '', bob.from, { more: { vote: { tag: asked.tag, chose: [1] } } });
+  assert.equal(voted.tag, '');
+  const vote = message(await alice.e2e.receive(voted.packet));
+  assert.deepEqual([vote.text, vote.more], ['', { vote: { tag: asked.tag, chose: [1] } }]);
+});
+
 t('a message sent without sound says so inside the encryption, and one sent as usual says nothing', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

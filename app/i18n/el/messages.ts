@@ -62,4 +62,16 @@ export const messages: Record<string, string> = {
   "The phone's location is off. Turn it on to send where you are.": 'Η τοποθεσία του τηλεφώνου είναι κλειστή. Άνοιξέ την για να στείλεις πού είσαι.',
   'Where you are was not found in time. Try again outdoors, or in a while.':
     'Δεν βρέθηκε εγκαίρως πού είσαι. Δοκίμασε ξανά σε ανοιχτό χώρο, ή σε λίγο.',
+  // Polls (components/poll.tsx).
+  Poll: 'Δημοσκόπηση',
+  'Poll: {question}': 'Δημοσκόπηση: {question}',
+  'Poll · choose one': 'Δημοσκόπηση · διάλεξε ένα',
+  'Poll · choose one or more': 'Δημοσκόπηση · διάλεξε ένα ή περισσότερα',
+  'New poll': 'Νέα δημοσκόπηση',
+  Question: 'Ερώτηση',
+  'Ask something': 'Ρώτα κάτι',
+  Options: 'Επιλογές',
+  'Option {n}': 'Επιλογή {n}',
+  'Add an option': 'Προσθήκη επιλογής',
+  'More than one answer': 'Πάνω από μία απάντηση',
 };
