@@ -563,7 +563,7 @@ chats in one list.
   before Erevos is opened.
 - **Block:** **Block** in the menu of a conversation, or **Blocked numbers** under **SMS** in the menu, puts a number
   in Android's own list of blocked numbers: Android rejects its SMS, MMS and calls, and every space and the phone app
-  see the same list. Only the SMS app may see and change it.
+  see the same list. Only the SMS app or the phone app may see and change it.
 - **Drafts:** what you type and do not send stays with that conversation, and the list shows it as **Draft**. An SMS
   that could not go stays there as the draft too.
 - **Taking an SMS back:** an SMS you send waits 5 seconds at the end of the conversation first: tap it then to take
@@ -625,6 +625,9 @@ Erevos's keypad.
   notice; it shows in **Recents**, under **Blocked**. Android asks once whether Erevos may screen calls
   (**Let Erevos screen calls**): without that, a blocked call rings a moment before Erevos ends it. What is blocked
   is the same in every space, so it tells nothing of another, and is kept on the phone with no names.
+- **Blocked numbers:** under **Phone** → **Settings**, **Blocked numbers** is Android's own list, the same one as
+  under **SMS**: type a number and tap **Block**, or tap one to unblock it. Android rejects their calls before they
+  ring, and their SMS and MMS. Every space sees the same list.
 - **A contact group for a while:** under **Phone** → **Settings**, **Block a contact group** lists the groups (the
   labels) of your phone's contacts. **Block** beside one blocks its contacts' calls **For an hour**,
   **Until tomorrow morning** (7:00) or **Until I lift it**; the line under the group says until when, and **Lift**

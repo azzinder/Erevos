@@ -16,6 +16,7 @@ import android.os.Build
 import android.provider.BlockedNumberContract
 import android.provider.ContactsContract
 import android.provider.Telephony
+import android.telecom.TelecomManager
 import android.telephony.SmsManager
 import android.telephony.SmsMessage
 import android.telephony.SubscriptionManager
@@ -462,13 +463,17 @@ internal object SmsStore {
   // --- Blocked numbers -------------------------------------------------------------------------
 
   /** Whether Erevos may read and change Android's own list of blocked numbers: as the default SMS
-   *  app, for the phone's owner. Android then rejects their SMS, MMS and calls itself. */
+   *  app or the default phone app (erevos-phone), for the phone's owner. Android then rejects
+   *  their SMS, MMS and calls itself. */
   fun canBlock(context: Context): Boolean =
-    Build.VERSION.SDK_INT >= 24 && isDefault(context) && try {
+    Build.VERSION.SDK_INT >= 24 && (isDefault(context) || isDialer(context)) && try {
       BlockedNumberContract.canCurrentUserBlockNumbers(context)
     } catch (_: Exception) {
       false
     }
+
+  private fun isDialer(context: Context): Boolean =
+    runCatching { context.getSystemService(TelecomManager::class.java)?.defaultDialerPackage == context.packageName }.getOrDefault(false)
 
   /** The numbers in Android's list, as they were written there. */
   fun blocked(context: Context): List<String> {
@@ -486,14 +491,14 @@ internal object SmsStore {
   }
 
   fun block(context: Context, number: String): Boolean {
-    check(canBlock(context)) { "Only the SMS app may block numbers" }
+    check(canBlock(context)) { "Only the SMS app or the phone app may block numbers" }
     if (BlockedNumberContract.isBlocked(context, number)) return true
     val values = ContentValues().apply { put(BlockedNumberContract.BlockedNumbers.COLUMN_ORIGINAL_NUMBER, number) }
     return context.contentResolver.insert(BlockedNumberContract.BlockedNumbers.CONTENT_URI, values) != null
   }
 
   fun unblock(context: Context, number: String): Boolean {
-    check(canBlock(context)) { "Only the SMS app may block numbers" }
+    check(canBlock(context)) { "Only the SMS app or the phone app may block numbers" }
     return BlockedNumberContract.unblock(context, number) > 0
   }
 

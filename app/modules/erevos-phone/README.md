@@ -26,7 +26,9 @@ been compile-checked against Android 16's framework classes, not built or run.
   `CallService` once it rings. A contact group (`groups()`, read only) can be blocked for a while:
   its contacts' calls are, through their group membership in the phone's contacts. The rules are
   JSON from `lib/phone-rules.ts` (`setRules()`), in the module's preferences: the same for every
-  space, only prefixes, group ids and times.
+  space, only prefixes, group ids and times. Single numbers go in Android's own list of blocked
+  numbers (`BlockedNumberContract`) through `erevos-sms`'s `block()`, which the phone app may use
+  too: Telecom rejects their calls itself, and the SMS screens show the same list.
 - **Notices.** `CallNotices`: a call that rings, with Answer and Decline and a full-screen intent,
   and one while a call is on, with End. Telecom rings itself, with each contact's own ringtone.
   Missed calls are Telecom's own notice.
