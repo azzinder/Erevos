@@ -1,10 +1,24 @@
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
-import { loadDevicesData, MAX_OUTBOX, saveDevicesData, type DevicesData, type Peer } from '../lock/devices-data';
+import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type DevicesData, type Left, type Peer } from '../lock/devices-data';
 import type { Contact } from '../lock/e2e-data';
 import { isTag, WAITING, type Mark, type Message } from '../lock/history';
 import { loadSpaceData } from '../lock/space-data';
 import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
-import { bytesSource, FileGoneError, leaveTakenFiles, offerRef, readFile, readOffer, sendFile, takeFile, uploadFile, type FileOffer } from './attachments';
+import {
+  bytesSource,
+  dropFile,
+  FileGoneError,
+  offerRef,
+  readFile,
+  readOffer,
+  sendFile,
+  takeFile,
+  uploadFile,
+  watchTakenFiles,
+  type FileFrom,
+  type FileOffer,
+  type TakenFiles,
+} from './attachments';
 import { contactLink, type ContactCode } from './contact-code';
 import * as core from './core';
 import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
@@ -58,6 +72,11 @@ import { sendWaiting, type SendPlace } from './waiting';
 // drained, so the link never skips more than its ratchet can: then it is sent the contacts and what
 // of the history it missed.
 //
+// A photo or file passed on to devices, or a copy of one put on the relay for them, is left there
+// when taken until each device told of it said it took it, and this phone took it too if it was
+// still to: whichever comes last, the primary has it deleted there. A device unlinked takes nothing
+// more, so what waited only for it goes then. What no one takes expires on the relay after 14 days.
+//
 // Three turns keep it straight: the chat's own (E2E), which may wait for this file's; this file's
 // (`run`), for the links and their keys, which never waits for the chat; and the work a message
 // brings (`act`: the history, sealing for contacts, the relay's file store), which waits for both.
@@ -78,6 +97,8 @@ const RETRY_MOST = 5 * 60_000;
 // Messages a device wrote that could not go to the contact yet (not the ones the chat keeps), and how often each is tried.
 const MAX_LATER = 50;
 const LATER_TRIES = 5;
+// How long a photo or file left on the relay for devices is kept track of: the relay drops it after 14 days.
+const LEFT_LASTS = 15 * 24 * 60 * 60_000;
 const CONTACT_PREFIX = 'contact:';
 // What a message a device wrote may say that need not be tried again: where it reads, that it is
 // open, the timer (which went with the contact here), and what came or was read (held for the next).
@@ -96,6 +117,8 @@ export type LinkedChange = { gone: { peer: string; tag?: string }[] };
 export type HistoryChoice = { since: number | null; files: boolean };
 
 type Here = { own: Relay; sends: Relay; place: Place; where: Where };
+// A photo or file told of with an envelope, left on the relay for the devices it goes to; `phone`: this phone is still to take it too.
+type Leaving = { from: FileFrom; phone: boolean };
 type Pending = { code: LinkCode; bundle: Uint8Array; account: Uint8Array; device: string; safety: string };
 
 const listeners = new Set<(change: LinkedChange) => void>();
@@ -144,8 +167,10 @@ function offerOf(ref: FileRef): FileOffer | null {
   return readOffer({ ...shared, relay: from.relay, ids: from.ids });
 }
 
+const fromOf = (offer: FileOffer): FileFrom => ({ relay: offer.relay, ids: offer.ids });
+
 /** The links of one space's chat to the account's other devices. */
-export class Links implements Link {
+export class Links implements Link, TakenFiles {
   private data: DevicesData;
   private turn: Promise<unknown> = Promise.resolve();
   private acts: Promise<unknown> = Promise.resolve();
@@ -183,7 +208,6 @@ export class Links implements Link {
   static async open(space: number, key: Uint8Array, chats: SpaceChats, tick = TICK): Promise<Links> {
     const links = new Links(space, key, chats, await loadDevicesData(space, key));
     chats.e2e.useLink(links);
-    leaveTakenFiles(links.role() !== null);
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
     return links;
@@ -295,20 +319,47 @@ export class Links implements Link {
   }
 
   // Says something to each linked device (on the primary) or to the phone (on a linked device).
-  private say(envelope: Envelope | ((peer: Peer) => Envelope), only?: string): Promise<void> {
+  // Returns the devices it was sealed for; the photos and files it tells of (`files`) are left on
+  // the relay for them, in the same turn, so this phone taking one meanwhile does not delete it.
+  private say(envelope: Envelope | ((peer: Peer) => Envelope), only?: string, files: Leaving[] = []): Promise<string[]> {
     return this.run(async () => {
       const make = typeof envelope === 'function' ? envelope : () => envelope;
       if (this.data.primary) {
-        if (only && only !== this.data.primary.id) return;
+        if (only && only !== this.data.primary.id) return [];
         await this.save({ ...this.data, primary: await this.seal(this.data.primary, make(this.data.primary)) });
-      } else {
-        const devices: Peer[] = [];
-        for (const d of this.data.devices) devices.push(d.linked && (!only || d.id === only) ? await this.seal(d, make(d)) : d);
-        await this.save({ ...this.data, devices });
+        return [this.data.primary.id];
       }
-    }).then(() => {
+      const devices: Peer[] = [];
+      const told: string[] = [];
+      for (const d of this.data.devices) {
+        if (!d.linked || (only && d.id !== only)) {
+          devices.push(d);
+          continue;
+        }
+        const sealed = await this.seal(d, make(d));
+        if (sealed.outbox.length > d.outbox.length) told.push(d.id);
+        devices.push(sealed);
+      }
+      await this.save({ ...this.data, devices, left: this.leftFor(told, files) });
+      return told;
+    }).then((told) => {
       void this.flush().catch(() => undefined);
+      return told;
     });
+  }
+
+  // The photos and files left on the relay, with `files` left for the devices `told` too.
+  private leftFor(told: string[], files: Leaving[]): Left[] {
+    if (told.length === 0 || files.length === 0) return this.data.left;
+    const now = Date.now();
+    let left = this.data.left;
+    for (const { from, phone } of files) {
+      const kept = left.find((l) => l.ids === from.ids);
+      left = kept
+        ? left.map((l) => (l === kept ? { ...l, devices: [...new Set([...l.devices, ...told])] } : l))
+        : [...left, { relay: from.relay, ids: from.ids, at: now, phone, devices: told }];
+    }
+    return left.slice(-MAX_LEFT);
   }
 
   private linked(): Peer[] {
@@ -417,9 +468,12 @@ export class Links implements Link {
       case 'set':
         this.act(() => this.setFor(said.c, said.change, said.remove === true));
         break;
+      case 'took':
+        this.act(() => this.letGo(peer.id, said.ids));
+        break;
       case 'bye':
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
-        leaveTakenFiles(this.role() !== null);
+        this.act(() => this.letGo(peer.id, null));
         announce();
         break;
       default:
@@ -503,7 +557,9 @@ export class Links implements Link {
     if (this.data.primary || !this.data.devices.some((d) => d.linked)) return;
     const m = parse(plaintext);
     if (!m || isSignal(m)) return;
-    void this.say({ k: 'in', c: identity, m: withoutPlace(m) }).catch(() => undefined);
+    // Their photo or file stays on the relay until each device took it, and this phone too.
+    const offer = isObject(m.file) ? readOffer(m.file) : null;
+    void this.say({ k: 'in', c: identity, m: withoutPlace(m) }, undefined, offer ? [{ from: fromOf(offer), phone: true }] : []).catch(() => undefined);
   }
 
   sealed(identity: string, plaintext: Uint8Array): void {
@@ -577,7 +633,6 @@ export class Links implements Link {
       { k: 'contacts', all: true, list: contacts, gone: [], link },
     );
     await this.save({ ...this.data, devices: this.data.devices.map((d) => (d.id === peer.id ? linked : d)), link });
-    leaveTakenFiles(true);
     this.act(() => this.bringHistory(peer.id));
     announce();
   }
@@ -624,7 +679,6 @@ export class Links implements Link {
       await this.here().catch(() => null);
       const primary = await this.seal({ ...answer.peer, since: Date.now() }, { k: 'ready', name: this.data.offer?.name ?? '' });
       await this.save({ ...this.data, primary, account: answer.account, offer: null, answer: null, synced: {}, packs: [] });
-      leaveTakenFiles(true);
     }).then(() => {
       announce();
       return this.flush().catch(() => undefined);
@@ -731,8 +785,9 @@ export class Links implements Link {
       await this.run(async () => {
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
       });
-      leaveTakenFiles(this.role() !== null);
       announce();
+      // What was left on the relay only for it.
+      this.act(() => this.letGo(peer.id, null));
     }
     return told;
   }
@@ -744,7 +799,6 @@ export class Links implements Link {
     await this.run(async () => {
       await this.save({ ...this.data, primary: null, account: '', link: '', synced: {}, packs: [], offer: null, answer: null });
     });
-    leaveTakenFiles(false);
     const gone = e2e.contacts().map((c) => c.identity);
     for (const identity of gone) await e2e.removeContact(identity).catch(() => undefined);
     await this.clearChats(gone);
@@ -753,6 +807,53 @@ export class Links implements Link {
   private async clearChats(identities: string[]): Promise<void> {
     for (const identity of identities) await this.chats.history.clear(peerOf(identity)).catch(() => undefined);
     announce({ gone: identities.map((identity) => ({ peer: peerOf(identity) })) });
+  }
+
+  // ---- Photos and files left on the relay (lib/attachments.ts, TakenFiles) ----
+
+  leave(): boolean {
+    // On the primary, whether a device is still to take it is known once the turn that told it ended (`taken`).
+    return this.role() !== null;
+  }
+
+  taken(from: FileFrom, left: boolean): void {
+    if (this.data.primary) {
+      // The phone deletes it there, once each device took it.
+      if (left) void this.say({ k: 'took', ids: [from.ids] }).catch(() => undefined);
+      return;
+    }
+    void this.run(async () => {
+      const kept = this.data.left.find((l) => l.ids === from.ids);
+      const waits = left && !!kept && kept.devices.length > 0;
+      if (kept) await this.save({ ...this.data, left: waits ? this.data.left.map((l) => (l === kept ? { ...l, phone: false } : l)) : this.data.left.filter((l) => l !== kept) });
+      return left && !waits;
+    })
+      .then((drop) => {
+        if (drop) this.act(() => this.drop(from));
+      })
+      .catch(() => undefined);
+  }
+
+  // On the primary: a device took the photos and files `ids`, or, with null, takes none any more,
+  // unlinked. Those no one else is still to take are deleted from the relay.
+  private async letGo(device: string, ids: string[] | null): Promise<void> {
+    const done = await this.run(async () => {
+      const gone: Left[] = [];
+      const left: Left[] = [];
+      for (const l of this.data.left) {
+        if (!l.devices.includes(device) || (ids && !ids.includes(l.ids))) left.push(l);
+        else if (l.devices.length === 1 && !l.phone) gone.push(l);
+        else left.push({ ...l, devices: l.devices.filter((d) => d !== device) });
+      }
+      if (left.length !== this.data.left.length || left.some((l, i) => l !== this.data.left[i])) await this.save({ ...this.data, left });
+      return gone;
+    });
+    for (const l of done) await this.drop(l);
+  }
+
+  private async drop(from: FileFrom): Promise<void> {
+    const here = await this.here().catch(() => null);
+    if (here) await dropFile(here.own, from).catch(() => undefined);
   }
 
   // ---- The relay ----
@@ -855,7 +956,15 @@ export class Links implements Link {
   // Looked at now and then while the space is open: what waits, the history still to bring, and
   // what a device wrote that could not go yet.
   private tick(): void {
-    if (this.closed || !this.role()) return;
+    if (this.closed) return;
+    // What the relay dropped by now.
+    const old = Date.now() - LEFT_LASTS;
+    if (this.data.left.some((l) => l.at < old)) {
+      void this.run(async () => {
+        await this.save({ ...this.data, left: this.data.left.filter((l) => l.at >= old) });
+      }).catch(() => undefined);
+    }
+    if (!this.role()) return;
     this.flush().catch(() => undefined);
     if (this.data.primary && this.data.packs.length > 0) this.act(() => this.takePacks());
     for (const d of this.data.devices) if (d.linked && d.history) this.act(() => this.bringHistory(d.id));
@@ -1074,14 +1183,16 @@ export class Links implements Link {
       }
       this.echoes.delete(key);
       let m = echo.m;
+      const files: Leaving[] = [];
       if (isObject(m.file)) {
         const here = await this.here().catch(() => null);
         const offer = here && message.file ? (offerOf(message.file) ?? (await uploadFile(here.own, message.file).catch(() => null))) : null;
         if (!offer) continue;
         m = { ...m, file: offer };
+        files.push({ from: fromOf(offer), phone: !!message.file?.from });
       }
       const mark = (message.mark ?? 0) > 0 ? (message.mark as 1 | 2) : undefined;
-      await this.say({ k: 'out', c: echo.c, m, ...(mark ? { mark } : {}) });
+      await this.say({ k: 'out', c: echo.c, m, ...(mark ? { mark } : {}) }, undefined, files);
     }
     if (this.echoes.size > 0) this.watchEchoes();
   }
@@ -1101,11 +1212,12 @@ export class Links implements Link {
       const now = Date.now();
       const all = history.messages().filter((m) => known.has(m.peer) && m.tag && m.at >= job.since && m.at <= job.upTo && m.mark !== WAITING && !(m.until && m.until <= now));
       const entries: PackEntry[] = [];
+      const files: Leaving[] = [];
       let size = 0;
       let used = 0;
       // A pack ends between messages of different times, so the next starts where this one ended.
       while (used < all.length && (size < PACK_BYTES || all[used].at === all[used - 1].at)) {
-        const entry = await this.entryOf(all[used], job.files, here);
+        const entry = await this.entryOf(all[used], job.files, here, files);
         used++;
         if (!entry) continue;
         entries.push(entry);
@@ -1115,7 +1227,7 @@ export class Links implements Link {
       if (entries.length > 0) {
         const { ref, offer } = await sendFile(here.own, bytesSource(writePack(entries)), { name: 'history.json', mime: 'application/json', kind: 'file' });
         await deleteChunks(ref.id, ref.count).catch(() => undefined);
-        await this.say({ k: 'history', offer, last }, id);
+        await this.say({ k: 'history', offer, last }, id, files);
       }
       await this.run(async () => {
         const devices = this.data.devices.map((d) =>
@@ -1128,7 +1240,8 @@ export class Links implements Link {
     }
   }
 
-  private async entryOf(m: Message, files: boolean, here: Here): Promise<PackEntry | null> {
+  // One message as it goes in a pack; a photo or file in it goes as where it waits on the relay, or a copy put there (`left`).
+  private async entryOf(m: Message, files: boolean, here: Here, left: Leaving[]): Promise<PackEntry | null> {
     const entry: PackEntry = {
       peer: m.peer,
       text: m.text,
@@ -1146,7 +1259,9 @@ export class Links implements Link {
     if (m.file) {
       if (!files) return null;
       const offer = offerOf(m.file) ?? (await uploadFile(here.own, m.file).catch(() => null));
-      return offer ? { ...entry, file: offer } : null;
+      if (!offer) return null;
+      left.push({ from: fromOf(offer), phone: !!m.file.from });
+      return { ...entry, file: offer };
     }
     return m.text ? entry : null;
   }
@@ -1247,7 +1362,9 @@ let current: Links | null = null;
 joinSpaceChats(async (chats, space, key) => {
   current?.close();
   current = null;
+  watchTakenFiles(null);
   current = await Links.open(space, key, chats);
+  watchTakenFiles(current);
 });
 
 /** The open space's links, once its chats are open. */
@@ -1261,7 +1378,7 @@ export async function spaceLinks(): Promise<Links> {
 export function forgetLinks(): void {
   current?.close();
   current = null;
-  leaveTakenFiles(false);
+  watchTakenFiles(null);
 }
 
 /** Which the open space is (Role), as far as its chats are open yet. */

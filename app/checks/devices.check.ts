@@ -2,7 +2,8 @@
 // between the devices, alone; then a phone and a computer of one account and a contact on a
 // version from before linking, through a real relay and the real core: linking with the codes
 // compared, the history brought over, messages both ways and on both devices, contacts kept alike,
-// and unlinking. Skipped, with a note, when the core or the relay is not built.
+// photos and files deleted from the relay once each took them, and unlinking. Skipped, with a
+// note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -12,7 +13,7 @@ import { afterEach, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
-import { bytesSource, offerRef, readFile, sendFile, takeFile } from '../lib/attachments';
+import { bytesSource, FileGoneError, offerRef, readFile, sendFile, takeFile, watchTakenFiles } from '../lib/attachments';
 import { Links, type HistoryChoice } from '../lib/devices';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode } from '../lib/link-code';
@@ -20,6 +21,7 @@ import { changedFields, encodeEnvelope, encodeOne, isKept, isSignal, isWorthTell
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import type { SpaceChats } from '../lib/space-chats';
 import { VoiceAssembler } from '../lib/voice';
+import { newFileId, type FileRef } from '../lock/attachment-files';
 import { History } from '../lock/history';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { EMPTY_SPACE, saveSpaceData, type Queue } from '../lock/space-data';
@@ -350,14 +352,27 @@ test('photos, files and voice messages go through the phone both ways, and delet
     await chats.history.add({ peer: `contact:${identity}`, text: '', mine: true, at: Date.now(), tag: sealed.tag, file: ref });
     return sealed.tag;
   };
-  // Takes a photo as the chat does, and keeps where it is now.
+  // Takes a photo as the chat does, its links hearing of it as the open space's do, and keeps where it is now.
   const fileOf = async (p: Phone, tag: string) => {
     const m = p.chats.history.messages().find((x) => x.tag === tag);
     if (!m?.file) return null;
-    const taken = await takeFile(relay, m.file);
+    watchTakenFiles(p.links);
+    const taken = await takeFile(relay, m.file).finally(() => watchTakenFiles(null));
     await p.chats.history.setFile(m.peer, tag, taken);
+    await p.links.settled();
     return readFile(taken);
   };
+  // Whether a file is still on the relay: taken by someone else, left there.
+  const onRelay = async (ref: FileRef) => {
+    try {
+      await takeFile(relay, { ...ref, id: newFileId() }, undefined, true);
+      return true;
+    } catch (error) {
+      if (error instanceof FileGoneError) return false;
+      throw error;
+    }
+  };
+  const fromOf = (p: Phone, tag: string) => p.chats.history.messages().find((m) => m.tag === tag)!.file!;
 
   const pixel = await phone(0);
   const dell = await phone(1);
@@ -380,15 +395,34 @@ test('photos, files and voice messages go through the phone both ways, and delet
   });
   const voiceKept = dell.chats.history.messages().find((m) => m.tag === oldVoiceTag);
   assert.deepEqual(await loadClip(voiceKept!.voice!), oldVoice);
+  // The copy goes from the relay once the computer took it.
+  const oldCopy = fromOf(dell, oldPhotoTag);
   assert.deepEqual(await fileOf(dell, oldPhotoTag), oldPhoto);
+  await take(pixel);
+  assert.equal(await onRelay(oldCopy), false);
 
-  // A photo from Carol now: both the phone and the computer take it.
+  // A photo from Carol now: both the phone and the computer take it, and it goes from the relay
+  // once both did, whichever was first.
   const photo = randomBytes(90_000);
   const photoTag = await sendPhoto(carol, account, photo);
   await take(pixel);
   await take(dell);
+  const carols = fromOf(pixel, photoTag);
   assert.deepEqual(await fileOf(dell, photoTag), photo);
+  await take(pixel);
+  assert.equal(await onRelay(carols), true);
   assert.deepEqual(await fileOf(pixel, photoTag), photo);
+  assert.equal(await onRelay(carols), false);
+  const another = randomBytes(20_000);
+  const anotherTag = await sendPhoto(carol, account, another);
+  await take(pixel);
+  await take(dell);
+  const anothers = fromOf(pixel, anotherTag);
+  assert.deepEqual(await fileOf(pixel, anotherTag), another);
+  assert.equal(await onRelay(anothers), true);
+  assert.deepEqual(await fileOf(dell, anotherTag), another);
+  await take(pixel);
+  assert.equal(await onRelay(anothers), false);
 
   // The computer sends a photo and a voice message: the phone takes them on, and Carol gets both from the account.
   const dellPhoto = randomBytes(80_000);
@@ -421,7 +455,10 @@ test('photos, files and voice messages go through the phone both ways, and delet
     await take(dell);
     return dell.chats.history.messages().some((m) => m.tag === pixelPhotoTag);
   });
+  const copy = fromOf(dell, pixelPhotoTag);
   assert.deepEqual(await fileOf(dell, pixelPhotoTag), pixelPhoto);
+  await take(pixel);
+  assert.equal(await onRelay(copy), false);
 
   // Deleted on both phones from the computer: gone from the phone and from Carol's.
   const gone = await write(dell, carolId, 'oops');
@@ -435,6 +472,17 @@ test('photos, files and voice messages go through the phone both ways, and delet
   await take(carol);
   assert.equal(pixel.chats.history.messages().some((m) => m.tag === gone), false);
   assert.equal(carol.chats.history.messages().some((m) => m.tag === gone), false);
+
+  // A photo the computer never took goes from the relay once it is unlinked, the phone having taken it.
+  const last = randomBytes(10_000);
+  const lastTag = await sendPhoto(carol, account, last);
+  await take(pixel);
+  const lasts = fromOf(pixel, lastTag);
+  assert.deepEqual(await fileOf(pixel, lastTag), last);
+  assert.equal(await onRelay(lasts), true);
+  await pixel.links.unlink(pixel.links.devices()[0].id);
+  await pixel.links.settled();
+  assert.equal(await onRelay(lasts), false);
 
   for (const p of [pixel, dell]) p.links.close();
 });

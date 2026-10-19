@@ -37,6 +37,13 @@ export type Peer = {
   behind: number;
 };
 
+/**
+ * On the primary: a photo or file that came, passed on to devices, or a copy of one put on the relay
+ * for them, left there until each device it went to took it (`devices`, by id) and, if it is still
+ * to, this phone (`phone`): where it is (as FileRef's `from`), and when it was left.
+ */
+export type Left = { relay: string; ids: string; at: number; phone: boolean; devices: string[] };
+
 /** A device being linked: the key its code shows (its secret, base64), the code's secret, its name, and when it was made. */
 export type Offer = { account: string; secret: string; name: string; made: number };
 
@@ -58,14 +65,18 @@ export type DevicesData = {
   synced: Record<string, Synced>;
   /** On a linked device: packs of the history the primary put on the relay, still to take. */
   packs: FileOffer[];
+  /** On the primary: photos and files left on the relay for devices still to take them. */
+  left: Left[];
 };
 
-export const EMPTY_DEVICES: DevicesData = { devices: [], primary: null, account: '', link: '', offer: null, answer: null, synced: {}, packs: [] };
+export const EMPTY_DEVICES: DevicesData = { devices: [], primary: null, account: '', link: '', offer: null, answer: null, synced: {}, packs: [], left: [] };
 
 export const FILE = 'erevos-devices';
 const BLOCK = 16 * 1024;
 /** The most packets that wait for one device: once there are as many, nothing more is sealed for it until they went. */
 export const MAX_OUTBOX = 300;
+/** The most photos and files kept track of as left on the relay for devices: the oldest are let go, to expire there. */
+export const MAX_LEFT = 1000;
 
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isBase64 = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9+/]*={0,2}$/.test(v);
@@ -76,6 +87,13 @@ function checkedJob(value: unknown): Job | null {
   const v = value as Partial<Record<keyof Job, unknown>> | null;
   if (!v || typeof v !== 'object' || !isTime(v.since) || !isTime(v.upTo) || !isTime(v.done)) return null;
   return { since: v.since, files: v.files === true, upTo: v.upTo, done: v.done };
+}
+
+function checkedLeft(value: unknown): Left | null {
+  const v = (value ?? {}) as Partial<Record<keyof Left, unknown>>;
+  if (!isText(v.relay) || !isText(v.ids) || !/^(?:[0-9a-f]{48})+$/.test(v.ids) || !isTime(v.at)) return null;
+  const devices = Array.isArray(v.devices) ? v.devices.filter((id): id is string => isHex(id, 64)) : [];
+  return { relay: v.relay, ids: v.ids, at: v.at, phone: v.phone === true, devices };
 }
 
 function checkedPeer(value: unknown): Peer | null {
@@ -119,6 +137,7 @@ function checked(value: unknown): DevicesData {
     answer: a && answerPeer && isHex(a.account, 64) && isText(a.code) ? { peer: answerPeer, account: a.account, code: a.code } : null,
     synced,
     packs: Array.isArray(v.packs) ? v.packs.map(readOffer).filter((o): o is FileOffer => o !== null) : [],
+    left: Array.isArray(v.left) ? v.left.map(checkedLeft).filter((l): l is Left => l !== null).slice(-MAX_LEFT) : [],
   };
 }
 

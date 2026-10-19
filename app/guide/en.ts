@@ -729,8 +729,8 @@ The chats then come to the computer, and after them the messages chosen.
   go both ways.
 - **The phone has to be on** and reach the relay for the computer to send and receive. What the computer writes
   meanwhile waits on the relay, and goes once the phone is back.
-- **Photos and files** that come stay on the relay while devices are linked, as both the phone and the computer take
-  them, until the relay drops them after 14 days.
+- **Photos and files** that come stay on the relay until both the phone and the computer took them; then the phone
+  deletes them there. One the computer never takes goes when it is unlinked, or after 14 days, as any not taken.
 - **Calls and groups** stay on the phone for now: a call rings only there, and the computer starts none.
 - **Hidden chats and second passwords** are never linked. A chat moved into hidden chats on the phone leaves the
   computer. A space a second password opens links only from inside it, to devices of its own.

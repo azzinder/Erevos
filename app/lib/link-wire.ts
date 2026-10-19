@@ -12,8 +12,8 @@ import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from
 // opened (`in`), one it sealed for a contact (`out`), a pack of the history on the relay's file store
 // (`history`), where it is now (`here`) and that it unlinked the device (`bye`). From a linked
 // device: that the codes match (`ready`), a message for a contact (`send`), a contact to add (`add`),
-// a change to a contact (`set`), where it is (`here`) and that it unlinked itself (`bye`). An
-// envelope too large for one packet goes in parts (`part`).
+// a change to a contact (`set`), the photos and files it took (`took`), where it is (`here`) and
+// that it unlinked itself (`bye`). An envelope too large for one packet goes in parts (`part`).
 //
 // A contact's message travels as the JSON lib/e2e.ts makes of it (`m`), without where the contact's
 // queue is, which only the primary needs. Which messages go on, and which are worth telling the
@@ -49,6 +49,7 @@ export type Envelope =
   | { k: 'add'; code: ContactCode }
   | { k: 'set'; c: string; change: Partial<Omit<Synced, 'identity'>>; remove?: boolean }
   | { k: 'history'; offer: FileOffer; last: boolean }
+  | { k: 'took'; ids: string[] }
   | { k: 'here' }
   | { k: 'bye' };
 
@@ -63,6 +64,8 @@ const PART_BYTES = 10 * 1024;
 // The most parts one envelope is cut into, and how long parts wait for the rest.
 const MAX_PARTS = 128;
 const PARTS_STALE = 30 * 60_000;
+// The most files one `took` says.
+const MAX_TOOK = 50;
 
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isHex = (v: unknown, length: number): v is string => isText(v) && v.length === length && /^[0-9a-f]+$/.test(v);
@@ -172,6 +175,10 @@ function checkedEnvelope(v: Json): Envelope | null {
     case 'history': {
       const offer = readOffer(v.offer);
       return offer ? { k: 'history', offer, last: v.last === true } : null;
+    }
+    case 'took': {
+      const ids = Array.isArray(v.ids) ? v.ids.filter((i): i is string => isText(i) && /^(?:[0-9a-f]{48})+$/.test(i)).slice(0, MAX_TOOK) : [];
+      return ids.length > 0 ? { k: 'took', ids } : null;
     }
     case 'here':
     case 'bye':

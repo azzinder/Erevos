@@ -93,8 +93,12 @@ Linking, by QR code and a safety check:
   contact deletes theirs once taken. That the phone read a chat, or deleted messages on both phones,
   goes to the devices too.
 
-While devices are linked, photos and files that came are left on the relay when taken, as both the
-phone and the computer take them; the relay drops them after 14 days.
+A photo or file that came, or a copy of one the phone put on the relay for its devices, is left there
+when taken until each device told of it said it took it (in its link), and the phone took it too if
+it was still to; whichever is last, the phone then deletes it there, as a phone with no devices does
+once it took one. A device unlinked takes nothing more, so what waited only for it is deleted then.
+What no one takes expires after 14 days, as before. Group files stay on the relay for the other
+members, as always.
 
 What the phone seals for a device waits, sealed, in that device's outbox until the relay takes it,
 so nothing is sealed twice. When a device is away so long that its outbox is full (300 packets),
@@ -163,6 +167,8 @@ after restoring one, link the devices again.
   history.
 - `lib/e2e.ts`: a linked device's chat seals for its primary, and the primary's tells its devices
   what it opened and sealed (`Link`).
+- `lib/attachments.ts`: a photo or file taken stays on the relay while another device is still to take
+  it (`watchTakenFiles`).
 - `app/app/devices.tsx`: Menu → Linked devices; `app/app/link.tsx` opens it from a scanned code.
 - `app/checks/devices.check.ts`: a phone, a computer and a contact on an older version, through a
   real relay and the real core.

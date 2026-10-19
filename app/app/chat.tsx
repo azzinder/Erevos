@@ -1712,7 +1712,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     tried.current.add(key);
     setTaking((now) => ({ ...now, [key]: '0%' }));
     try {
-      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })));
+      // Hidden chats are never linked: what they take goes from the relay at once, and no other device hears of it.
+      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), hiddenKey ? false : undefined);
       setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, file: taken } : m)));
       // Deleted while it came: its chunks go too.
       if (history.current && !(await history.current.setFile(peer, tag, taken))) await deleteChunks(taken.id, taken.count);

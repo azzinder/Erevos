@@ -33,13 +33,21 @@ export const MAX_FILE = 100 * 1000 * 1000;
 /** Photos and files that came, up to this size, are taken from the relay as soon as they come. */
 export const AUTO_TAKE = 16 * 1000 * 1000;
 
-// Whether files taken stay on the relay: while the account has linked devices (lib/devices.ts),
-// each of them takes what came too.
-let leaveTaken = false;
+/** Where a file that came waits on the relay until taken: the relay, and its chunks' ids (hex, one after another). */
+export type FileFrom = NonNullable<FileRef['from']>;
 
-/** Leaves the files this phone takes on the relay from now on, for the account's other devices to take too, or no longer. */
-export function leaveTakenFiles(on: boolean): void {
-  leaveTaken = on;
+/**
+ * What the account's other devices (lib/devices.ts) need of the files taken here: whether a file
+ * stays on the relay for now, as another of them still takes it, and to hear once it was taken,
+ * and whether it was left there. The one that takes it last has it deleted there.
+ */
+export type TakenFiles = { leave(from: FileFrom): boolean; taken(from: FileFrom, left: boolean): void };
+
+let takenFiles: TakenFiles | null = null;
+
+/** Who hears of the files the open space's chats take from now on, or no one. */
+export function watchTakenFiles(watch: TakenFiles | null): void {
+  takenFiles = watch;
 }
 
 // The nonce and tag AES-GCM adds, and the chunk's place and length.
@@ -233,13 +241,16 @@ export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress, 
 /**
  * Takes a file that came, through our relay (`own`), checks every chunk and keeps them here, then
  * deletes them from the relay, unless they are left there (`leave`): a group's file the other
- * members take too, or any file while the account has linked devices (see leaveTakenFiles), stays
- * on the relay and expires there. Returns where it is now kept. If any chunk is missing or was
- * changed, nothing is kept.
+ * members take too stays on the relay and expires there. Left out, for a chat's file, the
+ * account's other devices say (see watchTakenFiles): while one still takes it, it stays there
+ * until it did. Returns where it is now kept. If any chunk is missing or was changed, nothing is
+ * kept.
  */
-export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, leave = leaveTaken): Promise<FileRef> {
+export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, leave?: boolean): Promise<FileRef> {
   const { from, ...taken } = ref;
   if (!from) return ref;
+  const watch = leave === undefined ? takenFiles : null;
+  const left = leave ?? watch?.leave(from) ?? false;
   const via = sameRelay(from.relay, own.url) ? undefined : from.relay;
   const key = fromHex(ref.key);
   const ids = Array.from({ length: ref.count }, (_, n) => fromHex(from.ids.slice(n * ID_HEX, (n + 1) * ID_HEX)));
@@ -255,14 +266,26 @@ export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, le
     }
     if (size !== ref.size) throw new FileDamagedError();
     // Taken: the relay need not keep it. One it cannot delete expires there.
-    if (!leave) for (const id of ids) await deleteChunk(session, id, via).catch(() => false);
+    if (!left) for (const id of ids) await deleteChunk(session, id, via).catch(() => false);
   } catch (error) {
     await deleteChunks(ref.id, ref.count).catch(() => undefined);
     throw error;
   } finally {
     session.close();
   }
+  watch?.taken(from, left);
   return taken;
+}
+
+/** Deletes from the relay, through ours (`own`), a file left there once taken. One it cannot delete expires there. */
+export async function dropFile(own: Relay, from: FileFrom): Promise<void> {
+  const via = sameRelay(from.relay, own.url) ? undefined : from.relay;
+  const session = await RelaySession.open({ url: own.url, token: own.token });
+  try {
+    for (let at = 0; at < from.ids.length; at += ID_HEX) await deleteChunk(session, fromHex(from.ids.slice(at, at + ID_HEX)), via).catch(() => false);
+  } finally {
+    session.close();
+  }
 }
 
 /** The file is not on this phone: not taken from the relay yet, or its chunks are gone. */
