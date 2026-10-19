@@ -195,7 +195,7 @@ function caption(message: Message): string {
   if (scheduled(message)) parts.push(t('Scheduled · {when}', { when: laterLabel(message.at) }));
   else if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? t('Waiting') : MARKS[message.mark]);
   if (message.until) parts.push(t('Disappears {when}', { when: disappearsAt(message.until) }));
-  else if (message.lasts) parts.push(t('Disappears {time} after it is read', { time: timerLabel(message.lasts).toLowerCase() }));
+  else if (message.lasts) parts.push(t('Disappears {time} after it is read', { time: timerLabel(message.lasts) }));
   return parts.join('  ·  ');
 }
 
@@ -1045,7 +1045,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     if (received.timerChanged) {
       setNote(
         received.timer
-          ? t('{name} set new messages in this chat to disappear {time} after they are read.', { name, time: timerLabel(received.timer).toLowerCase() })
+          ? t('{name} set new messages in this chat to disappear {time} after they are read.', { name, time: timerLabel(received.timer) })
           : t('{name} turned disappearing messages off in this chat.', { name }),
       );
     }
@@ -1366,7 +1366,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts, quiet });
       keep(selected, text, tag, timer);
       const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(selected, contacts));
-      setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer).toLowerCase() }) : sent);
+      setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer) }) : sent);
     } catch (error) {
       if (!canWait(error) || hiddenKey) {
         setNote(notSent(error));
@@ -2077,7 +2077,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       return;
     }
     const set = timer
-      ? t('New messages in this chat now disappear from both phones {time} after they are read.', { time: timerLabel(timer).toLowerCase() })
+      ? t('New messages in this chat now disappear from both phones {time} after they are read.', { time: timerLabel(timer) })
       : t('New messages in this chat no longer disappear.');
     const target = relayTarget();
     try {
@@ -2208,7 +2208,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       : selectedNearby
         ? t('Nearby · end-to-end encrypted')
         : selectedTimer
-          ? t('End-to-end encrypted · {time} after read', { time: timerLabel(selectedTimer).toLowerCase() })
+          ? t('End-to-end encrypted · {time} after read', { time: timerLabel(selectedTimer) })
           : t('End-to-end encrypted')
     : '';
 

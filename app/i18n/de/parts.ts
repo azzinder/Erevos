@@ -1,0 +1,233 @@
+// German for parts (lib/i18n.ts).
+export const parts: Record<string, string> = {
+  // The password screen and the password sheet (lock/gate.tsx, components/PasswordSheet.tsx).
+  'Enter your password': 'Gib dein Passwort ein',
+  Unlock: 'Entsperren',
+  'Wrong password': 'Falsches Passwort',
+  'Use at least 4 characters.': 'Nimm mindestens 4 Zeichen.',
+  'The passwords do not match.': 'Die Passwörter stimmen nicht überein.',
+  'Use a different password.': 'Nimm ein anderes Passwort.',
+  'New password': 'Neues Passwort',
+  'Repeat password': 'Passwort wiederholen',
+  'Too many attempts. Try again in {n} minute.': 'Zu viele Versuche. Versuche es in {n} Minute erneut.',
+  'Too many attempts. Try again in {n} minutes.': 'Zu viele Versuche. Versuche es in {n} Minuten erneut.',
+  'Too many attempts. Try again in {n} second.': 'Zu viele Versuche. Versuche es in {n} Sekunde erneut.',
+  'Too many attempts. Try again in {n} seconds.': 'Zu viele Versuche. Versuche es in {n} Sekunden erneut.',
+
+  // Small parts of screens.
+  'QR code': 'QR-Code',
+  Group: 'Gruppe',
+
+  // Calls (components/call-screen.tsx, components/group-call-screen.tsx).
+  'Call ended': 'Anruf beendet',
+  'They hung up': 'Hat aufgelegt',
+  'Turned down': 'Abgelehnt',
+  'They turned it down': 'Hat abgelehnt',
+  'They are in another call': 'Ist in einem anderen Anruf',
+  'Not answered': 'Nicht angenommen',
+  'The call could not connect': 'Der Anruf kam nicht zustande',
+  'The call could not connect on their phone': 'Der Anruf kam auf dem anderen Telefon nicht zustande',
+  'Calling…': 'Ruft an…',
+  'Ringing…': 'Klingelt…',
+  'Incoming video call': 'Eingehender Videoanruf',
+  'Incoming voice call': 'Eingehender Sprachanruf',
+  'Connecting…': 'Verbindet…',
+  'Missed call': 'Verpasster Anruf',
+  Decline: 'Ablehnen',
+  Answer: 'Annehmen',
+  Unmute: 'Mikro an',
+  Mute: 'Stumm',
+  Speaker: 'Lautsprecher',
+  'Camera on': 'Kamera an',
+  'Camera off': 'Kamera aus',
+  Flip: 'Wechseln',
+  End: 'Auflegen',
+  'You started a group video call': 'Du hast einen Gruppen-Videoanruf gestartet',
+  'You started a group call': 'Du hast einen Gruppenanruf gestartet',
+  '{name} started a group video call': '{name} hat einen Gruppen-Videoanruf gestartet',
+  '{name} started a group call': '{name} hat einen Gruppenanruf gestartet',
+  'Waiting for others · {time}': 'Warten auf die anderen · {time}',
+  'Missed group call': 'Verpasster Gruppenanruf',
+  'Could not open the microphone': 'Das Mikrofon ließ sich nicht öffnen',
+  'Pictures pause with more than {n} in the call': 'Bilder pausieren bei mehr als {n} im Anruf',
+  'Group video call · end-to-end encrypted': 'Gruppen-Videoanruf · Ende-zu-Ende-verschlüsselt',
+  'Group voice call · end-to-end encrypted': 'Gruppen-Sprachanruf · Ende-zu-Ende-verschlüsselt',
+  'In the call': 'Im Anruf',
+  Join: 'Beitreten',
+  '{name} tried to call. Accept their message request to take calls from them.':
+    '{name} hat versucht, dich anzurufen. Nimm die Nachrichtenanfrage an, um Anrufe von diesem Kontakt anzunehmen.',
+  'The call ended.': 'Der Anruf ist zu Ende.',
+  'The call has ended.': 'Der Anruf wurde beendet.',
+  'Calls are set up through the relay. Type its address in Relay first.': 'Anrufe werden über das Relay aufgebaut. Gib zuerst seine Adresse unter „Relay“ ein.',
+
+  // The web app's card (components/integrity-card.tsx, lib/integrity.web.ts).
+  'This web app': 'Diese Web-App',
+  'Release {version}, checked': 'Version {version}, geprüft',
+  'Not checked: no service worker runs Erevos here': 'Nicht geprüft: Hier führt kein Service Worker Erevos aus',
+  "Erevos runs only code signed with its release key, kept on this device. The key's fingerprint is":
+    'Erevos führt nur Code aus, der mit seinem Release-Schlüssel signiert ist, und dieser ist auf diesem Gerät gespeichert. Der Fingerabdruck des Schlüssels ist',
+  '. It must match the one you were given with the address of this server.': '. Er muss zu dem passen, den du mit der Adresse dieses Servers bekommen hast.',
+  'Release {version} is checked and starts the next time Erevos opens.': 'Version {version} ist geprüft und startet beim nächsten Öffnen von Erevos.',
+  'Last looked for updates {when}.': 'Zuletzt nach Updates gesucht: {when}.',
+  'Refused:': 'Abgelehnt:',
+  'Looking…': 'Suche…',
+  'Look for an update': 'Nach Update suchen',
+  'Notifications while closed': 'Benachrichtigungen, wenn geschlossen',
+  'On in this space': 'In diesem Bereich an',
+  'Off in this space': 'In diesem Bereich aus',
+  'When a message comes while Erevos is closed, your relay sends an empty push through this browser\'s push service (Apple\'s on an iPhone), and Erevos shows "New message", nothing more. The push carries no message and no sender, but the push service sees when something comes for this device, and that it uses Erevos. Hidden chats never get notifications. Turned on in more than one space with the same relay, the relay can tell those spaces are on one device.':
+    'Kommt eine Nachricht, während Erevos geschlossen ist, sendet dein Relay einen leeren Push über den Push-Dienst dieses Browsers (auf einem iPhone den von Apple), und Erevos zeigt „New message“, mehr nicht. Der Push enthält weder Nachricht noch Absender, aber der Push-Dienst sieht, wann etwas für dieses Gerät kommt und dass es Erevos nutzt. Versteckte Chats bekommen nie Benachrichtigungen. Sind sie in mehr als einem Bereich mit demselben Relay an, kann das Relay erkennen, dass diese Bereiche auf einem Gerät sind.',
+  'Turn off': 'Ausschalten',
+  'Turn on': 'Einschalten',
+  'Erevos was tampered with': 'Erevos wurde manipuliert',
+  'The server sent this device a new service worker, the part of Erevos that checks its code, and no signed release lists it. Erevos goes on with the checked code while it is open, but once it is closed the browser may start the new one, which could show a fake Erevos. Do not open Erevos from this server again, and do not type your passwords into it, until whoever runs the server knows why. Your chats stay sealed with your password.':
+    'Der Server hat diesem Gerät einen neuen Service Worker geschickt, den Teil von Erevos, der seinen Code prüft, und keine signierte Version führt ihn auf. Erevos läuft mit dem geprüften Code weiter, solange es offen ist, aber sobald es geschlossen ist, kann der Browser den neuen starten, der ein gefälschtes Erevos zeigen könnte. Öffne Erevos nicht wieder von diesem Server und gib dort keine Passwörter ein, bis der Betreiber des Servers weiß, warum. Deine Chats bleiben mit deinem Passwort versiegelt.',
+  'I understand': 'Verstanden',
+  'Update refused': 'Update abgelehnt',
+  '{reason} Erevos keeps the release it has. Lock → This web app shows what was refused.':
+    '{reason} Erevos behält seine bisherige Version. Unter „Sperre → Diese Web-App“ steht, was abgelehnt wurde.',
+
+  // Files and photos (lib/attachments.ts, lib/photo*.ts, lib/pick-*.ts, lib/save-file*.ts, lib/backup-place.web.ts).
+  'Files can be 100 MB at most.': 'Dateien dürfen höchstens 100 MB groß sein.',
+  'The file was changed on the way, so it was not kept.': 'Die Datei wurde unterwegs verändert und deshalb nicht gespeichert.',
+  'The file is not on the relay any more. Files wait there 14 days.': 'Die Datei ist nicht mehr auf dem Relay. Dateien warten dort 14 Tage.',
+  'This file is not on this phone.': 'Diese Datei ist nicht auf diesem Telefon.',
+  'This file is not on this computer.': 'Diese Datei ist nicht auf diesem Computer.',
+  // Shown after "in", as „in {folder}“: in the dative, with its article.
+  'the place you chose': 'dem gewählten Ort',
+  'the downloads folder': 'dem Download-Ordner',
+  'Not saved: the share sheet was closed.': 'Nicht gespeichert: Das Teilen-Menü wurde geschlossen.',
+  'That folder is not there any more. Choose it again.': 'Diesen Ordner gibt es nicht mehr. Wähle ihn erneut.',
+  'Ready to save.': 'Bereit zum Speichern.',
+  Original: 'Original',
+  'Original: the photo as it was, full size, with only its place, phone and time taken out.':
+    'Original: das Foto, wie es war, in voller Größe, nur ohne Ort, Telefon und Aufnahmezeit.',
+  '{quality}%: a new, smaller photo, quicker to send. It says nothing but its picture.':
+    '{quality} %: ein neues, kleineres Foto, schneller gesendet. Es verrät nichts außer seinem Bild.',
+  'This photo does not get small enough for an MMS.': 'Dieses Foto wird nicht klein genug für eine MMS.',
+  'Erevos may not use the camera. Allow it in the phone settings to take photos.': 'Erevos darf die Kamera nicht nutzen. Erlaube es in den Einstellungen des Telefons, um Fotos aufzunehmen.',
+  'Voice message': 'Sprachnachricht',
+  Sticker: 'Sticker',
+  'File: {name}': 'Datei: {name}',
+  'That voice message is too long.': 'Diese Sprachnachricht ist zu lang.',
+
+  // When a message or an SMS sent for later goes (components/later-picker.tsx, lib/later.ts).
+  'In 1 hour': 'In 1 Stunde',
+  'Tonight 20:00': 'Heute Abend 20:00',
+  'Tomorrow 09:00': 'Morgen 09:00',
+  Day: 'Tag',
+  Hour: 'Stunde',
+  Minutes: 'Minuten',
+  'Goes on {when}.': 'Wird am {when} gesendet.',
+  'That time has gone by. Choose one ahead.': 'Diese Zeit ist vorbei. Wähle eine spätere.',
+  'At most a year ahead.': 'Höchstens ein Jahr im Voraus.',
+  // The home screen's list (lib/inbox.ts).
+  'You: {text}': 'Du: {text}',
+  Sun: 'So',
+  Mon: 'Mo',
+  Tue: 'Di',
+  Wed: 'Mi',
+  Thu: 'Do',
+  Fri: 'Fr',
+  Sat: 'Sa',
+
+  // Contacts and chats (lib/e2e.ts, lib/space-chats.ts, lock/).
+  "That is this chat's own contact link.": 'Das ist dein eigener Kontaktlink.',
+  'That code has no key. Ask for their contact link or QR code from this version of Erevos.':
+    'Dieser Code enthält keinen Schlüssel. Bitte um einen Kontaktlink oder QR-Code aus dieser Version von Erevos.',
+  'No such contact.': 'Diesen Kontakt gibt es nicht.',
+  'Not a contact.': 'Kein Kontakt.',
+  'That is not a phone number.': 'Das ist keine Telefonnummer.',
+  'Not a time Erevos keeps messages for.': 'So lange hebt Erevos keine Nachrichten auf.',
+  'No conversation with this contact.': 'Keine Unterhaltung mit diesem Kontakt.',
+  'That contact uses the relay at {relay}, and its link has no key for it. Ask them for a new link.':
+    'Dieser Kontakt nutzt das Relay unter {relay}, und sein Link enthält keinen Schlüssel dafür. Bitte um einen neuen Link.',
+  'Wrong password for this backup.': 'Falsches Passwort für dieses Backup.',
+
+  // Groups (lib/groups.ts, lib/space-groups.ts).
+  'No groups here yet.': 'Hier gibt es noch keine Gruppen.',
+  'Give the group a name.': 'Gib der Gruppe einen Namen.',
+  'You made the group.': 'Du hast die Gruppe erstellt.',
+  'Only the group’s admin adds members.': 'Nur der Admin der Gruppe fügt Mitglieder hinzu.',
+  'You are not in this group any more.': 'Du bist nicht mehr in dieser Gruppe.',
+  'Only the group’s admin renames it.': 'Nur der Admin der Gruppe kann sie umbenennen.',
+  'Only the group’s admin takes members out.': 'Nur der Admin der Gruppe entfernt Mitglieder.',
+  'You closed the group.': 'Du hast die Gruppe geschlossen.',
+  'You asked to leave. The group closes here once the admin takes you out.': 'Du hast gebeten, die Gruppe zu verlassen. Sie wird hier geschlossen, sobald der Admin dich entfernt.',
+  'You left the group.': 'Du hast die Gruppe verlassen.',
+  'You are no longer in the group.': 'Du bist nicht mehr in der Gruppe.',
+  'member {id}': 'Mitglied {id}',
+  '{who} added you to the group.': '{who} hat dich zur Gruppe hinzugefügt.',
+  '{who} joined.': '{who} ist beigetreten.',
+  '{who} left.': '{who} hat die Gruppe verlassen.',
+  'Groups go through the relay. Type its address in Relay first.': 'Gruppen laufen über das Relay. Gib zuerst seine Adresse unter „Relay“ ein.',
+
+  // The build and updates (lib/core.ts, lib/crypto.ts, lib/install-update*.ts, lib/updates.ts, lib/shell.ts).
+  'This build has no Erevos core, so it cannot encrypt. Rebuild the app.': 'Diese Version hat keinen Erevos-Kern und kann deshalb nicht verschlüsseln. Baue die App neu.',
+  'The Erevos core gave back something unexpected.': 'Der Erevos-Kern hat etwas Unerwartetes zurückgegeben.',
+  'This build of Erevos has no Tor.': 'Diese Version von Erevos hat kein Tor.',
+  'This build has no secure random source. Rebuild the app so it includes expo-crypto.':
+    'Diese Version hat keine sichere Zufallsquelle. Baue die App so neu, dass sie expo-crypto enthält.',
+  'This release has no Android package.': 'Diese Version hat kein Android-Paket.',
+  'The download was cut short.': 'Der Download wurde abgebrochen.',
+  'The downloaded package is not the one the release published. Nothing was installed.':
+    'Das heruntergeladene Paket ist nicht das, das mit der Version veröffentlicht wurde. Es wurde nichts installiert.',
+  'This version installs from the download page.': 'Diese Version wird über die Download-Seite installiert.',
+  'GitHub answered {status}.': 'GitHub hat mit {status} geantwortet.',
+  'The desktop app answered {status}.': 'Die Desktop-App hat mit {status} geantwortet.',
+  'The browser did not open its storage.': 'Der Browser hat seinen Speicher nicht geöffnet.',
+
+  // LoRa and nearby phones (lib/lora.ts, lib/nearby.ts).
+  'The radio restarts with its new settings, and links again.': 'Das Funkgerät startet mit seinen neuen Einstellungen neu und verbindet sich wieder.',
+  'There is no relay, and no Erevos phone is linked nearby. Type the relay address in Relay, or come near their phone.':
+    'Es gibt kein Relay, und kein Erevos-Telefon in der Nähe ist verbunden. Gib die Relay-Adresse unter „Relay“ ein oder geh in die Nähe des anderen Telefons.',
+  'Too large for LoRa, which takes only text. It can go once the relay can be reached, or near their phone.':
+    'Zu groß für LoRa, das nur Text überträgt. Es kann gesendet werden, sobald das Relay erreichbar ist, oder in der Nähe des anderen Telefons.',
+
+  // The relay (lib/relay.ts, lib/sms-invite.ts); {what} is the request's name.
+  'An id is 48 hex characters.': 'Eine ID hat 48 Hex-Zeichen.',
+  'Through Tor: {reason}': 'Über Tor: {reason}',
+  'cannot reach the relay at {url}, or the token is wrong': 'das Relay unter {url} ist nicht erreichbar, oder das Token ist falsch',
+  'message is not held': 'die Nachricht wird nicht aufgehoben',
+  'the relay at {url} cannot keep messages for later: update it': 'das Relay unter {url} kann keine Nachrichten für später aufheben: Aktualisiere es',
+  'The relay at {url} that keeps it is no longer set here.': 'Das Relay unter {url}, das sie aufhebt, ist hier nicht mehr eingestellt.',
+  'the relay closed the connection': 'das Relay hat die Verbindung geschlossen',
+  'lost the connection to the relay': 'die Verbindung zum Relay ist abgerissen',
+  '{what}: queue not found': '{what}: Warteschlange nicht gefunden',
+  '{what}: queue is full': '{what}: Warteschlange ist voll',
+  '{what}: the relay could not save it, try again later': '{what}: Das Relay konnte sie nicht speichern, versuche es später erneut',
+  '{what}: the second relay could not reach your relay, try again later': '{what}: Das zweite Relay hat dein Relay nicht erreicht, versuche es später erneut',
+  '{what}: the file is not on the relay any more': '{what}: Die Datei ist nicht mehr auf dem Relay',
+  '{what}: the relay has no room for files now, try again later': '{what}: Das Relay hat gerade keinen Platz für Dateien, versuche es später erneut',
+  '{what}: the relay could not keep it, try again later': '{what}: Das Relay konnte sie nicht aufheben, versuche es später erneut',
+  '{what}: your relay could not reach the relay the file is on': '{what}: Dein Relay hat das Relay mit der Datei nicht erreicht',
+  '{reason}. A relay older than this app cannot take files: update it.': '{reason}. Ein Relay, das älter als diese App ist, nimmt keine Dateien an: Aktualisiere es.',
+  'message is too large': 'die Nachricht ist zu groß',
+  'your relay has no key for two-hop sending, so it was not sent through the second relay':
+    'dein Relay hat keinen Schlüssel für das Senden über zwei Stationen, deshalb ging sie nicht über das zweite Relay',
+  'The relay address is too long for an SMS invite.': 'Die Relay-Adresse ist zu lang für eine SMS-Einladung.',
+
+  // Notifications in the web app (lib/web-push*.ts).
+  'Notifications through the browser are for the web app.': 'Benachrichtigungen über den Browser gibt es nur für die Web-App.',
+  'Your relay does not send notifications. It needs a newer version, set up with a push key.':
+    'Dein Relay sendet keine Benachrichtigungen. Es braucht eine neuere Version, eingerichtet mit einem Push-Schlüssel.',
+  'This browser cannot show notifications for a closed web app. On an iPhone, add Erevos to the home screen first.':
+    'Dieser Browser kann für eine geschlossene Web-App keine Benachrichtigungen zeigen. Füge Erevos auf einem iPhone zuerst zum Home-Bildschirm hinzu.',
+  'Notifications are not allowed for Erevos. Allow them in the settings of this browser or phone.':
+    'Benachrichtigungen sind für Erevos nicht erlaubt. Erlaube sie in den Einstellungen dieses Browsers oder Telefons.',
+  'Set up the relay first, under Relay.': 'Richte zuerst das Relay ein, unter „Relay“.',
+  'Notifications could not be turned on: {reason}': 'Benachrichtigungen ließen sich nicht einschalten: {reason}',
+  // Calls' lines in a chat (lib/call-lines.ts).
+  'Voice call': 'Sprachanruf',
+  'Video call': 'Videoanruf',
+  'Group call': 'Gruppenanruf',
+  'Group video call': 'Gruppen-Videoanruf',
+  'Missed voice call': 'Verpasster Sprachanruf',
+  'Missed video call': 'Verpasster Videoanruf',
+  'Missed group video call': 'Verpasster Gruppen-Videoanruf',
+  '{missed}, while in another call': '{missed}, während eines anderen Anrufs',
+  'turned down': 'abgelehnt',
+  'could not connect': 'kam nicht zustande',
+  'they were in another call': 'war in einem anderen Anruf',
+  'not answered': 'nicht angenommen',
+};

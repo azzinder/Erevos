@@ -1,29 +1,55 @@
 import { useSyncExternalStore } from 'react';
 
+import { DE } from '../i18n/de/index';
 import { EL } from '../i18n/el/index';
 import { secureGet, secureSet } from './secure';
 
 /**
- * The app's language: English or Greek, for the whole app and the guide, on every platform. The
- * words are written in English in the code, inside t('…'), and i18n/el/ has each in Greek, keyed
- * by the English (checks/i18n.check.ts makes sure none is missing). The first start follows the
- * phone's language; the choice (Home → Menu → Language, or the password screen) is kept on the
- * phone, outside every space, so the password screen shows it too.
+ * The app's language, for the whole app on every platform: English, Greek or another of LANGS.
+ * The words are written in English in the code, inside t('…'), and i18n/el/ has each in Greek,
+ * i18n/de/ in German and so on, keyed by the English. Greek has every one (checks/i18n.check.ts
+ * makes sure none is missing); a word another language does not have yet shows in English, and
+ * `npm run i18n-missing` lists them. The guide is in English and Greek only, so the other
+ * languages show it in English. The first start follows the phone's language, if it is one of
+ * these; the choice (Home → Menu → Language) is kept on the phone, outside every space, so the
+ * password screen shows it too.
  */
-export type Lang = 'en' | 'el';
+export type Lang = 'en' | 'el' | 'de';
 
-export const LANGS: Lang[] = ['el', 'en'];
-export const LANG_LABELS: Record<Lang, string> = { el: 'Ελληνικά', en: 'English' };
+/** As the language switch lists them: the two the guide is written in first, then the others. */
+export const LANGS: Lang[] = ['el', 'en', 'de'];
+/** Each language by its own name. */
+export const LANG_LABELS: Record<Lang, string> = { el: 'Ελληνικά', en: 'English', de: 'Deutsch' };
+
+const WORDS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { el: EL, de: DE };
+
+// How each writes dates and times, when the phone's own is another language.
+const LOCALES: Record<Exclude<Lang, 'en'>, string> = { el: 'el-GR', de: 'de-DE' };
+
+// Which counts take a word's first form, as plural() is given it: 1 alone, unless the language
+// counts otherwise here.
+const ONE: Partial<Record<Lang, (n: number) => boolean>> = {};
 
 const KEY = 'erevos.lang';
 
+/** The language of a locale such as 'de-AT', if Erevos has it; English otherwise. */
+export function langOf(locale: string): Lang {
+  const code = locale.toLowerCase().split(/[-_]/)[0];
+  return (LANGS as string[]).includes(code) ? (code as Lang) : 'en';
+}
+
+function phoneLocale(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().locale;
+  } catch {
+    return null;
+  }
+}
+
 /** The phone's language, if Erevos has it; English otherwise. */
 export function deviceLang(): Lang {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase().startsWith('el') ? 'el' : 'en';
-  } catch {
-    return 'en';
-  }
+  const locale = phoneLocale();
+  return locale ? langOf(locale) : 'en';
 }
 
 let current: Lang = deviceLang();
@@ -46,9 +72,9 @@ export async function setLang(next: Lang): Promise<void> {
 export async function loadLang(): Promise<Lang> {
   try {
     const kept = await secureGet(KEY);
-    if (kept === 'en' || kept === 'el') {
+    if (kept && (LANGS as string[]).includes(kept)) {
       if (kept !== current) {
-        current = kept;
+        current = kept as Lang;
         for (const listener of listeners) listener();
       }
     }
@@ -68,12 +94,28 @@ export function useLang(): Lang {
   return useSyncExternalStore(onLangChange, lang, lang);
 }
 
+/** The words of `l` by their English, for the checks; none for English itself. */
+export function words(l: Lang): Record<string, string> {
+  return l === 'en' ? {} : WORDS[l];
+}
+
+/**
+ * The locale dates and times are written in, for toLocaleString: the phone's own in English, or
+ * when the phone is in the app's language (so de-AT stays Austrian), else the language's own.
+ */
+export function locale(): string | undefined {
+  if (current === 'en') return undefined;
+  const phone = phoneLocale();
+  return phone && langOf(phone) === current ? phone : LOCALES[current];
+}
+
 /**
  * `text` in the app's language. `text` is the English, written out in the call so the check finds
- * it; {name} in it is replaced by vars.name, in either language.
+ * it; {name} in it is replaced by vars.name, in every language. A word the language does not have
+ * yet shows in English.
  */
 export function t(text: string, vars?: Record<string, string | number>): string {
-  const shown = current === 'el' ? (EL[text] ?? text) : text;
+  const shown = current === 'en' ? text : (WORDS[current][text] ?? text);
   return vars ? fill(shown, vars) : shown;
 }
 
@@ -82,9 +124,14 @@ export function mark<T extends string>(text: T): T {
   return text;
 }
 
-/** The count's form of a word: plural(n, '{n} chat', '{n} chats'), both forms written for the check. */
+/**
+ * The count's form of a word: plural(n, '{n} chat', '{n} chats'), both forms written for the
+ * check. The language decides which counts take the first (ONE above); each language then has
+ * its own words for both forms.
+ */
 export function plural(n: number, one: string, many: string, vars?: Record<string, string | number>): string {
-  return t(n === 1 ? one : many, { n, ...vars });
+  const first = ONE[current] ?? ((count: number) => count === 1);
+  return t(first(n) ? one : many, { n, ...vars });
 }
 
 function fill(text: string, vars: Record<string, string | number>): string {
