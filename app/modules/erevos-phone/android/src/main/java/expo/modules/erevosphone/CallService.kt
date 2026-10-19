@@ -1,5 +1,7 @@
 package expo.modules.erevosphone
 
+import android.os.Handler
+import android.os.Looper
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.CallEndpoint
@@ -15,6 +17,7 @@ import java.util.IdentityHashMap
  */
 class CallService : InCallService() {
   private val callbacks = IdentityHashMap<Call, Call.Callback>()
+  private val main = Handler(Looper.getMainLooper())
 
   override fun onCreate() {
     super.onCreate()
@@ -45,6 +48,19 @@ class CallService : InCallService() {
     call.registerCallback(callback)
     Calls.add(call)
     if (!Calls.isRinging(call) && call.parent == null) CallActivity.show(this)
+    else if (Calls.isRinging(call)) screenAgain(call)
+  }
+
+  // A call that rings which the screening service did not see (another app screens calls, or
+  // Android did not ask): the rules are looked at here, and a blocked call ends after it began to ring.
+  private fun screenAgain(call: Call) {
+    val number = Callers.number(call)
+    if (Calls.wasScreened(number) || !Rules.any(this)) return
+    val app = applicationContext
+    Thread {
+      val blocked = runCatching { Rules.blocks(app, number) }.getOrDefault(false)
+      if (blocked) main.post { if (Calls.isRinging(call)) call.reject(false, null) }
+    }.start()
   }
 
   override fun onCallRemoved(call: Call) {

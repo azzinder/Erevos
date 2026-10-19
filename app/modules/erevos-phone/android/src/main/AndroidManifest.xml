@@ -25,6 +25,17 @@
       </intent-filter>
     </service>
 
+    <!-- What Telecom asks about each call that comes, before it rings, once Erevos holds the call
+         screening role too: the blocking rules (Rules.kt). -->
+    <service
+      android:name="expo.modules.erevosphone.ScreeningService"
+      android:exported="true"
+      android:permission="android.permission.BIND_SCREENING_SERVICE">
+      <intent-filter>
+        <action android:name="android.telecom.CallScreeningService" />
+      </intent-filter>
+    </service>
+
     <activity
       android:name="expo.modules.erevosphone.DialActivity"
       android:exported="true"

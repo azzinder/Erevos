@@ -47,7 +47,29 @@ class ErevosPhoneModule : Module() {
         "isDefault" to (context != null && isDefault(context)),
         "calls" to Calls.live().size,
         "slots" to (context?.let { Sims.slots(it) } ?: 0),
+        "screens" to (context != null && screens(context)),
       )
+    }
+
+    // Shows Android's question whether Erevos should screen calls, so blocked calls do not ring.
+    Function("requestScreening") {
+      val context = context()
+      val activity = appContext.currentActivity ?: throw IllegalStateException("No activity")
+      // Before Android 10 the phone app screens calls itself.
+      if (Build.VERSION.SDK_INT >= 29) {
+        val roles = context.getSystemService(RoleManager::class.java)
+        if (roles == null || !roles.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) throw IllegalStateException("This phone has no call screening role")
+        activity.startActivityForResult(roles.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING), 4244)
+      }
+    }
+
+    // The blocking rules, as lib/phone-rules.ts wrote them (JSON), or "".
+    Function("rules") {
+      Rules.raw(context())
+    }
+
+    Function("setRules") { json: String ->
+      Rules.save(context(), json)
     }
 
     // Shows Android's question whether Erevos should be the phone app. The answer shows in status().
@@ -134,6 +156,16 @@ class ErevosPhoneModule : Module() {
         if (roles != null && roles.isRoleAvailable(RoleManager.ROLE_DIALER)) return roles.isRoleHeld(RoleManager.ROLE_DIALER)
       }
       return context.getSystemService(TelecomManager::class.java)?.defaultDialerPackage == context.packageName
+    }
+
+    /** Whether Telecom asks Erevos about each call that comes: it holds the call screening role,
+     *  or, before Android 10, is the phone app. */
+    fun screens(context: Context): Boolean {
+      if (Build.VERSION.SDK_INT >= 29) {
+        val roles = context.getSystemService(RoleManager::class.java)
+        if (roles != null && roles.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) return roles.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
+      }
+      return isDefault(context)
     }
   }
 }

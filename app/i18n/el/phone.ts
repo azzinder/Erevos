@@ -79,4 +79,25 @@ export const phone: Record<string, string> = {
   Remove: 'Αφαίρεση',
   'Add a reply': 'Προσθήκη απάντησης',
   'Use the usual replies': 'Οι συνηθισμένες απαντήσεις',
+
+  // Blocking calls (app/phone-settings.tsx, lib/phone-rules.ts).
+  Blocking: 'Αποκλεισμός',
+  "A blocked call does not ring and leaves no notice; it shows under Blocked in the calls. A number in the phone's contacts is never blocked. What is blocked is the same in every space, and keeps no names.":
+    'Μια αποκλεισμένη κλήση δεν χτυπά και δεν αφήνει ειδοποίηση· φαίνεται στις «Αποκλεισμένες» των «Πρόσφατων». Ένας αριθμός από τις επαφές του τηλεφώνου δεν αποκλείεται ποτέ. Ό,τι αποκλείεται είναι το ίδιο σε κάθε χώρο, και δεν κρατά ονόματα.',
+  'Block telemarketing': 'Αποκλεισμός τηλεμάρκετινγκ',
+  'Stop blocking telemarketing': 'Χωρίς αποκλεισμό τηλεμάρκετινγκ',
+  'The numbers these countries keep for telemarketing calls:': 'Οι αριθμοί που κρατούν αυτές οι χώρες για κλήσεις τηλεμάρκετινγκ:',
+  France: 'Γαλλία',
+  Spain: 'Ισπανία',
+  Chile: 'Χιλή',
+  India: 'Ινδία',
+  Brazil: 'Βραζιλία',
+  'optional for the callers since August 2025': 'προαιρετικό για όσους καλούν από τον Αύγουστο του 2025',
+  'Numbers starting with': 'Αριθμοί που αρχίζουν από',
+  Block: 'Αποκλεισμός',
+  'Type the start of the numbers to block, with the country code or as you dial it here: +33 162 or 0162.':
+    'Γράψε την αρχή των αριθμών που θα αποκλείονται, με τον κωδικό χώρας ή όπως τους καλείς εδώ: +33 162 ή 0162.',
+  'Erevos does not screen calls yet, so a blocked call rings a moment before Erevos ends it.':
+    'Το Erevos δεν ελέγχει ακόμα τις κλήσεις, οπότε μια αποκλεισμένη κλήση χτυπά για λίγο πριν την τερματίσει το Erevos.',
+  'Let Erevos screen calls': 'Να ελέγχει το Erevos τις κλήσεις',
 };

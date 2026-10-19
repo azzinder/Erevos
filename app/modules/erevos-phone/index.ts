@@ -5,8 +5,9 @@ import { requireOptionalNativeModule, type EventSubscription } from 'expo-module
 // a SIM. On other platforms, and in an app built before this module, there is no phone: phoneReady()
 // is false and everything here does nothing.
 
-/** `calls`: how many calls are on now; `slots`: how many SIMs the phone can hold. */
-export type PhoneStatus = { sdk: number; phone: boolean; isDefault: boolean; calls: number; slots: number };
+/** `calls`: how many calls are on now; `slots`: how many SIMs the phone can hold; `screens`:
+ *  whether Android asks Erevos about each call before it rings (the call screening role). */
+export type PhoneStatus = { sdk: number; phone: boolean; isDefault: boolean; calls: number; slots: number; screens: boolean };
 
 /** A way the phone can call: a SIM. `id` is what placeCall takes and the call history keeps;
  *  `slot` counts from 0, -1 for an account that is no SIM's; `name` is "SIM 1" or the account's. */
@@ -56,6 +57,9 @@ export type PhoneEvents = {
 type NativePhone = {
   status(): PhoneStatus;
   requestDefault(): void;
+  requestScreening(): void;
+  rules(): string;
+  setRules(json: string): void;
   accounts(): Promise<PhoneAccount[]>;
   placeCall(number: string, account: string): Promise<void>;
   history(): Promise<{ allowed: boolean; calls: LoggedCall[] }>;
@@ -83,6 +87,25 @@ export function phoneStatus(): PhoneStatus | null {
 /** Shows Android's question whether Erevos should be the phone app. */
 export function requestDefaultPhone(): void {
   native?.requestDefault();
+}
+
+/** Shows Android's question whether Erevos should screen calls (the call screening role), so a
+ *  blocked call is turned away before it rings. */
+export function requestScreening(): void {
+  native?.requestScreening();
+}
+
+/**
+ * The blocking rules (lib/phone-rules.ts), JSON, '' for none: kept in the module's own
+ * preferences, the same for every space, as calls are screened with Erevos locked. Only
+ * prefixes, never names.
+ */
+export function blockingRules(): string {
+  return native ? native.rules() : '';
+}
+
+export function setBlockingRules(json: string): void {
+  native?.setRules(json);
 }
 
 /** The phone's SIMs, once Erevos may read the phone's state; else none. */

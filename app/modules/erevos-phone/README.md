@@ -18,6 +18,13 @@ been compile-checked against Android 16's framework classes, not built or run.
   module's own preferences, set with `setQuickReplies()`) or one written then, and declines with
   `Call.reject(true, text)`: Telecom sends the SMS itself (its `RespondViaSmsManager`, through
   `SmsManager`), which writes it to the phone's SMS. The SMS app's `RespondViaSmsService` is not used.
+- **Blocking.** `ScreeningService`, a `CallScreeningService` Telecom asks before a call rings once
+  Erevos holds the call screening role too (`requestScreening()`), turns away the calls `Rules`
+  blocks: prefixes, after the + or as the phone's country writes numbers (matched through
+  `PhoneNumberUtils.formatNumberToE164`), never for a number in the phone's contacts. Holding both
+  roles, Telecom asks it about the contacts' calls too. A call it did not see is ended by
+  `CallService` once it rings. The rules are JSON from `lib/phone-rules.ts` (`setRules()`), in the
+  module's preferences: the same for every space, only prefixes.
 - **Notices.** `CallNotices`: a call that rings, with Answer and Decline and a full-screen intent,
   and one while a call is on, with End. Telecom rings itself, with each contact's own ringtone.
   Missed calls are Telecom's own notice.

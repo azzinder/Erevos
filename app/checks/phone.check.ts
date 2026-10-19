@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import { randomBytes } from '../lib/crypto';
 import { callLength, cleanReplies, dialNumber, KEYS, knownNames, MAX_REPLIES, MAX_REPLY, typeKey } from '../lib/phone';
 import { callKind, callMarks, callWho, filterCalls, groupCalls, withDays } from '../lib/phone-log';
+import { addPrefix, blockedInternational, checkedRules, NO_RULES, ownPrefix, removePrefix, rulesFrom, rulesJson, storedRules, TELEMARKETING } from '../lib/phone-rules';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
 import type { LoggedCall, PhoneAccount } from '../modules/erevos-phone';
 import { files } from './files-memory';
@@ -158,4 +159,43 @@ test('calls one after another with the same number, kind and day are one row, un
     items.map((i) => (i.kind === 'day' ? i.label : i.row.calls.length)),
     ['Today', 2, 1, 'Yesterday', 1, 1, 2, '12/10/26', 1],
   );
+});
+
+test("the owner's prefixes are kept with their country code, or as the phone's country writes them", () => {
+  assert.equal(ownPrefix('+33 1 62'), '+33162');
+  assert.equal(ownPrefix('0033162'), '+33162');
+  assert.equal(ownPrefix('(0)1-62'), '0162');
+  assert.equal(ownPrefix('2310'), '2310');
+  assert.equal(ownPrefix('1'), null);
+  assert.equal(ownPrefix('+3'), null);
+  assert.equal(ownPrefix('01 62 abc'), null);
+  assert.equal(ownPrefix('+'), null);
+  assert.equal(ownPrefix('1234567890123456'), null);
+});
+
+test('the telemarketing ranges and the own prefixes become the digits the phone matches', () => {
+  assert.deepEqual(storedRules(NO_RULES), { telemarketing: false, own: [], international: [], national: [] });
+  const all = storedRules({ telemarketing: true, own: ['+4420', '0162', '+33162'] });
+  for (const p of ['33162', '33949', '339475', '339479', '34400', '56809', '91140', '55303', '4420']) assert.ok(all.international.includes(p), p);
+  assert.equal(all.international.filter((p) => p === '33162').length, 1);
+  assert.deepEqual(all.national, ['0162']);
+  assert.ok(blockedInternational(all, '33162123456'));
+  assert.ok(blockedInternational(all, '34400123456'));
+  assert.ok(blockedInternational(all, '442071234567'));
+  assert.ok(!blockedInternational(all, '33612345678'));
+  assert.ok(!blockedInternational(all, '34600123456'));
+  assert.ok(!blockedInternational(all, ''));
+  assert.ok(!blockedInternational(storedRules({ telemarketing: false, own: [] }), '33162123456'));
+});
+
+test('the rules kept are read back, and what is not understood is left out', () => {
+  const rules = addPrefix(addPrefix({ telemarketing: true, own: [] }, '+33162'), '0162');
+  assert.deepEqual(rulesFrom(rulesJson(rules)), rules);
+  assert.deepEqual(addPrefix(rules, '0162'), rules);
+  assert.deepEqual(removePrefix(rules, '+33162').own, ['0162']);
+  assert.equal(rulesJson(NO_RULES), '');
+  assert.deepEqual(rulesFrom(''), NO_RULES);
+  assert.deepEqual(rulesFrom('{oops'), NO_RULES);
+  assert.deepEqual(checkedRules({ telemarketing: 'yes', own: ['+33 162', 7, 'x', '+33162'] }), { telemarketing: false, own: ['+33162'] });
+  assert.ok(TELEMARKETING.every((r) => r.prefixes.length > 0 && /^\d+$/.test(r.code)));
 });

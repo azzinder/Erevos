@@ -6,13 +6,24 @@ import { Button, Card, Input, Page, Row, Text } from '../components/ui';
 import { askFullScreen, backgroundState } from '../lib/background';
 import { mark, t } from '../lib/i18n';
 import { cleanReplies, MAX_REPLIES, MAX_REPLY } from '../lib/phone';
-import { phoneReady, phoneStatus, quickReplies, requestDefaultPhone, setQuickReplies, type PhoneStatus } from '../modules/erevos-phone';
+import { addPrefix, MAX_OWN, ownPrefix, removePrefix, rulesFrom, rulesJson, shownPrefix, TELEMARKETING, type PhoneRules } from '../lib/phone-rules';
+import {
+  blockingRules,
+  phoneReady,
+  phoneStatus,
+  quickReplies,
+  requestDefaultPhone,
+  requestScreening,
+  setBlockingRules,
+  setQuickReplies,
+  type PhoneStatus,
+} from '../modules/erevos-phone';
 import { space } from '../theme/colors';
 
 // Erevos as the phone's phone app (modules/erevos-phone): then a call, made or come, shows on
 // Erevos's own call screen, over the lock screen and with Erevos locked, and tel: links and the
 // phone's call button open Erevos's keypad. What Android still holds back shows here, each with
-// the way to allow it; and the quick replies a call can be declined with.
+// the way to allow it; the quick replies a call can be declined with, and which calls are blocked.
 
 // What the phone app needs from Android. Becoming the phone app gives them, except to an app
 // installed from a browser on Android 15 and later, which Android holds back until its owner
@@ -151,7 +162,85 @@ export default function PhoneSettings() {
         {note ? <Text tone="muted">{note}</Text> : null}
       </Card>
       {status?.isDefault ? <QuickReplies /> : null}
+      {status?.isDefault ? <Blocking screens={status.screens} /> : null}
     </Page>
+  );
+}
+
+// Which calls are blocked: the telemarketing ranges and the owner's prefixes (lib/phone-rules.ts).
+// The same in every space, so they tell nothing of another.
+function Blocking({ screens }: { screens: boolean }) {
+  const [rules, setRules] = useState<PhoneRules>(() => rulesFrom(blockingRules()));
+  const [typed, setTyped] = useState('');
+  const [note, setNote] = useState('');
+  const blocking = rules.telemarketing || rules.own.length > 0;
+
+  function keep(next: PhoneRules) {
+    setBlockingRules(rulesJson(next));
+    setRules(next);
+    // Turned away before they ring once Erevos screens calls; Android asks the owner once.
+    if (!screens && (next.telemarketing || next.own.length > 0)) askScreening();
+  }
+
+  function askScreening() {
+    try {
+      requestScreening();
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  function add() {
+    const prefix = ownPrefix(typed);
+    if (!prefix) {
+      setNote(t('Type the start of the numbers to block, with the country code or as you dial it here: +33 162 or 0162.'));
+      return;
+    }
+    setNote('');
+    setTyped('');
+    keep(addPrefix(rules, prefix));
+  }
+
+  return (
+    <Card>
+      <Text variant="bodyStrong">{t('Blocking')}</Text>
+      <Text tone="muted">
+        {t("A blocked call does not ring and leaves no notice; it shows under Blocked in the calls. A number in the phone's contacts is never blocked. What is blocked is the same in every space, and keeps no names.")}
+      </Text>
+      <Button
+        title={rules.telemarketing ? t('Stop blocking telemarketing') : t('Block telemarketing')}
+        kind={rules.telemarketing ? 'secondary' : 'primary'}
+        onPress={() => keep({ ...rules, telemarketing: !rules.telemarketing })}
+      />
+      <Text variant="caption" tone="faint">
+        {t('The numbers these countries keep for telemarketing calls:')}
+      </Text>
+      {TELEMARKETING.map((range) => (
+        <Text key={range.code} variant="caption" tone="faint">
+          {`${t(range.country)} (+${range.code}): ${range.shown}${range.note ? ` (${t(range.note)})` : ''}`}
+        </Text>
+      ))}
+      <Text variant="bodyStrong">{t('Numbers starting with')}</Text>
+      {rules.own.map((prefix) => (
+        <Row key={prefix} style={{ gap: space.sm }}>
+          <Text style={{ flex: 1 }}>{shownPrefix(prefix)}</Text>
+          <Button title={t('Remove')} kind="secondary" compact onPress={() => keep(removePrefix(rules, prefix))} />
+        </Row>
+      ))}
+      {rules.own.length < MAX_OWN ? (
+        <Row style={{ gap: space.sm }}>
+          <Input value={typed} onChangeText={setTyped} placeholder="+33 162" keyboardType="phone-pad" style={{ flex: 1 }} onSubmitEditing={add} />
+          <Button title={t('Block')} compact onPress={add} />
+        </Row>
+      ) : null}
+      {blocking && !screens ? (
+        <>
+          <Text tone="muted">{t('Erevos does not screen calls yet, so a blocked call rings a moment before Erevos ends it.')}</Text>
+          <Button title={t('Let Erevos screen calls')} kind="secondary" onPress={askScreening} />
+        </>
+      ) : null}
+      {note ? <Text tone="muted">{note}</Text> : null}
+    </Card>
   );
 }
 
