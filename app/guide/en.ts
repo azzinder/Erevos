@@ -904,6 +904,10 @@ home screen's menu.
 - **Not in a backup:** photos and files, not yet: a backup is made in the phone's memory, and they would not fit. A
   backup restored on the same phone shows them again; on another phone they show as not on it. Also left out: the
   count of wrong passwords, and how automatic backups are set.
+- **Linked devices** are not in a backup: a link stays with the phone and the computer it was made on. After restoring
+  a backup on another phone, link the computer again: on the computer, tap **Unlink this device**, then link it as the
+  first time, see [Linked devices](#devices). A linked computer's own backup holds the phone's chats as they were, but
+  not the link to write in them: make the backups on the phone.
 - **A backup from a newer Erevos:** Erevos 0.1.8 and later open it too, and restore all of it they know; before
   that, they say some of it stays out. Update Erevos first to restore all of it.
 
@@ -1050,7 +1054,8 @@ The chats then come to the computer, and after them the messages chosen.
 - **Unlink**, on the phone, cuts a device off at once: nothing more goes to it, and nothing it sends is taken. That is
   how to cut off a lost computer. If it is on, it is told, and the account's chats leave it. On the computer,
   **Unlink this device** does the same from there.
-- **Up to four** devices link to one phone. A backup does not carry the links: after restoring one, link again.
+- **Up to four** devices link to one phone. A backup does not carry the links: after restoring one on another phone,
+  tap **Unlink this device** on the computer and link it again, see [Backups](#backup).
 
 ## On an iPhone, from the browser {#iphone}
 

@@ -8,8 +8,8 @@ import { sealedFile } from './sealed-file';
 // that holds the account (the primary), each linked device; on a linked device, the primary. For
 // each, the conversation of the link, where it reads, and what waits to go to it. Kept sealed with the
 // space's key in FILE, one value for each space (sealed-file.ts), in blocks of BLOCK bytes. Hidden
-// chats have none: they are never linked. A backup leaves this file out, so after restoring one the
-// devices are linked again.
+// chats have none: they are never linked. A backup leaves this file out, and restoring one leaves it
+// as it is: on another phone there is none, and the devices are linked again.
 
 /** What of the history still goes to a device: from `since` (milliseconds, 0 for all of it) up to `upTo`, photos and files too or not, and how many of those messages went. */
 export type Job = { since: number; files: boolean; upTo: number; done: number };

@@ -196,8 +196,15 @@ stay on the phone for now; public groups are not told to the devices at all.
 ### Older versions
 
 Contacts on any older Erevos see nothing new: same identity, same queue, same ratchet, same safety
-number. Both the phone and the computer need this version to link. A backup does not carry links:
-after restoring one, link the devices again.
+number. Both the phone and the computer need this version to link.
+
+### Backups
+
+A backup does not carry links (lock/devices-data.ts is left out), and restoring one leaves them as
+they are: on the same phone the devices stay linked, and on another phone there are none. There, a
+computer is linked again once it unlinked itself (**Unlink this device**, which clears the account's
+chats from it). A linked computer's own backup holds the phone's chats as they were, without the
+link to write in them, so the guide says to make backups on the phone.
 
 ## Where it is in the code
 
