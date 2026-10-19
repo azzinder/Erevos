@@ -49,6 +49,11 @@ export const contacts: Record<string, string> = {
   'Birthday tomorrow': 'Γενέθλια αύριο',
   'Birthday in {n} days, turns {age}': 'Γενέθλια σε {n} ημέρες, κλείνει τα {age}',
   'Birthday in {n} days': 'Γενέθλια σε {n} ημέρες',
+  'Add a photo': 'Προσθήκη φωτογραφίας',
+  'Choose a photo': 'Επιλογή φωτογραφίας',
+  'Remove the photo': 'Αφαίρεση της φωτογραφίας',
+  "The photo is kept with the contact in Android's contacts, where the phone shows it when they call, and its account (Google) syncs it.":
+    'Η φωτογραφία φυλάγεται μαζί με την επαφή στις επαφές του Android, όπου το τηλέφωνο τη δείχνει όταν σε καλούν, και ο λογαριασμός της (Google) τη συγχρονίζει.',
 
   // Writing a contact.
   'Edit contact': 'Επεξεργασία επαφής',

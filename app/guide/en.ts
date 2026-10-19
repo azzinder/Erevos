@@ -525,6 +525,10 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
   day/month) and a note. A new contact is kept **On this phone only**, or in an account the phone syncs contacts
   with (Google), as you choose. What Erevos does not show of a contact, such as another app's own details, stays as
   it was.
+- **Photo:** tap the picture at the top of a contact to **Choose a photo** from the phone's photos, **Take photo**
+  with the camera, or **Remove the photo**. You cut it square, and Erevos draws it anew, so nothing the photo said
+  besides its picture (a place, a phone) is kept. It is kept with the contact in Android's contacts, where the phone
+  shows it when they call.
 - **Delete** takes the contact off the phone, from every account it is kept in.
 - **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
   Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,

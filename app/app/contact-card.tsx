@@ -2,22 +2,37 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
-import { ContactFace, usePhoneContactPhoto } from '../components/contact-face';
-import { Button, Card, Page, Row, Sheet, Text } from '../components/ui';
+import { ContactFace, forgetPhoneContactPhoto, usePhoneContactPhoto } from '../components/contact-face';
+import { Button, Card, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { groupsByTitle, phoneCard, type Card as ContactCard } from '../lib/contact-book';
 import { birthdayComing, birthdayLabel, kindLabel, parseBirthday, type Entry } from '../lib/contacts';
 import { t } from '../lib/i18n';
+import { pickAvatar } from '../lib/pick-avatar';
+import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
-import { addToPhoneGroup, onContactsEvent, phoneContact, phoneGroups, removeFromPhoneGroup, removePhoneContacts, starPhoneContact, type PhoneGroup } from '../modules/erevos-contacts';
+import {
+  addToPhoneGroup,
+  onContactsEvent,
+  phoneContact,
+  phoneGroups,
+  removeFromPhoneGroup,
+  removePhoneContacts,
+  setPhoneContactPhoto,
+  starPhoneContact,
+  type PhoneGroup,
+} from '../modules/erevos-contacts';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // One contact, whole: its photo and name, then every number, email and address, its birthday and
 // note, and its groups. A number calls (Linking's tel: goes to the phone app) or writes an SMS in
-// Erevos. The star makes it a favourite, in Android's contacts, which every phone app lists.
+// Erevos. The star makes it a favourite, in Android's contacts, which every phone app lists. Its
+// photo, from the phone's photos or the camera, is kept there too, 720 points square, as Android
+// shows it large when they call.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+const PHOTO_SIDE = 720;
 
 export default function ContactCardScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
@@ -28,6 +43,7 @@ export default function ContactCardScreen() {
   const [gone, setGone] = useState(false);
   const [groups, setGroups] = useState<PhoneGroup[]>([]);
   const [choosingGroups, setChoosingGroups] = useState(false);
+  const [choosingPhoto, setChoosingPhoto] = useState(false);
   const [note, setNote] = useState('');
   const photo = usePhoneContactPhoto(card?.phone?.id ?? null, card?.phone?.photo ?? 0, true);
 
@@ -87,6 +103,21 @@ export default function ContactCardScreen() {
     }
   }
 
+  async function changePhoto(from: 'photos' | 'camera' | null) {
+    if (!card?.phone) return;
+    setNote('');
+    try {
+      const bytes = from ? await pickAvatar(from, PHOTO_SIDE) : null;
+      if (from && !bytes) return;
+      await setPhoneContactPhoto(card.phone.id, bytes);
+      forgetPhoneContactPhoto(card.phone.id);
+      setChoosingPhoto(false);
+      load();
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
   // In a group, or out of it, in Android's contacts: in the contact's raw contact of the group's account.
   async function toggleGroup(group: PhoneGroup) {
     if (!card?.phone) return;
@@ -112,7 +143,9 @@ export default function ContactCardScreen() {
   return (
     <Page>
       <View style={styles.top}>
-        <ContactFace name={card.name} uri={photo} size={96} />
+        <Pressable onPress={() => setChoosingPhoto(true)} accessibilityRole="button" accessibilityLabel={photo ? t('Change photo') : t('Add a photo')}>
+          <ContactFace name={card.name} uri={photo} size={96} />
+        </Pressable>
         <Text variant="title" style={styles.center}>
           {card.name}
         </Text>
@@ -219,6 +252,16 @@ export default function ContactCardScreen() {
         })}
         {note ? <Text tone="muted">{note}</Text> : null}
         <Button title={t('Done')} compact onPress={() => setChoosingGroups(false)} />
+      </Sheet>
+
+      <Sheet visible={choosingPhoto} onClose={() => setChoosingPhoto(false)} title={t('Photo')}>
+        <Text tone="muted">{t("The photo is kept with the contact in Android's contacts, where the phone shows it when they call, and its account (Google) syncs it.")}</Text>
+        <Row wrap>
+          <Button title={t('Choose a photo')} compact onPress={() => void changePhoto('photos')} />
+          {CAN_TAKE_PHOTOS ? <Button title={t('Take photo')} kind="secondary" compact onPress={() => void changePhoto('camera')} /> : null}
+        </Row>
+        {card.phone?.photo ? <TextButton title={t('Remove the photo')} onPress={() => void changePhoto(null)} /> : null}
+        {note ? <Text tone="muted">{note}</Text> : null}
       </Sheet>
     </Page>
   );

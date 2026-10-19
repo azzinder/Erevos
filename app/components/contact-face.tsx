@@ -13,6 +13,8 @@ import { Text } from './ui';
 
 const HUES = [4, 24, 42, 140, 172, 200, 222, 262, 292, 330];
 const opened = new Map<string, string>();
+// How many times a contact's photo was changed here: Android may keep a new photo under the old id.
+const changed = new Map<number, number>();
 
 function hueOf(name: string): number {
   let h = 0;
@@ -20,9 +22,14 @@ function hueOf(name: string): number {
   return HUES[h % HUES.length];
 }
 
+/** After a contact's photo is changed here: it is read anew, the next time it is shown. */
+export function forgetPhoneContactPhoto(id: number) {
+  changed.set(id, (changed.get(id) ?? 0) + 1);
+}
+
 /** A phone contact's photo as an image address, or null while it is read, or if it has none. */
 export function usePhoneContactPhoto(id: number | null, photo: number, large = false): string | null {
-  const key = id && photo ? `${id}:${photo}:${large ? 1 : 0}` : '';
+  const key = id && photo ? `${id}:${photo}:${large ? 1 : 0}:${changed.get(id) ?? 0}` : '';
   const [uri, setUri] = useState(() => (key ? (opened.get(key) ?? null) : null));
   useEffect(() => {
     if (!key || !id) {

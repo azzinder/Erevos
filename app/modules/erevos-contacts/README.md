@@ -18,6 +18,9 @@ compiled against Android 16's framework classes, not built into the app or run y
   Android fills itself (an account's "My Contacts", the starred) are left out. A contact joins a group in
   its raw contact of the group's account (a GroupMembership row there), as an account's sync keeps only its
   own groups; `addToGroup()` is false when it has none in that account.
+- **Photos.** `photo()` gives a contact's thumbnail or its large photo; `setPhoto()` writes the bytes in a Photo
+  row of its main raw contact (the one its name is from), which Android turns into its large photo and thumbnail at
+  once, and makes it the one shown (super primary). No bytes take away its photos in every account.
 - **Changes elsewhere.** `watch()` sends `onContactsChanged` when Android's contacts change.
 
 ## JS API

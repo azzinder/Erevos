@@ -15,6 +15,7 @@ import android.provider.ContactsContract.CommonDataKinds.GroupMembership
 import android.provider.ContactsContract.CommonDataKinds.Note
 import android.provider.ContactsContract.CommonDataKinds.Organization
 import android.provider.ContactsContract.CommonDataKinds.Phone
+import android.provider.ContactsContract.CommonDataKinds.Photo
 import android.provider.ContactsContract.CommonDataKinds.StructuredName
 import android.provider.ContactsContract.CommonDataKinds.StructuredPostal
 import android.provider.ContactsContract.Contacts
@@ -355,6 +356,47 @@ internal object ContactsStore {
     val uri = ContentUris.withAppendedId(Contacts.CONTENT_URI, id)
     val bytes = Contacts.openContactPhotoInputStream(context.contentResolver, uri, large)?.use { it.readBytes() } ?: return null
     return Base64.encodeToString(bytes, Base64.NO_WRAP)
+  }
+
+  /** The raw contact a change to the whole contact goes in: the one its name is from, or its first. */
+  private fun mainRaw(resolver: ContentResolver, contact: Long): Long? {
+    resolver.query(ContentUris.withAppendedId(Contacts.CONTENT_URI, contact), arrayOf(Contacts.NAME_RAW_CONTACT_ID), null, null, null)?.use { c ->
+      if (c.moveToFirst() && !c.isNull(0)) return c.getLong(0)
+    }
+    return raws(resolver, contact).firstOrNull()?.first
+  }
+
+  /**
+   * Gives a contact a photo (JPEG or PNG bytes) in its main raw contact, the one shown over those
+   * other accounts give it; Android keeps it as the large photo and makes the thumbnail from it, at
+   * once. With no bytes, its photos are taken away in every account.
+   */
+  fun setPhoto(context: Context, id: Long, data: ByteArray) {
+    val resolver = context.contentResolver
+    val rows = ArrayList<Pair<Long, Long>>()
+    resolver.query(Data.CONTENT_URI, arrayOf(Data._ID, Data.RAW_CONTACT_ID), "${Data.CONTACT_ID}=? AND ${Data.MIMETYPE}=?", arrayOf(id.toString(), Photo.CONTENT_ITEM_TYPE), null)?.use { c ->
+      while (c.moveToNext()) rows.add(c.getLong(0) to c.getLong(1))
+    }
+    val ops = ArrayList<ContentProviderOperation>()
+    if (data.isEmpty()) {
+      rows.forEach { ops.add(ContentProviderOperation.newDelete(ContentUris.withAppendedId(Data.CONTENT_URI, it.first)).build()) }
+    } else {
+      val raw = mainRaw(resolver, id) ?: throw IllegalStateException("This contact is gone")
+      val values = ContentValues().apply {
+        put(Photo.PHOTO, data)
+        put(Data.IS_PRIMARY, 1)
+        put(Data.IS_SUPER_PRIMARY, 1)
+      }
+      val row = rows.firstOrNull { it.second == raw }?.first
+      ops.add(
+        if (row != null) {
+          ContentProviderOperation.newUpdate(ContentUris.withAppendedId(Data.CONTENT_URI, row)).withValues(values).build()
+        } else {
+          ContentProviderOperation.newInsert(Data.CONTENT_URI).withValue(Data.RAW_CONTACT_ID, raw).withValue(Data.MIMETYPE, Photo.CONTENT_ITEM_TYPE).withValues(values).build()
+        },
+      )
+    }
+    if (ops.isNotEmpty()) resolver.applyBatch(ContactsContract.AUTHORITY, ops)
   }
 
   /**
