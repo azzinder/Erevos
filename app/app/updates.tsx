@@ -1,0 +1,158 @@
+import Constants from 'expo-constants';
+import { router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Linking, Platform, View } from 'react-native';
+
+import { Button, Card, Page, Text } from '../components/ui';
+import { ask } from '../lib/alert';
+import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
+import { SHELL } from '../lib/shell';
+import { buildOf, fetchLatestRelease, formatSize, isNewer, RELEASES_PAGE, type Release } from '../lib/updates';
+import { loadCurrentSpaceData } from '../lock/space-data';
+import { space } from '../theme/colors';
+import { useColors } from '../theme/context';
+
+// Updates (home menu → Updates), as in LPHL FASOULI: the installed version and Check for updates.
+// Erevos never looks by itself; only this button asks GitHub (lib/updates.ts). On Android the new
+// version downloads, is checked and installs over this one; on a computer and Sailfish OS the
+// download page opens. The web app updates itself (pwa/), so it has no button.
+
+const supported = Platform.OS === 'android' || SHELL !== null;
+// This app's version (app.config.js sets it for releases) and its build number.
+const VERSION = Constants.expoConfig?.version ?? '0.0.0';
+const CURRENT_BUILD = buildOf(VERSION);
+
+export default function UpdatesScreen() {
+  const colors = useColors();
+  const [checking, setChecking] = useState(false);
+  const [note, setNote] = useState('');
+  const [progress, setProgress] = useState<{ received: number; total: number } | null>(null);
+  const abort = useRef<AbortController | null>(null);
+
+  // A package downloaded earlier is installed by now, or was not wanted.
+  useEffect(() => {
+    try {
+      clearDownloads();
+    } catch {
+      // Tried again next time.
+    }
+    return () => abort.current?.abort();
+  }, []);
+
+  async function install(release: Release) {
+    const controller = new AbortController();
+    abort.current = controller;
+    setProgress({ received: 0, total: release.apk?.size ?? 0 });
+    try {
+      await downloadAndInstall(release, (received, total) => setProgress({ received, total }), controller.signal);
+      setNote('Android shows its installer: tap Install. Erevos closes and opens as the new version, with everything kept.');
+    } catch (error) {
+      if (!controller.signal.aborted) setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      abort.current = null;
+      setProgress(null);
+    }
+  }
+
+  async function check() {
+    setNote('');
+    // A check outside Tor would show GitHub this device's internet address while the owner asked
+    // for it to be hidden.
+    const data = await loadCurrentSpaceData().catch(() => null);
+    if (data?.tor) {
+      setNote(
+        'Tor is on in this space, and this check would go to GitHub without it, showing your internet address. ' +
+          'Turn Tor off for a moment to check, or open the releases page in Tor Browser.',
+      );
+      return;
+    }
+    setChecking(true);
+    let release: Release | null;
+    try {
+      release = await fetchLatestRelease();
+    } catch {
+      setNote('GitHub could not be reached. Check the internet connection and try again.');
+      return;
+    } finally {
+      setChecking(false);
+    }
+    if (!release) {
+      setNote('No release was found yet.');
+      return;
+    }
+    if (!CURRENT_BUILD) {
+      setNote(`This Erevos was built on a computer, so it does not update itself. The newest release is ${release.version}: User guide → Updates says how to switch to it.`);
+      return;
+    }
+    if (!isNewer(release, CURRENT_BUILD)) {
+      setNote(`Erevos is up to date (${VERSION}).`);
+      return;
+    }
+    const found = release;
+    const installable = canInstall && found.apk !== null;
+    ask(
+      `Erevos ${found.version} is out`,
+      [
+        found.date ? `Released ${found.date}.` : '',
+        'Updating keeps your contacts, chats and settings. A backup first (Backups → Make a backup) covers any surprise.',
+        installable
+          ? `It downloads (${formatSize(found.apk!.size)}), is checked against the release and installs over this one.`
+          : 'The download page opens: take the file for this system, see User guide → Updates.',
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
+      [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Backups', onPress: () => router.push('/backup') },
+        {
+          text: installable ? 'Install' : 'Open download page',
+          onPress: () => {
+            if (installable) void install(found);
+            else void Linking.openURL(RELEASES_PAGE).catch(() => setNote(`Open ${RELEASES_PAGE} in a browser.`));
+          },
+        },
+      ],
+    );
+  }
+
+  const share = progress && progress.total > 0 ? Math.min(1, progress.received / progress.total) : 0;
+  return (
+    <Page>
+      <Text variant="title">Updates</Text>
+      <Card>
+        <Text variant="caption" tone="muted">
+          Installed
+        </Text>
+        <Text variant="heading">Erevos {VERSION}</Text>
+      </Card>
+      {supported ? (
+        <Card>
+          <Text tone="muted">
+            Erevos never looks for updates by itself: a regular check would tell GitHub that this device has Erevos.
+            It asks only when you tap the button, and GitHub then sees this device's internet address, nothing else.
+          </Text>
+          {progress ? (
+            <View style={{ gap: space.sm }}>
+              <Text variant="bodyStrong">Downloading…</Text>
+              <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.border, overflow: 'hidden' }}>
+                <View style={{ width: `${Math.round(share * 100)}%`, height: 8, backgroundColor: colors.primary }} />
+              </View>
+              <Text variant="caption" tone="muted">
+                {formatSize(progress.received)} / {formatSize(progress.total)}
+              </Text>
+              <Button title="Cancel" kind="secondary" onPress={() => abort.current?.abort()} />
+            </View>
+          ) : (
+            <Button title="Check for updates" onPress={() => void check()} loading={checking} />
+          )}
+          {note ? <Text tone="muted">{note}</Text> : null}
+        </Card>
+      ) : (
+        <Card>
+          <Text tone="muted">This web app updates itself: a new signed version is taken the next time Erevos opens.</Text>
+        </Card>
+      )}
+      <Button title="How updating works" kind="secondary" onPress={() => router.push({ pathname: '/guide/[id]', params: { id: 'updates' } })} />
+    </Page>
+  );
+}

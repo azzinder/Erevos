@@ -45,6 +45,7 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 | **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
 | **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
 | **Backups** | Backups of everything on the phone, made by hand or by themselves, and restoring one. See [Backups](#backup). |
+| **Updates** | The version you have, and **Check for updates**. See [Updates](#updates). |
 | **User guide** | This guide. |
 | **Relay test**, **Radio test** | Tests of the connections. See [The test screens](#tests). |
 
@@ -695,13 +696,21 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
 
 ## Updates {#updates}
 
-Erevos does not update itself, and does not even look for updates on its own: a check like that would tell the place
-it asks, every day, that this phone or computer has Erevos. You update it by hand, when you choose.
+Erevos never looks for updates on its own: a regular check would tell the place it asks, every day, that this phone
+or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI:
 
-**Which version you have:** at the bottom of this guide's first screen, **Erevos 0.1.N**.
+1. Open **Updates** in the home screen's menu (or **Check for updates** at the bottom of this guide's first screen).
+   It shows the version you have, **Erevos 0.1.N**.
+2. Tap **Check for updates**. GitHub then sees this device's internet address, nothing else. While Tor is on in the
+   space, Erevos does not check, since that would go around Tor.
+3. When there is a new version: on Android tap **Install**. It downloads, is checked against the release (its size and
+   SHA-256), and Android's installer opens: tap **Install** there. The first time, Android asks to allow installing
+   apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take the file as
+   in the table below.
 
-**Where new versions are:** on Erevos's releases page, \`https://github.com/azzinder/Erevos/releases\` (for now only
-people the repository is shared with can open it). The newest is at the top, **Erevos 0.1.N**, with a file for each
+The rest of this section is for updating by hand.
+
+**Where new versions are:** on Erevos's releases page, \`https://github.com/azzinder/erevos-releases/releases\`. The newest is at the top, **Erevos 0.1.N**, with a file for each
 system. The five newest stay there.
 
 **Check the file** if you can, on a computer: each release has \`SHA256SUMS\`, and in the folder with the downloaded
@@ -712,7 +721,7 @@ costs a minute and covers any surprise.
 
 | On | How to update |
 | --- | --- |
-| **Android** | Open the releases page on the phone, tap \`erevos-android.apk\`, then **Install**. It installs over the one you have and keeps everything. Allow installing from the browser once, when Android asks. |
+| **Android** | **Updates → Check for updates → Install**, or by hand: open the releases page on the phone, tap \`erevos-android.apk\`, then **Install**. It installs over the one you have and keeps everything. Allow installing from the browser once, when Android asks. |
 | **Linux, Arch-based** | \`sudo pacman -U erevos-linux-x86_64.pacman\` |
 | **Linux, AppImage** | Replace the old \`erevos-linux-x86_64.AppImage\` with the new one and make it executable. |
 | **macOS** | Open \`erevos-macos.dmg\` and drag Erevos to Applications, **Replace**. Then allow it again under **System Settings → Privacy & Security → Open Anyway**. |

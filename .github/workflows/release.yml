@@ -335,6 +335,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      # Writes to the public download repository that Updates → Check for updates reads
+      # (app/lib/updates.ts); without the token that step is skipped.
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      RELEASES_REPO: azzinder/erevos-releases
     steps:
       - name: Publish the release
         env:
@@ -347,9 +352,21 @@ jobs:
             echo "::error::No job made a package: nothing to publish"; exit 1
           fi
           (cd files && sha256sum erevos-* > SHA256SUMS && cat SHA256SUMS)
+          # What Updates → Check for updates reads to find a new version (app/lib/updates.ts): the
+          # APK's address in the public repository, its size and SHA-256, which the app checks.
+          APK=null
+          if [ -f files/erevos-android.apk ]; then
+            APK=$(jq -n --arg url "https://github.com/$RELEASES_REPO/releases/download/v$EREVOS_VERSION/erevos-android.apk" \
+              --argjson size "$(stat -c %s files/erevos-android.apk)" --arg sha256 "$(sha256sum files/erevos-android.apk | cut -d' ' -f1)" \
+              '{url: $url, size: $size, sha256: $sha256}')
+          fi
+          jq -n --arg version "$EREVOS_VERSION" --argjson build "$EREVOS_BUILD" --arg date "$(TZ=Europe/Athens date +%F)" \
+            --arg commit "${GITHUB_SHA::7}" --argjson apk "$APK" \
+            '{version: $version, build: $build, date: $date, commit: $commit, apk: $apk}' > files/version.json
+          cat files/version.json
           : > packages.md
           package() { if [ -f "files/$1" ]; then echo "- $2" >> packages.md; fi; }
-          package erevos-android.apk "**Android** 7 or newer (64-bit): open this page on the phone and tap erevos-android.apk. Allow installing from the browser once."
+          package erevos-android.apk "**Android** 7 or newer (64-bit): in Erevos, Updates → Check for updates → Install. Or open this page on the phone and tap erevos-android.apk."
           package erevos-linux-x86_64.pacman "**Arch Linux / CachyOS** (x86_64): \`sudo pacman -U erevos-linux-x86_64.pacman\`"
           package erevos-linux-x86_64.AppImage "**Other Linux** (x86_64): make erevos-linux-x86_64.AppImage executable and run it (needs FUSE 2)."
           package erevos-macos.dmg "**macOS** 13 or newer (Apple silicon and Intel): open erevos-macos.dmg and drag Erevos to Applications. It has no paid Apple signature: the first time, and after each update, allow it under System Settings → Privacy & Security → Open Anyway."
@@ -367,7 +384,7 @@ jobs:
           ${missing:+Not in this release:${missing%,} (its build failed or is switched off; the release before may have it).}
 
           SHA256SUMS lists every file's SHA-256: \`sha256sum -c SHA256SUMS\`.
-          Updating keeps your contacts and chats; make a backup first. How, for each system: User guide → Updates.
+          Updating keeps your contacts and chats; make a backup first. In Erevos: Updates → Check for updates; by hand: User guide → Updates.
           The web app is not here: it goes out signed from the release computer (deploy/web).
           NOTES
           cat notes.md
@@ -376,3 +393,13 @@ jobs:
           # The five newest releases stay.
           gh release list --limit 100 --exclude-drafts --json tagName --jq '.[5:][].tagName' |
             xargs -r -n1 gh release delete --cleanup-tag --yes
+
+      # The public repository holds only the releases: Erevos's own repository stays private.
+      - name: Publish to the public download repository
+        if: ${{ env.RELEASES_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          gh release create "v$EREVOS_VERSION" files/* --repo "$RELEASES_REPO" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest
+          gh release list --repo "$RELEASES_REPO" --limit 100 --exclude-drafts --json tagName --jq '.[5:][].tagName' |
+            xargs -r -n1 gh release delete --repo "$RELEASES_REPO" --cleanup-tag --yes

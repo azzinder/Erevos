@@ -81,6 +81,12 @@ release only over an app signed with the same key, so a phone with a build
 from a computer (signed with the debug key) has to uninstall it first: make a
 backup before.
 
+Each release also goes to the public repository `azzinder/erevos-releases`
+when the Actions secret `RELEASES_TOKEN` (a token that may write releases
+there) is set, with a `version.json` that **Updates → Check for updates** in
+the app reads. The app never checks by itself; on Android it downloads the
+APK, checks its size and SHA-256 and opens Android's installer.
+
 The repository variable `EREVOS_MACOS` set to `off` leaves the Mac out (a Mac
 minute counts as ten).
 

@@ -10,7 +10,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "check": "node --import ./checks/register.mjs --test checks/lock.check.ts checks/theme.check.ts checks/guide.check.ts checks/e2e.check.ts checks/history.check.ts checks/imports.check.ts checks/inbox.check.ts checks/relay.check.ts checks/backup.check.ts checks/attachments.check.ts checks/receiver.check.ts checks/waiting.check.ts checks/nearby.check.ts checks/lan.check.ts checks/lora.check.ts checks/call.check.ts checks/sms.check.ts checks/tor.check.ts checks/groups.check.ts checks/group-call.check.ts checks/spare.check.ts"
+    "check": "node --import ./checks/register.mjs --test checks/lock.check.ts checks/theme.check.ts checks/guide.check.ts checks/e2e.check.ts checks/history.check.ts checks/imports.check.ts checks/inbox.check.ts checks/relay.check.ts checks/backup.check.ts checks/attachments.check.ts checks/receiver.check.ts checks/waiting.check.ts checks/nearby.check.ts checks/lan.check.ts checks/lora.check.ts checks/call.check.ts checks/sms.check.ts checks/tor.check.ts checks/groups.check.ts checks/group-call.check.ts checks/spare.check.ts checks/updates.check.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -25,6 +25,7 @@
     "expo-font": "~57.0.4",
     "expo-image-manipulator": "~57.0.21",
     "expo-image-picker": "~57.0.20",
+    "expo-intent-launcher": "~57.0.1",
     "expo-linking": "~57.0.11",
     "expo-router": "~57.0.23",
     "expo-secure-store": "~57.0.4",
