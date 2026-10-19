@@ -31,7 +31,7 @@ import { loadCurrentSpaceData } from '../lock/space-data';
 import { LATER_TEXT, type LaterSms, type SmsData } from '../lock/sms-data';
 import {
   blockedNumbers,
-  contactNames,
+  contactCards,
   deleteSmsMessages,
   markSmsRead,
   mmsReady,
@@ -56,12 +56,12 @@ import { useStyles, useTheme } from '../theme/context';
 // read them. The first one to a number that is no contact also carries a hidden invite
 // (lib/sms-invite.ts), when invites are on. A contact can be linked to the number by hand. A photo
 // goes as an MMS, as plain as an SMS. With two SIMs, the one to send on is chosen here, and kept
-// for the number. The number shows the name the phone's contacts give it, when that is turned on.
-// With several numbers (`to` comma-separated) it is a group's conversation: every message goes to
-// all of them as one MMS, text alone too, and each that comes says who wrote it. Ours are marked ✓
-// once they went and ✓✓✓ once the network's delivery report says they reached the phone. Send held
-// down sends a text SMS later (lib/sms-later.ts), to one number only; it shows at the end, marked
-// Scheduled, until it goes.
+// for the number. The number shows the name and picture the phone's contacts give it, when that is
+// turned on. With several numbers (`to` comma-separated) it is a group's conversation: every
+// message goes to all of them as one MMS, text alone too, and each that comes says who wrote it.
+// Ours are marked ✓ once they went and ✓✓✓ once the network's delivery report says they reached
+// the phone. Send held down sends a text SMS later (lib/sms-later.ts), to one number only; it shows
+// at the end, marked Scheduled, until it goes.
 //
 // What is typed and not sent is kept, sealed in the space, as the conversation's draft. A message
 // sent waits the seconds chosen under SMS (5 at first), shown at the end, and can be taken back in
@@ -161,6 +161,7 @@ export default function Sms() {
   const [sims, setSims] = useState<Sim[]>([]);
   const [sim, setSim] = useState(-1);
   const [names, setNames] = useState<Record<string, string>>({});
+  const [face, setFace] = useState('');
   const [later, setLater] = useState<LaterSms[]>([]);
   const [laterMenu, setLaterMenu] = useState(false);
   // The space's order of its SMS (lib/sms-folders.ts), and the numbers Android blocks.
@@ -227,7 +228,11 @@ export default function Sms() {
           if (kept) setDraft((typed) => (typed.trim() ? typed : kept));
         }
         if (!group) setLater(opened.later.filter((l) => sameNumber(l.to, to)));
-        if (opened.names) setNames(await contactNames(numbers).catch(() => ({} as Record<string, string>)));
+        if (opened.names) {
+          const cards = await contactCards(numbers).catch(() => ({}) as Record<string, { name: string; photo: string }>);
+          setNames(Object.fromEntries(Object.entries(cards).map(([n, c]) => [n, c.name])));
+          setFace(group ? '' : (cards[to]?.photo ?? ''));
+        }
         if (!twoSims) return;
         const [found, loaded] = await Promise.all([smsSims(), smsMessages(to, 50).catch(() => [] as SmsMessage[])]);
         const lastCame = [...loaded].reverse().find((m) => !m.mine)?.sim ?? -1;
@@ -503,6 +508,7 @@ export default function Sms() {
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
       <ScrollView ref={thread} contentContainerStyle={styles.thread} onContentSizeChange={() => thread.current?.scrollToEnd({ animated: false })}>
         <View style={styles.head}>
+          {face ? <Image source={{ uri: face }} style={styles.face} onError={() => setFace('')} accessibilityIgnoresInvertColors /> : null}
           <View style={styles.headText}>
             <Text variant="title">{title}</Text>
             {group ? <Text tone="muted">{plural(numbers.length, 'Group MMS · {n} number', 'Group MMS · {n} numbers')}</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
@@ -729,6 +735,7 @@ const makeStyles = (colors: Colors) =>
     thread: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.lg, gap: space.sm },
     head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     headText: { flex: 1, gap: 2 },
+    face: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surfaceAlt },
     more: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
     pressed: { backgroundColor: colors.surfacePressed },
     bubble: { maxWidth: '85%', padding: space.md, borderRadius: radius.lg, gap: 2 },

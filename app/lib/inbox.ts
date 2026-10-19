@@ -15,9 +15,9 @@ import { t, mark } from './i18n';
 export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null; phone?: string };
 
 /** The latest SMS of a conversation with one number. `name`: what the phone's contacts call the
- *  number, when the owner lets Erevos show it. `replied`: any message in it is ours (missing from a
- *  build before it). */
-export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number; name?: string; replied?: boolean };
+ *  number, when the owner lets Erevos show it, and `photo` the picture they have for it. `replied`:
+ *  any message in it is ours (missing from a build before it). */
+export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number; name?: string; photo?: string; replied?: boolean };
 
 export type InboxMessage = {
   peer: string;
@@ -63,6 +63,8 @@ export type InboxRow = {
   pinned?: boolean;
   /** What is typed in an SMS conversation and not sent yet. */
   draft?: string;
+  /** The picture the phone's contacts have for an SMS number, as an address the app may show. */
+  photo?: string;
 };
 
 const PREFIX = 'contact:';
@@ -118,7 +120,7 @@ export function buildInbox(
   });
   for (const t of sms) {
     if (used.has(t)) continue;
-    rows.push({ identity: `sms:${t.address}`, name: t.name || t.address, last: t.text, mine: t.mine, mark: 0, at: t.at, unread: t.unread, timer: 0, imported: false, avatar: null, sms: t.address, lastSms: true });
+    rows.push({ identity: `sms:${t.address}`, name: t.name || t.address, last: t.text, mine: t.mine, mark: 0, at: t.at, unread: t.unread, timer: 0, imported: false, avatar: null, sms: t.address, lastSms: true, photo: t.photo });
   }
   return rows.sort((a, b) => b.at - a.at || shownName(a).localeCompare(shownName(b)));
 }

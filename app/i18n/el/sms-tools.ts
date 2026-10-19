@@ -74,6 +74,8 @@ export const smsTools: Record<string, string> = {
   'Into an Erevos chat': 'Σε συνομιλία του Erevos',
 
   // The SMS settings (app/sms-settings.tsx).
+  'With the names come the pictures your contacts have, in the list and in the conversation. They too are read only to show them.':
+    'Μαζί με τα ονόματα έρχονται και οι εικόνες των επαφών σου, στη λίστα και στη συνομιλία. Κι αυτές διαβάζονται μόνο για να φανούν.',
   'Archived, Spam and Trash': 'Αρχειοθετημένες, ανεπιθύμητα και κάδος',
   "In the list, swipe an SMS conversation to the right to archive it, to the left to delete it, or hold it down to pin it at the top and more. This space keeps its own pins, archived conversations, Trash and spam marks, sealed with its password; the SMS stay in the phone's SMS, where another space sees them as they are.":
     'Στη λίστα, σύρε μια συνομιλία SMS δεξιά για να την αρχειοθετήσεις, αριστερά για να τη διαγράψεις, ή κράτα την πατημένη για να την καρφιτσώσεις στην κορυφή και άλλα. Αυτός ο χώρος κρατά τα δικά του καρφιτσώματα, αρχειοθετημένες συνομιλίες, κάδο και σημάνσεις ανεπιθύμητων, σφραγισμένα με τον κωδικό του· τα SMS μένουν στα SMS του τηλεφώνου, όπου ένας άλλος χώρος τα βλέπει όπως είναι.',

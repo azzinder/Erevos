@@ -296,6 +296,9 @@ export default function SmsSettings() {
           {t("SMS numbers that are no Erevos contact can show the names your phone's contacts give them. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.")}
         </Text>
         <Button title={names ? t('Show numbers only') : t('Show names from my contacts')} kind="secondary" onPress={() => void toggleNames()} />
+        <Text variant="caption" tone="faint">
+          {t('With the names come the pictures your contacts have, in the list and in the conversation. They too are read only to show them.')}
+        </Text>
       </Card>
 
       <SectionTitle title={t('Archived, Spam and Trash')} />

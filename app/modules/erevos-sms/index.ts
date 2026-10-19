@@ -14,6 +14,10 @@ export type Sim = { id: number; slot: number; name: string };
  *  ours (missing in an app built before it). */
 export type SmsThread = { thread: number; address: string; text: string; at: number; mine: boolean; unread: number; replied?: boolean };
 
+/** What the phone's contacts have for a number: its name, and its picture as an address the app
+ *  may show (empty when none). */
+export type ContactCard = { name: string; photo: string };
+
 /** A picture of an MMS, as an address the app may show. */
 export type SmsPicture = { uri: string; type: string };
 
@@ -77,6 +81,7 @@ type NativeSms = {
   deleteMessages?(ids: string[]): Promise<number>;
   resend?(kind: string, id: number, sim: number): Promise<number>;
   pictureBytes?(uri: string): Promise<Uint8Array>;
+  contactCards?(numbers: string[]): Promise<Record<string, ContactCard>>;
   canBlock?(): Promise<boolean>;
   blocked?(): Promise<string[]>;
   block?(number: string): Promise<boolean>;
@@ -154,6 +159,15 @@ export function laterSmsHolder(): LaterSmsHolder | null {
     cancel: (id) => sms.cancelLater!(id),
     state: (ids) => (ids.length > 0 ? sms.laterState!(ids) : Promise.resolve({})),
   };
+}
+
+/** The names and pictures the phone's contacts give these numbers, once Erevos may read them;
+ *  else none. A build before pictures gives the names alone. */
+export async function contactCards(numbers: string[]): Promise<Record<string, ContactCard>> {
+  if (numbers.length === 0) return {};
+  if (native?.contactCards) return native.contactCards(numbers);
+  const names = await contactNames(numbers);
+  return Object.fromEntries(Object.entries(names).map(([number, name]) => [number, { name, photo: '' }]));
 }
 
 /** Whether this build can delete SMS, send again and block numbers. */

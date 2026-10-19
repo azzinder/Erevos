@@ -104,9 +104,10 @@ test('pinned SMS conversations come first, in the list\'s order, and a draft sho
   assert.deepEqual(arranged.map((r) => r.pinned ?? false), [true, true, false, false]);
   assert.equal(arranged[3].draft, 'half written');
   assert.equal(arranged[2], rows[0]);
-  // The list kept for when Erevos opens keeps the pins, not the drafts.
-  const cached = kept([arranged[3], arranged[0]]);
+  // The list kept for when Erevos opens keeps the pins, not the drafts nor the contacts' pictures.
+  const cached = kept([{ ...arranged[3], photo: 'content://com.android.contacts/1/photo' }, arranged[0]]);
   assert.equal(cached.rows[0].draft, undefined);
+  assert.equal(cached.rows[0].photo, undefined);
   assert.equal(cached.rows[1].pinned, true);
 });
 

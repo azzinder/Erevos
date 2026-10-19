@@ -1,6 +1,6 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Image, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LockIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
@@ -23,7 +23,7 @@ import { arrangeRows, dueTrash, emptyTrash, onSmsOrderChanged, sortSms } from '.
 import { groupName, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
-import { blockedNumbers, contactNames, deleteSmsThread, onSmsEvent, smsStatus, smsThreads, smsToolsReady } from '../modules/erevos-sms';
+import { blockedNumbers, contactCards, deleteSmsThread, onSmsEvent, smsStatus, smsThreads, smsToolsReady, type ContactCard } from '../modules/erevos-sms';
 import { Archive } from '../lock/archive';
 import { useLock } from '../lock/context';
 import { loadE2EData } from '../lock/e2e-data';
@@ -70,19 +70,21 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
   { title: mark('Radio test'), detail: mark('For testing the nearby link'), href: '/radio', phone: true },
 ];
 
-// The phone's SMS conversations, named as the phone's contacts name them when the owner turned that
-// on, with the space's own order of them (lib/sms-folders.ts: pinned, archived, in the Trash, spam)
-// and the numbers Android blocks.
+// The phone's SMS conversations, named as the phone's contacts name them, with their pictures,
+// when the owner turned that on; with the space's own order of them (lib/sms-folders.ts: pinned,
+// archived, in the Trash, spam) and the numbers Android blocks.
 type SmsList = { threads: InboxSms[]; order: SmsData | null; blocked: string[] };
 
 async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
   const threads = await smsThreads();
   const link = await SmsLink.open(space, key).catch(() => null);
-  const names: Record<string, string> = link?.names ? await contactNames(threads.flatMap((t) => smsNumbers(t.address))).catch(() => ({})) : {};
+  const cards: Record<string, ContactCard> = link?.names ? await contactCards(threads.flatMap((t) => smsNumbers(t.address))).catch(() => ({})) : {};
+  const names = Object.fromEntries(Object.entries(cards).map(([number, card]) => [number, card.name]));
   // A group's MMS conversation: named by all its numbers.
   const rows = threads.map((t) => {
     const numbers = smsNumbers(t.address);
-    return { ...t, name: numbers.length > 1 ? groupName(numbers, names) : names[numbers[0] ?? t.address] };
+    const card = numbers.length > 1 ? undefined : cards[numbers[0] ?? t.address];
+    return { ...t, name: numbers.length > 1 ? groupName(numbers, names) : card?.name, photo: card?.photo || undefined };
   });
   return { threads: rows, order: link?.state ?? null, blocked: await blockedNumbers() };
 }
@@ -428,6 +430,7 @@ function IconButton({ label, onPress, children }: { label: string; onPress: () =
 function ChatRow({ row, now, online = false, onLong }: { row: InboxRow; now: number; online?: boolean; onLong?: () => void }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
+  const [photoFailed, setPhotoFailed] = useState(false);
   const name = shownName(row);
   const preview = row.draft || row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
   return (
@@ -446,7 +449,10 @@ function ChatRow({ row, now, online = false, onLong }: { row: InboxRow; now: num
       accessibilityLabel={`${name}${online ? t(', online') : ''}${row.unread ? t(', {n} not read', { n: row.unread }) : ''}`}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      {row.sms ? (
+      {row.sms && row.photo && !photoFailed ? (
+        // The picture the phone's contacts have for the number, read from them as it shows.
+        <Image source={{ uri: row.photo }} style={styles.smsFace} onError={() => setPhotoFailed(true)} accessibilityIgnoresInvertColors />
+      ) : row.sms ? (
         <View style={styles.smsFace}>
           <Text variant="label" tone="muted">
             SMS

@@ -82,6 +82,7 @@ class ErevosSmsModule : Module() {
       (if (kind == "mms") MmsStore.resend(context(), id.toLong(), sim) else SmsStore.resend(context(), id.toLong(), sim)).toDouble()
     }
     AsyncFunction("pictureBytes") { uri: String -> MmsStore.partBytes(context(), uri) }
+    AsyncFunction("contactCards") { numbers: List<String> -> SmsStore.contactCards(context(), numbers) }
     // Android's own list of blocked numbers, which the default SMS app may read and change.
     AsyncFunction("canBlock") { SmsStore.canBlock(context()) }
     AsyncFunction("blocked") { SmsStore.blocked(context()) }

@@ -84,36 +84,48 @@ internal object SmsStore {
     }
   }
 
-  /** Names the phone's contacts give these numbers. Empty without READ_CONTACTS. Nothing is kept.
-   *  The contacts' numbers are read once, not looked up one by one: a hundred numbers took long. */
-  fun contactNames(context: Context, numbers: List<String>): Map<String, String> {
+  /** Names the phone's contacts give these numbers. Empty without READ_CONTACTS. Nothing is kept. */
+  fun contactNames(context: Context, numbers: List<String>): Map<String, String> = contacts(context, numbers).mapValues { it.value.first }
+
+  /** The name and picture (an address the app may show, or "") the phone's contacts give these
+   *  numbers. Empty without READ_CONTACTS. Nothing is kept. */
+  fun contactCards(context: Context, numbers: List<String>): Map<String, Map<String, Any?>> =
+    contacts(context, numbers).mapValues { (_, card) -> mapOf("name" to card.first, "photo" to (card.second ?: "")) }
+
+  /** The contacts' numbers are read once, not looked up one by one: a hundred numbers took long. */
+  private fun contacts(context: Context, numbers: List<String>): Map<String, Pair<String, String?>> {
     if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return emptyMap()
     // By the last ten digits, and, for numbers written with another prefix, by the last seven.
-    val byTen = HashMap<String, String>()
-    val bySeven = HashMap<String, MutableList<Pair<String, String>>>()
+    val byTen = HashMap<String, Pair<String, String?>>()
+    val bySeven = HashMap<String, MutableList<Pair<String, Pair<String, String?>>>>()
     try {
-      val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+      val projection = arrayOf(
+        ContactsContract.CommonDataKinds.Phone.NUMBER,
+        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+        ContactsContract.CommonDataKinds.Phone.PHOTO_THUMBNAIL_URI,
+      )
       context.contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, projection, null, null, null)?.use { c ->
         while (c.moveToNext()) {
           val digits = c.getString(0)?.filter { it.isDigit() }?.ifEmpty { null } ?: continue
           val name = c.getString(1)?.takeIf { it.isNotBlank() } ?: continue
-          byTen.putIfAbsent(digits.takeLast(10), name)
-          if (digits.length >= 7) bySeven.getOrPut(digits.takeLast(7)) { ArrayList() }.add(digits to name)
+          val card = name to c.getString(2)?.takeIf { it.isNotBlank() }
+          byTen.putIfAbsent(digits.takeLast(10), card)
+          if (digits.length >= 7) bySeven.getOrPut(digits.takeLast(7)) { ArrayList() }.add(digits to card)
         }
       }
     } catch (_: Exception) {
       return emptyMap()
     }
-    val names = HashMap<String, String>()
+    val cards = HashMap<String, Pair<String, String?>>()
     for (number in numbers.distinct().take(500)) {
       val digits = number.filter { it.isDigit() }
       if (digits.isEmpty()) continue
       // The same last ten digits; else one number ends the other, as Android's own lookup matches.
-      val name = byTen[digits.takeLast(10)]
+      val card = byTen[digits.takeLast(10)]
         ?: if (digits.length >= 7) bySeven[digits.takeLast(7)]?.firstOrNull { (other, _) -> digits.endsWith(other) || other.endsWith(digits) }?.second else null
-      if (name != null) names[number] = name
+      if (card != null) cards[number] = card
     }
-    return names
+    return cards
   }
 
   /** The latest message of each conversation, newest first, with how many are not read, and

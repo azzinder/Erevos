@@ -23,6 +23,8 @@ not been compiled yet.
 - **Blocked numbers.** `blocked()`, `block()` and `unblock()` use Android's own list
   (`BlockedNumberContract`), which only the default SMS app (or dialer) may read and change.
   Android then rejects those numbers' SMS, MMS and calls itself.
+- **Contact photos.** `contactCards()` gives the phone contacts' names with their thumbnail
+  addresses (`content://`), shown as they are and kept nowhere.
 
 ## JS API
 
