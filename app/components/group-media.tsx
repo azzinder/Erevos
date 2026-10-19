@@ -87,15 +87,15 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   // Takes a photo, file or voice message that came, from the relay it is on through ours, and keeps it here.
   async function take(ref: FileRef, voice: boolean) {
     if (takingNow.current.has(ref.id) || !ref.from) return;
-    const relay = own ?? (await groupRelay().catch(() => null));
-    if (!relay) {
-      onError(t('Type the relay address in Relay first.'));
-      return;
-    }
     takingNow.current.add(ref.id);
     tried.current.add(ref.id);
-    setTaking((now) => ({ ...now, [ref.id]: '0%' }));
     try {
+      const relay = own ?? (await groupRelay().catch(() => null));
+      if (!relay) {
+        onError(t('Type the relay address in Relay first.'));
+        return;
+      }
+      setTaking((now) => ({ ...now, [ref.id]: '0%' }));
       const kept = await takeGroupFile(await spaceGroups(), id, relay, ref, (done, count) =>
         setTaking((now) => ({ ...now, [ref.id]: `${Math.floor((done / count) * 100)}%` })),
       );
