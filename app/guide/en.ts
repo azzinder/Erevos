@@ -697,7 +697,8 @@ Erevos's keypad.
 
 On Android, **Contacts** in the menu shows the phone's contacts: the ones in Android's own contacts, which your
 other apps use too, so there is nothing to import. Android asks once whether Erevos may read and change them
-(**Allow contacts**).
+(**Allow contacts**). They have an icon of their own in the phone's apps too, **Contacts** with Erevos's icon,
+which opens them behind Erevos's lock.
 
 - **Finding someone:** **Search contacts** looks in every field: names, numbers (however they are written, with or
   without the country code), emails, addresses, the company, the birthday and the note. **Favourites** shows only

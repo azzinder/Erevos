@@ -82,6 +82,22 @@ class ContactIntentActivity : Activity() {
   }
 }
 
+/**
+ * Erevos's Contacts as an app of its own in the phone's launcher, with Erevos's icon: it opens
+ * them (erevos://contacts), behind Erevos's lock, and closes at once.
+ */
+class ContactsLauncherActivity : Activity() {
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    try {
+      startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("erevos://contacts")).setPackage(packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (_: Exception) {
+      packageManager.getLaunchIntentForPackage(packageName)?.let(::startActivity)
+    }
+    finish()
+  }
+}
+
 internal object ContactIntents {
   /** The contact (its id) a contacts address names: a contact's (by lookup key or id), a raw contact's or a row's. */
   fun contactFor(context: Context, uri: Uri): Long? =

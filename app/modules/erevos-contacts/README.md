@@ -40,6 +40,8 @@ compiled against Android 16's framework classes, not built into the app or run y
   giving no answer back. PickContactActivity answers PICK and GET_CONTENT for a contact, a number, an email or an
   address with a list of its own (framework views, in the app's language), and gives back the address of the one
   tapped with a read grant for it.
+- **A launcher icon.** ContactsLauncherActivity puts Contacts in the phone's apps, with Erevos's icon and a name in
+  the phone's language (res/values*), and opens erevos://contacts.
 - **Changes elsewhere.** `watch()` sends `onContactsChanged` when Android's contacts change.
 
 ## JS API
