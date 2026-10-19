@@ -19,8 +19,11 @@ export const devices: Record<string, string> = {
   // The menu, and the chat on a linked device (app/index.tsx, app/chat.tsx).
   'Linked devices': 'Appareils associés',
   'This account on a computer or in a browser too': 'Ce compte aussi sur un ordinateur ou dans un navigateur',
-  'Calls ring on the phone that holds this account, for now. Call from there.': 'Pour l’instant, les appels sonnent sur le téléphone qui détient ce compte. Appelle depuis celui-ci.',
   "This chat is the phone's: move it into hidden chats there.": 'Cette discussion appartient au téléphone : déplace-la dans les discussions masquées depuis celui-ci.',
+
+  // A call answered on another device of the account (components/call-screen.tsx, lib/call-lines.ts).
+  'Answered on another device': 'Répondu sur un autre appareil',
+  'answered on another device': 'répondu sur un autre appareil',
 
   // Linked devices (app/devices.tsx).
   'All of it': 'Tout',
@@ -47,8 +50,11 @@ export const devices: Record<string, string> = {
   'Photos and files too': 'Les photos et fichiers aussi',
   'Linked to {name}': 'Associé à {name}',
   'Since {when}. Last heard from {last}.': 'Depuis le {when}. Dernier contact le {last}.',
-  'This device has the chats of the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay. Calls and groups stay on the phone for now.':
-    'Cet appareil a les discussions du téléphone qui détient le compte. Ce que tu écris ici passe par le téléphone, qui doit être allumé et joindre le relais. Les appels et les groupes restent sur le téléphone pour l’instant.',
+  'This device has the chats and groups of the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay. Calls ring here too. New groups, public groups and group calls stay on the phone for now.':
+    'Cet appareil a les discussions et les groupes du téléphone qui détient le compte. Ce que tu écris ici passe par le téléphone, qui doit être allumé et joindre le relais. Les appels sonnent aussi ici. Les nouveaux groupes, les groupes publics et les appels de groupe restent sur le téléphone pour l’instant.',
+  'Make or join groups on the phone that holds this account.': 'Crée des groupes ou rejoins-en depuis le téléphone qui détient ce compte.',
+  'Group calls ring on the phone that holds this account, for now. Call from there.':
+    'Pour l’instant, les appels de groupe sonnent sur le téléphone qui détient ce compte. Appelle depuis celui-ci.',
   'The same account on a computer or in a browser. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Hidden chats and what a second password opens never go.':
     'Le même compte sur un ordinateur ou dans un navigateur. Le compte reste celui du téléphone : il transmet, chiffré de bout en bout, ce qui arrive et ce que l’ordinateur écrit, donc tes contacts ne voient rien de nouveau. Les discussions masquées et ce qu’ouvre un second mot de passe ne sont jamais transmis.',
   'Link {name}': 'Associer {name}',
