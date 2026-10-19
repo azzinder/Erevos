@@ -7,10 +7,11 @@ import { sealedFile, type Holder } from './sealed-file';
 // The SMS themselves stay in the phone's SMS store, where every SMS app keeps them; one sent for
 // later is kept here instead until it goes (lib/sms-later.ts), so no other app sees it before, and
 // Android holds a copy locked with this phone's own key, to send it then with the space locked.
-// The space's own order of its SMS is kept here too, never in the phone's store, so no other app
-// and no other space sees it (lib/sms-folders.ts): the conversations pinned, archived and put in
-// the Trash, what is typed in each and not sent, the spam filter's rules and the numbers marked
-// spam or not, and the seconds an SMS waits before it goes, to be taken back.
+// The space's own order of its SMS is sealed in ORDER_FILE, never in the phone's store, so no other
+// app and no other space sees it (lib/sms-folders.ts): the conversations pinned, archived and put
+// in the Trash, what is typed in each and not sent, the spam filter's rules and the numbers marked
+// spam or not, and the seconds an SMS waits before it goes, to be taken back. Backups hold that
+// file and not this one, so a backup restored on another phone never sends an SMS for later again.
 
 export type { Holder };
 
@@ -78,6 +79,8 @@ export const EMPTY_SMS: SmsData = {
 };
 
 const FILE = 'erevos-sms';
+/** The space's own order of its SMS, in a file of its own that backups hold (lock/backup.ts). */
+export const ORDER_FILE = 'erevos-sms-order';
 const BLOCK = 4 * 1024;
 /** Invites older than this are forgotten, and a number can be invited again. */
 export const INVITE_DAYS = 30;
@@ -143,7 +146,30 @@ export function fresh(data: SmsData, now: number): SmsData {
   return { ...data, sent: data.sent.filter((s) => s.at > after), got: data.got.filter((g) => g.at > after), waiting: data.waiting.filter((w) => w.at > after) };
 }
 
-const store = sealedFile({ name: FILE, empty: EMPTY_SMS, checked, block: BLOCK });
+// What ORDER_FILE holds of a space's SMS data; FILE holds the rest. `kept` is written with each
+// save: from then on the order is ORDER_FILE's, and what FILE kept of it before (as an Erevos before
+// ORDER_FILE did) is read no more.
+const ORDER = ['pinned', 'archived', 'trash', 'drafts', 'spam', 'spamLinks', 'spamWords', 'marks', 'undo'] as const;
+type SmsOrder = Pick<SmsData, (typeof ORDER)[number]>;
+type KeptOrder = SmsOrder & { kept: boolean };
 
-export const loadSmsData = store.load;
-export const saveSmsData = store.save;
+const orderOf = (data: SmsOrder): SmsOrder => Object.fromEntries(ORDER.map((name) => [name, data[name]])) as SmsOrder;
+
+const store = sealedFile({ name: FILE, empty: EMPTY_SMS, checked, block: BLOCK });
+const orders = sealedFile<KeptOrder>({
+  name: ORDER_FILE,
+  empty: { ...orderOf(EMPTY_SMS), kept: false },
+  checked: (value) => ({ ...orderOf(checked(value)), kept: (value as { kept?: unknown } | null)?.kept === true }),
+  block: BLOCK,
+});
+
+export async function loadSmsData(holder: Holder, space: number, key: Uint8Array): Promise<SmsData> {
+  const [data, order] = await Promise.all([store.load(holder, space, key), orders.load(holder, space, key)]);
+  return order.kept ? { ...data, ...orderOf(order) } : data;
+}
+
+/** Saves the order first: once it is kept there, FILE's copy of it from before is read no more. */
+export async function saveSmsData(holder: Holder, space: number, key: Uint8Array, data: SmsData): Promise<void> {
+  await orders.save(holder, space, key, { ...orderOf(data), kept: true });
+  await store.save(holder, space, key, { ...data, ...orderOf(EMPTY_SMS) });
+}

@@ -758,8 +758,12 @@ home screen's menu.
   on, with up to 32 MB of their pictures, while Erevos is the SMS app. They are sealed with the backup's password like
   the rest. Restoring the backup puts back into the phone's SMS each message it does not have yet, and deletes none;
   Erevos has to be the SMS app then too, or the rest is restored without them. The SMS are the phone's, the same in
-  every space; each space's SMS settings, pins, Trash and drafts are not in backups yet. An older Erevos does not
-  open a backup that holds SMS.
+  every space. An older Erevos does not open a backup that holds SMS.
+- **The SMS in order:** each space's pins, archived conversations, Trash, drafts, spam filter and marks, and how long
+  an SMS waits to be taken back are in every backup, sealed with the space's password like the rest. The SMS sent
+  later (**SMS later**) are not, so a backup restored on another phone never sends one again; nor are invites, names
+  from your contacts and the SIM chosen for each number. An older Erevos does not open a backup that holds them; one
+  made by an older Erevos restores as ever, without them.
 - **Not in a backup:** photos and files, not yet: a backup is made in the phone's memory, and they would not fit. A
   backup restored on the same phone shows them again; on another phone they show as not on it. Also left out: the
   count of wrong passwords, and how automatic backups are set.

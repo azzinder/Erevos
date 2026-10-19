@@ -9,6 +9,7 @@ import { FILE as E2E } from './e2e-data';
 import { FILE as GROUPS } from './group-data';
 import { FILE as HISTORY, PAGE_PREFIX as PAGE } from './history';
 import { POCKETS } from './sealed-file';
+import { ORDER_FILE as SMS_ORDER } from './sms-data';
 import { PREFIX as AVATAR } from './avatar-photos';
 import { PREFIX as VOICE } from './voice-clips';
 
@@ -23,7 +24,10 @@ import { PREFIX as VOICE } from './voice-clips';
 // kind (1 byte), name (2-byte length, then the name) and data (4-byte length, then the data).
 //
 // What it leaves out stays with the phone: how many wrong passwords were typed, and how automatic
-// backups are made (lib/backup-folder.ts).
+// backups are made (lib/backup-folder.ts). Of each space's SMS data (lock/sms-data.ts) it holds the
+// space's own order of its SMS, and not the rest, with the SMS sent for later: restored on another
+// phone, none of them goes again. An Erevos from before SMS_ORDER does not open a backup holding it;
+// one from before, without it, restores as ever, and the spaces' order of their SMS starts empty.
 //
 // When the owner wants it, a backup also holds the phone's SMS and MMS (lib/backup-sms.ts), as
 // one entry of its own kind, PHONE_SMS: they are the phone's, not a space's, the same in every
@@ -48,7 +52,7 @@ const SLOTTED = Array.from({ length: MOST_SLOTS }, (_, n) => [
 const KEYS = [...FIXED, ...OTHER_POCKETS.map((p) => `erevos.hidden-lock.${p}`), ...SLOTTED];
 
 // The sealed files that are text; voice messages' sounds are bytes.
-const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS];
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, SMS_ORDER];
 
 const KIND_KEY = 0;
 const KIND_TEXT = 1;
