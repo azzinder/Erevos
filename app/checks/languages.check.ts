@@ -69,6 +69,7 @@ test('the first start follows the phone, where Erevos has its language', () => {
   assert.equal(langOf('de'), 'de');
   assert.equal(langOf('fr-CA'), 'fr');
   assert.equal(langOf('es-MX'), 'es');
+  assert.equal(langOf('it_CH'), 'it');
   assert.equal(langOf('en-US'), 'en');
   assert.equal(langOf('nl-NL'), 'en');
   assert.equal(langOf(''), 'en');
@@ -84,5 +85,7 @@ test('plural takes the form each language counts with, then its words', async ()
   assert.deepEqual([chats(0), chats(1), chats(2)], ['0 chats', '1 chat', '2 chats']);
   await setLang('fr');
   assert.deepEqual([chats(0), chats(1), chats(2)], ['0 discussion', '1 discussion', '2 discussions']);
+  await setLang('it');
+  assert.deepEqual([chats(0), chats(1), chats(2)], ['0 chat', '1 chat', '2 chat']);
   await setLang('en');
 });
