@@ -2,7 +2,9 @@
 
 A public group is a group chat that anyone with its link, or its QR code, can ask to join. It is
 the same MLS group as a private one (crates/erevos-group, app/lib/groups.ts), with an owner, admins
-and moderation. This note says how it works and what it gives away. Not audited.
+and moderation. This note says how it works and what it gives away. Not audited. The app's side is
+app/lib/public-groups.ts, with what travels in app/lib/public-rules.ts and its checks, phones with
+the real core and relays, in app/checks/public-groups.check.ts.
 
 ## Who does what
 
@@ -99,9 +101,10 @@ group's but the door and the messages on their way.
   so a request to the old link finds no queue there and the phone that sent it says the link no
   longer works. The new link goes to the members in the rules. Requests waiting in the old door are
   lost.
-- **Handing over:** the owner chooses an admin. One commit makes that admin's phone the keeper;
-  that phone then makes a door of its own, on its own relay, so the link changes. The old owner is
-  an admin from then on, and its old door is deleted.
+- **Handing over:** the owner chooses a member, usually an admin. One commit makes that member's
+  phone the keeper; that phone then makes a door of its own, on its own relay, so the link changes.
+  The old owner is an admin from then on, and its old door is deleted, with the requests that
+  waited at it for an admin.
 - If the owner's phone is lost for good, nobody can let people in again or change the rules; the
   group goes on for those in it, and the admins still mute, take out (for every phone that hears)
   and delete. Hand the group over before changing phones.
