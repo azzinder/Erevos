@@ -506,6 +506,8 @@ chats in one list.
 - **Links:** a web address in an SMS is underlined, and opens as in a chat, once you have seen it whole.
 - **Names from your contacts:** off at first. Under **SMS** in the menu, **Show names from my contacts** shows the
   names your phone's contacts give SMS numbers. Erevos only reads them to show them, and keeps no copy.
+- **Senders with a name:** an SMS from a name instead of a number, like a bank's, opens to read, but cannot be
+  answered.
 
 ## Password lock {#lock}
 

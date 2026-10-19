@@ -12,7 +12,7 @@ import { toBase64Url } from '../lib/e2e';
 import { lang, plural, t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { relayKey } from '../lib/relay';
-import { groupName, smsAddress, smsNumbers } from '../lib/sms-group';
+import { groupName, sameConversation, smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { pickMmsPhoto, type MmsPhoto } from '../lib/pick-mms-photo';
 import { cancelLater as cancelSmsLater, laterChanged, onLaterSent } from '../lib/sms-later';
@@ -37,11 +37,17 @@ import { useStyles, useTheme } from '../theme/context';
 // once they went and ✓✓✓ once the network's delivery report says they reached the phone. Send held
 // down sends a text SMS later (lib/sms-later.ts), to one number only; it shows at the end, marked
 // Scheduled, until it goes.
+//
+// A sender that writes with a name instead of a number (a bank, say) shows its SMS, and cannot be
+// answered.
 
 export default function Sms() {
   const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string }>();
-  const numbers = smsNumbers(typeof params.to === 'string' ? params.to : '');
-  const to = smsAddress(numbers);
+  const raw = typeof params.to === 'string' ? params.to : '';
+  const numbers = smsNumbers(raw);
+  // A sender that writes with a name instead of a number: its SMS show, but cannot be answered.
+  const sender = numbers.length === 0 && /^[\p{L}\p{N}][\p{L}\p{N} .&_-]{0,19}$/u.test(raw.trim()) ? raw.trim() : '';
+  const to = smsAddress(numbers) || sender;
   const group = numbers.length > 1;
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
@@ -85,7 +91,7 @@ export default function Sms() {
     load();
     loadE2EData('space', space, key)
       .then((data) => {
-        const linked = group ? undefined : data.contacts.find((c) => c.phone && sameNumber(c.phone, to));
+        const linked = group || sender ? undefined : data.contacts.find((c) => c.phone && sameNumber(c.phone, to));
         if (linked && params.plain !== '1') router.replace(`/chat?contact=${linked.identity}`);
         else setContacts(data.contacts);
       })
@@ -102,7 +108,8 @@ export default function Sms() {
         setSim(chooseSim(found, opened.simFor(to), lastCame));
       })
       .catch(() => undefined);
-    const subscriptions = [onSmsEvent('onSms', ({ address }) => numbers.some((n) => sameNumber(address, n)) && load()), onSmsEvent('onSmsSent', () => load()), onSmsEvent('onSmsDelivered', () => load())];
+    const ours = (address: string) => (numbers.length > 0 ? numbers.some((n) => sameNumber(address, n)) : sameConversation(address, to));
+    const subscriptions = [onSmsEvent('onSms', ({ address }) => ours(address) && load()), onSmsEvent('onSmsSent', () => load()), onSmsEvent('onSmsDelivered', () => load())];
     const stopLater = onLaterSent(load);
     return () => {
       subscriptions.forEach((s) => s?.remove());
@@ -247,6 +254,7 @@ export default function Sms() {
     }
   }
 
+  const mayAnswer = numbers.length > 0;
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
       <ScrollView ref={thread} contentContainerStyle={styles.thread} onContentSizeChange={() => thread.current?.scrollToEnd({ animated: false })}>
@@ -256,7 +264,7 @@ export default function Sms() {
           <Text variant="caption" color={colors.warning}>
             {t('Plain SMS: not encrypted. The phone company can read these messages.')}
           </Text>
-          {contacts.length > 0 && !group ? (
+          {contacts.length > 0 && !group && mayAnswer ? (
             choosing ? (
               <>
                 <Text tone="muted">{t('Which contact is {number}? Messages to this number will go through Erevos.', { number: to })}</Text>
@@ -308,7 +316,7 @@ export default function Sms() {
         ))}
         {note ? <Text tone="muted">{note}</Text> : null}
       </ScrollView>
-      {sims.length > 1 || (twoSims && sims.length === 0) || photo ? (
+      {mayAnswer && (sims.length > 1 || (twoSims && sims.length === 0) || photo) ? (
         <Row wrap style={styles.options}>
           {sims.length > 1 ? (
             sims.map((s) => <Chip key={s.id} label={`SIM ${s.slot + 1}${s.name ? ` · ${s.name}` : ''}`} selected={sim === s.id} onPress={() => pickSim(s.id)} />)
@@ -318,18 +326,26 @@ export default function Sms() {
           {photo ? <Chip label={t('Picture · {size} KB · remove', { size: Math.ceil(photo.bytes.length / 1024) })} selected onPress={() => setPhoto(null)} /> : null}
         </Row>
       ) : null}
-      <View style={styles.composer}>
-        {mmsReady() ? <Button title={t('Photo')} kind="ghost" compact onPress={() => void addPhoto()} /> : null}
-        <Input value={draft} onChangeText={setDraft} placeholder={photo || group ? t('MMS (not encrypted)') : t('SMS (not encrypted)')} multiline style={styles.input} />
-        <Button
-          title={t('Send')}
-          compact
-          loading={sending}
-          disabled={!draft.trim() && !photo}
-          onPress={() => void send()}
-          onLongPress={!group && !photo && draft.trim() ? () => setLaterMenu(true) : undefined}
-        />
-      </View>
+      {mayAnswer ? (
+        <View style={styles.composer}>
+          {mmsReady() ? <Button title={t('Photo')} kind="ghost" compact onPress={() => void addPhoto()} /> : null}
+          <Input value={draft} onChangeText={setDraft} placeholder={photo || group ? t('MMS (not encrypted)') : t('SMS (not encrypted)')} multiline style={styles.input} />
+          <Button
+            title={t('Send')}
+            compact
+            loading={sending}
+            disabled={!draft.trim() && !photo}
+            onPress={() => void send()}
+            onLongPress={!group && !photo && draft.trim() ? () => setLaterMenu(true) : undefined}
+          />
+        </View>
+      ) : (
+        <View style={styles.composer}>
+          <Text variant="caption" tone="muted" style={styles.input}>
+            {t('It writes with a name, not a number, so it cannot be answered.')}
+          </Text>
+        </View>
+      )}
       <Sheet visible={laterMenu} onClose={() => setLaterMenu(false)} title={t('SMS later')}>
         {laterMenu ? <LaterPicker onPick={(at) => void sendLater(at)} /> : null}
         <Text variant="caption" tone="muted">
