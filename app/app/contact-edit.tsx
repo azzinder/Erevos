@@ -7,7 +7,7 @@ import { sealedFields } from '../lib/contact-book';
 import { askedFields, birthdayText, CHOSEN_KINDS, cleanFields, EMPTY_FIELDS, fieldsName, kindLabel, MAX_ENTRIES, parseBirthday, phoneFields, phoneSave, type Entry, type Fields } from '../lib/contacts';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
-import { loadPlace, placeOf, saveSealed, spacePlace, type Place } from '../lib/sealed-contacts';
+import { linkPhoneContact, loadPlace, placeOf, saveSealed, spacePlace, type Place } from '../lib/sealed-contacts';
 import { contactAccounts, contactsReady, phoneContact, savePhoneContact, type ContactAccount, type PhoneContact } from '../modules/erevos-contacts';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -16,7 +16,8 @@ import { useStyles, useTheme } from '../theme/context';
 // Android's contacts on this phone only, or in an account the phone syncs contacts with, as the
 // owner chooses, or only in Erevos, sealed in the space (`sealed`, lib/sealed-contacts.ts). Among
 // the hidden chats' screens (`hidden`), it is always theirs, sealed with them. Another app (or a
-// QR code) can start one with fields of its own (`fill`), which are kept only once the owner saves.
+// QR code) can start one with fields of its own (`fill`), which are kept only once the owner saves;
+// one made from an Erevos contact's card (`erevos`) is that Erevos contact once saved.
 
 type ListName = 'phones' | 'emails' | 'addresses';
 
@@ -30,9 +31,10 @@ function typedBirthday(text: string): string {
 }
 
 export default function ContactEdit() {
-  const params = useLocalSearchParams<{ id?: string; fill?: string; sealed?: string; hidden?: string }>();
+  const params = useLocalSearchParams<{ id?: string; fill?: string; sealed?: string; erevos?: string; hidden?: string }>();
   const id = Number(params.id ?? 0);
   const sealedId = typeof params.sealed === 'string' ? params.sealed : '';
+  const erevos = typeof params.erevos === 'string' && /^[0-9a-f]{64}$/.test(params.erevos) ? params.erevos : '';
   const hidden = params.hidden === '1';
   const hiddenOpen = useOpenHiddenPlace();
   const phoneHere = Platform.OS === 'android' && contactsReady() && !hidden;
@@ -135,12 +137,14 @@ export default function ContactEdit() {
     try {
       if (keptSealed) {
         if (!place) throw new Error(t('The hidden chats are closed.'));
-        const kept = await saveSealed(place, sealedId || null, clean);
+        const kept = await saveSealed(place, sealedId || null, clean, erevos ? { erevos } : {});
         if (sealedId) router.back();
         else router.replace(`/contact-card?sealed=${kept}${hidden ? '&hidden=1' : ''}`);
         return;
       }
       const saved = await savePhoneContact(phoneSave(clean, phone, account, phone?.starred ?? false));
+      const lookup = erevos && !phone ? (await phoneContact(saved).catch(() => null))?.lookup : '';
+      if (lookup) await linkPhoneContact(spacePlace(), lookup, erevos).catch(() => undefined);
       if (phone) router.back();
       else router.replace(`/contact-card?id=${saved}`);
     } catch (error) {

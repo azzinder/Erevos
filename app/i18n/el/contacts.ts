@@ -20,7 +20,6 @@ export const contacts: Record<string, string> = {
   'No contacts yet.': 'Καμία επαφή ακόμα.',
   "These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them. Those with a lock are kept only in Erevos, sealed in this space.":
     'Αυτές είναι οι επαφές του τηλεφώνου, στις επαφές του ίδιου του Android: τις βλέπει κάθε εφαρμογή που έχει άδεια να τις διαβάζει, και μπορεί να τις συγχρονίζει ένας λογαριασμός (Google). Όσες έχουν λουκέτο φυλάγονται μόνο στο Erevos, σφραγισμένες σε αυτόν τον χώρο.',
-  '{name}, favourite': '{name}, αγαπημένη',
   '{n} contact': '{n} επαφή',
   '{n} contacts': '{n} επαφές',
   'New contact': 'Νέα επαφή',
@@ -201,8 +200,6 @@ export const contacts: Record<string, string> = {
     'Σφραγισμένη σε αυτόν τον χώρο, και όχι στις επαφές του τηλεφώνου: δεν τη βλέπει άλλη εφαρμογή, ούτε κάποιος λογαριασμός με τον οποίο συγχρονίζεται το τηλέφωνο.',
   'No contact is kept only in Erevos yet. Choose Only in Erevos when you make one.':
     'Καμία επαφή δεν φυλάγεται ακόμα μόνο στο Erevos. Διάλεξε «Μόνο στο Erevos» όταν φτιάχνεις μία.',
-  '{name}, favourite, only in Erevos': '{name}, αγαπημένη, μόνο στο Erevos',
-  '{name}, only in Erevos': '{name}, μόνο στο Erevos',
   'Erevos keeps {n} contacts of its own at most.': 'Το Erevos κρατά το πολύ {n} δικές του επαφές.',
   'This contact is no longer kept in Erevos.': 'Αυτή η επαφή δεν φυλάγεται πια στο Erevos.',
   'Delete {name}? It is kept only in Erevos, and cannot be brought back.': 'Να διαγραφεί η επαφή {name}; Φυλάγεται μόνο στο Erevos, και δεν θα μπορεί να επανέλθει.',
@@ -220,4 +217,37 @@ export const contacts: Record<string, string> = {
   "Kept only here, sealed with the hidden chats: they show nowhere else, not even in the space's contacts.":
     'Φυλάγονται μόνο εδώ, σφραγισμένες μαζί με τις κρυφές συνομιλίες: δεν φαίνονται πουθενά αλλού, ούτε καν στις επαφές του χώρου.',
   'Kept only in these hidden chats, sealed.': 'Φυλάγεται μόνο σε αυτές τις κρυφές συνομιλίες, σφραγισμένη.',
+  'favourite': 'αγαπημένη',
+  'only in Erevos': 'μόνο στο Erevos',
+
+  // Erevos contacts, and a contact's history.
+  'Erevos contacts': 'Επαφές Erevos',
+  'Erevos contact': 'Επαφή Erevos',
+  'with an Erevos chat': 'με συνομιλία στο Erevos',
+  'No Erevos contacts yet. Add one in Chat, with their link or QR code.':
+    'Καμία επαφή Erevos ακόμα. Πρόσθεσε μία στη Συνομιλία, με τον σύνδεσμο ή τον κωδικό QR της.',
+  'A contact of your Erevos chats. Add it to your contacts to give it numbers, an email and more.':
+    'Επαφή των συνομιλιών σου στο Erevos. Πρόσθεσέ τη στις επαφές σου για να της δώσεις αριθμούς, email και άλλα.',
+  'In Erevos': 'Στο Erevos',
+  'The Erevos contact {name}': 'Η επαφή Erevos {name}',
+  'End-to-end encrypted, through Erevos instead of the phone company.':
+    'Κρυπτογραφημένα από άκρη σε άκρη, μέσω Erevos αντί για την εταιρεία κινητής.',
+  'Not this Erevos contact': 'Όχι αυτή η επαφή Erevos',
+  'One of its numbers is linked to this Erevos contact, in its chat.':
+    'Ένας από τους αριθμούς της είναι συνδεδεμένος με αυτή την επαφή Erevos, στη συνομιλία της.',
+  'Link to an Erevos contact': 'Σύνδεση με επαφή Erevos',
+  "The same person in your Erevos chats: this card then shows their chat and calls. The link is sealed in Erevos, never in the phone's contacts.":
+    'Το ίδιο πρόσωπο στις συνομιλίες σου στο Erevos: αυτή η κάρτα δείχνει τότε τη συνομιλία και τις κλήσεις του. Η σύνδεση σφραγίζεται στο Erevos, ποτέ στις επαφές του τηλεφώνου.',
+  'Add to contacts': 'Προσθήκη στις επαφές',
+  'History': 'Ιστορικό',
+  'No calls or messages with this contact yet.': 'Καμία κλήση ή μήνυμα με αυτή την επαφή ακόμα.',
+  "Its calls show here once Erevos may read the phone's call log. Erevos only shows them, and keeps no copy.":
+    'Οι κλήσεις της φαίνονται εδώ μόλις το Erevos μπορεί να διαβάζει το αρχείο κλήσεων του τηλεφώνου. Το Erevos μόνο τις δείχνει, και δεν κρατά αντίγραφο.',
+  'Show calls': 'Εμφάνιση κλήσεων',
+  'Incoming call, {time}': 'Εισερχόμενη κλήση, {time}',
+  'Incoming call': 'Εισερχόμενη κλήση',
+  'Outgoing call, {time}': 'Εξερχόμενη κλήση, {time}',
+  'Outgoing call, no answer': 'Εξερχόμενη κλήση, χωρίς απάντηση',
+  'Declined call': 'Απορριφθείσα κλήση',
+  'Blocked call': 'Αποκλεισμένη κλήση',
 };

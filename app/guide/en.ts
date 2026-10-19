@@ -561,6 +561,15 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
   sealed with them: they show nowhere else, not even in the space's contacts, and the screen shows nothing once the
   hidden chats close. A new contact there is always one of theirs. They take no photo, file or menu, as those leave
   Erevos, which closes the hidden chats; so does calling one, which goes through the phone app and its call log.
+- **Erevos contacts:** a contact that is the same person as one of your chats' Erevos contacts shows as one card with
+  it: by a number linked to them in Erevos, or with **Link to an Erevos contact** on its card, a link sealed in the
+  space, never in Android's contacts (**Not this Erevos contact** undoes it). The card then has **Message**, **Call**
+  and **Video**, end-to-end encrypted through Erevos instead of the phone company. A chats' contact that no contact is
+  has a card of its own, with the shield, where **Add to contacts** makes one; the **Erevos contacts** chip lists them
+  all. In hidden chats, these are the hidden chats' own contacts, and their chat opens there.
+- **History:** a contact's card lists its latest calls in the phone's call log, its SMS and its messages in Erevos,
+  the newest first; tap one to call back, write an SMS or open the chat. The calls show once you let Erevos read the
+  call log (**Show calls**). Erevos only reads them to show them, and keeps no copy.
 - **Delete** takes the contact off the phone, from every account it is kept in; one kept only in Erevos, from Erevos.
 - **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
   Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,
@@ -885,7 +894,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
-| **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. | |
+| **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. A contact's calls and SMS are read from the phone's own call log and SMS only to show its history, and kept nowhere. | |
 | **Contacts kept only in Erevos** | Sealed with the space's key, or with the hidden chats' for theirs, in one file for every space whose size shows roughly how many there are in all, not whose they are; their photos each in a file of its own. Never in Android's contacts. Calls and SMS to them go through the phone, and show in its call log and SMS. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |

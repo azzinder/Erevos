@@ -4,23 +4,24 @@ import { FlatList, PermissionsAndroid, Platform, Pressable, ScrollView, StyleShe
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ContactFace, useCardPhoto } from '../components/contact-face';
-import { LockIcon, MoreIcon, PlusIcon, SearchIcon } from '../components/icons';
+import { LockIcon, MoreIcon, PlusIcon, SearchIcon, ShieldIcon } from '../components/icons';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
-import { byName, cardHref, groupsByTitle, groupTitles, phoneCards, sealedCards, type Card as ContactCard } from '../lib/contact-book';
+import { byName, cardHref, erevosPeople, groupsByTitle, groupTitles, phoneCards, sealedCard, withErevos, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
 import { birthdayComing, daysToBirthday, fillText, matches, parseBirthday } from '../lib/contacts';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { plural, t } from '../lib/i18n';
 import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
 import { readQrPhoto } from '../lib/read-qr';
-import { onSealedChange, placeOf, spacePlace, type Place } from '../lib/sealed-contacts';
+import { loadPlace, onSealedChange, placeOf, spacePlace, type Place } from '../lib/sealed-contacts';
 import { contactFromQr } from '../lib/vcard';
 import { contactsReady, contactsStatus, onContactsEvent, phoneGroups, setBirthdayReminders, watchContacts, type PhoneGroup } from '../modules/erevos-contacts';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // Contacts: the phone's own contacts, from Android's contacts (modules/erevos-contacts), and those
-// kept only in Erevos, sealed in the space (lib/sealed-contacts.ts), with a search over every
+// kept only in Erevos, sealed in the space (lib/sealed-contacts.ts), each as one card with the
+// Erevos contact it is, and the chats' Erevos contacts that none is; with a search over every
 // field, the favourites, the birthdays (the next first), each group's contacts, and a new contact.
 // Read again each time it comes back into view, and when they change while it shows (another app,
 // a sync). The menu has the rest: groups (app/contact-groups.tsx), birthday reminders, duplicates
@@ -31,8 +32,8 @@ import { useStyles, useTheme } from '../theme/context';
 // they close (lib/hidden-contacts.ts): nothing of the phone's or the space's. It has no menu
 // there: what it holds would leave Erevos (a photo picked, a file), which closes them.
 
-/** What the list shows: everyone, the favourites, those kept only in Erevos, the birthdays, or a group's contacts (its id). */
-type Filter = 'all' | 'starred' | 'sealed' | 'birthdays' | number;
+/** What the list shows: everyone, the favourites, the Erevos contacts, those kept only in Erevos, the birthdays, or a group's contacts (its id). */
+type Filter = 'all' | 'starred' | 'erevos' | 'sealed' | 'birthdays' | number;
 
 export default function Contacts() {
   const styles = useStyles(makeStyles);
@@ -70,8 +71,15 @@ export default function Contacts() {
     setAllowed(status.read);
     if (status.read && phoneHere) watchContacts();
     const fail = (error: unknown) => active.current && setNote(t("The phone's contacts could not be read: {error}", { error: error instanceof Error ? error.message : String(error) }));
-    Promise.all([phoneHere && status.read ? phoneCards() : Promise.resolve([]), place ? sealedCards(place).catch(() => []) : Promise.resolve([])])
-      .then(([phone, sealed]) => active.current && setCards(byName([...phone, ...sealed])))
+    Promise.all([
+      phoneHere && status.read ? phoneCards() : Promise.resolve([]),
+      place ? loadPlace(place).catch(() => null) : Promise.resolve(null),
+      erevosPeople(hidden ? hiddenOpen : null),
+    ])
+      .then(([phone, data, people]) => {
+        if (!active.current) return;
+        setCards(byName(withErevos([...phone, ...(data?.contacts ?? []).map(sealedCard)], data?.links ?? [], people)));
+      })
       .catch(fail);
     if (!phoneHere || !status.read) return;
     phoneGroups()
@@ -82,7 +90,7 @@ export default function Contacts() {
         setFilter((f) => (typeof f === 'number' && !found.some((g) => g.id === f) ? 'all' : f));
       })
       .catch(() => undefined);
-  }, [phoneHere, place]);
+  }, [phoneHere, place, hidden, hiddenOpen]);
 
   useFocusEffect(
     useCallback(() => {
@@ -118,9 +126,14 @@ export default function Contacts() {
         .sort((x, y) => daysToBirthday(x.b, now) - daysToBirthday(y.b, now));
       return born.map((x) => x.c);
     }
-    const list = (cards ?? []).filter((c) => (filter === 'all' ? true : filter === 'starred' ? c.starred : filter === 'sealed' ? c.sealed !== null : c.groups.includes(filter)));
+    const list = (cards ?? []).filter((c) =>
+      filter === 'all' ? true : filter === 'starred' ? c.starred : filter === 'erevos' ? c.erevos !== '' : filter === 'sealed' ? c.sealed !== null : c.groups.includes(filter),
+    );
     return query.trim() ? list.filter((c) => matches(c, query, groupTitles(c, groups))) : list;
   }, [cards, groups, query, filter]);
+
+  // What a .vcf file takes of them: the contacts, not the chats' Erevos contacts, which stay sealed.
+  const saveable = useMemo(() => shown.filter((c) => c.phone || c.sealed), [shown]);
 
   // A notice on the morning of each birthday: Android 13 and later ask first whether Erevos may show notices.
   async function toggleReminders() {
@@ -167,7 +180,7 @@ export default function Contacts() {
     const day = new Date();
     const name = vcfName(`contacts-${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`);
     try {
-      const saved = await saveVCards(shown, name);
+      const saved = await saveVCards(saveable, name);
       if (saved) setNote(t('Saved as {name}. The file is outside Erevos: anyone who has it can read these contacts.', { name: saved }));
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
@@ -208,6 +221,7 @@ export default function Contacts() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters} keyboardShouldPersistTaps="handled">
         <Chip label={t('All')} selected={filter === 'all'} onPress={() => setFilter('all')} />
         <Chip label={t('Favourites')} selected={filter === 'starred'} onPress={() => setFilter('starred')} />
+        <Chip label={t('Erevos contacts')} selected={filter === 'erevos'} onPress={() => setFilter('erevos')} />
         {!hidden ? <Chip label={t('Only in Erevos')} selected={filter === 'sealed'} onPress={() => setFilter('sealed')} /> : null}
         <Chip label={t('Birthdays')} selected={filter === 'birthdays'} onPress={() => setFilter('birthdays')} />
         {groups.map((g) => (
@@ -253,6 +267,8 @@ export default function Contacts() {
                   ? t('No favourites yet. Tap the star on a contact.')
                   : filter === 'birthdays'
                     ? t('No contact has a birthday yet. Add one in Edit.')
+                    : filter === 'erevos'
+                      ? t('No Erevos contacts yet. Add one in Chat, with their link or QR code.')
                     : filter === 'sealed'
                       ? t('No contact is kept only in Erevos yet. Choose Only in Erevos when you make one.')
                       : filter === 'all'
@@ -305,10 +321,10 @@ export default function Contacts() {
             setReadingQr(true);
           }}
         />
-        {shown.length > 0 ? (
+        {saveable.length > 0 ? (
           <MenuRow
             title={t('Save as a .vcf file')}
-            detail={plural(shown.length, 'The {n} contact shown, in a folder you choose', 'The {n} contacts shown, in a folder you choose')}
+            detail={plural(saveable.length, 'The {n} contact shown, in a folder you choose', 'The {n} contacts shown, in a folder you choose')}
             onPress={() => void saveShown()}
           />
         ) : null}
@@ -346,13 +362,15 @@ function ContactRow({ card, birthday, hidden }: { card: ContactCard; birthday?: 
   const { colors } = useTheme();
   const photo = useCardPhoto(card);
   const born = birthday ? parseBirthday(card.birthday) : null;
-  const detail = born ? birthdayComing(born, new Date()) : card.phones[0]?.value || card.emails[0]?.value || card.company;
+  const onlyErevos = !card.phone && !card.sealed;
+  const detail = born ? birthdayComing(born, new Date()) : card.phones[0]?.value || card.emails[0]?.value || card.company || (onlyErevos ? t('Erevos contact') : '');
   const sealed = card.sealed !== null && !hidden;
+  const label = [card.name, card.starred ? t('favourite') : '', sealed ? t('only in Erevos') : '', card.erevos ? t('with an Erevos chat') : ''].filter(Boolean).join(', ');
   return (
     <Pressable
       onPress={() => router.push(cardHref(card, hidden))}
       accessibilityRole="button"
-      accessibilityLabel={card.starred && sealed ? t('{name}, favourite, only in Erevos', { name: card.name }) : card.starred ? t('{name}, favourite', { name: card.name }) : sealed ? t('{name}, only in Erevos', { name: card.name }) : card.name}
+      accessibilityLabel={label}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
       <ContactFace name={card.name} uri={photo} size={44} />
@@ -366,6 +384,7 @@ function ContactRow({ card, birthday, hidden }: { card: ContactCard; birthday?: 
           </Text>
         ) : null}
       </View>
+      {card.erevos ? <ShieldIcon color={colors.success} size={14} /> : null}
       {sealed ? <LockIcon color={colors.textFaint} size={16} /> : null}
       {card.starred ? (
         <Text variant="bodyStrong" color={colors.accentText}>

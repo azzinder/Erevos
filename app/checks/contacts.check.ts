@@ -9,12 +9,15 @@ import {
   askedFields,
   birthdayComing,
   birthdayText,
+  callText,
   cleanFields,
   daysToBirthday,
   EMPTY_FIELDS,
+  erevosFor,
   fieldsName,
   fillText,
   findDuplicates,
+  historyLines,
   simFields,
   initials,
   keeperFirst,
@@ -28,10 +31,14 @@ import {
   splitName,
   turns,
   typeOf,
+  whenText,
+  type ErevosPerson,
   type Fields,
 } from '../lib/contacts';
 import { setLang } from '../lib/i18n';
-import type { PhoneContact } from '../modules/erevos-contacts';
+import type { Message } from '../lock/history';
+import type { CallEntry, PhoneContact } from '../modules/erevos-contacts';
+import type { SmsMessage } from '../modules/erevos-sms';
 
 const maria: Fields = {
   ...EMPTY_FIELDS,
@@ -304,4 +311,59 @@ test("a SIM's contact as fields", () => {
   // A number without a name is named by its number; a name without a number has none.
   assert.equal(simFields({ name: '', number: '112', sim: 1 }).name, '112');
   assert.deepEqual(simFields({ name: 'Ταξί', number: '', sim: 0 }).phones, []);
+});
+
+test('the Erevos contact a contact is: linked by hand first, else by a number linked in Erevos', () => {
+  const eleni: ErevosPerson = { identity: 'aa'.repeat(32), name: 'Eleni', phone: '6912345678' };
+  const nikos: ErevosPerson = { identity: 'bb'.repeat(32), name: 'Nikos', phone: '' };
+  const people = [eleni, nikos];
+  // +30 691 234 5678 is 6912345678 with the country code.
+  assert.equal(erevosFor('', maria.phones, people), eleni.identity);
+  assert.equal(erevosFor(nikos.identity, maria.phones, people), nikos.identity);
+  // A link to an Erevos contact that is gone counts for nothing.
+  assert.equal(erevosFor('cc'.repeat(32), maria.phones, people), eleni.identity);
+  assert.equal(erevosFor('', [], people), '');
+  assert.equal(erevosFor('', maria.phones, [nikos]), '');
+});
+
+test("a contact's calls, SMS and Erevos messages, as one history, the newest first", async () => {
+  await setLang('en');
+  const calls: CallEntry[] = [
+    { number: '6912345678', at: 1000, seconds: 65, kind: 'in' },
+    { number: '6912345678', at: 4000, seconds: 0, kind: 'missed' },
+    { number: '+306912345678', at: 2000, seconds: 0, kind: 'out' },
+  ];
+  const sms = (id: number, at: number, text: string): SmsMessage => ({ id, text, at, mine: false, state: 'done', read: true });
+  const lists = [
+    { number: '6912345678', messages: [sms(1, 3000, 'Hi'), sms(2, 500, '')] },
+    { number: '+306912345678', messages: [sms(1, 3000, 'Hi')] },
+  ];
+  const erevos: Message[] = [
+    { peer: 'contact:x', text: 'Through Erevos', mine: true, at: 3500, tag: 't1' },
+    { peer: 'contact:x', text: 'Gone', mine: false, at: 3600, tag: 't2', until: 3700 },
+  ];
+  const lines = historyLines(calls, lists, erevos, 5000);
+  assert.deepEqual(
+    lines.map((l) => [l.kind, l.at, l.text]),
+    [
+      ['call', 4000, 'Missed call'],
+      ['erevos', 3500, 'Through Erevos'],
+      ['sms', 3000, 'Hi'],
+      ['call', 2000, 'Outgoing call, no answer'],
+      ['call', 1000, 'Incoming call, 1:05'],
+      ['sms', 500, ''],
+    ],
+  );
+  assert.equal(lines[0].missed, true);
+  assert.equal(lines[1].mine, true);
+  assert.equal(historyLines(calls, lists, erevos, 5000, 2).length, 2);
+  assert.equal(callText({ number: '1', at: 0, seconds: 3725, kind: 'out' }), 'Outgoing call, 1:02:05');
+  assert.equal(callText({ number: '1', at: 0, seconds: 0, kind: 'blocked' }), 'Blocked call');
+});
+
+test('when a line of history was', () => {
+  const now = new Date(2026, 9, 19, 18, 0).getTime();
+  assert.equal(whenText(new Date(2026, 9, 19, 9, 5).getTime(), now), '09:05');
+  assert.equal(whenText(new Date(2026, 2, 4, 9, 5).getTime(), now), '4/3');
+  assert.equal(whenText(new Date(2025, 11, 31, 9, 5).getTime(), now), '31/12/2025');
 });

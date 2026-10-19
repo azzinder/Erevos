@@ -1,27 +1,35 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, PermissionsAndroid, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ContactFace, forgetPhoneContactPhoto, useCardPhoto } from '../components/contact-face';
+import { ShieldIcon } from '../components/icons';
+import { KeyFace } from '../components/key-face';
 import { QrCode } from '../components/QrCode';
 import { Button, Card, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
-import { groupsByTitle, phoneCard, sealedCard, type Card as ContactCard } from '../lib/contact-book';
+import { byName, cardErevos, erevosCard, erevosPeople, groupsByTitle, phoneCard, sealedCard, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
-import { birthdayComing, birthdayLabel, kindLabel, parseBirthday, phoneSave, type Entry } from '../lib/contacts';
+import { birthdayComing, birthdayLabel, fillText, historyLines, kindLabel, parseBirthday, phoneSave, whenText, type Entry, type ErevosPerson, type HistoryLine } from '../lib/contacts';
 import { fromBase64 } from '../lib/crypto';
-import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
+import { enterHiddenScreen, hiddenScreens, useOpenHiddenPlace, type OpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
 import { pickAvatar } from '../lib/pick-avatar';
 import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
-import { loadPlace, onSealedChange, placeOf, removeSealed, saveSealed, setSealedPhoto, spacePlace, starSealed, type Place } from '../lib/sealed-contacts';
+import { linkPhoneContact, linkSealed, loadPlace, onSealedChange, placeOf, removeSealed, saveSealed, setSealedPhoto, spacePlace, starSealed, type Place } from '../lib/sealed-contacts';
+import { spaceChats } from '../lib/space-chats';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
+import { sameNumber } from '../lib/sms-invite';
 import { qrVCard } from '../lib/vcard';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
+import type { ContactLink } from '../lock/contacts-data';
 import {
   addToPhoneGroup,
+  contactsReady,
+  contactsStatus,
   onContactsEvent,
   phoneContact,
+  phoneCalls,
   phoneContactPhoto,
   phoneGroups,
   pickRingtone,
@@ -33,6 +41,7 @@ import {
   starPhoneContact,
   type PhoneGroup,
 } from '../modules/erevos-contacts';
+import { smsMessages, smsReady, smsThreads } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
@@ -48,6 +57,11 @@ import { useStyles, useTheme } from '../theme/context';
 // move into Erevos, and one kept in Erevos out to the phone's contacts. Among the hidden chats'
 // screens (`hidden`), it is one of theirs, and shows nothing once they close; it takes no photo
 // there, as picking one leaves Erevos, which closes them.
+//
+// A contact that is an Erevos contact (linked by hand, kept sealed with the space's or hidden
+// chats' contacts, or by a number linked to it in Erevos) shows its chat, a call and a video call
+// through Erevos; an Erevos contact that no contact is has a card of its own (`erevos`). Below,
+// its history: its calls in the phone's call log, its SMS, and its messages in Erevos.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 const PHOTO_SIDE = 720;
@@ -55,9 +69,10 @@ const PHOTO_SIDE = 720;
 const SEALED_SIDE = 512;
 
 export default function ContactCardScreen() {
-  const params = useLocalSearchParams<{ id?: string; sealed?: string; hidden?: string }>();
+  const params = useLocalSearchParams<{ id?: string; sealed?: string; erevos?: string; hidden?: string }>();
   const id = Number(params.id ?? 0);
   const sealedId = typeof params.sealed === 'string' ? params.sealed : '';
+  const erevosId = typeof params.erevos === 'string' && /^[0-9a-f]{64}$/.test(params.erevos) ? params.erevos : '';
   const hidden = params.hidden === '1';
   const hiddenOpen = useOpenHiddenPlace();
   const styles = useStyles(makeStyles);
@@ -68,6 +83,10 @@ export default function ContactCardScreen() {
   const [choosingGroups, setChoosingGroups] = useState(false);
   const [choosingPhoto, setChoosingPhoto] = useState(false);
   const [showingQr, setShowingQr] = useState(false);
+  const [linking, setLinking] = useState(false);
+  // The Erevos contacts it may be, and which phone contacts were linked to one by hand.
+  const [people, setPeople] = useState<ErevosPerson[]>([]);
+  const [links, setLinks] = useState<ContactLink[]>([]);
   const [note, setNote] = useState('');
   const [tone, setTone] = useState('');
   const photo = useCardPhoto(card, true);
@@ -98,16 +117,31 @@ export default function ContactCardScreen() {
   }, [ringtone]);
 
   const load = useCallback(() => {
+    const found = erevosPeople(hidden ? hiddenOpen : null).then((list) => {
+      setPeople(list);
+      return list;
+    });
+    if (erevosId) {
+      found
+        .then((list) => {
+          const person = list.find((p) => p.identity === erevosId);
+          setCard(person ? erevosCard(person) : null);
+          setGone(!person);
+        })
+        .catch((error) => setNote(errorText(error)));
+      return;
+    }
     if (sealedId) {
       if (!place) {
         setCard(null);
         return;
       }
-      loadPlace(place)
-        .then((data) => {
-          const found = data.contacts.find((c) => c.id === sealedId);
-          setCard(found ? sealedCard(found) : null);
-          setGone(!found);
+      Promise.all([loadPlace(place), found])
+        .then(([data, list]) => {
+          const kept = data.contacts.find((c) => c.id === sealedId);
+          const c = kept ? sealedCard(kept) : null;
+          setCard(c ? { ...c, erevos: cardErevos(c, [], list) } : null);
+          setGone(!kept);
         })
         .catch((error) => setNote(errorText(error)));
       return;
@@ -116,27 +150,30 @@ export default function ContactCardScreen() {
       setGone(true);
       return;
     }
-    phoneContact(id)
-      .then((c) => {
-        setCard(c ? phoneCard(c) : null);
+    const spaceLinks = (async () => (await loadPlace(spacePlace())).links)().catch((): ContactLink[] => []);
+    Promise.all([phoneContact(id), spaceLinks, found])
+      .then(([c, linked, list]) => {
+        const shown = c ? phoneCard(c) : null;
+        setLinks(linked);
+        setCard(shown ? { ...shown, erevos: cardErevos(shown, linked, list) } : null);
         setGone(!c);
       })
       .catch((error) => setNote(errorText(error)));
     phoneGroups()
       .then((found) => setGroups(groupsByTitle(found)))
       .catch(() => undefined);
-  }, [id, sealedId, place]);
+  }, [id, sealedId, erevosId, place, hidden, hiddenOpen]);
 
   useFocusEffect(
     useCallback(() => {
       load();
-      const changed = sealedId ? null : onContactsEvent('onContactsChanged', load);
+      const changed = sealedId || erevosId ? null : onContactsEvent('onContactsChanged', load);
       const sealed = onSealedChange(load);
       return () => {
         changed?.remove();
         sealed();
       };
-    }, [load, sealedId]),
+    }, [load, sealedId, erevosId]),
   );
 
   const close = () => (router.canGoBack() ? router.back() : router.replace(hidden ? '/contacts?hidden=1' : '/contacts'));
@@ -234,8 +271,9 @@ export default function ContactCardScreen() {
     try {
       const base64 = card.phone.photo ? await phoneContactPhoto(card.phone.id, true).catch(() => null) : null;
       const ref = base64 ? await savePhoto(fromBase64(base64)) : null;
-      const kept = await saveSealed(spacePlace(), null, card, { starred: card.starred, photo: ref });
+      const kept = await saveSealed(spacePlace(), null, card, { starred: card.starred, photo: ref, erevos: card.erevos });
       await removePhoneContacts([card.phone.id]);
+      await linkPhoneContact(spacePlace(), card.phone.lookup, '').catch(() => undefined);
       router.replace(`/contact-card?sealed=${kept}`);
     } catch (error) {
       setNote(errorText(error));
@@ -251,6 +289,8 @@ export default function ContactCardScreen() {
       const made = await savePhoneContact(phoneSave(card, null, null, card.starred));
       const bytes = card.sealed.photo ? await loadPhoto(card.sealed.photo).catch(() => null) : null;
       if (bytes) await setPhoneContactPhoto(made, bytes).catch(() => undefined);
+      const lookup = card.sealed.erevos ? (await phoneContact(made).catch(() => null))?.lookup : '';
+      if (lookup) await linkPhoneContact(place, lookup, card.sealed.erevos).catch(() => undefined);
       await removeSealed(place, card.sealed.id);
       router.replace(`/contact-card?id=${made}`);
     } catch (error) {
@@ -275,18 +315,51 @@ export default function ContactCardScreen() {
     }
   }
 
+  // Links it to an Erevos contact by hand, or no longer with ''.
+  async function link(identity: string) {
+    if (!card) return;
+    setNote('');
+    try {
+      if (card.sealed && place) await linkSealed(place, card.sealed.id, identity);
+      else if (card.phone) await linkPhoneContact(spacePlace(), card.phone.lookup, identity);
+      setLinking(false);
+      load();
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  // Its chat in Erevos, or a call there: the hidden chats' own beneath these screens, or the space's.
+  function erevos(call?: 'voice' | 'video') {
+    if (!card?.erevos) return;
+    if (hidden) {
+      hiddenOpen?.open(card.erevos, call);
+      router.dismiss(hiddenScreens());
+      return;
+    }
+    router.push(`/chat?contact=${card.erevos}${call ? `&call=${call}` : ''}`);
+  }
+
   const call = (number: string) => void Linking.openURL(`tel:${number.replace(/[^\d+*#,;]/g, '')}`).catch((error) => setNote(errorText(error)));
   const sms = (number: string) => router.push(`/sms?to=${encodeURIComponent(smsAddress(smsNumbers(number)))}&plain=1`);
   const first = card.phones[0]?.value;
   const birthday = parseBirthday(card.birthday);
   const editHref = card.sealed ? `/contact-edit?sealed=${card.sealed.id}${hidden ? '&hidden=1' : ''}` : `/contact-edit?id=${card.phone?.id ?? 0}`;
+  // Only an Erevos contact, in the chats: no contact of the phone's or kept in Erevos is it.
+  const onlyChat = !card.phone && !card.sealed;
+  const person = people.find((p) => p.identity === card.erevos);
+  const byHand = card.sealed ? card.sealed.erevos !== '' && card.sealed.erevos === card.erevos : links.some((l) => l.lookup === card.phone?.lookup && l.identity === card.erevos);
 
   return (
     <Page>
       <View style={styles.top}>
-        <Pressable onPress={() => setChoosingPhoto(true)} disabled={hidden} accessibilityRole="button" accessibilityLabel={photo ? t('Change photo') : t('Add a photo')}>
-          <ContactFace name={card.name} uri={photo} size={96} />
-        </Pressable>
+        {onlyChat ? (
+          <KeyFace identity={card.erevos} name={person?.name} size={96} />
+        ) : (
+          <Pressable onPress={() => setChoosingPhoto(true)} disabled={hidden} accessibilityRole="button" accessibilityLabel={photo ? t('Change photo') : t('Add a photo')}>
+            <ContactFace name={card.name} uri={photo} size={96} />
+          </Pressable>
+        )}
         <Text variant="title" style={styles.center}>
           {card.name}
         </Text>
@@ -300,12 +373,47 @@ export default function ContactCardScreen() {
             {hidden ? t('Kept only in these hidden chats, sealed.') : t('Kept only in Erevos, sealed in this space. Not in the phone\'s contacts.')}
           </Text>
         ) : null}
-        <Pressable onPress={() => void star()} accessibilityRole="button" accessibilityLabel={card.starred ? t('Remove from favourites') : t('Add to favourites')} hitSlop={8}>
-          <Text variant="heading" color={card.starred ? colors.accentText : colors.textFaint}>
-            {card.starred ? `★ ${t('Favourite')}` : `☆ ${t('Add to favourites')}`}
+        {onlyChat ? (
+          <Text variant="caption" tone="muted" style={styles.center}>
+            {t('A contact of your Erevos chats. Add it to your contacts to give it numbers, an email and more.')}
           </Text>
-        </Pressable>
+        ) : (
+          <Pressable onPress={() => void star()} accessibilityRole="button" accessibilityLabel={card.starred ? t('Remove from favourites') : t('Add to favourites')} hitSlop={8}>
+            <Text variant="heading" color={card.starred ? colors.accentText : colors.textFaint}>
+              {card.starred ? `★ ${t('Favourite')}` : `☆ ${t('Add to favourites')}`}
+            </Text>
+          </Pressable>
+        )}
       </View>
+
+      {card.erevos ? (
+        <Card>
+          <Row>
+            <ShieldIcon color={colors.success} size={14} />
+            <Text variant="label" tone="muted" style={styles.grow}>
+              {t('In Erevos')}
+            </Text>
+          </Row>
+          {!onlyChat && person?.name && person.name !== card.name ? <Text>{t('The Erevos contact {name}', { name: person.name })}</Text> : null}
+          <Row wrap>
+            <Button title={t('Message')} compact onPress={() => erevos()} />
+            <Button title={t('Call')} kind="secondary" compact onPress={() => erevos('voice')} />
+            <Button title={t('Video')} kind="secondary" compact onPress={() => erevos('video')} />
+          </Row>
+          <Text variant="caption" tone="muted">
+            {t('End-to-end encrypted, through Erevos instead of the phone company.')}
+          </Text>
+          {onlyChat ? null : byHand ? (
+            <TextButton title={t('Not this Erevos contact')} onPress={() => void link('')} />
+          ) : (
+            <Text variant="caption" tone="faint">
+              {t('One of its numbers is linked to this Erevos contact, in its chat.')}
+            </Text>
+          )}
+        </Card>
+      ) : people.length > 0 ? (
+        <Button title={t('Link to an Erevos contact')} kind="secondary" compact onPress={() => setLinking(true)} />
+      ) : null}
 
       {first ? (
         <Row wrap style={styles.actions}>
@@ -382,15 +490,47 @@ export default function ContactCardScreen() {
         </Card>
       ) : null}
 
-      <Row wrap>
-        <Button title={t('Edit')} kind="secondary" compact onPress={() => router.push(editHref)} />
-        <Button title={t('QR code')} kind="secondary" compact onPress={() => setShowingQr(true)} />
-        {!hidden ? <Button title={t('Save as a .vcf file')} kind="secondary" compact onPress={() => void saveFile()} /> : null}
-        {card.phone ? <Button title={t('Keep only in Erevos')} kind="secondary" compact onPress={() => void moveIntoErevos()} /> : null}
-        {card.sealed && !hidden ? <Button title={t("Move to the phone's contacts")} kind="secondary" compact onPress={() => void moveToPhone()} /> : null}
-        <Button title={t('Delete')} kind="danger" compact onPress={() => void remove()} />
-      </Row>
+      <ContactHistory card={card} hiddenOpen={hidden ? hiddenOpen : null} onCall={call} onSms={sms} onErevos={() => erevos()} />
+
+      {onlyChat ? (
+        <Row wrap>
+          <Button
+            title={t('Add to contacts')}
+            kind="secondary"
+            compact
+            onPress={() => router.push(`/contact-edit?fill=${encodeURIComponent(fillText(card))}&erevos=${card.erevos}${hidden ? '&hidden=1' : ''}`)}
+          />
+        </Row>
+      ) : (
+        <Row wrap>
+          <Button title={t('Edit')} kind="secondary" compact onPress={() => router.push(editHref)} />
+          <Button title={t('QR code')} kind="secondary" compact onPress={() => setShowingQr(true)} />
+          {!hidden ? <Button title={t('Save as a .vcf file')} kind="secondary" compact onPress={() => void saveFile()} /> : null}
+          {card.phone ? <Button title={t('Keep only in Erevos')} kind="secondary" compact onPress={() => void moveIntoErevos()} /> : null}
+          {card.sealed && !hidden ? <Button title={t("Move to the phone's contacts")} kind="secondary" compact onPress={() => void moveToPhone()} /> : null}
+          <Button title={t('Delete')} kind="danger" compact onPress={() => void remove()} />
+        </Row>
+      )}
       {note ? <Text tone="muted">{note}</Text> : null}
+
+      <Sheet visible={linking} onClose={() => setLinking(false)} title={t('Link to an Erevos contact')}>
+        <Text tone="muted">{t("The same person in your Erevos chats: this card then shows their chat and calls. The link is sealed in Erevos, never in the phone's contacts.")}</Text>
+        {byName(people.map(erevosCard)).map((p) => (
+          <Pressable key={p.key} onPress={() => void link(p.erevos)} accessibilityRole="button" style={({ pressed }) => [styles.pick, pressed && styles.pressed]}>
+            <KeyFace identity={p.erevos} name={p.given} size={36} />
+            <View style={styles.grow}>
+              <Text>{p.name}</Text>
+              {p.phones[0] ? (
+                <Text variant="caption" tone="muted">
+                  {p.phones[0].value}
+                </Text>
+              ) : null}
+            </View>
+          </Pressable>
+        ))}
+        {note ? <Text tone="muted">{note}</Text> : null}
+        <Button title={t('Cancel')} kind="secondary" compact onPress={() => setLinking(false)} />
+      </Sheet>
 
       <Sheet visible={choosingGroups} onClose={() => setChoosingGroups(false)} title={t('Groups')}>
         {groups.length === 0 ? <Text tone="muted">{t('No groups yet. Make one under Groups in the menu of Contacts.')}</Text> : null}
@@ -435,6 +575,88 @@ export default function ContactCardScreen() {
         {note ? <Text tone="muted">{note}</Text> : null}
       </Sheet>
     </Page>
+  );
+}
+
+/**
+ * The contact's history, the newest first: its calls in the phone's call log (once Erevos may read
+ * it), its SMS (the conversations with one of its numbers), and its messages in Erevos. Read on
+ * the phone, shown only here.
+ */
+function ContactHistory({ card, hiddenOpen, onCall, onSms, onErevos }: {
+  card: ContactCard;
+  hiddenOpen: OpenHiddenPlace | null;
+  onCall: (number: string) => void;
+  onSms: (number: string) => void;
+  onErevos: () => void;
+}) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const [lines, setLines] = useState<HistoryLine[] | null>(null);
+  const [callsAllowed, setCallsAllowed] = useState(() => contactsStatus().calls);
+  const numbers = card.phones.map((p) => p.value);
+  const asked = `${numbers.join('\n')}\n${card.erevos}`;
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const calls = await phoneCalls(numbers).catch(() => []);
+      // Only conversations there are: asking for one by its number would start it.
+      const threads = smsReady() && numbers.length > 0 ? await smsThreads(500).catch(() => []) : [];
+      const own = threads.filter((th) => smsNumbers(th.address).length === 1 && numbers.some((n) => sameNumber(n, th.address)));
+      const sms = await Promise.all(own.map(async (th) => ({ number: th.address, messages: await smsMessages(th.address, 50).catch(() => []) })));
+      const peer = `contact:${card.erevos}`;
+      const erevos = !card.erevos
+        ? []
+        : hiddenOpen
+          ? hiddenOpen.messages(card.erevos)
+          : await spaceChats()
+              .then((chats) => chats.history.messages().filter((m) => m.peer === peer))
+              .catch(() => []);
+      if (active) setLines(historyLines(calls, sms, erevos, Date.now()));
+    })();
+    return () => {
+      active = false;
+    };
+  }, [asked, callsAllowed, hiddenOpen]);
+
+  async function allowCalls() {
+    const answer = await PermissionsAndroid.request('android.permission.READ_CALL_LOG').catch(() => null);
+    setCallsAllowed(answer === PermissionsAndroid.RESULTS.GRANTED || contactsStatus().calls);
+  }
+
+  if (!lines) return null;
+  const now = Date.now();
+  return (
+    <Card>
+      <Text variant="label" tone="muted">
+        {t('History')}
+      </Text>
+      {lines.length === 0 ? <Text tone="muted">{t('No calls or messages with this contact yet.')}</Text> : null}
+      {lines.map((line) => (
+        <Pressable
+          key={line.key}
+          onPress={() => (line.kind === 'erevos' ? onErevos() : line.kind === 'sms' ? onSms(line.number) : onCall(line.number))}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.line, pressed && styles.pressed]}
+        >
+          <Text variant="caption" tone="muted">
+            {[line.kind === 'call' ? t('Call') : line.kind === 'sms' ? t('SMS') : t('Chat'), whenText(line.at, now), line.mine ? t('You') : ''].filter(Boolean).join(' · ')}
+          </Text>
+          <Text numberOfLines={2} color={line.missed ? colors.danger : undefined}>
+            {line.text}
+          </Text>
+        </Pressable>
+      ))}
+      {Platform.OS === 'android' && contactsReady() && !callsAllowed && numbers.length > 0 ? (
+        <>
+          <Text variant="caption" tone="faint">
+            {t("Its calls show here once Erevos may read the phone's call log. Erevos only shows them, and keeps no copy.")}
+          </Text>
+          <TextButton title={t('Show calls')} onPress={() => void allowCalls()} />
+        </>
+      ) : null}
+    </Card>
   );
 }
 
@@ -512,6 +734,12 @@ const makeStyles = (colors: Colors) =>
     },
     grow: {
       flex: 1,
+    },
+    line: {
+      gap: 2,
+      paddingVertical: 4,
+      paddingHorizontal: space.xs,
+      borderRadius: radius.md,
     },
     pick: {
       flexDirection: 'row',

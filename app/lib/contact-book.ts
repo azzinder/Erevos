@@ -1,14 +1,17 @@
-import { fieldsName, keeperFirst, mergeFields, phoneFields, phoneSave, plain, type Fields } from './contacts';
+import { EMPTY_FIELDS, erevosFor, fieldsName, keeperFirst, mergeFields, phoneFields, phoneSave, plain, type ErevosPerson, type Fields } from './contacts';
+import type { OpenHiddenPlace } from './hidden-contacts';
 import { lang, t } from './i18n';
+import { spaceChats } from './space-chats';
 import { phoneContacts, savePhoneContact, takeOverContacts, type PhoneContact, type PhoneGroup } from '../modules/erevos-contacts';
-import type { SealedContact } from '../lock/contacts-data';
+import type { ContactLink, SealedContact } from '../lock/contacts-data';
 import { loadPlace, type Place } from './sealed-contacts';
 
 // The contacts screen's book (app/contacts.tsx): the phone's contacts, from Android's contacts
-// (modules/erevos-contacts), and those kept only in Erevos, sealed in the open space or hidden
-// chats (lib/sealed-contacts.ts), as cards the screens show alike.
+// (modules/erevos-contacts), those kept only in Erevos, sealed in the open space or hidden chats
+// (lib/sealed-contacts.ts), and the chats' Erevos contacts, as cards the screens show alike. A
+// contact that is an Erevos contact shows as one card with it.
 
-/** A contact as the screens show it. `key` is 'p' and the phone contact's id, or 's' and the sealed one's. */
+/** A contact as the screens show it. `key` is 'p' and the phone contact's id, 's' and the sealed one's, or 'e' and the Erevos contact's identity. */
 export type Card = Fields & {
   key: string;
   name: string;
@@ -38,10 +41,47 @@ export function sealedCard(s: SealedContact): Card {
   return { ...sealedFields(s), key: `s${s.id}`, name: fieldsName(s), starred: s.starred, phone: null, sealed: s, erevos: s.erevos, groups: [] };
 }
 
-/** Where a card opens: a phone contact by its id, a sealed one by its own, among the hidden chats' screens with `hidden`. */
+/** An Erevos contact that no contact is, as a card of its own. */
+export function erevosCard(p: ErevosPerson): Card {
+  const phones = p.phone ? [{ value: p.phone, kind: 'mobile' as const, label: '' }] : [];
+  const name = p.name || t('contact {id}', { id: p.identity.slice(0, 8) });
+  return { ...EMPTY_FIELDS, given: p.name, phones, key: `e${p.identity}`, name, starred: false, phone: null, sealed: null, erevos: p.identity, groups: [] };
+}
+
+/** Where a card opens: a phone contact by its id, a sealed one by its own, an Erevos one by its identity; among the hidden chats' screens with `hidden`. */
 export function cardHref(card: Card, hidden = false): `/contact-card?${string}` {
-  if (card.sealed) return `/contact-card?sealed=${card.sealed.id}${hidden ? '&hidden=1' : ''}`;
+  const among = hidden ? '&hidden=1' : '';
+  if (card.sealed) return `/contact-card?sealed=${card.sealed.id}${among}`;
+  if (!card.phone && card.erevos) return `/contact-card?erevos=${card.erevos}${among}`;
   return `/contact-card?id=${card.phone?.id ?? 0}`;
+}
+
+/** The Erevos contacts of the open hidden chats, or of the open space; none when its chats cannot open. */
+export async function erevosPeople(hidden: OpenHiddenPlace | null): Promise<ErevosPerson[]> {
+  if (hidden) return hidden.erevos();
+  try {
+    const { e2e } = await spaceChats();
+    const phones = e2e.phones();
+    return e2e
+      .contacts()
+      .filter((c) => !c.request)
+      .map((c) => ({ identity: c.identity, name: c.name, phone: phones.find((p) => p.identity === c.identity)?.phone ?? '' }));
+  } catch {
+    return [];
+  }
+}
+
+/** The Erevos contact a card is: linked by hand (`links`, for the phone's), else by a number. */
+export function cardErevos(card: Card, links: ContactLink[], people: ErevosPerson[]): string {
+  const linked = card.sealed ? card.sealed.erevos : (links.find((l) => l.lookup === card.phone?.lookup)?.identity ?? '');
+  return card.phone || card.sealed ? erevosFor(linked, card.phones, people) : card.erevos;
+}
+
+/** Cards with the Erevos contact each is, then a card for each Erevos contact none is. */
+export function withErevos(cards: Card[], links: ContactLink[], people: ErevosPerson[]): Card[] {
+  const linked = cards.map((c) => ({ ...c, erevos: cardErevos(c, links, people) }));
+  const taken = new Set(linked.map((c) => c.erevos));
+  return [...linked, ...people.filter((p) => !taken.has(p.identity)).map(erevosCard)];
 }
 
 /** A place's sealed contacts as cards. */

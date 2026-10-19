@@ -1,4 +1,6 @@
-import type { ContactAccount, ContactSave, PhoneContact, PhoneEntry, SimContact } from '../modules/erevos-contacts';
+import type { Message } from '../lock/history';
+import type { CallEntry, ContactAccount, ContactSave, PhoneContact, PhoneEntry, SimContact } from '../modules/erevos-contacts';
+import type { SmsMessage } from '../modules/erevos-sms';
 import { lang, mark, t } from './i18n';
 import { sameNumber } from './sms-invite';
 
@@ -6,7 +8,7 @@ import { sameNumber } from './sms-invite';
 // (modules/erevos-contacts), and those kept only in Erevos, sealed in the space or in its hidden
 // chats (lock/contacts-data.ts). Here is what both have alike, worked on without the phone: their
 // fields, the name shown, the search over every field, finding the same person kept twice and
-// merging the two, and birthdays.
+// merging the two, birthdays, the Erevos contact each is, and its calls and messages.
 
 /** What a number, an email or an address is: as Android's contacts and vCards name them. */
 export type Kind = 'mobile' | 'home' | 'work' | 'main' | 'fax' | 'pager' | 'other' | 'custom';
@@ -465,4 +467,69 @@ export function fillText(f: Fields): string {
     note: f.note,
     birthday: f.birthday,
   });
+}
+
+/** An Erevos contact as the contacts screens show it: its identity (hex), its name, and the number linked to it in Erevos ('' for none). */
+export type ErevosPerson = { identity: string; name: string; phone: string };
+
+/**
+ * The Erevos contact a contact is: the one it was linked to by hand (`linked`), while Erevos still
+ * has it, else the one whose number in Erevos is one of its numbers. '' for none.
+ */
+export function erevosFor(linked: string, phones: Entry[], people: ErevosPerson[]): string {
+  if (linked && people.some((p) => p.identity === linked)) return linked;
+  return people.find((p) => p.phone && phones.some((e) => sameNumber(e.value, p.phone)))?.identity ?? '';
+}
+
+/** A line of a contact's history: a call in the phone's call log, an SMS, or a message in Erevos. */
+export type HistoryLine = { key: string; at: number; kind: 'call' | 'sms' | 'erevos'; mine: boolean; missed: boolean; text: string; number: string };
+
+/** What a call was: which way, and how long it lasted (0:42, 1:02:09). */
+export function callText(call: CallEntry): string {
+  const s = Math.max(0, Math.floor(call.seconds));
+  const time = s >= 3600 ? `${Math.floor(s / 3600)}:${two(Math.floor(s / 60) % 60)}:${two(s % 60)}` : `${Math.floor(s / 60)}:${two(s % 60)}`;
+  if (call.kind === 'in') return call.seconds > 0 ? t('Incoming call, {time}', { time }) : t('Incoming call');
+  if (call.kind === 'out') return call.seconds > 0 ? t('Outgoing call, {time}', { time }) : t('Outgoing call, no answer');
+  if (call.kind === 'missed') return t('Missed call');
+  if (call.kind === 'rejected') return t('Declined call');
+  if (call.kind === 'blocked') return t('Blocked call');
+  return t('Call');
+}
+
+/** What an Erevos message says, or what it holds. */
+function erevosText(m: Message): string {
+  if (m.voice) return t('Voice message');
+  if (m.file) return m.file.mime.startsWith('image/') ? t('Photo') : m.file.name || t('File');
+  return m.text;
+}
+
+/**
+ * A contact's calls, SMS (by number) and Erevos messages, as one history: the latest `most`,
+ * the newest first. Disappearing messages whose time has come are left out, and an SMS kept under
+ * two of its numbers shows once.
+ */
+export function historyLines(calls: CallEntry[], sms: { number: string; messages: SmsMessage[] }[], erevos: Message[], now: number, most = 30): HistoryLine[] {
+  const lines: HistoryLine[] = calls.map((c, i) => ({ key: `c${i}`, at: c.at, kind: 'call', mine: c.kind === 'out', missed: c.kind === 'missed' || c.kind === 'rejected', text: callText(c), number: c.number }));
+  const seen = new Set<number>();
+  for (const { number, messages } of sms) {
+    for (const m of messages) {
+      if (seen.has(m.id)) continue;
+      seen.add(m.id);
+      lines.push({ key: `s${m.id}`, at: m.at, kind: 'sms', mine: m.mine, missed: false, text: m.text || (m.pictures?.length ? t('Photo') : ''), number });
+    }
+  }
+  for (const m of erevos) {
+    if (m.until && m.until <= now) continue;
+    lines.push({ key: `e${m.tag}${m.at}`, at: m.at, kind: 'erevos', mine: m.mine, missed: false, text: erevosText(m), number: '' });
+  }
+  return lines.sort((a, b) => b.at - a.at).slice(0, most);
+}
+
+/** When a line of history was: its time today, the day and month this year, else the date too. */
+export function whenText(at: number, now: number): string {
+  const d = new Date(at);
+  const today = new Date(now);
+  if (d.toDateString() === today.toDateString()) return `${two(d.getHours())}:${two(d.getMinutes())}`;
+  if (d.getFullYear() === today.getFullYear()) return `${d.getDate()}/${d.getMonth() + 1}`;
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
