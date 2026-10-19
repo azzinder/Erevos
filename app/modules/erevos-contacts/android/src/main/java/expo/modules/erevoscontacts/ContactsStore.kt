@@ -19,6 +19,7 @@ import android.provider.ContactsContract.CommonDataKinds.StructuredName
 import android.provider.ContactsContract.CommonDataKinds.StructuredPostal
 import android.provider.ContactsContract.Contacts
 import android.provider.ContactsContract.Data
+import android.provider.ContactsContract.Groups
 import android.provider.ContactsContract.RawContacts
 import android.util.Base64
 import org.json.JSONArray
@@ -354,6 +355,108 @@ internal object ContactsStore {
     val uri = ContentUris.withAppendedId(Contacts.CONTENT_URI, id)
     val bytes = Contacts.openContactPhotoInputStream(context.contentResolver, uri, large)?.use { it.readBytes() } ?: return null
     return Base64.encodeToString(bytes, Base64.NO_WRAP)
+  }
+
+  /**
+   * The groups (labels) contacts can be put in, with how many contacts are in each: Android's own,
+   * in the account each belongs to. Those Android fills itself (an account's "My Contacts", the
+   * starred) are left out.
+   */
+  fun groups(context: Context): List<Map<String, Any?>> {
+    if (!canRead(context)) return emptyList()
+    val resolver = context.contentResolver
+    val counts = HashMap<Long, MutableSet<Long>>()
+    resolver.query(Data.CONTENT_URI, arrayOf(GroupMembership.GROUP_ROW_ID, Data.CONTACT_ID), "${Data.MIMETYPE}=?", arrayOf(GroupMembership.CONTENT_ITEM_TYPE), null)?.use { c ->
+      while (c.moveToNext()) if (!c.isNull(0)) counts.getOrPut(c.getLong(0)) { HashSet() }.add(c.getLong(1))
+    }
+    val groups = ArrayList<Map<String, Any?>>()
+    val columns = arrayOf(Groups._ID, Groups.TITLE, Groups.ACCOUNT_TYPE, Groups.ACCOUNT_NAME, Groups.GROUP_IS_READ_ONLY, Groups.AUTO_ADD, Groups.FAVORITES)
+    resolver.query(Groups.CONTENT_URI, columns, "${Groups.DELETED}=0", null, null)?.use { c ->
+      while (c.moveToNext()) {
+        if (c.getInt(5) != 0 || c.getInt(6) != 0) continue
+        val id = c.getLong(0)
+        groups.add(
+          mapOf(
+            "id" to id.toDouble(),
+            "title" to (c.getString(1) ?: ""),
+            "account" to Account(c.getString(2) ?: "", c.getString(3) ?: "").map(),
+            "count" to (counts[id]?.size ?: 0).toDouble(),
+            "readOnly" to (c.getInt(4) != 0),
+          ),
+        )
+      }
+    }
+    return groups
+  }
+
+  fun createGroup(context: Context, title: String, type: String, name: String): Long {
+    val values = ContentValues().apply {
+      put(Groups.TITLE, title)
+      put(Groups.ACCOUNT_TYPE, type.ifEmpty { null })
+      put(Groups.ACCOUNT_NAME, name.ifEmpty { null })
+      put(Groups.GROUP_VISIBLE, 1)
+    }
+    val uri = context.contentResolver.insert(Groups.CONTENT_URI, values) ?: throw IllegalStateException("The group could not be made")
+    return ContentUris.parseId(uri)
+  }
+
+  fun renameGroup(context: Context, id: Long, title: String) {
+    context.contentResolver.update(ContentUris.withAppendedId(Groups.CONTENT_URI, id), ContentValues().apply { put(Groups.TITLE, title) }, null, null)
+  }
+
+  /** Deletes a group, and with it who is in it; the contacts stay. */
+  fun deleteGroup(context: Context, id: Long) {
+    context.contentResolver.delete(ContentUris.withAppendedId(Groups.CONTENT_URI, id), null, null)
+  }
+
+  /** The group's account. */
+  private fun groupAccount(resolver: ContentResolver, group: Long): Account? {
+    resolver.query(ContentUris.withAppendedId(Groups.CONTENT_URI, group), arrayOf(Groups.ACCOUNT_TYPE, Groups.ACCOUNT_NAME), null, null, null)?.use { c ->
+      if (c.moveToFirst()) return Account(c.getString(0) ?: "", c.getString(1) ?: "")
+    }
+    return null
+  }
+
+  /** The contact's raw contacts, with their accounts. */
+  private fun raws(resolver: ContentResolver, contact: Long): List<Pair<Long, Account>> {
+    val found = ArrayList<Pair<Long, Account>>()
+    resolver.query(RawContacts.CONTENT_URI, arrayOf(RawContacts._ID, RawContacts.ACCOUNT_TYPE, RawContacts.ACCOUNT_NAME), "${RawContacts.CONTACT_ID}=? AND ${RawContacts.DELETED}=0", arrayOf(contact.toString()), null)?.use { c ->
+      while (c.moveToNext()) found.add(c.getLong(0) to Account(c.getString(1) ?: "", c.getString(2) ?: ""))
+    }
+    return found
+  }
+
+  /** The rows that put a contact in a group. */
+  private fun memberships(resolver: ContentResolver, group: Long, contact: Long): List<Long> {
+    val rows = ArrayList<Long>()
+    resolver.query(Data.CONTENT_URI, arrayOf(Data._ID), "${Data.MIMETYPE}=? AND ${GroupMembership.GROUP_ROW_ID}=? AND ${Data.CONTACT_ID}=?", arrayOf(GroupMembership.CONTENT_ITEM_TYPE, group.toString(), contact.toString()), null)?.use { c ->
+      while (c.moveToNext()) rows.add(c.getLong(0))
+    }
+    return rows
+  }
+
+  /**
+   * Puts a contact in a group, in its raw contact of the group's account, as an account's sync
+   * keeps only its own groups. False when the contact is kept in no raw contact of that account.
+   */
+  fun addToGroup(context: Context, group: Long, contact: Long): Boolean {
+    val resolver = context.contentResolver
+    if (memberships(resolver, group, contact).isNotEmpty()) return true
+    val account = groupAccount(resolver, group) ?: throw IllegalStateException("That group is gone")
+    val raw = raws(resolver, contact).firstOrNull { account.same(it.second.type, it.second.name) }?.first ?: return false
+    val values = ContentValues().apply {
+      put(Data.RAW_CONTACT_ID, raw)
+      put(Data.MIMETYPE, GroupMembership.CONTENT_ITEM_TYPE)
+      put(GroupMembership.GROUP_ROW_ID, group)
+    }
+    resolver.insert(Data.CONTENT_URI, values)
+    return true
+  }
+
+  fun removeFromGroup(context: Context, group: Long, contact: Long) {
+    val resolver = context.contentResolver
+    val ops = ArrayList(memberships(resolver, group, contact).map { ContentProviderOperation.newDelete(ContentUris.withAppendedId(Data.CONTENT_URI, it)).build() })
+    if (ops.isNotEmpty()) resolver.applyBatch(ContactsContract.AUTHORITY, ops)
   }
 
   /** The contact a content:// address of Android's contacts names (a contact, a lookup, a raw contact or one of its rows). */

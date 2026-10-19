@@ -526,6 +526,11 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
   with (Google), as you choose. What Erevos does not show of a contact, such as another app's own details, stays as
   it was.
 - **Delete** takes the contact off the phone, from every account it is kept in.
+- **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
+  Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,
+  **Rename** it or **Delete group** (its contacts stay). On a contact, **Choose groups** puts it in groups or takes
+  it out. The chips under the search show one group's contacts. A group is kept in an account, as its contacts are:
+  a contact joins it only if it is kept in that account too.
 
 ## Password lock {#lock}
 

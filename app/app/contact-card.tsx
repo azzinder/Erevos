@@ -3,19 +3,19 @@ import { useCallback, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { ContactFace, usePhoneContactPhoto } from '../components/contact-face';
-import { Button, Card, Page, Row, Text } from '../components/ui';
+import { Button, Card, Page, Row, Sheet, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
-import { phoneCard, type Card as ContactCard } from '../lib/contact-book';
+import { groupsByTitle, phoneCard, type Card as ContactCard } from '../lib/contact-book';
 import { birthdayComing, birthdayLabel, kindLabel, parseBirthday, type Entry } from '../lib/contacts';
 import { t } from '../lib/i18n';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
-import { onContactsEvent, phoneContact, removePhoneContacts, starPhoneContact } from '../modules/erevos-contacts';
+import { addToPhoneGroup, onContactsEvent, phoneContact, phoneGroups, removeFromPhoneGroup, removePhoneContacts, starPhoneContact, type PhoneGroup } from '../modules/erevos-contacts';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // One contact, whole: its photo and name, then every number, email and address, its birthday and
-// note. A number calls (Linking's tel: goes to the phone app) or writes an SMS in Erevos. The star
-// makes it a favourite, in Android's contacts, which every phone app lists.
+// note, and its groups. A number calls (Linking's tel: goes to the phone app) or writes an SMS in
+// Erevos. The star makes it a favourite, in Android's contacts, which every phone app lists.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -26,6 +26,8 @@ export default function ContactCardScreen() {
   const { colors } = useTheme();
   const [card, setCard] = useState<ContactCard | null>(null);
   const [gone, setGone] = useState(false);
+  const [groups, setGroups] = useState<PhoneGroup[]>([]);
+  const [choosingGroups, setChoosingGroups] = useState(false);
   const [note, setNote] = useState('');
   const photo = usePhoneContactPhoto(card?.phone?.id ?? null, card?.phone?.photo ?? 0, true);
 
@@ -40,6 +42,9 @@ export default function ContactCardScreen() {
         setGone(!c);
       })
       .catch((error) => setNote(errorText(error)));
+    phoneGroups()
+      .then((found) => setGroups(groupsByTitle(found)))
+      .catch(() => undefined);
   }, [id]);
 
   useFocusEffect(
@@ -77,6 +82,23 @@ export default function ContactCardScreen() {
     try {
       await removePhoneContacts([card.phone.id]);
       router.canGoBack() ? router.back() : router.replace('/contacts');
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  // In a group, or out of it, in Android's contacts: in the contact's raw contact of the group's account.
+  async function toggleGroup(group: PhoneGroup) {
+    if (!card?.phone) return;
+    setNote('');
+    const inIt = card.groups.includes(group.id);
+    try {
+      if (inIt) await removeFromPhoneGroup(group.id, card.phone.id);
+      else if (!(await addToPhoneGroup(group.id, card.phone.id))) {
+        setNote(t('{name} is kept in another account than the group {group}, so it cannot join it.', { name: card.name, group: group.title }));
+        return;
+      }
+      setCard({ ...card, groups: inIt ? card.groups.filter((g) => g !== group.id) : [...card.groups, group.id] });
     } catch (error) {
       setNote(errorText(error));
     }
@@ -156,11 +178,48 @@ export default function ContactCardScreen() {
         </Card>
       ) : null}
 
+      <Card>
+        <Text variant="label" tone="muted">
+          {t('Groups')}
+        </Text>
+        <Text tone={card.groups.length ? undefined : 'muted'}>
+          {groups
+            .filter((g) => card.groups.includes(g.id))
+            .map((g) => g.title)
+            .join(', ') || t('In no group')}
+        </Text>
+        <Button title={t('Choose groups')} kind="secondary" compact onPress={() => setChoosingGroups(true)} />
+      </Card>
+
       <Row wrap>
         <Button title={t('Edit')} kind="secondary" compact onPress={() => router.push(`/contact-edit?id=${card.phone?.id ?? 0}`)} />
         <Button title={t('Delete')} kind="danger" compact onPress={() => void remove()} />
       </Row>
       {note ? <Text tone="muted">{note}</Text> : null}
+
+      <Sheet visible={choosingGroups} onClose={() => setChoosingGroups(false)} title={t('Groups')}>
+        {groups.length === 0 ? <Text tone="muted">{t('No groups yet. Make one under Groups in the menu of Contacts.')}</Text> : null}
+        {groups.map((g) => {
+          const on = card.groups.includes(g.id);
+          return (
+            <Pressable key={g.id} onPress={() => void toggleGroup(g)} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={({ pressed }) => [styles.pick, (pressed || on) && styles.pressed]}>
+              <View style={styles.grow}>
+                <Text>{g.title}</Text>
+                {g.account.name ? (
+                  <Text variant="caption" tone="muted">
+                    {g.account.name}
+                  </Text>
+                ) : null}
+              </View>
+              <Text variant="bodyStrong" color={on ? colors.accentText : colors.textFaint}>
+                {on ? '✓' : '○'}
+              </Text>
+            </Pressable>
+          );
+        })}
+        {note ? <Text tone="muted">{note}</Text> : null}
+        <Button title={t('Done')} compact onPress={() => setChoosingGroups(false)} />
+      </Sheet>
     </Page>
   );
 }
@@ -220,5 +279,15 @@ const makeStyles = (colors: Colors) =>
     },
     pressed: {
       backgroundColor: colors.surfacePressed,
+    },
+    grow: {
+      flex: 1,
+    },
+    pick: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.md,
+      padding: space.sm,
+      borderRadius: radius.md,
     },
   });

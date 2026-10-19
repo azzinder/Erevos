@@ -14,6 +14,10 @@ compiled against Android 16's framework classes, not built into the app or run y
   contact no entry names is deleted. Rows Erevos does not show (another app's own, a middle name) are not
   touched. A new contact is a raw contact in the account named, or on the phone only.
 - **Favourites.** Android's STARRED, which every phone app lists.
+- **Groups.** Android's own groups (ContactsContract.Groups), with how many contacts are in each; those
+  Android fills itself (an account's "My Contacts", the starred) are left out. A contact joins a group in
+  its raw contact of the group's account (a GroupMembership row there), as an account's sync keeps only its
+  own groups; `addToGroup()` is false when it has none in that account.
 - **Changes elsewhere.** `watch()` sends `onContactsChanged` when Android's contacts change.
 
 ## JS API

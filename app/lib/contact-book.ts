@@ -1,6 +1,6 @@
 import { fieldsName, phoneFields, plain, type Fields } from './contacts';
 import { lang } from './i18n';
-import { phoneContacts, type PhoneContact } from '../modules/erevos-contacts';
+import { phoneContacts, type PhoneContact, type PhoneGroup } from '../modules/erevos-contacts';
 
 // The contacts screen's book (app/contacts.tsx): the phone's contacts, from Android's contacts
 // (modules/erevos-contacts), as cards the screens show alike.
@@ -21,16 +21,28 @@ export function phoneCard(c: PhoneContact): Card {
   return { ...fields, key: `p${c.id}`, name: c.name || fieldsName(fields), starred: c.starred, phone: c, groups: c.groups };
 }
 
+/** Names compared in the app's language's order. */
+function compare(a: string, b: string): number {
+  try {
+    return a.localeCompare(b, lang() === 'el' ? 'el' : 'en', { sensitivity: 'base' });
+  } catch {
+    return plain(a) < plain(b) ? -1 : plain(a) > plain(b) ? 1 : 0;
+  }
+}
+
 /** Cards by name, in the app's language's order. */
 export function byName(cards: Card[]): Card[] {
-  const order = lang() === 'el' ? 'el' : 'en';
-  return [...cards].sort((a, b) => {
-    try {
-      return a.name.localeCompare(b.name, order, { sensitivity: 'base' });
-    } catch {
-      return plain(a.name) < plain(b.name) ? -1 : plain(a.name) > plain(b.name) ? 1 : 0;
-    }
-  });
+  return [...cards].sort((a, b) => compare(a.name, b.name));
+}
+
+/** Groups by their names. */
+export function groupsByTitle(groups: PhoneGroup[]): PhoneGroup[] {
+  return [...groups].sort((a, b) => compare(a.title, b.title));
+}
+
+/** The names of a card's groups, for the search. */
+export function groupTitles(card: Card, groups: PhoneGroup[]): string[] {
+  return groups.filter((g) => card.groups.includes(g.id)).map((g) => g.title);
 }
 
 /** The phone's contacts as cards, by name. None until Erevos may read them. */

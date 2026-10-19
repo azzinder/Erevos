@@ -71,5 +71,11 @@ class ErevosContactsModule : Module() {
     AsyncFunction("setStarred") { id: Double, starred: Boolean -> ContactsStore.setStarred(context(), id.toLong(), starred) }
     AsyncFunction("accounts") { ContactsStore.accounts(context()) }
     AsyncFunction("photo") { id: Double, large: Boolean -> ContactsStore.photo(context(), id.toLong(), large) }
+    AsyncFunction("groups") { ContactsStore.groups(context()) }
+    AsyncFunction("createGroup") { title: String, type: String, name: String -> ContactsStore.createGroup(context(), title, type, name).toDouble() }
+    AsyncFunction("renameGroup") { id: Double, title: String -> ContactsStore.renameGroup(context(), id.toLong(), title) }
+    AsyncFunction("deleteGroup") { id: Double -> ContactsStore.deleteGroup(context(), id.toLong()) }
+    AsyncFunction("addToGroup") { group: Double, contact: Double -> ContactsStore.addToGroup(context(), group.toLong(), contact.toLong()) }
+    AsyncFunction("removeFromGroup") { group: Double, contact: Double -> ContactsStore.removeFromGroup(context(), group.toLong(), contact.toLong()) }
   }
 }

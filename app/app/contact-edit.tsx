@@ -136,7 +136,7 @@ export default function ContactEdit() {
       </Field>
 
       {!phone ? (
-        <Field label={t('Keep it')}>
+        <Field label={t('Kept in')}>
           <Row wrap>
             <Chip label={t('On this phone only')} selected={account === null} onPress={() => setAccount(null)} />
             {accounts.map((a) => (

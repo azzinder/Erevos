@@ -6,24 +6,27 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ContactFace, usePhoneContactPhoto } from '../components/contact-face';
 import { MoreIcon, PlusIcon, SearchIcon } from '../components/icons';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
-import { phoneCards, type Card as ContactCard } from '../lib/contact-book';
+import { groupsByTitle, groupTitles, phoneCards, type Card as ContactCard } from '../lib/contact-book';
 import { matches } from '../lib/contacts';
 import { plural, t } from '../lib/i18n';
-import { contactsReady, contactsStatus, onContactsEvent, watchContacts } from '../modules/erevos-contacts';
+import { contactsReady, contactsStatus, onContactsEvent, phoneGroups, watchContacts, type PhoneGroup } from '../modules/erevos-contacts';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // Contacts: the phone's own contacts, from Android's contacts (modules/erevos-contacts), with a
-// search over every field, the favourites, and a new contact. Read again each time it comes back
-// into view, and when Android's contacts change while it shows (another app, a sync).
+// search over every field, the favourites, each group's contacts, and a new contact. Read again
+// each time it comes back into view, and when Android's contacts change while it shows (another
+// app, a sync). The menu has the rest: groups (app/contact-groups.tsx).
 
-type Filter = 'all' | 'starred';
+/** What the list shows: everyone, the favourites, or a group's contacts (its id). */
+type Filter = 'all' | 'starred' | number;
 
 export default function Contacts() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [cards, setCards] = useState<ContactCard[] | null>(null);
+  const [groups, setGroups] = useState<PhoneGroup[]>([]);
   const [allowed, setAllowed] = useState(() => contactsStatus().read);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
@@ -42,6 +45,14 @@ export default function Contacts() {
     phoneCards()
       .then((read) => active.current && setCards(read))
       .catch((error) => active.current && setNote(t("The phone's contacts could not be read: {error}", { error: error instanceof Error ? error.message : String(error) })));
+    phoneGroups()
+      .then((found) => {
+        if (!active.current) return;
+        setGroups(groupsByTitle(found));
+        // A group deleted meanwhile shows everyone again.
+        setFilter((f) => (typeof f === 'number' && !found.some((g) => g.id === f) ? 'all' : f));
+      })
+      .catch(() => undefined);
   }, []);
 
   useFocusEffect(
@@ -68,9 +79,14 @@ export default function Contacts() {
   }
 
   const shown = useMemo(() => {
-    const list = (cards ?? []).filter((c) => filter === 'all' || c.starred);
-    return query.trim() ? list.filter((c) => matches(c, query)) : list;
-  }, [cards, query, filter]);
+    const list = (cards ?? []).filter((c) => (filter === 'all' ? true : filter === 'starred' ? c.starred : c.groups.includes(filter)));
+    return query.trim() ? list.filter((c) => matches(c, query, groupTitles(c, groups))) : list;
+  }, [cards, groups, query, filter]);
+
+  function go(href: Parameters<typeof router.push>[0]) {
+    setMenu(false);
+    router.push(href);
+  }
 
   if (Platform.OS !== 'android' || !contactsReady()) {
     return (
@@ -106,6 +122,9 @@ export default function Contacts() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters} keyboardShouldPersistTaps="handled">
         <Chip label={t('All')} selected={filter === 'all'} onPress={() => setFilter('all')} />
         <Chip label={t('Favourites')} selected={filter === 'starred'} onPress={() => setFilter('starred')} />
+        {groups.map((g) => (
+          <Chip key={g.id} label={g.title || t('Group without a name')} selected={filter === g.id} onPress={() => setFilter(g.id)} />
+        ))}
       </ScrollView>
       {!allowed ? (
         <Card>
@@ -134,7 +153,13 @@ export default function Contacts() {
         ListEmptyComponent={
           cards === null || !allowed ? null : (
             <Text tone="muted" style={styles.empty}>
-              {query.trim() ? t('No contact has “{query}” in it.', { query: query.trim() }) : filter === 'starred' ? t('No favourites yet. Tap the star on a contact.') : t('No contacts yet.')}
+              {query.trim()
+                ? t('No contact has “{query}” in it.', { query: query.trim() })
+                : filter === 'starred'
+                  ? t('No favourites yet. Tap the star on a contact.')
+                  : filter === 'all'
+                    ? t('No contacts yet.')
+                    : t('No one in this group yet.')}
             </Text>
           )
         }
@@ -163,12 +188,25 @@ export default function Contacts() {
         </Text>
       </Pressable>
       <Sheet visible={menu} onClose={() => setMenu(false)} title={t('Contacts')}>
+        {allowed ? <MenuRow title={t('Groups')} detail={t('Family, Work, and your own: make, rename, who is in them')} onPress={() => go('/contact-groups')} /> : null}
         <Text variant="caption" tone="muted">
           {t("These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them.")}
         </Text>
         <Button title={t('Done')} kind="secondary" compact onPress={() => setMenu(false)} />
       </Sheet>
     </View>
+  );
+}
+
+function MenuRow({ title, detail, onPress }: { title: string; detail: string; onPress: () => void }) {
+  const styles = useStyles(makeStyles);
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
+      <Text variant="bodyStrong">{title}</Text>
+      <Text variant="caption" tone="muted">
+        {detail}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -297,5 +335,11 @@ const makeStyles = (colors: Colors) =>
     },
     fabPressed: {
       backgroundColor: colors.primaryPressed,
+    },
+    menuRow: {
+      gap: 2,
+      paddingVertical: space.sm + 2,
+      paddingHorizontal: space.sm,
+      borderRadius: radius.md,
     },
   });
