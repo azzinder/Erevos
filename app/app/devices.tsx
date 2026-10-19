@@ -66,11 +66,13 @@ export default function Devices() {
   const [period, setPeriod] = useState<Period>('all');
   const [files, setFiles] = useState(true);
   const [again, setAgain] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const refresh = (l: Links) => {
     setDevices(l.devices());
     setRole(l.role());
     setAnswer(l.answerCode());
+    setCopied(l.copied());
   };
 
   useEffect(() => {
@@ -341,6 +343,7 @@ export default function Devices() {
               <Text tone="muted">
                 {t('Use this when this device is the computer: its chats become those of the phone that holds the account.')}
               </Text>
+              {copied ? <Text>{t('These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.')}</Text> : null}
               {!hasQueue ? (
                 <>
                   <Field label={t('Relay address')}>

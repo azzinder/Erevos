@@ -985,7 +985,9 @@ home screen's menu.
 - **Linked devices** are not in a backup: a link stays with the phone and the computer it was made on. After restoring
   a backup on another phone, link the computer again: on the computer, tap **Unlink this device**, then link it as the
   first time, see [Linked devices](#devices). A linked computer's own backup holds the phone's chats as they were, but
-  not the link to write in them: make the backups on the phone.
+  not the link to write in them: restored, they can be read there but not written in, and Erevos says so once. To write
+  in them, link that computer to the phone again: the chats the phone still has stay, with what came since, and the
+  others go. On the phone, unlink the device it was before. Make the backups on the phone.
 - **A backup from a newer Erevos:** Erevos 0.1.8 and later open it too, and restore all of it they know; before
   that, they say some of it stays out. Update Erevos first to restore all of it.
 
@@ -1096,8 +1098,8 @@ nothing new: the same account and the same safety number, whatever version of Er
 
 To link a computer:
 
-1. On the computer, in a space with no chats of its own (a new install, or a space a new password opens), open
-   **Linked devices** in the menu. Fill in the relay if it asks, name the device, and tap **Link to my phone**. It
+1. On the computer, in a space with no chats of its own (a new install, a space a new password opens, or a linked
+   computer's chats restored from its backup), open **Linked devices** in the menu. Fill in the relay if it asks, name the device, and tap **Link to my phone**. It
    shows a QR code.
 2. On the phone, scan the code with the camera: Erevos opens on **Linked devices** with it. Or copy the code on the
    computer, paste it on the phone under **Code from the computer**, and tap **Next**.

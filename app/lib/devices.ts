@@ -129,6 +129,11 @@ import { sendWaiting, type SendPlace } from './waiting';
 // device that has it, and a device that may not (after the space opened again with changes not told,
 // or caught up) is told the group's marks whole.
 //
+// A linked device's own backup has the account's chats as they were but not the link, which no
+// backup holds (lock/devices-data.ts): restored, they are read, not written in, and it says so once.
+// Such a space links again: the chats the phone still has stay, with what came since, and the
+// others go.
+//
 // Three turns keep it straight: the chat's own (E2E), which may wait for this file's; this file's
 // (`run`), for the links and their keys, which never waits for the chat; and the work a message
 // brings (`act`: the history, sealing for contacts, the relay's file store), which waits for both.
@@ -343,6 +348,29 @@ export class Links implements Link, TakenFiles {
   devices(): DeviceInfo[] {
     const info = ({ id, name, since, heard, linked, history }: Peer): DeviceInfo => ({ id, name, since, heard, linked, history: history && { done: history.done } });
     return this.data.primary ? [info(this.data.primary)] : this.data.devices.map(info);
+  }
+
+  /**
+   * Whether this space's chats are a linked device's copy, restored from its backup: not linked, and
+   * its contacts all as a linked device keeps them (with no conversation of their own), its groups
+   * with no state. They can be read, not written in, until it is linked again.
+   */
+  copied(): boolean {
+    if (this.role() !== null) return false;
+    const { e2e } = this.chats;
+    const contacts = e2e.contacts();
+    const groups = this.groups?.groups;
+    if (contacts.length === 0 && (groups?.all().length ?? 0) === 0) return false;
+    return contacts.every((c) => !e2e.record(c.identity)?.conversations[0]) && !groups?.hasState();
+  }
+
+  /** In a linked device's copy (copied): whether to say so, once. */
+  sayCopy(): Promise<boolean> {
+    return this.run(async () => {
+      if (this.data.copySaid || !this.copied()) return false;
+      await this.save({ ...this.data, copySaid: true });
+      return true;
+    });
   }
 
   /** On a linked device: the account's contact link, to show as this chat's own. */
@@ -750,12 +778,14 @@ export class Links implements Link, TakenFiles {
 
   /**
    * On the device to link: makes its link key, a secret and the code to show (lib/link-code.ts),
-   * named `name`. Only a space with no contacts links: its chats become the phone's.
+   * named `name`. Only a space with no chats of its own links, or a linked device's copy: its chats
+   * become the phone's.
    */
   makeOffer(name: string): Promise<string> {
     return this.run(async () => {
       if (this.role() !== null) throw new Error(t('This space is linked already.'));
-      if (this.chats.e2e.contacts().length > 0 || (this.groups?.groups.all().length ?? 0) > 0) throw new Error(t('This space has chats of its own. Link from a space with none, such as one that opens with a new password.'));
+      const chats = this.chats.e2e.contacts().length > 0 || (this.groups?.groups.all().length ?? 0) > 0;
+      if (chats && !this.copied()) throw new Error(t('This space has chats of its own. Link from a space with none, such as one that opens with a new password.'));
       const here = await this.here();
       if (!here) throw new Error(t('Type the relay address first.'));
       const account = await core.newAccount();
@@ -780,14 +810,19 @@ export class Links implements Link, TakenFiles {
     return linkCodeLink({ key: toBase64Url(bundle), senderHex: sender, relayUrl: relay, relayKey: rk || undefined, secret: offer.secret, name: offer.name });
   }
 
-  /** On the device to link: the codes match. From now on its chats are the phone's. */
+  /**
+   * On the device to link: the codes match. From now on its chats are the phone's. A linked device's
+   * copy keeps those of its chats the phone has once it says them, and lets go of the others.
+   */
   confirm(code: string): Promise<void> {
     return this.run(async () => {
       const answer = this.data.answer;
       if (!answer || answer.code !== code) throw new Error(t('The code changed. Compare it again.'));
       await this.here().catch(() => null);
+      const { e2e } = this.chats;
+      const synced = this.copied() ? Object.fromEntries(e2e.contacts().map((c) => [c.identity, syncedOf(e2e.record(c.identity)!)])) : {};
       const primary = await this.seal({ ...answer.peer, since: Date.now() }, { k: 'ready', name: this.data.offer?.name ?? '' });
-      await this.save({ ...this.data, primary, account: answer.account, offer: null, answer: null, synced: {}, packs: [] });
+      await this.save({ ...this.data, primary, account: answer.account, offer: null, answer: null, synced, packs: [], copySaid: false });
     }).then(() => {
       announce();
       return this.flush().catch(() => undefined);
@@ -1874,6 +1909,13 @@ export function linkedRole(): Role {
 /** On a linked device: the account's contact link, to show as the chat's own. */
 export function accountLink(): string | null {
   return current?.accountLink() ?? null;
+}
+
+/** Once, in a space whose chats are a linked device's copy restored from its backup: what to say of it. Null otherwise. */
+export async function copyNote(): Promise<string | null> {
+  if (!core.hasCore()) return null;
+  const links = await spaceLinks().catch(() => null);
+  return links && (await links.sayCopy().catch(() => false)) ? t('These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.') : null;
 }
 
 /**

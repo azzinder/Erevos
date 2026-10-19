@@ -12,7 +12,7 @@ import { Chip, font, fontStyle, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
 import { canGroup, canPublicGroup, hasCore } from '../lib/core';
-import { linkedRole } from '../lib/devices';
+import { copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
@@ -240,6 +240,10 @@ export default function Home() {
       }
       load();
       lookOnline();
+      // Once, in a linked device's chats restored from its backup: that they are read, not written in, here.
+      void copyNote().then((text) => {
+        if (text && active) ask(t('Linked devices'), text, [{ text: t('OK') }]);
+      });
       const every = setInterval(lookOnline, 5000);
       // What comes while this screen shows moves its chat to the top.
       const stop = onReceived(() => {

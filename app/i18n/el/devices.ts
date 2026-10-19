@@ -18,6 +18,7 @@ export const devices: Record<string, string> = {
 
   // The menu, and the chat on a linked device (app/index.tsx, app/chat.tsx).
   'Linked devices': 'Συνδεδεμένες συσκευές',
+  'These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.': 'Αυτές οι συνομιλίες ήρθαν από το αντίγραφο ασφαλείας μιας συνδεδεμένης συσκευής: εδώ μπορείς να τις διαβάσεις, όχι να γράψεις σε αυτές. Για να γράψεις, σύνδεσε ξανά αυτή τη συσκευή με το τηλέφωνο, στις Συνδεδεμένες συσκευές.',
   'This account on a computer or in a browser too': 'Αυτός ο λογαριασμός και σε υπολογιστή ή σε browser',
   "This chat is the phone's: move it into hidden chats there.": 'Αυτή η συνομιλία είναι του τηλεφώνου: μετέφερέ την στις κρυφές συνομιλίες από εκεί.',
 

@@ -79,9 +79,11 @@ export type DevicesData = {
   left: Left[];
   /** On a linked device: the members of each of the account's groups, by the group's id, as the phone said them. */
   members: Record<string, GroupSeat[]>;
+  /** In a space whose chats are a linked device's copy, from its backup (lib/devices.ts, copied): whether that was said. */
+  copySaid: boolean;
 };
 
-export const EMPTY_DEVICES: DevicesData = { devices: [], primary: null, account: '', link: '', offer: null, answer: null, synced: {}, packs: [], left: [], members: {} };
+export const EMPTY_DEVICES: DevicesData = { devices: [], primary: null, account: '', link: '', offer: null, answer: null, synced: {}, packs: [], left: [], members: {}, copySaid: false };
 
 export const FILE = 'erevos-devices';
 const BLOCK = 16 * 1024;
@@ -168,6 +170,7 @@ function checked(value: unknown): DevicesData {
     packs: Array.isArray(v.packs) ? v.packs.map(readOffer).filter((o): o is FileOffer => o !== null) : [],
     left: Array.isArray(v.left) ? v.left.map(checkedLeft).filter((l): l is Left => l !== null).slice(-MAX_LEFT) : [],
     members,
+    copySaid: v.copySaid === true,
   };
 }
 

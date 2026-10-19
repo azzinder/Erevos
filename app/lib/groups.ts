@@ -208,6 +208,11 @@ export class Groups {
     return this.data.groups;
   }
 
+  /** Whether this phone is in groups of its own: it has their MLS state, which a linked device never has. */
+  hasState(): boolean {
+    return !!this.data.state;
+  }
+
   /** On a linked device: the groups as the phone said them, made by `update` from those here, with the groups where a member's message came. */
   mirror(update: (groups: Group[]) => { groups: Group[]; came: string[] }): Promise<void> {
     return this.run(async () => {

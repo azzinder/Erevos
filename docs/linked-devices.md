@@ -222,7 +222,13 @@ A backup does not carry links (lock/devices-data.ts is left out), and restoring 
 they are: on the same phone the devices stay linked, and on another phone there are none. There, a
 computer is linked again once it unlinked itself (**Unlink this device**, which clears the account's
 chats from it). A linked computer's own backup holds the phone's chats as they were, without the
-link to write in them, so the guide says to make backups on the phone.
+link to write in them, so the guide says to make backups on the phone. Restored on another computer,
+those chats open to be read: Erevos says once that they came from a linked device's backup, and what
+is written there says why it cannot go (a contact as a device keeps it has no conversation of its
+own). Such a space links again as an empty one does: once the phone sends its contacts, the chats it
+has stay, the history brought over joins them, each message once, and the others go; the first
+`groups` after linking says all the groups there are (`all`), so a group the phone no longer has
+goes too.
 
 ## Where it is in the code
 

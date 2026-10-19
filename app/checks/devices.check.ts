@@ -3,7 +3,8 @@
 // version from before linking, through a real relay and the real core: linking with the codes
 // compared, the history brought over, messages both ways and on both devices, contacts kept alike,
 // photos and files deleted from the relay once each took them, calls on either, the phone's groups
-// on the computer too, what is done later to messages reaching it, and unlinking.
+// on the computer too, what is done later to messages reaching it, unlinking, and a computer's own
+// backup restored elsewhere.
 // Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
@@ -411,6 +412,62 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
   assert.deepEqual(await take(dell), []);
 
   for (const p of [pixel, dell]) p.links.close();
+});
+
+test('a linked computer\'s own backup, restored: read, not written in, said once, and linked again', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { url, where, phone, take, write, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const carol = await phone(2, false);
+  const dave = await phone(3, false);
+  const account = pixel.chats.e2e.identityHex();
+  const [carolId, daveId] = [carol.chats.e2e.identityHex(), dave.chats.e2e.identityHex()];
+  for (const p of [carol, dave]) {
+    await p.chats.e2e.addContact({ senderHex: pixel.queue.senderHex, key: toBase64Url(pixel.chats.e2e.bundle), relayUrl: url }, p.queue.senderHex, where);
+    await write(p, account, 'hello');
+  }
+  await take(pixel);
+  await linkUp(pixel, dell);
+  await until(async () => {
+    await take(dell);
+    return dell.chats.history.messages().length === 2;
+  });
+
+  // The computer's chats as its backup has them, restored in a space of another computer: no link.
+  const copy = await phone(4);
+  for (const c of dell.chats.e2e.contacts()) await copy.chats.e2e.putIn(dell.chats.e2e.record(c.identity)!);
+  await copy.chats.history.putIn(dell.chats.history.messages());
+  assert.deepEqual([copy.links.role(), copy.links.copied(), dell.links.copied(), pixel.links.copied()], [null, true, false, false]);
+  // Said once; written in, it says why not.
+  assert.deepEqual([await copy.links.sayCopy(), await copy.links.sayCopy()], [true, false]);
+  await assert.rejects(write(copy, carolId, 'from the copy'), /linked device’s backup/);
+
+  // Dave's chat leaves the phone meanwhile. Linked again, the copy keeps the chats the phone has,
+  // each message once, with what came since, and lets go of the others.
+  await pixel.chats.e2e.removeContact(daveId);
+  await pixel.chats.history.clear(`contact:${daveId}`);
+  await write(carol, account, 'since');
+  await take(pixel);
+  await linkUp(pixel, copy);
+  await until(async () => {
+    await take(copy);
+    return copy.chats.history.messages().some((m) => m.text === 'since');
+  });
+  assert.equal(copy.links.role(), 'linked');
+  assert.deepEqual(
+    copy.chats.e2e.contacts().map((c) => c.identity),
+    [carolId],
+  );
+  assert.deepEqual(
+    copy.chats.history.messages().map((m) => [m.peer, m.text]),
+    [
+      [`contact:${carolId}`, 'hello'],
+      [`contact:${carolId}`, 'since'],
+    ],
+  );
+  assert.equal(copy.links.copied(), false);
+
+  for (const p of [pixel, dell, copy]) p.links.close();
 });
 
 test('photos, files and voice messages go through the phone both ways, and deleting goes to both phones', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {

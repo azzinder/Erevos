@@ -848,10 +848,12 @@ export class E2E {
         read: first ? tags([...message.read, ...contact.heldRead]) : message.read,
       };
     });
+    const through = this.link?.through === true;
+    // A linked device's chats restored from its backup have no conversation to write in (lib/devices.ts, copied).
+    if (!through && !contact.conversations[0]) throw new Error(t('These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.'));
     let conversation = fromBase64(contact.conversations[0]);
     const packets: Uint8Array[] = [];
     const plaintexts = said.map(encodeMessage);
-    const through = this.link?.through === true;
     for (const plaintext of plaintexts) {
       if (through) {
         packets.push(await this.link!.wrap(contact.identity, plaintext));
