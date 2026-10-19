@@ -1,3 +1,4 @@
+import { startActivityAsync } from 'expo-intent-launcher';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
@@ -22,6 +23,11 @@ const SMS_PERMISSIONS = [
   'android.permission.SEND_SMS',
   'android.permission.RECEIVE_MMS',
 ] as const;
+// Android 15 and later also hold the SMS app role back from an app installed from a browser: its
+// question then does not come, or says the setting is restricted.
+const NOT_CHOSEN =
+  'Choose Erevos in Android\'s Default apps → SMS app. If Android says it is a restricted setting, open Erevos\'s ' +
+  'App info, tap ⋮ at the top right → Allow restricted settings, and choose Erevos again.';
 const RESTRICTED =
   'Android did not allow it. In Erevos\'s App info, under Permissions → SMS, it may say Restricted setting: then go ' +
   'back, tap ⋮ at the top right → Allow restricted settings, and allow SMS under Permissions.';
@@ -31,6 +37,8 @@ export default function SmsSettings() {
   // Whether Android lets Erevos read the phone's SMS; null until known.
   const [canRead, setCanRead] = useState<boolean | null>(null);
   const [readNote, setReadNote] = useState('');
+  // Set once the owner asked Android to make Erevos the SMS app, until it is.
+  const [asked, setAsked] = useState(false);
   // What reading the phone's SMS gave, as the SMS app: how many conversations, or why it failed.
   const [reading, setReading] = useState<{ count: number } | { error: string } | null>(null);
   const [link, setLink] = useState<SmsLink | null>(null);
@@ -81,12 +89,17 @@ export default function SmsSettings() {
 
   async function makeDefault() {
     setNote('');
+    setAsked(true);
     try {
       requestDefaultSms();
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
     }
     if (Number(Platform.Version) >= 33) await PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS').catch(() => undefined);
+  }
+
+  async function openDefaultApps() {
+    await startActivityAsync('android.settings.MANAGE_DEFAULT_APPS_SETTINGS').catch(() => Linking.openSettings());
   }
 
   async function allowSms() {
@@ -140,7 +153,19 @@ export default function SmsSettings() {
           through Erevos, end-to-end encrypted. To everyone else it goes as a plain SMS, marked SMS: the phone company
           can read it, as it reads every SMS.
         </Text>
-        {status?.isDefault ? null : <Button title="Make Erevos the SMS app" onPress={() => void makeDefault()} />}
+        {status?.isDefault ? null : (
+          <>
+            <Button title="Make Erevos the SMS app" onPress={() => void makeDefault()} />
+            {asked ? (
+              <>
+                <Text variant="bodyStrong">Android did not make Erevos the SMS app</Text>
+                <Text tone="muted">{NOT_CHOSEN}</Text>
+                <Button title="Open Default apps" kind="secondary" onPress={() => void openDefaultApps()} />
+                <Button title="Open Erevos's App info" kind="secondary" onPress={() => void Linking.openSettings()} />
+              </>
+            ) : null}
+          </>
+        )}
         {status?.isDefault && canRead === false ? (
           <>
             <Text variant="bodyStrong">Android does not let Erevos read the SMS</Text>

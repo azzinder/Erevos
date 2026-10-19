@@ -439,6 +439,10 @@ chats in one list.
 
 - **SMS from before:** nothing to import. Erevos shows the SMS and MMS already on the phone, from Android's own
   store, where they stay for any other SMS app. Android keeps them, not sealed by Erevos, as with every SMS app.
+- **If Erevos does not become the SMS app:** Android 15 and later can hold this back from an app installed from a
+  browser. Under **SMS** in the menu, tap **Open Default apps** → **SMS app** → Erevos. If Android calls it a
+  restricted setting, open **Erevos's App info**, tap **⋮** at the top right → **Allow restricted settings**, and
+  choose Erevos again.
 - **If no SMS show:** Android 15 and later hold the SMS permission back from an app installed from a browser.
   Under **SMS** in the menu, tap **Allow SMS**. If Android calls it a restricted setting, open **Erevos's App
   info**, tap **⋮** at the top right → **Allow restricted settings**, and allow SMS under **Permissions**. Chats
