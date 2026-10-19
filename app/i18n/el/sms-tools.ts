@@ -122,5 +122,7 @@ export const smsTools: Record<string, string> = {
   'Without the SMS': 'Χωρίς τα SMS',
   'Putting the SMS back into the phone…': 'Τα SMS επιστρέφουν στο τηλέφωνο…',
   "{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.": '{sms} SMS και {mms} MMS επέστρεψαν στα SMS του τηλεφώνου. Όσα είχε ήδη έμειναν όπως ήταν.',
+  'A newer Erevos made this backup: what this one does not know yet stays out. Update Erevos first to restore all of it.':
+    'Αυτό το αντίγραφο το έφτιαξε ένα νεότερο Erevos: ό,τι δεν γνωρίζει ακόμα αυτό εδώ μένει έξω. Ενημέρωσε πρώτα το Erevos για να τα επαναφέρεις όλα.',
   "The SMS could not go back into the phone's SMS: {error}": 'Τα SMS δεν μπόρεσαν να επιστρέψουν στα SMS του τηλεφώνου: {error}',
 };

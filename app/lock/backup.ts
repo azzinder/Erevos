@@ -23,6 +23,9 @@ import { PREFIX as VOICE } from './voice-clips';
 // The file: MAGIC, the salt (SALT bytes) and PBKDF2 rounds (4 bytes) the password's key comes from,
 // then, sealed with that key (AES-256-GCM, lib/crypto.ts), the entries one after another: their
 // kind (1 byte), name (2-byte length, then the name) and data (4-byte length, then the data).
+// An entry of a kind or name this Erevos does not know, from a newer one, is left out, and the
+// rest restored; an Erevos before that refused the whole backup. What is damaged, or not sealed
+// with the backup's key, opens nothing.
 //
 // What it leaves out stays with the phone: how many wrong passwords were typed, and how automatic
 // backups are made (lib/backup-folder.ts). Of each space's SMS data (lock/sms-data.ts) it holds the
@@ -63,8 +66,9 @@ const PHONE_SMS = 'phone-sms';
 
 type Entry = { kind: number; name: string; data: Uint8Array };
 
-/** What a backup holds, opened: ready to restore. */
-export type Backup = { entries: Entry[]; size: number };
+/** What a backup holds, opened: ready to restore. `unknown`: how many entries in it this Erevos
+ *  does not know (a newer one made it), left out. */
+export type Backup = { entries: Entry[]; size: number; unknown: number };
 
 /** The key a password gives for backups, with the salt and rounds it came from. */
 export type BackupKey = { key: Uint8Array; salt: Uint8Array; iter: number };
@@ -128,9 +132,10 @@ function allowed(kind: number, name: string): boolean {
   return kind === KIND_BYTES && (name.startsWith(VOICE) || name.startsWith(AVATAR) || name.startsWith(PAGE)) && /^[a-z0-9-]+$/.test(name);
 }
 
-function unpack(bytes: Uint8Array): Entry[] {
+function unpack(bytes: Uint8Array): { entries: Entry[]; unknown: number } {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const entries: Entry[] = [];
+  let unknown = 0;
   let at = 0;
   while (at < bytes.length) {
     if (at + 3 > bytes.length) throw new NotABackupError();
@@ -142,11 +147,13 @@ function unpack(bytes: Uint8Array): Entry[] {
     at += nameLength;
     const length = view.getUint32(at);
     at += 4;
-    if (at + length > bytes.length || !allowed(kind, name)) throw new NotABackupError();
-    entries.push({ kind, name, data: bytes.slice(at, at + length) });
+    if (at + length > bytes.length) throw new NotABackupError();
+    // One this Erevos does not know, as a newer one may hold, is left out and never written.
+    if (allowed(kind, name)) entries.push({ kind, name, data: bytes.slice(at, at + length) });
+    else unknown++;
     at += length;
   }
-  return entries;
+  return { entries, unknown };
 }
 
 /** A backup of everything on the phone, sealed with `key`: the bytes of the file. With
@@ -177,9 +184,9 @@ export async function openBackup(bytes: Uint8Array, password: string): Promise<B
   } catch {
     throw new WrongBackupPasswordError();
   }
-  const entries = unpack(packed);
+  const { entries, unknown } = unpack(packed);
   if (!entries.some((entry) => entry.name === 'erevos.space-keys' || entry.name === 'erevos.lock')) throw new NotABackupError();
-  return { entries, size: bytes.length };
+  return { entries, size: bytes.length, unknown };
 }
 
 /**

@@ -817,6 +817,8 @@ home screen's menu.
 - **Not in a backup:** photos and files, not yet: a backup is made in the phone's memory, and they would not fit. A
   backup restored on the same phone shows them again; on another phone they show as not on it. Also left out: the
   count of wrong passwords, and how automatic backups are set.
+- **A backup from a newer Erevos:** Erevos 0.1.8 and later open it too, and restore all of it they know; before
+  that, they say some of it stays out. Update Erevos first to restore all of it.
 
 ## Imported chats {#import}
 
