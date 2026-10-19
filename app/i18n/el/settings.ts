@@ -166,6 +166,7 @@ export const settings: Record<string, string> = {
   'This number has Erevos: link it to a contact': 'Αυτός ο αριθμός έχει Erevos: σύνδεσέ τον με μια επαφή',
   'not sent': 'δεν στάλθηκε',
   'sending': 'αποστέλλεται',
+  'not delivered': 'δεν παραδόθηκε',
   'Choose the SIM': 'Επιλογή SIM',
   'Picture · {size} KB · remove': 'Εικόνα · {size} KB · αφαίρεση',
   'MMS (not encrypted)': 'MMS (μη κρυπτογραφημένο)',

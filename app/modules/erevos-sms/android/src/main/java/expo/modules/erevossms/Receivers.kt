@@ -43,6 +43,13 @@ class SentReceiver : BroadcastReceiver() {
   }
 }
 
+/** The network's delivery report of a text that went. */
+class DeliveredReceiver : BroadcastReceiver() {
+  override fun onReceive(context: Context, intent: Intent) {
+    SmsStore.delivered(context, intent.getLongExtra("id", -1L), intent.getByteArrayExtra("pdu"), intent.getStringExtra("format"))
+  }
+}
+
 /** "Reply with a message" from the incoming call screen. */
 class RespondViaSmsService : Service() {
   override fun onBind(intent: Intent?): IBinder? = null

@@ -27,7 +27,8 @@ import { useStyles, useTheme } from '../theme/context';
 // goes as an MMS, as plain as an SMS. With two SIMs, the one to send on is chosen here, and kept
 // for the number. The number shows the name the phone's contacts give it, when that is turned on.
 // With several numbers (`to` comma-separated) it is a group's conversation: every message goes to
-// all of them as one MMS, text alone too, and each that comes says who wrote it.
+// all of them as one MMS, text alone too, and each that comes says who wrote it. Ours are marked ✓
+// once they went and ✓✓✓ once the network's delivery report says they reached the phone.
 
 export default function Sms() {
   const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string }>();
@@ -82,7 +83,7 @@ export default function Sms() {
         setSim(chooseSim(found, opened.simFor(to), lastCame));
       })
       .catch(() => undefined);
-    const subscriptions = [onSmsEvent('onSms', ({ address }) => numbers.some((n) => sameNumber(address, n)) && load()), onSmsEvent('onSmsSent', () => load())];
+    const subscriptions = [onSmsEvent('onSms', ({ address }) => numbers.some((n) => sameNumber(address, n)) && load()), onSmsEvent('onSmsSent', () => load()), onSmsEvent('onSmsDelivered', () => load())];
     return () => subscriptions.forEach((s) => s?.remove());
   }, [to, load, params.plain]);
 
@@ -214,7 +215,7 @@ export default function Sms() {
             <Text variant="caption" tone="faint">
               {new Date(m.at).toLocaleString(lang() === 'el' ? 'el-GR' : undefined)}
               {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}
-              {m.state === 'failed' ? ` · ${t('not sent')}` : m.state === 'sending' ? ` · ${t('sending')}` : ''}
+              {m.mine ? smsMark(m.state) : ''}
             </Text>
           </View>
         ))}
@@ -237,6 +238,15 @@ export default function Sms() {
       </View>
     </KeyboardPaddedView>
   );
+}
+
+// Where one of ours is: on its way, went (✓), reached their phone (✓✓✓), or not.
+function smsMark(state: SmsMessage['state']): string {
+  if (state === 'failed') return ` · ${t('not sent')}`;
+  if (state === 'sending') return ` · ${t('sending')}`;
+  if (state === 'undelivered') return ` · ${t('not delivered')}`;
+  if (state === 'delivered') return ' · ✓✓✓';
+  return state === 'sent' ? ' · ✓' : '';
 }
 
 const makeStyles = (colors: Colors) =>

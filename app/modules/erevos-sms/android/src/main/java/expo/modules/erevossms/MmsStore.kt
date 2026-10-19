@@ -264,6 +264,7 @@ internal object MmsStore {
             "state" to when (box) {
               Telephony.Mms.MESSAGE_BOX_FAILED -> "failed"
               Telephony.Mms.MESSAGE_BOX_OUTBOX -> "sending"
+              Telephony.Mms.MESSAGE_BOX_SENT -> "sent"
               else -> "done"
             },
             "read" to (c.getInt(3) != 0),

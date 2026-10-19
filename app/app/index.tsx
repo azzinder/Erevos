@@ -1,5 +1,5 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -97,6 +97,9 @@ export default function Home() {
   const [now, setNow] = useState(Date.now());
   // The contacts whose phones said they are open, and not long ago (lib/e2e.ts).
   const [online, setOnline] = useState<Set<string>>(new Set());
+  // The phone's SMS as last read: the list shows them while they are read again.
+  const smsShown = useRef<InboxSms[]>([]);
+  const smsRead = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -112,22 +115,42 @@ export default function Home() {
               return [e2e.contacts().map((c) => ({ ...c, phone: phones.get(c.identity) })), history.messages()];
             })
           : Promise.all([loadE2EData('space', current, key).then((d) => d.contacts), History.open('space', current, key).then((h) => h.messages())]);
-      const load = () =>
+      // The chats show as soon as they are read; the phone's SMS, slower to read (a hundred
+      // conversations), join them when they are.
+      const load = () => {
+        let chatsRead: ((sms: InboxSms[]) => void) | null = null;
+        // The phone's SMS show only once Erevos is its SMS app.
+        let smsFirst = false;
+        if (smsStatus()?.isDefault) {
+          smsFirst = smsRead.current === false;
+          void quiet(smsRows(current, key), smsShown.current).then((sms) => {
+            if (!active) return;
+            smsShown.current = sms;
+            smsRead.current = true;
+            smsFirst = false;
+            chatsRead?.(sms);
+          });
+        } else smsShown.current = [];
         void Promise.all([
           quiet(chats(), [[], []]),
           quiet(Archive.open('space', current, key).then((a) => a.chats()), []),
           quiet(loadCurrentSpaceData(), null),
-          // The phone's SMS show only once Erevos is its SMS app.
-          smsStatus()?.isDefault ? quiet(smsRows(current, key), []) : Promise.resolve([]),
           canGroup() ? quiet(spaceGroups().then((g) => g.list() as InboxGroup[]), []) : Promise.resolve([] as InboxGroup[]),
-        ]).then(([[contacts, messages], imported, data, sms, groups]) => {
+        ]).then(([[contacts, messages], imported, data, groups]) => {
           if (!active) return;
-          const at = Date.now();
-          setNow(at);
           const name = (identity: string) => memberName(identity, contacts);
-          setRows(mergeRows(buildInbox(contacts, messages, imported, at, sms), groupRows(groups, name, (text) => noteText(text, name))));
+          chatsRead = (sms) => {
+            const at = Date.now();
+            const list = mergeRows(buildInbox(contacts, messages, imported, at, sms), groupRows(groups, name, (text) => noteText(text, name)));
+            // Not "No chats yet" while the SMS are still being read the first time.
+            if (list.length === 0 && smsFirst) return;
+            setNow(at);
+            setRows(list);
+          };
+          chatsRead(smsShown.current);
           setRelay(!data?.url ? 'none' : data.ownQueue ? 'ready' : 'no-queue');
         });
+      };
       // Who shows online, again every few seconds, as it lasts only a while. A chat that appears
       // offline does not see it.
       const lookOnline = () =>

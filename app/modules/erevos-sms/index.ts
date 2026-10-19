@@ -17,14 +17,15 @@ export type SmsThread = { thread: number; address: string; text: string; at: num
 export type SmsPicture = { uri: string; type: string };
 
 /** `sim` is the SIM it came or went on (-1 if unknown); `kind` and `pictures` are missing in an app
- *  built before MMS. */
+ *  built before MMS. One of ours that went is `sent`, then `delivered` or `undelivered` when the
+ *  network sends a delivery report (an older build says `done`). */
 export type SmsMessage = {
   id: number;
   kind?: 'sms' | 'mms';
   text: string;
   at: number;
   mine: boolean;
-  state: 'done' | 'sending' | 'failed';
+  state: 'done' | 'sending' | 'failed' | 'sent' | 'delivered' | 'undelivered';
   read: boolean;
   sim?: number;
   pictures?: SmsPicture[];
@@ -38,6 +39,7 @@ export type SmsInvitePart = { from: string; data: string; at: number };
 export type SmsEvents = {
   onSms: (event: { address: string; mms?: number }) => void;
   onSmsSent: (event: { id: number; ok: boolean; mms?: boolean }) => void;
+  onSmsDelivered: (event: { id: number; ok: boolean }) => void;
   onInvite: (event: { from: string }) => void;
 };
 

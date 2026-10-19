@@ -16,6 +16,7 @@ import android.os.Build
 import android.provider.ContactsContract
 import android.provider.Telephony
 import android.telephony.SmsManager
+import android.telephony.SmsMessage
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import android.util.Base64
@@ -33,6 +34,7 @@ internal object SmsStore {
 
   const val INVITE_PORT: Short = 16180
   const val SENT_ACTION = "expo.modules.erevossms.SENT"
+  const val DELIVERED_ACTION = "expo.modules.erevossms.DELIVERED"
   private const val CHANNEL = "sms"
   private const val PREFS = "erevos-sms"
   private const val INVITES = "invites"
@@ -81,20 +83,34 @@ internal object SmsStore {
     }
   }
 
-  /** Names the phone's contacts give these numbers. Empty without READ_CONTACTS. Nothing is kept. */
+  /** Names the phone's contacts give these numbers. Empty without READ_CONTACTS. Nothing is kept.
+   *  The contacts' numbers are read once, not looked up one by one: a hundred numbers took long. */
   fun contactNames(context: Context, numbers: List<String>): Map<String, String> {
     if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return emptyMap()
+    // By the last ten digits, and, for numbers written with another prefix, by the last seven.
+    val byTen = HashMap<String, String>()
+    val bySeven = HashMap<String, MutableList<Pair<String, String>>>()
+    try {
+      val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+      context.contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, projection, null, null, null)?.use { c ->
+        while (c.moveToNext()) {
+          val digits = c.getString(0)?.filter { it.isDigit() }?.ifEmpty { null } ?: continue
+          val name = c.getString(1)?.takeIf { it.isNotBlank() } ?: continue
+          byTen.putIfAbsent(digits.takeLast(10), name)
+          if (digits.length >= 7) bySeven.getOrPut(digits.takeLast(7)) { ArrayList() }.add(digits to name)
+        }
+      }
+    } catch (_: Exception) {
+      return emptyMap()
+    }
     val names = HashMap<String, String>()
     for (number in numbers.distinct().take(500)) {
-      if (number.isBlank()) continue
-      val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
-      try {
-        context.contentResolver.query(uri, arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME), null, null, null)?.use { c ->
-          if (c.moveToFirst()) c.getString(0)?.let { if (it.isNotBlank()) names[number] = it }
-        }
-      } catch (_: Exception) {
-        // Not a number the phone can look up.
-      }
+      val digits = number.filter { it.isDigit() }
+      if (digits.isEmpty()) continue
+      // The same last ten digits; else one number ends the other, as Android's own lookup matches.
+      val name = byTen[digits.takeLast(10)]
+        ?: if (digits.length >= 7) bySeven[digits.takeLast(7)]?.firstOrNull { (other, _) -> digits.endsWith(other) || other.endsWith(digits) }?.second else null
+      if (name != null) names[number] = name
     }
     return names
   }
@@ -167,7 +183,7 @@ internal object SmsStore {
     val (selection, args) = if (thread != null) "${Telephony.Sms.THREAD_ID}=?" to arrayOf(thread.toString())
       else "${Telephony.Sms.ADDRESS}=?" to arrayOf(address)
     val out = ArrayList<Map<String, Any?>>()
-    val projection = arrayOf(Telephony.Sms._ID, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.TYPE, Telephony.Sms.READ, Telephony.Sms.SUBSCRIPTION_ID)
+    val projection = arrayOf(Telephony.Sms._ID, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.TYPE, Telephony.Sms.READ, Telephony.Sms.SUBSCRIPTION_ID, Telephony.Sms.STATUS)
     context.contentResolver.query(Telephony.Sms.CONTENT_URI, projection, selection, args, "${Telephony.Sms.DATE} DESC")?.use { c ->
       while (c.moveToNext() && out.size < limit) {
         val type = c.getInt(3)
@@ -181,6 +197,12 @@ internal object SmsStore {
             "state" to when (type) {
               Telephony.Sms.MESSAGE_TYPE_FAILED -> "failed"
               Telephony.Sms.MESSAGE_TYPE_OUTBOX, Telephony.Sms.MESSAGE_TYPE_QUEUED -> "sending"
+              // Whether it reached their phone, as far as the network's delivery report says.
+              Telephony.Sms.MESSAGE_TYPE_SENT -> when (if (c.isNull(6)) Telephony.Sms.STATUS_NONE else c.getInt(6)) {
+                Telephony.Sms.STATUS_COMPLETE -> "delivered"
+                Telephony.Sms.STATUS_FAILED -> "undelivered"
+                else -> "sent"
+              }
               else -> "done"
             },
             "read" to (c.getInt(4) != 0),
@@ -228,7 +250,8 @@ internal object SmsStore {
 
   /**
    * Sends a text. As the default app, the message is written to the provider first and its row
-   * says later whether it went; otherwise Android writes it. Returns the row's id, or -1.
+   * says later whether it went, and whether it reached their phone when the network sends a
+   * delivery report; otherwise Android writes it. Returns the row's id, or -1.
    */
   fun send(context: Context, address: String, text: String, sim: Int = -1): Long {
     var id = -1L
@@ -240,6 +263,7 @@ internal object SmsStore {
         put(Telephony.Sms.READ, 1)
         put(Telephony.Sms.SEEN, 1)
         put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_OUTBOX)
+        put(Telephony.Sms.STATUS, Telephony.Sms.STATUS_PENDING)
         if (sim >= 0) put(Telephony.Sms.SUBSCRIPTION_ID, sim)
       }
       id = context.contentResolver.insert(Telephony.Sms.CONTENT_URI, values)?.lastPathSegment?.toLongOrNull() ?: -1L
@@ -252,7 +276,17 @@ internal object SmsStore {
       repeat(parts.size - 1) { add(null) }
       add(last)
     }
-    sms.sendMultipartTextMessage(address, null, parts, intents, null)
+    // The delivery report of the last part. Android puts the report in the intent, so it must be mutable.
+    val reports = if (id < 0) null else {
+      val delivered = Intent(context, DeliveredReceiver::class.java).setAction(DELIVERED_ACTION).putExtra("id", id)
+      val mutable = if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0
+      val report = PendingIntent.getBroadcast(context, (id and 0x7fffffff).toInt(), delivered, mutable or PendingIntent.FLAG_UPDATE_CURRENT)
+      ArrayList<PendingIntent?>(parts.size).apply {
+        repeat(parts.size - 1) { add(null) }
+        add(report)
+      }
+    }
+    sms.sendMultipartTextMessage(address, null, parts, intents, reports)
     return id
   }
 
@@ -264,6 +298,42 @@ internal object SmsStore {
       context.contentResolver.update(Uri.withAppendedPath(Telephony.Sms.CONTENT_URI, id.toString()), values, null, null)
     }
     listener?.invoke("onSmsSent", mapOf("id" to id.toDouble(), "ok" to ok))
+  }
+
+  /** The network's delivery report of a text that went: it reached their phone, is still on its
+   *  way, or will not. Kept in the text's row. */
+  fun delivered(context: Context, id: Long, pdu: ByteArray?, format: String?) {
+    if (id < 0 || pdu == null) return
+    val report = try {
+      if (Build.VERSION.SDK_INT >= 23) SmsMessage.createFromPdu(pdu, format) else @Suppress("DEPRECATION") SmsMessage.createFromPdu(pdu)
+    } catch (_: Exception) {
+      null
+    } ?: return
+    val status = deliveryStatus(report.status, format)
+    if (isDefault(context)) {
+      val values = ContentValues().apply { put(Telephony.Sms.STATUS, status) }
+      context.contentResolver.update(Uri.withAppendedPath(Telephony.Sms.CONTENT_URI, id.toString()), values, null, null)
+    }
+    listener?.invoke("onSmsDelivered", mapOf("id" to id.toDouble(), "ok" to (status == Telephony.Sms.STATUS_COMPLETE)))
+  }
+
+  /** A report's status as the SMS provider keeps it. GSM gives TP-Status (below 0x20 delivered,
+   *  below 0x40 still trying, else failed); CDMA an error class and a message status. */
+  private fun deliveryStatus(status: Int, format: String?): Int {
+    if (format == "3gpp2") {
+      val errorClass = (status shr 24) and 0x03
+      val code = (status shr 16) and 0x3f
+      return when (errorClass) {
+        0 -> if (code == 2) Telephony.Sms.STATUS_COMPLETE else Telephony.Sms.STATUS_PENDING
+        3 -> Telephony.Sms.STATUS_FAILED
+        else -> Telephony.Sms.STATUS_PENDING
+      }
+    }
+    return when {
+      status < 0x20 -> Telephony.Sms.STATUS_COMPLETE
+      status < 0x40 -> Telephony.Sms.STATUS_PENDING
+      else -> Telephony.Sms.STATUS_FAILED
+    }
   }
 
   /** Keeps a text that came, as the default app must, and says so. */

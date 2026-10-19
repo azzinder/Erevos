@@ -467,6 +467,9 @@ chats in one list.
   invite. A phone without Erevos shows nothing; a phone with Erevos answers through the relay and the two become
   contacts. Each number is asked once a month at most, and **Turn invites off** stops them.
 - **Everyone else:** a plain SMS, marked SMS. The phone company can read it, as it reads every SMS.
+- **✓ and ✓✓✓:** an SMS of yours shows ✓ once it went, and ✓✓✓ once the network's delivery report says it reached
+  their phone, or "not delivered". Some phone companies send no delivery reports; then it stays ✓. SMS cannot say
+  whether it was read.
 - **Photos (MMS):** **Photo** beside the message field adds a photo, made smaller to fit one MMS (about 280 KB),
   with nothing in it besides the picture. Photos that come by MMS show in the conversation. An MMS is as plain as an
   SMS: the phone company can see it.

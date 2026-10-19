@@ -79,6 +79,7 @@
     </receiver>
 
     <receiver android:name="expo.modules.erevossms.SentReceiver" android:exported="false" />
+    <receiver android:name="expo.modules.erevossms.DeliveredReceiver" android:exported="false" />
     <receiver android:name="expo.modules.erevossms.MmsSentReceiver" android:exported="false" />
     <receiver android:name="expo.modules.erevossms.MmsDownloadedReceiver" android:exported="false" />
 

@@ -22,7 +22,7 @@ class ErevosSmsModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("ErevosSms")
-    Events("onSms", "onSmsSent", "onInvite")
+    Events("onSms", "onSmsSent", "onSmsDelivered", "onInvite")
 
     OnCreate {
       SmsStore.listener = { name, body -> main.post { sendEvent(name, body) } }
