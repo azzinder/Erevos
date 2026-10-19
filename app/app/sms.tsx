@@ -15,7 +15,7 @@ import { relayKey } from '../lib/relay';
 import { groupName, smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { pickMmsPhoto, type MmsPhoto } from '../lib/pick-mms-photo';
-import { laterChanged, onLaterSent } from '../lib/sms-later';
+import { cancelLater as cancelSmsLater, laterChanged, onLaterSent } from '../lib/sms-later';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { cleanName, loadE2EData, type Contact } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
@@ -181,8 +181,9 @@ export default function Sms() {
     }
   }
 
-  // Keeps the SMS typed to go at `at`, sealed in the space until then (lib/sms-later.ts). Asked
-  // now whether Erevos may send, as it cannot ask then.
+  // Keeps the SMS typed to go at `at`: sealed in the space, and held by Android until then, which
+  // sends it then with Erevos closed too (lib/sms-later.ts). Asked now whether Erevos may send, as
+  // it cannot ask then.
   async function sendLater(at: number) {
     const text = draft.trim();
     const sms = link.current;
@@ -196,7 +197,7 @@ export default function Sms() {
       setDraft('');
       setLater(sms.later.filter((l) => sameNumber(l.to, to)));
       laterChanged();
-      setNote(t('It goes on {when} if Erevos is running then, or else when Erevos next opens. Tap it to cancel it.', { when: laterLabel(at) }));
+      setNote(t('It goes on {when}, with Erevos closed too; if the phone is off then, as soon as it is on again. Tap it to cancel it.', { when: laterLabel(at) }));
     } catch (error) {
       setNote(t('Not kept. {reason}', { reason: error instanceof Error ? error.message : String(error) }));
     }
@@ -211,13 +212,16 @@ export default function Sms() {
         onPress: () => {
           const kept = link.current;
           if (!kept) return;
-          void kept
-            .removeLater(sms.id)
-            .then(() => {
+          void cancelSmsLater(kept, sms.id)
+            .then((cancelled) => {
               setLater(kept.later.filter((l) => sameNumber(l.to, to)));
               laterChanged();
+              if (!cancelled) {
+                setNote(t('It had gone already.'));
+                load();
+              }
             })
-            .catch(() => undefined);
+            .catch((error) => setNote(t('Not cancelled. {reason}', { reason: error instanceof Error ? error.message : String(error) })));
         },
       },
     ]);
@@ -324,7 +328,7 @@ export default function Sms() {
       <Sheet visible={laterMenu} onClose={() => setLaterMenu(false)} title={t('SMS later')}>
         {laterMenu ? <LaterPicker onPick={(at) => void sendLater(at)} /> : null}
         <Text variant="caption" tone="muted">
-          {t('It waits sealed in Erevos, not in the phone\'s SMS, and goes at that time if Erevos is running, in the background too; if not, when Erevos next opens. Text only, to one number.')}
+          {t('It goes at that time, with Erevos closed and locked too; if the phone is off then, as soon as it is on again. Until then it is not in the phone\'s SMS: it waits locked with a key of this phone. Text only, to one number.')}
         </Text>
       </Sheet>
     </KeyboardPaddedView>

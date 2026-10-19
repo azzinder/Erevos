@@ -33,6 +33,17 @@ export type SmsMessage = {
   from?: string;
 };
 
+/** Where an SMS sent for later is, as Android holds it: waiting there for its time, went, or
+ *  never given to it (kept before this build, or it could not be opened). */
+export type LaterSmsState = 'waiting' | 'went' | 'unknown';
+
+/** Android holding SMS sent for later until their time, so they go with Erevos closed. */
+export type LaterSmsHolder = {
+  schedule(sms: { id: string; to: string; text: string; sim: number; at: number }): Promise<void>;
+  cancel(id: string): Promise<boolean>;
+  state(ids: string[]): Promise<Record<string, LaterSmsState>>;
+};
+
 /** A piece of an SMS invite that came, base64. */
 export type SmsInvitePart = { from: string; data: string; at: number };
 
@@ -40,6 +51,8 @@ export type SmsEvents = {
   onSms: (event: { address: string; mms?: number }) => void;
   onSmsSent: (event: { id: number; ok: boolean; mms?: boolean }) => void;
   onSmsDelivered: (event: { id: number; ok: boolean }) => void;
+  /** An SMS sent for later went, held by Android until its time (`id`: lock/sms-data.ts's). */
+  onSmsLaterSent: (event: { id: string }) => void;
   onInvite: (event: { from: string }) => void;
 };
 
@@ -56,6 +69,9 @@ type NativeSms = {
   contactNames?(numbers: string[]): Promise<Record<string, string>>;
   sendData(address: string, data: Uint8Array): Promise<void>;
   takeInvites(): Promise<SmsInvitePart[]>;
+  scheduleLater?(id: string, to: string, text: string, sim: number, at: number): Promise<void>;
+  cancelLater?(id: string): Promise<boolean>;
+  laterState?(ids: string[]): Promise<Record<string, LaterSmsState>>;
   addListener<Name extends keyof SmsEvents>(name: Name, listener: SmsEvents[Name]): EventSubscription;
 };
 
@@ -118,6 +134,17 @@ export function contactNames(numbers: string[]): Promise<Record<string, string>>
 export function sendSmsData(address: string, data: Uint8Array): Promise<void> {
   if (!native) return Promise.reject(new Error('This app was built without SMS.'));
   return native.sendData(address, data);
+}
+
+/** Android's hold on SMS sent for later, or null in a build without it (and with no SMS). */
+export function laterSmsHolder(): LaterSmsHolder | null {
+  const sms = native;
+  if (!sms?.scheduleLater || !sms.cancelLater || !sms.laterState) return null;
+  return {
+    schedule: (l) => sms.scheduleLater!(l.id, l.to, l.text, l.sim, l.at),
+    cancel: (id) => sms.cancelLater!(id),
+    state: (ids) => (ids.length > 0 ? sms.laterState!(ids) : Promise.resolve({})),
+  };
 }
 
 /** The invite pieces that came since the last call. Each is given once. */

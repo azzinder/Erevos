@@ -6,3 +6,5 @@ export const smsReady = () => false;
 export const sendSms = async (): Promise<number> => {
   throw new Error('This app was built without SMS.');
 };
+export const laterSmsHolder = () => null;
+export const onSmsEvent = () => null;

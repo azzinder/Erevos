@@ -5,7 +5,8 @@ import { sealedFile, type Holder } from './sealed-file';
 // their answers, the invites that came from other Erevos phones, and invite pieces still waiting
 // for the rest; whether to show names from the phone's contacts, and the SIM chosen for each number.
 // The SMS themselves stay in the phone's SMS store, where every SMS app keeps them; one sent for
-// later is kept here instead until it goes (lib/sms-later.ts), so no other app sees it before.
+// later is kept here instead until it goes (lib/sms-later.ts), so no other app sees it before, and
+// Android holds a copy locked with this phone's own key, to send it then with the space locked.
 
 export type { Holder };
 

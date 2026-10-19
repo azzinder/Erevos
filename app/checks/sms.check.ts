@@ -14,7 +14,8 @@ import { toBase64Url } from '../lib/e2e';
 import { buildInbox } from '../lib/inbox';
 import { collectInvites, inviteAnswer, invitePieces, PIECE, plainNumber, sameNumber, type SmsInvite } from '../lib/sms-invite';
 import { groupName, sameAddress, smsAddress, smsNumbers } from '../lib/sms-group';
-import { sendDue } from '../lib/sms-later';
+import { cancelLater, sendDue } from '../lib/sms-later';
+import type { LaterSmsHolder, LaterSmsState } from '../modules/erevos-sms';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { MAX_LATER } from '../lock/sms-data';
 import { files } from './files-memory';
@@ -202,6 +203,81 @@ test('SMS sent for later are kept sealed in the space, the soonest first, and go
   await again.removeLater(again.later[0].id);
   assert.deepEqual((await SmsLink.open(0, key)).later, []);
   assert.deepEqual(await sendDue(again, send, 1000), { went: [], next: 0 });
+});
+
+// Android holding SMS for later, as LaterSms.kt does: what it was given, and what went.
+function fakeHolder() {
+  const held = new Map<string, { to: string; text: string; at: number }>();
+  const went = new Set<string>();
+  const holder: LaterSmsHolder = {
+    schedule: async (sms) => void held.set(sms.id, sms),
+    cancel: async (id) => held.delete(id),
+    state: async (ids) => Object.fromEntries(ids.map((id): [string, LaterSmsState] => [id, held.has(id) ? 'waiting' : went.has(id) ? 'went' : 'unknown'])),
+  };
+  const fire = (now: number) => {
+    for (const [id, sms] of held) if (sms.at <= now) {
+      held.delete(id);
+      went.add(id);
+    }
+  };
+  return { holder, held, fire };
+}
+
+test('Android holds SMS for later, and the space forgets each once Android says it went', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const link = await SmsLink.open(0, key);
+  assert.ok(await link.addLater({ to: '+306944444444', text: 'ahead', at: 500, sim: -1 }));
+  assert.ok(await link.addLater({ to: '+306955555555', text: 'due before', at: 50, sim: 1 }));
+  const { holder, held, fire } = fakeHolder();
+  const sent: string[] = [];
+  const send = async (to: string, text: string) => void sent.push(`${to} ${text}`);
+  // One kept before Android held them, whose time came, goes from here; the other goes to Android,
+  // and needs no timer here.
+  const first = await sendDue(link, send, 100, holder);
+  assert.deepEqual([first.went.map((l) => l.text), first.next, sent], [['due before'], 0, ['+306955555555 due before']]);
+  assert.deepEqual([...held.values()].map((h) => h.text), ['ahead']);
+  assert.deepEqual(link.later.map((l) => l.text), ['ahead']);
+  // Not sent twice, nor given to Android again; late at Android, it is looked at again a while later.
+  assert.deepEqual(await sendDue(link, send, 400, holder), { went: [], next: 0 });
+  assert.equal((await sendDue(link, send, 600, holder)).next, 600 + 5 * 60_000);
+  assert.equal(sent.length, 1);
+  // Android sent it: the space forgets it.
+  fire(600);
+  const after = await sendDue(link, send, 601, holder);
+  assert.deepEqual([after.went.map((l) => l.text), after.next, sent.length], [['ahead'], 0, 1]);
+  assert.deepEqual((await SmsLink.open(0, key)).later, []);
+  // When Android cannot say what it holds, nothing goes from here, as it may send them itself.
+  assert.ok(await link.addLater({ to: '+306944444444', text: 'unsure', at: 610, sim: -1 }));
+  const unsure: LaterSmsHolder = { ...holder, state: async () => Promise.reject(new Error('no')) };
+  assert.deepEqual(await sendDue(link, send, 620, unsure), { went: [], next: 620 + 5 * 60_000 });
+  assert.equal(sent.length, 1);
+  await link.removeLater(link.later[0].id);
+  // Without Android's hold, it goes from here at its time, as before.
+  assert.ok(await link.addLater({ to: '+306944444444', text: 'here', at: 700, sim: -1 }));
+  assert.deepEqual(await sendDue(link, send, 650, null), { went: [], next: 700 });
+});
+
+test('a cancelled SMS for later is gone from Android and the space, or says it had gone', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const link = await SmsLink.open(0, key);
+  const { holder, held, fire } = fakeHolder();
+  assert.ok(await link.addLater({ to: '+306944444444', text: 'one', at: 500, sim: -1 }));
+  assert.ok(await link.addLater({ to: '+306944444444', text: 'two', at: 900, sim: -1 }));
+  await sendDue(link, async () => undefined, 100, holder);
+  assert.equal(held.size, 2);
+  const [one, two] = link.later;
+  assert.equal(await cancelLater(link, one.id, holder), true);
+  assert.deepEqual([[...held.values()].map((h) => h.text), link.later.map((l) => l.text)], [['two'], ['two']]);
+  fire(900);
+  assert.equal(await cancelLater(link, two.id, holder), false);
+  assert.equal(link.later.length, 0);
+  // When Android cannot be asked, nothing is forgotten.
+  assert.ok(await link.addLater({ to: '+306944444444', text: 'three', at: 999, sim: -1 }));
+  const broken: LaterSmsHolder = { ...holder, cancel: async () => Promise.reject(new Error('no')) };
+  await assert.rejects(cancelLater(link, link.later[0].id, broken));
+  assert.deepEqual(link.later.map((l) => l.text), ['three']);
 });
 
 test('no more than MAX_LATER SMS wait to go later, and none is dropped for a new one', async () => {
