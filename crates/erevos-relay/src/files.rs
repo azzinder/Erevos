@@ -171,13 +171,20 @@ impl FileStore {
 
     /// Keeps a chunk and returns its new id.
     pub fn put(&mut self, chunk: Vec<u8>) -> Result<ChunkId, FileError> {
+        self.put_from(chunk, 0)
+    }
+
+    /// Keeps a chunk whose time to expire starts at `from` (Unix seconds),
+    /// or now if that is sooner, and returns its new id: a file in a message
+    /// sent for later stays until a while after the message goes.
+    pub fn put_from(&mut self, chunk: Vec<u8>, from: u64) -> Result<ChunkId, FileError> {
         let size = chunk.len() as u64;
         if self.used + size > self.cap {
             return Err(FileError::Full);
         }
         let mut id = [0u8; 24];
         rand::rngs::OsRng.fill_bytes(&mut id);
-        let at = self.hour();
+        let at = self.hour().max(from / HOUR * HOUR);
         match self.path(&id) {
             Some(path) => write_chunk(&path, at, &chunk).map_err(storage)?,
             None => {

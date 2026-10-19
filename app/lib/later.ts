@@ -5,8 +5,26 @@ import { lang, mark } from './i18n';
 // the phone's own, so a later one follows its clock and its time zone.
 
 const MINUTE = 60_000;
+const DAY = 24 * 60 * MINUTE;
 /** The minutes go in steps of this many. */
 export const STEP = 5;
+/** How far ahead one can go: a year, as a relay holds a message for later a little longer at most. */
+export const LATEST = 365 * DAY;
+/** A message that comes this much or more before the time its sender gave it waits to show till then. */
+export const EARLY = MINUTE;
+
+/**
+ * When a message that comes now shows: at the time its sender gave it (lib/e2e.ts, `due`), when it
+ * came well before then, as from a relay that sent it too soon, or else now.
+ */
+export function showsAt(due: number, now = Date.now()): number {
+  return due >= now + EARLY && due <= now + LATEST + 30 * DAY ? due : now;
+}
+
+/** Whether `at` can be picked for later: ahead, and not more than LATEST ahead. */
+export function canPick(at: number, now = Date.now()): boolean {
+  return at > now && at <= now + LATEST;
+}
 
 function on(day: number, hour: number, minute: number, days = 0): number {
   const d = new Date(day);

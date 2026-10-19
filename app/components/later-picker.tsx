@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { t } from '../lib/i18n';
-import { firstLater, laterClock, laterDay, laterLabel, quickTimes, stepLater } from '../lib/later';
+import { canPick, firstLater, laterClock, laterDay, laterLabel, quickTimes, stepLater } from '../lib/later';
 import { Button, Chip, Row, Text } from './ui';
 
 // Choosing when a message or an SMS sent for later goes (lib/later.ts): a time at a tap, or the
@@ -26,10 +26,11 @@ function Stepper({ label, value, onStep }: { label: string; value: string; onSte
   );
 }
 
-/** Picks a time ahead and gives it to `onPick`, with Send later; one gone by cannot be picked. */
+/** Picks a time ahead and gives it to `onPick`, with Send later; one gone by, or more than a year ahead, cannot be picked. */
 export function LaterPicker({ onPick }: { onPick: (at: number) => void }) {
   const [at, setAt] = useState(() => firstLater());
   const ahead = at > Date.now();
+  const fits = canPick(at);
   const clock = laterClock(at);
   return (
     <View style={{ gap: 10 }}>
@@ -43,10 +44,10 @@ export function LaterPicker({ onPick }: { onPick: (at: number) => void }) {
         <Stepper label={t('Hour')} value={clock.hour} onStep={(by) => setAt(stepLater(at, 'hour', by))} />
         <Stepper label={t('Minutes')} value={clock.minute} onStep={(by) => setAt(stepLater(at, 'minute', by))} />
       </Row>
-      <Text variant="caption" tone={ahead ? 'muted' : undefined}>
-        {ahead ? t('Goes on {when}.', { when: laterLabel(at) }) : t('That time has gone by. Choose one ahead.')}
+      <Text variant="caption" tone={fits ? 'muted' : undefined}>
+        {fits ? t('Goes on {when}.', { when: laterLabel(at) }) : ahead ? t('At most a year ahead.') : t('That time has gone by. Choose one ahead.')}
       </Text>
-      <Button title={t('Send later')} compact disabled={!ahead} onPress={() => at > Date.now() && onPick(at)} />
+      <Button title={t('Send later')} compact disabled={!fits} onPress={() => canPick(at) && onPick(at)} />
     </View>
   );
 }

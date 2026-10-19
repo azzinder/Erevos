@@ -43,6 +43,19 @@
 //!   that comes into the queue sends an empty push there (see `push.rs`).
 //!   Reply: `OK`, `NOT_FOUND` (no such queue, or the relay does not push), or
 //!   `FAILED` (not a known push service's address, or not written).
+//! - `LATER`: 8-byte Unix seconds, a 16-byte id, then a 4-byte length and a
+//!   whole `SEND`, `FORWARD` or `SEALED_SEND` request. The relay holds the
+//!   request and runs it at that time, as if it came then (see `later.rs`),
+//!   so a message sent for later goes then though the phone is off by then.
+//!   Reply: `OK` (also when it holds that id already, so a phone may ask
+//!   again), `FULL` (it holds `MAX_HELD` requests or `HELD_CAP` bytes), or
+//!   `FAILED`. A time more than `MAX_AHEAD` ahead closes the connection.
+//! - `UNLATER`: a 16-byte id. Reply: `OK` if the relay held that request
+//!   and dropped it now, `NOT_FOUND` if it holds none (it went, is going
+//!   now, or never came), or `FAILED`.
+//! - `FILE_KEEP`: 8-byte Unix seconds, then as `FILE_PUT`. The chunk's time
+//!   to expire starts then rather than now: a file in a message sent for
+//!   later. A time more than `MAX_AHEAD` ahead closes the connection.
 //! - `CALL_RELAY`: no fields. Reply: credentials for the call relay beside
 //!   this relay (see `turn.rs`): a 2-byte length and the username, a 2-byte
 //!   length and the password, a 1-byte count of addresses and each address
@@ -92,8 +105,9 @@ use tungstenite::http::StatusCode;
 use tungstenite::Message;
 
 use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
+use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
 use crate::push::{Push, SetError, MAX_ENDPOINT};
-use crate::queue::{QueueError, QueueId, Store};
+use crate::queue::{system_now, QueueError, QueueId, Store};
 use crate::turn::Turn;
 
 /// What every connection shares: the queues, the file store, the key for
@@ -107,6 +121,10 @@ pub struct Shared {
     pub turn: Option<Turn>,
     /// Web Push, if the relay pushes (set once, after start).
     pub push: std::sync::OnceLock<Arc<Push>>,
+    /// Requests held for later; `held_changed` wakes `run_held` when one
+    /// comes or goes.
+    pub held: Mutex<Held>,
+    pub held_changed: Condvar,
 }
 
 pub type SharedStore = Arc<Shared>;
@@ -125,6 +143,8 @@ impl Shared {
             key,
             turn,
             push: std::sync::OnceLock::new(),
+            held: Mutex::new(Held::default()),
+            held_changed: Condvar::new(),
         })
     }
 
@@ -134,6 +154,10 @@ impl Shared {
 
     fn files(&self) -> std::sync::MutexGuard<'_, FileStore> {
         self.files.lock().expect("files lock")
+    }
+
+    fn held(&self) -> std::sync::MutexGuard<'_, Held> {
+        self.held.lock().expect("held lock")
     }
 }
 
@@ -156,6 +180,9 @@ pub const CALL_RELAY: u8 = 12;
 pub const WAIT: u8 = 13;
 pub const PUSH_KEY: u8 = 14;
 pub const PUSH_SET: u8 = 15;
+pub const LATER: u8 = 16;
+pub const UNLATER: u8 = 17;
+pub const FILE_KEEP: u8 = 18;
 
 /// The longest a `WAIT` lasts, seconds.
 pub const MAX_WAIT: u8 = 60;
@@ -177,6 +204,12 @@ pub const FILES_PATH: &str = "/files";
 const FORWARD_TIMEOUT: Duration = Duration::from_secs(15);
 /// A chunk can take longer to come than a message.
 const FILE_TIMEOUT: Duration = Duration::from_secs(60);
+/// Largest request held for later: a forward with the longest address and
+/// sealed send.
+const MAX_HELD_REQUEST: usize = 1 + 2 + MAX_ADDRESS + 4 + MAX_SEALED;
+/// Longest `run_held` sleeps before it looks at the clock again, so a clock
+/// set forward is followed soon.
+const HELD_LOOK: u64 = 60;
 
 /// What a connection may ask for.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -466,6 +499,38 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
                 _ => vec![NOT_FOUND],
             }
         }
+        LATER => {
+            let at = read_time(r)?;
+            let id = read_held_id(r)?;
+            let request = read_bytes(r, MAX_HELD_REQUEST)?;
+            check_held(&request)?;
+            let held = shared.held().hold(id, at, request);
+            shared.held_changed.notify_all();
+            vec![held.map_or_else(held_code, |()| OK)]
+        }
+        UNLATER => {
+            let id = read_held_id(r)?;
+            let dropped = shared.held().drop_held(&id);
+            shared.held_changed.notify_all();
+            match dropped {
+                Ok(true) => vec![OK],
+                Ok(false) => vec![NOT_FOUND],
+                Err(e) => vec![held_code(e)],
+            }
+        }
+        FILE_KEEP => {
+            let from = read_time(r)?;
+            let chunk = read_bytes(r, MAX_CHUNK)?;
+            let put = shared.files().put_from(chunk, from);
+            match put {
+                Ok(id) => {
+                    let mut out = vec![OK];
+                    out.extend_from_slice(&id);
+                    out
+                }
+                Err(e) => vec![file_code(e)],
+            }
+        }
         CALL_RELAY => match &shared.turn {
             Some(turn) => {
                 let (username, password) = turn.credentials();
@@ -521,6 +586,13 @@ fn code(error: QueueError) -> u8 {
     }
 }
 
+fn held_code(error: HeldError) -> u8 {
+    match error {
+        HeldError::Full => FULL,
+        HeldError::Storage => FAILED,
+    }
+}
+
 fn file_code(error: FileError) -> u8 {
     match error {
         FileError::NotFound => NOT_FOUND,
@@ -536,6 +608,84 @@ fn read_id(r: &mut impl Read) -> io::Result<QueueId> {
     let mut id = [0u8; 24];
     r.read_exact(&mut id)?;
     Ok(id)
+}
+
+fn read_held_id(r: &mut impl Read) -> io::Result<HeldId> {
+    let mut id = [0u8; 16];
+    r.read_exact(&mut id)?;
+    Ok(id)
+}
+
+/// Unix seconds, at most `MAX_AHEAD` from now.
+fn read_time(r: &mut impl Read) -> io::Result<u64> {
+    let mut at = [0u8; 8];
+    r.read_exact(&mut at)?;
+    let at = u64::from_be_bytes(at);
+    if at > system_now().saturating_add(MAX_AHEAD) {
+        return Err(io::Error::new(ErrorKind::InvalidData, "too far ahead"));
+    }
+    Ok(at)
+}
+
+/// A request to hold for later must be one whole `SEND`, `FORWARD` or
+/// `SEALED_SEND`, so it runs as it would have now.
+fn check_held(request: &[u8]) -> io::Result<()> {
+    let mut r = Cursor::new(request);
+    let mut op = [0u8; 1];
+    r.read_exact(&mut op)?;
+    match op[0] {
+        SEND => {
+            read_id(&mut r)?;
+            read_message(&mut r)?;
+        }
+        FORWARD => {
+            read_address(&mut r)?;
+            read_sealed(&mut r)?;
+        }
+        SEALED_SEND => {
+            read_sealed(&mut r)?;
+        }
+        _ => return Err(io::Error::new(ErrorKind::InvalidData, "not a send")),
+    }
+    if r.position() != request.len() as u64 {
+        return Err(io::Error::new(ErrorKind::InvalidData, "more than a send"));
+    }
+    Ok(())
+}
+
+/// Runs the requests held for later as their time comes, until the relay
+/// stops. Each that went, or whose queue is gone, is forgotten; any other is
+/// tried again later.
+pub fn run_held(shared: SharedStore) {
+    loop {
+        let due = {
+            let mut held = shared.held();
+            loop {
+                let now = system_now();
+                match held.next() {
+                    Some(at) if at <= now => break held.take_due(),
+                    next => {
+                        let wait = next.map_or(HELD_LOOK, |at| (at - now).min(HELD_LOOK));
+                        held = shared
+                            .held_changed
+                            .wait_timeout(held, Duration::from_secs(wait))
+                            .expect("held lock")
+                            .0;
+                    }
+                }
+            }
+        };
+        for request in due {
+            let reply = respond(&mut Cursor::new(&request.request), &shared, Access::All);
+            let done = matches!(&reply, Ok(Some(r)) if r.first().is_some_and(|s| *s == OK || *s == NOT_FOUND));
+            let mut held = shared.held();
+            if done {
+                held.went(&request.id);
+            } else {
+                held.failed(&request.id);
+            }
+        }
+    }
 }
 
 fn read_message(r: &mut impl Read) -> io::Result<Vec<u8>> {
@@ -709,6 +859,8 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
         let store = Shared::new(Store::default(), FileStore::default(), None, None);
+        let held = Arc::clone(&store);
+        thread::spawn(move || run_held(held));
         thread::spawn(move || serve(listener, store));
         addr
     }
@@ -721,6 +873,8 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
         let store = Shared::new(Store::default(), FileStore::default(), key, None);
+        let held = Arc::clone(&store);
+        thread::spawn(move || run_held(held));
         let token: Option<Arc<str>> = token.map(Arc::from);
         thread::spawn(move || serve_ws(listener, store, token));
         addr
@@ -1316,5 +1470,135 @@ mod tests {
             ))
             .unwrap();
         assert!(!matches!(recipient.read(), Ok(Message::Binary(_))));
+    }
+
+    fn later_request(at: u64, id: &HeldId, request: &[u8]) -> Vec<u8> {
+        let mut req = vec![LATER];
+        req.extend_from_slice(&at.to_be_bytes());
+        req.extend_from_slice(id);
+        req.extend_from_slice(&(request.len() as u32).to_be_bytes());
+        req.extend_from_slice(request);
+        req
+    }
+
+    fn send_request(sender: &QueueId, msg: &[u8]) -> Vec<u8> {
+        let mut req = vec![SEND];
+        req.extend_from_slice(sender);
+        req.extend_from_slice(&(msg.len() as u32).to_be_bytes());
+        req.extend_from_slice(msg);
+        req
+    }
+
+    fn unlater_request(id: &HeldId) -> Vec<u8> {
+        let mut req = vec![UNLATER];
+        req.extend_from_slice(id);
+        req
+    }
+
+    #[test]
+    fn a_message_sent_for_later_goes_at_its_time_in_order() {
+        let mut ws = connect_with_token(start_ws(None), "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        let at = system_now() + 1;
+        let first = later_request(at, &[1; 16], &send_request(&sender, b"one"));
+        assert_eq!(ws_call(&mut ws, first.clone()), vec![OK]);
+        // Asked again, as a phone may when the reply was lost: still once.
+        assert_eq!(ws_call(&mut ws, first), vec![OK]);
+        let second = later_request(at, &[2; 16], &send_request(&sender, b"two"));
+        assert_eq!(ws_call(&mut ws, second), vec![OK]);
+        assert_eq!(ws_receive(&mut ws, &recipient), None);
+        thread::sleep(Duration::from_millis(2500));
+        assert_eq!(
+            ws_receive(&mut ws, &recipient).as_deref(),
+            Some(&b"one"[..])
+        );
+        assert_eq!(
+            ws_receive(&mut ws, &recipient).as_deref(),
+            Some(&b"two"[..])
+        );
+        assert_eq!(ws_receive(&mut ws, &recipient), None);
+        // Gone, so there is nothing to drop.
+        assert_eq!(ws_call(&mut ws, unlater_request(&[1; 16])), vec![NOT_FOUND]);
+    }
+
+    #[test]
+    fn a_message_sent_for_later_is_dropped_before_its_time() {
+        let mut ws = connect_with_token(start_ws(None), "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        let request = later_request(system_now() + 1, &[3; 16], &send_request(&sender, b"never"));
+        assert_eq!(ws_call(&mut ws, request), vec![OK]);
+        assert_eq!(ws_call(&mut ws, unlater_request(&[3; 16])), vec![OK]);
+        assert_eq!(ws_call(&mut ws, unlater_request(&[3; 16])), vec![NOT_FOUND]);
+        thread::sleep(Duration::from_millis(2500));
+        assert_eq!(ws_receive(&mut ws, &recipient), None);
+    }
+
+    #[test]
+    fn a_forward_sent_for_later_reaches_the_other_relay_then() {
+        let key = RelayKey::generate();
+        let public = key.public();
+        let far = start_ws_with(Some("far"), Some(key));
+        let near = start_ws_with(Some("near"), None);
+        let mut far_ws = connect_with_token(far, "", "far");
+        let (recipient, sender) = ws_create(&mut far_ws);
+        let mut near_ws = connect_with_token(near, "", "near");
+        let sealed = seal(&public, &sender, b"later, via two relays").unwrap();
+        let forward = forward_request(&format!("ws://{far}"), &sealed);
+        let r = ws_call(
+            &mut near_ws,
+            later_request(system_now() + 1, &[4; 16], &forward),
+        );
+        assert_eq!(r, vec![OK]);
+        assert_eq!(ws_receive(&mut far_ws, &recipient), None);
+        thread::sleep(Duration::from_millis(2500));
+        assert_eq!(
+            ws_receive(&mut far_ws, &recipient).as_deref(),
+            Some(&b"later, via two relays"[..])
+        );
+    }
+
+    #[test]
+    fn only_a_send_is_held_and_not_too_far_ahead() {
+        let mut ws = connect_with_token(start_ws(None), "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        let mut receive = vec![RECEIVE];
+        receive.extend_from_slice(&recipient);
+        ws.send(Message::Binary(
+            later_request(system_now(), &[5; 16], &receive).into(),
+        ))
+        .unwrap();
+        assert!(!matches!(ws.read(), Ok(Message::Binary(_))));
+
+        let mut ws = connect_with_token(start_ws(None), "", "");
+        let mut extra = send_request(&sender, b"x");
+        extra.push(0);
+        ws.send(Message::Binary(
+            later_request(system_now(), &[6; 16], &extra).into(),
+        ))
+        .unwrap();
+        assert!(!matches!(ws.read(), Ok(Message::Binary(_))));
+
+        let mut ws = connect_with_token(start_ws(None), "", "");
+        let far = system_now() + MAX_AHEAD + 60;
+        ws.send(Message::Binary(
+            later_request(far, &[7; 16], &send_request(&sender, b"x")).into(),
+        ))
+        .unwrap();
+        assert!(!matches!(ws.read(), Ok(Message::Binary(_))));
+    }
+
+    #[test]
+    fn a_chunk_kept_for_later_is_taken_like_any() {
+        let mut ws = connect_with_token(start_ws(None), "", "");
+        let mut req = vec![FILE_KEEP];
+        req.extend_from_slice(&(system_now() + 30 * 24 * 60 * 60).to_be_bytes());
+        req.extend_from_slice(&3u32.to_be_bytes());
+        req.extend_from_slice(b"abc");
+        let r = ws_call(&mut ws, req);
+        assert_eq!((r[0], r.len()), (OK, 25));
+        assert_eq!(
+            chunk_of(&ws_call(&mut ws, id_request(FILE_GET, &r[1..]))),
+            b"abc"
+        );
     }
 }

@@ -4,7 +4,7 @@ import { loadClip } from '../lock/voice-clips';
 import { uploadFile } from './attachments';
 import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForLoraError } from './nearby';
-import { canTryLater, fromHex, sendMessage, type Relay } from './relay';
+import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Relay } from './relay';
 import { carriedFor, contactTarget, type SpaceChats } from './space-chats';
 import { t } from './i18n';
 
@@ -22,10 +22,12 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // only so many it never got. So a message is tried only when there is a way for it, and after a
 // failed try it waits longer each time before the next.
 //
-// A message sent for later waits the same way, kept with the time it should go as its time: it is
-// not tried before then, and holds back none of that contact's others meanwhile. It goes with the
-// first look once its time came, while Erevos runs (in the background too, while a space is open),
-// or when Erevos next opens.
+// A message sent for later waits the same way, kept with the time it should go as its time, and
+// holds back none of that contact's others meanwhile. With the first look at a relay that answers,
+// it is sealed and handed to that relay to hold till its time (holdLater): from then on it waits
+// there, not here, and goes then though this phone is off. It says when it should show, so their
+// phone does not show it sooner. Only while no relay can hold it (none answers, or one from before
+// relays held messages) does it wait here, to go with the first look once its time came.
 
 const CONTACT_PREFIX = 'contact:';
 // The first wait after a failed try, and the longest, milliseconds.
@@ -45,8 +47,8 @@ export function canWait(error: unknown): boolean {
  */
 export type SendPlace = { sends: Relay | null; own: Relay | null; senderHex: string; here: Where; ownKey: string; relayUp: boolean };
 
-/** A message that waited and went: its chat, its tag, and how long it lasts once read (seconds). */
-export type Went = { peer: string; tag: string; lasts: number };
+/** A message that waited and went: its chat, its tag, how long it lasts once read (seconds), and, sent for later, the relay that holds it till its time. */
+export type Went = { peer: string; tag: string; lasts: number; held?: HeldAt };
 
 // Failed tries so far, by tag, and when the next may be.
 const tries = new Map<string, { count: number; next: number }>();
@@ -70,9 +72,21 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
   const stuck = new Set<string>();
   for (const message of history.waiting()) {
     const { peer, tag } = message;
-    if (stuck.has(peer) || !peer.startsWith(CONTACT_PREFIX) || message.at > now) continue;
+    if (stuck.has(peer) || !peer.startsWith(CONTACT_PREFIX)) continue;
     const identity = peer.slice(CONTACT_PREFIX.length);
     const tried = tries.get(tag);
+    if (message.at > now) {
+      if ((tried && tried.next > now) || !place.relayUp || !place.sends) continue;
+      try {
+        const { lasts, held } = await holdLater(e2e, place, identity, message);
+        tries.delete(tag);
+        if (await history.sent(peer, tag, lasts, held)) went.push({ peer, tag, lasts, held });
+      } catch {
+        const count = (tried?.count ?? 0) + 1;
+        tries.set(tag, { count, next: now + Math.min(LONGEST_WAIT, FIRST_WAIT * 2 ** (count - 1)) });
+      }
+      continue;
+    }
     if ((tried && tried.next > now) || !canGo(e2e, place, identity, message)) {
       stuck.add(peer);
       continue;
@@ -90,9 +104,65 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
   return went;
 }
 
-/** When the next message sent for later should go, or 0 if none waits for its time. */
+/** When the next message sent for later and waiting here should go, or 0 if none waits for its time. */
 export function nextDue(history: Pick<Chats['history'], 'waiting'>, now = Date.now()): number {
   return history.waiting().reduce((next, m) => (m.at > now && (next === 0 || m.at < next) ? m.at : next), 0);
+}
+
+/**
+ * Seals a message sent for later, with when it should show, and hands it to the relay that would
+ * take it now, to hold till its time (lib/relay.ts, sendMessageLater). A photo or file goes to our
+ * relay first, kept there till a while after that time. The conversation's first packet, if the
+ * relay has not taken it yet, goes now. Says how long it lasts once read, and where it is held.
+ * Throws when no relay answers or can hold it (CannotHoldError): it can wait here instead.
+ *
+ * It does not say where we are (our queue, our relay): when it comes, that may have changed since,
+ * and their phone goes on writing where we last said.
+ */
+export async function holdLater(e2e: E2E, place: SendPlace, identity: string, message: Message): Promise<{ lasts: number; held: HeldAt }> {
+  const queue = e2e.queueOf(identity);
+  const sends = place.sends;
+  if (!sends || !queue?.sender) throw new NoWayError();
+  const to = contactTarget(sends, queue);
+  if (!(await canHoldAt(to.via ?? to))) throw new CannotHoldError(t('the relay at {url} cannot keep messages for later: update it', { url: (to.via ?? to).url }));
+  const options = { tag: message.tag, lasts: message.lasts ?? 0, due: message.at };
+  let sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; timer: number };
+  let packets: Uint8Array[];
+  if (message.voice) {
+    const audio = await loadClip(message.voice);
+    if (!audio) throw new Error(t("This voice message's sound is gone."));
+    const voice = await e2e.sealVoice(identity, audio, message.voice.ms, '', options);
+    sealed = voice;
+    packets = voice.packets;
+  } else if (message.file) {
+    if (!place.own) throw new NoWayError();
+    const offer = await uploadFile(place.own, message.file, undefined, message.at);
+    const file = await e2e.sealFile(identity, offer, '', options);
+    sealed = file;
+    packets = [file.packet];
+  } else {
+    const text = await e2e.seal(identity, message.text, '', { ...options, quiet: message.quiet });
+    sealed = text;
+    packets = [text.packet];
+  }
+  const target = contactTarget(sends, sealed);
+  if (sealed.first) {
+    await sendMessage(target, fromHex(sealed.sender), sealed.first);
+    await e2e.firstSent(identity);
+  }
+  const held = await sendMessageLater(target, fromHex(sealed.sender), packets, message.at);
+  return { lasts: sealed.timer, held };
+}
+
+/**
+ * Takes back a message sent for later from the relay that holds it, one of `sends` (ours, the
+ * second relay, or the backup): true when it now never goes, false when it went already. Throws
+ * when that relay cannot be reached, or is no longer set.
+ */
+export async function takeBack(sends: Relay | null, held: HeldAt): Promise<boolean> {
+  const holder = [sends, sends?.via, sends?.backup, sends?.backup?.via].find((relay) => relay && sameRelay(relay.url, held.relay));
+  if (!holder) throw new RelayError(t('The relay at {url} that keeps it is no longer set here.', { url: held.relay }));
+  return dropLater({ url: holder.url, token: holder.token }, held.id);
 }
 
 // Whether there is a way for it now, before sealing it: the relay answers and can reach their
@@ -137,7 +207,7 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     packets = [file.packet];
     worthCarrying = false;
   } else {
-    const text = await e2e.seal(identity, message.text, place.senderHex, options);
+    const text = await e2e.seal(identity, message.text, place.senderHex, { ...options, quiet: message.quiet });
     sealed = text;
     packets = [text.packet];
   }

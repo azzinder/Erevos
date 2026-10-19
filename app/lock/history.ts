@@ -1,5 +1,6 @@
 import { decryptBytes, encryptBytes, randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
 import { deleteFile, readBytes, writeBytes } from '../lib/files';
+import { isRelayAddress, type HeldAt } from '../lib/relay';
 
 import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
 import { sealedFile, sealedSize, type Holder } from './sealed-file';
@@ -43,7 +44,8 @@ export const WAITING = -1;
  * One message: when (milliseconds), whether this phone sent it, its text, its tag, when it
  * disappears (milliseconds, 0 if not, or not yet), how long it lasts once read (seconds, 0 if it
  * does not disappear or its time has started), its mark, where its sound is if it is a voice
- * message, and where its file is if it is a photo or file. What is empty at the end is left out.
+ * message, where its file is if it is a photo or file, and what more is said of ours (More). What
+ * is empty at the end is left out.
  */
 export type Kept = [
   at: number,
@@ -54,8 +56,16 @@ export type Kept = [
   lasts?: number,
   mark?: Mark,
   voice?: VoiceRef | 0,
-  file?: FileRef,
+  file?: FileRef | 0,
+  more?: More,
 ];
+
+/**
+ * Of ours: `h`, the id a relay holds it by, sent for later, and `r` that relay (lib/relay.ts,
+ * sendMessageLater), so it can still be taken back before it goes; `q` 1 when it goes without
+ * sound, kept while it waits.
+ */
+type More = { h?: string; r?: string; q?: 1 };
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -75,18 +85,45 @@ export type Message = {
   mark?: Mark;
   voice?: VoiceRef;
   file?: FileRef;
+  /** Ours sent for later, held by a relay till `at`: its id there, and that relay. */
+  held?: HeldAt;
+  /** Ours that waits, to go without sound. */
+  quiet?: boolean;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
-function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file }: Fields): Kept {
-  const kept: Kept = [at, mine ? 1 : 0, text, tag, until, until ? 0 : lasts, mark, voice ?? 0, file];
+function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file, held, quiet }: Fields): Kept {
+  const more: More = { ...(held ? { h: held.id, r: held.relay } : {}), ...(quiet ? { q: 1 as const } : {}) };
+  const kept: Kept = [at, mine ? 1 : 0, text, tag, until, until ? 0 : lasts, mark, voice ?? 0, file ?? 0, Object.keys(more).length > 0 ? more : undefined];
   while (kept.length > 4 && !kept[kept.length - 1]) kept.pop();
   return kept;
 }
 
-function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file]: Kept): Fields {
-  return { at, mine: mine === 1, text, tag, until, lasts, mark, ...(voice ? { voice } : {}), ...(file ? { file } : {}) };
+function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file, more]: Kept): Fields {
+  return {
+    at,
+    mine: mine === 1,
+    text,
+    tag,
+    until,
+    lasts,
+    mark,
+    ...(voice ? { voice } : {}),
+    ...(file ? { file } : {}),
+    ...(more?.h && more.r ? { held: { id: more.h, relay: more.r } } : {}),
+    ...(more?.q ? { quiet: true } : {}),
+  };
+}
+
+const HELD_ID = /^[0-9a-f]{32}(?:,[0-9a-f]{32}){0,63}$/;
+
+function checkedMore(value: unknown): More | undefined {
+  const v = value as { h?: unknown; r?: unknown; q?: unknown } | null;
+  if (!v || typeof v !== 'object') return undefined;
+  const held = typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
+  const more: More = { ...(held ? { h: v.h as string, r: v.r as string } : {}), ...(v.q === 1 ? { q: 1 as const } : {}) };
+  return Object.keys(more).length > 0 ? more : undefined;
 }
 
 const voiceIds = (data: HistoryData) =>
@@ -126,7 +163,9 @@ function checkedKept(m: unknown): Kept | null {
   const mark = m[6] === 1 || m[6] === 2 || (m[6] === WAITING && m[1] === 1) ? m[6] : 0;
   const voice = isVoiceRef(m[7]) ? m[7] : undefined;
   const file = isFileRef(m[8]) ? m[8] : undefined;
-  return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark, voice, file });
+  const more = m[1] === 1 ? checkedMore(m[9]) : undefined;
+  const held = more?.h && more.r ? { id: more.h, relay: more.r } : undefined;
+  return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark, voice, file, held, quiet: !!more?.q });
 }
 
 function checkedChats(value: unknown): Record<string, Kept[]> {
@@ -312,11 +351,14 @@ export class History {
     return this.messages().filter((m) => m.mine && m.mark === WAITING);
   }
 
-  /** A message that waited went: as the relay took it, lasting `lasts` seconds once read. False if it is gone. */
-  async sent(peer: string, tag: string, lasts: number): Promise<boolean> {
+  /**
+   * A message that waited went: as the relay took it, lasting `lasts` seconds once read, or, sent
+   * for later, as a relay holds it till its time (`held`). False if it is gone.
+   */
+  async sent(peer: string, tag: string, lasts: number, held?: HeldAt): Promise<boolean> {
     const list = this.data.chats[peer];
     if (!list?.some((m) => m[3] === tag && m[6] === WAITING)) return false;
-    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts }) : m));
+    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, quiet: false }) : m));
     await this.save({ chats: { ...this.data.chats, [peer]: changed } });
     return true;
   }
@@ -346,7 +388,8 @@ export class History {
     const raised: string[] = [];
     const list = (this.data.chats[peer] ?? []).map((kept): Kept => {
       const m = unpack(kept);
-      if (m.mine !== mine || m.mark! >= mark || (tags && !tags.includes(m.tag))) return kept;
+      // Theirs that came before its time (lib/later.ts, showsAt) is not read before it shows.
+      if (m.mine !== mine || m.mark! >= mark || (tags && !tags.includes(m.tag)) || (!mine && m.at > now)) return kept;
       raised.push(m.tag);
       const starts = mark === 2 && !m.until && m.lasts;
       return pack({ ...m, mark, ...(starts ? { until: now + m.lasts! * 1000, lasts: 0 } : {}) });

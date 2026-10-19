@@ -194,9 +194,10 @@ export async function keepFile(source: Source, meta: Omit<FileMeta, 'size'>, pro
 
 /**
  * Puts a file kept here (keepFile) on our relay (`own`). Returns the offer for the contact. If the
- * relay cannot take all of it, what it took is deleted there; the chunks here stay.
+ * relay cannot take all of it, what it took is deleted there; the chunks here stay. With `from`
+ * (milliseconds), for a message sent for later, the chunks' time on the relay starts then.
  */
-export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress): Promise<FileOffer> {
+export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress, from = 0): Promise<FileOffer> {
   if (ref.from) throw new FileMissingError();
   const ids: string[] = [];
   const session = await RelaySession.open({ url: own.url, token: own.token });
@@ -204,7 +205,7 @@ export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress):
     for (let n = 0; n < ref.count; n++) {
       const sealed = await readChunk(ref.id, n);
       if (!sealed) throw new FileMissingError();
-      ids.push(toHex(await putChunk(session, sealed)));
+      ids.push(toHex(await putChunk(session, sealed, from)));
       progress?.(n + 1, ref.count);
     }
   } catch (error) {

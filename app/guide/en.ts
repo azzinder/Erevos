@@ -192,10 +192,16 @@ at the relay, or at once when they are nearby. A message counts as read once its
   space is open; then it shows **✓**. A text waits at once. A voice message, photo or file asks first: **Keep it
   waiting** or **Delete it**. A waiting message is deleted on this phone only. Hidden chats keep nothing waiting.
 - **Send later:** hold **Send** down and choose a time at a tap (**In 1 hour**, **Tonight 20:00**, **Tomorrow
-  09:00**) or the day, hour and minutes, then **Send later**. The message stays in the chat marked **Scheduled** with
-  its time, and nothing leaves the phone until then: it is encrypted only as it goes. It goes at that time while
-  Erevos runs, in the background too while **In the background** is on **Receive and ring** (below); otherwise when
-  Erevos next opens. Until then, delete it on this phone. Hidden chats do not have it.
+  09:00**) or the day, hour and minutes, up to a year ahead, then **Send later**. The message stays in the chat marked
+  **Scheduled** with its time. It goes encrypted to the relay, which keeps it and sends it at that time, even if this
+  phone is off or locked then, and their phone shows it from that time, not sooner. With no relay reachable now, it
+  waits on this phone and goes to the relay once one can be reached. With nothing typed, the time you choose is for
+  the next photo, file or voice message: a photo or file goes to your relay at once and stays there until they take
+  it, 14 days after its time at most. Hidden chats have it too, but there the relay has to be reachable when you
+  schedule. Until its time, delete it to take it back from the relay, and it never goes. A message without sound
+  stays without sound. A relay from before this keeps nothing for later: then the message waits on this phone and
+  goes at its time while Erevos runs, in the background too while **In the background** is on **Receive and ring**
+  (below), or when Erevos next opens.
 - **Send without sound:** hold **Send** down and choose **Send without sound**: their phone shows the notice without
   a sound or vibration. An Erevos from before it does not know this and sounds as usual, and so does Erevos as a web
   app, whose notice comes from the browser.
@@ -415,6 +421,8 @@ has everything in \`deploy/relay\`.
 
 Queues and waiting messages are kept on the server's disk, and so are the encrypted pieces of photos and files until
 they are taken (1024 MB together at most), so a restart loses nothing, and no request is logged.
+Messages sent for later are kept there until their time too, 10,000 or 256 MB at most: the relay sees when
+each is to go, not what it says.
 
 > Never post the token where others can read it. Whoever runs the server sees the IP addresses that connect, the
 > queue ids, and when and how much arrives. They cannot read the messages, which are end-to-end encrypted.

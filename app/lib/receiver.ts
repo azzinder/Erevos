@@ -20,6 +20,7 @@ import {
 } from './relay';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
 import { isGroupPacket } from './groups';
+import { showsAt } from './later';
 import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-chats';
 import { lookAtSpare, spareBackup } from './spare';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
@@ -421,11 +422,13 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   const peer = `${CONTACT_PREFIX}${received.identity}`;
   const { identity, tag, timer } = received;
   const at = Date.now();
+  // One sent for later that a relay sent too soon shows at its time (lib/later.ts).
+  const shows = showsAt(received.due, at);
   const hidden = e2e.contacts().some((contact) => contact.identity === identity && contact.hide);
   // Their phone says it is open: the home screen shows it.
   let changed = received.added || received.timerChanged || received.online > 0;
   const add = async (message: Partial<Message>) => {
-    await history.add({ peer, text: '', mine: false, at, tag: tag || newTag(), lasts: timer, ...message });
+    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...message });
     // A message request hears nothing back, not even that its message came, until accepted.
     if (tag && !received.request) {
       if (hidden) await e2e.hold(identity, 'got', [tag]);

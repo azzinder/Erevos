@@ -15,11 +15,16 @@
 // Carried messages (lib/nearby.ts): a message sealed for a contact's relay, which a phone nearby
 // hands to that relay once it reaches the internet, through its own relay (carryTo).
 //
+// Sent for later (sendMessageLater): a message sealed now is handed to the relay that would take it
+// now, with the time it should go, and that relay sends it on then, so it goes though this phone is
+// off by then. Until then this phone may take it back (dropLater).
+//
 // Through Tor (setThroughTor, off by default): every request goes through the core's Tor
 // (crates/erevos-tor) instead of the phone's own connection. There is no falling back to a direct
 // connection: when Tor cannot reach the relay, the request fails.
 
 import { relaySeal, tor } from './core';
+import { randomBytes } from './crypto';
 import { t } from './i18n';
 
 const CREATE = 1;
@@ -37,6 +42,9 @@ const CALL_RELAY = 12;
 const WAIT = 13;
 const PUSH_KEY = 14;
 const PUSH_SET = 15;
+const LATER = 16;
+const UNLATER = 17;
+const FILE_KEEP = 18;
 
 const OK = 0;
 const NOT_FOUND = 1;
@@ -296,6 +304,10 @@ export async function relayKey(relay: Relay): Promise<Uint8Array | null> {
 
 /** Hands a message sealed for the relay at `to` to the relay `via`, which passes it on. */
 export async function forwardMessage(via: Relay, to: string, sealed: Uint8Array): Promise<void> {
+  check(await request(via, forwardRequest(to, sealed)), 'send');
+}
+
+function forwardRequest(to: string, sealed: Uint8Array): Uint8Array {
   const address = utf8Encode(to);
   const bytes = new Uint8Array(1 + 2 + address.length + 4 + sealed.length);
   const view = new DataView(bytes.buffer);
@@ -304,7 +316,7 @@ export async function forwardMessage(via: Relay, to: string, sealed: Uint8Array)
   bytes.set(address, 3);
   view.setUint32(3 + address.length, sealed.length);
   bytes.set(sealed, 3 + address.length + 4);
-  check(await request(via, bytes), 'send');
+  return bytes;
 }
 
 /**
@@ -355,20 +367,120 @@ export async function sendMessage(relay: Relay, senderId: Uint8Array, message: U
 }
 
 async function sendOne(relay: Relay, senderId: Uint8Array, message: Uint8Array): Promise<void> {
+  const { to, bytes } = await sendRequest(relay, senderId, message);
+  check(await request(to, bytes), 'send');
+}
+
+// The request that queues one message, and the relay it goes to: the second relay with the message
+// sealed for this one, when it has one, or else this one.
+async function sendRequest(relay: Relay, senderId: Uint8Array, message: Uint8Array): Promise<{ to: Relay; bytes: Uint8Array }> {
   if (relay.via) {
     const key = await relayKey(relay);
     if (!key) throw new RelayError(t('your relay has no key for two-hop sending, so it was not sent through the second relay'));
-    await forwardMessage(relay.via, relay.url, await relaySeal(key, senderId, message));
-    return;
+    return { to: relay.via, bytes: forwardRequest(relay.url, await relaySeal(key, senderId, message)) };
   }
-  const header = new Uint8Array(1 + 24 + 4);
-  header[0] = SEND;
-  header.set(senderId, 1);
-  new DataView(header.buffer).setUint32(25, message.length);
-  const bytes = new Uint8Array(header.length + message.length);
-  bytes.set(header, 0);
-  bytes.set(message, header.length);
-  check(await request(relay, bytes), 'send');
+  const bytes = new Uint8Array(1 + 24 + 4 + message.length);
+  bytes[0] = SEND;
+  bytes.set(senderId, 1);
+  new DataView(bytes.buffer).setUint32(25, message.length);
+  bytes.set(message, 1 + 24 + 4);
+  return { to: relay, bytes };
+}
+
+// Relays that can hold messages for later, or cannot (from before LATER), by address, for this run.
+const holds = new Map<string, boolean>();
+
+/**
+ * Whether the relay can hold a message for later. A relay from before it closes the connection, as
+ * for any request it does not know: then one that answers a plain request cannot, and is not asked
+ * again this run. Throws when the relay cannot be reached.
+ */
+export async function canHoldAt(relay: Relay): Promise<boolean> {
+  const address = relay.url.trim().toLowerCase();
+  const known = holds.get(address);
+  if (known !== undefined) return known;
+  try {
+    // Taking back one it never held: a relay that holds says it holds none.
+    const reply = await request(relay, Uint8Array.of(UNLATER, ...randomBytes(16)));
+    if (reply[0] !== NOT_FOUND) check(reply, 'later');
+  } catch (error) {
+    if (!(error instanceof RelayUnreachableError)) throw error;
+    await request(relay, Uint8Array.of(KEY)).catch(() => {
+      throw error;
+    });
+    holds.set(address, false);
+    return false;
+  }
+  holds.set(address, true);
+  return true;
+}
+
+// Unix seconds as 8 bytes at `at`, without BigInt.
+function putSeconds(view: DataView, at: number, ms: number): void {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  view.setUint32(at, Math.floor(seconds / 2 ** 32));
+  view.setUint32(at + 4, seconds % 2 ** 32);
+}
+
+/** A message held for later: its ids (hex, one for each packet, comma-separated) and the relay that holds it. */
+export type HeldAt = { id: string; relay: string };
+
+/** Thrown when no relay that would take a message can hold it for later. */
+export class CannotHoldError extends RelayError {}
+
+/**
+ * Hands the packets of one message to the relay that would take them now, or else where its
+ * `fallback` says, in turn, to go at `at` (milliseconds) in their order: they go then, though this
+ * phone is off by then. Says which relay holds them, and the ids to take them back with. Throws,
+ * with what the relay first said, if none takes them all: CannotHoldError when none of them can
+ * hold any. What a relay took of them before it failed, it is asked to drop.
+ */
+export async function sendMessageLater(relay: Relay, senderId: Uint8Array, messages: Uint8Array[], at: number): Promise<HeldAt> {
+  if (messages.some((message) => message.length > MAX_MESSAGE)) throw new RelayError(t('message is too large'));
+  let first: unknown = null;
+  for (const route of [{ relay, senderId }, ...(relay.fallback ?? []).map((f) => ({ relay: f.relay, senderId: f.senderId ?? senderId }))]) {
+    const ids: string[] = [];
+    let holder: Relay | null = null;
+    try {
+      for (const message of messages) {
+        const { to, bytes } = await sendRequest(route.relay, route.senderId, message);
+        if (!(await canHoldAt(to))) throw new CannotHoldError(t('the relay at {url} cannot keep messages for later: update it', { url: to.url }));
+        holder = to;
+        const id = randomBytes(16);
+        const held = new Uint8Array(1 + 8 + 16 + 4 + bytes.length);
+        const view = new DataView(held.buffer);
+        held[0] = LATER;
+        putSeconds(view, 1, at);
+        held.set(id, 9);
+        view.setUint32(25, bytes.length);
+        held.set(bytes, 29);
+        check(await request(to, held), 'send');
+        ids.push(toHex(id));
+      }
+      return { id: ids.join(','), relay: holder!.url };
+    } catch (error) {
+      first ??= error;
+      if (holder) for (const id of ids) await dropLater(holder, id).catch(() => undefined);
+    }
+  }
+  throw first;
+}
+
+/**
+ * Takes back a message held for later by the relay `holder`: true when it did not go and now never
+ * will, false when it went already (or is going now). Throws when the relay cannot be reached.
+ */
+export async function dropLater(holder: Relay, id: string): Promise<boolean> {
+  let dropped = false;
+  for (const one of id.split(',')) {
+    if (!/^[0-9a-f]{32}$/.test(one)) throw new RelayError(t('message is not held'));
+    const id = Uint8Array.from(one.match(/../g)!, (pair) => parseInt(pair, 16));
+    const reply = await request(holder, Uint8Array.of(UNLATER, ...id));
+    if (reply[0] === NOT_FOUND) continue;
+    check(reply, 'delete');
+    dropped = true;
+  }
+  return dropped;
 }
 
 /** Takes the oldest message from the queue, or returns null if it is empty. The relay then forgets it. */
@@ -533,13 +645,18 @@ function older(error: unknown): unknown {
   return error;
 }
 
-/** Puts one chunk of an encrypted file on the relay, and returns its id. */
-export async function putChunk(session: RelaySession, chunk: Uint8Array): Promise<Uint8Array> {
+/**
+ * Puts one chunk of an encrypted file on the relay, and returns its id. With `from` (milliseconds),
+ * for a file in a message sent for later, its time on the relay starts then instead of now.
+ */
+export async function putChunk(session: RelaySession, chunk: Uint8Array, from = 0): Promise<Uint8Array> {
   if (chunk.length > MAX_CHUNK) throw new RelayError('chunk is too large');
-  const bytes = new Uint8Array(1 + 4 + chunk.length);
-  bytes[0] = FILE_PUT;
-  new DataView(bytes.buffer).setUint32(1, chunk.length);
-  bytes.set(chunk, 5);
+  const head = from > 0 ? 9 : 1;
+  const bytes = new Uint8Array(head + 4 + chunk.length);
+  bytes[0] = from > 0 ? FILE_KEEP : FILE_PUT;
+  if (from > 0) putSeconds(new DataView(bytes.buffer), 1, from);
+  new DataView(bytes.buffer).setUint32(head, chunk.length);
+  bytes.set(chunk, head + 4);
   const reply = await session.call(bytes).catch((error) => {
     throw older(error);
   });

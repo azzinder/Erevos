@@ -174,7 +174,7 @@ function buttonColors(kind: ButtonKind, colors: Colors): { bg: string; pressed: 
 export function Button({ title, onPress, onLongPress, kind = 'primary', disabled, loading, compact, style }: {
   title: string;
   onPress: () => void;
-  /** Held down: more ways to do it (Send: later, or without sound). */
+  /** Held down: more ways to do it (Send: later, or without sound), also while it cannot be tapped. */
   onLongPress?: () => void;
   kind?: ButtonKind;
   disabled?: boolean;
@@ -187,9 +187,9 @@ export function Button({ title, onPress, onLongPress, kind = 'primary', disabled
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
       onLongPress={onLongPress}
-      disabled={disabled || loading}
+      disabled={(disabled && !onLongPress) || loading}
       style={({ pressed }) => [
         {
           minHeight: compact ? 44 : 52,

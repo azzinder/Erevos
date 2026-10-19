@@ -36,6 +36,11 @@
 //! it, in `<file>.addresses`. `EREVOS_RELAY_PUSH_SUBJECT` is the `mailto:` or
 //! `https:` address push services may write to about the relay.
 //!
+//! Messages sent for later (see `later.rs`) are kept in the folder
+//! `EREVOS_RELAY_LATER`, or else in `<journal>.later` beside the journal,
+//! until they go. Without either, they live in memory and are lost when the
+//! relay stops.
+//!
 //! Set `EREVOS_TURN_URLS` (comma-separated `turn:` addresses) and
 //! `EREVOS_TURN_SECRET` (the `static-auth-secret` of the coturn beside the
 //! relay) to hand phones credentials for calls through it (see `turn.rs`).
@@ -43,6 +48,7 @@
 
 mod files;
 mod journal;
+mod later;
 mod push;
 mod queue;
 mod server;
@@ -60,6 +66,7 @@ use std::time::Duration;
 
 use erevos_core::relay_seal::RelayKey;
 use files::FileStore;
+use later::Held;
 use queue::Store;
 use server::Shared;
 use turn::Turn;
@@ -209,8 +216,41 @@ fn main() -> ExitCode {
             FileStore::in_memory(cap.unwrap_or(files::DEFAULT_MEMORY_CAP), ttl)
         }
     };
+    let held_dir = env::var("EREVOS_RELAY_LATER")
+        .ok()
+        .filter(|dir| !dir.is_empty())
+        .or_else(|| {
+            env::var("EREVOS_RELAY_JOURNAL")
+                .ok()
+                .filter(|path| !path.is_empty())
+                .map(|path| format!("{path}.later"))
+        });
+    let held = match &held_dir {
+        Some(dir) => {
+            match Held::open(Path::new(dir), ttl) {
+                Ok(held) => {
+                    eprintln!(
+                        "erevos-relay: keeping messages sent for later in {dir}, {} now",
+                        held.len()
+                    );
+                    held
+                }
+                Err(e) => {
+                    eprintln!("erevos-relay: cannot open the folder for messages sent for later {dir}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+        None => {
+            eprintln!("erevos-relay: messages sent for later are kept in memory and lost when the relay stops");
+            Held::in_memory(ttl)
+        }
+    };
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
     let store = Shared::new(store, files, key, turn);
+    *store.held.lock().expect("held lock") = held;
+    let held_store = Arc::clone(&store);
+    thread::spawn(move || server::run_held(held_store));
     match env::var("EREVOS_RELAY_PUSH_KEY") {
         Ok(path) if !path.is_empty() => {
             let key = match push::load_key(Path::new(&path)) {

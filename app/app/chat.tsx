@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
 import { nearbySettings, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
-import { canWait, sendWaiting, type SendPlace } from '../lib/waiting';
+import { canWait, holdLater, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { callPermissions } from '../lib/call-permissions';
@@ -16,9 +16,9 @@ import { onSpaceCallLine, spaceCalls } from '../lib/space-calls';
 import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
-import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
+import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import { FileGoneError, fileSize, keepFile, MAX_FILE, offerRef, readFile, sendFile, takeFile, bytesSource, type Source } from '../lib/attachments';
-import { isNews, messageCame } from '../lib/background';
+import { isNews, messageCameAt } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
@@ -32,7 +32,7 @@ import { ShieldIcon, TimerIcon } from '../components/icons';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { LaterPicker } from '../components/later-picker';
-import { laterLabel } from '../lib/later';
+import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
@@ -53,7 +53,7 @@ import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { isGroupPacket } from '../lib/groups';
 import { takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
-import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type Relay } from '../lib/relay';
+import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type HeldAt, type Relay } from '../lib/relay';
 import { answersAsk, appShown, awayPace, holdReceiver, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, relayFor, spaceChats } from '../lib/space-chats';
@@ -102,7 +102,8 @@ import { t, plural, mark } from '../lib/i18n';
 // `until`: when it disappears, milliseconds, or 0. `lasts`: seconds it lasts once read, while it
 // waits for that. `mark`: as lock/history.ts keeps it.
 // `at`: when it was sent or came, milliseconds. `voice`: where a voice message's sound is.
-// `file`: where a photo or file is, or where to take it from.
+// `file`: where a photo or file is, or where to take it from. `held`: ours sent for later, the
+// relay that holds it till `at`. `quiet`: ours that waits, to go without sound.
 type Message = {
   id: number;
   peer: string;
@@ -115,6 +116,8 @@ type Message = {
   at: number;
   voice?: VoiceRef;
   file?: FileRef;
+  held?: HeldAt;
+  quiet?: boolean;
 };
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
@@ -180,8 +183,9 @@ function disappearsAt(until: number): string {
     : t('on {date} {time}', { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, time });
 }
 
-// A message of ours sent for later, whose time has not come: it waits, kept with that time.
-const scheduled = (message: Message) => message.mine && message.mark === WAITING && message.at > Date.now();
+// A message of ours sent for later, whose time has not come: it waits with that time, here or, held
+// by a relay, there.
+const scheduled = (message: Message) => message.mine && (message.mark === WAITING || !!message.held) && message.at > Date.now();
 
 // How long a voice message is: 0:07.
 // Under a message to or from a contact: its mark if it is ours, and when it disappears.
@@ -462,6 +466,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   const [attaching, setAttaching] = useState(false);
   // Send held down: later, or without sound.
   const [sendMenu, setSendMenu] = useState(false);
+  // The time picked there for the next photo, file or voice message, when nothing was typed.
+  const [laterFor, setLaterFor] = useState<number | null>(null);
   const [quality, setQuality] = useState<PhotoQuality>('original');
   // How far each file being taken from the relay is, by `${peer}|${tag}`; 'failed' or 'gone' if it did not come.
   const [taking, setTaking] = useState<Record<string, string>>({});
@@ -628,7 +634,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     // A contact heard nearby, or a LoRa radio linked: what waits for them may go now.
     const stopWatching = nearby.onChange(() => {
       setNearbyChanged((n) => n + 1);
-      sendWaitingNow.current(false);
+      void sendWaitingNow.current(false);
     });
     const stopWatchingLora = lora.onChange(() => setNearbyChanged((n) => n + 1));
     const release = takeNearby((link, packet) => nearbyCame.current(link, packet));
@@ -928,7 +934,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         await spare();
         if (!hiddenKey) await answerInvites(e2e, ownSender, here(), sends).catch(() => undefined);
         // What waited to go, now that the relay answers.
-        sendWaitingNow.current(true);
+        void sendWaitingNow.current(true);
         await sendReceipts(sends);
         failures = 0;
       } catch (error) {
@@ -991,8 +997,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       return;
     }
     const peer = `${CONTACT_PREFIX}${received.identity}`;
-    // Erevos in the background: the notice says one more came (lib/background.ts).
-    if (!hiddenKey && isNews(received)) messageCame(received.quiet);
+    // Erevos in the background: the notice says one more came (lib/background.ts), at its time
+    // for one sent for later that a relay sent too soon (lib/later.ts), and so it shows.
+    const shows = showsAt(received.due);
+    if (!hiddenKey && isNews(received)) messageCameAt(shows, received.quiet);
     setContacts(e2e.contacts());
     setSelected((current) => current ?? peer);
     if (received.call) {
@@ -1014,7 +1022,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         }
         saveClip(whole.audio, whole.ms)
           .then((voice) => {
-            addMessage(peer, '', false, tag, timer, voice);
+            addMessage(peer, '', false, tag, timer, voice, undefined, 0, shows);
             if (tag) receipt(peer, 'got', [tag]);
           })
           .catch((error) => setNote(t('A voice message came but could not be kept. {error}', { error: errorText(error) })));
@@ -1022,11 +1030,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     }
     if (received.file) {
       // Taken from the relay by the effect that watches for files waiting.
-      const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file));
+      const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file), 0, shows);
       receipt(peer, 'got', [tag]);
     }
     if (received.text) {
-      addMessage(peer, received.text, false, received.tag, received.timer);
+      addMessage(peer, received.text, false, received.tag, received.timer, undefined, undefined, 0, shows);
       if (received.tag) receipt(peer, 'got', [received.tag]);
     }
     // Marked on the screen at once. A mark the history could not keep is the old one when the chat next opens.
@@ -1058,18 +1066,31 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   // read if it disappears. A contact's message from an Erevos before tags gets one known to this
   // phone only. Returns its tag.
   // A message of ours that waits to go is marked so (`mark`, lib/waiting.ts); one sent for later
-  // has the time it should go (`at`), and shows after the others until then.
-  function addMessage(peer: string, text: string, mine: boolean, tag = '', timer = 0, voice?: VoiceRef, file?: FileRef, mark: Mark = 0, at = Date.now()): string {
+  // has the time it should go (`at`), and shows after the others until then, as does theirs sent
+  // for later that came before its time, which shows only then. `more`: of ours, the relay that
+  // holds it for later, or that it waits to go without sound.
+  function addMessage(
+    peer: string,
+    text: string,
+    mine: boolean,
+    tag = '',
+    timer = 0,
+    voice?: VoiceRef,
+    file?: FileRef,
+    mark: Mark = 0,
+    at = Date.now(),
+    more: { held?: HeldAt; quiet?: boolean } = {},
+  ): string {
     const contact = peer.startsWith(CONTACT_PREFIX);
     const kept = contact ? tag || newTag() : '';
     const lasts = contact ? timer : 0;
-    const message = { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark, at, voice, file };
+    const message = { id: nextId.current++, peer, text, mine, tag: kept, until: 0, lasts, mark, at, voice, file, ...more };
     setMessages((list) => {
       const later = list.findIndex((m) => m.at > at);
       return later < 0 ? [...list, message] : [...list.slice(0, later), message, ...list.slice(later)];
     });
     if (contact) {
-      history.current?.add({ peer, text, mine, at, tag: kept, lasts, mark, voice, file }).catch(() => {
+      history.current?.add({ peer, text, mine, at, tag: kept, lasts, mark, voice, file, ...more }).catch(() => {
         // Shown, but gone when the chat next opens.
       });
     }
@@ -1082,7 +1103,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     const now = Date.now();
     setMessages((list) =>
       list.map((m) => {
-        if (m.peer !== peer || m.mine !== mine || m.mark >= mark || (tags && !tags.includes(m.tag))) return m;
+        if (m.peer !== peer || m.mine !== mine || m.mark >= mark || (tags && !tags.includes(m.tag)) || (!mine && m.at > now)) return m;
         return { ...m, mark, ...(mark === 2 && !m.until && m.lasts ? { until: now + m.lasts * 1000, lasts: 0 } : {}) };
       }),
     );
@@ -1130,6 +1151,30 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   }
 
   function deleteMessage(message: Message) {
+    // One a relay holds for later is taken back from it, if it did not go yet.
+    if (message.held && message.at > Date.now()) {
+      const held = message.held;
+      ask(t('Delete message'), t('Delete this message before it goes? The relay that keeps it drops it.'), [
+        { text: t('Cancel'), style: 'cancel' },
+        {
+          text: t('Delete'),
+          style: 'destructive',
+          onPress: () =>
+            void takeBack(relayTarget(), held)
+              .then((dropped) => {
+                if (dropped) {
+                  forgetMessage(message);
+                  setNote(t('Deleted. It will not go.'));
+                } else {
+                  setNote(t('It went already. Delete it again to delete it on both phones.'));
+                  setMessages((list) => list.map((m) => (m.id === message.id ? { ...m, at: Math.min(m.at, Date.now()) } : m)));
+                }
+              })
+              .catch((error) => setNote(t('Not deleted: the relay could not be asked. {reason}', { reason: errorText(error) }))),
+        },
+      ]);
+      return;
+    }
     // One that waits never reached their phone.
     const both = message.peer.startsWith(CONTACT_PREFIX) && message.tag && message.mark !== WAITING;
     ask(t('Delete message'), t('Delete this message? It cannot be brought back.'), [
@@ -1307,7 +1352,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
   }
 
   // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it
-  // is read; `quiet`, it comes without sound (one that has to wait goes with sound, as any).
+  // is read; `quiet`, it comes without sound, also when it has to wait.
   async function send(lasts = 0, quiet = false) {
     const text = draft.trim();
     if (!text || !selected?.startsWith(CONTACT_PREFIX)) return;
@@ -1327,22 +1372,75 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         return;
       }
       // Nothing could take it now: it waits, and goes by itself (lib/waiting.ts).
-      addMessage(selected, text, true, newTag(), lasts || timerOf(selected), undefined, undefined, WAITING);
+      addMessage(selected, text, true, newTag(), lasts || timerOf(selected), undefined, undefined, WAITING, Date.now(), { quiet });
       setDraft('');
       setNote(t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason: waitingReason(error, selected, t('It is too long for LoRa.')) }));
     }
   }
 
-  // Keeps the message typed to go at `at`, waiting as one nothing could take (lib/waiting.ts), so
-  // it is sealed only when it goes. Hidden chats keep nothing waiting.
-  function sendLater(at: number) {
+  // Keeps the message typed to go at `at`, or, with nothing typed, the next photo, file or voice
+  // message (laterFor).
+  async function sendLater(at: number) {
     const text = draft.trim();
     setSendMenu(false);
-    if (!text || !selected?.startsWith(CONTACT_PREFIX) || hiddenKey || at <= Date.now()) return;
+    if (!selected?.startsWith(CONTACT_PREFIX) || !canPick(at)) return;
+    if (!text) {
+      setLaterFor(at);
+      setNote(t('Now pick a photo or file with Attach, or hold Voice: it goes on {when}.', { when: laterLabel(at) }));
+      return;
+    }
     setVanishing(false);
-    addMessage(selected, text, true, newTag(), timerOf(selected), undefined, undefined, WAITING, at);
-    setDraft('');
-    setNote(t('It goes on {when} if Erevos is running then, or else when Erevos next opens. Until then you can delete it here.', { when: laterLabel(at) }));
+    if (await schedule(selected, at, { text })) setDraft('');
+  }
+
+  // Keeps a message to go at `at`: sealed and handed to the relay at once, to hold till then
+  // (lib/waiting.ts, holdLater), so it goes though this phone is off by then. In the space's chats,
+  // while no relay can take it, it waits here, and goes to the relay with the first look that
+  // reaches one. Hidden chats keep nothing waiting: there it goes to the relay now, or is not kept,
+  // and a voice message's sound or a file's chunks kept for it go. Says whether it is kept.
+  async function schedule(peer: string, at: number, what: { text?: string; voice?: VoiceRef; file?: FileRef }): Promise<boolean> {
+    if (!e2e) {
+      setNote(t(NO_CORE));
+      return false;
+    }
+    const { text = '', voice, file } = what;
+    const tag = newTag();
+    const lasts = timerOf(peer);
+    const when = laterLabel(at);
+    const heldNote = t('Scheduled for {when}. The relay sends it then, even if this phone is off. Until then you can delete it here.', { when });
+    if (hiddenKey) {
+      try {
+        const message: Kept = { peer, text, mine: true, at, tag, lasts, mark: WAITING, voice, file };
+        const { held, lasts: kept } = await holdLater(e2e, waitingPlace(true), peer.slice(CONTACT_PREFIX.length), message);
+        addMessage(peer, text, true, tag, kept, voice, file, 0, at, { held });
+        setNote(heldNote);
+        return true;
+      } catch (error) {
+        if (voice) await deleteClip(voice.id).catch(() => undefined);
+        if (file) await deleteChunks(file.id, file.count).catch(() => undefined);
+        setNote(t('Not scheduled. {reason}', { reason: notSentReason(error) }));
+        return false;
+      }
+    }
+    addMessage(peer, text, true, tag, lasts, voice, file, WAITING, at);
+    const went = await sendWaitingNow.current(true);
+    setNote(
+      went.some((w) => w.peer === peer && w.tag === tag && w.held)
+        ? heldNote
+        : t('Scheduled for {when}. It goes to the relay once one can be reached, and from there at that time, even if this phone is off then. Until then you can delete it here.', { when }),
+    );
+    return true;
+  }
+
+  // The time picked for the next photo, file or voice message, taken once: null when none was, or
+  // when it has gone by meanwhile (then said).
+  function takeLaterFor(): number | null {
+    const at = laterFor;
+    if (at === null) return null;
+    setLaterFor(null);
+    if (canPick(at)) return at;
+    setNote(t('That time has gone by. Choose one ahead.'));
+    return null;
   }
 
   // The chat's timer, seconds.
@@ -1373,24 +1471,27 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     );
   }
 
-  // Sends what waits that can go now (lib/waiting.ts), and shows it as gone. `relayUp`: the relay
-  // just answered. Hidden chats keep nothing waiting.
-  const sendWaitingNow = useRef((_relayUp: boolean) => undefined as void);
-  sendWaitingNow.current = (relayUp) => {
+  // Where what waits goes from (lib/waiting.ts). `relayUp`: the relay just answered.
+  function waitingPlace(relayUp: boolean): SendPlace {
+    return { sends: relayTarget(), own: ownRelay(), senderHex: ownQueue?.senderHex ?? '', here: here(), ownKey: ownRelayKey, relayUp };
+  }
+
+  // Sends what waits that can go now (lib/waiting.ts), and shows it as gone, or as held by the
+  // relay till its time. Says what went. Hidden chats keep nothing waiting.
+  const sendWaitingNow = useRef((_relayUp: boolean) => Promise.resolve([] as Went[]));
+  sendWaitingNow.current = async (relayUp) => {
     const kept = history.current;
-    if (hiddenKey || !e2e || !kept) return;
-    const place: SendPlace = { sends: relayTarget(), own: ownRelay(), senderHex: ownQueue?.senderHex ?? '', here: here(), ownKey: ownRelayKey, relayUp };
-    void sendWaiting({ e2e, history: kept }, place)
-      .then((went) => {
-        if (went.length === 0) return;
-        setMessages((list) =>
-          list.map((m) => {
-            const sent = went.find((w) => w.peer === m.peer && w.tag === m.tag);
-            return sent ? { ...m, mark: 0, lasts: sent.lasts } : m;
-          }),
-        );
-      })
-      .catch(() => undefined);
+    if (hiddenKey || !e2e || !kept) return [];
+    const went = await sendWaiting({ e2e, history: kept }, waitingPlace(relayUp)).catch(() => [] as Went[]);
+    if (went.length > 0) {
+      setMessages((list) =>
+        list.map((m) => {
+          const sent = went.find((w) => w.peer === m.peer && w.tag === m.tag);
+          return sent ? { ...m, mark: 0, lasts: sent.lasts, held: sent.held, quiet: false } : m;
+        }),
+      );
+    }
+    return went;
   };
 
   async function shareLink(link: string) {
@@ -1541,6 +1642,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       setNote(t(NO_CORE));
       return;
     }
+    // Picked to go later (laterFor): kept, and handed to the relay for then.
+    if (!talk && laterFor !== null) {
+      const at = takeLaterFor();
+      if (at !== null) await schedule(peer, at, { voice: await saveClip(audio, ms) });
+      return;
+    }
     const identity = peer.slice(CONTACT_PREFIX.length);
     try {
       const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here(), talk });
@@ -1673,6 +1780,30 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     }
     if (!picked) return;
     const what = kind === 'photo' ? 'photo' : 'file';
+    // Picked to go later (laterFor): kept here, and handed to the relay for then.
+    const later = takeLaterFor();
+    if (laterFor !== null && later === null) {
+      picked.close?.();
+      return;
+    }
+    if (later !== null) {
+      try {
+        if (picked.source.size > MAX_FILE) throw new TooLargeError();
+        const size = picked.w && picked.h ? { w: picked.w, h: picked.h } : {};
+        const ref = await keepFile(picked.source, { name: picked.name, mime: picked.mime, kind, ...size }, (done, count) => {
+          if (count > 1) {
+            const percent = Math.floor((done / count) * 100);
+            setNote(what === 'photo' ? t('Keeping the photo, {percent}%', { percent }) : t('Keeping the file, {percent}%', { percent }));
+          }
+        });
+        await schedule(peer, later, { file: ref });
+      } catch (error) {
+        setNote(error instanceof TooLargeError ? t('Not sent. Files can be 100 MB at most.') : t('Not scheduled. {reason}', { reason: errorText(error) }));
+      } finally {
+        picked.close?.();
+      }
+      return;
+    }
     let kept: FileRef | null = null;
     try {
       if (picked.source.size > MAX_FILE) throw new TooLargeError();
@@ -2010,7 +2141,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
     void acceptContact(code);
   }
 
-  const visible = messages.filter((message) => message.peer === selected);
+  // Theirs that came before the time it was sent for shows then (lib/later.ts, showsAt).
+  const shownBy = Date.now();
+  const visible = messages.filter((message) => message.peer === selected && (message.mine || message.at <= shownBy));
   // The photos shown: the latest in the thread, and the one looked at on its own.
   const shownPhotos = visible
     .filter((m) => m.file?.kind === 'photo' && !m.file.from)
@@ -2799,6 +2932,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
             style={styles.action}
           />
         </Row>
+        {laterFor !== null && selectedContact ? (
+          <Row wrap>
+            <Text variant="caption" tone="muted">
+              {t('The next photo, file or voice message goes on {when}.', { when: laterLabel(laterFor) })}
+            </Text>
+            <TextButton title={t('Cancel')} onPress={() => setLaterFor(null)} />
+          </Row>
+        ) : null}
         {vanishing && selectedContact ? (
           <Row wrap>
             <Text variant="caption" tone="muted">
@@ -2812,31 +2953,30 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
         ) : null}
       </View>
       <Sheet visible={sendMenu} onClose={() => setSendMenu(false)} title={t('Send')}>
-        <Button
-          title={t('Send without sound')}
-          kind="secondary"
-          compact
-          onPress={() => {
-            setSendMenu(false);
-            void send(0, true);
-          }}
-        />
-        <Text variant="caption" tone="muted">
-          {t('Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, and sounds as usual.')}
-        </Text>
-        <Text variant="label">{t('Send later')}</Text>
-        {hiddenKey ? (
-          <Text variant="caption" tone="muted">
-            {t('Not in hidden chats: they keep nothing waiting to go.')}
-          </Text>
-        ) : (
+        {draft.trim() ? (
           <>
-            {sendMenu ? <LaterPicker onPick={sendLater} /> : null}
+            <Button
+              title={t('Send without sound')}
+              kind="secondary"
+              compact
+              onPress={() => {
+                setSendMenu(false);
+                void send(0, true);
+              }}
+            />
             <Text variant="caption" tone="muted">
-              {t('It goes at that time if Erevos is running, in the background too; if not, when Erevos next opens.')}
+              {t('Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, and sounds as usual.')}
             </Text>
           </>
-        )}
+        ) : null}
+        <Text variant="label">{t('Send later')}</Text>
+        {sendMenu ? <LaterPicker onPick={(at) => void sendLater(at)} /> : null}
+        <Text variant="caption" tone="muted">
+          {draft.trim() ? '' : `${t('With nothing typed, the next photo, file or voice message goes then.')} `}
+          {hiddenKey
+            ? t('The relay keeps it and sends it at that time, even if this phone is off then. In hidden chats the relay has to be reachable now.')
+            : t('The relay keeps it and sends it at that time, even if this phone is off then.')}
+        </Text>
       </Sheet>
       <Sheet visible={attaching} onClose={() => setAttaching(false)} title={t('Send a photo or file')}>
         <Row wrap>

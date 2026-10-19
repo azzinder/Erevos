@@ -14,10 +14,10 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { nearby, Nearby } from '../lib/nearby';
-import { createQueue, toHex } from '../lib/relay';
+import { createQueue, fromHex, receiveMessage, toHex } from '../lib/relay';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
-import { firstLater, quickTimes, stepLater } from '../lib/later';
-import { nextDue, sendWaiting, type SendPlace } from '../lib/waiting';
+import { canPick, firstLater, LATEST, quickTimes, showsAt, stepLater } from '../lib/later';
+import { nextDue, sendWaiting, takeBack, type SendPlace } from '../lib/waiting';
 import { WAITING } from '../lock/history';
 import { setCurrentSpace } from '../lock/keys';
 import { blobs, files } from './files-memory';
@@ -149,6 +149,69 @@ test('one sent for later goes only once its time came, and holds back none of th
   } finally {
     done();
   }
+});
+
+test('one waiting to go without sound still goes without sound', { skip: !coreReady }, async () => {
+  const { bob, alice, peer, toAlice, link, done } = await twoPhones();
+  try {
+    await bob.history.add({ peer, text: 'shh', mine: true, at: Date.now(), tag: 'aaaaaaaaaaaa', mark: WAITING, quiet: true });
+    link(true);
+    assert.deepEqual((await sendWaiting(bob, nowhere)).map((w) => w.tag), ['aaaaaaaaaaaa']);
+    const came = (await alice.receive(toAlice[0])) as Extract<Received, { kind: 'message' }>;
+    assert.deepEqual([came.text, came.quiet], ['shh', true]);
+  } finally {
+    done();
+  }
+});
+
+test('one sent for later goes to the relay at once, which sends it at its time, and can be taken back before', { skip: !coreReady || !relayReady }, async () => {
+  const { bob, alice, peer, done } = await twoPhones();
+  try {
+    const url = await startRelay();
+    const relay = { url };
+    const bobIds = await createQueue(relay);
+    const aliceIds = await createQueue(relay);
+    const bobQueue = { recipientHex: toHex(bobIds.recipientId), senderHex: toHex(bobIds.senderId) };
+    // Alice says where her queue is.
+    const bobId = alice.contacts()[0].identity;
+    await bob.e2e.receive((await alice.seal(bobId, 'my queue', toHex(aliceIds.senderId), { at: { relay: url, relayKey: '' } })).packet);
+    const place: SendPlace = { sends: relay, own: relay, senderHex: bobQueue.senderHex, here: { relay: url, relayKey: '' }, ownKey: '', relayUp: true };
+    const at = Date.now() + 2000;
+    await bob.history.add({ peer, text: 'later', mine: true, at, tag: 'bbbbbbbbbbbb', mark: WAITING });
+    await bob.history.add({ peer, text: 'never', mine: true, at: Date.now() + 600_000, tag: 'cccccccccccc', mark: WAITING });
+    // The relay answers: both go to it at once, long before their time, and wait there.
+    const went = await sendWaiting(bob, place);
+    assert.deepEqual(went.map((w) => w.tag), ['bbbbbbbbbbbb', 'cccccccccccc']);
+    assert.ok(went.every((w) => w.held && /^[0-9a-f]{32}$/.test(w.held.id) && w.held.relay === url));
+    assert.deepEqual(bob.history.waiting(), []);
+    assert.deepEqual(bob.history.messages().map((m) => m.held?.id), went.map((w) => w.held!.id));
+    assert.equal(await receiveMessage(relay, aliceIds.recipientId), null);
+    // Taken back before its time: it never goes, and there is nothing to take back again.
+    const never = went[1].held!;
+    assert.equal(await takeBack(relay, never), true);
+    assert.equal(await takeBack(relay, never), false);
+    // Its time came, with Bob's phone gone: the relay sends it, and it says when it should show.
+    await new Promise((r) => setTimeout(r, 3500));
+    const packet = await receiveMessage(relay, aliceIds.recipientId);
+    assert.ok(packet);
+    const came = (await alice.receive(packet)) as Extract<Received, { kind: 'message' }>;
+    assert.deepEqual([came.text, came.tag, came.due], ['later', 'bbbbbbbbbbbb', at]);
+    assert.equal(await receiveMessage(relay, aliceIds.recipientId), null);
+  } finally {
+    done();
+  }
+});
+
+test('one that comes well before its time shows then; one sent for later goes at most a year ahead', () => {
+  const now = Date.now();
+  assert.equal(showsAt(0, now), now);
+  assert.equal(showsAt(now + 30_000, now), now);
+  assert.equal(showsAt(now + 3600_000, now), now + 3600_000);
+  // A time too far ahead to be one sent for later is not believed.
+  assert.equal(showsAt(now + 3 * LATEST, now), now);
+  assert.equal(canPick(now - 1, now), false);
+  assert.equal(canPick(now + LATEST, now), true);
+  assert.equal(canPick(now + LATEST + 60_000, now), false);
 });
 
 test('the times to send later: ahead, to the minute, the hour and minutes going round on the same day', () => {

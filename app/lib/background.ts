@@ -2,6 +2,7 @@ import { AppRegistry, AppState, PermissionsAndroid, Platform } from 'react-nativ
 
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
 import type { Received } from './e2e';
+import { showsAt } from './later';
 import { appShown, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
 import { onSpaceGroupMessage } from './space-groups';
@@ -82,6 +83,13 @@ export function messageCame(quiet = false): void {
   }
 }
 
+/** As messageCame, at `at` (milliseconds) when that is ahead: for a message that came before its time (lib/later.ts, showsAt). */
+export function messageCameAt(at: number, quiet = false): void {
+  const wait = at - Date.now();
+  if (wait <= 0) messageCame(quiet);
+  else setTimeout(() => messageCame(quiet), Math.min(wait, 2 ** 31 - 1));
+}
+
 function clearMessages() {
   if (unseen === 0) return;
   unseen = 0;
@@ -147,7 +155,7 @@ export function startBackground(): () => void {
   changes.add(follow);
   const told = [
     onMessage((received) => {
-      if (isNews(received)) messageCame(received.quiet);
+      if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet);
     }),
     onSpaceGroupMessage(() => messageCame()),
   ];

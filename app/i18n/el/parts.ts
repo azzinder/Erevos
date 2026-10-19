@@ -120,6 +120,7 @@ export const parts: Record<string, string> = {
   Minutes: 'Λεπτά',
   'Goes on {when}.': 'Θα σταλεί στις {when}.',
   'That time has gone by. Choose one ahead.': 'Αυτή η ώρα πέρασε. Διάλεξε μια που έρχεται.',
+  'At most a year ahead.': 'Το πολύ έναν χρόνο μπροστά.',
   // The home screen's list (lib/inbox.ts).
   'You: {text}': 'Εσύ: {text}',
   Sun: 'Κυρ',
@@ -187,6 +188,9 @@ export const parts: Record<string, string> = {
   'An id is 48 hex characters.': 'Ένα id έχει 48 δεκαεξαδικούς χαρακτήρες.',
   'Through Tor: {reason}': 'Μέσω Tor: {reason}',
   'cannot reach the relay at {url}, or the token is wrong': 'δεν είναι δυνατή η σύνδεση με το relay στο {url}, ή το token είναι λάθος',
+  'message is not held': 'το μήνυμα δεν κρατιέται',
+  'the relay at {url} cannot keep messages for later: update it': 'το relay στο {url} δεν μπορεί να κρατήσει μηνύματα για αργότερα: ενημέρωσέ το',
+  'The relay at {url} that keeps it is no longer set here.': 'Το relay στο {url} που το κρατά δεν είναι πια ρυθμισμένο εδώ.',
   'the relay closed the connection': 'το relay έκλεισε τη σύνδεση',
   'lost the connection to the relay': 'χάθηκε η σύνδεση με το relay',
   '{what}: queue not found': '{what}: η ουρά δεν βρέθηκε',

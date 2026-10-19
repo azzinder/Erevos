@@ -64,7 +64,8 @@ const PREFIX = 'contact:';
 
 /**
  * The rows, chats that moved latest first, then the rest by name. Messages gone by `now` are left
- * out, and so are ours sent for later whose time has not come (marked waiting, lib/waiting.ts).
+ * out, and so are those whose time has not come: ours sent for later (lib/waiting.ts), and theirs
+ * that came before the time they were sent for (lib/later.ts, showsAt).
  */
 export function buildInbox(
   contacts: InboxContact[],
@@ -76,7 +77,7 @@ export function buildInbox(
   const latest = new Map<string, InboxMessage>();
   const unread = new Map<string, number>();
   for (const m of messages) {
-    if (!m.peer.startsWith(PREFIX) || (m.until && m.until <= now) || (m.mine && m.mark === -1 && m.at > now)) continue;
+    if (!m.peer.startsWith(PREFIX) || (m.until && m.until <= now) || m.at > now) continue;
     const identity = m.peer.slice(PREFIX.length);
     const before = latest.get(identity);
     if (!before || m.at >= before.at) latest.set(identity, m);
