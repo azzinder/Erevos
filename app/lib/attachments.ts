@@ -30,6 +30,15 @@ import { t } from './i18n';
 /** The largest file that can be sent. */
 export const MAX_FILE = 100 * 1000 * 1000;
 
+// Whether files taken stay on the relay: while the account has linked devices (lib/devices.ts),
+// each of them takes what came too.
+let leaveTaken = false;
+
+/** Leaves the files this phone takes on the relay from now on, for the account's other devices to take too, or no longer. */
+export function leaveTakenFiles(on: boolean): void {
+  leaveTaken = on;
+}
+
 // The nonce and tag AES-GCM adds, and the chunk's place and length.
 const SEALING = 12 + 16;
 const HEAD = 8;
@@ -220,10 +229,10 @@ export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress, 
 
 /**
  * Takes a file that came, through our relay (`own`), checks every chunk and keeps them here, then
- * deletes them from the relay. Returns where it is now kept. If any chunk is missing or was
- * changed, nothing is kept.
+ * deletes them from the relay, unless they are left there (`leave`, see leaveTakenFiles). Returns
+ * where it is now kept. If any chunk is missing or was changed, nothing is kept.
  */
-export async function takeFile(own: Relay, ref: FileRef, progress?: Progress): Promise<FileRef> {
+export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, leave = leaveTaken): Promise<FileRef> {
   const { from, ...taken } = ref;
   if (!from) return ref;
   const via = sameRelay(from.relay, own.url) ? undefined : from.relay;
@@ -241,7 +250,7 @@ export async function takeFile(own: Relay, ref: FileRef, progress?: Progress): P
     }
     if (size !== ref.size) throw new FileDamagedError();
     // Taken: the relay need not keep it. One it cannot delete expires there.
-    for (const id of ids) await deleteChunk(session, id, via).catch(() => false);
+    if (!leave) for (const id of ids) await deleteChunk(session, id, via).catch(() => false);
   } catch (error) {
     await deleteChunks(ref.id, ref.count).catch(() => undefined);
     throw error;
