@@ -8,7 +8,7 @@ import { LockIcon, MoreIcon, PlusIcon, SearchIcon, ShieldIcon } from '../compone
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
 import { byName, cardHref, erevosPeople, groupsByTitle, groupTitles, phoneCards, sealedCard, withErevos, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
-import { birthdayComing, daysToBirthday, fillText, matches, parseBirthday } from '../lib/contacts';
+import { askedFields, birthdayComing, daysToBirthday, fillText, fieldsName, matches, mergeFields, parseBirthday } from '../lib/contacts';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { plural, t } from '../lib/i18n';
 import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
@@ -28,6 +28,9 @@ import { useStyles, useTheme } from '../theme/context';
 // to merge (app/contact-duplicates.tsx), the SIM's contacts (app/contact-sim.tsx), .vcf files in
 // (app/contact-import.tsx) and out, and a contact's QR code read from a photo.
 //
+// Another app's number or email to add to a contact (`add`, Android's INSERT_OR_EDIT through
+// modules/erevos-contacts) makes it a list to choose that contact from, or a new one.
+//
 // Opened from hidden chats (`hidden`), it shows only their own sealed contacts, and nothing once
 // they close (lib/hidden-contacts.ts): nothing of the phone's or the space's. It has no menu
 // there: what it holds would leave Erevos (a photo picked, a file), which closes them.
@@ -39,8 +42,13 @@ export default function Contacts() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ hidden?: string }>();
+  const params = useLocalSearchParams<{ hidden?: string; add?: string }>();
   const hidden = params.hidden === '1';
+  // What another app asks to add to a contact, checked, kept as the screens pass it on.
+  const adding = useMemo(() => {
+    const fields = !hidden && typeof params.add === 'string' ? askedFields(params.add) : null;
+    return fields ? { fields, text: fillText(fields) } : null;
+  }, [hidden, params.add]);
   const hiddenOpen = useOpenHiddenPlace();
   const [cards, setCards] = useState<ContactCard[] | null>(null);
   const [groups, setGroups] = useState<PhoneGroup[]>([]);
@@ -233,6 +241,13 @@ export default function Contacts() {
           {Platform.OS === 'android' ? t('This build of Erevos has no contacts part yet. It comes with the next build of the app.') : t("Only Erevos on Android reads the phone's contacts.")}
         </Text>
       ) : null}
+      {adding ? (
+        <Card>
+          <Text variant="bodyStrong">{t('Add {what} to a contact', { what: adding.fields.phones[0]?.value || adding.fields.emails[0]?.value || fieldsName(adding.fields) })}</Text>
+          <Text tone="muted">{t('Tap the contact to add it to, or make a new one.')}</Text>
+          <Button title={t('New contact')} compact onPress={() => router.replace(`/contact-edit?fill=${encodeURIComponent(adding.text)}`)} />
+        </Card>
+      ) : null}
       {phoneHere && !allowed ? (
         <Card>
           <Text variant="bodyStrong">{t("Erevos may not read the phone's contacts yet")}</Text>
@@ -255,7 +270,25 @@ export default function Contacts() {
         ListHeaderComponent={header}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
-        renderItem={({ item }) => <ContactRow card={item} birthday={filter === 'birthdays'} hidden={hidden} />}
+        renderItem={({ item }) => (
+          <ContactRow
+            card={item}
+            birthday={filter === 'birthdays'}
+            hidden={hidden}
+            onPress={
+              adding
+                ? () =>
+                    router.replace(
+                      item.phone
+                        ? `/contact-edit?id=${item.phone.id}&add=${encodeURIComponent(adding.text)}`
+                        : item.sealed
+                          ? `/contact-edit?sealed=${item.sealed.id}&add=${encodeURIComponent(adding.text)}`
+                          : `/contact-edit?fill=${encodeURIComponent(fillText(mergeFields([item, adding.fields])))}&erevos=${item.erevos}`,
+                    )
+                : undefined
+            }
+          />
+        )}
         initialNumToRender={20}
         windowSize={11}
         ListEmptyComponent={
@@ -357,7 +390,7 @@ function MenuRow({ title, detail, onPress }: { title: string; detail: string; on
   );
 }
 
-function ContactRow({ card, birthday, hidden }: { card: ContactCard; birthday?: boolean; hidden: boolean }) {
+function ContactRow({ card, birthday, hidden, onPress }: { card: ContactCard; birthday?: boolean; hidden: boolean; onPress?: () => void }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const photo = useCardPhoto(card);
@@ -368,7 +401,7 @@ function ContactRow({ card, birthday, hidden }: { card: ContactCard; birthday?: 
   const label = [card.name, card.starred ? t('favourite') : '', sealed ? t('only in Erevos') : '', card.erevos ? t('with an Erevos chat') : ''].filter(Boolean).join(', ');
   return (
     <Pressable
-      onPress={() => router.push(cardHref(card, hidden))}
+      onPress={onPress ?? (() => router.push(cardHref(card, hidden)))}
       accessibilityRole="button"
       accessibilityLabel={label}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}

@@ -4,7 +4,7 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Button, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
 import { sealedFields } from '../lib/contact-book';
-import { askedFields, birthdayText, CHOSEN_KINDS, cleanFields, EMPTY_FIELDS, fieldsName, kindLabel, MAX_ENTRIES, parseBirthday, phoneFields, phoneSave, type Entry, type Fields } from '../lib/contacts';
+import { askedFields, birthdayText, CHOSEN_KINDS, cleanFields, EMPTY_FIELDS, fieldsName, kindLabel, MAX_ENTRIES, mergeFields, parseBirthday, phoneFields, phoneSave, type Entry, type Fields } from '../lib/contacts';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
 import { linkPhoneContact, loadPlace, placeOf, saveSealed, spacePlace, type Place } from '../lib/sealed-contacts';
@@ -17,7 +17,8 @@ import { useStyles, useTheme } from '../theme/context';
 // owner chooses, or only in Erevos, sealed in the space (`sealed`, lib/sealed-contacts.ts). Among
 // the hidden chats' screens (`hidden`), it is always theirs, sealed with them. Another app (or a
 // QR code) can start one with fields of its own (`fill`), which are kept only once the owner saves;
-// one made from an Erevos contact's card (`erevos`) is that Erevos contact once saved.
+// one made from an Erevos contact's card (`erevos`) is that Erevos contact once saved. What another
+// app asks to add to a contact (`add`) is added to the one being changed, kept once saved.
 
 type ListName = 'phones' | 'emails' | 'addresses';
 
@@ -31,7 +32,7 @@ function typedBirthday(text: string): string {
 }
 
 export default function ContactEdit() {
-  const params = useLocalSearchParams<{ id?: string; fill?: string; sealed?: string; erevos?: string; hidden?: string }>();
+  const params = useLocalSearchParams<{ id?: string; fill?: string; add?: string; sealed?: string; erevos?: string; hidden?: string }>();
   const id = Number(params.id ?? 0);
   const sealedId = typeof params.sealed === 'string' ? params.sealed : '';
   const erevos = typeof params.erevos === 'string' && /^[0-9a-f]{64}$/.test(params.erevos) ? params.erevos : '';
@@ -41,6 +42,8 @@ export default function ContactEdit() {
   const styles = useStyles(makeStyles);
   const [phone, setPhone] = useState<PhoneContact | null>(null);
   const [filled] = useState<Fields>(() => (typeof params.fill === 'string' ? (askedFields(params.fill) ?? EMPTY_FIELDS) : EMPTY_FIELDS));
+  const [added] = useState<Fields | null>(() => (typeof params.add === 'string' ? askedFields(params.add) : null));
+  const withAdded = (f: Fields) => (added ? mergeFields([f, added]) : f);
   const [fields, setFields] = useState<Fields>(filled);
   const [birthday, setBirthday] = useState(() => typedBirthday(filled.birthday));
   const [birthdayBefore, setBirthdayBefore] = useState(() => typedBirthday(filled.birthday));
@@ -77,7 +80,7 @@ export default function ContactEdit() {
             return;
           }
           const f = sealedFields(found);
-          setFields(f);
+          setFields(withAdded(f));
           setBirthday(typedBirthday(f.birthday));
           setBirthdayBefore(typedBirthday(f.birthday));
           setReady(true);
@@ -92,7 +95,7 @@ export default function ContactEdit() {
           }
           const f = phoneFields(c);
           setPhone(c);
-          setFields(f);
+          setFields(withAdded(f));
           setBirthday(typedBirthday(f.birthday));
           setBirthdayBefore(typedBirthday(f.birthday));
           setReady(true);
@@ -138,14 +141,14 @@ export default function ContactEdit() {
       if (keptSealed) {
         if (!place) throw new Error(t('The hidden chats are closed.'));
         const kept = await saveSealed(place, sealedId || null, clean, erevos ? { erevos } : {});
-        if (sealedId) router.back();
+        if (sealedId && !added) router.back();
         else router.replace(`/contact-card?sealed=${kept}${hidden ? '&hidden=1' : ''}`);
         return;
       }
       const saved = await savePhoneContact(phoneSave(clean, phone, account, phone?.starred ?? false));
       const lookup = erevos && !phone ? (await phoneContact(saved).catch(() => null))?.lookup : '';
       if (lookup) await linkPhoneContact(spacePlace(), lookup, erevos).catch(() => undefined);
-      if (phone) router.back();
+      if (phone && !added) router.back();
       else router.replace(`/contact-card?id=${saved}`);
     } catch (error) {
       setNote(t('Not saved. {error}', { error: errorText(error) }));

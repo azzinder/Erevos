@@ -250,4 +250,8 @@ export const contacts: Record<string, string> = {
   'Outgoing call, no answer': 'Εξερχόμενη κλήση, χωρίς απάντηση',
   'Declined call': 'Απορριφθείσα κλήση',
   'Blocked call': 'Αποκλεισμένη κλήση',
+
+  // Other apps' contacts.
+  'Add {what} to a contact': 'Προσθήκη του {what} σε επαφή',
+  'Tap the contact to add it to, or make a new one.': 'Πάτα την επαφή όπου θα προστεθεί, ή φτιάξε μια νέα.',
 };

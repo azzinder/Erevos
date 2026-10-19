@@ -570,6 +570,11 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
 - **History:** a contact's card lists its latest calls in the phone's call log, its SMS and its messages in Erevos,
   the newest first; tap one to call back, write an SMS or open the chat. The calls show once you let Erevos read the
   call log (**Show calls**). Erevos only reads them to show them, and keeps no copy.
+- **Other apps:** another app's **Add to contacts** (a number in the phone app, an email in mail) can open in Erevos:
+  a new contact with what that app gave, or the list to tap the contact to add it to. An app that shows or changes a
+  contact can open it in Erevos too, behind Erevos's lock. Android asks which app to use; choose Erevos. An app that
+  asks you to pick a contact, or a number, email or address, gets only the one you tap, from the phone's contacts:
+  those kept only in Erevos never show there.
 - **Delete** takes the contact off the phone, from every account it is kept in; one kept only in Erevos, from Erevos.
 - **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
   Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,

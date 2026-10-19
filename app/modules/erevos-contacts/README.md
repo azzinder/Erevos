@@ -36,6 +36,12 @@ compiled against Android 16's framework classes, not built into the app or run y
   later (SimPhonebookContract), the main SIM's before (content://icc/adn).
 - **Calls.** `calls()` gives the latest calls with a contact's numbers from the phone's call log (CallLog), the newest
   first, a row matching by its last ten digits; it needs READ_CALL_LOG, asked for on a contact's card. Shown only.
+- **Other apps.** ContactIntentActivity takes INSERT (a new contact with the extras and DATA rows another app gives),
+  INSERT_OR_EDIT (the contacts, to choose one to add them to), EDIT, VIEW and QUICK_CONTACT (a contact's address,
+  by lookup key, id, raw contact or row), and opens the screen for it by an erevos:// link, behind the app's lock,
+  giving no answer back. PickContactActivity answers PICK and GET_CONTENT for a contact, a number, an email or an
+  address with a list of its own (framework views, in the app's language), and gives back the address of the one
+  tapped with a read grant for it.
 - **Changes elsewhere.** `watch()` sends `onContactsChanged` when Android's contacts change.
 
 ## JS API
