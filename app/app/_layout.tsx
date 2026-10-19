@@ -17,7 +17,7 @@ import { forgetLinks } from '../lib/devices';
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
-import { knownNames } from '../lib/phone';
+import { watchKnownNames } from '../lib/known-names';
 import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
 import { startSmsLater } from '../lib/sms-later';
@@ -25,13 +25,12 @@ import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
-import { clearKnownNames, forgetKnownNamesAfter, setKnownNames } from '../modules/erevos-phone';
+import { clearKnownNames, forgetKnownNamesAfter } from '../modules/erevos-phone';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { startPublicDoors } from '../lib/space-public-groups';
 import { applyTor } from '../lib/tor';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
-import { loadE2EData } from '../lock/e2e-data';
 import { PasswordGate } from '../lock/gate';
 import { prepareHidden } from '../lock/hidden';
 import { currentSpace, loadOpenKey, setCurrentSpace } from '../lock/keys';
@@ -92,13 +91,6 @@ export default function RootLayout() {
       await show(kept);
       setPhase({ kind: 'open', space, passwordLock });
       saveLockScreenLook(kept).catch(() => undefined);
-      // While the space is open, a call from a number linked to one of its contacts shows their name.
-      loadE2EData('space', space, key)
-        .then((e2e) => {
-          // Unless the space locked meanwhile: currentSpace() throws then, or is another's.
-          if (currentSpace().key === key) setKnownNames(knownNames(e2e.contacts));
-        })
-        .catch(() => undefined);
       setTimeout(() => void runAutoBackup().catch(() => undefined), BACKUP_AFTER_MS);
     },
     [show],
@@ -296,6 +288,9 @@ function Receiver() {
   useEffect(() => startNearbyLinks(), []);
   useEffect(() => startSmsLater(), []);
   useEffect(() => startPublicDoors(), []);
+  // While the space is open, a call from a number linked to one of its contacts, or kept only in
+  // Erevos, shows their name (lib/known-names.ts).
+  useEffect(() => watchKnownNames(), []);
   // On Android, it goes on while Erevos is in the background, so a call rings (lib/background.ts).
   useEffect(() => startBackground(), []);
   useEffect(() => {

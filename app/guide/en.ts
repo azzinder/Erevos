@@ -637,7 +637,8 @@ phone app**. Every call then shows on Erevos's own call screen, and tel: links a
 Erevos's keypad.
 
 - **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them; while
-  Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them. It shows over the
+  Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them, and so does the
+  number of a contact kept only in Erevos; that of a contact of open hidden chats, only while they are open. It shows over the
   lock screen and needs no password, as a call has to be answered with Erevos locked. A call that comes shows
   **Answer**, **Decline** and **Message**, and Android rings with the contact's own ringtone; the volume keys quiet
   it. In a call: **Mute**, **Keypad** for the tones a menu asks for, **Speaker**, **Hold**, **Add call** and **End**.
@@ -735,8 +736,9 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
 - **SIM contacts** in the menu reads the contacts on the phone's SIM cards and copies those not on the phone yet
   (all chosen at first) into Android's contacts, on this phone only or in an account. The SIM keeps its own.
 - **Only in Erevos:** under **Kept in**, a new contact can be kept **Only in Erevos** instead: sealed in this space
-  like its chats, never in Android's contacts, so no other app or account sees it, and other apps (the phone's own
-  call screen too) show only its number. It has a lock in the list, and the **Only in Erevos** chip shows just those.
+  like its chats, never in Android's contacts, so no other app or account sees it, and other apps show only its
+  number; Erevos's call screen shows its name while Erevos is unlocked. It has a lock in the list, and the **Only in
+  Erevos** chip shows just those.
   **Keep only in Erevos** on a phone contact moves it in, with its photo and star, and deletes it from the phone's
   contacts; **Move to the phone's contacts** takes it back out. Its photo is sealed with it. Groups, ringtones and
   birthday reminders are Android's, so it has none. A call or SMS to it still goes through the phone, and shows in

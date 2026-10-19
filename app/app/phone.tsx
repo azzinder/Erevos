@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text } from '../components/ui';
 import { mark, t } from '../lib/i18n';
-import { callLength, dialNumber, KEYS, knownNames, typeKey } from '../lib/phone';
+import { refreshKnownNames } from '../lib/known-names';
+import { callLength, dialNumber, KEYS, typeKey } from '../lib/phone';
 import {
   CALL_FILTERS,
   callClock,
@@ -22,7 +23,6 @@ import {
   type CallRow,
 } from '../lib/phone-log';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
-import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import {
   callHistory,
@@ -33,7 +33,6 @@ import {
   phoneStatus,
   placeCall,
   seenMissedCalls,
-  setKnownNames,
   showCall,
   type Favourite,
   type LoggedCall,
@@ -98,12 +97,7 @@ export default function Phone() {
     const { space: open, key } = currentSpace();
     PhoneSims.open(open, key).then(setSims, () => setSims(null));
     // A contact linked to a number since the space opened: its calls show its name too.
-    loadE2EData('space', open, key)
-      .then((e2e) => {
-        // Unless the space locked meanwhile: currentSpace() throws then.
-        if (currentSpace().key === key) setKnownNames(knownNames(e2e.contacts));
-      })
-      .catch(() => undefined);
+    void refreshKnownNames();
     const app = AppState.addEventListener('change', (state) => state === 'active' && look());
     const calls = onPhoneEvent('onCalls', () => setStatus(phoneStatus()));
     return () => {

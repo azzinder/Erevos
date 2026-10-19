@@ -168,8 +168,8 @@ export function showCall(): void {
 /**
  * Names Erevos knows for phone numbers, `{ number: name }`, which the call screen and its notice
  * show for a call with one of them, before the phone's contacts: the names of contacts kept only
- * inside Erevos, sealed. Give them only while a space is open, and only the space's own, never a
- * hidden place's. They stay in the memory of Erevos's process only, never written anywhere, and
+ * inside Erevos, sealed. Give them only while a space is open, and only the space's own, with an
+ * open hidden place's only while it is open (lib/known-names.ts). They stay in the memory of Erevos's process only, never written anywhere, and
  * each call replaces the ones before; clearKnownNames() forgets them, which the app does whenever
  * the space locks (app/_layout.tsx), and forgetKnownNamesAfter() when it would, in the background.
  * With Erevos locked, a call shows the phone's contacts only.

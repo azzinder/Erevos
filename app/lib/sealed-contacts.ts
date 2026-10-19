@@ -122,23 +122,25 @@ export async function linkSealed(place: Place, id: string, identity: string): Pr
  * sameNumber (lib/sms-invite.ts). None while no space is open.
  */
 export async function sealedNames(): Promise<Record<string, string>> {
-  const places: Place[] = [];
+  let space: Place;
   try {
-    places.push(spacePlace());
+    space = spacePlace();
   } catch {
     return {};
   }
   const hidden = openHiddenPlace();
-  if (hidden) places.push(placeOf(hidden));
+  return { ...(await placeNames(space)), ...(hidden ? await placeNames(placeOf(hidden)) : {}) };
+}
+
+/** The names one place's sealed contacts give numbers, as sealedNames writes them. */
+export async function placeNames(place: Place): Promise<Record<string, string>> {
   const names: Record<string, string> = {};
-  for (const place of places) {
-    const data = await loadPlace(place).catch(() => null);
-    for (const c of data?.contacts ?? []) {
-      const name = fieldsName(c);
-      for (const p of c.phones) {
-        const number = cleanNumber(p.value).replace(/[^\d+]/g, '');
-        if (number) names[number] = name;
-      }
+  const data = await loadPlace(place).catch(() => null);
+  for (const c of data?.contacts ?? []) {
+    const name = fieldsName(c);
+    for (const p of c.phones) {
+      const number = cleanNumber(p.value).replace(/[^\d+]/g, '');
+      if (number) names[number] = name;
     }
   }
   return names;
