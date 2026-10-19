@@ -355,6 +355,27 @@ t('a poll travels with its words, and a vote on it with none', async () => {
   assert.deepEqual([vote.text, vote.more], ['', { vote: { tag: asked.tag, chose: [1] } }]);
 });
 
+t('a message forwarded says so, with its words, its voice or its file, and only with them', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  await bob.e2e.receive(alice.e2e.pending()[0].first);
+  await alice.e2e.firstSent(identity);
+  const words = await alice.e2e.seal(identity, '🌝', alice.from, { more: { sticker: 'moon-smile', forwarded: true } });
+  assert.deepEqual(message(await bob.e2e.receive(words.packet)).more, { sticker: 'moon-smile', forwarded: true });
+  const voice = await alice.e2e.sealVoice(identity, new Uint8Array(10), 1000, alice.from, { forwarded: true });
+  assert.deepEqual(message(await bob.e2e.receive(voice.packets[0])).more, { forwarded: true });
+  const offer = { name: 'a.txt', mime: 'text/plain', kind: 'file' as const, size: 3000, relay: 'ws://127.0.0.1:7879', ids: 'ab'.repeat(24), key: 'cd'.repeat(32), chunk: 64 * 1024 };
+  const file = await alice.e2e.sealFile(identity, offer, alice.from, { forwarded: true });
+  const came = message(await bob.e2e.receive(file.packet));
+  assert.deepEqual([came.file?.name, came.more], ['a.txt', { forwarded: true }]);
+  const plain = await alice.e2e.sealFile(identity, offer, alice.from);
+  assert.deepEqual(message(await bob.e2e.receive(plain.packet)).more, {});
+  // Alone it is nothing to show, so it is not sent as anything.
+  const alone = await alice.e2e.seal(identity, '', alice.from, { more: { forwarded: true } });
+  assert.deepEqual(message(await bob.e2e.receive(alone.packet)).more, {});
+});
+
 t('typing travels with no words, and neither accepts a request nor says the phone is open', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

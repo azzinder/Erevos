@@ -82,4 +82,12 @@ export const messages: Record<string, string> = {
   None: 'Κανένα',
   Earlier: 'Πιο πριν',
   Later: 'Πιο μετά',
+  // Forwarding a message to another chat (lib/forward.ts).
+  Forward: 'Προώθηση',
+  'Forward to': 'Προώθηση σε',
+  Forwarded: 'Προωθημένο',
+  'Forwarding…': 'Προώθηση…',
+  '{name} (group)': '{name} (ομάδα)',
+  'It goes as a copy, sent anew and end-to-end encrypted, marked as forwarded but not from where.':
+    'Πηγαίνει ως αντίγραφο, σταλμένο από την αρχή και κρυπτογραφημένο από άκρη σε άκρη, με την ένδειξη ότι προωθήθηκε αλλά όχι από πού.',
 };

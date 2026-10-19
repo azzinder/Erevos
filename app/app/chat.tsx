@@ -17,7 +17,7 @@ import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
-import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, sendFile, takeFile, bytesSource, type Source } from '../lib/attachments';
+import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, sendFile, takeFile, bytesSource, refSource, type Source } from '../lib/attachments';
 import { isNews, messageCameAt } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
@@ -42,6 +42,7 @@ import { CAN_PLACE, findPlace } from '../lib/place';
 import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { searchMessages } from '../lib/message-search';
+import { canForward, forwardToGroup, voiceCopy } from '../lib/forward';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
@@ -62,8 +63,8 @@ import { takeHidden } from '../lib/hidden-handoff';
 import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
-import { isGroupPacket } from '../lib/groups';
-import { takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
+import { isGroupPacket, type GroupInfo } from '../lib/groups';
+import { spaceGroups, takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
 import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, toHex, type CallRelay, type HeldAt, type Relay } from '../lib/relay';
 import { answersAsk, appShown, awayPace, holdReceiver, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
@@ -489,6 +490,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   // The sheet for sending a photo or file, and how photos go.
   const [attaching, setAttaching] = useState(false);
   const [stickering, setStickering] = useState(false);
+  // A message to forward, while its chat is picked, and the space's groups it can go to.
+  const [forwarding, setForwarding] = useState<Message | null>(null);
+  const [forwardGroups, setForwardGroups] = useState<GroupInfo[]>([]);
   // Where the phone was found, to send once it is looked at.
   const [placeFound, setPlaceFound] = useState<Place | null>(null);
   const [polling, setPolling] = useState(false);
@@ -1327,8 +1331,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   function menuActions(message: Message): MenuAction[] {
     const actions: MenuAction[] = [];
     if (theyHave(message) || (message.mine && message.mark === WAITING)) actions.push({ title: t('Reply'), onPress: () => setReplying(message) });
-    if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
+    if (forwardable(message)) actions.push({ title: t('Forward'), onPress: () => startForward(message) });
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
+    if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
     if (CAN_COPY && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
@@ -1354,10 +1359,53 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     });
   }
 
-  // Opens what was picked in Attach once its sheet has gone: on the web, over it, a sheet would not show.
-  function fromAttach(open: () => void) {
-    setAttaching(false);
-    setTimeout(open, Platform.OS === 'web' ? 0 : 300);
+  // A message that can go to another chat as a copy: one that stays (one that disappears is not
+  // copied on), and is here whole. A call's line is the chat's own.
+  const forwardable = (message: Message) =>
+    message.peer.startsWith(CONTACT_PREFIX) && !!message.tag && !message.lasts && !message.until && !isCallLine(message.text) && canForward(message);
+
+  // Asks where a message goes: to a contact of this place, or, outside hidden chats, to a group.
+  function startForward(message: Message) {
+    setForwarding(message);
+    setForwardGroups([]);
+    if (hiddenKey) return;
+    spaceGroups().then(
+      (groups) => setForwardGroups(groups.list().filter((group) => group.status === 'in')),
+      () => setForwardGroups([]),
+    );
+  }
+
+  // Forwards a message to a contact's chat, and shows that chat: its words, sticker, place or a new
+  // poll go anew, and a voice message's sound or a photo's or file's bytes are sent again.
+  async function forwardTo(message: Message, peer: string) {
+    setForwarding(null);
+    setSelected(peer);
+    if (message.voice) {
+      const copy = await voiceCopy(message.voice);
+      if (!copy) setNote(t('This voice message\'s sound is gone.'));
+      else await sendVoice(copy.audio, copy.ms, false, peer, true);
+      return;
+    }
+    const file = message.file;
+    if (file) {
+      await sendAttachment(file.kind, async () => ({ name: file.name, mime: file.mime, source: refSource(file), w: file.w, h: file.h }), peer, true);
+      return;
+    }
+    await send(0, false, { ...contentOf(message), forwarded: true, text: message.text }, peer);
+  }
+
+  // Forwards a message to a group, then shows the group once it went.
+  async function forwardToGroupChat(message: Message, id: string) {
+    setForwarding(null);
+    setNote(t('Forwarding…'));
+    try {
+      await forwardToGroup(id, message);
+    } catch (error) {
+      setNote(notSent(error));
+      return;
+    }
+    setNote('');
+    router.push(`/group?id=${id}`);
   }
 
   // Finds where the phone is, to show before it goes.
@@ -1573,24 +1621,25 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
   }
 
   // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it
-  // is read; `quiet`, it comes without sound, also when it has to wait.
-  // Sends what is typed, or, given `content`, a sticker, a place or a poll with its words (its
-  // emoji, where it is, or what it asks): then what is typed stays.
-  async function send(lasts = 0, quiet = false, content?: Content & { text: string }) {
+  // is read; `quiet`, it comes without sound, also when it has to wait. Given `content`, it sends
+  // that instead, a sticker, a place or a poll with its words (its emoji, where it is, or what it
+  // asks), or words forwarded, and what is typed stays; with `to`, to that chat, not the one shown.
+  async function send(lasts = 0, quiet = false, content?: Content & { text: string }, to = selected) {
     const text = content ? content.text : draft.trim();
-    if (!text || !selected?.startsWith(CONTACT_PREFIX)) return;
+    if (!text || !to?.startsWith(CONTACT_PREFIX)) return;
     setVanishing(false);
     if (!e2e) {
       setNote(t(NO_CORE));
       return;
     }
-    const answer = answering(selected);
+    // A copy answers nothing.
+    const answer = content?.forwarded ? {} : answering(to);
     const carried = content ? contentOf(content) : {};
     const parts = { ...answer, ...carried };
     try {
-      const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts, quiet, ...answer, more: carried });
-      keep(selected, text, tag, timer, parts, !content);
-      const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(selected, contacts));
+      const { tag, timer, way } = await sendToContact(relayTarget(), to.slice(CONTACT_PREFIX.length), text, { lasts, quiet, ...answer, more: carried });
+      keep(to, text, tag, timer, parts, !content);
+      const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(to, contacts));
       setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer).toLowerCase() }) : sent);
     } catch (error) {
       if (!canWait(error) || hiddenKey) {
@@ -1598,10 +1647,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
         return;
       }
       // Nothing could take it now: it waits, and goes by itself (lib/waiting.ts).
-      addMessage(selected, text, true, newTag(), lasts || timerOf(selected), undefined, undefined, WAITING, Date.now(), { quiet, ...parts });
+      addMessage(to, text, true, newTag(), lasts || timerOf(to), undefined, undefined, WAITING, Date.now(), { quiet, ...parts });
       if (!content) setDraft('');
       setReplying(null);
-      setNote(t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason: waitingReason(error, selected, t('It is too long for LoRa.')) }));
+      setNote(t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason: waitingReason(error, to, t('It is too long for LoRa.')) }));
     }
   }
 
@@ -1863,25 +1912,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     setNote(next.has(peer) ? t('Walkie-talkie: hold to talk. It plays on their phone as it comes, if this chat is open there.') : '');
   }
 
-  // Seals a voice message for the contact picked, hands its parts to their phone in turn (nearby,
-  // or through the relay), and keeps its sound sealed. If nothing took all of it, it is not kept.
-  async function sendVoice(audio: Uint8Array, ms: number, talk: boolean) {
-    const peer = selectedContact;
+  // Seals a voice message for the contact picked, or for `to` when it is `forwarded` there, hands
+  // its parts to their phone in turn (nearby, or through the relay), and keeps its sound sealed. If
+  // nothing took all of it, it is not kept.
+  async function sendVoice(audio: Uint8Array, ms: number, talk: boolean, to = selectedContact, forwarded = false) {
+    const peer = to;
     if (!peer) return;
     if (!e2e) {
       setNote(t(NO_CORE));
       return;
     }
     // Picked to go later (laterFor): kept, and handed to the relay for then.
-    if (!talk && laterFor !== null) {
+    if (!talk && !forwarded && laterFor !== null) {
       const at = takeLaterFor();
       if (at !== null) await schedule(peer, at, { voice: await saveClip(audio, ms) });
       return;
     }
     const identity = peer.slice(CONTACT_PREFIX.length);
-    const parts = answering(peer);
+    const parts: Parts = forwarded ? { forwarded } : answering(peer);
     try {
-      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here(), talk, ...parts });
+      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here(), talk, re: parts.re, forwarded });
       const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets, true);
       addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms), undefined, 0, Date.now(), parts);
       setReplying(null);
@@ -1983,11 +2033,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
 
   type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; close?: () => void };
 
-  // Sends a photo or file to the contact picked: its chunks to our relay, then, end-to-end
-  // encrypted, where they are and their key. Kept here as it went. If any of it cannot go,
-  // nothing is kept.
-  async function sendAttachment(kind: FileKind, get: () => Promise<Picked | null>) {
-    const peer = selectedContact;
+  // Sends a photo or file to the contact picked, or to `to` when it is `forwarded` there: its chunks
+  // to our relay, then, end-to-end encrypted, where they are and their key. Kept here as it went.
+  // If any of it cannot go, nothing is kept.
+  async function sendAttachment(kind: FileKind, get: () => Promise<Picked | null>, to = selectedContact, forwarded = false) {
+    const peer = to;
     const target = relayTarget();
     const own = ownRelay();
     if (!peer || !target || !own) {
@@ -2014,8 +2064,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
     if (!picked) return;
     const what = kind === 'photo' ? 'photo' : 'file';
     // Picked to go later (laterFor): kept here, and handed to the relay for then.
-    const later = takeLaterFor();
-    if (laterFor !== null && later === null) {
+    const later = forwarded ? null : takeLaterFor();
+    if (!forwarded && laterFor !== null && later === null) {
       picked.close?.();
       return;
     }
@@ -2038,7 +2088,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
       return;
     }
     let kept: FileRef | null = null;
-    const parts = answering(peer);
+    const parts: Parts = forwarded ? { forwarded } : answering(peer);
     try {
       if (picked.source.size > MAX_FILE) throw new TooLargeError();
       setNote(what === 'photo' ? t('Sending the photo…') : t('Sending the file…'));
@@ -2051,7 +2101,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
       });
       kept = sent.ref;
       const identity = peer.slice(CONTACT_PREFIX.length);
-      const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { at: here(), ...parts });
+      const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { at: here(), re: parts.re, forwarded });
       await handOver(e2e, target, identity, sealed, [sealed.packet]);
       addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, sent.ref, 0, Date.now(), parts);
       setReplying(null);
@@ -3226,7 +3276,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
                   </Text>
                 )}
                 <Text style={[ink, styles.time, message.sticker && { color: colors.textMuted }]}>
-                  {[message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}
+                  {[message.forwarded ? t('Forwarded') : '', message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}
                 </Text>
               </Pressable>
               <Reactions
@@ -3339,9 +3389,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
         note={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
         more={
           <>
-            <Button title={t('Sticker')} kind="secondary" compact onPress={() => fromAttach(() => setStickering(true))} />
-            {CAN_PLACE ? <Button title={t('Location')} kind="secondary" compact onPress={() => fromAttach(() => void locate())} /> : null}
-            <Button title={t('Poll')} kind="secondary" compact onPress={() => fromAttach(() => setPolling(true))} />
+            <Button title={t('Sticker')} kind="secondary" compact onPress={() => afterSheet(() => setStickering(true))} />
+            {CAN_PLACE ? <Button title={t('Location')} kind="secondary" compact onPress={() => afterSheet(() => void locate())} /> : null}
+            <Button title={t('Poll')} kind="secondary" compact onPress={() => afterSheet(() => setPolling(true))} />
           </>
         }
       />
@@ -3368,6 +3418,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, linkNumber = '
       </Sheet>
       <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
         <StickerPicker onPick={sendSticker} />
+      </Sheet>
+      <Sheet visible={!!forwarding && shown} onClose={() => setForwarding(null)} title={t('Forward to')}>
+        {forwarding ? (
+          <>
+            <Text variant="caption" tone="muted" numberOfLines={2}>
+              {messageLine(forwarding)}
+            </Text>
+            {shownContacts
+              .filter((c) => !c.request)
+              .map((c) => (
+                <TextButton key={c.identity} title={label(`${CONTACT_PREFIX}${c.identity}`, shownContacts)} onPress={() => void forwardTo(forwarding, `${CONTACT_PREFIX}${c.identity}`)} />
+              ))}
+            {forwardGroups.map((group) => (
+              <TextButton key={group.id} title={t('{name} (group)', { name: group.name })} onPress={() => void forwardToGroupChat(forwarding, group.id)} />
+            ))}
+            <Text variant="caption" tone="muted">
+              {t('It goes as a copy, sent anew and end-to-end encrypted, marked as forwarded but not from where.')}
+            </Text>
+          </>
+        ) : null}
       </Sheet>
       <FileViewer
         file={viewing?.file ?? null}

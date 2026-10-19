@@ -68,9 +68,9 @@ export type Kept = [
  * our reaction to it, and `o`, theirs; `n`, when it was pinned to the top of the chat; `f` 1 when it
  * is starred, on this phone only; `s`, the name of the sticker it is (its text is the sticker's emoji);
  * `l`, the place it is (its text says where); `k`, the poll it is (its text asks it), with `a`, the
- * options we chose, and `b`, theirs.
+ * options we chose, and `b`, theirs; `d` 1 when it was forwarded from another chat.
  */
-type More = { h?: string; r?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[] };
+type More = { h?: string; r?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; d?: 1 };
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -115,12 +115,14 @@ export type Parts = {
   poll?: Poll;
   myVote?: number[];
   theirVote?: number[];
+  /** Forwarded from another chat: its sender's, or this phone's. */
+  forwarded?: boolean;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, forwarded }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
@@ -132,6 +134,7 @@ function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place
     ...(poll ? { k: poll } : {}),
     ...(poll && myVote?.length ? { a: myVote } : {}),
     ...(poll && theirVote?.length ? { b: theirVote } : {}),
+    ...(forwarded ? { d: 1 as const } : {}),
   };
 }
 
@@ -147,6 +150,7 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.k ? { poll: more.k } : {}),
     ...(more?.a ? { myVote: more.a } : {}),
     ...(more?.b ? { theirVote: more.b } : {}),
+    ...(more?.d ? { forwarded: true } : {}),
   };
 }
 
@@ -182,7 +186,7 @@ const HELD_ID = /^[0-9a-f]{32}(?:,[0-9a-f]{32}){0,63}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; d?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
   const poll = checkedPoll(v.k);
@@ -202,6 +206,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(poll ? { k: poll } : {}),
     ...(ours?.length ? { a: ours } : {}),
     ...(theirs?.length ? { b: theirs } : {}),
+    ...(v.d === 1 ? { d: 1 as const } : {}),
   };
   return Object.keys(more).length > 0 ? more : undefined;
 }

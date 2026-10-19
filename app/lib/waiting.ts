@@ -126,7 +126,7 @@ export async function holdLater(e2e: E2E, place: SendPlace, identity: string, me
   if (!sends || !queue?.sender) throw new NoWayError();
   const to = contactTarget(sends, queue);
   if (!(await canHoldAt(to.via ?? to))) throw new CannotHoldError(t('the relay at {url} cannot keep messages for later: update it', { url: (to.via ?? to).url }));
-  const options = { tag: message.tag, lasts: message.lasts ?? 0, due: message.at, re: message.re };
+  const options = { tag: message.tag, lasts: message.lasts ?? 0, due: message.at, re: message.re, forwarded: message.forwarded };
   let sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; timer: number };
   let packets: Uint8Array[];
   if (message.voice) {
@@ -190,7 +190,7 @@ function throughRelay(place: SendPlace, queue: { sender: string; relay: string; 
 // through the relay, after the conversation's first packet if the relay has not taken that yet.
 // Returns how long it lasts once read.
 async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Message): Promise<number> {
-  const options = { at: place.here, tag: message.tag, lasts: message.lasts ?? 0, re: message.re };
+  const options = { at: place.here, tag: message.tag, lasts: message.lasts ?? 0, re: message.re, forwarded: message.forwarded };
   let sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; tag: string; timer: number };
   let packets: Uint8Array[];
   let worthCarrying = true;

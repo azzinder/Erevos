@@ -702,7 +702,7 @@ export class E2E {
     audio: Uint8Array,
     ms: number,
     from: string,
-    { lasts = 0, at = { relay: '', relayKey: '' }, talk = false, tag: given, due = 0, re = '' }: { lasts?: number; at?: Where; talk?: boolean; tag?: string; due?: number; re?: string } = {},
+    { lasts = 0, at = { relay: '', relayKey: '' }, talk = false, tag: given, due = 0, re = '', forwarded = false }: { lasts?: number; at?: Where; talk?: boolean; tag?: string; due?: number; re?: string; forwarded?: boolean } = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -726,6 +726,7 @@ export class E2E {
         ...SAYS_NOTHING, call: null, group: null,
         due,
         re: isTag(re) ? re : '',
+        more: forwarded ? { forwarded: true as const } : {},
       }));
       const packets = await this.sealFor(contact, messages, true);
       const first = contact.first ? fromBase64(contact.first) : null;
@@ -742,7 +743,7 @@ export class E2E {
     identity: string,
     offer: FileOffer,
     from: string,
-    { lasts = 0, at = { relay: '', relayKey: '' }, tag: given, due = 0, re = '' }: { lasts?: number; at?: Where; tag?: string; due?: number; re?: string } = {},
+    { lasts = 0, at = { relay: '', relayKey: '' }, tag: given, due = 0, re = '', forwarded = false }: { lasts?: number; at?: Where; tag?: string; due?: number; re?: string; forwarded?: boolean } = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -750,7 +751,7 @@ export class E2E {
       if (!isTimer(lasts)) throw new Error(t('Not a time Erevos keeps messages for.'));
       const tag = isTag(given) ? given : newTag();
       const { timer, timerAt } = contact;
-      const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...SAYS_NOTHING, call: null, group: null, due, re: isTag(re) ? re : '' };
+      const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...SAYS_NOTHING, call: null, group: null, due, re: isTag(re) ? re : '', more: forwarded ? { forwarded: true as const } : {} };
       const [packet] = await this.sealFor(contact, [message], true);
       const first = contact.first ? fromBase64(contact.first) : null;
       const { sender, relay, relayKey } = contact;

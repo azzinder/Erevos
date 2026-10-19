@@ -268,11 +268,16 @@ Press and hold a message for its menu: the reactions at the top, then what you c
   the relay nor their phone nearby can take it, nothing changes.
 - **Reply:** your next message answers it, and shows it quoted above your words, on both phones. Tap the quote to go
   to the message it answers; **✕** drops it. An Erevos from before this shows the answer without the quote.
-- **Pin:** pins it to the top of the chat, on both phones; either of you can **Unpin** it. With more than one pinned,
-  the latest shows; tap it to go to it, and the next one shows.
+- **Forward:** sends a copy of it to another chat: pick a contact, or a group. Its words, sticker or place go anew, a
+  poll as a new one with no answers yet, and a voice message's sound or a photo's or file's bytes are sent again,
+  encrypted with a new key, so nothing ties the copy to the message it came from. In a contact's chat the copy says
+  **Forwarded** under it, not from where; an Erevos from before this shows it without that. A message that disappears
+  is not forwarded, and from hidden chats a message goes only to the same hidden chats.
 - **Star:** stars it, on this phone only, to find it again: **Starred messages** in the home screen's menu lists them
   from all your chats, and a chat's details list its own. A tap goes to the message. Hidden chats' starred messages
   show only in their chats' details.
+- **Pin:** pins it to the top of the chat, on both phones; either of you can **Unpin** it. With more than one pinned,
+  the latest shows; tap it to go to it, and the next one shows.
 - **Copy:** puts its words on the clipboard, to paste in another app. On Android the copy is marked private, so the
   phone's notice of it does not show the words, but any app that reads the clipboard can read them.
 - **Delete:** on this phone, or on both, as above.

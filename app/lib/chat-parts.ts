@@ -24,13 +24,14 @@ export type Vote = { tag: string; chose: number[] };
  * What a contact's message carries beyond what lib/e2e.ts says itself, each in a field of its own
  * that an Erevos from before leaves alone. With words, which say it to an Erevos from before and
  * show nowhere in this one: a sticker, whose words are its emoji (lib/stickers.ts), a place, whose
- * words are where it is, or a poll, whose words are its question and options. With no words: a
- * pin, a vote, or that they are typing to us now (`typing`).
+ * words are where it is, or a poll, whose words are its question and options. With words, a voice
+ * message or a photo or file: that it was forwarded from another chat (`forwarded`). With no words:
+ * a pin, a vote, or that they are typing to us now (`typing`).
  */
-export type Carried = { sticker?: string; place?: Place; poll?: Poll; pin?: Pin; vote?: Vote; typing?: true };
+export type Carried = { sticker?: string; place?: Place; poll?: Poll; forwarded?: true; pin?: Pin; vote?: Vote; typing?: true };
 
 /** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
-export type Content = Pick<Carried, 'sticker' | 'place' | 'poll'>;
+export type Content = Pick<Carried, 'sticker' | 'place' | 'poll'> & { forwarded?: boolean };
 
 export const MAX_QUESTION = 300;
 export const MAX_OPTION = 100;
@@ -64,19 +65,20 @@ export function carriedOf(value: Record<string, unknown>): Carried {
     ...(poll ? { poll } : {}),
     ...(isTag(pin?.tag) && typeof pin.on === 'boolean' ? { pin: { tag: pin.tag, on: pin.on } } : {}),
     ...(isTag(vote?.tag) && chose ? { vote: { tag: vote.tag, chose } } : {}),
+    ...(value.forwarded === true ? { forwarded: true as const } : {}),
     ...(value.typing === true ? { typing: true as const } : {}),
   };
 }
 
 /** What a kept message carries with its words, as it goes again. */
-export function contentOf({ sticker, place, poll }: Content): Content {
-  return carriedOf({ sticker, place, poll });
+export function contentOf({ sticker, place, poll, forwarded }: Content): Carried {
+  return carriedOf({ sticker, place, poll, forwarded });
 }
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, place, poll, pin, vote, typing } = carriedOf(carried);
-  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}) };
+  const { sticker, place, poll, forwarded, pin, vote, typing } = carriedOf(carried);
+  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(forwarded ? { forwarded } : {}) };
   return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(typing ? { typing } : {}) };
 }
 

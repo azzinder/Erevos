@@ -198,6 +198,17 @@ t('keeps the sticker or the place a message is, and drops one of the wrong shape
   assert.deepEqual([odd.sticker, odd.place], [undefined, undefined]);
 });
 
+t('keeps that a message was forwarded', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  await history.add({ peer: 'contact:aa', text: 'look', mine: true, at: 1, tag: newTag(), forwarded: true });
+  await history.add({ peer: 'contact:aa', text: 'mine', mine: true, at: 2, tag: newTag() });
+  assert.deepEqual(
+    (await History.open('space', 0, key)).messages().map((m) => m.forwarded),
+    [true, undefined],
+  );
+});
+
 t('keeps a poll and the votes on it, ours and theirs, as the poll allows', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);
