@@ -24,6 +24,7 @@ import { forgetSpaceChats } from '../lib/space-chats';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
 import { forgetSpaceGroups } from '../lib/space-groups';
+import { startPublicDoors } from '../lib/space-public-groups';
 import { applyTor } from '../lib/tor';
 import { loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
@@ -266,11 +267,13 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
 
 // Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), from the
 // relay and from phones nearby (lib/nearby-links.ts), and tells it whether the app shows: only then
-// do contacts hear the phone is open. SMS sent for later go from here too (lib/sms-later.ts).
+// do contacts hear the phone is open. SMS sent for later go from here too (lib/sms-later.ts), and
+// the doors of the public groups the space owns are looked at (lib/space-public-groups.ts).
 function Receiver() {
   useEffect(() => startReceiver(), []);
   useEffect(() => startNearbyLinks(), []);
   useEffect(() => startSmsLater(), []);
+  useEffect(() => startPublicDoors(), []);
   // On Android, it goes on while Erevos is in the background, so a call rings (lib/background.ts).
   useEffect(() => startBackground(), []);
   useEffect(() => {

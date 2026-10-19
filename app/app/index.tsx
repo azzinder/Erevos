@@ -7,7 +7,7 @@ import { LockIcon, MoreIcon, PlusIcon, SearchIcon, TimerIcon } from '../componen
 import { KeyFace } from '../components/key-face';
 import { font, fontStyle, Sheet, Text } from '../components/ui';
 import { ask } from '../lib/alert';
-import { canGroup, hasCore } from '../lib/core';
+import { canGroup, canPublicGroup, hasCore } from '../lib/core';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
@@ -44,6 +44,7 @@ type Relay = 'ready' | 'no-queue' | 'none';
 // `phone`: only on a phone, as it needs its radio. `links`: where there are links to phones nearby.
 const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean }[] = [
   { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group' },
+  { title: mark('Public groups'), detail: mark('Make a group anyone with its link can join, or join one by a link'), href: '/public-groups' },
   {
     title: mark('Nearby phones'),
     detail: HAS_RADIO ? mark('Your contacts over Bluetooth and Wi-Fi, without internet') : mark('Your contacts on the same Wi-Fi, without internet'),
@@ -323,7 +324,7 @@ export default function Home() {
             {LANG_LABELS[lang()]}
           </Text>
         </Pressable>
-        {MENU.filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || canGroup())).map((item) => (
+        {MENU.filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || canGroup()) && (item.href !== '/public-groups' || canPublicGroup())).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"
