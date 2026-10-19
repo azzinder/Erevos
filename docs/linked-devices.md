@@ -87,12 +87,17 @@ Linking, by QR code and a safety check:
   same tag, so both show the same marks; one the contact cannot be reached for now is marked Waiting
   there and goes as everything that waits does (lib/waiting.ts). A photo or file is first taken from
   the computer's relay to the phone, then sent on from the phone's. What only says that messages
-  were read, deletes messages on both phones, or sets the timer goes on as it is, and the phone does
-  the same in its own history. What only says that messages came is not sent on: the phone said it.
+  were read, deletes messages on both phones, sets the timer, reacts to a message, pins it or votes
+  on a poll goes on as it is, and the phone does the same in its own history. What only says that
+  messages came is not sent on: the phone said it.
 - **Written on the phone:** once the phone has kept it as sent, each linked device is told, and shows
   it as its own. A photo or file goes to the devices as a copy on the relay of their own, since the
-  contact deletes theirs once taken. That the phone read a chat, or deleted messages on both phones,
-  goes to the devices too.
+  contact deletes theirs once taken. That the phone read a chat, deleted messages on both phones,
+  reacted, pinned or voted goes to the devices too, and each does it as its own.
+- **Done on the phone only:** a star, or deleting a message or a chat's messages on the phone alone,
+  is nothing the contact hears of; it goes to the devices as a change (`changed`, by the chat and
+  the message's tag), and each does the same. A device's own stars and deletes stay on it. Hidden
+  chats are never told of.
 
 A photo or file that came, or a copy of one the phone put on the relay for its devices, is left there
 when taken until each device told of it said it took it (in its link), and the phone took it too if
@@ -180,6 +185,17 @@ in order, told apart by sender and tag. When a device is linked, or caught up af
 full, it is told every group first; their messages up to then go in the history packs with the
 chats', from the period chosen, and those after as they come.
 
+What members do later to a message the devices have (a reaction, a vote, a pin, deleting it for
+everyone), and what the phone does to it alone (a star, deleting it there), reaches the devices
+too. The phone keeps, in memory, what was done to each group's messages as last told, and for each
+device a mark of it: what changed since goes, by tag, only what changed of each message. A device
+whose mark differs from what the phone has (the app closed before it told a change, or the device
+was caught up after its outbox was full) is told the group's marks whole: what was done to each
+message that has anything, and the tags of all of them, so it lets go of what was done to the
+others and of the messages the phone no longer has (but its own of the last minutes, which may not
+have reached the phone yet). The messages told after carry what was done to them, as do those of
+the history packs. Edits are not there: no message is edited in Erevos yet.
+
 What is written or done on a device goes to the phone, which does it as its own: a message goes to
 the group from the account, with the tag the device kept it by, so the device does not keep it
 twice, and with what it answers or is beyond its words (lib/group-parts.ts); a reaction, a vote, a
@@ -192,15 +208,13 @@ took it, as for a chat's.
 
 A device makes and joins no group: it has no MLS state of its own. New groups, public groups
 (lib/public-groups.ts: their keys made for each group, their doors and moderation) and group calls
-stay on the phone for now; public groups are not told to the devices at all. What changes a message
-already told (reactions, votes, pins, deleting for everyone, from members or the phone) is not told
-again yet: a device shows only those done on it. Telling them needs the phone to say what changed
-in a message after it went, the next step.
+stay on the phone for now; public groups are not told to the devices at all.
 
 ### Older versions
 
 Contacts on any older Erevos see nothing new: same identity, same queue, same ratchet, same safety
-number. Both the phone and the computer need this version to link.
+number. Both the phone and the computer need this version to link. A device from before changes in
+messages told already leaves `changed` alone, and shows those done on it only, as before.
 
 ### Backups
 

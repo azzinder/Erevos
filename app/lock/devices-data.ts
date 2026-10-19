@@ -14,8 +14,12 @@ import { sealedFile } from './sealed-file';
 /** What of the history still goes to a device: from `since` (milliseconds, 0 for all of it) up to `upTo`, photos and files too or not, and how many of those messages went. */
 export type Job = { since: number; files: boolean; upTo: number; done: number };
 
-/** On the primary: what a device was last told of a group: a mark of what it said of it (lib/link-wire.ts, mirrorMark), and its last message told. */
-export type Told = { meta: string; last: string };
+/**
+ * On the primary: what a device was last told of a group: a mark of what it said of it
+ * (lib/link-wire.ts, mirrorMark), its last message told and when that came, and a mark of what was
+ * done to its messages as told (marksDigest; empty when not known).
+ */
+export type Told = { meta: string; last: string; at: number; marks: string };
 
 export type Peer = {
   /** The identity of its link key, hex. */
@@ -109,7 +113,7 @@ function checkedTold(value: unknown): Record<string, Told> {
   if (!value || typeof value !== 'object') return told;
   for (const [id, t] of Object.entries(value)) {
     const v = (t ?? {}) as Partial<Record<keyof Told, unknown>>;
-    if (isGroupId(id) && isText(v.meta) && isText(v.last)) told[id] = { meta: v.meta, last: v.last };
+    if (isGroupId(id) && isText(v.meta) && isText(v.last)) told[id] = { meta: v.meta, last: v.last, at: isTime(v.at) ? v.at : 0, marks: isText(v.marks) ? v.marks : '' };
   }
   return told;
 }

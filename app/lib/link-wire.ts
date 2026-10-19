@@ -1,8 +1,9 @@
 import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, type Avatar, type Contact, type Spare } from '../lock/e2e-data';
-import { MAX_GROUP_MESSAGES, type Group, type GroupMessage, type GroupParts } from '../lock/group-data';
-import { isTag, type Mark } from '../lock/history';
+import { MAX_GROUP_MESSAGES, type Group, type GroupMarks, type GroupMessage, type GroupParts } from '../lock/group-data';
+import { isReactionEmoji, isTag, type Mark, type Parts as ChatParts } from '../lock/history';
 import { checkedLook, type Look } from '../theme/look';
 import { offerRef, readOffer, type FileFrom, type FileOffer } from './attachments';
+import { carriedOf, checkedChoices } from './chat-parts';
 import { checkContact, checkSpare, type ContactCode } from './contact-code';
 import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { groupPartsOf, markedOf, type Marked } from './group-parts';
@@ -14,7 +15,8 @@ import { cleanGroupName, isGroupId } from './group-signal';
 // holds the account): its first message (`hello`), the contacts (`contacts`), a contact's message it
 // opened (`in`), one it sealed for a contact (`out`), a pack of the history on the relay's file store
 // (`history`), that a call was answered or turned down on another device (`call`), what changed in
-// the groups (`groups`), where it is now (`here`) and that it unlinked the device (`bye`). From a
+// the groups (`groups`), what changed in messages told already (`changed`), where it is now
+// (`here`) and that it unlinked the device (`bye`). From a
 // linked device: that the codes match (`ready`), a message for a contact (`send`), a contact to add
 // (`add`), a change to a contact (`set`), what to do in a group (`group`), the photos and files it
 // took (`took`), where it is (`here`) and that it unlinked itself (`bye`). An envelope too large for
@@ -24,7 +26,10 @@ import { cleanGroupName, isGroupId } from './group-signal';
 // queue is, which only the primary needs. Which messages go on, and which are worth telling the
 // other devices, is decided from that JSON alone, so what a later version adds to a message goes on
 // unread. A call's signals go too, as lib/linked-calls.ts decides on the primary. A group's
-// messages go as the primary keeps them (lib/groups.ts), each told apart by its sender and tag.
+// messages go as the primary keeps them (lib/groups.ts), each told apart by its sender and tag,
+// with what was done to them since (reactions, votes, a pin, the primary's star); what is done to
+// one later goes as a change to it, by its tag, as does a star or deleting on the primary only in a
+// chat, which the contact is not told of. A version from before leaves `changed` alone.
 // Self-contained on purpose, so it can run under plain Node for checks.
 
 /** Where a device reads: the sender id of its queue, the relay (ws:// or wss://), that relay's key (base64url, or empty), and its backup queue. */
@@ -57,8 +62,9 @@ export type Envelope =
   | { k: 'history'; offer: FileOffer; last: boolean }
   | { k: 'took'; ids: string[] }
   | { k: 'call'; id: string; done: 'answered' | 'declined' }
-  | { k: 'groups'; list: GroupMirror[]; gone: string[]; entries: GroupEntry[] }
+  | { k: 'groups'; list: GroupMirror[]; gone: string[]; entries: GroupEntry[]; all?: true }
   | { k: 'group'; id: string; ask: GroupAsk }
+  | { k: 'changed'; chats: ChatChange[]; groups: GroupChange[]; whole: WholeGroup[] }
   | { k: 'here' }
   | { k: 'bye' };
 
@@ -70,9 +76,38 @@ export type GroupMirror = Pick<Group, 'id' | 'name' | 'admin' | 'status' | 'aske
 
 /**
  * A group's message as it goes to the devices: a photo, file or voice message as where it waits on
- * the relay, and what it answers or is beyond its words (lib/group-parts.ts).
+ * the relay, what it answers or is beyond its words (lib/group-parts.ts), and what was done to it
+ * since (`marks`, always said by a version that says them).
  */
-export type GroupEntry = { group: string; at: number; from: string; text: string; tag: string; note?: boolean; ms?: number; file?: FileOffer; parts?: GroupParts };
+export type GroupEntry = { group: string; at: number; from: string; text: string; tag: string; note?: boolean; ms?: number; file?: FileOffer; parts?: GroupParts; marks?: GroupMarked };
+
+/** What was done to a group's message since it went, as the devices are told of it: each member's reaction and vote, its pin, and the primary's star. */
+export type GroupMarked = Pick<GroupMarks, 'reactions' | 'votes' | 'pinned' | 'starred'>;
+
+/**
+ * What changed of a group's message the devices were told of, by its tag: each member's reactions
+ * and votes, and its pin, as they are now (null: none any more); the primary's star; or that it is
+ * gone there.
+ */
+export type GroupChange = {
+  group: string;
+  tag: string;
+  gone?: true;
+  reactions?: Record<string, string> | null;
+  votes?: Record<string, number[]> | null;
+  pinned?: number | null;
+  starred?: boolean;
+};
+
+/** A group whose marks are said whole, with the tags of all its messages: a device lets go of the marks not said, and of the messages not among them. */
+export type WholeGroup = { group: string; tags: string[] };
+
+/**
+ * What was done on the primary only to one of a chat's messages, which the contact is not told of:
+ * starred there or not (`starred`), or deleted there (`gone`); with no tag, the chat's messages
+ * deleted there.
+ */
+export type ChatChange = { c: string; tag?: string; starred?: boolean; gone?: true };
 
 /**
  * What a linked device has the primary do in a group: write in it, with the tag the device kept it
@@ -103,13 +138,20 @@ const MAX_PARTS = 128;
 const PARTS_STALE = 30 * 60_000;
 /** The most files one `took` says. */
 export const MAX_TOOK = 50;
-// About how large the messages of one `groups` grow, so that one goes in a few parts.
+// About how large the messages of one `groups`, or the changes of one `changed`, grow, so that one goes in a few parts.
 const GROUP_BYTES = 200 * 1024;
+// The most members a group's message is said to have a reaction or a vote of, as lock/group-data.ts keeps.
+const MAX_MARKS = 100;
+// How long a device keeps a message of its own that the primary, saying a group's marks whole, does
+// not have: what the device wrote may not have reached it yet.
+const OWN_KEPT = 10 * 60_000;
 
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isHex = (v: unknown, length: number): v is string => isText(v) && v.length === length && /^[0-9a-f]+$/.test(v);
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 const isObject = (v: unknown): v is Json => !!v && typeof v === 'object' && !Array.isArray(v);
+// A group message's tag as a member's phone may make it.
+const isGroupTag = (v: unknown): v is string => isText(v) && v.length > 0 && v.length <= 64;
 
 /** A place as said, checked: null when it is not one. */
 export function checkedPlace(value: unknown): Place | null {
@@ -225,11 +267,17 @@ function checkedEnvelope(v: Json): Envelope | null {
       const list = Array.isArray(v.list) ? v.list.map(checkedMirror).filter((g): g is GroupMirror => g !== null) : [];
       const gone = Array.isArray(v.gone) ? v.gone.filter(isGroupId) : [];
       const entries = Array.isArray(v.entries) ? v.entries.map(checkedGroupEntry).filter((e): e is GroupEntry => e !== null) : [];
-      return { k: 'groups', list, gone, entries };
+      return { k: 'groups', list, gone, entries, ...(v.all === true ? { all: true as const } : {}) };
     }
     case 'group': {
       const ask = checkedAsk(v.ask);
       return isGroupId(v.id) && ask ? { k: 'group', id: v.id, ask } : null;
+    }
+    case 'changed': {
+      const chats = Array.isArray(v.chats) ? v.chats.map(checkedChatChange).filter((c): c is ChatChange => c !== null) : [];
+      const groups = Array.isArray(v.groups) ? v.groups.map(checkedGroupChange).filter((c): c is GroupChange => c !== null) : [];
+      const whole = Array.isArray(v.whole) ? v.whole.map(checkedWhole).filter((w): w is WholeGroup => w !== null) : [];
+      return chats.length + groups.length + whole.length > 0 ? { k: 'changed', chats, groups, whole } : null;
     }
     case 'here':
     case 'bye':
@@ -280,7 +328,62 @@ export function checkedGroupEntry(value: unknown): GroupEntry | null {
     ...(ms ? { ms } : {}),
     ...(file ? { file } : {}),
     ...(parts ? { parts } : {}),
+    ...(isObject(v.marks) ? { marks: checkedMarks(v.marks) } : {}),
   };
+}
+
+// What each member did, by identity ('' for the account), of what passes `check`; none when empty.
+function byMember<T>(value: unknown, check: (v: unknown) => T | null): Record<string, T> | undefined {
+  if (!isObject(value)) return undefined;
+  const kept: Record<string, T> = {};
+  for (const [who, v] of Object.entries(value).slice(0, MAX_MARKS)) {
+    const checked = who === '' || isHex(who, 64) ? check(v) : null;
+    if (checked !== null) kept[who] = checked;
+  }
+  return Object.keys(kept).length > 0 ? kept : undefined;
+}
+
+const reactionOf = (v: unknown) => (isReactionEmoji(v) ? v : null);
+const voteOf = (v: unknown) => {
+  const chose = checkedChoices(v);
+  return chose && chose.length > 0 ? chose : null;
+};
+
+function checkedMarks(v: Json): GroupMarked {
+  const reactions = byMember(v.reactions, reactionOf);
+  const votes = byMember(v.votes, voteOf);
+  return {
+    ...(reactions ? { reactions } : {}),
+    ...(votes ? { votes } : {}),
+    ...(isTime(v.pinned) && v.pinned > 0 ? { pinned: v.pinned } : {}),
+    ...(v.starred === true ? { starred: true as const } : {}),
+  };
+}
+
+function checkedGroupChange(value: unknown): GroupChange | null {
+  if (!isObject(value) || !isGroupId(value.group) || !isGroupTag(value.tag)) return null;
+  const v = value;
+  const change: GroupChange = { group: v.group as string, tag: v.tag as string };
+  if (v.gone === true) return { ...change, gone: true };
+  if (v.reactions === null || isObject(v.reactions)) change.reactions = byMember(v.reactions, reactionOf) ?? null;
+  if (v.votes === null || isObject(v.votes)) change.votes = byMember(v.votes, voteOf) ?? null;
+  if (v.pinned === null || (isTime(v.pinned) && v.pinned > 0)) change.pinned = v.pinned as number | null;
+  if (typeof v.starred === 'boolean') change.starred = v.starred;
+  return Object.keys(change).length > 2 ? change : null;
+}
+
+function checkedWhole(value: unknown): WholeGroup | null {
+  if (!isObject(value) || !isGroupId(value.group) || !Array.isArray(value.tags)) return null;
+  return { group: value.group as string, tags: value.tags.filter(isGroupTag).slice(-MAX_GROUP_MESSAGES) };
+}
+
+function checkedChatChange(value: unknown): ChatChange | null {
+  if (!isObject(value) || !isHex(value.c, 64)) return null;
+  const c = value.c;
+  if (value.tag === undefined) return value.gone === true ? { c, gone: true } : null;
+  if (!isTag(value.tag)) return null;
+  if (value.gone === true) return { c, tag: value.tag, gone: true };
+  return typeof value.starred === 'boolean' ? { c, tag: value.tag, starred: value.starred } : null;
 }
 
 // What a group's message is or carries beyond itself, checked (lib/group-parts.ts): none when it is nothing.
@@ -455,7 +558,10 @@ export function isWorthTelling(m: Json): boolean {
   return Object.keys(m).some((key) => !QUIET_KEYS.has(key));
 }
 
-/** One message of the history as it goes in a pack: its sound with it, a photo or file as a copy on the relay. */
+/**
+ * One message of the history as it goes in a pack: its sound with it, a photo or file as a copy on
+ * the relay, and what it is or carries beyond its words, with what was done to it (lock/history.ts).
+ */
 export type PackEntry = {
   peer: string;
   text: string;
@@ -467,6 +573,7 @@ export type PackEntry = {
   mark?: Mark;
   voice?: { ms: number; data: string };
   file?: FileOffer;
+  parts?: ChatParts;
 };
 
 const PEER = /^contact:[0-9a-f]{64}$/;
@@ -486,6 +593,7 @@ export function readPack(bytes: Uint8Array): PackEntry[] {
     const file = e.file !== undefined ? readOffer(e.file) : null;
     if (e.file !== undefined && !file) return [];
     const mark = e.mark === 1 || e.mark === 2 ? e.mark : 0;
+    const parts = isObject(e.parts) ? chatPartsOf(e.parts) : {};
     return [
       {
         peer: e.peer,
@@ -498,9 +606,34 @@ export function readPack(bytes: Uint8Array): PackEntry[] {
         mark,
         ...(voice ? { voice } : {}),
         ...(file ? { file } : {}),
+        ...(Object.keys(parts).length > 0 ? { parts } : {}),
       },
     ];
   });
+}
+
+/** What a chat's message is or carries beyond its words, and what was done to it, as kept (lock/history.ts), each checked or left out. */
+export function chatPartsOf(v: Json): ChatParts {
+  const { sticker, place, poll, preview, forwarded } = carriedOf(v);
+  const vote = (chose: unknown) => {
+    const checked = poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null;
+    return checked && checked.length > 0 ? checked : null;
+  };
+  const [myVote, theirVote] = [vote(v.myVote), vote(v.theirVote)];
+  return {
+    ...(isTag(v.re) ? { re: v.re } : {}),
+    ...(isReactionEmoji(v.myReaction) ? { myReaction: v.myReaction } : {}),
+    ...(isReactionEmoji(v.theirReaction) ? { theirReaction: v.theirReaction } : {}),
+    ...(isTime(v.pinned) && v.pinned > 0 ? { pinned: v.pinned } : {}),
+    ...(v.starred === true ? { starred: true } : {}),
+    ...(sticker ? { sticker } : {}),
+    ...(place ? { place } : {}),
+    ...(poll ? { poll } : {}),
+    ...(myVote ? { myVote } : {}),
+    ...(theirVote ? { theirVote } : {}),
+    ...(preview ? { preview } : {}),
+    ...(forwarded ? { forwarded: true } : {}),
+  };
 }
 
 /** A pack of messages, with those of groups, as it goes to the relay's file store. */
@@ -530,11 +663,14 @@ export function lastKey(group: Pick<Group, 'messages'>): string {
   return last ? groupMessageKey(last) : '';
 }
 
-/** A group's messages after the one `last` names (groupMessageKey): all of them when that one is not there. */
-export function messagesAfter(messages: GroupMessage[], last: string): GroupMessage[] {
+/**
+ * A group's messages after the one `last` names (groupMessageKey). Once that one is gone, those from
+ * when it came (`at`) on, or, not knowing when, all of them.
+ */
+export function messagesAfter(messages: GroupMessage[], last: string, at = 0): GroupMessage[] {
   if (!last) return messages;
-  for (let at = messages.length - 1; at >= 0; at--) if (groupMessageKey(messages[at]) === last) return messages.slice(at + 1);
-  return messages;
+  for (let i = messages.length - 1; i >= 0; i--) if (groupMessageKey(messages[i]) === last) return messages.slice(i + 1);
+  return at > 0 ? messages.filter((m) => m.at >= at) : messages;
 }
 
 /** A group as the primary tells its devices of it, with its members as its MLS state has them. */
@@ -545,7 +681,11 @@ export function groupMirror(group: Group, members: { leaf: number; about: { id: 
 
 /** A short mark of what a group's mirror says, so it is told again only once that changed. */
 export function mirrorMark(mirror: GroupMirror): string {
-  const text = JSON.stringify(mirror);
+  return digest(JSON.stringify(mirror));
+}
+
+// Two 32-bit hashes of a text, as 16 hex digits: the same text, the same mark.
+function digest(text: string): string {
   let a = 0x811c9dc5;
   let b = 0x9747b28c ^ text.length;
   for (let i = 0; i < text.length; i++) {
@@ -556,37 +696,175 @@ export function mirrorMark(mirror: GroupMirror): string {
   return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0');
 }
 
-/** What changed in the groups, as envelopes: the groups as they are now and those gone with the first, the messages after, a few at a time. */
-export function groupEnvelopes(list: GroupMirror[], gone: string[], entries: GroupEntry[]): Envelope[] {
-  const out: Envelope[] = [];
-  const next = (batch: GroupEntry[]): Envelope => ({ k: 'groups', list: out.length === 0 ? list : [], gone: out.length === 0 ? gone : [], entries: batch });
-  let batch: GroupEntry[] = [];
+// Items in batches of about GROUP_BYTES each, at least one batch.
+function batched<T>(items: T[]): T[][] {
+  const out: T[][] = [];
+  let batch: T[] = [];
   let size = 0;
-  for (const entry of entries) {
-    const bytes = JSON.stringify(entry).length;
+  for (const item of items) {
+    const bytes = JSON.stringify(item).length;
     if (batch.length > 0 && size + bytes > GROUP_BYTES) {
-      out.push(next(batch));
+      out.push(batch);
       batch = [];
       size = 0;
     }
-    batch.push(entry);
+    batch.push(item);
     size += bytes;
   }
-  if (batch.length > 0 || out.length === 0) out.push(next(batch));
+  if (batch.length > 0 || out.length === 0) out.push(batch);
   return out;
 }
 
 /**
- * A linked device's groups once the primary said what changed: each group said as it is now, but
- * read as late as either read it; the groups gone left out; and the messages that came put in by
- * time, each once. Returns them, the groups where a member's message came that was not read yet,
- * and the photos and files said again for a message kept here already, which this device takes
- * no more.
+ * What changed in the groups, as envelopes: the groups as they are now and those gone with the
+ * first, the messages after, a few at a time. With `all`, the groups said are all there are.
  */
-export function mirrorGroups(kept: Group[], said: { list: GroupMirror[]; gone: string[]; entries: GroupEntry[] }): { groups: Group[]; came: string[]; again: FileFrom[] } {
+export function groupEnvelopes(list: GroupMirror[], gone: string[], entries: GroupEntry[], all = false): Envelope[] {
+  return batched(entries).map((batch, i) => (i === 0 ? { k: 'groups', list, gone, entries: batch, ...(all ? { all: true as const } : {}) } : { k: 'groups', list: [], gone: [], entries: batch }));
+}
+
+/** What was done to a group's message since it went, as its devices are told of it. */
+export function marksOf({ reactions, votes, pinned, starred }: GroupMarked): GroupMarked {
+  return { ...(reactions ? { reactions } : {}), ...(votes ? { votes } : {}), ...(pinned ? { pinned } : {}), ...(starred ? { starred: true as const } : {}) };
+}
+
+// A message's marks as text, the same for the same marks: each member's in the order of their identities.
+function marksText({ reactions, votes, pinned, starred }: GroupMarked): string {
+  const sorted = (by: Record<string, unknown> | undefined) => (by ? Object.entries(by).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)) : null);
+  return JSON.stringify([sorted(reactions), sorted(votes), pinned ?? 0, starred === true]);
+}
+
+/** What was done to each of a group's messages, by tag, but its notes and those with no tag. */
+export function groupMarks(messages: GroupMessage[]): Map<string, GroupMarked> {
+  const marks = new Map<string, GroupMarked>();
+  for (const m of messages) if (!m.note && isGroupTag(m.tag)) marks.set(m.tag, marksOf(m));
+  return marks;
+}
+
+/** A short mark of what was done to a group's messages (groupMarks), so a device is told only what changed since. */
+export function marksDigest(marks: Map<string, GroupMarked>): string {
+  return digest([...marks].map(([tag, m]) => `${tag}=${marksText(m)}`).join(';'));
+}
+
+/**
+ * What changed in a group's messages from `before` to `now` (groupMarks), for a device told them as
+ * they were: for each, what changed of it, or that it is gone. A message that came since goes with
+ * what was done to it (GroupEntry), not here.
+ */
+export function marksChanged(group: string, before: Map<string, GroupMarked>, now: Map<string, GroupMarked>): GroupChange[] {
+  const out: GroupChange[] = [];
+  for (const [tag, was] of before) {
+    const is = now.get(tag);
+    if (!is) {
+      out.push({ group, tag, gone: true });
+      continue;
+    }
+    const change: GroupChange = { group, tag };
+    if (marksText({ reactions: was.reactions }) !== marksText({ reactions: is.reactions })) change.reactions = is.reactions ?? null;
+    if (marksText({ votes: was.votes }) !== marksText({ votes: is.votes })) change.votes = is.votes ?? null;
+    if ((was.pinned ?? 0) !== (is.pinned ?? 0)) change.pinned = is.pinned ?? null;
+    if (!!was.starred !== !!is.starred) change.starred = !!is.starred;
+    if (Object.keys(change).length > 2) out.push(change);
+  }
+  return out;
+}
+
+/**
+ * A group's marks said whole, for a device not known to have them as they were: what was done to
+ * each message that has any, the primary's star only when on, and the tags of all its messages.
+ */
+export function wholeMarks(group: string, now: Map<string, GroupMarked>): { changes: GroupChange[]; whole: WholeGroup } {
+  const changes: GroupChange[] = [];
+  for (const [tag, m] of now) {
+    if (Object.keys(m).length === 0) continue;
+    changes.push({ group, tag, reactions: m.reactions ?? null, votes: m.votes ?? null, pinned: m.pinned ?? null, ...(m.starred ? { starred: true } : {}) });
+  }
+  return { changes, whole: { group, tags: [...now.keys()] } };
+}
+
+/** What changed in messages told already, as envelopes, a few changes at a time: the chats' and the groups said whole with the first. */
+export function changeEnvelopes(chats: ChatChange[], groups: GroupChange[], whole: WholeGroup[]): Envelope[] {
+  return batched(groups).map((batch, i) => ({ k: 'changed', chats: i === 0 ? chats : [], groups: batch, whole: i === 0 ? whole : [] }));
+}
+
+// A message without what members did to it for everyone (reactions, votes, its pin): this device's own star stays.
+function withoutMarks(m: GroupMessage): GroupMessage {
+  const { reactions: _r, votes: _v, pinned: _p, ...rest } = m;
+  return rest;
+}
+
+// A message once `change` is made to it: a vote counts only on a poll, and only as the poll allows.
+function withChange(m: GroupMessage, change: GroupChange): GroupMessage {
+  const next: GroupMessage = { ...m };
+  if (change.reactions !== undefined) {
+    if (change.reactions) next.reactions = change.reactions;
+    else delete next.reactions;
+  }
+  if (change.votes !== undefined) {
+    const poll = m.poll;
+    const votes = poll && change.votes ? byMember(change.votes, (chose) => checkedChoices(chose, poll.o.length, !!poll.m)) : undefined;
+    if (votes) next.votes = votes;
+    else delete next.votes;
+  }
+  if (change.pinned !== undefined) {
+    if (change.pinned) next.pinned = change.pinned;
+    else delete next.pinned;
+  }
+  if (change.starred !== undefined) {
+    if (change.starred) next.starred = true;
+    else delete next.starred;
+  }
+  return next;
+}
+
+// A message with what was done to it as a GroupEntry says: what members did, as said; the star, if on.
+function withEntryMarks(m: GroupMessage, marks: GroupMarked): GroupMessage {
+  return withChange(withoutMarks(m), { group: '', tag: m.tag, reactions: marks.reactions ?? null, votes: marks.votes ?? null, pinned: marks.pinned ?? null, ...(marks.starred ? { starred: true } : {}) });
+}
+
+/**
+ * A linked device's groups once the primary said what changed in messages told already (`now`, this
+ * device's clock): each change made to its message, by tag. A group said whole first lets go of what
+ * was done to the messages not said, and of the messages the primary no longer has, but this
+ * device's own of the last minutes, which may not have reached it yet.
+ */
+export function changedGroups(kept: Group[], said: { groups: GroupChange[]; whole: WholeGroup[] }, now: number): Group[] {
+  const changes = new Map<string, GroupChange[]>();
+  for (const c of said.groups) changes.set(c.group, [...(changes.get(c.group) ?? []), c]);
+  const whole = new Map(said.whole.map((w) => [w.group, new Set(w.tags)]));
+  return kept.map((group) => {
+    const told = changes.get(group.id) ?? [];
+    const tags = whole.get(group.id);
+    if (told.length === 0 && !tags) return group;
+    let messages = group.messages;
+    if (tags) {
+      const marked = new Set(told.map((c) => c.tag));
+      messages = messages
+        .filter((m) => m.note || !m.tag || tags.has(m.tag) || (!m.from && m.at > now - OWN_KEPT))
+        .map((m) => (m.note || marked.has(m.tag) ? m : withoutMarks(m)));
+    }
+    for (const c of told) {
+      const at = messages.findIndex((m) => !m.note && m.tag === c.tag);
+      if (at < 0) continue;
+      messages = c.gone ? messages.filter((_, i) => i !== at) : messages.map((m, i) => (i === at ? withChange(m, c) : m));
+    }
+    return { ...group, messages };
+  });
+}
+
+/**
+ * A linked device's groups once the primary said what changed: each group said as it is now, but
+ * read as late as either read it; the groups gone left out, and with `all`, those not said; and the
+ * messages that came put in by time, each once, with what was done to them. One kept here already
+ * takes what was done to it as said again. Returns them, the groups where a member's message came
+ * that was not read yet, and the photos and files said again for a message kept here already, which
+ * this device takes no more.
+ */
+export function mirrorGroups(kept: Group[], said: { list: GroupMirror[]; gone: string[]; entries: GroupEntry[]; all?: boolean }): { groups: Group[]; came: string[]; again: FileFrom[] } {
   const gone = new Set(said.gone);
+  const listed = new Set(said.list.map((m) => m.id));
   const groups = new Map<string, Group>();
-  for (const g of kept) if (!gone.has(g.id)) groups.set(g.id, g);
+  for (const g of kept) if (!gone.has(g.id) && (!said.all || listed.has(g.id))) groups.set(g.id, g);
   for (const m of said.list) {
     if (gone.has(m.id)) continue;
     const before = groups.get(m.id);
@@ -597,6 +875,8 @@ export function mirrorGroups(kept: Group[], said: { list: GroupMirror[]; gone: s
   const again: FileFrom[] = [];
   const added = new Map<string, GroupMessage[]>();
   const keys = new Map<string, Set<string>>();
+  // What was done to messages kept already, as said again, by group and key.
+  const marked = new Map<string, Map<string, GroupMarked>>();
   for (const e of said.entries) {
     const group = groups.get(e.group);
     if (!group) continue;
@@ -605,6 +885,7 @@ export function mirrorGroups(kept: Group[], said: { list: GroupMirror[]; gone: s
     const key = groupMessageKey(e);
     if (have.has(key)) {
       if (e.file) again.push({ relay: e.file.relay, ids: e.file.ids });
+      if (e.marks && !e.note) marked.set(e.group, (marked.get(e.group) ?? new Map<string, GroupMarked>()).set(key, e.marks));
       continue;
     }
     have.add(key);
@@ -618,12 +899,19 @@ export function mirrorGroups(kept: Group[], said: { list: GroupMirror[]; gone: s
       ...(e.ms ? { ms: e.ms } : {}),
       ...e.parts,
     };
-    added.set(e.group, [...(added.get(e.group) ?? []), message]);
+    added.set(e.group, [...(added.get(e.group) ?? []), e.marks && !e.note ? withEntryMarks(message, e.marks) : message]);
     if (e.from && !e.note && e.at > group.readAt) came.add(e.group);
   }
-  for (const [id, messages] of added) {
+  for (const id of new Set([...added.keys(), ...marked.keys()])) {
     const group = groups.get(id)!;
-    const all = [...group.messages, ...messages].sort((x, y) => x.at - y.at);
+    const remarked = marked.get(id);
+    const before = remarked
+      ? group.messages.map((m) => {
+          const marks = m.note ? undefined : remarked.get(groupMessageKey(m));
+          return marks ? withEntryMarks(m, marks) : m;
+        })
+      : group.messages;
+    const all = [...before, ...(added.get(id) ?? [])].sort((x, y) => x.at - y.at);
     groups.set(id, { ...group, messages: all.slice(-MAX_GROUP_MESSAGES) });
   }
   return { groups: [...groups.values()], came: [...came], again };

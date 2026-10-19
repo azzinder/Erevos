@@ -1111,8 +1111,9 @@ The chats then come to the computer, and after them the messages chosen.
 
 - **Messages** from contacts come to both. What you write on the computer goes through the phone: the phone shows it
   as yours, and the contact gets it from the account. What you write on the phone shows on the computer too. Read
-  marks, deleting from both phones, names, timers, chat looks and pictures, appearing offline and accepting requests
-  go both ways.
+  marks, reactions, pins, votes, deleting from both phones, names, timers, chat looks and pictures, appearing offline
+  and accepting requests go both ways. A star, or deleting on **This phone**, done on the phone goes to the computer
+  too; done on the computer, it stays there.
 - **The phone has to be on** and reach the relay for the computer to send and receive. What the computer writes
   meanwhile waits on the relay, and goes once the phone is back.
 - **Photos and files** that come stay on the relay until both the phone and the computer took them; then the phone
@@ -1124,12 +1125,13 @@ The chats then come to the computer, and after them the messages chosen.
 - **Groups** are on the computer too, with their messages, photos, files and voice messages. Write in them, answer,
   react, vote, pin, delete your own for everyone, add and take out members, rename one or leave it, there as on the
   phone: the phone does it for the computer, as its own. A photo or file the phone keeps goes to the computer as a copy
-  on the relay, deleted there once the computer took it. For now, reactions, votes, pins and deleting for everyone show
-  on the computer only when done there; making a group, public groups and group calls stay on the phone.
+  on the relay, deleted there once the computer took it. What the members do later to a message (react, vote, pin,
+  delete it for everyone) shows on the computer too, as does a star or deleting on **This phone** done on the phone.
+  Making a group, public groups and group calls stay on the phone for now.
 - **Hidden chats and second passwords** are never linked. A chat moved into hidden chats on the phone leaves the
   computer. A space a second password opens links only from inside it, to devices of its own.
-- **Bring over messages again**, on the phone, sends a period of the history again; what the computer has already is
-  not kept twice.
+- **Bring over messages again**, on the phone, sends a period of the history again, with its reactions, pins, votes
+  and stars; what the computer has already is not kept twice.
 - **Unlink**, on the phone, cuts a device off at once: nothing more goes to it, and nothing it sends is taken. That is
   how to cut off a lost computer. If it is on, it is told, and the account's chats leave it. On the computer,
   **Unlink this device** does the same from there.

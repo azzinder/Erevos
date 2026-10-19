@@ -51,7 +51,8 @@ import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
-import { accountLink, linkedRole, onLinked } from '../lib/devices';
+import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
+import type { ChatChange } from '../lib/link-wire';
 import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
@@ -1267,6 +1268,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (message.tag) history.current?.remove(message.peer, message.tag).catch((error) => setNote(errorText(error)));
   }
 
+  // What is done on this phone only, which the contact is not told of, the account's linked devices
+  // do too (lib/devices.ts): never what is done in hidden chats.
+  function toDevices(peer: string, change: Omit<ChatChange, 'c'>) {
+    if (!hiddenKey && peer.startsWith(CONTACT_PREFIX)) changedHere({ c: peer.slice(CONTACT_PREFIX.length), ...change });
+  }
+
+  function forgetChatHere(peer: string) {
+    forgetChat(peer);
+    toDevices(peer, { gone: true });
+  }
+
+  function forgetHere(message: Message) {
+    forgetMessage(message);
+    if (message.tag) toDevices(message.peer, { tag: message.tag, gone: true });
+  }
+
   // Asks the contact's phone to delete messages too, and deletes them here once the relay has
   // taken that. If it cannot, nothing is deleted.
   async function eraseOnBoth(peer: string, erase: Erase, here: () => void) {
@@ -1292,7 +1309,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       : t('Delete the messages with {name}? They cannot be brought back.', { name });
     ask(t('Delete messages'), question, [
       { text: t('Cancel'), style: 'cancel' },
-      { text: t('This phone'), onPress: () => forgetChat(peer) },
+      { text: t('This phone'), onPress: () => forgetChatHere(peer) },
       { text: t('Both phones'), style: 'destructive', onPress: () => void eraseOnBoth(peer, { all: true }, () => forgetChat(peer)) },
     ]);
   }
@@ -1310,7 +1327,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             void takeBack(relayTarget(), held)
               .then((dropped) => {
                 if (dropped) {
-                  forgetMessage(message);
+                  forgetHere(message);
                   setNote(t('Deleted. It will not go.'));
                 } else {
                   setNote(t('It went already. Delete it again to delete it on both phones.'));
@@ -1326,7 +1343,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const both = message.peer.startsWith(CONTACT_PREFIX) && message.tag && message.mark !== WAITING;
     ask(t('Delete message'), t('Delete this message? It cannot be brought back.'), [
       { text: t('Cancel'), style: 'cancel' },
-      { text: t('This phone'), onPress: () => forgetMessage(message) },
+      { text: t('This phone'), onPress: () => forgetHere(message) },
       ...(both
         ? [{ text: t('Both phones'), style: 'destructive' as const, onPress: () => void eraseOnBoth(message.peer, { tag: message.tag }, () => forgetMessage(message)) }]
         : []),
@@ -1381,6 +1398,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     history.current?.star(message.peer, message.tag, on).catch(() => {
       // Shown, but gone when the chat next opens.
     });
+    toDevices(message.peer, { tag: message.tag, starred: on });
   }
 
   // Goes to one of the chat's messages, by its tag, and lights it a moment.
@@ -2148,8 +2166,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         const shown = new Set(left.map((m) => `${m.peer}|${m.tag}`));
         const marked = left.map((m) => {
           const there = m.tag ? byTag.get(`${m.peer}|${m.tag}`) : undefined;
-          if (!there || (there.mark ?? 0) <= m.mark) return m;
-          return { ...m, mark: there.mark ?? 0, until: m.until || (there.until ?? 0), lasts: m.until ? m.lasts : (there.lasts ?? 0) };
+          if (!there) return m;
+          // What was done to it on another device, or through one: reactions, a pin, votes, a star.
+          const done = { myReaction: there.myReaction, theirReaction: there.theirReaction, pinned: there.pinned, starred: there.starred, myVote: there.myVote, theirVote: there.theirVote };
+          const changed = (Object.keys(done) as (keyof typeof done)[]).some((key) => JSON.stringify(m[key]) !== JSON.stringify(done[key]));
+          const next = changed ? { ...m, ...done } : m;
+          if ((there.mark ?? 0) <= next.mark) return next;
+          return { ...next, mark: there.mark ?? 0, until: next.until || (there.until ?? 0), lasts: next.until ? next.lasts : (there.lasts ?? 0) };
         });
         const added = now
           .filter((m) => m.peer.startsWith(CONTACT_PREFIX) && m.tag && !shown.has(`${m.peer}|${m.tag}`))

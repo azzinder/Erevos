@@ -3,7 +3,7 @@
 // version from before linking, through a real relay and the real core: linking with the codes
 // compared, the history brought over, messages both ways and on both devices, contacts kept alike,
 // photos and files deleted from the relay once each took them, calls on either, the phone's groups
-// on the computer too, and unlinking.
+// on the computer too, what is done later to messages reaching it, and unlinking.
 // Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
@@ -25,14 +25,19 @@ import { Groups, type GroupTransport } from '../lib/groups';
 import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode } from '../lib/link-code';
 import {
   changedFields,
+  changedGroups,
+  changeEnvelopes,
   encodeEnvelope,
   encodeOne,
   groupEnvelopes,
+  groupMarks,
   groupMirror,
   isKept,
   isSignal,
   isWorthTelling,
   lastKey,
+  marksChanged,
+  marksDigest,
   messagesAfter,
   mirrorGroups,
   mirrorMark,
@@ -42,6 +47,7 @@ import {
   readGroupEntries,
   readPack,
   syncedOf,
+  wholeMarks,
   withoutPlace,
   writePack,
   type Envelope,
@@ -53,7 +59,7 @@ import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib
 import type { SpaceChats } from '../lib/space-chats';
 import { VoiceAssembler } from '../lib/voice';
 import { newFileId, type FileRef } from '../lock/attachment-files';
-import { EMPTY_GROUPS, type Group } from '../lock/group-data';
+import { EMPTY_GROUPS, type Group, type GroupMessage } from '../lock/group-data';
 import { History } from '../lock/history';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { EMPTY_SPACE, saveSpaceData, type Queue } from '../lock/space-data';
@@ -159,9 +165,13 @@ test('what goes between devices: parts put together, messages sorted, contacts k
   const pack = writePack([entry, { ...entry, peer: 'sms:123' } as never, { ...entry, tag: 'x' }]);
   assert.deepEqual(readPack(pack), [entry]);
   assert.deepEqual(readPack(utf8Encode('[1,2]')), []);
+  // With what it answers and what was done to it; what is not one of those is left out.
+  const poll = { q: 'When?', o: ['Mon', 'Tue'] };
+  const parted = { ...entry, parts: { re: '112233445566', myReaction: '👍', theirReaction: 'no', pinned: 9, starred: true, poll, myVote: [1], theirVote: [7] } };
+  assert.deepEqual(readPack(writePack([parted as never])), [{ ...entry, parts: { re: '112233445566', myReaction: '👍', pinned: 9, starred: true, poll, myVote: [1] } }]);
 });
 
-type Phone = { chats: SpaceChats; queue: Queue; links: Links; space: number };
+type Phone = { chats: SpaceChats; queue: Queue; links: Links; space: number; key: Uint8Array };
 
 // Every link opened stops after its check, whatever happened in it.
 const opened: Links[] = [];
@@ -190,7 +200,7 @@ async function setup() {
     opened.push(links);
     // A contact on an Erevos from before linked devices has none.
     if (!linking) links.close();
-    return { chats, queue: own, links, space };
+    return { chats, queue: own, links, space, key };
   };
   // What the chat or the receiver does with what comes to a space's queue, in short.
   const take = async ({ chats, queue: own, links }: Phone): Promise<Opened[]> => {
@@ -345,6 +355,35 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
   });
   const stuck = dell.chats.history.messages().find((m) => m.tag === sticker.tag);
   assert.deepEqual([stuck?.text, stuck?.sticker, stuck?.re], ['🌝', 'moon-smile', fromDell]);
+
+  // What the phone does later to a message reaches the computer as its own: a reaction and a pin
+  // with what it seals for Carol.
+  const onDell = (tag: string) => dell.chats.history.messages().find((m) => m.tag === tag);
+  const onPixel = (tag: string) => pixel.chats.history.messages().find((m) => m.tag === tag);
+  const marked = await pixel.chats.e2e.seal(carolId, '', pixel.queue.senderHex, { at: where, react: { tag: fromDell, emoji: '👍' }, more: { pin: { tag: fromPixel, on: true } } });
+  await sendMessage(relay, fromHex(marked.sender), marked.packet);
+  await take(carol);
+  await until(async () => {
+    await take(dell);
+    return onDell(fromDell)?.myReaction === '👍' && !!onDell(fromPixel)?.pinned;
+  });
+  // The computer's reaction to Carol's message goes to her from the account, and is the phone's too.
+  const reacted = await dell.chats.e2e.seal(carolId, '', dell.queue.senderHex, { at: where, react: { tag: came.tag, emoji: '😂' } });
+  await sendMessage(relay, fromHex(reacted.sender), reacted.packet);
+  await take(pixel);
+  assert.deepEqual((await take(carol)).map((m) => m.react), [{ tag: came.tag, emoji: '😂' }]);
+  assert.equal(onPixel(came.tag)?.myReaction, '😂');
+  // Starred, and deleted, on the phone only, which Carol is not told of: the computer does the same.
+  await pixel.chats.history.star(`contact:${carolId}`, fromPixel, true);
+  pixel.links.changedHere({ c: carolId, tag: fromPixel, starred: true });
+  await pixel.chats.history.remove(`contact:${carolId}`, sticker.tag);
+  pixel.links.changedHere({ c: carolId, tag: sticker.tag, gone: true });
+  await pixel.links.settled();
+  await until(async () => {
+    await take(dell);
+    return !!onDell(fromPixel)?.starred && !onDell(sticker.tag);
+  });
+  assert.deepEqual(await take(carol), []);
 
   // A contact added on the computer is added by the phone, which starts the conversation.
   const dave = await phone(3, false);
@@ -744,6 +783,110 @@ test('groups between devices: told as they change, each message once, and what a
   assert.equal(mirrorGroups([kept], { list: [{ ...mirror, readAt: 7 }], gone: [], entries: [] }).groups[0].readAt, 7);
 });
 
+test('what changes later in messages told already: only what changed, or all of it, and so on the computer', () => {
+  const g = 'ab'.repeat(16);
+  const other = 'cd'.repeat(16);
+  const alice = 'a1'.repeat(32);
+  const poll = { q: 'When?', o: ['Mon', 'Tue'] };
+  const messages: GroupMessage[] = [
+    { at: 1, from: '', text: 'You made the group.', tag: '', note: true },
+    { at: 2, from: alice, text: 'hi', tag: 'aabbccddeeff' },
+    { at: 3, from: '', text: 'When?', tag: '112233445566', poll },
+    { at: 4, from: alice, text: 'bye', tag: 'abcdefabcdef' },
+  ];
+  // What was done to each message, but the notes; the same marks in another order are the same.
+  const before = groupMarks(messages);
+  assert.deepEqual([...before.keys()], ['aabbccddeeff', '112233445566', 'abcdefabcdef']);
+  const reacted = (reactions: Record<string, string>) => groupMarks(messages.map((m) => (m.tag === 'aabbccddeeff' ? { ...m, reactions } : m)));
+  assert.equal(marksDigest(reacted({ [alice]: '👍', '': '❤️' })), marksDigest(reacted({ '': '❤️', [alice]: '👍' })));
+  assert.notEqual(marksDigest(before), marksDigest(reacted({ [alice]: '👍' })));
+  // Alice reacts and votes, the phone pins and stars, and Bye is deleted: only that goes.
+  const after = groupMarks([messages[0], { ...messages[1], reactions: { [alice]: '👍' }, starred: true }, { ...messages[2], votes: { [alice]: [1] }, pinned: 9 }]);
+  const changes = marksChanged(g, before, after);
+  assert.deepEqual(changes, [
+    { group: g, tag: 'aabbccddeeff', reactions: { [alice]: '👍' }, starred: true },
+    { group: g, tag: '112233445566', votes: { [alice]: [1] }, pinned: 9 },
+    { group: g, tag: 'abcdefabcdef', gone: true },
+  ]);
+  // What is taken off is said as none any more.
+  assert.deepEqual(marksChanged(g, after, groupMarks(messages.slice(0, 3))), [
+    { group: g, tag: 'aabbccddeeff', reactions: null, starred: false },
+    { group: g, tag: '112233445566', votes: null, pinned: null },
+  ]);
+
+  // As they travel: checked, and many in several envelopes; what is not one is left out.
+  const parts = new Parts();
+  const travel = (envelope: Envelope) => {
+    let out: unknown = null;
+    for (const bytes of encodeEnvelope(envelope, null)) out = parts.take('p', bytes);
+    return out;
+  };
+  const [one] = changeEnvelopes([{ c: alice, tag: 'aabbccddeeff', starred: true }, { c: alice, gone: true }], changes, [{ group: g, tags: ['aabbccddeeff'] }]);
+  assert.deepEqual(travel(one), one);
+  const many = Array.from({ length: 3000 }, (_, i) => ({ group: g, tag: (0x100000 + i).toString(16).padStart(12, '0'), reactions: { [alice]: '👍' } }));
+  const split = changeEnvelopes([], many, []);
+  assert.ok(split.length > 1);
+  assert.deepEqual(
+    split.map(travel).flatMap((e) => ((e as Envelope).k === 'changed' ? (e as Extract<Envelope, { k: 'changed' }>).groups : [])),
+    many,
+  );
+  const junk = { v: 1, k: 'changed', chats: [{ c: 'x', gone: true }, { c: alice, tag: 'x', gone: true }, { c: alice, tag: 'aabbccddeeff' }], groups: [{ group: 'x', tag: 'aabbccddeeff', gone: true }, { group: g, tag: 'aabbccddeeff' }], whole: [{ group: 'x', tags: [] }] };
+  assert.equal(parts.take('p', utf8Encode(JSON.stringify(junk))), null);
+
+  // On the computer: each change made, a vote only as its poll allows, a message gone.
+  const group: Group = { id: g, name: 'Φίλοι', admin: false, status: 'in', asked: [], later: [], outbox: [], readAt: 0, messages };
+  const [changed] = changedGroups([group], { groups: changes, whole: [] }, 100);
+  assert.deepEqual(
+    changed.messages.map((m) => m.tag),
+    ['', 'aabbccddeeff', '112233445566'],
+  );
+  assert.deepEqual([changed.messages[1].reactions, changed.messages[1].starred], [{ [alice]: '👍' }, true]);
+  assert.deepEqual([changed.messages[2].votes, changed.messages[2].pinned], [{ [alice]: [1] }, 9]);
+  assert.equal(changedGroups([group], { groups: [{ group: g, tag: '112233445566', votes: { [alice]: [5] } }], whole: [] }, 100)[0].messages[2].votes, undefined);
+  // Said whole: what was done to the messages not said goes, and the messages the phone no longer
+  // has, but the computer's own of the last minutes, which may not have reached the phone yet.
+  const NOW = 60 * 60_000;
+  const marked: Group = {
+    ...group,
+    messages: [
+      ...messages.map((m) => (m.tag === '112233445566' ? { ...m, reactions: { [alice]: '😂' }, starred: true as const } : m)),
+      { at: 5, from: '', text: 'long ago', tag: '0a0b0c0d0e0f' },
+      { at: NOW - 1000, from: '', text: 'just now', tag: 'fedcbafedcba' },
+    ],
+  };
+  const all = wholeMarks(g, groupMarks([messages[0], { ...messages[1], reactions: { [alice]: '👍' } }, messages[2]]));
+  assert.deepEqual(all.whole, { group: g, tags: ['aabbccddeeff', '112233445566'] });
+  const [whole] = changedGroups([marked], { groups: all.changes, whole: [all.whole] }, NOW);
+  assert.deepEqual(
+    whole.messages.map((m) => m.tag),
+    ['', 'aabbccddeeff', '112233445566', 'fedcbafedcba'],
+  );
+  assert.deepEqual(whole.messages[1].reactions, { [alice]: '👍' });
+  // The computer's own star stays.
+  assert.deepEqual([whole.messages[2].reactions, whole.messages[2].starred], [undefined, true]);
+
+  // Told again with what was done to it, a message kept here takes that; with `all`, a group not said goes.
+  const mirror = groupMirror(group, []);
+  const again = mirrorGroups([group, { ...group, id: other }], {
+    list: [mirror],
+    gone: [],
+    entries: [
+      { group: g, at: 2, from: alice, text: 'hi', tag: 'aabbccddeeff', marks: { reactions: { [alice]: '👍' }, pinned: 4 } },
+      { group: g, at: 5, from: alice, text: 'new', tag: '999999999999', marks: { reactions: { '': '❤️' } } },
+    ],
+    all: true,
+  });
+  assert.deepEqual(
+    again.groups.map((x) => x.id),
+    [g],
+  );
+  const kept = again.groups[0].messages;
+  assert.deepEqual([kept[1].reactions, kept[1].pinned], [{ [alice]: '👍' }, 4]);
+  assert.deepEqual(kept[kept.length - 1].reactions, { '': '❤️' });
+  // Once the last one told is gone: those from when it came on.
+  assert.deepEqual(messagesAfter(messages, `${alice}|gonegonegone`, 3), messages.slice(2));
+});
+
 // Group chats on an in-memory relay of their own, as checks/groups.check.ts has them: each member's
 // queue in order, and the chats' signals handed on.
 function groupNet() {
@@ -880,6 +1023,42 @@ test('groups on a linked computer: the phone\'s, read and written there through 
   await bob.groups.send(id, 'yes', bob.transport, { re: said!.tag });
   await round();
   assert.equal(onDell.messages(id).find((m) => m.text === 'yes')?.re, said?.tag);
+
+  // What is done later to messages the computer has reaches it: Bob's reaction and his vote, the
+  // phone's pin and star, a message deleted for everyone, and one deleted on the phone only.
+  await onPixel.groups.send(id, 'When?', onPixel.transport, { poll: { q: 'When?', o: ['Mon', 'Tue'] } });
+  await round();
+  const poll = onPixel.groups.messages(id).find((m) => m.poll)!;
+  const yes = bob.groups.messages(id).find((m) => m.text === 'yes')!;
+  await bob.groups.mark(id, { t: 'react', tag: said!.tag, emoji: '😂' }, bob.transport);
+  await bob.groups.mark(id, { t: 'vote', tag: poll.tag, chose: [1] }, bob.transport);
+  await bob.groups.mark(id, { t: 'erase', tag: yes.tag }, bob.transport);
+  await net.settle();
+  await onPixel.groups.mark(id, { t: 'pin', tag: said!.tag, on: true }, onPixel.transport);
+  await onPixel.groups.star(id, said!.tag, true);
+  await round();
+  const marked = () => onDell.messages(id).find((m) => m.tag === said?.tag);
+  assert.deepEqual(marked()?.reactions, { '': '👍', [bob.identity]: '😂' });
+  assert.deepEqual([!!marked()?.pinned, marked()?.starred], [true, true]);
+  assert.deepEqual(onDell.messages(id).find((m) => m.tag === poll.tag)?.votes, { [bob.identity]: [1] });
+  assert.equal(onDell.messages(id).some((m) => m.tag === yes.tag), false);
+  const answering = onDell.messages(id).find((m) => m.text === 'answering')!;
+  await onPixel.groups.deleteHere(id, answering.tag);
+  await round();
+  assert.equal(onDell.messages(id).some((m) => m.tag === answering.tag), false);
+  // The phone opens again with a reaction it did not tell yet: the computer is told the group's
+  // marks whole with the next change, and has both.
+  pixel.links.close();
+  await bob.groups.mark(id, { t: 'react', tag: said!.tag, emoji: '' }, bob.transport);
+  await net.settle();
+  pixel.links = await Links.open(pixel.space, pixel.key, pixel.chats, 60 * 60_000);
+  opened.push(pixel.links);
+  pixel.links.useGroups(onPixel.groups, onPixel.transport);
+  await onPixel.groups.mark(id, { t: 'react', tag: poll.tag, emoji: '🎉' }, onPixel.transport);
+  await round();
+  assert.deepEqual(marked()?.reactions, { '': '👍' });
+  assert.deepEqual(onDell.messages(id).find((m) => m.tag === poll.tag)?.reactions, { '': '🎉' });
+  assert.equal(marked()?.starred, true);
 
   // Renamed, and Carol taken out, on the computer, as the admin: the phone does it for everyone.
   await onDell.rename(id, 'Νέο όνομα', nowhere);

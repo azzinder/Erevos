@@ -2,7 +2,7 @@ import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type DevicesData, type Left, type Peer } from '../lock/devices-data';
 import type { Contact } from '../lock/e2e-data';
 import type { Group, GroupMessage } from '../lock/group-data';
-import { isTag, WAITING, type Mark, type Message } from '../lock/history';
+import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
 import { loadSpaceData } from '../lock/space-data';
 import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import {
@@ -35,9 +35,13 @@ import { t } from './i18n';
 import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode, type LinkCode } from './link-code';
 import {
   changedFields,
+  changedGroups,
+  changeEnvelopes,
+  chatPartsOf,
   encodeEnvelope,
   encodeOne,
   groupEnvelopes,
+  groupMarks,
   groupMessageKey,
   groupMirror,
   isCall,
@@ -45,6 +49,9 @@ import {
   isSignal,
   isWorthTelling,
   lastKey,
+  marksChanged,
+  marksDigest,
+  marksOf,
   MAX_TOOK,
   messagesAfter,
   mirrorGroups,
@@ -56,15 +63,20 @@ import {
   readPack,
   syncedOf,
   withoutPlace,
+  wholeMarks,
   writePack,
+  type ChatChange,
   type Envelope,
   type GroupAsk,
+  type GroupChange,
   type GroupEntry,
+  type GroupMarked,
   type GroupMirror,
   type Json,
   type PackEntry,
   type Place,
   type Synced,
+  type WholeGroup,
 } from './link-wire';
 import { LinkedCalls, type CallStep } from './linked-calls';
 import { nearby } from './nearby';
@@ -108,6 +120,14 @@ import { sendWaiting, type SendPlace } from './waiting';
 // primary tells each device what changed in them, a group as it is now and the messages it was not
 // told of yet, and does what a device asks in one, as its own. A device keeps them as the phone said
 // them; it makes and joins no group, and group calls ring on the phone only.
+//
+// What is done later to a message told already reaches the devices too. In a chat, the phone's
+// reactions, pins and votes go with what it sealed for the contact (`out`), the contact's with what
+// came (`in`); a star or deleting on the phone only, which the contact is not told of, goes as a
+// change (`changed`). In a group, the primary keeps what was done to each group's messages as last
+// told (`marked`, in memory) and a mark of it for each device: what changed since goes to each
+// device that has it, and a device that may not (after the space opened again with changes not told,
+// or caught up) is told the group's marks whole.
 //
 // Three turns keep it straight: the chat's own (E2E), which may wait for this file's; this file's
 // (`run`), for the links and their keys, which never waits for the chat; and the work a message
@@ -230,6 +250,8 @@ export class Links implements Link, TakenFiles {
   private stopGroups: (() => void) | null = null;
   private telling = false;
   private groupsLate = false;
+  // On the primary: what was done to each group's messages as last told, and its mark (marksDigest).
+  private readonly marked = new Map<string, { marks: Map<string, GroupMarked>; digest: string }>();
   // Where this side reads, as last found, said with what goes; and the relay's key, asked once for each relay.
   private at: Place | null = null;
   private keyOf: { url: string; key: string } | null = null;
@@ -588,13 +610,16 @@ export class Links implements Link, TakenFiles {
         break;
       case 'groups': {
         // Who is in each, in the turn; the groups and their messages, in the work after.
-        const members = { ...this.data.members };
+        const members: DevicesData['members'] = said.all ? {} : { ...this.data.members };
         for (const id of said.gone) delete members[id];
         for (const g of said.list) members[g.id] = g.members;
         await this.save({ ...this.data, members });
         this.act(() => this.mirrorFrom(said));
         break;
       }
+      case 'changed':
+        this.act(() => this.changedFrom(said.chats, said.groups, said.whole));
+        break;
       case 'bye':
         this.act(() => this.forget());
         break;
@@ -1032,13 +1057,14 @@ export class Links implements Link, TakenFiles {
       await this.run(async () => {
         const now = this.data.devices.find((p) => p.id === d.id);
         if (!now) return;
-        const said = await this.groupsTo(await this.seal({ ...now, behind: 0 }, { k: 'contacts', all: true, list: contacts, gone: [], link: this.ownLink() }));
+        const said = await this.groupsTo(await this.seal({ ...now, behind: 0 }, { k: 'contacts', all: true, list: contacts, gone: [], link: this.ownLink() }), true);
         const history = { since: now.behind, files: now.files, upTo: Date.now(), done: 0 };
         await this.keepPeer({ ...said, history });
       });
-      // The contacts go with this flush.
+      // The contacts go with this flush; what was done in the groups meanwhile, after the history.
       this.again = true;
       this.act(() => this.bringHistory(d.id));
+      this.groupsChanged();
     }
   }
 
@@ -1143,8 +1169,10 @@ export class Links implements Link, TakenFiles {
       }
     }
     if (!kept) {
-      // What was read goes with the next message to them; what else it says is tried again.
+      // What was read goes with the next message to them; what else it says is tried again. Its
+      // reaction, pin or vote is this phone's own once it went.
       if (!went && read.length > 0) await e2e.hold(c, 'read', read);
+      if (went) await this.marksAsOwn(peer, m, now);
       announce({ gone });
       return went || !Object.keys(m).some((key) => !QUIET.has(key));
     }
@@ -1248,6 +1276,15 @@ export class Links implements Link, TakenFiles {
     announce();
   }
 
+  /**
+   * On the primary: one of a chat's messages starred or deleted on this phone only, or all of them
+   * deleted here, which the contact is not told of: its linked devices do the same.
+   */
+  changedHere(change: ChatChange): void {
+    if (this.data.primary || !this.data.devices.some((d) => d.linked) || !this.chats.e2e.record(change.c)) return;
+    void this.say({ k: 'changed', chats: [change], groups: [], whole: [] }).catch(() => undefined);
+  }
+
   // ---- Calls (lib/linked-calls.ts) ----
 
   /** On the primary: whether a linked device, or the phone, has a call it took or made through here, but the one `id` names. */
@@ -1319,7 +1356,16 @@ export class Links implements Link, TakenFiles {
       members: (id) => this.seatsOf(id),
       took: (from) => this.tookAll([from.ids]),
     });
+    // What was done to their messages as the space opens: what the devices were told, unless the
+    // space closed before they were told of a change (their marks then differ, and they are told whole).
+    this.marked.clear();
+    for (const group of groups.all()) if (shared(group.id)) this.marked.set(group.id, this.marksNow(group));
     this.stopGroups = groups.onChange(() => this.groupsChanged());
+  }
+
+  private marksNow(group: Group): { marks: Map<string, GroupMarked>; digest: string } {
+    const marks = groupMarks(group.messages);
+    return { marks, digest: marksDigest(marks) };
   }
 
   // The groups the devices are told of, as they are now, with their members.
@@ -1335,15 +1381,28 @@ export class Links implements Link, TakenFiles {
     return out;
   }
 
-  // In the turn, on the primary, for a device linked or caught up: every group as it is now, and
-  // those it had that went. Their messages up to now go with the history, those after as they come.
-  private async groupsTo(peer: Peer): Promise<Peer> {
+  // In the turn, on the primary, for a device linked or caught up: every group as it is now, all
+  // there are, and those it had that went. Their messages up to now go with the history, with what
+  // was done to them, and those after as they come. A device just linked has none of them yet, so
+  // what changes in them from now on is all it is to be told; one caught up (`caught`) may have
+  // missed changes, and is told the groups' marks whole next.
+  private async groupsTo(peer: Peer, caught = false): Promise<Peer> {
     const now = await this.groupMirrors();
     const gone = Object.keys(peer.groups).filter((id) => !now.some((g) => g.group.id === id));
-    const envelopes = now.length > 0 || gone.length > 0 ? groupEnvelopes(now.map((g) => g.mirror), gone, []) : [];
     let sealed = peer;
-    for (const envelope of envelopes) sealed = await this.seal(sealed, envelope);
-    return { ...sealed, groups: Object.fromEntries(now.map((g) => [g.group.id, { meta: g.mark, last: lastKey(g.group) }])) };
+    for (const envelope of groupEnvelopes(
+      now.map((g) => g.mirror),
+      gone,
+      [],
+      true,
+    ))
+      sealed = await this.seal(sealed, envelope);
+    const told = ({ group, mark }: { group: Group; mark: string }): Peer['groups'][string] => {
+      const marked = this.marked.get(group.id) ?? this.marksNow(group);
+      this.marked.set(group.id, marked);
+      return { meta: mark, last: lastKey(group), at: group.messages[group.messages.length - 1]?.at ?? 0, marks: caught ? '' : marked.digest };
+    };
+    return { ...sealed, groups: Object.fromEntries(now.map((g) => [g.group.id, told(g)])) };
   }
 
   // On the primary: a group changed. The devices are told, once for changes close together.
@@ -1357,9 +1416,9 @@ export class Links implements Link, TakenFiles {
   }
 
   // On the primary: each linked device is told what changed in the groups since it was last told: a
-  // group as it is now once that changed, the messages after the last it was told of, and the groups
-  // gone. A photo or file this phone keeps goes as a copy put on the relay for the devices, deleted
-  // there once they took it.
+  // group as it is now once that changed, the messages after the last it was told of, what was done
+  // since to those it was told of, and the groups gone. A photo or file this phone keeps goes as a
+  // copy put on the relay for the devices, deleted there once they took it.
   private async tellGroups(): Promise<void> {
     if (!this.groups || this.data.primary) return;
     this.groupsLate = false;
@@ -1367,17 +1426,22 @@ export class Links implements Link, TakenFiles {
     const here = await this.here().catch(() => null);
     const copies = new Map<string, FileOffer | null>();
     const kept = new Set<string>();
+    const marked = new Map(now.map(({ group }) => [group.id, this.marksNow(group)]));
     for (const d of this.data.devices) {
       if (!d.linked || d.behind) continue;
       const told = d.groups;
       const list: GroupMirror[] = [];
       const entries: GroupEntry[] = [];
+      const changes: GroupChange[] = [];
+      const whole: WholeGroup[] = [];
       const files: Leaving[] = [];
       const next: Peer['groups'] = {};
       for (const { group, mirror, mark } of now) {
-        if (told[group.id]?.meta !== mark) list.push(mirror);
-        let last = told[group.id]?.last ?? '';
-        for (const m of messagesAfter(group.messages, last)) {
+        const was = told[group.id];
+        if (was?.meta !== mark) list.push(mirror);
+        let last = was?.last ?? '';
+        let at = was?.at ?? 0;
+        for (const m of messagesAfter(group.messages, last, at)) {
           const entry = await this.groupEntryOf(group.id, m, true, here, files, copies);
           // One whose photo or file cannot go now waits, with those after it, for the next look.
           if (!entry && m.file) {
@@ -1386,17 +1450,33 @@ export class Links implements Link, TakenFiles {
           }
           if (entry) entries.push(entry);
           last = groupMessageKey(m);
+          at = m.at;
         }
-        next[group.id] = { meta: mark, last };
+        // What was done since to the messages it was told of: what changed, from what it was told
+        // last; or, not knowing what it has, all of it.
+        const is = marked.get(group.id)!;
+        if (was && was.marks !== is.digest) {
+          const before = this.marked.get(group.id);
+          if (before && was.marks === before.digest) changes.push(...marksChanged(group.id, before.marks, is.marks));
+          else {
+            const all = wholeMarks(group.id, is.marks);
+            changes.push(...all.changes);
+            whole.push(all.whole);
+          }
+        }
+        next[group.id] = { meta: mark, last, at, marks: is.digest };
       }
       const gone = Object.keys(told).filter((id) => !now.some((g) => g.group.id === id));
-      if (list.length === 0 && entries.length === 0 && gone.length === 0) continue;
+      const groups = list.length > 0 || entries.length > 0 || gone.length > 0;
+      const changed = changes.length > 0 || whole.length > 0;
+      if (!groups && !changed && JSON.stringify(next) === JSON.stringify(told)) continue;
       await this.run(async () => {
         const peer = this.data.devices.find((p) => p.id === d.id);
         // Told otherwise meanwhile, as when caught up: the next change tells it.
         if (!peer?.linked || peer.behind || JSON.stringify(peer.groups) !== JSON.stringify(told)) return;
         let sealed = peer;
-        for (const envelope of groupEnvelopes(list, gone, entries)) sealed = await this.seal(sealed, envelope);
+        const envelopes = [...(groups ? groupEnvelopes(list, gone, entries) : []), ...(changed ? changeEnvelopes([], changes, whole) : [])];
+        for (const envelope of envelopes) sealed = await this.seal(sealed, envelope);
         if (sealed.behind) {
           await this.keepPeer(sealed);
           return;
@@ -1406,19 +1486,30 @@ export class Links implements Link, TakenFiles {
         for (const file of files) kept.add(file.from.ids);
       });
     }
+    // From now on, what changes is told as what changed since this.
+    this.marked.clear();
+    for (const [id, marks] of marked) this.marked.set(id, marks);
     // A copy no device was told of goes at once.
     for (const offer of copies.values()) if (offer && !kept.has(offer.ids)) await this.drop(fromOf(offer));
     void this.flush().catch(() => undefined);
   }
 
-  // A group's message as it goes to the devices. A photo, file or voice message goes as where it
-  // waits on the relay for the group's members, or, kept here, as a copy put there for the devices
-  // (`left`), one for all of them (`copies`, by file id). Null for one that cannot go, and, without
-  // `files`, for a photo or file (not a voice message).
+  // A group's message as it goes to the devices, with what was done to it. A photo, file or voice
+  // message goes as where it waits on the relay for the group's members, or, kept here, as a copy put
+  // there for the devices (`left`), one for all of them (`copies`, by file id). Null for one that
+  // cannot go, and, without `files`, for a photo or file (not a voice message).
   private async groupEntryOf(group: string, m: GroupMessage, files: boolean, here: Here | null, left: Leaving[], copies: Map<string, FileOffer | null>): Promise<GroupEntry | null> {
     // What it answers, and what it is beyond its words, as it came.
     const parts = groupPartsOf(m, !m.file);
-    const entry: GroupEntry = { group, at: m.at, from: m.from, text: m.text, tag: m.tag, ...(m.note ? { note: true } : {}), ...(Object.keys(parts).length > 0 ? { parts } : {}) };
+    const entry: GroupEntry = {
+      group,
+      at: m.at,
+      from: m.from,
+      text: m.text,
+      tag: m.tag,
+      ...(m.note ? { note: true } : { marks: marksOf(m) }),
+      ...(Object.keys(parts).length > 0 ? { parts } : {}),
+    };
     if (!m.file) return m.text || m.note ? entry : null;
     if (!files && m.ms === undefined) return null;
     let offer = offerOf(m.file);
@@ -1472,6 +1563,27 @@ export class Links implements Link, TakenFiles {
       return { groups: made.groups, came: quiet ? [] : made.came };
     });
     this.tookAll(again.map((from) => from.ids));
+  }
+
+  // On a linked device: what the phone said changed in messages told already: in a chat, a star or
+  // deleting there; in a group, what was done to its messages since, or all of it.
+  private async changedFrom(chats: ChatChange[], groups: GroupChange[], whole: WholeGroup[]): Promise<void> {
+    const { e2e, history } = this.chats;
+    const gone: LinkedChange['gone'] = [];
+    for (const change of chats) {
+      if (!e2e.record(change.c)) continue;
+      const peer = peerOf(change.c);
+      if (!change.tag) {
+        await history.clear(peer);
+        gone.push({ peer });
+      } else if (change.gone) {
+        await history.remove(peer, change.tag);
+        gone.push({ peer, tag: change.tag });
+      } else if (change.starred !== undefined) await history.star(peer, change.tag, change.starred);
+    }
+    if (chats.length > 0) announce({ gone });
+    const shared = this.groups;
+    if (shared && (groups.length > 0 || whole.length > 0)) await shared.groups.mirror((kept) => ({ groups: changedGroups(kept, { groups, whole }, Date.now()), came: [] }));
   }
 
   // On a linked device: a group's members as the phone said them, only who each is, as nothing is sealed for them here.
@@ -1598,6 +1710,9 @@ export class Links implements Link, TakenFiles {
       ...(m.lasts ? { lasts: m.lasts } : {}),
       ...(m.mark && m.mark > 0 ? { mark: m.mark } : {}),
     };
+    // What it answers or is beyond its words, and what was done to it: reactions, a pin, votes, a star.
+    const parts = chatPartsOf(m as unknown as Json);
+    if (Object.keys(parts).length > 0) entry.parts = parts;
     if (m.voice) {
       const audio = await loadClip(m.voice).catch(() => null);
       return audio ? { ...entry, voice: { ms: m.voice.ms, data: toBase64(audio) } } : null;
@@ -1632,6 +1747,7 @@ export class Links implements Link, TakenFiles {
       await history.remove(peer, erase.tag);
       gone.push({ peer, tag: erase.tag });
     }
+    await this.marksAsOwn(peer, m, now);
     if (isKept(m)) {
       const tag = m.tag as string;
       const have = history.messages().find((x) => x.peer === peer && x.tag === tag);
@@ -1653,6 +1769,17 @@ export class Links implements Link, TakenFiles {
       }
     }
     announce({ gone });
+  }
+
+  // What a message sealed for a contact says of one of the chat's messages, kept as this side's own,
+  // as the chat keeps what it sends: a reaction, a pin, a vote.
+  private async marksAsOwn(peer: string, m: Json, now: number): Promise<void> {
+    const { history } = this.chats;
+    const react = isObject(m.react) && isTag(m.react.tag) && (m.react.emoji === '' || isReactionEmoji(m.react.emoji)) ? { tag: m.react.tag, emoji: m.react.emoji as string } : null;
+    if (react) await history.react(peer, react.tag, true, react.emoji);
+    const { pin, vote } = carriedOf(m);
+    if (pin) await history.pin(peer, pin.tag, pin.on ? now : 0);
+    if (vote) await history.vote(peer, vote.tag, true, vote.chose);
   }
 
   // Packs of the history the phone put on the relay: each taken, opened and kept, then deleted.
@@ -1689,7 +1816,7 @@ export class Links implements Link, TakenFiles {
       const key = `${e.peer}|${e.tag}`;
       if (!known.has(e.peer) || have.has(key)) continue;
       have.add(key);
-      const message: Message = { peer: e.peer, text: e.text, mine: e.mine, at: e.at, tag: e.tag, until: e.until ?? 0, lasts: e.lasts ?? 0, mark: e.mark ?? 0 };
+      const message: Message = { peer: e.peer, text: e.text, mine: e.mine, at: e.at, tag: e.tag, until: e.until ?? 0, lasts: e.lasts ?? 0, mark: e.mark ?? 0, ...e.parts };
       if (e.voice) {
         let audio: Uint8Array;
         try {
@@ -1747,4 +1874,12 @@ export function linkedRole(): Role {
 /** On a linked device: the account's contact link, to show as the chat's own. */
 export function accountLink(): string | null {
   return current?.accountLink() ?? null;
+}
+
+/**
+ * On the primary: what was done on this phone only to the open space's chat (lib/link-wire.ts,
+ * ChatChange), for its linked devices to do too. Hidden chats are not the space's, and are never told.
+ */
+export function changedHere(change: ChatChange): void {
+  current?.changedHere(change);
 }
