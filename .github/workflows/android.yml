@@ -18,6 +18,15 @@ jobs:
       EXPO_NO_TELEMETRY: "1"
     steps:
       - uses: actions/checkout@v4
+      # The Rust core, Tor, lyrebird and the native modules need more disk than the runner leaves
+      # free, as in release.yml.
+      - name: Free disk space
+        working-directory: .
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/share/powershell
+          sudo docker image prune --all --force
+          df -h /
       - uses: actions/setup-node@v4
         with:
           node-version: 22
