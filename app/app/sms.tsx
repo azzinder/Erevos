@@ -26,7 +26,7 @@ import { currentSpace } from '../lock/keys';
 import { LinkedText } from '../components/linked-text';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { LATER_TEXT, type LaterSms, type SmsData } from '../lock/sms-data';
-import { contactNames, markSmsRead, mmsReady, onSmsEvent, sendMms, sendSms, sendSmsData, smsMessages, smsSims, smsStatus, type Sim, type SmsMessage } from '../modules/erevos-sms';
+import { blockedNumbers, contactNames, markSmsRead, mmsReady, onSmsEvent, sendMms, sendSms, sendSmsData, smsMessages, smsSims, smsStatus, type Sim, type SmsMessage } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
@@ -42,9 +42,9 @@ import { useStyles, useTheme } from '../theme/context';
 // down sends a text SMS later (lib/sms-later.ts), to one number only; it shows at the end, marked
 // Scheduled, until it goes.
 //
-// ⋮ pins, archives or deletes the conversation (components/sms-actions.tsx); the part of it in the
-// Trash does not show here. A sender that writes with a name instead of a number (a bank, say) shows
-// its SMS, and cannot be answered.
+// ⋮ pins, archives, marks as spam, blocks or deletes the conversation (components/sms-actions.tsx);
+// the part of it in the Trash does not show here. A sender that writes with a name instead of a
+// number (a bank, say) shows its SMS, and cannot be answered.
 
 export default function Sms() {
   const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string }>();
@@ -69,8 +69,9 @@ export default function Sms() {
   const [names, setNames] = useState<Record<string, string>>({});
   const [later, setLater] = useState<LaterSms[]>([]);
   const [laterMenu, setLaterMenu] = useState(false);
-  // The space's order of its SMS (lib/sms-folders.ts).
+  // The space's order of its SMS (lib/sms-folders.ts), and the numbers Android blocks.
   const [order, setOrder] = useState<SmsData | null>(null);
+  const [blocked, setBlocked] = useState<string[]>([]);
   // The conversation's own actions (⋮).
   const [menu, setMenu] = useState<SmsTarget | null>(null);
   const link = useRef<SmsLink | null>(null);
@@ -121,10 +122,14 @@ export default function Sms() {
         setSim(chooseSim(found, opened.simFor(to), lastCame));
       })
       .catch(() => undefined);
+    void blockedNumbers().then(setBlocked);
     const ours = (address: string) => (numbers.length > 0 ? numbers.some((n) => sameNumber(address, n)) : sameConversation(address, to));
     const subscriptions = [onSmsEvent('onSms', ({ address }) => ours(address) && load()), onSmsEvent('onSmsSent', () => load()), onSmsEvent('onSmsDelivered', () => load())];
     const stopLater = onLaterSent(load);
-    const stopOrder = onSmsOrderChanged(load);
+    const stopOrder = onSmsOrderChanged(() => {
+      load();
+      void blockedNumbers().then(setBlocked);
+    });
     return () => {
       subscriptions.forEach((s) => s?.remove());
       stopLater();
@@ -143,10 +148,11 @@ export default function Sms() {
   const trashed = order ? trashOf(to, order) : null;
   const shown = shownMessages(messages, trashed);
   const title = group ? groupName(numbers, names) : names[to] || to;
-  // Where the conversation is, by its latest message: in the list, archived, or in the Trash with
-  // nothing after.
+  // Where the conversation is, by its latest message: in the list, archived, in Spam, or in the
+  // Trash with nothing after.
   const last = messages[messages.length - 1] ?? null;
-  const folder = order && last ? smsFolder({ address: to, text: last.text, at: last.at, mine: last.mine, unread: 0 }, order) : 'list';
+  const known = !!names[to] || contacts.some((c) => c.phone && sameNumber(c.phone, to));
+  const folder = order && last ? smsFolder({ address: to, text: last.text, at: last.at, mine: last.mine, unread: 0, replied: messages.some((m) => m.mine) }, order, blocked, known) : 'list';
 
   // The SIMs show once Erevos may read the phone's state; it asks only when the owner taps.
   async function askSims() {
@@ -287,7 +293,7 @@ export default function Sms() {
             {group ? <Text tone="muted">{plural(numbers.length, 'Group MMS · {n} number', 'Group MMS · {n} numbers')}</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
             {folder !== 'list' ? (
               <Text variant="caption" color={colors.warning}>
-                {folder === 'archived' ? t('Archived') : t('In the Trash')}
+                {folder === 'spam' ? t('In Spam') : folder === 'archived' ? t('Archived') : t('In the Trash')}
               </Text>
             ) : null}
           </View>

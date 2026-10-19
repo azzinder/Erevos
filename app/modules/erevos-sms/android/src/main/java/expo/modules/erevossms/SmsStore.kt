@@ -13,6 +13,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.BlockedNumberContract
 import android.provider.ContactsContract
 import android.provider.Telephony
 import android.telephony.SmsManager
@@ -115,7 +116,8 @@ internal object SmsStore {
     return names
   }
 
-  /** The latest message of each conversation, newest first, with how many are not read. */
+  /** The latest message of each conversation, newest first, with how many are not read, and
+   *  whether any in it is ours (`replied`). */
   fun threads(context: Context, limit: Int): List<Map<String, Any?>> {
     val seen = LinkedHashMap<Long, MutableMap<String, Any?>>()
     val projection = arrayOf(Telephony.Sms.THREAD_ID, Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.TYPE, Telephony.Sms.READ)
@@ -123,7 +125,8 @@ internal object SmsStore {
       var rows = 0
       while (c.moveToNext() && rows++ < 5000) {
         val thread = c.getLong(0)
-        val unread = c.getInt(4) == Telephony.Sms.MESSAGE_TYPE_INBOX && c.getInt(5) == 0
+        val mine = c.getInt(4) != Telephony.Sms.MESSAGE_TYPE_INBOX
+        val unread = !mine && c.getInt(5) == 0
         val row = seen[thread]
         if (row == null) {
           if (seen.size >= limit) continue
@@ -132,11 +135,13 @@ internal object SmsStore {
             "address" to (c.getString(1) ?: ""),
             "text" to (c.getString(2) ?: ""),
             "at" to c.getLong(3).toDouble(),
-            "mine" to (c.getInt(4) != Telephony.Sms.MESSAGE_TYPE_INBOX),
+            "mine" to mine,
             "unread" to (if (unread) 1 else 0),
+            "replied" to mine,
           )
-        } else if (unread) {
-          row["unread"] = (row["unread"] as Int) + 1
+        } else {
+          if (unread) row["unread"] = (row["unread"] as Int) + 1
+          if (mine) row["replied"] = true
         }
       }
     }
@@ -156,6 +161,8 @@ internal object SmsStore {
   private fun mmsInto(context: Context, seen: LinkedHashMap<Long, MutableMap<String, Any?>>, latest: LongArray, limit: Int) {
     val (thread, id, at, mine, unread) = latest.toList()
     val row = seen[thread]
+    // Whether any message in it is ours: one of its SMS, or of its MMS.
+    val replied = (row?.get("replied") as Boolean? ?: false) || latest.getOrElse(5) { mine } == 1L
     if (row == null || (row["at"] as Double) < at.toDouble()) {
       if (row == null && seen.size >= limit) return
       val (text, pictures) = MmsStore.parts(context, id)
@@ -171,9 +178,11 @@ internal object SmsStore {
         "at" to at.toDouble(),
         "mine" to (mine == 1L),
         "unread" to ((row?.get("unread") as Int?) ?: 0) + unread.toInt(),
+        "replied" to replied,
       )
     } else {
       row["unread"] = (row["unread"] as Int) + unread.toInt()
+      row["replied"] = replied
     }
   }
 
@@ -400,6 +409,44 @@ internal object SmsStore {
     val thread = threadId(context, address) ?: return 0
     val gone = context.contentResolver.delete(Telephony.Sms.CONTENT_URI, "${Telephony.Sms.THREAD_ID}=? AND ${Telephony.Sms.DATE}<=?", arrayOf(thread.toString(), upTo.toString()))
     return gone + MmsStore.deleteThread(context, thread, upTo)
+  }
+
+  // --- Blocked numbers -------------------------------------------------------------------------
+
+  /** Whether Erevos may read and change Android's own list of blocked numbers: as the default SMS
+   *  app, for the phone's owner. Android then rejects their SMS, MMS and calls itself. */
+  fun canBlock(context: Context): Boolean =
+    Build.VERSION.SDK_INT >= 24 && isDefault(context) && try {
+      BlockedNumberContract.canCurrentUserBlockNumbers(context)
+    } catch (_: Exception) {
+      false
+    }
+
+  /** The numbers in Android's list, as they were written there. */
+  fun blocked(context: Context): List<String> {
+    if (!canBlock(context)) return emptyList()
+    val numbers = ArrayList<String>()
+    try {
+      val projection = arrayOf(BlockedNumberContract.BlockedNumbers.COLUMN_ORIGINAL_NUMBER)
+      context.contentResolver.query(BlockedNumberContract.BlockedNumbers.CONTENT_URI, projection, null, null, null)?.use { c ->
+        while (c.moveToNext()) c.getString(0)?.takeIf { it.isNotBlank() }?.let { numbers.add(it) }
+      }
+    } catch (_: Exception) {
+      return emptyList()
+    }
+    return numbers
+  }
+
+  fun block(context: Context, number: String): Boolean {
+    check(canBlock(context)) { "Only the SMS app may block numbers" }
+    if (BlockedNumberContract.isBlocked(context, number)) return true
+    val values = ContentValues().apply { put(BlockedNumberContract.BlockedNumbers.COLUMN_ORIGINAL_NUMBER, number) }
+    return context.contentResolver.insert(BlockedNumberContract.BlockedNumbers.CONTENT_URI, values) != null
+  }
+
+  fun unblock(context: Context, number: String): Boolean {
+    check(canBlock(context)) { "Only the SMS app may block numbers" }
+    return BlockedNumberContract.unblock(context, number) > 0
   }
 
   fun sendData(context: Context, address: String, data: ByteArray) {

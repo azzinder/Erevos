@@ -349,7 +349,8 @@ internal object MmsStore {
     return ""
   }
 
-  /** The newest MMS of each conversation, newest first: thread, row, time (ms), whether mine, read. */
+  /** The newest MMS of each conversation, newest first: thread, row, time (ms), whether mine, how
+   *  many are not read, and whether any is ours. */
   fun latest(context: Context, rows: Int): List<LongArray> {
     val out = LinkedHashMap<Long, LongArray>()
     val projection = arrayOf(Telephony.Mms.THREAD_ID, Telephony.Mms._ID, Telephony.Mms.DATE, Telephony.Mms.MESSAGE_BOX, Telephony.Mms.READ, Telephony.Mms.MESSAGE_TYPE)
@@ -362,8 +363,11 @@ internal object MmsStore {
           val inbox = c.getInt(3) == Telephony.Mms.MESSAGE_BOX_INBOX
           val unread = if (inbox && c.getInt(4) == 0) 1L else 0L
           val seen = out[thread]
-          if (seen == null) out[thread] = longArrayOf(thread, c.getLong(1), c.getLong(2) * 1000, if (inbox) 0 else 1, unread)
-          else seen[4] += unread
+          if (seen == null) out[thread] = longArrayOf(thread, c.getLong(1), c.getLong(2) * 1000, if (inbox) 0 else 1, unread, if (inbox) 0 else 1)
+          else {
+            seen[4] += unread
+            if (!inbox) seen[5] = 1
+          }
         }
       }
     } catch (_: Exception) {

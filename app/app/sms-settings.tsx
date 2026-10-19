@@ -3,17 +3,21 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
 
-import { Button, Card, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
+import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
+import { ask } from '../lib/alert';
 import { mark, plural, t } from '../lib/i18n';
+import { smsOrderChanged } from '../lib/sms-folders';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
-import { requestDefaultSms, smsReady, smsStatus, smsThreads, type SmsStatus } from '../modules/erevos-sms';
+import { MAX_WORDS, WORD } from '../lock/sms-data';
+import { blockedNumbers, blockNumber, canBlockNumbers, requestDefaultSms, smsReady, smsStatus, smsThreads, smsToolsReady, unblockNumber, type SmsStatus } from '../modules/erevos-sms';
 
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
 // writing to a number that has Erevos goes through Erevos. Whether to look for Erevos on a number
 // with a hidden SMS invite, whether SMS numbers show the names the phone's contacts give them, and
-// a new SMS conversation, and the space's SMS folders.
+// a new SMS conversation. The space's SMS folders, its spam filter's rules, and the numbers blocked
+// in Android's own list.
 
 // What the SMS app needs from Android. Becoming the SMS app gives them, except to an app installed
 // from a browser on Android 15 and later, which Android holds them back from until its owner allows
@@ -49,6 +53,13 @@ export default function SmsSettings() {
   const [names, setNames] = useState(false);
   const [number, setNumber] = useState('');
   const [note, setNote] = useState('');
+  // The spam filter (lib/sms-folders.ts), as the space keeps it.
+  const [spam, setSpam] = useState({ on: true, links: false, words: [] as string[] });
+  const [word, setWord] = useState('');
+  // Android's list of blocked numbers, or null when Erevos may not read it.
+  const [blocked, setBlocked] = useState<string[] | null>(null);
+  const [toBlock, setToBlock] = useState('');
+  const [blockNote, setBlockNote] = useState('');
 
   useEffect(() => {
     const { space, key } = currentSpace();
@@ -57,6 +68,7 @@ export default function SmsSettings() {
         setLink(opened);
         setInvites(opened.invites);
         setNames(opened.names);
+        setSpam({ on: opened.state.spam, links: opened.state.spamLinks, words: [...opened.state.spamWords] });
       })
       .catch(() => setNote(t('The SMS settings of this space could not open.')));
     const look = () => {
@@ -67,6 +79,7 @@ export default function SmsSettings() {
       if (Number(Platform.Version) >= 33) {
         void PermissionsAndroid.check('android.permission.POST_NOTIFICATIONS').then(setCanNotify, () => setCanNotify(null));
       } else setCanNotify(true);
+      void canBlockNumbers().then((can) => (can ? blockedNumbers().then(setBlocked) : setBlocked(null)));
       if (now?.isDefault) {
         smsThreads().then(
           (threads) => setReading({ count: threads.length }),
@@ -143,6 +156,57 @@ export default function SmsSettings() {
     }
     await link.setNames(!names);
     setNames(!names);
+  }
+
+  async function changeSpam(change: (opened: SmsLink) => Promise<unknown>) {
+    if (!link) return;
+    await change(link);
+    setSpam({ on: link.state.spam, links: link.state.spamLinks, words: [...link.state.spamWords] });
+    smsOrderChanged();
+  }
+
+  async function addWord() {
+    const typed = word.trim();
+    if (!typed || !link) return;
+    if (!(await link.addSpamWord(typed))) {
+      setNote(t('At most {n} words, each up to {length} letters.', { n: MAX_WORDS, length: WORD }));
+      return;
+    }
+    setWord('');
+    await changeSpam(async () => undefined);
+  }
+
+  async function block() {
+    setBlockNote('');
+    const numbers = smsNumbers(toBlock);
+    if (numbers.length !== 1) {
+      setBlockNote(t('Type one phone number.'));
+      return;
+    }
+    try {
+      await blockNumber(numbers[0]);
+      setToBlock('');
+      setBlocked(await blockedNumbers());
+      smsOrderChanged();
+    } catch (error) {
+      setBlockNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  function unblock(number: string) {
+    ask(t('Unblock {number}?', { number }), t('Its SMS, MMS and calls reach the phone again.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: t('Unblock'),
+        onPress: () =>
+          void unblockNumber(number)
+            .then(async () => {
+              setBlocked(await blockedNumbers());
+              smsOrderChanged();
+            })
+            .catch((error) => setBlockNote(error instanceof Error ? error.message : String(error))),
+      },
+    ]);
   }
 
   function open() {
@@ -226,15 +290,84 @@ export default function SmsSettings() {
         <Button title={names ? t('Show numbers only') : t('Show names from my contacts')} kind="secondary" onPress={() => void toggleNames()} />
       </Card>
 
-      <SectionTitle title={t('Archived and Trash')} />
+      <SectionTitle title={t('Archived, Spam and Trash')} />
       <Card>
         <Text tone="muted">
-          {t("In the list, swipe an SMS conversation to the right to archive it, to the left to delete it, or hold it down to pin it at the top and more. This space keeps its own pins, archived conversations and Trash, sealed with its password; the SMS stay in the phone's SMS, where another space sees them as they are.")}
+          {t("In the list, swipe an SMS conversation to the right to archive it, to the left to delete it, or hold it down to pin it at the top and more. This space keeps its own pins, archived conversations, Trash and spam marks, sealed with its password; the SMS stay in the phone's SMS, where another space sees them as they are.")}
         </Text>
         <Row wrap>
           <Button title={t('Archived conversations')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=archived')} />
+          <Button title={t('Spam')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=spam')} />
           <Button title={t('Trash')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=trash')} />
         </Row>
+      </Card>
+
+      <SectionTitle title={t('Spam filter')} />
+      <Card>
+        <Text tone="muted">
+          {t('It works on this phone alone, by rules, and sends nothing anywhere. An SMS from a number that is no contact and was never answered goes to Spam when it has a link with words that try to fool, like a parcel held or a prize, or one of your words below. A number you marked as spam always goes there, one you marked not spam never does.')}
+        </Text>
+        <Button title={spam.on ? t('Turn the spam filter off') : t('Turn the spam filter on')} kind="secondary" onPress={() => void changeSpam((l) => l.setSpam(!spam.on))} />
+        {spam.on ? (
+          <>
+            <Button
+              title={spam.links ? t('Let links from unknown numbers through') : t('Send every link from unknown numbers to Spam')}
+              kind="ghost"
+              compact
+              onPress={() => void changeSpam((l) => l.setSpamLinks(!spam.links))}
+            />
+            <Field label={t('Your words')} hint={t('An SMS with one of them goes to Spam, from any number or sender that is no contact. Tap a word to remove it.')}>
+              <Row>
+                <Input value={word} onChangeText={setWord} placeholder={t('A word or a few')} style={{ flex: 1 }} onSubmitEditing={() => void addWord()} maxLength={WORD} />
+                <Button title={t('Add')} compact kind="secondary" onPress={() => void addWord()} />
+              </Row>
+            </Field>
+            {spam.words.length > 0 ? (
+              <Row wrap>
+                {spam.words.map((w) => (
+                  <Chip key={w} label={`${w} ×`} onPress={() => void changeSpam((l) => l.removeSpamWord(w))} />
+                ))}
+              </Row>
+            ) : null}
+          </>
+        ) : null}
+        <Text variant="caption" tone="faint">
+          {t('A notice still says "New message" when spam comes, as it shows before Erevos is opened. Block a number to hear nothing more from it.')}
+        </Text>
+      </Card>
+
+      <SectionTitle title={t('Blocked numbers')} />
+      <Card>
+        <Text tone="muted">
+          {t("These are Android's own blocked numbers: Android rejects their SMS, MMS and calls. Every space, and the phone app, sees the same list. Block one from its conversation, with ⋮, or here.")}
+        </Text>
+        {blocked === null ? (
+          <Text variant="caption" tone="faint">
+            {smsToolsReady() ? t('Only the SMS app can see and change them: make Erevos the SMS app above.') : t('This build of Erevos cannot block numbers yet.')}
+          </Text>
+        ) : (
+          <>
+            {blocked.length === 0 ? (
+              <Text variant="caption" tone="faint">
+                {t('No number is blocked.')}
+              </Text>
+            ) : null}
+            <Row wrap>
+              {blocked.map((b) => (
+                <Chip key={b} label={`${b} ×`} onPress={() => unblock(b)} />
+              ))}
+            </Row>
+            <Row>
+              <Input value={toBlock} onChangeText={setToBlock} keyboardType="phone-pad" placeholder={t('Phone number')} style={{ flex: 1 }} onSubmitEditing={() => void block()} />
+              <Button title={t('Block')} compact kind="secondary" onPress={() => void block()} />
+            </Row>
+            {blockNote ? (
+              <Text variant="caption" tone="muted">
+                {blockNote}
+              </Text>
+            ) : null}
+          </>
+        )}
       </Card>
 
       {(status?.slots ?? 0) >= 2 ? (

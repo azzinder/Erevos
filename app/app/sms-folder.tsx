@@ -11,26 +11,28 @@ import { lang, plural, t } from '../lib/i18n';
 import { rowTime, type InboxSms } from '../lib/inbox';
 import { emptyTrash, onSmsOrderChanged, smsOrderChanged, sortSms, trashGoesAt } from '../lib/sms-folders';
 import { groupName, smsNumbers } from '../lib/sms-group';
+import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
+import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import { TRASH_DAYS, type Trashed } from '../lock/sms-data';
-import { contactNames, deleteSmsThread, smsStatus, smsThreads, smsToolsReady } from '../modules/erevos-sms';
+import { blockedNumbers, contactNames, deleteSmsThread, smsStatus, smsThreads, smsToolsReady } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
-// One of the space's SMS folders (lib/sms-folders.ts): the Archive or the Trash. Archived
-// conversations open as they do from the list, and held down show what can be done to them.
+// One of the space's SMS folders (lib/sms-folders.ts): the Archive, Spam or the Trash. Archived and
+// spam conversations open as they do from the list, and held down show what can be done to them.
 // What is in the Trash can be brought back, or deleted from the phone now, all of it with Empty the
 // Trash; each part goes from the phone by itself TRASH_DAYS after it was put there, when Erevos
 // opens. The folders are this space's own: another space sees the phone's SMS as they are.
 
-type Folder = 'archived' | 'trash';
+type Folder = 'archived' | 'spam' | 'trash';
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 export default function SmsFolderScreen() {
   const params = useLocalSearchParams<{ folder?: string }>();
-  const folder: Folder = params.folder === 'trash' ? 'trash' : 'archived';
+  const folder: Folder = params.folder === 'spam' ? 'spam' : params.folder === 'trash' ? 'trash' : 'archived';
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -45,11 +47,18 @@ export default function SmsFolderScreen() {
   const load = useCallback(() => {
     const { space: current, key } = currentSpace();
     void (async () => {
-      const [threads, link] = await Promise.all([smsThreads(), SmsLink.open(current, key)]);
+      const [threads, link, blocked, data] = await Promise.all([
+        smsThreads(),
+        SmsLink.open(current, key),
+        blockedNumbers(),
+        loadE2EData('space', current, key).catch(() => null),
+      ]);
       const found: Record<string, string> = link.names ? await contactNames(threads.flatMap((th) => smsNumbers(th.address))).catch(() => ({})) : {};
-      const sorted = sortSms(threads, link.state);
+      const phones = (data?.contacts ?? []).flatMap((c) => (c.phone ? [c.phone] : []));
+      const named = threads.map((th) => ({ ...th, name: smsNumbers(th.address).length === 1 ? found[smsNumbers(th.address)[0]] : undefined }));
+      const sorted = sortSms(named, link.state, blocked, (th) => !!th.name || phones.some((p) => sameNumber(p, th.address)));
       setNames(found);
-      setRows(sorted.archived);
+      setRows(folder === 'spam' ? sorted.spam : sorted.archived);
       setTrash([...link.state.trash].sort((a, b) => b.at - a.at));
       setNow(Date.now());
     })().catch((error) => setNote(errorText(error)));
@@ -109,16 +118,19 @@ export default function SmsFolderScreen() {
   }
 
   const day = (at: number) => new Date(at).toLocaleDateString(lang() === 'el' ? 'el-GR' : undefined, { day: 'numeric', month: 'short' });
-  const title = folder === 'trash' ? t('Trash') : t('Archived conversations');
+  const title = folder === 'spam' ? t('Spam') : folder === 'trash' ? t('Trash') : t('Archived conversations');
   return (
     <View style={styles.screen}>
       <Page>
         <Text variant="title">{title}</Text>
         <Text variant="caption" tone="muted">
-          {folder === 'trash'
-            ? t('Conversations you deleted, kept {days} days in case you want them back, then deleted from the phone. Only this space hides them meanwhile: they are still in the phone\'s SMS.', { days: TRASH_DAYS })
-            : t('Conversations you archived. One comes back to the list when a new SMS comes from them. Hold one down for more.')}
+          {folder === 'spam'
+            ? t('SMS from numbers you blocked or marked as spam, and those the spam filter caught. The filter works on this phone alone and sends nothing anywhere. Hold one down to say it is not spam.')
+            : folder === 'trash'
+              ? t('Conversations you deleted, kept {days} days in case you want them back, then deleted from the phone. Only this space hides them meanwhile: they are still in the phone\'s SMS.', { days: TRASH_DAYS })
+              : t('Conversations you archived. One comes back to the list when a new SMS comes from them. Hold one down for more.')}
         </Text>
+        {folder === 'spam' ? <Button title={t('Spam filter')} kind="secondary" compact onPress={() => router.push('/sms-settings')} /> : null}
 
         {folder === 'trash' ? (
           <>
@@ -160,7 +172,7 @@ export default function SmsFolderScreen() {
                 </Text>
               </Pressable>
             ))}
-            {rows && rows.length === 0 ? <Text tone="muted">{t('Nothing archived.')}</Text> : null}
+            {rows && rows.length === 0 ? <Text tone="muted">{folder === 'spam' ? t('No spam.') : t('Nothing archived.')}</Text> : null}
           </>
         )}
         {note ? <Text tone="muted">{note}</Text> : null}

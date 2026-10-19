@@ -19,6 +19,9 @@ not been compiled yet.
   `lib/sms-invite.ts`.
 - **Deleting.** As the default app, `deleteThread()` deletes a conversation's SMS and MMS up to a
   time (the space's Trash, `lib/sms-folders.ts`).
+- **Blocked numbers.** `blocked()`, `block()` and `unblock()` use Android's own list
+  (`BlockedNumberContract`), which only the default SMS app (or dialer) may read and change.
+  Android then rejects those numbers' SMS, MMS and calls itself.
 
 ## JS API
 

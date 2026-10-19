@@ -77,5 +77,10 @@ class ErevosSmsModule : Module() {
     AsyncFunction("laterState") { ids: List<String> -> LaterSms.state(context(), ids) }
     // Deleting conversations from the phone (the space's Trash).
     AsyncFunction("deleteThread") { address: String, upTo: Double -> SmsStore.deleteThread(context(), address, upTo.toLong()).toDouble() }
+    // Android's own list of blocked numbers, which the default SMS app may read and change.
+    AsyncFunction("canBlock") { SmsStore.canBlock(context()) }
+    AsyncFunction("blocked") { SmsStore.blocked(context()) }
+    AsyncFunction("block") { number: String -> SmsStore.block(context(), number) }
+    AsyncFunction("unblock") { number: String -> SmsStore.unblock(context(), number) }
   }
 }

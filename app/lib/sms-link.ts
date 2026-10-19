@@ -7,7 +7,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { fresh, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, saveSmsData, type LaterSms, type SmsData } from '../lock/sms-data';
+import { fresh, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, WORD, type LaterSms, type SmsData } from '../lock/sms-data';
 import type { Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 
@@ -91,7 +91,7 @@ export class SmsLink {
     return this.update((d) => ({ ...d, later: d.later.filter((l) => l.id !== id) }));
   }
 
-  /** The space's SMS data as it is now: its folders (lib/sms-folders.ts). */
+  /** The space's SMS data as it is now: its folders and spam rules (lib/sms-folders.ts). */
   get state(): Readonly<SmsData> {
     return this.data;
   }
@@ -140,6 +140,37 @@ export class SmsLink {
   /** Takes a conversation out of the Trash: it is back, or it went from the phone. */
   untrash(address: string): Promise<void> {
     return this.update((d) => ({ ...d, trash: d.trash.filter((t) => !sameConversation(t.address, address)) }));
+  }
+
+  /** Says a number sends spam (true), or does not (false), whatever the filter thinks; null leaves
+   *  it to the filter again. */
+  markSpam(number: string, spam: boolean | null): Promise<void> {
+    return this.update((d) => ({ ...d, marks: [...d.marks.filter((m) => !sameConversation(m.number, number)), ...(spam === null ? [] : [{ number, spam, at: Date.now() }])] }));
+  }
+
+  setSpam(on: boolean): Promise<void> {
+    return this.update((d) => ({ ...d, spam: on }));
+  }
+
+  setSpamLinks(on: boolean): Promise<void> {
+    return this.update((d) => ({ ...d, spamLinks: on }));
+  }
+
+  /** Adds a word that sends an SMS to Spam. False when it is no word, or MAX_WORDS are kept. */
+  async addSpamWord(word: string): Promise<boolean> {
+    const kept = word.trim().replace(/\s+/g, ' ');
+    if (!kept || kept.length > WORD) return false;
+    let done = true;
+    await this.update((d) => {
+      if (d.spamWords.some((w) => w.toLowerCase() === kept.toLowerCase())) return d;
+      done = d.spamWords.length < MAX_WORDS;
+      return done ? { ...d, spamWords: [...d.spamWords, kept] } : d;
+    });
+    return done;
+  }
+
+  removeSpamWord(word: string): Promise<void> {
+    return this.update((d) => ({ ...d, spamWords: d.spamWords.filter((w) => w !== word) }));
   }
 
   /** Whether the first SMS to `number` should carry an invite: invites are on, the core can open

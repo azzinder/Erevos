@@ -3,25 +3,27 @@ import { Pressable, StyleSheet } from 'react-native';
 
 import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
-import { smsOrderChanged, type SmsFolder } from '../lib/sms-folders';
-import { sameConversation } from '../lib/sms-group';
+import { isBlocked, smsOrderChanged, spamMark, type SmsFolder } from '../lib/sms-folders';
+import { sameConversation, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
 import { MAX_PINS, TRASH_DAYS } from '../lock/sms-data';
+import { blockedNumbers, blockNumber, canBlockNumbers, unblockNumber } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 import { Sheet, Text } from './ui';
 import { offerUndo } from './undo-bar';
 
 // What can be done to an SMS conversation, from the list (held down), a folder, or the conversation
-// itself (⋮): pin it at the top, archive it, or put it in the Trash. Each but pinning shows Undo for
-// a few seconds after (components/undo-bar.tsx). Pins, the Archive and the Trash are this space's
-// own, sealed in it (lock/sms-data.ts).
+// itself (⋮): pin it at the top, archive it, say it is spam or not, block its number in Android's
+// own list, or put it in the Trash. Each but pinning shows Undo for a few seconds after
+// (components/undo-bar.tsx). Pins, the Archive, the Trash and spam marks are this space's own,
+// sealed in it (lock/sms-data.ts); the blocked numbers are Android's, the same in every space.
 
 /** A conversation: its address, the name it shows, its latest message's time, and where it is. */
 export type SmsTarget = { address: string; name: string; at: number; folder: SmsFolder };
 
-type State = { link: SmsLink };
+type State = { link: SmsLink; blocked: boolean | null };
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -90,15 +92,17 @@ export function SmsActions({ target, onClose, onTrashed }: {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const [state, setState] = useState<State | null>(null);
+  const numbers = target ? smsNumbers(target.address) : [];
+  const one = numbers.length === 1 ? numbers[0] : null;
 
   useEffect(() => {
     setState(null);
     if (!target) return;
     let active = true;
     const { space: current, key } = currentSpace();
-    void SmsLink.open(current, key)
-      .then((link) => {
-        if (active) setState({ link });
+    void Promise.all([SmsLink.open(current, key), canBlockNumbers(), blockedNumbers()])
+      .then(([link, can, blocked]) => {
+        if (active) setState({ link, blocked: can && one ? isBlocked(target.address, blocked) : null });
       })
       .catch(() => undefined);
     return () => {
@@ -111,6 +115,8 @@ export function SmsActions({ target, onClose, onTrashed }: {
   const data = state?.link.state;
   const pinned = !!data?.pinned.some((p) => sameConversation(p.address, address));
   const archived = data?.archived.find((a) => sameConversation(a.address, address)) ?? null;
+  const mark = data ? spamMark(address, data) : null;
+  const spam = target.folder === 'spam';
 
   function pin() {
     onClose();
@@ -124,6 +130,30 @@ export function SmsActions({ target, onClose, onTrashed }: {
     archiveConversation(address, !archived, state?.link);
   }
 
+  function markSpam() {
+    onClose();
+    if (!one) return;
+    const before = mark;
+    run(state?.link, (link) => link.markSpam(one, !spam), { text: spam ? t('Not spam: back in the list.') : t('Marked as spam: it is in Spam.'), undo: (link) => link.markSpam(one, before) });
+  }
+
+  function block() {
+    onClose();
+    if (!one || !state || state.blocked === null) return;
+    if (state.blocked) {
+      run(state.link, () => unblockNumber(one), { text: t('Unblocked.'), undo: () => blockNumber(one) });
+      return;
+    }
+    ask(
+      t('Block {number}?', { number: one }),
+      t("It goes into Android's own list of blocked numbers: Android rejects its SMS, MMS and calls, in every space and in the phone app too, until you unblock it. The conversation goes to Spam."),
+      [
+        { text: t('Cancel'), style: 'cancel' },
+        { text: t('Block'), style: 'destructive', onPress: () => run(state.link, () => blockNumber(one), { text: t('Blocked.'), undo: () => unblockNumber(one) }) },
+      ],
+    );
+  }
+
   function trash() {
     onClose();
     trashConversation(address, target!.at, state?.link);
@@ -132,7 +162,9 @@ export function SmsActions({ target, onClose, onTrashed }: {
 
   const rows: { label: string; run: () => void; danger?: boolean }[] = [];
   if (target.folder === 'list') rows.push({ label: pinned ? t('Unpin') : t('Pin to the top'), run: pin });
-  rows.push({ label: archived ? t('Unarchive') : t('Archive'), run: archive });
+  if (target.folder !== 'spam') rows.push({ label: archived ? t('Unarchive') : t('Archive'), run: archive });
+  if (one && state?.blocked !== true) rows.push({ label: spam ? t('Not spam') : t('Mark as spam'), run: markSpam });
+  if (one && state && state.blocked !== null) rows.push({ label: state.blocked ? t('Unblock {number}', { number: one }) : t('Block {number}', { number: one }), run: block });
   rows.push({ label: t('Delete'), run: trash, danger: true });
 
   return (

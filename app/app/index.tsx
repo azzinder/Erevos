@@ -21,8 +21,9 @@ import { spaceChats } from '../lib/space-chats';
 import { spaceGroups } from '../lib/space-groups';
 import { arrangeRows, dueTrash, emptyTrash, onSmsOrderChanged, sortSms } from '../lib/sms-folders';
 import { groupName, smsNumbers } from '../lib/sms-group';
+import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
-import { contactNames, deleteSmsThread, onSmsEvent, smsStatus, smsThreads, smsToolsReady } from '../modules/erevos-sms';
+import { blockedNumbers, contactNames, deleteSmsThread, onSmsEvent, smsStatus, smsThreads, smsToolsReady } from '../modules/erevos-sms';
 import { Archive } from '../lock/archive';
 import { useLock } from '../lock/context';
 import { loadE2EData } from '../lock/e2e-data';
@@ -70,8 +71,9 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
 ];
 
 // The phone's SMS conversations, named as the phone's contacts name them when the owner turned that
-// on, with the space's own order of them (lib/sms-folders.ts: pinned, archived, in the Trash).
-type SmsList = { threads: InboxSms[]; order: SmsData | null };
+// on, with the space's own order of them (lib/sms-folders.ts: pinned, archived, in the Trash, spam)
+// and the numbers Android blocks.
+type SmsList = { threads: InboxSms[]; order: SmsData | null; blocked: string[] };
 
 async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
   const threads = await smsThreads();
@@ -82,7 +84,7 @@ async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
     const numbers = smsNumbers(t.address);
     return { ...t, name: numbers.length > 1 ? groupName(numbers, names) : names[numbers[0] ?? t.address] };
   });
-  return { threads: rows, order: link?.state ?? null };
+  return { threads: rows, order: link?.state ?? null, blocked: await blockedNumbers() };
 }
 
 // The spaces whose Trash was looked at since Erevos started: what was there long enough goes from
@@ -112,9 +114,9 @@ export default function Home() {
   // The contacts whose phones said they are open, and not long ago (lib/e2e.ts).
   const [online, setOnline] = useState<Set<string>>(new Set());
   // The phone's SMS as last read: the list shows them while they are read again.
-  const smsShown = useRef<SmsList>({ threads: [], order: null });
-  // How many SMS conversations are in the space's Archive and Trash.
-  const [folders, setFolders] = useState({ archived: 0, trash: 0 });
+  const smsShown = useRef<SmsList>({ threads: [], order: null, blocked: [] });
+  // How many SMS conversations are in the space's Archive, Spam and Trash.
+  const [folders, setFolders] = useState({ archived: 0, spam: 0, trash: 0 });
   // The SMS conversation held down, whose actions show.
   const [target, setTarget] = useState<SmsTarget | null>(null);
   const smsRead = useRef(false);
@@ -158,7 +160,7 @@ export default function Home() {
               .then((gone) => active && gone > 0 && load())
               .catch(() => undefined);
           }
-        } else smsShown.current = { threads: [], order: null };
+        } else smsShown.current = { threads: [], order: null, blocked: [] };
         void Promise.all([
           quiet(chats(), [[], []]),
           quiet(Archive.open('space', current, key).then((a) => a.chats()), []),
@@ -167,14 +169,15 @@ export default function Home() {
         ]).then(([[contacts, messages], imported, data, groups]) => {
           if (!active) return;
           const name = (identity: string) => memberName(identity, contacts);
+          const phones = contacts.flatMap((c) => (c.phone ? [c.phone] : []));
           chatsRead = (sms) => {
             const at = Date.now();
-            // Archived and those in the Trash are not in the list; pinned ones are at its top.
+            // Archived, spam and those in the Trash are not in the list; pinned ones are at its top.
             const order = sms.order;
-            const sorted = order ? sortSms(sms.threads, order) : null;
+            const sorted = order ? sortSms(sms.threads, order, sms.blocked, (t) => !!t.name || phones.some((p) => sameNumber(p, t.address))) : null;
             const merged = mergeRows(buildInbox(contacts, messages, imported, at, sorted?.list ?? sms.threads), groupRows(groups, name, (text) => noteText(text, name)));
             const list = order ? arrangeRows(merged, order.pinned) : merged;
-            setFolders({ archived: sorted?.archived.length ?? 0, trash: order?.trash.length ?? 0 });
+            setFolders({ archived: sorted?.archived.length ?? 0, spam: sorted?.spam.length ?? 0, trash: order?.trash.length ?? 0 });
             if (sorted && sorted.back.length > 0) void SmsLink.open(current, key).then((link) => link.unarchive(sorted.back)).catch(() => undefined);
             // Not "No chats yet", nor the kept copy without its SMS, while the SMS are still being
             // read the first time.
@@ -288,9 +291,10 @@ export default function Home() {
           {relayText}
         </Text>
       </Pressable>
-      {folders.archived + folders.trash > 0 ? (
+      {folders.archived + folders.spam + folders.trash > 0 ? (
         <Row wrap>
           {folders.archived ? <Chip label={t('Archived · {n}', { n: folders.archived })} onPress={() => router.push('/sms-folder?folder=archived')} /> : null}
+          {folders.spam ? <Chip label={t('Spam · {n}', { n: folders.spam })} onPress={() => router.push('/sms-folder?folder=spam')} /> : null}
           {folders.trash ? <Chip label={t('Trash · {n}', { n: folders.trash })} onPress={() => router.push('/sms-folder?folder=trash')} /> : null}
         </Row>
       ) : null}

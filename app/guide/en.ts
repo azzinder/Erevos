@@ -512,8 +512,8 @@ chats in one list.
 ### Keeping the SMS in order
 
 - **Swipe:** in the list, swipe an SMS conversation to the right to archive it, or to the left to delete it.
-  **Undo** shows for a few seconds after. Hold a conversation down for the rest: **Pin to the top**, **Archive**
-  and **Delete**. In a conversation, **⋮** at the top shows the same.
+  **Undo** shows for a few seconds after. Hold a conversation down for the rest: **Pin to the top**, **Archive**,
+  **Mark as spam**, **Block** and **Delete**. In a conversation, **⋮** at the top shows the same.
 - **Pinned:** up to 10 SMS conversations stay at the top of the list, with a pin. **Unpin** lets one go back to its
   place.
 - **Archived conversations:** out of the list, under **Archived** at the top of the home screen. One comes back to
@@ -521,7 +521,15 @@ chats in one list.
 - **Trash:** a deleted conversation waits in the **Trash** 30 days, then Erevos deletes it from the phone's SMS. Until
   then **Bring back** puts it back in the list; **Delete now** and **Empty the Trash** delete at once, for good. An
   SMS that comes after it went to the Trash shows in the list again. Only the SMS app may delete SMS.
-- **Each space its own:** pins, archived conversations and the Trash belong to the space, sealed
+- **Spam:** a filter that works on the phone alone, by rules, and sends nothing anywhere. An SMS from a number that
+  is no contact and that you never answered goes to **Spam** when it has a link with words that try to fool, like a
+  parcel held or a prize, or one of the words you add under **SMS** in the menu → **Spam filter**. **Mark as spam**
+  and **Not spam** decide for a number for good. A notice still says "New message" when spam comes, as it shows
+  before Erevos is opened.
+- **Block:** **Block** in the menu of a conversation, or **Blocked numbers** under **SMS** in the menu, puts a number
+  in Android's own list of blocked numbers: Android rejects its SMS, MMS and calls, and every space and the phone app
+  see the same list. Only the SMS app may see and change it.
+- **Each space its own:** pins, archived conversations, the Trash and spam marks belong to the space, sealed
   with its password. The SMS themselves stay in the phone's SMS: another space sees them as they are, and one in the
   Trash here shows there until it is deleted from the phone.
 

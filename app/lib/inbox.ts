@@ -15,8 +15,9 @@ import { t, mark } from './i18n';
 export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null; phone?: string };
 
 /** The latest SMS of a conversation with one number. `name`: what the phone's contacts call the
- *  number, when the owner lets Erevos show it. */
-export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number; name?: string };
+ *  number, when the owner lets Erevos show it. `replied`: any message in it is ours (missing from a
+ *  build before it). */
+export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number; name?: string; replied?: boolean };
 
 export type InboxMessage = {
   peer: string;
