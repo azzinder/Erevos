@@ -275,6 +275,120 @@ t('a message carries its tag, and a request to delete one message or all of them
   assert.equal(message(await bob.e2e.receive(both.packet)).erase, null);
 });
 
+t('an answer says which message it answers, and a reaction travels with no words', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(identity);
+
+  const question = await alice.e2e.seal(identity, 'coffee?', alice.from);
+  assert.equal(message(await bob.e2e.receive(question.packet)).re, '');
+  const answer = await bob.e2e.seal(hello.identity, 'yes', bob.from, { re: question.tag });
+  const answered = message(await alice.e2e.receive(answer.packet));
+  assert.deepEqual([answered.text, answered.re], ['yes', question.tag]);
+  // A voice message and a file answer too.
+  const voice = await bob.e2e.sealVoice(hello.identity, new Uint8Array(10), 1000, bob.from, { re: question.tag });
+  assert.equal(message(await alice.e2e.receive(voice.packets[0])).re, question.tag);
+
+  const liked = await alice.e2e.seal(identity, '', alice.from, { react: { tag: answer.tag, emoji: '👍' } });
+  assert.equal(liked.tag, '');
+  const reaction = message(await bob.e2e.receive(liked.packet));
+  assert.deepEqual([reaction.text, reaction.tag, reaction.react], ['', '', { tag: answer.tag, emoji: '👍' }]);
+  const back = await alice.e2e.seal(identity, '', alice.from, { react: { tag: answer.tag, emoji: '' } });
+  assert.deepEqual(message(await bob.e2e.receive(back.packet)).react, { tag: answer.tag, emoji: '' });
+  // A reaction with words is none, and words never react.
+  const words = await alice.e2e.seal(identity, '', alice.from, { react: { tag: answer.tag, emoji: 'nice' } });
+  assert.equal(message(await bob.e2e.receive(words.packet)).react, null);
+  const both = await alice.e2e.seal(identity, 'text', alice.from, { react: { tag: answer.tag, emoji: '👍' } });
+  assert.equal(message(await bob.e2e.receive(both.packet)).react, null);
+});
+
+t('a pin travels with no words, and says the phone is open as writing does', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(identity);
+
+  const words = await alice.e2e.seal(identity, 'meet here', alice.from);
+  await bob.e2e.receive(words.packet);
+  const pinned = await bob.e2e.seal(hello.identity, '', bob.from, { more: { pin: { tag: words.tag, on: true } } });
+  assert.equal(pinned.tag, '');
+  const pin = message(await alice.e2e.receive(pinned.packet));
+  assert.deepEqual([pin.text, pin.more], ['', { pin: { tag: words.tag, on: true } }]);
+  assert.ok(pin.online > Date.now());
+  const down = await bob.e2e.seal(hello.identity, '', bob.from, { more: { pin: { tag: words.tag, on: false } } });
+  assert.deepEqual(message(await alice.e2e.receive(down.packet)).more, { pin: { tag: words.tag, on: false } });
+  // Words never pin, and a pin of no tag is none.
+  const both = await bob.e2e.seal(hello.identity, 'text', bob.from, { more: { pin: { tag: words.tag, on: true } } });
+  assert.deepEqual(message(await alice.e2e.receive(both.packet)).more, {});
+  const odd = await bob.e2e.seal(hello.identity, '', bob.from, { more: { pin: { tag: 'nope', on: true } } });
+  assert.deepEqual(message(await alice.e2e.receive(odd.packet)).more, {});
+});
+
+t('a sticker travels by its name, with its emoji as its words', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  await bob.e2e.receive(alice.e2e.pending()[0].first);
+  await alice.e2e.firstSent(identity);
+  const sealed = await alice.e2e.seal(identity, '🌝', alice.from, { more: { sticker: 'moon-smile' } });
+  assert.notEqual(sealed.tag, '');
+  const sticker = message(await bob.e2e.receive(sealed.packet));
+  assert.deepEqual([sticker.text, sticker.tag, sticker.more], ['🌝', sealed.tag, { sticker: 'moon-smile' }]);
+});
+
+t('a poll travels with its words, and a vote on it with none', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(identity);
+  const poll = { q: 'Tea or coffee?', o: ['Tea', 'Coffee'] };
+  const asked = await alice.e2e.seal(identity, '📊 Tea or coffee?\n1. Tea\n2. Coffee', alice.from, { more: { poll } });
+  const came = message(await bob.e2e.receive(asked.packet));
+  assert.deepEqual([came.tag, came.more], [asked.tag, { poll }]);
+  const voted = await bob.e2e.seal(hello.identity, '', bob.from, { more: { vote: { tag: asked.tag, chose: [1] } } });
+  assert.equal(voted.tag, '');
+  const vote = message(await alice.e2e.receive(voted.packet));
+  assert.deepEqual([vote.text, vote.more], ['', { vote: { tag: asked.tag, chose: [1] } }]);
+});
+
+t('a message forwarded says so, with its words, its voice or its file, and only with them', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  await bob.e2e.receive(alice.e2e.pending()[0].first);
+  await alice.e2e.firstSent(identity);
+  const words = await alice.e2e.seal(identity, '🌝', alice.from, { more: { sticker: 'moon-smile', forwarded: true } });
+  assert.deepEqual(message(await bob.e2e.receive(words.packet)).more, { sticker: 'moon-smile', forwarded: true });
+  const voice = await alice.e2e.sealVoice(identity, new Uint8Array(10), 1000, alice.from, { forwarded: true });
+  assert.deepEqual(message(await bob.e2e.receive(voice.packets[0])).more, { forwarded: true });
+  const offer = { name: 'a.txt', mime: 'text/plain', kind: 'file' as const, size: 3000, relay: 'ws://127.0.0.1:7879', ids: 'ab'.repeat(24), key: 'cd'.repeat(32), chunk: 64 * 1024 };
+  const file = await alice.e2e.sealFile(identity, offer, alice.from, { forwarded: true });
+  const came = message(await bob.e2e.receive(file.packet));
+  assert.deepEqual([came.file?.name, came.more], ['a.txt', { forwarded: true }]);
+  const plain = await alice.e2e.sealFile(identity, offer, alice.from);
+  assert.deepEqual(message(await bob.e2e.receive(plain.packet)).more, {});
+  // Alone it is nothing to show, so it is not sent as anything.
+  const alone = await alice.e2e.seal(identity, '', alice.from, { more: { forwarded: true } });
+  assert.deepEqual(message(await bob.e2e.receive(alone.packet)).more, {});
+});
+
+t('typing travels with no words, and neither accepts a request nor says the phone is open', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(identity);
+  const typing = await bob.e2e.seal(hello.identity, '', bob.from, { more: { typing: true } });
+  assert.equal(typing.tag, '');
+  const said = message(await alice.e2e.receive(typing.packet));
+  assert.deepEqual([said.text, said.more, said.online], ['', { typing: true }, 0]);
+  assert.equal(bob.e2e.contacts()[0].request, true);
+});
+
 t('a message sent without sound says so inside the encryption, and one sent as usual says nothing', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

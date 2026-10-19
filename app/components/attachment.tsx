@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Image, Modal, Platform, Pressable, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -105,7 +105,7 @@ export function useShownPhotos(files: FileRef[], onError: (error: unknown) => vo
 }
 
 /** The sheet a photo or file is sent from, with how photos go (lib/photo-quality.ts), and `note` last. */
-export function AttachSheet({ visible, onClose, onPhoto, onFile, quality, onQuality, note }: {
+export function AttachSheet({ visible, onClose, onPhoto, onFile, quality, onQuality, note, more }: {
   visible: boolean;
   onClose: () => void;
   onPhoto: (from: 'photos' | 'camera') => void;
@@ -113,14 +113,17 @@ export function AttachSheet({ visible, onClose, onPhoto, onFile, quality, onQual
   quality: PhotoQuality;
   onQuality: (quality: PhotoQuality) => void;
   note: string;
+  /** What else can be sent from here, under the photo and the file: a sticker, a place, a poll. */
+  more?: ReactNode;
 }) {
   return (
-    <Sheet visible={visible} onClose={onClose} title={t('Send a photo or file')}>
+    <Sheet visible={visible} onClose={onClose} title={more ? t('Attach') : t('Send a photo or file')}>
       <Row wrap>
         <Button title={t('Photo')} compact onPress={() => onPhoto('photos')} />
         {CAN_TAKE_PHOTOS ? <Button title={t('Take photo')} compact onPress={() => onPhoto('camera')} /> : null}
         <Button title={t('File')} kind="secondary" compact onPress={onFile} />
       </Row>
+      {more ? <Row wrap>{more}</Row> : null}
       <Text variant="label">{t('Photo quality')}</Text>
       <Row wrap>
         {QUALITIES.map(({ value, label: shown }) => (

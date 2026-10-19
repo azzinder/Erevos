@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Where the phone is, once, when a place is sent from a chat: asked for then, never before.
+       Declared for Android 6 and later this way, so it does not clash with erevos-radio's location,
+       which is kept for Bluetooth on Android 12 and older. -->
+  <uses-permission-sdk-23 android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission-sdk-23 android:name="android.permission.ACCESS_FINE_LOCATION" />
+</manifest>

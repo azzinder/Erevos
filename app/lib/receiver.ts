@@ -2,6 +2,7 @@ import { newTag, type Message } from '../lock/history';
 import { loadCurrentSpaceData, updateCurrentSpaceData, type Queue } from '../lock/space-data';
 import { saveClip } from '../lock/voice-clips';
 import { offerRef } from './attachments';
+import { contentOf } from './chat-parts';
 import { canRelaySeal, hasCore } from './core';
 import { ONLINE, toBase64Url, type Extra, type Received, type Where } from './e2e';
 import { nearby } from './nearby';
@@ -428,7 +429,7 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   // Their phone says it is open: the home screen shows it.
   let changed = received.added || received.timerChanged || received.online > 0;
   const add = async (message: Partial<Message>) => {
-    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...message });
+    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...message });
     // A message request hears nothing back, not even that its message came, until accepted.
     if (tag && !received.request) {
       if (hidden) await e2e.hold(identity, 'got', [tag]);
@@ -445,6 +446,10 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   if (received.text) await add({ text: received.text });
   if (received.got.length > 0 && (await history.mark(peer, true, 1, at, received.got)).length > 0) changed = true;
   if (received.read.length > 0 && (await history.mark(peer, true, 2, at, received.read)).length > 0) changed = true;
+  if (received.react && (await history.react(peer, received.react.tag, false, received.react.emoji))) changed = true;
+  const { pin, vote } = received.more;
+  if (pin && (await history.pin(peer, pin.tag, pin.on ? at : 0))) changed = true;
+  if (vote && (await history.vote(peer, vote.tag, false, vote.chose))) changed = true;
   if (received.erase && 'all' in received.erase) {
     await history.clear(peer);
     changed = true;

@@ -28,7 +28,10 @@ iPhone.
 
 The home screen is the list of your chats, the one that moved last at the top. Each shows the contact's picture,
 the last message with its marks, when it came, and how many of their messages you have not read. A clock beside it
-means its messages disappear. **Search chats** finds a chat by its name or its last message.
+means its messages disappear. **Search chats** finds a chat by its name or its last message, and, under the chats,
+the messages that have what you type in them, in all the space's chats: tap one to open its chat at it. In a chat, its
+details have **Search in this chat**: ▲ and ▼ go to what it found earlier and later. Either looks only on this phone,
+in what it keeps sealed; hidden chats are searched only from inside them.
 
 - **The picture** is drawn from the contact's key: the same key always gives the same colours and moon (in greens under Matrix), so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
@@ -232,9 +235,13 @@ is. If theirs is, the chat says **Online** under their name with a green dot, an
 their picture. Writing to someone also shows you online to them for two minutes. All of it goes inside the encryption,
 only between you and that contact: the relay sees a message now and then, as with any chat. There is no "last seen".
 
+While you type to a contact who shows online, their chat shows **typing…** under your name for a few seconds, and
+yours under theirs when they type. It is said every few seconds at most, only while they show online, never to a
+message request, and not in groups.
+
 To hide it from one contact, open their chat, tap its name and then **Appear offline: off**. With it on:
 
-- **They do not see you online**, and your phone sends them nothing while you read.
+- **They do not see you online**, nor that you are typing, and your phone sends them nothing while you read.
 - **Their messages stay ✓** on their phone, not ✓✓ or ✓✓✓, while you read them.
 - **When you write to them**, you show online for two minutes, and every message of theirs you read turns ✓✓✓ at once.
 - **You do not see them online either**, since your phone does not ask.
@@ -255,12 +262,43 @@ Each chat can also look its own way: tap its name and then **Chat look** for the
 colors, wallpaper, messages), for that chat only. Like the name, it stays on this phone, sealed with the chat. **Same as the app**
 gives it the app's look again.
 
-To delete one message, press and hold it. To delete all the messages of a chat, tap its name and then **Delete messages**.
+To keep a chat outside Erevos, tap its name and then **Export chat**: its messages go into a text file, each day under its
+date and each message with its time and who wrote it, saved in the folder you pick (on a computer, where you choose). The
+file is not encrypted: anyone who has it, or any app that reads that folder, can read it. Photos, files and voice messages
+are only named, messages that disappear are left out, and hidden chats are not exported, so that no file outside Erevos
+shows they are there.
+
+To delete one message, press and hold it and tap **Delete**. To delete all the messages of a chat, tap its name and then **Delete messages**.
 Either way Erevos asks where:
 
 - **This phone:** only here. The other phone keeps its own.
 - **Both phones:** their phone deletes them too, the next time it looks at the relay. Their Erevos does so, but a
   changed app, a screenshot or a copy can still keep them.
+
+### A message's menu
+
+Press and hold a message for its menu: the reactions at the top, then what you can do with it.
+
+- **Reactions:** tap one, or **+** for more. It shows under the message on both phones, yours lit; tap it
+  again to take it back. Each of you has one reaction on a message. It goes at once, or not at all: when neither
+  the relay nor their phone nearby can take it, nothing changes.
+- **Reply:** your next message answers it, and shows it quoted above your words, on both phones. Tap the quote to go
+  to the message it answers; **✕** drops it. An Erevos from before this shows the answer without the quote.
+- **Forward:** sends a copy of it to another chat: pick a contact, or a group. Its words, sticker or place go anew, a
+  poll as a new one with no answers yet, and a voice message's sound or a photo's or file's bytes are sent again,
+  encrypted with a new key, so nothing ties the copy to the message it came from. The copy says **Forwarded** under
+  it, not from where; an Erevos from before this shows it without that. A message that disappears
+  is not forwarded, and from hidden chats a message goes only to the same hidden chats.
+- **Star:** stars it, on this phone only, to find it again: **Starred messages** in the home screen's menu lists them
+  from all your chats, and a chat's details list its own. A tap goes to the message. Hidden chats' starred messages
+  show only in their chats' details.
+- **Pin:** pins it to the top of the chat, on both phones; either of you can **Unpin** it. With more than one pinned,
+  the latest shows; tap it to go to it, and the next one shows.
+- **Copy:** puts its words on the clipboard, to paste in another app. On Android the copy is marked private, so the
+  phone's notice of it does not show the words, but any app that reads the clipboard can read them.
+- **Delete:** on this phone, or on both, as above.
+
+Reactions, replies and pins travel inside the encryption, like the messages.
 
 ### Disappearing messages
 
@@ -323,6 +361,37 @@ it. Photos and files have the same marks as the rest, and follow the chat's disa
 - **Saved** photos and files are outside Erevos, not sealed: anyone with the phone can open them.
 - **Through the relay only:** files need its file store, even when the contact is nearby. A relay older than this
   version cannot take files: update it.
+
+### More under Attach
+
+Under **Attach** there is more to send than photos and files:
+
+- **Sticker:** one of the stickers built into Erevos, drawn by each phone itself: only its name travels, so nothing is
+  ever downloaded. An Erevos from before this shows its emoji instead.
+- **Location** (on Android): sends where you are, once, as a place. The first time, Android asks whether Erevos may use
+  the location. The phone finds where it is by satellite when you allowed the precise location and it is on, otherwise
+  as its location settings say, which on many phones asks Google or the phone's maker. Erevos looks only when you tap,
+  shows you the place before it goes, and does not follow you after. The message holds only the coordinates, end-to-end
+  encrypted; no map is loaded in Erevos. **Open in maps** hands the place to your maps app, which may load its map from
+  the internet. An Erevos from before this shows the coordinates as words.
+- **Poll:** a question with two options or more, up to 12, and, with **More than one answer**, more than one to choose.
+  Tap an option to choose it, again to take it back; each option shows how many chose it, and who. Votes travel inside
+  the encryption, as reactions do. An Erevos from before this shows the question and its options as words, to answer in
+  words.
+
+### Link previews
+
+A link in a message is underlined, and opens only once you tap it and say so. With **Link previews** on, in a chat's
+details, a link you send goes with its preview: as you send it, this phone fetches the page and takes its title, a line
+about it and a small picture, and they go inside the message, end-to-end encrypted. The phone that gets it fetches
+nothing: it shows what came. It is off unless you turn it on, and then it is on for all the chats of the space.
+
+- **The site sees this phone's internet address**, and when, as it would from a browser, but not who the message is
+  for. Through Tor, Erevos sends only its relay requests, not pages, so while the space goes through Tor no previews
+  are made at all.
+- Hidden chats make none, nor Erevos on a computer, which shows those that come all the same.
+- **Over LoRa**, which takes only a little, a message goes without its preview rather than wait, and keeps none here.
+- A preview is what the page says of itself, true or not. An Erevos from before this shows the link without it.
 
 ### Voice and video calls
 
@@ -398,7 +467,16 @@ then shows on their home screen, with a note of who added them. Groups go throug
   - **A member who joins later** does not get what came before, as with the words. A member whose Erevos is from
     before this version sees nothing of it.
   - **On the phone** each is kept in its pieces, sealed, as in a contact's chat. Deleting the group here deletes them.
-- **Not yet:** marks and disappearing messages in groups, groups in hidden chats, and groups over a nearby phone.
+- **A message's menu,** held down, as in a contact's chat: the reactions, **Reply**, **Forward**, **Star**, **Pin**,
+  **Copy** and **Delete**. Each member has one reaction on a message, and a poll shows who chose what. A pin is for
+  everyone, and any member can **Unpin** it. **Delete** asks **This phone** or, for your own message, **Everyone**:
+  the members' Erevos delete it too, and a photo, file or voice message of yours leaves your relay at once instead of
+  in 14 days. **Attach** has **Sticker**, **Location** and **Poll** here too. Links are underlined and asked before
+  they open, and **Link previews**, when on, go with yours. In the members sheet, or a public group's own screen, **Search in this chat** goes through the group's messages and **Export chat**
+  writes them out; **Starred messages** and the home screen's search take in the groups too. A member whose Erevos is
+  from before this version sees the words, a sticker's emoji, a place's coordinates and a poll's question, and
+  nothing of reactions, pins and deleting.
+- **Not yet:** marks, typing and disappearing messages in groups, groups in hidden chats, and groups over a nearby phone.
 
 ## Public groups {#public-groups}
 
@@ -1043,10 +1121,11 @@ The chats then come to the computer, and after them the messages chosen.
   answered on another device. Turning a call down on one turns it down on both. The computer calls through the phone
   too; the call itself then goes straight between the computer and the contact, encrypted between them, and the phone
   has to stay on only to set it up.
-- **Groups** are on the computer too, with their messages, photos, files and voice messages. Write in them, add and
-  take out members, rename one or leave it, there as on the phone: the phone does it for the computer, as its own. A
-  photo or file the phone keeps goes to the computer as a copy on the relay, deleted there once the computer took it.
-  Making a group, public groups and group calls stay on the phone for now.
+- **Groups** are on the computer too, with their messages, photos, files and voice messages. Write in them, answer,
+  react, vote, pin, delete your own for everyone, add and take out members, rename one or leave it, there as on the
+  phone: the phone does it for the computer, as its own. A photo or file the phone keeps goes to the computer as a copy
+  on the relay, deleted there once the computer took it. For now, reactions, votes, pins and deleting for everyone show
+  on the computer only when done there; making a group, public groups and group calls stay on the phone.
 - **Hidden chats and second passwords** are never linked. A chat moved into hidden chats on the phone leaves the
   computer. A space a second password opens links only from inside it, to devices of its own.
 - **Bring over messages again**, on the phone, sends a period of the history again; what the computer has already is
@@ -1216,6 +1295,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. | Video with more than four people, through a server; more than eight people. |
 | **Public groups** | As group chats, and anyone with the link can ask to join and read from when let in. Requests come to the owner's relay sealed for the owner's phone: the relay sees how many and when, not from whom. Members see each other's chosen names, keys made for that group alone, relay addresses and queue sender ids. Not audited. | |
+| **Link previews** | Off unless turned on. Then, as you send a link, your phone fetches its page straight from the site, which sees your IP address and when, not who the message is for. The preview goes inside the encrypted message; the phone that gets it fetches nothing. None while the space goes through Tor, and none in hidden chats. | Previews through Tor. |
 
 ## What is coming {#coming}
 

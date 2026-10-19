@@ -45,6 +45,8 @@ export type SpaceData = {
   spare: SpareRelay;
   // Whether the web app asks the relay for a push when a message comes (lib/web-push.web.ts).
   push: boolean;
+  // Whether this phone makes the preview of a link it sends (lib/make-preview.ts). Off unless set.
+  previews: boolean;
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null };
@@ -62,6 +64,7 @@ export const EMPTY_SPACE: SpaceData = {
   bridges: NO_BRIDGES,
   spare: NO_SPARE,
   push: false,
+  previews: false,
 };
 
 const BLOCK = 1024;
@@ -108,6 +111,7 @@ function checked(value: unknown): SpaceData {
     bridges: checkedBridges(v.bridges),
     spare: checkedSpareRelay(v.spare),
     push: v.push === true,
+    previews: v.previews === true,
   };
 }
 

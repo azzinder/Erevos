@@ -182,8 +182,9 @@ chats', from the period chosen, and those after as they come.
 
 What is written or done on a device goes to the phone, which does it as its own: a message goes to
 the group from the account, with the tag the device kept it by, so the device does not keep it
-twice; adding and taking out members and renaming (when the account is the admin), leaving, deleting
-a closed group and reading. A photo, file or voice message the device sends stays where the device
+twice, and with what it answers or is beyond its words (lib/group-parts.ts); a reaction, a vote, a
+pin or deleting its own for everyone; adding and taking out members and renaming (when the account
+is the admin), leaving, deleting a closed group and reading. A photo, file or voice message the device sends stays where the device
 put it, on its relay, as a member's does: the members, the phone among them, take it from there. One
 that came from a member goes to the devices as where it waits for the members; one the phone keeps
 (its own, or taken already) goes as a copy on the relay for the devices, deleted there once each
@@ -191,7 +192,10 @@ took it, as for a chat's.
 
 A device makes and joins no group: it has no MLS state of its own. New groups, public groups
 (lib/public-groups.ts: their keys made for each group, their doors and moderation) and group calls
-stay on the phone for now; public groups are not told to the devices at all.
+stay on the phone for now; public groups are not told to the devices at all. What changes a message
+already told (reactions, votes, pins, deleting for everyone, from members or the phone) is not told
+again yet: a device shows only those done on it. Telling them needs the phone to say what changed
+in a message after it went, the next step.
 
 ### Older versions
 

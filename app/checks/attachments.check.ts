@@ -14,10 +14,13 @@ import {
   chunkPlan,
   FileDamagedError,
   FileGoneError,
+  FileMissingError,
+  keepFile,
   offerRef,
   openChunk,
   readFile,
   readOffer,
+  refSource,
   room,
   sealChunk,
   sendFile,
@@ -173,6 +176,25 @@ test('a message that leaves the history takes its file with it', async () => {
   assert.ok(blobs.has(`${PREFIX}${file.id}-1`));
   await history.remove('contact:x', 'aaaaaaaaaaaa');
   assert.ok(!blobs.has(`${PREFIX}${file.id}-0`) && !blobs.has(`${PREFIX}${file.id}-1`));
+});
+
+test('a file kept here reads again as it was, a piece at a time, to forward it', async () => {
+  const data = randomBytes(room(1024 * 1024) * 2 + 100);
+  const ref = await keepFile(bytesSource(data), { name: 'big.bin', mime: 'application/octet-stream', kind: 'file' });
+  assert.equal(ref.count, 3);
+  const source = refSource(ref);
+  assert.equal(source.size, data.length);
+  // Across the end of a chunk, and past the end of the file.
+  const edge = room(1024 * 1024) - 10;
+  assert.deepEqual(await source.read(edge, 20), data.subarray(edge, edge + 20));
+  assert.deepEqual(await source.read(data.length - 5, 50), data.subarray(data.length - 5));
+  const pieces: Uint8Array[] = [];
+  for (let at = 0; at < data.length; at += 700_000) pieces.push(await source.read(at, 700_000));
+  assert.deepEqual(Buffer.concat(pieces), Buffer.from(data));
+  // Still on the relay, or its chunks gone: nothing to read.
+  await assert.rejects(refSource({ ...ref, from: { relay: 'ws://127.0.0.1:7879', ids: 'ab'.repeat(72) } }).read(0, 10), FileMissingError);
+  blobs.delete(`${PREFIX}${ref.id}-1`);
+  await assert.rejects(source.read(edge, 20), FileMissingError);
 });
 
 // Through real relays.

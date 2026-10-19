@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { askThread } from '../components/group-messages';
 import { KeyFace } from '../components/key-face';
 import { messageLine, shareGroupLink } from '../components/public-group';
 import { QrCode } from '../components/QrCode';
@@ -21,6 +22,8 @@ import { useTheme } from '../theme/context';
 // who are its admins, the bans, and the latest messages, to delete for everyone. What each may do
 // shows only to whoever may do it: the owner names admins, changes the link, chooses whether an
 // admin lets in each who asks, and hands the group over; admins mute, take out, ban and delete.
+// Search in this chat and Export chat go to the group's thread and do it there
+// (components/group-messages.tsx).
 
 // The latest messages an admin can delete from here.
 const DELETABLE = 30;
@@ -304,6 +307,27 @@ export default function PublicGroupScreen() {
           ))}
         </>
       ) : null}
+
+      <Row wrap>
+        <Button
+          title={t('Search in this chat')}
+          kind="secondary"
+          compact
+          onPress={() => {
+            askThread(id, 'search');
+            router.dismissTo(`/group?id=${id}`);
+          }}
+        />
+        <Button
+          title={t('Export chat')}
+          kind="secondary"
+          compact
+          onPress={() => {
+            askThread(id, 'export');
+            router.dismissTo(`/group?id=${id}`);
+          }}
+        />
+      </Row>
 
       {note ? <Text tone="muted">{note}</Text> : null}
 

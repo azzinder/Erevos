@@ -39,7 +39,8 @@ const none = { relay: '', relayKey: '' };
 const nowhere: SendPlace = { sends: null, own: null, senderHex: '', here: none, ownKey: '', relayUp: false };
 
 // Bob's space open, and Alice's phone, which has Bob's link and wrote once; the link between them
-// up or not (`link`). What Bob's phone sends Alice's on it lands in `toAlice`.
+// up or not (`link`), and a LoRa radio on Bob's phone whose mesh reaches Alice's (`radio`). What
+// Bob's phone sends Alice's on either lands in `toAlice`.
 async function twoPhones() {
   files.clear();
   blobs.clear();
@@ -49,9 +50,11 @@ async function twoPhones() {
   const aliceNearby = new Nearby();
   const toAlice: Uint8Array[] = [];
   let up = false;
+  let mesh = false;
   const stop = nearby.start((link, text) => {
-    if (!up || link !== 'ble-link-alice') return false;
-    const packet = aliceNearby.frameIn('ble-link-bob', text);
+    const lora = link.startsWith('lora-');
+    if (lora ? !mesh : !up || link !== 'ble-link-alice') return false;
+    const packet = aliceNearby.frameIn(lora ? 'lora-00000002' : 'ble-link-bob', text);
     if (packet) toAlice.push(packet);
     return true;
   });
@@ -69,12 +72,16 @@ async function twoPhones() {
     nearby.linkUp('ble-link-alice');
     nearby.heardOn(aliceId, 'ble-link-alice');
   };
+  const radio = () => {
+    mesh = true;
+    nearby.linkUp('lora-00000001');
+  };
   const done = () => {
     stop();
     forgetSpaceChats();
     setCurrentSpace(null);
   };
-  return { bob, alice, peer, toAlice, link, done };
+  return { bob, alice, peer, toAlice, link, radio, done };
 }
 
 test('what waits goes only once there is a way, in order, with its tag', { skip: !coreReady }, async () => {
@@ -253,6 +260,24 @@ test('a voice message or photo does not wait for LoRa, and a photo goes once the
     assert.equal(offer.tag, 'eeeeeeeeeeee');
     const taken = await takeFile(relay, offerRef(offer.file!));
     assert.deepEqual(await readFile(taken), photo);
+  } finally {
+    done();
+  }
+});
+
+test('over LoRa, a text too much for it with its link’s preview goes without the preview', { skip: !coreReady }, async () => {
+  const { bob, alice, peer, toAlice, radio, done } = await twoPhones();
+  try {
+    const text = 'look https://example.org/';
+    const preview = { url: 'https://example.org/', title: 'Example', text: 'An example page.', image: `/9j/${'A'.repeat(6000)}` };
+    await bob.history.add({ peer, text, mine: true, at: 1, tag: 'ffffffffffff', mark: WAITING, preview });
+    radio();
+    const went = await sendWaiting(bob, nowhere);
+    assert.deepEqual(went, [{ peer, tag: 'ffffffffffff', lasts: 0, bare: true }]);
+    const came = (await alice.receive(toAlice[toAlice.length - 1])) as Extract<Received, { kind: 'message' }>;
+    assert.deepEqual([came.tag, came.text, came.more.preview], ['ffffffffffff', text, undefined]);
+    const kept = bob.history.messages().find((m) => m.tag === 'ffffffffffff');
+    assert.deepEqual([kept?.mark, kept?.preview], [0, undefined]);
   } finally {
     done();
   }

@@ -1,10 +1,11 @@
 import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, type Avatar, type Contact, type Spare } from '../lock/e2e-data';
-import { MAX_GROUP_MESSAGES, type Group, type GroupMessage } from '../lock/group-data';
+import { MAX_GROUP_MESSAGES, type Group, type GroupMessage, type GroupParts } from '../lock/group-data';
 import { isTag, type Mark } from '../lock/history';
 import { checkedLook, type Look } from '../theme/look';
 import { offerRef, readOffer, type FileFrom, type FileOffer } from './attachments';
 import { checkContact, checkSpare, type ContactCode } from './contact-code';
 import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { groupPartsOf, markedOf, type Marked } from './group-parts';
 import { cleanGroupName, isGroupId } from './group-signal';
 
 // What goes between the devices of one account (lib/devices.ts), inside the conversation of their
@@ -67,13 +68,21 @@ export type GroupSeat = { leaf: number; id: string; me: boolean };
 /** A group as the primary tells its devices of it: what the screens show of it, and its members. */
 export type GroupMirror = Pick<Group, 'id' | 'name' | 'admin' | 'status' | 'asked' | 'readAt'> & { members: GroupSeat[] };
 
-/** A group's message as it goes to the devices: a photo, file or voice message as where it waits on the relay. */
-export type GroupEntry = { group: string; at: number; from: string; text: string; tag: string; note?: boolean; ms?: number; file?: FileOffer };
+/**
+ * A group's message as it goes to the devices: a photo, file or voice message as where it waits on
+ * the relay, and what it answers or is beyond its words (lib/group-parts.ts).
+ */
+export type GroupEntry = { group: string; at: number; from: string; text: string; tag: string; note?: boolean; ms?: number; file?: FileOffer; parts?: GroupParts };
 
-/** What a linked device has the primary do in a group: write in it, with the tag the device kept it by, or change it. */
+/**
+ * What a linked device has the primary do in a group: write in it, with the tag the device kept it
+ * by and what it answers or is beyond its words; say something of a message (a reaction, a vote, a
+ * pin, deleting its own for everyone); or change the group.
+ */
 export type GroupAsk =
-  | { t: 'text'; text: string; tag: string }
-  | { t: 'file'; file: FileOffer; tag: string; ms?: number }
+  | { t: 'text'; text: string; tag: string; parts?: GroupParts }
+  | { t: 'file'; file: FileOffer; tag: string; ms?: number; parts?: GroupParts }
+  | { t: 'mark'; marked: Marked }
   | { t: 'add'; identities: string[] }
   | { t: 'name'; name: string }
   | { t: 'remove'; leaf: number }
@@ -260,6 +269,7 @@ export function checkedGroupEntry(value: unknown): GroupEntry | null {
   const note = v.note === true;
   if (!note && !v.text && !file) return null;
   const ms = file && isTime(v.ms) && v.ms > 0 ? Math.round(v.ms) : 0;
+  const parts = partsOf(v.parts, !file);
   return {
     group: v.group,
     at: v.at,
@@ -269,19 +279,34 @@ export function checkedGroupEntry(value: unknown): GroupEntry | null {
     ...(note ? { note: true } : {}),
     ...(ms ? { ms } : {}),
     ...(file ? { file } : {}),
+    ...(parts ? { parts } : {}),
   };
+}
+
+// What a group's message is or carries beyond itself, checked (lib/group-parts.ts): none when it is nothing.
+function partsOf(value: unknown, words: boolean): GroupParts | null {
+  const parts = isObject(value) ? groupPartsOf(value, words) : {};
+  return Object.keys(parts).length > 0 ? parts : null;
 }
 
 function checkedAsk(value: unknown): GroupAsk | null {
   if (!isObject(value)) return null;
   const v = value;
   switch (v.t) {
-    case 'text':
-      return isText(v.text) && v.text.trim() !== '' && isTag(v.tag) ? { t: 'text', text: v.text, tag: v.tag } : null;
+    case 'text': {
+      if (!isText(v.text) || v.text.trim() === '' || !isTag(v.tag)) return null;
+      const parts = partsOf(v.parts, true);
+      return { t: 'text', text: v.text, tag: v.tag, ...(parts ? { parts } : {}) };
+    }
     case 'file': {
       const file = readOffer(v.file);
       if (!file || !isTag(v.tag)) return null;
-      return { t: 'file', file, tag: v.tag, ...(isTime(v.ms) && v.ms > 0 ? { ms: v.ms } : {}) };
+      const parts = partsOf(v.parts, false);
+      return { t: 'file', file, tag: v.tag, ...(isTime(v.ms) && v.ms > 0 ? { ms: v.ms } : {}), ...(parts ? { parts } : {}) };
+    }
+    case 'mark': {
+      const marked = isObject(v.marked) ? markedOf(v.marked) : null;
+      return marked ? { t: 'mark', marked } : null;
     }
     case 'add': {
       const identities = Array.isArray(v.identities) ? v.identities.filter((i): i is string => isHex(i, 64)) : [];
@@ -387,8 +412,9 @@ function readSaid(value: Json): Said | null {
 // What says where a contact's queue is, in a message: only the primary keeps it.
 const PLACE_KEYS = ['from', 'relay', 'relayKey', 'spare'];
 // What a message carries that is not worth telling the account's other devices on its own: it says
-// that messages came, that a phone is open, or asks, with the chat's timer, which the contacts carry.
-const QUIET_KEYS = new Set([...PLACE_KEYS, 'text', 'tag', 'timer', 'timerAt', 'lasts', 'got', 'on', 'onAt', 'ask', 'quiet', 'due']);
+// that messages came, that a phone is open or someone types, or asks, with the chat's timer, which
+// the contacts carry.
+const QUIET_KEYS = new Set([...PLACE_KEYS, 'text', 'tag', 'timer', 'timerAt', 'lasts', 'got', 'on', 'onAt', 'ask', 'quiet', 'due', 'typing']);
 
 /** Whether a message is a call's or a group's signal: not kept in the history, and not told of as other messages are. */
 export function isSignal(m: Json): boolean {
@@ -590,6 +616,7 @@ export function mirrorGroups(kept: Group[], said: { list: GroupMirror[]; gone: s
       ...(e.note ? { note: true } : {}),
       ...(e.file ? { file: offerRef(e.file) } : {}),
       ...(e.ms ? { ms: e.ms } : {}),
+      ...e.parts,
     };
     added.set(e.group, [...(added.get(e.group) ?? []), message]);
     if (e.from && !e.note && e.at > group.readAt) came.add(e.group);

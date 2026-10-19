@@ -311,6 +311,48 @@ export async function eachPiece(ref: FileRef, take: (piece: Uint8Array) => void 
   if (size !== ref.size) throw new FileDamagedError();
 }
 
+/**
+ * A file kept here, to send again (forwarded): its pieces opened as they are read, one chunk at a
+ * time. Reading throws FileMissingError when its chunks are not here.
+ */
+export function refSource(ref: FileRef): Source {
+  const key = fromHex(ref.key);
+  const piece = room(ref.chunk);
+  return {
+    size: ref.size,
+    read: async (at, length) => {
+      if (ref.from) throw new FileMissingError();
+      const out = new Uint8Array(Math.max(0, Math.min(length, ref.size - at)));
+      let done = 0;
+      while (done < out.length) {
+        const n = Math.floor((at + done) / piece);
+        const sealed = await readChunk(ref.id, n);
+        if (!sealed) throw new FileMissingError();
+        const data = openChunk(key, n, sealed, ref.chunk);
+        const from = at + done - n * piece;
+        const part = data.subarray(from, Math.min(data.length, from + out.length - done));
+        if (part.length === 0) throw new FileDamagedError();
+        out.set(part, done);
+        done += part.length;
+      }
+      return out;
+    },
+  };
+}
+
+/**
+ * Takes chunks off our relay before they expire, by their ids (hex, one after another): those of a
+ * group's file deleted for everyone. One it cannot take off expires there.
+ */
+export async function takeOffRelay(own: Relay, ids: string): Promise<void> {
+  const session = await RelaySession.open({ url: own.url, token: own.token });
+  try {
+    for (let at = 0; at + ID_HEX <= ids.length; at += ID_HEX) await deleteChunk(session, fromHex(ids.slice(at, at + ID_HEX))).catch(() => false);
+  } finally {
+    session.close();
+  }
+}
+
 /** The file's bytes, or null when it is not here (not taken yet, or its chunks are gone). */
 export async function readFile(ref: FileRef): Promise<Uint8Array | null> {
   const out = new Uint8Array(ref.size);

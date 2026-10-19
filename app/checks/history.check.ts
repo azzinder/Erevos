@@ -125,6 +125,112 @@ t('deletes one message by its tag, and gives messages kept before tags a tag of 
   assert.match(old.tag, /^[0-9a-f]{12}$/);
 });
 
+t('keeps which message one answers, and the reactions to it, ours and theirs', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const first = newTag();
+  const answer = newTag();
+  await history.add({ peer: 'contact:aa', text: 'question?', mine: false, at: 1, tag: first });
+  await history.add({ peer: 'contact:aa', text: 'answer', mine: true, at: 2, tag: answer, re: first });
+  assert.equal(await history.react('contact:aa', first, true, '👍'), true);
+  assert.equal(await history.react('contact:aa', answer, false, '❤️'), true);
+  assert.equal(await history.react('contact:aa', newTag(), false, '😂'), false);
+  const kept = (await History.open('space', 0, key)).messages();
+  assert.deepEqual(
+    kept.map((m) => [m.text, m.re, m.myReaction, m.theirReaction]),
+    [
+      ['question?', undefined, '👍', undefined],
+      ['answer', first, undefined, '❤️'],
+    ],
+  );
+  // A reaction taken back is none; one that is words is never kept.
+  await history.react('contact:aa', first, true, '');
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', first, 0, 0, 0, 0, 0, { y: 'hello', o: '<b>', p: 'not a tag' }]] } });
+  const [odd] = (await History.open('space', 1, key)).messages();
+  assert.deepEqual([odd.myReaction, odd.theirReaction, odd.re], [undefined, undefined, undefined]);
+  assert.equal((await History.open('space', 0, key)).messages()[0].myReaction, undefined);
+});
+
+t('keeps when a message was pinned, until it is taken down', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const tag = newTag();
+  await history.add({ peer: 'contact:aa', text: 'the address', mine: false, at: 1, tag });
+  assert.equal(await history.pin('contact:aa', tag, 5000), true);
+  assert.equal(await history.pin('contact:aa', newTag(), 5000), false);
+  assert.equal((await History.open('space', 0, key)).messages()[0].pinned, 5000);
+  await history.pin('contact:aa', tag, 0);
+  assert.equal((await History.open('space', 0, key)).messages()[0].pinned, undefined);
+});
+
+t('keeps a star on this phone, and a star of the wrong shape is none', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const tag = newTag();
+  await history.add({ peer: 'contact:aa', text: 'keep this', mine: true, at: 1, tag });
+  assert.equal(await history.star('contact:aa', tag, true), true);
+  assert.equal((await History.open('space', 0, key)).messages()[0].starred, true);
+  await history.star('contact:aa', tag, false);
+  assert.equal((await History.open('space', 0, key)).messages()[0].starred, undefined);
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', tag, 0, 0, 0, 0, 0, { f: true, n: -5 }]] } });
+  const [odd] = (await History.open('space', 1, key)).messages();
+  assert.deepEqual([odd.starred, odd.pinned], [undefined, undefined]);
+});
+
+t('keeps the sticker or the place a message is, and drops one of the wrong shape', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  await history.add({ peer: 'contact:aa', text: '🌝', mine: true, at: 1, tag: newTag(), sticker: 'moon-smile' });
+  await history.add({ peer: 'contact:aa', text: 'here', mine: false, at: 2, tag: newTag(), place: { lat: 1.5, lon: -2.25, acc: 8 } });
+  const kept = (await History.open('space', 0, key)).messages();
+  assert.deepEqual(
+    kept.map((m) => [m.sticker, m.place]),
+    [
+      ['moon-smile', undefined],
+      [undefined, { lat: 1.5, lon: -2.25, acc: 8 }],
+    ],
+  );
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', newTag(), 0, 0, 0, 0, 0, { s: 'Big Sticker', l: { lat: 200, lon: 0 } }]] } });
+  const [odd] = (await History.open('space', 1, key)).messages();
+  assert.deepEqual([odd.sticker, odd.place], [undefined, undefined]);
+});
+
+t('keeps that a message was forwarded, and the preview of its link', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const preview = { url: 'https://x.example/', title: 'T', text: 'About it', image: '/9j/AAAA' };
+  await history.add({ peer: 'contact:aa', text: 'look', mine: true, at: 1, tag: newTag(), forwarded: true });
+  await history.add({ peer: 'contact:aa', text: 'https://x.example/', mine: false, at: 2, tag: newTag(), preview });
+  assert.deepEqual(
+    (await History.open('space', 0, key)).messages().map((m) => [m.forwarded, m.preview]),
+    [
+      [true, undefined],
+      [undefined, preview],
+    ],
+  );
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', newTag(), 0, 0, 0, 0, 0, { w: { url: 'javascript:x', title: 'T', text: '' } }]] } });
+  assert.equal((await History.open('space', 1, key)).messages()[0].preview, undefined);
+});
+
+t('keeps a poll and the votes on it, ours and theirs, as the poll allows', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const tag = newTag();
+  await history.add({ peer: 'contact:aa', text: 'q', mine: true, at: 1, tag, poll: { q: 'Which?', o: ['a', 'b', 'c'] } });
+  assert.equal(await history.vote('contact:aa', tag, true, [2]), true);
+  assert.equal(await history.vote('contact:aa', tag, false, [0, 1]), true);
+  assert.equal(await history.vote('contact:aa', tag, false, [5]), false);
+  assert.equal(await history.vote('contact:aa', newTag(), false, [0]), false);
+  const [poll] = (await History.open('space', 0, key)).messages();
+  assert.deepEqual([poll.poll, poll.myVote, poll.theirVote], [{ q: 'Which?', o: ['a', 'b', 'c'] }, [2], [0]]);
+  await history.vote('contact:aa', tag, true, []);
+  assert.equal((await History.open('space', 0, key)).messages()[0].myVote, undefined);
+});
+
 t('deletes the messages of one chat and keeps the others', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);

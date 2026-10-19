@@ -35,8 +35,10 @@ type Picked = { name: string; mime: string; source: Source; w?: number; h?: numb
  * The media of group `id`, whose messages are `messages`. `onError` shows what went wrong. Gives
  * the buttons for under the field (`tools`), what goes on now (`said`, for under the messages), the
  * sheets (`sheets`), and a message's photo, file or voice message for its bubble (`content`).
+ * `more` gives what else Attach offers (components/group-messages.tsx), each opened once its sheet
+ * has gone.
  */
-export function useGroupMedia(id: string, messages: GroupMessage[], onError: (text: string) => void) {
+export function useGroupMedia(id: string, messages: GroupMessage[], onError: (text: string) => void, more?: (afterSheet: (then: () => void) => void) => ReactNode) {
   const [own, setOwn] = useState<Relay | null>(null);
   const [quality, setQuality] = useState<PhotoQuality>('original');
   const [attaching, setAttaching] = useState(false);
@@ -304,6 +306,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
         quality={quality}
         onQuality={chooseQuality}
         note={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, 14 days, for each member to take.')}
+        more={more?.(afterSheet)}
       />
       <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onClose={() => setViewing(null)} />
     </>

@@ -1,3 +1,4 @@
+import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, isStickerName, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import { decryptBytes, encryptBytes, randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
 import { deleteFile, readBytes, writeBytes } from '../lib/files';
 import { isRelayAddress, type HeldAt } from '../lib/relay';
@@ -63,9 +64,14 @@ export type Kept = [
 /**
  * Of ours: `h`, the id a relay holds it by, sent for later, and `r` that relay (lib/relay.ts,
  * sendMessageLater), so it can still be taken back before it goes; `q` 1 when it goes without
- * sound, kept while it waits.
+ * sound, kept while it waits. Of either, its Parts: `p`, the tag of the message it answers; `y`,
+ * our reaction to it, and `o`, theirs; `n`, when it was pinned to the top of the chat; `f` 1 when it
+ * is starred, on this phone only; `s`, the name of the sticker it is (its text is the sticker's emoji);
+ * `l`, the place it is (its text says where); `k`, the poll it is (its text asks it), with `a`, the
+ * options we chose, and `b`, theirs; `w`, the preview of the link in its words, as its sender made
+ * it; `d` 1 when it was forwarded from another chat.
  */
-type More = { h?: string; r?: string; q?: 1 };
+type More = { h?: string; r?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1 };
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -89,12 +95,76 @@ export type Message = {
   held?: HeldAt;
   /** Ours that waits, to go without sound. */
   quiet?: boolean;
+} & Parts;
+
+/** What else a message is or carries, beyond its words, on both phones or this one only. */
+export type Parts = {
+  /** The tag of the message it answers. */
+  re?: string;
+  /** Our reaction to it, and theirs. */
+  myReaction?: string;
+  theirReaction?: string;
+  /** When it was pinned to the top of the chat, by either phone (milliseconds, this phone's clock). */
+  pinned?: number;
+  /** Starred, to find again among the starred messages: on this phone only. */
+  starred?: boolean;
+  /** The sticker it is, by name (lib/stickers.ts). */
+  sticker?: string;
+  /** The place it is, sent once (lib/chat-parts.ts). */
+  place?: Place;
+  /** The poll it is, and the options we chose on it, and they did. */
+  poll?: Poll;
+  myVote?: number[];
+  theirVote?: number[];
+  /** The preview of the link in its words, made by the phone that sent it (lib/link-preview.ts). */
+  preview?: Preview;
+  /** Forwarded from another chat: its sender's, or this phone's. */
+  forwarded?: boolean;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
-function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file, held, quiet }: Fields): Kept {
-  const more: More = { ...(held ? { h: held.id, r: held.relay } : {}), ...(quiet ? { q: 1 as const } : {}) };
+// A message's Parts as kept in More, and back.
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded }: Parts): More {
+  return {
+    ...(re ? { p: re } : {}),
+    ...(myReaction ? { y: myReaction } : {}),
+    ...(theirReaction ? { o: theirReaction } : {}),
+    ...(pinned ? { n: pinned } : {}),
+    ...(starred ? { f: 1 as const } : {}),
+    ...(sticker ? { s: sticker } : {}),
+    ...(place ? { l: place } : {}),
+    ...(poll ? { k: poll } : {}),
+    ...(poll && myVote?.length ? { a: myVote } : {}),
+    ...(poll && theirVote?.length ? { b: theirVote } : {}),
+    ...(preview ? { w: preview } : {}),
+    ...(forwarded ? { d: 1 as const } : {}),
+  };
+}
+
+function partsOf(more: More | undefined): Parts {
+  return {
+    ...(more?.p ? { re: more.p } : {}),
+    ...(more?.y ? { myReaction: more.y } : {}),
+    ...(more?.o ? { theirReaction: more.o } : {}),
+    ...(more?.n ? { pinned: more.n } : {}),
+    ...(more?.f ? { starred: true } : {}),
+    ...(more?.s ? { sticker: more.s } : {}),
+    ...(more?.l ? { place: more.l } : {}),
+    ...(more?.k ? { poll: more.k } : {}),
+    ...(more?.a ? { myVote: more.a } : {}),
+    ...(more?.b ? { theirVote: more.b } : {}),
+    ...(more?.w ? { preview: more.w } : {}),
+    ...(more?.d ? { forwarded: true } : {}),
+  };
+}
+
+function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file, held, quiet, ...parts }: Fields): Kept {
+  const more: More = {
+    ...(held ? { h: held.id, r: held.relay } : {}),
+    ...(quiet ? { q: 1 as const } : {}),
+    ...moreOf(parts),
+  };
   const kept: Kept = [at, mine ? 1 : 0, text, tag, until, until ? 0 : lasts, mark, voice ?? 0, file ?? 0, Object.keys(more).length > 0 ? more : undefined];
   while (kept.length > 4 && !kept[kept.length - 1]) kept.pop();
   return kept;
@@ -113,16 +183,38 @@ function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, fil
     ...(file ? { file } : {}),
     ...(more?.h && more.r ? { held: { id: more.h, relay: more.r } } : {}),
     ...(more?.q ? { quiet: true } : {}),
+    ...partsOf(more),
   };
 }
 
 const HELD_ID = /^[0-9a-f]{32}(?:,[0-9a-f]{32}){0,63}$/;
 
-function checkedMore(value: unknown): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; q?: unknown } | null;
+// What is said of ours only is kept of ours only.
+function checkedMore(value: unknown, mine: boolean): More | undefined {
+  const v = value as { h?: unknown; r?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
-  const held = typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
-  const more: More = { ...(held ? { h: v.h as string, r: v.r as string } : {}), ...(v.q === 1 ? { q: 1 as const } : {}) };
+  const place = checkedPlace(v.l);
+  const poll = checkedPoll(v.k);
+  const preview = checkedPreview(v.w);
+  const votes = (chose: unknown) => (poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null);
+  const [ours, theirs] = [votes(v.a), votes(v.b)];
+  const held = mine && typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
+  const more: More = {
+    ...(held ? { h: v.h as string, r: v.r as string } : {}),
+    ...(mine && v.q === 1 ? { q: 1 as const } : {}),
+    ...(isTag(v.p) ? { p: v.p } : {}),
+    ...(isReactionEmoji(v.y) ? { y: v.y } : {}),
+    ...(isReactionEmoji(v.o) ? { o: v.o } : {}),
+    ...(count(v.n) ? { n: count(v.n) } : {}),
+    ...(v.f === 1 ? { f: 1 as const } : {}),
+    ...(isStickerName(v.s) ? { s: v.s } : {}),
+    ...(place ? { l: place } : {}),
+    ...(poll ? { k: poll } : {}),
+    ...(ours?.length ? { a: ours } : {}),
+    ...(theirs?.length ? { b: theirs } : {}),
+    ...(preview ? { w: preview } : {}),
+    ...(v.d === 1 ? { d: 1 as const } : {}),
+  };
   return Object.keys(more).length > 0 ? more : undefined;
 }
 
@@ -139,6 +231,9 @@ const TAG = /^[0-9a-f]{12}$/;
 
 export const newTag = () => toHex(randomBytes(6));
 export const isTag = (value: unknown): value is string => typeof value === 'string' && TAG.test(value);
+
+/** Whether this can be a reaction: one emoji or a few, no words. */
+export const isReactionEmoji = (value: unknown): value is string => typeof value === 'string' && /^[^\sA-Za-z0-9<>&"'`\\]{1,16}$/.test(value);
 
 export const FILE = 'erevos-history';
 export const SIZE = 64 * 1024;
@@ -163,9 +258,22 @@ function checkedKept(m: unknown): Kept | null {
   const mark = m[6] === 1 || m[6] === 2 || (m[6] === WAITING && m[1] === 1) ? m[6] : 0;
   const voice = isVoiceRef(m[7]) ? m[7] : undefined;
   const file = isFileRef(m[8]) ? m[8] : undefined;
-  const more = m[1] === 1 ? checkedMore(m[9]) : undefined;
+  const more = checkedMore(m[9], m[1] === 1);
   const held = more?.h && more.r ? { id: more.h, relay: more.r } : undefined;
-  return pack({ at: m[0], mine: m[1] === 1, text: m[2], tag: isTag(m[3]) ? m[3] : newTag(), until: count(m[4]), lasts: count(m[5]), mark, voice, file, held, quiet: !!more?.q });
+  return pack({
+    at: m[0],
+    mine: m[1] === 1,
+    text: m[2],
+    tag: isTag(m[3]) ? m[3] : newTag(),
+    until: count(m[4]),
+    lasts: count(m[5]),
+    mark,
+    voice,
+    file,
+    held,
+    quiet: !!more?.q,
+    ...partsOf(more),
+  });
 }
 
 function checkedChats(value: unknown): Record<string, Kept[]> {
@@ -353,12 +461,52 @@ export class History {
 
   /**
    * A message that waited went: as the relay took it, lasting `lasts` seconds once read, or, sent
-   * for later, as a relay holds it till its time (`held`). False if it is gone.
+   * for later, as a relay holds it till its time (`held`). With `bare`, it went without its link's
+   * preview (over LoRa, lib/waiting.ts), which it no longer keeps. False if it is gone.
    */
-  async sent(peer: string, tag: string, lasts: number, held?: HeldAt): Promise<boolean> {
+  async sent(peer: string, tag: string, lasts: number, held?: HeldAt, bare = false): Promise<boolean> {
     const list = this.data.chats[peer];
     if (!list?.some((m) => m[3] === tag && m[6] === WAITING)) return false;
-    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, quiet: false }) : m));
+    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, quiet: false, ...(bare ? { preview: undefined } : {}) }) : m));
+    await this.save({ chats: { ...this.data.chats, [peer]: changed } });
+    return true;
+  }
+
+  /**
+   * Sets a reaction to a chat's message, by its tag: ours (`ours`) or theirs, an emoji, or none
+   * (`''`). False if the message is gone.
+   */
+  react(peer: string, tag: string, ours: boolean, emoji: string): Promise<boolean> {
+    return this.change(peer, tag, ours ? { myReaction: emoji } : { theirReaction: emoji });
+  }
+
+  /** Pins a chat's message to the top, by its tag, as of `at` (milliseconds), or takes it down (0). False if the message is gone. */
+  pin(peer: string, tag: string, at: number): Promise<boolean> {
+    return this.change(peer, tag, { pinned: at || undefined });
+  }
+
+  /**
+   * Keeps a vote on a chat's poll, by its tag: ours (`ours`) or theirs, the options chosen; none
+   * takes it back. False if the poll is gone, or the vote is not one on it.
+   */
+  vote(peer: string, tag: string, ours: boolean, chose: number[]): Promise<boolean> {
+    const kept = this.data.chats[peer]?.find((m) => m[3] === tag);
+    const poll = kept ? unpack(kept).poll : undefined;
+    const checked = poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null;
+    if (!checked) return Promise.resolve(false);
+    return this.change(peer, tag, ours ? { myVote: checked } : { theirVote: checked });
+  }
+
+  /** Stars a chat's message, by its tag, or takes the star off. False if the message is gone. */
+  star(peer: string, tag: string, on: boolean): Promise<boolean> {
+    return this.change(peer, tag, { starred: on || undefined });
+  }
+
+  // Changes what is kept of one message of a chat, by its tag. False if the message is gone.
+  private async change(peer: string, tag: string, fields: Partial<Fields>): Promise<boolean> {
+    const list = this.data.chats[peer];
+    if (!list?.some((m) => m[3] === tag)) return false;
+    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), ...fields }) : m));
     await this.save({ chats: { ...this.data.chats, [peer]: changed } });
     return true;
   }

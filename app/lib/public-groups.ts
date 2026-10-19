@@ -1,6 +1,6 @@
 import type { FileRef } from '../lock/attachment-files';
 import { cleanName } from '../lock/e2e-data';
-import { checkedAbout, type About, type Group, type GroupData, type GroupMessage } from '../lock/group-data';
+import { checkedAbout, type About, type Group, type GroupData, type GroupMessage, type GroupParts } from '../lock/group-data';
 import {
   MAX_ASKING,
   MAX_EPOCHS,
@@ -18,6 +18,7 @@ import type { FileOffer } from './attachments';
 import * as core from './core';
 import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
+import type { Marked } from './group-parts';
 import { cleanGroupName } from './group-signal';
 import { Groups, type GroupTransport, type Me } from './groups';
 import { mark, t } from './i18n';
@@ -814,14 +815,20 @@ export class PublicGroups extends Groups {
     return kept !== undefined && marked(kept.mutes, kept.me);
   }
 
-  send(id: string, text: string, transport: GroupTransport, tag?: string): Promise<void> {
+  send(id: string, text: string, transport: GroupTransport, parts: GroupParts = {}, tag?: string): Promise<void> {
     if (this.mutedHere(id)) return Promise.reject(new Error(t('An admin muted you in this group.')));
-    return super.send(id, text, transport, tag);
+    return super.send(id, text, transport, parts, tag);
   }
 
-  sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport, tag?: string): Promise<void> {
+  sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport, parts: GroupParts = {}, tag?: string): Promise<void> {
     if (this.mutedHere(id)) return Promise.reject(new Error(t('An admin muted you in this group.')));
-    return super.sendFile(id, ref, offer, ms, transport, tag);
+    return super.sendFile(id, ref, offer, ms, transport, parts, tag);
+  }
+
+  // Nor a reaction, a vote, a pin or deleting for everyone: the others' phones drop them too.
+  mark(id: string, marked: Marked, transport: GroupTransport): Promise<GroupMessage | null> {
+    if (this.mutedHere(id)) return Promise.reject(new Error(t('An admin muted you in this group.')));
+    return super.mark(id, marked, transport);
   }
 
   // A public group's members come through its link, not from contacts.

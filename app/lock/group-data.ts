@@ -1,6 +1,7 @@
+import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, isStickerName, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import { isFileRef, type FileRef } from './attachment-files';
 import { isRelay, isRelayKey } from './e2e-data';
-import { isTag } from './history';
+import { isReactionEmoji, isTag } from './history';
 import { sealedFile, type Holder } from './sealed-file';
 
 // What each space keeps for its group chats (lib/groups.ts): its MLS state (the Rust core's, with
@@ -24,7 +25,18 @@ export type About = {
 
 /** A message in a group: `from` is the sender's identity, empty for this phone's own. A `note`
  *  says what happened in the group, such as who joined. */
-export type GroupMessage = { at: number; from: string; text: string; tag: string; note?: boolean } & GroupMedia;
+export type GroupMessage = { at: number; from: string; text: string; tag: string; note?: boolean } & GroupMedia & GroupParts & GroupMarks;
+
+/** What a message is or carries beyond its words or its file, as its sender sent it (lib/group-parts.ts):
+ *  the tag of the message it answers, a sticker, a place, a poll, a link's preview, or that it was
+ *  forwarded. A sticker's, a place's or a poll's words are its text, for an Erevos from before. */
+export type GroupParts = { re?: string; sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true };
+
+/** What was done to a message since: each member's reaction and vote, by identity ('' for this
+ *  phone's), when it was pinned for everyone, and, on this phone only, its star. Of our own photo,
+ *  file or voice message, `put` is its chunks' ids on our relay, to take them off when it is deleted
+ *  for everyone. */
+export type GroupMarks = { reactions?: Record<string, string>; votes?: Record<string, number[]>; pinned?: number; starred?: true; put?: string };
 
 /** A photo or file in a group's message: where it is, or where to take it from. With `ms`, it is
  *  a voice message's sound, and lasts that long, milliseconds. */
@@ -72,6 +84,8 @@ export const MAX_LATER = 100;
 export const MAX_OUTBOX = 200;
 export const MAX_ORPHANS = 50;
 export const MAX_GIVEN = 50;
+// The most members a message keeps a reaction or a vote of.
+const MAX_MARKS = 100;
 
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isBase64 = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9+/]*={0,2}$/.test(v);
@@ -88,7 +102,47 @@ export function checkedAbout(value: unknown): About | null {
 function checkedMessage(value: unknown): GroupMessage | null {
   const v = (value ?? {}) as Partial<Record<keyof GroupMessage, unknown>>;
   if (!isTime(v.at) || !isText(v.text) || !(v.from === '' || isHex(v.from, 64))) return null;
-  return { at: v.at, from: v.from as string, text: v.text, tag: isTag(v.tag) ? v.tag : '', ...(v.note === true ? { note: true } : {}), ...checkedMedia(v) };
+  return {
+    at: v.at,
+    from: v.from as string,
+    text: v.text,
+    tag: isTag(v.tag) ? v.tag : '',
+    ...(v.note === true ? { note: true } : {}),
+    ...checkedMedia(v),
+    ...checkedParts(v as Record<string, unknown>, v.from === ''),
+  };
+}
+
+// What each member did, by identity ('' for this phone), of what passes `check`; none when empty.
+function byMember<T>(value: unknown, check: (v: unknown) => T | null): Record<string, T> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const kept: Record<string, T> = {};
+  for (const [who, v] of Object.entries(value).slice(0, MAX_MARKS)) {
+    const checked = who === '' || isHex(who, 64) ? check(v) : null;
+    if (checked !== null) kept[who] = checked;
+  }
+  return Object.keys(kept).length > 0 ? kept : undefined;
+}
+
+function checkedParts(v: Record<string, unknown>, mine: boolean): GroupParts & GroupMarks {
+  const place = checkedPlace(v.place);
+  const poll = checkedPoll(v.poll);
+  const preview = checkedPreview(v.preview);
+  const reactions = byMember(v.reactions, (emoji) => (isReactionEmoji(emoji) ? emoji : null));
+  const votes = poll ? byMember(v.votes, (chose) => checkedChoices(chose, poll.o.length, !!poll.m)) : undefined;
+  return {
+    ...(isTag(v.re) ? { re: v.re } : {}),
+    ...(isStickerName(v.sticker) ? { sticker: v.sticker } : {}),
+    ...(place ? { place } : {}),
+    ...(poll ? { poll } : {}),
+    ...(preview ? { preview } : {}),
+    ...(v.forwarded === true ? { forwarded: true as const } : {}),
+    ...(reactions ? { reactions } : {}),
+    ...(votes ? { votes } : {}),
+    ...(isTime(v.pinned) && v.pinned > 0 ? { pinned: v.pinned } : {}),
+    ...(v.starred === true ? { starred: true as const } : {}),
+    ...(mine && isText(v.put) && /^(?:[0-9a-f]{48})+$/.test(v.put) ? { put: v.put } : {}),
+  };
 }
 
 function checkedMedia(v: { file?: unknown; ms?: unknown }): GroupMedia {

@@ -124,6 +124,18 @@ export function resumeLora(): void {
     });
 }
 
+type Permissions = Parameters<typeof PermissionsAndroid.requestMultiple>[0];
+
+/**
+ * What the radios ask for on this phone: the location only up to Android 12, where Bluetooth needed
+ * it (erevos-radio's manifest). From Android 13 the location is there for a place sent from a chat
+ * (erevos-device), asked for then, and the radios must not ask for it.
+ */
+export function radioPermissions(permissions: Permissions): Permissions {
+  if (Platform.OS === 'android' && Number(Platform.Version) <= 32) return permissions;
+  return permissions.filter((permission) => permission !== 'android.permission.ACCESS_FINE_LOCATION');
+}
+
 const LORA_PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0] = [
   'android.permission.BLUETOOTH_SCAN',
   'android.permission.BLUETOOTH_CONNECT',
@@ -133,7 +145,7 @@ const LORA_PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0]
 /** Looks for Meshtastic radios for a few seconds, calling `listener` with each. Returns how to stop. */
 export function findRadios(listener: (radio: SavedRadio) => void): () => void {
   foundListeners.add(listener);
-  PermissionsAndroid.requestMultiple(LORA_PERMISSIONS)
+  PermissionsAndroid.requestMultiple(radioPermissions(LORA_PERMISSIONS))
     .catch(() => undefined)
     .finally(() => {
       if (foundListeners.has(listener)) meshScan();
@@ -215,7 +227,7 @@ export function startLinks({ lan, direct }: { lan: boolean; direct: boolean }): 
   if (!HAS_RADIO) return;
   resumeLora();
   started = true;
-  PermissionsAndroid.requestMultiple(RADIO_PERMISSIONS)
+  PermissionsAndroid.requestMultiple(radioPermissions(RADIO_PERMISSIONS))
     .catch(() => undefined)
     .finally(() => {
       if (!started) return;

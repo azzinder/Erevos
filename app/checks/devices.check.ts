@@ -334,6 +334,18 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
   await dell.links.settled();
   assert.equal(await receiveMessage(relay, fromHex(pixel.queue.recipientHex)), null);
 
+  // What it carries beyond words goes with it: here a sticker, answering the computer's message.
+  const sticker = await pixel.chats.e2e.seal(carolId, '🌝', pixel.queue.senderHex, { at: where, re: fromDell, more: { sticker: 'moon-smile' } });
+  await sendMessage(relay, fromHex(sticker.sender), sticker.packet);
+  await pixel.chats.history.add({ peer: `contact:${carolId}`, text: '🌝', mine: true, at: Date.now(), tag: sticker.tag, re: fromDell, sticker: 'moon-smile' });
+  await take(carol);
+  await until(async () => {
+    await take(dell);
+    return dell.chats.history.messages().some((m) => m.tag === sticker.tag);
+  });
+  const stuck = dell.chats.history.messages().find((m) => m.tag === sticker.tag);
+  assert.deepEqual([stuck?.text, stuck?.sticker, stuck?.re], ['🌝', 'moon-smile', fromDell]);
+
   // A contact added on the computer is added by the phone, which starts the conversation.
   const dave = await phone(3, false);
   const daveId = dave.chats.e2e.identityHex();
@@ -691,9 +703,11 @@ test('groups between devices: told as they change, each message once, and what a
   const junk = { v: 1, k: 'groups', list: [{ id: 'x' }], gone: ['y'], entries: [{ group: g, at: 1, from: 'nobody', text: 'hi', tag: '' }, { group: g, at: 1, from: alice, text: '', tag: 't' }] };
   assert.deepEqual(parts.take('p', utf8Encode(JSON.stringify(junk))), { k: 'groups', list: [], gone: [], entries: [] });
   // What a computer asks the phone to do in a group, checked.
-  const ask: Envelope = { k: 'group', id: g, ask: { t: 'text', text: 'hi', tag: 'aabbccddeeff' } };
+  const ask: Envelope = { k: 'group', id: g, ask: { t: 'text', text: 'hi', tag: 'aabbccddeeff', parts: { re: '112233445566' } } };
   assert.deepEqual(travel(ask), ask);
-  for (const wrong of [{ t: 'text', text: ' ', tag: 'aabbccddeeff' }, { t: 'remove', leaf: 0 }, { t: 'add', identities: ['x'] }, { t: 'make' }]) {
+  const react: Envelope = { k: 'group', id: g, ask: { t: 'mark', marked: { t: 'react', tag: 'aabbccddeeff', emoji: '👍' } } };
+  assert.deepEqual(travel(react), react);
+  for (const wrong of [{ t: 'text', text: ' ', tag: 'aabbccddeeff' }, { t: 'remove', leaf: 0 }, { t: 'add', identities: ['x'] }, { t: 'mark', marked: { t: 'react', tag: 'x', emoji: '👍' } }, { t: 'make' }]) {
     assert.equal(parts.take('p', utf8Encode(JSON.stringify({ v: 1, k: 'group', id: g, ask: wrong }))), null);
   }
   // In a pack, with the chats' messages.
@@ -854,6 +868,18 @@ test('groups on a linked computer: the phone\'s, read and written there through 
   assert.equal(said?.from, account);
   assert.equal(onPixel.groups.messages(id).find((m) => m.text === 'from the computer')?.tag, said?.tag);
   assert.equal(onDell.messages(id).filter((m) => m.text === 'from the computer').length, 1);
+
+  // What the computer answers, and its reaction, reach the group from the account; Bob's answer
+  // comes to the computer with what it answers.
+  await onDell.send(id, 'answering', nowhere, { re: said!.tag });
+  await onDell.mark(id, { t: 'react', tag: said!.tag, emoji: '👍' }, nowhere);
+  await round();
+  assert.equal(bob.groups.messages(id).find((m) => m.text === 'answering')?.re, said?.tag);
+  assert.deepEqual(bob.groups.messages(id).find((m) => m.tag === said?.tag)?.reactions, { [account]: '👍' });
+  assert.deepEqual(onDell.messages(id).find((m) => m.tag === said?.tag)?.reactions, { '': '👍' });
+  await bob.groups.send(id, 'yes', bob.transport, { re: said!.tag });
+  await round();
+  assert.equal(onDell.messages(id).find((m) => m.text === 'yes')?.re, said?.tag);
 
   // Renamed, and Carol taken out, on the computer, as the admin: the phone does it for everyone.
   await onDell.rename(id, 'Νέο όνομα', nowhere);

@@ -1,11 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useGroupMedia } from '../components/group-media';
+import { useGroupMessages } from '../components/group-messages';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { KeyFace } from '../components/key-face';
+import { LinkedText } from '../components/linked-text';
 import { usePublicGroup } from '../components/public-group';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
@@ -32,6 +34,9 @@ import { ContactPicker, groupableContacts } from '../components/contact-picker';
 // contacts, takes members out and renames it, and anyone can leave. Its Call and Video buttons start
 // a call in the group (lib/group-calls.ts); the call going on shows above the messages, to join.
 // Attach and Voice under the field send photos, files and voice messages (components/group-media.tsx).
+// A message held down opens its menu, and its bubble shows what it answers, a sticker, a place, a
+// poll or a link's preview, and its reactions (components/group-messages.tsx). `at`: the tag of a
+// message to go to, starred or found.
 
 type Contact = { identity: string; name: string };
 
@@ -42,7 +47,7 @@ const clock = (at: number) => {
 };
 
 export default function GroupScreen() {
-  const { id = '' } = useLocalSearchParams<{ id?: string }>();
+  const { id = '', at } = useLocalSearchParams<{ id?: string; at?: string }>();
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
   const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
@@ -55,10 +60,13 @@ export default function GroupScreen() {
   const [sheet, setSheet] = useState(false);
   const [, setCalls] = useState(0);
   const scroll = useRef<ScrollView>(null);
-  // Photos, files and voice messages: their buttons, sheets, and their place in the bubbles.
-  const media = useGroupMedia(id, messages, setNote);
   // A public group (app/public-group.tsx): its members by the names they chose, and its own screen for them.
   const pub = usePublicGroup(id);
+  const name = (identity: string) => (pub.isPublic ? pub.name(identity) : memberName(identity, contacts));
+  // Replies, reactions, pins, stickers, places, polls and the rest: the menu, sheets, and bubble parts.
+  const parts = useGroupMessages({ id, info, messages, name, onNote: setNote, scroll, at });
+  // Photos, files and voice messages: their buttons, sheets, and their place in the bubbles.
+  const media = useGroupMedia(id, messages, setNote, parts.attachMore);
 
   // A call going on in the group shows, until its members' phones go quiet.
   useEffect(() => {
@@ -106,15 +114,13 @@ export default function GroupScreen() {
     };
   }, [id, load]);
 
-  const name = (identity: string) => (pub.isPublic ? pub.name(identity) : memberName(identity, contacts));
-
   async function send() {
     const text = draft.trim();
     if (!text) return;
     setDraft('');
     setNote('');
     try {
-      await (await spaceGroups()).send(id, text, spaceGroupTransport);
+      await parts.send(text);
     } catch (error) {
       setDraft(text);
       setNote(error instanceof Error ? error.message : String(error));
@@ -189,7 +195,9 @@ export default function GroupScreen() {
           </Text>
         </Pressable>
       ) : null}
-      <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={styles.list} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
+      {parts.pinned}
+      {parts.search}
+      <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={styles.list} onContentSizeChange={() => parts.follows() && scroll.current?.scrollToEnd({ animated: false })}>
         {messages.map((m, i) => {
           if (m.note) {
             return (
@@ -202,19 +210,30 @@ export default function GroupScreen() {
           const before = messages[i - 1];
           const first = !before || before.note || before.from !== m.from;
           const ink = mine ? b.mineText : b.theirsText;
+          const caption = parts.caption(m);
           return (
-            <View key={i} style={[styles.bubble, mine ? b.mine : b.theirs, m.file?.kind === 'photo' && (mine || !first) && styles.photoBubble]}>
-              {!mine && first ? (
-                <Text variant="label" color={colors.accentText}>
-                  {name(m.from)}
-                </Text>
-              ) : null}
-              {media.content(m, ink) ?? (
-                <Text style={ink} selectable>
-                  {shownLine(m.text)}
-                </Text>
-              )}
-              <Text style={[ink, styles.time]}>{clock(m.at)}</Text>
+            <View key={i} onLayout={parts.placedAt(m)}>
+              <Pressable
+                onLongPress={() => parts.hold(m)}
+                accessibilityHint={t('Hold for more')}
+                style={[styles.bubble, mine ? b.mine : b.theirs, m.file?.kind === 'photo' && (mine || !first) && styles.photoBubble, m.sticker && styles.stickerBubble, parts.litStyle(m)]}
+              >
+                {!mine && first ? (
+                  <Text variant="label" color={colors.accentText}>
+                    {name(m.from)}
+                  </Text>
+                ) : null}
+                {parts.quote(m, ink)}
+                {media.content(m, ink, () => parts.hold(m)) ??
+                  parts.body(m, ink) ?? (
+                    <Text style={ink}>
+                      <LinkedText text={shownLine(m.text)} />
+                    </Text>
+                  )}
+                {parts.preview(m, ink)}
+                <Text style={[ink, styles.time, m.sticker && { color: colors.textMuted }]}>{caption ? `${clock(m.at)}  ·  ${caption}` : clock(m.at)}</Text>
+              </Pressable>
+              {parts.reactions(m)}
             </View>
           );
         })}
@@ -230,6 +249,7 @@ export default function GroupScreen() {
       ) : null}
       {out ? null : (
         <View style={styles.dock}>
+          {parts.replyBar}
           <Input value={draft} onChangeText={setDraft} placeholder={t('Message {name}', { name: info.name })} maxLength={MAX_GROUP_TEXT} multiline />
           <Row>
             <Row wrap style={{ flex: 1 }}>
@@ -240,17 +260,29 @@ export default function GroupScreen() {
         </View>
       )}
       {media.sheets}
-      <MembersSheet visible={sheet} onClose={() => setSheet(false)} info={info} name={name} onNote={setNote} />
+      {parts.sheets}
+      <MembersSheet
+        visible={sheet}
+        onClose={() => setSheet(false)}
+        info={info}
+        name={name}
+        onNote={setNote}
+        onSearch={parts.startSearch}
+        onExport={parts.exportGroup}
+      />
     </KeyboardPaddedView>
   );
 }
 
-function MembersSheet({ visible, onClose, info, name, onNote }: {
+function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport }: {
   visible: boolean;
   onClose: () => void;
   info: GroupInfo;
   name: (identity: string) => string;
   onNote: (text: string) => void;
+  /** Opens the search through the group's messages, and writes the group out as text. */
+  onSearch: () => void;
+  onExport: () => void;
 }) {
   const { colors } = useTheme();
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -382,6 +414,26 @@ function MembersSheet({ visible, onClose, info, name, onNote }: {
                 </Row>
               </Card>
             ) : null}
+            <Row wrap>
+              <Button
+                title={t('Search in this chat')}
+                kind="secondary"
+                compact
+                onPress={() => {
+                  onClose();
+                  onSearch();
+                }}
+              />
+              <Button
+                title={t('Export chat')}
+                kind="secondary"
+                compact
+                onPress={() => {
+                  onClose();
+                  setTimeout(onExport, Platform.OS === 'web' ? 0 : 300);
+                }}
+              />
+            </Row>
             {out ? (
               <Button
                 title={t('Delete the group here')}
@@ -479,6 +531,14 @@ const makeStyles = (colors: Colors) =>
     photoBubble: {
       paddingTop: 4,
       paddingHorizontal: 4,
+    },
+    // A sticker stands on its own, with no bubble behind it.
+    stickerBubble: {
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      paddingHorizontal: 0,
+      shadowOpacity: 0,
+      elevation: 0,
     },
     time: {
       fontSize: 11,

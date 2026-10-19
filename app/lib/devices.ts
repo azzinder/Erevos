@@ -23,11 +23,13 @@ import {
 import { currentCall } from './call';
 import { decodeCall } from './call-signal';
 import { callsElsewhere, onCallChange } from './calls';
+import { carriedOf } from './chat-parts';
 import { contactLink, type ContactCode } from './contact-code';
 import * as core from './core';
 import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { fromBase64Url, OwnCodeError, toBase64Url, type Link, type Where } from './e2e';
 import { currentGroupCall } from './group-call';
+import { groupPartsOf } from './group-parts';
 import type { GroupMember, Groups, GroupTransport } from './groups';
 import { t } from './i18n';
 import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode, type LinkCode } from './link-code';
@@ -1414,7 +1416,9 @@ export class Links implements Link, TakenFiles {
   // (`left`), one for all of them (`copies`, by file id). Null for one that cannot go, and, without
   // `files`, for a photo or file (not a voice message).
   private async groupEntryOf(group: string, m: GroupMessage, files: boolean, here: Here | null, left: Leaving[], copies: Map<string, FileOffer | null>): Promise<GroupEntry | null> {
-    const entry: GroupEntry = { group, at: m.at, from: m.from, text: m.text, tag: m.tag, ...(m.note ? { note: true } : {}) };
+    // What it answers, and what it is beyond its words, as it came.
+    const parts = groupPartsOf(m, !m.file);
+    const entry: GroupEntry = { group, at: m.at, from: m.from, text: m.text, tag: m.tag, ...(m.note ? { note: true } : {}), ...(Object.keys(parts).length > 0 ? { parts } : {}) };
     if (!m.file) return m.text || m.note ? entry : null;
     if (!files && m.ms === undefined) return null;
     let offer = offerOf(m.file);
@@ -1434,10 +1438,13 @@ export class Links implements Link, TakenFiles {
     const { groups, transport } = shared;
     switch (ask.t) {
       case 'text':
-        return groups.send(id, ask.text, transport, ask.tag);
+        return groups.send(id, ask.text, transport, ask.parts, ask.tag);
       // Left where the device put it, as a member's is: each member takes it from there, this phone too.
       case 'file':
-        return groups.sendFile(id, offerRef(ask.file), ask.file, ask.ms, transport, ask.tag);
+        return groups.sendFile(id, offerRef(ask.file), ask.file, ask.ms, transport, ask.parts, ask.tag);
+      case 'mark':
+        await groups.mark(id, ask.marked, transport);
+        return;
       case 'add':
         return groups.add(id, ask.identities, transport);
       case 'name':
@@ -1632,7 +1639,10 @@ export class Links implements Link, TakenFiles {
         if (mark && have.mine && (have.mark ?? 0) < mark) await history.mark(peer, true, mark, now, [tag]);
       } else {
         const lasts = typeof m.lasts === 'number' && m.lasts > 0 ? m.lasts : typeof m.timer === 'number' ? m.timer : 0;
-        const base: Message = { peer, text: '', mine: true, at: now, tag, lasts, mark: mark ?? 0 };
+        // With what it answers, and what it is beyond words (lib/chat-parts.ts): a sticker, a place, a poll, a preview.
+        const { sticker, place, poll, preview, forwarded } = carriedOf(m);
+        const parts = { ...(isTag(m.re) ? { re: m.re } : {}), ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}) };
+        const base: Message = { peer, text: '', mine: true, at: now, tag, lasts, mark: mark ?? 0, ...parts };
         const voice = voiceOf(m.voice);
         const offer = isObject(m.file) ? readOffer(m.file) : null;
         if (isText(m.text) && m.text) await history.add({ ...base, text: m.text });
