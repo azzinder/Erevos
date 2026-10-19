@@ -6,9 +6,10 @@ import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles } from '../theme/context';
 import { Text, TextButton } from './ui';
 
-// What was just done to an SMS conversation or message (archived, put in the Trash, deleted), with
-// Undo for a few seconds, on whichever SMS screen shows next: the one it was done on, or the list
-// it goes back to. One at a time; a new one takes the place of the last.
+// What was just done to an SMS conversation or message (archived, put in the Trash, deleted), or
+// to calls in the phone's Recents (deleted), with Undo for a few seconds, on
+// whichever screen with the bar shows next: the one it was done on, or the list it goes back to.
+// One at a time; a new one takes the place of the last.
 
 export type Offer = { text: string; undo: () => unknown };
 

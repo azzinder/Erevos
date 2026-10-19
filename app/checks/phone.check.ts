@@ -8,7 +8,7 @@ import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
 import { callLength, cleanReplies, dialNumber, KEYS, knownNames, MAX_REPLIES, MAX_REPLY, typeKey } from '../lib/phone';
-import { callKind, callMarks, callWho, filterCalls, groupCalls, withDays } from '../lib/phone-log';
+import { callKind, callMarks, callsWith, callWho, filterCalls, groupCalls, withDays, withoutCalls } from '../lib/phone-log';
 import {
   addPrefix,
   blockedInternational,
@@ -175,6 +175,20 @@ test('calls one after another with the same number, kind and day are one row, un
     items.map((i) => (i.kind === 'day' ? i.label : i.row.calls.length)),
     ['Today', 2, 1, 'Yesterday', 1, 1, 2, '12/10/26', 1],
   );
+});
+
+test('the calls of a number are found however it is written, and those being deleted are hidden', () => {
+  const greek = logged({ number: '+306911111111' });
+  const local = logged({ number: '6911111111' });
+  const other = logged({ number: '+302101234567' });
+  const hidden = logged({ number: '', presentation: 2 });
+  const calls = [greek, local, other, hidden];
+  assert.deepEqual(callsWith(calls, local).map((c) => c.id), [greek.id, local.id]);
+  assert.deepEqual(callsWith(calls, other).map((c) => c.id), [other.id]);
+  // A hidden number is no number: it has no calls of its own to delete.
+  assert.deepEqual(callsWith(calls, hidden), []);
+  assert.deepEqual(withoutCalls(calls, new Set([greek.id, hidden.id])), [local, other]);
+  assert.equal(withoutCalls(calls, new Set()), calls);
 });
 
 test("the owner's prefixes are kept with their country code, or as the phone's country writes them", () => {

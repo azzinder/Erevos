@@ -54,6 +54,7 @@ const PHONE_PERMISSIONS = [
   'android.permission.CALL_PHONE',
   'android.permission.READ_PHONE_STATE',
   'android.permission.READ_CALL_LOG',
+  'android.permission.WRITE_CALL_LOG',
   'android.permission.READ_CONTACTS',
 ] as const;
 const NOT_CHOSEN = mark(

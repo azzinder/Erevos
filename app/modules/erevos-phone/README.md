@@ -38,7 +38,9 @@ been compile-checked against Android 16's framework classes, not built or run.
 - **History.** `History`: `history()` reads Android's call history (`CallLog.Calls`, with
   `FEATURES` for Wi-Fi calling and HD voice and `PHONE_ACCOUNT_ID` for the SIM), `favourites()` the
   starred contacts with their numbers, `seenMissed()` takes away Telecom's missed-call notice. An
-  `onHistory` event follows changes to either. Nothing of it is kept.
+  `onHistory` event follows changes to either. Nothing of it is kept. `deleteCalls(ids)` and
+  `deleteCallsOf(number, before)` delete calls the owner deletes, with `WRITE_CALL_LOG`, which the
+  phone app role grants.
 
 ## JS API
 

@@ -48,6 +48,13 @@ export const phone: Record<string, string> = {
   'Call {name}': 'Κλήση: {name}',
   'Send an SMS': 'Αποστολή SMS',
   'Change the number before calling': 'Αλλαγή αριθμού πριν την κλήση',
+  'Delete this call': 'Διαγραφή αυτής της κλήσης',
+  'Delete these {n} calls': 'Διαγραφή αυτών των {n} κλήσεων',
+  'Delete every call with this number': 'Διαγραφή όλων των κλήσεων με αυτόν τον αριθμό',
+  'Call deleted.': 'Η κλήση διαγράφηκε.',
+  '{n} calls deleted.': 'Διαγράφηκαν {n} κλήσεις.',
+  'The calls with {who} were deleted.': 'Οι κλήσεις με {who} διαγράφηκαν.',
+  'The calls were not deleted. {error}': 'Οι κλήσεις δεν διαγράφηκαν. {error}',
   "Android does not let Erevos read the phone's contacts yet.": 'Το Android δεν αφήνει ακόμα το Erevos να διαβάσει τις επαφές του τηλεφώνου.',
   'Allow the contacts': 'Να επιτρέπονται οι επαφές',
   'No favourites yet. The contacts you star show here, to call at a tap.':
