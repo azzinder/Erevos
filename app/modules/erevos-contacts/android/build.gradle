@@ -1,0 +1,19 @@
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.erevoscontacts'
+version = '0.0.1'
+
+android {
+  namespace "expo.modules.erevoscontacts"
+
+  defaultConfig {
+    versionCode 1
+    versionName "0.0.1"
+  }
+}
+
+dependencies {
+  // Reading a QR code from a photo (QrReader.kt): ZXing's core, plain Java, nothing of Google Play.
+  implementation 'com.google.zxing:core:3.5.3'
+}

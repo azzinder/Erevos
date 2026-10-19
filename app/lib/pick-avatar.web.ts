@@ -36,15 +36,15 @@ function choose(): Promise<globalThis.File | null> {
   });
 }
 
-export async function pickAvatar(_from: 'photos' | 'camera'): Promise<Uint8Array | null> {
+export async function pickAvatar(_from: 'photos' | 'camera', size = SIDE): Promise<Uint8Array | null> {
   const file = await choose();
   if (!file) return null;
   const image = await createImageBitmap(file, { imageOrientation: 'from-image' });
   const side = Math.min(image.width, image.height);
   const canvas = document.createElement('canvas');
-  canvas.width = SIDE;
-  canvas.height = SIDE;
-  canvas.getContext('2d')!.drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, SIDE, SIDE);
+  canvas.width = size;
+  canvas.height = size;
+  canvas.getContext('2d')!.drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, size, size);
   image.close();
   return jpeg(canvas, 0.85);
 }

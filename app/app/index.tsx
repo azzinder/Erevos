@@ -59,6 +59,7 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
     links: true,
   },
   { title: mark('SMS'), detail: mark('Erevos as the SMS app, one list for all messages'), href: '/sms-settings', phone: true },
+  { title: mark('Contacts'), detail: mark("The phone's contacts, their groups and birthdays"), href: '/contacts', phone: true },
   { title: mark('Linked devices'), detail: mark('This account on a computer or in a browser too'), href: '/devices' },
   { title: mark('Phone'), detail: mark('Erevos as the phone app: the keypad, the calls and the favourites'), href: '/phone', phone: true },
   { title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay' },

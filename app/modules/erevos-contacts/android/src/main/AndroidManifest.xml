@@ -1,0 +1,91 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- The phone's contacts, read and changed in Android's own contacts. Asked for when the owner
+       first opens Contacts. -->
+  <uses-permission android:name="android.permission.READ_CONTACTS" />
+  <uses-permission android:name="android.permission.WRITE_CONTACTS" />
+  <!-- Birthday reminders (Birthdays.kt), once the owner turns them on: a notice in the morning,
+       from an alarm set again when the phone starts. -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+  <application>
+    <!-- Contacts as an icon of its own in the launcher, with Erevos's icon (ContactIntents.kt). -->
+    <activity
+      android:name="expo.modules.erevoscontacts.ContactsLauncherActivity"
+      android:exported="true"
+      android:excludeFromRecents="true"
+      android:noHistory="true"
+      android:label="@string/erevos_contacts_launcher"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+    <!-- Other apps' requests to add a contact, add to one, change one or show one (ContactIntents.kt):
+         opened in Erevos, behind its lock. -->
+    <activity
+      android:name="expo.modules.erevoscontacts.ContactIntentActivity"
+      android:exported="true"
+      android:excludeFromRecents="true"
+      android:noHistory="true"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter>
+        <action android:name="android.intent.action.INSERT" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.dir/contact" />
+        <data android:mimeType="vnd.android.cursor.dir/raw_contact" />
+        <data android:mimeType="vnd.android.cursor.dir/person" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.INSERT_OR_EDIT" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.item/contact" />
+        <data android:mimeType="vnd.android.cursor.item/raw_contact" />
+        <data android:mimeType="vnd.android.cursor.item/person" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.EDIT" />
+        <action android:name="android.intent.action.VIEW" />
+        <action android:name="android.provider.action.QUICK_CONTACT" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.item/contact" />
+        <data android:mimeType="vnd.android.cursor.item/raw_contact" />
+        <data android:mimeType="vnd.android.cursor.item/person" />
+      </intent-filter>
+    </activity>
+    <!-- Other apps' requests to pick a contact, or one of its numbers, emails or addresses: the
+         phone's contacts only, never those kept in Erevos. -->
+    <activity
+      android:name="expo.modules.erevoscontacts.PickContactActivity"
+      android:exported="true"
+      android:excludeFromRecents="true">
+      <intent-filter>
+        <action android:name="android.intent.action.PICK" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.dir/contact" />
+        <data android:mimeType="vnd.android.cursor.dir/person" />
+        <data android:mimeType="vnd.android.cursor.dir/phone_v2" />
+        <data android:mimeType="vnd.android.cursor.dir/email_v2" />
+        <data android:mimeType="vnd.android.cursor.dir/postal-address_v2" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.GET_CONTENT" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.item/contact" />
+        <data android:mimeType="vnd.android.cursor.item/person" />
+        <data android:mimeType="vnd.android.cursor.item/phone_v2" />
+        <data android:mimeType="vnd.android.cursor.item/email_v2" />
+        <data android:mimeType="vnd.android.cursor.item/postal-address_v2" />
+      </intent-filter>
+    </activity>
+    <receiver android:name="expo.modules.erevoscontacts.BirthdayReceiver" android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        <action android:name="android.intent.action.TIME_SET" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+      </intent-filter>
+    </receiver>
+  </application>
+</manifest>

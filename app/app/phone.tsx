@@ -8,7 +8,8 @@ import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
 import { Held } from '../lib/held';
 import { mark, plural, t } from '../lib/i18n';
-import { callLength, dialNumber, KEYS, knownNames, typeKey } from '../lib/phone';
+import { refreshKnownNames } from '../lib/known-names';
+import { callLength, dialNumber, KEYS, typeKey } from '../lib/phone';
 import { isBlocked, onSmsOrderChanged, smsOrderChanged } from '../lib/sms-folders';
 import { sameNumber } from '../lib/sms-invite';
 import {
@@ -30,7 +31,6 @@ import {
 } from '../lib/phone-log';
 import { blockedUntil, liftGroup, liveGroups, rulesFrom, rulesJson, type PhoneRules } from '../lib/phone-rules';
 import { accountLabel, callAccount, PhoneSims } from '../lib/phone-sims';
-import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import {
   blockingRules,
@@ -46,7 +46,6 @@ import {
   placeCall,
   seenMissedCalls,
   setBlockingRules,
-  setKnownNames,
   showCall,
   type ContactGroup,
   type Favourite,
@@ -137,12 +136,7 @@ export default function Phone() {
     const { space: open, key } = currentSpace();
     PhoneSims.open(open, key).then(setSims, () => setSims(null));
     // A contact linked to a number since the space opened: its calls show its name too.
-    loadE2EData('space', open, key)
-      .then((e2e) => {
-        // Unless the space locked meanwhile: currentSpace() throws then.
-        if (currentSpace().key === key) setKnownNames(knownNames(e2e.contacts));
-      })
-      .catch(() => undefined);
+    void refreshKnownNames();
     const app = AppState.addEventListener('change', (state) => state === 'active' && look());
     const calls = onPhoneEvent('onCalls', () => setStatus(phoneStatus()));
     return () => {
