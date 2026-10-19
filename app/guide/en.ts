@@ -664,7 +664,12 @@ send changed code. Erevos does not take that code on trust:
   not open Erevos from that server again until it is explained. With a password lock your chats stay sealed.
 - **No Bluetooth or nearby link** and no SMS: Safari does not allow them.
 - **Only while it is open:** iOS stops web apps in the background, so messages arrive when you open Erevos; they wait
-  on the relay until then. Notifications come later, and they too would pass through Apple, encrypted.
+  on the relay until then.
+- **Notifications** while Erevos is closed are off unless you turn them on: **Lock and second password → Notifications
+  while closed → Turn on** (iOS 16.4 or later, from the home screen). When a message comes, your relay sends an empty
+  push through Apple, and Erevos shows **New message**, nothing more. Apple sees when something comes for your iPhone,
+  and that it uses Erevos, never what or from whom. They are per space, never for hidden chats, and your relay must be
+  set up to send them.
 - **Backups** are made by hand: **Make a backup** saves the file through the share sheet (Files, iCloud Drive or
   another app). A browser gives out a file only after a tap, so there are no automatic backups.
 - **Voice messages** recorded on an iPhone are AAC; they play everywhere.

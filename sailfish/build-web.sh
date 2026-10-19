@@ -12,7 +12,7 @@ cd "$root/app"
 npm ci --no-audit --no-fund
 node scripts/build-web-core.mjs
 rm -rf "$here/web"
-EXPO_NO_TELEMETRY=1 EXPO_PUBLIC_SHELL=sailfish npx expo export --platform web --output-dir "$here/web"
+EXPO_NO_TELEMETRY=1 EXPO_PUBLIC_SHELL=sailfish npx expo export --clear --platform web --output-dir "$here/web"
 test -f "$here/web/core/erevos_ffi_bg.wasm"
 
 # Sailfish WebView is Gecko 91: what the build needs and it lacks comes first.

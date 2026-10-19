@@ -36,6 +36,13 @@
 //!   then a whole `FILE_GET` or `FILE_DELETE` request. This relay passes the
 //!   request to `<address>/files` and replies with that relay's reply, or
 //!   `UNREACHABLE`.
+//! - `PUSH_KEY`: no fields. Reply: the relay's key for Web Push (65 bytes,
+//!   an uncompressed P-256 point), or `NOT_FOUND` if the relay does not push.
+//! - `PUSH_SET`: recipient id, then a 2-byte length and a push address made
+//!   by a browser for that key; empty removes it. From then on each message
+//!   that comes into the queue sends an empty push there (see `push.rs`).
+//!   Reply: `OK`, `NOT_FOUND` (no such queue, or the relay does not push), or
+//!   `FAILED` (not a known push service's address, or not written).
 //! - `CALL_RELAY`: no fields. Reply: credentials for the call relay beside
 //!   this relay (see `turn.rs`): a 2-byte length and the username, a 2-byte
 //!   length and the password, a 1-byte count of addresses and each address
@@ -85,6 +92,7 @@ use tungstenite::http::StatusCode;
 use tungstenite::Message;
 
 use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
+use crate::push::{Push, SetError, MAX_ENDPOINT};
 use crate::queue::{QueueError, QueueId, Store};
 use crate::turn::Turn;
 
@@ -97,6 +105,8 @@ pub struct Shared {
     pub files: Mutex<FileStore>,
     pub key: Option<RelayKey>,
     pub turn: Option<Turn>,
+    /// Web Push, if the relay pushes (set once, after start).
+    pub push: std::sync::OnceLock<Arc<Push>>,
 }
 
 pub type SharedStore = Arc<Shared>;
@@ -114,6 +124,7 @@ impl Shared {
             files: Mutex::new(files),
             key,
             turn,
+            push: std::sync::OnceLock::new(),
         })
     }
 
@@ -143,6 +154,8 @@ pub const FILE_DELETE: u8 = 10;
 pub const FILE_VIA: u8 = 11;
 pub const CALL_RELAY: u8 = 12;
 pub const WAIT: u8 = 13;
+pub const PUSH_KEY: u8 = 14;
+pub const PUSH_SET: u8 = 15;
 
 /// The longest a `WAIT` lasts, seconds.
 pub const MAX_WAIT: u8 = 60;
@@ -302,7 +315,7 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
             let sender = read_id(r)?;
             let msg = read_message(r)?;
             let sent = shared.store().send(&sender, msg);
-            status(arrived(shared, sent))
+            status(arrived(shared, &sender, sent))
         }
         RECEIVE => {
             let recipient = read_id(r)?;
@@ -343,7 +356,13 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         }
         DELETE => {
             let recipient = read_id(r)?;
-            status(shared.store().delete(&recipient))
+            let deleted = shared.store().delete(&recipient);
+            if deleted.is_ok() {
+                if let Some(push) = shared.push.get() {
+                    push.forget(&recipient);
+                }
+            }
+            status(deleted)
         }
         KEY => match &shared.key {
             Some(key) => {
@@ -363,7 +382,7 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
             match shared.key.as_ref().map(|key| key.open(&sealed)) {
                 Some(Ok((sender, msg))) if msg.len() <= MAX_MESSAGE => {
                     let sent = shared.store().send(&sender, msg);
-                    status(arrived(shared, sent))
+                    status(arrived(shared, &sender, sent))
                 }
                 // Sealed for another key, changed on the way, or this relay has no key:
                 // to the sender it is the same as a queue that is not here.
@@ -411,6 +430,42 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
             let id = read_id(r)?;
             file_via(&address, op[0], &id)
         }
+        PUSH_KEY => match shared.push.get() {
+            Some(push) => {
+                let mut out = vec![OK];
+                out.extend_from_slice(&push.public_key());
+                out
+            }
+            None => vec![NOT_FOUND],
+        },
+        PUSH_SET => {
+            let recipient = read_id(r)?;
+            let mut len = [0u8; 2];
+            r.read_exact(&mut len)?;
+            let len = u16::from_be_bytes(len) as usize;
+            if len > MAX_ENDPOINT {
+                return Err(io::Error::new(
+                    ErrorKind::InvalidData,
+                    "push address too long",
+                ));
+            }
+            let mut endpoint = vec![0u8; len];
+            r.read_exact(&mut endpoint)?;
+            let exists = !matches!(
+                shared.store().has_waiting(&recipient),
+                Err(QueueError::NotFound)
+            );
+            match (shared.push.get(), exists) {
+                (Some(push), true) => match std::str::from_utf8(&endpoint) {
+                    Ok(endpoint) => match push.set(&recipient, endpoint) {
+                        Ok(()) => vec![OK],
+                        Err(SetError::Refused | SetError::Storage) => vec![FAILED],
+                    },
+                    Err(_) => vec![FAILED],
+                },
+                _ => vec![NOT_FOUND],
+            }
+        }
         CALL_RELAY => match &shared.turn {
             Some(turn) => {
                 let (username, password) = turn.credentials();
@@ -430,10 +485,20 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
     Ok(Some(reply))
 }
 
-/// Wakes the connections waiting for a message once one was queued.
-fn arrived(shared: &Shared, sent: Result<(), QueueError>) -> Result<(), QueueError> {
+/// Wakes the connections waiting for a message once one was queued, and
+/// pushes to the queue's web app if it asked for that.
+fn arrived(
+    shared: &Shared,
+    sender: &QueueId,
+    sent: Result<(), QueueError>,
+) -> Result<(), QueueError> {
     if sent.is_ok() {
         shared.arrived.notify_all();
+        if let Some(push) = shared.push.get() {
+            if let Some(recipient) = shared.store().recipient_of(sender) {
+                push.arrived(&recipient);
+            }
+        }
     }
     sent
 }
@@ -812,6 +877,85 @@ mod tests {
         let (recipient, sender) = ws_create(&mut ws);
         assert_eq!(ws_send(&mut ws, &sender, b"hi"), OK);
         assert_eq!(ws_receive(&mut ws, &recipient).as_deref(), Some(&b"hi"[..]));
+    }
+
+    #[test]
+    fn a_web_app_asks_for_a_push_and_a_message_sends_it() {
+        // A push service on this machine, which hands back each request line.
+        let service = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = format!("http://{}/", service.local_addr().unwrap());
+        let (tx, pushes) = std::sync::mpsc::channel();
+        thread::spawn(move || {
+            for stream in service.incoming() {
+                let mut stream = stream.unwrap();
+                let mut request = Vec::new();
+                let mut byte = [0u8; 1];
+                while !request.ends_with(b"\r\n\r\n") && stream.read(&mut byte).unwrap() == 1 {
+                    request.push(byte[0]);
+                }
+                stream.write_all(b"HTTP/1.1 201 Created\r\n\r\n").unwrap();
+                let request = String::from_utf8(request).unwrap();
+                tx.send(request.lines().next().unwrap().to_string())
+                    .unwrap();
+            }
+        });
+
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let shared = Shared::new(Store::default(), FileStore::default(), None, None);
+        let key = p256::ecdsa::SigningKey::random(&mut rand::rngs::OsRng);
+        let push = Push::new(
+            key,
+            "mailto:a@example.org".into(),
+            vec![address.clone()],
+            None,
+        )
+        .unwrap();
+        let public = push.public_key();
+        shared.push.set(push).ok().unwrap();
+        thread::spawn(move || serve(listener, shared));
+
+        let mut s = TcpStream::connect(addr).unwrap();
+        s.write_all(&[PUSH_KEY]).unwrap();
+        let mut r = [0u8; 66];
+        s.read_exact(&mut r).unwrap();
+        assert_eq!((r[0], &r[1..]), (OK, &public[..]));
+
+        let set = |s: &mut TcpStream, queue: &QueueId, endpoint: &str| {
+            let mut req = vec![PUSH_SET];
+            req.extend_from_slice(queue);
+            req.extend_from_slice(&(endpoint.len() as u16).to_be_bytes());
+            req.extend_from_slice(endpoint.as_bytes());
+            s.write_all(&req).unwrap();
+            let mut r = [0u8; 1];
+            s.read_exact(&mut r).unwrap();
+            r[0]
+        };
+        let (recipient, sender) = create(&mut s);
+        assert_eq!(set(&mut s, &[7u8; 24], &format!("{address}x")), NOT_FOUND);
+        assert_eq!(set(&mut s, &recipient, "https://evil.org/x"), FAILED);
+        assert_eq!(set(&mut s, &recipient, &format!("{address}sub/1")), OK);
+
+        assert_eq!(send(&mut s, &sender, b"hi"), OK);
+        let line = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert_eq!(line, "POST /sub/1 HTTP/1.1");
+        // The message itself waits as before.
+        assert_eq!(receive(&mut s, &recipient).as_deref(), Some(&b"hi"[..]));
+
+        // Removed: no more pushes.
+        assert_eq!(set(&mut s, &recipient, ""), OK);
+        thread::sleep(crate::push::PUSH_GAP.min(Duration::from_millis(10)));
+        assert_eq!(send(&mut s, &sender, b"again"), OK);
+        assert!(pushes.recv_timeout(Duration::from_millis(500)).is_err());
+    }
+
+    #[test]
+    fn a_relay_that_does_not_push_says_so() {
+        let mut s = TcpStream::connect(start()).unwrap();
+        s.write_all(&[PUSH_KEY]).unwrap();
+        let mut r = [0u8; 1];
+        s.read_exact(&mut r).unwrap();
+        assert_eq!(r[0], NOT_FOUND);
     }
 
     #[test]

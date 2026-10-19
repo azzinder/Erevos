@@ -6,7 +6,10 @@ license.workspace = true
 
 [dependencies]
 hmac = "0.12"
+p256 = { version = "0.13", features = ["ecdsa"] }
 rand = "0.8"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 sha1 = "0.10"
 tungstenite = { version = "0.30.0", features = ["rustls-tls-webpki-roots"] }
+webpki-roots = "0.26"
 erevos-core = { path = "../erevos-core" }

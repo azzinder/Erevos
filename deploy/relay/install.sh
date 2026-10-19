@@ -87,6 +87,8 @@ if ! grep -q '^EREVOS_TURN_SECRET=' /etc/erevos-relay.env; then
 fi
 sed -i '/^EREVOS_TURN_URLS=/d' /etc/erevos-relay.env
 printf 'EREVOS_TURN_URLS=turn:%s:3478,turn:%s:3478?transport=tcp\n' "$domain" "$domain" >>/etc/erevos-relay.env
+sed -i '/^EREVOS_RELAY_PUSH_SUBJECT=/d' /etc/erevos-relay.env
+printf 'EREVOS_RELAY_PUSH_SUBJECT=https://%s\n' "$domain" >>/etc/erevos-relay.env
 chmod 600 /etc/erevos-relay.env
 
 echo "== Call relay (coturn)"

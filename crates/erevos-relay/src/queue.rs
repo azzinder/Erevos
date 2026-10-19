@@ -269,6 +269,11 @@ impl Store {
         })
     }
 
+    /// The queue a sender id sends to, if it is here.
+    pub fn recipient_of(&self, sender_id: &QueueId) -> Option<QueueId> {
+        self.by_sender.get(sender_id).copied()
+    }
+
     pub fn send(&mut self, sender_id: &QueueId, msg: Vec<u8>) -> Result<(), QueueError> {
         let rid = *self.by_sender.get(sender_id).ok_or(QueueError::NotFound)?;
         self.expire_queue(&rid)?;

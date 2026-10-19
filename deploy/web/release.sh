@@ -25,7 +25,7 @@ echo "== Building the core and the web build"
 cd "$root/app"
 npm ci --no-audit --no-fund
 node scripts/build-web-core.mjs
-EXPO_NO_TELEMETRY=1 npx expo export --platform web --output-dir "$web"
+EXPO_NO_TELEMETRY=1 npx expo export --clear --platform web --output-dir "$web"
 
 echo "== Making and signing the web app"
 node "$root/pwa/build.mjs" "$web" "$out"

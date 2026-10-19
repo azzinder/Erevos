@@ -34,6 +34,8 @@ const FILE_DELETE = 10;
 const FILE_VIA = 11;
 const CALL_RELAY = 12;
 const WAIT = 13;
+const PUSH_KEY = 14;
+const PUSH_SET = 15;
 
 const OK = 0;
 const NOT_FOUND = 1;
@@ -558,4 +560,31 @@ export async function callRelay(relay: Relay): Promise<CallRelay | null> {
   const count = reply[at++] ?? 0;
   const urls = Array.from({ length: count }, short).filter((url) => /^turns?:/.test(url));
   return urls.length > 0 ? { urls, username, credential } : null;
+}
+
+/** The relay's key for Web Push, or null if it does not push (an older relay closes the
+ *  connection at an opcode it does not know, which is the same answer). */
+export async function pushKey(relay: Relay): Promise<Uint8Array | null> {
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(PUSH_KEY));
+  } catch (error) {
+    if (error instanceof RelayUnreachableError) return null;
+    throw error;
+  }
+  if (reply[0] === NOT_FOUND) return null;
+  check(reply, 'push key');
+  return reply.slice(1);
+}
+
+/** Asks the relay for an empty push to `endpoint` whenever a message comes into the queue, or
+ *  for none when `endpoint` is empty. */
+export async function setPush(relay: Relay, recipientId: Uint8Array, endpoint: string): Promise<void> {
+  const address = utf8Encode(endpoint);
+  const bytes = new Uint8Array(1 + 24 + 2 + address.length);
+  bytes[0] = PUSH_SET;
+  bytes.set(recipientId, 1);
+  new DataView(bytes.buffer).setUint16(25, address.length);
+  bytes.set(address, 27);
+  check(await request(relay, bytes), 'push');
 }

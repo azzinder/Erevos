@@ -16,6 +16,8 @@ Environment=EREVOS_RELAY_JOURNAL=/var/lib/erevos-relay/queues.journal
 Environment=EREVOS_RELAY_KEY=/var/lib/erevos-relay/relay.key
 # Encrypted chunks of the files phones send, until the contact takes them.
 Environment=EREVOS_RELAY_FILES=/var/lib/erevos-relay/files
+# Key for the empty pushes that tell web apps a message came. Made on first start; keep it.
+Environment=EREVOS_RELAY_PUSH_KEY=/var/lib/erevos-relay/push.key
 Restart=on-failure
 RestartSec=2
 
