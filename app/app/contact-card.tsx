@@ -2,27 +2,33 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
-import { ContactFace, forgetPhoneContactPhoto, usePhoneContactPhoto } from '../components/contact-face';
+import { ContactFace, forgetPhoneContactPhoto, useCardPhoto } from '../components/contact-face';
 import { QrCode } from '../components/QrCode';
 import { Button, Card, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
-import { groupsByTitle, phoneCard, type Card as ContactCard } from '../lib/contact-book';
+import { groupsByTitle, phoneCard, sealedCard, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
-import { birthdayComing, birthdayLabel, kindLabel, parseBirthday, type Entry } from '../lib/contacts';
+import { birthdayComing, birthdayLabel, kindLabel, parseBirthday, phoneSave, type Entry } from '../lib/contacts';
+import { fromBase64 } from '../lib/crypto';
+import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
 import { pickAvatar } from '../lib/pick-avatar';
 import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
+import { loadPlace, onSealedChange, placeOf, removeSealed, saveSealed, setSealedPhoto, spacePlace, starSealed, type Place } from '../lib/sealed-contacts';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { qrVCard } from '../lib/vcard';
+import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import {
   addToPhoneGroup,
   onContactsEvent,
   phoneContact,
+  phoneContactPhoto,
   phoneGroups,
   pickRingtone,
   removeFromPhoneGroup,
   removePhoneContacts,
   ringtoneName,
+  savePhoneContact,
   setPhoneContactPhoto,
   starPhoneContact,
   type PhoneGroup,
@@ -36,13 +42,24 @@ import { useStyles, useTheme } from '../theme/context';
 // photo, from the phone's photos or the camera, is kept there too, 720 points square, as Android
 // shows it large when they call; and its own ringtone, picked in Android's picker. Its QR code is
 // its vCard, which another phone's camera reads as a contact to add.
+//
+// A contact kept only in Erevos (`sealed`, lib/sealed-contacts.ts) has the same, but for groups
+// and a ringtone, which are Android's: its star and photo are sealed with it. A phone contact can
+// move into Erevos, and one kept in Erevos out to the phone's contacts. Among the hidden chats'
+// screens (`hidden`), it is one of theirs, and shows nothing once they close; it takes no photo
+// there, as picking one leaves Erevos, which closes them.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 const PHOTO_SIDE = 720;
+// A sealed photo is kept smaller: the phone never shows it on a call.
+const SEALED_SIDE = 512;
 
 export default function ContactCardScreen() {
-  const params = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<{ id?: string; sealed?: string; hidden?: string }>();
   const id = Number(params.id ?? 0);
+  const sealedId = typeof params.sealed === 'string' ? params.sealed : '';
+  const hidden = params.hidden === '1';
+  const hiddenOpen = useOpenHiddenPlace();
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const [card, setCard] = useState<ContactCard | null>(null);
@@ -53,8 +70,21 @@ export default function ContactCardScreen() {
   const [showingQr, setShowingQr] = useState(false);
   const [note, setNote] = useState('');
   const [tone, setTone] = useState('');
-  const photo = usePhoneContactPhoto(card?.phone?.id ?? null, card?.phone?.photo ?? 0, true);
+  const photo = useCardPhoto(card, true);
   const ringtone = card?.phone?.ringtone ?? '';
+
+  useEffect(() => (hidden ? enterHiddenScreen() : undefined), [hidden]);
+
+  // Where a sealed contact is: the hidden chats while they are open, else the space.
+  const place = useMemo((): Place | null => {
+    if (!sealedId) return null;
+    if (hidden) return hiddenOpen ? placeOf(hiddenOpen) : null;
+    try {
+      return spacePlace();
+    } catch {
+      return null;
+    }
+  }, [sealedId, hidden, hiddenOpen]);
 
   useEffect(() => {
     let active = true;
@@ -68,6 +98,20 @@ export default function ContactCardScreen() {
   }, [ringtone]);
 
   const load = useCallback(() => {
+    if (sealedId) {
+      if (!place) {
+        setCard(null);
+        return;
+      }
+      loadPlace(place)
+        .then((data) => {
+          const found = data.contacts.find((c) => c.id === sealedId);
+          setCard(found ? sealedCard(found) : null);
+          setGone(!found);
+        })
+        .catch((error) => setNote(errorText(error)));
+      return;
+    }
     if (!(id > 0)) {
       setGone(true);
       return;
@@ -81,31 +125,45 @@ export default function ContactCardScreen() {
     phoneGroups()
       .then((found) => setGroups(groupsByTitle(found)))
       .catch(() => undefined);
-  }, [id]);
+  }, [id, sealedId, place]);
 
   useFocusEffect(
     useCallback(() => {
       load();
-      const changed = onContactsEvent('onContactsChanged', load);
-      return () => changed?.remove();
-    }, [load]),
+      const changed = sealedId ? null : onContactsEvent('onContactsChanged', load);
+      const sealed = onSealedChange(load);
+      return () => {
+        changed?.remove();
+        sealed();
+      };
+    }, [load, sealedId]),
   );
 
+  const close = () => (router.canGoBack() ? router.back() : router.replace(hidden ? '/contacts?hidden=1' : '/contacts'));
+
+  if (hidden && !hiddenOpen) {
+    return (
+      <Page>
+        <Text tone="muted">{t('The hidden chats are closed.')}</Text>
+      </Page>
+    );
+  }
   if (gone) {
     return (
       <Page>
-        <Text tone="muted">{t('This contact is no longer on the phone.')}</Text>
-        <Button title={t('Close')} kind="secondary" onPress={() => (router.canGoBack() ? router.back() : router.replace('/contacts'))} />
+        <Text tone="muted">{sealedId ? t('This contact is no longer kept in Erevos.') : t('This contact is no longer on the phone.')}</Text>
+        <Button title={t('Close')} kind="secondary" onPress={close} />
       </Page>
     );
   }
   if (!card) return <Page>{note ? <Text tone="muted">{note}</Text> : null}</Page>;
 
   async function star() {
-    if (!card?.phone) return;
+    if (!card) return;
     setNote('');
     try {
-      await starPhoneContact(card.phone.id, !card.starred);
+      if (card.sealed && place) await starSealed(place, card.sealed.id, !card.starred);
+      else if (card.phone) await starPhoneContact(card.phone.id, !card.starred);
       setCard({ ...card, starred: !card.starred });
     } catch (error) {
       setNote(errorText(error));
@@ -113,24 +171,32 @@ export default function ContactCardScreen() {
   }
 
   async function remove() {
-    if (!card?.phone) return;
-    if (!(await confirm(t('Delete contact'), t('Delete {name} from the phone? It goes from every account it is kept in, and cannot be brought back.', { name: card.name }), t('Delete')))) return;
+    if (!card) return;
+    const question = card.sealed
+      ? t('Delete {name}? It is kept only in Erevos, and cannot be brought back.', { name: card.name })
+      : t('Delete {name} from the phone? It goes from every account it is kept in, and cannot be brought back.', { name: card.name });
+    if (!(await confirm(t('Delete contact'), question, t('Delete')))) return;
     try {
-      await removePhoneContacts([card.phone.id]);
-      router.canGoBack() ? router.back() : router.replace('/contacts');
+      if (card.sealed && place) await removeSealed(place, card.sealed.id);
+      else if (card.phone) await removePhoneContacts([card.phone.id]);
+      close();
     } catch (error) {
       setNote(errorText(error));
     }
   }
 
   async function changePhoto(from: 'photos' | 'camera' | null) {
-    if (!card?.phone) return;
+    if (!card) return;
     setNote('');
     try {
-      const bytes = from ? await pickAvatar(from, PHOTO_SIDE) : null;
+      const bytes = from ? await pickAvatar(from, card.sealed ? SEALED_SIDE : PHOTO_SIDE) : null;
       if (from && !bytes) return;
-      await setPhoneContactPhoto(card.phone.id, bytes);
-      forgetPhoneContactPhoto(card.phone.id);
+      if (card.sealed && place) {
+        await setSealedPhoto(place, card.sealed.id, bytes);
+      } else if (card.phone) {
+        await setPhoneContactPhoto(card.phone.id, bytes);
+        forgetPhoneContactPhoto(card.phone.id);
+      }
       setChoosingPhoto(false);
       load();
     } catch (error) {
@@ -159,6 +225,39 @@ export default function ContactCardScreen() {
     }
   }
 
+  // A phone contact sealed in the space instead, with its star and photo, and taken out of
+  // Android's contacts, where other apps and its account no longer see it.
+  async function moveIntoErevos() {
+    if (!card?.phone) return;
+    if (!(await confirm(t('Keep only in Erevos'), t("Move {name} into Erevos? It is sealed in this space and deleted from the phone's contacts, from every account it is kept in: other apps no longer see it, and the phone no longer shows its name when it calls.", { name: card.name }), t('Move')))) return;
+    setNote('');
+    try {
+      const base64 = card.phone.photo ? await phoneContactPhoto(card.phone.id, true).catch(() => null) : null;
+      const ref = base64 ? await savePhoto(fromBase64(base64)) : null;
+      const kept = await saveSealed(spacePlace(), null, card, { starred: card.starred, photo: ref });
+      await removePhoneContacts([card.phone.id]);
+      router.replace(`/contact-card?sealed=${kept}`);
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  // A sealed contact put in Android's contacts on this phone, and no longer kept in Erevos.
+  async function moveToPhone() {
+    if (!card?.sealed || !place) return;
+    if (!(await confirm(t("Move to the phone's contacts"), t("Move {name} to the phone's contacts? Every app allowed to read them sees it there, and it is no longer kept in Erevos.", { name: card.name }), t('Move')))) return;
+    setNote('');
+    try {
+      const made = await savePhoneContact(phoneSave(card, null, null, card.starred));
+      const bytes = card.sealed.photo ? await loadPhoto(card.sealed.photo).catch(() => null) : null;
+      if (bytes) await setPhoneContactPhoto(made, bytes).catch(() => undefined);
+      await removeSealed(place, card.sealed.id);
+      router.replace(`/contact-card?id=${made}`);
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
   // In a group, or out of it, in Android's contacts: in the contact's raw contact of the group's account.
   async function toggleGroup(group: PhoneGroup) {
     if (!card?.phone) return;
@@ -180,11 +279,12 @@ export default function ContactCardScreen() {
   const sms = (number: string) => router.push(`/sms?to=${encodeURIComponent(smsAddress(smsNumbers(number)))}&plain=1`);
   const first = card.phones[0]?.value;
   const birthday = parseBirthday(card.birthday);
+  const editHref = card.sealed ? `/contact-edit?sealed=${card.sealed.id}${hidden ? '&hidden=1' : ''}` : `/contact-edit?id=${card.phone?.id ?? 0}`;
 
   return (
     <Page>
       <View style={styles.top}>
-        <Pressable onPress={() => setChoosingPhoto(true)} accessibilityRole="button" accessibilityLabel={photo ? t('Change photo') : t('Add a photo')}>
+        <Pressable onPress={() => setChoosingPhoto(true)} disabled={hidden} accessibilityRole="button" accessibilityLabel={photo ? t('Change photo') : t('Add a photo')}>
           <ContactFace name={card.name} uri={photo} size={96} />
         </Pressable>
         <Text variant="title" style={styles.center}>
@@ -193,6 +293,11 @@ export default function ContactCardScreen() {
         {card.company || card.title ? (
           <Text tone="muted" style={styles.center}>
             {[card.title, card.company].filter(Boolean).join(' · ')}
+          </Text>
+        ) : null}
+        {card.sealed ? (
+          <Text variant="caption" tone="muted" style={styles.center}>
+            {hidden ? t('Kept only in these hidden chats, sealed.') : t('Kept only in Erevos, sealed in this space. Not in the phone\'s contacts.')}
           </Text>
         ) : null}
         <Pressable onPress={() => void star()} accessibilityRole="button" accessibilityLabel={card.starred ? t('Remove from favourites') : t('Add to favourites')} hitSlop={8}>
@@ -252,31 +357,37 @@ export default function ContactCardScreen() {
         </Card>
       ) : null}
 
-      <Card>
-        <Text variant="label" tone="muted">
-          {t('Groups')}
-        </Text>
-        <Text tone={card.groups.length ? undefined : 'muted'}>
-          {groups
-            .filter((g) => card.groups.includes(g.id))
-            .map((g) => g.title)
-            .join(', ') || t('In no group')}
-        </Text>
-        <Button title={t('Choose groups')} kind="secondary" compact onPress={() => setChoosingGroups(true)} />
-      </Card>
+      {card.phone ? (
+        <Card>
+          <Text variant="label" tone="muted">
+            {t('Groups')}
+          </Text>
+          <Text tone={card.groups.length ? undefined : 'muted'}>
+            {groups
+              .filter((g) => card.groups.includes(g.id))
+              .map((g) => g.title)
+              .join(', ') || t('In no group')}
+          </Text>
+          <Button title={t('Choose groups')} kind="secondary" compact onPress={() => setChoosingGroups(true)} />
+        </Card>
+      ) : null}
 
-      <Card>
-        <Text variant="label" tone="muted">
-          {t('Ringtone')}
-        </Text>
-        <Text tone={ringtone ? undefined : 'muted'}>{ringtone ? tone || t('A ringtone of its own') : t("The phone's own")}</Text>
-        <Button title={t('Choose ringtone')} kind="secondary" compact onPress={() => void chooseRingtone()} />
-      </Card>
+      {card.phone ? (
+        <Card>
+          <Text variant="label" tone="muted">
+            {t('Ringtone')}
+          </Text>
+          <Text tone={ringtone ? undefined : 'muted'}>{ringtone ? tone || t('A ringtone of its own') : t("The phone's own")}</Text>
+          <Button title={t('Choose ringtone')} kind="secondary" compact onPress={() => void chooseRingtone()} />
+        </Card>
+      ) : null}
 
       <Row wrap>
-        <Button title={t('Edit')} kind="secondary" compact onPress={() => router.push(`/contact-edit?id=${card.phone?.id ?? 0}`)} />
+        <Button title={t('Edit')} kind="secondary" compact onPress={() => router.push(editHref)} />
         <Button title={t('QR code')} kind="secondary" compact onPress={() => setShowingQr(true)} />
-        <Button title={t('Save as a .vcf file')} kind="secondary" compact onPress={() => void saveFile()} />
+        {!hidden ? <Button title={t('Save as a .vcf file')} kind="secondary" compact onPress={() => void saveFile()} /> : null}
+        {card.phone ? <Button title={t('Keep only in Erevos')} kind="secondary" compact onPress={() => void moveIntoErevos()} /> : null}
+        {card.sealed && !hidden ? <Button title={t("Move to the phone's contacts")} kind="secondary" compact onPress={() => void moveToPhone()} /> : null}
         <Button title={t('Delete')} kind="danger" compact onPress={() => void remove()} />
       </Row>
       {note ? <Text tone="muted">{note}</Text> : null}
@@ -311,12 +422,16 @@ export default function ContactCardScreen() {
       </Sheet>
 
       <Sheet visible={choosingPhoto} onClose={() => setChoosingPhoto(false)} title={t('Photo')}>
-        <Text tone="muted">{t("The photo is kept with the contact in Android's contacts, where the phone shows it when they call, and its account (Google) syncs it.")}</Text>
+        <Text tone="muted">
+          {card.sealed
+            ? t('The photo is sealed with the contact, in a file of its own: only Erevos shows it.')
+            : t("The photo is kept with the contact in Android's contacts, where the phone shows it when they call, and its account (Google) syncs it.")}
+        </Text>
         <Row wrap>
           <Button title={t('Choose a photo')} compact onPress={() => void changePhoto('photos')} />
           {CAN_TAKE_PHOTOS ? <Button title={t('Take photo')} kind="secondary" compact onPress={() => void changePhoto('camera')} /> : null}
         </Row>
-        {card.phone?.photo ? <TextButton title={t('Remove the photo')} onPress={() => void changePhoto(null)} /> : null}
+        {card.phone?.photo || card.sealed?.photo ? <TextButton title={t('Remove the photo')} onPress={() => void changePhoto(null)} /> : null}
         {note ? <Text tone="muted">{note}</Text> : null}
       </Sheet>
     </Page>

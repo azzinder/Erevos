@@ -49,6 +49,7 @@ import { cleanName, MAX_NAME, type Avatar } from '../lock/e2e-data';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
+import { setOpenHiddenPlace } from '../lib/hidden-contacts';
 import { History, newTag, WAITING, type Mark, type Message as Kept } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
@@ -252,20 +253,22 @@ export default function ChatScreen() {
   const router = useRouter();
   // A contact to open with (from the home screen, or an imported chat that goes on with them),
   // hidden chats opened from the home screen's search (their key handed over in memory), or the
-  // relay settings to show at once.
-  const { contact, hidden, setup, phone } = useLocalSearchParams<{ contact?: string; hidden?: string; setup?: string; phone?: string }>();
+  // relay settings to show at once. A call to start with the contact, from its contact card.
+  const { contact, hidden, setup, phone, call } = useLocalSearchParams<{ contact?: string; hidden?: string; setup?: string; phone?: string; call?: string }>();
   const fromSearch = hidden === 'open';
   const [hiddenPlace, setHiddenPlace] = useState<HiddenPlace | null>(() => (fromSearch ? takeHidden() : null));
   const hiddenKey = hiddenPlace?.key ?? null;
-  // Hidden chats opened from the search close back to the home screen.
+  // Hidden chats opened from the search close back to the home screen, with their contacts
+  // screens over them (app/contacts.tsx).
   const closeHidden = () => {
     setHiddenPlace(null);
-    if (fromSearch) router.canGoBack() ? router.back() : router.replace('/');
+    if (fromSearch) router.dismissTo('/');
   };
   const [asking, setAsking] = useState(false);
   const initial = typeof contact === 'string' && /^[0-9a-f]{64}$/.test(contact) ? `${CONTACT_PREFIX}${contact}` : null;
   // A number linked by hand from its SMS conversation (app/sms.tsx).
   const linkNumber = initial && typeof phone === 'string' && /^\+?\d{3,20}$/.test(phone) ? phone : '';
+  const initialCall = initial && (call === 'voice' || call === 'video') ? call : null;
   // The look of the chat in view (its own, or the space's), as the chat showing says.
   const [chatLook, setChatLook] = useState<ChatLook | null>(null);
 
@@ -299,7 +302,7 @@ export default function ChatScreen() {
         <ChatStatusBar />
         <KeyboardPaddedView bottom={insets.bottom} style={[layout.screen, { paddingTop: insets.top }]}>
           <View style={[layout.screen, hiddenKey && layout.gone]}>
-            <Chat hiddenKey={null} initial={initial} linkNumber={linkNumber} setup={setup === '1'} shown={!hiddenKey} onLook={setChatLook} />
+            <Chat hiddenKey={null} initial={initial} initialCall={initialCall} linkNumber={linkNumber} setup={setup === '1'} shown={!hiddenKey} onLook={setChatLook} />
           </View>
           {hiddenKey ? (
             <Chat hiddenKey={hiddenKey} pocket={hiddenPlace?.pocket ?? 0} shown onHidden={closeHidden} onChangePassword={() => setAsking(true)} onLook={setChatLook} />
@@ -352,10 +355,12 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
+  /** A call to start with the `initial` contact once the chat is loaded. */
+  initialCall?: 'voice' | 'video' | null;
   /** A phone number to link to the `initial` contact. */
   linkNumber?: string;
   /** Opens with the relay settings and adding a contact in view. */
@@ -756,6 +761,40 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
       void held?.then((release) => release());
     };
   }, []);
+
+  // Hidden chats lend themselves to their contacts screens while open (lib/hidden-contacts.ts):
+  // their contacts and messages, and a way to open a chat, or call, from a contact card.
+  const pendingCall = useRef<{ peer: string; video: boolean } | null>(initial && initialCall ? { peer: initial, video: initialCall === 'video' } : null);
+  useEffect(() => {
+    if (!hiddenKey || !loaded || !e2e) return;
+    setOpenHiddenPlace({
+      space: currentSpace().space,
+      pocket,
+      key: hiddenKey,
+      erevos: () => {
+        const phones = e2e.phones();
+        return e2e
+          .contacts()
+          .filter((c) => !c.request)
+          .map((c) => ({ identity: c.identity, name: c.name, phone: phones.find((p) => p.identity === c.identity)?.phone ?? '' }));
+      },
+      messages: (identity) => (history.current?.messages() ?? []).filter((m) => m.peer === `${CONTACT_PREFIX}${identity}`),
+      open: (identity, call) => {
+        const peer = `${CONTACT_PREFIX}${identity}`;
+        pendingCall.current = call ? { peer, video: call === 'video' } : null;
+        setDetails(false);
+        setSelected(peer);
+      },
+    });
+    return () => setOpenHiddenPlace(null);
+  }, [hiddenKey, loaded, e2e]);
+  // The call asked for starts once its chat is open.
+  useEffect(() => {
+    const wanted = pendingCall.current;
+    if (!wanted || !loaded || !e2e || selected !== wanted.peer) return;
+    pendingCall.current = null;
+    void startCall(wanted.video);
+  }, [loaded, e2e, selected]);
 
   // Another chat starts with its latest imported messages.
   useEffect(() => setImportedShown(IMPORTED_PAGE), [selected]);
@@ -2603,7 +2642,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, linkNumber = '', setup = 
             <Text style={styles.moreText}>⋯</Text>
           </Pressable>
         ) : hiddenKey && onChangePassword ? (
-          <TextButton title={t('Change PIN')} onPress={onChangePassword} />
+          <>
+            <TextButton title={t('Contacts')} onPress={() => router.push('/contacts?hidden=1')} />
+            <TextButton title={t('Change PIN')} onPress={onChangePassword} />
+          </>
         ) : null}
       </View>
       {!selected ? (

@@ -1,24 +1,52 @@
 import { fieldsName, keeperFirst, mergeFields, phoneFields, phoneSave, plain, type Fields } from './contacts';
 import { lang, t } from './i18n';
 import { phoneContacts, savePhoneContact, takeOverContacts, type PhoneContact, type PhoneGroup } from '../modules/erevos-contacts';
+import type { SealedContact } from '../lock/contacts-data';
+import { loadPlace, type Place } from './sealed-contacts';
 
 // The contacts screen's book (app/contacts.tsx): the phone's contacts, from Android's contacts
-// (modules/erevos-contacts), as cards the screens show alike.
+// (modules/erevos-contacts), and those kept only in Erevos, sealed in the open space or hidden
+// chats (lib/sealed-contacts.ts), as cards the screens show alike.
 
-/** A contact as the screens show it. `key` is 'p' and the phone contact's id. */
+/** A contact as the screens show it. `key` is 'p' and the phone contact's id, or 's' and the sealed one's. */
 export type Card = Fields & {
   key: string;
   name: string;
   starred: boolean;
   /** The phone's contact, as Android gave it. */
   phone: PhoneContact | null;
+  /** The contact kept only in Erevos. */
+  sealed: SealedContact | null;
+  /** The Erevos contact it is, by identity (hex), or ''. */
+  erevos: string;
   /** Its groups in Android's contacts, by id. */
   groups: number[];
 };
 
 export function phoneCard(c: PhoneContact): Card {
   const fields = phoneFields(c);
-  return { ...fields, key: `p${c.id}`, name: c.name || fieldsName(fields), starred: c.starred, phone: c, groups: c.groups };
+  return { ...fields, key: `p${c.id}`, name: c.name || fieldsName(fields), starred: c.starred, phone: c, sealed: null, erevos: '', groups: c.groups };
+}
+
+/** Only what a contact says, of a sealed one. */
+export function sealedFields(s: SealedContact): Fields {
+  const { given, family, company, title, phones, emails, addresses, note, birthday } = s;
+  return { given, family, company, title, phones, emails, addresses, note, birthday };
+}
+
+export function sealedCard(s: SealedContact): Card {
+  return { ...sealedFields(s), key: `s${s.id}`, name: fieldsName(s), starred: s.starred, phone: null, sealed: s, erevos: s.erevos, groups: [] };
+}
+
+/** Where a card opens: a phone contact by its id, a sealed one by its own, among the hidden chats' screens with `hidden`. */
+export function cardHref(card: Card, hidden = false): `/contact-card?${string}` {
+  if (card.sealed) return `/contact-card?sealed=${card.sealed.id}${hidden ? '&hidden=1' : ''}`;
+  return `/contact-card?id=${card.phone?.id ?? 0}`;
+}
+
+/** A place's sealed contacts as cards. */
+export async function sealedCards(place: Place): Promise<Card[]> {
+  return (await loadPlace(place)).contacts.map(sealedCard);
 }
 
 /** Names compared in the app's language's order. */

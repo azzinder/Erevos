@@ -550,7 +550,18 @@ other apps use too, so there is nothing to import. Android asks once whether Ere
   birthday. They are the phone's contacts' birthdays only, never those of contacts kept only in Erevos.
 - **SIM contacts** in the menu reads the contacts on the phone's SIM cards and copies those not on the phone yet
   (all chosen at first) into Android's contacts, on this phone only or in an account. The SIM keeps its own.
-- **Delete** takes the contact off the phone, from every account it is kept in.
+- **Only in Erevos:** under **Kept in**, a new contact can be kept **Only in Erevos** instead: sealed in this space
+  like its chats, never in Android's contacts, so no other app or account sees it, and other apps (the phone's own
+  call screen too) show only its number. It has a lock in the list, and the **Only in Erevos** chip shows just those.
+  **Keep only in Erevos** on a phone contact moves it in, with its photo and star, and deletes it from the phone's
+  contacts; **Move to the phone's contacts** takes it back out. Its photo is sealed with it. Groups, ringtones and
+  birthday reminders are Android's, so it has none. A call or SMS to it still goes through the phone, and shows in
+  the phone's call log and SMS like any other. An Erevos backup holds these contacts, sealed.
+- **In hidden chats:** **Contacts** at the top of open hidden chats lists their own contacts, kept only there and
+  sealed with them: they show nowhere else, not even in the space's contacts, and the screen shows nothing once the
+  hidden chats close. A new contact there is always one of theirs. They take no photo, file or menu, as those leave
+  Erevos, which closes the hidden chats; so does calling one, which goes through the phone app and its call log.
+- **Delete** takes the contact off the phone, from every account it is kept in; one kept only in Erevos, from Erevos.
 - **Groups:** **Groups** in the menu of Contacts (the three dots) lists Android's own groups, such as Family or
   Work, with how many are in each, and makes new ones. Open one to **Add contacts**, take one out with **×**,
   **Rename** it or **Delete group** (its contacts stay). On a contact, **Choose groups** puts it in groups or takes
@@ -875,6 +886,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it. | Tor bridges, for where Tor is blocked. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
 | **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. | |
+| **Contacts kept only in Erevos** | Sealed with the space's key, or with the hidden chats' for theirs, in one file for every space whose size shows roughly how many there are in all, not whose they are; their photos each in a file of its own. Never in Android's contacts. Calls and SMS to them go through the phone, and show in its call log and SMS. | |
 | **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |

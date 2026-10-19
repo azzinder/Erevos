@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Image, View } from 'react-native';
 
+import type { Card } from '../lib/contact-book';
 import { initials } from '../lib/contacts';
 import { phoneContactPhoto } from '../modules/erevos-contacts';
 import { useTheme } from '../theme/context';
+import { useSealedPhoto } from './sealed-photo';
 import { Text } from './ui';
 
 // A contact's picture on the contacts screens (app/contacts.tsx): its photo, or its initials on a
 // colour drawn from its name. A phone contact's photo comes from Android's contacts, kept for the
 // time the app is open by the contact and Android's id of the photo, so a list read again does not
-// ask for it again, and a new photo shows at once.
+// ask for it again, and a new photo shows at once. A contact kept only in Erevos has its photo
+// sealed (components/sealed-photo.ts).
 
 const HUES = [4, 24, 42, 140, 172, 200, 222, 262, 292, 330];
 const opened = new Map<string, string>();
@@ -55,6 +58,13 @@ export function usePhoneContactPhoto(id: number | null, photo: number, large = f
     };
   }, [key]);
   return uri;
+}
+
+/** A card's photo, the phone's or the sealed one, as an image address, or null. */
+export function useCardPhoto(card: Card | null, large = false): string | null {
+  const phone = usePhoneContactPhoto(card?.phone?.id ?? null, card?.phone?.photo ?? 0, large);
+  const sealed = useSealedPhoto(card?.sealed?.photo ?? null);
+  return card?.sealed ? sealed : phone;
 }
 
 /** The picture: `uri` when there is a photo, else the name's initials. */

@@ -6,6 +6,7 @@ import { phoneSave, plain } from './contacts';
 import { fromBase64, utf8Encode } from './crypto';
 import { pickFile } from './pick-file';
 import { parseVCards, writeVCard, type VCard } from './vcard';
+import { loadPhoto } from '../lock/avatar-photos';
 import {
   addToPhoneGroup,
   createPhoneGroup,
@@ -18,7 +19,8 @@ import {
 
 // The phone's contacts in and out of .vcf files (lib/vcard.ts): a file the owner picks, read here
 // and its contacts saved in Android's contacts, with their photos and groups; and contacts saved
-// as one file in a folder the owner picks. A saved file is outside Erevos, not sealed.
+// as one file in a folder the owner picks, those kept only in Erevos too. A saved file is outside
+// Erevos, not sealed.
 
 /** The largest .vcf file read. */
 export const MAX_VCF = 20 * 1024 * 1024;
@@ -45,6 +47,12 @@ export async function saveVCards(cards: Card[], name: string): Promise<string | 
   const large = cards.length <= LARGE_PHOTOS;
   const parts: string[] = [];
   for (const card of cards) {
+    if (card.sealed) {
+      // A sealed photo is one size only, so it goes with few contacts only.
+      const sealedPhoto = card.sealed.photo && large ? await loadPhoto(card.sealed.photo).catch(() => null) : null;
+      parts.push(writeVCard({ ...card, photo: sealedPhoto, groups: [] }));
+      continue;
+    }
     const photo = card.phone?.photo ? await phoneContactPhoto(card.phone.id, large).catch(() => null) : null;
     parts.push(writeVCard({ ...card, photo: photo ? fromBase64(photo) : null, groups: groupTitles(card, groups) }));
   }

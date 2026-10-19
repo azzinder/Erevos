@@ -1,18 +1,22 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Button, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
+import { sealedFields } from '../lib/contact-book';
 import { askedFields, birthdayText, CHOSEN_KINDS, cleanFields, EMPTY_FIELDS, fieldsName, kindLabel, MAX_ENTRIES, parseBirthday, phoneFields, phoneSave, type Entry, type Fields } from '../lib/contacts';
+import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
-import { contactAccounts, phoneContact, savePhoneContact, type ContactAccount, type PhoneContact } from '../modules/erevos-contacts';
+import { loadPlace, placeOf, saveSealed, spacePlace, type Place } from '../lib/sealed-contacts';
+import { contactAccounts, contactsReady, phoneContact, savePhoneContact, type ContactAccount, type PhoneContact } from '../modules/erevos-contacts';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // A contact being written: a new one, or one of the phone's to change. A new one is kept in
 // Android's contacts on this phone only, or in an account the phone syncs contacts with, as the
-// owner chooses. Another app (or a QR code) can start one with fields of its own (`fill`), which
-// are kept only once the owner saves.
+// owner chooses, or only in Erevos, sealed in the space (`sealed`, lib/sealed-contacts.ts). Among
+// the hidden chats' screens (`hidden`), it is always theirs, sealed with them. Another app (or a
+// QR code) can start one with fields of its own (`fill`), which are kept only once the owner saves.
 
 type ListName = 'phones' | 'emails' | 'addresses';
 
@@ -26,8 +30,12 @@ function typedBirthday(text: string): string {
 }
 
 export default function ContactEdit() {
-  const params = useLocalSearchParams<{ id?: string; fill?: string }>();
+  const params = useLocalSearchParams<{ id?: string; fill?: string; sealed?: string; hidden?: string }>();
   const id = Number(params.id ?? 0);
+  const sealedId = typeof params.sealed === 'string' ? params.sealed : '';
+  const hidden = params.hidden === '1';
+  const hiddenOpen = useOpenHiddenPlace();
+  const phoneHere = Platform.OS === 'android' && contactsReady() && !hidden;
   const styles = useStyles(makeStyles);
   const [phone, setPhone] = useState<PhoneContact | null>(null);
   const [filled] = useState<Fields>(() => (typeof params.fill === 'string' ? (askedFields(params.fill) ?? EMPTY_FIELDS) : EMPTY_FIELDS));
@@ -36,12 +44,44 @@ export default function ContactEdit() {
   const [birthdayBefore, setBirthdayBefore] = useState(() => typedBirthday(filled.birthday));
   const [accounts, setAccounts] = useState<ContactAccount[]>([]);
   const [account, setAccount] = useState<ContactAccount | null>(null);
-  const [ready, setReady] = useState(!(id > 0));
+  // A new contact: in Android's contacts, or sealed, only in Erevos.
+  const [sealed, setSealed] = useState(() => !phoneHere);
+  const [ready, setReady] = useState(!(id > 0) && !sealedId);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState('');
 
+  useEffect(() => (hidden ? enterHiddenScreen() : undefined), [hidden]);
+
+  // Where a sealed contact is kept: the hidden chats while they are open, else the space.
+  const place = useMemo((): Place | null => {
+    if (hidden) return hiddenOpen ? placeOf(hiddenOpen) : null;
+    try {
+      return spacePlace();
+    } catch {
+      return null;
+    }
+  }, [hidden, hiddenOpen]);
+  const placeKey = place ? `${place.holder} ${place.space}` : '';
+  const keptSealed = Boolean(sealedId) || hidden || (!phone && sealed);
+
   useEffect(() => {
-    if (id > 0) {
+    if (sealedId) {
+      if (!place) return;
+      loadPlace(place)
+        .then((data) => {
+          const found = data.contacts.find((c) => c.id === sealedId);
+          if (!found) {
+            setNote(t('This contact is no longer kept in Erevos.'));
+            return;
+          }
+          const f = sealedFields(found);
+          setFields(f);
+          setBirthday(typedBirthday(f.birthday));
+          setBirthdayBefore(typedBirthday(f.birthday));
+          setReady(true);
+        })
+        .catch((error) => setNote(errorText(error)));
+    } else if (id > 0) {
       phoneContact(id)
         .then((c) => {
           if (!c) {
@@ -56,18 +96,23 @@ export default function ContactEdit() {
           setReady(true);
         })
         .catch((error) => setNote(errorText(error)));
-    } else {
+    } else if (phoneHere) {
       contactAccounts()
         .then(setAccounts)
         .catch(() => undefined);
     }
-  }, [id]);
+    // Read once for the place, not each time the hidden chats lend it again, which would undo what is typed.
+  }, [id, sealedId, phoneHere, placeKey]);
 
   const set = (patch: Partial<Fields>) => setFields((f) => ({ ...f, ...patch }));
   const setEntry = (list: ListName, index: number, patch: Partial<Entry>) =>
     setFields((f) => ({ ...f, [list]: f[list].map((e, i) => (i === index ? { ...e, ...patch } : e)) }));
   const addEntry = (list: ListName) => setFields((f) => ({ ...f, [list]: [...f[list], { value: '', kind: CHOSEN_KINDS[list][0], label: '' }].slice(0, MAX_ENTRIES) }));
   const removeEntry = (list: ListName, index: number) => setFields((f) => ({ ...f, [list]: f[list].filter((_, i) => i !== index) }));
+  const keepIn = (a: ContactAccount | null) => {
+    setSealed(false);
+    setAccount(a);
+  };
 
   async function save() {
     setNote('');
@@ -88,6 +133,13 @@ export default function ContactEdit() {
     }
     setSaving(true);
     try {
+      if (keptSealed) {
+        if (!place) throw new Error(t('The hidden chats are closed.'));
+        const kept = await saveSealed(place, sealedId || null, clean);
+        if (sealedId) router.back();
+        else router.replace(`/contact-card?sealed=${kept}${hidden ? '&hidden=1' : ''}`);
+        return;
+      }
       const saved = await savePhoneContact(phoneSave(clean, phone, account, phone?.starred ?? false));
       if (phone) router.back();
       else router.replace(`/contact-card?id=${saved}`);
@@ -98,11 +150,18 @@ export default function ContactEdit() {
     }
   }
 
+  if (hidden && !hiddenOpen) {
+    return (
+      <Page>
+        <Text tone="muted">{t('The hidden chats are closed.')}</Text>
+      </Page>
+    );
+  }
   if (!ready) return <Page>{note ? <Text tone="muted">{note}</Text> : null}</Page>;
 
   return (
     <Page>
-      <Text variant="title">{phone ? t('Edit contact') : t('New contact')}</Text>
+      <Text variant="title">{phone || sealedId ? t('Edit contact') : t('New contact')}</Text>
       <Field label={t('First name')}>
         <Input value={fields.given} onChangeText={(given) => set({ given })} autoCapitalize="words" />
       </Field>
@@ -136,16 +195,27 @@ export default function ContactEdit() {
         <Input value={fields.note} onChangeText={(text) => set({ note: text })} multiline style={styles.multiline} />
       </Field>
 
-      {!phone ? (
+      {hidden ? (
+        <Text variant="caption" tone="faint">
+          {t("Kept only here, sealed with the hidden chats: they show nowhere else, not even in the space's contacts.")}
+        </Text>
+      ) : !phone && !sealedId ? (
         <Field label={t('Kept in')}>
           <Row wrap>
-            <Chip label={t('On this phone only')} selected={account === null} onPress={() => setAccount(null)} />
-            {accounts.map((a) => (
-              <Chip key={`${a.type}\n${a.name}`} label={a.name} selected={account?.type === a.type && account.name === a.name} onPress={() => setAccount(a)} />
-            ))}
+            {phoneHere ? <Chip label={t('On this phone only')} selected={!sealed && account === null} onPress={() => keepIn(null)} /> : null}
+            {phoneHere
+              ? accounts.map((a) => (
+                  <Chip key={`${a.type}\n${a.name}`} label={a.name} selected={!sealed && account?.type === a.type && account.name === a.name} onPress={() => keepIn(a)} />
+                ))
+              : null}
+            <Chip label={t('Only in Erevos')} selected={sealed} onPress={() => setSealed(true)} />
           </Row>
           <Text variant="caption" tone="faint">
-            {account ? t("In Android's contacts, synced with {account}.", { account: account.name }) : t("In Android's contacts on this phone, synced nowhere.")}
+            {sealed
+              ? t("Sealed in this space, and not in the phone's contacts: no other app sees it, nor any account the phone syncs with.")
+              : account
+                ? t("In Android's contacts, synced with {account}.", { account: account.name })
+                : t("In Android's contacts on this phone, synced nowhere.")}
           </Text>
         </Field>
       ) : null}

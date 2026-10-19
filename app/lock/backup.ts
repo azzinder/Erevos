@@ -5,6 +5,7 @@ import { t } from '../lib/i18n';
 
 import { FILE as ARCHIVE } from './archive';
 import { ITER } from './config';
+import { FILE as CONTACTS } from './contacts-data';
 import { FILE as E2E } from './e2e-data';
 import { FILE as GROUPS } from './group-data';
 import { FILE as HISTORY, PAGE_PREFIX as PAGE } from './history';
@@ -42,8 +43,9 @@ const SLOTTED = Array.from({ length: MOST_SLOTS }, (_, n) => [
 ]).flat();
 const KEYS = [...FIXED, ...OTHER_POCKETS.map((p) => `erevos.hidden-lock.${p}`), ...SLOTTED];
 
-// The sealed files that are text; voice messages' sounds are bytes.
-const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS];
+// The sealed files that are text; voice messages' sounds are bytes. A file not on the phone is
+// left out, so the backup of a phone that keeps no contacts in Erevos still opens in older versions.
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, CONTACTS];
 
 const KIND_KEY = 0;
 const KIND_TEXT = 1;
