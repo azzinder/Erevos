@@ -1,13 +1,10 @@
 // The Greek of the Contacts screens: the phone's contacts, their groups, merging, vCards, QR codes,
 // birthdays and contacts kept only in Erevos (app/contacts.tsx and what goes with it) (i18n/el/index.ts).
 export const contacts: Record<string, string> = {
-  'Contacts': 'Επαφές',
   "The phone's contacts, their groups and birthdays": 'Οι επαφές του τηλεφώνου, οι ομάδες και τα γενέθλιά τους',
   'This build of Erevos has no contacts part yet. It comes with the next build of the app.': 'Αυτή η έκδοση του Erevos δεν έχει ακόμα επαφές. Θα έρθουν με την επόμενη έκδοση της εφαρμογής.',
   "Only Erevos on Android reads the phone's contacts.": 'Μόνο το Erevos σε Android διαβάζει τις επαφές του τηλεφώνου.',
   'Search contacts': 'Αναζήτηση επαφών',
-  'All': 'Όλες',
-  'Favourites': 'Αγαπημένες',
   "Erevos may not read the phone's contacts yet": 'Το Erevos δεν έχει ακόμα άδεια να διαβάζει τις επαφές του τηλεφώνου',
   "Erevos reads and changes them only in Android's own contacts, where they stay for your other apps. It sends them nowhere.":
     'Το Erevos τις διαβάζει και τις αλλάζει μόνο στις επαφές του ίδιου του Android, όπου μένουν και για τις άλλες σου εφαρμογές. Δεν τις στέλνει πουθενά.',
@@ -20,8 +17,6 @@ export const contacts: Record<string, string> = {
   'No contacts yet.': 'Καμία επαφή ακόμα.',
   "These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them. Those with a lock are kept only in Erevos, sealed in this space.":
     'Αυτές είναι οι επαφές του τηλεφώνου, στις επαφές του ίδιου του Android: τις βλέπει κάθε εφαρμογή που έχει άδεια να τις διαβάζει, και μπορεί να τις συγχρονίζει ένας λογαριασμός (Google). Όσες έχουν λουκέτο φυλάγονται μόνο στο Erevos, σφραγισμένες σε αυτόν τον χώρο.',
-  '{n} contact': '{n} επαφή',
-  '{n} contacts': '{n} επαφές',
   'New contact': 'Νέα επαφή',
 
   // One contact.
@@ -70,7 +65,6 @@ export const contacts: Record<string, string> = {
   'Add an email': 'Προσθήκη email',
   'Addresses': 'Διευθύνσεις',
   'Add an address': 'Προσθήκη διεύθυνσης',
-  'More': 'Περισσότερα',
   'Day/month/year, or day/month without the year.': 'Ημέρα/μήνας/έτος, ή ημέρα/μήνας χωρίς το έτος.',
   'Write the birthday as day/month/year, or day/month.': 'Γράψε τα γενέθλια ως ημέρα/μήνα/έτος, ή ημέρα/μήνα.',
   'Give the contact a name, a number or an email.': 'Δώσε στην επαφή όνομα, αριθμό ή email.',
@@ -78,7 +72,6 @@ export const contacts: Record<string, string> = {
   'On this phone only': 'Μόνο σε αυτό το τηλέφωνο',
   "In Android's contacts, synced with {account}.": 'Στις επαφές του Android, συγχρονισμένη με το {account}.',
   "In Android's contacts on this phone, synced nowhere.": 'Στις επαφές του Android σε αυτό το τηλέφωνο, χωρίς συγχρονισμό πουθενά.',
-  'Remove': 'Αφαίρεση',
 
   // Groups.
   'Groups': 'Ομάδες',
@@ -245,11 +238,8 @@ export const contacts: Record<string, string> = {
     'Οι κλήσεις της φαίνονται εδώ μόλις το Erevos μπορεί να διαβάζει το αρχείο κλήσεων του τηλεφώνου. Το Erevos μόνο τις δείχνει, και δεν κρατά αντίγραφο.',
   'Show calls': 'Εμφάνιση κλήσεων',
   'Incoming call, {time}': 'Εισερχόμενη κλήση, {time}',
-  'Incoming call': 'Εισερχόμενη κλήση',
   'Outgoing call, {time}': 'Εξερχόμενη κλήση, {time}',
   'Outgoing call, no answer': 'Εξερχόμενη κλήση, χωρίς απάντηση',
-  'Declined call': 'Απορριφθείσα κλήση',
-  'Blocked call': 'Αποκλεισμένη κλήση',
 
   // Other apps' contacts.
   'Add {what} to a contact': 'Προσθήκη του {what} σε επαφή',

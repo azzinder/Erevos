@@ -1,3 +1,4 @@
+import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import {
   checkedAbout,
   EMPTY_GROUPS,
@@ -12,12 +13,15 @@ import {
   type GroupMessage,
 } from '../lock/group-data';
 import { newTag } from '../lock/history';
+import { offerRef, readOffer, type FileOffer } from './attachments';
 import * as core from './core';
 import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { decodeGroupCall, type GroupCallSignal } from './group-call-signal';
 import { cleanGroupName, isGroupId, type GroupSignal } from './group-signal';
 import { t, mark } from './i18n';
+import { moderated } from './public-rules';
+import { MAX_VOICE_MS } from './voice';
 
 // Group chats, MLS (RFC 9420) in the Rust core (crates/erevos-group). Whoever makes a group is its
 // admin: it adds contacts and takes members out, and is the only one whose changes count, so no
@@ -32,6 +36,14 @@ import { t, mark } from './i18n';
 // A member leaves by asking the admin, who takes it out. A member taken out reads nothing sent
 // after. A message from a member that comes before the admin's change it was written after waits
 // here (`later`) until the change comes.
+//
+// Photos, files and voice messages go as with a contact (lib/attachments.ts): encrypted with a key
+// of their own and put on the sender's relay, and only where they are and the key go in the
+// group's message. Each member takes them from there (lib/group-media.ts) and leaves them for the
+// others, so they expire on the relay after 14 days. A member who joins later reads none of what
+// came before, its files neither. A phone from before these reads nothing in such a message (a kind
+// it does not know) and goes on with the next. When a message leaves the group here, however it
+// goes, its chunks on this phone go too.
 //
 // Every call runs after the one before it ends, as in lib/e2e.ts, and the MLS state is kept before
 // anything it made is handed back.
@@ -63,8 +75,12 @@ export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
   asked: string[];
 };
 
-// What members say inside the group's messages.
-type Said = { t: 'text'; text: string; tag: string } | { t: 'name'; name: string } | { t: 'call'; call: GroupCallSignal };
+// What members say inside the group's messages. A `file` with `ms` is a voice message's sound.
+type Said =
+  | { t: 'text'; text: string; tag: string }
+  | { t: 'name'; name: string }
+  | { t: 'call'; call: GroupCallSignal }
+  | { t: 'file'; file: FileOffer; tag: string; ms?: number };
 
 function encodeSaid(said: Said): Uint8Array {
   return utf8Encode(JSON.stringify(said));
@@ -80,6 +96,11 @@ function decodeSaid(bytes: Uint8Array): Said | null {
     if (v.t === 'call') {
       const call = decodeGroupCall(v.call);
       if (call) return { t: 'call', call };
+    }
+    if (v.t === 'file') {
+      const file = readOffer(v.file);
+      const voice = file?.kind === 'file' && typeof v.ms === 'number' && v.ms > 0 && v.ms <= MAX_VOICE_MS + 5000;
+      if (file) return { t: 'file', file, tag: typeof v.tag === 'string' ? v.tag : '', ...(voice ? { ms: Math.round(v.ms as number) } : {}) };
     }
   } catch {
     // Not what an Erevos says.
@@ -100,10 +121,12 @@ export function isGroupPacket(packet: Uint8Array): boolean {
   return packet.length > 2 && packet[0] === GROUP_PACKET[0] && packet[1] === GROUP_PACKET[1];
 }
 
+// Public groups (lib/public-groups.ts) are these groups with more to them: what they need here is
+// `protected` rather than private, and the three hooks below `messages` do nothing for the rest.
 export class Groups {
-  private data: GroupData;
+  protected data: GroupData;
   private readonly store: (data: GroupData) => Promise<void>;
-  private readonly me: () => Promise<Me>;
+  protected readonly me: () => Promise<Me>;
   private queue: Promise<unknown> = Promise.resolve();
   private readonly listeners = new Set<() => void>();
   private readonly callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
@@ -139,26 +162,30 @@ export class Groups {
     };
   }
 
-  private changed() {
+  protected changed() {
     this.listeners.forEach((listener) => listener());
   }
 
-  private run<T>(call: () => Promise<T>): Promise<T> {
+  protected run<T>(call: () => Promise<T>): Promise<T> {
     const next = this.queue.catch(() => undefined).then(call);
     this.queue = next;
     return next;
   }
 
-  private async save(data: GroupData): Promise<void> {
+  // The chunks of a file whose message left go once the groups without it are kept.
+  protected async save(data: GroupData): Promise<void> {
+    const kept = new Set(filesIn(data).map((file) => file.id));
+    const gone = filesIn(this.data).filter((file) => !kept.has(file.id));
     this.data = data;
     await this.store(data);
+    for (const file of gone) await deleteChunks(file.id, file.count).catch(() => undefined);
   }
 
-  private find(id: string): Group | undefined {
+  protected find(id: string): Group | undefined {
     return this.data.groups.find((g) => g.id === id);
   }
 
-  private withGroup(group: Group): GroupData {
+  protected withGroup(group: Group): GroupData {
     const at = this.data.groups.findIndex((g) => g.id === group.id);
     const groups = [...this.data.groups];
     if (at < 0) groups.push(group);
@@ -167,7 +194,7 @@ export class Groups {
   }
 
   // The MLS state, made the first time, saying where this phone's group messages come to now.
-  private async state(): Promise<Uint8Array> {
+  protected async state(): Promise<Uint8Array> {
     const me = await this.me();
     let seal = this.data.seal ? fromBase64(this.data.seal) : null;
     if (!seal) seal = randomBytes(32);
@@ -177,7 +204,7 @@ export class Groups {
     return state;
   }
 
-  private kept(): Uint8Array {
+  protected kept(): Uint8Array {
     if (!this.data.state) throw new Error(t('No groups here yet.'));
     return fromBase64(this.data.state);
   }
@@ -198,6 +225,21 @@ export class Groups {
     return this.find(id)?.messages ?? [];
   }
 
+  /** A group message just opened, before anything of it shows: true when it was taken here, or is not to show. */
+  protected async heard(_id: string, _opened: { sender: number; about: Uint8Array; text: Uint8Array }, _message: Uint8Array, _transport: GroupTransport): Promise<boolean> {
+    return false;
+  }
+
+  /** What was sealed for this phone and is not a group message: true when it was taken here. */
+  protected async unsealed(_message: Uint8Array, _transport: GroupTransport): Promise<boolean> {
+    return false;
+  }
+
+  /** The members of a group, by identity, whose phones are sent nothing more. */
+  protected unreached(_id: string): Set<string> {
+    return new Set();
+  }
+
   /** A group's members as its MLS state has them; none once out of it. */
   async members(id: string): Promise<GroupMember[]> {
     const group = this.find(id);
@@ -205,7 +247,7 @@ export class Groups {
     return this.membersIn(id);
   }
 
-  private async membersIn(id: string): Promise<GroupMember[]> {
+  protected async membersIn(id: string): Promise<GroupMember[]> {
     const json = JSON.parse(utf8Decode(await core.group.members(this.kept(), fromHex(id)))) as {
       own: number;
       members: { leaf: number; about: string }[];
@@ -274,6 +316,34 @@ export class Groups {
       const now = this.find(id)!;
       await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: said, tag }]), readAt: Date.now() }));
       this.changed();
+    });
+  }
+
+  /**
+   * Sends a photo or file, or with `ms` a voice message, to the group: `offer` says where it is on
+   * our relay and its key, and `ref` where it is kept here.
+   */
+  sendFile(id: string, ref: FileRef, offer: FileOffer, ms: number | undefined, transport: GroupTransport): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group || group.status !== 'in') throw new Error(t('You are not in this group any more.'));
+      const tag = newTag();
+      const voice = ms === undefined ? {} : { ms: Math.round(ms) };
+      await this.broadcast(id, encodeSaid({ t: 'file', file: offer, tag, ...voice }), transport);
+      const now = this.find(id)!;
+      await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: '', tag, file: ref, ...voice }]), readAt: Date.now() }));
+      this.changed();
+    });
+  }
+
+  /** Keeps where a file that came is, once it is taken from the relay. False if its message is gone. */
+  setFile(id: string, file: FileRef): Promise<boolean> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group?.messages.some((m) => m.file?.id === file.id)) return false;
+      await this.save(this.withGroup({ ...group, messages: group.messages.map((m) => (m.file?.id === file.id ? { ...m, file } : m)) }));
+      this.changed();
+      return true;
     });
   }
 
@@ -389,12 +459,13 @@ export class Groups {
     await this.deliver(id, await this.membersIn(id), sealed.message, transport);
   }
 
-  // Sends one MLS message to each of `members` but this phone, sealed for each. What the relay
-  // does not take waits in the group's outbox.
-  private async deliver(id: string, members: GroupMember[], message: Uint8Array, transport: GroupTransport) {
+  // Sends one MLS message to each of `members` but this phone, sealed for each, and with `all`
+  // those sent nothing more too. What the relay does not take waits in the group's outbox.
+  protected async deliver(id: string, members: GroupMember[], message: Uint8Array, transport: GroupTransport, all = false) {
     const failed: Group['outbox'] = [];
+    const skip = all ? new Set<string>() : this.unreached(id);
     for (const member of members) {
-      if (member.me || !member.about) continue;
+      if (member.me || !member.about || skip.has(member.about.id)) continue;
       const packet = await this.sealFor(member.about, message);
       try {
         await transport.post(member.about, packet);
@@ -414,12 +485,12 @@ export class Groups {
     return packet;
   }
 
-  private trimmed(messages: GroupMessage[]): GroupMessage[] {
+  protected trimmed(messages: GroupMessage[]): GroupMessage[] {
     return messages.slice(-MAX_GROUP_MESSAGES);
   }
 
   // Adds a note to a group: who joined or left (by identity), or a text of its own.
-  private async note(id: string, what: string, who?: string) {
+  protected async note(id: string, what: string, who?: string) {
     const group = this.find(id);
     if (!group || who === '') return;
     const text = who === undefined ? what : `${who}|${what}`;
@@ -427,7 +498,7 @@ export class Groups {
     this.changed();
   }
 
-  private async out(id: string, text: string) {
+  protected async out(id: string, text: string) {
     const group = this.find(id);
     if (!group) return;
     if (this.data.state) {
@@ -498,12 +569,13 @@ export class Groups {
       } catch {
         return false;
       }
+      if (await this.unsealed(message, transport)) return true;
       await this.openLocked(message, transport);
       return true;
     });
   }
 
-  private async openLocked(message: Uint8Array, transport: GroupTransport): Promise<void> {
+  protected async openLocked(message: Uint8Array, transport: GroupTransport): Promise<void> {
     if (!this.data.state) return;
     let id: string;
     try {
@@ -527,6 +599,7 @@ export class Groups {
     const { opened } = result;
     await this.save({ ...this.data, state: toBase64(result.state) });
     if (opened.kind === 'message') {
+      if (await this.heard(id, opened, message, transport)) return;
       const said = decodeSaid(opened.text);
       const from = aboutOf(opened.about)?.id;
       if (!said || !from) return;
@@ -535,6 +608,14 @@ export class Groups {
         const signal = said.call;
         if ('to' in signal && signal.to !== (await this.me()).id) return;
         this.callListeners.forEach((listener) => listener(id, from, signal));
+        return;
+      }
+      if (said.t === 'file') {
+        // Not taken yet: where to take it from.
+        const media = { file: offerRef(said.file), ...(said.ms === undefined ? {} : { ms: said.ms }) };
+        await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: '', tag: said.tag, ...media }]) }));
+        this.messageListeners.forEach((listener) => listener(id));
+        this.changed();
         return;
       }
       if (said.t === 'name') {
@@ -579,6 +660,9 @@ export class Groups {
   }
 }
 
+// Every photo, file and voice message the groups keep.
+const filesIn = (data: GroupData): FileRef[] => data.groups.flatMap((g) => g.messages.flatMap((m) => (m.file ? [m.file] : [])));
+
 /** A member's name: the one its chat has here, or the start of its key, as a contact's or a member's. */
 export function memberName(identity: string, contacts: { identity: string; name: string }[]): string {
   const contact = contacts.find((c) => c.identity === identity);
@@ -591,7 +675,7 @@ export function noteText(text: string, name: (identity: string) => string): stri
   if (bar !== 64) return t(text);
   const who = name(text.slice(0, 64));
   const what = text.slice(65);
-  return what === 'added you' ? t('{who} added you to the group.', { who }) : what === 'joined' ? t('{who} joined.', { who }) : what === 'left' ? t('{who} left.', { who }) : `${who} ${what}`;
+  return what === 'added you' ? t('{who} added you to the group.', { who }) : what === 'joined' ? t('{who} joined.', { who }) : what === 'left' ? t('{who} left.', { who }) : (moderated(who, what) ?? `${who} ${what}`);
 }
 
 export { EMPTY_GROUPS };

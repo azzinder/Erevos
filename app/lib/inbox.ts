@@ -15,8 +15,9 @@ import { t, mark } from './i18n';
 export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null; phone?: string };
 
 /** The latest SMS of a conversation with one number. `name`: what the phone's contacts call the
- *  number, when the owner lets Erevos show it. */
-export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number; name?: string };
+ *  number, when the owner lets Erevos show it, and `photo` the picture they have for it. `replied`:
+ *  any message in it is ours (missing from a build before it). */
+export type InboxSms = { address: string; text: string; at: number; mine: boolean; unread: number; name?: string; photo?: string; replied?: boolean };
 
 export type InboxMessage = {
   peer: string;
@@ -58,6 +59,12 @@ export type InboxRow = {
   lastSms: boolean;
   /** The last message disappears (or will, once read), so its text is never kept elsewhere. */
   fades?: boolean;
+  /** An SMS conversation pinned at the top (lib/sms-folders.ts). */
+  pinned?: boolean;
+  /** What is typed in an SMS conversation and not sent yet. */
+  draft?: string;
+  /** The picture the phone's contacts have for an SMS number, as an address the app may show. */
+  photo?: string;
 };
 
 const PREFIX = 'contact:';
@@ -113,12 +120,12 @@ export function buildInbox(
   });
   for (const t of sms) {
     if (used.has(t)) continue;
-    rows.push({ identity: `sms:${t.address}`, name: t.name || t.address, last: t.text, mine: t.mine, mark: 0, at: t.at, unread: t.unread, timer: 0, imported: false, avatar: null, sms: t.address, lastSms: true });
+    rows.push({ identity: `sms:${t.address}`, name: t.name || t.address, last: t.text, mine: t.mine, mark: 0, at: t.at, unread: t.unread, timer: 0, imported: false, avatar: null, sms: t.address, lastSms: true, photo: t.photo });
   }
   return rows.sort((a, b) => b.at - a.at || shownName(a).localeCompare(shownName(b)));
 }
 
-function preview(message: InboxMessage | undefined): string {
+function preview(message: Pick<InboxMessage, 'text' | 'voice' | 'file'> | undefined): string {
   if (message?.voice) return t('Voice message, {time}', { time: voiceDuration(message.voice.ms) });
   if (message?.file) return message.file.kind === 'photo' ? t('Photo') : t('File: {name}', { name: message.file.name });
   return shownLine(message?.text ?? '');
@@ -142,16 +149,19 @@ export type InboxGroup = {
   id: string;
   name: string;
   status: 'in' | 'leaving' | 'out';
-  last: { at: number; from: string; text: string; note?: boolean } | null;
+  last: { at: number; from: string; text: string; note?: boolean; file?: { kind: 'photo' | 'file'; name: string }; ms?: number } | null;
   unread: number;
 };
+
+// A group's photo, file or voice message (with `ms`) shows as a chat's does.
+const groupPreview = (last: NonNullable<InboxGroup['last']>) => preview(last.file && last.ms !== undefined ? { text: '', voice: { ms: last.ms } } : last);
 
 /** The space's groups as rows, `group:` and their id in place of a contact's identity. `name`
  *  gives a member's name by identity, and `note` a note's text. */
 export function groupRows(groups: InboxGroup[], name: (identity: string) => string, note: (text: string) => string): InboxRow[] {
   return groups.map((g) => {
     const last = g.last;
-    const text = !last ? '' : last.note ? note(last.text) : last.from ? `${name(last.from)}: ${shownLine(last.text)}` : t('You: {text}', { text: shownLine(last.text) });
+    const text = !last ? '' : last.note ? note(last.text) : last.from ? `${name(last.from)}: ${groupPreview(last)}` : t('You: {text}', { text: groupPreview(last) });
     return {
       identity: `group:${g.id}`,
       name: g.name || t('Group'),

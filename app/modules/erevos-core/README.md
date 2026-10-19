@@ -28,6 +28,13 @@ phones), and a release build all four. The NDK is the one the rest of the app al
 Without them the build stops with a message that points here. A build made before this module
 existed has no core: the chat then says it cannot encrypt, and leaves the relay alone.
 
+Tor bridges also need Go, 1.26 or later, once (`sudo pacman -S go`, or go.dev/dl). The build then
+builds lyrebird, Tor's pluggable transports (obfs4, Snowflake, WebTunnel, meek), from
+`transports/go.mod` at the top of the repository, with the NDK's compiler for each ABI, and the
+app carries it as `liblyrebird.so`. It is a program Tor starts, so Android must unpack the native
+libraries on install (`plugins/with-native-programs.js`). Go fetches what lyrebird is built from
+through proxy.golang.org, checked against `transports/go.sum`.
+
 ## Not done
 
 - Written without an Android SDK, so the first compile is on a build computer.

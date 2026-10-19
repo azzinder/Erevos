@@ -14,16 +14,16 @@ import type { Fonts, StyleName } from './colors';
 // chats mix both). Nocturne is set in Inter, as on the LPHL site: medium (500) for what other
 // styles set bold. Each loads only when its style is in use, and the app waits for it before
 // switching (theme/context.tsx), so no screen shows in a style without its font. Classic keeps
-// the system font, as does Custom; Matrix the platform's monospace and Paper its serif (shape.family),
-// so none of them loads anything.
+// the system font, as do Custom and Material You; Matrix the platform's monospace and Paper its
+// serif (shape.family), so none of them loads anything.
 
 const TIGHT = {
   fonts: { regular: 'InterTight_400Regular', semibold: 'InterTight_600SemiBold', bold: 'InterTight_800ExtraBold' },
   sources: { InterTight_400Regular, InterTight_600SemiBold, InterTight_800ExtraBold },
 };
 
-// The styles that load no font: the system's (Classic, Custom) or the platform's own family (Matrix, Paper).
-type Own = Exclude<StyleName, 'classic' | 'custom' | 'matrix' | 'paper'>;
+// The styles that load no font: the system's (Classic, Material You, Custom) or the platform's own family (Matrix, Paper).
+type Own = Exclude<StyleName, 'classic' | 'material' | 'custom' | 'matrix' | 'paper'>;
 const isOwn = (style: StyleName): style is Own => style in FACES;
 
 const FACES: Record<Own, { fonts: Fonts; sources: Record<string, FontSource> }> = {

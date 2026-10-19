@@ -13,7 +13,7 @@ import { fromHex, randomBytes, toHex } from '../lib/crypto';
 import { toBase64Url } from '../lib/e2e';
 import { buildInbox } from '../lib/inbox';
 import { collectInvites, inviteAnswer, invitePieces, PIECE, plainNumber, sameNumber, type SmsInvite } from '../lib/sms-invite';
-import { groupName, sameAddress, smsAddress, smsNumbers } from '../lib/sms-group';
+import { groupName, sameAddress, sameConversation, smsAddress, smsNumbers } from '../lib/sms-group';
 import { cancelLater, sendDue } from '../lib/sms-later';
 import type { LaterSmsHolder, LaterSmsState } from '../modules/erevos-sms';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
@@ -147,6 +147,15 @@ test('a group MMS: several numbers make one address, each number once, in any or
   assert.ok(!sameAddress('+306911111111,+306922222222', '+306911111111'));
   assert.ok(!sameAddress('+306911111111', '+306911111111,+306922222222'));
   assert.equal(groupName(['+306911111111', '+306922222222'], { '+306922222222': 'Νίκος' }), '+306911111111, Νίκος');
+});
+
+test('a sender that writes with a name is one conversation by that name, and never a number\'s', () => {
+  assert.ok(sameConversation('BANK', ' bank'));
+  assert.ok(!sameConversation('BANK', 'SHOP'));
+  assert.ok(!sameConversation('BANK', '+306911111111'));
+  assert.ok(!sameConversation('+306911111111', 'BANK'));
+  assert.ok(sameConversation('+306911111111,+306922222222', '6922222222, 6911111111'));
+  assert.ok(!sameConversation('', ''));
 });
 
 test('a group MMS conversation keeps its own row, even with a contact\'s number in it', () => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
+import { AppState, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,14 +17,14 @@ import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
-import { FileGoneError, fileSize, keepFile, MAX_FILE, offerRef, readFile, sendFile, takeFile, bytesSource, type Source } from '../lib/attachments';
+import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, sendFile, takeFile, bytesSource, type Source } from '../lib/attachments';
 import { isNews, messageCameAt } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
-import { loadPhotoQuality, QUALITIES, qualityNote, savePhotoQuality } from '../lib/photo-quality';
-import { photoUri, releaseUri } from '../lib/photo-uri';
-import { CAN_CHOOSE_FOLDER, saveFile } from '../lib/save-file';
+import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
+import { saveFile } from '../lib/save-file';
+import { AttachSheet, Attachment, FileViewer, SHOWN_PHOTOS, Tool, useShownPhotos } from '../components/attachment';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
@@ -37,6 +37,7 @@ import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
 import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
+import { accountLink, linkedRole, onLinked } from '../lib/devices';
 import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
@@ -68,6 +69,7 @@ import type { Look } from '../theme/look';
 import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
 import { t, plural, mark } from '../lib/i18n';
+import { forwardedTo } from '../lib/forward';
 
 // Chat with contacts, end-to-end encrypted (lib/e2e.ts), through the relay and, while their phone
 // is near, over the radio link too (lib/nearby.ts), where phones nearby may also carry a message
@@ -146,13 +148,6 @@ const RECEIVE_BATCH = 50;
 // How the LoRa radio is, in a word (lib/lora.ts).
 const LORA_SHOWN = { off: mark('Off'), connecting: mark('Linking'), starting: mark('Linking'), up: mark('Linked'), down: mark('Not linked') } as const;
 
-// Their photos and files up to this size are taken from the relay as soon as they come.
-const AUTO_TAKE = 16 * 1000 * 1000;
-
-// Photos shown in the thread at once, the latest: each is held whole in memory while shown. The
-// others show when tapped. A computer has the memory for all of them.
-const SHOWN_PHOTOS = Platform.OS === 'web' ? 200 : 6;
-
 // Contacts are named by their identity key, after this prefix.
 const CONTACT_PREFIX = 'contact:';
 
@@ -196,7 +191,7 @@ function caption(message: Message): string {
   if (scheduled(message)) parts.push(t('Scheduled · {when}', { when: laterLabel(message.at) }));
   else if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? t('Waiting') : MARKS[message.mark]);
   if (message.until) parts.push(t('Disappears {when}', { when: disappearsAt(message.until) }));
-  else if (message.lasts) parts.push(t('Disappears {time} after it is read', { time: timerLabel(message.lasts).toLowerCase() }));
+  else if (message.lasts) parts.push(t('Disappears {time} after it is read', { time: timerLabel(message.lasts) }));
   return parts.join('  ·  ');
 }
 
@@ -382,7 +377,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [draft, setDraft] = useState('');
+  // A message passed on from an SMS conversation (lib/forward.ts) starts in the field.
+  const [draft, setDraft] = useState(() => (initial ? (forwardedTo(initial)?.text ?? '') : ''));
   const [note, setNote] = useState('');
   const [showRelay, setShowRelay] = useState(setup);
   // The chat's details, over the chat: its picture, name, timer, look, safety number, moving it.
@@ -481,10 +477,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
   const tried = useRef(new Set<string>());
   // The photo or file shown on its own, to look at or save.
   const [viewing, setViewing] = useState<Message | null>(null);
-  // Photos shown, by file id, as addresses an Image can show (lib/photo-uri.ts).
-  const [photos, setPhotos] = useState<Record<string, string>>({});
-  const photosRef = useRef(photos);
-  photosRef.current = photos;
   const thread = useRef<ScrollView>(null);
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
@@ -1084,7 +1076,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
     if (received.timerChanged) {
       setNote(
         received.timer
-          ? t('{name} set new messages in this chat to disappear {time} after they are read.', { name, time: timerLabel(received.timer).toLowerCase() })
+          ? t('{name} set new messages in this chat to disappear {time} after they are read.', { name, time: timerLabel(received.timer) })
           : t('{name} turned disappearing messages off in this chat.', { name }),
       );
     }
@@ -1320,6 +1312,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
   }
 
   async function startCall(video: boolean) {
+    // The contact's answer would come to the phone that holds the account, which made no call.
+    if (!hiddenKey && linkedRole() === 'linked') {
+      setNote(t('Calls ring on the phone that holds this account, for now. Call from there.'));
+      return;
+    }
     if (!selectedContact) {
       setNote(video ? t('Video calls go to contacts through the relay. Pick one first.') : t('Calls go to contacts through the relay. Pick one first.'));
       return;
@@ -1405,7 +1402,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
       const { tag, timer, way } = await sendToContact(relayTarget(), selected.slice(CONTACT_PREFIX.length), text, { lasts, quiet });
       keep(selected, text, tag, timer);
       const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(selected, contacts));
-      setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer).toLowerCase() }) : sent);
+      setNote(timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer) }) : sent);
     } catch (error) {
       if (!canWait(error) || hiddenKey) {
         setNote(notSent(error));
@@ -1769,15 +1766,41 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
     }
   }
 
-  // Their photos and files up to AUTO_TAKE are taken as soon as they come, or when the chat opens.
+  // Photos and files up to AUTO_TAKE still on the relay are taken as soon as they come, or when the
+  // chat opens: theirs, and on a linked device the copies of what the phone sent (lib/devices.ts).
   useEffect(() => {
     const own = ownRelay();
     if (!loaded || !own) return;
     for (const m of messages) {
-      if (m.mine || !m.file?.from || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
+      if (!m.file?.from || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
       void take(own, m.peer, m.tag, m.file);
     }
   }, [loaded, relayUrl, relayToken, messages]);
+
+  // What the account's other devices changed in the history while the chat is open (lib/devices.ts):
+  // messages brought over or written on another of them, marks raised there, messages deleted there.
+  useEffect(() => {
+    if (hiddenKey) return;
+    return onLinked(({ gone }) => {
+      const kept = history.current;
+      if (!kept) return;
+      const now = kept.messages();
+      const byTag = new Map(now.filter((m) => m.tag).map((m) => [`${m.peer}|${m.tag}`, m]));
+      setMessages((list) => {
+        const left = list.filter((m) => !gone.some((g) => g.peer === m.peer && (!g.tag || g.tag === m.tag)));
+        const shown = new Set(left.map((m) => `${m.peer}|${m.tag}`));
+        const marked = left.map((m) => {
+          const there = m.tag ? byTag.get(`${m.peer}|${m.tag}`) : undefined;
+          if (!there || (there.mark ?? 0) <= m.mark) return m;
+          return { ...m, mark: there.mark ?? 0, until: m.until || (there.until ?? 0), lasts: m.until ? m.lasts : (there.lasts ?? 0) };
+        });
+        const added = now
+          .filter((m) => m.peer.startsWith(CONTACT_PREFIX) && m.tag && !shown.has(`${m.peer}|${m.tag}`))
+          .map((m) => ({ ...m, until: m.until ?? 0, lasts: m.lasts ?? 0, mark: m.mark ?? 0, id: nextId.current++ }));
+        return added.length > 0 ? [...marked, ...added].sort((a, b) => a.at - b.at) : marked;
+      });
+    });
+  }, [hiddenKey]);
 
   useEffect(() => {
     loadPhotoQuality().then(setQuality, () => undefined);
@@ -1949,28 +1972,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
     }
   }
 
-  const loadingPhotos = useRef(new Set<string>());
-
-  // Reads a photo into memory to show it.
-  function showPhoto(ref: FileRef) {
-    if (ref.from || photosRef.current[ref.id] || loadingPhotos.current.has(ref.id)) return;
-    loadingPhotos.current.add(ref.id);
-    readFile(ref)
-      .then((bytes) => {
-        if (bytes) setPhotos((now) => ({ ...now, [ref.id]: photoUri(bytes, ref.mime) }));
-      })
-      .catch((error) => setNote(t('Cannot show the photo. {error}', { error: errorText(error) })))
-      .finally(() => loadingPhotos.current.delete(ref.id));
-  }
-
-  // Photos held in memory go when the chat closes.
-  useEffect(
-    () => () => {
-      for (const uri of Object.values(photosRef.current)) releaseUri(uri);
-    },
-    [],
-  );
-
   // Nothing plays, or records, once the chat closes. Sound a closed Erevos left unsealed goes
   // when it opens.
   useEffect(() => {
@@ -2037,6 +2038,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
   // hidden chats' relay queue from now on; what it sends before it hears that may not come.
   async function moveToHidden(peer: string, pin: string, fresh: number | null) {
     if (!e2e || !history.current || moving) return;
+    if (!hiddenKey && linkedRole() === 'linked') {
+      setMoveNote(t("This chat is the phone's: move it into hidden chats there."));
+      return;
+    }
     const identity = peer.slice(CONTACT_PREFIX.length);
     if (pin.length < MIN_PIN) {
       setMoveNote(t('The PIN needs {n} characters at least.', { n: MIN_PIN }));
@@ -2116,7 +2121,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
       return;
     }
     const set = timer
-      ? t('New messages in this chat now disappear from both phones {time} after they are read.', { time: timerLabel(timer).toLowerCase() })
+      ? t('New messages in this chat now disappear from both phones {time} after they are read.', { time: timerLabel(timer) })
       : t('New messages in this chat no longer disappear.');
     const target = relayTarget();
     try {
@@ -2190,21 +2195,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
     .slice(-SHOWN_PHOTOS)
     .map((m) => m.file!);
   if (viewing?.file?.kind === 'photo' && !viewing.file.from) shownPhotos.push(viewing.file);
-  const shownKey = shownPhotos.map((file) => file.id).join(',');
-  useEffect(() => {
-    const wanted = new Set(shownPhotos.map((file) => file.id));
-    for (const file of shownPhotos) showPhoto(file);
-    setPhotos((now) => {
-      const gone = Object.keys(now).filter((id) => !wanted.has(id));
-      if (gone.length === 0) return now;
-      const kept = { ...now };
-      for (const id of gone) {
-        releaseUri(kept[id]);
-        delete kept[id];
-      }
-      return kept;
-    });
-  }, [shownKey]);
+  // Each read into memory to show it (components/attachment.tsx).
+  const photos = useShownPhotos(shownPhotos, (error) => setNote(t('Cannot show the photo. {error}', { error: errorText(error) })));
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
   const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity]);
   const importedFrom = [...new Set(imported.map((m) => SOURCE_LABELS[m.source]))].join(` ${t('and')} `);
@@ -2224,7 +2216,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
   // Without a relay queue the link has only the keys: who adds it reaches this phone nearby.
   const ownLink = !e2e
     ? null
-    : ownQueue
+    : !hiddenKey && accountLink()
+      ? accountLink()
+      : ownQueue
       ? contactLink({
           senderHex: ownQueue.senderHex,
           relayUrl: relayUrl.trim(),
@@ -2247,7 +2241,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
       : selectedNearby
         ? t('Nearby · end-to-end encrypted')
         : selectedTimer
-          ? t('End-to-end encrypted · {time} after read', { time: timerLabel(selectedTimer).toLowerCase() })
+          ? t('End-to-end encrypted · {time} after read', { time: timerLabel(selectedTimer) })
           : t('End-to-end encrypted')
     : '';
 
@@ -3021,120 +3015,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, initialCall = null, linkN
             : t('The relay keeps it and sends it at that time, even if this phone is off then.')}
         </Text>
       </Sheet>
-      <Sheet visible={attaching} onClose={() => setAttaching(false)} title={t('Send a photo or file')}>
-        <Row wrap>
-          <Button title={t('Photo')} compact onPress={() => sendPhoto('photos')} />
-          {CAN_TAKE_PHOTOS ? <Button title={t('Take photo')} compact onPress={() => sendPhoto('camera')} /> : null}
-          <Button title={t('File')} kind="secondary" compact onPress={sendPickedFile} />
-        </Row>
-        <Text variant="label">{t('Photo quality')}</Text>
-        <Row wrap>
-          {QUALITIES.map(({ value, label: shown }) => (
-            <Chip key={shown} label={t(shown)} selected={quality === value} onPress={() => chooseQuality(value)} />
-          ))}
-        </Row>
-        <Text variant="caption" tone="muted">
-          {qualityNote(quality)}
-        </Text>
-        <Text variant="caption" tone="muted">
-          {t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
-        </Text>
-      </Sheet>
-      <Modal visible={viewing !== null} animationType="fade" onRequestClose={() => setViewing(null)}>
-        <View style={[styles.viewer, { paddingTop: Math.max(space.lg, insets.top), paddingBottom: Math.max(space.lg, insets.bottom) }]}>
-          {viewing?.file?.kind === 'photo' ? (
-            <>
-              {photos[viewing.file.id] ? (
-                <Image source={{ uri: photos[viewing.file.id] }} style={styles.viewerPhoto} resizeMode="contain" accessibilityLabel={t('Photo')} />
-              ) : (
-                <Text tone="muted" style={styles.viewerPhoto}>
-                  {t('Opening the photo…')}
-                </Text>
-              )}
-              <Text tone="muted">
-                {viewing.file.w && viewing.file.h ? `${viewing.file.w} × ${viewing.file.h} · ` : ''}
-                {fileSize(viewing.file.size)}
-              </Text>
-            </>
-          ) : viewing?.file ? (
-            <View style={styles.viewerFile}>
-              <Text variant="heading">{viewing.file.name}</Text>
-              <Text tone="muted">{fileSize(viewing.file.size)}</Text>
-            </View>
-          ) : null}
-          <Row wrap style={styles.viewerTools}>
-            <Button title={t('Save')} compact onPress={() => viewing && void saveAttachment(viewing, false)} />
-            {CAN_CHOOSE_FOLDER ? (
-              <Button title={t('Save in another folder')} kind="secondary" compact onPress={() => viewing && void saveAttachment(viewing, true)} />
-            ) : null}
-            <Button title={t('Close')} kind="secondary" compact onPress={() => setViewing(null)} />
-          </Row>
-        </View>
-      </Modal>
+      <AttachSheet
+        visible={attaching}
+        onClose={() => setAttaching(false)}
+        onPhoto={sendPhoto}
+        onFile={sendPickedFile}
+        quality={quality}
+        onQuality={chooseQuality}
+        note={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
+      />
+      <FileViewer
+        file={viewing?.file ?? null}
+        uri={viewing?.file ? photos[viewing.file.id] : undefined}
+        onSave={(choose) => viewing && void saveAttachment(viewing, choose)}
+        onClose={() => setViewing(null)}
+      />
     </View>
-  );
-}
-
-// A photo or file in the thread: the photo itself once it is here and shown, otherwise what it
-// is and how far it has come.
-function Attachment({ file, uri, state, ink }: { file: FileRef; uri?: string; state?: string; ink: StyleProp<TextStyle> }) {
-  const colors = useColors();
-  const status = !file.from
-    ? null
-    : state === 'gone'
-      ? t('No longer on the relay')
-      : state === 'failed'
-        ? t('Did not come · tap to try again')
-        : state
-          ? t('Coming, {progress}', { progress: state })
-          : t('Tap to take it, {size}', { size: fileSize(file.size) });
-  if (file.kind === 'photo') {
-    const width = 240;
-    const height = Math.round(Math.min(320, Math.max(120, file.w && file.h ? (width * file.h) / file.w : 180)));
-    return uri ? (
-      <Image source={{ uri }} style={{ width, height, borderRadius: radius.md }} resizeMode="cover" resizeMethod="resize" accessibilityLabel={t('Photo')} />
-    ) : (
-      <View style={{ width, height, borderRadius: radius.md, backgroundColor: withAlpha(colors.text, 0.08), alignItems: 'center', justifyContent: 'center', padding: space.md }}>
-        <Text style={[ink, { textAlign: 'center' }]}>{status ?? t('Photo · tap to see it')}</Text>
-      </View>
-    );
-  }
-  return (
-    <View style={{ gap: 2, minWidth: 160 }}>
-      <Text style={[ink, { fontWeight: '600' }]} numberOfLines={2}>
-        {file.name}
-      </Text>
-      <Text style={[ink, { fontSize: 13, opacity: 0.8 }]}>{status ?? t('{size} · tap to save', { size: fileSize(file.size) })}</Text>
-    </View>
-  );
-}
-
-// A button under the message field: small, so a row of them fits beside Send. Voice is held, not tapped.
-type ToolProps = { title: string; on?: boolean; onPress?: () => void; onPressIn?: () => void; onPressOut?: () => void };
-
-function Tool({ title, on = false, onPress, onPressIn, onPressOut }: ToolProps) {
-  const colors = useColors();
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      accessibilityRole="button"
-      accessibilityState={{ selected: on }}
-      style={({ pressed }) => ({
-        minHeight: 40,
-        paddingHorizontal: 12,
-        justifyContent: 'center',
-        borderRadius: radius.pill,
-        borderWidth: 1,
-        borderColor: on ? colors.primary : withAlpha(colors.border, 0.7),
-        backgroundColor: pressed ? colors.surfacePressed : on ? withAlpha(colors.primary, 0.14) : colors.surfaceAlt,
-      })}
-    >
-      <Text variant="label" color={on ? colors.accentText : colors.text} style={{ fontSize: 14 }}>
-        {title}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -3410,27 +3306,6 @@ const makeStyles = (colors: Colors) =>
     photoBubble: {
       paddingTop: 4,
       paddingHorizontal: 4,
-    },
-    viewer: {
-      flex: 1,
-      gap: space.md,
-      paddingHorizontal: space.lg,
-      backgroundColor: colors.ground,
-    },
-    viewerPhoto: {
-      flex: 1,
-      width: '100%',
-      textAlign: 'center',
-      textAlignVertical: 'center',
-    },
-    viewerFile: {
-      flex: 1,
-      gap: space.sm,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    viewerTools: {
-      justifyContent: 'center',
     },
     // The last message of a run leaves room before the next run (its corner: theme/bubbles.ts).
     mineTail: {

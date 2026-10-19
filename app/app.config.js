@@ -8,6 +8,6 @@ module.exports = ({ config }) => {
     ...config,
     version: process.env.EREVOS_VERSION || config.version,
     android: { ...config.android, ...(build > 0 ? { versionCode: build } : {}) },
-    plugins: [...(config.plugins || []), './plugins/with-release-signing'],
+    plugins: [...(config.plugins || []), './plugins/with-release-signing', './plugins/with-native-programs'],
   };
 };

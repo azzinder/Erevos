@@ -8,6 +8,7 @@ import {
   FRAME_TEXTS,
   frameTextChoices,
   CUSTOM_GROUNDS,
+  followsTheme,
   isFixed,
   isScene,
   takesGlass,
@@ -29,14 +30,17 @@ import { GLASS_KINDS, LOOK_NAMES, type GlassKind, type LookName } from '../theme
 import { mark, t } from '../lib/i18n';
 import { pickWallpaper } from '../lib/pick-avatar';
 import { savePhoto } from '../lock/avatar-photos';
+import { phoneTones } from '../modules/erevos-look';
 import { BUBBLE_SHAPES, WALLPAPERS, type BubbleShape, type Wallpaper } from '../theme/look';
 
 // Appearance, as in LPHL FASOULI's settings: flat or glass (as on lphl.nekten.eu), the style,
 // light or dark, the colours (the style's own, one of the twelve LPHL palettes, or a colour of
 // your own) and the text on coloured areas; and how a chat draws its messages. Neon and Matrix
 // are styles of their own: always dark, in their own colours, with a scene behind the screens.
-// Each space keeps its own (theme/look.ts), and every space shows this same screen. A chat can
-// have its own too, chosen with the same choices from its details (app/chat.tsx).
+// Material You takes the phone's own colours, light or dark as the theme says, and is offered only
+// where the phone has them (Android 12 and later). Each space keeps its own (theme/look.ts), and
+// every space shows this same screen. A chat can have its own too, chosen with the same choices
+// from its details (app/chat.tsx).
 
 // Proper names of styles and palettes stay as they are; the rest is translated where it is shown.
 const LOOK_LABELS: Record<LookName, string> = { flat: mark('Flat'), glass: 'Glass' };
@@ -46,6 +50,7 @@ const STYLE_LABELS: Record<StyleName, string> = { classic: 'Classic', modernist:
   matrix: 'Matrix',
   paper: 'Paper',
   aurora: 'Aurora',
+  material: 'Material You',
   custom: mark('Custom'),
 };
 const BUBBLE_LABELS: Record<BubbleShape, string> = { round: mark('Round'), square: mark('Square'), line: mark('Line') };
@@ -131,6 +136,8 @@ export function AppearanceEditor({ title, top }: { title?: string; top?: ReactNo
   const [pickColor, setPickColor] = useState(false);
   const [pickTextColor, setPickTextColor] = useState(false);
   const [photoError, setPhotoError] = useState('');
+  // Whether the phone has colours of its own for Material You.
+  const [phoneColors] = useState(() => phoneTones() !== null);
 
   /** A photo of the owner's as the wallpaper, sealed in its own file. */
   async function choosePhoto() {
@@ -147,8 +154,11 @@ export function AppearanceEditor({ title, top }: { title?: string; top?: ReactNo
   // Nocturne, Neon, Matrix, Paper, Aurora and Custom have their own colours, light or dark as they
   // are: as on the LPHL site, the theme and the text on coloured areas wait, and a palette leaves
   // them for the style chosen before. Custom's colours are its background and accent, chosen here.
+  // Material You's are the phone's, and only the text on coloured areas waits.
   const nocturne = isFixed(look.style);
+  const ownScheme = !followsTheme(look.style);
   const custom = look.style === 'custom';
+  const material = look.style === 'material';
   const scene = !takesGlass(look.style);
   const styleName = t(STYLE_LABELS[look.style]);
   const bubbles = bubbleStyles(look.bubbles, colors);
@@ -172,7 +182,9 @@ export function AppearanceEditor({ title, top }: { title?: string; top?: ReactNo
         <Text variant="caption" tone="faint">
           {isScene(look.style)
             ? t('{style} draws its own scene behind the screens, so it takes no glass.', { style: styleName })
-            : t('Custom takes no glass: its background is the one you chose.')}
+            : material
+              ? t("Material You takes no glass: its colors are the phone's own.")
+              : t('Custom takes no glass: its background is the one you chose.')}
         </Text>
       ) : null}
       {look.look === 'glass' && !scene ? (
@@ -191,10 +203,17 @@ export function AppearanceEditor({ title, top }: { title?: string; top?: ReactNo
 
       <SectionTitle title={t('Style')} />
       <Row wrap>
-        {STYLES.map((st) => (
+        {STYLES.filter((st) => st !== 'material' || phoneColors || material).map((st) => (
           <Chip key={st} label={t(STYLE_LABELS[st])} selected={look.style === st} onPress={() => (st !== look.style ? setLook({ style: st }) : undefined)} />
         ))}
       </Row>
+      {material ? (
+        <Text variant="caption" tone="faint">
+          {phoneColors
+            ? t("Your phone's own colors, which Android makes from its wallpaper: a new wallpaper changes them here too.")
+            : t("Material You takes the phone's own colors, on Android 12 and later. Here it shows in Classic's.")}
+        </Text>
+      ) : null}
 
       {custom ? (
         <>
@@ -239,10 +258,10 @@ export function AppearanceEditor({ title, top }: { title?: string; top?: ReactNo
       <SectionTitle title={t('Theme')} />
       <Row wrap>
         {THEMES.map((th) => (
-          <Chip key={th} label={t(THEME_LABELS[th])} selected={look.theme === th} disabled={nocturne} onPress={() => setLook({ theme: th })} />
+          <Chip key={th} label={t(THEME_LABELS[th])} selected={look.theme === th} disabled={ownScheme} onPress={() => setLook({ theme: th })} />
         ))}
       </Row>
-      {nocturne ? (
+      {ownScheme ? (
         <Text variant="caption" tone="faint">
           {custom
             ? t('Custom is light or dark as its background is.')

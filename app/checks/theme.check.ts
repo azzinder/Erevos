@@ -22,6 +22,10 @@ import {
   isScene,
   takesGlass,
   CUSTOM_GROUNDS,
+  checkedTones,
+  setSystemTones,
+  TONE_NAMES,
+  type SystemTones,
 } from '../theme/colors';
 import { rawAccent, withAlpha } from '../theme/colors';
 import { backdropKind, GLASS_KINDS, glassSide, inkGround, paneFrame, withLook } from '../theme/glass';
@@ -305,4 +309,77 @@ test('a photo wallpaper keeps its photo in the space, and the password screen\'s
   const copy = await loadLockScreenLook();
   assert.equal(copy.wallpaper, 'auto');
   assert.equal(copy.wallpaperPhoto, null);
+});
+
+// Material 3's baseline tones, as a phone with its purple wallpaper gives them: Android's
+// system_*_0 to _1000, lightest first.
+const BASELINE: SystemTones = {
+  accent1: ['#FFFFFF', '#FFFBFE', '#F6EDFF', '#EADDFF', '#D0BCFF', '#B69DF8', '#9A82DB', '#7F67BE', '#6750A4', '#4F378B', '#381E72', '#21005D', '#000000'],
+  accent2: ['#FFFFFF', '#FFFBFE', '#F6EDFF', '#E8DEF8', '#CCC2DC', '#B0A7C0', '#958DA5', '#7A7289', '#625B71', '#4A4458', '#332D41', '#1D192B', '#000000'],
+  accent3: ['#FFFFFF', '#FFFBFA', '#FFECF1', '#FFD8E4', '#EFB8C8', '#D29DAC', '#B58392', '#986977', '#7D5260', '#633B48', '#492532', '#31111D', '#000000'],
+  neutral1: ['#FFFFFF', '#FFFBFE', '#F4EFF4', '#E6E1E5', '#C9C5CA', '#AEAAAE', '#939094', '#787579', '#605D62', '#484649', '#313033', '#1C1B1F', '#000000'],
+  neutral2: ['#FFFFFF', '#FFFBFE', '#F5EEFA', '#E7E0EC', '#CAC4D0', '#AEA9B4', '#938F99', '#79747E', '#605D66', '#49454F', '#322F37', '#1D1A22', '#000000'],
+};
+
+/** Greys at Android's tones (L* 100, 99, 95, 90 … 10, 0): a wallpaper with no colour at all. */
+function greyTones(): SystemTones {
+  const grey = (l: number) => {
+    const y = l > 8 ? ((l + 16) / 116) ** 3 : l / 903.3;
+    const v = Math.round(255 * (y <= 0.0031308 ? 12.92 * y : 1.055 * y ** (1 / 2.4) - 0.055));
+    const h = v.toString(16).padStart(2, '0').toUpperCase();
+    return `#${h}${h}${h}`;
+  };
+  const list = [100, 99, 95, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0].map(grey);
+  return Object.fromEntries(TONE_NAMES.map((name) => [name, list])) as SystemTones;
+}
+
+test("the phone's own colors are taken only whole: five palettes of 13 tones", () => {
+  assert.deepEqual(checkedTones(BASELINE), BASELINE);
+  const lower = Object.fromEntries(TONE_NAMES.map((name) => [name, BASELINE[name].map((c) => c.toLowerCase())]));
+  assert.deepEqual(checkedTones(lower), BASELINE);
+  assert.equal(checkedTones(null), null);
+  assert.equal(checkedTones({ ...BASELINE, accent3: undefined }), null);
+  assert.equal(checkedTones({ ...BASELINE, neutral1: BASELINE.neutral1.slice(1) }), null);
+  assert.equal(checkedTones({ ...BASELINE, accent1: [...BASELINE.accent1.slice(1), 'black'] }), null);
+});
+
+test("Material You reads well in the phone's colors, light or dark as the theme says, and takes no glass", () => {
+  assert.equal(resolveScheme('material', 'light', 'dark'), 'light');
+  assert.equal(resolveScheme('material', 'system', 'dark'), 'dark');
+  assert.equal(resolveScheme('material', 'system', 'light'), 'light');
+  assert.ok(isFixed('material') && !takesGlass('material') && !isScene('material'));
+  assert.equal(backdropKind('material', 'glass'), null);
+  // Where the phone gives no colours, it shows in Classic's.
+  setSystemTones(null);
+  assert.deepEqual(buildColors('material', 'dark', 'auto'), buildColors('classic', 'dark', 'auto'));
+  try {
+    for (const tones of [BASELINE, greyTones()]) {
+      setSystemTones(tones);
+      for (const scheme of SCHEMES) {
+        const c = buildColors('material', scheme, 'auto');
+        const where = `material ${scheme} ${tones.accent1[8]}`;
+        for (const [key, value] of Object.entries(c)) {
+          if (key !== 'overlay') assert.match(value, /^#[0-9A-F]{6}$/, `${where}: ${key}`);
+        }
+        assert.equal(c.primary, tones.accent1[scheme === 'light' ? 8 : 4], `${where}: the phone's accent`);
+        assert.equal(c.text, tones.neutral1[scheme === 'light' ? 11 : 3], `${where}: the phone's text`);
+        assert.ok(contrast(c.text, c.background) >= 7, `${where}: text`);
+        for (const ground of [c.surface, c.surfaceAlt]) assert.ok(contrast(c.text, ground) >= 4.5, `${where}: text on ${ground}`);
+        for (const key of ['textMuted', 'accentText', 'success', 'warning', 'danger'] as const) {
+          assert.ok(contrast(c[key], c.background) >= 4.5, `${where}: ${key}`);
+        }
+        assert.ok(contrast(c.textFaint, c.background) >= 3, `${where}: faint`);
+        assert.ok(contrast(c.primary, c.onPrimary) >= 4.5, `${where}: text on the accent`);
+        assert.ok(contrast(c.hero, c.heroText) >= 4.5, `${where}: text on colored areas`);
+        // The palettes and the text on coloured areas leave it as it is.
+        assert.deepEqual(buildColors('material', scheme, 'kipos', { customAccent: '#2F7FC4', frameText: 'white' }), c);
+        assert.equal(rawAccent('material', scheme, 'auto', '#D9A441'), c.primary);
+      }
+    }
+  } finally {
+    setSystemTones(null);
+  }
+  // Kept with the look, and a palette chosen from it goes back to the style before.
+  assert.equal(checkedLook({ ...DEFAULT_LOOK, style: 'material' }).style, 'material');
+  assert.equal(changeLook({ ...DEFAULT_LOOK, style: 'modernist' }, { style: 'material' }).prevStyle, 'modernist');
 });

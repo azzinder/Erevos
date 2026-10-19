@@ -17,6 +17,17 @@ not been compiled yet.
 - **SMS invites.** Data SMS to port 16180, which messaging apps do not show. Pieces that come are
   kept in the app's preferences until `takeInvites()` takes them. The format is in
   `lib/sms-invite.ts`.
+- **Deleting and sending again.** As the default app, `deleteThread()` deletes a conversation's SMS
+  and MMS up to a time (the space's Trash, `lib/sms-folders.ts`), `deleteMessages()` single ones,
+  and `resend()` sends one of ours that failed again, in place of the old row.
+- **Blocked numbers.** `blocked()`, `block()` and `unblock()` use Android's own list
+  (`BlockedNumberContract`), which only the default SMS app (or dialer) may read and change.
+  Android then rejects those numbers' SMS, MMS and calls itself.
+- **Backups.** `exportSms()` reads the phone's SMS and MMS into one byte array for Erevos's sealed
+  backups (`SmsBackup.kt`, format there), with up to 32 MB of MMS pictures; it never touches a
+  file. `importSms()` puts back each message the phone does not have yet, and deletes none.
+- **Contact photos.** `contactCards()` gives the phone contacts' names with their thumbnail
+  addresses (`content://`), shown as they are and kept nowhere.
 
 ## JS API
 

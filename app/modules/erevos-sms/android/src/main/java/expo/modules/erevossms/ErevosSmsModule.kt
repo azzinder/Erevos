@@ -75,5 +75,21 @@ class ErevosSmsModule : Module() {
     }
     AsyncFunction("cancelLater") { id: String -> LaterSms.cancel(context(), id) }
     AsyncFunction("laterState") { ids: List<String> -> LaterSms.state(context(), ids) }
+    // Deleting from the phone, sending again what did not go, and MMS pictures to send on.
+    AsyncFunction("deleteThread") { address: String, upTo: Double -> SmsStore.deleteThread(context(), address, upTo.toLong()).toDouble() }
+    AsyncFunction("deleteMessages") { ids: List<String> -> SmsStore.deleteMessages(context(), ids).toDouble() }
+    AsyncFunction("resend") { kind: String, id: Double, sim: Int ->
+      (if (kind == "mms") MmsStore.resend(context(), id.toLong(), sim) else SmsStore.resend(context(), id.toLong(), sim)).toDouble()
+    }
+    AsyncFunction("pictureBytes") { uri: String -> MmsStore.partBytes(context(), uri) }
+    AsyncFunction("contactCards") { numbers: List<String> -> SmsStore.contactCards(context(), numbers) }
+    // Android's own list of blocked numbers, which the default SMS app may read and change.
+    AsyncFunction("canBlock") { SmsStore.canBlock(context()) }
+    AsyncFunction("blocked") { SmsStore.blocked(context()) }
+    AsyncFunction("block") { number: String -> SmsStore.block(context(), number) }
+    AsyncFunction("unblock") { number: String -> SmsStore.unblock(context(), number) }
+    // The phone's SMS and MMS for a backup, and put back from one (SmsBackup.kt).
+    AsyncFunction("exportSms") { SmsBackup.export(context()) }
+    AsyncFunction("importSms") { data: ByteArray -> SmsBackup.import(context(), data) }
   }
 }

@@ -18,6 +18,14 @@ import { t } from './i18n';
 export type SpaceChats = { e2e: E2E; history: History; voiceParts: VoiceAssembler };
 
 let opened: { of: object; chats: Promise<SpaceChats> } | null = null;
+// What joins the space's chats as they open, before anything uses them: the links to the account's
+// other devices (lib/devices.ts), which registers itself here so this file need not know it.
+const joiners: ((chats: SpaceChats, space: number, key: Uint8Array) => Promise<void>)[] = [];
+
+/** Has `join` called each time the space's chats open, before they are handed out. */
+export function joinSpaceChats(join: (chats: SpaceChats, space: number, key: Uint8Array) => Promise<void>): void {
+  joiners.push(join);
+}
 
 /** The open space's chats, opened the first time they are asked for. */
 export function spaceChats(): Promise<SpaceChats> {
@@ -26,7 +34,10 @@ export function spaceChats(): Promise<SpaceChats> {
     const chats = (async () => {
       const history = await History.open('space', current.space, current.key);
       const e2e = await E2E.open('space', current.space, current.key);
-      return { e2e, history, voiceParts: new VoiceAssembler() };
+      const chats = { e2e, history, voiceParts: new VoiceAssembler() };
+      // The chats still open without what could not join them.
+      for (const join of joiners) await join(chats, current.space, current.key).catch(() => undefined);
+      return chats;
     })();
     opened = { of: current, chats };
     // Tried again the next time they are asked for.
