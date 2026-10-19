@@ -5,7 +5,8 @@ import { LPHL_PALETTE_ORDER, LPHL_PALETTES, type LphlModeColors, type LphlPalett
 // differs from FASOULI: Classic is Erevos's own warm dark with its gold (and a light one to
 // match), there are no money colours, but there is `success` for notes that something worked,
 // and Modernist is set in Inter Tight alone, as chats are written in Greek as well. The glass look
-// is in glass.ts.
+// is in glass.ts. Material You takes the phone's own colours, which Android 12 and later make
+// from the wallpaper (materialColors).
 
 const classic = {
   light: {
@@ -281,27 +282,35 @@ export const NOCTURNE = {
   fieldLine: '#424450',
 };
 
-export type StyleName = 'classic' | 'modernist' | 'nocturne' | 'neon' | 'matrix' | 'paper' | 'aurora' | 'custom';
-export const STYLES: StyleName[] = ['classic', 'modernist', 'nocturne', 'neon', 'matrix', 'paper', 'aurora', 'custom'];
+export type StyleName = 'classic' | 'modernist' | 'nocturne' | 'neon' | 'matrix' | 'paper' | 'aurora' | 'material' | 'custom';
+export const STYLES: StyleName[] = ['classic', 'modernist', 'nocturne', 'neon', 'matrix', 'paper', 'aurora', 'material', 'custom'];
 /** The styles a palette can be shown in (the others have their own colours). */
 export type PaletteStyle = 'classic' | 'modernist';
 
 /**
- * Styles with their own colours whatever the palette, scheme or text setting: Nocturne, Neon and
- * Matrix always dark, Paper and Aurora always light, Custom light or dark as its background is.
+ * Styles with their own colours whatever the palette or text setting: Nocturne, Neon and Matrix
+ * always dark, Paper and Aurora always light, Custom light or dark as its background is, Material
+ * You as the Theme setting says (followsTheme).
  */
-export const FIXED_STYLES: StyleName[] = ['nocturne', 'neon', 'matrix', 'paper', 'aurora', 'custom'];
+export const FIXED_STYLES: StyleName[] = ['nocturne', 'neon', 'matrix', 'paper', 'aurora', 'material', 'custom'];
 export const isFixed = (style: StyleName): boolean => FIXED_STYLES.includes(style);
+/** Whether the Theme setting (system, light or dark) decides a style's scheme. */
+export const followsTheme = (style: StyleName): boolean => !isFixed(style) || style === 'material';
 
 /** Styles that draw their own scene behind the screens (Neon's grid, Matrix's rain, Paper's lines, Aurora's light). */
 export const SCENE_STYLES: StyleName[] = ['neon', 'matrix', 'paper', 'aurora'];
 export const isScene = (style: StyleName): boolean => SCENE_STYLES.includes(style);
 
-/** Whether a style can be glass: not those with a scene of their own, nor Custom, whose background is its owner's. */
-export const takesGlass = (style: StyleName): boolean => !isScene(style) && style !== 'custom';
+/**
+ * Whether a style can be glass: not those with a scene of their own, nor Custom, whose background is
+ * its owner's, nor Material You, whose colours are the phone's.
+ */
+export const takesGlass = (style: StyleName): boolean => !isScene(style) && style !== 'custom' && style !== 'material';
 
-// Custom's entry is a stand-in: its colours come from its background and accent (customColors).
-export const palettes: Record<StyleName, typeof classic> = { classic, modernist, nocturne, neon, matrix, paper, aurora, custom: classic };
+// Custom's and Material You's entries are stand-ins: their colours come from the background and
+// accent chosen (customColors), or from the phone (materialColors). Material You shows in Classic's
+// where the phone gives none.
+export const palettes: Record<StyleName, typeof classic> = { classic, modernist, nocturne, neon, matrix, paper, aurora, material: classic, custom: classic };
 
 type BaseColors = typeof classic.light;
 
@@ -323,8 +332,98 @@ export const THEMES: ThemePref[] = ['system', 'light', 'dark'];
 export function resolveScheme(style: StyleName, theme: ThemePref, system: string | null | undefined, ground = DEFAULT_CUSTOM_GROUND): 'light' | 'dark' {
   if (style === 'custom') return isDarkGround(ground) ? 'dark' : 'light';
   if (style === 'paper' || style === 'aurora') return 'light';
-  if (isFixed(style)) return 'dark';
+  if (!followsTheme(style)) return 'dark';
   return theme === 'system' ? (system === 'light' ? 'light' : 'dark') : theme;
+}
+
+/**
+ * The phone's own colours (Android 12 and later, read by modules/erevos-look): five palettes made
+ * from the wallpaper, three of accents and two of neutrals, each 13 tones from Android's
+ * system_*_0 (white) through _10, _50, _100 … _900 to _1000 (black), as #RRGGBB.
+ */
+export type ToneName = 'accent1' | 'accent2' | 'accent3' | 'neutral1' | 'neutral2';
+export type SystemTones = Record<ToneName, string[]>;
+export const TONE_NAMES: ToneName[] = ['accent1', 'accent2', 'accent3', 'neutral1', 'neutral2'];
+/** Android's numbers for the 13 tones of each palette, lightest first. */
+export const TONE_STEPS = [0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000] as const;
+type ToneStep = (typeof TONE_STEPS)[number];
+
+/** The phone's colours as they came, checked: null unless every palette has its 13 tones. */
+export function checkedTones(value: unknown): SystemTones | null {
+  if (!value || typeof value !== 'object') return null;
+  const v = value as Record<string, unknown>;
+  const tones = {} as SystemTones;
+  for (const name of TONE_NAMES) {
+    const list = v[name];
+    if (!Array.isArray(list) || list.length !== TONE_STEPS.length) return null;
+    if (!list.every((c) => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c))) return null;
+    tones[name] = list.map((c: string) => c.toUpperCase());
+  }
+  return tones;
+}
+
+// The phone's colours while a ThemeProvider shows (theme/context.tsx sets them before it renders,
+// as it sets the shape tokens below), or null where the phone gives none.
+let systemTones: SystemTones | null = null;
+
+export function setSystemTones(tones: SystemTones | null): void {
+  systemTones = tones;
+}
+
+/**
+ * Material You's colours, taken from the five palettes as Android's own apps take them (Material
+ * 3's roles): the neutrals for the ground, the cards and the text, the first accent for what is lit,
+ * the third for notes that something worked. Two tones 50 steps apart or more read on each other.
+ */
+export function materialColors(tones: SystemTones, scheme: 'light' | 'dark'): BaseColors {
+  const of = (name: ToneName) => (step: ToneStep) => tones[name][TONE_STEPS.indexOf(step)];
+  const [accent, third, neutral, variant] = [of('accent1'), of('accent3'), of('neutral1'), of('neutral2')];
+  if (scheme === 'light') {
+    const background = neutral(50);
+    return {
+      background,
+      surface: neutral(10),
+      surfaceAlt: variant(100),
+      surfacePressed: mixHex(variant(100), variant(200), 0.4),
+      border: variant(200),
+      text: neutral(900),
+      textMuted: readableOn(variant(700), background),
+      textFaint: readableOn(variant(500), background, MIN_CONTRAST),
+      primary: accent(600),
+      primaryPressed: accent(700),
+      onPrimary: accent(0),
+      primarySoft: accent(100),
+      hero: accent(600),
+      heroText: accent(0),
+      heroMuted: accent(100),
+      success: third(600),
+      warning: readableOn('#A86F12', background),
+      danger: readableOn('#B3261E', background),
+      overlay: 'rgba(0, 0, 0, 0.4)',
+    };
+  }
+  const background = neutral(900);
+  return {
+    background,
+    surface: mixHex(neutral(900), neutral(800), 0.5),
+    surfaceAlt: neutral(800),
+    surfacePressed: neutral(700),
+    border: variant(700),
+    text: neutral(100),
+    textMuted: readableOn(variant(200), background),
+    textFaint: readableOn(variant(400), background, MIN_CONTRAST),
+    primary: accent(200),
+    primaryPressed: accent(100),
+    onPrimary: accent(800),
+    primarySoft: accent(700),
+    hero: accent(200),
+    heroText: accent(800),
+    heroMuted: accent(700),
+    success: third(200),
+    warning: readableOn('#E7B95A', background),
+    danger: readableOn('#F2B8B5', background),
+    overlay: 'rgba(0, 0, 0, 0.6)',
+  };
 }
 
 /** Colour palette choice: the style's own colours, one of the LPHL palettes, or the user's own colour. */
@@ -468,6 +567,7 @@ export function buildColors(
   opts: ColorOptions = DEFAULT_COLOR_OPTIONS,
 ): Colors {
   if (style === 'custom') return done(customColors(opts.customGround ?? DEFAULT_CUSTOM_GROUND, opts.customAccent));
+  if (style === 'material') return done(systemTones ? materialColors(systemTones, scheme) : { ...palettes.classic[scheme] });
   if (isFixed(style)) return done({ ...palettes[style].dark });
   const c = paletteColors(style, scheme, palette, opts.customAccent);
   // "As in the palette" keeps the fills and text exactly as the palette defines them.
@@ -501,6 +601,7 @@ export function buildColors(
  */
 export function rawAccent(style: StyleName, scheme: 'light' | 'dark', palette: PaletteChoice, customAccent: string): string {
   if (style === 'custom') return /^#[0-9a-fA-F]{6}$/.test(customAccent) ? customAccent.toUpperCase() : DEFAULT_COLOR_OPTIONS.customAccent;
+  if (style === 'material') return buildColors(style, scheme, palette).primary;
   if (isFixed(style)) return palettes[style].dark.primary;
   if (palette === 'auto') return palettes[style][scheme].primary;
   if (palette === 'custom') return /^#[0-9a-fA-F]{6}$/.test(customAccent) ? customAccent.toUpperCase() : DEFAULT_COLOR_OPTIONS.customAccent;
@@ -513,6 +614,7 @@ export function rawAccent(style: StyleName, scheme: 'light' | 'dark', palette: P
  */
 export function deepAccent(style: StyleName, palette: PaletteChoice, customAccent: string): string {
   if (style === 'custom') return rawAccent(style, 'light', palette, customAccent);
+  if (style === 'material') return buildColors(style, 'light', palette).primaryPressed;
   if (isFixed(style)) return palettes[style].dark.primary;
   if (palette === 'auto') return palettes[style].light.primaryPressed;
   const p = palette === 'custom' ? customPalette(rawAccent(style, 'light', 'custom', customAccent), 'light') : LPHL_PALETTES[palette].light;
@@ -637,6 +739,12 @@ const SHAPES: Record<StyleName, Shape> = {
   // Soft and round, cards without outlines, in Inter.
   aurora: {
     radius: { sm: 12, md: 16, lg: 24, xl: 32, pill: 999, button: 999, chip: 999 },
+    shape: { cardBorder: 0, buttonAlign: 'center', fonts: null, lines: false, type: 'plain', glass: false, ink: null, glow: false, family: null },
+  },
+  // Material 3's shapes, as in Android's own apps: round buttons, softly rounded cards with no
+  // outline, chips a little round, in the phone's own font.
+  material: {
+    radius: { sm: 8, md: 12, lg: 16, xl: 28, pill: 999, button: 999, chip: 8 },
     shape: { cardBorder: 0, buttonAlign: 'center', fonts: null, lines: false, type: 'plain', glass: false, ink: null, glow: false, family: null },
   },
   // As Classic: the colours are the owner's.
