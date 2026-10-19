@@ -13,6 +13,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.BlockedNumberContract
 import android.provider.ContactsContract
 import android.provider.Telephony
 import android.telephony.SmsManager
@@ -83,39 +84,52 @@ internal object SmsStore {
     }
   }
 
-  /** Names the phone's contacts give these numbers. Empty without READ_CONTACTS. Nothing is kept.
-   *  The contacts' numbers are read once, not looked up one by one: a hundred numbers took long. */
-  fun contactNames(context: Context, numbers: List<String>): Map<String, String> {
+  /** Names the phone's contacts give these numbers. Empty without READ_CONTACTS. Nothing is kept. */
+  fun contactNames(context: Context, numbers: List<String>): Map<String, String> = contacts(context, numbers).mapValues { it.value.first }
+
+  /** The name and picture (an address the app may show, or "") the phone's contacts give these
+   *  numbers. Empty without READ_CONTACTS. Nothing is kept. */
+  fun contactCards(context: Context, numbers: List<String>): Map<String, Map<String, Any?>> =
+    contacts(context, numbers).mapValues { (_, card) -> mapOf("name" to card.first, "photo" to (card.second ?: "")) }
+
+  /** The contacts' numbers are read once, not looked up one by one: a hundred numbers took long. */
+  private fun contacts(context: Context, numbers: List<String>): Map<String, Pair<String, String?>> {
     if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return emptyMap()
     // By the last ten digits, and, for numbers written with another prefix, by the last seven.
-    val byTen = HashMap<String, String>()
-    val bySeven = HashMap<String, MutableList<Pair<String, String>>>()
+    val byTen = HashMap<String, Pair<String, String?>>()
+    val bySeven = HashMap<String, MutableList<Pair<String, Pair<String, String?>>>>()
     try {
-      val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+      val projection = arrayOf(
+        ContactsContract.CommonDataKinds.Phone.NUMBER,
+        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+        ContactsContract.CommonDataKinds.Phone.PHOTO_THUMBNAIL_URI,
+      )
       context.contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, projection, null, null, null)?.use { c ->
         while (c.moveToNext()) {
           val digits = c.getString(0)?.filter { it.isDigit() }?.ifEmpty { null } ?: continue
           val name = c.getString(1)?.takeIf { it.isNotBlank() } ?: continue
-          byTen.putIfAbsent(digits.takeLast(10), name)
-          if (digits.length >= 7) bySeven.getOrPut(digits.takeLast(7)) { ArrayList() }.add(digits to name)
+          val card = name to c.getString(2)?.takeIf { it.isNotBlank() }
+          byTen.putIfAbsent(digits.takeLast(10), card)
+          if (digits.length >= 7) bySeven.getOrPut(digits.takeLast(7)) { ArrayList() }.add(digits to card)
         }
       }
     } catch (_: Exception) {
       return emptyMap()
     }
-    val names = HashMap<String, String>()
+    val cards = HashMap<String, Pair<String, String?>>()
     for (number in numbers.distinct().take(500)) {
       val digits = number.filter { it.isDigit() }
       if (digits.isEmpty()) continue
       // The same last ten digits; else one number ends the other, as Android's own lookup matches.
-      val name = byTen[digits.takeLast(10)]
+      val card = byTen[digits.takeLast(10)]
         ?: if (digits.length >= 7) bySeven[digits.takeLast(7)]?.firstOrNull { (other, _) -> digits.endsWith(other) || other.endsWith(digits) }?.second else null
-      if (name != null) names[number] = name
+      if (card != null) cards[number] = card
     }
-    return names
+    return cards
   }
 
-  /** The latest message of each conversation, newest first, with how many are not read. */
+  /** The latest message of each conversation, newest first, with how many are not read, and
+   *  whether any in it is ours (`replied`). */
   fun threads(context: Context, limit: Int): List<Map<String, Any?>> {
     val seen = LinkedHashMap<Long, MutableMap<String, Any?>>()
     val projection = arrayOf(Telephony.Sms.THREAD_ID, Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.TYPE, Telephony.Sms.READ)
@@ -123,7 +137,8 @@ internal object SmsStore {
       var rows = 0
       while (c.moveToNext() && rows++ < 5000) {
         val thread = c.getLong(0)
-        val unread = c.getInt(4) == Telephony.Sms.MESSAGE_TYPE_INBOX && c.getInt(5) == 0
+        val mine = c.getInt(4) != Telephony.Sms.MESSAGE_TYPE_INBOX
+        val unread = !mine && c.getInt(5) == 0
         val row = seen[thread]
         if (row == null) {
           if (seen.size >= limit) continue
@@ -132,11 +147,13 @@ internal object SmsStore {
             "address" to (c.getString(1) ?: ""),
             "text" to (c.getString(2) ?: ""),
             "at" to c.getLong(3).toDouble(),
-            "mine" to (c.getInt(4) != Telephony.Sms.MESSAGE_TYPE_INBOX),
+            "mine" to mine,
             "unread" to (if (unread) 1 else 0),
+            "replied" to mine,
           )
-        } else if (unread) {
-          row["unread"] = (row["unread"] as Int) + 1
+        } else {
+          if (unread) row["unread"] = (row["unread"] as Int) + 1
+          if (mine) row["replied"] = true
         }
       }
     }
@@ -156,6 +173,8 @@ internal object SmsStore {
   private fun mmsInto(context: Context, seen: LinkedHashMap<Long, MutableMap<String, Any?>>, latest: LongArray, limit: Int) {
     val (thread, id, at, mine, unread) = latest.toList()
     val row = seen[thread]
+    // Whether any message in it is ours: one of its SMS, or of its MMS.
+    val replied = (row?.get("replied") as Boolean? ?: false) || latest.getOrElse(5) { mine } == 1L
     if (row == null || (row["at"] as Double) < at.toDouble()) {
       if (row == null && seen.size >= limit) return
       val (text, pictures) = MmsStore.parts(context, id)
@@ -171,9 +190,11 @@ internal object SmsStore {
         "at" to at.toDouble(),
         "mine" to (mine == 1L),
         "unread" to ((row?.get("unread") as Int?) ?: 0) + unread.toInt(),
+        "replied" to replied,
       )
     } else {
       row["unread"] = (row["unread"] as Int) + unread.toInt()
+      row["replied"] = replied
     }
   }
 
@@ -388,6 +409,92 @@ internal object SmsStore {
     } catch (_: SecurityException) {
       // Notifications are not allowed: the message waits in the list.
     }
+  }
+
+  // --- Deleting, sending again ---------------------------------------------------------------
+
+  /** Deletes from the phone a conversation's SMS and MMS up to `upTo` (milliseconds), as only the
+   *  default SMS app may. Android drops the conversation once nothing is left in it. Returns how
+   *  many went. */
+  fun deleteThread(context: Context, address: String, upTo: Long): Int {
+    check(isDefault(context)) { "Only the SMS app may delete SMS" }
+    val thread = threadId(context, address) ?: return 0
+    val gone = context.contentResolver.delete(Telephony.Sms.CONTENT_URI, "${Telephony.Sms.THREAD_ID}=? AND ${Telephony.Sms.DATE}<=?", arrayOf(thread.toString(), upTo.toString()))
+    return gone + MmsStore.deleteThread(context, thread, upTo)
+  }
+
+  /** Deletes messages from the phone, each named by its kind and row: "sms:12", "mms:3". */
+  fun deleteMessages(context: Context, ids: List<String>): Int {
+    check(isDefault(context)) { "Only the SMS app may delete SMS" }
+    var gone = 0
+    for (name in ids) {
+      val id = name.substringAfter(':').toLongOrNull() ?: continue
+      val uri = when (name.substringBefore(':')) {
+        "sms" -> Telephony.Sms.CONTENT_URI
+        "mms" -> Uri.parse("content://mms")
+        else -> continue
+      }
+      gone += context.contentResolver.delete(Uri.withAppendedPath(uri, id.toString()), null, null)
+    }
+    return gone
+  }
+
+  /** Sends again one of ours that did not go: the same text to the same number, on `sim` (or the
+   *  SIM it was to go on, for -1), as a new message in place of the old one. Returns the new row. */
+  fun resend(context: Context, id: Long, sim: Int): Long {
+    var address = ""
+    var body = ""
+    var was = -1
+    val row = Uri.withAppendedPath(Telephony.Sms.CONTENT_URI, id.toString())
+    context.contentResolver.query(row, arrayOf(Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.SUBSCRIPTION_ID), null, null, null)?.use { c ->
+      if (c.moveToFirst()) {
+        address = c.getString(0) ?: ""
+        body = c.getString(1) ?: ""
+        was = if (c.isNull(2)) -1 else c.getInt(2)
+      }
+    }
+    require(address.isNotEmpty() && body.isNotEmpty()) { "That SMS is no longer on the phone" }
+    val sent = send(context, address, body, if (sim >= 0) sim else was)
+    if (isDefault(context)) context.contentResolver.delete(row, null, null)
+    return sent
+  }
+
+  // --- Blocked numbers -------------------------------------------------------------------------
+
+  /** Whether Erevos may read and change Android's own list of blocked numbers: as the default SMS
+   *  app, for the phone's owner. Android then rejects their SMS, MMS and calls itself. */
+  fun canBlock(context: Context): Boolean =
+    Build.VERSION.SDK_INT >= 24 && isDefault(context) && try {
+      BlockedNumberContract.canCurrentUserBlockNumbers(context)
+    } catch (_: Exception) {
+      false
+    }
+
+  /** The numbers in Android's list, as they were written there. */
+  fun blocked(context: Context): List<String> {
+    if (!canBlock(context)) return emptyList()
+    val numbers = ArrayList<String>()
+    try {
+      val projection = arrayOf(BlockedNumberContract.BlockedNumbers.COLUMN_ORIGINAL_NUMBER)
+      context.contentResolver.query(BlockedNumberContract.BlockedNumbers.CONTENT_URI, projection, null, null, null)?.use { c ->
+        while (c.moveToNext()) c.getString(0)?.takeIf { it.isNotBlank() }?.let { numbers.add(it) }
+      }
+    } catch (_: Exception) {
+      return emptyList()
+    }
+    return numbers
+  }
+
+  fun block(context: Context, number: String): Boolean {
+    check(canBlock(context)) { "Only the SMS app may block numbers" }
+    if (BlockedNumberContract.isBlocked(context, number)) return true
+    val values = ContentValues().apply { put(BlockedNumberContract.BlockedNumbers.COLUMN_ORIGINAL_NUMBER, number) }
+    return context.contentResolver.insert(BlockedNumberContract.BlockedNumbers.CONTENT_URI, values) != null
+  }
+
+  fun unblock(context: Context, number: String): Boolean {
+    check(canBlock(context)) { "Only the SMS app may block numbers" }
+    return BlockedNumberContract.unblock(context, number) > 0
   }
 
   fun sendData(context: Context, address: String, data: ByteArray) {

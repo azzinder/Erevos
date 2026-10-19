@@ -539,7 +539,45 @@ chats in one list.
   SMS has once sent, as sent SMS stay in the phone's SMS. Text only, to one number.
 - **Links:** a web address in an SMS is underlined, and opens as in a chat, once you have seen it whole.
 - **Names from your contacts:** off at first. Under **SMS** in the menu, **Show names from my contacts** shows the
-  names your phone's contacts give SMS numbers. Erevos only reads them to show them, and keeps no copy.
+  names your phone's contacts give SMS numbers, and the pictures they have for them, in the list and in the
+  conversation. Erevos only reads them to show them, and keeps no copy.
+- **Senders with a name:** an SMS from a name instead of a number, like a bank's, opens to read, but cannot be
+  answered.
+
+### Keeping the SMS in order
+
+- **Swipe:** in the list, swipe an SMS conversation to the right to archive it, or to the left to delete it.
+  **Undo** shows for a few seconds after. Hold a conversation down for the rest: **Pin to the top**, **Archive**,
+  **Mark as spam**, **Block** and **Delete**. In a conversation, **⋮** at the top shows the same.
+- **Pinned:** up to 10 SMS conversations stay at the top of the list, with a pin. **Unpin** lets one go back to its
+  place.
+- **Archived conversations:** out of the list, under **Archived** at the top of the home screen. One comes back to
+  the list by itself when a new SMS comes from them, or with **Unarchive**.
+- **Trash:** a deleted conversation waits in the **Trash** 30 days, then Erevos deletes it from the phone's SMS. Until
+  then **Bring back** puts it back in the list; **Delete now** and **Empty the Trash** delete at once, for good. An
+  SMS that comes after it went to the Trash shows in the list again. Only the SMS app may delete SMS.
+- **Spam:** a filter that works on the phone alone, by rules, and sends nothing anywhere. An SMS from a number that
+  is no contact and that you never answered goes to **Spam** when it has a link with words that try to fool, like a
+  parcel held or a prize, or one of the words you add under **SMS** in the menu → **Spam filter**. **Mark as spam**
+  and **Not spam** decide for a number for good. A notice still says "New message" when spam comes, as it shows
+  before Erevos is opened.
+- **Block:** **Block** in the menu of a conversation, or **Blocked numbers** under **SMS** in the menu, puts a number
+  in Android's own list of blocked numbers: Android rejects its SMS, MMS and calls, and every space and the phone app
+  see the same list. Only the SMS app may see and change it.
+- **Drafts:** what you type and do not send stays with that conversation, and the list shows it as **Draft**. An SMS
+  that could not go stays there as the draft too.
+- **Taking an SMS back:** an SMS you send waits 5 seconds at the end of the conversation first: tap it then to take
+  it back into the message field. Under **SMS** in the menu, **Taking an SMS back** sets **Off**, 5 or 10 seconds.
+  When you leave Erevos, it goes at once.
+- **Send again:** one of yours that did not go, or was not delivered, says so: tap it to send it again. Hold any
+  message down for **Forward**, **Send again** and **Delete**, with its words to select and copy; a deleted message
+  has **Undo** too.
+- **Forward:** hold a message down → **Forward**, then type a number and tap **Write**, or choose a contact under
+  **Into an Erevos chat**. It opens in that conversation, to read and send there. To a number its picture goes too,
+  as an MMS; into a chat only its words.
+- **Each space its own:** pins, archived conversations, the Trash, spam marks and drafts belong to the space, sealed
+  with its password. The SMS themselves stay in the phone's SMS: another space sees them as they are, and one in the
+  Trash here shows there until it is deleted from the phone.
 
 ## Phone {#phone}
 
@@ -716,6 +754,12 @@ home screen's menu.
 - **Discretion:** every space shows the same Backups screen, and a backup holds every space, so neither tells how
   many spaces there are or whether hidden chats are set. The file's name says it is an Erevos backup, and its size
   shows roughly how much is kept.
+- **The phone's SMS:** on Android, **Put the SMS in backups** adds the phone's SMS and MMS to each backup from then
+  on, with up to 32 MB of their pictures, while Erevos is the SMS app. They are sealed with the backup's password like
+  the rest. Restoring the backup puts back into the phone's SMS each message it does not have yet, and deletes none;
+  Erevos has to be the SMS app then too, or the rest is restored without them. The SMS are the phone's, the same in
+  every space; each space's SMS settings, pins, Trash and drafts are not in backups yet. An older Erevos does not
+  open a backup that holds SMS.
 - **Not in a backup:** photos and files, not yet: a backup is made in the phone's memory, and they would not fit. A
   backup restored on the same phone shows them again; on another phone they show as not on it. Also left out: the
   count of wrong passwords, and how automatic backups are set.

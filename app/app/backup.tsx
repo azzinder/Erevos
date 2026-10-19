@@ -3,8 +3,8 @@ import { Platform } from 'react-native';
 
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
-import { confirm } from '../lib/alert';
-import { locale, mark, t } from '../lib/i18n';
+import { ask, choose as chooseOne, confirm } from '../lib/alert';
+import { locale, mark, plural, t } from '../lib/i18n';
 import {
   CAN_AUTO_BACKUP,
   CAN_BACK_UP,
@@ -19,17 +19,20 @@ import {
   writeBackup,
   type AutoBackup,
 } from '../lib/backup-folder';
+import { backsUpSms, canBackUpSms, phoneSmsForBackup, setBacksUpSms, smsCounts, SMS_PICTURES_MB } from '../lib/backup-sms';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { SHELL } from '../lib/shell';
 import { holdReceiver } from '../lib/receiver';
-import { backupKey, makeBackup, openBackup, restoreBackup, WrongBackupPasswordError, type Backup } from '../lock/backup';
+import { backupKey, backupPhoneSms, makeBackup, openBackup, restoreBackup, WrongBackupPasswordError, type Backup } from '../lock/backup';
 import { useLock } from '../lock/context';
+import { importPhoneSms, smsStatus } from '../modules/erevos-sms';
 import { useTheme } from '../theme/context';
 
 // Backups of everything Erevos keeps on the phone or computer (lock/backup.ts): made by hand into a folder the
 // owner picks, made by themselves every day or week (lib/backup-folder.ts), and put back. Every
 // space shows the same screen and the same settings, and a backup holds every space, so nothing
-// here says how many there are.
+// here says how many there are. On Android a backup can hold the phone's SMS and MMS too
+// (lib/backup-sms.ts), put back into the phone's SMS when it is restored.
 
 // What the password sheet is for: a backup made now, automatic backups' password, or a backup to open.
 type Asking = { kind: 'make'; folder: string } | { kind: 'auto'; every: number; folder: string } | { kind: 'open'; bytes: Uint8Array; name: string } | null;
@@ -73,9 +76,12 @@ export default function Backups() {
   const [busy, setBusy] = useState(false);
   // A folder or file picker is open: a second tap opens no second one.
   const picking = useRef(false);
+  // Whether backups hold the phone's SMS and MMS.
+  const [smsToo, setSmsToo] = useState(false);
 
   useEffect(() => {
     loadAutoBackup().then(setAuto);
+    void backsUpSms().then(setSmsToo);
   }, []);
 
   if (!CAN_BACK_UP) {
@@ -164,14 +170,29 @@ export default function Backups() {
     }
   }
 
+  async function toggleSms() {
+    await setBacksUpSms(!smsToo);
+    setSmsToo(!smsToo);
+  }
+
+  // What a backup holds of the phone's SMS, said after it is made.
+  function smsText(sms: Uint8Array | null): string {
+    const counts = sms ? smsCounts(sms) : null;
+    if (!counts) return '';
+    const held = ` ${t("It holds {sms} SMS and {mms} MMS of the phone's.", { sms: counts.sms, mms: counts.mms })}`;
+    return counts.left > 0 ? `${held} ${plural(counts.left, '{n} picture did not fit and stayed out.', '{n} pictures did not fit and stayed out.')}` : held;
+  }
+
   async function submit(password: string): Promise<boolean | void> {
     if (!asking) return;
     if (asking.kind === 'make') {
-      const backup = await makeBackup(await backupKey(password));
+      const key = await backupKey(password);
       setAsking(null);
       try {
+        const sms = await phoneSmsForBackup();
+        const backup = await makeBackup(key, sms);
         const { name, size, where } = await writeBackup(asking.folder, backup);
-        say(t('Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.', { name, size: sizeText(size), folder: where ?? folderLabel(asking.folder) }));
+        say(t('Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.', { name, size: sizeText(size), folder: where ?? folderLabel(asking.folder) }) + smsText(sms));
       } catch (error) {
         say(errorText(error), true);
       }
@@ -188,16 +209,38 @@ export default function Backups() {
         throw error;
       }
       setAsking(null);
+      // The phone's SMS in it go back into the phone's SMS only while Erevos is the SMS app.
+      const sms = backupPhoneSms(backup);
+      const putSms = !!sms && canBackUpSms() && !!smsStatus()?.isDefault;
+      if (sms && !putSms) {
+        const without = await chooseOne(
+          t('SMS in this backup'),
+          t("This backup also holds the phone's SMS. They go back into the phone's SMS only while Erevos is the SMS app: make it the SMS app under SMS in the menu, then restore again. Or restore the rest now, without them."),
+          t('Cancel'),
+          t('Without the SMS'),
+        );
+        if (!without) return;
+      }
       if (await confirm(t('Replace everything'), t('Every space on {device}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.', { device: t(THIS_DEVICE) }))) {
         // Nothing may keep what was here over what the backup brings: the receiver stops first,
         // and starts again with the space as restored.
         const release = await holdReceiver();
+        let told = '';
         try {
           await restoreBackup(backup);
+          if (sms && putSms) {
+            setBusy(true);
+            say(t('Putting the SMS back into the phone…'));
+            told = await importPhoneSms(sms).then(
+              (put) => t("{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.", { sms: put.sms, mms: put.mms }),
+              (error) => t("The SMS could not go back into the phone's SMS: {error}", { error: errorText(error) }),
+            );
+          }
           lockNow();
         } finally {
           release();
         }
+        if (told) ask(t('SMS'), told, [{ text: t('OK') }]);
       }
     }
   }
@@ -223,6 +266,25 @@ export default function Backups() {
           <Button title={t('Make a backup')} compact onPress={make} disabled={busy} />
         </Row>
       </Card>
+
+      {canBackUpSms() ? (
+        <>
+          <SectionTitle title={t("The phone's SMS")} />
+          <Card>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t("Backups can hold the phone's SMS and MMS too, with up to {mb} MB of their pictures, sealed with the backup's password. Restoring the backup puts back into the phone's SMS each one it does not have, and deletes none.", { mb: SMS_PICTURES_MB })}
+            </Text>
+            {smsToo && !smsStatus()?.isDefault ? (
+              <Text variant="caption" color={colors.danger} style={hint}>
+                {t('Erevos reads them only while it is the SMS app: make it the SMS app under SMS in the menu.')}
+              </Text>
+            ) : null}
+            <Row wrap>
+              <Button title={smsToo ? t('Leave the SMS out') : t('Put the SMS in backups')} kind="secondary" compact onPress={toggleSms} disabled={busy} />
+            </Row>
+          </Card>
+        </>
+      ) : null}
 
       {CAN_AUTO_BACKUP ? null : (
         <Text variant="caption" tone="muted" style={hint}>

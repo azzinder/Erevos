@@ -24,6 +24,11 @@ import { PREFIX as VOICE } from './voice-clips';
 //
 // What it leaves out stays with the phone: how many wrong passwords were typed, and how automatic
 // backups are made (lib/backup-folder.ts).
+//
+// When the owner wants it, a backup also holds the phone's SMS and MMS (lib/backup-sms.ts), as
+// one entry of its own kind, PHONE_SMS: they are the phone's, not a space's, the same in every
+// space. Restoring the backup does not write them anywhere; the backup screen puts them back into
+// the phone's SMS. An Erevos from before this kind does not open such a backup.
 
 const MAGIC = utf8Encode('EREVOS BACKUP 1\n');
 const SALT = 16;
@@ -48,6 +53,8 @@ const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS];
 const KIND_KEY = 0;
 const KIND_TEXT = 1;
 const KIND_BYTES = 2;
+const KIND_PHONE_SMS = 3;
+const PHONE_SMS = 'phone-sms';
 
 type Entry = { kind: number; name: string; data: Uint8Array };
 
@@ -112,6 +119,7 @@ function pack(entries: Entry[]): Uint8Array {
 function allowed(kind: number, name: string): boolean {
   if (kind === KIND_KEY) return KEYS.includes(name);
   if (kind === KIND_TEXT) return TEXT_FILES.includes(name);
+  if (kind === KIND_PHONE_SMS) return name === PHONE_SMS;
   return kind === KIND_BYTES && (name.startsWith(VOICE) || name.startsWith(AVATAR) || name.startsWith(PAGE)) && /^[a-z0-9-]+$/.test(name);
 }
 
@@ -136,9 +144,12 @@ function unpack(bytes: Uint8Array): Entry[] {
   return entries;
 }
 
-/** A backup of everything on the phone, sealed with `key`: the bytes of the file. */
-export async function makeBackup({ key, salt, iter }: BackupKey): Promise<Uint8Array> {
-  const sealed = encryptBytes(key, pack(await collect()));
+/** A backup of everything on the phone, sealed with `key`: the bytes of the file. With
+ *  `phoneSms`, the phone's SMS and MMS too (lib/backup-sms.ts). */
+export async function makeBackup({ key, salt, iter }: BackupKey, phoneSms: Uint8Array | null = null): Promise<Uint8Array> {
+  const entries = await collect();
+  if (phoneSms) entries.push({ kind: KIND_PHONE_SMS, name: PHONE_SMS, data: phoneSms });
+  const sealed = encryptBytes(key, pack(entries));
   const out = new Uint8Array(MAGIC.length + SALT + 4 + sealed.length);
   out.set(MAGIC);
   out.set(salt, MAGIC.length);
@@ -181,6 +192,11 @@ export async function restoreBackup({ entries }: Backup): Promise<void> {
   }
   for (const entry of entries) if (entry.kind === KIND_KEY) await secureSet(entry.name, utf8Decode(entry.data));
   for (const name of KEYS) if (!keep.has(name)) await secureDelete(name);
+}
+
+/** The phone's SMS and MMS a backup holds, or null when it holds none. */
+export function backupPhoneSms({ entries }: Backup): Uint8Array | null {
+  return entries.find((entry) => entry.kind === KIND_PHONE_SMS)?.data ?? null;
 }
 
 /** The name a backup made at `now` gets: the date and time, on this phone's clock. */

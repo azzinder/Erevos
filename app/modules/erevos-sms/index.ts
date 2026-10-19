@@ -10,8 +10,13 @@ export type SmsStatus = { sdk: number; phone: boolean; isDefault: boolean; slots
 /** A SIM in the phone: `id` is what sending takes, `slot` counts from 0. */
 export type Sim = { id: number; slot: number; name: string };
 
-/** The latest message of a conversation. `at` is milliseconds. */
-export type SmsThread = { thread: number; address: string; text: string; at: number; mine: boolean; unread: number };
+/** The latest message of a conversation. `at` is milliseconds. `replied`: any message in it is
+ *  ours (missing in an app built before it). */
+export type SmsThread = { thread: number; address: string; text: string; at: number; mine: boolean; unread: number; replied?: boolean };
+
+/** What the phone's contacts have for a number: its name, and its picture as an address the app
+ *  may show (empty when none). */
+export type ContactCard = { name: string; photo: string };
 
 /** A picture of an MMS, as an address the app may show. */
 export type SmsPicture = { uri: string; type: string };
@@ -72,6 +77,17 @@ type NativeSms = {
   scheduleLater?(id: string, to: string, text: string, sim: number, at: number): Promise<void>;
   cancelLater?(id: string): Promise<boolean>;
   laterState?(ids: string[]): Promise<Record<string, LaterSmsState>>;
+  deleteThread?(address: string, upTo: number): Promise<number>;
+  deleteMessages?(ids: string[]): Promise<number>;
+  resend?(kind: string, id: number, sim: number): Promise<number>;
+  pictureBytes?(uri: string): Promise<Uint8Array>;
+  contactCards?(numbers: string[]): Promise<Record<string, ContactCard>>;
+  canBlock?(): Promise<boolean>;
+  blocked?(): Promise<string[]>;
+  block?(number: string): Promise<boolean>;
+  unblock?(number: string): Promise<boolean>;
+  exportSms?(): Promise<Uint8Array>;
+  importSms?(data: Uint8Array): Promise<{ sms: number; mms: number }>;
   addListener<Name extends keyof SmsEvents>(name: Name, listener: SmsEvents[Name]): EventSubscription;
 };
 
@@ -145,6 +161,72 @@ export function laterSmsHolder(): LaterSmsHolder | null {
     cancel: (id) => sms.cancelLater!(id),
     state: (ids) => (ids.length > 0 ? sms.laterState!(ids) : Promise.resolve({})),
   };
+}
+
+/** The names and pictures the phone's contacts give these numbers, once Erevos may read them;
+ *  else none. A build before pictures gives the names alone. */
+export async function contactCards(numbers: string[]): Promise<Record<string, ContactCard>> {
+  if (numbers.length === 0) return {};
+  if (native?.contactCards) return native.contactCards(numbers);
+  const names = await contactNames(numbers);
+  return Object.fromEntries(Object.entries(names).map(([number, name]) => [number, { name, photo: '' }]));
+}
+
+/** Whether this build can delete SMS, send again, block numbers and back up the phone's SMS. */
+export function smsToolsReady(): boolean {
+  return typeof native?.deleteThread === 'function';
+}
+
+const notInBuild = () => Promise.reject(new Error('This build of Erevos cannot do this yet.'));
+
+/** Deletes from the phone a conversation's SMS and MMS up to `upTo` (milliseconds), as the SMS app. */
+export function deleteSmsThread(address: string, upTo: number): Promise<number> {
+  return native?.deleteThread ? native.deleteThread(address, upTo) : notInBuild();
+}
+
+/** Deletes messages from the phone, each by its kind and row: "sms:12", "mms:3". */
+export function deleteSmsMessages(ids: string[]): Promise<number> {
+  return native?.deleteMessages ? native.deleteMessages(ids) : notInBuild();
+}
+
+/** Sends one of ours that did not go again, in its place, on `sim` (-1: the SIM it was for). */
+export function resendSms(message: Pick<SmsMessage, 'kind' | 'id'>, sim = -1): Promise<number> {
+  return native?.resend ? native.resend(message.kind ?? 'sms', message.id, sim) : notInBuild();
+}
+
+/** The bytes of an MMS's picture, by its address (SmsPicture.uri). */
+export function smsPictureBytes(uri: string): Promise<Uint8Array> {
+  return native?.pictureBytes ? native.pictureBytes(uri) : notInBuild();
+}
+
+/** Whether Erevos may block numbers in Android's own list: as the SMS app, in a build with it. */
+export function canBlockNumbers(): Promise<boolean> {
+  return native?.canBlock ? native.canBlock().catch(() => false) : Promise.resolve(false);
+}
+
+/** The numbers in Android's list of blocked numbers, as the SMS app may read them; else none. */
+export function blockedNumbers(): Promise<string[]> {
+  return native?.blocked ? native.blocked().catch(() => []) : Promise.resolve([]);
+}
+
+/** Puts a number in Android's list: Android then rejects its SMS, MMS and calls. */
+export function blockNumber(number: string): Promise<boolean> {
+  return native?.block ? native.block(number) : notInBuild();
+}
+
+export function unblockNumber(number: string): Promise<boolean> {
+  return native?.unblock ? native.unblock(number) : notInBuild();
+}
+
+/** Every SMS and MMS on the phone, for a backup (lib/backup-sms.ts reads them); null in a build
+ *  without it. */
+export function exportPhoneSms(): Promise<Uint8Array | null> {
+  return native?.exportSms ? native.exportSms() : Promise.resolve(null);
+}
+
+/** Puts the SMS and MMS of a backup into the phone's, those it does not have yet, as the SMS app. */
+export function importPhoneSms(data: Uint8Array): Promise<{ sms: number; mms: number }> {
+  return native?.importSms ? native.importSms(data) : notInBuild();
 }
 
 /** The invite pieces that came since the last call. Each is given once. */
