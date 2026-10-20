@@ -78,12 +78,22 @@ let shows = true;
 const waits = new Set<AbortController>();
 let hurry: (() => void) | null = null;
 
+const shownListeners = new Set<(shown: boolean) => void>();
+
 /** Says whether the app shows on the screen (AppState 'active'). Shown again, it looks at once. */
 export function setAppShown(shown: boolean): void {
+  const changed = shows !== shown;
   shows = shown;
+  if (changed) shownListeners.forEach((listener) => listener(shown));
   if (!shown) return;
   endWaits();
   hurry?.();
+}
+
+/** Calls `listener` each time the app shows or stops showing, until the function it gives is called. */
+export function onAppShown(listener: (shown: boolean) => void): () => void {
+  shownListeners.add(listener);
+  return () => shownListeners.delete(listener);
 }
 
 function endWaits() {

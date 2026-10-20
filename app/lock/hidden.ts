@@ -1,5 +1,6 @@
 import { isSlot, ITER, loadLockConfig, SamePasswordError, sealSlot, trySlot, unusedSlot, type Slot } from './config';
-import { newSpaceKey } from './keys';
+import { prepareWatchEntries, unwatchPocket } from './hidden-watch';
+import { currentSpace, newSpaceKey } from './keys';
 import { clearSlot, fillSlots, getSlot, setSlot, SLOTS, type SlotStore } from './slots';
 import { POCKETS } from './sealed-file';
 import { EMPTY_SPACE, prepareHiddenEntries, saveHiddenData } from './space-data';
@@ -20,7 +21,8 @@ import { assertNotLockedOut, LockedOutError, prepareTries, recordRightPassword, 
 // can move into them (lock/move-chat.ts).
 //
 // Hidden chats have their own relay queue. While they are closed nothing reads it, and messages to
-// them wait on the relay, so they never show among the other chats.
+// them wait on the relay, so they never show among the other chats. Those that ask for it say
+// that a message came, from the queue kept with their space (hidden-watch.ts).
 
 /** Hidden chats, open: their key, and which of the space's pockets they are. */
 export type HiddenPlace = { key: Uint8Array; pocket: number };
@@ -35,6 +37,7 @@ const stores: SlotStore<Slot>[] = Array.from({ length: POCKETS }, (_, pocket) =>
 export async function prepareHidden(count = SLOTS): Promise<void> {
   for (const store of stores) await fillSlots(store, count);
   await prepareHiddenEntries(count);
+  await prepareWatchEntries(count);
   await prepareTries();
 }
 
@@ -91,11 +94,28 @@ export async function setHiddenPassword(space: number, pocket: number, password:
   if (other && other.pocket !== pocket) throw new SamePasswordError();
   const hiddenKey = key ?? newSpaceKey();
   await setSlot(stores[pocket], space, await sealSlot(password, hiddenKey, ITER));
-  if (!key) await saveHiddenData(space, pocket, hiddenKey, EMPTY_SPACE);
+  if (!key) {
+    await saveHiddenData(space, pocket, hiddenKey, EMPTY_SPACE);
+    // What was there before tells of no more messages.
+    const open = openSpace(space);
+    if (open) await unwatchPocket(space, open, pocket, null).catch(() => undefined);
+  }
   return hiddenKey;
+}
+
+/** The key of `space` when it is the one open, else null. */
+function openSpace(space: number): Uint8Array | null {
+  try {
+    const open = currentSpace();
+    return open.space === space ? open.key : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Makes the hidden chats in a space's `pocket` stop opening. They stay on the phone, and nothing opens them. */
 export async function removeHiddenPassword(space: number, pocket: number): Promise<void> {
   await clearSlot(stores[pocket], space);
+  const open = openSpace(space);
+  if (open) await unwatchPocket(space, open, pocket, null).catch(() => undefined);
 }

@@ -422,7 +422,7 @@ a missed call.
   says only "New message", or how many came, and on a locked phone only "Erevos". A call rings with the phone's
   ringtone and a notice that says only "Incoming call", over the lock screen too. Tap it to answer. With the password
   lock on, a call that rings shows before the password, and Erevos locks as soon as it ends. Only that space's chats
-  and groups come so, never hidden chats. Set it under **Lock and second password** → **In the background**:
+  and groups come so; hidden chats only say that a message came, if you let them (see Hidden chats). Set it under **Lock and second password** → **In the background**:
   **Receive and ring** (the default) or **Only while Erevos shows**, and **Say a message came** (the default) or **No
   notice**. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
   screen**.
@@ -960,6 +960,14 @@ chats. There is no button for them anywhere. Each place can hold one chat or sev
 - **Relay only:** hidden chats have their own relay queue and their own keys, and never use the nearby link. While
   they are closed, their messages wait on the relay.
 - **They close by themselves** when Erevos goes to the background.
+- **Say when a message comes** (Android): turned on at the top of a place, while it is closed and Erevos is in the
+  background a notice says only "New message", as for the other chats, until you open that place. It needs **Receive
+  and ring** and **Say a message came** under **In the background**, and a relay that waits (from 18 October 2026 on).
+  For it, the space keeps a relay queue for each of its 4 places, those not in use made for nothing on the same
+  relay, so opening the space shows neither whether hidden chats are set nor which, as long as they use the space's
+  relay; the relay is asked only whether
+  something waits, never for the message. Whoever sees the notice and finds nothing new in your chats may guess there
+  are more. Backups do not keep it: turn it on again after restoring.
 - **A new PIN for a place** (from Lock, or **New hidden chats**) starts it empty and replaces what was in it. To keep
   them and change only the PIN, open them and use **Change PIN** there. Each PIN must differ from the others and from
   the password that opens Erevos.
@@ -1323,7 +1331,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
-| **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does. | |
+| **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same "New message": whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does. | |
 | **Widget and Phone (Android)** | The widget, once added, shows how many missed calls, unread SMS and new messages there are, never who or what. The Phone opens without the password only if you let it: then anyone holding the unlocked phone sees the calls and favourites Android keeps, with the names of the phone's contacts only. | |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |

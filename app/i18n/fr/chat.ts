@@ -209,6 +209,13 @@ export const chat: Record<string, string> = {
   'No chats yet. Add a contact under Relay. Your contacts reach you nearby too, over Wi-Fi or Bluetooth, without the internet.': 'Pas encore de discussions. Ajoute un contact dans « Relais ». Tes contacts te joignent aussi à proximité, par Wi-Fi ou Bluetooth, sans internet.',
   'Hide relay': 'Masquer le relais',
   'Relay and new contacts': 'Relais et nouveaux contacts',
+  'Say when a message comes': 'Prévenir quand un message arrive',
+  'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", as for the other chats, until you open them. Whoever sees it and finds nothing new in your chats may guess there are more.':
+    "Tant que ces discussions cachées sont fermées et qu'Erevos est en arrière-plan, une notification dit seulement « New message », comme pour les autres discussions, jusqu'à ce que tu les ouvres. Qui la voit sans rien trouver de nouveau dans tes discussions peut deviner qu'il y en a d'autres.",
+  'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
+    "Fermées, ces discussions cachées ne disent rien : leurs messages attendent sur le relais jusqu'à ce que tu les ouvres.",
+  'Create the relay queue of these hidden chats first, under Relay and new contacts.':
+    "Crée d'abord la file sur le relais de ces discussions cachées, sous « Relais et nouveaux contacts ».",
   'Relay address': 'Adresse du relais',
   'Token (optional)': 'Jeton (facultatif)',
   'Second relay (optional)': 'Second relais (facultatif)',

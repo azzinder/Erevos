@@ -18,7 +18,7 @@ import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, sendFile, takeFile, bytesSource, refSource, type Source } from '../lib/attachments';
-import { isNews, messageCameAt } from '../lib/background';
+import { canRingInBackground, isNews, messageCameAt } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
@@ -57,6 +57,7 @@ import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, 
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
+import { isWatchedQueue, loadWatched, unwatchPocket, watchPocket } from '../lock/hidden-watch';
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
 import { moveChat } from '../lock/move-chat';
 import { SamePasswordError } from '../lock/config';
@@ -413,6 +414,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [lanOn, setLanOn] = useState(true);
   // Whether this phone makes the preview of a link it sends, in the space's chats (SpaceData.previews).
   const [previews, setPreviews] = useState(false);
+  // Whether these hidden chats say a message came while they are closed (lock/hidden-watch.ts).
+  const [watched, setWatched] = useState(false);
+  const [watchNote, setWatchNote] = useState('');
   // Set while a preview is being made, so the words do not go twice.
   const previewing = useRef(false);
   const [directOn, setDirectOn] = useState(true);
@@ -776,6 +780,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setHomeUrl(data.spare.url);
         setHomeToken(data.spare.token);
         setOwnQueue(data.ownQueue);
+        if (hiddenKey) {
+          void loadWatched(space, key)
+            .then((list) => active && setWatched(isWatchedQueue(list, pocket, data.ownQueue?.recipientHex)))
+            .catch(() => undefined);
+        }
       })
       .catch(() => {
         // Nothing usable saved. Start empty.
@@ -2573,8 +2582,35 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       const ids = await createQueue(target);
       setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
       setNote(t('Relay queue created.'));
+      // The new queue is the one to say a message came from.
+      if (hiddenKey && watched) {
+        const { space, key } = currentSpace();
+        await watchPocket(space, key, pocket, { url: target.url, token: target.token ?? '', recipientHex: toHex(ids.recipientId) }).catch(() => setWatched(false));
+      }
     } catch (error) {
       setNote(errorText(error));
+    }
+  }
+
+  // Has these hidden chats say a message came while they are closed, or no longer.
+  async function changeWatched(on: boolean) {
+    const { space, key } = currentSpace();
+    const url = typedRelay.shown.trim();
+    const token = typedToken.shown.trim();
+    setWatchNote('');
+    try {
+      if (on) {
+        if (!url || !ownQueue) {
+          setWatchNote(t('Create the relay queue of these hidden chats first, under Relay and new contacts.'));
+          return;
+        }
+        await watchPocket(space, key, pocket, { url, token, recipientHex: ownQueue.recipientHex });
+      } else {
+        await unwatchPocket(space, key, pocket, url ? { url, token: token || undefined } : null);
+      }
+      setWatched(on);
+    } catch (error) {
+      setWatchNote(errorText(error));
     }
   }
 
@@ -3159,6 +3195,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             </Text>
           )}
           <View style={styles.panel}>
+            {hiddenKey && canRingInBackground ? (
+              <>
+                <DetailRow title={t('Say when a message comes')} right={<Toggle on={watched} />} onPress={() => void changeWatched(!watched)} />
+                <Text variant="caption" tone="muted">
+                  {watched
+                    ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", as for the other chats, until you open them. Whoever sees it and finds nothing new in your chats may guess there are more.')
+                    : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
+                </Text>
+                {watchNote ? <Text variant="caption" tone="muted">{watchNote}</Text> : null}
+              </>
+            ) : null}
             <Row wrap>
               <TextButton title={showRelay ? t('Hide relay') : t('Relay and new contacts')} onPress={() => setShowRelay((on) => !on)} />
             </Row>

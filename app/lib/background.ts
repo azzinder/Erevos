@@ -2,6 +2,7 @@ import { AppRegistry, AppState, PermissionsAndroid, Platform } from 'react-nativ
 
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
 import type { Received } from './e2e';
+import { startHiddenNotices } from './hidden-notices';
 import { showsAt } from './later';
 import { appShown, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
@@ -12,10 +13,11 @@ import { onSpaceGroupMessage } from './space-groups';
 // (lib/receiver.ts) and on the links to phones nearby (lib/nearby-links.ts). A call rings with the
 // phone's ringtone and a notice that says only "Incoming call", over the lock screen, and messages
 // that came show a notice that says only how many, and on a locked phone only "Erevos". Only the
-// open space's chats and groups are looked at, never hidden chats, whose key is in memory only
-// while they are open. On by default; switches on the Lock screen turn it off on this phone, or
-// only the messages notice. Swiped away from the recent apps, or stopped by Android, Erevos
-// looks at nothing and cannot ring.
+// open space's chats and groups are read, never hidden chats, whose key is in memory only while
+// they are open; those that asked for it only say that a message came (lib/hidden-notices.ts).
+// On by default; switches on the Lock screen turn it off on this phone, or only the messages
+// notice. Swiped away from the recent apps, or stopped by Android, Erevos looks at nothing and
+// cannot ring.
 
 const KEY = 'erevos.ring-background';
 const NOTICES_KEY = 'erevos.message-notices';
@@ -125,9 +127,19 @@ export function startBackground(): () => void {
   if (!canRingInBackground) return () => undefined;
   let stopped = false;
   let running = false;
+  // The hidden chats' notices, while the messages notice is on (lib/hidden-notices.ts).
+  let hidden: (() => void) | null = null;
+  const tellHidden = (on: boolean) => {
+    if (on && !hidden) hidden = startHiddenNotices(() => messageCame());
+    if (!on && hidden) {
+      hidden();
+      hidden = null;
+    }
+  };
   const stop = () => {
     running = false;
     telling = false;
+    tellHidden(false);
     callAudio!.stopReceiving!();
     keeping.forEach((done) => done());
     keeping.clear();
@@ -141,12 +153,16 @@ export function startBackground(): () => void {
     }
     telling = notices;
     if (!notices) clearMessages();
-    if (running) return;
+    if (running) {
+      tellHidden(notices);
+      return;
+    }
     await askNotices();
     if (stopped || running) return;
     try {
       callAudio!.startReceiving!();
       running = true;
+      tellHidden(notices);
     } catch {
       // Android refused (Erevos was already in the background): it rings while it shows.
     }
