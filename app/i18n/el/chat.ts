@@ -188,6 +188,14 @@ export const chat: Record<string, string> = {
   'Safety number': 'Αριθμός ασφαλείας',
   'Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.': 'Σύγκρινέ τον με τον δικό τους, από κοντά ή σε κλήση: αν και τα δύο τηλέφωνα δείχνουν τον ίδιο, δεν μπαίνει κανείς ενδιάμεσα.',
   'Move to hidden chats': 'Μεταφορά στις κρυφές συνομιλίες',
+  'Move back to my chats': 'Μεταφορά πίσω στις συνομιλίες μου',
+  "The space's chats have no relay queue yet: create it under Relay there first.":
+    'Οι συνομιλίες του χώρου δεν έχουν ακόμα ουρά στο relay: δημιούργησέ την πρώτα στο Relay εκεί.',
+  'Moved back to your chats.': 'Μεταφέρθηκε πίσω στις συνομιλίες σου.',
+  'Moved back to your chats. Their phone learns where to write when you next write to them from there.':
+    'Μεταφέρθηκε πίσω στις συνομιλίες σου. Το τηλέφωνό τους μαθαίνει πού να γράφει όταν τους γράψεις την επόμενη φορά από εκεί.',
+  'The chat leaves the hidden chats with its messages, name, picture and look, and shows again among the chats of this space, which anyone who opens Erevos with its password sees. The safety number stays the same.':
+    'Η συνομιλία φεύγει από τις κρυφές με τα μηνύματα, το όνομα, την εικόνα και την εμφάνισή της, και ξαναφαίνεται στις συνομιλίες αυτού του χώρου, που τις βλέπει όποιος ανοίγει το Erevos με τον κωδικό του. Ο αριθμός ασφαλείας μένει ίδιος.',
   'The chat leaves this list and goes into the hidden chats, sealed with their PIN. To open them, type the PIN in the search on the home screen and press Enter. Nothing shows that they exist.': 'Η συνομιλία φεύγει από αυτή τη λίστα και πηγαίνει στις κρυφές συνομιλίες, σφραγισμένη με το PIN τους. Για να τις ανοίξεις, γράψε το PIN στην αναζήτηση της αρχικής οθόνης και πάτα Enter. Τίποτα δεν δείχνει ότι υπάρχουν.',
   'PIN of the hidden chats, {n} or more characters': 'PIN των κρυφών συνομιλιών, {n} ή περισσότεροι χαρακτήρες',
   'Pick a place for them, 1 to {n}, and remember it: Erevos cannot tell which are used.': 'Διάλεξε μια θέση γι’ αυτές, από 1 έως {n}, και θυμήσου την: το Erevos δεν μπορεί να ξέρει ποιες χρησιμοποιούνται.',

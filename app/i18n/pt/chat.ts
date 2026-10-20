@@ -188,6 +188,14 @@ export const chat: Record<string, string> = {
   'Safety number': 'Número de segurança',
   'Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.': 'Compare com o do seu contato, pessoalmente ou numa chamada: se os dois celulares mostrarem o mesmo, não há ninguém no meio.',
   'Move to hidden chats': 'Mover para conversas ocultas',
+  'Move back to my chats': 'Voltar para minhas conversas',
+  "The space's chats have no relay queue yet: create it under Relay there first.":
+    'As conversas do espaço ainda não têm fila no relay: crie-a primeiro em Relay, lá.',
+  'Moved back to your chats.': 'Movida de volta para suas conversas.',
+  'Moved back to your chats. Their phone learns where to write when you next write to them from there.':
+    'Movida de volta para suas conversas. O celular da outra pessoa vai saber para onde escrever na próxima vez que você escrever de lá.',
+  'The chat leaves the hidden chats with its messages, name, picture and look, and shows again among the chats of this space, which anyone who opens Erevos with its password sees. The safety number stays the same.':
+    'A conversa sai das conversas ocultas com suas mensagens, nome, imagem e aparência, e volta a aparecer entre as conversas deste espaço, que qualquer pessoa que abra o Erevos com a senha dele vê. O número de segurança continua o mesmo.',
   'The chat leaves this list and goes into the hidden chats, sealed with their PIN. To open them, type the PIN in the search on the home screen and press Enter. Nothing shows that they exist.': 'A conversa sai desta lista e vai para as conversas ocultas, seladas com o PIN delas. Para abri-las, digite o PIN na busca da tela inicial e pressione Enter. Nada mostra que elas existem.',
   'PIN of the hidden chats, {n} or more characters': 'PIN das conversas ocultas, {n} caracteres ou mais',
   'Pick a place for them, 1 to {n}, and remember it: Erevos cannot tell which are used.': 'Escolha uma posição para elas, de 1 a {n}, e lembre-se dela: o Erevos não consegue saber quais estão em uso.',
@@ -211,11 +219,11 @@ export const chat: Record<string, string> = {
   'Relay and new contacts': 'Relay e novos contatos',
   'Say when a message comes': 'Avisar quando chega uma mensagem',
   'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", as for the other chats, until you open them. Whoever sees it and finds nothing new in your chats may guess there are more.':
-    'Enquanto estas conversas ocultas estão fechadas e o Erevos está em segundo plano, um aviso diz apenas «New message», como para as outras conversas, até que as abras. Quem o vir e não encontrar nada de novo nas tuas conversas pode suspeitar que há mais.',
+    'Enquanto estas conversas ocultas estão fechadas e o Erevos está em segundo plano, um aviso diz apenas «New message», como para as outras conversas, até você abri-las. Quem o vir e não encontrar nada de novo nas suas conversas pode suspeitar que há mais.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
-    'Fechadas, estas conversas ocultas não dizem nada: as suas mensagens esperam no relay até que as abras.',
+    'Fechadas, estas conversas ocultas não dizem nada: as suas mensagens esperam no relay até você abri-las.',
   'Create the relay queue of these hidden chats first, under Relay and new contacts.':
-    'Cria primeiro a fila no relay destas conversas ocultas, em «Relay e novos contatos».',
+    'Crie primeiro a fila no relay destas conversas ocultas, em «Relay e novos contatos».',
   'Relay address': 'Endereço do relay',
   'Token (optional)': 'Token (opcional)',
   'Second relay (optional)': 'Segundo relay (opcional)',

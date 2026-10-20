@@ -188,6 +188,14 @@ export const chat: Record<string, string> = {
   'Safety number': 'Número de seguridad',
   'Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.': 'Compáralo con el de tu contacto, en persona o en una llamada: si los dos teléfonos muestran el mismo, no hay nadie en medio.',
   'Move to hidden chats': 'Mover a chats ocultos',
+  'Move back to my chats': 'Volver a mis chats',
+  "The space's chats have no relay queue yet: create it under Relay there first.":
+    'Los chats del espacio aún no tienen cola en el relay: créala primero en Relay allí.',
+  'Moved back to your chats.': 'Movido de vuelta a tus chats.',
+  'Moved back to your chats. Their phone learns where to write when you next write to them from there.':
+    'Movido de vuelta a tus chats. Su teléfono sabrá dónde escribir la próxima vez que le escribas desde ahí.',
+  'The chat leaves the hidden chats with its messages, name, picture and look, and shows again among the chats of this space, which anyone who opens Erevos with its password sees. The safety number stays the same.':
+    'El chat sale de los chats ocultos con sus mensajes, nombre, imagen y aspecto, y vuelve a aparecer entre los chats de este espacio, que ve cualquiera que abra Erevos con su contraseña. El número de seguridad no cambia.',
   'The chat leaves this list and goes into the hidden chats, sealed with their PIN. To open them, type the PIN in the search on the home screen and press Enter. Nothing shows that they exist.': 'El chat sale de esta lista y pasa a los chats ocultos, sellados con su PIN. Para abrirlos, escribe el PIN en la búsqueda de la pantalla de inicio y pulsa Intro. Nada muestra que existan.',
   'PIN of the hidden chats, {n} or more characters': 'PIN de los chats ocultos, {n} caracteres o más',
   'Pick a place for them, 1 to {n}, and remember it: Erevos cannot tell which are used.': 'Elige una posición para ellos, de 1 a {n}, y recuérdala: Erevos no puede saber cuáles están en uso.',

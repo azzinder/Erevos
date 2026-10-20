@@ -451,7 +451,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [renaming, setRenaming] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState('');
   // The part of the details opened under its row: the picture, the timer, or moving the chat.
-  const [opened, setOpened] = useState<'picture' | 'timer' | 'move' | 'starred' | null>(null);
+  const [opened, setOpened] = useState<'picture' | 'timer' | 'move' | 'back' | 'starred' | null>(null);
   // Moving the chat into the hidden chats: the PIN typed, whether new hidden chats are being
   // started with it (asked a second time), what went wrong, and while it moves.
   const [pinDraft, setPinDraft] = useState('');
@@ -2520,6 +2520,44 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  // Moves a chat of these hidden chats back among the space's chats: the move into them, the other way.
+  async function moveToSpace(peer: string) {
+    if (!e2e || !history.current || !hiddenKey || moving) return;
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    setMoving(true);
+    setMoveNote('');
+    try {
+      const data = await loadCurrentSpaceData();
+      const target = relayFor(data.url, data.token, data.via, data.viaToken);
+      if (!target || !data.ownQueue) throw new Error(t("The space's chats have no relay queue yet: create it under Relay there first."));
+      const space = await spaceChats();
+      await moveChat(identity, { e2e, history: history.current, archive: null }, { e2e: space.e2e, history: space.history });
+      setMessages((list) => list.filter((m) => m.peer !== peer));
+      setContacts(e2e.contacts());
+      setOpened(null);
+      setDetails(false);
+      setSelected(null);
+      // Where to write from now on, said from the space's chats.
+      try {
+        const key = await relayKey(target).catch(() => null);
+        const sealed = await space.e2e.seal(identity, '', data.ownQueue.senderHex, { at: { relay: data.url.trim(), relayKey: key ? toBase64Url(key) : '' } });
+        const to = contactTarget(target, sealed);
+        if (sealed.first) {
+          await sendMessage(to, fromHex(sealed.sender), sealed.first);
+          await space.e2e.firstSent(identity);
+        }
+        await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+        setNote(t('Moved back to your chats.'));
+      } catch {
+        setNote(t('Moved back to your chats. Their phone learns where to write when you next write to them from there.'));
+      }
+    } catch (error) {
+      setMoveNote(t('Not moved. {error}', { error: errorText(error) }));
+    } finally {
+      setMoving(false);
+    }
+  }
+
   async function changeTimer(peer: string, timer: number) {
     if (!e2e) return;
     const identity = peer.slice(CONTACT_PREFIX.length);
@@ -3066,7 +3104,37 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                           </View>
                         ) : null}
                       </>
-                    ) : null}
+                    ) : (
+                      <>
+                        <View style={styles.rule} />
+                        <DetailRow
+                          title={t('Move back to my chats')}
+                          open={opened === 'back'}
+                          onPress={() => {
+                            setOpened((now) => (now === 'back' ? null : 'back'));
+                            setMoveNote('');
+                          }}
+                        />
+                        {opened === 'back' ? (
+                          <View style={styles.rowMore}>
+                            <Text variant="caption" tone="muted">
+                              {t('The chat leaves the hidden chats with its messages, name, picture and look, and shows again among the chats of this space, which anyone who opens Erevos with its password sees. The safety number stays the same.')}
+                            </Text>
+                            {moveNote ? (
+                              <Text variant="caption" style={{ color: colors.danger }}>
+                                {moveNote}
+                              </Text>
+                            ) : null}
+                            <Row wrap>
+                              <Button title={t('Move')} compact loading={moving} onPress={() => void moveToSpace(selectedContact)} />
+                            </Row>
+                            <Text variant="caption" tone="muted">
+                              {t('Their phone is told at once where to write from now on. A message they send in that moment may not come.')}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </>
+                    )}
                   </View>
                   <View style={[styles.group, styles.groupGap]}>
                     <DetailRow

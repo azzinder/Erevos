@@ -956,6 +956,8 @@ chats. There is no button for them anywhere. Each place can hold one chat or sev
    tap **Move**. The
    chat leaves your list with its messages, name, picture and look, and its safety number stays the same. Their phone
    is told at once to write to the hidden chats from now on; a message they send in that very moment may not come.
+5. To move a chat back among the space's chats, open it in the hidden chats, then its **Details**, tap **Move back to
+   my chats** and **Move**. It goes with its messages, name, picture and look, and its phone is told where to write.
 
 - **Relay only:** hidden chats have their own relay queue and their own keys, and never use the nearby link. While
   they are closed, their messages wait on the relay.

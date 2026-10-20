@@ -188,6 +188,14 @@ export const chat: Record<string, string> = {
   'Safety number': 'Sicherheitsnummer',
   'Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.': 'Vergleiche sie mit der deines Kontakts, persönlich oder bei einem Anruf: Zeigen beide Telefone dieselbe, sitzt niemand dazwischen.',
   'Move to hidden chats': 'In versteckte Chats verschieben',
+  'Move back to my chats': 'Zurück in meine Chats verschieben',
+  "The space's chats have no relay queue yet: create it under Relay there first.":
+    'Die Chats des Bereichs haben noch keine Relay-Warteschlange: Lege sie dort zuerst unter Relay an.',
+  'Moved back to your chats.': 'Zurück in deine Chats verschoben.',
+  'Moved back to your chats. Their phone learns where to write when you next write to them from there.':
+    'Zurück in deine Chats verschoben. Das andere Telefon erfährt, wohin es schreiben soll, wenn du deinem Kontakt das nächste Mal von dort schreibst.',
+  'The chat leaves the hidden chats with its messages, name, picture and look, and shows again among the chats of this space, which anyone who opens Erevos with its password sees. The safety number stays the same.':
+    'Der Chat verlässt die versteckten Chats mit seinen Nachrichten, seinem Namen, Bild und Aussehen und erscheint wieder unter den Chats dieses Bereichs, die jeder sieht, der Erevos mit dessen Passwort öffnet. Die Sicherheitsnummer bleibt gleich.',
   'The chat leaves this list and goes into the hidden chats, sealed with their PIN. To open them, type the PIN in the search on the home screen and press Enter. Nothing shows that they exist.': 'Der Chat verlässt diese Liste und kommt in die versteckten Chats, versiegelt mit ihrer PIN. Um sie zu öffnen, gib die PIN in die Suche auf dem Startbildschirm ein und drücke Enter. Nichts zeigt, dass es sie gibt.',
   'PIN of the hidden chats, {n} or more characters': 'PIN der versteckten Chats, {n} oder mehr Zeichen',
   'Pick a place for them, 1 to {n}, and remember it: Erevos cannot tell which are used.': 'Wähle einen Platz für sie, 1 bis {n}, und merke ihn dir: Erevos kann nicht erkennen, welche belegt sind.',
