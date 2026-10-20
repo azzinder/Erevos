@@ -3,12 +3,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, PermissionsAndroid, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ContactFace, forgetPhoneContactPhoto, useCardPhoto } from '../components/contact-face';
+import { ErevosIdInput, erevosIdText, readErevosId } from '../components/erevos-id';
 import { ShieldIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { QrCode } from '../components/QrCode';
 import { Button, Card, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { byName, cardErevos, erevosCard, erevosPeople, groupsByTitle, phoneCard, sealedCard, type Card as ContactCard } from '../lib/contact-book';
+import { offerContact } from '../lib/contact-code';
 import { saveVCards, vcfName } from '../lib/contact-files';
 import { birthdayComing, birthdayLabel, callsWith, fillText, historyLines, kindLabel, parseBirthday, phoneSave, whenText, type Entry, type ErevosPerson, type HistoryLine } from '../lib/contacts';
 import { fromBase64 } from '../lib/crypto';
@@ -58,8 +60,11 @@ import { useStyles, useTheme } from '../theme/context';
 //
 // A contact that is an Erevos contact (linked by hand, kept sealed with the space's or hidden
 // chats' contacts, or by a number linked to it in Erevos) shows its chat, a call and a video call
-// through Erevos; an Erevos contact that no contact is has a card of its own (`erevos`). Below,
-// its history: its calls in the phone's call log, its SMS, and its messages in Erevos.
+// through Erevos, and the start of its key as its Erevos ID; an Erevos contact that no contact is
+// has a card of its own (`erevos`). One that is none yet takes their Erevos ID, their contact link
+// pasted or read from their QR code (components/erevos-id.tsx): the chats add them, and the
+// contact is linked to them. Below, its history: its calls in the phone's call log, its SMS, and
+// its messages in Erevos.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 const PHOTO_SIDE = 720;
@@ -82,6 +87,9 @@ export default function ContactCardScreen() {
   const [choosingPhoto, setChoosingPhoto] = useState(false);
   const [showingQr, setShowingQr] = useState(false);
   const [linking, setLinking] = useState(false);
+  // An Erevos ID being pasted, and what is wrong with it.
+  const [erevosCode, setErevosCode] = useState('');
+  const [idNote, setIdNote] = useState('');
   // The Erevos contacts it may be, and which phone contacts were linked to one by hand.
   const [people, setPeople] = useState<ErevosPerson[]>([]);
   const [links, setLinks] = useState<ContactLink[]>([]);
@@ -327,6 +335,27 @@ export default function ContactCardScreen() {
     }
   }
 
+  // Adds the Erevos contact an Erevos ID names to the space's chats, which open with it, and links
+  // this contact to it once it is added.
+  function addErevos() {
+    if (!card) return;
+    setIdNote('');
+    const code = readErevosId(erevosCode);
+    if (!code) {
+      setIdNote(t('That is not an Erevos ID: an Erevos ID is a contact link starting with erevos://contact'));
+      return;
+    }
+    const sealed = card.sealed && place ? { place, id: card.sealed.id } : null;
+    const lookup = card.phone?.lookup ?? '';
+    if (!sealed && !lookup) return;
+    const into = spacePlace();
+    offerContact(code, (identity) => {
+      void (sealed ? linkSealed(sealed.place, sealed.id, identity) : linkPhoneContact(into, lookup, identity)).catch(() => undefined);
+    });
+    setErevosCode('');
+    router.push('/chat');
+  }
+
   // Its chat in Erevos, or a call there: the hidden chats' own beneath these screens, or the space's.
   function erevos(call?: 'voice' | 'video') {
     if (!card?.erevos) return;
@@ -393,6 +422,9 @@ export default function ContactCardScreen() {
             </Text>
           </Row>
           {!onlyChat && person?.name && person.name !== card.name ? <Text>{t('The Erevos contact {name}', { name: person.name })}</Text> : null}
+          <Text variant="caption" tone="muted" selectable>
+            {t('Erevos ID: {id}', { id: erevosIdText(card.erevos) })}
+          </Text>
           <Row wrap>
             <Button title={t('Message')} compact onPress={() => erevos()} />
             <Button title={t('Call')} kind="secondary" compact onPress={() => erevos('voice')} />
@@ -409,9 +441,29 @@ export default function ContactCardScreen() {
             </Text>
           )}
         </Card>
-      ) : people.length > 0 ? (
-        <Button title={t('Link to an Erevos contact')} kind="secondary" compact onPress={() => setLinking(true)} />
-      ) : null}
+      ) : (
+        <Card>
+          <Row>
+            <ShieldIcon color={colors.textFaint} size={14} />
+            <Text variant="label" tone="muted" style={styles.grow}>
+              {t('Erevos ID')}
+            </Text>
+          </Row>
+          <Text variant="caption" tone="muted">
+            {hidden
+              ? t("Choose them among these hidden chats' contacts: this card then shows their chat and calls.")
+              : t('The contact link their Erevos shows, under Copy my contact link or as their QR code. Added here, they join your Erevos chats, and this card shows their chat and calls, end-to-end encrypted.')}
+          </Text>
+          {!hidden ? (
+            <>
+              <ErevosIdInput value={erevosCode} onChange={setErevosCode} onNote={setIdNote} />
+              {erevosCode.trim() ? <Button title={t('Add to Erevos')} compact onPress={addErevos} /> : null}
+            </>
+          ) : null}
+          {people.length > 0 ? <Button title={t('Choose from my Erevos chats')} kind="secondary" compact onPress={() => setLinking(true)} /> : null}
+          {idNote ? <Text tone="muted">{idNote}</Text> : null}
+        </Card>
+      )}
 
       {first ? (
         <Row wrap style={styles.actions}>

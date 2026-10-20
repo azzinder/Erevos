@@ -1,0 +1,78 @@
+// Links that open Erevos (erevos://...): its Phone and Contacts icons in the launcher, a tel: link
+// through the Phone (modules/erevos-phone), another app's request about a contact
+// (modules/erevos-contacts), an SMS notice, a contact code scanned with the camera. The password
+// screen comes first, and the screens start afresh once a space opens (app/_layout.tsx), so a link
+// is held here (app/+native-intent.ts) and opened once a space is open, if it came in the last few
+// minutes. One opened just before Erevos locked, as it does when it comes back from the background
+// with the link, is held again for after the password.
+// Self-contained on purpose, so it can run under plain Node for checks.
+
+/** How long a link waits for the password. */
+export const KEEP_MS = 5 * 60_000;
+/** A link opened this long before Erevos locks opens again after the password. */
+export const RELOCK_MS = 3_000;
+
+let held: { href: string; at: number } | null = null;
+let opened: { href: string; at: number } | null = null;
+const listeners = new Set<() => void>();
+
+/** The screen a link names, as the app's routes (erevos://contacts?x=1 is /contacts?x=1); '' for the home screen or another kind of link. */
+export function linkHref(url: string): string {
+  const match = /^erevos:\/*([^?#]*)(\?[^#]*)?/i.exec(url.trim());
+  if (!match) return '';
+  const path = match[1].replace(/\/+$/, '');
+  if (!path || !/^[a-z0-9-]+(\/[a-z0-9-]+)*$/i.test(path)) return '';
+  return `/${path}${match[2] && match[2] !== '?' ? match[2] : ''}`;
+}
+
+/** A link's screen, and its details as the screen's params: /phone?number=%2B30 is /phone and { number: '+30' }. */
+export function linkParts(href: string): { path: string; params: Record<string, string> } {
+  const read = (text: string) => {
+    try {
+      return decodeURIComponent(text.replace(/\+/g, ' '));
+    } catch {
+      return text;
+    }
+  };
+  const at = href.indexOf('?');
+  const params: Record<string, string> = {};
+  if (at >= 0) {
+    for (const pair of href.slice(at + 1).split('&')) {
+      if (!pair) continue;
+      const eq = pair.indexOf('=');
+      params[read(eq < 0 ? pair : pair.slice(0, eq))] = eq < 0 ? '' : read(pair.slice(eq + 1));
+    }
+  }
+  return { path: at < 0 ? href : href.slice(0, at), params };
+}
+
+/** Holds a link Erevos was opened with, until a space is open. */
+export function holdLink(url: string, now = Date.now()): void {
+  const href = linkHref(url);
+  if (!href) return;
+  held = { href, at: now };
+  for (const listener of [...listeners]) listener();
+}
+
+/** The link held, once: null when none is, or it came too long ago. */
+export function takeLink(now = Date.now()): string | null {
+  const link = held;
+  held = null;
+  if (!link || now - link.at > KEEP_MS) return null;
+  opened = { href: link.href, at: now };
+  return link.href;
+}
+
+/** Erevos locks: a link opened just before is held again, to open after the password. */
+export function lockingKeepsLink(now = Date.now()): void {
+  if (opened && now - opened.at <= RELOCK_MS && !held) held = { href: opened.href, at: now };
+  opened = null;
+}
+
+/** Calls `listener` each time a link is held, until stopped. */
+export function onLinkHeld(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}

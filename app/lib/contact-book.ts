@@ -1,10 +1,14 @@
+import { PermissionsAndroid, Platform } from 'react-native';
+
 import { EMPTY_FIELDS, erevosFor, fieldsName, keeperFirst, mergeFields, phoneFields, phoneSave, plain, type ErevosPerson, type Fields } from './contacts';
 import type { OpenHiddenPlace } from './hidden-contacts';
 import { lang, t } from './i18n';
 import { spaceChats } from './space-chats';
 import { phoneContacts, savePhoneContact, takeOverContacts, type PhoneContact, type PhoneGroup } from '../modules/erevos-contacts';
+import { contactCards } from '../modules/erevos-sms';
 import type { ContactLink, SealedContact } from '../lock/contacts-data';
-import { loadPlace, type Place } from './sealed-contacts';
+import { sameNumber } from './sms-invite';
+import { loadPlace, placeNames, spacePlace, type Place } from './sealed-contacts';
 
 // The contacts screen's book (app/contacts.tsx): the phone's contacts, from Android's contacts
 // (modules/erevos-contacts), those kept only in Erevos, sealed in the open space or hidden chats
@@ -133,4 +137,15 @@ export async function mergePhoneCards(cards: Card[]): Promise<Card> {
     others.map((o) => o.phone!.id),
   );
   return keeper;
+}
+
+/**
+ * Whether a number is one of the contacts, the phone's or those the space keeps only in Erevos, so
+ * that one that is not can be added; null while Erevos may not read the phone's contacts.
+ */
+export async function isContactNumber(number: string): Promise<boolean | null> {
+  if (Platform.OS !== 'android' || !(await PermissionsAndroid.check('android.permission.READ_CONTACTS').catch(() => false))) return null;
+  const [cards, sealed] = await Promise.all([contactCards([number]).catch(() => null), placeNames(spacePlace()).catch(() => null)]);
+  if (!cards || !sealed) return null;
+  return Object.keys(cards).some((n) => sameNumber(n, number)) || Object.keys(sealed).some((n) => sameNumber(n, number));
 }

@@ -2,12 +2,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
+import { ErevosIdInput, erevosIdText, readErevosId } from '../components/erevos-id';
 import { Button, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
 import { sealedFields } from '../lib/contact-book';
+import { offerContact } from '../lib/contact-code';
 import { askedFields, birthdayText, CHOSEN_KINDS, cleanFields, EMPTY_FIELDS, fieldsName, kindLabel, MAX_ENTRIES, mergeFields, parseBirthday, phoneFields, phoneSave, type Entry, type Fields } from '../lib/contacts';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
-import { linkPhoneContact, loadPlace, placeOf, saveSealed, spacePlace, type Place } from '../lib/sealed-contacts';
+import { linkPhoneContact, linkSealed, loadPlace, placeOf, saveSealed, spacePlace, type Place } from '../lib/sealed-contacts';
 import { contactAccounts, contactsReady, phoneContact, savePhoneContact, type ContactAccount, type PhoneContact } from '../modules/erevos-contacts';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -18,7 +20,10 @@ import { useStyles, useTheme } from '../theme/context';
 // the hidden chats' screens (`hidden`), it is always theirs, sealed with them. Another app (or a
 // QR code) can start one with fields of its own (`fill`), which are kept only once the owner saves;
 // one made from an Erevos contact's card (`erevos`) is that Erevos contact once saved. What another
-// app asks to add to a contact (`add`) is added to the one being changed, kept once saved.
+// app asks to add to a contact (`add`) is added to the one being changed, kept once saved. Its
+// Erevos ID, their contact link pasted, read from their QR code or from a QR code read in Contacts
+// (`code`), adds them to the space's Erevos chats once saved, which then open, and links the
+// contact to them (components/erevos-id.tsx).
 
 type ListName = 'phones' | 'emails' | 'addresses';
 
@@ -32,7 +37,7 @@ function typedBirthday(text: string): string {
 }
 
 export default function ContactEdit() {
-  const params = useLocalSearchParams<{ id?: string; fill?: string; add?: string; sealed?: string; erevos?: string; hidden?: string }>();
+  const params = useLocalSearchParams<{ id?: string; fill?: string; add?: string; sealed?: string; erevos?: string; hidden?: string; code?: string }>();
   const id = Number(params.id ?? 0);
   const sealedId = typeof params.sealed === 'string' ? params.sealed : '';
   const erevos = typeof params.erevos === 'string' && /^[0-9a-f]{64}$/.test(params.erevos) ? params.erevos : '';
@@ -54,6 +59,9 @@ export default function ContactEdit() {
   const [ready, setReady] = useState(!(id > 0) && !sealedId);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState('');
+  // Its Erevos ID being written, and the Erevos contact it is linked to already ('' for none).
+  const [erevosCode, setErevosCode] = useState(() => (typeof params.code === 'string' ? params.code : ''));
+  const [linkedTo, setLinkedTo] = useState(erevos);
 
   useEffect(() => (hidden ? enterHiddenScreen() : undefined), [hidden]);
 
@@ -80,6 +88,7 @@ export default function ContactEdit() {
             return;
           }
           const f = sealedFields(found);
+          setLinkedTo(found.erevos);
           setFields(withAdded(f));
           setBirthday(typedBirthday(f.birthday));
           setBirthdayBefore(typedBirthday(f.birthday));
@@ -95,6 +104,9 @@ export default function ContactEdit() {
           }
           const f = phoneFields(c);
           setPhone(c);
+          loadPlace(spacePlace())
+            .then((data) => setLinkedTo(data.links.find((l) => l.lookup === c.lookup)?.identity ?? ''))
+            .catch(() => undefined);
           setFields(withAdded(f));
           setBirthday(typedBirthday(f.birthday));
           setBirthdayBefore(typedBirthday(f.birthday));
@@ -136,19 +148,31 @@ export default function ContactEdit() {
       setNote(t('Give the contact a name, a number or an email.'));
       return;
     }
+    const code = !hidden && erevosCode.trim() ? readErevosId(erevosCode) : null;
+    if (!hidden && erevosCode.trim() && !code) {
+      setNote(t('That is not an Erevos ID: an Erevos ID is a contact link starting with erevos://contact'));
+      return;
+    }
     setSaving(true);
     try {
       if (keptSealed) {
         if (!place) throw new Error(t('The hidden chats are closed.'));
         const kept = await saveSealed(place, sealedId || null, clean, erevos ? { erevos } : {});
-        if (sealedId && !added) router.back();
+        if (code) {
+          offerContact(code, (identity) => void linkSealed(place, kept, identity).catch(() => undefined));
+          router.replace('/chat');
+        } else if (sealedId && !added) router.back();
         else router.replace(`/contact-card?sealed=${kept}${hidden ? '&hidden=1' : ''}`);
         return;
       }
       const saved = await savePhoneContact(phoneSave(clean, phone, account, phone?.starred ?? false));
-      const lookup = erevos && !phone ? (await phoneContact(saved).catch(() => null))?.lookup : '';
-      if (lookup) await linkPhoneContact(spacePlace(), lookup, erevos).catch(() => undefined);
-      if (phone && !added) router.back();
+      const lookup = phone?.lookup || ((erevos && !phone) || code ? ((await phoneContact(saved).catch(() => null))?.lookup ?? '') : '');
+      if (lookup && erevos && !phone) await linkPhoneContact(spacePlace(), lookup, erevos).catch(() => undefined);
+      if (code && lookup) {
+        const into = spacePlace();
+        offerContact(code, (identity) => void linkPhoneContact(into, lookup, identity).catch(() => undefined));
+        router.replace('/chat');
+      } else if (phone && !added) router.back();
       else router.replace(`/contact-card?id=${saved}`);
     } catch (error) {
       setNote(t('Not saved. {error}', { error: errorText(error) }));
@@ -193,6 +217,23 @@ export default function ContactEdit() {
       <SectionTitle title={t('Addresses')} />
       <Entries list="addresses" entries={fields.addresses} onChange={setEntry} onRemove={removeEntry} />
       <TextButton title={t('Add an address')} onPress={() => addEntry('addresses')} />
+
+      {!hidden ? (
+        <>
+          <SectionTitle title={t('Erevos ID')} />
+          {linkedTo ? (
+            <Text variant="caption" tone="muted" selectable>
+              {t('Erevos ID: {id}', { id: erevosIdText(linkedTo) })}
+            </Text>
+          ) : null}
+          <ErevosIdInput value={erevosCode} onChange={setErevosCode} onNote={setNote} />
+          <Text variant="caption" tone="faint">
+            {linkedTo
+              ? t('Their contact link from Erevos, to link this contact to another Erevos contact instead.')
+              : t('The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join your Erevos chats, and the contact shows their chat and calls.')}
+          </Text>
+        </>
+      ) : null}
 
       <SectionTitle title={t('More')} />
       <Field label={t('Birthday')} hint={t('Day/month/year, or day/month without the year.')}>

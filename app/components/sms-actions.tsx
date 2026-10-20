@@ -1,7 +1,10 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { ask } from '../lib/alert';
+import { isContactNumber } from '../lib/contact-book';
+import { newContactHref } from '../lib/contacts';
 import { t } from '../lib/i18n';
 import { isBlocked, smsOrderChanged, spamMark, type SmsFolder } from '../lib/sms-folders';
 import { sameConversation, smsNumbers } from '../lib/sms-group';
@@ -15,15 +18,15 @@ import { Sheet, Text } from './ui';
 import { offerUndo } from './undo-bar';
 
 // What can be done to an SMS conversation, from the list (held down), a folder, or the conversation
-// itself (⋮): pin it at the top, archive it, say it is spam or not, block its number in Android's
-// own list, or put it in the Trash. Each but pinning shows Undo for a few seconds after
+// itself (⋮): add its number to the contacts when it is none, pin it at the top, archive it, say it
+// is spam or not, block its number in Android's own list, or put it in the Trash. Each but pinning shows Undo for a few seconds after
 // (components/undo-bar.tsx). Pins, the Archive, the Trash and spam marks are this space's own,
 // sealed in it (lock/sms-data.ts); the blocked numbers are Android's, the same in every space.
 
 /** A conversation: its address, the name it shows, its latest message's time, and where it is. */
 export type SmsTarget = { address: string; name: string; at: number; folder: SmsFolder };
 
-type State = { link: SmsLink; blocked: boolean | null };
+type State = { link: SmsLink; blocked: boolean | null; known: boolean | null };
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -100,9 +103,9 @@ export function SmsActions({ target, onClose, onTrashed }: {
     if (!target) return;
     let active = true;
     const { space: current, key } = currentSpace();
-    void Promise.all([SmsLink.open(current, key), canBlockNumbers(), blockedNumbers()])
-      .then(([link, can, blocked]) => {
-        if (active) setState({ link, blocked: can && one ? isBlocked(target.address, blocked) : null });
+    void Promise.all([SmsLink.open(current, key), canBlockNumbers(), blockedNumbers(), one ? isContactNumber(one) : null])
+      .then(([link, can, blocked, known]) => {
+        if (active) setState({ link, blocked: can && one ? isBlocked(target.address, blocked) : null, known });
       })
       .catch(() => undefined);
     return () => {
@@ -160,7 +163,13 @@ export function SmsActions({ target, onClose, onTrashed }: {
     onTrashed?.();
   }
 
+  function addContact() {
+    onClose();
+    if (one) router.push(newContactHref(one));
+  }
+
   const rows: { label: string; run: () => void; danger?: boolean }[] = [];
+  if (one && state?.known === false) rows.push({ label: t('Add to contacts'), run: addContact });
   if (target.folder === 'list') rows.push({ label: pinned ? t('Unpin') : t('Pin to the top'), run: pin });
   if (target.folder !== 'spam') rows.push({ label: archived ? t('Unarchive') : t('Archive'), run: archive });
   if (one && state?.blocked !== true) rows.push({ label: spam ? t('Not spam') : t('Mark as spam'), run: markSpam });

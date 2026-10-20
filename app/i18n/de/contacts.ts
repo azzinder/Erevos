@@ -244,4 +244,23 @@ export const contacts: Record<string, string> = {
   // Other apps' contacts.
   'Add {what} to a contact': '{what} zu einem Kontakt hinzufügen',
   'Tap the contact to add it to, or make a new one.': 'Tippe auf den Kontakt, zu dem es hinzukommt, oder erstelle einen neuen.',
+
+  // A contact's Erevos ID (components/erevos-id.tsx).
+  'Erevos ID': 'Erevos-ID',
+  'Erevos ID: {id}': 'Erevos-ID: {id}',
+  'That is not an Erevos ID: an Erevos ID is a contact link starting with erevos://contact':
+    'Das ist keine Erevos-ID: Eine Erevos-ID ist ein Kontaktlink, der mit erevos://contact beginnt',
+  'Their contact link from Erevos, to link this contact to another Erevos contact instead.':
+    'Der Kontaktlink aus Erevos, um diesen Kontakt stattdessen mit einem anderen Erevos-Kontakt zu verknüpfen.',
+  'The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join your Erevos chats, and the contact shows their chat and calls.':
+    'Der Kontaktlink, den das Erevos der Person unter „Meinen Kontaktlink kopieren“ oder als QR-Code zeigt. Nach dem Speichern kommt sie in deine Erevos-Chats, und der Kontakt zeigt ihren Chat und ihre Anrufe.',
+  "Choose them among these hidden chats' contacts: this card then shows their chat and calls.":
+    'Wähle sie unter den Kontakten dieser versteckten Chats: Diese Karte zeigt dann ihren Chat und ihre Anrufe.',
+  'The contact link their Erevos shows, under Copy my contact link or as their QR code. Added here, they join your Erevos chats, and this card shows their chat and calls, end-to-end encrypted.':
+    'Der Kontaktlink, den das Erevos der Person unter „Meinen Kontaktlink kopieren“ oder als QR-Code zeigt. Hier hinzugefügt, kommt sie in deine Erevos-Chats, und diese Karte zeigt ihren Chat und ihre Anrufe, Ende-zu-Ende-verschlüsselt.',
+  'Add to Erevos': 'Zu Erevos hinzufügen',
+  'Choose from my Erevos chats': 'Aus meinen Erevos-Chats wählen',
+  'That QR code holds no Erevos ID.': 'Dieser QR-Code enthält keine Erevos-ID.',
+  'Take photo of their QR code': 'Foto ihres QR-Codes aufnehmen',
+  'Choose a photo of it': 'Foto davon auswählen',
 };

@@ -244,4 +244,23 @@ export const contacts: Record<string, string> = {
   // Other apps' contacts.
   'Add {what} to a contact': 'Προσθήκη του {what} σε επαφή',
   'Tap the contact to add it to, or make a new one.': 'Πάτα την επαφή όπου θα προστεθεί, ή φτιάξε μια νέα.',
+
+  // A contact's Erevos ID (components/erevos-id.tsx).
+  'Erevos ID': 'Erevos ID',
+  'Erevos ID: {id}': 'Erevos ID: {id}',
+  'That is not an Erevos ID: an Erevos ID is a contact link starting with erevos://contact':
+    'Αυτό δεν είναι Erevos ID: το Erevos ID είναι σύνδεσμος επαφής που αρχίζει με erevos://contact',
+  'Their contact link from Erevos, to link this contact to another Erevos contact instead.':
+    'Ο σύνδεσμος επαφής από το Erevos, για να συνδέσεις αυτή την επαφή με άλλη επαφή Erevos.',
+  'The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join your Erevos chats, and the contact shows their chat and calls.':
+    'Ο σύνδεσμος επαφής που δείχνει το Erevos της επαφής, στο «Αντιγραφή του συνδέσμου επαφής μου» ή ως κωδικό QR. Μόλις αποθηκευτεί, η επαφή μπαίνει στις συνομιλίες σου στο Erevos και δείχνει τη συνομιλία και τις κλήσεις της.',
+  "Choose them among these hidden chats' contacts: this card then shows their chat and calls.":
+    'Διάλεξέ την ανάμεσα στις επαφές αυτών των κρυφών συνομιλιών: η κάρτα δείχνει τότε τη συνομιλία και τις κλήσεις της.',
+  'The contact link their Erevos shows, under Copy my contact link or as their QR code. Added here, they join your Erevos chats, and this card shows their chat and calls, end-to-end encrypted.':
+    'Ο σύνδεσμος επαφής που δείχνει το Erevos της επαφής, στο «Αντιγραφή του συνδέσμου επαφής μου» ή ως κωδικό QR. Με την προσθήκη, μπαίνει στις συνομιλίες σου στο Erevos, και η κάρτα δείχνει τη συνομιλία και τις κλήσεις της, κρυπτογραφημένα από άκρη σε άκρη.',
+  'Add to Erevos': 'Προσθήκη στο Erevos',
+  'Choose from my Erevos chats': 'Επιλογή από τις συνομιλίες μου στο Erevos',
+  'That QR code holds no Erevos ID.': 'Αυτός ο κωδικός QR δεν έχει Erevos ID.',
+  'Take photo of their QR code': 'Φωτογραφία του κωδικού QR της',
+  'Choose a photo of it': 'Επιλογή φωτογραφίας του',
 };

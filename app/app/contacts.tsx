@@ -4,6 +4,7 @@ import { FlatList, PermissionsAndroid, Platform, Pressable, ScrollView, StyleShe
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ContactFace, useCardPhoto } from '../components/contact-face';
+import { readErevosId } from '../components/erevos-id';
 import { LockIcon, MoreIcon, PlusIcon, SearchIcon, ShieldIcon } from '../components/icons';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
 import { byName, cardHref, erevosPeople, groupsByTitle, groupTitles, phoneCards, sealedCard, withErevos, type Card as ContactCard } from '../lib/contact-book';
@@ -175,6 +176,8 @@ export default function Contacts() {
       setReadingQr(false);
       const card = text ? contactFromQr(text) : null;
       if (card) router.push(`/contact-edit?fill=${encodeURIComponent(fillText(card))}`);
+      // Someone's Erevos QR code starts a contact with their Erevos ID.
+      else if (text && readErevosId(text)) router.push(`/contact-edit?code=${encodeURIComponent(text)}`);
       else setNote(text ? t('This QR code holds no contact.') : t('No QR code was found in the photo. Take it again closer, with all of the code in it.'));
     } catch (error) {
       setReadingQr(false);

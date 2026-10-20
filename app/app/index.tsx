@@ -4,7 +4,7 @@ import { FlatList, Image, Platform, Pressable, StyleSheet, TextInput, View } fro
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FoundRow } from '../components/found-row';
-import { LockIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
+import { LockIcon, MoreIcon, PersonIcon, PhoneIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { archiveConversation, SmsActions, trashConversation, type SmsTarget } from '../components/sms-actions';
 import { SwipeRow } from '../components/swipe-row';
@@ -288,6 +288,16 @@ export default function Home() {
           <Text variant="title">Erevos</Text>
         </View>
         <View style={styles.tools}>
+          {Platform.OS !== 'web' ? (
+            <>
+              <IconButton label={t('Phone')} onPress={() => router.push('/phone')}>
+                <PhoneIcon color={colors.text} />
+              </IconButton>
+              <IconButton label={t('Contacts')} onPress={() => router.push('/contacts')}>
+                <PersonIcon color={colors.text} />
+              </IconButton>
+            </>
+          ) : null}
           <IconButton
             label={lock.passwordLock ? t('Lock now') : t('Lock and second password')}
             onPress={() => (lock.passwordLock ? lock.lockNow() : router.push('/security'))}

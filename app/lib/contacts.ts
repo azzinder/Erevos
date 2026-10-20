@@ -471,6 +471,11 @@ export function fillText(f: Fields): string {
   });
 }
 
+/** The form of a new contact with this number in it (app/contact-edit.tsx), for one that is no contact yet. */
+export function newContactHref(number: string): `/contact-edit?fill=${string}` {
+  return `/contact-edit?fill=${encodeURIComponent(fillText({ ...EMPTY_FIELDS, phones: [{ value: number, kind: 'mobile', label: '' }] }))}`;
+}
+
 /** An Erevos contact as the contacts screens show it: its identity (hex), its name, and the number linked to it in Erevos ('' for none). */
 export type ErevosPerson = { identity: string; name: string; phone: string };
 

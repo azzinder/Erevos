@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { router, Stack, useRootNavigationState, usePathname, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
@@ -17,6 +17,7 @@ import { forgetLinks } from '../lib/devices';
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
+import { linkParts, lockingKeepsLink, onLinkHeld, takeLink } from '../lib/open-link';
 import { watchKnownNames } from '../lib/known-names';
 import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
@@ -100,6 +101,8 @@ export default function RootLayout() {
     // Nothing of the space that was open stays in memory, nor its screens: they start afresh
     // once a space opens (after a backup is restored too).
     setCurrentSpace(null);
+    // A link Erevos came back with opens after the password (lib/open-link.ts).
+    lockingKeepsLink();
     forgetSpaceChats();
     forgetLinks();
     forgetSpaceGroups();
@@ -271,12 +274,36 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="chat" options={{ headerShown: false }} />
       </Stack>
+      <OpenLink key={`link-${phase.space}-${lang}`} />
       <Receiver key={`receiver-${phase.space}`} />
       <CallHost key={`call-${phase.space}`} />
       <AlertHost />
       {bar}
     </LockContext.Provider>
   );
+}
+
+// Opens the screen a link names, held while the password screen showed (lib/open-link.ts), once
+// the screens are there, and each link that comes while the space is open. The screen that shows
+// already only takes the link's details.
+function OpenLink() {
+  const ready = useRootNavigationState()?.key;
+  const pathname = usePathname();
+  const here = useRef(pathname);
+  here.current = pathname;
+  useEffect(() => {
+    if (!ready) return;
+    const open = () => {
+      const href = takeLink();
+      if (!href) return;
+      const { path, params } = linkParts(href);
+      if (path === here.current) router.setParams(params);
+      else router.push(href as Href);
+    };
+    open();
+    return onLinkHeld(open);
+  }, [ready]);
+  return null;
 }
 
 // Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), from the

@@ -37,6 +37,22 @@
       </intent-filter>
     </service>
 
+    <!-- Phone as an icon of its own in the launcher, opening the keypad (DialActivity.kt). -->
+    <activity
+      android:name="expo.modules.erevosphone.PhoneLauncherActivity"
+      android:exported="true"
+      android:excludeFromRecents="true"
+      android:noHistory="true"
+      android:icon="@mipmap/erevos_phone_launcher"
+      android:roundIcon="@mipmap/erevos_phone_launcher"
+      android:label="@string/erevos_phone_launcher"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+
     <activity
       android:name="expo.modules.erevosphone.DialActivity"
       android:exported="true"

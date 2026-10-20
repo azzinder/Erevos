@@ -49,7 +49,7 @@ import { canForward, forwardedTo, forwardToGroup, takeForward, voiceCopy, type F
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
-import { contactLink, onContactOffered, parseContact, type ContactCode } from '../lib/contact-code';
+import { contactLink, onContactOffered, parseContact, type Added, type ContactCode } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
@@ -639,7 +639,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // Adds a contact from a code: typed or pasted here, or scanned and opened on the contact screen.
-  async function acceptContact(code: ContactCode) {
+  async function acceptContact(code: ContactCode, then?: Added) {
     if (!e2e) {
       setNote(t(NO_CORE));
       return;
@@ -673,6 +673,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       }
       const { identity, added } = await e2e.addContact(code, queue?.senderHex ?? '', target ? here(url) : here(''));
       setContacts(e2e.contacts());
+      // A contact of the phone's, or one kept only in Erevos, whose Erevos ID this was is linked to it.
+      then?.(identity);
       setSelected(`${CONTACT_PREFIX}${identity}`);
       if (target) await sendPending(e2e, target);
       const nearbyOnly = !target || !code.senderHex;
@@ -919,7 +921,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // cannot overwrite it.
   useEffect(() => {
     if (!loaded || !shown) return;
-    return onContactOffered((code) => void acceptContact(code));
+    return onContactOffered((code, added) => void acceptContact(code, added));
   }, [loaded, shown, relayUrl, relayToken, ownQueue, e2e]);
 
   useEffect(() => {

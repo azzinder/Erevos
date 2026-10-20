@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,8 @@ import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
+import { isContactNumber } from '../lib/contact-book';
+import { newContactHref } from '../lib/contacts';
 import { canRelaySeal } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { toBase64Url } from '../lib/e2e';
@@ -162,6 +164,9 @@ export default function Sms() {
   const [sim, setSim] = useState(-1);
   const [names, setNames] = useState<Record<string, string>>({});
   const [face, setFace] = useState('');
+  // Whether the number is one of the contacts, the phone's or those kept only in Erevos; null
+  // while Erevos may not read them.
+  const [inContacts, setInContacts] = useState<boolean | null>(null);
   const [later, setLater] = useState<LaterSms[]>([]);
   const [laterMenu, setLaterMenu] = useState(false);
   // The space's order of its SMS (lib/sms-folders.ts), and the numbers Android blocks.
@@ -204,6 +209,19 @@ export default function Sms() {
         .catch(() => undefined);
     }
   }, [to]);
+
+  // A number that is no contact can be added as one, even with the names not shown; looked at
+  // again on coming back, as from adding it.
+  useFocusEffect(
+    useCallback(() => {
+      if (group || numbers.length !== 1) return;
+      let active = true;
+      void isContactNumber(numbers[0]).then((known) => active && setInContacts(known));
+      return () => {
+        active = false;
+      };
+    }, [to]),
+  );
 
   useEffect(() => {
     const { space, key } = currentSpace();
@@ -512,6 +530,11 @@ export default function Sms() {
           <View style={styles.headText}>
             <Text variant="title">{title}</Text>
             {group ? <Text tone="muted">{plural(numbers.length, 'Group MMS · {n} number', 'Group MMS · {n} numbers')}</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
+            {inContacts === false ? (
+              <View style={styles.addContact}>
+                <Button title={t('Add to contacts')} kind="secondary" compact onPress={() => router.push(newContactHref(numbers[0]))} />
+              </View>
+            ) : null}
             {folder !== 'list' ? (
               <Text variant="caption" color={colors.warning}>
                 {folder === 'spam' ? t('In Spam') : folder === 'archived' ? t('Archived') : t('In the Trash')}
@@ -735,6 +758,7 @@ const makeStyles = (colors: Colors) =>
     thread: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.lg, gap: space.sm },
     head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     headText: { flex: 1, gap: 2 },
+    addContact: { flexDirection: 'row', marginTop: space.xs },
     face: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surfaceAlt },
     more: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
     pressed: { backgroundColor: colors.surfacePressed },

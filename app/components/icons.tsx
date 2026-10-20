@@ -118,3 +118,67 @@ export function PinIcon({ color, size = 14 }: Props) {
     </View>
   );
 }
+
+/** A handset: for the Phone. Half a ring from its top left to its bottom right, a cup at each end. */
+export function PhoneIcon({ color, size = 20 }: Props) {
+  const line = Math.max(2, size / 9);
+  const ring = size * 0.84;
+  const at = (size - ring) / 2;
+  // The ends of the ring's middle line, up left and down right of its centre.
+  const reach = ((ring - line) / 2) * Math.SQRT1_2;
+  const cup = { length: size * 0.34, width: line * 1.7 };
+  const cupAt = (sign: 1 | -1) => {
+    // From an end, half a cup's length towards the centre.
+    const inward = ((cup.length - cup.width) / 2) * Math.SQRT1_2;
+    const x = size / 2 + sign * (reach - inward);
+    const y = size / 2 + sign * (reach - inward);
+    return { left: x - cup.length / 2, top: y - cup.width / 2 };
+  };
+  return (
+    <View style={{ width: size, height: size }}>
+      <View
+        style={{
+          position: 'absolute',
+          left: at,
+          top: at,
+          width: ring,
+          height: ring,
+          borderRadius: ring,
+          borderWidth: line,
+          borderColor: 'transparent',
+          borderLeftColor: color,
+          borderBottomColor: color,
+        }}
+      />
+      {([-1, 1] as const).map((sign) => (
+        <View
+          key={sign}
+          style={{ position: 'absolute', ...cupAt(sign), width: cup.length, height: cup.width, borderRadius: cup.width, backgroundColor: color, transform: [{ rotate: '45deg' }] }}
+        />
+      ))}
+    </View>
+  );
+}
+
+/** A head and shoulders: for contacts. */
+export function PersonIcon({ color, size = 20 }: Props) {
+  const line = Math.max(1.5, size / 10);
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center' }}>
+      <View style={{ width: size * 0.44, height: size * 0.44, borderRadius: size, borderWidth: line, borderColor: color, marginTop: size * 0.02 }} />
+      <View
+        style={{
+          width: size * 0.84,
+          height: size * 0.4,
+          borderTopLeftRadius: size * 0.42,
+          borderTopRightRadius: size * 0.42,
+          borderBottomLeftRadius: line,
+          borderBottomRightRadius: line,
+          borderWidth: line,
+          borderColor: color,
+          marginTop: size * 0.08,
+        }}
+      />
+    </View>
+  );
+}

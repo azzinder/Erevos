@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
+import { isContactNumber } from '../lib/contact-book';
+import { newContactHref } from '../lib/contacts';
 import { Held } from '../lib/held';
 import { mark, plural, t } from '../lib/i18n';
 import { refreshKnownNames } from '../lib/known-names';
@@ -404,7 +406,8 @@ function GroupBlocks() {
 }
 
 // Android's call history, read again whenever it changes, with filters; a row opens its calls,
-// which can be deleted from there, with Undo for a few seconds.
+// which can be deleted from there, with Undo for a few seconds, and its number added to the
+// contacts when it is none.
 function Recents({ accounts, onCall, onEdit }: {
   accounts: PhoneAccount[];
   onCall: (number: string, account?: string) => void;
@@ -457,6 +460,18 @@ function Recents({ accounts, onCall, onEdit }: {
   }, [open, calls]);
   const first = row?.calls[0] ?? null;
   const ofNumber = first ? callsWith(calls, first) : [];
+  // Whether the open row's number is one of the contacts; one that is not can be added.
+  const [known, setKnown] = useState<boolean | null>(null);
+  const openNumber = first && !hiddenNumber(first) && !first.name ? first.number : '';
+  useEffect(() => {
+    setKnown(null);
+    if (!openNumber) return;
+    let active = true;
+    void isContactNumber(openNumber).then((found) => active && setKnown(found));
+    return () => {
+      active = false;
+    };
+  }, [openNumber]);
 
   async function allow() {
     const answer = await PermissionsAndroid.request('android.permission.READ_CALL_LOG').catch(() => null);
@@ -612,6 +627,16 @@ function Recents({ accounts, onCall, onEdit }: {
                 router.push(`/sms?to=${encodeURIComponent(first.number)}`);
               }}
             />
+            {known === false ? (
+              <Button
+                title={t('Add to contacts')}
+                kind="secondary"
+                onPress={() => {
+                  setOpen(null);
+                  router.push(newContactHref(first.number));
+                }}
+              />
+            ) : null}
             <Button
               title={t('Change the number before calling')}
               kind="secondary"

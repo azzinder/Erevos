@@ -9,12 +9,14 @@
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
   <application>
-    <!-- Contacts as an icon of its own in the launcher, with Erevos's icon (ContactIntents.kt). -->
+    <!-- Contacts as an icon of its own in the launcher (ContactIntents.kt). -->
     <activity
       android:name="expo.modules.erevoscontacts.ContactsLauncherActivity"
       android:exported="true"
       android:excludeFromRecents="true"
       android:noHistory="true"
+      android:icon="@mipmap/erevos_contacts_launcher"
+      android:roundIcon="@mipmap/erevos_contacts_launcher"
       android:label="@string/erevos_contacts_launcher"
       android:theme="@android:style/Theme.Translucent.NoTitleBar">
       <intent-filter>

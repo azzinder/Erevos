@@ -69,27 +69,30 @@ export function parseContact(text: string): ContactCode | null {
   return code && spare ? { ...code, spare } : code;
 }
 
-// Hands a contact from the screen a scanned link opens to the chat screen, which owns the
-// contact list. Kept in memory only: the chat saves the contact once it has it.
+// Hands a contact from the screen a scanned link opens, or from a contact's Erevos ID
+// (app/contact-card.tsx), to the chat screen, which owns the contact list. Kept in memory only: the
+// chat saves the contact once it has it, and then tells `added` who it is, to link the contact to.
 
-type Listener = (code: ContactCode) => void;
+/** What is told who the contact added is (its identity), once it is. */
+export type Added = (identity: string) => void;
+type Listener = (code: ContactCode, added?: Added) => void;
 
-let waiting: ContactCode | null = null;
+let waiting: { code: ContactCode; added?: Added } | null = null;
 let listener: Listener | null = null;
 
 /** Gives a contact to the chat: now if the chat is open, otherwise when it next opens. */
-export function offerContact(code: ContactCode): void {
-  if (listener) listener(code);
-  else waiting = code;
+export function offerContact(code: ContactCode, added?: Added): void {
+  if (listener) listener(code, added);
+  else waiting = { code, added };
 }
 
 /** For the chat: receives offered contacts until unsubscribed, starting with one that waited. */
 export function onContactOffered(next: Listener): () => void {
   listener = next;
   if (waiting) {
-    const code = waiting;
+    const { code, added } = waiting;
     waiting = null;
-    next(code);
+    next(code, added);
   }
   return () => {
     if (listener === next) listener = null;

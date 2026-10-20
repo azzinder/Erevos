@@ -37,6 +37,7 @@ in what it keeps sealed; hidden chats are searched only from inside them.
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
 - **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
 - **New chat**, at the bottom, opens the relay settings and adding a contact.
+- **The handset and the person** at the top, on Android, open **Phone** and **Contacts** at once.
 - **The lock** at the top locks Erevos at once when a password is set, or opens the lock settings when not.
 - **The three dots** open the rest:
 
@@ -677,7 +678,9 @@ chats in one list.
 
 - **Swipe:** in the list, swipe an SMS conversation to the right to archive it, or to the left to delete it.
   **Undo** shows for a few seconds after. Hold a conversation down for the rest: **Pin to the top**, **Archive**,
-  **Mark as spam**, **Block** and **Delete**. In a conversation, **⋮** at the top shows the same.
+  **Mark as spam**, **Block** and **Delete**, and **Add to contacts** for a number that is none of your contacts. In
+  a conversation, **⋮** at the top shows the same, and such a number has **Add to contacts** under its name too: a
+  new contact with the number in it.
 - **Pinned:** up to 10 SMS conversations stay at the top of the list, with a pin. **Unpin** lets one go back to its
   place.
 - **Archived conversations:** out of the list, under **Archived** at the top of the home screen. One comes back to
@@ -712,7 +715,9 @@ chats in one list.
 
 On Android, Erevos can be the phone's phone app: under **Phone** in the menu, tap **Settings** → **Make Erevos the
 phone app**. Every call then shows on Erevos's own call screen, and tel: links and the phone's call button open
-Erevos's keypad.
+Erevos's keypad. **Phone** opens from the handset at the top of the home screen too, and has an icon of its own in
+the phone's apps, **Phone** with a handset on Erevos's icon, which opens the keypad. Each of these, like a tel: link,
+opens it once Erevos is unlocked: with a password, after you type it.
 
 - **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them; while
   Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them, and so does the
@@ -739,8 +744,9 @@ Erevos's keypad.
   the call was, on which SIM, and how. **All**, **Missed**, **Incoming**, **Outgoing** and, once a call was blocked,
   **Blocked** filter it; with two SIMs, **SIM 1** or **SIM 2** keeps that SIM's calls. Calls one after another with
   the same number show once, with how many. **☏** calls back; a tap on the row shows its calls, how long each lasted,
-  and **Call** (with two SIMs, one for each), **Send an SMS** and **Change the number before calling**. Seen there,
-  missed calls leave Android's notice, and that notice opens **Recents**.
+  and **Call** (with two SIMs, one for each), **Send an SMS**, **Add to contacts** for a number that is none of your
+  contacts, and **Change the number before calling**. Seen there, missed calls leave Android's notice, and that
+  notice opens **Recents**.
 - **Deleting calls:** in the row's calls, **Delete this call** (or **Delete these 3 calls**, for a row of several)
   deletes them from Android's call history, **Delete** beside one of several deletes only that one, and
   **Delete every call with this number**, when it has more, deletes them all, the older ones too. **Undo** shows for
@@ -784,8 +790,9 @@ Erevos's keypad.
 
 On Android, **Contacts** in the menu shows the phone's contacts: the ones in Android's own contacts, which your
 other apps use too, so there is nothing to import. Android asks once whether Erevos may read and change them
-(**Allow contacts**). They have an icon of their own in the phone's apps too, **Contacts** with Erevos's icon,
-which opens them behind Erevos's lock.
+(**Allow contacts**). They open from the person at the top of the home screen too, and have an icon of their own in
+the phone's apps, **Contacts** with a person on Erevos's icon, which opens them behind Erevos's lock: with a
+password, once you type it.
 
 - **Finding someone:** **Search contacts** looks in every field: names, numbers (however they are written, with or
   without the country code), emails, addresses, the company, the birthday and the note. **Favourites** shows only
@@ -812,7 +819,8 @@ which opens them behind Erevos's lock.
 - **QR codes:** **QR code** on a contact shows its vCard as a QR code, which another phone's camera reads as a
   contact to add: its name, numbers, emails, addresses and note, without its photo (a long note or many addresses
   are left out to fit). Whoever sees it can read it. **Read a contact's QR code** in the menu reads one from a photo
-  you take or choose, here on the phone, and starts a new contact with it, saved only when you save it.
+  you take or choose, here on the phone, and starts a new contact with it, saved only when you save it. Someone's
+  Erevos QR code starts one with their Erevos ID.
 - **Duplicates:** **Find duplicates** in the menu lists the contacts that look like the same person kept twice: the
   same name (its words in any order), number or email. **Merge** keeps the fullest of them, with every number, email
   and address of the others, their notes, and their photo, ringtone, star and groups when it has none, and deletes
@@ -835,10 +843,15 @@ which opens them behind Erevos's lock.
   sealed with them: they show nowhere else, not even in the space's contacts, and the screen shows nothing once the
   hidden chats close. A new contact there is always one of theirs. They take no photo, file or menu, as those leave
   Erevos, which closes the hidden chats; so does calling one, which goes through the phone app and its call log.
+- **Erevos ID:** a contact's Erevos ID is the contact link their Erevos shows, under **Copy my contact link** or as
+  their QR code. On a contact's card, or under **Erevos ID** when you write one, paste it, or read it with **Take photo
+  of their QR code** or **Choose a photo of it**: **Add to Erevos** (or **Save**) adds them to your Erevos chats,
+  which open with them, and links the contact to them. A contact that is an Erevos contact shows the start of their
+  key as **Erevos ID**.
 - **Erevos contacts:** a contact that is the same person as one of your chats' Erevos contacts shows as one card with
-  it: by a number linked to them in Erevos, or with **Link to an Erevos contact** on its card, a link sealed in the
-  space, never in Android's contacts (**Not this Erevos contact** undoes it). The card then has **Message**, **Call**
-  and **Video**, end-to-end encrypted through Erevos instead of the phone company. A chats' contact that no contact is
+  it: by a number linked to them in Erevos, by their Erevos ID, or with **Choose from my Erevos chats** on its card, a
+  link sealed in the space, never in Android's contacts (**Not this Erevos contact** undoes it). The card then has
+  **Message**, **Call** and **Video**, end-to-end encrypted through Erevos instead of the phone company. A chats' contact that no contact is
   has a card of its own, with the shield, where **Add to contacts** makes one; the **Erevos contacts** chip lists them
   all. In hidden chats, these are the hidden chats' own contacts, and their chat opens there.
 - **History:** a contact's card lists its latest calls in the phone's call log, its SMS and its messages in Erevos,

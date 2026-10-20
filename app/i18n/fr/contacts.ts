@@ -244,4 +244,23 @@ export const contacts: Record<string, string> = {
   // Other apps' contacts.
   'Add {what} to a contact': 'Ajouter {what} à un contact',
   'Tap the contact to add it to, or make a new one.': 'Appuie sur le contact auquel l’ajouter, ou crées-en un nouveau.',
+
+  // A contact's Erevos ID (components/erevos-id.tsx).
+  'Erevos ID': 'ID Erevos',
+  'Erevos ID: {id}': 'ID Erevos : {id}',
+  'That is not an Erevos ID: an Erevos ID is a contact link starting with erevos://contact':
+    'Ce n’est pas un ID Erevos : un ID Erevos est un lien de contact qui commence par erevos://contact',
+  'Their contact link from Erevos, to link this contact to another Erevos contact instead.':
+    'Son lien de contact Erevos, pour associer plutôt ce contact à un autre contact Erevos.',
+  'The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join your Erevos chats, and the contact shows their chat and calls.':
+    'Le lien de contact que montre son Erevos, sous « Copier mon lien de contact » ou en code QR. Une fois enregistré, la personne rejoint tes discussions Erevos, et le contact affiche sa discussion et ses appels.',
+  "Choose them among these hidden chats' contacts: this card then shows their chat and calls.":
+    'Choisis-la parmi les contacts de ces discussions cachées : cette fiche affiche alors sa discussion et ses appels.',
+  'The contact link their Erevos shows, under Copy my contact link or as their QR code. Added here, they join your Erevos chats, and this card shows their chat and calls, end-to-end encrypted.':
+    'Le lien de contact que montre son Erevos, sous « Copier mon lien de contact » ou en code QR. Ajoutée ici, la personne rejoint tes discussions Erevos, et cette fiche affiche sa discussion et ses appels, chiffrés de bout en bout.',
+  'Add to Erevos': 'Ajouter à Erevos',
+  'Choose from my Erevos chats': 'Choisir dans mes discussions Erevos',
+  'That QR code holds no Erevos ID.': 'Ce code QR ne contient aucun ID Erevos.',
+  'Take photo of their QR code': 'Photographier son code QR',
+  'Choose a photo of it': 'En choisir une photo',
 };

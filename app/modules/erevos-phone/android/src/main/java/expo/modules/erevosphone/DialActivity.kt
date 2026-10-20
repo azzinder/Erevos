@@ -31,3 +31,19 @@ class DialActivity : Activity() {
     finish()
   }
 }
+
+/**
+ * Erevos's Phone as an app of its own in the phone's launcher, with an icon of its own: it opens
+ * the keypad (erevos://phone), behind Erevos's lock, and closes at once.
+ */
+class PhoneLauncherActivity : Activity() {
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    try {
+      startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("erevos://phone")).setPackage(packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (_: Exception) {
+      packageManager.getLaunchIntentForPackage(packageName)?.let(::startActivity)
+    }
+    finish()
+  }
+}
