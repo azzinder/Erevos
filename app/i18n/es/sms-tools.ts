@@ -1,6 +1,7 @@
 // The Spanish of the SMS screen's own tools: pinning, archive, drafts, blocking and the like (i18n/es/index.ts).
 export const smsTools: Record<string, string> = {
   // The list and its folders (app/index.tsx, app/sms-folder.tsx, components/sms-actions.tsx).
+  Names: 'Nombres',
   'All messages': 'Todos',
   'Archived · {n}': 'Archivadas · {n}',
   'Spam · {n}': 'Spam · {n}',

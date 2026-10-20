@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FoundRow } from '../components/found-row';
@@ -11,6 +11,7 @@ import { SwipeRow } from '../components/swipe-row';
 import { Chip, font, fontStyle, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
+import { sealedNamer } from '../lib/contact-book';
 import { canGroup, canPublicGroup, hasCore } from '../lib/core';
 import { copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
@@ -79,23 +80,33 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
   { title: mark('Radio test'), detail: mark('For testing the nearby link'), href: '/radio', phone: true },
 ];
 
-// The phone's SMS conversations, named as the phone's contacts name them, with their pictures,
-// when the owner turned that on; with the space's own order of them (lib/sms-folders.ts: pinned,
-// archived, in the Trash, spam) and the numbers Android blocks.
-type SmsList = { threads: InboxSms[]; order: SmsData | null; blocked: string[] };
+// The phone's SMS conversations, by their numbers only until the owner turns names on (`names`,
+// in the list or under SMS): then named as the phone's contacts name them, with their pictures,
+// or as the space's contacts kept only in Erevos do; with the space's own order of them
+// (lib/sms-folders.ts: pinned, archived, in the Trash, spam) and the numbers Android blocks.
+type SmsList = { threads: InboxSms[]; order: SmsData | null; blocked: string[]; names: boolean };
+
+const NO_SMS: SmsList = { threads: [], order: null, blocked: [], names: true };
 
 async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
   const threads = await smsThreads();
   const link = await SmsLink.open(space, key).catch(() => null);
-  const cards: Record<string, ContactCard> = link?.names ? await contactCards(threads.flatMap((t) => smsNumbers(t.address))).catch(() => ({})) : {};
-  const names = Object.fromEntries(Object.entries(cards).map(([number, card]) => [number, card.name]));
+  const all = threads.flatMap((t) => smsNumbers(t.address));
+  const cards: Record<string, ContactCard> = link?.names ? await contactCards(all).catch(() => ({})) : {};
+  const sealed = link?.names ? await sealedNamer() : () => '';
+  const names: Record<string, string> = {};
+  for (const number of all) {
+    const name = cards[number]?.name || sealed(number);
+    if (name) names[number] = name;
+  }
   // A group's MMS conversation: named by all its numbers.
   const rows = threads.map((t) => {
     const numbers = smsNumbers(t.address);
-    const card = numbers.length > 1 ? undefined : cards[numbers[0] ?? t.address];
-    return { ...t, name: numbers.length > 1 ? groupName(numbers, names) : card?.name, photo: card?.photo || undefined };
+    const one = numbers[0] ?? t.address;
+    const card = numbers.length > 1 ? undefined : cards[one];
+    return { ...t, name: numbers.length > 1 ? groupName(numbers, names) : names[one], photo: card?.photo || undefined };
   });
-  return { threads: rows, order: link?.state ?? null, blocked: await blockedNumbers() };
+  return { threads: rows, order: link?.state ?? null, blocked: await blockedNumbers(), names: !!link?.names };
 }
 
 // The spaces whose Trash was looked at since Erevos started: what was there long enough goes from
@@ -144,7 +155,9 @@ export default function Home() {
   // The contacts whose phones said they are open, and not long ago (lib/e2e.ts).
   const [online, setOnline] = useState<Set<string>>(new Set());
   // The phone's SMS as last read: the list shows them while they are read again.
-  const smsShown = useRef<SmsList>({ threads: [], order: null, blocked: [] });
+  const smsShown = useRef<SmsList>(NO_SMS);
+  // Read again, as when the names were just turned on.
+  const [again, setAgain] = useState(0);
   // How many SMS conversations are in the space's Archive, Spam and Trash.
   const [folders, setFolders] = useState({ archived: 0, spam: 0, trash: 0 });
   // The SMS conversation held down, whose actions show.
@@ -190,7 +203,7 @@ export default function Home() {
               .then((gone) => active && gone > 0 && load())
               .catch(() => undefined);
           }
-        } else smsShown.current = { threads: [], order: null, blocked: [] };
+        } else smsShown.current = NO_SMS;
         void Promise.all([
           quiet(chats(), [[], []]),
           quiet(Archive.open('space', current, key).then((a) => a.chats()), []),
@@ -281,7 +294,7 @@ export default function Home() {
         stopOrder();
         stopGroups();
       };
-    }, []),
+    }, [again]),
   );
 
   const shown = useMemo(() => {
@@ -290,6 +303,26 @@ export default function Home() {
   }, [rows, query, show]);
   // The choice shows once the list has SMS and Erevos chats both, or while one of them is chosen.
   const mixed = show !== 'all' || ((rows ?? []).some(isSms) && (rows ?? []).some((row) => !row.sms));
+  // Names, once there are SMS conversations: they unlock the names of their numbers.
+  const hasSmsRows = (rows ?? []).some((row) => row.sms !== '');
+
+  // Turns the names of SMS numbers on, as under SMS in the menu (Android asks first), or off.
+  async function toggleNames() {
+    const on = !smsShown.current.names;
+    if (on && Platform.OS === 'android') {
+      const answer = await PermissionsAndroid.request('android.permission.READ_CONTACTS').catch(() => null);
+      if (answer !== PermissionsAndroid.RESULTS.GRANTED) {
+        ask(t('Not done'), t("Erevos may not read the phone's contacts, so numbers stay as they are."), [{ text: t('OK') }]);
+        return;
+      }
+    }
+    const { space: current, key } = currentSpace();
+    const link = await SmsLink.open(current, key).catch(() => null);
+    if (!link) return;
+    await link.setNames(on);
+    smsShown.current = { ...smsShown.current, names: on };
+    setAgain((n) => n + 1);
+  }
   // Messages with what is looked for in them, once it is two letters or more.
   const hits = useMemo(() => (query.trim().length >= 2 ? searchMessages(searched.messages, query, 50) : []), [searched, query]);
   const nameOf = (peer: string) => searched.names.get(peer) ?? shownName({ identity: peer.replace(/^contact:/, ''), name: '' });
@@ -348,11 +381,16 @@ export default function Home() {
           {relayText}
         </Text>
       </Pressable>
-      {mixed ? (
+      {mixed || hasSmsRows ? (
         <Row wrap>
-          <Chip label={t('All messages')} selected={show === 'all'} onPress={() => setShow('all')} />
-          <Chip label={t('SMS')} selected={show === 'sms'} onPress={() => setShow('sms')} />
-          <Chip label="Erevos" selected={show === 'erevos'} onPress={() => setShow('erevos')} />
+          {mixed ? (
+            <>
+              <Chip label={t('All messages')} selected={show === 'all'} onPress={() => setShow('all')} />
+              <Chip label={t('SMS')} selected={show === 'sms'} onPress={() => setShow('sms')} />
+              <Chip label="Erevos" selected={show === 'erevos'} onPress={() => setShow('erevos')} />
+            </>
+          ) : null}
+          {hasSmsRows ? <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} /> : null}
         </Row>
       ) : null}
       {folders.archived + folders.spam + folders.trash > 0 ? (

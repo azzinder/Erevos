@@ -15,6 +15,24 @@ import { loadPlace, placeNames, spacePlace, type Place } from './sealed-contacts
 // (lib/sealed-contacts.ts), and the chats' Erevos contacts, as cards the screens show alike. A
 // contact that is an Erevos contact shows as one card with it.
 
+// A number as names are found by it: its last ten digits, or all of them when fewer (sameNumber).
+const numberKey = (number: string) => {
+  const digits = number.replace(/\D/g, '');
+  return digits.length >= 10 ? digits.slice(-10) : digits;
+};
+
+/** The names the open space's contacts kept only in Erevos give numbers, however a number is
+ *  written: for the SMS, which show them without asking Android, as they are the space's own. */
+export async function sealedNamer(): Promise<(number: string) => string> {
+  const names = await placeNames(spacePlace()).catch((): Record<string, string> => ({}));
+  const byKey = new Map<string, string>();
+  for (const [number, name] of Object.entries(names)) {
+    const key = numberKey(number);
+    if (key && name && !byKey.has(key)) byKey.set(key, name);
+  }
+  return (number) => byKey.get(numberKey(number)) ?? '';
+}
+
 /** A contact as the screens show it. `key` is 'p' and the phone contact's id, 's' and the sealed one's, or 'e' and the Erevos contact's identity. */
 export type Card = Fields & {
   key: string;

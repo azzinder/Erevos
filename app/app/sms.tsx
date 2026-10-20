@@ -10,7 +10,7 @@ import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
-import { isContactNumber } from '../lib/contact-book';
+import { isContactNumber, sealedNamer } from '../lib/contact-book';
 import { newContactHref } from '../lib/contacts';
 import { canRelaySeal } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
@@ -246,9 +246,11 @@ export default function Sms() {
           if (kept) setDraft((typed) => (typed.trim() ? typed : kept));
         }
         if (!group) setLater(opened.later.filter((l) => sameNumber(l.to, to)));
+        // Once names are on: the phone's contacts', else those of the contacts kept only in Erevos.
         if (opened.names) {
           const cards = await contactCards(numbers).catch(() => ({}) as Record<string, { name: string; photo: string }>);
-          setNames(Object.fromEntries(Object.entries(cards).map(([n, c]) => [n, c.name])));
+          const sealed = await sealedNamer();
+          setNames(Object.fromEntries(numbers.flatMap((n) => (cards[n]?.name || sealed(n) ? [[n, cards[n]?.name || sealed(n)]] : []))));
           setFace(group ? '' : (cards[to]?.photo ?? ''));
         }
         if (!twoSims) return;

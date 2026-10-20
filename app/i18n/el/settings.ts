@@ -199,7 +199,8 @@ export const settings: Record<string, string> = {
   'Turn invites on': 'Ενεργοποίηση προσκλήσεων',
   'A number can also be linked by hand: open its SMS conversation and choose the contact.': 'Ένας αριθμός μπορεί να συνδεθεί και με το χέρι: άνοιξε τη συνομιλία SMS του και διάλεξε την επαφή.',
   'Names from your contacts': 'Ονόματα από τις επαφές σου',
-  'SMS numbers that are no Erevos contact can show the names your phone\'s contacts give them. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.': 'Οι αριθμοί SMS που δεν είναι επαφές στο Erevos μπορούν να δείχνουν τα ονόματα που τους δίνουν οι επαφές του τηλεφώνου σου. Το Erevos τα διαβάζει μόνο για να τα δείξει, δεν κρατά αντίγραφο και δεν τα στέλνει πουθενά. Το Android ρωτά πρώτα.',
+  'SMS numbers that are no Erevos contact show only their numbers, until you turn names on here or with Names above the list: then the names your phone\'s contacts give them, and those of your contacts kept only in Erevos. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.':
+    'Οι αριθμοί SMS που δεν είναι επαφές στο Erevos δείχνουν μόνο τον αριθμό τους, μέχρι να ανοίξεις τα ονόματα εδώ ή με τα «Ονόματα» πάνω από τη λίστα: τότε τα ονόματα που τους δίνουν οι επαφές του τηλεφώνου σου, και αυτά των επαφών σου που υπάρχουν μόνο στο Erevos. Το Erevos τα διαβάζει μόνο για να τα δείξει, δεν κρατά αντίγραφο και δεν τα στέλνει πουθενά. Το Android ρωτά πρώτα.',
   'Show numbers only': 'Μόνο αριθμοί',
   'Show names from my contacts': 'Ονόματα από τις επαφές μου',
   'Two SIMs': 'Δύο SIM',

@@ -255,7 +255,7 @@ export default function SmsSettings() {
       <SectionTitle title={t('Names from your contacts')} />
       <Card>
         <Text tone="muted">
-          {t("SMS numbers that are no Erevos contact can show the names your phone's contacts give them. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.")}
+          {t("SMS numbers that are no Erevos contact show only their numbers, until you turn names on here or with Names above the list: then the names your phone's contacts give them, and those of your contacts kept only in Erevos. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.")}
         </Text>
         <Button title={names ? t('Show numbers only') : t('Show names from my contacts')} kind="secondary" onPress={() => void toggleNames()} />
         <Text variant="caption" tone="faint">

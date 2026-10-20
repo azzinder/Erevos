@@ -200,7 +200,8 @@ export const settings: Record<string, string> = {
   'Turn invites on': 'Attiva gli inviti',
   'A number can also be linked by hand: open its SMS conversation and choose the contact.': 'Un numero si può anche collegare a mano: apri la sua conversazione SMS e scegli il contatto.',
   'Names from your contacts': 'Nomi dai tuoi contatti',
-  'SMS numbers that are no Erevos contact can show the names your phone\'s contacts give them. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.': 'I numeri SMS che non sono contatti Erevos possono mostrare il nome che danno loro i contatti del tuo telefono. Erevos li legge solo per mostrarli, non ne tiene copia e non li invia da nessuna parte. Android chiede prima.',
+  'SMS numbers that are no Erevos contact show only their numbers, until you turn names on here or with Names above the list: then the names your phone\'s contacts give them, and those of your contacts kept only in Erevos. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.':
+    'I numeri SMS che non sono contatti Erevos mostrano solo il loro numero, finché non attivi i nomi qui o con «Nomi» sopra l’elenco: allora il nome che danno loro i contatti del tuo telefono, e quello dei tuoi contatti tenuti solo in Erevos. Erevos li legge solo per mostrarli, non ne tiene copia e non li invia da nessuna parte. Android chiede prima.',
   'Show numbers only': 'Mostra solo i numeri',
   'Show names from my contacts': 'Mostra i nomi dai miei contatti',
   'Two SIMs': 'Due SIM',

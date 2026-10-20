@@ -674,9 +674,10 @@ chats in one list.
   Keystore), not with your space's password, as Android has to send it while Erevos is locked: the protection every
   SMS has once sent, as sent SMS stay in the phone's SMS. Text only, to one number.
 - **Links:** a web address in an SMS is underlined, and opens as in a chat, once you have seen it whole.
-- **Names from your contacts:** off at first. Under **SMS** in the menu, **Show names from my contacts** shows the
-  names your phone's contacts give SMS numbers, and the pictures they have for them, in the list and in the
-  conversation. Erevos only reads them to show them, and keeps no copy.
+- **Names from your contacts:** off at first, so SMS numbers show as numbers. **Names**, above the list, unlocks
+  them (as does **Show names from my contacts** under **SMS** in the menu): the names your phone's contacts give SMS
+  numbers, and the pictures they have for them, or else those of your contacts kept only in Erevos, in the list and
+  in the conversation. Tap **Names** again for numbers only. Erevos only reads them to show them, and keeps no copy.
 - **Senders with a name:** an SMS from a name instead of a number, like a bank's, opens to read, but cannot be
   answered.
 
