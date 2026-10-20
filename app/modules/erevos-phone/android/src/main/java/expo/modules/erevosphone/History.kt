@@ -18,9 +18,10 @@ import android.telecom.TelecomManager
 /**
  * Android's call history (CallLog.Calls), which Telecom writes for every call, the phone's
  * starred contacts, its favourites, and its contact groups. Erevos reads them for the Phone
- * screen, which is behind its password, and keeps no copy; it changes only the history, when the
- * owner deletes calls from it. Names come from the phone's contacts as they are now, and from
- * what Erevos knows of numbers while a space is open (Calls.knownName). Not compiled or run yet.
+ * screen, which is behind its password unless its owner lets it open without it, and keeps no
+ * copy; it changes only the history, when the owner deletes calls from it. Names come from the
+ * phone's contacts as they are now, and from what Erevos knows of numbers while a space is open
+ * (Calls.knownName). Not compiled or run yet.
  */
 internal object History {
   /** The most calls read at once, newest first. */
@@ -49,20 +50,24 @@ internal object History {
       CallLog.Calls.NEW,
     )
     if (Build.VERSION.SDK_INT >= 29) columns.add(CallLog.Calls.BLOCK_REASON)
-    val names = HashMap<String, Contact?>()
+    // The contacts are read once, not once for each number, and the country once: with hundreds of
+    // calls, asking Android for each made the list slow to show.
+    val book = phoneBook(context)
+    val country = Callers.country(context)
+    val shown = HashMap<String, String>()
     val calls = ArrayList<Map<String, Any?>>()
     try {
       context.contentResolver.query(uri, columns.toTypedArray(), null, null, "${CallLog.Calls.DATE} DESC")?.use { c ->
         while (c.moveToNext() && calls.size < MOST) {
           val number = c.getString(1) ?: ""
           val presentation = c.getInt(7)
-          val contact = if (number.isBlank()) null else names.getOrPut(number) { Callers.lookup(context, number) }
+          val contact = book.find(number)
           val name = Calls.knownName(number) ?: contact?.name ?: c.getString(8) ?: ""
           calls.add(
             mapOf(
               "id" to c.getLong(0).toDouble(),
               "number" to number,
-              "shown" to Callers.shown(context, number),
+              "shown" to shown.getOrPut(number) { Callers.shown(number, country) },
               "name" to name,
               "photo" to (contact?.thumb ?: ""),
               "at" to c.getLong(2).toDouble(),
@@ -81,6 +86,42 @@ internal object History {
       return emptyList()
     }
     return calls
+  }
+
+  /** The phone's contacts by their numbers: matched as calls are (Calls.key), else by their last
+   *  nine digits, as a number written with its country code and one written with the country's
+   *  leading 0 differ before them. */
+  private class PhoneBook {
+    val byKey = HashMap<String, Contact>()
+    val byNine = HashMap<String, Contact>()
+
+    fun add(number: String, contact: Contact) {
+      Calls.key(number)?.let { byKey.putIfAbsent(it, contact) }
+      nine(number)?.let { byNine.putIfAbsent(it, contact) }
+    }
+
+    fun find(number: String): Contact? = Calls.key(number)?.let { byKey[it] } ?: nine(number)?.let { byNine[it] }
+
+    private fun nine(number: String): String? = number.filter { it.isDigit() }.takeIf { it.length >= 9 }?.takeLast(9)
+  }
+
+  /** The phone's contacts, read at once; the number a contact marked as its main one first. Empty
+   *  while Erevos may not read the contacts. */
+  private fun phoneBook(context: Context): PhoneBook {
+    val book = PhoneBook()
+    if (!contactsAllowed(context)) return book
+    val columns = arrayOf(Phone.CONTACT_ID, Phone.NUMBER, Phone.DISPLAY_NAME, Phone.PHOTO_URI, Phone.PHOTO_THUMBNAIL_URI)
+    try {
+      context.contentResolver.query(Phone.CONTENT_URI, columns, null, null, "${Phone.IS_SUPER_PRIMARY} DESC")?.use { c ->
+        while (c.moveToNext()) {
+          val number = c.getString(1)?.takeIf { it.isNotBlank() } ?: continue
+          book.add(number, Contact(c.getLong(0), c.getString(2), c.getString(3), c.getString(4)))
+        }
+      }
+    } catch (_: SecurityException) {
+      return PhoneBook()
+    }
+    return book
   }
 
   /** Deletes calls from the history, by their ids; how many went. The phone app may. */

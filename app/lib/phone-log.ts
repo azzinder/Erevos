@@ -1,11 +1,35 @@
 // The Phone screen's calls (app/phone.tsx): Android's own call history (modules/erevos-phone),
-// read each time the screen shows it and never kept. What each call was, the filters, and the
-// calls one after another with the same number drawn as one row, under the day they were on.
+// read each time the screen shows it, and kept only in memory, so that it shows at once the next
+// time. What each call was, the filters, and the calls one after another with the same number
+// drawn as one row, under the day they were on.
 
 import { mark, t } from './i18n';
 import type { LoggedCall } from '../modules/erevos-phone';
 
 export type CallKind = 'incoming' | 'outgoing' | 'missed' | 'declined' | 'blocked';
+
+/** The call history as Android gives it (callHistory in modules/erevos-phone). */
+export type CallHistory = { allowed: boolean; calls: LoggedCall[] };
+
+// The history as last read, and the space it was read in (its key; null with Erevos locked), as
+// its names are partly the space's (lib/known-names.ts): it shows only there, and goes as Erevos
+// locks (app/_layout.tsx).
+let kept: { space: object | null; history: CallHistory } | null = null;
+
+/** The call history last read in this space, to show while it is read again; null if none was. */
+export function keptHistory(space: object | null): CallHistory | null {
+  return kept && kept.space === space ? kept.history : null;
+}
+
+/** Keeps the call history just read in this space, in memory only. */
+export function keepHistory(space: object | null, history: CallHistory): void {
+  kept = { space, history };
+}
+
+/** Erevos locks: the call history last read goes. */
+export function forgetHistory(): void {
+  kept = null;
+}
 
 /** What the history shows: every call, or one kind; `incoming` takes the declined ones too. */
 export type CallFilter = 'all' | 'missed' | 'incoming' | 'outgoing' | 'blocked';

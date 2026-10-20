@@ -717,7 +717,8 @@ On Android, Erevos can be the phone's phone app: under **Phone** in the menu, ta
 phone app**. Every call then shows on Erevos's own call screen, and tel: links and the phone's call button open
 Erevos's keypad. **Phone** opens from the handset at the top of the home screen too, and has an icon of its own in
 the phone's apps, **Phone** with a handset on Erevos's icon, which opens the keypad. Each of these, like a tel: link,
-opens it once Erevos is unlocked: with a password, after you type it.
+opens it once Erevos is unlocked: with a password, after you type it, unless the Phone opens without it (see Erevos's
+password, below).
 
 - **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them; while
   Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them, and so does the
@@ -776,7 +777,14 @@ opens it once Erevos is unlocked: with a password, after you type it.
   **Blocked**. Erevos only reads the groups, and keeps the group's id and the time, not its name. While a group is
   blocked, the **Phone** screen says so at the top, until when, with **Lift**.
 - **Erevos's password:** the **Phone** screen, with the keypad, the calls and the favourites, is behind it like the
-  rest of Erevos. Only the call screen is not.
+  rest of Erevos. Only the call screen is not, unless you let the Phone open without it: under **Phone** →
+  **Settings**, **Open the Phone without the password** (off at first, and shown only while Erevos has a password).
+  With Erevos locked, the Phone's icon, a tel: link and the notice of a missed call then open the keypad,
+  **Recents** and **Favourites**, which Android keeps for every phone app, with the names of the phone's contacts only:
+  never those kept only in Erevos or of hidden chats, and no SIM kept for a number. There you can call, nothing more:
+  no deleting, blocking, SMS or adding to contacts. **Open Erevos** at the top shows the password screen, as does
+  Erevos's own icon after Erevos was in the background for more than 30 seconds, unless a call made there took it
+  away. **Keep the Phone behind the password** turns it off.
 - **If Erevos does not become the phone app:** as with SMS, Android 15 and later can hold it back from an app
   installed from a browser. Under **Settings**, tap **Open Default apps** → **Phone app** → Erevos. If Android calls
   it a restricted setting, open **Erevos's App info**, tap **⋮** at the top right → **Allow restricted settings**,

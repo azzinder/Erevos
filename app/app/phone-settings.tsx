@@ -7,6 +7,7 @@ import { Button, Card, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { askFullScreen, backgroundState } from '../lib/background';
 import { mark, plural, t } from '../lib/i18n';
 import { cleanReplies, MAX_REPLIES, MAX_REPLY } from '../lib/phone';
+import { phoneOpensLocked, setPhoneOpensLocked } from '../lib/phone-open';
 import {
   addPrefix,
   BLOCK_FOR,
@@ -39,6 +40,7 @@ import {
   type PhoneStatus,
 } from '../modules/erevos-phone';
 import { smsToolsReady } from '../modules/erevos-sms';
+import { useLock } from '../lock/context';
 import { space } from '../theme/colors';
 import { useTheme } from '../theme/context';
 
@@ -144,7 +146,7 @@ export default function PhoneSettings() {
       <Card>
         <Text variant="bodyStrong">{status?.isDefault ? t('Erevos is the phone app') : t('Erevos is not the phone app')}</Text>
         <Text tone="muted">
-          {t("As the phone app, Erevos shows every call on its own screen: who calls, with their photo, over the lock screen too, without unlocking Erevos. Its Phone screen, with the keypad, the calls and the favourites, stays behind Erevos's password. Phone calls are plain phone calls: the phone company carries them, as it carries every call.")}
+          {t("As the phone app, Erevos shows every call on its own screen: who calls, with their photo, over the lock screen too, without unlocking Erevos. Its Phone screen, with the keypad, the calls and the favourites, stays behind Erevos's password, unless you let it open without it, below. Phone calls are plain phone calls: the phone company carries them, as it carries every call.")}
         </Text>
         {status?.isDefault ? null : (
           <>
@@ -184,9 +186,50 @@ export default function PhoneSettings() {
         {status && !status.phone ? <Text tone="muted">{t('This device has no phone part, so it cannot make calls.')}</Text> : null}
         {note ? <Text tone="muted">{note}</Text> : null}
       </Card>
+      {status?.isDefault ? <OpenLocked /> : null}
       {status?.isDefault ? <QuickReplies /> : null}
       {status?.isDefault ? <Blocking screens={status.screens} /> : null}
     </Page>
+  );
+}
+
+// Whether the Phone opens without Erevos's password (lib/phone-open.ts); only with a password to
+// open without.
+function OpenLocked() {
+  const { passwordLock } = useLock();
+  const [on, setOn] = useState<boolean | null>(null);
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    void phoneOpensLocked().then(setOn);
+  }, []);
+
+  if (!passwordLock || on === null) return null;
+
+  async function change(next: boolean) {
+    setNote('');
+    try {
+      await setPhoneOpensLocked(next);
+      setOn(next);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  return (
+    <Card>
+      <Text variant="bodyStrong">{t('Open the Phone without the password')}</Text>
+      <Text tone="muted">
+        {t("With Erevos locked, the Phone's icon, a tel: link and the notice of a missed call then open the keypad, the calls and the favourites, which Android keeps for every phone app. Anyone holding the unlocked phone sees your calls and favourites, with the names of the phone's contacts only, never those kept only in Erevos or in hidden chats. Calls can be made there, nothing changed; everything else stays behind the password.")}
+      </Text>
+      {on ? <Text variant="bodyStrong">{t('The Phone opens without the password.')}</Text> : null}
+      <Button
+        title={on ? t('Keep the Phone behind the password') : t('Open the Phone without the password')}
+        kind={on ? 'secondary' : 'primary'}
+        onPress={() => void change(!on)}
+      />
+      {note ? <Text tone="muted">{note}</Text> : null}
+    </Card>
   );
 }
 

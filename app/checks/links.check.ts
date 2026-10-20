@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { splitLinks } from '../lib/links';
-import { holdLink, KEEP_MS, linkHref, linkParts, lockingKeepsLink, onLinkHeld, RELOCK_MS, takeLink } from '../lib/open-link';
+import { holdLink, KEEP_MS, linkHref, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, takeLink } from '../lib/open-link';
 
 const urls = (text: string) => splitLinks(text).flatMap((part) => (part.url ? [part.url] : []));
 
@@ -69,4 +69,12 @@ test('a link opened just before Erevos locks opens again after the password', ()
   assert.equal(takeLink(9000), null);
   lockingKeepsLink(9000);
   assert.equal(takeLink(9000), null);
+});
+
+test('a held link can be looked at, as the locked Phone does, and stays held', () => {
+  holdLink('erevos://phone?tab=recents', 1000);
+  assert.equal(peekLink(2000), '/phone?tab=recents');
+  assert.equal(peekLink(1000 + KEEP_MS + 1), null, 'too old');
+  assert.equal(takeLink(2000), '/phone?tab=recents');
+  assert.equal(peekLink(2000), null);
 });

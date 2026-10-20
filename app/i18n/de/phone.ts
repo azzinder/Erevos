@@ -67,8 +67,8 @@ export const phone: Record<string, string> = {
   // The phone's settings (app/phone-settings.tsx).
   'Phone settings': 'Telefon-Einstellungen',
   'Erevos is the phone app': 'Erevos ist die Telefon-App',
-  "As the phone app, Erevos shows every call on its own screen: who calls, with their photo, over the lock screen too, without unlocking Erevos. Its Phone screen, with the keypad, the calls and the favourites, stays behind Erevos's password. Phone calls are plain phone calls: the phone company carries them, as it carries every call.":
-    'Als Telefon-App zeigt Erevos jeden Anruf auf seinem eigenen Bildschirm: wer anruft, mit Foto, auch über dem Sperrbildschirm, ohne dass du Erevos entsperrst. Sein Bildschirm „Telefon“ mit Wähltasten, Anrufen und Favoriten bleibt hinter dem Passwort von Erevos. Telefonanrufe sind normale Telefonanrufe: Der Mobilfunkanbieter überträgt sie, wie jeden Anruf.',
+  "As the phone app, Erevos shows every call on its own screen: who calls, with their photo, over the lock screen too, without unlocking Erevos. Its Phone screen, with the keypad, the calls and the favourites, stays behind Erevos's password, unless you let it open without it, below. Phone calls are plain phone calls: the phone company carries them, as it carries every call.":
+    'Als Telefon-App zeigt Erevos jeden Anruf auf seinem eigenen Bildschirm: wer anruft, mit Foto, auch über dem Sperrbildschirm, ohne dass du Erevos entsperrst. Sein Bildschirm „Telefon“ mit Wähltasten, Anrufen und Favoriten bleibt hinter dem Passwort von Erevos, außer du lässt ihn unten ohne Passwort öffnen. Telefonanrufe sind normale Telefonanrufe: Der Mobilfunkanbieter überträgt sie, wie jeden Anruf.',
   'Make Erevos the phone app': 'Erevos zur Telefon-App machen',
   'Android did not make Erevos the phone app': 'Android hat Erevos nicht zur Telefon-App gemacht',
   "Choose Erevos in Android's Default apps → Phone app. If Android says it is a restricted setting, open Erevos's App info, tap ⋮ at the top right → Allow restricted settings, and choose Erevos again.":
@@ -90,6 +90,14 @@ export const phone: Record<string, string> = {
   Remove: 'Entfernen',
   'Add a reply': 'Antwort hinzufügen',
   'Use the usual replies': 'Die üblichen Antworten nutzen',
+
+  // Opening the Phone without the password (app/phone-settings.tsx, lib/phone-open.ts).
+  'Open Erevos': 'Erevos öffnen',
+  'Open the Phone without the password': 'Telefon ohne Passwort öffnen',
+  "With Erevos locked, the Phone's icon, a tel: link and the notice of a missed call then open the keypad, the calls and the favourites, which Android keeps for every phone app. Anyone holding the unlocked phone sees your calls and favourites, with the names of the phone's contacts only, never those kept only in Erevos or in hidden chats. Calls can be made there, nothing changed; everything else stays behind the password.":
+    'Bei gesperrtem Erevos öffnen dann das Symbol des Telefons, ein tel:-Link und die Mitteilung über einen verpassten Anruf die Wähltasten, die Anrufe und die Favoriten, die Android für jede Telefon-App aufbewahrt. Wer das entsperrte Handy in der Hand hat, sieht deine Anrufe und Favoriten, nur mit den Namen aus den Kontakten des Handys, nie mit denen, die nur Erevos oder versteckte Chats kennen. Dort lässt sich anrufen, aber nichts ändern; alles andere bleibt hinter dem Passwort.',
+  'The Phone opens without the password.': 'Das Telefon öffnet sich ohne Passwort.',
+  'Keep the Phone behind the password': 'Telefon wieder hinter das Passwort',
 
   // Blocking calls (app/phone-settings.tsx, lib/phone-rules.ts).
   Blocking: 'Anrufe blockieren',

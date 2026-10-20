@@ -67,8 +67,8 @@ export const phone: Record<string, string> = {
   // The phone's settings (app/phone-settings.tsx).
   'Phone settings': 'Ρυθμίσεις τηλεφώνου',
   'Erevos is the phone app': 'Το Erevos είναι η εφαρμογή τηλεφώνου',
-  "As the phone app, Erevos shows every call on its own screen: who calls, with their photo, over the lock screen too, without unlocking Erevos. Its Phone screen, with the keypad, the calls and the favourites, stays behind Erevos's password. Phone calls are plain phone calls: the phone company carries them, as it carries every call.":
-    'Ως εφαρμογή τηλεφώνου, το Erevos δείχνει κάθε κλήση στη δική του οθόνη: ποιος καλεί, με τη φωτογραφία του, και πάνω από την οθόνη κλειδώματος, χωρίς να ξεκλειδώσεις το Erevos. Η οθόνη «Τηλέφωνο», με το πληκτρολόγιο, τις κλήσεις και τα αγαπημένα, μένει πίσω από τον κωδικό του Erevos. Οι κλήσεις τηλεφώνου είναι απλές κλήσεις: τις μεταφέρει η εταιρεία κινητής, όπως κάθε κλήση.',
+  "As the phone app, Erevos shows every call on its own screen: who calls, with their photo, over the lock screen too, without unlocking Erevos. Its Phone screen, with the keypad, the calls and the favourites, stays behind Erevos's password, unless you let it open without it, below. Phone calls are plain phone calls: the phone company carries them, as it carries every call.":
+    'Ως εφαρμογή τηλεφώνου, το Erevos δείχνει κάθε κλήση στη δική του οθόνη: ποιος καλεί, με τη φωτογραφία του, και πάνω από την οθόνη κλειδώματος, χωρίς να ξεκλειδώσεις το Erevos. Η οθόνη «Τηλέφωνο», με το πληκτρολόγιο, τις κλήσεις και τα αγαπημένα, μένει πίσω από τον κωδικό του Erevos, εκτός αν την αφήσεις να ανοίγει χωρίς αυτόν, παρακάτω. Οι κλήσεις τηλεφώνου είναι απλές κλήσεις: τις μεταφέρει η εταιρεία κινητής, όπως κάθε κλήση.',
   'Make Erevos the phone app': 'Κάνε το Erevos εφαρμογή τηλεφώνου',
   'Android did not make Erevos the phone app': 'Το Android δεν έκανε το Erevos εφαρμογή τηλεφώνου',
   "Choose Erevos in Android's Default apps → Phone app. If Android says it is a restricted setting, open Erevos's App info, tap ⋮ at the top right → Allow restricted settings, and choose Erevos again.":
@@ -90,6 +90,14 @@ export const phone: Record<string, string> = {
   Remove: 'Αφαίρεση',
   'Add a reply': 'Προσθήκη απάντησης',
   'Use the usual replies': 'Οι συνηθισμένες απαντήσεις',
+
+  // Opening the Phone without the password (app/phone-settings.tsx, lib/phone-open.ts).
+  'Open Erevos': 'Άνοιγμα Erevos',
+  'Open the Phone without the password': 'Άνοιγμα του Τηλεφώνου χωρίς κωδικό',
+  "With Erevos locked, the Phone's icon, a tel: link and the notice of a missed call then open the keypad, the calls and the favourites, which Android keeps for every phone app. Anyone holding the unlocked phone sees your calls and favourites, with the names of the phone's contacts only, never those kept only in Erevos or in hidden chats. Calls can be made there, nothing changed; everything else stays behind the password.":
+    'Με το Erevos κλειδωμένο, το εικονίδιο του Τηλεφώνου, ένας σύνδεσμος tel: και η ειδοποίηση αναπάντητης κλήσης ανοίγουν τότε το πληκτρολόγιο, τις κλήσεις και τα αγαπημένα, που το Android τα κρατά για κάθε εφαρμογή τηλεφώνου. Όποιος κρατά το ξεκλείδωτο κινητό βλέπει τις κλήσεις και τα αγαπημένα σου, με ονόματα μόνο από τις επαφές του κινητού, ποτέ αυτά που κρατά μόνο το Erevos ή οι κρυφές συνομιλίες. Από εκεί γίνονται κλήσεις, χωρίς να αλλάζει τίποτα· όλα τα άλλα μένουν πίσω από τον κωδικό.',
+  'The Phone opens without the password.': 'Το Τηλέφωνο ανοίγει χωρίς κωδικό.',
+  'Keep the Phone behind the password': 'Τηλέφωνο πάλι πίσω από τον κωδικό',
 
   // Blocking calls (app/phone-settings.tsx, lib/phone-rules.ts).
   Blocking: 'Αποκλεισμός',

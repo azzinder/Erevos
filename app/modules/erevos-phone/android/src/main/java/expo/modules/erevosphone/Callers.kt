@@ -93,9 +93,11 @@ internal object Callers {
     context.contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it) }
 
   /** The number as the phone writes it in its own country, or as it is. */
-  fun shown(context: Context, number: String): String {
+  fun shown(context: Context, number: String): String = shown(number, country(context))
+
+  /** The number as it is written in `country` ("FR"), or as it is. */
+  fun shown(number: String, country: String?): String {
     if (number.isBlank()) return number
-    val country = country(context)
     return (if (country != null) PhoneNumberUtils.formatNumber(number, country) else null) ?: number
   }
 

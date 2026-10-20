@@ -25,10 +25,13 @@ import {
   filterCalls,
   groupCalls,
   hiddenNumber,
+  keepHistory,
+  keptHistory,
   KIND_LABELS,
   withDays,
   withoutCalls,
   type CallFilter,
+  type CallHistory,
   type CallRow,
 } from '../lib/phone-log';
 import { blockedUntil, liftGroup, liveGroups, rulesFrom, rulesJson, type PhoneRules } from '../lib/phone-rules';
@@ -63,9 +66,11 @@ import { useStyles, useTheme } from '../theme/context';
 // number, the calls (Android's call history, with filters) and the favourites (the phone's starred
 // contacts); above them, while a contact group's calls are blocked, a reminder with Lift. A call
 // itself shows on the native call screen, which works with Erevos locked and over the phone's lock
-// screen; this screen is behind Erevos's password like the rest of the app. It opens from tel:
-// links and the phone's call button with the number typed in (`number`), and from Android's notice
-// of a missed call on the calls (`tab`). With two SIMs, each call goes on the one chosen for its
+// screen; this screen is behind Erevos's password like the rest of the app, unless its owner lets
+// it open without it (lib/phone-open.ts): then, with Erevos locked, it shows on its own
+// (app/_layout.tsx), with the names of the phone's contacts only, and calls can be looked at and
+// made, nothing changed. It opens from tel: links and the phone's call button with the number
+// typed in (`number`), and from Android's notice of a missed call on the calls (`tab`). With two SIMs, each call goes on the one chosen for its
 // number (lib/phone-sims.ts), else on the one chosen now, which is then kept for the number.
 
 type Tab = 'keypad' | 'recents' | 'favourites';
@@ -91,6 +96,23 @@ const hiding = new Set<number>();
 const hidingChanged = new Set<() => void>();
 const tellHiding = () => hidingChanged.forEach((listener) => listener());
 
+// The open space's key, which the call history kept is for (lib/phone-log.ts); null while Erevos is locked.
+function spaceKey(): Uint8Array | null {
+  try {
+    return currentSpace().key;
+  } catch {
+    return null;
+  }
+}
+
+// Reads the call history, and keeps it for the next time the calls show.
+async function readHistory(): Promise<CallHistory> {
+  const space = spaceKey();
+  const history = await callHistory().catch((): CallHistory => ({ allowed: false, calls: [] }));
+  keepHistory(space, history);
+  return history;
+}
+
 async function deleteNow(item: Deleting) {
   try {
     await (item.number ? deleteCallsOf(item.number, item.before) : deleteCalls(item.calls));
@@ -104,6 +126,15 @@ async function deleteNow(item: Deleting) {
 
 export default function Phone() {
   const params = useLocalSearchParams<{ number?: string; tab?: string }>();
+  return <PhoneView params={params} />;
+}
+
+/** The Phone shown with Erevos locked (app/_layout.tsx): `onOpen` shows the password screen, and
+ *  `onCalled` is told just before a call is made, which takes Erevos to the background. */
+export type LockedPhone = { onOpen: () => void; onCalled: () => void };
+
+/** The Phone, with a link's details (`params`); `locked` with Erevos locked. */
+export function PhoneView({ params, locked }: { params: { number?: string; tab?: string }; locked?: LockedPhone }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -135,10 +166,15 @@ export default function Phone() {
       phoneAccounts().then(setAccounts, () => setAccounts([]));
     };
     look();
-    const { space: open, key } = currentSpace();
-    PhoneSims.open(open, key).then(setSims, () => setSims(null));
-    // A contact linked to a number since the space opened: its calls show its name too.
-    void refreshKnownNames();
+    // The calls are read at once, so that they show as soon as they are opened.
+    void readHistory();
+    // With Erevos locked, no space is open: no SIM is kept for a number, and no name of its own shows.
+    if (!locked) {
+      const { space: open, key } = currentSpace();
+      PhoneSims.open(open, key).then(setSims, () => setSims(null));
+      // A contact linked to a number since the space opened: its calls show its name too.
+      void refreshKnownNames();
+    }
     const app = AppState.addEventListener('change', (state) => state === 'active' && look());
     const calls = onPhoneEvent('onCalls', () => setStatus(phoneStatus()));
     return () => {
@@ -186,6 +222,7 @@ export default function Phone() {
         const answer = await PermissionsAndroid.request('android.permission.CALL_PHONE');
         if (answer !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(t('Erevos may not make calls. Make it the phone app under Settings.'));
       }
+      locked?.onCalled();
       await placeCall(plain, on);
       if (on && accounts.length >= 2) sims?.remember(plain, on).catch(() => undefined);
     } catch (error) {
@@ -210,8 +247,14 @@ export default function Phone() {
           <Text variant="title" style={styles.title}>
             {t('Phone')}
           </Text>
-          <Button title={t('Contacts')} kind="secondary" compact onPress={() => router.push('/contacts')} />
-          <Button title={t('Settings')} kind="secondary" compact onPress={() => router.push('/phone-settings')} />
+          {locked ? (
+            <Button title={t('Open Erevos')} kind="secondary" compact onPress={locked.onOpen} />
+          ) : (
+            <>
+              <Button title={t('Contacts')} kind="secondary" compact onPress={() => router.push('/contacts')} />
+              <Button title={t('Settings')} kind="secondary" compact onPress={() => router.push('/phone-settings')} />
+            </>
+          )}
         </Row>
         {status && status.calls > 0 ? <Button title={t('Back to the call')} onPress={showCall} /> : null}
         {status && !status.isDefault ? (
@@ -220,7 +263,7 @@ export default function Phone() {
             <Text tone="muted">{t("Calls made here show on Android's own call screen until you make Erevos the phone app, under Settings.")}</Text>
           </Card>
         ) : null}
-        <GroupBlocks />
+        {locked ? null : <GroupBlocks />}
         <Row style={styles.tabs}>
           {TABS.map((each) => (
             <Chip key={each.tab} label={t(each.label)} selected={tab === each.tab} onPress={() => setTab(each.tab)} />
@@ -232,6 +275,7 @@ export default function Phone() {
       {tab === 'recents' ? (
         <Recents
           accounts={accounts}
+          locked={!!locked}
           onCall={(to, account) => void call(to, account)}
           onEdit={(to) => {
             setNumber(dialNumber(to));
@@ -332,9 +376,11 @@ export default function Phone() {
             }}
           />
         ))}
-        <Text variant="caption" tone="faint">
-          {t('Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.')}
-        </Text>
+        {locked ? null : (
+          <Text variant="caption" tone="faint">
+            {t('Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.')}
+          </Text>
+        )}
       </Sheet>
 
       <UndoBar bottom={insets.bottom + space.md} />
@@ -407,14 +453,16 @@ function GroupBlocks() {
 
 // Android's call history, read again whenever it changes, with filters; a row opens its calls,
 // which can be deleted from there, with Undo for a few seconds, and its number added to the
-// contacts when it is none.
-function Recents({ accounts, onCall, onEdit }: {
+// contacts when it is none. With Erevos locked, calls are only looked at and made.
+function Recents({ accounts, locked, onCall, onEdit }: {
   accounts: PhoneAccount[];
+  locked: boolean;
   onCall: (number: string, account?: string) => void;
   onEdit: (number: string) => void;
 }) {
   const styles = useStyles(makeStyles);
-  const [history, setHistory] = useState<{ allowed: boolean; calls: LoggedCall[] } | null>(null);
+  // The calls last read show at once, while they are read again.
+  const [history, setHistory] = useState<CallHistory | null>(() => keptHistory(spaceKey()));
   const [filter, setFilter] = useState<CallFilter>('all');
   const [account, setAccount] = useState('');
   // The ids of the calls of the row that is open.
@@ -425,7 +473,7 @@ function Recents({ accounts, onCall, onEdit }: {
   const [blocked, setBlocked] = useState<string[] | null>(null);
 
   useEffect(() => {
-    const load = () => callHistory().then(setHistory, () => setHistory({ allowed: false, calls: [] }));
+    const load = () => readHistory().then(setHistory);
     const lookBlocked = () => void canBlockNumbers().then((can) => (can ? blockedNumbers().then(setBlocked) : setBlocked(null)));
     load();
     lookBlocked();
@@ -462,7 +510,7 @@ function Recents({ accounts, onCall, onEdit }: {
   const ofNumber = first ? callsWith(calls, first) : [];
   // Whether the open row's number is one of the contacts; one that is not can be added.
   const [known, setKnown] = useState<boolean | null>(null);
-  const openNumber = first && !hiddenNumber(first) && !first.name ? first.number : '';
+  const openNumber = !locked && first && !hiddenNumber(first) && !first.name ? first.number : '';
   useEffect(() => {
     setKnown(null);
     if (!openNumber) return;
@@ -475,7 +523,7 @@ function Recents({ accounts, onCall, onEdit }: {
 
   async function allow() {
     const answer = await PermissionsAndroid.request('android.permission.READ_CALL_LOG').catch(() => null);
-    if (answer === PermissionsAndroid.RESULTS.GRANTED) setHistory(await callHistory().catch(() => ({ allowed: false, calls: [] })));
+    if (answer === PermissionsAndroid.RESULTS.GRANTED) setHistory(await readHistory());
     else setNote(t('Android did not allow it. Under Settings, Allow calls and contacts says how to.'));
   }
 
@@ -588,7 +636,7 @@ function Recents({ accounts, onCall, onEdit }: {
             accounts={twoSims ? accounts : []}
             // One of several; the sheet closes so that Undo shows.
             onDelete={
-              row.calls.length > 1
+              !locked && row.calls.length > 1
                 ? (call) => {
                     setOpen(null);
                     void remove([call.id]);
@@ -619,14 +667,16 @@ function Recents({ accounts, onCall, onEdit }: {
                 }}
               />
             )}
-            <Button
-              title={t('Send an SMS')}
-              kind="secondary"
-              onPress={() => {
-                setOpen(null);
-                router.push(`/sms?to=${encodeURIComponent(first.number)}`);
-              }}
-            />
+            {locked ? null : (
+              <Button
+                title={t('Send an SMS')}
+                kind="secondary"
+                onPress={() => {
+                  setOpen(null);
+                  router.push(`/sms?to=${encodeURIComponent(first.number)}`);
+                }}
+              />
+            )}
             {known === false ? (
               <Button
                 title={t('Add to contacts')}
@@ -645,7 +695,7 @@ function Recents({ accounts, onCall, onEdit }: {
                 onEdit(first.number);
               }}
             />
-            {blocked ? (
+            {blocked && !locked ? (
               <Button
                 title={isBlocked(first.number, blocked) ? t('Unblock this number') : t('Block this number')}
                 kind="secondary"
@@ -657,7 +707,7 @@ function Recents({ accounts, onCall, onEdit }: {
             ) : null}
           </>
         ) : null}
-        {row && first ? (
+        {row && first && !locked ? (
           <>
             <Button
               title={plural(row.calls.length, 'Delete this call', 'Delete these {n} calls')}

@@ -17,7 +17,9 @@ import { forgetLinks } from '../lib/devices';
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
-import { linkParts, lockingKeepsLink, onLinkHeld, takeLink } from '../lib/open-link';
+import { linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, takeLink } from '../lib/open-link';
+import { phoneOpensLocked } from '../lib/phone-open';
+import { forgetHistory } from '../lib/phone-log';
 import { watchKnownNames } from '../lib/known-names';
 import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
@@ -40,6 +42,7 @@ import { space as gap } from '../theme/colors';
 import { ThemeProvider, useTheme } from '../theme/context';
 import { ensureStyleFonts } from '../theme/fonts';
 import { DEFAULT_LOOK, loadLockScreenLook, saveLockScreenLook, type Look } from '../theme/look';
+import { PhoneView } from './phone';
 
 setupCrypto();
 
@@ -109,6 +112,7 @@ export default function RootLayout() {
     forgetSmsLink();
     forgetSpare();
     clearKnownNames();
+    forgetHistory();
     setThroughTor(false);
     setPhase({ kind: 'loading' });
     // The keystore holds the same entries whatever is in use: made once per start, beside the
@@ -245,7 +249,7 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
   if (phase.kind === 'locked') {
     return (
       <ScreenBackdrop>
-        <PasswordGate key={lang} config={phase.config} onUnlock={onUnlock} />
+        <Locked lang={lang} config={phase.config} onUnlock={onUnlock} />
         <AlertHost />
         {bar}
       </ScreenBackdrop>
@@ -281,6 +285,63 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
       {bar}
     </LockContext.Provider>
   );
+}
+
+// How long before Erevos goes to the background a call made on the locked Phone may be, for it to
+// be what took Erevos there.
+const CALL_LEAVES_MS = 10_000;
+
+// With Erevos locked: the password screen, or the Phone, when a link asks for it and it opens
+// without the password (lib/phone-open.ts): its icon, a tel: link, the notice of a missed call.
+// Any other link waits for the password. Back from the background after Erevos would have locked,
+// the password screen shows again, unless a call made on the Phone took it there, or the Phone's
+// link brought it back.
+function Locked({ lang, config, onUnlock }: { lang: Lang; config: LockConfig; onUnlock: (space: { space: number; key: Uint8Array }) => Promise<void> }) {
+  const [phone, setPhone] = useState<Record<string, string> | null>(null);
+  const opens = useRef(false);
+  const linkAt = useRef(0);
+  const calledAt = useRef(0);
+  const awayAt = useRef<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const look = () => {
+      const href = peekLink();
+      if (!href) return;
+      const { path, params } = linkParts(href);
+      if (path !== '/phone' || !opens.current) {
+        setPhone(null);
+        return;
+      }
+      takeLink();
+      linkAt.current = Date.now();
+      setPhone(params);
+    };
+    void phoneOpensLocked().then((on) => {
+      if (!active) return;
+      opens.current = on;
+      look();
+    });
+    const stop = onLinkHeld(look);
+    const app = AppState.addEventListener('change', (state) => {
+      if (state === 'background') awayAt.current = Date.now();
+      if (state !== 'active' || awayAt.current === null) return;
+      const left = awayAt.current;
+      awayAt.current = null;
+      const now = Date.now();
+      if (now - left > RELOCK_AFTER_MS && left - calledAt.current > CALL_LEAVES_MS && now - linkAt.current > RELOCK_MS) setPhone(null);
+    });
+    return () => {
+      active = false;
+      stop();
+      app.remove();
+    };
+  }, []);
+
+  if (phone) {
+    return <PhoneView params={phone} locked={{ onOpen: () => setPhone(null), onCalled: () => (calledAt.current = Date.now()) }} />;
+  }
+  return <PasswordGate key={lang} config={config} onUnlock={onUnlock} />;
 }
 
 // Opens the screen a link names, held while the password screen showed (lib/open-link.ts), once

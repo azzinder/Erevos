@@ -54,6 +54,11 @@ export function holdLink(url: string, now = Date.now()): void {
   for (const listener of [...listeners]) listener();
 }
 
+/** The link held, left held: null when none is, or it came too long ago. */
+export function peekLink(now = Date.now()): string | null {
+  return held && now - held.at <= KEEP_MS ? held.href : null;
+}
+
 /** The link held, once: null when none is, or it came too long ago. */
 export function takeLink(now = Date.now()): string | null {
   const link = held;
