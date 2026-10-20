@@ -1,5 +1,7 @@
 package expo.modules.erevoscall
 
+import android.app.Activity
+import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
@@ -10,6 +12,7 @@ import android.media.Ringtone
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.WindowManager
@@ -33,6 +36,21 @@ class ErevosCallModule : Module() {
   private var ringtone: Ringtone? = null
   private var keepTask: Int? = null
 
+  // Whether a call shows over the lock screen. Erevos swiped away from the recent apps has no
+  // screen when a call rings: the one the call notice brings up then shows over it too.
+  private var overLock = false
+  private val created = object : Application.ActivityLifecycleCallbacks {
+    override fun onActivityCreated(activity: Activity, saved: Bundle?) {
+      if (overLock) setOverLock(activity, true)
+    }
+    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityResumed(activity: Activity) {}
+    override fun onActivityPaused(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivitySaveInstanceState(activity: Activity, state: Bundle) {}
+    override fun onActivityDestroyed(activity: Activity) {}
+  }
+
   private val context: Context?
     get() = appContext.reactContext
 
@@ -41,6 +59,14 @@ class ErevosCallModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("ErevosCall")
+
+    OnCreate {
+      (context?.applicationContext as? Application)?.registerActivityLifecycleCallbacks(created)
+    }
+
+    OnDestroy {
+      (context?.applicationContext as? Application)?.unregisterActivityLifecycleCallbacks(created)
+    }
 
     Function("start") { speaker: Boolean ->
       val manager = audio ?: return@Function
@@ -181,16 +207,19 @@ class ErevosCallModule : Module() {
   }
 
   private fun showOverLock(on: Boolean) {
+    overLock = on
     val activity = appContext.currentActivity ?: return
-    activity.runOnUiThread {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-        activity.setShowWhenLocked(on)
-        activity.setTurnScreenOn(on)
-      } else {
-        @Suppress("DEPRECATION")
-        val flags = WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-        if (on) activity.window.addFlags(flags) else activity.window.clearFlags(flags)
-      }
+    activity.runOnUiThread { setOverLock(activity, on) }
+  }
+
+  private fun setOverLock(activity: Activity, on: Boolean) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+      activity.setShowWhenLocked(on)
+      activity.setTurnScreenOn(on)
+    } else {
+      @Suppress("DEPRECATION")
+      val flags = WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+      if (on) activity.window.addFlags(flags) else activity.window.clearFlags(flags)
     }
   }
 

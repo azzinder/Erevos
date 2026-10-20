@@ -21,12 +21,66 @@ import { GroupCallScreen } from './group-call-screen';
 const LOOK_EVERY = 3000;
 const LOOK_IN_CALL = 700;
 
-// The call screen over whatever screen shows, while the space is open (lib/calls.ts). A contact's
-// call that the receiver opens rings here; the chat screen hands over the ones it opens itself.
-// The call ends when the space closes. On Android a contact's call rings with the phone's
-// ringtone, and while Erevos is in the background (lib/background.ts) also with a notice that
-// says only "Incoming call", over the lock screen; tapping it brings Erevos up to answer. A group's
-// call (lib/group-calls.ts) shows and rings here the same way.
+// The open space's calls, whatever shows, and while no screen shows (lib/space-running.ts): their
+// signals taken, a contact's call that the receiver opens rung, and the relay looked at more
+// often during one. On Android a contact's call rings with the phone's ringtone, and while Erevos
+// is in the background (lib/background.ts) also with a notice that says only "Incoming call",
+// over the lock screen; tapping it brings Erevos up to answer. A group's call (lib/group-calls.ts)
+// rings the same way. Returns how to stop, which ends the call, as the space closes.
+export function watchCalls(): () => void {
+  let known: Call | null = null;
+  let knownGroup: GroupCall | null = null;
+  setReceiverPace(() => (currentCall() || currentGroupCall() ? LOOK_IN_CALL : LOOK_EVERY));
+  const stopGroupChange = onGroupCallChange(() => {
+    const call = shownGroupCall()?.call ?? null;
+    if (call && call !== knownGroup) {
+      knownGroup = call;
+      if (call.state === 'in') callAudio?.start(call.video);
+      else if (call.state === 'incoming') callAudio?.ring?.(call.video, AppState.currentState !== 'active');
+    }
+    if (call && call.state !== 'incoming' && !currentCall()) callAudio?.stopRinging?.();
+    if (call?.state === 'ended' && !currentCall()) {
+      callAudio?.stop();
+      callAudio?.showOverLock?.(false);
+    }
+  });
+  const stopGroupSignals = onSpaceGroupCall((group, from, signal) => void groupCallSignal(spaceGroupCalls, group, from, signal, rtc).catch(() => undefined));
+  const stopChange = onCallChange(() => {
+    const call = shownCall()?.call ?? null;
+    if (call && call !== known) {
+      known = call;
+      // Ours starts its sound at once; theirs once answered.
+      if (call.outgoing) callAudio?.start(call.video);
+      // Theirs rings with the phone's ringtone, and in the background with the call notice too.
+      else if (call.state === 'incoming') callAudio?.ring?.(call.video, AppState.currentState !== 'active');
+    }
+    if (call?.state !== 'incoming') callAudio?.stopRinging?.();
+    if (call?.state === 'ended') {
+      callAudio?.stop();
+      callAudio?.showOverLock?.(false);
+    }
+  });
+  const stopMessages = onMessage((received) => {
+    if (!received.call) return;
+    void callSignal(spaceCalls, `${CONTACT_PREFIX}${received.identity}`, received.call, received.request, rtc);
+  });
+  return () => {
+    stopChange();
+    stopMessages();
+    stopGroupChange();
+    stopGroupSignals();
+    setReceiverPace(() => LOOK_EVERY);
+    endCall();
+    endGroupCall();
+    callAudio?.stopRinging?.();
+    callAudio?.stop();
+    callAudio?.showOverLock?.(false);
+  };
+}
+
+// The call screen over whatever screen shows, while the space is open (watchCalls). The chat
+// screen hands over the calls it opens itself. A call that rang while no screen showed shows as
+// soon as the screens are there again.
 export function CallHost() {
   const [, setShown] = useState(0);
   const [speaker, setSpeaker] = useState(false);
@@ -35,14 +89,11 @@ export function CallHost() {
   const [names, setNames] = useState<{ group: string; contacts: { identity: string; name: string }[] }>({ group: '', contacts: [] });
 
   useEffect(() => {
-    setReceiverPace(() => (currentCall() || currentGroupCall() ? LOOK_IN_CALL : LOOK_EVERY));
-    const stopGroupChange = onGroupCallChange(() => {
+    const groupChanged = () => {
       const call = shownGroupCall()?.call ?? null;
       if (call && call !== knownGroup.current) {
         knownGroup.current = call;
         setSpeaker(call.video);
-        if (call.state === 'in') callAudio?.start(call.video);
-        else if (call.state === 'incoming') callAudio?.ring?.(call.video, AppState.currentState !== 'active');
         void Promise.all([spaceGroups(), spaceChats()])
           .then(([groups, { e2e }]) =>
             setNames({
@@ -52,48 +103,25 @@ export function CallHost() {
           )
           .catch(() => undefined);
       }
-      if (call && call.state !== 'incoming' && !currentCall()) callAudio?.stopRinging?.();
-      if (call?.state === 'ended' && !currentCall()) {
-        callAudio?.stop();
-        callAudio?.showOverLock?.(false);
-      }
       setShown((n) => n + 1);
-    });
-    const stopGroupSignals = onSpaceGroupCall((group, from, signal) => void groupCallSignal(spaceGroupCalls, group, from, signal, rtc).catch(() => undefined));
-    const stopChange = onCallChange(() => {
+    };
+    const changed = () => {
       const shown = shownCall();
       const call = shown?.call ?? null;
       if (call && call !== known.current) {
         known.current = call;
         setSpeaker(call.video);
-        // Ours starts its sound at once; theirs once answered.
-        if (call.outgoing) callAudio?.start(call.video);
-        // Theirs rings with the phone's ringtone, and in the background with the call notice too.
-        else if (call.state === 'incoming') callAudio?.ring?.(call.video, AppState.currentState !== 'active');
         if (shown?.place === spaceCalls) void learnSpaceNames().then(() => setShown((n) => n + 1), () => undefined);
       }
-      if (call?.state !== 'incoming') callAudio?.stopRinging?.();
-      if (call?.state === 'ended') {
-        callAudio?.stop();
-        callAudio?.showOverLock?.(false);
-      }
       setShown((n) => n + 1);
-    });
-    const stopMessages = onMessage((received) => {
-      if (!received.call) return;
-      void callSignal(spaceCalls, `${CONTACT_PREFIX}${received.identity}`, received.call, received.request, rtc);
-    });
+    };
+    groupChanged();
+    changed();
+    const stopGroupChange = onGroupCallChange(groupChanged);
+    const stopChange = onCallChange(changed);
     return () => {
-      stopChange();
-      stopMessages();
       stopGroupChange();
-      stopGroupSignals();
-      setReceiverPace(() => LOOK_EVERY);
-      endCall();
-      endGroupCall();
-      callAudio?.stopRinging?.();
-      callAudio?.stop();
-      callAudio?.showOverLock?.(false);
+      stopChange();
     };
   }, []);
 

@@ -300,7 +300,7 @@ function BackgroundCalls() {
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
           {on
-            ? t('While a space is open, Erevos keeps running in the background: it waits at the relay and on the links to phones nearby, so messages come and a call rings with the phone\'s ringtone, over the lock screen too. Only that space\'s chats and groups; hidden chats only say that a message came, if you let them. The notices say only "Erevos", "Incoming call" and how many messages came, never who or what; on a locked phone the one for messages says only "Erevos". Swiped away from the recent apps, Erevos takes nothing and cannot ring.')
+            ? t('While a space is open, Erevos keeps running in the background: it waits at the relay and on the links to phones nearby, so messages come and a call rings with the phone\'s ringtone, over the lock screen too. Only that space\'s chats and groups; hidden chats only say that a message came, if you let them. The notices say only "Erevos", "Incoming call" and how many messages came, never who or what; on a locked phone the one for messages says only "Erevos". Swiped away from the recent apps, it goes on the same; stopped by Android, it takes nothing and cannot ring.')
             : t('Messages come, and a call rings, only while Erevos shows. A call shows as missed once you open Erevos.')}
         </Text>
         {on && allowed && !allowed.notices ? (

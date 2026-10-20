@@ -4,16 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 
 import { AlertHost } from '../components/alert-host';
-import { CallHost } from '../components/call-host';
+import { CallHost, watchCalls } from '../components/call-host';
 import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
 import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
 import { startBackground } from '../lib/background';
 import { runAutoBackup } from '../lib/backup-folder';
 import { currentCall } from '../lib/call';
-import { onCallChange } from '../lib/calls';
+import { endCall, onCallChange } from '../lib/calls';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { forgetLinks } from '../lib/devices';
+import { endGroupCall } from '../lib/group-calls';
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
@@ -26,6 +27,7 @@ import { setThroughTor } from '../lib/relay';
 import { startSmsLater } from '../lib/sms-later';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
+import { keepSpaceRunning, stopSpaceRunning } from '../lib/space-running';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
 import { clearKnownNames, forgetKnownNamesAfter } from '../modules/erevos-phone';
@@ -60,6 +62,11 @@ type Phase =
   | { kind: 'locked'; config: LockConfig }
   | { kind: 'open'; space: number; passwordLock: boolean };
 
+// The space that was open when Android took the screens away (Erevos swiped away from the recent
+// apps), its look, and since when Erevos was away. The space goes on without them
+// (lib/space-running.ts), and the screens that start again find it as after the background.
+let left: { space: number; passwordLock: boolean; look: Look; at: number } | null = null;
+
 // Shows the password screen when the lock is on, and the app once a space is open. The space
 // decides what the chat finds on the phone (lock/space-data.ts) and how the app looks
 // (theme/look.ts), and the screens start afresh in each space, so nothing of one shows in another.
@@ -69,6 +76,7 @@ export default function RootLayout() {
   const [look, setLook] = useState<Look>(DEFAULT_LOOK);
   const [error, setError] = useState<string | null>(null);
   const phaseRef = useRef(phase);
+  const lookRef = useRef(look);
   const backgroundAt = useRef<number | null>(null);
   const relockAfterCall = useRef(false);
   const lang = useLang();
@@ -76,8 +84,14 @@ export default function RootLayout() {
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
+  useEffect(() => {
+    lookRef.current = look;
+  }, [look]);
 
-  const fail = useCallback((e: unknown) => setError(e instanceof Error ? e.message : String(e)), []);
+  const fail = useCallback((e: unknown) => {
+    stopSpaceRunning();
+    setError(e instanceof Error ? e.message : String(e));
+  }, []);
 
   // A look is shown once its style's fonts are ready, so no screen shows without them.
   const show = useCallback(async (next: Look) => {
@@ -104,6 +118,7 @@ export default function RootLayout() {
   const start = useCallback(async () => {
     // Nothing of the space that was open stays in memory, nor its screens: they start afresh
     // once a space opens (after a backup is restored too).
+    stopSpaceRunning();
     setCurrentSpace(null);
     // A link Erevos came back with opens after the password (lib/open-link.ts).
     lockingKeepsLink();
@@ -137,9 +152,43 @@ export default function RootLayout() {
     }
   }, [openSpace, show]);
 
+  // Back to the space that went on without its screens, as from the background: while the lock
+  // would not have closed it yet, or a call rings or goes on, which locks once it ends.
+  const goOn = useCallback(
+    async (was: NonNullable<typeof left>) => {
+      await show(was.look);
+      if (was.passwordLock && Date.now() - was.at > RELOCK_AFTER_MS) relockAfterCall.current = true;
+      else if (was.passwordLock) forgetKnownNamesAfter(-1);
+      setPhase({ kind: 'open', space: was.space, passwordLock: was.passwordLock });
+    },
+    [show],
+  );
+
   useEffect(() => {
-    start().catch(fail);
-  }, [start, fail]);
+    const was = left;
+    left = null;
+    let open: number | null = null;
+    try {
+      open = currentSpace().space;
+    } catch {
+      // No space is open.
+    }
+    const goesOn =
+      was !== null && was.space === open && (!was.passwordLock || Date.now() - was.at <= RELOCK_AFTER_MS || currentCall() !== null);
+    (goesOn ? goOn(was) : start()).catch(fail);
+  }, [start, goOn, fail]);
+
+  // Android took the screens away, Erevos swiped away from the recent apps: the open space goes
+  // on, ready for messages and calls, and a call ends, as it would have no screen.
+  useEffect(
+    () => () => {
+      const current = phaseRef.current;
+      left = current.kind === 'open' ? { space: current.space, passwordLock: current.passwordLock, look: lookRef.current, at: backgroundAt.current ?? Date.now() } : null;
+      endCall();
+      endGroupCall();
+    },
+    [],
+  );
 
   // Android's notices, shown while the app is closed, say it in the app's language too.
   useEffect(() => {
@@ -284,7 +333,7 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
         <Stack.Screen name="chat" options={{ headerShown: false }} />
       </Stack>
       <OpenLink key={`link-${phase.space}-${lang}`} />
-      <Receiver key={`receiver-${phase.space}`} />
+      <Receiver space={phase.space} />
       <CallHost key={`call-${phase.space}`} />
       <AlertHost />
       {bar}
@@ -376,22 +425,32 @@ function OpenLink() {
 
 // Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), from the
 // relay and from phones nearby (lib/nearby-links.ts), and tells it whether the app shows: only then
-// do contacts hear the phone is open. SMS sent for later go from here too (lib/sms-later.ts), and
-// the doors of the public groups the space owns are looked at (lib/space-public-groups.ts).
-function Receiver() {
-  useEffect(() => startReceiver(), []);
-  useEffect(() => startNearbyLinks(), []);
-  useEffect(() => startSmsLater(), []);
-  useEffect(() => startPublicDoors(), []);
-  // While the space is open, a call from a number linked to one of its contacts, or kept only in
-  // Erevos, shows their name (lib/known-names.ts).
-  useEffect(() => watchKnownNames(), []);
-  // On Android, it goes on while Erevos is in the background, so a call rings (lib/background.ts).
-  useEffect(() => startBackground(), []);
-  useEffect(() => {
-    setAppShown(AppState.currentState === 'active');
-    const subscription = AppState.addEventListener('change', (state) => setAppShown(state === 'active'));
-    return () => subscription.remove();
-  }, []);
+// do contacts hear the phone is open. SMS sent for later go from here too (lib/sms-later.ts), the
+// doors of the public groups the space owns are looked at (lib/space-public-groups.ts), and its
+// calls ring (components/call-host.tsx). While the space is open, a call from a number linked to
+// one of its contacts, or kept only in Erevos, shows their name (lib/known-names.ts). On Android,
+// it goes on while Erevos is in the background, so a call rings (lib/background.ts). All of it
+// stops when the space closes, not with the screens (lib/space-running.ts).
+function Receiver({ space }: { space: number }) {
+  useEffect(
+    () =>
+      keepSpaceRunning(space, () => [
+        startReceiver(),
+        startNearbyLinks(),
+        startSmsLater(),
+        startPublicDoors(),
+        watchKnownNames(),
+        startBackground(),
+        followAppShown(),
+        watchCalls(),
+      ]),
+    [space],
+  );
   return null;
+}
+
+function followAppShown(): () => void {
+  setAppShown(AppState.currentState === 'active');
+  const subscription = AppState.addEventListener('change', (state) => setAppShown(state === 'active'));
+  return () => subscription.remove();
 }
