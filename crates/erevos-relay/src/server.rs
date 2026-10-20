@@ -1798,11 +1798,13 @@ mod tests {
     fn a_message_sent_for_later_is_dropped_before_its_time() {
         let mut ws = connect_with_token(start_ws(None), "", "");
         let (recipient, sender) = ws_create(&mut ws);
-        let request = later_request(system_now() + 1, &[3; 16], &send_request(&sender, b"never"));
+        // The clock counts whole seconds, so one second ahead may already be due a moment
+        // later; two seconds ahead leaves at least one for taking it back.
+        let request = later_request(system_now() + 2, &[3; 16], &send_request(&sender, b"never"));
         assert_eq!(ws_call(&mut ws, request), vec![OK]);
         assert_eq!(ws_call(&mut ws, unlater_request(&[3; 16])), vec![OK]);
         assert_eq!(ws_call(&mut ws, unlater_request(&[3; 16])), vec![NOT_FOUND]);
-        thread::sleep(Duration::from_millis(2500));
+        thread::sleep(Duration::from_millis(3500));
         assert_eq!(ws_receive(&mut ws, &recipient), None);
     }
 
