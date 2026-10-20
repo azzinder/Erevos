@@ -327,7 +327,7 @@ function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport
   const out = info.status !== 'in';
   return (
     <Sheet visible={visible} onClose={onClose} title={info.name}>
-      <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ gap: space.sm }}>
+      <ScrollView nestedScrollEnabled style={{ maxHeight: 520 }} contentContainerStyle={{ gap: space.sm }}>
         {adding ? (
           <>
             <Text variant="bodyStrong">{t('Add to the group')}</Text>

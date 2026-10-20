@@ -271,6 +271,7 @@ export const contacts: Record<string, string> = {
   'Add to Erevos': 'Adicionar ao Erevos',
   'Choose from my Erevos chats': 'Escolher nas minhas conversas no Erevos',
   'That QR code holds no Erevos ID.': 'Esse código QR não tem nenhum ID do Erevos.',
-  'Take photo of their QR code': 'Tirar foto do código QR',
-  'Choose a photo of it': 'Escolher uma foto do código',
+  'Take a photo of the QR code': 'Tirar foto do código QR',
+  'Choose a photo of the QR code': 'Escolher foto do código QR',
+  'The photo could not be read. Choose another one, or take it again.': 'Não foi possível ler a foto. Escolha outra ou tire-a de novo.',
 };

@@ -269,6 +269,8 @@ export default function Contacts() {
     <View style={styles.container}>
       <FlatList
         data={shown}
+        // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
+        removeClippedSubviews={false}
         keyExtractor={(card) => card.key}
         ListHeaderComponent={header}
         keyboardShouldPersistTaps="handled"

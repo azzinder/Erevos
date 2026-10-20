@@ -859,8 +859,8 @@ password, once you type it.
   hidden chats close. A new contact there is always one of theirs. They take no photo, file or menu, as those leave
   Erevos, which closes the hidden chats; so does calling one, which goes through the phone app and its call log.
 - **Erevos ID:** a contact's Erevos ID is the contact link their Erevos shows, under **Copy my contact link** or as
-  their QR code. On a contact's card, or under **Erevos ID** when you write one, paste it, or read it with **Take photo
-  of their QR code** or **Choose a photo of it**: **Add to Erevos** (or **Save**) adds them to your Erevos chats,
+  their QR code. On a contact's card, or under **Erevos ID** when you write one, paste it, or read it with **Take a photo
+  of the QR code** or **Choose a photo of the QR code**: **Add to Erevos** (or **Save**) adds them to your Erevos chats,
   which open with them, and links the contact to them. A contact that is an Erevos contact shows the start of their
   key as **Erevos ID**.
 - **Erevos contacts:** a contact that is the same person as one of your chats' Erevos contacts shows as one card with

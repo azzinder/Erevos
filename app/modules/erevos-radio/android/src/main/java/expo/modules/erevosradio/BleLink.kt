@@ -441,9 +441,12 @@ class BleLink(
     return gatt.writeDescriptor(descriptor)
   }
 
-  /** The chunk size for a peer: its negotiated MTU minus the 3-byte ATT header. */
+  /**
+   * The chunk size for a peer: its negotiated MTU minus the 3-byte ATT header, and at most the
+   * 512 bytes a value may hold, as an MTU of 517 would allow 514 and Android throws on more.
+   */
   private fun chunkSizeFor(address: String): Int =
-    ((mtus[address] ?: DEFAULT_MTU) - ATT_HEADER).coerceAtLeast(DEFAULT_MTU - ATT_HEADER)
+    ((mtus[address] ?: DEFAULT_MTU) - ATT_HEADER).coerceIn(DEFAULT_MTU - ATT_HEADER, MAX_VALUE)
 
   private fun linkId(address: String): String = LINK_PREFIX + address
 
@@ -455,6 +458,7 @@ class BleLink(
     private const val REQUESTED_MTU = 517
     private const val DEFAULT_MTU = 23
     private const val ATT_HEADER = 3
+    private const val MAX_VALUE = 512
     private const val PRESENCE_INTERVAL_MS = 10_000L
     private const val DIAL_INTERVAL_MS = 5_000L
   }

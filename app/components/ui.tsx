@@ -4,6 +4,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text as RNText,
   TextInput,
@@ -343,12 +344,14 @@ export function Sheet({ visible, onClose, title, children }: {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      {/* The sheet rises with the keyboard, so its fields stay in sight. */}
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}>
+      {/* The sheet rises with the keyboard, so its fields stay in sight. One taller than the
+          screen stops below the status bar and scrolls. */}
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end', paddingTop: insets.top + space.sm, backgroundColor: colors.overlay }}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel={t('Close')} />
         <View
           style={[
             {
+              flexShrink: 1,
               gap: 10,
               padding: space.xl - 4,
               paddingBottom: Math.max(space.xxl, insets.bottom + space.lg),
@@ -371,7 +374,9 @@ export function Sheet({ visible, onClose, title, children }: {
               {title}
             </Text>
           ) : null}
-          {children}
+          <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ gap: 10 }} keyboardShouldPersistTaps="handled">
+            {children}
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>

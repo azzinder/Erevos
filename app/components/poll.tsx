@@ -81,7 +81,7 @@ export function PollSheet({ visible, onClose, onSend }: { visible: boolean; onCl
   const poll = pollOf(question, options, multiple);
   return (
     <Sheet visible={visible} onClose={onClose} title={t('New poll')}>
-      <ScrollView style={{ maxHeight: 380 }} contentContainerStyle={{ gap: 10 }} keyboardShouldPersistTaps="handled">
+      <ScrollView nestedScrollEnabled style={{ maxHeight: 380 }} contentContainerStyle={{ gap: 10 }} keyboardShouldPersistTaps="handled">
         <Field label={t('Question')}>
           <Input value={question} onChangeText={setQuestion} maxLength={MAX_QUESTION} placeholder={t('Ask something')} autoFocus />
         </Field>

@@ -244,7 +244,7 @@ function OneGroup({ id }: { id: number }) {
 
       <Sheet visible={adding} onClose={() => setAdding(false)} title={t('Add contacts')}>
         <Input value={query} onChangeText={setQuery} placeholder={t('Search contacts')} autoCorrect={false} />
-        <ScrollView style={styles.picker} keyboardShouldPersistTaps="handled">
+        <ScrollView nestedScrollEnabled style={styles.picker} keyboardShouldPersistTaps="handled">
           {others.slice(0, 300).map((card) => {
             const on = chosen.has(card.key);
             return (

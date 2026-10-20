@@ -315,6 +315,8 @@ function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
       )}
       <FlatList
         data={newestFirst}
+        // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
+        removeClippedSubviews={false}
         inverted
         renderItem={render}
         keyExtractor={(_, index) => String(index)}

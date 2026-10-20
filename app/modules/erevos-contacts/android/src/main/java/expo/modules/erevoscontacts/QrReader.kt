@@ -25,7 +25,9 @@ internal object QrReader {
     val uri = Uri.parse(address)
     val resolver = context.contentResolver
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) } ?: throw IllegalStateException("The photo could not be read")
+    // Read for its size only, the decoder gives no picture: the size is in bounds.
+    (resolver.openInputStream(uri) ?: throw IllegalStateException("The photo could not be opened")).use { BitmapFactory.decodeStream(it, null, bounds) }
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) throw IllegalStateException("The photo is of a kind not read here")
     var sample = 1
     while (bounds.outWidth / sample > MOST || bounds.outHeight / sample > MOST) sample *= 2
     val options = BitmapFactory.Options().apply { inSampleSize = sample }

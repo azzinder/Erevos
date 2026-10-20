@@ -415,6 +415,8 @@ export default function Home() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <FlatList
         data={shown}
+        // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
+        removeClippedSubviews={false}
         keyExtractor={(row) => row.identity}
         ListHeaderComponent={header}
         keyboardShouldPersistTaps="handled"

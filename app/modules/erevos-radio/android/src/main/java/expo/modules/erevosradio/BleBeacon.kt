@@ -13,6 +13,8 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelUuid
 import java.nio.ByteBuffer
 import java.util.UUID
@@ -52,8 +54,20 @@ class BleBeacon(
       onScan(result.device, nonce)
     }
 
-    override fun onScanFailed(errorCode: Int) = onLog("BLE scan failed: $errorCode")
+    override fun onScanFailed(errorCode: Int) {
+      onLog("BLE scan failed: $errorCode")
+      // Android refuses a sixth scan started within 30 seconds (Erevos coming back to the screen,
+      // or started again): the scan starts again once that is over, not at the next start only.
+      if (errorCode == SCANNING_TOO_FREQUENTLY) {
+        main.removeCallbacks(scanAgain)
+        main.postDelayed(scanAgain, SCAN_AGAIN_MS)
+      }
+    }
   }
+
+  private val main = Handler(Looper.getMainLooper())
+  private var scan: (() -> Unit)? = null
+  private val scanAgain = Runnable { scan?.invoke() }
 
   fun start(nonce: Int, quiet: Boolean) = guarded("Starting BLE") {
     val bluetooth = adapter
@@ -89,14 +103,16 @@ class BleBeacon(
     // is still found; onScanResult drops everything that is not Erevos.
     val filters =
       if (quiet) listOf(ScanFilter.Builder().setServiceUuid(ParcelUuid(SERVICE_UUID)).build()) else emptyList()
-    scanner.startScan(
-      filters,
-      ScanSettings.Builder().setScanMode(if (quiet) ScanSettings.SCAN_MODE_LOW_POWER else ScanSettings.SCAN_MODE_LOW_LATENCY).build(),
-      scanCallback,
-    )
+    val settings =
+      ScanSettings.Builder().setScanMode(if (quiet) ScanSettings.SCAN_MODE_LOW_POWER else ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+    main.removeCallbacks(scanAgain)
+    scan = { guarded("Starting the BLE scan") { scanner.startScan(filters, settings, scanCallback) } }
+    scan?.invoke()
   }
 
   fun stop() = guarded("Stopping BLE") {
+    main.removeCallbacks(scanAgain)
+    scan = null
     adapter?.bluetoothLeAdvertiser?.stopAdvertising(advertiseCallback)
     adapter?.bluetoothLeScanner?.stopScan(scanCallback)
   }
@@ -116,6 +132,10 @@ class BleBeacon(
 
     // The Bluetooth company id set aside for tests, which belongs to no one.
     private const val TEST_COMPANY = 0xFFFF
+
+    // ScanCallback.SCAN_FAILED_SCANNING_TOO_FREQUENTLY, which older SDKs do not name.
+    private const val SCANNING_TOO_FREQUENTLY = 6
+    private const val SCAN_AGAIN_MS = 31_000L
 
     fun isAvailable(context: Context): Boolean =
       context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)

@@ -36,8 +36,8 @@ export function ErevosIdInput({ value, onChange, onNote }: { value: string; onCh
     <>
       <Input value={value} onChangeText={onChange} placeholder="erevos://contact?…" autoCapitalize="none" autoCorrect={false} />
       <Row wrap>
-        {CAN_TAKE_PHOTOS ? <Button title={t('Take photo of their QR code')} kind="secondary" compact onPress={() => void readQr('camera')} /> : null}
-        <Button title={t('Choose a photo of it')} kind="secondary" compact onPress={() => void readQr('photos')} />
+        {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the QR code')} kind="secondary" compact onPress={() => void readQr('camera')} /> : null}
+        <Button title={t('Choose a photo of the QR code')} kind="secondary" compact onPress={() => void readQr('photos')} />
       </Row>
     </>
   );

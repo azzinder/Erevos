@@ -678,7 +678,7 @@ export default function Sms() {
           <>
             {chosen.text ? (
               <>
-                <ScrollView style={styles.chosenText}>
+                <ScrollView nestedScrollEnabled style={styles.chosenText}>
                   <Text selectable>{chosen.text}</Text>
                 </ScrollView>
                 <Text variant="caption" tone="muted">

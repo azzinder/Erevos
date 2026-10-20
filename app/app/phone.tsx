@@ -591,6 +591,8 @@ function Recents({ accounts, locked, onCall, onEdit }: {
     <>
       <FlatList
         data={items}
+        // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
+        removeClippedSubviews={false}
         keyExtractor={(item) => item.key}
         contentContainerStyle={styles.list}
         ListHeaderComponent={

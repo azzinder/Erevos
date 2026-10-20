@@ -1,6 +1,7 @@
 import { File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 
+import { t } from './i18n';
 import { NoCameraError } from './pick-photo';
 import { readQrCode } from '../modules/erevos-contacts';
 
@@ -23,6 +24,9 @@ export async function readQrPhoto(from: 'photos' | 'camera'): Promise<string | n
   if (!asset) return null;
   try {
     return (await readQrCode(asset.uri)) ?? '';
+  } catch {
+    // Not the phone's own words, which are for developers.
+    throw new Error(t('The photo could not be read. Choose another one, or take it again.'));
   } finally {
     const copy = new File(asset.uri);
     if (asset.uri.startsWith(Paths.cache.uri) && copy.exists) copy.delete();

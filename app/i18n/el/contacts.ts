@@ -261,6 +261,7 @@ export const contacts: Record<string, string> = {
   'Add to Erevos': 'Προσθήκη στο Erevos',
   'Choose from my Erevos chats': 'Επιλογή από τις συνομιλίες μου στο Erevos',
   'That QR code holds no Erevos ID.': 'Αυτός ο κωδικός QR δεν έχει Erevos ID.',
-  'Take photo of their QR code': 'Φωτογραφία του κωδικού QR της',
-  'Choose a photo of it': 'Επιλογή φωτογραφίας του',
+  'Take a photo of the QR code': 'Λήψη φωτογραφίας του κωδικού QR',
+  'Choose a photo of the QR code': 'Επιλογή φωτογραφίας του κωδικού QR',
+  'The photo could not be read. Choose another one, or take it again.': 'Η φωτογραφία δεν διαβάστηκε. Διάλεξε άλλη ή τράβηξέ τη ξανά.',
 };
