@@ -67,6 +67,8 @@ class CallService : InCallService() {
     callbacks.remove(call)?.let { call.unregisterCallback(it) }
     Callers.forget(call)
     Calls.remove(call)
+    // A call missed shows on the widget, once Telecom has written it in the call history.
+    Widget.refresh(this, 3_000)
   }
 
   // Android 14 and later tell where the sound goes with call endpoints too (below); the phones

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="erevos_widget_name">Erevos</string>
+  <string name="erevos_widget_description">Phone, SMS, messages and contacts, with how many are new</string>
+</resources>

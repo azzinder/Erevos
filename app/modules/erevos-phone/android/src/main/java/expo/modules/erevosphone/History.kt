@@ -217,6 +217,8 @@ internal object History {
       context.getSystemService(TelecomManager::class.java)?.cancelMissedCallsNotification()
     } catch (_: SecurityException) {
     }
+    // Telecom marks them seen in the call history a moment later.
+    Widget.refresh(context, 2_000)
   }
 
   /** Calls `changed` whenever the call history or the contacts change, until the returned function

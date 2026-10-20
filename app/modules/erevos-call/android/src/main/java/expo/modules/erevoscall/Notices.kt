@@ -183,10 +183,12 @@ object Notices {
       .build()
     manager.notify(MESSAGES_ID, notification)
     if (loud) sounded = true
+    Widget.messages(context, count)
   }
 
   fun clearMessages(context: Context) {
     sounded = false
     manager(context).cancel(MESSAGES_ID)
+    Widget.messages(context, 0)
   }
 }

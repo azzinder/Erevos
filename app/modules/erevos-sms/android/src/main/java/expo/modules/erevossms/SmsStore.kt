@@ -268,6 +268,7 @@ internal object SmsStore {
     }
     context.contentResolver.update(Telephony.Sms.CONTENT_URI, values, "${Telephony.Sms.THREAD_ID}=? AND ${Telephony.Sms.READ}=0", arrayOf(thread.toString()))
     MmsStore.markRead(context, thread)
+    Widget.refresh(context)
   }
 
   /**
@@ -380,6 +381,7 @@ internal object SmsStore {
   fun came(context: Context, body: Map<String, Any?>) {
     listener?.invoke("onSms", body)
     if (!onScreen()) notifyNew(context)
+    Widget.refresh(context)
   }
 
   private fun onScreen(): Boolean {

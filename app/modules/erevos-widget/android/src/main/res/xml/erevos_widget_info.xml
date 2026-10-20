@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erevos's widget (ErevosWidget.kt): four cells wide, one high; counts again every 30 minutes too,
+     the most often Android allows, besides when Erevos tells it to. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+  android:description="@string/erevos_widget_description"
+  android:initialLayout="@layout/erevos_widget"
+  android:minHeight="40dp"
+  android:minResizeHeight="40dp"
+  android:minResizeWidth="180dp"
+  android:minWidth="250dp"
+  android:previewLayout="@layout/erevos_widget"
+  android:resizeMode="horizontal|vertical"
+  android:targetCellHeight="1"
+  android:targetCellWidth="4"
+  android:updatePeriodMillis="1800000"
+  android:widgetCategory="home_screen" />

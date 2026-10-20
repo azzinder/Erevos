@@ -1,5 +1,5 @@
-import { router, useFocusEffect, type Href } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams, type Href } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -102,6 +102,12 @@ async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
 // the phone once each time.
 const trashLooked = new Set<number>();
 
+// Which of the list shows: all of it, the SMS conversations (and the chats whose last message was
+// an SMS), or the Erevos chats. Erevos's widget opens on one of them (erevos://?show=sms).
+type Show = 'all' | 'sms' | 'erevos';
+const showOf = (show: unknown): Show => (show === 'sms' || show === 'erevos' ? show : 'all');
+const isSms = (row: InboxRow) => row.sms !== '' || row.lastSms;
+
 export default function Home() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
@@ -110,6 +116,11 @@ export default function Home() {
   const [rows, setRows] = useState<InboxRow[] | null>(null);
   const [relay, setRelay] = useState<Relay>('none');
   const [query, setQuery] = useState('');
+  const params = useLocalSearchParams<{ show?: string }>();
+  const [show, setShow] = useState<Show>(showOf(params.show));
+  useEffect(() => {
+    if (typeof params.show === 'string') setShow(showOf(params.show));
+  }, [params.show]);
   // The space's messages as last read, and its chats' names, for the search.
   const [searched, setSearched] = useState<{ messages: Findable[]; names: Map<string, string> }>({ messages: [], names: new Map() });
 
@@ -273,7 +284,12 @@ export default function Home() {
     }, []),
   );
 
-  const shown = useMemo(() => filterInbox(rows ?? [], query), [rows, query]);
+  const shown = useMemo(() => {
+    const found = filterInbox(rows ?? [], query);
+    return show === 'all' ? found : found.filter((row) => (show === 'sms') === isSms(row));
+  }, [rows, query, show]);
+  // The choice shows once the list has SMS and Erevos chats both, or while one of them is chosen.
+  const mixed = show !== 'all' || ((rows ?? []).some(isSms) && (rows ?? []).some((row) => !row.sms));
   // Messages with what is looked for in them, once it is two letters or more.
   const hits = useMemo(() => (query.trim().length >= 2 ? searchMessages(searched.messages, query, 50) : []), [searched, query]);
   const nameOf = (peer: string) => searched.names.get(peer) ?? shownName({ identity: peer.replace(/^contact:/, ''), name: '' });
@@ -332,6 +348,13 @@ export default function Home() {
           {relayText}
         </Text>
       </Pressable>
+      {mixed ? (
+        <Row wrap>
+          <Chip label={t('All messages')} selected={show === 'all'} onPress={() => setShow('all')} />
+          <Chip label={t('SMS')} selected={show === 'sms'} onPress={() => setShow('sms')} />
+          <Chip label="Erevos" selected={show === 'erevos'} onPress={() => setShow('erevos')} />
+        </Row>
+      ) : null}
       {folders.archived + folders.spam + folders.trash > 0 ? (
         <Row wrap>
           {folders.archived ? <Chip label={t('Archived · {n}', { n: folders.archived })} onPress={() => router.push('/sms-folder?folder=archived')} /> : null}

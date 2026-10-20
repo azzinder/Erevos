@@ -71,6 +71,13 @@ test('a link opened just before Erevos locks opens again after the password', ()
   assert.equal(takeLink(9000), null);
 });
 
+test('the home screen with details is a link too, as the widget gives it', () => {
+  assert.equal(linkHref('erevos://?show=sms'), '/?show=sms');
+  assert.equal(linkHref('erevos:///?show=erevos'), '/?show=erevos');
+  assert.equal(linkHref('erevos://?'), '');
+  assert.deepEqual(linkParts('/?show=sms'), { path: '/', params: { show: 'sms' } });
+});
+
 test('a held link can be looked at, as the locked Phone does, and stays held', () => {
   holdLink('erevos://phone?tab=recents', 1000);
   assert.equal(peekLink(2000), '/phone?tab=recents');

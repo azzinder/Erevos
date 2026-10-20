@@ -38,6 +38,12 @@ in what it keeps sealed; hidden chats are searched only from inside them.
 - **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
 - **New chat**, at the bottom, opens the relay settings and adding a contact.
 - **The handset and the person** at the top, on Android, open **Phone** and **Contacts** at once.
+- **All messages**, **SMS** and **Erevos**, above the chats once there are SMS conversations too, show all of them,
+  only the SMS (with the chats whose last message was an SMS), or only the Erevos chats.
+- **The widget**, on Android: add Erevos from your home screen's widgets. Its four buttons open **Phone**, the
+  **SMS**, the Erevos **Messages** and **Contacts**, after the password like any link (the Phone without it, if you
+  let it). Over the first three it shows how many missed calls, unread SMS and new messages there are, never who or
+  what; with missed calls, **Phone** opens on **Recents**. Its words follow Erevos's language.
 - **The lock** at the top locks Erevos at once when a password is set, or opens the lock settings when not.
 - **The three dots** open the rest:
 
@@ -1317,6 +1323,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
 | **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does. | |
+| **Widget and Phone (Android)** | The widget, once added, shows how many missed calls, unread SMS and new messages there are, never who or what. The Phone opens without the password only if you let it: then anyone holding the unlocked phone sees the calls and favourites Android keeps, with the names of the phone's contacts only. | |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. | Video with more than four people, through a server; more than eight people. |

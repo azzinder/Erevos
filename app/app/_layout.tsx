@@ -29,6 +29,7 @@ import { forgetSpaceChats } from '../lib/space-chats';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
 import { clearKnownNames, forgetKnownNamesAfter } from '../modules/erevos-phone';
+import { refreshWidget } from '../modules/erevos-widget';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { startPublicDoors } from '../lib/space-public-groups';
 import { applyTor } from '../lib/tor';
@@ -143,6 +144,8 @@ export default function RootLayout() {
   // Android's notices, shown while the app is closed, say it in the app's language too.
   useEffect(() => {
     callAudio?.setLanguage?.(lang);
+    // The widget's words follow the app's language (modules/erevos-widget).
+    refreshWidget();
   }, [lang]);
 
   // The web app's service worker refused code from the server: said at once, locked or open.
@@ -153,6 +156,8 @@ export default function RootLayout() {
       const current = phaseRef.current;
       if (state === 'background') {
         backgroundAt.current = Date.now();
+        // What was read here is no longer new on the widget.
+        refreshWidget();
         // The names of the space's contacts go when it would lock, even if the app does not run then.
         if (current.kind === 'open' && current.passwordLock) forgetKnownNamesAfter(RELOCK_AFTER_MS);
       }
@@ -359,6 +364,8 @@ function OpenLink() {
       if (!href) return;
       const { path, params } = linkParts(href);
       if (path === here.current) router.setParams(params);
+      // The home screen is under every other: back to it, not a second one.
+      else if (path === '/') router.dismissTo(href as Href);
       else router.push(href as Href);
     };
     open();

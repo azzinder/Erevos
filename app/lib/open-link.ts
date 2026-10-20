@@ -16,13 +16,16 @@ let held: { href: string; at: number } | null = null;
 let opened: { href: string; at: number } | null = null;
 const listeners = new Set<() => void>();
 
-/** The screen a link names, as the app's routes (erevos://contacts?x=1 is /contacts?x=1); '' for the home screen or another kind of link. */
+/** The screen a link names, as the app's routes (erevos://contacts?x=1 is /contacts?x=1, erevos://?show=sms
+ *  is the home screen's /?show=sms); '' for the home screen with nothing more, or another kind of link. */
 export function linkHref(url: string): string {
   const match = /^erevos:\/*([^?#]*)(\?[^#]*)?/i.exec(url.trim());
   if (!match) return '';
   const path = match[1].replace(/\/+$/, '');
-  if (!path || !/^[a-z0-9-]+(\/[a-z0-9-]+)*$/i.test(path)) return '';
-  return `/${path}${match[2] && match[2] !== '?' ? match[2] : ''}`;
+  const query = match[2] && match[2] !== '?' ? match[2] : '';
+  if (!path) return query ? `/${query}` : '';
+  if (!/^[a-z0-9-]+(\/[a-z0-9-]+)*$/i.test(path)) return '';
+  return `/${path}${query}`;
 }
 
 /** A link's screen, and its details as the screen's params: /phone?number=%2B30 is /phone and { number: '+30' }. */
