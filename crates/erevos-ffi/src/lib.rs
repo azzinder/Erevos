@@ -108,9 +108,11 @@ pub fn first_message_id(packet: &[u8]) -> Result<Vec<u8>> {
 
 /// Chats exported from another messenger (crates/erevos-import), for the
 /// app as UTF-8 JSON: a list of `{source, title, skipped, messages}`, each
-/// message `{at, local, sender, text, attachments}`. `at` is in seconds, on
-/// the exporting phone's clock when `local`; `attachments` names the kind of
-/// each file, which stays behind. `name` is the file's name, UTF-8.
+/// message `{at, local, sender, text, attachments, paths}`. `at` is in
+/// seconds, on the exporting phone's clock when `local`; `attachments` names
+/// the kind of each file, and `paths` where each is in the export, relative to
+/// its folder, for the app to bring in from a zip with them. `name` is the
+/// file's name, UTF-8.
 pub fn import_chats(name: &[u8], data: &[u8]) -> Result<Vec<u8>> {
     use erevos_import::{AttachmentKind, Source, Time};
     let chats = erevos_import::read(&String::from_utf8_lossy(name), data).map_err(|e| e.to_string())?;
@@ -137,8 +139,11 @@ pub fn import_chats(name: &[u8], data: &[u8]) -> Result<Vec<u8>> {
                             AttachmentKind::File => "file",
                         })
                         .collect();
+                    let paths: Vec<String> =
+                        m.attachments.iter().map(|a| a.path.to_string_lossy().replace('\\', "/")).collect();
                     serde_json::json!({
                         "at": at, "local": local, "sender": m.sender, "text": m.text, "attachments": attachments,
+                        "paths": paths,
                     })
                 })
                 .collect();
@@ -486,6 +491,7 @@ mod tests {
         assert_eq!(json[0]["messages"][0]["local"], true);
         assert_eq!(json[0]["messages"][0]["at"], 1_792_227_960);
         assert_eq!(json[0]["messages"][1]["attachments"][0], "photo");
+        assert_eq!(json[0]["messages"][1]["paths"][0], "IMG-1.jpg");
         assert!(import_chats(b"x.html", b"<html>").unwrap_err().contains("result.json"));
     }
 

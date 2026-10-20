@@ -1,15 +1,29 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Attachment, FileViewer, SHOWN_PHOTOS, useShownPhotos } from '../components/attachment';
 import { Button, Card, Chip, Field, Input, Page, Row, Text, TextButton } from '../components/ui';
 import { ask } from '../lib/alert';
+import { FileTooLargeError, fileSize } from '../lib/attachments';
 import { canImport } from '../lib/core';
 import { plural, t } from '../lib/i18n';
-import { pickFile, TooLargeError } from '../lib/pick-file';
-import { mediaText, readExport, senders, shownTime, SOURCE_LABELS, toArchived, type ImportedChat } from '../lib/imports';
+import { pickSource, TooLargeError, type PickedSource } from '../lib/pick-file';
+import {
+  exportFiles,
+  keepExportFiles,
+  mediaText,
+  openExport,
+  senders,
+  shownTime,
+  SOURCE_LABELS,
+  toArchived,
+  type OpenedExport,
+} from '../lib/imports';
+import { saveFile } from '../lib/save-file';
 import { Archive, type ArchivedMessage, type ChatSummary } from '../lock/archive';
+import type { FileRef } from '../lock/attachment-files';
 import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import { radius, space, type Colors } from '../theme/colors';
@@ -25,8 +39,10 @@ type Contact = { identity: string; name: string };
 const contactLabel = (identity: string, contacts: Contact[]) =>
   contacts.find((contact) => contact.identity === identity)?.name || t('contact {id}', { id: identity.slice(0, 8) });
 
-// What the phone can hold in memory to read at once. A WhatsApp export with its media is larger.
+// What the phone can hold in memory to read at once: a file that is not a zip is read whole. A zip,
+// with its photos and videos, is read a piece at a time, from a copy in the app's cache.
 const MAX_BYTES = 100 * 1024 * 1024;
+const MAX_ZIP = 8 * 1000 * 1000 * 1000;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -38,8 +54,10 @@ export default function ImportedScreen() {
   // The space's own contacts, that an imported chat can go on with. Not its hidden chats'.
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [open, setOpen] = useState<string | null>(null);
-  // What a picked file held, waiting for the owner's name in it before it is kept.
-  const [found, setFound] = useState<{ chats: ImportedChat[]; people: string[] } | null>(null);
+  // What a picked file held, waiting for the owner's name in it before it is kept, and the file,
+  // open until then, for the photos and files it holds.
+  const [found, setFound] = useState<{ opened: OpenedExport; picked: PickedSource; people: string[] } | null>(null);
+  const [progress, setProgress] = useState('');
   const [me, setMe] = useState('');
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
@@ -65,29 +83,39 @@ export default function ImportedScreen() {
     };
   }, []);
 
+  // The picked file's copy goes once it is kept, or let go of.
+  useEffect(() => () => found?.picked.close(), [found]);
+
   async function pick() {
     if (!canImport()) {
       setNote(t('This build cannot read exports yet. Rebuild the app.'));
       return;
     }
     setNote('');
+    setBusy(true);
+    let picked: PickedSource | null = null;
     try {
-      const picked = await pickFile(MAX_BYTES);
+      picked = await pickSource(MAX_ZIP);
       if (!picked) return;
-      setBusy(true);
-      const read = await readExport(picked.name, picked.bytes);
+      const opened = await openExport(picked.name, picked.source, MAX_BYTES);
+      const read = opened.chats;
       if (read.every((chat) => chat.messages.length === 0)) {
         setNote(t('There are no messages in that file.'));
+        picked.close();
         return;
       }
       const people = senders(read);
-      setFound({ chats: read, people });
+      setFound({ opened, picked, people });
+      picked = null;
       // In an export of many chats, the one who wrote the most is almost surely its owner.
       setMe(read.length > 1 ? (people[0] ?? '') : '');
       setTitle(read[0].title);
     } catch (error) {
+      picked?.close();
       setNote(
-        error instanceof TooLargeError ? t('That file is too large. Export the chat again without media.') : t('Not imported. {reason}', { reason: errorText(error) }),
+        error instanceof TooLargeError || error instanceof FileTooLargeError
+          ? t('That file is too large. A chat with its photos and videos comes in as a .zip.')
+          : t('Not imported. {reason}', { reason: errorText(error) }),
       );
     } finally {
       setBusy(false);
@@ -98,7 +126,10 @@ export default function ImportedScreen() {
     if (!archive || !found) return;
     setBusy(true);
     try {
-      const named = found.chats.length === 1 ? [{ ...found.chats[0], title: title.trim() || found.chats[0].title }] : found.chats;
+      const files = exportFiles(found.opened);
+      if (files.count > 0) setProgress(t('Bringing in the files: {done} of {count}', { done: 0, count: files.count }));
+      const withFiles = await keepExportFiles(found.opened, (done, count) => setProgress(t('Bringing in the files: {done} of {count}', { done, count })));
+      const named = withFiles.length === 1 ? [{ ...withFiles[0], title: title.trim() || withFiles[0].title }] : withFiles;
       await archive.add(toArchived(named, me));
       setChats(archive.chats());
       const count = named.reduce((sum, chat) => sum + chat.messages.length, 0);
@@ -107,6 +138,8 @@ export default function ImportedScreen() {
           chats: plural(named.length, 'one chat', '{n} chats'),
           messages: plural(count, '{n} message', '{n} messages'),
         }) +
+          (files.count > 0 ? ' ' + plural(files.count, 'One photo or file came with them.', '{n} photos and files came with them.') : '') +
+          (files.tooLarge > 0 ? ' ' + plural(files.tooLarge, 'One file larger than 1 GB stayed behind.', '{n} files larger than 1 GB stayed behind.') : '') +
           ' ' +
           t('Delete the export file from the phone yourself: Erevos keeps its own sealed copy.'),
       );
@@ -114,6 +147,7 @@ export default function ImportedScreen() {
     } catch (error) {
       setNote(t('Not kept. {reason}', { reason: errorText(error) }));
     } finally {
+      setProgress('');
       setBusy(false);
     }
   }
@@ -165,22 +199,23 @@ export default function ImportedScreen() {
       <Text variant="title">{t('Imported chats')}</Text>
       <Text tone="muted">
         {t(
-          'Chats brought in from Telegram or WhatsApp, to read here. They stay on this phone, sealed in this space, and are never sent anywhere. Only the words come in: photos and other files stay behind.',
+          'Chats brought in from Telegram or WhatsApp, to read here, with their photos, videos, voice messages and files. They stay on this phone, sealed in this space, and are never sent anywhere.',
         )}
       </Text>
 
       {found ? (
         <Card>
           <Text variant="bodyStrong">
-            {found.chats.length === 1
-              ? `${SOURCE_LABELS[found.chats[0].source]}: ${plural(found.chats[0].messages.length, '{n} message', '{n} messages')}`
-              : `${SOURCE_LABELS[found.chats[0].source]}: ${plural(found.chats.length, '{n} chat', '{n} chats')}, ${plural(
-                  found.chats.reduce((sum, chat) => sum + chat.messages.length, 0),
+            {found.opened.chats.length === 1
+              ? `${SOURCE_LABELS[found.opened.chats[0].source]}: ${plural(found.opened.chats[0].messages.length, '{n} message', '{n} messages')}`
+              : `${SOURCE_LABELS[found.opened.chats[0].source]}: ${plural(found.opened.chats.length, '{n} chat', '{n} chats')}, ${plural(
+                  found.opened.chats.reduce((sum, chat) => sum + chat.messages.length, 0),
                   '{n} message',
                   '{n} messages',
                 )}`}
           </Text>
-          {found.chats.length === 1 ? (
+          <FoundFiles opened={found.opened} />
+          {found.opened.chats.length === 1 ? (
             <Field label={t('Name of the chat')}>
               <Input value={title} onChangeText={setTitle} placeholder={t('Name')} maxLength={80} />
             </Field>
@@ -196,8 +231,9 @@ export default function ImportedScreen() {
           </Row>
           <Row wrap>
             <Button title={t('Keep')} compact loading={busy} onPress={() => void keep()} />
-            <Button title={t('Cancel')} kind="secondary" compact onPress={() => setFound(null)} />
+            <Button title={t('Cancel')} kind="secondary" compact disabled={busy} onPress={() => setFound(null)} />
           </Row>
+          {progress ? <Text variant="caption">{progress}</Text> : null}
         </Card>
       ) : (
         <Button title={t('Import a file')} loading={busy} onPress={() => void pick()} />
@@ -208,7 +244,7 @@ export default function ImportedScreen() {
       {chats.length === 0 && !found ? (
         <Text variant="caption" tone="muted">
           {t(
-            'Nothing imported yet. In Telegram Desktop: Export chat history, format JSON, and pick result.json here. In WhatsApp: a chat, then More, Export chat, Without media, and save the file to the phone.',
+            'Nothing imported yet. In WhatsApp: a chat, then More, Export chat, Include media, and save the .zip to the phone. In Telegram Desktop: Export chat history, format JSON, with photos, videos, voice messages and files, then make a .zip of the folder it made and copy it to the phone.',
           )}
         </Text>
       ) : null}
@@ -231,6 +267,23 @@ export default function ImportedScreen() {
   );
 }
 
+// What of the chats' photos and files the picked export holds, and what stays behind.
+function FoundFiles({ opened }: { opened: OpenedExport }) {
+  const files = exportFiles(opened);
+  const named = opened.chats.reduce((sum, chat) => sum + chat.messages.reduce((n, m) => n + m.attachments.length, 0), 0);
+  if (named === 0) return null;
+  return (
+    <Text variant="caption" tone="muted">
+      {files.count > 0
+        ? plural(files.count, 'With one photo or file, {size}, kept sealed here too.', 'With {n} photos and files, {size} in all, kept sealed here too.', {
+            size: fileSize(files.bytes),
+          })
+        : t('The photos and files are not in this file, so only their kind shows. A .zip exported with media brings them too.')}
+      {files.tooLarge > 0 ? ' ' + plural(files.tooLarge, 'One file larger than 1 GB stays behind.', '{n} files larger than 1 GB stay behind.') : ''}
+    </Text>
+  );
+}
+
 function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
   archive: Archive;
   chat: ChatSummary;
@@ -242,22 +295,54 @@ function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [picking, setPicking] = useState(false);
+  const [viewing, setViewing] = useState<FileRef | null>(null);
+  const [note, setNote] = useState('');
   const title = chat.title || SOURCE_LABELS[chat.source];
   const messages = useMemo(() => archive.chat(chat.id)?.messages ?? [], [archive, chat.id]);
   // Newest first, in a list drawn upside down, so it opens at the latest message.
   const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
   // In a group, each message says who wrote it.
   const group = useMemo(() => new Set(messages.map((m) => m[1]).filter((name) => name && name !== chat.me)).size > 1, [messages, chat.me]);
+  // The photos shown: the latest, and the one looked at on its own.
+  const shownPhotos = useMemo(
+    () =>
+      newestFirst
+        .flatMap(([, , , , files = []]) => files)
+        .filter((file) => file.kind === 'photo')
+        .slice(0, SHOWN_PHOTOS),
+    [newestFirst],
+  );
+  const photos = useShownPhotos(viewing?.kind === 'photo' ? [...shownPhotos, viewing] : shownPhotos, (error) =>
+    setNote(t('Cannot show the photo. {error}', { error: errorText(error) })),
+  );
 
-  const render = ({ item: [at, sender, text, kinds] }: { item: ArchivedMessage }) => {
+  async function save(file: FileRef, choose: boolean) {
+    try {
+      const where = await saveFile(file, choose);
+      if (!where) return;
+      setViewing(null);
+      setNote(t('Saved in {where}. There it is outside Erevos, not sealed.', { where }));
+    } catch (error) {
+      setViewing(null);
+      setNote(t('Not saved. {error}', { error: errorText(error) }));
+    }
+  }
+
+  const render = ({ item: [at, sender, text, kinds, kept = []] }: { item: ArchivedMessage }) => {
     const mine = chat.me !== '' && sender === chat.me;
     const files = mediaText(kinds);
+    const ink = mine ? styles.mineText : styles.theirsText;
     return (
       <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
-        {group && !mine && sender ? <Text style={[styles.sender, mine ? styles.mineText : styles.theirsText]}>{sender}</Text> : null}
-        {text ? <Text style={mine ? styles.mineText : styles.theirsText}>{text}</Text> : null}
-        {files ? <Text style={[styles.files, mine ? styles.mineText : styles.theirsText]}>{t('{files}, not imported', { files })}</Text> : null}
-        <Text style={[styles.time, mine ? styles.mineText : styles.theirsText]}>{shownTime(at)}</Text>
+        {group && !mine && sender ? <Text style={[styles.sender, ink]}>{sender}</Text> : null}
+        {kept.map((file, i) => (
+          <Pressable key={`${file.id}-${i}`} onPress={() => setViewing(file)} accessibilityRole="button">
+            <Attachment file={file} uri={photos[file.id]} ink={ink} />
+          </Pressable>
+        ))}
+        {text ? <Text style={ink}>{text}</Text> : null}
+        {files ? <Text style={[styles.files, ink]}>{t('{files}, not imported', { files })}</Text> : null}
+        <Text style={[styles.time, ink]}>{shownTime(at)}</Text>
       </View>
     );
   };
@@ -275,6 +360,7 @@ function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
         {t('Imported from {source}, only to read. Erevos cannot show who really wrote these.', { source: SOURCE_LABELS[chat.source] })}
         {chat.skipped === 1 ? t(' One notice or call was left out.') : chat.skipped ? t(' {n} notices and calls were left out.', { n: chat.skipped }) : ''}
       </Text>
+      {note ? <Text variant="caption">{note}</Text> : null}
       {chat.contact ? (
         <View style={styles.section}>
           <Text variant="caption" tone="muted">
@@ -322,6 +408,12 @@ function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
         keyExtractor={(_, index) => String(index)}
         contentContainerStyle={styles.thread}
         initialNumToRender={30}
+      />
+      <FileViewer
+        file={viewing}
+        uri={viewing ? photos[viewing.id] : undefined}
+        onSave={(choose) => viewing && void save(viewing, choose)}
+        onClose={() => setViewing(null)}
       />
     </View>
   );

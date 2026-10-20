@@ -1032,18 +1032,22 @@ home screen's menu.
 
 ## Imported chats {#import}
 
-Your old chats from Telegram and WhatsApp can come into Erevos, to read. They stay on this phone, sealed in the
-space you bring them into, and are never sent anywhere.
+Your old chats from Telegram and WhatsApp can come into Erevos, to read, with their photos, videos, voice messages and
+files. They stay on this phone, sealed in the space you bring them into, and are never sent anywhere.
 
 First export the chat from the other app:
 
-- **WhatsApp:** open the chat, then **More**, **Export chat**, **Without media**, and save the file to the phone.
-- **Telegram Desktop:** **Export chat history**, format **JSON**, then copy **result.json** to the phone.
+- **WhatsApp:** open the chat, then **More**, **Export chat**, **Include media**, and save the .zip to the phone.
+  **Without media** brings only the words.
+- **Telegram Desktop:** **Export chat history**, format **JSON**, with the photos, videos, voice messages and files you
+  want. Then make a .zip of the folder it made (on Windows: right-click it, **Send to**, **Compressed (zipped) folder**)
+  and copy the .zip to the phone. **result.json** on its own brings only the words.
 
 Then:
 
-1. In Erevos, open **Imported chats** and tap **Import a file**, then pick the file. A .zip of either works too.
-2. Erevos says what it found. Tap your own name, so your messages show on the right, and tap **Keep**.
+1. In Erevos, open **Imported chats** and tap **Import a file**, then pick the file.
+2. Erevos says what it found, with how many photos and files and how large they are together. Tap your own name, so
+   your messages show on the right, and tap **Keep**. The files come in one after another, and it says how far it is.
 3. Delete the export file from the phone yourself: Erevos keeps its own sealed copy, but the file you saved is not
    sealed.
 
@@ -1054,7 +1058,12 @@ To go on with the conversation in Erevos, the other person needs Erevos too:
 3. Their chat now shows the old messages ahead of the new ones, a little fainter, with **Continued in Erevos**
    between them. **Open the chat** takes you there, and a contact you have not named takes the imported chat's name.
 
-- **Only the words:** photos, voice messages and other files stay behind, and the chat says where one was.
+- **Photos, videos, voice messages and files** come in from a .zip, each sealed in this space as a file in a chat is.
+  Photos show in the chat; tap any of them to see it on its own and **Save** it, to play a video or voice message in
+  the phone's own app. Files larger than 1 GB, and those the export does not hold, stay behind, and the chat says where
+  one was.
+- **Room on the phone:** while a .zip comes in, the phone needs about twice its size free, as Erevos reads a copy of it
+  and keeps the files sealed. Imported files are not in backups yet, as other files are not.
 - **Only on this phone, only to read:** imported messages are never sent, so the other phone does not get them. Erevos
   cannot show who really wrote them.
 - **Notices and calls** from the other app are left out, and the chat says how many.
@@ -1325,7 +1334,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. A contact's calls and SMS are read from the phone's own call log and SMS only to show its history, and kept nowhere. | |
 | **Contacts kept only in Erevos** | Sealed with the space's key, or with the hidden chats' for theirs, in one file for every space whose size shows roughly how many there are in all, not whose they are; their photos each in a file of its own. Never in Android's contacts. Calls and SMS to them go through the phone, and show in its call log and SMS. | |
 | **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos reads it, and the favourites, to show them, deletes from it only the calls you delete, and keeps no copy. The SIM chosen for each number is sealed in the space; the quick replies, and what is blocked (prefixes, group ids and times only, the same for every space), are kept on the phone, not sealed. | |
-| **Imported chats** | Sealed in the space they were brought into. Only their words; photos and files stay behind. The file's size tells roughly how much was imported, not where. | Viber, and the photos and files. |
+| **Imported chats** | Sealed in the space they were brought into, their photos and files too, each in its pieces as a chat's file is. The file's size, and how many pieces there are, tell roughly how much was imported, not where. | Viber, and files over 1 GB. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
 | **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |

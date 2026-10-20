@@ -1,21 +1,26 @@
 import { randomBytes, toHex } from '../lib/crypto';
 import { t } from '../lib/i18n';
 
+import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
 import { sealedFile, type Holder } from './sealed-file';
 
 // Chats brought in from other messengers (lib/imports.ts): kept on this phone, sealed in the
 // space they were brought into, and never sent anywhere. One sealed value per space in FILE
 // (sealed-file.ts), padded to whole blocks of BLOCK bytes. The file's size tells about how much
-// was brought in, but not into which space. Only the messages' words are kept: the photos and
-// other files stay behind.
+// was brought in, but not into which space. The photos, videos and other files that came with an
+// export are kept as a message's file is, each in chunks of its own (lock/attachment-files.ts),
+// with only where they are and their keys here; those that did not come are named.
 //
 // A chat can go on in Erevos: linked to one of the space's contacts, its messages show in the chat
 // with them, ahead of the new ones. They are still only on this phone, and only to read.
 
 export type Source = 'telegram' | 'whatsapp' | 'viber';
 
-/** One message: when (milliseconds, 0 if the export did not say), who wrote it, its text, and what files it had. */
-export type ArchivedMessage = [at: number, sender: string, text: string, media: string];
+/**
+ * One message: when (milliseconds, 0 if the export did not say), who wrote it, its text, the kinds
+ * of the files it had that stayed behind, and those kept here.
+ */
+export type ArchivedMessage = [at: number, sender: string, text: string, media: string, files?: FileRef[]];
 
 export type ArchivedChat = {
   id: string;
@@ -33,7 +38,7 @@ export type ArchivedChat = {
 };
 
 /** A message of an imported chat as the chat with its contact shows it. */
-export type LinkedMessage = { at: number; sender: string; text: string; media: string; mine: boolean; source: Source };
+export type LinkedMessage = { at: number; sender: string; text: string; media: string; files: FileRef[]; mine: boolean; source: Source };
 
 export type ArchiveData = { chats: ArchivedChat[] };
 
@@ -45,7 +50,12 @@ const SOURCES: Source[] = ['telegram', 'whatsapp', 'viber'];
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isIdentity = (v: unknown): v is string => isText(v) && /^[0-9a-f]{64}$/.test(v);
 const isMessage = (m: unknown): m is ArchivedMessage =>
-  Array.isArray(m) && m.length === 4 && typeof m[0] === 'number' && isText(m[1]) && isText(m[2]) && isText(m[3]);
+  Array.isArray(m) &&
+  (m.length === 4 || (m.length === 5 && Array.isArray(m[4]) && m[4].every(isFileRef))) &&
+  typeof m[0] === 'number' &&
+  isText(m[1]) &&
+  isText(m[2]) &&
+  isText(m[3]);
 
 function checkedChat(value: unknown): ArchivedChat | null {
   const v = (value ?? {}) as Partial<Record<keyof ArchivedChat, unknown>>;
@@ -120,9 +130,9 @@ export class Archive {
       .filter((chat) => contact !== '' && chat.contact === contact)
       .flatMap(({ me, source, messages }) => {
         let after = 0;
-        return messages.map(([at, sender, text, media]) => {
+        return messages.map(([at, sender, text, media, files = []]) => {
           after = at > 0 ? at : after;
-          return { after, message: { at, sender, text, media, mine: me !== '' && sender === me, source } };
+          return { after, message: { at, sender, text, media, files, mine: me !== '' && sender === me, source } };
         });
       });
     return placed
@@ -149,8 +159,11 @@ export class Archive {
     return added.map((chat) => chat.id);
   }
 
-  /** Deletes a chat from the phone. */
-  remove(id: string): Promise<void> {
-    return this.save({ chats: this.data.chats.filter((chat) => chat.id !== id) });
+  /** Deletes a chat from the phone, with its files. */
+  async remove(id: string): Promise<void> {
+    const files = new Map<string, number>();
+    for (const [, , , , kept = []] of this.chat(id)?.messages ?? []) for (const ref of kept) files.set(ref.id, ref.count);
+    await this.save({ chats: this.data.chats.filter((chat) => chat.id !== id) });
+    for (const [file, count] of files) await deleteChunks(file, count).catch(() => undefined);
   }
 }

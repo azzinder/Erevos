@@ -544,8 +544,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [taking, setTaking] = useState<Record<string, string>>({});
   // Files already tried, so one that failed is taken again only when tapped.
   const tried = useRef(new Set<string>());
-  // The photo or file shown on its own, to look at or save.
+  // The photo or file shown on its own, to look at or save; one of an imported message's apart.
   const [viewing, setViewing] = useState<Message | null>(null);
+  const [viewingImported, setViewingImported] = useState<FileRef | null>(null);
   const thread = useRef<ScrollView>(null);
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
@@ -2370,6 +2371,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  async function saveImported(file: FileRef, choose: boolean) {
+    try {
+      const where = await saveFile(file, choose);
+      if (!where) return;
+      setViewingImported(null);
+      setNote(t('Saved in {where}. There it is outside Erevos, not sealed.', { where }));
+    } catch (error) {
+      setViewingImported(null);
+      setNote(t('Not saved. {error}', { error: errorText(error) }));
+    }
+  }
+
   async function saveAttachment(message: Message, choose: boolean) {
     if (!message.file) return;
     try {
@@ -2684,6 +2697,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     .slice(-SHOWN_PHOTOS)
     .map((m) => m.file!);
   if (viewing?.file?.kind === 'photo' && !viewing.file.from) shownPhotos.push(viewing.file);
+  if (viewingImported?.kind === 'photo') shownPhotos.push(viewingImported);
   // Each read into memory to show it (components/attachment.tsx).
   const photos = useShownPhotos(shownPhotos, (error) => setNote(t('Cannot show the photo. {error}', { error: errorText(error) })));
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
@@ -3504,6 +3518,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           return (
             <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? b.mine : b.theirs, styles.imported]}>
               {importedGroup && !message.mine && message.sender ? <Text style={[ink, styles.sender]}>{message.sender}</Text> : null}
+              {message.files.map((file, n) => (
+                <Pressable key={`${file.id}-${n}`} onPress={() => setViewingImported(file)} accessibilityRole="button">
+                  <Attachment file={file} uri={photos[file.id]} ink={ink} />
+                </Pressable>
+              ))}
               {message.text ? <Text style={ink}>{message.text}</Text> : null}
               {files ? <Text style={[ink, styles.files]}>{t('{files}, not imported', { files })}</Text> : null}
               {message.at ? <Text style={[ink, styles.time]}>{shownTime(message.at)}</Text> : null}
@@ -3763,10 +3782,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         ) : null}
       </Sheet>
       <FileViewer
-        file={viewing?.file ?? null}
-        uri={viewing?.file ? photos[viewing.file.id] : undefined}
-        onSave={(choose) => viewing && void saveAttachment(viewing, choose)}
-        onClose={() => setViewing(null)}
+        file={viewing?.file ?? viewingImported}
+        uri={viewing?.file ? photos[viewing.file.id] : viewingImported ? photos[viewingImported.id] : undefined}
+        onSave={(choose) => (viewing ? void saveAttachment(viewing, choose) : viewingImported && void saveImported(viewingImported, choose))}
+        onClose={() => {
+          setViewing(null);
+          setViewingImported(null);
+        }}
       />
     </View>
   );

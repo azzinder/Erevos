@@ -191,11 +191,12 @@ export async function sendFile(
 
 /**
  * Encrypts a file and keeps its chunks here only, to put on the relay later (uploadFile): a photo
- * or file that waits (lib/waiting.ts). If any of it cannot be kept, nothing is.
+ * or file that waits (lib/waiting.ts), or one brought in with an imported chat, which may be
+ * larger (`most`). If any of it cannot be kept, nothing is.
  */
-export async function keepFile(source: Source, meta: Omit<FileMeta, 'size'>, progress?: Progress): Promise<FileRef> {
+export async function keepFile(source: Source, meta: Omit<FileMeta, 'size'>, progress?: Progress, most = MAX_FILE): Promise<FileRef> {
   const size = source.size;
-  if (size > MAX_FILE) throw new FileTooLargeError();
+  if (size > most) throw new FileTooLargeError();
   const { chunk, count } = chunkPlan(size);
   const key = randomBytes(32);
   const id = newFileId();
