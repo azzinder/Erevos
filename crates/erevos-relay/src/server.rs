@@ -60,6 +60,13 @@
 //!   this relay (see `turn.rs`): a 2-byte length and the username, a 2-byte
 //!   length and the password, a 1-byte count of addresses and each address
 //!   after a 2-byte length. `NOT_FOUND` if the relay has no call relay.
+//! - `LEND`: no fields. Reply: a ticket (see `lend.rs`), its text to the end,
+//!   for a place on this relay that a phone with no relay of its own may
+//!   take, or `NOT_FOUND` if the relay does not lend.
+//! - `BORROW`: no fields, on a connection that gave a ticket as its token.
+//!   Reply: recipient id, sender id (24 bytes each) of a new queue, then the
+//!   text of the lent token for it to the end, or `FULL` when the ticket gave
+//!   all its places.
 //!
 //! Two-hop sending: a phone gives `FORWARD` to its own relay, which opens a
 //! WebSocket to `<address>/sealed` on the contact's relay and sends
@@ -74,6 +81,12 @@
 //! relay, not the contact's phone. The `/files` path needs no token, since
 //! the chunk id is what guards a chunk, and takes only `FILE_GET` and
 //! `FILE_DELETE`.
+//!
+//! Lent places (see `lend.rs`): a connection whose token is a ticket may only
+//! `BORROW` (and ask for the `KEY`); one whose token is a lent token may use
+//! its queues and files as a phone with the relay's token does, but not
+//! `FORWARD`, `FILE_VIA`, `LATER`, `UNLATER`, `CALL_RELAY` or `LEND`, and may
+//! make only so many queues and files a day (`FULL` past that).
 //!
 //! Reply status: `OK`, `NOT_FOUND` (no such queue or chunk), `FULL` (the
 //! queue holds `MAX_QUEUED` messages, or the file store is full), `FAILED`
@@ -106,6 +119,7 @@ use tungstenite::Message;
 
 use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
 use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
+use crate::lend::{Lend, Nonce, Pass};
 use crate::push::{Push, SetError, MAX_ENDPOINT};
 use crate::queue::{system_now, QueueError, QueueId, Store};
 use crate::turn::Turn;
@@ -121,6 +135,9 @@ pub struct Shared {
     pub turn: Option<Turn>,
     /// Web Push, if the relay pushes (set once, after start).
     pub push: std::sync::OnceLock<Arc<Push>>,
+    /// Places lent to phones with no relay, if the relay lends (set once,
+    /// after start).
+    pub lend: std::sync::OnceLock<Lend>,
     /// Requests held for later; `held_changed` wakes `run_held` when one
     /// comes or goes.
     pub held: Mutex<Held>,
@@ -143,6 +160,7 @@ impl Shared {
             key,
             turn,
             push: std::sync::OnceLock::new(),
+            lend: std::sync::OnceLock::new(),
             held: Mutex::new(Held::default()),
             held_changed: Condvar::new(),
         })
@@ -183,6 +201,8 @@ pub const PUSH_SET: u8 = 15;
 pub const LATER: u8 = 16;
 pub const UNLATER: u8 = 17;
 pub const FILE_KEEP: u8 = 18;
+pub const LEND: u8 = 19;
+pub const BORROW: u8 = 20;
 
 /// The longest a `WAIT` lasts, seconds.
 pub const MAX_WAIT: u8 = 60;
@@ -219,6 +239,11 @@ enum Access {
     Sealed,
     /// The `/files` path: `FILE_GET` and `FILE_DELETE` only.
     Files,
+    /// A ticket for a place, which expires then (Unix seconds): `KEY` and
+    /// `BORROW` only.
+    Ticket(Nonce, u64),
+    /// A lent token: what a phone needs of its own queues and files.
+    Lent(Nonce),
 }
 
 /// Serves raw TCP connections until the listener fails. Each connection gets
@@ -282,6 +307,22 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
             access = Access::Files;
             return Ok(response);
         }
+        let lent = store
+            .lend
+            .get()
+            .zip(presented_token(request))
+            .and_then(|(lend, presented)| lend.check(&presented, system_now()));
+        match lent {
+            Some(Pass::Ticket { nonce, expires }) => {
+                access = Access::Ticket(nonce, expires);
+                return Ok(response);
+            }
+            Some(Pass::Lent(nonce)) => {
+                access = Access::Lent(nonce);
+                return Ok(response);
+            }
+            None => {}
+        }
         match token {
             Some(expected) if !is_authorized(request, expected) => Err(unauthorized()),
             _ => Ok(response),
@@ -321,9 +362,26 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         Err(e) => return Err(e),
     }
     let allowed = match access {
-        Access::All => true,
+        Access::All => op[0] != BORROW,
         Access::Sealed => matches!(op[0], KEY | SEALED_SEND),
         Access::Files => matches!(op[0], FILE_GET | FILE_DELETE),
+        Access::Ticket(..) => matches!(op[0], KEY | BORROW),
+        Access::Lent(_) => matches!(
+            op[0],
+            CREATE
+                | SEND
+                | RECEIVE
+                | WAIT
+                | DELETE
+                | KEY
+                | SEALED_SEND
+                | FILE_PUT
+                | FILE_GET
+                | FILE_DELETE
+                | FILE_KEEP
+                | PUSH_KEY
+                | PUSH_SET
+        ),
     };
     if !allowed {
         return Err(io::Error::new(
@@ -332,6 +390,13 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         ));
     }
     let reply = match op[0] {
+        CREATE
+            if !lent_may(shared, access, |lend, nonce| {
+                lend.may_create(nonce, system_now())
+            }) =>
+        {
+            vec![FULL]
+        }
         CREATE => {
             let created = shared.store().create();
             match created {
@@ -424,6 +489,9 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         }
         FILE_PUT => {
             let chunk = read_bytes(r, MAX_CHUNK)?;
+            if !lent_may_put(shared, access, chunk.len()) {
+                return Ok(Some(vec![FULL]));
+            }
             let put = shared.files().put(chunk);
             match put {
                 Ok(id) => {
@@ -521,6 +589,9 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         FILE_KEEP => {
             let from = read_time(r)?;
             let chunk = read_bytes(r, MAX_CHUNK)?;
+            if !lent_may_put(shared, access, chunk.len()) {
+                return Ok(Some(vec![FULL]));
+            }
             let put = shared.files().put_from(chunk, from);
             match put {
                 Ok(id) => {
@@ -545,9 +616,51 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
             }
             None => vec![NOT_FOUND],
         },
+        LEND => match shared.lend.get() {
+            Some(lend) => {
+                let mut out = vec![OK];
+                out.extend_from_slice(lend.ticket(system_now()).as_bytes());
+                out
+            }
+            None => vec![NOT_FOUND],
+        },
+        BORROW => {
+            let (Access::Ticket(nonce, expires), Some(lend)) = (access, shared.lend.get()) else {
+                return Err(io::Error::new(ErrorKind::PermissionDenied, "no ticket"));
+            };
+            match lend.borrow(nonce, expires, system_now()) {
+                Some(token) => match shared.store().create() {
+                    Ok(q) => {
+                        let mut out = vec![OK];
+                        out.extend_from_slice(&q.recipient_id);
+                        out.extend_from_slice(&q.sender_id);
+                        out.extend_from_slice(token.as_bytes());
+                        out
+                    }
+                    Err(e) => vec![code(e)],
+                },
+                None => vec![FULL],
+            }
+        }
         _ => return Err(io::Error::new(ErrorKind::InvalidData, "unknown opcode")),
     };
     Ok(Some(reply))
+}
+
+/// Whether a connection may do what `may` says of its lent token: always,
+/// unless it has one.
+fn lent_may(shared: &Shared, access: Access, may: impl FnOnce(&Lend, Nonce) -> bool) -> bool {
+    match (access, shared.lend.get()) {
+        (Access::Lent(nonce), Some(lend)) => may(lend, nonce),
+        (Access::Lent(_), None) => false,
+        _ => true,
+    }
+}
+
+fn lent_may_put(shared: &Shared, access: Access, bytes: usize) -> bool {
+    lent_may(shared, access, |lend, nonce| {
+        lend.may_put(nonce, system_now(), bytes as u64)
+    })
 }
 
 /// Wakes the connections waiting for a message once one was queued, and
@@ -816,6 +929,31 @@ fn offered_protocols(request: &Request) -> impl Iterator<Item = &str> {
         .map(str::trim)
 }
 
+/// The token a connection gave, as `Authorization: Bearer` or as a
+/// subprotocol in hex.
+fn presented_token(request: &Request) -> Option<String> {
+    let bearer = request
+        .headers()
+        .get("authorization")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "));
+    if let Some(bearer) = bearer {
+        return Some(bearer.to_string());
+    }
+    offered_protocols(request)
+        .filter_map(|p| p.strip_prefix(TOKEN_PROTOCOL))
+        .find_map(|hex| {
+            if !hex.len().is_multiple_of(2) || !hex.is_ascii() {
+                return None;
+            }
+            let bytes: Option<Vec<u8>> = (0..hex.len())
+                .step_by(2)
+                .map(|at| u8::from_str_radix(&hex[at..at + 2], 16).ok())
+                .collect();
+            String::from_utf8(bytes?).ok()
+        })
+}
+
 fn is_authorized(request: &Request, expected: &str) -> bool {
     let presented = request
         .headers()
@@ -873,6 +1011,10 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
         let store = Shared::new(Store::default(), FileStore::default(), key, None);
+        // A relay with a key lends, as one started by main does.
+        if let Some(key) = &store.key {
+            let _ = store.lend.set(Lend::new(key));
+        }
         let held = Arc::clone(&store);
         thread::spawn(move || run_held(held));
         let token: Option<Arc<str>> = token.map(Arc::from);
@@ -1130,6 +1272,137 @@ mod tests {
         let (recipient, sender) = ws_create(&mut ws);
         assert_eq!(ws_send(&mut ws, &sender, b"hi"), OK);
         assert_eq!(ws_receive(&mut ws, &recipient).as_deref(), Some(&b"hi"[..]));
+    }
+
+    /// A request the connection may not make: it is closed, with no reply.
+    fn refused(ws: &mut Ws, request: Vec<u8>) -> bool {
+        ws.send(Message::Binary(request.into())).unwrap();
+        !matches!(ws.read(), Ok(Message::Binary(_)))
+    }
+
+    fn ticket_of(addr: SocketAddr, token: &str) -> String {
+        let r = ws_call(&mut connect_with_token(addr, "", token), vec![LEND]);
+        assert_eq!(r[0], OK);
+        String::from_utf8(r[1..].to_vec()).unwrap()
+    }
+
+    /// A place taken with `ticket`: its queue's recipient and sender ids, and its lent token.
+    fn borrow(addr: SocketAddr, ticket: &str) -> (QueueId, QueueId, String) {
+        let r = ws_call(&mut connect_with_token(addr, "", ticket), vec![BORROW]);
+        assert_eq!(r[0], OK);
+        let mut recipient = [0u8; 24];
+        let mut sender = [0u8; 24];
+        recipient.copy_from_slice(&r[1..25]);
+        sender.copy_from_slice(&r[25..49]);
+        (
+            recipient,
+            sender,
+            String::from_utf8(r[49..].to_vec()).unwrap(),
+        )
+    }
+
+    #[test]
+    fn a_phone_without_a_relay_takes_a_place_lent_with_a_ticket() {
+        let addr = start_ws_with(Some("t"), Some(RelayKey::generate()));
+        let mut owner = connect_with_token(addr, "", "t");
+        let (owner_recipient, owner_sender) = ws_create(&mut owner);
+        let ticket = ticket_of(addr, "t");
+        assert!(ticket.starts_with("ticket."));
+
+        // A ticket only takes a place.
+        assert!(refused(
+            &mut connect_with_token(addr, "", &ticket),
+            vec![CREATE]
+        ));
+        let (recipient, sender, token) = borrow(addr, &ticket);
+        assert!(token.starts_with("lent."));
+        assert!(refused(
+            &mut connect_with_token(addr, "", &token),
+            vec![BORROW]
+        ));
+
+        // The place's queue works both ways, as one made with the relay's token.
+        let mut lent = connect_with_token(addr, "", &token);
+        assert_eq!(ws_send(&mut lent, &owner_sender, b"from a lent place"), OK);
+        assert_eq!(
+            ws_receive(&mut owner, &owner_recipient).as_deref(),
+            Some(&b"from a lent place"[..])
+        );
+        assert_eq!(ws_send(&mut owner, &sender, b"back"), OK);
+        assert_eq!(
+            ws_receive(&mut lent, &recipient).as_deref(),
+            Some(&b"back"[..])
+        );
+        let mut wait = vec![WAIT];
+        wait.extend_from_slice(&recipient);
+        wait.push(0);
+        assert_eq!(ws_call(&mut lent, wait), vec![OK, 0]);
+        assert_eq!(ws_call(&mut lent, vec![KEY])[0], OK);
+        let mut put = vec![FILE_PUT];
+        put.extend_from_slice(&3u32.to_be_bytes());
+        put.extend_from_slice(b"abc");
+        assert_eq!(ws_call(&mut lent, put)[0], OK);
+
+        // So many more queues a day.
+        for _ in 0..crate::lend::MAX_QUEUES {
+            ws_create(&mut lent);
+        }
+        assert_eq!(ws_call(&mut lent, vec![CREATE]), vec![FULL]);
+
+        // It cannot lend on, nor have the relay connect anywhere.
+        for request in [
+            vec![LEND],
+            vec![CALL_RELAY],
+            forward_request("ws://127.0.0.1:1", b"x"),
+        ] {
+            assert!(refused(&mut connect_with_token(addr, "", &token), request));
+        }
+
+        // A ticket gives so many places; a made-up lent token is refused as a wrong token is.
+        for _ in 1..crate::lend::MAX_BORROWS {
+            borrow(addr, &ticket);
+        }
+        let r = ws_call(&mut connect_with_token(addr, "", &ticket), vec![BORROW]);
+        assert_eq!(r, vec![FULL]);
+        let mut request = format!("ws://{addr}").into_client_request().unwrap();
+        request.headers_mut().insert(
+            "authorization",
+            format!("Bearer lent.{}", "0".repeat(64)).parse().unwrap(),
+        );
+        assert!(tungstenite::connect(request).is_err());
+        // The relay's own token takes no place.
+        assert!(refused(&mut owner, vec![BORROW]));
+    }
+
+    #[test]
+    fn a_browser_gives_a_lent_token_as_a_subprotocol() {
+        let addr = start_ws_with(Some("t"), Some(RelayKey::generate()));
+        let (recipient, sender, token) = borrow(addr, &ticket_of(addr, "t"));
+        let hex: String = token.bytes().map(|b| format!("{b:02x}")).collect();
+        let mut request = format!("ws://{addr}").into_client_request().unwrap();
+        request.headers_mut().insert(
+            "sec-websocket-protocol",
+            format!("erevos, erevos-token.{hex}").parse().unwrap(),
+        );
+        let (mut ws, _) = tungstenite::connect(request).unwrap();
+        assert_eq!(ws_send(&mut ws, &sender, b"hi"), OK);
+        assert_eq!(ws_receive(&mut ws, &recipient).as_deref(), Some(&b"hi"[..]));
+        assert!(refused(&mut ws, vec![LEND]));
+    }
+
+    #[test]
+    fn a_relay_without_a_key_lends_nothing() {
+        let addr = start_ws(Some("t"));
+        let mut owner = connect_with_token(addr, "", "t");
+        assert_eq!(ws_call(&mut owner, vec![LEND]), vec![NOT_FOUND]);
+        // A ticket from another relay is a wrong token here.
+        let other = start_ws_with(Some("o"), Some(RelayKey::generate()));
+        let ticket = ticket_of(other, "o");
+        let mut request = format!("ws://{addr}").into_client_request().unwrap();
+        request
+            .headers_mut()
+            .insert("authorization", format!("Bearer {ticket}").parse().unwrap());
+        assert!(tungstenite::connect(request).is_err());
     }
 
     #[test]

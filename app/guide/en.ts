@@ -179,7 +179,9 @@ radio, and on Android only.
 
 A relay is a small server that keeps one-way queues: each phone has its own queue, and whoever has its **contact
 link** can drop messages into it. The relay holds no accounts, names or phone numbers, and cannot read the messages:
-they are end-to-end encrypted, and only the two phones have the keys. Both phones must use the same relay for now.
+they are end-to-end encrypted, and only the two phones have the keys. Each phone may use a relay of its own: a message
+to a contact on another relay is sealed for theirs and handed to yours, which passes it on, so their relay never sees
+your phone's address. A phone with no relay gets a place on its contact's, see **No relay of your own** below.
 
 1. On the home screen, tap **New chat**. The relay settings open (they are under **Relay and new contacts** in
    a chat with no contact picked).
@@ -194,6 +196,26 @@ they are end-to-end encrypted, and only the two phones have the keys. Both phone
 The new chat appears on the home screen named **contact** and the first characters of their key. It is enough that one
 phone adds the other: adding a link starts an encrypted conversation and tells the other phone how to answer, so it
 lists the chat the next time it looks at its queue, which it does every few seconds.
+
+### No relay of your own
+
+A phone with no relay chats over the internet all the same: adding the link of a contact whose relay lends places, it
+takes a place there, with no token.
+
+- **How:** add their link as in 4 and 5, with nothing under **Relay**. Erevos says you now have a place on their
+  relay, lent through their link, and uses it as its own from then on: your own link names it, so others reach you
+  there too.
+- **Who lends:** your link carries a ticket for a place on your relay, when it has a key for two-hop sending and is
+  up to date, unless whoever runs it turned lending off. A ticket lasts 30 days and gives up to four places; your
+  link takes a new one by itself before then.
+- **What a lent place does not do:** messages to contacts on other relays go straight to their relay, which then sees
+  your phone's address. It keeps nothing for later (a message sent later waits on the phone), gives no call relay
+  (calls go straight between the phones), and makes 4 more queues and sends 1 GB of files a day at most. Your link
+  lends nothing on.
+- **Your own relay instead:** type its address under **Relay**: the lent place is let go of, and contacts learn the
+  new one from your next message.
+- **A link without a ticket** (from an older relay or Erevos): a relay that needs no token is used as it is;
+  otherwise you reach each other nearby only, until you have a relay.
 
 ### The safety number
 
@@ -1329,7 +1351,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it, and over Wi-Fi Direct anyone who joins the phones' own Wi-Fi. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
-| **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. [Through Tor](#tor), off unless turned on, no relay sees it, and with bridges, for where Tor is blocked, the network sees only a bridge. Snowflake's broker and STUN servers see your address. | Tor on a computer. |
+| **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. From a place lent on a contact's relay, every relay you send to sees it. [Through Tor](#tor), off unless turned on, no relay sees it, and with bridges, for where Tor is blocked, the network sees only a bridge. Snowflake's broker and STUN servers see your address. | Tor on a computer. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
 | **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. A contact's calls and SMS are read from the phone's own call log and SMS only to show its history, and kept nowhere. | |
 | **Contacts kept only in Erevos** | Sealed with the space's key, or with the hidden chats' for theirs, in one file for every space whose size shows roughly how many there are in all, not whose they are; their photos each in a file of its own. Never in Android's contacts. Calls and SMS to them go through the phone, and show in its call log and SMS. | |
@@ -1365,8 +1387,8 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   relay](#relay), and so is a walkie-talkie that works even over Bluetooth.
 - **Groups:** group chats, with photos, files and voice messages, and group voice and video calls are here, see [Group chats](#groups). Next: video with
   more than four people, through a server the call moves to by itself, still encrypted end to end.
-- **Bringing your chats:** Viber, and the photos and files of imported chats. Telegram and WhatsApp already come
-  in, see [Imported chats](#import).
+- **Bringing your chats:** Viber. Telegram and WhatsApp already come in, with their photos and files, see
+  [Imported chats](#import).
 - **More systems:** public groups and group calls on linked devices too; the account, its calls and its groups are on
   a computer already, see [Linked devices](#devices). Linux, macOS and Windows are here, see [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
   [On Sailfish OS](#sailfish); and so are backups, see [Backups](#backup).
@@ -1402,8 +1424,8 @@ There is no way to recover it. Erevos keeps nothing that could open your data wi
 
 ### A contact code was not added.
 
-Both phones must use the same relay for now. The line under the chat names both relays. A code from an older
-Erevos has no keys and is refused: ask for a new one.
+A contact on another relay needs a link with that relay's key, which links from an up-to-date Erevos have: the line
+under the chat names that relay. A code from an older Erevos has no keys and is refused: ask for a new one.
 
 ### Can the relay read my messages?
 

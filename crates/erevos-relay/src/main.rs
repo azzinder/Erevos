@@ -24,6 +24,12 @@
 //! Without it, the relay still forwards for its own phones but cannot take
 //! sealed sends from other relays.
 //!
+//! A relay with a key also lends places to phones that have no relay of
+//! their own (see `lend.rs`): its phones put a ticket in their contact links,
+//! and whoever adds them without a relay takes a queue here with it. Set
+//! `EREVOS_RELAY_LEND=off` to lend none. A new key takes back every place
+//! lent.
+//!
 //! Set `EREVOS_RELAY_FILES` to a folder to keep the chunks of files that
 //! phones send (see `files.rs`) there. Without it, they live in memory and are
 //! lost when the relay stops. `EREVOS_RELAY_FILES_MB` sets how much room they
@@ -49,6 +55,7 @@
 mod files;
 mod journal;
 mod later;
+mod lend;
 mod push;
 mod queue;
 mod server;
@@ -248,6 +255,16 @@ fn main() -> ExitCode {
     };
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
     let store = Shared::new(store, files, key, turn);
+    let lending = env::var("EREVOS_RELAY_LEND").map_or(true, |on| on != "off");
+    match &store.key {
+        Some(key) if lending => {
+            let _ = store.lend.set(lend::Lend::new(key));
+        }
+        Some(_) => eprintln!("erevos-relay: EREVOS_RELAY_LEND=off, no places are lent"),
+        None => eprintln!(
+            "erevos-relay: no EREVOS_RELAY_KEY set, no places are lent to phones without a relay"
+        ),
+    }
     *store.held.lock().expect("held lock") = held;
     let held_store = Arc::clone(&store);
     thread::spawn(move || server::run_held(held_store));

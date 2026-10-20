@@ -69,10 +69,29 @@ import { takeHidden } from '../lib/hidden-handoff';
 import { setOpenHiddenPlace } from '../lib/hidden-contacts';
 import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts } from '../lock/history';
 import { currentSpace } from '../lock/keys';
-import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
+import { loadCurrentSpaceData, loadHiddenData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { isGroupPacket, type GroupInfo } from '../lib/groups';
 import { spaceGroups, takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
-import { callRelay, carryTo, createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, throughTor, toHex, type CallRelay, type HeldAt, type Relay } from '../lib/relay';
+import {
+  borrowPlace,
+  callRelay,
+  carryTo,
+  createQueue,
+  fromHex,
+  isLentToken,
+  isQueueNotFound,
+  lendTicket,
+  receiveMessage,
+  relayKey,
+  sameRelay,
+  sendMessage,
+  throughTor,
+  ticketExpires,
+  toHex,
+  type CallRelay,
+  type HeldAt,
+  type Relay,
+} from '../lib/relay';
 import { answersAsk, appShown, awayPace, holdReceiver, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, relayFor, spaceChats } from '../lib/space-chats';
@@ -164,6 +183,8 @@ const TYPING_SHOWS = 6000;
 
 // Messages opened from the relay in one look at it, at most: a minute's voice message comes in one.
 const RECEIVE_BATCH = 50;
+// A ticket kept for our link is used while it has more than this left (milliseconds).
+const TICKET_KEPT = 7 * 24 * 3600 * 1000;
 
 // How the LoRa radio is, in a word (lib/lora.ts).
 const LORA_SHOWN = { off: mark('Off'), connecting: mark('Linking'), starting: mark('Linking'), up: mark('Linked'), down: mark('Not linked') } as const;
@@ -436,10 +457,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [relayToken, setRelayToken] = useState('');
   // Our relay's key for sealed sends, put in our link so contacts on other relays can reach us.
   const [ownRelayKey, setOwnRelayKey] = useState('');
+  // A ticket for a place on our relay, put in our link for whoever adds us with no relay of their own.
+  const [ownTicket, setOwnTicket] = useState('');
   // The second relay for two-hop sending (lib/relay.ts), empty when not used.
   const [viaUrl, setViaUrl] = useState('');
   const [viaToken, setViaToken] = useState('');
-  const typedRelay = useTyped(relayUrl, setRelayUrl);
+  // A lent token works on the relay that lent it only: with another relay typed in, it goes.
+  const typedRelay = useTyped(relayUrl, (url) => {
+    if (isLentToken(relayToken) && !sameRelay(url, relayUrl)) setRelayToken('');
+    setRelayUrl(url);
+  });
   const typedToken = useTyped(relayToken, setRelayToken);
   const typedVia = useTyped(viaUrl, setViaUrl);
   const typedViaToken = useTyped(viaToken, setViaToken);
@@ -660,9 +687,36 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       );
       return;
     }
-    const url = ours || code.relayUrl;
-    if (code.relayUrl && !ours) setRelayUrl(code.relayUrl);
-    const target = relayTarget(url);
+    let url = ours;
+    let token = relayToken;
+    let queue = ownQueue;
+    let lent = false;
+    let noPlace: unknown = null;
+    if (!ours && code.relayUrl) {
+      // With no relay of our own, theirs: a place lent there when their link brings a ticket for
+      // one (lib/relay.ts), or else the relay as it is, which works when it needs no token (or
+      // the one typed here).
+      try {
+        if (code.lend && !queue) {
+          const place = await borrowPlace(code.relayUrl, code.lend);
+          token = place.token;
+          queue = { recipientHex: toHex(place.queue.recipientId), senderHex: toHex(place.queue.senderId) };
+          lent = true;
+        } else if (!queue) {
+          const ids = await createQueue({ url: code.relayUrl, token: relayToken.trim() || undefined });
+          queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+        }
+        url = code.relayUrl;
+        setRelayUrl(url);
+        setRelayToken(token);
+        setOwnQueue(queue);
+      } catch (error) {
+        // Neither: they reach this phone nearby only, as one with no relay.
+        noPlace = error;
+        queue = ownQueue;
+      }
+    }
+    const target = relayFor(url, token, viaUrl, viaToken, spareBackup(spareStore));
     if (!target && !code.key) {
       setNote(t('Not added. Type the relay address in Relay first.'));
       return;
@@ -670,7 +724,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       // The contact answers through our own queue, so there has to be one when there is a relay.
       // Without one, they reach this phone nearby only, until it has a queue and tells them.
-      let queue = ownQueue;
       if (!queue && target) {
         const ids = await createQueue(target);
         queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
@@ -686,8 +739,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setNote(
         added
           ? nearbyOnly
-            ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. Until you both have a relay, you reach each other nearby only.')
-            : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
+            ? noPlace
+              ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. Their relay gave no place: {error}. Until you have a relay, you reach each other nearby only.', {
+                  error: errorText(noPlace),
+                })
+              : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. Until you both have a relay, you reach each other nearby only.')
+            : lent
+              ? t("Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay of your own, you now have a place on theirs, lent through their link.")
+              : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
           : t('Already a contact. Where to reach them is updated.'),
       );
     } catch (error) {
@@ -998,6 +1057,37 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       active = false;
     };
   }, [relayUrl, relayToken]);
+
+  // Asks our relay for a ticket for a place on it, for our link, so whoever adds us with no relay
+  // of their own takes one (lib/relay.ts, lendTicket). It is kept with the space's data while it
+  // has more than a week left, so the link stays the same; then a new one is asked for. A place
+  // lent to us lends none on, and hidden chats lend none.
+  useEffect(() => {
+    const url = relayUrl.trim();
+    setOwnTicket('');
+    if (!loaded || hiddenKey || !url || isLentToken(relayToken)) return;
+    let active = true;
+    void (async () => {
+      const kept = (await loadCurrentSpaceData()).lend;
+      const left = kept.ticket && sameRelay(kept.relay, url) ? ticketExpires(kept.ticket) - Date.now() : 0;
+      if (left > TICKET_KEPT) {
+        if (active) setOwnTicket(kept.ticket);
+        return;
+      }
+      try {
+        const ticket = await lendTicket({ url, token: relayToken.trim() || undefined });
+        if (!active) return;
+        setOwnTicket(ticket ?? '');
+        await updateCurrentSpaceData({ lend: ticket ? { relay: url, ticket } : NO_LENDING });
+      } catch {
+        // The relay cannot be reached: the one kept, while it lasts, and asked again next time.
+        if (active && left > 0) setOwnTicket(kept.ticket);
+      }
+    })().catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [loaded, relayUrl, relayToken]);
 
   // Looks at our own relay queue every few seconds and opens what came. Without the core nothing
   // could open it, so the queue is left alone, and its messages wait on the relay.
@@ -2728,6 +2818,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           key: toBase64Url(e2e.bundle),
           relayKey: ownRelayKey || undefined,
           spare: spareCode(e2e.spare()),
+          lend: ownTicket || undefined,
         })
       : hiddenKey
         ? null
@@ -3304,17 +3395,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     keyboardType="url"
                   />
                 </Field>
-                <Field label={t('Token (optional)')}>
-                  <Input
-                    value={typedToken.shown}
-                    onChangeText={typedToken.type}
-                    onBlur={typedToken.done}
-                    placeholder={t('Token, if the relay needs one')}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    secureTextEntry
-                  />
-                </Field>
+                {isLentToken(relayToken) ? (
+                  <Text variant="caption" tone="muted">
+                    {t("A place lent on this relay through a contact's link: no token of your own is needed. Type another relay to use that one instead.")}
+                  </Text>
+                ) : (
+                  <Field label={t('Token (optional)')}>
+                    <Input
+                      value={typedToken.shown}
+                      onChangeText={typedToken.type}
+                      onBlur={typedToken.done}
+                      placeholder={t('Token, if the relay needs one')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      secureTextEntry
+                    />
+                  </Field>
+                )}
                 <Field label={t('Second relay (optional)')}>
                   <Input
                     value={typedVia.shown}

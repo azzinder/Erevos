@@ -19,6 +19,13 @@
 // now, with the time it should go, and that relay sends it on then, so it goes though this phone is
 // off by then. Until then this phone may take it back (dropLater).
 //
+// Lent places (crates/erevos-relay/src/lend.rs): a relay lends places to phones that have no relay
+// of their own. Its phones put a ticket for one in their contact link (lendTicket); a phone with no
+// relay that adds them takes a place with it (borrowPlace): a queue, and a lent token, which goes
+// where the relay's token goes from then on. With a lent token the relay connects nowhere for this
+// phone, so sends to contacts on other relays go straight to their /sealed path, and their files
+// come straight from their /files path; it holds nothing for later and gives no call relay.
+//
 // Through Tor (setThroughTor, off by default): every request goes through the core's Tor
 // (crates/erevos-tor) instead of the phone's own connection. There is no falling back to a direct
 // connection: when Tor cannot reach the relay, the request fails.
@@ -45,6 +52,8 @@ const PUSH_SET = 15;
 const LATER = 16;
 const UNLATER = 17;
 const FILE_KEEP = 18;
+const LEND = 19;
+const BORROW = 20;
 
 const OK = 0;
 const NOT_FOUND = 1;
@@ -307,6 +316,14 @@ export async function forwardMessage(via: Relay, to: string, sealed: Uint8Array)
   check(await request(via, forwardRequest(to, sealed)), 'send');
 }
 
+function sealedSendRequest(sealed: Uint8Array): Uint8Array {
+  const bytes = new Uint8Array(1 + 4 + sealed.length);
+  bytes[0] = SEALED_SEND;
+  new DataView(bytes.buffer).setUint32(1, sealed.length);
+  bytes.set(sealed, 5);
+  return bytes;
+}
+
 function forwardRequest(to: string, sealed: Uint8Array): Uint8Array {
   const address = utf8Encode(to);
   const bytes = new Uint8Array(1 + 2 + address.length + 4 + sealed.length);
@@ -330,15 +347,10 @@ export async function carryTo(own: Relay, url: string, sealed: Uint8Array): Prom
   if (sealed.length > MAX_MESSAGE + 1024) return false;
   const first = own.via ?? own;
   try {
-    if (sameRelay(first.url, url)) {
-      const bytes = new Uint8Array(1 + 4 + sealed.length);
-      bytes[0] = SEALED_SEND;
-      new DataView(bytes.buffer).setUint32(1, sealed.length);
-      bytes.set(sealed, 5);
-      check(await request(first, bytes), 'send');
-    } else {
-      await forwardMessage(first, url.trim().replace(/\/+$/, ''), sealed);
-    }
+    if (sameRelay(first.url, url)) check(await request(first, sealedSendRequest(sealed)), 'send');
+    // A place lent on our relay cannot have it connect to theirs.
+    else if (isLentToken(first.token)) check(await request(relayPath(url, '/sealed'), sealedSendRequest(sealed)), 'send');
+    else await forwardMessage(first, url.trim().replace(/\/+$/, ''), sealed);
     return true;
   } catch (error) {
     if (isQueueNotFound(error)) return false;
@@ -372,12 +384,15 @@ async function sendOne(relay: Relay, senderId: Uint8Array, message: Uint8Array):
 }
 
 // The request that queues one message, and the relay it goes to: the second relay with the message
-// sealed for this one, when it has one, or else this one.
+// sealed for this one, when it has one, or else this one. From a place lent on the second relay,
+// which connects nowhere for it, the sealed message goes straight to this one's /sealed path.
 async function sendRequest(relay: Relay, senderId: Uint8Array, message: Uint8Array): Promise<{ to: Relay; bytes: Uint8Array }> {
   if (relay.via) {
     const key = await relayKey(relay);
     if (!key) throw new RelayError(t('your relay has no key for two-hop sending, so it was not sent through the second relay'));
-    return { to: relay.via, bytes: forwardRequest(relay.url, await relaySeal(key, senderId, message)) };
+    const sealed = await relaySeal(key, senderId, message);
+    if (isLentToken(relay.via.token)) return { to: relayPath(relay.url, '/sealed'), bytes: sealedSendRequest(sealed) };
+    return { to: relay.via, bytes: forwardRequest(relay.url, sealed) };
   }
   const bytes = new Uint8Array(1 + 24 + 4 + message.length);
   bytes[0] = SEND;
@@ -396,6 +411,8 @@ const holds = new Map<string, boolean>();
  * again this run. Throws when the relay cannot be reached.
  */
 export async function canHoldAt(relay: Relay): Promise<boolean> {
+  // A lent place holds nothing for later.
+  if (isLentToken(relay.token)) return false;
   const address = relay.url.trim().toLowerCase();
   const known = holds.get(address);
   if (known !== undefined) return known;
@@ -535,12 +552,71 @@ export async function waitForMessage(relay: Relay, recipientId: Uint8Array, seco
   return reply[1] === 1;
 }
 
+/**
+ * A ticket for a place on the relay, for our contact link, or null if it lends none: it has no
+ * key, lending is off, or it is from before lending (it closes the connection, as for any request
+ * it does not know). None for a place lent to us. Throws when the relay cannot be reached.
+ */
+export async function lendTicket(relay: Relay): Promise<string | null> {
+  if (isLentToken(relay.token)) return null;
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(LEND));
+  } catch (error) {
+    if (!(error instanceof RelayUnreachableError)) throw error;
+    await request(relay, Uint8Array.of(KEY)).catch(() => {
+      throw error;
+    });
+    return null;
+  }
+  if (reply[0] === NOT_FOUND) return null;
+  check(reply, 'lend');
+  const ticket = utf8Decode(reply.slice(1));
+  if (!isTicket(ticket)) throw new RelayError('lend: unexpected reply');
+  return ticket;
+}
+
+/**
+ * Takes a place on the relay at `url` with a ticket from a contact's link: our queue there, and
+ * the lent token to use it with from now on, where the relay's token goes. Throws when the ticket
+ * gave all its places (FULL), or the relay cannot be reached or does not take it (expired, or the
+ * relay has a new key).
+ */
+export async function borrowPlace(url: string, ticket: string): Promise<{ queue: QueueIds; token: string }> {
+  const reply = await request({ url, token: ticket }, Uint8Array.of(BORROW));
+  if (reply[0] === FULL) throw new RelayError(t('the link has given all its places on its relay. Ask them for a new link'), FULL);
+  check(reply, 'borrow');
+  const token = utf8Decode(reply.slice(49));
+  if (!isLentToken(token)) throw new RelayError('borrow: unexpected reply');
+  return { queue: { recipientId: reply.slice(1, 25), senderId: reply.slice(25, 49) }, token };
+}
+
 /** Deletes the queue. Later sends to it fail. */
 export async function deleteQueue(relay: Relay, recipientId: Uint8Array): Promise<void> {
   const bytes = new Uint8Array(1 + 24);
   bytes[0] = DELETE;
   bytes.set(recipientId, 1);
   check(await request(relay, bytes), 'delete');
+}
+
+/** Whether `token` is a lent token, for a place lent on a relay, rather than the relay's own token. */
+export function isLentToken(token: string | undefined): boolean {
+  return !!token && /^lent\.[0-9a-f]{64}$/.test(token.trim());
+}
+
+/** Whether `text` is a ticket for a place on a relay, as a contact link carries. */
+export function isTicket(text: string): boolean {
+  return /^ticket\.[0-9a-f]{80}$/.test(text);
+}
+
+/** When a ticket expires, in milliseconds. */
+export function ticketExpires(ticket: string): number {
+  return parseInt(ticket.slice(7, 23), 16) * 1000;
+}
+
+/** The path of the relay at `url` that other relays use: `/sealed` for sealed sends, `/files` for files. No token. */
+export function relayPath(url: string, path: '/sealed' | '/files'): Relay {
+  return { url: `${url.trim().replace(/\/+$/, '')}${path}` };
 }
 
 /** Relay addresses that differ only in case or a trailing slash are the same relay. */
@@ -704,6 +780,8 @@ export type CallRelay = { urls: string[]; username: string; credential: string }
 /** Credentials for the call relay beside the relay, or null if it has none. They last hours, so
  *  they are fetched for each call. */
 export async function callRelay(relay: Relay): Promise<CallRelay | null> {
+  // A lent place gets none.
+  if (isLentToken(relay.token)) return null;
   const reply = await request(relay, Uint8Array.of(CALL_RELAY));
   if (reply[0] === NOT_FOUND) return null;
   check(reply, 'call relay');

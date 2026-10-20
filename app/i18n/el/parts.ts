@@ -205,6 +205,7 @@ export const parts: Record<string, string> = {
   'message is too large': 'το μήνυμα είναι πολύ μεγάλο',
   'your relay has no key for two-hop sending, so it was not sent through the second relay':
     'το relay σου δεν έχει κλειδί για αποστολή με δύο βήματα, οπότε δεν στάλθηκε μέσω του δεύτερου relay',
+  'the link has given all its places on its relay. Ask them for a new link': 'ο σύνδεσμος έδωσε ήδη όλες τις θέσεις του στο relay του. Ζήτησέ τους νέο σύνδεσμο',
   'The relay address is too long for an SMS invite.': 'Η διεύθυνση του relay είναι πολύ μεγάλη για πρόσκληση με SMS.',
 
   // Notifications in the web app (lib/web-push*.ts).

@@ -35,18 +35,19 @@ after(() => {
 });
 
 /** Starts a relay and returns its address once it answers. Node's WebSocket cannot send the
- *  token header that React Native's does, so it takes none. With `withKey`, it has a key for
- *  sealed sends, as relays that take messages from other relays do. */
-export async function startRelay(withKey = false): Promise<string> {
+ *  token header that React Native's does, so it takes none, unless given one (`token`), which
+ *  goes as a browser's does. With `withKey`, it has a key for sealed sends, as relays that take
+ *  messages from other relays do, and lends places. */
+export async function startRelay(withKey = false, token = ''): Promise<string> {
   const [tcp, ws] = [await freePort(), await freePort()];
   keys ??= withKey ? mkdtempSync(join(tmpdir(), 'erevos-relay-keys-')) : null;
-  const env = { ...process.env, EREVOS_RELAY_TOKEN: '', EREVOS_RELAY_KEY: withKey && keys ? join(keys, `key-${ws}`) : '' };
+  const env = { ...process.env, EREVOS_RELAY_TOKEN: token, EREVOS_RELAY_KEY: withKey && keys ? join(keys, `key-${ws}`) : '' };
   const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
   relays.push(child);
   const url = `ws://127.0.0.1:${ws}`;
   for (let i = 0; i < 50; i++) {
     try {
-      (await RelaySession.open({ url })).close();
+      (await RelaySession.open({ url, token: token || undefined })).close();
       return url;
     } catch {
       await new Promise((r) => setTimeout(r, 100));

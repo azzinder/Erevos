@@ -12,7 +12,7 @@
 // checks.
 
 import { decryptBytes, encryptBytes, fromHex, randomBytes, toHex } from './crypto';
-import { deleteChunk, getChunk, putChunk, RelaySession, sameRelay, type Relay } from './relay';
+import { deleteChunk, getChunk, isLentToken, putChunk, RelaySession, relayPath, sameRelay, type Relay } from './relay';
 import {
   CHUNK_SIZES,
   cleanFileName,
@@ -239,6 +239,15 @@ export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress, 
   return { ...shared, relay: own.url, ids: ids.join('') };
 }
 
+// Where a file on the relay at `relay` is taken from: our relay (`own`), and through it the relay
+// the file is on; or, from a place lent on ours, which connects nowhere for us, straight from that
+// relay's /files path.
+function fileWay(own: Relay, relay: string): { at: Relay; via?: string } {
+  if (sameRelay(relay, own.url)) return { at: { url: own.url, token: own.token } };
+  if (isLentToken(own.token)) return { at: relayPath(relay, '/files') };
+  return { at: { url: own.url, token: own.token }, via: relay };
+}
+
 /**
  * Takes a file that came, through our relay (`own`), checks every chunk and keeps them here, then
  * deletes them from the relay, unless they are left there (`leave`): a group's file the other
@@ -252,10 +261,10 @@ export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, le
   if (!from) return ref;
   const watch = leave === undefined ? takenFiles : null;
   const left = leave ?? watch?.leave(from) ?? false;
-  const via = sameRelay(from.relay, own.url) ? undefined : from.relay;
+  const { at, via } = fileWay(own, from.relay);
   const key = fromHex(ref.key);
   const ids = Array.from({ length: ref.count }, (_, n) => fromHex(from.ids.slice(n * ID_HEX, (n + 1) * ID_HEX)));
-  const session = await RelaySession.open({ url: own.url, token: own.token });
+  const session = await RelaySession.open(at);
   try {
     let size = 0;
     for (let n = 0; n < ref.count; n++) {
@@ -280,8 +289,8 @@ export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, le
 
 /** Deletes from the relay, through ours (`own`), a file left there once taken. One it cannot delete expires there. */
 export async function dropFile(own: Relay, from: FileFrom): Promise<void> {
-  const via = sameRelay(from.relay, own.url) ? undefined : from.relay;
-  const session = await RelaySession.open({ url: own.url, token: own.token });
+  const { at, via } = fileWay(own, from.relay);
+  const session = await RelaySession.open(at);
   try {
     for (let at = 0; at < from.ids.length; at += ID_HEX) await deleteChunk(session, fromHex(from.ids.slice(at, at + ID_HEX)), via).catch(() => false);
   } finally {

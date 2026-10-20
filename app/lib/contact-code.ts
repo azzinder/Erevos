@@ -10,20 +10,25 @@
 // A phone with a backup relay (lib/spare.ts) adds its queue there:
 //   &sid=<sender id there>&srelay=<backup relay address>&srk=<its key>
 // so a contact writes there while the first relay cannot be reached.
+// A phone whose relay lends places (crates/erevos-relay/src/lend.rs) adds a ticket for one:
+//   &lend=ticket.<80 hex characters>
+// so whoever adds it with no relay of their own takes a place there (lib/relay.ts, borrowPlace).
 // Self-contained on purpose, so it can run under plain Node for checks.
 
 export type SpareCode = { senderHex: string; relayUrl: string; relayKey?: string };
-export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string; spare?: SpareCode };
+export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string; spare?: SpareCode; lend?: string };
 
 const LINK = 'erevos://contact?';
 // A bundle is about 1800 characters. Anything far longer is not one.
 const MAX_KEY = 4096;
+const TICKET = /^ticket\.[0-9a-f]{80}$/;
 
-export function contactLink({ senderHex, relayUrl, key, relayKey, spare }: ContactCode): string {
+export function contactLink({ senderHex, relayUrl, key, relayKey, spare, lend }: ContactCode): string {
   const backup = spare
     ? `&sid=${spare.senderHex}&srelay=${encodeURIComponent(spare.relayUrl)}${spare.relayKey ? `&srk=${spare.relayKey}` : ''}`
     : '';
-  return `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}${backup}`;
+  const ticket = lend && relayUrl && TICKET.test(lend) ? `&lend=${lend}` : '';
+  return `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}${backup}${ticket}`;
 }
 
 /** Checks a backup queue of a link: null when it is not one, as when a part is missing. */
@@ -64,9 +69,10 @@ export function parseContact(text: string): ContactCode | null {
     }
   }
   const code = checkContact(fields.id, fields.relay ?? '', fields.key ?? '', fields.rk ?? '');
-  // A backup queue that does not read is left out: the link still works without it.
+  // A backup queue or a ticket that does not read is left out: the link still works without it.
   const spare = code?.relayUrl && fields.sid ? checkSpare(fields.sid, fields.srelay ?? '', fields.srk ?? '') : null;
-  return code && spare ? { ...code, spare } : code;
+  const lend = code?.relayUrl && fields.lend && TICKET.test(fields.lend) ? fields.lend : '';
+  return code ? { ...code, ...(spare ? { spare } : {}), ...(lend ? { lend } : {}) } : code;
 }
 
 // Hands a contact from the screen a scanned link opens, or from a contact's Erevos ID

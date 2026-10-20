@@ -47,10 +47,15 @@ export type SpaceData = {
   push: boolean;
   // Whether this phone makes the preview of a link it sends (lib/make-preview.ts). Off unless set.
   previews: boolean;
+  // The ticket our contact link gives for a place on our relay (lib/relay.ts, lendTicket), and
+  // that relay, kept while it has days left so the link stays the same. Empty when there is none.
+  lend: Lending;
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null };
 const NO_SPARE: SpareRelay = { url: '', token: '', queue: null };
+export type Lending = { relay: string; ticket: string };
+export const NO_LENDING: Lending = { relay: '', ticket: '' };
 
 export const EMPTY_SPACE: SpaceData = {
   url: '',
@@ -65,6 +70,7 @@ export const EMPTY_SPACE: SpaceData = {
   spare: NO_SPARE,
   push: false,
   previews: false,
+  lend: NO_LENDING,
 };
 
 const BLOCK = 1024;
@@ -112,7 +118,15 @@ function checked(value: unknown): SpaceData {
     spare: checkedSpareRelay(v.spare),
     push: v.push === true,
     previews: v.previews === true,
+    lend: checkedLending(v.lend),
   };
+}
+
+function checkedLending(value: unknown): Lending {
+  const v = (value ?? {}) as Partial<Record<keyof Lending, unknown>>;
+  return typeof v.relay === 'string' && typeof v.ticket === 'string' && /^ticket\.[0-9a-f]{80}$/.test(v.ticket)
+    ? { relay: v.relay, ticket: v.ticket }
+    : NO_LENDING;
 }
 
 /** An entry's data, or an empty one when the entry is missing or sealed with another key. */
