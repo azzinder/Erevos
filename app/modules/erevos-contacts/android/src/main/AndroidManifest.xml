@@ -9,9 +9,12 @@
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
   <application>
-    <!-- Contacts as an icon of its own in the launcher (ContactIntents.kt). -->
+    <!-- Contacts as an icon of its own in the launcher (ContactIntents.kt). It and the activity
+         below hand a link to Erevos and close, in a task of their own (taskAffinity ""), so every
+         tap opens the contacts, not Erevos as it was left. -->
     <activity
       android:name="expo.modules.erevoscontacts.ContactsLauncherActivity"
+      android:taskAffinity=""
       android:exported="true"
       android:excludeFromRecents="true"
       android:noHistory="true"
@@ -28,6 +31,7 @@
          opened in Erevos, behind its lock. -->
     <activity
       android:name="expo.modules.erevoscontacts.ContactIntentActivity"
+      android:taskAffinity=""
       android:exported="true"
       android:excludeFromRecents="true"
       android:noHistory="true"

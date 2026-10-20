@@ -37,9 +37,13 @@
       </intent-filter>
     </service>
 
-    <!-- Phone as an icon of its own in the launcher, opening the keypad (DialActivity.kt). -->
+    <!-- Phone as an icon of its own in the launcher, opening the keypad (DialActivity.kt). It and
+         the other activities that only hand a link to Erevos and close have a task of their own
+         (taskAffinity ""), which ends as they close: in Erevos's task, a second tap on the icon
+         only brought Erevos up as it was left, not on the keypad. -->
     <activity
       android:name="expo.modules.erevosphone.PhoneLauncherActivity"
+      android:taskAffinity=""
       android:exported="true"
       android:excludeFromRecents="true"
       android:noHistory="true"
@@ -55,6 +59,7 @@
 
     <activity
       android:name="expo.modules.erevosphone.DialActivity"
+      android:taskAffinity=""
       android:exported="true"
       android:excludeFromRecents="true"
       android:noHistory="true"

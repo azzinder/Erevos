@@ -54,8 +54,11 @@
       </intent-filter>
     </service>
 
+    <!-- sms: and mms: links (Receivers.kt): handed to Erevos, in a task of their own (taskAffinity
+         ""), so each opens its conversation, not Erevos as it was left. -->
     <activity
       android:name="expo.modules.erevossms.ComposeActivity"
+      android:taskAffinity=""
       android:exported="true"
       android:excludeFromRecents="true"
       android:noHistory="true"
