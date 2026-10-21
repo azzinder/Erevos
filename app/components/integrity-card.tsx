@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
 import { loadCurrentSpaceData } from '../lock/space-data';
@@ -121,6 +122,7 @@ export function IntegrityCard() {
             ) : null}
             <Row wrap>
               <Button title={push ? t('Turn off') : t('Turn on')} kind="secondary" compact onPress={switchPush} disabled={busy || push === null} />
+              <Button title={t('All permissions')} kind="ghost" compact onPress={() => router.push('/permissions')} />
             </Row>
           </Card>
         </>

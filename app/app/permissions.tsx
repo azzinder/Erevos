@@ -1,18 +1,22 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, Platform, View } from 'react-native';
 
 import { Button, Card, Page, Row, SectionTitle, Text } from '../components/ui';
 import { backgroundState } from '../lib/background';
-import { t } from '../lib/i18n';
-import { makerOf, NEEDED, type Check, type CheckId, type Maker } from '../lib/permission-checks';
-import { fix, HAS_CHECKS, makerDone, readChecks } from '../lib/permissions';
+import { plural, t } from '../lib/i18n';
+import { lacking, makerOf, type Check, type CheckId, type Maker } from '../lib/permission-checks';
+import { BROWSER, fix, HAS_CHECKS, IOS_OTHER_BROWSER, makerDone, readChecks } from '../lib/permissions';
+import type { Browser } from '../lib/web-permission-checks';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // Permissions (home menu → Permissions, and by itself after a new version when something calls
 // need is missing, lib/permissions.ts): what Android and the phone maker let Erevos do, each with
-// why it matters and the button that asks for it.
+// why it matters and the button that asks for it. In the web app, what the browser lets it do
+// (lib/permissions.web.ts), with the browser's own question, or where its setting is.
+
+const WEB = Platform.OS === 'web';
 
 function title(id: CheckId): string {
   switch (id) {
@@ -20,16 +24,32 @@ function title(id: CheckId): string {
       return t('Notices');
     case 'calls':
       return t('The call notice');
+    case 'messages':
+      return t('The message notice');
     case 'fullScreen':
       return t('Calls over the lock screen');
     case 'battery':
       return t('Running on battery');
+    case 'restricted':
+      return t('Running in the background');
+    case 'unused':
+      return t('Pausing when unused');
     case 'data':
       return t('Mobile data in the background');
     case 'maker':
       return t("The phone maker's own setting");
     case 'microphone':
       return t('Microphone');
+    case 'messageSound':
+      return t('Sound for new messages');
+    case 'lockScreen':
+      return t('Notices on the lock screen');
+    case 'dnd':
+      return t('Calls through Do Not Disturb');
+    case 'ringer':
+      return t('The ringer');
+    case 'saver':
+      return t('Battery saver');
     case 'camera':
       return t('Camera');
     case 'nearby':
@@ -38,33 +58,63 @@ function title(id: CheckId): string {
       return t('Contacts');
     case 'alarms':
       return t('Exact times');
+    case 'home':
+      return t('On the home screen');
+    case 'push':
+      return t('Notifications while closed');
+    case 'storage':
+      return t('Keeping the data');
   }
 }
 
-function why(id: CheckId): string {
+function why(id: CheckId, browser: Browser | null): string {
   switch (id) {
     case 'notices':
       return t('For "Incoming call" to show while Erevos is closed, with its buttons, and for the notice that messages came. Without notices a call may not ring at all on some phones.');
     case 'calls':
-      return t('The "Calls" notices are turned off for Erevos: a call rings, but nothing shows to answer it from.');
+      return t('For a call to show, with its buttons: the "Calls" notices must be on, and set to pop up on the screen. Otherwise a call rings, but nothing shows to answer it from.');
+    case 'messages':
+      return t('For the notice that a message came while Erevos is closed. With the "Messages" notices turned off, messages still come, but nothing says so.');
     case 'fullScreen':
       return t('So a call fills the screen over the lock screen, as a phone call does.');
     case 'battery':
       return t("Android's battery saving stops apps a while after they go to the background. Left out of it, Erevos keeps waiting for calls and messages.");
+    case 'restricted':
+      return t("With Erevos's battery use set to Restricted, Android does not let it run in the background at all: nothing comes and nothing rings while it is closed.");
+    case 'unused':
+      return t('Android pauses an app that is not opened for a few months, and takes back its permissions. Left out of it, Erevos keeps waiting for calls and messages however long it stays in the background.');
     case 'data':
       return t('Data Saver cuts mobile data to apps in the background: on mobile data nothing comes while Erevos is closed.');
     case 'maker':
       return t("Some phone makers stop apps in the background with a setting of their own, beyond Android's, and Erevos cannot see it.");
     case 'microphone':
       return t('For calls and voice messages. Without it a call can be answered but you are not heard.');
+    case 'messageSound':
+      return t('For the notice that a message came to make a sound. The "Messages" notices can be set to show silently, or have no sound chosen.');
+    case 'lockScreen':
+      return t('For "Incoming call" and "New message" to show on a locked phone. They never say who: on a locked phone the message notice says only "Erevos".');
+    case 'dnd':
+      return t('While Do Not Disturb is on, a call from Erevos rings and pops up only if its calls may break through it. Whether they should is yours to choose.');
+    case 'ringer':
+      return t('The phone is on silent or vibrate, or its ring volume is off: a call shows, but its ringtone does not sound.');
+    case 'saver':
+      return t('Battery saver is on now. While it is on, Android holds back apps in the background more, and calls and messages may come late.');
     case 'camera':
-      return t('For video calls, photos and reading QR codes.');
+      return WEB ? t('For video calls.') : t('For video calls, photos and reading QR codes.');
     case 'nearby':
       return t('For chats with phones nearby over Bluetooth and Wi-Fi, without internet.');
     case 'contacts':
       return t("For the names of the phone's contacts in Phone, SMS and Contacts.");
     case 'alarms':
       return t('For SMS sent later to go at the minute they are set for.');
+    case 'home':
+      return browser === 'iphone'
+        ? t('On an iPhone, only Erevos added to the home screen can show notifications while it is closed. And Safari clears what a site keeps in a tab after 7 days without a visit, but not what an app on the home screen keeps.')
+        : t('Installed, Erevos opens in a window of its own, as an app does, and the browser keeps its data more readily.');
+    case 'push':
+      return t('When a message comes while Erevos is closed, your relay sends an empty push and Erevos shows "New message", nothing more. Turned on for each space under Lock → Notifications while closed, never for hidden chats.');
+    case 'storage':
+      return t("Without it, the browser may clear Erevos's data when the device runs low on space, Safari above all, and your chats would be gone with it. A backup (menu → Backups) is the safety net.");
   }
 }
 
@@ -86,14 +136,78 @@ function makerSteps(maker: Maker): string {
   }
 }
 
-function action(id: CheckId): string {
-  switch (id) {
+/** How to add the web app to the home screen, where the browser has no question for it now. */
+function installSteps(browser: Browser): string {
+  switch (browser) {
+    case 'iphone':
+      return t('In Safari, tap Share, then Add to Home Screen, and open Erevos from there. It keeps its data apart from this tab: make a backup here first (menu → Backups), and restore it there.');
+    case 'chromium':
+      return t("In the browser's menu (⋮): Add to Home screen, or Install. On a computer, also the install icon at the right of the address bar.");
+    case 'firefox':
+      return t("In Firefox's menu (⋮): Add to Home screen, or Install.");
+    case 'safari':
+      return t('In Safari: File → Add to Dock. It keeps its data apart from this window: make a backup here first (menu → Backups), and restore it there.');
+    case 'other':
+      return t("In this browser's menu: Install, or Add to Home screen.");
+  }
+}
+
+/** Where to allow what the browser was once refused: it does not ask again. */
+function siteSteps(id: CheckId, browser: Browser): string {
+  switch (browser) {
+    case 'iphone':
+      return id === 'push'
+        ? t('On the iPhone: Settings → Notifications → Erevos → Allow Notifications.')
+        : IOS_OTHER_BROWSER
+          ? t("On the iPhone: Settings → Apps → this browser (Chrome, Firefox, Edge…) → Microphone or Camera on, then allow this site in the browser's own site settings. Then open Erevos again.")
+          : id === 'camera'
+            ? t('On the iPhone: Settings → Apps → Safari → Camera (on older iOS, Settings → Safari): Ask or Allow. Then close Erevos and open it again.')
+            : t('On the iPhone: Settings → Apps → Safari → Microphone (on older iOS, Settings → Safari): Ask or Allow. Then close Erevos and open it again.');
+    case 'chromium':
+      return t("Tap the icon left of the address, or ⋮ → Settings → Site settings, then this site, and set it to Allow (an app on an Android home screen: its page in Android's settings). Then open Erevos again.");
+    case 'firefox':
+      return t('Tap the icon left of the address and take the block away, or Settings → Privacy & Security → Permissions. Then open Erevos again.');
+    case 'safari':
+      return t('In Safari: Settings → Websites, that permission, then this site: Allow. Then open Erevos again.');
+    case 'other':
+      return t("In this browser's settings for this site, allow it. Then open Erevos again.");
+  }
+}
+
+/** How to change it, where no button does it all, for a check that is not allowed. */
+function steps(check: Check, maker: Maker | null, browser: Browser | null): string | null {
+  if (check.id === 'maker') return maker ? makerSteps(maker) : null;
+  if (check.state === 'ok' || check.state === 'ask') return null;
+  switch (check.id) {
+    case 'restricted':
+      return t("On Erevos's page in Android's settings: Battery (or App battery usage) → Unrestricted, or at least Optimised.");
+    case 'unused':
+      return t("On Erevos's page in Android's settings, turn off Pause app activity if unused (on Android 11: Permissions → Remove permissions if app isn't used).");
+    case 'lockScreen':
+      return t("In Erevos's notice settings, let them show on the lock screen. If it is off for the whole phone: Android's Settings → Notifications → Notifications on lock screen (named differently on some phones).");
+    case 'dnd':
+      return t('In the "Calls" notice settings, turn on Override Do Not Disturb; on some phones, add Erevos to the apps allowed in Do Not Disturb instead.');
+  }
+  if (!browser || check.asks || check.state === 'note') return null;
+  if (check.id === 'home') return installSteps(browser);
+  if (check.id === 'push' && check.state === 'none') return t('This browser cannot show notifications for a closed web app. On an iPhone, add Erevos to the home screen first.');
+  if (check.id === 'push' || check.id === 'microphone' || check.id === 'camera') return siteSteps(check.id, browser);
+  return null;
+}
+
+function action(check: Check): string {
+  switch (check.id) {
     case 'notices':
     case 'microphone':
     case 'camera':
     case 'nearby':
     case 'contacts':
+    case 'storage':
       return t('Allow');
+    case 'home':
+      return t('Install');
+    case 'push':
+      return check.state === 'note' ? t('Open the setting') : t('Allow');
     default:
       return t('Open the setting');
   }
@@ -101,12 +215,36 @@ function action(id: CheckId): string {
 
 function CheckCard({ check, maker, onChanged }: { check: Check; maker: Maker | null; onChanged: () => void }) {
   const colors = useColors();
-  const state =
-    check.state === 'ok'
-      ? { label: check.id === 'maker' ? t('Checked') : t('Allowed'), color: colors.success }
-      : check.state === 'yours'
-        ? { label: t('Check it yourself'), color: colors.warning }
-        : { label: t('Not allowed'), color: colors.danger };
+  const label = (): { label: string; color: string } => {
+    switch (check.state) {
+      case 'ok':
+        return { label: check.id === 'maker' ? t('Checked') : check.id === 'home' ? t('Installed') : t('Allowed'), color: colors.success };
+      case 'missing':
+        return { label: check.id === 'home' ? t('Not installed') : t('Not allowed'), color: colors.danger };
+      case 'yours':
+        return { label: check.id === 'maker' ? t('Check it yourself') : t('Cannot be read'), color: colors.warning };
+      case 'ask':
+        return { label: t('Asked when first used'), color: colors.textMuted };
+      case 'none':
+        return { label: t('Not in this browser'), color: check.needed ? colors.danger : colors.textMuted };
+      case 'note':
+        return {
+          label:
+            check.id === 'push'
+              ? t('Off in this space')
+              : check.id === 'ringer'
+                ? t('Silent or vibrate')
+                : check.id === 'dnd'
+                  ? t('Not allowed, Do Not Disturb is on')
+                  : t('On now'),
+          color: check.id === 'push' ? colors.textMuted : check.id === 'dnd' ? colors.danger : colors.warning,
+        };
+    }
+  };
+  const state = label();
+  const how = steps(check, maker, BROWSER);
+  // On the web the off notifications are turned on under Lock, which says what the push service sees.
+  const press = () => (check.id === 'push' && check.state === 'note' ? router.push('/security') : void fix(check.id).then(onChanged));
   return (
     <Card>
       <Row style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -118,16 +256,16 @@ function CheckCard({ check, maker, onChanged }: { check: Check; maker: Maker | n
         </Text>
       </Row>
       <Text variant="caption" tone="muted" style={hint}>
-        {why(check.id)}
+        {why(check.id, BROWSER)}
       </Text>
-      {check.id === 'maker' && maker ? (
+      {how ? (
         <Text variant="caption" style={hint}>
-          {makerSteps(maker)}
+          {how}
         </Text>
       ) : null}
-      {check.state !== 'ok' ? (
+      {check.state !== 'ok' && (check.asks ?? true) ? (
         <Row wrap>
-          <Button title={action(check.id)} kind="secondary" compact onPress={() => void fix(check.id).then(onChanged)} />
+          <Button title={action(check)} kind="secondary" compact onPress={press} />
           {check.id === 'maker' ? <Button title={t('I did it')} kind="ghost" compact onPress={() => void makerDone(true).then(onChanged)} /> : null}
         </Row>
       ) : check.id === 'maker' ? (
@@ -152,39 +290,67 @@ export default function PermissionsScreen() {
 
   useEffect(() => {
     read();
-    // Back from Android's question or settings: what it allows now.
+    // Back from Android's question or settings, or the browser's: what it allows now.
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') read();
     });
     return () => subscription.remove();
   }, [read]);
 
-  const needed = checks?.filter((check) => NEEDED.has(check.id)) ?? [];
-  const others = checks?.filter((check) => !NEEDED.has(check.id)) ?? [];
-  const missing = needed.filter((check) => check.state !== 'ok').length;
+  const needed = checks?.filter((check) => check.needed) ?? [];
+  const others = checks?.filter((check) => !check.needed) ?? [];
+  const missing = needed.filter(lacking).length;
   return (
     <Page>
       <Text variant="title">{t('Permissions')}</Text>
       <Card>
-        <Text tone="muted" style={hint}>
-          {after === 'update'
-            ? t('Erevos is new on this phone, or was just updated, so it looked at what Android lets it do. Some of it is missing, and without it a call may not ring, or messages may not come, while Erevos is closed.')
-            : t('What Android, and the phone maker, let Erevos do on this phone.')}
-        </Text>
-        <Text variant="caption" tone="muted" style={hint}>
-          {t('Android lets each app do only what you allow. Erevos has no push service: while it is closed, it keeps running quietly to wait for calls and messages, and some phones stop that unless allowed. Each button opens Android\'s own question or setting; nothing is sent anywhere. Erevos looks again after each new version, and here any time (menu → Permissions).')}
-        </Text>
-        <Text variant="caption" tone="muted" style={hint}>
-          {t('After the phone restarts, open Erevos and your space once: until then it cannot read anything, so it cannot ring.')}
-        </Text>
+        {WEB ? (
+          <>
+            <Text tone="muted" style={hint}>
+              {after === 'update'
+                ? t('Erevos was just updated, or is new in this browser, so it looked at what the browser lets it do. Some of it is missing, and without it a call may not be heard, notifications may not come, or the browser may clear Erevos\'s data.')
+                : t('What this browser lets Erevos do.')}
+            </Text>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t('A browser lets a web app do only what you allow, and asks for most of it the first time it is used. In a browser Erevos runs only while it is open; while it is closed, a notification can say only that a message came. Each button asks the browser\'s own question. The check itself only reads what the browser says, and sends nothing anywhere. Erevos looks again after each new release, and here any time (menu → Permissions).')}
+            </Text>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t("A browser does not let Erevos see battery saving (an iPhone's Low Power Mode neither), so it is not among these.")}
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text tone="muted" style={hint}>
+              {after === 'update'
+                ? t('Erevos is new on this phone, or was just updated, so it looked at what Android lets it do. Some of it is missing, and without it a call may not ring, or messages may not come, while Erevos is closed.')
+                : t('What Android, and the phone maker, let Erevos do on this phone.')}
+            </Text>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t('Android lets each app do only what you allow. Erevos has no push service: while it is closed, it keeps running quietly to wait for calls and messages, and some phones stop that unless allowed. Each button opens Android\'s own question or setting; nothing is sent anywhere. Erevos looks again after each new version, and here any time (menu → Permissions).')}
+            </Text>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t('After the phone restarts, open Erevos and your space once: until then it cannot read anything, so it cannot ring.')}
+            </Text>
+          </>
+        )}
       </Card>
       {!HAS_CHECKS ? (
         <Card>
-          <Text tone="muted">{t('Only an Android phone has these to check. A computer, a browser and Sailfish OS ask for what they need when it is first used.')}</Text>
+          <Text tone="muted">{t('Only an Android phone and the web app in a browser have these to check. A computer and Sailfish OS ask for what they need when it is first used.')}</Text>
         </Card>
       ) : checks === null ? null : (
         <>
-          <SectionTitle title={missing ? t('For calls and messages in the background · {n} missing', { n: missing }) : t('For calls and messages in the background · all allowed')} />
+          <SectionTitle
+            title={
+              WEB
+                ? missing
+                  ? plural(missing, 'For calls, messages and your data · {n} is missing', 'For calls, messages and your data · {n} are missing')
+                  : t('For calls, messages and your data · nothing missing')
+                : missing
+                  ? plural(missing, 'For calls and messages in the background · {n} is missing', 'For calls and messages in the background · {n} are missing')
+                  : t('For calls and messages in the background · all allowed')
+            }
+          />
           <View style={{ gap: space.md }}>
             {needed.map((check) => (
               <CheckCard key={check.id} check={check} maker={maker} onChanged={read} />

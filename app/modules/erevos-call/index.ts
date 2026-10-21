@@ -12,10 +12,31 @@ export type BackgroundState = {
   alarms?: boolean;
   /** Who made the phone, in lowercase ("huawei", "google"). */
   maker?: string;
+  /** The "Calls" and "Messages" notices as the owner left them (Android 8 and later). */
+  callChannel?: NoticeChannel;
+  messageChannel?: NoticeChannel;
+  /** Whether the phone shows notices on its lock screen at all; missing where Android does not let an app read it. */
+  lockScreen?: boolean;
+  /** Do Not Disturb is on now (Android 6 and later). */
+  dnd?: boolean;
+  /** Erevos's battery use is set to Restricted (Android 9 and later). */
+  restricted?: boolean;
+  /** Erevos is left out of "Pause app activity if unused" (Android 11 and later). */
+  unusedExempt?: boolean;
+  /** Battery saver is on now. */
+  saver?: boolean;
+  /** The ringer: 2 rings, 1 vibrates, 0 is silent; and the ring volume. */
+  ringer?: number;
+  ringVolume?: number;
 };
 
-/** The settings screens openSettings opens; "app" is Erevos's own page in Android's settings. */
-export type SettingsScreen = 'notices' | 'calls' | 'data' | 'alarms' | 'app';
+/** A notice channel's settings: importance (0 off, 2 silent, 3 sounds, 4 also pops up), whether it
+ *  has a sound, its lock screen visibility (-1 hidden there), and whether it breaks through Do Not Disturb. */
+export type NoticeChannel = { importance: number; sound: boolean; lockScreen: number; bypassDnd: boolean };
+
+/** The settings screens openSettings opens; "app" is Erevos's own page in Android's settings, which
+ *  a build from before a screen opens for it. */
+export type SettingsScreen = 'notices' | 'calls' | 'messages' | 'data' | 'alarms' | 'unused' | 'saver' | 'sound' | 'app';
 
 // What came after the first calls is missing in a build made before it, so it is optional.
 type CallAudio = {

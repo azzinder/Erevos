@@ -2,15 +2,17 @@ import Constants from 'expo-constants';
 import { Linking, PermissionsAndroid, Platform, type Permission } from 'react-native';
 
 import { callAudio, type SettingsScreen } from '../modules/erevos-call';
-import { askBattery, askFullScreen, backgroundState, loadRingInBackground } from './background';
+import { askBattery, askFullScreen, backgroundState, loadMessageNotices, loadRingInBackground } from './background';
 import { checksFrom, known, offerFor, type Check, type CheckId } from './permission-checks';
 import { HAS_RADIO, nearbyPermissions } from './radio';
 import { secureGet, secureSet } from './secure';
+import type { Browser } from './web-permission-checks';
 
 // The permissions check on an Android phone (app/permissions.tsx): what Android, and the phone
 // maker, let Erevos do, read again after each new version, since an update, the maker's battery
 // settings or the owner may have taken some away. A friend's Huawei rang only once Erevos was
 // opened. What it reads stays on the phone; each button opens Android's own question or screen.
+// The web app's is lib/permissions.web.ts.
 
 const SEEN_KEY = 'erevos.permissions-seen';
 const MAKER_KEY = 'erevos.permissions-maker';
@@ -22,6 +24,11 @@ const INSTALLED = `${Constants.expoConfig?.version ?? '0.0.0'}+${String(Constant
 
 export const HAS_CHECKS = Platform.OS === 'android';
 
+/** The browser, in the web app (lib/permissions.web.ts); none here. */
+export const BROWSER: Browser | null = null;
+
+export const IOS_OTHER_BROWSER = false;
+
 /** Every check that applies to this phone; none elsewhere. */
 export async function readChecks(): Promise<Check[]> {
   if (!HAS_CHECKS) return [];
@@ -31,6 +38,7 @@ export async function readChecks(): Promise<Check[]> {
     sdk: SDK,
     nearby: HAS_RADIO ? nearbyPermissions() : null,
     makerDone: (await secureGet(MAKER_KEY).catch(() => null)) === 'done',
+    messageNotices: await loadMessageNotices(),
   });
 }
 
@@ -97,9 +105,29 @@ export async function fix(id: CheckId): Promise<void> {
       return;
     }
     case 'calls':
+    case 'messages':
     case 'data':
     case 'alarms':
+    case 'unused':
+    case 'saver':
       open(id);
+      return;
+    case 'messageSound':
+      open('messages');
+      return;
+    // The lock screen is set in Erevos's notices; letting calls through Do Not Disturb in its call notice.
+    case 'lockScreen':
+      open('notices');
+      return;
+    case 'dnd':
+      open('calls');
+      return;
+    case 'ringer':
+      open('sound');
+      return;
+    // Battery use is on Erevos's page in the settings.
+    case 'restricted':
+      open('app');
       return;
     case 'fullScreen':
       askFullScreen();
@@ -125,5 +153,10 @@ export async function fix(id: CheckId): Promise<void> {
       return ask(nearbyPermissions());
     case 'contacts':
       return ask(['android.permission.READ_CONTACTS']);
+    // The web app's (lib/permissions.web.ts).
+    case 'home':
+    case 'push':
+    case 'storage':
+      return;
   }
 }

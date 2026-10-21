@@ -25,6 +25,7 @@ export const screens: Record<string, string> = {
   Updates: 'Updates',
   'This version, and Check for updates': 'Diese Version, und nach Updates suchen',
   'What Android lets Erevos do, for calls to ring while it is closed': 'Was Android Erevos erlaubt, damit Anrufe klingeln, während es geschlossen ist',
+  'What the browser lets Erevos do: notifications, the microphone, keeping its data': 'Was der Browser Erevos erlaubt: Benachrichtigungen, das Mikrofon, das Behalten seiner Daten',
   'User guide': 'Anleitung',
   'How Erevos works, and what is not protected yet': 'Wie Erevos funktioniert, und was noch nicht geschützt ist',
   'Relay test': 'Relay-Test',

@@ -19,7 +19,7 @@ object Notices {
   const val MESSAGES_ID = 7103
   private const val RECEIVING_CHANNEL = "erevos-receiving"
   const val CALLS_CHANNEL = "erevos-calls"
-  private const val MESSAGES_CHANNEL = "erevos-messages"
+  const val MESSAGES_CHANNEL = "erevos-messages"
   // The same notice, for messages sent without sound: a channel that never sounds.
   private const val QUIET_CHANNEL = "erevos-messages-quiet"
 
@@ -49,6 +49,20 @@ object Notices {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
     val channel = manager(context).getNotificationChannel(CALLS_CHANNEL) ?: return true
     return channel.importance != NotificationManager.IMPORTANCE_NONE
+  }
+
+  /** A channel's settings as the owner left them, for the permissions check; made first if it is
+   *  not yet, so its screen in the settings opens. Null before Android 8, which has no channels. */
+  fun channelState(context: Context, id: String): Map<String, Any>? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return null
+    channels(context)
+    val channel = manager(context).getNotificationChannel(id) ?: return null
+    return mapOf(
+      "importance" to channel.importance,
+      "sound" to (channel.sound != null),
+      "lockScreen" to channel.lockscreenVisibility,
+      "bypassDnd" to channel.canBypassDnd(),
+    )
   }
 
   private fun channels(context: Context) {

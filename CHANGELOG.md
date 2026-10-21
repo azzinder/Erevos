@@ -10,6 +10,18 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet. The next release is **2.0.0**.
 
+- **Permissions in the web app** (menu → Permissions): what the browser lets Erevos do, each with
+  why and the browser's own question, or where its setting is once it no longer asks: running from
+  the home screen, notifications while closed for a space that turned them on, the microphone, the
+  camera, and keeping its data for good (Safari may clear it otherwise; a backup is the safety
+  net). It knows an iPhone or iPad, Chrome and the browsers made from it, Firefox and Safari on a
+  Mac. After each new signed release it opens by itself when something messages, calls or the data
+  need is missing. A browser cannot tell battery saving, so it is not there. On Android the screen
+  now also reads the message notice, whether the call notice pops up, battery use set to
+  Restricted and pausing when unused (these open it by itself too), the message sound, notices on
+  the lock screen and calls through Do Not Disturb, and says when the phone is on silent or
+  vibrate, or battery saver or Do Not Disturb is on.
+
 - **Newer keys every month**: each chat's account makes new prekeys (X25519 and ML-KEM-768) every
   30 days and gives them to its contacts inside their chats, whose Erevos starts a new conversation
   with them; keys older than the last three are thrown away. So a phone or backup taken later no

@@ -1,6 +1,7 @@
 package expo.modules.erevoscall
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.Application
 import android.app.AlarmManager
 import android.app.NotificationManager
@@ -164,21 +165,41 @@ class ErevosCallModule : Module() {
     // among them, show a call over the lock screen, keep running when the battery saver would stop
     // it, and use mobile data while in the background (Data Saver). Also exact alarms, and who made
     // the phone, whose own settings may stop apps in the background too (lib/permissions.ts).
+    // Then how the call and message notices are set (off, silent, hidden on the lock screen, through
+    // Do Not Disturb), battery use set to Restricted, "Pause app activity if unused", and battery
+    // saver, Do Not Disturb and the ringer as they are now. What this Android cannot tell is left out.
     Function("backgroundState") {
       val context = context ?: return@Function mapOf("notices" to false, "fullScreen" to false, "battery" to false)
       val notices = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
       val power = context.getSystemService(Context.POWER_SERVICE) as PowerManager
       val network = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
       val alarms = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-      mapOf(
-        "notices" to (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || notices.areNotificationsEnabled()),
+      val sdk = Build.VERSION.SDK_INT
+      val state = mutableMapOf<String, Any>(
+        "notices" to (sdk < Build.VERSION_CODES.N || notices.areNotificationsEnabled()),
         "calls" to Notices.callsShown(context),
-        "fullScreen" to (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE || notices.canUseFullScreenIntent()),
-        "battery" to (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || power.isIgnoringBatteryOptimizations(context.packageName)),
-        "data" to (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || network.restrictBackgroundStatus != ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED),
-        "alarms" to (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()),
+        "fullScreen" to (sdk < Build.VERSION_CODES.UPSIDE_DOWN_CAKE || notices.canUseFullScreenIntent()),
+        "battery" to (sdk < Build.VERSION_CODES.M || power.isIgnoringBatteryOptimizations(context.packageName)),
+        "data" to (sdk < Build.VERSION_CODES.N || network.restrictBackgroundStatus != ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED),
+        "alarms" to (sdk < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()),
         "maker" to Build.MANUFACTURER.lowercase(),
+        "saver" to power.isPowerSaveMode,
       )
+      Notices.channelState(context, Notices.CALLS_CHANNEL)?.let { state["callChannel"] = it }
+      Notices.channelState(context, Notices.MESSAGES_CHANNEL)?.let { state["messageChannel"] = it }
+      lockScreenShown(context)?.let { state["lockScreen"] = it }
+      if (sdk >= Build.VERSION_CODES.M) state["dnd"] = notices.currentInterruptionFilter > NotificationManager.INTERRUPTION_FILTER_ALL
+      if (sdk >= Build.VERSION_CODES.P) {
+        (context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.let { state["restricted"] = it.isBackgroundRestricted }
+      }
+      if (sdk >= Build.VERSION_CODES.R) {
+        state["unusedExempt"] = context.packageManager.isAutoRevokeWhitelisted
+      }
+      audio?.let {
+        state["ringer"] = it.ringerMode
+        state["ringVolume"] = it.getStreamVolume(AudioManager.STREAM_RING)
+      }
+      state
     }
 
     // Asks Android to leave Erevos out of battery saving, or opens the setting to show calls over
@@ -202,8 +223,10 @@ class ErevosCallModule : Module() {
     }
 
     // Android's screen for one of the settings backgroundState reads: Erevos's notices, its call
-    // notice, its mobile data in the background, its exact alarms; anything else, or a phone
-    // without that screen, opens Erevos's page in Android's settings ("app"). False if none opened.
+    // or message notice, its mobile data in the background, its exact alarms, "Remove permissions
+    // if app isn't used" (on Android 11; later it is on Erevos's page), battery saver, the sound
+    // settings; anything else, or a phone without that screen, opens Erevos's page in Android's
+    // settings ("app"), where Restricted battery use is too. False if none opened.
     Function("openSettings") { which: String ->
       val context = context ?: return@Function false
       val app = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
@@ -211,10 +234,14 @@ class ErevosCallModule : Module() {
       val intent = when {
         which == "notices" && sdk >= Build.VERSION_CODES.O ->
           Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-        which == "calls" && sdk >= Build.VERSION_CODES.O ->
+        (which == "calls" || which == "messages") && sdk >= Build.VERSION_CODES.O ->
           Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-            .putExtra(Settings.EXTRA_CHANNEL_ID, Notices.CALLS_CHANNEL)
+            .putExtra(Settings.EXTRA_CHANNEL_ID, if (which == "calls") Notices.CALLS_CHANNEL else Notices.MESSAGES_CHANNEL)
+        which == "unused" && sdk == Build.VERSION_CODES.R ->
+          Intent(Intent.ACTION_AUTO_REVOKE_PERMISSIONS, Uri.parse("package:${context.packageName}"))
+        which == "saver" -> Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)
+        which == "sound" -> Intent(Settings.ACTION_SOUND_SETTINGS)
         which == "data" && sdk >= Build.VERSION_CODES.N ->
           Intent(Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS, Uri.parse("package:${context.packageName}"))
         which == "alarms" && sdk >= Build.VERSION_CODES.S ->
@@ -232,6 +259,15 @@ class ErevosCallModule : Module() {
       makerScreens(Build.MANUFACTURER.lowercase()).any { open(context, Intent().setComponent(it)) }
     }
   }
+
+  // Whether the phone shows notices on its lock screen at all, a setting of the whole phone that
+  // not every Android lets an app read: then null, and the check goes by the channels alone.
+  private fun lockScreenShown(context: Context): Boolean? =
+    try {
+      Settings.Secure.getInt(context.contentResolver, "lock_screen_show_notifications", 1) != 0
+    } catch (e: Exception) {
+      null
+    }
 
   private fun open(context: Context, intent: Intent): Boolean =
     try {

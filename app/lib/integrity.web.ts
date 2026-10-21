@@ -44,7 +44,7 @@ function alarm(news: News): void {
       [{ text: t('I understand') }],
     );
   else if (news.kind === 'refused')
-    ask(t('Update refused'), t('{reason} Erevos keeps the release it has. Lock → This web app shows what was refused.', { reason: news.reason ?? '' }).trim(), [{ text: 'OK' }]);
+    ask(t('Update refused'), t('{reason} Erevos keeps the release it has. Lock → This web app shows what was refused.', { reason: news.reason ?? '' }).trim(), [{ text: t('OK') }]);
 }
 
 let started = false;

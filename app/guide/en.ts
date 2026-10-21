@@ -474,11 +474,15 @@ a missed call.
   app while closed. A call there shows as a missed call once Erevos opens. A message request cannot call you until you
   accept it.
 - **Permissions (Android):** menu → **Permissions** shows what Android lets Erevos do for calls and messages in the
-  background (notices, the call notice, calls over the lock screen, running on battery, mobile data in the background,
-  the microphone) and for other things (camera, phones nearby, contacts, exact times), each with why and a button that
-  opens Android's own question or setting. On Huawei, Honor, Xiaomi, OPPO, realme, OnePlus, vivo, Samsung and ASUS
-  phones it also says where the maker's own setting is, which Erevos cannot read: tap **I did it** once it is set. After
-  each new version, and the first time, it opens by itself when calls need something.
+  background (notices, the call notice and that it pops up, the message notice, calls over the lock screen, running on
+  battery, running in the background with battery use not set to Restricted, not paused when unused, mobile data in the
+  background, the microphone) and for other things (the sound for new messages, notices on the lock screen, calls
+  through Do Not Disturb, camera, phones nearby, contacts, exact times), each with why and a button that opens Android's
+  own question or setting. It also says when the phone is on silent or vibrate, when battery saver is on, and when Do
+  Not Disturb is on while Erevos calls are not let through it. On Huawei, Honor, Xiaomi, OPPO, realme, OnePlus, vivo, Samsung and ASUS phones it also says where the maker's own
+  setting is, which Erevos cannot read: tap **I did it** once it is set. After each new version, and the first time, it
+  opens by itself when calls or messages need something. In the web app it shows what the browser allows, see
+  [On an iPhone](#iphone).
 - **One call at a time.** A call goes on while you move between screens of the space. It ends when the space closes,
   and a call in hidden chats when they close, as they do when Erevos goes to the background. Swiping Erevos away from
   the recent apps ends a call too.
@@ -1306,6 +1310,14 @@ send changed code. Erevos does not take that code on trust:
   push through Apple, and Erevos shows **New message**, nothing more. Apple sees when something comes for your iPhone,
   and that it uses Erevos, never what or from whom. They are per space, never for hidden chats, and your relay must be
   set up to send them.
+- **Permissions:** menu → **Permissions** shows what the browser lets Erevos do: whether it runs from the home screen,
+  notifications while closed (needed once this space turned them on), the microphone for calls, the camera for video
+  calls, and whether the browser keeps Erevos's data for good. Without that, Safari may clear the data when the iPhone
+  runs low on space, so a backup is the safety net. Each has why, and a button with the browser's own question; where
+  the browser no longer asks, it says where the setting is (**Settings → Notifications → Erevos**, or **Settings → Apps →
+  Safari → Microphone**). It only reads what the browser says. A browser does not let Erevos read battery saving or Low
+  Power Mode, so those are not there. After each new signed release it opens by itself when something messages, calls
+  or the data need is missing. In another browser (Chrome, Firefox) it is the same, with that browser's settings.
 - **Backups** are made by hand: **Make a backup** saves the file through the share sheet (Files, iCloud Drive or
   another app). A browser gives out a file only after a tap, so there are no automatic backups.
 - **Voice messages** recorded on an iPhone are AAC; they play everywhere.

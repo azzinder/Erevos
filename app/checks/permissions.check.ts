@@ -4,13 +4,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { checksFrom, known, makerOf, needsLook, offerFor, type CheckInput } from '../lib/permission-checks';
+import { checksFrom, known, makerOf, needsLook, offerFor, type Check, type CheckInput } from '../lib/permission-checks';
+import type { BackgroundState, NoticeChannel } from '../modules/erevos-call';
 
 const ALL = { notices: true, fullScreen: true, battery: true, calls: true, data: true, alarms: true, maker: 'google' };
 const NEARBY = ['android.permission.NEARBY_WIFI_DEVICES', 'android.permission.BLUETOOTH_SCAN', 'android.permission.ACCESS_LOCAL_NETWORK'];
 
 function input(over: Partial<CheckInput> = {}, refused: string[] = []): CheckInput {
-  return { background: ALL, granted: async (p) => !refused.includes(p), sdk: 35, nearby: NEARBY, makerDone: false, ...over };
+  return { background: ALL, granted: async (p) => !refused.includes(p), sdk: 35, nearby: NEARBY, makerDone: false, messageNotices: true, ...over };
 }
 
 test('a phone with everything allowed shows every check as allowed, and nothing to offer', async () => {
@@ -76,4 +77,111 @@ test('the check offers itself once for each version, only when calls need someth
   assert.equal(offerFor('0.1.16+0', '2.0.0+17', true, fine), false);
   // Ringing in the background turned off on this phone: it does not need them.
   assert.equal(offerFor('0.1.16+0', '2.0.0+17', false, missing), false);
+});
+
+// A phone from this version on, which also says how the notices are set, and the rest.
+const CALLS: NoticeChannel = { importance: 4, sound: false, lockScreen: 1, bypassDnd: false };
+const MESSAGES: NoticeChannel = { importance: 3, sound: true, lockScreen: 0, bypassDnd: false };
+const NEWER: BackgroundState = {
+  ...ALL,
+  callChannel: CALLS,
+  messageChannel: MESSAGES,
+  lockScreen: true,
+  dnd: false,
+  restricted: false,
+  unusedExempt: true,
+  saver: false,
+  ringer: 2,
+  ringVolume: 5,
+};
+
+const stateOf = (checks: Check[], id: string) => checks.find((c) => c.id === id)?.state;
+
+test('a newer phone also shows the message notice, Restricted battery use, pausing when unused and how its notices are set', async () => {
+  const checks = await checksFrom(input({ background: { ...NEWER, callChannel: { ...CALLS, bypassDnd: true } } }));
+  assert.deepEqual(
+    checks.map((c) => c.id),
+    ['notices', 'calls', 'messages', 'fullScreen', 'battery', 'restricted', 'unused', 'data', 'microphone', 'messageSound', 'lockScreen', 'dnd', 'camera', 'nearby', 'contacts', 'alarms'],
+  );
+  assert.ok(checks.every((c) => c.state === 'ok'));
+  assert.deepEqual(
+    checks.filter((c) => c.needed).map((c) => c.id),
+    ['notices', 'calls', 'messages', 'fullScreen', 'battery', 'restricted', 'unused', 'data', 'microphone'],
+  );
+  assert.equal(needsLook(checks), false);
+});
+
+test('the message notice turned off is something messages need; set silent, it is only shown', async () => {
+  const off = await checksFrom(input({ background: { ...NEWER, messageChannel: { ...MESSAGES, importance: 0 } } }));
+  assert.equal(stateOf(off, 'messages'), 'missing');
+  assert.equal(needsLook(off), true);
+  // Off, its sound and its lock screen are no matter.
+  assert.equal(off.some((c) => c.id === 'messageSound'), false);
+  for (const messageChannel of [{ ...MESSAGES, importance: 2 }, { ...MESSAGES, sound: false }]) {
+    const quiet = await checksFrom(input({ background: { ...NEWER, messageChannel } }));
+    assert.equal(stateOf(quiet, 'messages'), 'ok');
+    assert.equal(stateOf(quiet, 'messageSound'), 'missing');
+    assert.equal(needsLook(quiet), false);
+  }
+  // With "No notice" chosen under Lock, the messages notice is as the owner wants it.
+  const unwanted = await checksFrom(input({ background: { ...NEWER, messageChannel: { ...MESSAGES, importance: 0 } }, messageNotices: false }));
+  assert.equal(unwanted.some((c) => c.id === 'messages' || c.id === 'messageSound'), false);
+  assert.equal(needsLook(unwanted), false);
+});
+
+test('a call notice that does not pop up is something calls need, as one turned off', async () => {
+  for (const importance of [3, 2]) {
+    const quiet = await checksFrom(input({ background: { ...NEWER, callChannel: { ...CALLS, importance } } }));
+    assert.equal(stateOf(quiet, 'calls'), 'missing');
+    assert.equal(needsLook(quiet), true);
+  }
+  const off = await checksFrom(input({ background: { ...NEWER, calls: false, callChannel: { ...CALLS, importance: 0 } } }));
+  assert.equal(stateOf(off, 'calls'), 'missing');
+  // Off, whether it breaks through Do Not Disturb is no matter.
+  assert.equal(off.some((c) => c.id === 'dnd'), false);
+  // With all notices off, only that shows of them.
+  const none = await checksFrom(input({ background: { ...NEWER, notices: false } }));
+  assert.deepEqual(
+    none.filter((c) => ['calls', 'messages', 'messageSound', 'lockScreen', 'dnd'].includes(c.id)),
+    [],
+  );
+  assert.equal(stateOf(none, 'notices'), 'missing');
+});
+
+test('battery use set to Restricted and pausing when unused are things calls need', async () => {
+  for (const background of [{ ...NEWER, restricted: true }, { ...NEWER, unusedExempt: false }]) {
+    assert.equal(needsLook(await checksFrom(input({ background }))), true);
+  }
+  assert.equal(stateOf(await checksFrom(input({ background: NEWER })), 'restricted'), 'ok');
+  // Android 9 and 10 say only whether it is Restricted, and know nothing of pausing.
+  const older = await checksFrom(input({ background: { ...ALL, restricted: false } }));
+  assert.equal(stateOf(older, 'restricted'), 'ok');
+  assert.equal(older.some((c) => c.id === 'unused'), false);
+});
+
+test('the lock screen, Do Not Disturb, the ringer and battery saver are shown, and never open the check by themselves', async () => {
+  const hidden = [
+    { ...NEWER, lockScreen: false },
+    { ...NEWER, callChannel: { ...CALLS, lockScreen: -1 } },
+    { ...NEWER, messageChannel: { ...MESSAGES, lockScreen: -1 } },
+  ];
+  for (const background of hidden) {
+    const checks = await checksFrom(input({ background }));
+    assert.equal(stateOf(checks, 'lockScreen'), 'missing');
+    assert.equal(needsLook(checks), false);
+  }
+  // A phone that does not let Erevos read the whole phone's setting goes by the channels.
+  const { lockScreen: _unread, ...unread } = NEWER;
+  assert.equal(stateOf(await checksFrom(input({ background: unread })), 'lockScreen'), 'ok');
+  // Calls not let through Do Not Disturb: the owner's choice, and a note while it is on.
+  assert.equal(stateOf(await checksFrom(input({ background: NEWER })), 'dnd'), 'missing');
+  const quiet = await checksFrom(input({ background: { ...NEWER, dnd: true, ringer: 1, saver: true } }));
+  assert.equal(stateOf(quiet, 'dnd'), 'note');
+  assert.equal(stateOf(quiet, 'ringer'), 'note');
+  assert.equal(stateOf(quiet, 'saver'), 'note');
+  assert.equal(needsLook(quiet), false);
+  assert.equal(stateOf(await checksFrom(input({ background: { ...NEWER, ringVolume: 0 } })), 'ringer'), 'note');
+  // Ringing out loud, with battery saver off, they are not shown.
+  const loud = await checksFrom(input({ background: NEWER }));
+  assert.equal(loud.some((c) => c.id === 'ringer' || c.id === 'saver'), false);
 });

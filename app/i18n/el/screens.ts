@@ -25,6 +25,7 @@ export const screens: Record<string, string> = {
   Updates: 'Ενημερώσεις',
   'This version, and Check for updates': 'Η έκδοση αυτή, και έλεγχος για ενημερώσεις',
   'What Android lets Erevos do, for calls to ring while it is closed': 'Τι επιτρέπει το Android στο Erevos, για να χτυπούν οι κλήσεις όταν είναι κλειστό',
+  'What the browser lets Erevos do: notifications, the microphone, keeping its data': 'Τι επιτρέπει ο browser στο Erevos: ειδοποιήσεις, μικρόφωνο, διατήρηση των δεδομένων του',
   'User guide': 'Οδηγός χρήσης',
   'How Erevos works, and what is not protected yet': 'Πώς δουλεύει το Erevos, και τι δεν προστατεύεται ακόμα',
   'Relay test': 'Δοκιμή relay',

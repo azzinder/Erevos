@@ -20,7 +20,7 @@ import { handOverHidden } from '../lib/hidden-handoff';
 import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
 import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type InboxGroup, type InboxRow, type InboxSms } from '../lib/inbox';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
-import { checksOffered, offerChecks } from '../lib/permissions';
+import { checksOffered, HAS_CHECKS, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
@@ -55,7 +55,8 @@ const MARKS = ['✓', '✓✓', '✓✓✓'];
 type Relay = 'ready' | 'no-queue' | 'none';
 
 // `phone`: only on a phone, as it needs its radio. `links`: where there are links to phones nearby.
-const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean }[] = [
+// `checks`: where there are permissions to check (lib/permissions.ts): a phone, and the web app.
+const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean; checks?: boolean }[] = [
   { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group' },
   { title: mark('Public groups'), detail: mark('Make a group anyone with its link can join, or join one by a link'), href: '/public-groups' },
   { title: mark('Starred messages'), detail: mark('The messages you starred, in all your chats'), href: '/starred' },
@@ -76,7 +77,12 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
   { title: mark('Appearance'), detail: mark('Style, colours, glass'), href: '/appearance' },
   { title: mark('Lock and second password'), detail: mark('Password, second space'), href: '/security' },
   { title: mark('Backups'), detail: mark('Make one, automatic backups, restore'), href: '/backup' },
-  { title: mark('Permissions'), detail: mark('What Android lets Erevos do, for calls to ring while it is closed'), href: '/permissions', phone: true },
+  {
+    title: mark('Permissions'),
+    detail: Platform.OS === 'web' ? mark('What the browser lets Erevos do: notifications, the microphone, keeping its data') : mark('What Android lets Erevos do, for calls to ring while it is closed'),
+    href: '/permissions',
+    checks: true,
+  },
   { title: mark('Updates'), detail: mark('This version, and Check for updates'), href: '/updates' },
   { title: mark('User guide'), detail: mark('How Erevos works, and what is not protected yet'), href: '/guide' },
   { title: mark('Relay test'), detail: mark('For testing a relay'), href: '/relay' },
@@ -136,8 +142,9 @@ export default function Home() {
     if (typeof params.show === 'string') setShow(showOf(params.show));
   }, [params.show]);
   // After a new version, the permissions check shows by itself once, when calls and messages in
-  // the background need something (lib/permissions.ts). A moment later, and only if nothing else
-  // opened meanwhile (a link, the widget, a call): then the next start offers it.
+  // the background need something (lib/permissions.ts); in the web app after a new signed release,
+  // when messages, calls or the data need something (lib/permissions.web.ts). A moment later, and
+  // only if nothing else opened meanwhile (a link, the widget, a call): then the next start offers it.
   const navigation = useNavigation();
   useEffect(() => {
     let active = true;
@@ -545,7 +552,7 @@ export default function Home() {
           </Pressable>
         )}
         {/* A linked device has the phone's groups, but makes and joins none (lib/devices.ts). */}
-        {(languages ? [] : MENU).filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
+        {(languages ? [] : MENU).filter((item) => (item.links ? HAS_LINKS : item.checks ? HAS_CHECKS || Platform.OS !== 'web' : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"
