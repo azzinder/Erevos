@@ -34,6 +34,10 @@ On main, not released yet. The next release is **2.0.0**.
 
 - **Builds**: every GitHub action the workflows use is pinned to a commit (its version in a
   comment), so a moved tag in an action's repository cannot change what runs beside the signing key.
+  Each build checks the locked Rust crates (`cargo audit`, with what passes and why in
+  `.cargo/audit.toml`) and the app's packages (`npm audit`, failing on a critical one) for known
+  advisories. Updated for them: rustls-webpki and webpki-roots (the relay's and Tor's TLS),
+  ml-kem 0.3.3 and fflate 0.8.3.
 
 - **Permissions** (Android, menu → Permissions): what Android lets Erevos do for calls and messages
   in the background (notices, the call notice, calls over the lock screen, battery saving, Data

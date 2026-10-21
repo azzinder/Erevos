@@ -16,6 +16,11 @@ jobs:
           toolchain: stable
           components: clippy
           targets: wasm32-unknown-unknown
+      # Known advisories in the locked crates; .cargo/audit.toml says which pass, and why.
+      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+        with:
+          tool: cargo-audit@0.22.2
+      - run: cargo audit
       - run: cargo clippy --all-targets -- -D warnings
       # The app's two ways into the core: JNI on Android and WebAssembly.
       - run: cargo clippy -p erevos-ffi --features android,tor --all-targets -- -D warnings

@@ -1,0 +1,13 @@
+# What `cargo audit` (CI: .github/workflows/rust.yml) lets pass, and why. Each line is checked
+# again when the crate behind it changes.
+[advisories]
+ignore = [
+    # rsa (Marvin attack, no fixed version): only Tor's code (arti) has it, which verifies relays'
+    # RSA signatures and never decrypts with RSA, where the timing leaks.
+    "RUSTSEC-2023-0071",
+    # libcrux-kem 0.0.9 (panics on short seeds and keys): in Cargo.lock only as the libcrux backend
+    # of hpke-rs, a feature nothing here turns on, so it is never built (`cargo tree -i libcrux-kem
+    # --all-features --target all` prints nothing). OpenMLS's crypto crate pins it.
+    "RUSTSEC-2026-0330",
+    "RUSTSEC-2026-0331",
+]
