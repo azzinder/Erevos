@@ -64,6 +64,7 @@ bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_relaySeal => crate::re
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_sealPublic => crate::seal_public, secret);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_sealOpen => crate::seal_open, secret, sealed);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_hardKey => crate::hard_key, input, salt, cost);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_signatureVerify => crate::signature_verify, key, message, signature);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_groupNew => crate::group_new, about);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_groupKeyPackage => crate::group_key_package, state);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_groupSetAbout => crate::group_set_about, state, about);

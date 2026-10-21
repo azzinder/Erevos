@@ -44,5 +44,5 @@ jobs:
           keys=$(mktemp -d)
           node ../pwa/release.mjs keygen "$keys/release.key" "$keys/release.pub"
           node ../pwa/build.mjs dist web-app --key "$keys/release.pub" --version 1
-          node ../pwa/release.mjs sign web-app "$keys/release.key"
+          node ../pwa/release.mjs sign web-app "$keys/release.key" --android 1 "$(printf '%064d' 0)"
           node ../pwa/release.mjs verify web-app "$keys/release.pub"

@@ -8,6 +8,7 @@ import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
 import { SHELL, shellFetch, shellSystem } from '../lib/shell';
+import { fetchStatement, signsRelease } from '../lib/update-signature';
 import { buildNumber, fetchLatestRelease, formatSize, isNewer, packageFile, RELEASES_PAGE, type Release } from '../lib/updates';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { space } from '../theme/colors';
@@ -93,6 +94,20 @@ export default function UpdatesScreen() {
     }
     const found = release;
     const installable = canInstall && found.apk !== null;
+    // An APK installs only once the release computer signed it (lib/update-signature.ts).
+    if (installable) {
+      setChecking(true);
+      const signed = await fetchStatement()
+        .then((text) => (text ? signsRelease(text, found) : false))
+        .catch(() => false)
+        .finally(() => setChecking(false));
+      if (!signed) {
+        setNote(
+          t('Erevos {version} is out, but the release computer has not signed it yet, or its signature could not be checked, so it does not install. Try again later.', { version: found.version }),
+        );
+        return;
+      }
+    }
     const file = packageFile(SHELL, shellSystem());
     ask(
       t('Erevos {version} is out', { version: found.version }),
@@ -134,7 +149,7 @@ export default function UpdatesScreen() {
       {supported ? (
         <Card>
           <Text tone="muted">
-            {t("Erevos never looks for updates by itself: a regular check would tell GitHub that this device has Erevos. It asks only when you tap the button, and GitHub then sees this device's internet address, nothing else.")}
+            {t("Erevos never looks for updates by itself: a regular check would tell GitHub that this device has Erevos. It asks only when you tap the button. GitHub then sees this device's internet address, nothing else, and on Android so does the web app's server, which holds the release computer's signature of the update.")}
           </Text>
           {progress ? (
             <View style={{ gap: space.sm }}>

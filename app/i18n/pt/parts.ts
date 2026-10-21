@@ -174,6 +174,7 @@ export const parts: Record<string, string> = {
     'O pacote baixado não é o que a versão publicou. Nada foi instalado.',
   'This version installs from the download page.': 'Esta versão é instalada pela página de download.',
   'GitHub answered {status}.': 'O GitHub respondeu {status}.',
+  "The web app's server answered {status}.": 'O servidor do app web respondeu {status}.',
   'The desktop app answered {status}.': 'O app para computador respondeu {status}.',
   'This computer has no keyring to seal Erevos’s keys with, so Erevos keeps none. Start a keyring (KWallet, or GNOME Keyring with --password-store=gnome-libsecret), or start Erevos with --plain-secrets to keep them unsealed, readable by your user, and set a password lock.': 'Este computador não tem chaveiro para selar as chaves do Erevos, então o Erevos não guarda nenhuma. Inicie um chaveiro (KWallet, ou GNOME Keyring com --password-store=gnome-libsecret), ou inicie o Erevos com --plain-secrets para guardá-las sem selo, legíveis pelo seu usuário, e coloque um bloqueio com senha.',
   'The browser did not open its storage.': 'O navegador não abriu o armazenamento dele.',

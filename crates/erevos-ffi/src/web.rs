@@ -88,6 +88,11 @@ pub fn hard_key(input: &[u8], salt: &[u8], cost: &[u8]) -> Result<Vec<u8>, JsErr
     js(crate::hard_key(input, salt, cost))
 }
 
+#[wasm_bindgen(js_name = signatureVerify)]
+pub fn signature_verify(key: &[u8], message: &[u8], signature: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::signature_verify(key, message, signature))
+}
+
 #[wasm_bindgen(js_name = sealPublic)]
 pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::seal_public(secret))

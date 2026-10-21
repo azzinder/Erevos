@@ -4,9 +4,12 @@
 //       Makes a new Ed25519 key. The private half goes to the file, encrypted with a passphrase
 //       you type, readable by you only; the public half to pwa/release-key.pub, for the
 //       repository (or to the file given). Shows the key's fingerprint, which the app shows too.
-//   node pwa/release.mjs sign <web app> <private key file>
+//   node pwa/release.mjs sign <web app> <private key file> [--android <build> <sha256>]
 //       Signs <web app>/release.json (made by pwa/build.mjs) into release.sig, after checking that
-//       the service worker there carries this key's public half.
+//       the service worker there carries this key's public half. With --android, also signs the
+//       statement that names the Android app of the same release, by its build and SHA-256, into
+//       <web app>/android-update.json, which the server serves beside the web app: Check for
+//       updates installs an APK only when it is signed so (app/lib/update-signature.ts).
 //   node pwa/release.mjs verify <web app folder, or https://address> [public key file]
 //       Checks a release, in a folder or as a server serves it: the signature, every file's hash,
 //       and that the service worker carries the key. Anyone can run it.
@@ -71,8 +74,19 @@ async function keygen(file, publicFile = PUBLIC) {
   console.log(`Fingerprint: ${fingerprint(raw)}`);
 }
 
-async function signRelease(dir, file) {
-  if (!dir || !file) fail('usage: node pwa/release.mjs sign <web app> <private key file>');
+/** What the release key signs for the Android app, as app/lib/update-signature.ts statementOf makes it. */
+export const androidStatement = (build, sha256) => `erevos android update v1\nbuild ${build}\nsha256 ${sha256}\n`;
+
+async function signRelease(dir, file, ...more) {
+  if (!dir || !file) fail('usage: node pwa/release.mjs sign <web app> <private key file> [--android <build> <sha256>]');
+  let android = null;
+  if (more.length) {
+    const [flag, build, sha256] = more;
+    if (flag !== '--android' || !/^[1-9]\d*$/.test(build ?? '') || !/^[0-9a-f]{64}$/.test(sha256 ?? '')) {
+      fail('usage: node pwa/release.mjs sign <web app> <private key file> [--android <build> <sha256, lowercase hex>]');
+    }
+    android = androidStatement(Number(build), sha256);
+  }
   const key = createPrivateKey({ key: fs.readFileSync(file), passphrase: await passphrase('Passphrase for the release key: ') });
   const raw = rawPublic(key);
   const worker = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8');
@@ -81,6 +95,11 @@ async function signRelease(dir, file) {
   const release = JSON.parse(body);
   fs.writeFileSync(path.join(dir, 'release.sig'), `${sign(null, body, key).toString('base64')}\n`);
   console.log(`Signed release ${release.version} (${Object.keys(release.files).length} files) with ${fingerprint(raw)}.`);
+  if (android) {
+    const signature = sign(null, Buffer.from(android), key).toString('base64');
+    fs.writeFileSync(path.join(dir, 'android-update.json'), `${JSON.stringify({ statement: android, signature })}\n`);
+    console.log(`Signed the Android app of the same release: ${android.trim().split('\n').slice(1).join(', ')}.`);
+  }
 }
 
 async function read(from, name) {
@@ -106,12 +125,23 @@ async function verifyRelease(from, keyFile = PUBLIC) {
     if (name === '/sw.js' && !bytes.toString().includes(`'${raw.toString('base64')}'`)) wrong.push('/sw.js (another key)');
   }
   if (wrong.length) fail(`Signed release ${release.version}, but these files differ from it:\n  ${wrong.join('\n  ')}`);
+  // The Android app's statement, where there is one.
+  const android = await read(from, 'android-update.json').catch(() => null);
+  if (android) {
+    const { statement, signature: signed } = JSON.parse(android);
+    if (!/^erevos android update v1\nbuild [1-9]\d*\nsha256 [0-9a-f]{64}\n$/.test(statement ?? '')) fail('android-update.json does not say what it should.');
+    if (!verify(null, Buffer.from(statement), publicFromRaw(raw), Buffer.from(signed ?? '', 'base64'))) fail(`android-update.json is NOT SIGNED with the key ${fingerprint(raw)}.`);
+    console.log(`OK: the Android app, ${statement.trim().split('\n').slice(1).join(', ')}.`);
+  }
   console.log(`OK: release ${release.version}${release.label ? ` (${release.label})` : ''} from ${release.created} (commit ${release.commit ?? 'unknown'}), ${Object.keys(release.files).length} files, signed with ${fingerprint(raw)}.`);
   console.log(`SHA-256 of release.json: ${createHash('sha256').update(body).digest('hex')}`);
 }
 
-const [command, ...rest] = process.argv.slice(2);
-if (command === 'keygen') await keygen(...rest);
-else if (command === 'sign') await signRelease(...rest);
-else if (command === 'verify') await verifyRelease(...rest);
-else fail('usage: node pwa/release.mjs keygen|sign|verify …');
+// Run as a command; imported (by the checks), only what it exports.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const [command, ...rest] = process.argv.slice(2);
+  if (command === 'keygen') await keygen(...rest);
+  else if (command === 'sign') await signRelease(...rest);
+  else if (command === 'verify') await verifyRelease(...rest);
+  else fail('usage: node pwa/release.mjs keygen|sign|verify …');
+}

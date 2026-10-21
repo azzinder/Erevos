@@ -33,3 +33,14 @@ pub enum Error {
     #[error("one-time prekey is unknown or already used")]
     UnknownPrekey,
 }
+
+/// Checks an Ed25519 signature (strictly, so no other bytes pass for the same
+/// one) by the 32-byte public key `key` over `message`: what the app checks a
+/// release's signed statements with (app/lib/update-signature.ts).
+pub fn verify_signature(key: &[u8], message: &[u8], signature: &[u8]) -> Result<(), Error> {
+    let key = <[u8; 32]>::try_from(key).map_err(|_| Error::Malformed)?;
+    let signature = <[u8; 64]>::try_from(signature).map_err(|_| Error::Malformed)?;
+    let key = ed25519_dalek::VerifyingKey::from_bytes(&key).map_err(|_| Error::Malformed)?;
+    key.verify_strict(message, &ed25519_dalek::Signature::from_bytes(&signature))
+        .map_err(|_| Error::BadSignature)
+}

@@ -8,7 +8,10 @@
 # It downloads erevos-web.tar.gz from the public download repository, checks it against the
 # release's SHA256SUMS and its number, signs it with the release key (default
 # ~/.erevos/web-release.key; it asks for the passphrase) and puts it on the server with deploy.sh,
-# which checks the server afterwards. Nothing is built here. --files-only goes to deploy.sh.
+# which checks the server afterwards. With the same passphrase it signs the release's Android app
+# too, by its build and SHA-256 (android-update.json, served beside the web app), which Check for
+# updates on Android needs before it installs it. Nothing is built here. --files-only goes to
+# deploy.sh.
 set -eu
 
 files_only=
@@ -43,6 +46,7 @@ trap 'rm -rf "$work"' EXIT
 echo "== Downloading the web app of v$version"
 base=${EREVOS_RELEASES_URL:-https://github.com/$repo/releases/download}/v$version
 curl -fsSL "$base/SHA256SUMS" -o "$work/SHA256SUMS"
+curl -fsSL "$base/version.json" -o "$work/version.json"
 curl -fL --progress-bar "$base/erevos-web.tar.gz" -o "$work/erevos-web.tar.gz"
 if ! grep -q ' erevos-web.tar.gz$' "$work/SHA256SUMS"; then
 	echo "v$version has no web app in its SHA256SUMS." >&2
@@ -57,8 +61,21 @@ if [ "$label" != "$version" ]; then
 	exit 1
 fi
 
+# The Android app of the same release, when it has one: its SHA-256 as SHA256SUMS has it, which
+# version.json must say too, and the build version.json names.
+android=
+if grep -q ' erevos-android.apk$' "$work/SHA256SUMS"; then
+	apk=$(grep ' erevos-android.apk$' "$work/SHA256SUMS" | cut -d' ' -f1)
+	build=$(node -e "const v = JSON.parse(require('fs').readFileSync(process.argv[1])); console.log(v.apk && v.apk.sha256 === process.argv[2] ? v.build : '')" "$work/version.json" "$apk")
+	if [ -z "$build" ]; then
+		echo "v$version's version.json does not name the APK in its SHA256SUMS." >&2
+		exit 1
+	fi
+	android="--android $build $apk"
+fi
+
 echo "== Signing it"
-node "$root/pwa/release.mjs" sign "$work/web" "$key"
+node "$root/pwa/release.mjs" sign "$work/web" "$key" $android
 node "$root/pwa/release.mjs" verify "$work/web"
 
 "$root/deploy/web/deploy.sh" $files_only "$target" "$domain" "$work/web"

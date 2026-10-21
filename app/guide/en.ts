@@ -1327,10 +1327,13 @@ or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI
 
 1. Open **Updates** in the home screen's menu (or **Check for updates** at the bottom of this guide's first screen).
    It shows the version you have, such as **Erevos 2.0.0**.
-2. Tap **Check for updates**. GitHub then sees this device's internet address, nothing else. While Tor is on in the
+2. Tap **Check for updates**. GitHub then sees this device's internet address, nothing else; on Android so does the web
+   app's server, which holds the release computer's signature of the update. While Tor is on in the
    space, Erevos does not check, since that would go around Tor.
 3. When there is a new version: on Android tap **Install**. It downloads, is checked against the release (its size and
-   SHA-256), and Android's installer opens: tap **Install** there. The first time, Android asks to allow installing
+   SHA-256), and Android's installer opens: tap **Install** there. Erevos offers it only once the release computer,
+   which keeps its key offline, has signed that build and SHA-256: whoever took over the GitHub account alone could
+   not get an APK of their own installed. Until then it says the version is out but not signed yet. The first time, Android asks to allow installing
    apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take the file
    Erevos names, the one of the package you have, and update as in the table below.
 

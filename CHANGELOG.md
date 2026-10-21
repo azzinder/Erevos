@@ -10,6 +10,12 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet. The next release is **2.0.0**.
 
+- **Android updates need the release computer's signature**: Check for updates installs an APK
+  only once `deploy/web/publish.sh` on the release computer has signed its build and SHA-256 with
+  the web app's offline key (`android-update.json`, served beside the web app). Until then it says
+  the version is out but not signed yet. Whoever took over the GitHub account alone can no longer
+  get an APK installed this way.
+
 - **Builds**: every GitHub action the workflows use is pinned to a commit (its version in a
   comment), so a moved tag in an action's repository cannot change what runs beside the signing key.
 

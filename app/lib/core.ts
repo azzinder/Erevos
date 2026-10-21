@@ -30,6 +30,8 @@ export interface Core {
   /** Argon2id for keys from passwords (lib/crypto.ts hardKey); `cost` is the memory in KiB and the
    *  passes, 4 bytes each, big-endian. Missing in a build made before it. */
   hardKey?(input: Uint8Array, salt: Uint8Array, cost: Uint8Array): Promise<Uint8Array>;
+  /** One byte, 1 when `signature` is the Ed25519 signature of `message` by `key`. Missing in a build made before it. */
+  signatureVerify?(key: Uint8Array, message: Uint8Array, signature: Uint8Array): Promise<Uint8Array>;
   /** Group chats (crates/erevos-group): missing in a build made before them. */
   groupNew?(about: Uint8Array): Promise<Uint8Array>;
   groupKeyPackage?(state: Uint8Array): Promise<Uint8Array>;
@@ -180,6 +182,19 @@ export async function sealOpen(secret: Uint8Array, sealed: Uint8Array): Promise<
   if (!it.sealOpen) throw new NoCoreError();
   const plain = await it.sealOpen(secret, sealed);
   return { senderId: plain.slice(0, 24), message: plain.slice(24) };
+}
+
+/** Whether the core can check Ed25519 signatures (a core from before them cannot). */
+export function canVerify(): boolean {
+  return typeof core?.signatureVerify === 'function';
+}
+
+/** Whether `signature` is the Ed25519 signature of `message` by the 32-byte public key `key`. */
+export async function verifySignature(key: Uint8Array, message: Uint8Array, signature: Uint8Array): Promise<boolean> {
+  const it = need();
+  if (!it.signatureVerify) throw new NoCoreError();
+  const answer = await it.signatureVerify(key, message, signature).catch(() => null);
+  return answer?.length === 1 && answer[0] === 1;
 }
 
 export async function packetKind(packet: Uint8Array): Promise<Kind> {

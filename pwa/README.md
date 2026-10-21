@@ -86,8 +86,9 @@ signed (`erevos-web.tar.gz`). On the computer with the key:
 
     deploy/web/publish.sh 2.0.0 root@<server> <app.example.org>
 
-It downloads it, checks it against the release's `SHA256SUMS` and its number, signs it, checks
-it, copies it to the server, serves it with Caddy (Let's Encrypt, HSTS, the headers above) and
+It downloads it, checks it against the release's `SHA256SUMS` and its number, signs it (and, with
+the same passphrase, the release's Android app by its build and SHA-256, `android-update.json`,
+which Check for updates on Android needs before it installs it), checks it, copies it to the server, serves it with Caddy (Let's Encrypt, HSTS, the headers above) and
 checks what the server then gives out. A server with its own web server (Apache, nginx) takes
 `--files-only` before the number: it then only switches `/var/www/erevos-web/current`, which
 that web server serves with the headers of `deploy/web/install.sh`. Commit

@@ -41,11 +41,14 @@ Notes:
   JavaScript cannot reliably wipe memory. Whoever can read the app's memory reads them.
 - **A compromised operating system**, or an app with the rights to read the screen or other apps'
   memory.
-- **A compromise of the GitHub account, for Android updates.** The APK signing key is a GitHub
-  Actions secret, and `version.json`, whose size and SHA-256 the app checks, is published by the
-  same workflow. Whoever controls the account can publish an APK the app and Android accept. The web
-  app is signed with a key kept offline, so GitHub alone cannot change it; the signer still signs
-  what GitHub built (see `pwa/README.md`). The workflows' actions are pinned to commits, so a tag
+- **A compromise of the GitHub account, for Android updates, in part.** The APK signing key is a
+  GitHub Actions secret, and `version.json`, whose size and SHA-256 the app checks, is published by
+  the same workflow. Check for updates also needs the release computer's signature, with the web
+  app's key kept offline, of the release's build and APK SHA-256 (`app/lib/update-signature.ts`),
+  so GitHub alone cannot get an APK installed that way. Whoever controls the account can still
+  publish an APK that Android installs over Erevos by hand, from the releases page, and the release
+  computer signs what GitHub built: it checks it is the release's, not how it was built. The web app
+  is signed with the same offline key (see `pwa/README.md`). The workflows' actions are pinned to commits, so a tag
   moved by an action's own repository cannot change what runs with the signing key; they are
   updated by hand.
 - **Traffic analysis by a global observer** who sees both ends. Erevos sends no cover traffic and

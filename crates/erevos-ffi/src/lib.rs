@@ -190,6 +190,16 @@ pub fn seal_open(secret: &[u8], sealed: &[u8]) -> Result<Vec<u8>> {
     Ok([sender.as_slice(), &message].concat())
 }
 
+/// Whether `signature` is the Ed25519 signature of `message` by the public
+/// key `key`: one byte, 1 or 0. Keys and signatures of the wrong size fail.
+pub fn signature_verify(key: &[u8], message: &[u8], signature: &[u8]) -> Result<Vec<u8>> {
+    match erevos_core::verify_signature(key, message, signature) {
+        Ok(()) => Ok(vec![1]),
+        Err(erevos_core::Error::BadSignature) => Ok(vec![0]),
+        Err(error) => Err(fail(error)),
+    }
+}
+
 /// The most memory and passes `hard_key` takes, so a file that names its own
 /// cost (a backup) cannot make the phone run out of memory or time.
 const HARD_MOST_KIB: u32 = 256 * 1024;
@@ -506,6 +516,21 @@ mod tests {
         assert!(hard_key(&[1; 32], &[2; 16], &cost(64, 17)).is_err());
         assert!(hard_key(&[1; 32], &[2; 16], &[0; 7]).is_err());
         assert!(hard_key(&[1; 32], &[2; 4], &cost(64, 1)).is_err());
+    }
+
+    #[test]
+    fn checks_signatures() {
+        // RFC 8032, test 2: one byte signed.
+        let unhex = |h: &str| (0..h.len()).step_by(2).map(|i| u8::from_str_radix(&h[i..i + 2], 16).unwrap()).collect::<Vec<u8>>();
+        let key = unhex("3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c");
+        let signature = unhex("92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00");
+        assert_eq!(signature_verify(&key, &[0x72], &signature).unwrap(), vec![1]);
+        assert_eq!(signature_verify(&key, &[0x73], &signature).unwrap(), vec![0]);
+        let mut other = signature.clone();
+        other[0] ^= 1;
+        assert_eq!(signature_verify(&key, &[0x72], &other).unwrap(), vec![0]);
+        assert!(signature_verify(&key[..31], &[0x72], &signature).is_err());
+        assert!(signature_verify(&key, &[0x72], &signature[..63]).is_err());
     }
 
     #[test]
