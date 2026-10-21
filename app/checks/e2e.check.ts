@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
 import { contactLink, parseContact } from '../lib/contact-code';
-import { setCore, type Core } from '../lib/core';
+import { accountBundle, accountIdentity, accountSign, bundleVerify, canSign, newAccount, setCore, type Core } from '../lib/core';
 import { randomBytes, toHex, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
 import { E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
@@ -52,6 +52,19 @@ async function chat(holder: 'space' | 'hidden', space: number, key = randomBytes
   const code = { senderHex: from, key: toBase64Url(e2e.bundle) };
   return { e2e, from, code, key };
 }
+
+t('an account signs what its bundle checks, and nothing else passes for it', async () => {
+  assert.equal(canSign(), true);
+  const account = await newAccount();
+  const bundle = await accountBundle(account);
+  const list = utf8Encode('{"t":"erevos devices"}');
+  const signature = await accountSign(account, 'devices', list);
+  assert.deepEqual(await bundleVerify(bundle, 'devices', list, signature), await accountIdentity(account));
+  assert.equal(await bundleVerify(bundle, 'devices', utf8Encode('{}'), signature), null);
+  assert.equal(await bundleVerify(bundle, 'other', list, signature), null);
+  assert.equal(await bundleVerify(await accountBundle(await newAccount()), 'devices', list, signature), null);
+  assert.equal(await bundleVerify(bundle, 'devices', list, signature.slice(1)), null);
+});
 
 const message = (r: Received) => {
   assert.equal(r.kind, 'message');

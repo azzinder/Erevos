@@ -215,6 +215,40 @@ impl PrekeyBundle {
     }
 }
 
+impl PrekeyBundle {
+    /// Checks the bundle, then that its identity key signed `message` under
+    /// `context` ([`signed_statement`]), as [`crate::conversation::Account::sign`] does.
+    ///
+    /// The bundle's signature does not prove that whoever made it holds the
+    /// X25519 identity it names: anyone can sign a bundle naming someone
+    /// else's. So take a bundle to check statements with only from inside a
+    /// conversation with that identity, never from a contact link alone.
+    pub fn verify_signed(&self, context: &[u8], message: &[u8], signature: &[u8]) -> Result<(), Error> {
+        self.verify()?;
+        let signature = <[u8; 64]>::try_from(signature).map_err(|_| Error::Malformed)?;
+        let vk = VerifyingKey::from_bytes(&self.identity_verify).map_err(|_| Error::Malformed)?;
+        vk.verify_strict(&signed_statement(context, message)?, &Signature::from_bytes(&signature))
+            .map_err(|_| Error::BadSignature)
+    }
+}
+
+/// What an account's identity key signs for a statement other than its own
+/// bundle: a prefix no bundle transcript starts with, the context (which names
+/// what the statement is, and holds no zero byte), a zero, then the message.
+pub fn signed_statement(context: &[u8], message: &[u8]) -> Result<Vec<u8>, Error> {
+    if context.is_empty() || context.contains(&0) {
+        return Err(Error::Malformed);
+    }
+    let mut out = Vec::with_capacity(SIGNED_PREFIX.len() + context.len() + 1 + message.len());
+    out.extend_from_slice(SIGNED_PREFIX);
+    out.extend_from_slice(context);
+    out.push(0);
+    out.extend_from_slice(message);
+    Ok(out)
+}
+
+const SIGNED_PREFIX: &[u8] = b"erevos signed v1\0";
+
 fn transcript(identity_dh: &PublicKey, signed: &PublicKey, pq: &[u8], one_time: Option<&OneTimePrekey>) -> Vec<u8> {
     let mut out = Vec::with_capacity(128 + pq.len());
     out.extend_from_slice(b"erevos prekey bundle v1");

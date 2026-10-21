@@ -38,8 +38,8 @@ on and reach its relay for the computer to send and receive. On Android, Erevos 
 the background (lib/background.ts), so in practice it is. What the computer writes while the phone
 is off waits in the phone's queue on the relay and goes when the phone is back.
 
-The second way can come later on top of this: once contacts know device lists, the primary can
-stop relaying for those contacts.
+The second way comes on top of this, so linked devices work with the phone off: once contacts
+know device lists, the primary stops relaying for those contacts. docs/multi-device.md is how.
 
 ## How it works
 

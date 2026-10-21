@@ -52,6 +52,8 @@ pub extern "system" fn Java_expo_modules_erevoscore_ErevosCoreNative_accountNew<
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_accountBundle => crate::account_bundle, account);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_accountIdentity => crate::account_identity, account);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_bundleIdentity => crate::bundle_identity, bundle);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_accountSign => crate::account_sign, account, context, message);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_bundleVerify => crate::bundle_verify, bundle, context, message, signature);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationStart => crate::conversation_start, account, bundle, plaintext);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationAccept => crate::conversation_accept, account, packet);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationSeal => crate::conversation_seal, conversation, plaintext);

@@ -32,6 +32,11 @@ export interface Core {
   hardKey?(input: Uint8Array, salt: Uint8Array, cost: Uint8Array): Promise<Uint8Array>;
   /** One byte, 1 when `signature` is the Ed25519 signature of `message` by `key`. Missing in a build made before it. */
   signatureVerify?(key: Uint8Array, message: Uint8Array, signature: Uint8Array): Promise<Uint8Array>;
+  /** An account's Ed25519 signature of `message` under `context`, and the check of one against a
+   *  bundle (its identity key, or nothing when it does not hold): missing in a build made before
+   *  linked devices that work with the primary off (docs/multi-device.md). */
+  accountSign?(account: Uint8Array, context: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
+  bundleVerify?(bundle: Uint8Array, context: Uint8Array, message: Uint8Array, signature: Uint8Array): Promise<Uint8Array>;
   /** Group chats (crates/erevos-group): missing in a build made before them. */
   groupNew?(about: Uint8Array): Promise<Uint8Array>;
   groupKeyPackage?(state: Uint8Array): Promise<Uint8Array>;
@@ -196,6 +201,32 @@ export async function verifySignature(key: Uint8Array, message: Uint8Array, sign
   const answer = await it.signatureVerify(key, message, signature).catch(() => null);
   return answer?.length === 1 && answer[0] === 1;
 }
+
+/** Whether the core can sign as an account and check what an account signed (a core from before linked devices on their own cannot). */
+export function canSign(): boolean {
+  return typeof core?.accountSign === 'function' && typeof core?.bundleVerify === 'function';
+}
+
+/** The account's signature of `message` under `context` (a short name for what it is, such as "devices"). */
+export function accountSign(account: Uint8Array, context: string, message: Uint8Array): Promise<Uint8Array> {
+  const it = need();
+  if (!it.accountSign) throw new NoCoreError();
+  return it.accountSign(account, utf8(context), message);
+}
+
+/**
+ * The identity key of the account whose bundle signed `message` under `context`, or null when it
+ * did not (or the bundle does not hold). Only a bundle that came inside a conversation with that
+ * identity says who signed: a bundle's signature does not prove it holds the identity it names.
+ */
+export async function bundleVerify(bundle: Uint8Array, context: string, message: Uint8Array, signature: Uint8Array): Promise<Uint8Array | null> {
+  const it = need();
+  if (!it.bundleVerify) throw new NoCoreError();
+  const identity = await it.bundleVerify(bundle, utf8(context), message, signature).catch(() => null);
+  return identity?.length === 32 ? identity : null;
+}
+
+const utf8 = (text: string) => new TextEncoder().encode(text);
 
 export async function packetKind(packet: Uint8Array): Promise<Kind> {
   const kind = await need().packetKind(packet);

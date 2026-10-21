@@ -56,6 +56,24 @@ pub fn bundle_identity(bundle: &[u8]) -> Result<Vec<u8>> {
     Ok(bundle.identity_dh.to_bytes().to_vec())
 }
 
+/// The account's Ed25519 signature of `message` under `context` (the list of
+/// its linked devices), for its contacts to check with `bundle_verify`.
+pub fn account_sign(account: &[u8], context: &[u8], message: &[u8]) -> Result<Vec<u8>> {
+    let account = Account::from_secret_bytes(account).map_err(fail)?;
+    Ok(account.sign(context, message).map_err(fail)?.to_vec())
+}
+
+/// Checks a bundle, then that its identity key signed `message` under
+/// `context`: the bundle's identity key when it did, nothing when it did not.
+pub fn bundle_verify(bundle: &[u8], context: &[u8], message: &[u8], signature: &[u8]) -> Result<Vec<u8>> {
+    let bundle = PrekeyBundle::from_bytes(bundle).map_err(fail)?;
+    match bundle.verify_signed(context, message, signature) {
+        Ok(()) => Ok(bundle.identity_dh.to_bytes().to_vec()),
+        Err(erevos_core::Error::BadSignature) => Ok(Vec::new()),
+        Err(error) => Err(fail(error)),
+    }
+}
+
 /// Starts a conversation: the conversation, then the first packet.
 pub fn conversation_start(account: &[u8], bundle: &[u8], plaintext: &[u8]) -> Result<Vec<u8>> {
     let account = Account::from_secret_bytes(account).map_err(fail)?;
@@ -531,6 +549,21 @@ mod tests {
         assert_eq!(signature_verify(&key, &[0x72], &other).unwrap(), vec![0]);
         assert!(signature_verify(&key[..31], &[0x72], &signature).is_err());
         assert!(signature_verify(&key, &[0x72], &signature[..63]).is_err());
+    }
+
+    #[test]
+    fn accounts_sign_what_their_bundles_check() {
+        let account = account_new();
+        let bundle = account_bundle(&account).unwrap();
+        let signature = account_sign(&account, b"devices", b"list").unwrap();
+        assert_eq!(signature.len(), 64);
+        assert_eq!(bundle_verify(&bundle, b"devices", b"list", &signature).unwrap(), account_identity(&account).unwrap());
+        assert!(bundle_verify(&bundle, b"devices", b"other", &signature).unwrap().is_empty());
+        let other = account_bundle(&account_new()).unwrap();
+        assert!(bundle_verify(&other, b"devices", b"list", &signature).unwrap().is_empty());
+        assert!(bundle_verify(&bundle, b"devices", b"list", &signature[..10]).is_err());
+        assert!(bundle_verify(&bundle[..20], b"devices", b"list", &signature).is_err());
+        assert!(account_sign(&account, b"", b"list").is_err());
     }
 
     #[test]

@@ -77,6 +77,15 @@ impl Account {
         PublicKey::from(&self.identity.dh).to_bytes()
     }
 
+    /// Signs `message` under `context` with this account's identity key, for
+    /// those who hold its bundle to check with [`PrekeyBundle::verify_signed`]
+    /// (the list of an account's linked devices). Never the same bytes as a
+    /// bundle's own signature.
+    pub fn sign(&self, context: &[u8], message: &[u8]) -> Result<[u8; 64], Error> {
+        use ed25519_dalek::Signer;
+        Ok(self.identity.signing.sign(&pqxdh::signed_statement(context, message)?).to_bytes())
+    }
+
     pub fn to_secret_bytes(&self) -> Zeroizing<Vec<u8>> {
         let identity = self.identity.to_secret_bytes();
         let prekeys = self.prekeys.to_secret_bytes();
@@ -393,6 +402,47 @@ mod tests {
         assert!(b.open(&damaged).is_err());
         assert_eq!(b.open(&next).unwrap(), b"y");
         assert!(accept(&mut bob, &first[..first.len() - 20]).is_err());
+    }
+
+    #[test]
+    fn an_account_signs_statements_its_bundle_checks() {
+        let alice = Account::generate();
+        let bundle = PrekeyBundle::from_bytes(&alice.bundle().to_bytes()).unwrap();
+        let signature = alice.sign(b"devices", b"the list").unwrap();
+        bundle.verify_signed(b"devices", b"the list", &signature).unwrap();
+        // Another context, message or account, or a changed signature: refused.
+        assert!(bundle.verify_signed(b"device", b"the list", &signature).is_err());
+        assert!(bundle.verify_signed(b"devices", b"the list!", &signature).is_err());
+        let other = PrekeyBundle::from_bytes(&Account::generate().bundle().to_bytes()).unwrap();
+        assert!(other.verify_signed(b"devices", b"the list", &signature).is_err());
+        let mut changed = signature;
+        changed[5] ^= 1;
+        assert!(bundle.verify_signed(b"devices", b"the list", &changed).is_err());
+        assert!(bundle.verify_signed(b"devices", b"the list", &signature[..63]).is_err());
+        // A context cannot run into the message.
+        assert!(alice.sign(b"dev\0ices", b"x").is_err());
+        assert!(alice.sign(b"", b"x").is_err());
+        assert!(bundle.verify_signed(b"devices\0the", b" list", &signature).is_err());
+    }
+
+    #[test]
+    fn a_statement_and_a_bundle_never_pass_for_each_other() {
+        let alice = Account::generate();
+        let bundle = alice.bundle();
+        // The bundle's own signature, over its own transcript, is no statement.
+        assert!(bundle.verify_signed(b"erevos prekey bundle v1", b"", &bundle.signature).is_err());
+        // A statement over a bundle's transcript bytes is no bundle signature.
+        let mut forged = bundle.clone();
+        let transcript = super::pqxdh::signed_statement(b"devices", b"x").unwrap();
+        assert!(!transcript.starts_with(b"erevos prekey bundle v1"));
+        forged.signature = alice.sign(b"erevos prekey bundle v1", b"").unwrap();
+        assert!(forged.verify().is_err());
+        // Its identity, named in a bundle someone else signed, does not check its statements.
+        let mallory = Account::generate();
+        let mut stolen = mallory.bundle();
+        stolen.identity_dh = bundle.identity_dh;
+        let signature = alice.sign(b"devices", b"x").unwrap();
+        assert!(stolen.verify_signed(b"devices", b"x", &signature).is_err());
     }
 
     #[test]
