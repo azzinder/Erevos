@@ -35,7 +35,7 @@ import { refreshWidget } from '../modules/erevos-widget';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { startPublicDoors } from '../lib/space-public-groups';
 import { applyTor } from '../lib/tor';
-import { loadLockConfig, type LockConfig } from '../lock/config';
+import { hardenLock, loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
 import { PasswordGate } from '../lock/gate';
 import { prepareHidden } from '../lock/hidden';
@@ -147,10 +147,13 @@ export default function RootLayout() {
     // rest, since the password screen need not wait for them.
     if (!hiddenPrepared) {
       hiddenPrepared = true;
-      void prepareHidden().catch(() => undefined);
+      void cryptoReady().then(() => prepareHidden()).catch(() => undefined);
     }
     // On a computer the core loads beside the app, and nothing that needs it opens before it.
     await cryptoReady();
+    // Password slots from before Argon2id get it now, while the password screen shows (after a
+    // backup is restored too); whatever changes the lock waits for it.
+    void hardenLock().catch(() => undefined);
     await loadLang();
     const config = await loadLockConfig();
     if (config.direct !== null) {

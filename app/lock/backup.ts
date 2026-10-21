@@ -1,4 +1,4 @@
-import { decryptBytes, deriveKey, encryptBytes, randomBytes, sameBytes, utf8Decode, utf8Encode } from '../lib/crypto';
+import { decryptBytes, deriveKey, encryptBytes, hardCost, hardKey, isHardCost, randomBytes, sameBytes, utf8Decode, utf8Encode, type HardCost } from '../lib/crypto';
 import { deleteFile, listFiles, readBytes, readFile, writeBytes, writeFile } from '../lib/files';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';
 import { t } from '../lib/i18n';
@@ -22,9 +22,12 @@ import { PREFIX as VOICE } from './voice-clips';
 // does: not how many spaces there are, nor whether hidden chats are set. Restoring it puts all of
 // it back, in place of what the phone had, and the passwords of the spaces open them as before.
 //
-// The file: MAGIC, the salt (SALT bytes) and PBKDF2 rounds (4 bytes) the password's key comes from,
-// then, sealed with that key (AES-256-GCM, lib/crypto.ts), the entries one after another: their
-// kind (1 byte), name (2-byte length, then the name) and data (4-byte length, then the data).
+// The file: MAGIC, the salt (SALT bytes) and PBKDF2 rounds (4 bytes) the password gives a key K
+// with, then Argon2id's salt (SALT bytes), memory in KiB and passes (4 bytes each), with which K
+// gives the backup's key, then, sealed with that key (AES-256-GCM, lib/crypto.ts), the entries one
+// after another: their kind (1 byte), name (2-byte length, then the name) and data (4-byte length,
+// then the data). A backup from before Argon2id starts with MAGIC_1 and has no Argon2id: K is its
+// key. It still opens; one with MAGIC opens only in an Erevos from Argon2id on.
 // An entry of a kind or name this Erevos does not know, from a newer one, is left out, and the
 // rest restored; an Erevos before that refused the whole backup. What is damaged, or not sealed
 // with the backup's key, opens nothing.
@@ -40,7 +43,8 @@ import { PREFIX as VOICE } from './voice-clips';
 // space. Restoring the backup does not write them anywhere; the backup screen puts them back into
 // the phone's SMS. An Erevos from before this kind does not open such a backup.
 
-const MAGIC = utf8Encode('EREVOS BACKUP 1\n');
+const MAGIC_1 = utf8Encode('EREVOS BACKUP 1\n');
+const MAGIC = utf8Encode('EREVOS BACKUP 2\n');
 const SALT = 16;
 
 // The keystore entries kept, in every space and slot whatever is in use: the lock, the spaces'
@@ -73,8 +77,12 @@ type Entry = { kind: number; name: string; data: Uint8Array };
  *  does not know (a newer one made it), left out. */
 export type Backup = { entries: Entry[]; size: number; unknown: number };
 
-/** The key a password gives for backups, with the salt and rounds it came from. */
-export type BackupKey = { key: Uint8Array; salt: Uint8Array; iter: number };
+/** Argon2id's salt and cost for a backup's key. */
+export type BackupHard = HardCost & { salt: Uint8Array };
+
+/** The key a password gives for backups, with the salt and rounds it came from. `hard` is null
+ *  for a backup from before Argon2id. */
+export type BackupKey = { key: Uint8Array; salt: Uint8Array; iter: number; hard: BackupHard | null };
 
 export class NotABackupError extends Error {
   constructor() {
@@ -88,8 +96,18 @@ export class WrongBackupPasswordError extends Error {
   }
 }
 
-export async function backupKey(password: string, salt = randomBytes(SALT), iter = ITER): Promise<BackupKey> {
-  return { key: await deriveKey(password, salt, iter), salt, iter };
+/** A new backup hard cost, with its own salt. */
+export const newBackupHard = (): BackupHard => ({ salt: randomBytes(SALT), ...hardCost() });
+
+/** The backup key that K, PBKDF2's key, gives with Argon2id. So automatic backups whose K was kept
+ *  from before Argon2id get it without the password (lib/backup-folder.ts). */
+export function hardBackupKey(k: Uint8Array, hard: BackupHard): Promise<Uint8Array> {
+  return hardKey(k, hard.salt, hard);
+}
+
+export async function backupKey(password: string, salt = randomBytes(SALT), iter = ITER, hard: BackupHard | null = newBackupHard()): Promise<BackupKey> {
+  const k = await deriveKey(password, salt, iter);
+  return { key: hard ? await hardBackupKey(k, hard) : k, salt, iter, hard };
 }
 
 async function collect(): Promise<Entry[]> {
@@ -161,26 +179,42 @@ function unpack(bytes: Uint8Array): { entries: Entry[]; unknown: number } {
 
 /** A backup of everything on the phone, sealed with `key`: the bytes of the file. With
  *  `phoneSms`, the phone's SMS and MMS too (lib/backup-sms.ts). */
-export async function makeBackup({ key, salt, iter }: BackupKey, phoneSms: Uint8Array | null = null): Promise<Uint8Array> {
+export async function makeBackup({ key, salt, iter, hard }: BackupKey, phoneSms: Uint8Array | null = null): Promise<Uint8Array> {
+  // Every backup made has Argon2id: a key without it is only for opening old ones.
+  if (!hard) throw new Error('a backup is made with Argon2id');
   const entries = await collect();
   if (phoneSms) entries.push({ kind: KIND_PHONE_SMS, name: PHONE_SMS, data: phoneSms });
   const sealed = encryptBytes(key, pack(entries));
-  const out = new Uint8Array(MAGIC.length + SALT + 4 + sealed.length);
+  const head = MAGIC.length + SALT + 4 + SALT + 8;
+  const out = new Uint8Array(head + sealed.length);
+  const view = new DataView(out.buffer);
   out.set(MAGIC);
   out.set(salt, MAGIC.length);
-  new DataView(out.buffer).setUint32(MAGIC.length + SALT, iter);
-  out.set(sealed, MAGIC.length + SALT + 4);
+  view.setUint32(MAGIC.length + SALT, iter);
+  out.set(hard.salt, MAGIC.length + SALT + 4);
+  view.setUint32(MAGIC.length + SALT + 4 + SALT, hard.m);
+  view.setUint32(MAGIC.length + SALT + 4 + SALT + 4, hard.t);
+  out.set(sealed, head);
   return out;
 }
 
 /** Opens a backup file with its password. Throws NotABackupError or WrongBackupPasswordError. */
 export async function openBackup(bytes: Uint8Array, password: string): Promise<Backup> {
-  const head = MAGIC.length + SALT + 4;
-  if (bytes.length < head || !sameBytes(bytes.subarray(0, MAGIC.length), MAGIC)) throw new NotABackupError();
+  const old = bytes.length >= MAGIC_1.length && sameBytes(bytes.subarray(0, MAGIC_1.length), MAGIC_1);
+  const head = MAGIC.length + SALT + 4 + (old ? 0 : SALT + 8);
+  if (bytes.length < head || !(old || sameBytes(bytes.subarray(0, MAGIC.length), MAGIC))) throw new NotABackupError();
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const salt = bytes.slice(MAGIC.length, MAGIC.length + SALT);
-  const iter = new DataView(bytes.buffer, bytes.byteOffset).getUint32(MAGIC.length + SALT);
+  const iter = view.getUint32(MAGIC.length + SALT);
   if (iter < 1000 || iter > 10_000_000) throw new NotABackupError();
-  const { key } = await backupKey(password, salt, iter);
+  let hard: BackupHard | null = null;
+  if (!old) {
+    const at = MAGIC.length + SALT + 4;
+    hard = { salt: bytes.slice(at, at + SALT), m: view.getUint32(at + SALT), t: view.getUint32(at + SALT + 4) };
+    // A cost no Erevos makes, as a made-up file may name to keep the phone busy.
+    if (!isHardCost(hard)) throw new NotABackupError();
+  }
+  const { key } = await backupKey(password, salt, iter, hard);
   let packed: Uint8Array;
   try {
     packed = decryptBytes(key, bytes.subarray(head));

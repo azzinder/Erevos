@@ -1,4 +1,19 @@
-import { decryptText, deriveKey, encryptText, fromBase64, fromHex, randomBytes, sameBytes, sha256Bytes, toBase64, toHex } from '../lib/crypto';
+import {
+  decryptText,
+  deriveKey,
+  encryptText,
+  fromBase64,
+  fromHex,
+  hardCost,
+  hardKey,
+  isHardCost,
+  randomBytes,
+  sameBytes,
+  sha256Bytes,
+  toBase64,
+  toHex,
+  type HardCost,
+} from '../lib/crypto';
 import { secureGet, secureSet } from '../lib/secure';
 
 import { deleteOpenKey, saveOpenKey } from './keys';
@@ -14,8 +29,13 @@ import { assertNotLockedOut, recordRightPassword, recordWrongPassword } from './
 // unlocking checks every slot. So neither what is stored nor how long unlocking takes shows
 // whether a second password is in use, and nothing in the app says so.
 //
-// A slot tells its password by `check` (SHA-256 of the key K that PBKDF2 derives from it) and
-// holds its space's key sealed with K, so the space can only be opened with the password.
+// A slot tells its password by `check` and holds its space's key sealed, so the space can only be
+// opened with the password. PBKDF2 derives a key K from the password, then Argon2id (`hard`) a
+// key A from SHA-256 of K: `check` is SHA-256 of A, and the space key is sealed with K, then with
+// A. So each guess at a password costs memory as well as time. A slot from before Argon2id had
+// SHA-256 of K as its check and the space key sealed with K only; hardenSlot gives it A from that
+// check, without the password, and every slot gets it at once (hardenLock), used or not, so none
+// shows that it was used since.
 //
 // Wrong passwords are counted on the phone and make the next check wait (tries.ts), wherever a
 // password is compared with the slots.
@@ -25,7 +45,12 @@ export interface Slot {
   iter: number;
   check: string;
   key: string;
+  // Missing in a slot from before Argon2id.
+  hard?: Hard;
 }
+
+/** Argon2id's salt and cost for a slot. */
+export type Hard = HardCost & { salt: string };
 
 export interface LockConfig {
   slots: Slot[];
@@ -50,11 +75,18 @@ export const ITER = 200_000;
 const KEY = 'erevos.lock';
 const EMPTY: LockConfig = { slots: [], direct: null, iter: ITER };
 
+const newHard = (): Hard => ({ salt: toBase64(randomBytes(16)), ...hardCost() });
+
+// A from what Argon2id starts from: SHA-256 of K, or a slot's check from before Argon2id.
+const hardened = (from: Uint8Array, hard: Hard) => hardKey(from, fromBase64(hard.salt), hard);
+
 /** Seals a space key with a password. */
 export async function sealSlot(password: string, spaceKey: Uint8Array, iter: number): Promise<Slot> {
   const salt = randomBytes(16);
   const k = await deriveKey(password, salt, iter);
-  return { salt: toBase64(salt), iter, check: toBase64(sha256Bytes(k)), key: encryptText(k, toHex(spaceKey)) };
+  const hard = newHard();
+  const a = await hardened(sha256Bytes(k), hard);
+  return { salt: toBase64(salt), iter, check: toBase64(sha256Bytes(a)), key: encryptText(a, encryptText(k, toHex(spaceKey))), hard };
 }
 
 /** A slot no password opens, shaped like a used one. */
@@ -63,8 +95,31 @@ export function unusedSlot(iter: number): Slot {
     salt: toBase64(randomBytes(16)),
     iter,
     check: toBase64(randomBytes(32)),
-    key: encryptText(randomBytes(32), toHex(randomBytes(32))),
+    key: encryptText(randomBytes(32), encryptText(randomBytes(32), toHex(randomBytes(32)))),
+    hard: newHard(),
   };
+}
+
+/** A slot from before Argon2id, given it without its password: it opens with the same one. Any
+ *  other slot as it is. */
+export async function hardenSlot(slot: Slot): Promise<Slot> {
+  if (slot.hard) return slot;
+  const hard = newHard();
+  const a = await hardened(fromBase64(slot.check), hard);
+  return { ...slot, check: toBase64(sha256Bytes(a)), key: encryptText(a, slot.key), hard };
+}
+
+/** What a password gives for a slot it opens: K, and A unless the slot is from before Argon2id. */
+type SlotKeys = { k: Uint8Array; a: Uint8Array | null };
+
+async function checked(slot: Slot, k: Uint8Array): Promise<SlotKeys | null> {
+  const a = slot.hard ? await hardened(sha256Bytes(k), slot.hard) : null;
+  return sameBytes(sha256Bytes(a ?? k), fromBase64(slot.check)) ? { k, a } : null;
+}
+
+/** The space key a slot holds, with the keys its password gave. */
+function opened(slot: Slot, { k, a }: SlotKeys): Uint8Array {
+  return fromHex(decryptText(k, a ? decryptText(a, slot.key) : slot.key));
 }
 
 /** At least `min` slots (and SLOTS), the added ones unused. */
@@ -74,9 +129,18 @@ function padded(slots: Slot[], iter: number, min = SLOTS): Slot[] {
   return out;
 }
 
+const isHard = (v: unknown): v is Hard => !!v && typeof (v as Partial<Hard>).salt === 'string' && isHardCost(v as Partial<Hard>);
+
 export const isSlot = (v: unknown): v is Slot => {
   const s = v as Partial<Slot> | null;
-  return !!s && typeof s.salt === 'string' && typeof s.iter === 'number' && typeof s.check === 'string' && typeof s.key === 'string';
+  return (
+    !!s &&
+    typeof s.salt === 'string' &&
+    typeof s.iter === 'number' &&
+    typeof s.check === 'string' &&
+    typeof s.key === 'string' &&
+    (s.hard === undefined || isHard(s.hard))
+  );
 };
 
 export async function loadLockConfig(): Promise<LockConfig> {
@@ -104,33 +168,60 @@ export function isPasswordLocked(config: LockConfig): boolean {
   return config.slots.length > 0 && config.direct === null;
 }
 
-/** The slot a password opens (and its K), or -1. Every slot is checked, whichever matches. */
-async function match(config: LockConfig, password: string): Promise<{ index: number; k: Uint8Array | null }> {
-  const results = await Promise.all(
-    config.slots.map(async (slot) => {
-      const k = await deriveKey(password, fromBase64(slot.salt), slot.iter);
-      return sameBytes(sha256Bytes(k), fromBase64(slot.check)) ? k : null;
-    }),
-  );
-  const index = results.findIndex((k) => k !== null);
-  return { index, k: index < 0 ? null : results[index] };
+let hardening: Promise<void> | null = null;
+
+/**
+ * Gives every slot from before Argon2id the slot it becomes (hardenSlot), all in one write. Run
+ * when Erevos starts, and before the lock changes, so a change never meets the slots half done.
+ */
+export function hardenLock(): Promise<void> {
+  hardening ??= (async () => {
+    const config = await loadLockConfig();
+    if (config.slots.every((slot) => slot.hard)) return;
+    const slots: Slot[] = [];
+    for (const slot of config.slots) slots.push(await hardenSlot(slot));
+    await save({ ...config, slots });
+  })().finally(() => {
+    hardening = null;
+  });
+  return hardening;
+}
+
+/** The lock as it is, every slot with Argon2id: for what changes it. */
+async function current(): Promise<LockConfig> {
+  await hardenLock();
+  return loadLockConfig();
+}
+
+/**
+ * The slot a password opens (and its keys), or -1. Every slot is checked, whichever matches:
+ * PBKDF2 for all at once, then Argon2id one slot after another, so only one takes its memory.
+ */
+async function match(config: LockConfig, password: string): Promise<{ index: number; keys: SlotKeys | null }> {
+  const ks = await Promise.all(config.slots.map((slot) => deriveKey(password, fromBase64(slot.salt), slot.iter)));
+  let found: { index: number; keys: SlotKeys | null } = { index: -1, keys: null };
+  for (const [index, slot] of config.slots.entries()) {
+    const keys = await checked(slot, ks[index]);
+    if (keys && found.index < 0) found = { index, keys };
+  }
+  return found;
 }
 
 /** The key a slot holds for a password, or null when it is not that slot's password. */
 export async function trySlot(slot: Slot, password: string): Promise<Uint8Array | null> {
-  const k = await deriveKey(password, fromBase64(slot.salt), slot.iter);
-  return sameBytes(sha256Bytes(k), fromBase64(slot.check)) ? fromHex(decryptText(k, slot.key)) : null;
+  const keys = await checked(slot, await deriveKey(password, fromBase64(slot.salt), slot.iter));
+  return keys ? opened(slot, keys) : null;
 }
 
-/** The space key a slot holds for K. */
-function openSlot(config: LockConfig, index: number, k: Uint8Array): Uint8Array {
-  return fromHex(decryptText(k, config.slots[index].key));
+/** The space key a slot holds for its password's keys. */
+function openSlot(config: LockConfig, index: number, keys: SlotKeys): Uint8Array {
+  return opened(config.slots[index], keys);
 }
 
 // match, counting: throws LockedOutError while wrong passwords have made it wait, counts a miss
 // as one more and a hit as the end of the count. Every comparison with the slots goes through
 // here, since each one would tell whether a password opens some space.
-async function countedMatch(config: LockConfig, password: string, now: number): Promise<{ index: number; k: Uint8Array | null }> {
+async function countedMatch(config: LockConfig, password: string, now: number): Promise<{ index: number; keys: SlotKeys | null }> {
   await assertNotLockedOut(now);
   const result = await match(config, password);
   if (result.index < 0) await recordWrongPassword(now);
@@ -140,17 +231,17 @@ async function countedMatch(config: LockConfig, password: string, now: number): 
 
 /** Which space a password opens, with its key, or null if it opens none. Throws LockedOutError while it must wait. */
 export async function unlock(config: LockConfig, password: string, now = Date.now()): Promise<Unlocked | null> {
-  const { index, k } = await countedMatch(config, password, now);
-  if (index < 0 || !k) return null;
-  return { space: index, key: openSlot(config, index, k) };
+  const { index, keys } = await countedMatch(config, password, now);
+  if (index < 0 || !keys) return null;
+  return { space: index, key: openSlot(config, index, keys) };
 }
 
 // The key of `space` when `password` is that space's own, else null: to make sure it is the owner
 // who turns on unlocking with a fingerprint (biometric.ts). Every slot is checked, and counted.
 export async function ownSpaceKey(space: number, password: string, now = Date.now()): Promise<Uint8Array | null> {
-  const config = await loadLockConfig();
-  const { index, k } = await countedMatch(config, password, now);
-  return index === space && k ? openSlot(config, index, k) : null;
+  const config = await current();
+  const { index, keys } = await countedMatch(config, password, now);
+  return index === space && keys ? openSlot(config, index, keys) : null;
 }
 
 export class SamePasswordError extends Error {
@@ -163,7 +254,7 @@ export class SamePasswordError extends Error {
 // second password of the space before it (then with a new key for the new space). It must differ
 // from the other passwords.
 export async function setLockPassword(space: number, password: string, spaceKey: Uint8Array, now = Date.now()): Promise<void> {
-  const config = await loadLockConfig();
+  const config = await current();
   // There is always a slot after this one, for its own second password.
   const slots = padded(config.slots, config.iter, space + 2);
   const { index } = await countedMatch({ ...config, slots }, password, now);
@@ -177,11 +268,11 @@ export async function setLockPassword(space: number, password: string, spaceKey:
 // off in a second space, this is how to get back to the space behind the first password. Any
 // other password becomes this space's. Returns the space to open, or null to stay.
 export async function lockWithPassword(space: number, password: string, spaceKey: Uint8Array, now = Date.now()): Promise<Unlocked | null> {
-  const config = await loadLockConfig();
+  const config = await current();
   if (config.slots.length > 0) {
-    const { index, k } = await countedMatch(config, password, now);
-    if (index >= 0 && index !== space && k) {
-      const key = openSlot(config, index, k);
+    const { index, keys } = await countedMatch(config, password, now);
+    if (index >= 0 && index !== space && keys) {
+      const key = openSlot(config, index, keys);
       await save({ ...config, direct: null });
       await deleteOpenKey(space);
       return { space: index, key };
@@ -197,7 +288,7 @@ export async function lockWithPassword(space: number, password: string, spaceKey
 
 /** Makes the second password set in this space (and any set beyond it) stop working. */
 export async function removeSecondPassword(space: number): Promise<void> {
-  const config = await loadLockConfig();
+  const config = await current();
   await save({ ...config, slots: config.slots.map((slot, j) => (j > space ? unusedSlot(config.iter) : slot)) });
 }
 
@@ -210,6 +301,6 @@ export async function removePasswordLock(space: number, spaceKey: Uint8Array): P
     await save(EMPTY);
     return;
   }
-  const config = await loadLockConfig();
+  const config = await current();
   await save({ slots: config.slots.map((slot, j) => (j > space ? unusedSlot(config.iter) : slot)), direct: space, iter: config.iter });
 }

@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { decryptText, encryptText, fromBase64, randomBytes, setPbkdf2, toBase64, toHex, webCryptoPbkdf2 } from '../lib/crypto';
+import { decryptText, encryptText, fromBase64, randomBytes, setHardCost, setPbkdf2, toBase64, toHex, webCryptoPbkdf2 } from '../lib/crypto';
 import {
   BiometricError,
   biometricOn,
@@ -18,6 +18,11 @@ import {
 import { loadLockConfig, removePasswordLock, setLockPassword, unlock } from '../lock/config';
 import { EMPTY_SPACE, prepareSpaces, saveSpaceData } from '../lock/space-data';
 import { store } from './secure-memory';
+import { useWasmCore } from './wasm-core';
+
+useWasmCore();
+// Argon2id at a small cost, so the many unlocks here run quick; its full cost has its own check.
+setHardCost({ m: 64, t: 1 });
 
 setPbkdf2(webCryptoPbkdf2()!);
 // Each check well after the one before, so the wait after wrong passwords never gets in the way.

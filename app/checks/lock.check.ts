@@ -4,8 +4,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { fromHex, randomBytes, setPbkdf2, toHex, webCryptoPbkdf2 } from '../lib/crypto';
+import { deriveKey, encryptText, fromHex, HARD, hardCost, randomBytes, setHardCost, setPbkdf2, sha256Bytes, toBase64, toHex, webCryptoPbkdf2 } from '../lib/crypto';
+import { setCore } from '../lib/core';
 import {
+  hardenLock,
   isPasswordLocked,
   loadLockConfig,
   lockWithPassword,
@@ -22,6 +24,11 @@ import { EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, prepareSpace
 import { POCKETS } from '../lock/sealed-file';
 import { assertNotLockedOut, FREE_TRIES, LockedOutError, SEARCH_TRIES } from '../lock/tries';
 import { store } from './secure-memory';
+import { useWasmCore } from './wasm-core';
+
+const core = useWasmCore();
+// Argon2id at a small cost, so the many unlocks here run quick; its full cost has its own check.
+setHardCost({ m: 64, t: 1 });
 
 setPbkdf2(webCryptoPbkdf2()!);
 // Every check a couple of hours after the one before, so the wait after wrong passwords never
@@ -39,6 +46,27 @@ const real = randomBytes(32);
 const decoy = randomBytes(32);
 
 const t = (name: string, fn: () => Promise<void>) => test(name, async () => { store.clear(); await fn(); });
+
+// A slot as Erevos sealed it before Argon2id: SHA-256 of PBKDF2's key as its check, and the key
+// sealed with that alone. Without a password, an unused one.
+const oldSlot = async (password: string | null, key = randomBytes(32)) => {
+  const salt = randomBytes(16);
+  const k = password === null ? randomBytes(32) : await deriveKey(password, salt, 200_000);
+  return { salt: toBase64(salt), iter: 200_000, check: toBase64(password === null ? randomBytes(32) : sha256Bytes(k)), key: encryptText(k, toHex(key)) };
+};
+
+// How many times Argon2id runs in `fn`.
+const hardCalls = async (fn: () => Promise<unknown>) => {
+  if (!core) return -1;
+  let calls = 0;
+  setCore({ ...core, hardKey: (...args) => { calls++; return core.hardKey!(...args); } });
+  try {
+    await fn();
+  } finally {
+    setCore(core);
+  }
+  return calls;
+};
 
 t('opens the real space or the second one, each with its key', async () => {
   assert.equal(await opened('x'), null);
@@ -66,12 +94,72 @@ t('stores the same, and takes the same work, with or without a second password',
     const c = await loadLockConfig();
     for (const password of ['real-1111', 'decoy-2222', 'wrong']) {
       derivations = 0;
-      await unlock(c, password);
+      const hard = await hardCalls(() => unlock(c, password));
       assert.equal(derivations, SLOTS, password);
+      if (core) assert.equal(hard, SLOTS, password);
     }
   } finally {
     subtle.deriveBits = deriveBits;
   }
+});
+
+t('a lock from before Argon2id gets it in every slot at once, and opens with the same passwords', async () => {
+  const slots = [await oldSlot('real-1111', real), await oldSlot('decoy-2222', decoy), await oldSlot(null), await oldSlot(null)];
+  store.set('erevos.lock', JSON.stringify({ slots, direct: null, iter: 200_000 }));
+  // As it is, it opens as before.
+  assert.deepEqual(await opened('real-1111'), { space: 0, key: toHex(real) });
+  await hardenLock();
+  const c = await loadLockConfig();
+  assert.ok(c.slots.every((slot, i) => slot.hard?.m === hardCost().m && slot.hard.t === hardCost().t && slot.check !== slots[i].check), 'every slot, used or not');
+  assert.deepEqual(await opened('real-1111'), { space: 0, key: toHex(real) });
+  assert.deepEqual(await opened('decoy-2222'), { space: 1, key: toHex(decoy) });
+  assert.equal(await opened('wrong'), null);
+  // Done once: nothing changes the second time.
+  const after = store.get('erevos.lock');
+  if (core) assert.equal(await hardCalls(() => hardenLock()), 0);
+  assert.equal(store.get('erevos.lock'), after);
+  // It looks as a lock sealed today does, with or without the second password.
+  const hardened = shape();
+  store.clear();
+  await setLockPassword(0, 'real-1111', real);
+  assert.equal(shape(), hardened);
+});
+
+t('passwords are sealed with Argon2id at its full cost', async () => {
+  setHardCost(null);
+  try {
+    await setLockPassword(0, 'real-1111', real);
+    assert.ok((await loadLockConfig()).slots.every((slot) => slot.hard?.m === 32 * 1024 && slot.hard.t === 3 && HARD.m === 32 * 1024));
+    assert.deepEqual(await opened('real-1111'), { space: 0, key: toHex(real) });
+    assert.equal(await opened('wrong'), null);
+  } finally {
+    setHardCost({ m: 64, t: 1 });
+  }
+});
+
+t('what changes the lock waits for every slot to get Argon2id, and leaves none without it', async () => {
+  store.set('erevos.lock', JSON.stringify({ slots: [await oldSlot('real-1111', real), await oldSlot(null), await oldSlot(null), await oldSlot(null)], direct: null, iter: 200_000 }));
+  await setLockPassword(1, 'decoy-2222', decoy);
+  assert.ok((await loadLockConfig()).slots.every((slot) => slot.hard));
+  assert.deepEqual(await opened('real-1111'), { space: 0, key: toHex(real) });
+  assert.deepEqual(await opened('decoy-2222'), { space: 1, key: toHex(decoy) });
+});
+
+t('hidden chats from before Argon2id get it in every place of every space, and open with the same PIN', async () => {
+  await setLockPassword(0, 'real-1111', real);
+  const key = randomBytes(32);
+  const before = await Promise.all(Array.from({ length: SLOTS }, (_, space) => oldSlot(space === 0 ? 'pin-1111' : null, key)));
+  store.set('erevos.hidden-lock.1', JSON.stringify(before));
+  for (const name of ['erevos.hidden-lock', 'erevos.hidden-lock.2', 'erevos.hidden-lock.3']) {
+    store.set(name, JSON.stringify(await Promise.all(Array.from({ length: SLOTS }, () => oldSlot(null)))));
+  }
+  assert.deepEqual(await searchHidden(0, 'pin-1111'), { key, pocket: 1 });
+  assert.equal(await searchHidden(1, 'pin-1111'), null);
+  for (const name of ['erevos.hidden-lock', 'erevos.hidden-lock.1', 'erevos.hidden-lock.2', 'erevos.hidden-lock.3']) {
+    const values = JSON.parse(store.get(name)!) as { hard?: { m: number } }[];
+    assert.ok(values.length >= SLOTS && values.every((value) => value.hard?.m === hardCost().m), name);
+  }
+  assert.deepEqual(await openHidden(0, 'pin-1111'), { key, pocket: 1 });
 });
 
 t('refuses a password another space already uses', async () => {
@@ -265,8 +353,9 @@ t('hidden chats look the same, set or not, and take the same work to try', async
     // Every place is tried, whichever opens.
     for (const [space, password] of [[0, 'secret-0'], [0, 'wrong'], [2, 'wrong']] as const) {
       derivations = 0;
-      await openHidden(space, password);
+      const hard = await hardCalls(() => openHidden(space, password));
       assert.equal(derivations, POCKETS, `${space} ${password}`);
+      if (core) assert.equal(hard, POCKETS, `${space} ${password}`);
     }
   } finally {
     subtle.deriveBits = deriveBits;

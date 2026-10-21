@@ -1,3 +1,4 @@
+import { setHardKey } from './crypto';
 import { t } from './i18n';
 // The Erevos core (Rust, crates/erevos-ffi): PQXDH to start a conversation and the double ratchet
 // for every message after it. The app plugs in the core at startup: the Android module
@@ -26,6 +27,9 @@ export interface Core {
   relaySeal?(relayKey: Uint8Array, senderId: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   sealPublic?(secret: Uint8Array): Promise<Uint8Array>;
   sealOpen?(secret: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
+  /** Argon2id for keys from passwords (lib/crypto.ts hardKey); `cost` is the memory in KiB and the
+   *  passes, 4 bytes each, big-endian. Missing in a build made before it. */
+  hardKey?(input: Uint8Array, salt: Uint8Array, cost: Uint8Array): Promise<Uint8Array>;
   /** Group chats (crates/erevos-group): missing in a build made before them. */
   groupNew?(about: Uint8Array): Promise<Uint8Array>;
   groupKeyPackage?(state: Uint8Array): Promise<Uint8Array>;
@@ -63,6 +67,18 @@ let core: Core | null = null;
 
 export function setCore(next: Core | null): void {
   core = next;
+  const hardKey = next?.hardKey?.bind(next);
+  setHardKey(
+    hardKey
+      ? (input, salt, { m, t }) => {
+          const cost = new Uint8Array(8);
+          const view = new DataView(cost.buffer);
+          view.setUint32(0, m);
+          view.setUint32(4, t);
+          return hardKey(input, salt, cost);
+        }
+      : null,
+  );
 }
 
 /** Whether this build has the core, and so can encrypt. */

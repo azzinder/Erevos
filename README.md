@@ -137,7 +137,10 @@ cryptography. Do not rely on it to protect anyone yet.
 - Each space has its own random key, which seals everything it keeps. Behind a password, the key is
   kept only sealed by it. A space without a password lock keeps its key in the OS keystore, so
   whoever can read the keystore can open it. Passwords and PINs are stretched with PBKDF2-SHA256,
-  200,000 rounds. Passwords and PINs need at least 4 characters; backup passwords need at least 12.
+  200,000 rounds, and then Argon2id (32 MiB, 3 passes), so every guess costs memory as well as time;
+  backups the same. Slots and automatic backups from before Argon2id get it at the next start or
+  backup, without the password. Passwords and PINs need at least 4 characters; backup passwords
+  need at least 12.
   Wrong passwords make the next try wait, but that does not slow down someone who has copied the
   stored data: see [docs/threat-model.md](docs/threat-model.md).
 - The lock keeps at least four password slots, and every space keeps a slot for each of its four

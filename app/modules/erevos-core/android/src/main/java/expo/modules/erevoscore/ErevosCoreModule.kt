@@ -38,6 +38,7 @@ class ErevosCoreModule : Module() {
     }
     AsyncFunction("sealPublic") { secret: ByteArray -> ErevosCoreNative.sealPublic(secret) }
     AsyncFunction("sealOpen") { secret: ByteArray, sealed: ByteArray -> ErevosCoreNative.sealOpen(secret, sealed) }
+    AsyncFunction("hardKey") { input: ByteArray, salt: ByteArray, cost: ByteArray -> ErevosCoreNative.hardKey(input, salt, cost) }
     // Group chats (crates/erevos-group).
     AsyncFunction("groupNew") { about: ByteArray -> ErevosCoreNative.groupNew(about) }
     AsyncFunction("groupKeyPackage") { state: ByteArray -> ErevosCoreNative.groupKeyPackage(state) }
@@ -125,6 +126,7 @@ internal object ErevosCoreNative {
   @JvmStatic external fun relaySeal(relayKey: ByteArray, senderId: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun sealPublic(secret: ByteArray): ByteArray
   @JvmStatic external fun sealOpen(secret: ByteArray, sealed: ByteArray): ByteArray
+  @JvmStatic external fun hardKey(input: ByteArray, salt: ByteArray, cost: ByteArray): ByteArray
   @JvmStatic external fun groupNew(about: ByteArray): ByteArray
   @JvmStatic external fun groupKeyPackage(state: ByteArray): ByteArray
   @JvmStatic external fun groupSetAbout(state: ByteArray, about: ByteArray): ByteArray

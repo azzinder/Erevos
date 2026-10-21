@@ -4,9 +4,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { encryptBytes, randomBytes, setPbkdf2, toHex, utf8Encode, webCryptoPbkdf2 } from '../lib/crypto';
+import { encryptBytes, HARD, hardCost, randomBytes, setHardCost, setPbkdf2, toHex, utf8Encode, webCryptoPbkdf2 } from '../lib/crypto';
 import { SmsLink } from '../lib/sms-link';
-import { backupKey, backupName, backupPhoneSms, makeBackup, NotABackupError, openBackup, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
+import { backupKey, backupName, backupPhoneSms, hardBackupKey, makeBackup, newBackupHard, NotABackupError, openBackup, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
 import { loadLockConfig, setLockPassword, unlock } from '../lock/config';
 import { History, newTag } from '../lock/history';
 import { openHidden, prepareHidden, setHiddenPassword } from '../lock/hidden';
@@ -16,6 +16,11 @@ import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { lastRestore } from '../lock/restored';
 import { blobs, files } from './files-memory';
 import { store } from './secure-memory';
+import { useWasmCore } from './wasm-core';
+
+useWasmCore();
+// Argon2id at a small cost, so the many unlocks here run quick; its full cost has its own check.
+setHardCost({ m: 64, t: 1 });
 
 setPbkdf2(webCryptoPbkdf2()!);
 
@@ -83,7 +88,7 @@ t('shows nothing of what it holds, and leaves out the wrong tries and its own se
   store.set('erevos.backup-auto', '{}');
   const file = await makeBackup(await backupKey('backup-pass'));
   const text = Buffer.from(file).toString('latin1');
-  assert.ok(text.startsWith('EREVOS BACKUP 1\n'));
+  assert.ok(text.startsWith('EREVOS BACKUP 2\n'));
   assert.doesNotMatch(text, /erevos\.|relay\.example|γεια/);
 
   const { entries } = await openBackup(file, 'backup-pass');
@@ -104,7 +109,8 @@ t('a wrong password or another file opens nothing', async () => {
 });
 
 t('leaves out what is not Erevos’s own, as a newer Erevos may hold, and opens nothing damaged', async () => {
-  const { key, salt, iter } = await backupKey('backup-pass');
+  // In the shape of a backup from before Argon2id, which still opens.
+  const { key, salt, iter } = await backupKey('backup-pass', undefined, undefined, null);
   // A file sealed right, holding these entries.
   const entry = (kind: number, name: string, data: string) => {
     const n = utf8Encode(name);
@@ -140,6 +146,25 @@ t('leaves out what is not Erevos’s own, as a newer Erevos may hold, and opens 
   await assert.rejects(openBackup(forged([lock], randomBytes(32)), 'backup-pass'), WrongBackupPasswordError);
   await assert.rejects(openBackup(forged([entry(9, 'erevos-from-later', 'x')]), 'backup-pass'), NotABackupError);
   await assert.rejects(openBackup(new Uint8Array(0), 'backup-pass'), NotABackupError);
+});
+
+t('a backup costs Argon2id to open, and a key kept from before it gets it without the password', async () => {
+  await phone();
+  const kept = await backupKey('backup-pass', undefined, undefined, null);
+  setHardCost(null);
+  const hard = newBackupHard();
+  setHardCost({ m: 64, t: 1 });
+  assert.deepEqual([hard.m, hard.t, hardCost().m], [HARD.m, HARD.t, 64]);
+  // What automatic backups do with the key they kept (lib/backup-folder.ts).
+  const file = await makeBackup({ ...kept, key: await hardBackupKey(kept.key, hard), hard });
+  assert.ok((await openBackup(file, 'backup-pass')).entries.some((entry) => entry.name === 'erevos.lock'));
+  await assert.rejects(openBackup(file, 'wrong'), WrongBackupPasswordError);
+  // Without Argon2id, none is made.
+  await assert.rejects(makeBackup(kept));
+  // A cost no Erevos makes is not a backup.
+  const costly = file.slice();
+  new DataView(costly.buffer).setUint32(16 + 16 + 4 + 16, 1024 * 1024);
+  await assert.rejects(openBackup(costly, 'backup-pass'), NotABackupError);
 });
 
 t('names backups by the date and time they were made', () => {

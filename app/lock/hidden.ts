@@ -1,7 +1,7 @@
-import { isSlot, ITER, loadLockConfig, SamePasswordError, sealSlot, trySlot, unusedSlot, type Slot } from './config';
+import { hardenSlot, isSlot, ITER, loadLockConfig, SamePasswordError, sealSlot, trySlot, unusedSlot, type Slot } from './config';
 import { prepareWatchEntries, unwatchPocket } from './hidden-watch';
 import { currentSpace, newSpaceKey } from './keys';
-import { clearSlot, fillSlots, getSlot, setSlot, SLOTS, type SlotStore } from './slots';
+import { changeSlots, clearSlot, fillSlots, getSlot, setSlot, SLOTS, type SlotStore } from './slots';
 import { POCKETS } from './sealed-file';
 import { EMPTY_SPACE, prepareHiddenEntries, saveHiddenData } from './space-data';
 import { assertNotLockedOut, LockedOutError, prepareTries, recordRightPassword, recordWrongPassword, SEARCH_TRIES } from './tries';
@@ -20,6 +20,9 @@ import { assertNotLockedOut, LockedOutError, prepareTries, recordRightPassword, 
 // They open with their PIN in the home screen's search (searchHidden), and a chat of the space
 // can move into them (lock/move-chat.ts).
 //
+// A PIN's slot is a password slot, with Argon2id (config.ts): one from before it gets it, as
+// every pocket's of every space does at once, before any PIN is tried or set (hardenPockets).
+//
 // Hidden chats have their own relay queue. While they are closed nothing reads it, and messages to
 // them wait on the relay, so they never show among the other chats. Those that ask for it say
 // that a message came, from the queue kept with their space (hidden-watch.ts).
@@ -33,9 +36,22 @@ const stores: SlotStore<Slot>[] = Array.from({ length: POCKETS }, (_, pocket) =>
   valid: isSlot,
 }));
 
+let hardening: Promise<void> | null = null;
+
+// Gives every pocket's slot from before Argon2id the one it becomes, in every space.
+function hardenPockets(): Promise<void> {
+  hardening ??= (async () => {
+    for (const store of stores) await changeSlots(store, hardenSlot);
+  })().finally(() => {
+    hardening = null;
+  });
+  return hardening;
+}
+
 /** Every space up to `count` (and SLOTS) has a slot and an entry for each pocket, used or not. */
 export async function prepareHidden(count = SLOTS): Promise<void> {
   for (const store of stores) await fillSlots(store, count);
+  await hardenPockets();
   await prepareHiddenEntries(count);
   await prepareWatchEntries(count);
   await prepareTries();
@@ -43,6 +59,7 @@ export async function prepareHidden(count = SLOTS): Promise<void> {
 
 /** Tries `password` on every pocket of the space, all of them every time, so it takes as long whatever opens. */
 async function tryPockets(space: number, password: string): Promise<HiddenPlace | null> {
+  await hardenPockets();
   let found: HiddenPlace | null = null;
   for (let pocket = 0; pocket < POCKETS; pocket++) {
     const key = await trySlot(await getSlot(stores[pocket], space), password);
@@ -115,6 +132,7 @@ function openSpace(space: number): Uint8Array | null {
 
 /** Makes the hidden chats in a space's `pocket` stop opening. They stay on the phone, and nothing opens them. */
 export async function removeHiddenPassword(space: number, pocket: number): Promise<void> {
+  await hardenPockets();
   await clearSlot(stores[pocket], space);
   const open = openSpace(space);
   if (open) await unwatchPocket(space, open, pocket, null).catch(() => undefined);

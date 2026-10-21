@@ -190,6 +190,29 @@ pub fn seal_open(secret: &[u8], sealed: &[u8]) -> Result<Vec<u8>> {
     Ok([sender.as_slice(), &message].concat())
 }
 
+/// The most memory and passes `hard_key` takes, so a file that names its own
+/// cost (a backup) cannot make the phone run out of memory or time.
+const HARD_MOST_KIB: u32 = 256 * 1024;
+const HARD_MOST_PASSES: u32 = 16;
+
+/// Argon2id (one lane, 32 bytes) of `input` with `salt`, for the keys that
+/// come from passwords and PINs (app/lib/crypto.ts). `cost` is the memory in
+/// KiB and the passes, each 4 bytes big-endian.
+pub fn hard_key(input: &[u8], salt: &[u8], cost: &[u8]) -> Result<Vec<u8>> {
+    let cost = <[u8; 8]>::try_from(cost).map_err(|_| "a cost is 8 bytes".to_string())?;
+    let memory = u32::from_be_bytes([cost[0], cost[1], cost[2], cost[3]]);
+    let passes = u32::from_be_bytes([cost[4], cost[5], cost[6], cost[7]]);
+    if memory > HARD_MOST_KIB || passes > HARD_MOST_PASSES {
+        return Err("that cost is more than Erevos takes".to_string());
+    }
+    let params = argon2::Params::new(memory, passes, 1, Some(32)).map_err(|e| e.to_string())?;
+    let mut out = vec![0u8; 32];
+    argon2::Argon2::new(argon2::Algorithm::Argon2id, argon2::Version::V0x13, params)
+        .hash_password_into(input, salt, &mut out)
+        .map_err(|e| e.to_string())?;
+    Ok(out)
+}
+
 /// Relay requests through Tor (erevos_tor), with byte arrays in and out as
 /// the JNI calls take them: paths and addresses are UTF-8, a connection's
 /// handle is 8 bytes, big-endian. Bridges come one per line, and the
@@ -467,6 +490,22 @@ mod tests {
             rest = &rest[4 + len..];
         }
         out
+    }
+
+    #[test]
+    fn hard_keys_are_argon2id() {
+        let cost = |m: u32, t: u32| [m.to_be_bytes(), t.to_be_bytes()].concat();
+        // The same as @noble/hashes gives, which the app falls back on without the core.
+        let key = hard_key(&[1; 32], &[2; 16], &cost(32, 3)).unwrap();
+        let hex: String = key.iter().map(|b| format!("{b:02x}")).collect();
+        assert_eq!(hex, "30e0b44b7e23423b7282859ea36f02825b5828dde3c25f124d59d42d7235e132");
+        assert_eq!(key, hard_key(&[1; 32], &[2; 16], &cost(32, 3)).unwrap());
+        assert_ne!(key, hard_key(&[1; 32], &[3; 16], &cost(32, 3)).unwrap());
+        assert_ne!(key, hard_key(&[1; 32], &[2; 16], &cost(64, 3)).unwrap());
+        assert!(hard_key(&[1; 32], &[2; 16], &cost(256 * 1024 + 1, 1)).is_err());
+        assert!(hard_key(&[1; 32], &[2; 16], &cost(64, 17)).is_err());
+        assert!(hard_key(&[1; 32], &[2; 16], &[0; 7]).is_err());
+        assert!(hard_key(&[1; 32], &[2; 4], &cost(64, 1)).is_err());
     }
 
     #[test]

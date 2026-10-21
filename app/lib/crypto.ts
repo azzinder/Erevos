@@ -1,8 +1,10 @@
 // Encryption helpers for what the app keeps on the phone: AES-256-GCM with keys derived from a
-// password by PBKDF2-SHA256, the same as in LPHL FASOULI. Pure JavaScript (the audited @noble
-// libraries), so it runs the same on Android, iOS, web and under plain Node for checks. The app
-// plugs in native randomness, a native PBKDF2 and a native AES-GCM at startup (crypto-setup).
+// password by PBKDF2-SHA256, the same as in LPHL FASOULI, and then Argon2id. Pure JavaScript (the
+// audited @noble libraries), so it runs the same on Android, iOS, web and under plain Node for
+// checks. The app plugs in native randomness, a native PBKDF2 and a native AES-GCM at startup
+// (crypto-setup), and the Erevos core's Argon2id once the core is in (lib/core.ts).
 import { gcm } from '@noble/ciphers/aes.js';
+import { argon2idAsync } from '@noble/hashes/argon2.js';
 import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { t } from './i18n';
@@ -141,6 +143,47 @@ export function webCryptoPbkdf2(): Pbkdf2 | null {
 /** PBKDF2-HMAC-SHA256, 32-byte key. */
 export async function deriveKey(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
   return pbkdf2(utf8Encode(password), salt, iterations, 32);
+}
+
+/** What Argon2id costs: memory in KiB, and passes. One lane, 32 bytes out. */
+export type HardCost = { m: number; t: number };
+
+/** The cost of the keys made from passwords and PINs from now on: in the core, about a tenth of
+ *  a second each on a computer. */
+export const HARD: HardCost = { m: 32 * 1024, t: 3 };
+
+let cost = HARD;
+
+/** The cost new keys get: HARD, unless checks asked for less, to run quicker (setHardCost). */
+export const hardCost = (): HardCost => cost;
+
+export function setHardCost(next: HardCost | null): void {
+  cost = next ?? HARD;
+}
+
+/** Whether a cost read from storage or a file is one Erevos takes (as the core does): never so
+ *  much that it runs the phone out of memory or time. */
+export function isHardCost(cost: Partial<HardCost>): cost is HardCost {
+  const { m, t } = cost;
+  return Number.isInteger(m) && Number.isInteger(t) && m! >= 8 && m! <= 256 * 1024 && t! >= 1 && t! <= 16;
+}
+
+export type HardKey = (input: Uint8Array, salt: Uint8Array, cost: HardCost) => Promise<Uint8Array>;
+
+const jsHardKey: HardKey = (input, salt, { m, t }) => argon2idAsync(input, salt, { m, t, p: 1, dkLen: 32, asyncTick: 20 });
+let hard = jsHardKey;
+
+// Argon2id in JavaScript is slow in browsers and far too slow on phones, so the core's takes its
+// place once the core is plugged in; null puts the JavaScript one back.
+export function setHardKey(fn: HardKey | null): void {
+  hard = fn ?? jsHardKey;
+}
+
+/** Argon2id of `input` with `salt`, 32 bytes: what makes each guess at a password cost memory as
+ *  well as time. */
+export async function hardKey(input: Uint8Array, salt: Uint8Array, cost: HardCost): Promise<Uint8Array> {
+  if (!isHardCost(cost)) throw new Error('that cost is more than Erevos takes');
+  return hard(input, salt, cost);
 }
 
 /** AES-256-GCM: `seal` gives what was sealed with the 16-byte tag after it, `open` throws when the tag is wrong. */

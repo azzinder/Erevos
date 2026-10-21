@@ -60,6 +60,15 @@ export async function clearSlot<T>(store: SlotStore<T>, index: number): Promise<
   await setSlot(store, index, store.fake());
 }
 
+/** Puts every value through `change`, one after another, and keeps them all in one write if any
+ *  came back different. */
+export async function changeSlots<T>(store: SlotStore<T>, change: (value: T) => Promise<T>): Promise<void> {
+  const values = await load(store);
+  const next: T[] = [];
+  for (const value of values) next.push(await change(value));
+  if (next.some((value, i) => value !== values[i])) await secureSet(store.key, JSON.stringify(next));
+}
+
 /** Makes sure the entry holds at least `count` values (and SLOTS). */
 export async function fillSlots<T>(store: SlotStore<T>, count: number): Promise<void> {
   const values = await load(store);

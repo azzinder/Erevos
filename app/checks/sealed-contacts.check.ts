@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { EMPTY_FIELDS, type Fields } from '../lib/contacts';
-import { randomBytes, setPbkdf2, webCryptoPbkdf2 } from '../lib/crypto';
+import { randomBytes, setHardCost, setPbkdf2, webCryptoPbkdf2 } from '../lib/crypto';
 import { setOpenHiddenPlace } from '../lib/hidden-contacts';
 import { linkPhoneContact, linkSealed, loadPlace, placeOf, removeSealed, saveSealed, sealedNames, setSealedPhoto, spacePlace, starSealed } from '../lib/sealed-contacts';
 import { loadPhoto } from '../lock/avatar-photos';
@@ -15,6 +15,11 @@ import { FILE, loadContactsData } from '../lock/contacts-data';
 import { setCurrentSpace } from '../lock/keys';
 import { blobs, files } from './files-memory';
 import { store } from './secure-memory';
+import { useWasmCore } from './wasm-core';
+
+useWasmCore();
+// Argon2id at a small cost, so the many unlocks here run quick; its full cost has its own check.
+setHardCost({ m: 64, t: 1 });
 
 setPbkdf2(webCryptoPbkdf2()!);
 

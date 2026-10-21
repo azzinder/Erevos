@@ -83,6 +83,11 @@ pub fn relay_seal(relay_key: &[u8], sender_id: &[u8], message: &[u8]) -> Result<
     js(crate::relay_seal(relay_key, sender_id, message))
 }
 
+#[wasm_bindgen(js_name = hardKey)]
+pub fn hard_key(input: &[u8], salt: &[u8], cost: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::hard_key(input, salt, cost))
+}
+
 #[wasm_bindgen(js_name = sealPublic)]
 pub fn seal_public(secret: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::seal_public(secret))

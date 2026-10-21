@@ -1,8 +1,8 @@
-import { makeBackup, type BackupKey } from '../lock/backup';
+import { hardBackupKey, makeBackup, newBackupHard, type BackupKey } from '../lock/backup';
 
 import { writeBackup } from './backup-place';
 import { phoneSmsForBackup } from './backup-sms';
-import { fromBase64, toBase64 } from './crypto';
+import { fromBase64, isHardCost, toBase64, type HardCost } from './crypto';
 import { secureDelete, secureGet, secureSet } from './secure';
 
 export { CAN_AUTO_BACKUP, CAN_BACK_UP, folderLabel, pickFolder, writeBackup } from './backup-place';
@@ -14,10 +14,26 @@ export { CAN_AUTO_BACKUP, CAN_BACK_UP, folderLabel, pickFolder, writeBackup } fr
 // into the folder chosen, which keeps the KEEP newest. Their settings are kept in the keystore
 // entry AUTO, outside every space and out of backups, with the key their password gives, so
 // they need no password each time. Whichever space opens, the setting is the same, and the
-// backups are of all of them.
+// backups are of all of them. Settings from before Argon2id kept PBKDF2's key: the next automatic
+// backup gives it Argon2id (lock/backup.ts), without the password, and keeps that key instead.
 
-/** How automatic backups are made. `every` is days, 0 when off; `last` milliseconds, 0 if never. */
-export type AutoBackup = { every: number; folder: string; key: string; salt: string; iter: number; last: number; error: string };
+/** How automatic backups are made. `every` is days, 0 when off; `last` milliseconds, 0 if never.
+ *  `hard` is Argon2id's salt and cost, null in settings from before it. */
+export type AutoBackup = {
+  every: number;
+  folder: string;
+  key: string;
+  salt: string;
+  iter: number;
+  hard: (HardCost & { salt: string }) | null;
+  last: number;
+  error: string;
+};
+
+const hardOf = (value: unknown): AutoBackup['hard'] =>
+  !!value && typeof (value as { salt?: unknown }).salt === 'string' && isHardCost(value as Partial<HardCost>)
+    ? (value as NonNullable<AutoBackup['hard']>)
+    : null;
 
 const AUTO = 'erevos.backup-auto';
 const DAY = 24 * 3600 * 1000;
@@ -35,6 +51,7 @@ export async function loadAutoBackup(): Promise<AutoBackup | null> {
       key: value.key,
       salt: value.salt,
       iter: typeof value.iter === 'number' ? value.iter : 0,
+      hard: hardOf(value.hard),
       last: typeof value.last === 'number' ? value.last : 0,
       error: typeof value.error === 'string' ? value.error : '',
     };
@@ -47,8 +64,17 @@ export async function loadAutoBackup(): Promise<AutoBackup | null> {
  * Turns automatic backups on, every `every` days into the folder at `folder` (its uri), with the
  * key of their password. Setting them again, with a new password, starts them anew.
  */
-export async function startAutoBackup(every: number, folder: string, { key, salt, iter }: BackupKey): Promise<AutoBackup> {
-  const auto: AutoBackup = { every, folder, key: toBase64(key), salt: toBase64(salt), iter, last: 0, error: '' };
+export async function startAutoBackup(every: number, folder: string, { key, salt, iter, hard }: BackupKey): Promise<AutoBackup> {
+  const auto: AutoBackup = {
+    every,
+    folder,
+    key: toBase64(key),
+    salt: toBase64(salt),
+    iter,
+    hard: hard && { salt: toBase64(hard.salt), m: hard.m, t: hard.t },
+    last: 0,
+    error: '',
+  };
   await secureSet(AUTO, JSON.stringify(auto));
   return auto;
 }
@@ -73,13 +99,21 @@ let running: Promise<AutoBackup | null> | null = null;
  */
 export function runAutoBackup(force = false, now = Date.now()): Promise<AutoBackup | null> {
   running ??= (async () => {
-    const auto = await loadAutoBackup();
+    let auto = await loadAutoBackup();
     if (!auto || !auto.every || (!force && now - auto.last < auto.every * DAY)) return auto;
     let next: AutoBackup;
     try {
+      let hard = auto.hard;
+      if (!hard) {
+        const fresh = newBackupHard();
+        hard = { salt: toBase64(fresh.salt), m: fresh.m, t: fresh.t };
+        auto = { ...auto, key: toBase64(await hardBackupKey(fromBase64(auto.key), fresh)), hard };
+        await secureSet(AUTO, JSON.stringify(auto));
+      }
       // With the phone's SMS, when the owner wants them (lib/backup-sms.ts).
       const sms = await phoneSmsForBackup();
-      await writeBackup(auto.folder, await makeBackup({ key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter }, sms), now, KEEP);
+      const key = { key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter, hard: { ...hard, salt: fromBase64(hard.salt) } };
+      await writeBackup(auto.folder, await makeBackup(key, sms), now, KEEP);
       next = { ...auto, last: now, error: '' };
     } catch (error) {
       next = { ...auto, error: errorText(error) };

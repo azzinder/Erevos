@@ -1018,6 +1018,9 @@ chats. There is no button for them anywhere. Each place can hold one chat or sev
   the password that opens Erevos.
 - **Wrong PINs in the search** are counted apart from the lock screen's: after five, searches stop trying for a while,
   silently, and the lock screen never waits because of them.
+- **A PIN keeps out whoever picks up the phone,** not whoever copies what it keeps: with a forensic tool on an
+  unlocked or rooted phone, PINs can be tried with no wait. Each try costs Argon2id (a lot of memory and time), but a
+  PIN of 4 digits is only 10,000 tries. If that is what you fear, use a longer PIN, or a few words.
 - **Discretion:** every space has all 4 places from the start, the unused ones filled with random data that looks
   like used ones, and the search tries every place each time. So nothing shows whether any hidden chats are set, or
   how many.

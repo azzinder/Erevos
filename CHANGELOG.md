@@ -30,6 +30,9 @@ On main, not released yet.
   is open unless turned off, Erevos stays out of screenshots and of the recent-apps preview.
 - Hidden chats' contact names no longer show on the call screen or in call notices.
 - **Backup passwords** need at least 12 characters.
+- **Argon2id** after PBKDF2 for passwords, PINs and backups, so each guess costs memory as well as
+  time. The lock's slots and hidden chats' PINs get it at the next start, without their passwords;
+  automatic backups at their next run. Backups made from now on open only in this version or later.
 - **Stored sizes**: every space's and hidden chats' value in a sealed file is the same size, used or
   not; what is larger goes to pages among the history's.
 - **Messages sealed for the relay**: once each phone has had a message from the other, every
