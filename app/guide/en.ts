@@ -1091,6 +1091,16 @@ chats. There is no button for them anywhere. Each place can hold one chat or sev
   relay; the relay is asked only whether
   something waits, never for the message. Whoever sees the notice and finds nothing new in your chats may guess there
   are more. Backups do not keep it: turn it on again after restoring.
+- **Ring calls when closed** (Android): turned on at the top of a place, below **Say when a message comes**, so that
+  while the place is closed and Erevos is in the background a call from one of its contacts makes the phone ring and
+  show "Incoming call" with no name, as a call from your other chats does. On the ringing screen, tap the small sign,
+  type the PIN and tap **Connect** to answer; a plain **Answer** cannot connect it, and **Decline** stops the ring. The
+  ring lasts about 45 seconds. It needs **Receive and ring** under **In the background** and a relay that waits, and
+  uses a relay queue of its own for each of the 4 places, those not ringing made for nothing on the same relay, the
+  same as the message notice above, so opening the space gives nothing away. The caller only rings a queue there; the
+  call itself waits on the chat's own queue until the PIN opens it. A contact you have deleted can still make it ring,
+  but the call can never connect. A call placed from a linked computer rings only while the hidden chats are open.
+  Backups do not keep it: turn it on again after restoring.
 - **A new PIN for a place** (from Lock, or **New hidden chats**) starts it empty and replaces what was in it. To keep
   them and change only the PIN, open them and use **Change PIN** there. Each PIN must differ from the others and from
   the password that opens Erevos.

@@ -1,6 +1,7 @@
 import { History } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { canRelaySeal, relaySeal } from './core';
+import { randomBytes } from './crypto';
 import { E2E, fromBase64Url } from './e2e';
 import type { Carried } from './nearby';
 import type { Spare } from '../lock/e2e-data';
@@ -122,6 +123,23 @@ export function contactTarget(own: Relay, where: { relay: string; relayKey: stri
 export function markOf(text: string, call?: { kind: string } | null): Mark {
   if (text) return 'message';
   return call?.kind === 'offer' ? 'ring' : 'quiet';
+}
+
+/**
+ * When `identity` said it has a ring queue (lib/e2e.ts ringOf, lock/hidden-ring.ts) and `signal` is
+ * a call offer, sends one ring to it: `length` random bytes, the size of the sealed offer, marked
+ * `ring`. The bytes name nothing and are never opened — the contact's phone drops them when its
+ * hidden chats open — but their arrival rings it while those chats are closed. The ring goes to the
+ * contact's relay, reached through `own` (or its second relay) as a message does. Does nothing when
+ * the signal is not an offer, or the contact said no ring queue. Rejects when the relay did not
+ * take it; the caller lets that pass, as the offer itself still went to the message queue.
+ */
+export async function ringOffer(e2e: E2E, own: Relay, identity: string, signal: { kind: string } | null | undefined, length: number): Promise<void> {
+  if (signal?.kind !== 'offer') return;
+  const ring = e2e.ringOf(identity);
+  if (!ring?.sender) return;
+  const to = contactTarget(own, { relay: ring.relay, relayKey: ring.relayKey });
+  await sendMessage(to, fromHex(ring.sender), randomBytes(length), 'ring');
 }
 
 // The chats that seal what they send a contact for the account's phone, as a linked device's do

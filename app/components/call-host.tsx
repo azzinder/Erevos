@@ -5,6 +5,7 @@ import { callAudio } from '../modules/erevos-call';
 import { currentCall, type Call } from '../lib/call';
 import { callPermissions } from '../lib/call-permissions';
 import { callSignal, closeCall, CONTACT_PREFIX, endCall, onCallChange, shownCall } from '../lib/calls';
+import { takeHiddenAnswer } from '../lib/hidden-ring';
 import { onMessage, setReceiverPace } from '../lib/receiver';
 import { currentGroupCall, type GroupCall } from '../lib/group-call';
 import { closeGroupCall, endGroupCall, groupCallSignal, onGroupCallChange, shownGroupCall } from '../lib/group-calls';
@@ -112,6 +113,12 @@ export function CallHost() {
         known.current = call;
         setSpeaker(call.video);
         if (shown?.place === spaceCalls) void learnSpaceNames().then(() => setShown((n) => n + 1), () => undefined);
+        // A hidden call just opened by its PIN on the ring screen (lib/hidden-ring.ts): the owner
+        // already chose to answer it, so it is answered at once. Never a call of the space's.
+        if (call.state === 'incoming' && shown?.place !== spaceCalls && takeHiddenAnswer()) {
+          callAudio?.stopRinging?.();
+          void callPermissions(call.video).then((granted) => (granted ? (setSpeaker(call.video), callAudio?.start(call.video), call.answer()) : call.decline()));
+        }
       }
       setShown((n) => n + 1);
     };

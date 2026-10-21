@@ -65,6 +65,11 @@ export type Contact = {
   packetKey: string;
   sealTo: string;
   sealsIn: boolean;
+  /** The relay sender id, hex, of a ring queue this contact (a hidden place) said it has, for a
+   *  call to ring them while their hidden chats are closed (lock/hidden-ring.ts). On the same relay
+   *  as their message queue (`relay`/`sender`). Empty when they said none, or an older Erevos that
+   *  says nothing of a ring queue: then a call to them rings only while their chats are open. */
+  ringSender?: string;
   /** Their prekeys as they last gave them inside their conversation (their bundle, base64), when
    *  newer than their link's: what the conversation started next with them starts with. Missing
    *  until they give some. */
@@ -208,6 +213,7 @@ function checkedContact(value: unknown): Contact | null {
     packetKey: isRelayKey(v.packetKey) ? v.packetKey : '',
     sealTo: isRelayKey(v.sealTo) ? v.sealTo : '',
     sealsIn: v.sealsIn === true,
+    ...(isHex(v.ringSender) && v.ringSender.length === 48 ? { ringSender: v.ringSender } : {}),
     ...(isBase64(v.bundle) && v.bundle ? { bundle: v.bundle } : {}),
     ...(isTime(v.bundleSent) ? { bundleSent: v.bundleSent } : {}),
     ...(isBase64(v.renew) && v.renew ? { renew: v.renew } : {}),

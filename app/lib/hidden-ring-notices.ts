@@ -1,0 +1,126 @@
+import { fillRinged, loadRinged } from '../lock/hidden-ring';
+import { currentSpace } from '../lock/keys';
+import { POCKETS } from '../lock/sealed-file';
+import { loadCurrentSpaceData } from '../lock/space-data';
+import { openHiddenPlace, onHiddenPlaceChange } from './hidden-contacts';
+import { hiddenRinging, onHiddenRingingChange } from './hidden-ring';
+import { canWaitAt, fromHex, isQueueNotFound, receiveMessage, waitForMessage, type Relay } from './relay';
+
+// While Erevos is in the background (lib/background.ts), a hidden place that rings (lock/hidden-ring.ts)
+// makes the phone ring when one of its contacts calls, though the place is closed. For every pocket
+// of the open space, the relay is asked to wait until something is in its ring queue; the queues
+// made for nothing are waited on the same way, so the relay and the network see the same for every
+// space, whether or not any place rings. A ring (random bytes, lib/space-chats.ts ringOffer) names
+// nothing and is not opened: its arrival alone means a call rings. `ring` then plays the phone's
+// ringtone and the "Incoming call" notice (lib/background.ts); the call's offer waits on the place's
+// message queue until its PIN opens it (app/chat.tsx). Only one hidden call rings at a time, and
+// none while a call is already in progress. Unlike the message notice this does not pause while the
+// app shows: a hidden call rings on any screen. It is drained as it rings, so the next call rings
+// again, and the pocket is let be while it is open.
+
+// How long one wait at the relay lasts, seconds; the longest pause after a failure or at a relay
+// that cannot wait, milliseconds; and the most pings drained in one go.
+const WAIT_FOR = 60;
+const MOST_PAUSE = 60_000;
+const NO_WAITING = 5 * 60_000;
+const DRAIN = 10;
+
+/** Starts waiting for the open space's hidden rings; `ring(space, pocket)` plays the ring. Returns how to stop. */
+export function startHiddenRinging(ring: (space: number, pocket: number) => void): () => void {
+  let open: { space: number; key: Uint8Array };
+  try {
+    open = currentSpace();
+  } catch {
+    return () => undefined;
+  }
+  const { space, key } = open;
+  let stopped = false;
+  const waits = new Set<AbortController>();
+  const wakers = new Set<() => void>();
+  const wake = () => {
+    const now = [...wakers];
+    wakers.clear();
+    now.forEach((up) => up());
+  };
+  const pause = (ms: number) =>
+    new Promise<void>((done) => {
+      const timer = setTimeout(() => {
+        wakers.delete(up);
+        done();
+      }, ms);
+      const up = () => {
+        clearTimeout(timer);
+        done();
+      };
+      wakers.add(up);
+    });
+
+  // Whether a ring may start now: none is showing, and no call is in progress (hiddenRinging is set
+  // for one already, or the ring screen keeps it while a call takes over).
+  const mayRing = (pocket: number) => !hiddenRinging() && openHiddenPlace()?.pocket !== pocket;
+
+  async function drain(relay: Relay, recipientHex: string) {
+    const recipient = fromHex(recipientHex);
+    for (let i = 0; i < DRAIN; i++) {
+      const bytes = await receiveMessage(relay, recipient).catch(() => null);
+      if (!bytes) break;
+    }
+  }
+
+  async function watch(pocket: number) {
+    let failures = 0;
+    while (!stopped) {
+      if (!mayRing(pocket)) {
+        await pause(MOST_PAUSE);
+        continue;
+      }
+      const kept = (await loadRinged(space, key).catch(() => null))?.[pocket] ?? null;
+      if (!kept) {
+        await pause(MOST_PAUSE);
+        continue;
+      }
+      const relay: Relay = { url: kept.url, token: kept.token || undefined };
+      if (!canWaitAt(relay)) {
+        await pause(NO_WAITING);
+        continue;
+      }
+      const wait = new AbortController();
+      waits.add(wait);
+      try {
+        const came = await waitForMessage(relay, fromHex(kept.recipientHex), WAIT_FOR, wait.signal);
+        failures = 0;
+        if (came && !stopped && mayRing(pocket)) {
+          // Drain the ring before it is answered, so the next call rings again.
+          await drain(relay, kept.recipientHex);
+          ring(space, pocket);
+        }
+      } catch (error) {
+        // A queue the relay no longer has: waited on again, in case it comes back; the place can
+        // turn ringing off and on to make a new one.
+        if (!isQueueNotFound(error)) failures++;
+        await pause(Math.min(MOST_PAUSE, 5_000 * 2 ** failures));
+      } finally {
+        waits.delete(wait);
+      }
+    }
+  }
+
+  // A space with a relay waits on POCKETS ring queues whatever hidden chats it has: those missing are made now.
+  void loadCurrentSpaceData()
+    .then((data) => (data.url.trim() ? fillRinged(space, key, { url: data.url.trim(), token: data.token.trim() || undefined }) : null))
+    .catch(() => undefined)
+    .finally(() => {
+      for (let pocket = 0; pocket < POCKETS; pocket++) if (!stopped) void watch(pocket);
+    });
+
+  // A ring ends (answered, turned down, or timed out) or a place opens: the pockets wait anew.
+  const ended = onHiddenRingingChange(wake);
+  const opened = onHiddenPlaceChange(wake);
+  return () => {
+    stopped = true;
+    ended();
+    opened();
+    waits.forEach((wait) => wait.abort());
+    wake();
+  };
+}

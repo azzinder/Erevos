@@ -133,6 +133,10 @@ type Message = {
   pk?: string;
   /** The sender's newer prekeys, its bundle (base64url), to start the next conversation with. */
   ak?: string;
+  /** The relay sender id (hex) of this chat's ring queue, for a hidden place that rings its
+   *  contacts' calls while it is closed (lock/hidden-ring.ts): empty to say it no longer rings,
+   *  and absent from a chat that does not ring at all. An older Erevos ignores it. */
+  rf?: string;
 };
 
 /** What else a message can carry. */
@@ -159,6 +163,9 @@ export type Extra = {
   more?: Carried;
   /** Gives them this chat's newest prekeys (`keysDue`), in a message with nothing else to show. */
   keys?: boolean;
+  /** Says this chat's ring queue sender id (hex), or '' that it no longer rings (lock/hidden-ring.ts):
+   *  a hidden place sends it so contacts can ring it while it is closed. Absent says nothing of one. */
+  rf?: string;
 };
 
 /** Where a chat's own queue is: its relay and that relay's key for sealed sends (base64url). */
@@ -188,7 +195,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -214,6 +221,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(react ? { react } : {}),
       ...(pk ? { pk } : {}),
       ...(ak ? { ak } : {}),
+      ...(rf !== undefined ? { rf } : {}),
       ...more,
     }),
   );
@@ -222,6 +230,12 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
 /** Where a message from a contact says their queues are: the backup one goes, or changes, with it. */
 function placeOf(message: Message): Pick<Contact, 'relay' | 'relayKey' | 'spare'> {
   return { ...whereOf(message), spare: message.spare ?? null };
+}
+
+/** The ring queue sender id a message leaves a contact with: what it says (a sender id, or none for
+ *  ''), or what was kept when it says nothing of one (`rf` absent). */
+function ringSenderOf(message: Message, known: Contact | undefined): string | undefined {
+  return message.rf === undefined ? known?.ringSender : message.rf || undefined;
 }
 
 /** Where a link or a message says a queue is. A queue said without a relay is on the same relay. */
@@ -277,6 +291,8 @@ function decodeMessage(bytes: Uint8Array): Message {
       more: carriedOf(value),
       pk: isRelayKey(value.pk) ? value.pk : '',
       ak: typeof value.ak === 'string' && value.ak.length <= MAX_BUNDLE && /^[A-Za-z0-9_-]+$/.test(value.ak) ? value.ak : '',
+      // Absent (`undefined`) says nothing of a ring queue; present says it, a sender id or '' for none.
+      rf: 'rf' in value ? (typeof value.rf === 'string' && /^[0-9a-f]{48}$/.test(value.rf) ? value.rf : '') : undefined,
     };
   } catch {
     return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null };
@@ -539,6 +555,13 @@ export class E2E {
   queueOf(identity: string): { sender: string; relay: string; relayKey: string; spare: Spare | null } | null {
     const contact = this.find(identity);
     return contact ? { sender: contact.sender, relay: contact.relay, relayKey: contact.relayKey, spare: contact.spare ?? null } : null;
+  }
+
+  /** Where a contact's ring queue is, as they last said (lock/hidden-ring.ts), or null when they
+   *  said none: on the same relay as their message queue, with its own sender id. */
+  ringOf(identity: string): { sender: string; relay: string; relayKey: string } | null {
+    const contact = this.find(identity);
+    return contact?.ringSender ? { sender: contact.ringSender, relay: contact.relay, relayKey: contact.relayKey } : null;
   }
 
   contacts(): ContactInfo[] {
@@ -856,7 +879,7 @@ export class E2E {
     identity: string,
     text: string,
     from: string,
-    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false, due = 0, re = '', react = null, more = {}, keys = false }: Extra = {},
+    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false, due = 0, re = '', react = null, more = {}, keys = false, rf }: Extra = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -890,6 +913,7 @@ export class E2E {
         react: text ? null : react,
         more: toCarry(more, !!text),
         ak: !text && keys && this.keysFor(contact) ? toBase64Url(fromBase64(this.data.prekeys![0].bundle)) : '',
+        rf,
       };
       // Writing, reacting, pinning or calling accepts a request; telling them only what came or was read never does.
       const [packet] = await this.sealFor(contact, [message], !!text || !!message.react || acts(message.more) || signal?.kind === 'offer');
@@ -1145,6 +1169,7 @@ export class E2E {
       sealTo: message.pk || known?.sealTo || '',
       // A new conversation from them: their phone may have lost this chat's key, so it is said again.
       sealsIn: false,
+      ...(ringSenderOf(message, known) ? { ringSender: ringSenderOf(message, known) } : {}),
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
     this.link?.opened(identity, opened.plaintext);
@@ -1229,6 +1254,8 @@ export class E2E {
           sealTo: message.pk || contact.sealTo,
           // Sealed: they have this chat's key, which need not be said any more; unsealed: they may not.
           sealsIn: sealed ?? contact.sealsIn,
+          // A ring queue they said: set it, or '' clears it (they no longer ring); absent keeps it.
+          ringSender: message.rf === undefined ? contact.ringSender : message.rf || undefined,
         };
         await this.save(this.withContact({ ...updated, ...(given ? null : await this.startedAgain(updated, message)) }));
         if (!given) this.link?.opened(contact.identity, opened.plaintext);

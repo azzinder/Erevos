@@ -32,6 +32,11 @@ export type SpaceData = {
   via: string;
   viaToken: string;
   ownQueue: Queue | null;
+  // A hidden place's second relay queue, used only for call rings while it is closed
+  // (lock/hidden-ring.ts), on the same relay as ownQueue. Null when the place does not ring, and in
+  // the space's own data, which never rings. Only this pocket knows which of its space's ring
+  // queues is its own.
+  ringQueue: Queue | null;
   routes: Record<string, string>;
   // Null until the look is changed in this space: it then takes the look last used. Hidden chats
   // keep none, as they show in the look of their space.
@@ -63,6 +68,7 @@ export const EMPTY_SPACE: SpaceData = {
   via: '',
   viaToken: '',
   ownQueue: null,
+  ringQueue: null,
   routes: {},
   look: null,
   tor: false,
@@ -111,6 +117,10 @@ function checked(value: unknown): SpaceData {
     via: typeof v.via === 'string' ? v.via : '',
     viaToken: typeof v.viaToken === 'string' ? v.viaToken : '',
     ownQueue: q && isHex(q.recipientHex, 48) && isHex(q.senderHex, 48) ? { recipientHex: q.recipientHex, senderHex: q.senderHex } : null,
+    ringQueue: (() => {
+      const r = v.ringQueue as Partial<Queue> | null | undefined;
+      return r && isHex(r.recipientHex, 48) && isHex(r.senderHex, 48) ? { recipientHex: r.recipientHex, senderHex: r.senderHex } : null;
+    })(),
     routes,
     look: v.look ? checkedLook(v.look) : null,
     tor: v.tor === true,

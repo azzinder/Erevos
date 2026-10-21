@@ -25,7 +25,7 @@ import { Links } from '../lib/devices';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { Groups, type GroupTransport } from '../lib/groups';
 import { carryTo, createQueue, fromHex, receiveMessage, relayKey, sendMessage, toHex, type Mark, type Relay } from '../lib/relay';
-import { carriedFor, markOf, sendSealed, sentMark, type SpaceChats } from '../lib/space-chats';
+import { carriedFor, markOf, ringOffer, sendSealed, sentMark, type SpaceChats } from '../lib/space-chats';
 import { spaceGroupTransport } from '../lib/space-groups';
 import { VoiceAssembler } from '../lib/voice';
 import { holdLater, sendWaiting, type SendPlace } from '../lib/waiting';
@@ -239,6 +239,47 @@ test('a text and the first packet of its conversation count once; what is said o
   assert.deepEqual(counted(alice.queue.senderHex), { messages: 1, unsure: false });
   assert.deepEqual(marks(alice.queue.senderHex).slice(-1), ['ring']);
   assert.deepEqual((await take(alice)).map((m) => [m.text, m.call?.kind ?? '']), [['hello', ''], ['', 'offer']]);
+});
+
+test('an offer to a contact who advertised a ring queue sends one ring there, of the offer\'s size, and nothing else ever goes there, from a space chat or a hidden one', { skip: !ready }, async () => {
+  // Alice is a hidden place that rings; Bob is her contact. Which chat Bob calls from (a space one
+  // or a hidden one) changes nothing of this: the caller's ringOffer, shared by both paths
+  // (app/chat.tsx and lib/space-calls.ts), is what sends the ring.
+  const alice = await phone();
+  const bob = await phone();
+  const { bobId, aliceId } = await meet(alice, bob);
+  // Before Alice says she has a ring queue, calling her sends no ring anywhere.
+  assert.equal(bob.chats.e2e.ringOf(aliceId), null);
+  seen.length = 0;
+  await ringOffer(bob.chats.e2e, relay, aliceId, call('offer'), 1024);
+  assert.deepEqual(seen, []);
+
+  // Alice's ring queue, on her own message relay, said to Bob through `rf`.
+  const ids = await createQueue(relay);
+  const ringSender = toHex(ids.senderId);
+  await write(alice, bobId, 'ring me', { rf: ringSender });
+  await take(bob);
+  assert.equal(bob.chats.e2e.ringOf(aliceId)?.sender, ringSender);
+
+  // Bob calls Alice: the offer rings her message queue, and ringOffer sends one ring of the same
+  // size to her ring queue. Nothing to the ring queue is opened; it is only drained.
+  seen.length = 0;
+  const offer = await write(bob, aliceId, '', { call: call('offer') });
+  await ringOffer(bob.chats.e2e, relay, aliceId, call('offer'), offer.packet.length);
+  assert.deepEqual(marks(alice.queue.senderHex), ['ring']);
+  assert.deepEqual(marks(ringSender), ['ring']);
+  const rung = await receiveMessage(relay, ids.recipientId);
+  assert.equal(rung?.length, offer.packet.length);
+  assert.equal(await receiveMessage(relay, ids.recipientId), null);
+
+  // A plain message, an answer, and anything that is not an offer send nothing to the ring queue;
+  // only a call's offer does.
+  seen.length = 0;
+  await write(bob, aliceId, 'hello');
+  await ringOffer(bob.chats.e2e, relay, aliceId, undefined, offer.packet.length);
+  await ringOffer(bob.chats.e2e, relay, aliceId, call('answer'), offer.packet.length);
+  await write(bob, aliceId, '', { call: call('answer') });
+  assert.deepEqual(marks(ringSender), []);
 });
 
 test('a voice message in parts counts once, on its last part', { skip: !ready }, async () => {

@@ -1,8 +1,12 @@
 import { AppRegistry, AppState, PermissionsAndroid, Platform } from 'react-native';
 
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
+import { currentCall, RING_MS } from './call';
 import type { Received } from './e2e';
+import { currentGroupCall } from './group-call';
 import { startHiddenNotices } from './hidden-notices';
+import { hiddenRinging, onHiddenRingingChange, setHiddenRinging } from './hidden-ring';
+import { startHiddenRinging } from './hidden-ring-notices';
 import { showsAt } from './later';
 import { appShown, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
@@ -136,10 +140,55 @@ export function startBackground(): () => void {
       hidden = null;
     }
   };
+  // A hidden place that rings its contacts' calls (lib/hidden-ring-notices.ts). On whenever
+  // receiving runs, not with the messages notice: ringing is its own per-place setting. One hidden
+  // call rings at a time, and none while a call is in progress.
+  let ringWatch: (() => void) | null = null;
+  let ringTimer: ReturnType<typeof setTimeout> | null = null;
+  const stopRing = () => {
+    if (ringTimer) {
+      clearTimeout(ringTimer);
+      ringTimer = null;
+    }
+    try {
+      callAudio?.stopRinging?.();
+    } catch {
+      // A build from before ringing: nothing was playing.
+    }
+  };
+  // A ring came for a hidden place: play the phone's ringtone and the "Incoming call" notice over
+  // the lock screen, naming no one, and stop after it has rung a while unanswered (a missed call).
+  const onRing = (space: number, pocket: number) => {
+    if (currentCall() || currentGroupCall() || hiddenRinging()) return;
+    setHiddenRinging({ space, pocket, at: Date.now() });
+    try {
+      callAudio?.ring?.(false, true);
+      callAudio?.showOverLock?.(true);
+    } catch {
+      // As above.
+    }
+    if (ringTimer) clearTimeout(ringTimer);
+    ringTimer = setTimeout(() => setHiddenRinging(null), RING_MS);
+  };
+  // Answered, turned down, or timed out: the ringtone and notice stop (the call, if answered, took
+  // over the sound itself).
+  const ringChange = onHiddenRingingChange(() => {
+    if (!hiddenRinging()) stopRing();
+  });
+  const ringHidden = (on: boolean) => {
+    if (on && !ringWatch) ringWatch = startHiddenRinging(onRing);
+    if (!on && ringWatch) {
+      ringWatch();
+      ringWatch = null;
+      if (hiddenRinging()) setHiddenRinging(null);
+      stopRing();
+    }
+  };
   const stop = () => {
     running = false;
     telling = false;
     tellHidden(false);
+    ringHidden(false);
     callAudio!.stopReceiving!();
     keeping.forEach((done) => done());
     keeping.clear();
@@ -155,6 +204,7 @@ export function startBackground(): () => void {
     if (!notices) clearMessages();
     if (running) {
       tellHidden(notices);
+      ringHidden(true);
       return;
     }
     await askNotices();
@@ -163,6 +213,7 @@ export function startBackground(): () => void {
       callAudio!.startReceiving!();
       running = true;
       tellHidden(notices);
+      ringHidden(true);
     } catch {
       // Android refused (Erevos was already in the background): it rings while it shows.
     }
@@ -184,6 +235,8 @@ export function startBackground(): () => void {
     changes.delete(follow);
     told.forEach((stopTelling) => stopTelling());
     shown.remove();
+    ringChange();
+    ringHidden(false);
     clearMessages();
     if (running) stop();
   };

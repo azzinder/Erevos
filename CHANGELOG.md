@@ -62,6 +62,19 @@ On main, not released yet. The next release is **2.0.0**.
   app's push how many messages came (above). The relay sees these marks on every system,
   notifications on or not: which packets are messages, and when a call starts.
 
+- **Hidden chats can ring their contacts' calls while closed** (**Ring calls when closed**,
+  Android): turned on at the top of a place, a call from one of its contacts then makes the phone
+  ring and show "Incoming call" with no name, as the other chats do, though the place is shut and
+  Erevos is in the background. On the ringing screen a small, discreet sign opens a PIN field; the
+  right PIN opens the place and answers, a plain Answer cannot connect, and Decline stops the ring
+  (about 45 seconds). Like the message notice it needs **Receive and ring** and a relay that waits,
+  and the space keeps a ring queue for each of its 4 places, those not ringing made for nothing on
+  the same relay, so opening the space gives nothing away; the relay is asked only whether a ring
+  waits there, never what, and a caller sends only random bytes of a call's size, never opened. The
+  call's own offer waits on the chat's message queue until the PIN opens it. A contact you deleted
+  can still make it ring but never connect; a call from a linked computer rings only while the
+  hidden chats are open. Backups do not keep it.
+
 - **Newer keys every month**: each chat's account makes new prekeys (X25519 and ML-KEM-768) every
   30 days and gives them to its contacts inside their chats, whose Erevos starts a new conversation
   with them; keys older than the last three are thrown away. So a phone or backup taken later no

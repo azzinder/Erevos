@@ -68,6 +68,7 @@ import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
 import { isWatchedQueue, loadWatched, unwatchPocket, watchPocket } from '../lock/hidden-watch';
+import { isRingedQueue, loadRinged, ringPocket, unringPocket } from '../lock/hidden-ring';
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
 import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
 import { moveChat } from '../lock/move-chat';
@@ -109,7 +110,7 @@ import {
 } from '../lib/relay';
 import { answersAsk, appShown, awayPace, holdReceiver, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
-import { carriedFor, contactTarget, markOf, relayFor, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
+import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
 import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
@@ -466,6 +467,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Whether these hidden chats say a message came while they are closed (lock/hidden-watch.ts).
   const [watched, setWatched] = useState(false);
   const [watchNote, setWatchNote] = useState('');
+  // Whether these hidden chats ring their contacts' calls while closed (lock/hidden-ring.ts), and
+  // their ring queue, kept with the place (its own relay). Only set for hidden chats.
+  const [ringing, setRinging] = useState(false);
+  const [ringQueue, setRingQueue] = useState<Queue | null>(null);
+  const [ringNote, setRingNote] = useState('');
   // Set while a preview is being made, so the words do not go twice.
   const previewing = useRef(false);
   const [directOn, setDirectOn] = useState(true);
@@ -924,9 +930,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setHomeToken(data.spare.token);
         setOwnQueue(data.ownQueue);
         if (hiddenKey) {
+          setRingQueue(data.ringQueue);
           void loadWatched(space, key)
             .then((list) => active && setWatched(isWatchedQueue(list, pocket, data.ownQueue?.recipientHex)))
             .catch(() => undefined);
+          void loadRinged(space, key)
+            .then((list) => active && setRinging(isRingedQueue(list, pocket, data.ringQueue?.recipientHex)))
+            .catch(() => undefined);
+          // A ring that woke the phone waits on the ring queue: drop it, so it does not ring again.
+          const ringQ = data.ringQueue;
+          if (ringQ && data.url.trim()) {
+            void (async () => {
+              const relay: Relay = { url: data.url.trim(), token: data.token.trim() || undefined };
+              const recipient = fromHex(ringQ.recipientHex);
+              for (let i = 0; i < 10 && active; i++) if (!(await receiveMessage(relay, recipient).catch(() => null))) break;
+            })();
+          }
         }
       })
       .catch(() => {
@@ -1870,9 +1889,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // tag, how long it lasts, and how it went.
   async function sendToContact(target: Relay | null, identity: string, text: string, extra: Extra = {}): Promise<{ tag: string; timer: number; way: Delivery }> {
     if (!e2e) throw new Error(t(NO_CORE));
-    const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here() });
+    // A hidden place that rings says its ring queue (lock/hidden-ring.ts); '' tells contacts it no
+    // longer rings. The space's own chats never ring, so they say nothing of one.
+    const rf = hiddenKey ? (ringing && ringQueue ? ringQueue.senderHex : '') : undefined;
+    const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here(), rf });
     // What is only a mark, or asks whether their phone is open, is not worth carrying for days.
     const way = await handOver(e2e, target, identity, sealed, [sealed.packet], markOf(text, extra.call), !!text || !!extra.erase);
+    // A call to a hidden contact that rings: wake it too, so it rings while its hidden chats are closed.
+    if (target && extra.call) void ringOffer(e2e, target, identity, extra.call, sealed.packet.length).catch(() => undefined);
     // Writing, reacting or pinning in a message request accepts it.
     if (text || extra.react || acts(extra.more ?? {})) setContacts(e2e.contacts());
     return { tag: sealed.tag, timer: sealed.timer, way };
@@ -2932,6 +2956,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         const { space, key } = currentSpace();
         await watchPocket(space, key, pocket, { url: target.url, token: target.token ?? '', recipientHex: toHex(ids.recipientId) }).catch(() => setWatched(false));
       }
+      // The ring queue lives on this relay too: a new relay needs a new ring queue.
+      if (hiddenKey && ringing) {
+        const { space, key } = currentSpace();
+        try {
+          const ring = await createQueue(target);
+          const queue = { recipientHex: toHex(ring.recipientId), senderHex: toHex(ring.senderId) };
+          await ringPocket(space, key, pocket, { url: target.url, token: target.token ?? '', recipientHex: queue.recipientHex, senderHex: queue.senderHex });
+          await updateHiddenData(space, pocket, hiddenKey, { ringQueue: queue });
+          setRingQueue(queue);
+        } catch {
+          setRinging(false);
+        }
+      }
     } catch (error) {
       setNote(errorText(error));
     }
@@ -2956,6 +2993,39 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setWatched(on);
     } catch (error) {
       setWatchNote(errorText(error));
+    }
+  }
+
+  // Has these hidden chats ring their contacts' calls while closed, or no longer. On makes a ring
+  // queue on this place's relay (lock/hidden-ring.ts) and says it to contacts; off puts a queue
+  // made for nothing in its place and tells contacts it no longer rings.
+  async function changeRinging(on: boolean) {
+    const { space, key } = currentSpace();
+    const url = typedRelay.shown.trim();
+    const token = typedToken.shown.trim();
+    setRingNote('');
+    try {
+      if (on) {
+        if (!url || !ownQueue) {
+          setRingNote(t('Create the relay queue of these hidden chats first, under Relay and new contacts.'));
+          return;
+        }
+        let queue = ringQueue;
+        if (!queue) {
+          const ids = await createQueue({ url, token: token || undefined });
+          queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+        }
+        await ringPocket(space, key, pocket, { url, token, recipientHex: queue.recipientHex, senderHex: queue.senderHex });
+        await updateHiddenData(space, pocket, hiddenKey!, { ringQueue: queue });
+        setRingQueue(queue);
+      } else {
+        await unringPocket(space, key, pocket, url ? { url, token: token || undefined } : null);
+        await updateHiddenData(space, pocket, hiddenKey!, { ringQueue: null });
+        setRingQueue(null);
+      }
+      setRinging(on);
+    } catch (error) {
+      setRingNote(errorText(error));
     }
   }
 
@@ -3762,6 +3832,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
                 </Text>
                 {watchNote ? <Text variant="caption" tone="muted">{watchNote}</Text> : null}
+                <DetailRow title={t('Ring calls when closed')} checked={ringing} onPress={() => void changeRinging(!ringing)} />
+                <Text variant="caption" tone="muted">
+                  {ringing
+                    ? t('While these hidden chats are closed and Erevos is in the background, a call from one of their contacts makes the phone ring and show "Incoming call" with no name. On the ringing screen, tap the small sign and type the PIN to answer. Whoever holds the phone sees a call that is in none of your chats, and may guess there are more.')
+                    : t('Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.')}
+                </Text>
+                {ringNote ? <Text variant="caption" tone="muted">{ringNote}</Text> : null}
               </>
             ) : null}
             <Row wrap>

@@ -5,6 +5,7 @@ import { AppState, View } from 'react-native';
 
 import { AlertHost } from '../components/alert-host';
 import { CallHost, watchCalls } from '../components/call-host';
+import { HiddenRingHost } from '../components/hidden-ring-screen';
 import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
 import { KeyboardProvider } from '../components/keyboard';
 import { Text } from '../components/ui';
@@ -365,6 +366,7 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
       <OpenLink key={`link-${phase.space}-${lang}`} />
       <Receiver space={phase.space} />
       <CallHost key={`call-${phase.space}`} />
+      <HiddenRingHost key={`ring-${phase.space}`} />
       <AlertHost />
       {bar}
     </LockContext.Provider>
