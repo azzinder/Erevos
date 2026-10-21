@@ -1,4 +1,4 @@
-import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, saveE2EData, type Avatar, type Contact, type E2EData, type Holder, type Spare } from '../lock/e2e-data';
+import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, MAX_SEEN_EACH, saveE2EData, type Avatar, type Contact, type E2EData, type Holder, type Spare } from '../lock/e2e-data';
 
 import { isReactionEmoji, isTag, newTag } from '../lock/history';
 
@@ -687,6 +687,7 @@ export class E2E {
           heldGot: [],
           heldRead: [],
           phone: '',
+          seen: this.find(identity)?.seen ?? [],
         }),
       );
       return { identity, added: true };
@@ -930,8 +931,10 @@ export class E2E {
       return { kind: 'refused', reason: 'unknown' };
     }
     const identity = toHex(await core.conversationPeer(opened.conversation));
-    const message = decodeMessage(opened.plaintext);
     const known = this.find(identity);
+    // The space's list moves on with every new contact: theirs keeps what they sent.
+    if (known?.seen.includes(id)) return { kind: 'refused', reason: 'replay' };
+    const message = decodeMessage(opened.plaintext);
     const timing = timerOf(message, known);
     const contact: Contact = {
       identity,
@@ -951,6 +954,7 @@ export class E2E {
       heldGot: known?.heldGot ?? [],
       heldRead: known?.heldRead ?? [],
       phone: known?.phone ?? '',
+      seen: [...(known?.seen ?? []), id].slice(-MAX_SEEN_EACH),
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
     this.link?.opened(identity, opened.plaintext);

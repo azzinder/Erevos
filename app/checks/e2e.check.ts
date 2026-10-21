@@ -137,6 +137,25 @@ t('a first packet the relay did not take goes again before the next message', as
   assert.deepEqual(await bob.e2e.receive(sealed.first), { kind: 'refused', reason: 'replay' });
 });
 
+t('an old first packet sent again is refused even once the space has seen many others since', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const first = alice.e2e.pending()[0].first;
+  const hello = message(await bob.e2e.receive(first));
+  await alice.e2e.firstSent(identity);
+  // Bob answers, so Alice's chat goes on in that conversation.
+  message(await alice.e2e.receive((await bob.e2e.seal(hello.identity, 'hi', bob.from)).packet));
+  // A hundred new contacts later the space's own list has forgotten it.
+  const kept = await loadE2EData('space', 1, bob.key);
+  await saveE2EData('space', 1, bob.key, { ...kept, seen: [] });
+  const later = await E2E.open('space', 1, bob.key);
+  assert.deepEqual(await later.receive(first), { kind: 'refused', reason: 'replay' });
+  // Bob's next message still goes in the live conversation, which Alice reads.
+  const after = await later.seal(hello.identity, 'still here', bob.from);
+  assert.equal(message(await alice.e2e.receive(after.packet)).text, 'still here');
+});
+
 t('both start a conversation at once and still read each other', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

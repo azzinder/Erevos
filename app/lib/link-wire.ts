@@ -202,7 +202,7 @@ export function changedFields(before: Synced, now: Synced): Partial<Omit<Synced,
  */
 export function mirrorOf(synced: Synced, kept: Contact | undefined, primary: Place, account: string): Contact {
   return {
-    ...(kept ?? { heldGot: [], heldRead: [], phone: '', avatar: null }),
+    ...(kept ?? { heldGot: [], heldRead: [], phone: '', avatar: null, seen: [] }),
     identity: synced.identity,
     sender: primary.sender,
     relay: primary.relay,

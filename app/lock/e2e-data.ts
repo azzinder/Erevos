@@ -54,6 +54,9 @@ export type Contact = {
    *  here from the space (into its hidden chats) keeps the space's, so the safety number stays the
    *  same. Empty for this account's own. */
   ownIdentity: string;
+  /** Ids of the first messages taken from them, the latest MAX_SEEN_EACH: one a relay sends again
+   *  is refused, however many others came since. */
+  seen: string[];
 };
 
 /** A queue on a backup relay: its sender id (hex), the relay, and the relay's key (base64url, or
@@ -125,6 +128,8 @@ export const isRelayKey = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9
 /** The most tags held for a contact, of each kind: the latest are kept. */
 export const MAX_HELD = 200;
 const heldTags = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isTag).slice(-MAX_HELD) : []);
+/** The most first-message ids kept for a contact. */
+export const MAX_SEEN_EACH = 16;
 
 function checkedContact(value: unknown): Contact | null {
   const v = (value ?? {}) as Partial<Record<keyof Contact, unknown>>;
@@ -149,6 +154,7 @@ function checkedContact(value: unknown): Contact | null {
     heldGot: heldTags(v.heldGot),
     heldRead: heldTags(v.heldRead),
     phone: isText(v.phone) && /^\+?\d{3,20}$/.test(v.phone) ? v.phone : '',
+    seen: Array.isArray(v.seen) ? v.seen.filter(isHex).slice(-MAX_SEEN_EACH) : [],
   };
 }
 
