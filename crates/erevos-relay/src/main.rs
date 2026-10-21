@@ -63,10 +63,11 @@
 //! may take together: 1024 MB on disk unless set, 256 MB in memory. Chunks
 //! nobody takes expire like messages.
 //!
-//! Set `EREVOS_RELAY_PUSH_KEY` to a file path to let web apps ask for an
-//! empty push when a message comes (Web Push, see `push.rs`). The key is made
+//! Set `EREVOS_RELAY_PUSH_KEY` to a file path to let web apps ask for a
+//! push when a message comes (Web Push, see `push.rs`). The key is made
 //! there on first start and must be kept; the push addresses are kept beside
-//! it, in `<file>.addresses`. `EREVOS_RELAY_PUSH_SUBJECT` is the `mailto:` or
+//! it, in `<file>.addresses`, and the browsers' keys for them in
+//! `<file>.addresses.keys`. `EREVOS_RELAY_PUSH_SUBJECT` is the `mailto:` or
 //! `https:` address push services may write to about the relay.
 //!
 //! Messages sent for later (see `later.rs`) are kept in the folder

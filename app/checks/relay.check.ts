@@ -25,6 +25,8 @@ import {
   RelayError,
   RelayUnreachableError,
   sendMessage,
+  sendMessageLater,
+  setPush,
   waitForMessage,
   type Relay,
 } from '../lib/relay';
@@ -47,8 +49,8 @@ const relays: ChildProcess[] = [];
 const dir = mkdtempSync(join(tmpdir(), 'erevos-relay-check-'));
 
 /** Starts a relay and returns its WebSocket address once it answers. With `key`, it has a key
- *  for sealed sends and a call relay beside it. Both forward to each other on 127.0.0.1, which a
- *  relay does only when allowed private peers. */
+ *  for sealed sends, a call relay beside it, and a key for Web Push. Both forward to each other on
+ *  127.0.0.1, which a relay does only when allowed private peers. */
 async function startRelay(key: boolean): Promise<string> {
   const [tcp, ws] = [await freePort(), await freePort()];
   const env = {
@@ -56,6 +58,7 @@ async function startRelay(key: boolean): Promise<string> {
     EREVOS_RELAY_KEY: key ? join(dir, `key-${ws}`) : '',
     EREVOS_TURN_URLS: key ? 'turn:127.0.0.1:3478,turn:127.0.0.1:3478?transport=tcp' : '',
     EREVOS_TURN_SECRET: key ? 'secret' : '',
+    EREVOS_RELAY_PUSH_KEY: key ? join(dir, `push-${ws}`) : '',
     EREVOS_RELAY_PRIVATE_PEERS: 'allow',
   };
   const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
@@ -96,6 +99,47 @@ test('a message sent through a second relay reaches the queue', { skip: !ready }
   await sendMessage({ url: far, via: { url: near } }, ids.senderId, Uint8Array.of(1, 2, 3));
   assert.deepEqual(await receiveMessage(own, ids.recipientId), Uint8Array.of(1, 2, 3));
   assert.equal(await receiveMessage(own, ids.recipientId), null);
+});
+
+test('a send that says what it carries reaches the queue as any, now, through a second relay, or held for later', { skip: !ready }, async () => {
+  const own: Relay = { url: far };
+  const ids = await createQueue(own);
+  await sendMessage(own, ids.senderId, Uint8Array.of(1), 'message');
+  await sendMessage(own, ids.senderId, Uint8Array.of(2), 'quiet');
+  await sendMessage({ url: far, via: { url: near } }, ids.senderId, Uint8Array.of(3), 'message');
+  for (const n of [1, 2, 3]) assert.deepEqual(await receiveMessage(own, ids.recipientId), Uint8Array.of(n));
+  await sendMessageLater(own, ids.senderId, [Uint8Array.of(4), Uint8Array.of(5)], Date.now() + 1000, 'message');
+  let got: Uint8Array | null = null;
+  for (let i = 0; i < 50 && !got; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    got = await receiveMessage(own, ids.recipientId);
+  }
+  assert.deepEqual(got, Uint8Array.of(4));
+  assert.deepEqual(await receiveMessage(own, ids.recipientId), Uint8Array.of(5));
+});
+
+test("a relay that pushes takes a browser's keys and says it will count in its pushes", { skip: !ready }, async () => {
+  const ids = await createQueue({ url: far });
+  const browser = (await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])) as CryptoKeyPair;
+  const keys = { p256dh: new Uint8Array(await crypto.subtle.exportKey('raw', browser.publicKey)), auth: crypto.getRandomValues(new Uint8Array(16)) };
+  const endpoint = 'https://web.push.apple.com/erevos-check';
+  assert.equal(await setPush({ url: far }, ids.recipientId, endpoint, keys), true);
+  // Without them its pushes are empty.
+  assert.equal(await setPush({ url: far }, ids.recipientId, endpoint), false);
+  assert.equal(await setPush({ url: far }, ids.recipientId, '', keys), false);
+  // A relay that does not push says so.
+  const other = await createQueue({ url: near });
+  await assert.rejects(setPush({ url: near }, other.recipientId, endpoint, keys), RelayError);
+});
+
+test('a web app on the screen takes its messages as any, from a relay that pushes or one that does not', { skip: !ready }, async () => {
+  for (const url of [far, near]) {
+    const own: Relay = { url };
+    const ids = await createQueue(own);
+    await sendMessage(own, ids.senderId, Uint8Array.of(6), 'message');
+    assert.deepEqual(await receiveMessage(own, ids.recipientId, true), Uint8Array.of(6));
+    assert.equal(await receiveMessage(own, ids.recipientId, true), null);
+  }
 });
 
 test('a relay without a key refuses two-hop sending instead of sending straight', { skip: !ready }, async () => {

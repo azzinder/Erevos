@@ -5,8 +5,10 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+aes-gcm = { version = "0.10", default-features = false, features = ["aes"] }
+hkdf = "0.12"
 hmac = "0.12"
-p256 = { version = "0.13", features = ["ecdsa"] }
+p256 = { version = "0.13", features = ["ecdsa", "ecdh"] }
 rand = "0.8"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 sha1 = "0.10"

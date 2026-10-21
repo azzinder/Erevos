@@ -26,6 +26,14 @@
 // phone, so sends to contacts on other relays go straight to their /sealed path, and their files
 // come straight from their /files path; it holds nothing for later and gives no call relay.
 //
+// Marks: a send may say what it carries (Mark), for a web app's notice while it is closed
+// (lib/web-push.web.ts): a message someone reads, which the relay counts in the push, or word
+// between phones, which pushes nothing. The mark is one byte after the request; a relay from before
+// marks reads no further than the request, and one that holds a message for later keeps the mark
+// for when it goes. Without a mark the relay pushes, but says it could not count it. A web app on
+// the screen also says so when it takes its messages (receiveMessage): finding the queue empty
+// then, the relay drops a push still waiting, which would tell of messages already read.
+//
 // Through Tor (setThroughTor, off by default): every request goes through the core's Tor
 // (crates/erevos-tor) instead of the phone's own connection. There is no falling back to a direct
 // connection: when Tor cannot reach the relay, the request fails.
@@ -54,6 +62,10 @@ const UNLATER = 17;
 const FILE_KEEP = 18;
 const LEND = 19;
 const BORROW = 20;
+
+// The marks' bytes (crates/erevos-relay/src/server.rs).
+const MARKS = { message: 1, quiet: 2 } as const;
+const SHOWN = 1;
 
 const OK = 0;
 const NOT_FOUND = 1;
@@ -311,9 +323,21 @@ export async function relayKey(relay: Relay): Promise<Uint8Array | null> {
   return key;
 }
 
+/** What a send carries: a message someone reads, or word between phones (see Marks above). */
+export type Mark = keyof typeof MARKS;
+
+// The request with its mark after it, if it has one.
+function marked(bytes: Uint8Array, mark: Mark | undefined): Uint8Array {
+  if (!mark) return bytes;
+  const out = new Uint8Array(bytes.length + 1);
+  out.set(bytes);
+  out[bytes.length] = MARKS[mark];
+  return out;
+}
+
 /** Hands a message sealed for the relay at `to` to the relay `via`, which passes it on. */
-export async function forwardMessage(via: Relay, to: string, sealed: Uint8Array): Promise<void> {
-  check(await request(via, forwardRequest(to, sealed)), 'send');
+export async function forwardMessage(via: Relay, to: string, sealed: Uint8Array, mark?: Mark): Promise<void> {
+  check(await request(via, marked(forwardRequest(to, sealed), mark)), 'send');
 }
 
 function sealedSendRequest(sealed: Uint8Array): Uint8Array {
@@ -359,16 +383,16 @@ export async function carryTo(own: Relay, url: string, sealed: Uint8Array): Prom
 }
 
 /** Queues one message, through the relay's `via` if it has one, or else where its `fallback` says,
- *  in turn. Throws, with what the relay first said, if none takes it: the sender id is unknown,
- *  the queue is full, or no relay can be reached. */
-export async function sendMessage(relay: Relay, senderId: Uint8Array, message: Uint8Array): Promise<void> {
+ *  in turn, with its `mark` if given. Throws, with what the relay first said, if none takes it: the
+ *  sender id is unknown, the queue is full, or no relay can be reached. */
+export async function sendMessage(relay: Relay, senderId: Uint8Array, message: Uint8Array, mark?: Mark): Promise<void> {
   if (message.length > MAX_MESSAGE) throw new RelayError(t('message is too large'));
   try {
-    await sendOne(relay, senderId, message);
+    await sendOne(relay, senderId, message, mark);
   } catch (error) {
     for (const next of relay.fallback ?? []) {
       try {
-        await sendOne(next.relay, next.senderId ?? senderId, message);
+        await sendOne(next.relay, next.senderId ?? senderId, message, mark);
         return;
       } catch {
         // The next one, if any.
@@ -378,9 +402,9 @@ export async function sendMessage(relay: Relay, senderId: Uint8Array, message: U
   }
 }
 
-async function sendOne(relay: Relay, senderId: Uint8Array, message: Uint8Array): Promise<void> {
+async function sendOne(relay: Relay, senderId: Uint8Array, message: Uint8Array, mark: Mark | undefined): Promise<void> {
   const { to, bytes } = await sendRequest(relay, senderId, message);
-  check(await request(to, bytes), 'send');
+  check(await request(to, marked(bytes, mark)), 'send');
 }
 
 // The request that queues one message, and the relay it goes to: the second relay with the message
@@ -450,16 +474,18 @@ export class CannotHoldError extends RelayError {}
  * `fallback` says, in turn, to go at `at` (milliseconds) in their order: they go then, though this
  * phone is off by then. Says which relay holds them, and the ids to take them back with. Throws,
  * with what the relay first said, if none takes them all: CannotHoldError when none of them can
- * hold any. What a relay took of them before it failed, it is asked to drop.
+ * hold any. What a relay took of them before it failed, it is asked to drop. The `mark` goes
+ * after each packet's whole request (inside it, the relay would refuse it): a message is one,
+ * so it goes with the last packet, and the ones before it are quiet.
  */
-export async function sendMessageLater(relay: Relay, senderId: Uint8Array, messages: Uint8Array[], at: number): Promise<HeldAt> {
+export async function sendMessageLater(relay: Relay, senderId: Uint8Array, messages: Uint8Array[], at: number, mark?: Mark): Promise<HeldAt> {
   if (messages.some((message) => message.length > MAX_MESSAGE)) throw new RelayError(t('message is too large'));
   let first: unknown = null;
   for (const route of [{ relay, senderId }, ...(relay.fallback ?? []).map((f) => ({ relay: f.relay, senderId: f.senderId ?? senderId }))]) {
     const ids: string[] = [];
     let holder: Relay | null = null;
     try {
-      for (const message of messages) {
+      for (const [i, message] of messages.entries()) {
         const { to, bytes } = await sendRequest(route.relay, route.senderId, message);
         if (!(await canHoldAt(to))) throw new CannotHoldError(t('the relay at {url} cannot keep messages for later: update it', { url: to.url }));
         holder = to;
@@ -471,7 +497,7 @@ export async function sendMessageLater(relay: Relay, senderId: Uint8Array, messa
         held.set(id, 9);
         view.setUint32(25, bytes.length);
         held.set(bytes, 29);
-        check(await request(to, held), 'send');
+        check(await request(to, marked(held, mark === 'message' && i < messages.length - 1 ? 'quiet' : mark)), 'send');
         ids.push(toHex(id));
       }
       return { id: ids.join(','), relay: holder!.url };
@@ -500,11 +526,20 @@ export async function dropLater(holder: Relay, id: string): Promise<boolean> {
   return dropped;
 }
 
-/** Takes the oldest message from the queue, or returns null if it is empty. The relay then forgets it. */
-export async function receiveMessage(relay: Relay, recipientId: Uint8Array): Promise<Uint8Array | null> {
-  const bytes = new Uint8Array(1 + 24);
+// Whether the web app shows on the screen. Never on a phone, whose queues the relay does not push for.
+function onScreen(): boolean {
+  return typeof document !== 'undefined' && document.visibilityState === 'visible';
+}
+
+/**
+ * Takes the oldest message from the queue, or returns null if it is empty. The relay then forgets
+ * it. `shown`: taken on the screen (see Marks above).
+ */
+export async function receiveMessage(relay: Relay, recipientId: Uint8Array, shown = onScreen()): Promise<Uint8Array | null> {
+  const bytes = new Uint8Array(1 + 24 + (shown ? 1 : 0));
   bytes[0] = RECEIVE;
   bytes.set(recipientId, 1);
+  if (shown) bytes[25] = SHOWN;
   const reply = await request(relay, bytes);
   check(reply, 'receive');
   if (reply[1] === 0) return null;
@@ -818,14 +853,27 @@ export async function pushKey(relay: Relay): Promise<Uint8Array | null> {
   return reply.slice(1);
 }
 
-/** Asks the relay for an empty push to `endpoint` whenever a message comes into the queue, or
- *  for none when `endpoint` is empty. */
-export async function setPush(relay: Relay, recipientId: Uint8Array, endpoint: string): Promise<void> {
+/** A browser's keys for its push address (PushSubscription.getKey): its P-256 key, 65 bytes, and
+ *  its authentication secret, 16 bytes. */
+export type PushKeys = { p256dh: Uint8Array; auth: Uint8Array };
+
+/** Asks the relay for a push to `endpoint` whenever a message comes into the queue, or for none
+ *  when `endpoint` is empty. With the browser's `keys`, a relay that counts puts in each push how
+ *  many messages came, encrypted for the browser: true when it said it will. An older relay takes
+ *  the address alone, and its pushes are empty. */
+export async function setPush(relay: Relay, recipientId: Uint8Array, endpoint: string, keys?: PushKeys): Promise<boolean> {
   const address = utf8Encode(endpoint);
-  const bytes = new Uint8Array(1 + 24 + 2 + address.length);
+  const sent = keys && endpoint ? keys.p256dh.length + keys.auth.length : 0;
+  const bytes = new Uint8Array(1 + 24 + 2 + address.length + sent);
   bytes[0] = PUSH_SET;
   bytes.set(recipientId, 1);
   new DataView(bytes.buffer).setUint16(25, address.length);
   bytes.set(address, 27);
-  check(await request(relay, bytes), 'push');
+  if (keys && sent) {
+    bytes.set(keys.p256dh, 27 + address.length);
+    bytes.set(keys.auth, 27 + address.length + keys.p256dh.length);
+  }
+  const reply = await request(relay, bytes);
+  check(reply, 'push');
+  return sent > 0 && reply[1] === 1;
 }

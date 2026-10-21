@@ -1,16 +1,18 @@
 import { loadCurrentSpaceData, updateCurrentSpaceData, type Queue } from '../lock/space-data';
 
 import { WEB_APP } from './integrity';
-import { fromHex, pushKey, setPush, type Relay } from './relay';
+import { fromHex, pushKey, setPush, type PushKeys, type Relay } from './relay';
 import { t } from './i18n';
 
 // Notifications for the web app while it is closed (an iPhone stops it as soon as it leaves the
-// screen). The browser makes a push address for the relay's key; the relay sends that address an
-// empty push whenever a message comes into the space's queue (crates/erevos-relay/src/push.rs), and
-// the service worker shows "New message", or "New messages" once more came since Erevos was last
-// open (pwa/sw.js). The push goes through the browser's push service (Apple's on an iPhone), which
-// sees when something comes, never what or from whom. Off unless turned on, per space, for the
-// space's own queue only: never for hidden chats.
+// screen). The browser makes a push address for the relay's key; the relay pushes to that address
+// whenever a message comes into the space's queue (crates/erevos-relay/src/push.rs). It is also
+// given the browser's keys for the address, so a relay that counts puts in each push how many
+// messages came, encrypted for the browser, and the service worker shows "3 new messages" (pwa/sw.js);
+// from an older relay the push is empty, and the notice says "New message", or "New messages" once
+// more came since Erevos was last open. The push goes through the browser's push service (Apple's
+// on an iPhone), which sees when a message comes, never what, how many or from whom. Off unless
+// turned on, per space, for the space's own queue only: never for hidden chats.
 
 const supported = typeof window !== 'undefined' && 'PushManager' in window && 'Notification' in window && 'serviceWorker' in navigator;
 
@@ -31,11 +33,21 @@ async function subscription(key: Uint8Array): Promise<PushSubscription> {
   return registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: new Uint8Array(key) });
 }
 
+// The keys the pushes are encrypted for, if this browser opens the encryption a relay uses (RFC 8291).
+function keysOf(sub: PushSubscription): PushKeys | undefined {
+  const encodings = (PushManager as { supportedContentEncodings?: readonly string[] }).supportedContentEncodings;
+  if (encodings && !encodings.includes('aes128gcm')) return undefined;
+  const p256dh = sub.getKey('p256dh');
+  const auth = sub.getKey('auth');
+  if (p256dh?.byteLength !== 65 || auth?.byteLength !== 16) return undefined;
+  return { p256dh: new Uint8Array(p256dh), auth: new Uint8Array(auth) };
+}
+
 async function register(own: Relay, queue: Queue): Promise<string | null> {
   const key = await pushKey(own);
   if (!key) return t('Your relay does not send notifications. It needs a newer version, set up with a push key.');
   const sub = await subscription(key);
-  await setPush(own, fromHex(queue.recipientHex), sub.endpoint);
+  await setPush(own, fromHex(queue.recipientHex), sub.endpoint, keysOf(sub));
   return null;
 }
 

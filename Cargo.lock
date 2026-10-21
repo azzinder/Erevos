@@ -1400,7 +1400,9 @@ dependencies = [
 name = "erevos-relay"
 version = "0.0.1"
 dependencies = [
+ "aes-gcm",
  "erevos-core",
+ "hkdf 0.12.4",
  "hmac 0.12.1",
  "p256",
  "rand 0.8.8",

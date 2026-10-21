@@ -62,12 +62,16 @@ app from a store is installed once and changes only when updated.
 - **The browser itself.** Apple makes Safari and could change what it does, as with any iPhone
   app.
 - **Not while closed.** iOS stops web apps in the background: messages wait on the relay until
-  the app opens. Notifications can say that one came (Lock → Notifications while closed, off
-  unless turned on): the relay sends an empty push through the browser's push service
-  (`crates/erevos-relay/src/push.rs`, `lib/web-push.web.ts`), and the service worker shows "New
-  message", or "New messages" once more came since Erevos was last open, in the app's language,
-  without a number: a push comes for word that a message arrived too, and at most once in 15
-  seconds. The push service sees when, and that the device uses Erevos; never what or from whom.
+  the app opens. Notifications can say that some came (Lock → Notifications while closed, off
+  unless turned on): the relay pushes through the browser's push service, at most once in 15
+  seconds (`crates/erevos-relay/src/push.rs`, `lib/web-push.web.ts`). Each push holds how many
+  messages came, encrypted for the browser, as the sending phones marked them: a message someone
+  reads counts, word between phones (that a message came or was read, new keys) pushes nothing.
+  The service worker then shows "3 new messages", in the app's language. It shows "New message",
+  or "New messages" once more came since Erevos was last open, without a number, when the push
+  is empty (a relay from before the counts) or the relay could not count all of it (a sender's
+  Erevos from before the marks), until Erevos is open again. The push service sees when a message
+  comes, and that the device uses Erevos; never what, how many or from whom.
 - **No Bluetooth, nearby link or SMS**, which Safari does not allow, and no automatic backups: a
   browser gives out a file only after a tap.
 

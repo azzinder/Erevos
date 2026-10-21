@@ -352,28 +352,83 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// A push from the relay (crates/erevos-relay/src/push.rs) carries nothing: it only says that a
-// packet came, a message or only word that one arrived, and at most once in 15 seconds. A browser
-// must show something for each push, and nothing more is known here, so the notice says "New
-// message", or "New messages" once more came since Erevos was last open, without a number that
-// would often be wrong, in the app's language. The app tells this worker its language ('lang') and
-// that it is open again ('seen'). The count is kept apart from the release state above, so a
-// release check never undoes it, and not in the notices themselves: an iPhone keeps every notice
-// of the same tag and may list them in any order, and swiping one away would start it again.
+// A push from the relay (crates/erevos-relay/src/push.rs) says that something came into one of
+// this browser's queues, at most once in 15 seconds. When the app gave the relay this browser's
+// keys for the push address (lib/web-push.web.ts), the push carries, encrypted for this browser,
+// how many messages came into that queue since the app last took them: the queue's stream, a
+// round that starts again each time the queue is emptied, and the round's total so far. So a push
+// that was lost, or that comes twice, never counts a message twice, and word between phones (that
+// a message came or was read, new keys) counts for nothing. The notice then says how many: "3 new
+// messages". Otherwise it says "New message", or "New messages" once more came since Erevos was
+// last open, without a number: when a push came empty (an older relay, or a browser that gave no
+// keys), or the relay could not count all of it (a sender's Erevos too old to say what it sent),
+// until Erevos is open again. In the app's language, which the app tells this worker ('lang');
+// the app says when it is open again ('seen'). The count is kept apart from the release state
+// above, so a release check never undoes it, and not in the notices themselves: an iPhone keeps
+// every notice of the same tag and may list them in any order, and swiping one away would start
+// it again.
 const NOTICE = 'erevos-new-message';
 const NOTICE_STATE = '/__erevos/notice';
+// For each language: one message, more than one with no number, and so many.
 const NOTICE_WORDS = {
-  en: ['New message', 'New messages'],
-  el: ['Νέο μήνυμα', 'Νέα μηνύματα'],
-  de: ['Neue Nachricht', 'Neue Nachrichten'],
-  es: ['Mensaje nuevo', 'Mensajes nuevos'],
-  fr: ['Nouveau message', 'Nouveaux messages'],
-  it: ['Nuovo messaggio', 'Nuovi messaggi'],
-  pt: ['Nova mensagem', 'Novas mensagens'],
-  sh: ['Nova poruka', 'Nove poruke'],
+  en: ['New message', 'New messages', (n) => `${n} new messages`],
+  el: ['Νέο μήνυμα', 'Νέα μηνύματα', (n) => `${n} νέα μηνύματα`],
+  de: ['Neue Nachricht', 'Neue Nachrichten', (n) => `${n} neue Nachrichten`],
+  es: ['Mensaje nuevo', 'Mensajes nuevos', (n) => `${n} mensajes nuevos`],
+  fr: ['Nouveau message', 'Nouveaux messages', (n) => `${n} nouveaux messages`],
+  it: ['Nuovo messaggio', 'Nuovi messaggi', (n) => `${n} nuovi messaggi`],
+  pt: ['Nova mensagem', 'Novas mensagens', (n) => `${n} novas mensagens`],
+  sh: [
+    'Nova poruka',
+    'Nove poruke',
+    (n) => {
+      const ten = n % 10;
+      const hundred = n % 100;
+      if (ten === 1 && hundred !== 11) return `${n} nova poruka`;
+      if (ten >= 2 && ten <= 4 && (hundred < 12 || hundred > 14)) return `${n} nove poruke`;
+      return `${n} novih poruka`;
+    },
+  ],
 };
+// What a counting push holds (push.rs): version 1, flags (1: not all of it was counted), the
+// queue's stream (8 bytes), the round and the total (4 bytes each).
+const COUNT_LENGTH = 18;
+const COUNT_UNSURE = 1;
+// Streams kept to tell a round's next push from a new round: a few queues per space.
+const STREAMS = 32;
 
 const knownLang = (lang) => typeof lang === 'string' && Object.hasOwn(NOTICE_WORDS, lang);
+const whole = (n) => (Number.isSafeInteger(n) && n > 0 ? n : 0);
+const word32 = (n) => Number.isSafeInteger(n) && n >= 0 && n < 2 ** 32;
+
+const keptRound = (at) => (word32(at?.round) && word32(at?.total) ? { round: at.round, total: at.total } : null);
+
+function keptStreams(read) {
+  const streams = {};
+  if (read && typeof read === 'object' && !Array.isArray(read)) {
+    for (const [stream, at] of Object.entries(read).slice(-STREAMS)) {
+      const now = keptRound(at);
+      const before = keptRound(at?.before);
+      if (/^[0-9a-f]{16}$/.test(stream) && now) streams[stream] = before ? { ...now, before } : now;
+    }
+  }
+  return streams;
+}
+
+// How many messages a push adds to its stream, and the stream as it is then. A push from the
+// round before, come late, adds only what that round had not said yet; one of the same round says
+// its total so far, so one come late or twice adds nothing.
+function counting(kept, said) {
+  if (kept?.round === said.round) {
+    return { added: Math.max(0, said.total - kept.total), stream: { ...kept, total: Math.max(kept.total, said.total) } };
+  }
+  if (kept?.before?.round === said.round) {
+    const before = kept.before;
+    return { added: Math.max(0, said.total - before.total), stream: { ...kept, before: { round: before.round, total: Math.max(before.total, said.total) } } };
+  }
+  const stream = { round: said.round, total: said.total };
+  return { added: said.total, stream: kept ? { ...stream, before: { round: kept.round, total: kept.total } } : stream };
+}
 
 let notice = null;
 
@@ -381,7 +436,15 @@ async function readNotice() {
   if (notice) return notice;
   const kept = await (await caches.open(META)).match(NOTICE_STATE);
   const read = kept ? await kept.json().catch(() => null) : null;
-  notice = { count: Number.isSafeInteger(read?.count) && read.count > 0 ? read.count : 0, lang: knownLang(read?.lang) ? read.lang : 'en' };
+  // Kept by a worker from before the counts: `count` was its pushes.
+  const pushes = whole(read?.pushes ?? read?.count);
+  notice = {
+    pushes,
+    messages: whole(read?.messages),
+    exact: typeof read?.exact === 'boolean' ? read.exact : pushes === 0,
+    lang: knownLang(read?.lang) ? read.lang : 'en',
+    streams: keptStreams(read?.streams),
+  };
   return notice;
 }
 
@@ -416,23 +479,54 @@ async function erevosOnScreen() {
   return open.some((client) => client.visibilityState === 'visible');
 }
 
+// The count a push holds, or null when it holds none this worker can read.
+function countIn(data) {
+  try {
+    const bytes = data ? new Uint8Array(data.arrayBuffer()) : null;
+    if (!bytes || bytes.length !== COUNT_LENGTH || bytes[0] !== 1) return null;
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    return { unsure: (bytes[1] & COUNT_UNSURE) !== 0, stream: hex(bytes.subarray(2, 10)), round: view.getUint32(10), total: view.getUint32(14) };
+  } catch {
+    return null;
+  }
+}
+
+function noticeWords(kept) {
+  const [one, more, many] = NOTICE_WORDS[kept.lang];
+  if (kept.exact) return kept.messages > 1 ? many(kept.messages) : one;
+  return kept.pushes > 1 || kept.messages > 1 ? more : one;
+}
+
 let shownLast = 0;
 
-function showNotice() {
+function showNotice(said) {
   return inTurn(async () => {
-    let count = 1;
-    let lang = 'en';
+    let words = NOTICE_WORDS.en[0];
     try {
       const kept = await readNotice();
-      lang = kept.lang;
-      count = (await erevosOnScreen()) ? kept.count : kept.count + 1;
-      if (count !== kept.count) await writeNotice({ ...kept, count });
+      const next = { ...kept, streams: { ...kept.streams } };
+      let added = 0;
+      if (said) {
+        const counted = counting(kept.streams[said.stream], said);
+        added = counted.added;
+        // The latest last, so the oldest go first.
+        delete next.streams[said.stream];
+        next.streams[said.stream] = counted.stream;
+        for (const stream of Object.keys(next.streams).slice(0, -STREAMS)) delete next.streams[stream];
+      }
+      if (!(await erevosOnScreen())) {
+        next.pushes = kept.pushes + 1;
+        next.messages = kept.messages + added;
+        next.exact = kept.exact && said !== null && !said.unsure;
+      }
+      words = noticeWords(next);
+      await writeNotice(next);
     } catch {
       // The notice below shows all the same.
     }
     const shown = Math.max(Date.now(), shownLast + 1);
     shownLast = shown;
-    await self.registration.showNotification('Erevos', { body: NOTICE_WORDS[lang][count > 1 ? 1 : 0], tag: NOTICE, icon: '/icon-192.png', data: { shown } });
+    await self.registration.showNotification('Erevos', { body: words, tag: NOTICE, icon: '/icon-192.png', data: { shown } });
     await closeNotices(shown).catch(() => undefined);
   });
 }
@@ -441,7 +535,7 @@ function noticeSeen() {
   return inTurn(async () => {
     await closeNotices().catch(() => undefined);
     const kept = await readNotice();
-    if (kept.count !== 0) await writeNotice({ ...kept, count: 0 });
+    if (kept.pushes !== 0 || kept.messages !== 0 || !kept.exact) await writeNotice({ ...kept, pushes: 0, messages: 0, exact: true });
   });
 }
 
@@ -454,7 +548,8 @@ function noticeLanguage(lang) {
 }
 
 self.addEventListener('push', (event) => {
-  event.waitUntil(showNotice());
+  // Read at once: the push's data is the event's.
+  event.waitUntil(showNotice(countIn(event.data)));
 });
 
 self.addEventListener('notificationclick', (event) => {

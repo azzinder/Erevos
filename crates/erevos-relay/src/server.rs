@@ -42,10 +42,14 @@
 //! - `PUSH_KEY`: no fields. Reply: the relay's key for Web Push (65 bytes,
 //!   an uncompressed P-256 point), or `NOT_FOUND` if the relay does not push.
 //! - `PUSH_SET`: recipient id, then a 2-byte length and a push address made
-//!   by a browser for that key; empty removes it. From then on each message
-//!   that comes into the queue sends an empty push there (see `push.rs`).
-//!   Reply: `OK`, `NOT_FOUND` (no such queue, or the relay does not push), or
-//!   `FAILED` (not a known push service's address, or not written).
+//!   by a browser for that key; empty removes it. Over WebSocket the
+//!   browser's keys for the address may follow: its P-256 key (65 bytes) and
+//!   authentication secret (16 bytes). From then on each message that comes
+//!   into the queue pushes there (see `push.rs`): with the keys, a count
+//!   encrypted for the browser, else an empty push. Reply: `OK`, and 1 after
+//!   it when the keys were taken; `NOT_FOUND` (no such queue, or the relay
+//!   does not push), or `FAILED` (not a known push service's address, or not
+//!   written).
 //! - `LATER`: 8-byte Unix seconds, a 16-byte id, then a 4-byte length and a
 //!   whole `SEND`, `FORWARD` or `SEALED_SEND` request. The relay holds the
 //!   request and runs it at that time, as if it came then (see `later.rs`),
@@ -71,6 +75,20 @@
 //!   text of the lent token for it to the end, or `FULL` when the ticket gave
 //!   all its places, or the relay holds all the queues it may (which uses
 //!   none of the ticket's places).
+//!
+//! Marks: over WebSocket, and in a request held for later, a `SEND`,
+//! `SEALED_SEND`, `FORWARD` or `LATER` request may end with one more byte
+//! that says what it carries: `MESSAGE` (something a person reads, counted in
+//! the web app's notice) or `QUIET` (word between phones, such as that a
+//! message came or new keys, which pushes nothing). Without one, the relay
+//! pushes as for a message but cannot count it. A `FORWARD` passes its mark
+//! on to the other relay. Older relays read no further than the request, and
+//! push for everything. The TCP front end takes no mark: its requests follow
+//! each other with nothing between.
+//!
+//! In the same way a `RECEIVE` over WebSocket may end with `SHOWN`: the app
+//! takes the messages on the screen, so when it finds the queue empty, a push
+//! still waiting for its gap does not go (see `Push::drained`).
 //!
 //! Two-hop sending: a phone gives `FORWARD` to its own relay, which opens a
 //! WebSocket to `<address>/sealed` on the contact's relay and sends
@@ -141,7 +159,7 @@ use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
 use crate::lend::{Lend, Nonce, Pass};
 use crate::lock::{lock, wait_timeout};
 use crate::peers;
-use crate::push::{Push, SetError, MAX_ENDPOINT};
+use crate::push::{Keys, Push, SetError, AUTH_LEN, MAX_ENDPOINT, P256DH_LEN};
 use crate::queue::{system_now, QueueError, QueueId, Store};
 use crate::tokens::Tokens;
 use crate::turn::Turn;
@@ -326,6 +344,31 @@ pub const FILE_KEEP: u8 = 18;
 pub const LEND: u8 = 19;
 pub const BORROW: u8 = 20;
 
+/// The marks a send may end with (see the module's doc).
+pub const MESSAGE: u8 = 1;
+pub const QUIET: u8 = 2;
+/// The mark a `RECEIVE` may end with (see the module's doc).
+pub const SHOWN: u8 = 1;
+
+/// What a send said it carries.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Mark {
+    /// Nothing: an older phone, the TCP front end, or a mark this relay does not know.
+    Unknown,
+    Message,
+    Quiet,
+}
+
+impl Mark {
+    fn byte(self) -> Option<u8> {
+        match self {
+            Mark::Unknown => None,
+            Mark::Message => Some(MESSAGE),
+            Mark::Quiet => Some(QUIET),
+        }
+    }
+}
+
 /// The longest a `WAIT` lasts, seconds.
 pub const MAX_WAIT: u8 = 60;
 
@@ -435,7 +478,7 @@ fn handle_tcp(mut stream: TcpStream, store: &Shared) -> io::Result<()> {
     stream.set_read_timeout(Some(store.limits.idle))?;
     stream.set_write_timeout(Some(WRITE_TIMEOUT))?;
     loop {
-        match respond(&mut stream, store, Access::All) {
+        match respond(&mut stream, store, Access::All, false) {
             Ok(Some(reply)) => stream.write_all(&reply)?,
             Ok(None) => return Ok(()),
             // Quiet too long: closed, as at the end of any connection.
@@ -570,7 +613,7 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
         match message {
             Message::Binary(bytes) => {
                 let request: &[u8] = bytes.as_ref();
-                let Some(reply) = respond(&mut Cursor::new(request), store, access)? else {
+                let Some(reply) = respond(&mut Cursor::new(request), store, access, true)? else {
                     return Ok(());
                 };
                 socket.send(Message::Binary(reply.into())).map_err(to_io)?;
@@ -583,8 +626,14 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
 }
 
 /// Reads one request from `r` and returns its reply. `None` means the peer
-/// closed before a new request started.
-fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Option<Vec<u8>>> {
+/// closed before a new request started. `framed`: `r` holds this request
+/// alone, so what follows it, a mark or a browser's keys, is part of it.
+fn respond(
+    r: &mut impl Read,
+    shared: &Shared,
+    access: Access,
+    framed: bool,
+) -> io::Result<Option<Vec<u8>>> {
     let mut op = [0u8; 1];
     match r.read_exact(&mut op) {
         Ok(()) => {}
@@ -642,12 +691,24 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         SEND => {
             let sender = read_id(r)?;
             let msg = read_message(r)?;
-            let sent = shared.store().send(&sender, msg);
-            status(arrived(shared, &sender, sent))
+            let mark = read_mark(r, framed)?;
+            status(queue_message(shared, &sender, msg, mark))
         }
         RECEIVE => {
             let recipient = read_id(r)?;
-            let got = shared.store().receive(&recipient);
+            let shown = read_byte(r, framed)? == Some(SHOWN);
+            let got = {
+                let mut store = shared.store();
+                let got = store.receive(&recipient);
+                // Under the lock that found it empty: what is sent after it
+                // counts from nothing.
+                if matches!(got, Ok(None)) {
+                    if let Some(push) = shared.push.get() {
+                        push.drained(&recipient, shown);
+                    }
+                }
+                got
+            };
             match got {
                 Ok(Some(msg)) => {
                     let mut out = vec![OK, 1];
@@ -699,14 +760,15 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         FORWARD => {
             let address = read_address(r)?;
             let sealed = read_sealed(r)?;
-            vec![forward(shared, &address, &sealed)]
+            let mark = read_mark(r, framed)?;
+            vec![forward(shared, &address, &sealed, mark)]
         }
         SEALED_SEND => {
             let sealed = read_sealed(r)?;
+            let mark = read_mark(r, framed)?;
             match shared.key.as_ref().map(|key| key.open(&sealed)) {
                 Some(Ok((sender, msg))) if msg.len() <= MAX_MESSAGE => {
-                    let sent = shared.store().send(&sender, msg);
-                    status(arrived(shared, &sender, sent))
+                    status(queue_message(shared, &sender, msg, mark))
                 }
                 // Sealed for another key, changed on the way, or this relay has no key:
                 // to the sender it is the same as a queue that is not here.
@@ -778,16 +840,25 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
             }
             let mut endpoint = vec![0u8; len];
             r.read_exact(&mut endpoint)?;
+            let keys = read_keys(r, framed)?;
             let exists = !matches!(
                 shared.store().has_waiting(&recipient),
                 Err(QueueError::NotFound)
             );
             match (shared.push.get(), exists) {
                 (Some(push), true) => match std::str::from_utf8(&endpoint) {
-                    Ok(endpoint) => match push.set(&recipient, endpoint) {
-                        Ok(()) => vec![OK],
-                        Err(SetError::Refused | SetError::Storage) => vec![FAILED],
-                    },
+                    Ok(endpoint) => {
+                        // Keys that are no key: the pushes go empty, as without them.
+                        let keys = keys
+                            .filter(|_| !endpoint.is_empty())
+                            .and_then(|(p256dh, auth)| Keys::new(&p256dh, &auth));
+                        let counts = keys.is_some();
+                        match push.set(&recipient, endpoint, keys) {
+                            Ok(()) if counts => vec![OK, 1],
+                            Ok(()) => vec![OK],
+                            Err(SetError::Refused | SetError::Storage) => vec![FAILED],
+                        }
+                    }
                     Err(_) => vec![FAILED],
                 },
                 _ => vec![NOT_FOUND],
@@ -796,8 +867,12 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         LATER => {
             let at = read_time(r)?;
             let id = read_held_id(r)?;
-            let request = read_bytes(r, MAX_HELD_REQUEST)?;
+            let mut request = read_bytes(r, MAX_HELD_REQUEST)?;
             check_held(&request)?;
+            // The mark goes after the held request, where it is read when it runs.
+            if let Some(mark) = read_mark(r, framed)?.byte() {
+                request.push(mark);
+            }
             let held = shared.held().hold(id, at, request);
             shared.held_changed.notify_all();
             vec![held.map_or_else(held_code, |()| OK)]
@@ -895,22 +970,77 @@ fn lent_may_put(shared: &Shared, access: Access, bytes: usize) -> bool {
     })
 }
 
-/// Wakes the connections waiting for a message once one was queued, and
-/// pushes to the queue's web app if it asked for that.
-fn arrived(
+/// Queues `msg` from `sender`, then wakes the connections waiting for a
+/// message. Under the same lock, it pushes to the queue's web app if it asked
+/// for that, unless the sender said it is word between phones that needs
+/// none: so a `RECEIVE` that empties the queue comes wholly before or after.
+fn queue_message(
     shared: &Shared,
     sender: &QueueId,
-    sent: Result<(), QueueError>,
+    msg: Vec<u8>,
+    mark: Mark,
 ) -> Result<(), QueueError> {
-    if sent.is_ok() {
-        shared.arrived.notify_all();
-        if let Some(push) = shared.push.get() {
-            if let Some(recipient) = shared.store().recipient_of(sender) {
-                push.arrived(&recipient);
+    let sent = {
+        let mut store = shared.store();
+        let sent = store.send(sender, msg);
+        if sent.is_ok() && mark != Mark::Quiet {
+            if let Some(push) = shared.push.get() {
+                if let Some(recipient) = store.recipient_of(sender) {
+                    push.arrived(&recipient, mark == Mark::Message);
+                }
             }
         }
+        sent
+    };
+    if sent.is_ok() {
+        shared.arrived.notify_all();
     }
     sent
+}
+
+/// The mark at the end of a send, if `framed` and there is one. A byte this
+/// relay does not know is no mark, so later ones do not break it.
+fn read_mark(r: &mut impl Read, framed: bool) -> io::Result<Mark> {
+    Ok(match read_byte(r, framed)? {
+        Some(MESSAGE) => Mark::Message,
+        Some(QUIET) => Mark::Quiet,
+        _ => Mark::Unknown,
+    })
+}
+
+/// The byte after a request, if `framed` and there is one.
+fn read_byte(r: &mut impl Read, framed: bool) -> io::Result<Option<u8>> {
+    if !framed {
+        return Ok(None);
+    }
+    let mut byte = [0u8; 1];
+    Ok(match r.read(&mut byte)? {
+        0 => None,
+        _ => Some(byte[0]),
+    })
+}
+
+/// A browser's key and authentication secret after a `PUSH_SET`, if `framed`
+/// and they are there. Anything else after it closes the connection.
+#[allow(clippy::type_complexity)]
+fn read_keys(r: &mut impl Read, framed: bool) -> io::Result<Option<(Vec<u8>, Vec<u8>)>> {
+    if !framed {
+        return Ok(None);
+    }
+    let mut rest = Vec::new();
+    r.take((P256DH_LEN + AUTH_LEN + 1) as u64)
+        .read_to_end(&mut rest)?;
+    match rest.len() {
+        0 => Ok(None),
+        n if n == P256DH_LEN + AUTH_LEN => {
+            let auth = rest.split_off(P256DH_LEN);
+            Ok(Some((rest, auth)))
+        }
+        _ => Err(io::Error::new(
+            ErrorKind::InvalidData,
+            "not a browser's keys",
+        )),
+    }
 }
 
 /// Bytes after their 2-byte length. Only short, known strings go out this way.
@@ -1039,7 +1169,12 @@ pub fn run_held(shared: SharedStore) {
             }
         };
         for request in due {
-            let reply = respond(&mut Cursor::new(&request.request), &shared, Access::All);
+            let reply = respond(
+                &mut Cursor::new(&request.request),
+                &shared,
+                Access::All,
+                true,
+            );
             let done = matches!(&reply, Ok(Some(r)) if r.first().is_some_and(|s| *s == OK || *s == NOT_FOUND));
             let mut held = shared.held();
             if done {
@@ -1080,12 +1215,14 @@ fn read_address(r: &mut impl Read) -> io::Result<String> {
     Ok(address)
 }
 
-/// Passes a sealed send to the relay at `address` and returns its status.
-fn forward(shared: &Shared, address: &str, sealed: &[u8]) -> u8 {
+/// Passes a sealed send to the relay at `address`, with its mark, and returns
+/// its status.
+fn forward(shared: &Shared, address: &str, sealed: &[u8], mark: Mark) -> u8 {
     let url = format!("{}{SEALED_PATH}", address.trim_end_matches('/'));
     let mut request = vec![SEALED_SEND];
     request.extend_from_slice(&(sealed.len() as u32).to_be_bytes());
     request.extend_from_slice(sealed);
+    request.extend(mark.byte());
     match call_relay(shared, &url, request, FORWARD_TIMEOUT) {
         Ok(reply) if reply.len() == 1 && reply[0] <= FAILED => reply[0],
         _ => UNREACHABLE,
@@ -1601,6 +1738,232 @@ mod tests {
         let mut r = [0u8; 1];
         s.read_exact(&mut r).unwrap();
         assert_eq!(r[0], NOT_FOUND);
+    }
+
+    /// A relay on WebSocket, with no token, that pushes to the push service
+    /// at `service`, at most once in `gap` for each queue.
+    fn start_ws_pushing(service: &str, key: Option<RelayKey>, gap: Duration) -> SocketAddr {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let shared = Shared::new(
+            Store::default(),
+            FileStore::default(),
+            key,
+            None,
+            Limits::default(),
+        );
+        let push = Push::with_gap(
+            p256::ecdsa::SigningKey::random(&mut rand::rngs::OsRng),
+            "mailto:a@example.org".into(),
+            vec![service.to_string()],
+            None,
+            gap,
+        )
+        .unwrap();
+        shared.push.set(push).ok().unwrap();
+        let held = Arc::clone(&shared);
+        thread::spawn(move || run_held(held));
+        thread::spawn(move || serve_ws(listener, shared, None));
+        addr
+    }
+
+    fn push_set_request(queue: &QueueId, endpoint: &str, keys: &[u8]) -> Vec<u8> {
+        let mut req = vec![PUSH_SET];
+        req.extend_from_slice(queue);
+        req.extend_from_slice(&(endpoint.len() as u16).to_be_bytes());
+        req.extend_from_slice(endpoint.as_bytes());
+        req.extend_from_slice(keys);
+        req
+    }
+
+    /// A browser's keys for a push address, as `PUSH_SET` takes them.
+    fn key_bytes(keys: &Keys) -> Vec<u8> {
+        let mut bytes = keys.p256dh.to_vec();
+        bytes.extend_from_slice(&keys.auth);
+        bytes
+    }
+
+    fn marked(mut request: Vec<u8>, mark: u8) -> Vec<u8> {
+        request.push(mark);
+        request
+    }
+
+    #[test]
+    fn a_web_app_with_its_keys_is_told_how_many_messages_came_but_not_of_word_between_phones() {
+        use crate::push::tests::{browser, said, service};
+        use crate::push::{stream, UNSURE};
+        let (service, pushes) = service(201);
+        let gap = Duration::from_millis(300);
+        let addr = start_ws_pushing(&service, None, gap);
+        let mut ws = connect_with_token(addr, "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        let (secret, keys) = browser();
+        let endpoint = format!("{service}k");
+
+        // Keys that are no point on the curve are taken as none: the pushes go empty.
+        let mut bogus = key_bytes(&keys);
+        bogus[1] ^= 1;
+        let r = ws_call(&mut ws, push_set_request(&recipient, &endpoint, &bogus));
+        assert_eq!(r, vec![OK]);
+        let r = ws_call(
+            &mut ws,
+            push_set_request(&recipient, &endpoint, &key_bytes(&keys)),
+        );
+        assert_eq!(r, vec![OK, 1]);
+        // Anything else after the address closes the connection.
+        assert!(refused(
+            &mut connect_with_token(addr, "", ""),
+            push_set_request(&recipient, &endpoint, &key_bytes(&keys)[..10])
+        ));
+
+        // Word between phones pushes nothing.
+        let quiet = marked(send_request(&sender, b"seen"), QUIET);
+        assert_eq!(ws_call(&mut ws, quiet), vec![OK]);
+        assert!(pushes.recv_timeout(gap * 2).is_err());
+
+        // A message pushes how many came, encrypted for the browser.
+        let message = marked(send_request(&sender, b"hello"), MESSAGE);
+        assert_eq!(ws_call(&mut ws, message), vec![OK]);
+        let (head, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert!(head.starts_with("POST /k HTTP/1.1\r\n"), "{head}");
+        let (_, flags, from, round, count) = said(&secret, &keys, &body);
+        assert_eq!((flags, from, count), (0, stream(&recipient), 1));
+
+        // A send that says nothing of what it is, as from an older phone, or
+        // with a mark this relay does not know: a push, which says the count
+        // is not sure.
+        for request in [
+            send_request(&sender, b"old"),
+            marked(send_request(&sender, b"new"), 9),
+        ] {
+            assert_eq!(ws_call(&mut ws, request), vec![OK]);
+            let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
+            let (_, flags, _, again, count) = said(&secret, &keys, &body);
+            assert_eq!((flags, again, count), (UNSURE, round, 1));
+        }
+
+        // The web app took its messages: the count starts again, in a new round.
+        let mut took = 0;
+        while ws_receive(&mut ws, &recipient).is_some() {
+            took += 1;
+        }
+        assert_eq!(took, 4);
+        let message = marked(send_request(&sender, b"next"), MESSAGE);
+        assert_eq!(ws_call(&mut ws, message), vec![OK]);
+        let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
+        let (_, flags, _, next, count) = said(&secret, &keys, &body);
+        assert_eq!((flags, count), (0, 1));
+        assert_ne!(next, round);
+    }
+
+    #[test]
+    fn messages_taken_on_the_screen_stop_the_push_that_waits() {
+        use crate::push::tests::{browser, said, service};
+        let (service, pushes) = service(201);
+        let gap = Duration::from_millis(400);
+        let addr = start_ws_pushing(&service, None, gap);
+        let mut ws = connect_with_token(addr, "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        let (secret, keys) = browser();
+        let set = push_set_request(&recipient, &format!("{service}w"), &key_bytes(&keys));
+        assert_eq!(ws_call(&mut ws, set), vec![OK, 1]);
+        let receive_shown = || {
+            let mut req = vec![RECEIVE];
+            req.extend_from_slice(&recipient);
+            req.push(SHOWN);
+            req
+        };
+
+        for text in [&b"one"[..], b"two"] {
+            let message = marked(send_request(&sender, text), MESSAGE);
+            assert_eq!(ws_call(&mut ws, message), vec![OK]);
+        }
+        let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
+        let (_, _, _, round, count) = said(&secret, &keys, &body);
+        assert_eq!(count, 1);
+        // Both read on the screen before the gap is over: the second push
+        // would tell of a message already read, so it does not go.
+        assert_eq!(ws_call(&mut ws, receive_shown())[..2], [OK, 1]);
+        assert_eq!(ws_call(&mut ws, receive_shown())[..2], [OK, 1]);
+        assert_eq!(ws_call(&mut ws, receive_shown()), vec![OK, 0]);
+        assert!(pushes
+            .recv_timeout(gap + Duration::from_millis(300))
+            .is_err());
+
+        let message = marked(send_request(&sender, b"three"), MESSAGE);
+        assert_eq!(ws_call(&mut ws, message), vec![OK]);
+        let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
+        let (_, _, _, next, count) = said(&secret, &keys, &body);
+        assert_eq!(count, 1);
+        assert_ne!(next, round);
+    }
+
+    #[test]
+    fn a_forward_passes_its_mark_on_to_the_other_relay() {
+        use crate::push::tests::{browser, said, service};
+        let (service, pushes) = service(201);
+        let key = RelayKey::generate();
+        let public = key.public();
+        let far = start_ws_pushing(&service, Some(key), Duration::from_millis(100));
+        let near = start_ws_lan(None);
+
+        let mut far_ws = connect_with_token(far, "", "");
+        let (recipient, sender) = ws_create(&mut far_ws);
+        let (secret, keys) = browser();
+        let set = push_set_request(&recipient, &format!("{service}f"), &key_bytes(&keys));
+        assert_eq!(ws_call(&mut far_ws, set), vec![OK, 1]);
+
+        let mut near_ws = connect_with_token(near, "", "");
+        let far_address = format!("ws://{far}");
+        let quiet = seal(&public, &sender, b"seen").unwrap();
+        let r = ws_call(
+            &mut near_ws,
+            marked(forward_request(&far_address, &quiet), QUIET),
+        );
+        assert_eq!(r, vec![OK]);
+        assert!(pushes.recv_timeout(Duration::from_millis(500)).is_err());
+
+        let message = seal(&public, &sender, b"hello").unwrap();
+        let r = ws_call(
+            &mut near_ws,
+            marked(forward_request(&far_address, &message), MESSAGE),
+        );
+        assert_eq!(r, vec![OK]);
+        let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
+        let (_, flags, _, _, count) = said(&secret, &keys, &body);
+        assert_eq!((flags, count), (0, 1));
+    }
+
+    #[test]
+    fn a_message_sent_for_later_is_counted_when_it_goes() {
+        use crate::push::tests::{browser, said, service};
+        let (service, pushes) = service(201);
+        let addr = start_ws_pushing(&service, None, Duration::from_millis(100));
+        let mut ws = connect_with_token(addr, "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        let (secret, keys) = browser();
+        let set = push_set_request(&recipient, &format!("{service}l"), &key_bytes(&keys));
+        assert_eq!(ws_call(&mut ws, set), vec![OK, 1]);
+
+        // The mark goes after the whole request: one inside the held send is
+        // more than a send, refused as before.
+        let at = system_now() + 1;
+        let inside = marked(send_request(&sender, b"x"), MESSAGE);
+        assert!(refused(
+            &mut connect_with_token(addr, "", ""),
+            later_request(at, &[4; 16], &inside)
+        ));
+        let held = later_request(at, &[3; 16], &send_request(&sender, b"later"));
+        assert_eq!(ws_call(&mut ws, marked(held, MESSAGE)), vec![OK]);
+        assert!(pushes.recv_timeout(Duration::from_millis(300)).is_err());
+
+        let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
+        let (_, flags, _, _, count) = said(&secret, &keys, &body);
+        assert_eq!((flags, count), (0, 1));
+        assert_eq!(
+            ws_receive(&mut ws, &recipient).as_deref(),
+            Some(&b"later"[..])
+        );
     }
 
     #[test]
