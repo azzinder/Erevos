@@ -43,6 +43,9 @@ On main, not released yet.
 - A group's keeper cannot leave or take itself out, and hands the group only to a member who stays.
 - An MMS with a length past its end is refused at once. A new fingerprint key opens only while the
   phone is unlocked.
+- **The desktop app on Linux with no keyring** keeps no keys, and says how to start one, unless
+  started with `--plain-secrets`; then it keeps them as before, readable by your user.
+- The guide says at the top of SMS that Erevos does not encrypt SMS and MMS.
 - **Carrying messages for phones nearby** is off unless turned on, and then goes only to relays on
   the internet over TLS (`wss://`).
 - A README that matches the code, this changelog, and a threat model (`docs/threat-model.md`).

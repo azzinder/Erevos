@@ -36,6 +36,9 @@ const WEB = path.join(__dirname, 'web');
 const MAC = process.platform === 'darwin';
 const WINDOWS = process.platform === 'win32';
 const SMOKE = process.argv.includes('--smoke');
+// On a Linux system with no keyring, the secrets are kept as they are only when Erevos was started
+// with this: see secretStore.
+const PLAIN_SECRETS = process.argv.includes('--plain-secrets');
 
 // Its data folder, its Keychain item ("Erevos Safe Storage") and its menu are named after it; the
 // name may never change, or it would start from an empty folder.
@@ -139,17 +142,26 @@ function inTurn(name, run) {
 }
 
 /**
- * Whether the keyring protects the secrets: without one (Linux with no keyring) they are kept as
- * they are, which the app's guide says. A Mac always has the Keychain: when it does not give the
- * key (the owner chose Deny), nothing is read or written.
+ * Whether the keyring protects the secrets. A Mac always has the Keychain: when it does not give
+ * the key (the owner chose Deny), nothing is read or written. A Linux system with no keyring, or
+ * one Electron does not find (it then picks "basic_text", whose key is no secret), reads and
+ * writes nothing either, so no password slot lies there unsealed by surprise; started with
+ * --plain-secrets it keeps them as they are, readable by this user, which the app's guide says.
  */
-const secretStore = () => (safeStorage.isEncryptionAvailable() ? 'encrypted' : MAC ? 'refused' : 'plain');
+function secretStore() {
+  const linuxPlain = process.platform === 'linux' && safeStorage.getSelectedStorageBackend?.() === 'basic_text';
+  if (safeStorage.isEncryptionAvailable() && !linuxPlain) return 'encrypted';
+  if (MAC) return 'refused';
+  return PLAIN_SECRETS ? 'plain' : 'no-keyring';
+}
 
 function secret(request, key) {
   if (!key) return new Response('no key', { status: 400 });
   const store = secretStore();
   const headers = { 'X-Erevos-Secret-Store': store };
   if (store === 'refused') return new Response('The Keychain refused. Open Erevos again and allow it.', { status: 503, headers });
+  // The app says this in its own words (lib/shell.ts).
+  if (store === 'no-keyring') return new Response('No keyring to seal the secrets with.', { status: 503, headers });
   const file = dataPath('secrets.json');
   if (request.method === 'GET') {
     const all = readJson(file, {});

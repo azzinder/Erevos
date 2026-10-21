@@ -175,6 +175,7 @@ export const parts: Record<string, string> = {
   'This version installs from the download page.': 'Αυτή η έκδοση εγκαθίσταται από τη σελίδα λήψης.',
   'GitHub answered {status}.': 'Το GitHub απάντησε {status}.',
   'The desktop app answered {status}.': 'Η εφαρμογή υπολογιστή απάντησε {status}.',
+  'This computer has no keyring to seal Erevos’s keys with, so Erevos keeps none. Start a keyring (KWallet, or GNOME Keyring with --password-store=gnome-libsecret), or start Erevos with --plain-secrets to keep them unsealed, readable by your user, and set a password lock.': 'Αυτός ο υπολογιστής δεν έχει κλειδοθήκη για να σφραγίσει τα κλειδιά του Erevos, οπότε το Erevos δεν κρατά κανένα. Ξεκίνα μια κλειδοθήκη (KWallet, ή GNOME Keyring με --password-store=gnome-libsecret), ή ξεκίνα το Erevos με --plain-secrets για να τα κρατά ασφράγιστα, αναγνώσιμα από τον χρήστη σου, και βάλε κλείδωμα με κωδικό.',
   'The browser did not open its storage.': 'Ο browser δεν άνοιξε τον χώρο αποθήκευσής του.',
 
   // LoRa and nearby phones (lib/lora.ts, lib/nearby.ts).

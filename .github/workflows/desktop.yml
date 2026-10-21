@@ -40,7 +40,7 @@ jobs:
         working-directory: desktop
       - name: Start it and wait for its first screen
         working-directory: desktop
-        run: xvfb-run -a npx electron . --smoke --no-sandbox
+        run: xvfb-run -a npx electron . --smoke --no-sandbox --plain-secrets
       - name: Package for Linux
         working-directory: desktop
         run: |

@@ -63,6 +63,11 @@ export async function shellFetch(path: string, init: RequestInit = {}): Promise<
   const headers = new Headers(init.headers);
   headers.set('X-Erevos-Token', token);
   const response = await fetch(path, { ...init, headers });
+  if (response.status === 503 && response.headers.get('X-Erevos-Secret-Store') === 'no-keyring') {
+    throw new ShellError(
+      t('This computer has no keyring to seal Erevos’s keys with, so Erevos keeps none. Start a keyring (KWallet, or GNOME Keyring with --password-store=gnome-libsecret), or start Erevos with --plain-secrets to keep them unsealed, readable by your user, and set a password lock.'),
+    );
+  }
   if (!response.ok && !TOLD.includes(response.status)) throw new ShellError((await response.text()) || t('The desktop app answered {status}.', { status: response.status }));
   return response;
 }

@@ -671,6 +671,9 @@ is **No bridges** unless you choose, each space has its own, and it counts only 
 On Android, Erevos can be the phone's SMS app, under **SMS** in the menu. The home screen then shows SMS and Erevos
 chats in one list.
 
+> **SMS and MMS are not encrypted by Erevos.** They travel as every SMS does, and stay in Android's own SMS store, where
+> any app allowed to read SMS sees them and Android's backups hold them. Only Erevos chats are end-to-end encrypted.
+
 - **SMS from before:** nothing to import. Erevos shows the SMS and MMS already on the phone, from Android's own
   store, where they stay for any other SMS app. Android keeps them, not sealed by Erevos, as with every SMS app.
 - **If Erevos does not become the SMS app:** Android 15 and later can hold this back from an app installed from a
@@ -1173,8 +1176,10 @@ encrypted as on the phone, and keeps its contacts, messages and settings sealed 
   hidden chats, voice messages, imported chats and backups.
 - **Where it keeps things:** in its own folder (on Linux \`~/.config/Erevos\`, on a Mac
   \`~/Library/Application Support/Erevos\`, on Windows \`%APPDATA%\\Erevos\`), sealed as on the phone. Its keystore is
-  sealed with the system's keyring (on a Mac the Keychain, on Windows the key of your Windows account). A Linux system
-  without a keyring keeps it as it is: set a password lock there. The portable Windows app keeps its things in the
+  sealed with the system's keyring (on a Mac the Keychain, on Windows the key of your Windows account). On a Linux
+  system without a keyring (KWallet or GNOME Keyring), or one Erevos does not find, Erevos opens with a note and keeps
+  nothing: start the keyring, or give Erevos \`--password-store=gnome-libsecret\`. Started with \`--plain-secrets\`, it
+  keeps its keystore there as it is, readable by your user: then set a password lock. The portable Windows app keeps its things in the
   same folder as the installed one, and uninstalling leaves them there.
 - **Windows' firewall** asks, the first time Erevos opens, whether it may use the network. Allow it on private
   networks, or phones and computers on the same Wi-Fi cannot reach it; relays work either way.
@@ -1300,8 +1305,8 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
 - **What only Android does:** the nearby link (Bluetooth and Wi-Fi Aware), LoRa and SMS. The rest is the same: spaces and
   the second password, hidden chats, voice messages, imported chats and backups.
 - **Where it keeps things:** in \`~/.local/share/erevos\` on the phone, sealed as on the phone. Sailfish has no
-  keyring for apps, so the keystore is kept there as it is, readable by your user only: the password lock is what
-  seals it.
+  keyring for apps, so the keystore is kept there as it is, readable by your user, and so by any app that runs as
+  you: the password lock is what seals it.
 - **Backups** go to \`Documents/Erevos\` on the phone, by hand or every day; copy them from there to a memory card or
   another device. **Save** puts a photo or file in Downloads.
 - **Only while it runs:** when Erevos is closed, messages wait on the relay until it opens.
@@ -1388,7 +1393,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
 | **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
 | **Photos and files** | End-to-end encrypted, through the relay's file store, in pieces of one size: the relay sees how many and when, so roughly how big. Your relay sees your address, as for messages; the contact takes them through their own relay. Photos lose their place, phone and time, unless sent as a file; a file keeps what it says inside. Sealed on the phone in their pieces, shown from memory. Saved copies are outside Erevos. Not in backups yet. | Backups that hold them. |
-| **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring (on Windows, your account's key); a Linux system without one keeps it as it is. | |
+| **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring (on Windows, your account's key); on a Linux system without one, Erevos keeps nothing unless started with \`--plain-secrets\`, and then keeps it as it is. | |
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
