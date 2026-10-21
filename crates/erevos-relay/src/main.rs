@@ -11,6 +11,13 @@
 //! can use the relay. The TCP front end has no token, so keep it on
 //! `127.0.0.1` anywhere others can reach the machine.
 //!
+//! Each connection has a thread of its own, so the relay takes at most
+//! `EREVOS_RELAY_MAX_CONNECTIONS` at once (512 unless set), both front ends
+//! together, and of those at most `EREVOS_RELAY_MAX_TOKENLESS_CONNECTIONS`
+//! (128 unless set) on the paths that need no token (`/sealed` and
+//! `/files`). Past that, a new connection is closed at once. A connection
+//! that sends nothing for five minutes is closed (see `server.rs`).
+//!
 //! Set `EREVOS_RELAY_JOURNAL` to a file path to keep queues and waiting
 //! messages there, so they survive a restart. Without it, they live in memory
 //! only and are lost when the relay stops.
@@ -76,8 +83,24 @@ use erevos_core::relay_seal::RelayKey;
 use files::FileStore;
 use later::Held;
 use queue::Store;
-use server::Shared;
+use server::{Limits, Shared};
 use turn::Turn;
+
+/// The whole number in the environment variable `name`, or `default` when it
+/// is not set. `None`, after saying why, when it is set to anything but a
+/// whole number of at least `least`.
+fn number(name: &str, default: u64, least: u64) -> Option<u64> {
+    match env::var(name) {
+        Ok(text) if !text.is_empty() => match text.parse::<u64>() {
+            Ok(n) if n >= least => Some(n),
+            _ => {
+                eprintln!("erevos-relay: {name} must be a whole number, at least {least}");
+                None
+            }
+        },
+        _ => Some(default),
+    }
+}
 
 /// Reads the relay key from `path`, or makes one there if the file does not exist.
 fn load_key(path: &Path) -> io::Result<RelayKey> {
@@ -254,8 +277,32 @@ fn main() -> ExitCode {
             Held::in_memory(ttl)
         }
     };
+    let Some(connections) = number(
+        "EREVOS_RELAY_MAX_CONNECTIONS",
+        server::DEFAULT_MAX_CONNECTIONS as u64,
+        1,
+    ) else {
+        return ExitCode::FAILURE;
+    };
+    let Some(tokenless) = number(
+        "EREVOS_RELAY_MAX_TOKENLESS_CONNECTIONS",
+        server::DEFAULT_MAX_TOKENLESS as u64,
+        1,
+    ) else {
+        return ExitCode::FAILURE;
+    };
+    let limits = Limits {
+        connections: connections.try_into().unwrap_or(usize::MAX),
+        tokenless: tokenless.try_into().unwrap_or(usize::MAX),
+        ..Limits::default()
+    };
+    eprintln!(
+        "erevos-relay: taking {} connections at once, {} of them on the paths that need no token",
+        limits.connections,
+        limits.tokenless.min(limits.connections)
+    );
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
-    let store = Shared::new(store, files, key, turn);
+    let store = Shared::new(store, files, key, turn, limits);
     let lending = env::var("EREVOS_RELAY_LEND").map_or(true, |on| on != "off");
     match &store.key {
         Some(key) if lending => {
@@ -305,16 +352,6 @@ fn main() -> ExitCode {
         sweep_store.files().expire();
     });
     let ws_store = Arc::clone(&store);
-    thread::spawn(move || {
-        if let Err(e) = server::serve_ws(ws, ws_store, token) {
-            eprintln!("erevos-relay websocket: {e}");
-        }
-    });
-    match server::serve(tcp, store) {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(e) => {
-            eprintln!("erevos-relay: {e}");
-            ExitCode::FAILURE
-        }
-    }
+    thread::spawn(move || server::serve_ws(ws, ws_store, token));
+    server::serve(tcp, store)
 }

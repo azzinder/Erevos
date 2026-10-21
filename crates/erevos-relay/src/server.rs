@@ -103,10 +103,20 @@
 //! `serve_ws`). Neither front end speaks TLS: put the WebSocket
 //! behind a TLS proxy before it leaves the local network.
 //!
+//! Each connection has a thread of its own, so the relay takes only so many
+//! at once (`Limits`): past `connections`, both front ends together, a new
+//! one is closed as soon as it comes, and past `tokenless` on the paths that
+//! need no token, the handshake is refused with 503, so connections from
+//! anyone cannot take all the places the relay's own phones need. A
+//! connection that sends nothing for `idle` is closed (a WebSocket with a
+//! close frame first), one whose WebSocket handshake is not over within
+//! `handshake` too, and one that takes no reply for `WRITE_TIMEOUT`.
+//!
 //! Not audited.
 
 use std::io::{self, Cursor, ErrorKind, Read, Write};
-use std::net::{TcpListener, TcpStream, ToSocketAddrs};
+use std::net::{Shutdown, TcpListener, TcpStream, ToSocketAddrs};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -115,6 +125,8 @@ use erevos_core::relay_seal::{RelayKey, OVERHEAD};
 
 use tungstenite::handshake::server::{ErrorResponse, Request, Response};
 use tungstenite::http::StatusCode;
+use tungstenite::protocol::frame::coding::CloseCode;
+use tungstenite::protocol::CloseFrame;
 use tungstenite::Message;
 
 use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
@@ -143,9 +155,85 @@ pub struct Shared {
     /// comes or goes.
     pub held: Mutex<Held>,
     pub held_changed: Condvar,
+    pub limits: Limits,
+    /// Connections open now, and of those, the ones on paths that need no
+    /// token.
+    connections: Arc<AtomicUsize>,
+    tokenless: Arc<AtomicUsize>,
 }
 
 pub type SharedStore = Arc<Shared>;
+
+/// Connections the relay takes at once unless set (`EREVOS_RELAY_MAX_CONNECTIONS`).
+pub const DEFAULT_MAX_CONNECTIONS: usize = 512;
+/// Of those, connections on the paths that need no token unless set
+/// (`EREVOS_RELAY_MAX_TOKENLESS_CONNECTIONS`).
+pub const DEFAULT_MAX_TOKENLESS: usize = 128;
+/// How long a connection may send nothing before it is closed. The app never
+/// leaves one quiet for long: most of its connections carry one request and
+/// close once it is answered, a `WAIT` too (the relay waits then, not the
+/// phone, and the relay is not reading meanwhile), and one that carries a
+/// file's chunks sends the next as soon as it has read and sealed it on the
+/// phone. Five minutes is far above any of that, even through Tor, so only a
+/// connection left open for nothing is cut.
+pub const IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
+/// How long a WebSocket handshake may take from the moment the connection
+/// came. A client sends its whole request at once; one that trickles it in
+/// to hold a place is closed.
+pub const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(30);
+/// How long a reply may wait for the other end to take any of it: one that
+/// takes nothing for that long has gone.
+const WRITE_TIMEOUT: Duration = Duration::from_secs(60);
+/// How long a front end waits before it takes connections again when it
+/// could not take one (out of file descriptors, say).
+const ACCEPT_PAUSE: Duration = Duration::from_millis(200);
+
+/// How many connections the relay takes, and how long they may stay quiet.
+#[derive(Clone, Copy, Debug)]
+pub struct Limits {
+    /// Connections at once, both front ends together.
+    pub connections: usize,
+    /// Of those, connections at once on the paths that need no token
+    /// (`/sealed` and `/files`).
+    pub tokenless: usize,
+    /// See `IDLE_TIMEOUT`.
+    pub idle: Duration,
+    /// See `HANDSHAKE_TIMEOUT`.
+    pub handshake: Duration,
+}
+
+impl Default for Limits {
+    fn default() -> Self {
+        Limits {
+            connections: DEFAULT_MAX_CONNECTIONS,
+            tokenless: DEFAULT_MAX_TOKENLESS,
+            idle: IDLE_TIMEOUT,
+            handshake: HANDSHAKE_TIMEOUT,
+        }
+    }
+}
+
+/// A place for one connection among those the relay takes at once. Dropping
+/// it, when the connection's thread ends however it ends, gives it back.
+struct Slot(Arc<AtomicUsize>);
+
+impl Slot {
+    /// A place in `count`, if fewer than `max` are taken.
+    fn take(count: &Arc<AtomicUsize>, max: usize) -> Option<Slot> {
+        count
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+                (n < max).then_some(n + 1)
+            })
+            .ok()
+            .map(|_| Slot(Arc::clone(count)))
+    }
+}
+
+impl Drop for Slot {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
+    }
+}
 
 /// What the shared locks are called in the line the relay prints if one is
 /// poisoned (see `lock.rs`).
@@ -159,6 +247,7 @@ impl Shared {
         files: FileStore,
         key: Option<RelayKey>,
         turn: Option<Turn>,
+        limits: Limits,
     ) -> SharedStore {
         Arc::new(Shared {
             store: Mutex::new(store),
@@ -170,6 +259,9 @@ impl Shared {
             lend: std::sync::OnceLock::new(),
             held: Mutex::new(Held::default()),
             held_changed: Condvar::new(),
+            limits,
+            connections: Arc::new(AtomicUsize::new(0)),
+            tokenless: Arc::new(AtomicUsize::new(0)),
         })
     }
 
@@ -253,51 +345,130 @@ enum Access {
     Lent(Nonce),
 }
 
-/// Serves raw TCP connections until the listener fails. Each connection gets
-/// its own thread; all share one store.
-pub fn serve(listener: TcpListener, store: SharedStore) -> io::Result<()> {
+/// Serves raw TCP connections. Each connection gets its own thread; all share
+/// one store.
+pub fn serve(listener: TcpListener, store: SharedStore) -> ! {
     loop {
-        let (stream, _) = listener.accept()?;
+        let stream = accept(&listener);
+        // Past the cap, closed at once, before it costs a thread.
+        let Some(slot) = Slot::take(&store.connections, store.limits.connections) else {
+            continue;
+        };
         let store = Arc::clone(&store);
         thread::spawn(move || {
+            let _slot = slot;
             // A bad client only loses its own connection.
             let _ = handle_tcp(stream, &store);
         });
     }
 }
 
-/// Serves WebSocket connections until the listener fails. Each connection gets
-/// its own thread; all share the same store as the TCP front end. With a
-/// `token`, a connection must send `Authorization: Bearer <token>` during the
-/// handshake, or offer the subprotocols `erevos` and `erevos-token.<token in
-/// hex>` as a browser does, or it is refused with 401. A connection that offers
-/// `erevos` gets it as its subprotocol, which a browser needs to go on.
-pub fn serve_ws(
-    listener: TcpListener,
-    store: SharedStore,
-    token: Option<Arc<str>>,
-) -> io::Result<()> {
+/// Serves WebSocket connections. Each connection gets its own thread; all
+/// share the same store as the TCP front end. With a `token`, a connection
+/// must send `Authorization: Bearer <token>` during the handshake, or offer
+/// the subprotocols `erevos` and `erevos-token.<token in hex>` as a browser
+/// does, or it is refused with 401. A connection that offers `erevos` gets it
+/// as its subprotocol, which a browser needs to go on.
+pub fn serve_ws(listener: TcpListener, store: SharedStore, token: Option<Arc<str>>) -> ! {
     loop {
-        let (stream, _) = listener.accept()?;
+        let stream = accept(&listener);
+        let Some(slot) = Slot::take(&store.connections, store.limits.connections) else {
+            continue;
+        };
         let store = Arc::clone(&store);
         let token = token.clone();
         thread::spawn(move || {
+            let _slot = slot;
             let _ = handle_ws(stream, &store, token.as_deref());
         });
     }
 }
 
-fn handle_tcp(mut stream: TcpStream, store: &Shared) -> io::Result<()> {
-    while let Some(reply) = respond(&mut stream, store, Access::All)? {
-        stream.write_all(&reply)?;
+/// The next connection. A front end that cannot take one for a moment (out
+/// of file descriptors, say) waits a little and goes on, instead of stopping
+/// while the rest of the relay runs.
+fn accept(listener: &TcpListener) -> TcpStream {
+    let mut said = false;
+    loop {
+        match listener.accept() {
+            Ok((stream, _)) => return stream,
+            Err(e) => {
+                if !said {
+                    eprintln!("erevos-relay: cannot take connections for now: {e}");
+                    said = true;
+                }
+                thread::sleep(ACCEPT_PAUSE);
+            }
+        }
     }
-    Ok(())
+}
+
+/// Whether a read or write ended because the other end was quiet too long.
+fn timed_out(error: &io::Error) -> bool {
+    matches!(error.kind(), ErrorKind::WouldBlock | ErrorKind::TimedOut)
+}
+
+fn handle_tcp(mut stream: TcpStream, store: &Shared) -> io::Result<()> {
+    stream.set_read_timeout(Some(store.limits.idle))?;
+    stream.set_write_timeout(Some(WRITE_TIMEOUT))?;
+    loop {
+        match respond(&mut stream, store, Access::All) {
+            Ok(Some(reply)) => stream.write_all(&reply)?,
+            Ok(None) => return Ok(()),
+            // Quiet too long: closed, as at the end of any connection.
+            Err(e) if timed_out(&e) => {
+                let _ = stream.shutdown(Shutdown::Both);
+                return Ok(());
+            }
+            Err(e) => return Err(e),
+        }
+    }
+}
+
+/// A connection's stream whose reads also end at `deadline` while one is set:
+/// the WebSocket handshake must be over by then, however its bytes trickle in.
+struct Timed {
+    stream: TcpStream,
+    idle: Duration,
+    deadline: Option<Instant>,
+}
+
+impl Read for Timed {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if let Some(deadline) = self.deadline {
+            let left = deadline.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                return Err(ErrorKind::TimedOut.into());
+            }
+            self.stream.set_read_timeout(Some(left.min(self.idle)))?;
+        }
+        self.stream.read(buf)
+    }
+}
+
+impl Write for Timed {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.stream.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.stream.flush()
+    }
 }
 
 // The error type of the handshake callback is fixed by tungstenite, so it cannot be boxed here.
 #[allow(clippy::result_large_err)]
 fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Result<()> {
+    let limits = store.limits;
+    stream.set_write_timeout(Some(WRITE_TIMEOUT))?;
+    let stream = Timed {
+        stream,
+        idle: limits.idle,
+        deadline: Some(Instant::now() + limits.handshake),
+    };
     let mut access = Access::All;
+    // Held until the connection ends, on the paths that need no token.
+    let mut tokenless: Option<Slot> = None;
     let check = |request: &Request, mut response: Response| {
         if offered_protocols(request).any(|p| p == PROTOCOL) {
             response.headers_mut().insert(
@@ -306,12 +477,20 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
             );
         }
         let path = request.uri().path();
-        if path.ends_with(SEALED_PATH) {
-            access = Access::Sealed;
-            return Ok(response);
-        }
-        if path.ends_with(FILES_PATH) {
-            access = Access::Files;
+        let open = if path.ends_with(SEALED_PATH) {
+            Some(Access::Sealed)
+        } else if path.ends_with(FILES_PATH) {
+            Some(Access::Files)
+        } else {
+            None
+        };
+        if let Some(open) = open {
+            // Anyone may come here, so only so many at once.
+            tokenless = Slot::take(&store.tokenless, limits.tokenless);
+            if tokenless.is_none() {
+                return Err(busy());
+            }
+            access = open;
             return Ok(response);
         }
         let lent = store
@@ -336,11 +515,23 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
         }
     };
     let mut socket = tungstenite::accept_hdr(stream, check).map_err(to_io)?;
+    let timed = socket.get_mut();
+    timed.deadline = None;
+    timed.stream.set_read_timeout(Some(limits.idle))?;
     loop {
         let message = match socket.read() {
             Ok(message) => message,
             Err(tungstenite::Error::ConnectionClosed | tungstenite::Error::AlreadyClosed) => {
                 return Ok(())
+            }
+            // Quiet too long: told so, and closed.
+            Err(tungstenite::Error::Io(e)) if timed_out(&e) => {
+                let _ = socket.close(Some(CloseFrame {
+                    code: CloseCode::Away,
+                    reason: "idle".into(),
+                }));
+                let _ = socket.flush();
+                return Ok(());
             }
             Err(e) => return Err(to_io(e)),
         };
@@ -988,6 +1179,13 @@ fn unauthorized() -> ErrorResponse {
     response
 }
 
+/// The answer when a path that needs no token has all the connections it may.
+fn busy() -> ErrorResponse {
+    let mut response = ErrorResponse::new(None);
+    *response.status_mut() = StatusCode::SERVICE_UNAVAILABLE;
+    response
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -998,9 +1196,14 @@ mod tests {
     use tungstenite::WebSocket;
 
     fn start() -> SocketAddr {
+        start_limited(Limits::default())
+    }
+
+    /// A relay on TCP that takes connections as `limits` says.
+    fn start_limited(limits: Limits) -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
-        let store = Shared::new(Store::default(), FileStore::default(), None, None);
+        let store = Shared::new(Store::default(), FileStore::default(), None, None, limits);
         let held = Arc::clone(&store);
         thread::spawn(move || run_held(held));
         thread::spawn(move || serve(listener, store));
@@ -1012,9 +1215,13 @@ mod tests {
     }
 
     fn start_ws_with(token: Option<&str>, key: Option<RelayKey>) -> SocketAddr {
+        start_ws_limited(token, key, Limits::default())
+    }
+
+    fn start_ws_limited(token: Option<&str>, key: Option<RelayKey>, limits: Limits) -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
-        let store = Shared::new(Store::default(), FileStore::default(), key, None);
+        let store = Shared::new(Store::default(), FileStore::default(), key, None, limits);
         // A relay with a key lends, as one started by main does.
         if let Some(key) = &store.key {
             let _ = store.lend.set(Lend::new(key));
@@ -1202,7 +1409,13 @@ mod tests {
 
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
-        let shared = Shared::new(Store::default(), FileStore::default(), None, None);
+        let shared = Shared::new(
+            Store::default(),
+            FileStore::default(),
+            None,
+            None,
+            Limits::default(),
+        );
         let key = p256::ecdsa::SigningKey::random(&mut rand::rngs::OsRng);
         let push = Push::new(
             key,
@@ -1565,7 +1778,13 @@ mod tests {
             "turn:relay.example.org:3478,turn:relay.example.org:3478?transport=tcp",
             "secret",
         );
-        let store = Shared::new(Store::default(), FileStore::default(), None, turn);
+        let store = Shared::new(
+            Store::default(),
+            FileStore::default(),
+            None,
+            turn,
+            Limits::default(),
+        );
         thread::spawn(move || serve_ws(listener, store, Some(Arc::from("t"))));
 
         let mut ws = connect_with_token(addr, "", "t");
@@ -1879,5 +2098,159 @@ mod tests {
             chunk_of(&ws_call(&mut ws, id_request(FILE_GET, &r[1..]))),
             b"abc"
         );
+    }
+
+    /// Whether the relay ended `s`: it reads as closed, or reset, rather than quiet.
+    fn ended(s: &mut TcpStream) -> bool {
+        s.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+        let mut r = [0u8; 1];
+        match s.read(&mut r) {
+            Ok(n) => n == 0,
+            Err(e) => !timed_out(&e),
+        }
+    }
+
+    /// Whether a new connection to the TCP front end at `addr` is answered.
+    fn answered(addr: SocketAddr) -> bool {
+        let mut s = TcpStream::connect(addr).unwrap();
+        s.write_all(&[KEY]).is_ok() && !ended(&mut s)
+    }
+
+    /// Whether `ok` comes true within a few seconds: a connection's place
+    /// comes back once its thread has seen it closed.
+    fn soon(mut ok: impl FnMut() -> bool) -> bool {
+        (0..100).any(|_| {
+            ok() || {
+                thread::sleep(Duration::from_millis(50));
+                false
+            }
+        })
+    }
+
+    #[test]
+    fn past_the_cap_a_connection_is_closed_at_once_until_a_place_comes_back() {
+        let addr = start_limited(Limits {
+            connections: 2,
+            ..Limits::default()
+        });
+        let mut first = TcpStream::connect(addr).unwrap();
+        let mut second = TcpStream::connect(addr).unwrap();
+        create(&mut first);
+        create(&mut second);
+        assert!(!answered(addr));
+        drop(first);
+        assert!(soon(|| answered(addr)));
+        // The ones it took go on as before.
+        create(&mut second);
+    }
+
+    #[test]
+    fn the_cap_counts_both_front_ends_together() {
+        let tcp = TcpListener::bind("127.0.0.1:0").unwrap();
+        let ws = TcpListener::bind("127.0.0.1:0").unwrap();
+        let (tcp_addr, ws_addr) = (tcp.local_addr().unwrap(), ws.local_addr().unwrap());
+        let limits = Limits {
+            connections: 1,
+            ..Limits::default()
+        };
+        let shared = Shared::new(Store::default(), FileStore::default(), None, None, limits);
+        let other = Arc::clone(&shared);
+        thread::spawn(move || serve(tcp, shared));
+        thread::spawn(move || serve_ws(ws, other, None));
+        let mut s = TcpStream::connect(tcp_addr).unwrap();
+        create(&mut s);
+        assert!(tungstenite::connect(format!("ws://{ws_addr}")).is_err());
+        drop(s);
+        assert!(soon(
+            || tungstenite::connect(format!("ws://{ws_addr}")).is_ok()
+        ));
+    }
+
+    #[test]
+    fn the_paths_that_need_no_token_have_fewer_places_than_the_rest() {
+        let limits = Limits {
+            tokenless: 1,
+            ..Limits::default()
+        };
+        let addr = start_ws_limited(Some("t"), None, limits);
+        let (mut open, _) = tungstenite::connect(format!("ws://{addr}{FILES_PATH}")).unwrap();
+        // Another is refused, on either path, as busy.
+        for path in [FILES_PATH, SEALED_PATH] {
+            match tungstenite::connect(format!("ws://{addr}{path}")) {
+                Err(tungstenite::Error::Http(response)) => {
+                    assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE)
+                }
+                other => panic!("expected a refusal, got {:?}", other.map(|_| ())),
+            }
+        }
+        // Phones with the token still come in.
+        let mut owner = connect_with_token(addr, "", "t");
+        assert_eq!(ws_call(&mut owner, vec![KEY]), vec![NOT_FOUND]);
+        assert_eq!(
+            ws_call(&mut open, id_request(FILE_GET, &[0; 24])),
+            vec![NOT_FOUND]
+        );
+        open.close(None).unwrap();
+        drop(open);
+        assert!(soon(|| tungstenite::connect(format!(
+            "ws://{addr}{SEALED_PATH}"
+        ))
+        .is_ok()));
+    }
+
+    #[test]
+    fn a_quiet_connection_is_closed_but_a_long_wait_is_not() {
+        let quick = Limits {
+            idle: Duration::from_millis(500),
+            ..Limits::default()
+        };
+        let mut s = TcpStream::connect(start_limited(quick)).unwrap();
+        let (recipient, _) = create(&mut s);
+        // A wait longer than that is the relay's, not the phone's: it is answered.
+        assert_eq!(wait(&mut s, &recipient, 2), vec![OK, 0]);
+        // Quiet for longer: closed, cleanly.
+        thread::sleep(Duration::from_millis(1500));
+        let mut r = [0u8; 1];
+        s.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+        assert_eq!(s.read(&mut r).unwrap(), 0);
+
+        // A WebSocket hears why first.
+        let addr = start_ws_limited(None, None, quick);
+        let (mut ws, _) = tungstenite::connect(format!("ws://{addr}")).unwrap();
+        let (recipient, _) = ws_create(&mut ws);
+        let mut wait = vec![WAIT];
+        wait.extend_from_slice(&recipient);
+        wait.push(2);
+        assert_eq!(ws_call(&mut ws, wait), vec![OK, 0]);
+        match ws.read() {
+            Ok(Message::Close(Some(frame))) => assert_eq!(frame.code, CloseCode::Away),
+            other => panic!("expected a close frame, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_handshake_that_trickles_in_is_cut_off() {
+        let addr = start_ws_limited(
+            None,
+            None,
+            Limits {
+                handshake: Duration::from_millis(700),
+                ..Limits::default()
+            },
+        );
+        let mut s = TcpStream::connect(addr).unwrap();
+        let mut writer = s.try_clone().unwrap();
+        // A byte at a time, each well within the time a connection may be quiet.
+        thread::spawn(move || {
+            for byte in b"GET / HTTP/1.1\r\nHost: relay\r\nUpgrade: websocket\r\n" {
+                thread::sleep(Duration::from_millis(100));
+                if writer.write_all(&[*byte]).is_err() {
+                    return;
+                }
+            }
+        });
+        let started = Instant::now();
+        assert!(ended(&mut s));
+        assert!(started.elapsed() < Duration::from_secs(3));
     }
 }
