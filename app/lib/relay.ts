@@ -364,18 +364,19 @@ function forwardRequest(to: string, sealed: Uint8Array): Uint8Array {
 /**
  * Hands a message sealed for the relay at `url` (relaySeal) to that relay, for the phone that
  * carried it there (lib/nearby.ts): through our own relay, or the second one when set, as a
- * two-hop send, so the relay at `url` never sees this phone's address. True when the relay took
+ * two-hop send, so the relay at `url` never sees this phone's address. `mark` only for this
+ * phone's own: one carried for another says nothing, as it cannot know. True when the relay took
  * it, false when it never will: the queue is not there, or it was sealed for another key. Throws
  * when a relay could not be reached or could not keep it now: try again later.
  */
-export async function carryTo(own: Relay, url: string, sealed: Uint8Array): Promise<boolean> {
+export async function carryTo(own: Relay, url: string, sealed: Uint8Array, mark?: Mark): Promise<boolean> {
   if (sealed.length > MAX_MESSAGE + 1024) return false;
   const first = own.via ?? own;
   try {
-    if (sameRelay(first.url, url)) check(await request(first, sealedSendRequest(sealed)), 'send');
+    if (sameRelay(first.url, url)) check(await request(first, marked(sealedSendRequest(sealed), mark)), 'send');
     // A place lent on our relay cannot have it connect to theirs.
-    else if (isLentToken(first.token)) check(await request(relayPath(url, '/sealed'), sealedSendRequest(sealed)), 'send');
-    else await forwardMessage(first, url.trim().replace(/\/+$/, ''), sealed);
+    else if (isLentToken(first.token)) check(await request(relayPath(url, '/sealed'), marked(sealedSendRequest(sealed), mark)), 'send');
+    else await forwardMessage(first, url.trim().replace(/\/+$/, ''), sealed, mark);
     return true;
   } catch (error) {
     if (isQueueNotFound(error)) return false;

@@ -18,7 +18,7 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes, toBase64 } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { framesOf, isCarriable, Nearby, NoWayError, type Carried } from '../lib/nearby';
-import { carryTo, createQueue, receiveMessage, relayKey, toHex } from '../lib/relay';
+import { carryTo, createQueue, receiveMessage, relayKey, toHex, type Mark } from '../lib/relay';
 import { carriedFor } from '../lib/space-chats';
 import { files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
@@ -400,6 +400,52 @@ test('what a phone carries stays when Erevos closes: for others on the phone, it
   await a3.nearby.carriedSaved();
   assert.deepEqual(a3.nearby.carriedCount(), { own: 0, others: 0 });
   assert.deepEqual(c3.nearby.carriedCount(), { own: 0, others: 0 });
+});
+
+test('its own say what they carry as the phone hands them to the relay, kept with them when Erevos closes; a phone carrying them for it cannot say', async () => {
+  files.clear();
+  const { phone, link } = room();
+  const [a, c] = ['A', 'C'].map(phone);
+  const spaceKey = randomBytes(32);
+  const leave = a.nearby.keepOwnIn(ownCarried(0, spaceKey));
+  await c.nearby.keepOthersIn(othersCarried());
+  link('A', 'C');
+  const sealed = [randomBytes(300), randomBytes(300)];
+  const said: Mark[] = ['quiet', 'message'];
+  const carry = async (): Promise<Carried[]> => sealed.map((s, i) => ({ url: 'ws://relay.example:7879', sealed: s, mark: said[i] }));
+  assert.equal(await a.nearby.deliver('bb', [randomBytes(100), randomBytes(100)], null, carry), 'carried');
+  await a.nearby.carriedSaved();
+  await c.nearby.carriedSaved();
+  leave();
+
+  // Erevos opens again on both: each hands what it kept to the relay.
+  const [a2, c2] = ['A2', 'C2'].map(phone);
+  a2.nearby.keepOwnIn(ownCarried(0, spaceKey));
+  await c2.nearby.keepOthersIn(othersCarried());
+  await a2.nearby.carriedSaved();
+  const handed = (to: [string, Mark | undefined][]) => async (_url: string, s: Uint8Array, mark?: Mark) => to.push([toBase64(s), mark]) > 0;
+  const [own, others]: [string, Mark | undefined][][] = [[], []];
+  assert.equal(await a2.nearby.uploadCarried(handed(own)), 2);
+  assert.equal(await c2.nearby.uploadCarried(handed(others)), 2);
+  assert.deepEqual(own, sealed.map((s, i) => [toBase64(s), said[i]]));
+  assert.deepEqual(others, sealed.map((s) => [toBase64(s), undefined]));
+
+  // A mark kept with what is carried for others is not taken back, and one no relay knows leaves its packet out.
+  const store = othersCarried();
+  const until = Date.now() + DAY;
+  await store.save([
+    { url: 'ws://relay.example:7879', sealed: sealed[0], hops: 1, until, mark: 'message' },
+    { url: 'ws://relay.example:7879', sealed: sealed[1], hops: 1, until, mark: 'loud' as Mark },
+  ]);
+  assert.deepEqual(
+    (await store.load()).map(({ sealed: s, mark }) => [toBase64(s), mark]),
+    [[toBase64(sealed[0]), 'message']],
+  );
+  const c3 = phone('C3');
+  await c3.nearby.keepOthersIn(store);
+  const again: [string, Mark | undefined][] = [];
+  assert.equal(await c3.nearby.uploadCarried(handed(again)), 1);
+  assert.deepEqual(again, [[toBase64(sealed[0]), undefined]]);
 });
 
 test('with no relay to reach, a phone nearby carries the message to the contact\'s relay, end-to-end encrypted', { skip: !ready || !relayReady }, async () => {

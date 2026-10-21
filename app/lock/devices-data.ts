@@ -108,9 +108,12 @@ export type DevicesData = {
   /** On a linked device: when each contact was removed, by identity, and the tags erased in each chat, by its peer, so a late word of them does not bring them back. */
   removed?: Record<string, number>;
   erased?: Record<string, string[]>;
+  /** Set in every file saved since packets said what they carry: in one from before (0.1.16), what
+   *  waited for a device was kept with no marks, and goes with none (lib/relay.ts, Mark). */
+  marked?: true;
 };
 
-export const EMPTY_DEVICES: DevicesData = { devices: [], primary: null, account: '', link: '', offer: null, answer: null, synced: {}, packs: [], left: [], members: {}, copySaid: false };
+export const EMPTY_DEVICES: DevicesData = { devices: [], primary: null, account: '', link: '', offer: null, answer: null, synced: {}, packs: [], left: [], members: {}, copySaid: false, marked: true };
 
 export const FILE = 'erevos-devices';
 const BLOCK = 16 * 1024;
@@ -164,13 +167,15 @@ function checkedMarks(value: unknown, outbox: string[]): Record<string, OutMark>
   return Object.keys(marks).length > 0 ? marks : null;
 }
 
-function checkedPeer(value: unknown): Peer | null {
+// `unmarked`: for a device in a file from before marks, whose outbox then goes with none, as a
+// message from an older Erevos does: the relay pushes it, but counts nothing.
+function checkedPeer(value: unknown, unmarked = false): Peer | null {
   const v = (value ?? {}) as Partial<Record<keyof Peer, unknown>>;
   const at = checkedPlace(v.at);
   if (!isHex(v.id, 64) || !isBase64(v.conversation) || !v.conversation || !at) return null;
   const endpoint = checkedEndpoint(v.endpoint);
   const outbox = Array.isArray(v.outbox) ? v.outbox.filter(isBase64) : [];
-  const marks = checkedMarks(v.marks, outbox);
+  const marks = unmarked && outbox.length > 0 ? Object.fromEntries(outbox.map((p): [string, OutMark] => [p, 'none'])) : checkedMarks(v.marks, outbox);
   return {
     id: v.id,
     name: isText(v.name) ? v.name : '',
@@ -216,7 +221,7 @@ function checked(value: unknown): DevicesData {
     }
   }
   return {
-    devices: Array.isArray(v.devices) ? v.devices.map(checkedPeer).filter((p): p is Peer => p !== null) : [],
+    devices: Array.isArray(v.devices) ? v.devices.map((d) => checkedPeer(d, v.marked !== true)).filter((p): p is Peer => p !== null) : [],
     primary: checkedPeer(v.primary),
     account: isHex(v.account, 64) ? v.account : '',
     link: isText(v.link) ? v.link : '',
@@ -230,6 +235,7 @@ function checked(value: unknown): DevicesData {
     ...(siblings ? { siblings } : {}),
     ...(Object.keys(removed).length > 0 ? { removed } : {}),
     ...(Object.keys(erased).length > 0 ? { erased } : {}),
+    marked: true,
   };
 }
 

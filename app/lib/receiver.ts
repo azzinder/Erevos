@@ -340,7 +340,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   await sendPending(chats, place.sends);
   await sendKeys(chats, place);
   // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
-  void nearby.uploadCarried((url, sealed) => carryTo(place.sends, url, sealed)).catch(() => undefined);
+  void nearby.uploadCarried((url, sealed, mark) => carryTo(place.sends, url, sealed, mark)).catch(() => undefined);
   // An SMS invite sent from the SMS screen since: its answer may be on its way.
   await refreshSmsLink().catch(() => undefined);
   let changed = false;

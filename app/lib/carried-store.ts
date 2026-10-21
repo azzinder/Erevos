@@ -2,6 +2,7 @@ import { sealedFile } from '../lock/sealed-file';
 import { decryptText, encryptText, fromBase64, randomBytes, toBase64, utf8Encode } from './crypto';
 import { readFile, writeFile } from './files';
 import type { CarriedStore, KeptCarried } from './nearby';
+import type { Mark } from './relay';
 import { secureGet, secureSet } from './secure';
 
 // Where the packets this phone carries for relays (lib/nearby.ts) stay when Erevos closes, sealed.
@@ -18,11 +19,13 @@ const OWN_FILE = 'erevos-carried';
 const BLOCK = 16 * 1024;
 
 // A packet kept: the relay's address, the sealed packet (base64), how many more phones it may go
-// to, and until when.
-type Stored = [string, string, number, number];
+// to, until when, and, for this phone's own, what it carries (lib/relay.ts, Mark).
+type Stored = [string, string, number, number] | [string, string, number, number, Mark];
 
-function stored({ url, sealed, hops, until }: KeptCarried): Stored {
-  return [url, toBase64(sealed), hops, until];
+const MARKS: readonly string[] = ['message', 'quiet', 'ring'] satisfies Mark[];
+
+function stored({ url, sealed, hops, until, mark }: KeptCarried): Stored {
+  return mark ? [url, toBase64(sealed), hops, until, mark] : [url, toBase64(sealed), hops, until];
 }
 
 function checked(value: unknown): { items: Stored[] } {
@@ -30,7 +33,12 @@ function checked(value: unknown): { items: Stored[] } {
   const items = Array.isArray(list)
     ? list.filter(
         (m): m is Stored =>
-          Array.isArray(m) && typeof m[0] === 'string' && typeof m[1] === 'string' && typeof m[2] === 'number' && typeof m[3] === 'number',
+          Array.isArray(m) &&
+          typeof m[0] === 'string' &&
+          typeof m[1] === 'string' &&
+          typeof m[2] === 'number' &&
+          typeof m[3] === 'number' &&
+          (m.length === 4 || (m.length === 5 && MARKS.includes(m[4]))),
       )
     : [];
   return { items };
@@ -38,9 +46,9 @@ function checked(value: unknown): { items: Stored[] } {
 
 function kept({ items }: { items: Stored[] }): KeptCarried[] {
   const out: KeptCarried[] = [];
-  for (const [url, sealed, hops, until] of items) {
+  for (const [url, sealed, hops, until, mark] of items) {
     try {
-      out.push({ url, sealed: fromBase64(sealed), hops, until });
+      out.push({ url, sealed: fromBase64(sealed), hops, until, ...(mark ? { mark } : {}) });
     } catch {
       // A damaged one is left out.
     }

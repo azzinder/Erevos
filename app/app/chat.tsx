@@ -1207,7 +1207,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       try {
         await sendPending(e2e, sends);
         // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
-        if (!hiddenKey) void nearby.uploadCarried((url, sealed) => carryTo(sends, url, sealed)).catch(() => undefined);
+        if (!hiddenKey) void nearby.uploadCarried((url, sealed, mark) => carryTo(sends, url, sealed, mark)).catch(() => undefined);
         // An SMS invite sent from the SMS screen since: its answer may be on its way.
         if (!hiddenKey) await refreshSmsLink().catch(() => undefined);
         // In the background, out of a call: waits at the relay until something comes.
@@ -1858,7 +1858,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return relay().then(() => 'relay');
     }
     const all = sealed.first ? [sealed.first, ...packets] : packets;
-    const carry = carried ? () => carriedFor(sealed, all, { url: relayUrl, key: ownRelayKey }) : null;
+    const carry = carried ? () => carriedFor(sealed, all, { url: relayUrl, key: ownRelayKey }, sentMark(chats, mark)) : null;
     // What is worth carrying is worth LoRa's air time too, when it is small (lib/lora.ts).
     return nearby.deliver(identity, all, relay, carry, carried);
   }

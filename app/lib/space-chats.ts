@@ -170,16 +170,21 @@ export async function sendSealed(
  * A contact's packets sealed for their relay, for phones nearby to carry there (lib/nearby.ts):
  * the relay their messages say, or our own (`own`, with its key) when they say none. Empty when
  * that relay's key is not known, they have no relay queue, or the core cannot seal for a relay.
+ * `mark` goes with the last, as sendSealed does, and the ones before are quiet: this phone says it
+ * as it hands its own over.
  */
 export async function carriedFor(
   contact: { sender: string; relay: string; relayKey: string },
   packets: Uint8Array[],
   own: { url: string; key: string },
+  mark?: Mark,
 ): Promise<Carried[]> {
   const url = (contact.relay || own.url).trim();
   const key = contact.relayKey || (url && sameRelay(url, own.url) ? own.key : '');
   if (!contact.sender || !url || !key || !canRelaySeal()) return [];
   const relayKey = fromBase64Url(key);
   const sender = fromHex(contact.sender);
-  return Promise.all(packets.map(async (packet) => ({ url, sealed: await relaySeal(relayKey, sender, packet) })));
+  return Promise.all(
+    packets.map(async (packet, i) => ({ url, sealed: await relaySeal(relayKey, sender, packet), ...(mark ? { mark: i === packets.length - 1 ? mark : ('quiet' as const) } : {}) })),
+  );
 }

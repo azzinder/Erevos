@@ -24,12 +24,12 @@ import { randomBytes } from '../lib/crypto';
 import { Links } from '../lib/devices';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { Groups, type GroupTransport } from '../lib/groups';
-import { createQueue, fromHex, receiveMessage, sendMessage, toHex, type Mark, type Relay } from '../lib/relay';
-import { markOf, sendSealed, sentMark, type SpaceChats } from '../lib/space-chats';
+import { carryTo, createQueue, fromHex, receiveMessage, relayKey, sendMessage, toHex, type Mark, type Relay } from '../lib/relay';
+import { carriedFor, markOf, sendSealed, sentMark, type SpaceChats } from '../lib/space-chats';
 import { spaceGroupTransport } from '../lib/space-groups';
 import { VoiceAssembler } from '../lib/voice';
 import { holdLater, sendWaiting, type SendPlace } from '../lib/waiting';
-import { loadDevicesData } from '../lock/devices-data';
+import { loadDevicesData, saveDevicesData } from '../lock/devices-data';
 import { EMPTY_GROUPS, loadGroupData, saveGroupData, type About, type GroupData } from '../lock/group-data';
 import { History, WAITING } from '../lock/history';
 import { setCurrentSpace } from '../lock/keys';
@@ -501,6 +501,86 @@ test("a linked computer's notice counts a contact's message the phone passes on 
   assert.deepEqual(counted(dell.queue.senderHex), { messages: 1, unsure: false });
   // What the computer wrote went on to Carol as a message.
   assert.deepEqual(counted(carol.queue.senderHex), { messages: 1, unsure: false });
+});
+
+test('what an Erevos from before marks kept for a linked computer goes with none, pushed but not counted; what is kept from then on keeps its mark', { skip: !ready, timeout: 90_000 }, async () => {
+  files.clear();
+  blobs.clear();
+  const { pixel, dell, carol, account } = await linkedWithCarol();
+
+  // Carol writes while the relay cannot be reached from the phone, and the phone, still on 0.1.16,
+  // keeps what it passes on with no mark and closes.
+  await write(carol, account, 'kept by the old phone');
+  unreachable = true;
+  await take(pixel);
+  pixel.links!.close();
+  const { marked: _, ...before } = await loadDevicesData(pixel.space, pixel.key);
+  assert.ok(before.devices[0].outbox.length > 0);
+  await saveDevicesData(pixel.space, pixel.key, { ...before, devices: before.devices.map(({ marks: _m, ...device }) => device) });
+
+  // Updated, it opens again: what waited says nothing, as from the old one, and not that it is quiet.
+  unreachable = false;
+  const since = seen.length;
+  pixel.links = await Links.open(pixel.space, pixel.key, pixel.chats, 60 * 60_000);
+  opened.push(pixel.links);
+  await pixel.links.flush();
+  assert.deepEqual((await take(dell)).map((m) => m.text), ['kept by the old phone']);
+  assert.ok(marks(dell.queue.senderHex, since).includes('none'));
+  assert.equal(counted(dell.queue.senderHex, since).messages, 0);
+
+  // What it keeps now is saved as marked, and its mark comes back with it.
+  await write(carol, account, 'kept by the new one');
+  unreachable = true;
+  await take(pixel);
+  const kept = (await loadDevicesData(pixel.space, pixel.key)).devices[0];
+  assert.deepEqual(Object.values(kept.marks ?? {}), ['message']);
+  unreachable = false;
+  const now = seen.length;
+  await pixel.links.flush();
+  assert.deepEqual((await take(dell)).map((m) => m.text), ['kept by the new one']);
+  assert.deepEqual(counted(dell.queue.senderHex, now), { messages: 1, unsure: false });
+});
+
+test("what the phone carries for a contact says what it carries as it hands it over, to the contact's relay or through another; what it carries for another phone says nothing", { skip: !ready }, async () => {
+  files.clear();
+  // Bob's relay, with its key, and another the phone reaches it through.
+  const bobs = await startRelay(true, '', true);
+  const other = await startRelay(false, '', true);
+  const alice = await phone();
+  const bob = await E2E.open('space', spaces++, randomBytes(32));
+  const queue = await createQueue({ url: bobs });
+  const key = await relayKey({ url: bobs });
+  assert.ok(key);
+  const link = { senderHex: toHex(queue.senderId), key: toBase64Url(bob.bundle), relayUrl: bobs, relayKey: toBase64Url(key!) };
+  const { identity: bobId } = await alice.chats.e2e.addContact(link, alice.queue.senderHex, where);
+  const opened = async () => {
+    const texts: string[] = [];
+    for (let bytes = await receiveMessage({ url: bobs }, queue.recipientId); bytes; bytes = await receiveMessage({ url: bobs }, queue.recipientId)) {
+      const received = await bob.receive(bytes);
+      if (received.kind === 'message') texts.push(received.text);
+    }
+    return texts;
+  };
+
+  // The conversation's first packet and a message in two parts, carried: all quiet but the last.
+  const [one, two] = [await alice.chats.e2e.seal(bobId, 'one', alice.queue.senderHex, { at: where }), await alice.chats.e2e.seal(bobId, 'two', alice.queue.senderHex, { at: where })];
+  const items = await carriedFor(one, [one.first!, one.packet, two.packet], { url, key: '' }, 'message');
+  assert.deepEqual(items.map((item) => item.mark), ['quiet', 'quiet', 'message']);
+  const since = seen.length;
+  // The first straight to Bob's relay, the others through another relay, which passes them on.
+  assert.equal(await carryTo({ url: bobs }, items[0].url, items[0].sealed, items[0].mark), true);
+  for (const item of items.slice(1)) assert.equal(await carryTo({ url: other }, item.url, item.sealed, item.mark), true);
+  assert.deepEqual(seen.slice(since).filter((s) => s.to === 'sealed').map((s) => s.mark), ['quiet', 'quiet', 'message']);
+  assert.deepEqual(await opened(), ['', 'one', 'two']);
+
+  // Carried for another phone, it cannot know: none.
+  const three = await alice.chats.e2e.seal(bobId, 'three', alice.queue.senderHex, { at: where });
+  const [carried] = await carriedFor(three, [three.packet], { url, key: '' });
+  assert.equal(carried.mark, undefined);
+  const later = seen.length;
+  assert.equal(await carryTo({ url: other }, carried.url, carried.sealed), true);
+  assert.deepEqual(seen.slice(later).filter((s) => s.to === 'sealed').map((s) => s.mark), ['none']);
+  assert.deepEqual(await opened(), ['three']);
 });
 
 test('what a linked computer sends goes quiet to the phone, which counts it once as it passes it on: a voice message, one that waited, one sent for later, a call', { skip: !ready, timeout: 90_000 }, async () => {

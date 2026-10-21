@@ -1,5 +1,6 @@
 import { fromBase64, randomBytes, sha256Bytes, toBase64, toHex } from './crypto';
 import { t } from './i18n';
+import type { Mark } from './relay';
 
 // Messages to and from contacts over the nearby radio link (modules/erevos-radio): Wi-Fi Aware or
 // Bluetooth, phone to phone, with no internet. They are the same end-to-end encrypted packets as
@@ -38,8 +39,10 @@ import { t } from './i18n';
  */
 export type Delivery = 'nearby' | 'relay' | 'spread' | 'carried' | 'lora';
 
-/** A packet sealed for the contact's relay (relaySeal), to hand to the relay at `url` from wherever there is internet. */
-export type Carried = { url: string; sealed: Uint8Array };
+/** A packet sealed for the contact's relay (relaySeal), to hand to the relay at `url` from wherever there is internet.
+ *  `mark`: what it carries (lib/relay.ts, Mark), on this phone's own only, said as it hands them
+ *  over; it never goes with what is passed on, and a phone carrying another's cannot know it. */
+export type Carried = { url: string; sealed: Uint8Array; mark?: Mark };
 
 /** Whether a phone nearby may have this phone carry a message to this relay: one on the internet,
  *  over TLS (wss://), named or at a public address. A stranger's packet never sends this phone,
@@ -60,8 +63,8 @@ export function isCarriable(url: string): boolean {
   return !(a === 0 || a === 10 || a === 127 || a >= 224 || (a === 100 && b >= 64 && b < 128) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b < 32) || (a === 192 && b === 168));
 }
 
-/** Hands a carried packet to its relay (carryTo): true when taken, false when it never will be. Throws to try again later. */
-export type Upload = (url: string, sealed: Uint8Array) => Promise<boolean>;
+/** Hands a carried packet to its relay (carryTo), with its mark if it is this phone's own: true when taken, false when it never will be. Throws to try again later. */
+export type Upload = (url: string, sealed: Uint8Array, mark?: Mark) => Promise<boolean>;
 
 /** A carried packet as the phone keeps it between runs: `hops` more phones it may go to, kept `until`. */
 export type KeptCarried = Carried & { hops: number; until: number };
@@ -365,9 +368,9 @@ export class Nearby {
     }
     const items = made
       .filter(({ url }) => RELAY_URL.test(url))
-      .map(({ url, sealed }) => {
+      .map(({ url, sealed, mark }) => {
         const space = this.ownStore;
-        return { url, sealed, key: keyOf(url, sealed), hops: MAX_HOPS, until: now + CARRY_FOR, own: true, space, from: null, offered: new Set<string>(), triedAt: 0 };
+        return { url, sealed, ...(mark ? { mark } : {}), key: keyOf(url, sealed), hops: MAX_HOPS, until: now + CARRY_FOR, own: true, space, from: null, offered: new Set<string>(), triedAt: 0 };
       });
     if (items.length === 0) return 'spread';
     for (const item of items) this.keep(item);
@@ -421,7 +424,7 @@ export class Nearby {
   private keptIn(store: CarriedStore): KeptCarried[] {
     return this.items
       .filter((item) => (store === this.others ? !item.own : item.space === store))
-      .map(({ url, sealed, hops, until }) => ({ url, sealed, hops, until }));
+      .map(({ url, sealed, mark, hops, until }) => ({ url, sealed, ...(mark ? { mark } : {}), hops, until }));
   }
 
   // Takes back what a store kept, before what came this run, and saves to it from now on.
@@ -430,13 +433,13 @@ export class Nearby {
     const now = Date.now();
     const known = new Set(this.items.map((item) => item.key));
     const back: Item[] = [];
-    for (const { url, sealed, hops, until } of kept) {
+    for (const { url, sealed, mark, hops, until } of kept) {
       if (!RELAY_URL.test(url) || !(until > now) || !(sealed instanceof Uint8Array) || !Number.isInteger(hops)) continue;
       const key = keyOf(url, sealed);
       if (known.has(key) || (!own && (!this.carrying || !this.carriable(url)))) continue;
       known.add(key);
       const most = own ? MAX_HOPS : MAX_HOPS - 1;
-      back.push({ url, sealed, key, hops: Math.max(0, Math.min(hops, most)), until: Math.min(until, now + CARRY_FOR), own, space: own ? store : null, from: null, offered: new Set(), triedAt: 0 });
+      back.push({ url, sealed, ...(own && mark ? { mark } : {}), key, hops: Math.max(0, Math.min(hops, most)), until: Math.min(until, now + CARRY_FOR), own, space: own ? store : null, from: null, offered: new Set(), triedAt: 0 });
     }
     for (const item of back) {
       this.seen.push(item.key);
@@ -559,7 +562,7 @@ export class Nearby {
         }
         item.triedAt = now;
         try {
-          if (await upload(item.url, item.sealed)) taken++;
+          if (await upload(item.url, item.sealed, item.own ? item.mark : undefined)) taken++;
           this.items = this.items.filter((kept) => kept !== item);
           this.save(item);
         } catch {

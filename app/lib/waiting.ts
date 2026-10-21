@@ -227,14 +227,14 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
   const sends = place.sends;
   const relay = sends && sealed.sender ? () => sendSealed(sends, sealed, packets, sentMark(e2e, 'message'), () => e2e.firstSent(identity)) : null;
   const all = sealed.first ? [sealed.first, ...packets] : packets;
-  const carry = worthCarrying ? () => carriedFor(sealed, all, { url: place.own?.url ?? '', key: place.ownKey }) : null;
+  const carry = worthCarrying ? () => carriedFor(sealed, all, { url: place.own?.url ?? '', key: place.ownKey }, sentMark(e2e, 'message')) : null;
   try {
     await nearby.deliver(identity, all, relay, carry, worthCarrying);
   } catch (error) {
     if (!(error instanceof TooLargeForLoraError) || !message.preview || message.voice || message.file) throw error;
     const bare = await e2e.seal(identity, message.text, place.senderHex, { ...options, quiet: message.quiet, more: withoutPreview(contentOf(message)) });
     const again = bare.first ? [bare.first, bare.packet] : [bare.packet];
-    await nearby.deliver(identity, again, null, () => carriedFor(bare, again, { url: place.own?.url ?? '', key: place.ownKey }), true);
+    await nearby.deliver(identity, again, null, () => carriedFor(bare, again, { url: place.own?.url ?? '', key: place.ownKey }, sentMark(e2e, 'message')), true);
     return { lasts: bare.timer, bare: true };
   }
   return { lasts: sealed.timer, bare: false };
