@@ -2,14 +2,26 @@
 //! restart. The file is an append-only journal: a header, then one record per
 //! change, written and synced before the change is applied in memory.
 //!
-//! - `CREATE`: recipient id, sender id.
+//! - `CREATE`: recipient id, sender id. Written by relays from before queues
+//!   expired; still read, as a queue last used now.
+//! - `CREATE_AT`: recipient id, sender id, the day its recipient last used it
+//!   (8-byte Unix seconds at the start of that day).
 //! - `SEND`: recipient id, a 4-byte length, the message. Written by relays
 //!   from before messages expired; still read, as a message that came now.
 //! - `SEND_AT`: recipient id, the hour it came (8-byte Unix seconds), a
 //!   4-byte length, the message.
 //! - `RECEIVE`: recipient id. The oldest message of that queue was handed
 //!   over, or expired.
-//! - `DELETE`: recipient id.
+//! - `DELETE`: recipient id. Deleted by its recipient, or expired unused.
+//! - `USED`: recipient id, the day its recipient used it (8-byte Unix
+//!   seconds at the start of that day). Written at most once a day a queue.
+//!
+//! A journal written by relays from before queues expired starts with
+//! `OLD_HEADER`, and is still read. One written now starts with `HEADER`,
+//! which those relays do not take as a journal: put back in place of this
+//! one, an older relay stops at start with a line saying so, instead of
+//! reading up to the first record it does not know and cutting the rest off
+//! the file.
 //!
 //! Received messages and deleted queues stay in the file until it is
 //! rewritten. That happens on every start and whenever such records outweigh
@@ -27,22 +39,30 @@ use crate::server::MAX_MESSAGE;
 
 /// The first bytes of a journal, so the relay never replays or overwrites a
 /// file that is something else.
-pub const HEADER: &[u8; 8] = b"EREVOSJ1";
+pub const HEADER: &[u8; 8] = b"EREVOSJ2";
+/// The first bytes of a journal written by a relay from before queues
+/// expired, which wrote neither `CREATE_AT` nor `USED`.
+pub const OLD_HEADER: &[u8; 8] = b"EREVOSJ1";
 
 const CREATE: u8 = 1;
 const SEND: u8 = 2;
 const RECEIVE: u8 = 3;
 const DELETE: u8 = 4;
 const SEND_AT: u8 = 5;
+const CREATE_AT: u8 = 6;
+const USED: u8 = 7;
 
 /// Bytes written since the last check before the relay works out whether a
 /// rewrite is worth it.
 const CHECK_EVERY: u64 = 4 << 20;
 
 pub enum Record<'a> {
+    /// `used` is the day its recipient last used it, in Unix seconds at the
+    /// start of that day; 0 when the record is from before relays kept that.
     Create {
         recipient_id: QueueId,
         sender_id: QueueId,
+        used: u64,
     },
     /// `at` is when the message came, in Unix seconds; 0 when the record
     /// is from before relays kept that.
@@ -57,16 +77,24 @@ pub enum Record<'a> {
     Delete {
         recipient_id: QueueId,
     },
+    /// The queue's recipient used it on `day`, in Unix seconds at the start
+    /// of that day.
+    Used {
+        recipient_id: QueueId,
+        day: u64,
+    },
 }
 
 impl Record<'_> {
     /// Bytes this record takes in the journal.
     pub fn len(&self) -> u64 {
         match self {
-            Record::Create { .. } => 1 + 24 + 24,
+            Record::Create { used: 0, .. } => 1 + 24 + 24,
+            Record::Create { .. } => 1 + 24 + 24 + 8,
             Record::Send { at: 0, message, .. } => 1 + 24 + 4 + message.len() as u64,
             Record::Send { message, .. } => 1 + 24 + 8 + 4 + message.len() as u64,
             Record::Receive { .. } | Record::Delete { .. } => 1 + 24,
+            Record::Used { .. } => 1 + 24 + 8,
         }
     }
 
@@ -75,10 +103,14 @@ impl Record<'_> {
             Record::Create {
                 recipient_id,
                 sender_id,
+                used,
             } => {
-                out.push(CREATE);
+                out.push(if *used == 0 { CREATE } else { CREATE_AT });
                 out.extend_from_slice(recipient_id);
                 out.extend_from_slice(sender_id);
+                if *used != 0 {
+                    out.extend_from_slice(&used.to_be_bytes());
+                }
             }
             Record::Send {
                 recipient_id,
@@ -103,6 +135,11 @@ impl Record<'_> {
             Record::Delete { recipient_id } => {
                 out.push(DELETE);
                 out.extend_from_slice(recipient_id);
+            }
+            Record::Used { recipient_id, day } => {
+                out.push(USED);
+                out.extend_from_slice(recipient_id);
+                out.extend_from_slice(&day.to_be_bytes());
             }
         }
     }
@@ -214,7 +251,7 @@ pub fn replay(path: &Path, mut apply: impl FnMut(Record)) -> io::Result<u64> {
     }
     let mut r = BufReader::new(file);
     let mut header = [0u8; 8];
-    if r.read_exact(&mut header).is_err() || &header != HEADER {
+    if r.read_exact(&mut header).is_err() || (&header != HEADER && &header != OLD_HEADER) {
         return Err(io::Error::new(
             ErrorKind::InvalidData,
             format!("{} is not an erevos-relay journal", path.display()),
@@ -249,6 +286,16 @@ fn read_record<'a>(r: &mut impl Read, message: &'a mut Vec<u8>) -> io::Result<Op
         CREATE => Record::Create {
             recipient_id,
             sender_id: read_id(r)?,
+            used: 0,
+        },
+        CREATE_AT => Record::Create {
+            recipient_id,
+            sender_id: read_id(r)?,
+            used: read_day(r)?,
+        },
+        USED => Record::Used {
+            recipient_id,
+            day: read_day(r)?,
         },
         SEND | SEND_AT => {
             let at = if tag[0] == SEND_AT {
@@ -286,6 +333,16 @@ fn read_id(r: &mut impl Read) -> io::Result<QueueId> {
     let mut id = [0u8; 24];
     r.read_exact(&mut id)?;
     Ok(id)
+}
+
+/// A day a queue was used, which is never 0.
+fn read_day(r: &mut impl Read) -> io::Result<u64> {
+    let mut day = [0u8; 8];
+    r.read_exact(&mut day)?;
+    match u64::from_be_bytes(day) {
+        0 => Err(ErrorKind::InvalidData.into()),
+        day => Ok(day),
+    }
 }
 
 /// Creates or truncates a file only its owner can read.

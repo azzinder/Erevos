@@ -25,6 +25,12 @@
 //! Messages nobody takes expire after 14 days. Set `EREVOS_RELAY_TTL_DAYS`
 //! to change that.
 //!
+//! The relay holds at most `EREVOS_RELAY_MAX_QUEUES` queues (100000 unless
+//! set), places lent among them; past that, a phone asking for a new one is
+//! told the relay is full. A queue its phone has not taken from or waited on
+//! for `EREVOS_RELAY_QUEUE_DAYS` (180 unless set) expires, with what waits in
+//! it (see `queue.rs`).
+//!
 //! Set `EREVOS_RELAY_KEY` to a file path to give the relay a key for sealed
 //! sends (two-hop sending, see `server.rs`). The file is made on first start
 //! and must be kept: phones put the public key in their contact links.
@@ -172,6 +178,24 @@ fn main() -> ExitCode {
         },
         _ => queue::DEFAULT_TTL,
     };
+    let Some(max_queues) = number(
+        "EREVOS_RELAY_MAX_QUEUES",
+        queue::DEFAULT_MAX_QUEUES as u64,
+        1,
+    ) else {
+        return ExitCode::FAILURE;
+    };
+    let Some(queue_days) = number(
+        "EREVOS_RELAY_QUEUE_DAYS",
+        queue::DEFAULT_QUEUE_TTL / queue::DAY,
+        1,
+    ) else {
+        return ExitCode::FAILURE;
+    };
+    let (max_queues, queue_ttl) = (
+        max_queues.try_into().unwrap_or(usize::MAX),
+        queue_days.saturating_mul(queue::DAY),
+    );
     let store = match env::var("EREVOS_RELAY_JOURNAL") {
         Ok(path) if !path.is_empty() => match Store::open_with(Path::new(&path), ttl) {
             Ok(store) => {
@@ -190,6 +214,10 @@ fn main() -> ExitCode {
             Store::with_ttl(ttl)
         }
     };
+    let store = store.with_queue_limits(max_queues, queue_ttl);
+    eprintln!(
+        "erevos-relay: holding {max_queues} queues at most, each until its phone leaves it unused for {queue_days} days"
+    );
     let key = match env::var("EREVOS_RELAY_KEY") {
         Ok(path) if !path.is_empty() => match load_key(Path::new(&path)) {
             Ok(key) => Some(key),
@@ -366,8 +394,7 @@ fn main() -> ExitCode {
     let sweep_store = Arc::clone(&store);
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(60 * 60));
-        sweep_store.store().expire();
-        sweep_store.files().expire();
+        server::sweep(&sweep_store);
     });
     let ws_store = Arc::clone(&store);
     thread::spawn(move || server::serve_ws(ws, ws_store, token));

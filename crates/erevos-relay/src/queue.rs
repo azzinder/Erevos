@@ -9,6 +9,16 @@
 //! A message nobody takes expires after `ttl` (14 days unless set), as on
 //! Session's nodes, so the relay does not keep it forever. The relay notes
 //! only the hour each message came, not the second.
+//!
+//! The store holds at most `max_queues` queues (100000 unless set), places
+//! lent to phones without a relay among them; past that, a new one is
+//! refused with `Full`. A queue its recipient has not used (taken from,
+//! waited on) for `queue_ttl` (180 days unless set) expires, with whatever
+//! waits in it, so queues of phones that are gone do not fill the relay.
+//! Sending to a queue does not count, so a sender cannot keep one alive. The
+//! relay notes only the day a queue was last used, and writes it down at most
+//! once a day a queue. A queue from a journal written before relays noted
+//! that counts as used the day it was read back.
 
 use std::collections::{HashMap, VecDeque};
 use std::io;
@@ -27,7 +37,13 @@ pub const MAX_QUEUED: usize = 1000;
 
 /// How long a message waits for its recipient before it expires.
 pub const DEFAULT_TTL: u64 = 14 * 24 * 60 * 60;
+/// Queues the relay holds unless set (`EREVOS_RELAY_MAX_QUEUES`).
+pub const DEFAULT_MAX_QUEUES: usize = 100_000;
+/// How long a queue its recipient does not use lasts unless set
+/// (`EREVOS_RELAY_QUEUE_DAYS`).
+pub const DEFAULT_QUEUE_TTL: u64 = 180 * DAY;
 pub(crate) const HOUR: u64 = 60 * 60;
+pub(crate) const DAY: u64 = 24 * HOUR;
 
 /// Unix seconds now. A clock before 1970 counts as 1970.
 pub(crate) fn system_now() -> u64 {
@@ -48,6 +64,8 @@ struct Queue {
     sender_id: QueueId,
     /// Oldest first, each with the hour it came.
     messages: VecDeque<(u64, Vec<u8>)>,
+    /// The day its recipient last used it, Unix seconds at its start.
+    used: u64,
 }
 
 pub struct Store {
@@ -55,6 +73,8 @@ pub struct Store {
     by_sender: HashMap<QueueId, QueueId>,
     journal: Option<Journal>,
     ttl: u64,
+    max_queues: usize,
+    queue_ttl: u64,
     clock: fn() -> u64,
 }
 
@@ -65,6 +85,8 @@ impl Default for Store {
             by_sender: HashMap::new(),
             journal: None,
             ttl: DEFAULT_TTL,
+            max_queues: DEFAULT_MAX_QUEUES,
+            queue_ttl: DEFAULT_QUEUE_TTL,
             clock: system_now,
         }
     }
@@ -88,6 +110,7 @@ fn records(queues: &HashMap<QueueId, Queue>) -> impl Iterator<Item = Record<'_>>
         std::iter::once(Record::Create {
             recipient_id: *recipient_id,
             sender_id: q.sender_id,
+            used: q.used,
         })
         .chain(q.messages.iter().map(|(at, message)| Record::Send {
             recipient_id: *recipient_id,
@@ -148,9 +171,72 @@ impl Store {
         }
     }
 
+    /// The same store, holding at most `max` queues, each expiring once its
+    /// recipient has not used it for `ttl` seconds.
+    pub fn with_queue_limits(self, max: usize, ttl: u64) -> Store {
+        Store {
+            max_queues: max,
+            queue_ttl: ttl,
+            ..self
+        }
+    }
+
     /// The hour that holds now, the time noted for a message that comes now.
     fn hour(&self) -> u64 {
         ((self.clock)() / HOUR * HOUR).max(1)
+    }
+
+    /// The day that holds now, the time noted for a queue used now.
+    fn today(&self) -> u64 {
+        ((self.clock)() / DAY * DAY).max(1)
+    }
+
+    /// Notes that the queue's recipient used it today, in the journal too the
+    /// first time a day. A failed write is said and left: the day is kept in
+    /// memory and goes into the next rewrite of the journal, and a day
+    /// missing after a restart only lets the queue expire a little sooner.
+    fn touch(&mut self, recipient_id: &QueueId) {
+        let today = self.today();
+        let Some(q) = self.queues.get_mut(recipient_id) else {
+            return;
+        };
+        if q.used >= today {
+            return;
+        }
+        q.used = today;
+        let _ = log(
+            &mut self.journal,
+            &Record::Used {
+                recipient_id: *recipient_id,
+                day: today,
+            },
+        );
+    }
+
+    /// Whether the store has room for one more queue.
+    pub fn has_room(&self) -> bool {
+        self.queues.len() < self.max_queues
+    }
+
+    /// Removes every queue its recipient has not used for `queue_ttl`, with
+    /// what waits in it, and returns their recipient ids. The relay calls this
+    /// now and then.
+    pub fn expire_queues(&mut self) -> Vec<QueueId> {
+        let now = (self.clock)();
+        let old: Vec<QueueId> = self
+            .queues
+            .iter()
+            .filter(|(_, q)| q.used.saturating_add(self.queue_ttl) <= now)
+            .map(|(id, _)| *id)
+            .collect();
+        let mut gone = Vec::with_capacity(old.len());
+        for id in old {
+            if self.delete(&id).is_err() {
+                break;
+            }
+            gone.push(id);
+        }
+        gone
     }
 
     fn expired(&self, at: u64) -> bool {
@@ -210,15 +296,24 @@ impl Store {
             Record::Create {
                 recipient_id,
                 sender_id,
+                used,
             } => {
+                // A record from before relays noted the day counts from now.
+                let used = if used == 0 { self.today() } else { used };
                 self.queues.insert(
                     recipient_id,
                     Queue {
                         sender_id,
                         messages: VecDeque::new(),
+                        used,
                     },
                 );
                 self.by_sender.insert(sender_id, recipient_id);
+            }
+            Record::Used { recipient_id, day } => {
+                if let Some(q) = self.queues.get_mut(&recipient_id) {
+                    q.used = q.used.max(day);
+                }
             }
             Record::Send {
                 recipient_id,
@@ -244,14 +339,20 @@ impl Store {
         }
     }
 
+    /// A new queue, or `Full` when the store holds `max_queues` already.
     pub fn create(&mut self) -> Result<NewQueue, QueueError> {
+        if !self.has_room() {
+            return Err(QueueError::Full);
+        }
         let recipient_id = random_id();
         let sender_id = random_id();
+        let used = self.today();
         log(
             &mut self.journal,
             &Record::Create {
                 recipient_id,
                 sender_id,
+                used,
             },
         )?;
         self.queues.insert(
@@ -259,6 +360,7 @@ impl Store {
             Queue {
                 sender_id,
                 messages: VecDeque::new(),
+                used,
             },
         );
         self.by_sender.insert(sender_id, recipient_id);
@@ -298,6 +400,7 @@ impl Store {
     /// Hands over the oldest message and deletes it from the relay.
     pub fn receive(&mut self, recipient_id: &QueueId) -> Result<Option<Vec<u8>>, QueueError> {
         self.expire_queue(recipient_id)?;
+        self.touch(recipient_id);
         let q = self
             .queues
             .get_mut(recipient_id)
@@ -316,9 +419,11 @@ impl Store {
         Ok(msg)
     }
 
-    /// Whether a message waits in the queue. Nothing is taken.
+    /// Whether a message waits in the queue. Nothing is taken. Asked by the
+    /// queue's recipient, so it counts as a use.
     pub fn has_waiting(&mut self, recipient_id: &QueueId) -> Result<bool, QueueError> {
         self.expire_queue(recipient_id)?;
+        self.touch(recipient_id);
         let q = self.queues.get(recipient_id).ok_or(QueueError::NotFound)?;
         Ok(!q.messages.is_empty())
     }
@@ -454,7 +559,8 @@ mod tests {
         drop(Store::open(&path.0).unwrap());
         let after = std::fs::metadata(&path.0).unwrap().len();
         assert!(before > 50 * 1000);
-        assert_eq!(after, (journal::HEADER.len() + 1 + 24 + 24) as u64);
+        // The queue alone, with the day it was last used.
+        assert_eq!(after, (journal::HEADER.len() + 1 + 24 + 24 + 8) as u64);
     }
 
     #[test]
@@ -574,7 +680,7 @@ mod tests {
     #[test]
     fn a_journal_from_before_expiry_still_opens() {
         let path = TempPath::new();
-        let mut old = journal::HEADER.to_vec();
+        let mut old = journal::OLD_HEADER.to_vec();
         let (recipient, sender) = ([1u8; 24], [2u8; 24]);
         old.push(1);
         old.extend_from_slice(&recipient);
@@ -586,6 +692,103 @@ mod tests {
         std::fs::write(&path.0, &old).unwrap();
         let mut s = Store::open(&path.0).unwrap();
         assert_eq!(s.receive(&recipient).unwrap().unwrap(), b"hello");
+    }
+
+    #[test]
+    fn the_store_holds_so_many_queues() {
+        let mut s = Store::default().with_queue_limits(2, DEFAULT_QUEUE_TTL);
+        let first = s.create().unwrap();
+        s.create().unwrap();
+        assert!(!s.has_room());
+        assert_eq!(s.create().err(), Some(QueueError::Full));
+        s.delete(&first.recipient_id).unwrap();
+        assert!(s.has_room());
+        s.create().unwrap();
+    }
+
+    fn fixed_now() -> u64 {
+        1_800_000_000
+    }
+
+    #[test]
+    fn a_queue_from_before_queues_expired_counts_as_used_the_day_it_is_read_back() {
+        let path = TempPath::new();
+        let mut old = journal::OLD_HEADER.to_vec();
+        let (recipient, sender) = ([3u8; 24], [4u8; 24]);
+        old.push(1);
+        old.extend_from_slice(&recipient);
+        old.extend_from_slice(&sender);
+        std::fs::write(&path.0, &old).unwrap();
+        let s = Store::open_clocked(&path.0, DEFAULT_TTL, fixed_now).unwrap();
+        let day = fixed_now() / DAY * DAY;
+        assert_eq!(s.queues[&recipient].used, day);
+        drop(s);
+        // Written back with that day, under the header older relays do not take.
+        let bytes = std::fs::read(&path.0).unwrap();
+        assert_eq!(&bytes[..8], journal::HEADER);
+        assert_ne!(journal::HEADER, journal::OLD_HEADER);
+        assert_eq!(&bytes[bytes.len() - 8..], &day.to_be_bytes());
+    }
+
+    static QUEUE_NOW: AtomicU64 = AtomicU64::new(1_800_000_000);
+    fn queue_now() -> u64 {
+        QUEUE_NOW.load(Ordering::SeqCst)
+    }
+
+    // One test moves this clock, so all of them that use it run in this one.
+    #[test]
+    fn queues_their_recipients_leave_unused_expire() {
+        let path = TempPath::new();
+        let open = || {
+            Store::open_clocked(&path.0, DEFAULT_TTL, queue_now)
+                .unwrap()
+                .with_queue_limits(DEFAULT_MAX_QUEUES, 180 * DAY)
+        };
+        let written = |s: &Store| s.journal.as_ref().unwrap().len();
+        let mut s = open();
+        let used = s.create().unwrap();
+        let sent_to = s.create().unwrap();
+
+        // Used again the day it was made: nothing more is written.
+        let before = written(&s);
+        assert_eq!(s.receive(&used.recipient_id).unwrap(), None);
+        assert_eq!(s.has_waiting(&used.recipient_id), Ok(false));
+        assert_eq!(written(&s), before);
+
+        // The next day, its first use is written, and only that one.
+        QUEUE_NOW.fetch_add(DAY, Ordering::SeqCst);
+        assert_eq!(s.has_waiting(&used.recipient_id), Ok(false));
+        assert_eq!(written(&s), before + 1 + 24 + 8);
+        assert_eq!(s.receive(&used.recipient_id).unwrap(), None);
+        assert_eq!(written(&s), before + 1 + 24 + 8);
+        // Only the day is kept, not the second.
+        assert_eq!(s.queues[&used.recipient_id].used % DAY, 0);
+
+        // Sending to a queue is no use of it.
+        QUEUE_NOW.fetch_add(100 * DAY, Ordering::SeqCst);
+        s.send(&sent_to.sender_id, b"for nobody".to_vec()).unwrap();
+        assert_eq!(s.receive(&used.recipient_id).unwrap(), None);
+        assert!(s.expire_queues().is_empty());
+        drop(s);
+
+        // 181 days after it was made, kept through a restart: the one only
+        // sent to goes, with what waits in it; the one used 80 days ago stays.
+        QUEUE_NOW.fetch_add(80 * DAY, Ordering::SeqCst);
+        let mut s = open();
+        assert_eq!(s.expire_queues(), vec![sent_to.recipient_id]);
+        assert_eq!(
+            s.send(&sent_to.sender_id, vec![1]),
+            Err(QueueError::NotFound)
+        );
+        assert_eq!(s.receive(&used.recipient_id).unwrap(), None);
+        drop(s);
+        // Its going was written down too.
+        let mut s = open();
+        assert_eq!(s.receive(&sent_to.recipient_id), Err(QueueError::NotFound));
+        assert!(s.expire_queues().is_empty());
+        QUEUE_NOW.fetch_add(180 * DAY, Ordering::SeqCst);
+        assert_eq!(s.expire_queues(), vec![used.recipient_id]);
+        assert_eq!(s.has_waiting(&used.recipient_id), Err(QueueError::NotFound));
     }
 
     #[cfg(unix)]

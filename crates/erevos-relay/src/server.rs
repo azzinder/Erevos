@@ -8,7 +8,8 @@
 //!   the phones use this one.
 //!
 //! Requests:
-//! - `CREATE`: no fields. Reply: recipient id, sender id (24 bytes each).
+//! - `CREATE`: no fields. Reply: recipient id, sender id (24 bytes each), or
+//!   `FULL` when the relay holds all the queues it may (see `queue.rs`).
 //! - `SEND`: sender id, then a 4-byte length and the message.
 //! - `RECEIVE`: recipient id. Reply: a 1-byte flag, then a length and the
 //!   message if one was waiting. The message is deleted from the relay.
@@ -68,7 +69,8 @@
 //! - `BORROW`: no fields, on a connection that gave a ticket as its token.
 //!   Reply: recipient id, sender id (24 bytes each) of a new queue, then the
 //!   text of the lent token for it to the end, or `FULL` when the ticket gave
-//!   all its places.
+//!   all its places, or the relay holds all the queues it may (which uses
+//!   none of the ticket's places).
 //!
 //! Two-hop sending: a phone gives `FORWARD` to its own relay, which opens a
 //! WebSocket to `<address>/sealed` on the contact's relay and sends
@@ -91,7 +93,8 @@
 //! make only so many queues and files a day (`FULL` past that).
 //!
 //! Reply status: `OK`, `NOT_FOUND` (no such queue or chunk), `FULL` (the
-//! queue holds `MAX_QUEUED` messages, or the file store is full), `FAILED`
+//! queue holds `MAX_QUEUED` messages, the relay all the queues it may, or the
+//! file store is full), `FAILED`
 //! (the relay could not write the change to its journal or file store, so
 //! nothing changed; try again later), or `UNREACHABLE` (a forward could not
 //! reach the other relay, or it closed without a reply).
@@ -831,8 +834,14 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
             let (Access::Ticket(nonce, expires), Some(lend)) = (access, shared.lend.get()) else {
                 return Err(io::Error::new(ErrorKind::PermissionDenied, "no ticket"));
             };
+            // Held while the place is counted and its queue made, so a relay
+            // that holds all the queues it may does not use up a ticket's places.
+            let mut store = shared.store();
+            if !store.has_room() {
+                return Ok(Some(vec![FULL]));
+            }
             match lend.borrow(nonce, expires, system_now()) {
-                Some(token) => match shared.store().create() {
+                Some(token) => match store.create() {
                     Ok(q) => {
                         let mut out = vec![OK];
                         out.extend_from_slice(&q.recipient_id);
@@ -967,6 +976,23 @@ fn check_held(request: &[u8]) -> io::Result<()> {
         return Err(io::Error::new(ErrorKind::InvalidData, "more than a send"));
     }
     Ok(())
+}
+
+/// Removes what expired: messages and chunks nobody took, and queues their
+/// recipients left unused, with their push addresses. The relay calls this
+/// now and then.
+pub fn sweep(shared: &Shared) {
+    let gone = {
+        let mut store = shared.store();
+        store.expire();
+        store.expire_queues()
+    };
+    if let Some(push) = shared.push.get() {
+        for queue in &gone {
+            push.forget(queue);
+        }
+    }
+    shared.files().expire();
 }
 
 /// Runs the requests held for later as their time comes, until the relay
@@ -2258,6 +2284,52 @@ mod tests {
             Ok(Message::Close(Some(frame))) => assert_eq!(frame.code, CloseCode::Away),
             other => panic!("expected a close frame, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn a_relay_with_all_its_queues_is_full_and_a_ticket_keeps_its_places() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let store = Store::default().with_queue_limits(1, crate::queue::DEFAULT_QUEUE_TTL);
+        let key = RelayKey::generate();
+        let shared = Shared::new(store, FileStore::default(), None, None, Limits::default());
+        let _ = shared.lend.set(Lend::new(&key));
+        thread::spawn(move || serve_ws(listener, shared, Some(Arc::from("t"))));
+        let mut owner = connect_with_token(addr, "", "t");
+        let (mine, _) = ws_create(&mut owner);
+        assert_eq!(ws_call(&mut owner, vec![CREATE]), vec![FULL]);
+        let ticket = ticket_of(addr, "t");
+        for _ in 0..=crate::lend::MAX_BORROWS {
+            let r = ws_call(&mut connect_with_token(addr, "", &ticket), vec![BORROW]);
+            assert_eq!(r, vec![FULL]);
+        }
+        assert_eq!(ws_call(&mut owner, id_request(DELETE, &mine)), vec![OK]);
+        // None of the ticket's places went on those: it still gives them all.
+        for _ in 0..crate::lend::MAX_BORROWS {
+            let (recipient, _, token) = borrow(addr, &ticket);
+            let mut lent = connect_with_token(addr, "", &token);
+            assert_eq!(ws_call(&mut lent, id_request(DELETE, &recipient)), vec![OK]);
+        }
+        let r = ws_call(&mut connect_with_token(addr, "", &ticket), vec![BORROW]);
+        assert_eq!(r, vec![FULL]);
+        // And the relay has room again.
+        ws_create(&mut owner);
+    }
+
+    #[test]
+    fn the_sweep_takes_queues_nobody_uses() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        // Unused for no time at all is long enough here.
+        let store = Store::default().with_queue_limits(10, 0);
+        let shared = Shared::new(store, FileStore::default(), None, None, Limits::default());
+        let swept = Arc::clone(&shared);
+        thread::spawn(move || serve(listener, shared));
+        let mut s = TcpStream::connect(addr).unwrap();
+        let (_, sender) = create(&mut s);
+        assert_eq!(send(&mut s, &sender, b"x"), OK);
+        sweep(&swept);
+        assert_eq!(send(&mut s, &sender, b"x"), NOT_FOUND);
     }
 
     #[test]
