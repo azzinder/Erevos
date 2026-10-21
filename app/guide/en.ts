@@ -518,10 +518,22 @@ a missed call.
 
 From the home screen's menu, **New group**: give it a name, tick the contacts to ask, and tap **Make the group**.
 You are its admin. Each contact's phone answers by itself the next time Erevos is open there, and joins: the group
-then shows on their home screen, with a note of who added them. Groups go through the relay, so it has to be set.
+then shows on their home screen, with a note of who added them. A phone joins only a group whose admin is the contact
+who asked it, and an admin lets a contact in only as themselves, never as someone else. Groups go through the relay,
+so it has to be set.
 
 - **Who can be asked:** contacts you have accepted, in this space. Members who are not each other's contacts still
-  talk in the group, and show by the start of their key until a name is given in a chat with them.
+  talk in the group, and show by the start of their key.
+- **Add as contact:** in the members list (**⋯**), **Add as contact** under a member who is not your contact asks
+  them, in a message only they get, for their contact link, and gives them yours. On their phone the ask shows once,
+  at the top of the group, and they tap **Send** or **Don’t**; if they tap **Don’t**, you are not told. Once they send
+  it you are each other's contacts, with a chat of your own, and **Name** gives them a name, as it does under any
+  contact who has none yet. No answer can mean they have not opened the group yet, said no, have an older Erevos, or
+  still have you as a contact, which shows them nothing; after a week you can ask again. Once you are each other's
+  contacts, in any group or by a contact link, what was asked in your other groups goes, and their ask no longer
+  shows. A member taken out of the group asks nothing more. If two members show the same key, one of them is not who
+  they say, and no contact link goes to either or is taken from either. Not in public groups. Asking is for the phone
+  that holds the account; **Name** works on a linked device too.
 - **End-to-end encrypted for the group:** MLS (RFC 9420). Each message is encrypted once for the group, then sealed
   again for each member, so what reaches each member's queue looks like nothing the others get, and no relay can tell
   who is in a group. It goes straight to each member's queue, through your relay. Every week each phone's keys in the

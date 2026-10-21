@@ -16,7 +16,8 @@ import { setCore, type Core } from '../lib/core';
 import { fromBase64, fromHex, randomBytes, toHex, utf8Encode } from '../lib/crypto';
 import { fromBase64Url, toBase64Url } from '../lib/e2e';
 import { decodeGroup, encodeGroup, type GroupSignal } from '../lib/group-signal';
-import { noteText, RENEW_EVERY, type GroupTransport } from '../lib/groups';
+import type { GroupContacts } from '../lib/group-contacts';
+import { noteText, RENEW_EVERY, type GroupMember, type GroupTransport } from '../lib/groups';
 import { setLang } from '../lib/i18n';
 import { relayDoors } from '../lib/public-doors';
 import { PublicGroups } from '../lib/public-groups';
@@ -463,6 +464,41 @@ test('a private group goes as before beside public ones', live, async () => {
   assert.equal(alice.groups.messages(id).find((m) => m.text === 'hi')?.from, bob.identity);
   assert.equal(alice.groups.ownsDoors(), false);
   await assert.rejects(alice.groups.mute(id, 'ab'.repeat(32), true, alice.transport));
+});
+
+test('members of a public group do not ask each other for contact links', live, async () => {
+  const net = network();
+  const bob = await net.phone('Bob', two);
+  const { alice, id } = await club(net, [bob]);
+  // Contacts kept in memory on both phones, each with an account's keys, which the group never reaches.
+  const added: string[] = [];
+  const contacts = async (): Promise<GroupContacts> => {
+    const key = toBase64Url(await core.accountBundle(await core.newAccount()));
+    return { bundle: async () => key, has: async () => false, accepted: async () => false, add: async (_me, about) => void added.push(about.id) };
+  };
+  alice.transport.contacts = await contacts();
+  bob.transport.contacts = await contacts();
+  const aliceKey = await keyOf(bob, id, 'Alice');
+  const bobKey = await keyOf(bob, id, 'Bob');
+
+  await assert.rejects(bob.groups.askContact(id, aliceKey, bob.transport), /Not in public groups\./);
+  await assert.rejects(bob.groups.answerContact(id, aliceKey, bob.transport), /Not in public groups\./);
+  await assert.rejects(bob.groups.declineContact(id, aliceKey), /Not in public groups\./);
+
+  // A phone that asks anyway, as a changed Erevos could: Alice's keeps nothing of it.
+  const before = notes(alice, id);
+  const send = (bob.groups as unknown as { sendContact(id: string, leaves: GroupMember[], to: string, back: boolean, transport: GroupTransport, me: string): Promise<void> }).sendContact;
+  const leaves = (await bob.groups.members(id)).filter((m) => m.about?.id === aliceKey);
+  assert.equal(leaves.length, 1);
+  // To her key in the group, and to who she is outside it, which a member may know.
+  for (const to of [aliceKey, alice.identity]) for (const back of [false, true]) await send.call(bob.groups, id, leaves, to, back, bob.transport, bobKey);
+  await net.settle();
+  const info = alice.groups.list().find((g) => g.id === id)!;
+  assert.deepEqual([info.asks, info.wants, notes(alice, id), added], [[], [], before, []]);
+  // And the group goes on.
+  await bob.groups.send(id, 'still in', bob.transport);
+  await net.settle();
+  assert.ok(texts(alice, id).includes('still in'));
 });
 
 test('a link is read back as made, and anything else is not one', () => {

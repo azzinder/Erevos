@@ -83,6 +83,21 @@ On main, not released yet. The next release is **2.0.0**.
   is left, down to 70%, and scroll past that. The title stays on one line, the three tabs share one
   row, and "Type a phone number." goes as soon as one is typed.
 
+- **Add as contact in a group**: in a group's members list (**⋯**), **Add as contact** under a
+  member who is not your contact asks them, in a message only they get, for their contact link, and
+  gives them yours. On their phone the ask shows once, at the top of the group, to **Send** or
+  **Don’t**; once they send it you are each other's contacts, with a chat of your own and no message
+  request on either side. Don't, or no answer, tells you nothing, and after a week you can ask
+  again. A member who is your contact already is never changed by it, and nothing of it reaches
+  hidden chats: once you are each other's contacts, in any group or by a contact link, what was
+  asked in your other groups goes, so nothing left over adds them again after their chat is deleted
+  or moved into hidden chats. A member taken out of the group asks nothing more, and when two
+  members show the same key no contact link goes to either or is taken from either. **Name** under a
+  contact who has no name yet gives them one, on a linked device too. Not in public groups, and
+  asking is for the phone that holds the account; an Erevos from before drops the ask. An admin now
+  adds a contact only by a key package that is theirs: one that says it is someone else does not
+  join. A phone joins a group only when its admin is the contact who asked it in.
+
 - **Group keys made new every week**: in every group, private or public, the admin's phone makes
   its own keys new, and each member's phone asks the admin to put it in anew with new ones. So keys
   taken from a phone once stop reading the group within a week. Members see no one leave or join.

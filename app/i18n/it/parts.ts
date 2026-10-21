@@ -160,6 +160,18 @@ export const parts: Record<string, string> = {
   '{who} added you to the group.': '{who} ti ha aggiunto al gruppo.',
   '{who} joined.': '{who} ora fa parte del gruppo.',
   '{who} left.': '{who} ha lasciato il gruppo.',
+  'You asked {who} for their contact link.': 'Hai chiesto a {who} il suo link di contatto.',
+  '{who} asked for your contact link.': '{who} ha chiesto il tuo link di contatto.',
+  'You sent {who} your contact link. You are each other’s contacts now.':
+    'Hai inviato il tuo link di contatto a {who}. Ora siete l’uno nei contatti dell’altro.',
+  '{who} sent their contact link. You are each other’s contacts now.': '{who} ha inviato il suo link di contatto. Ora siete l’uno nei contatti dell’altro.',
+  '{who} could not be added as a contact.': 'Non è stato possibile aggiungere {who} ai contatti.',
+  'Ask for contact links on the phone that holds this account.': 'Chiedi i link di contatto dal telefono che ha questo account.',
+  'They are not in this group any more.': 'Non fa più parte di questo gruppo.',
+  'Not in public groups.': 'Non nei gruppi pubblici.',
+  'More than one member of this group shows this key, so one of them is not who they say. Ask for their contact link some other way.':
+    'Più di un membro di questo gruppo mostra questa chiave, quindi uno di loro non è chi dice di essere. Chiedi il suo link di contatto in un altro modo.',
+  'Another space is open now.': 'Ora è aperto un altro spazio.',
   'Groups go through the relay. Type its address in Relay first.': 'I gruppi passano dal relay. Scrivi prima il suo indirizzo in «Relay».',
 
   // The build and updates (lib/core.ts, lib/crypto.ts, lib/install-update*.ts, lib/updates.ts, lib/shell.ts).

@@ -2,6 +2,8 @@ import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import {
   checkedAbout,
   EMPTY_GROUPS,
+  MAX_CONTACT_ASKS,
+  MAX_CONTACT_KEY,
   MAX_GIVEN,
   MAX_GROUP_MESSAGES,
   MAX_LATER,
@@ -19,6 +21,7 @@ import * as core from './core';
 import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { decodeGroupCall, type GroupCallSignal } from './group-call-signal';
+import type { GroupContacts } from './group-contacts';
 import { groupPartsOf, markedOf, withMarked, type Marked } from './group-parts';
 import { cleanGroupName, isGroupId, type GroupSignal } from './group-signal';
 import { t, mark } from './i18n';
@@ -69,9 +72,22 @@ import { MAX_VOICE_MS } from './voice';
 // this device has no MLS state of its own, and makes and joins no group.
 //
 // Each group message tells the relay what it carries (lib/relay.ts, Mark), for a web app's notice
-// while it is closed: a member's words, photo, file or voice message is a message; a call that
-// starts rings, so it goes with no mark; all else (commits, welcomes, new keys, reactions, pins,
-// names, admins' steps) is quiet. What waits in the outbox keeps its mark for when it goes.
+// while it is closed: a member's words, photo, file or voice message, or an ask for one's contact
+// link, is a message; a call that starts rings, so it goes with no mark; all else (commits,
+// welcomes, new keys, reactions, pins, names, admins' steps, an answer with a contact link) is quiet. What waits in the outbox keeps its mark for when it goes.
+//
+// Members who are not each other's contacts can ask for each other's contact links (`askContact`),
+// in a group message only that member gets, with this account's public keys in it: where the member
+// is reached is what it says about itself in the group, which MLS vouches for. The member's phone
+// shows the ask once, to Send or not; Send answers with its own keys (`back`), and each phone adds
+// the other to the space's contacts (lib/group-contacts.ts). A Don't, or no answer, tells the asker
+// nothing, and an ask from a member who is a contact here already shows nothing either, so what the
+// asker sees never says where this phone keeps them. Once a member is a contact, from any group or
+// some other way, no ask to or from it is kept in any group: none is left to add it again after its
+// chat goes, or moves into hidden chats. Only a member still in the group, by the one leaf it has
+// there, is asked or heard: two leaves that say one id are one who is not it. Not in public groups,
+// where a member's id is a key made for that group alone, nor on a linked device, which has no keys
+// of the account's.
 
 /** The start of a group message, after which comes the message sealed for its member. A chat's
  *  packets start with 1 then 1 or 2 (crates/erevos-core), or 1 then 4 once sealed for the relay
@@ -85,12 +101,24 @@ export const MAX_GROUP_TEXT = 4000;
 export const RENEW_EVERY = 7 * 24 * 3600_000;
 // The longest key package a member asks to be put in anew with, base64: about 1 KB.
 const MAX_RENEWAL = 8192;
+/** How long after asking a member for its contact link it can be asked again. */
+export const ASK_AGAIN = 7 * 24 * 3600_000;
+/** How long this phone takes a member's contact link after asking for it. */
+export const WANT_KEPT = 60 * 24 * 3600_000;
+/** How long a member's ask for this phone's contact link waits to be answered, and how long one
+ *  turned down keeps that member's asks from showing. */
+export const ASK_KEPT = 30 * 24 * 3600_000;
+/** The most asks for this phone's contact link waiting in a group: the rest are not kept. */
+export const MAX_ASKS = 20;
+export { MAX_CONTACT_KEY };
 
 /** How group messages leave this phone: to a member's queue, saying what it carries (`mark`, none
- *  for what rings), and to a contact inside their chat. */
+ *  for what rings), and to a contact inside their chat. With `contacts`, members can be asked for
+ *  their contact links, and added. */
 export type GroupTransport = {
   post(to: About, packet: Uint8Array, mark?: Mark): Promise<void>;
   signal(identity: string, signal: GroupSignal): Promise<void>;
+  contacts?: GroupContacts;
 };
 
 /** Where this phone's group messages come to, and who it is: what it says about itself, but the seal key. */
@@ -116,16 +144,25 @@ export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
   unread: number;
   /** Contacts asked to join who have not answered yet. */
   asked: string[];
+  /** Members this phone asked for their contact link, and when, while their answer is taken. */
+  wants: { id: string; at: number }[];
+  /** Members who ask for this phone's contact link and wait for an answer, oldest first. */
+  asks: { id: string; at: number }[];
 };
 
-// What members say inside the group's messages. A `file` with `ms` is a voice message's sound.
+// What members say inside the group's messages. A `file` with `ms` is a voice message's sound. A
+// `contact` gives the member `to` the sender's public keys: asking for theirs, or with `back`
+// answering such an ask.
 type Said =
   | ({ t: 'text'; text: string; tag: string } & GroupParts)
   | { t: 'name'; name: string }
   | { t: 'call'; call: GroupCallSignal }
   | ({ t: 'file'; file: FileOffer; tag: string; ms?: number } & GroupParts)
   | { t: 'renew'; kp: string }
+  | ContactSaid
   | Marked;
+
+type ContactSaid = { t: 'contact'; to: string; key: string; back?: true };
 
 function encodeSaid(said: Said): Uint8Array {
   return utf8Encode(JSON.stringify(said));
@@ -139,6 +176,10 @@ function decodeSaid(bytes: Uint8Array): Said | null {
     }
     if (v.t === 'name' && typeof v.name === 'string') return { t: 'name', name: cleanGroupName(v.name) };
     if (v.t === 'renew' && typeof v.kp === 'string' && v.kp.length <= MAX_RENEWAL && /^[A-Za-z0-9+/]+={0,2}$/.test(v.kp)) return { t: 'renew', kp: v.kp };
+    if (v.t === 'contact' && typeof v.to === 'string' && /^[0-9a-f]{64}$/.test(v.to) && typeof v.key === 'string' && v.key.length <= MAX_CONTACT_KEY && /^[A-Za-z0-9_-]+$/.test(v.key)) {
+      if (v.back === undefined) return { t: 'contact', to: v.to, key: v.key };
+      if (v.back === true) return { t: 'contact', to: v.to, key: v.key, back: true };
+    }
     if (v.t === 'call') {
       const call = decodeGroupCall(v.call);
       if (call) return { t: 'call', call };
@@ -162,6 +203,23 @@ function aboutOf(bytes: Uint8Array | string): About | null {
   } catch {
     return null;
   }
+}
+
+// A group's asks for this phone's contact link that wait for an answer: not turned down, nor too old.
+const openAsks = (group: Group, now: number) => (group.asks ?? []).filter((a) => a.key && now - a.at < ASK_KEPT);
+
+// The members this phone asked for their contact link whose answer it still takes.
+const freshWants = (group: Group, now: number) => (group.wants ?? []).filter((w) => now - w.at < WANT_KEPT);
+
+// A member whose id more than one leaf of a group says: one of them is not who it says.
+const notOne = () => new Error(t('More than one member of this group shows this key, so one of them is not who they say. Ask for their contact link some other way.'));
+
+// A group with these asks, both ways, those too old left out, and neither kept when empty.
+function withContactAsks(group: Group, wants: Group['wants'], asks: Group['asks'], now: number): Group {
+  const { wants: _wants, asks: _asks, ...rest } = group;
+  const keptWants = (wants ?? []).filter((w) => now - w.at < WANT_KEPT).slice(-MAX_CONTACT_ASKS);
+  const keptAsks = (asks ?? []).filter((a) => now - a.at < ASK_KEPT).slice(-MAX_CONTACT_ASKS);
+  return { ...rest, ...(keptWants.length > 0 ? { wants: keptWants } : {}), ...(keptAsks.length > 0 ? { asks: keptAsks } : {}) };
 }
 
 /** Whether a packet from the relay is a group message. */
@@ -311,13 +369,18 @@ export class Groups {
     return fromBase64(this.data.state);
   }
 
-  /** The groups, latest moved first. */
+  /** The groups, latest moved first. A member's ask for this phone's contact link is unread too. */
   list(): GroupInfo[] {
+    const now = Date.now();
     return this.data.groups
       .map((g) => {
         const last = g.messages[g.messages.length - 1] ?? null;
-        const unread = g.messages.filter((m) => m.from && !m.note && m.at > g.readAt).length;
-        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked };
+        const asks = openAsks(g, now)
+          .map(({ id, at }) => ({ id, at }))
+          .sort((a, b) => a.at - b.at);
+        const unread = g.messages.filter((m) => m.from && !m.note && m.at > g.readAt).length + asks.filter((a) => a.at > g.readAt).length;
+        const wants = freshWants(g, now).map(({ id, at }) => ({ id, at }));
+        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked, wants, asks };
       })
       .sort((a, b) => (b.last?.at ?? 0) - (a.last?.at ?? 0));
   }
@@ -347,6 +410,11 @@ export class Groups {
     return 0;
   }
 
+  /** Whether a group's members are who they are in their chats, and so can ask for each other's contact links. */
+  protected personal(_id: string): boolean {
+    return true;
+  }
+
   /** What this phone says about itself in a group it asks new keys for: what it says in every group now. */
   protected async renewedAbout(_id: string): Promise<Uint8Array> {
     const me = await this.me();
@@ -365,8 +433,9 @@ export class Groups {
     return this.membersIn(id);
   }
 
-  protected async membersIn(id: string): Promise<GroupMember[]> {
-    const json = JSON.parse(utf8Decode(await core.group.members(this.kept(), fromHex(id)))) as {
+  // The members of a group as `state` has them: the one kept here, or another not kept yet.
+  protected async membersIn(id: string, state = this.kept()): Promise<GroupMember[]> {
+    const json = JSON.parse(utf8Decode(await core.group.members(state, fromHex(id)))) as {
       own: number;
       members: { leaf: number; about: string }[];
     };
@@ -552,6 +621,179 @@ export class Groups {
     });
   }
 
+  /**
+   * Asks a member of a group for its contact link, in a group message only it gets, and gives it
+   * this account's: if it sends its own, each phone adds the other. One who asked this phone first
+   * is answered instead. Asks no one who is a contact already, nor anyone again before ASK_AGAIN,
+   * nor a member whose id another leaf says too. `now` for checks.
+   */
+  askContact(id: string, member: string, transport: GroupTransport, now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      const group = this.contactGroup(id);
+      const contacts = transport.contacts;
+      if (!contacts) return;
+      // Who this phone is now: the contacts of a space opened meanwhile are not this account's.
+      const me = (await this.me()).id;
+      if (await contacts.has(me, member)) return;
+      if (openAsks(group, now).some((a) => a.id === member)) return this.answerLocked(id, member, transport, me, now);
+      if (freshWants(group, now).some((w) => w.id === member && now - w.at < ASK_AGAIN)) return;
+      const leaves = await this.leavesOf(id, member);
+      if (leaves.length === 0) throw new Error(t('They are not in this group any more.'));
+      if (leaves.length > 1) throw notOne();
+      // Kept before it goes, so an answer that comes at once finds it.
+      await this.save(this.withGroup(withContactAsks(group, [...(group.wants ?? []).filter((w) => w.id !== member), { id: member, at: now }], group.asks, now)));
+      await this.sendContact(id, leaves, member, false, transport, me);
+      await this.note(id, 'asked link', member);
+    });
+  }
+
+  /** Sends this phone's contact link to a member who asked for it (Send): each phone adds the other. */
+  answerContact(id: string, member: string, transport: GroupTransport, now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      this.contactGroup(id);
+      if (transport.contacts) await this.answerLocked(id, member, transport, (await this.me()).id, now);
+    });
+  }
+
+  /** Turns down a member's ask for this phone's contact link (Don't): nothing goes, and its keys are forgotten here. */
+  declineContact(id: string, member: string, now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      const group = this.contactGroup(id);
+      if (!openAsks(group, now).some((a) => a.id === member)) return;
+      // Only that they asked stays, so their asks show no more until ASK_KEPT from now.
+      await this.save(this.withGroup(withContactAsks(group, group.wants, [...(group.asks ?? []).filter((a) => a.id !== member), { id: member, at: now, key: '' }], now)));
+      this.changed();
+    });
+  }
+
+  // A group whose members can be asked for their contact links here: else why not.
+  private contactGroup(id: string): Group {
+    if (this.through()) throw new Error(t('Ask for contact links on the phone that holds this account.'));
+    const group = this.find(id);
+    if (!group || group.status !== 'in') throw new Error(t('You are not in this group any more.'));
+    if (!this.personal(id)) throw new Error(t('Not in public groups.'));
+    return group;
+  }
+
+  // The leaves of the member `identity` in a group, but this phone's.
+  private async leavesOf(id: string, identity: string): Promise<GroupMember[]> {
+    return (await this.membersIn(id)).filter((m) => !m.me && m.about?.id === identity);
+  }
+
+  // Sends `member` this phone's contact link, as it asked, and adds it from the keys it gave. To a
+  // contact here already, made some other way since it asked, nothing goes, and its ask with it.
+  // `me`: who this phone was when Send was tapped.
+  private async answerLocked(id: string, member: string, transport: GroupTransport, me: string, now: number) {
+    const contacts = transport.contacts!;
+    const leaves = await this.leavesOf(id, member);
+    const known = await contacts.has(me, member);
+    if (known || leaves.length !== 1) {
+      const group = this.find(id)!;
+      await this.save(this.withGroup(withContactAsks(group, group.wants, group.asks?.filter((a) => a.id !== member), now)));
+      this.changed();
+      if (known) return;
+      throw leaves.length === 0 ? new Error(t('They are not in this group any more.')) : notOne();
+    }
+    const ask = openAsks(this.find(id)!, now).find((a) => a.id === member);
+    if (!ask) return;
+    await this.sendContact(id, leaves, member, true, transport, me);
+    await this.dropContactAsks(member, now);
+    const added = await contacts.add(me, leaves[0].about!, ask.key).then(
+      () => true,
+      () => false,
+    );
+    await this.note(id, added ? 'sent link' : 'link failed', member);
+  }
+
+  // Lets go of the asks for contact links to and from `identity` in every group, or with `wants`
+  // false only those from it: once it is a contact, none is left to add it again later.
+  private async dropContactAsks(identity: string, now: number, wants = true): Promise<boolean> {
+    const has = (g: Group) => (wants && g.wants?.some((w) => w.id === identity)) || g.asks?.some((a) => a.id === identity);
+    if (!this.data.groups.some(has)) return false;
+    const groups = this.data.groups.map((g) => (has(g) ? withContactAsks(g, wants ? g.wants?.filter((w) => w.id !== identity) : g.wants, g.asks?.filter((a) => a.id !== identity), now) : g));
+    await this.save({ ...this.data, groups });
+    return true;
+  }
+
+  // Asks for contact links with members the space has as contacts now, made some other way. One
+  // from here stays while they are a message request: their first packet can come before their
+  // answer, and the answer then accepts them.
+  private async pruneContactAsks(transport: GroupTransport) {
+    const contacts = transport.contacts;
+    const ids = new Set(this.data.groups.flatMap((g) => [...(g.wants ?? []), ...(g.asks ?? [])].map((a) => a.id)));
+    if (!contacts || ids.size === 0 || this.through()) return;
+    const me = (await this.me()).id;
+    const now = Date.now();
+    let dropped = false;
+    for (const identity of ids) {
+      if (await contacts.accepted(me, identity)) dropped = (await this.dropContactAsks(identity, now)) || dropped;
+      else if (await contacts.has(me, identity)) dropped = (await this.dropContactAsks(identity, now, false)) || dropped;
+    }
+    if (dropped) this.changed();
+  }
+
+  // Gives the member `to` this account's public keys, in a group message only its leaves get: an
+  // ask for its own, or with `back` the answer to its ask. `me`: who this phone is in the group.
+  private async sendContact(id: string, leaves: GroupMember[], to: string, back: boolean, transport: GroupTransport, me: string) {
+    const key = await transport.contacts!.bundle(me);
+    const sealed = await core.group.seal(this.kept(), fromHex(id), encodeSaid({ t: 'contact', to, key, ...(back ? { back: true as const } : {}) }));
+    await this.save({ ...this.data, state: toBase64(sealed.state) });
+    // An ask shows as unread there, so it is a message; the answer only adds them, quiet.
+    await this.deliver(id, leaves, sealed.message, transport, true, back ? 'quiet' : 'message');
+  }
+
+  // A member's contact link for this phone, from its leaf `sender`, which says `about` of itself.
+  // The answer to an ask from here adds it; an ask waits to be answered (`asks`), once, unless it
+  // is from a contact here already. Anything else goes, with nothing to show for it.
+  private async contactCame(id: string, sender: number, about: About, said: ContactSaid, transport: GroupTransport) {
+    const contacts = transport.contacts;
+    if (this.find(id)?.status !== 'in' || !this.personal(id) || !contacts) return;
+    const me = (await this.me()).id;
+    if (said.to !== me || about.id === me) return;
+    // The keys have to be the sender's own.
+    const theirs = await core.bundleIdentity(fromBase64Url(said.key)).then(toHex, () => '');
+    if (theirs !== about.id) return;
+    const from = about.id;
+    // From a member still in the group, by the one leaf it has there: one taken out after it wrote
+    // is answered nothing, and two leaves that say one id are one who is not it.
+    const leaves = await this.leavesOf(id, from);
+    if (leaves.length !== 1 || leaves[0].leaf !== sender) return;
+    const now = Date.now();
+    // A contact made some other way meanwhile: what was asked goes, and nothing adds it again.
+    if ((await contacts.accepted(me, from)) && (await this.dropContactAsks(from, now))) this.changed();
+    const group = this.find(id)!;
+    if (freshWants(group, now).some((w) => w.id === from)) {
+      // Asked from here: crossed with ours, or after a Don't taken back, or again after the card
+      // went. Such an ask is answered first, so they add this phone too.
+      if (!said.back) await this.sendContact(id, leaves, from, true, transport, me);
+      await this.dropContactAsks(from, now);
+      const added = await contacts.add(me, about, said.key).then(
+        () => true,
+        () => false,
+      );
+      await this.note(id, added ? 'got link' : 'link failed', from);
+      this.messageListeners.forEach((listener) => listener(id));
+      return;
+    }
+    // An answer to nothing asked from here; or an ask from a contact here already, whom showing
+    // it would tell that this phone keeps them somewhere else than the space.
+    if (said.back || (await contacts.has(me, from))) return;
+    const asks = group.asks ?? [];
+    const was = asks.find((a) => a.id === from && now - a.at < ASK_KEPT);
+    // Turned down: nothing more from them until ASK_KEPT has gone by.
+    if (was && !was.key) return;
+    if (was) {
+      // Asked again while the first waits: the newer keys, and nothing more to show.
+      await this.save(this.withGroup(withContactAsks(group, group.wants, asks.map((a) => (a === was ? { ...a, key: said.key } : a)), now)));
+      return;
+    }
+    // A flood of asks pushes out none that waits.
+    if (openAsks(group, now).length >= MAX_ASKS) return;
+    await this.save(this.withGroup(withContactAsks(group, group.wants, [...asks.filter((a) => a.id !== from), { id: from, at: now, key: said.key }], now)));
+    await this.note(id, 'asks link', from);
+    this.messageListeners.forEach((listener) => listener(id));
+  }
+
   /** Keeps a line in a group, such as how a call went. */
   line(id: string, text: string): Promise<void> {
     return this.run(() => this.note(id, text));
@@ -628,7 +870,8 @@ export class Groups {
     });
   }
 
-  /** Tries again what the relay did not take. */
+  /** Tries again what the relay did not take, and lets go of asks for contact links with members
+   *  who are contacts now. */
   flush(transport: GroupTransport): Promise<void> {
     return this.run(async () => {
       for (const group of this.data.groups) {
@@ -643,6 +886,7 @@ export class Groups {
         }
         if (left.length !== group.outbox.length) await this.save(this.withGroup({ ...this.find(group.id)!, outbox: left }));
       }
+      await this.pruneContactAsks(transport).catch(() => undefined);
     });
   }
 
@@ -778,11 +1022,13 @@ export class Groups {
     return messages.slice(-MAX_GROUP_MESSAGES);
   }
 
-  // Adds a note to a group: who joined or left (by identity), or a text of its own.
+  // Adds a note to a group: who joined or left (by identity), or a text of its own. A member who
+  // left takes its asks for contact links with it, both ways.
   protected async note(id: string, what: string, who?: string) {
-    const group = this.find(id);
-    if (!group || who === '') return;
+    const found = this.find(id);
+    if (!found || who === '') return;
     const text = who === undefined ? what : `${who}|${what}`;
+    const group = what === 'left' && who ? withContactAsks(found, found.wants?.filter((w) => w.id !== who), found.asks?.filter((a) => a.id !== who), Date.now()) : found;
     await this.save(this.withGroup({ ...group, messages: this.trimmed([...group.messages, { at: Date.now(), from: '', text, tag: '', note: true }]) }));
     this.changed();
   }
@@ -794,7 +1040,7 @@ export class Groups {
       const state = await core.group.forget(this.kept(), fromHex(id));
       this.data = { ...this.data, state: toBase64(state) };
     }
-    await this.save(this.withGroup({ ...group, status: 'out', asked: [], later: [], outbox: [] }));
+    await this.save(this.withGroup({ ...withContactAsks(group, [], [], 0), status: 'out', asked: [], later: [], outbox: [] }));
     await this.note(id, text);
   }
 
@@ -815,6 +1061,15 @@ export class Groups {
       if (signal.kind === 'keys') {
         const group = this.find(signal.group);
         if (!group?.admin || group.status !== 'in' || !group.asked.includes(identity)) return;
+        // The key package has to say the contact it came from: else a contact could join as
+        // someone else, and be asked for contact links as them.
+        if (core.canPublicGroup()) {
+          const about = await core.publicGroup.packageAbout(signal.data).then(
+            (made) => aboutOf(made.about),
+            () => null,
+          );
+          if (about?.id !== identity) return;
+        }
         const before = await this.membersIn(group.id);
         const added = await core.group.add(this.kept(), fromHex(group.id), signal.data);
         await this.save({ ...this.withGroup({ ...group, asked: group.asked.filter((i) => i !== identity) }), state: toBase64(added.state) });
@@ -828,6 +1083,10 @@ export class Groups {
       if (this.find(signal.group)?.status === 'in' || !this.data.given.includes(`${signal.group}:${identity}`)) return;
       const joined = await core.group.join(await this.state(), signal.data);
       if (toHex(joined.id) !== signal.group || !isGroupId(signal.group)) return;
+      // Its admin, at leaf 0, has to be the contact who asked this phone in: else a contact could
+      // make a group as someone else, and be asked for contact links as them.
+      const admin = (await this.membersIn(signal.group, joined.state)).find((m) => m.leaf === 0);
+      if (admin?.about?.id !== identity) return;
       const group: Group = {
         id: signal.group,
         name: signal.name || 'Group',
@@ -909,6 +1168,10 @@ export class Groups {
         this.callListeners.forEach((listener) => listener(id, from, signal));
         return;
       }
+      if (said.t === 'contact') {
+        await this.contactCame(id, opened.sender, aboutOf(opened.about)!, said, transport);
+        return;
+      }
       if (said.t === 'file') {
         // Not taken yet: where to take it from.
         const media = { file: offerRef(said.file), ...(said.ms === undefined ? {} : { ms: said.ms }) };
@@ -955,7 +1218,7 @@ export class Groups {
     } else if (opened.kind === 'removed') {
       const leaving = this.find(id)?.status === 'leaving';
       // The core forgot the group already.
-      await this.save(this.withGroup({ ...this.find(id)!, status: 'out', asked: [], later: [], outbox: [] }));
+      await this.save(this.withGroup({ ...withContactAsks(this.find(id)!, [], [], 0), status: 'out', asked: [], later: [], outbox: [] }));
       await this.note(id, leaving ? mark('You left the group.') : mark('You are no longer in the group.'));
     } else if (opened.kind === 'leaving') {
       const now = this.find(id)!;
@@ -986,7 +1249,26 @@ export function noteText(text: string, name: (identity: string) => string): stri
   if (bar !== 64) return t(text);
   const who = name(text.slice(0, 64));
   const what = text.slice(65);
-  return what === 'added you' ? t('{who} added you to the group.', { who }) : what === 'joined' ? t('{who} joined.', { who }) : what === 'left' ? t('{who} left.', { who }) : (moderated(who, what) ?? `${who} ${what}`);
+  switch (what) {
+    case 'added you':
+      return t('{who} added you to the group.', { who });
+    case 'joined':
+      return t('{who} joined.', { who });
+    case 'left':
+      return t('{who} left.', { who });
+    case 'asked link':
+      return t('You asked {who} for their contact link.', { who });
+    case 'asks link':
+      return t('{who} asked for your contact link.', { who });
+    case 'sent link':
+      return t('You sent {who} your contact link. You are each other’s contacts now.', { who });
+    case 'got link':
+      return t('{who} sent their contact link. You are each other’s contacts now.', { who });
+    case 'link failed':
+      return t('{who} could not be added as a contact.', { who });
+    default:
+      return moderated(who, what) ?? `${who} ${what}`;
+  }
 }
 
 export { EMPTY_GROUPS };

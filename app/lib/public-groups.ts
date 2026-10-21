@@ -541,6 +541,9 @@ export class PublicGroups extends Groups {
     }
     // Asking the owner for new keys, which a muted member does too.
     if (said.t === 'renew') return false;
+    // Members of a public group do not ask for each other's contact links: that would tie the key
+    // made for the group to who they are.
+    if (said.t === 'contact') return true;
     if (said.t === 'name') {
       // Only the owner names the group.
       const name = typeof said.name === 'string' ? cleanGroupName(said.name) : '';
@@ -620,6 +623,11 @@ export class PublicGroups extends Groups {
 
   protected async committed(id: string, transport: GroupTransport): Promise<void> {
     if (this.record(id)) await this.refresh(id, transport);
+  }
+
+  // A member of a public group is known there by a key made for it, not as in its chats.
+  protected personal(id: string): boolean {
+    return !this.record(id);
   }
 
   protected unreached(id: string): Set<string> {

@@ -68,6 +68,13 @@ export type Group = {
   keysAt?: number;
   /** When this phone last asked the keeper for new keys, ms, while it waits for the welcome. */
   renewing?: number;
+  /** Members this phone asked for their contact link (lib/groups.ts `askContact`), by identity, and
+   *  when: their answer is taken while the ask is fresh. Missing when none. */
+  wants?: { id: string; at: number }[];
+  /** Members who asked this phone for its contact link, by identity, when, and the keys they gave,
+   *  base64url: the card to Send or not. An empty key is one turned down, kept so that member asks
+   *  no more for a while. Missing when none. */
+  asks?: { id: string; at: number; key: string }[];
 };
 
 export type GroupData = {
@@ -92,6 +99,10 @@ export const MAX_LATER = 100;
 export const MAX_OUTBOX = 200;
 export const MAX_ORPHANS = 50;
 export const MAX_GIVEN = 50;
+/** The most members a group keeps asked for their contact link, and who asked for this phone's. */
+export const MAX_CONTACT_ASKS = 100;
+/** The longest key a member gives with its contact link, base64url: its bundle is about 1.8 KB. */
+export const MAX_CONTACT_KEY = 4096;
 // The most members a message keeps a reaction or a vote of.
 const MAX_MARKS = 100;
 
@@ -99,6 +110,7 @@ const isText = (v: unknown): v is string => typeof v === 'string';
 const isBase64 = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9+/]*={0,2}$/.test(v);
 const isHex = (v: unknown, length: number): v is string => isText(v) && v.length === length && /^[0-9a-f]*$/.test(v);
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+const isContactKey = (v: unknown): v is string => isText(v) && v.length <= MAX_CONTACT_KEY && /^[A-Za-z0-9_-]*$/.test(v);
 
 /** What a member says about itself, checked: null when it is not what an Erevos says. */
 export function checkedAbout(value: unknown): About | null {
@@ -159,11 +171,28 @@ function checkedMedia(v: { file?: unknown; ms?: unknown }): GroupMedia {
   return { file: v.file, ...(isTime(v.ms) ? { ms: v.ms } : {}) };
 }
 
-function checkedGroup(value: unknown): Group | null {
+/** A group as kept, checked: null when it is not one. */
+export function checkedGroup(value: unknown): Group | null {
   const v = (value ?? {}) as Partial<Record<keyof Group, unknown>>;
   if (!isHex(v.id, 32)) return null;
   const list = <T>(items: unknown, check: (item: unknown) => T | null, max: number) =>
     (Array.isArray(items) ? items.map(check).filter((item): item is T => item !== null) : []).slice(-max);
+  const wants = list(
+    v.wants,
+    (i) => {
+      const w = (i ?? {}) as { id?: unknown; at?: unknown };
+      return isHex(w.id, 64) && isTime(w.at) ? { id: w.id, at: w.at } : null;
+    },
+    MAX_CONTACT_ASKS,
+  );
+  const asks = list(
+    v.asks,
+    (i) => {
+      const a = (i ?? {}) as { id?: unknown; at?: unknown; key?: unknown };
+      return isHex(a.id, 64) && isTime(a.at) && isContactKey(a.key) ? { id: a.id, at: a.at, key: a.key } : null;
+    },
+    MAX_CONTACT_ASKS,
+  );
   return {
     id: v.id,
     name: isText(v.name) ? v.name : '',
@@ -185,6 +214,8 @@ function checkedGroup(value: unknown): Group | null {
     readAt: isTime(v.readAt) ? v.readAt : 0,
     ...(isTime(v.keysAt) ? { keysAt: v.keysAt } : {}),
     ...(isTime(v.renewing) ? { renewing: v.renewing } : {}),
+    ...(wants.length > 0 ? { wants } : {}),
+    ...(asks.length > 0 ? { asks } : {}),
   };
 }
 

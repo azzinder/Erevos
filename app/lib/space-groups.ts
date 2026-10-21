@@ -7,6 +7,7 @@ import { canGroup, canRelaySeal } from './core';
 import { toBase64Url } from './e2e';
 import type { GroupCallSignal } from './group-call-signal';
 import type { GroupCallPlace } from './group-calls';
+import { groupContacts } from './group-contacts';
 import type { GroupSignal } from './group-signal';
 import type { GroupTransport } from './groups';
 import { nearby } from './nearby';
@@ -20,7 +21,8 @@ import { t } from './i18n';
 // (lib/space-chats.ts): the chat screen, the group screens and the receiver use the same ones.
 // Their messages go to each member's phone nearby when it is (lib/nearby.ts), as on the same Wi-Fi
 // with no internet, and through the space's relay settings, read when sent. Their photos, files and
-// voice messages go through the space's relay only, straight (lib/group-media.ts).
+// voice messages go through the space's relay only, straight (lib/group-media.ts). A member asked
+// for its contact link is added to the space's own chats (lib/group-contacts.ts), never to hidden ones.
 
 let opened: { of: object; groups: Promise<PublicGroups> } | null = null;
 // The same once open, for what cannot wait for them (publicMemberName).
@@ -117,6 +119,15 @@ export const spaceGroupTransport: GroupTransport = {
     const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], 'quiet', () => e2e.firstSent(identity)) : null;
     await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
   },
+  // The chats of the space open at each call: lib/group-contacts.ts refuses those of an account
+  // other than the one the groups asking are.
+  contacts: groupContacts(
+    async () => (await spaceChats()).e2e,
+    async () => {
+      const place = await settings();
+      return { senderHex: place.senderHex, relay: place.own.url, relayKey: place.relayKey };
+    },
+  ),
 };
 
 /** The space's relay, straight, not through its second relay: groups' files go to it and come through it. */

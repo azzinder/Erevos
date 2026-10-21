@@ -79,7 +79,24 @@ export const screens: Record<string, string> = {
   'You are its admin: closing it takes every member out, and no one can write in it again.': 'Vi ste admin: zatvaranjem grupe uklanjaju se svi članovi i u njoj se više ne može pisati.',
   'The admin takes you out the next time Erevos is open on their phone. You read nothing the group says after.': 'Admin vas uklanja kad sljedeći put na njegovom telefonu bude otvoren Erevos. Poslije toga ne čitate ništa što se kaže u grupi.',
   Leave: 'Napusti',
-  'Members who are not your contacts show by the start of their key. Add them as contacts to give them names.': 'Članovi koji nisu vaši kontakti prikazuju se po početku svog ključa. Dodajte ih u kontakte da im date imena.',
+  'Add as contact': 'Dodaj u kontakte',
+  'Asked': 'Zatraženo',
+  'Ask again': 'Zatraži ponovo',
+  'Ask': 'Zatraži',
+  'Don’t': 'Ne šalji',
+  'Asks for your contact link': 'Traži vaš link za kontakt',
+  'Erevos asks {name} for their contact link, in a message only they get, and gives them yours. If they send theirs, you are each other’s contacts. If they don’t, you are not told.':
+    'Erevos u poruci koju prima samo {name} traži link za kontakt te osobe i šalje joj vaš. Ako ta osoba pošalje svoj, imate jedno drugo u kontaktima. Ako ne pošalje, o tome niste obaviješteni.',
+  '{who} asks for your contact link': '{who} traži vaš link za kontakt',
+  'Only you see this. Send yours if you know who they are: you become each other’s contacts. If you don’t, they are not told.':
+    'Ovo vidite samo vi. Pošaljite svoj ako znate o kome se radi: tada imate jedno drugo u kontaktima. Ako ne pošaljete, ta osoba to ne saznaje.',
+  '{n} more member asks too, in the members list.': 'Još {n} član traži isto: pogledajte popis članova.',
+  '{n} more members ask too, in the members list.':
+    'Još {n} član traži isto: pogledajte popis članova. | Još {n} člana traže isto: pogledajte popis članova. | Još {n} članova traži isto: pogledajte popis članova.',
+  'Members who are not your contacts show by the start of their key. Tap Add as contact beside one to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
+    'Članovi koji nisu vaši kontakti prikazuju se po početku svog ključa. Dodirnite „Dodaj u kontakte“ uz člana da od njega, u poruci koju prima samo on, zatražite link za kontakt. Kad ga pošalje, imate jedno drugo u kontaktima, a dodirom na „Ime“ dajete mu ime.',
+  'Members who are not your contacts show by the start of their key. Ask them for their contact links on the phone that holds this account.':
+    'Članovi koji nisu vaši kontakti prikazuju se po početku svog ključa. Linkove za kontakt od njih tražite na telefonu na kojem je ovaj račun.',
   'This build of Erevos has no group chats yet. Update it to make one.': 'Ova verzija Erevosa još nema grupne razgovore. Ažurirajte je da biste napravili grupu.',
   'Every member sees it.': 'Vidi ga svaki član.',
   'Who to ask': 'Koga pozvati',

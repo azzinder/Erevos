@@ -21,11 +21,12 @@ import { currentGroupCall } from '../lib/group-call';
 import { linkedRole } from '../lib/devices';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
-import { MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
+import { ASK_AGAIN, MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
 import { spaceChats } from '../lib/space-chats';
 import { spaceGroupCalls, spaceGroups, spaceGroupTransport } from '../lib/space-groups';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 import { rtc } from '../lib/webrtc';
+import { MAX_NAME } from '../lock/e2e-data';
 import type { GroupMessage } from '../lock/group-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
@@ -41,8 +42,17 @@ import { ContactPicker, groupableContacts } from '../components/contact-picker';
 // A message held down opens its menu, and its bubble shows what it answers, a sticker, a place, a
 // poll or a link's preview, and its reactions (components/group-messages.tsx). `at`: the tag of a
 // message to go to, starred or found.
+// In a group that is not public, the members sheet asks a member who is not a contact for their
+// contact link (Add as contact), and names a contact who has no name yet; a member who asks for
+// this phone's shows as a card over the messages, to Send or not (lib/groups.ts `askContact`),
+// unless they are a contact here already. Asking and answering are the phone's, which holds the
+// account's keys: a linked device names contacts, and the phone takes the name.
 
 type Contact = { identity: string; name: string };
+
+// What asking for a contact link says, on the card and before Send in the members sheet.
+const askTitle = (who: string) => t('{who} asks for your contact link', { who });
+const askBody = () => t('Only you see this. Send yours if you know who they are: you become each other’s contacts. If you don’t, they are not told.');
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const clock = (at: number) => {
@@ -74,6 +84,7 @@ export default function GroupScreen() {
   const [sheet, setSheet] = useState(false);
   // A public group's ⋯: its video call, and its own screen.
   const [publicMenu, setPublicMenu] = useState(false);
+  const [answering, setAnswering] = useState(false);
   const [, setCalls] = useState(0);
   const scroll = useRef<ScrollView>(null);
   // A public group (app/public-group.tsx): its members by the names they chose, and its own screen for them.
@@ -94,6 +105,13 @@ export default function GroupScreen() {
     };
   }, []);
 
+  // The space's contacts, read again whenever the group changes: one added from it gets their name.
+  const readContacts = useCallback(() => {
+    void spaceChats()
+      .then(({ e2e }) => setContacts(e2e.contacts().map((c) => ({ identity: c.identity, name: c.name }))))
+      .catch(() => undefined);
+  }, []);
+
   const load = useCallback(async () => {
     const groups = await spaceGroups();
     setInfo(groups.list().find((g) => g.id === id) ?? null);
@@ -104,9 +122,7 @@ export default function GroupScreen() {
   useEffect(() => {
     let stop = () => undefined as void;
     let active = true;
-    void spaceChats()
-      .then(({ e2e }) => setContacts(e2e.contacts().map((c) => ({ identity: c.identity, name: c.name }))))
-      .catch(() => undefined);
+    readContacts();
     void spaceGroups()
       .then((groups) => {
         if (!active) return;
@@ -117,6 +133,7 @@ export default function GroupScreen() {
           const now = groups.messages(id).length;
           const listed = groups.list().find((g) => g.id === id) ?? null;
           setInfo(listed);
+          readContacts();
           if (now !== seen) {
             seen = now;
             void load();
@@ -128,7 +145,7 @@ export default function GroupScreen() {
       active = false;
       stop();
     };
-  }, [id, load]);
+  }, [id, load, readContacts]);
 
   async function send() {
     const text = draft.trim();
@@ -140,6 +157,21 @@ export default function GroupScreen() {
     } catch (error) {
       setDraft(text);
       setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  // The card's Send or Don't, for the member who asked first.
+  async function answer(member: string, send: boolean) {
+    setNote('');
+    setAnswering(true);
+    try {
+      const groups = await spaceGroups();
+      if (send) await groups.answerContact(id, member, spaceGroupTransport);
+      else await groups.declineContact(id, member);
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setAnswering(false);
     }
   }
 
@@ -199,6 +231,10 @@ export default function GroupScreen() {
 
   const out = info.status !== 'in';
   const going = out ? null : groupCallGoingOn(id);
+  // Who asks for this phone's contact link, but a contact here already: the first, the rest wait
+  // in the members sheet.
+  const asks = info.asks.filter((a) => !contacts.some((c) => c.identity === a.id));
+  const asker = out || pub.isPublic || linkedRole() === 'linked' ? null : (asks[0] ?? null);
   // The panel under "+" closes first: it is not left open under what opens.
   const openMembers = () => {
     media.setAttaching(false);
@@ -252,6 +288,28 @@ export default function GroupScreen() {
             {going.people.map(name).join(', ')}
           </Text>
         </Pressable>
+      ) : null}
+      {asker ? (
+        <View style={styles.ask}>
+          <Row>
+            <KeyFace identity={asker.id} name={name(asker.id)} size={36} />
+            <Text variant="bodyStrong" style={{ flex: 1 }}>
+              {askTitle(name(asker.id))}
+            </Text>
+          </Row>
+          <Text variant="caption" tone="muted">
+            {askBody()}
+          </Text>
+          <Row>
+            <Button title={t('Send')} compact disabled={answering} onPress={() => void answer(asker.id, true)} />
+            <Button title={t('Don’t')} kind="secondary" compact disabled={answering} onPress={() => void answer(asker.id, false)} />
+          </Row>
+          {asks.length > 1 ? (
+            <Text variant="caption" tone="muted">
+              {plural(asks.length - 1, '{n} more member asks too, in the members list.', '{n} more members ask too, in the members list.')}
+            </Text>
+          ) : null}
+        </View>
       ) : null}
       {parts.pinned}
       {parts.search}
@@ -336,6 +394,8 @@ export default function GroupScreen() {
         onClose={() => setSheet(false)}
         info={info}
         name={name}
+        contacts={contacts}
+        onContacts={readContacts}
         onNote={setNote}
         onSearch={parts.startSearch}
         onExport={parts.exportGroup}
@@ -367,11 +427,14 @@ export default function GroupScreen() {
   );
 }
 
-function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport, onVideo }: {
+function MembersSheet({ visible, onClose, info, name, contacts, onContacts, onNote, onSearch, onExport, onVideo }: {
   visible: boolean;
   onClose: () => void;
   info: GroupInfo;
   name: (identity: string) => string;
+  /** The space's contacts, and how to read them again once one is named here. */
+  contacts: Contact[];
+  onContacts: () => void;
   onNote: (text: string) => void;
   /** Opens the search through the group's messages, and writes the group out as text. */
   onSearch: () => void;
@@ -385,12 +448,16 @@ function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [rename, setRename] = useState('');
   const [busy, setBusy] = useState(false);
+  // The contact being named, and the name typed for it.
+  const [naming, setNaming] = useState('');
+  const [contactName, setContactName] = useState('');
 
   useEffect(() => {
     if (!visible) return;
     setAdding(null);
     setChosen(new Set());
     setRename(info.name);
+    setNaming('');
     void spaceGroups()
       .then((groups) => groups.members(info.id))
       .then(setMembers, () => setMembers([]));
@@ -420,6 +487,64 @@ function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport
   };
 
   const out = info.status !== 'in';
+  const linked = linkedRole() === 'linked';
+
+  // Asks a member for their contact link, once they said what it does.
+  const askFor = (identity: string) =>
+    void closeThenConfirm(
+      t('Add as contact'),
+      t('Erevos asks {name} for their contact link, in a message only they get, and gives them yours. If they send theirs, you are each other’s contacts. If they don’t, you are not told.', {
+        name: name(identity),
+      }),
+      t('Ask'),
+    ).then((ok) => {
+      if (ok) void run(async () => (await spaceGroups()).askContact(info.id, identity, spaceGroupTransport));
+    });
+
+  // Under a member's name: asking them for their contact link, what came of it, or naming them.
+  // On a linked device only naming: asking is the phone's.
+  const contactControl = (identity: string) => {
+    const contact = contacts.find((c) => c.identity === identity);
+    if (contact) {
+      return contact.name ? null : (
+        <TextButton
+          title={t('Name')}
+          onPress={() => {
+            setNaming(identity);
+            setContactName('');
+          }}
+        />
+      );
+    }
+    if (linked) return null;
+    if (info.asks.some((a) => a.id === identity)) {
+      return (
+        <Row>
+          <Text variant="caption" tone="muted" style={{ flexShrink: 1 }}>
+            {t('Asks for your contact link')}
+          </Text>
+          <TextButton
+            title={t('Send')}
+            onPress={() =>
+              void closeThenConfirm(askTitle(name(identity)), askBody(), t('Send')).then((ok) => {
+                if (ok) void run(async () => (await spaceGroups()).answerContact(info.id, identity, spaceGroupTransport));
+              })
+            }
+          />
+        </Row>
+      );
+    }
+    const asked = info.wants.find((w) => w.id === identity);
+    if (asked && Date.now() - asked.at < ASK_AGAIN) {
+      return (
+        <Text variant="caption" tone="muted">
+          {t('Asked')}
+        </Text>
+      );
+    }
+    return <TextButton title={asked ? t('Ask again') : t('Add as contact')} onPress={() => askFor(identity)} />;
+  };
+
   return (
     <Sheet visible={visible} onClose={onClose} title={info.name}>
       <ScrollView nestedScrollEnabled style={{ maxHeight: 520 }} contentContainerStyle={{ gap: space.sm }}>
@@ -478,25 +603,52 @@ function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport
               />
             )}
             {members.map((m) => (
-              <Row key={m.leaf}>
-                <KeyFace identity={m.about?.id ?? ''} name={m.me ? t('You') : name(m.about?.id ?? '')} size={36} />
-                <Text style={{ flex: 1 }} numberOfLines={1}>
-                  {m.me ? t('You') : name(m.about?.id ?? '')}
-                  {m.leaf === 0 ? t('  · admin') : ''}
-                </Text>
-                {info.admin && !m.me && !out ? (
-                  <TextButton
-                    title={t('Take out')}
-                    onPress={() =>
-                      void closeThenConfirm(t('Take out'), t('{name} will read nothing the group says from now on.', { name: name(m.about?.id ?? '') })).then(
-                        (ok) => {
-                          if (ok) void run(async () => (await spaceGroups()).remove(info.id, m.leaf, spaceGroupTransport));
-                        },
-                      )
-                    }
-                  />
+              <View key={m.leaf} style={{ gap: space.sm }}>
+                <Row>
+                  <KeyFace identity={m.about?.id ?? ''} name={m.me ? t('You') : name(m.about?.id ?? '')} size={36} />
+                  <View style={{ flex: 1, minWidth: 0, alignItems: 'flex-start', gap: 2 }}>
+                    <Text numberOfLines={1} style={{ alignSelf: 'stretch' }}>
+                      {m.me ? t('You') : name(m.about?.id ?? '')}
+                      {m.leaf === 0 ? t('  · admin') : ''}
+                    </Text>
+                    {m.me || !m.about || out ? null : contactControl(m.about.id)}
+                  </View>
+                  {info.admin && !m.me && !out ? (
+                    <TextButton
+                      title={t('Take out')}
+                      onPress={() =>
+                        void closeThenConfirm(t('Take out'), t('{name} will read nothing the group says from now on.', { name: name(m.about?.id ?? '') })).then(
+                          (ok) => {
+                            if (ok) void run(async () => (await spaceGroups()).remove(info.id, m.leaf, spaceGroupTransport));
+                          },
+                        )
+                      }
+                    />
+                  ) : null}
+                </Row>
+                {naming && naming === m.about?.id ? (
+                  <Card>
+                    <Field label={t('Name')}>
+                      <Input value={contactName} onChangeText={setContactName} maxLength={MAX_NAME} autoFocus />
+                    </Field>
+                    <Row>
+                      <Button
+                        title={t('Save')}
+                        compact
+                        disabled={busy || !contactName.trim()}
+                        onPress={() =>
+                          void run(async () => {
+                            await (await spaceChats()).e2e.rename(naming, contactName);
+                            setNaming('');
+                            onContacts();
+                          })
+                        }
+                      />
+                      <TextButton title={t('Cancel')} onPress={() => setNaming('')} />
+                    </Row>
+                  </Card>
                 ) : null}
-              </Row>
+              </View>
             ))}
             {info.asked.length > 0 ? (
               <Text variant="caption" tone="muted">
@@ -574,9 +726,13 @@ function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport
                 }
               />
             )}
-            <Text variant="caption" color={colors.textFaint}>
-              {t('Members who are not your contacts show by the start of their key. Add them as contacts to give them names.')}
-            </Text>
+            {out ? null : (
+              <Text variant="caption" color={colors.textFaint}>
+                {linked
+                  ? t('Members who are not your contacts show by the start of their key. Ask them for their contact links on the phone that holds this account.')
+                  : t('Members who are not your contacts show by the start of their key. Tap Add as contact beside one to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.')}
+              </Text>
+            )}
           </>
         )}
       </ScrollView>
@@ -621,6 +777,17 @@ const makeStyles = (colors: Colors) =>
     // ⋯ keeps apart from the call beside it, so a slip on it calls no one.
     moreGap: {
       marginLeft: space.sm,
+    },
+    // A member's ask for this phone's contact link, over the messages.
+    ask: {
+      marginHorizontal: space.lg,
+      marginTop: space.sm,
+      padding: space.md,
+      borderRadius: radius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      gap: space.sm,
     },
     going: {
       marginHorizontal: space.lg,

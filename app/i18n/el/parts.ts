@@ -160,6 +160,19 @@ export const parts: Record<string, string> = {
   '{who} added you to the group.': '{who}: σε πρόσθεσε στην ομάδα.',
   '{who} joined.': '{who}: μπήκε στην ομάδα.',
   '{who} left.': '{who}: έφυγε.',
+  'You asked {who} for their contact link.': '{who}: ζήτησες τον σύνδεσμο επαφής.',
+  '{who} asked for your contact link.': '{who}: ζήτησε τον σύνδεσμο επαφής σου.',
+  'You sent {who} your contact link. You are each other’s contacts now.':
+    '{who}: έστειλες τον σύνδεσμο επαφής σου. Τώρα έχετε ο ένας τον άλλον στις επαφές.',
+  '{who} sent their contact link. You are each other’s contacts now.':
+    '{who}: σου έστειλε τον σύνδεσμο επαφής. Τώρα έχετε ο ένας τον άλλον στις επαφές.',
+  '{who} could not be added as a contact.': '{who}: δεν μπόρεσε να προστεθεί στις επαφές.',
+  'Ask for contact links on the phone that holds this account.': 'Για να ζητήσεις σύνδεσμο επαφής, χρησιμοποίησε το τηλέφωνο που έχει τον λογαριασμό.',
+  'They are not in this group any more.': 'Δεν είναι πια σε αυτή την ομάδα.',
+  'Not in public groups.': 'Δεν γίνεται σε δημόσιες ομάδες.',
+  'More than one member of this group shows this key, so one of them is not who they say. Ask for their contact link some other way.':
+    'Πάνω από ένα μέλος αυτής της ομάδας φαίνεται με αυτό το κλειδί, άρα κάποιο δεν είναι αυτό που λέει. Ζήτησε τον σύνδεσμο επαφής του με άλλον τρόπο.',
+  'Another space is open now.': 'Τώρα είναι ανοιχτός άλλος χώρος.',
   'Groups go through the relay. Type its address in Relay first.': 'Οι ομάδες λειτουργούν μέσω του relay. Γράψε πρώτα τη διεύθυνσή του στο «Relay».',
 
   // The build and updates (lib/core.ts, lib/crypto.ts, lib/install-update*.ts, lib/updates.ts, lib/shell.ts).

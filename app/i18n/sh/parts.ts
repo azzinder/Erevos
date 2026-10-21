@@ -160,6 +160,17 @@ export const parts: Record<string, string> = {
   '{who} added you to the group.': 'Admin {who} vas je dodao u grupu.',
   '{who} joined.': '{who} je sada u grupi.',
   '{who} left.': '{who} više nije u grupi.',
+  'You asked {who} for their contact link.': 'Zatražili ste da vam {who} pošalje link za kontakt.',
+  '{who} asked for your contact link.': '{who} traži vaš link za kontakt.',
+  'You sent {who} your contact link. You are each other’s contacts now.': 'Poslali ste svoj link za kontakt. Vi i {who} sada imate jedno drugo u kontaktima.',
+  '{who} sent their contact link. You are each other’s contacts now.': '{who} šalje svoj link za kontakt. Sada imate jedno drugo u kontaktima.',
+  '{who} could not be added as a contact.': '{who}: dodavanje u kontakte nije uspjelo.',
+  'Ask for contact links on the phone that holds this account.': 'Linkove za kontakt tražite na telefonu na kojem je ovaj račun.',
+  'They are not in this group any more.': 'Taj član više nije u ovoj grupi.',
+  'Not in public groups.': 'U javnim grupama to nije moguće.',
+  'More than one member of this group shows this key, so one of them is not who they say. Ask for their contact link some other way.':
+    'Više od jednog člana ove grupe prikazuje ovaj ključ, pa jedan od njih nije onaj za koga se izdaje. Link za kontakt zatražite na neki drugi način.',
+  'Another space is open now.': 'Sada je otvoren drugi prostor.',
   'Groups go through the relay. Type its address in Relay first.': 'Grupe idu preko relaya. Prvo upišite njegovu adresu u „Relay“.',
 
   // The build and updates (lib/core.ts, lib/crypto.ts, lib/install-update*.ts, lib/updates.ts, lib/shell.ts).

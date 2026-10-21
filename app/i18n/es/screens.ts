@@ -79,7 +79,23 @@ export const screens: Record<string, string> = {
   'You are its admin: closing it takes every member out, and no one can write in it again.': 'Eres su admin: al cerrarlo se expulsa a todos los miembros, y nadie podrá volver a escribir en él.',
   'The admin takes you out the next time Erevos is open on their phone. You read nothing the group says after.': 'El admin te sacará la próxima vez que abra Erevos en su teléfono. Después no leerás nada del grupo.',
   Leave: 'Salir',
-  'Members who are not your contacts show by the start of their key. Add them as contacts to give them names.': 'Los miembros que no son tus contactos aparecen con el principio de su clave. Añádelos como contactos para darles nombre.',
+  'Add as contact': 'Añadir como contacto',
+  'Asked': 'Solicitado',
+  'Ask again': 'Volver a pedir',
+  'Ask': 'Pedir',
+  'Don’t': 'No enviar',
+  'Asks for your contact link': 'Pide tu enlace de contacto',
+  'Erevos asks {name} for their contact link, in a message only they get, and gives them yours. If they send theirs, you are each other’s contacts. If they don’t, you are not told.':
+    'Erevos le pide a {name} su enlace de contacto, en un mensaje que solo recibe ese miembro, y le da el tuyo. Si envía el suyo, cada uno queda en los contactos del otro. Si no, no se te avisa.',
+  '{who} asks for your contact link': '{who} pide tu enlace de contacto',
+  'Only you see this. Send yours if you know who they are: you become each other’s contacts. If you don’t, they are not told.':
+    'Solo tú ves esto. Envía el tuyo si sabes quién es: cada uno quedará en los contactos del otro. Si no, no se le avisa.',
+  '{n} more member asks too, in the members list.': '{n} miembro más también lo pide, en la lista de miembros.',
+  '{n} more members ask too, in the members list.': '{n} miembros más también lo piden, en la lista de miembros.',
+  'Members who are not your contacts show by the start of their key. Tap Add as contact beside one to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
+    'Los miembros que no son tus contactos aparecen con el principio de su clave. Toca «Añadir como contacto» junto a uno para pedirle su enlace de contacto, en un mensaje que solo recibe ese miembro. Cuando lo envíe, cada uno quedará en los contactos del otro, y con «Nombre» le das un nombre.',
+  'Members who are not your contacts show by the start of their key. Ask them for their contact links on the phone that holds this account.':
+    'Los miembros que no son tus contactos aparecen con el principio de su clave. Pídeles sus enlaces de contacto desde el teléfono que tiene esta cuenta.',
   'This build of Erevos has no group chats yet. Update it to make one.': 'Esta versión de Erevos aún no tiene chats de grupo. Actualízala para crear uno.',
   'Every member sees it.': 'Todos los miembros lo ven.',
   'Who to ask': 'A quién invitar',
