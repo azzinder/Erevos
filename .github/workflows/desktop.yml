@@ -14,16 +14,17 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: |
             app/package-lock.json
             desktop/package-lock.json
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable, 2026-10-21
         with:
+          toolchain: stable
           targets: wasm32-unknown-unknown
       - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
       - name: Build the web app with its core
@@ -47,13 +48,13 @@ jobs:
           # The Arch package is made with bsdtar.
           sudo apt-get update -q && sudo apt-get install -y -q libarchive-tools
           npx electron-builder --linux pacman AppImage --x64 --publish never
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: erevos-linux
           path: |
             desktop/dist/*.pacman
             desktop/dist/*.AppImage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: desktop-web
           path: desktop/web
@@ -65,13 +66,13 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: desktop-web
           path: desktop/web
@@ -106,7 +107,7 @@ jobs:
           "$app/Contents/MacOS/Erevos" --smoke | tee smoke.log
           grep -q "SMOKE OK core=true secrets=encrypted" smoke.log
           hdiutil detach "$mnt"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: erevos-macos
           path: desktop/dist/*.dmg
@@ -120,13 +121,13 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: desktop-web
           path: desktop/web
@@ -140,7 +141,7 @@ jobs:
           set -euo pipefail
           desktop/dist/win-unpacked/Erevos.exe --smoke | tee smoke.log
           grep -q "SMOKE OK core=true secrets=encrypted" smoke.log
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: erevos-windows
           path: desktop/dist/*.exe

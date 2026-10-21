@@ -10,6 +10,9 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet. The next release is **2.0.0**.
 
+- **Builds**: every GitHub action the workflows use is pinned to a commit (its version in a
+  comment), so a moved tag in an action's repository cannot change what runs beside the signing key.
+
 - **Permissions** (Android, menu → Permissions): what Android lets Erevos do for calls and messages
   in the background (notices, the call notice, calls over the lock screen, battery saving, Data
   Saver, the microphone) and for other things (camera, phones nearby, contacts, exact times), each

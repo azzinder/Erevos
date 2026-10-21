@@ -45,6 +45,8 @@ Notes:
   Actions secret, and `version.json`, whose size and SHA-256 the app checks, is published by the
   same workflow. Whoever controls the account can publish an APK the app and Android accept. The web
   app is signed with a key kept offline, so GitHub alone cannot change it; the signer still signs
-  what GitHub built (see `pwa/README.md`).
+  what GitHub built (see `pwa/README.md`). The workflows' actions are pinned to commits, so a tag
+  moved by an action's own repository cannot change what runs with the signing key; they are
+  updated by hand.
 - **Traffic analysis by a global observer** who sees both ends. Erevos sends no cover traffic and
   adds no delays, so messages can be matched by time and size.
