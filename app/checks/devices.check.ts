@@ -1419,11 +1419,13 @@ test('the devices the list names reach each other: started by the lower id, seal
   // reads there too.
   pixel.links.close();
   const off = await write(dell, carolId, 'with the phone off');
+  await dell.links.settled();
   await take(lenovo);
   const onLenovo = lenovo.chats.history.messages().find((m) => m.tag === off);
   assert.deepEqual([onLenovo?.text, onLenovo?.mine], ['with the phone off', true]);
   const reacted = await lenovo.chats.e2e.seal(carolId, '', lenovo.queue.senderHex, { at: where, react: { tag: hello, emoji: '👍' }, read: [hello] });
   await sendMessage(relay, fromHex(reacted.sender), reacted.packet);
+  await lenovo.links.settled();
   await take(dell);
   const helloOnDell = dell.chats.history.messages().find((m) => m.tag === hello);
   assert.deepEqual([helloOnDell?.myReaction, helloOnDell?.mark], ['👍', 2]);
