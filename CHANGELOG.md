@@ -43,6 +43,11 @@ On main, not released yet. The next release is **2.0.0**.
   advisories. Updated for them: rustls-webpki and webpki-roots (the relay's and Tor's TLS),
   ml-kem 0.3.3 and fflate 0.8.3.
 
+- **An F-Droid build** (`EREVOS_DISTRIBUTION=fdroid`): F-Droid updates it, so its Updates screen
+  says so and has no Check for updates, and it may not install packages. The release APK keeps
+  both. No build's manifest names Google Play services any more: expo-image-picker's hint to
+  Google Play, to install its photo picker on Android 10 and older, is left out.
+
 - **Permissions** (Android, menu → Permissions): what Android lets Erevos do for calls and messages
   in the background (notices, the call notice, calls over the lock screen, battery saving, Data
   Saver, the microphone) and for other things (camera, phones nearby, contacts, exact times), each

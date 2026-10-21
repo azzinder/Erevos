@@ -1367,6 +1367,10 @@ costs a minute and covers any surprise.
 - **Android, the first time from the releases page:** an Erevos built on a computer for testing is signed with
   another key, and Android refuses to install over it (**App not installed**). Make a backup, uninstall Erevos,
   install the one from the releases page and restore the backup. After that, every update installs over it.
+- **Erevos from F-Droid**, once it is there, is updated by F-Droid: its **Updates** shows the version and says so,
+  with no **Check for updates**. F-Droid signs it with a key of its own, so Android installs neither it over the
+  Erevos from the releases page nor that one over it. To switch: make a backup, uninstall Erevos, install the other one
+  and restore the backup.
 - **Never older:** do not install an older version over a newer one. Its data may be in a form the older one cannot
   read. Restore a backup made with that older version instead.
 - **A release that lacks your system** says so in its notes: that build failed, so take the release before.

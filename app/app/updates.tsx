@@ -6,6 +6,7 @@ import { Linking, Platform, View } from 'react-native';
 import { Button, Card, Page, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
+import { FDROID } from '../lib/distribution';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
 import { SHELL, shellFetch, shellSystem } from '../lib/shell';
 import { fetchStatement, signsRelease } from '../lib/update-signature';
@@ -18,9 +19,9 @@ import { useColors } from '../theme/context';
 // Erevos never looks by itself; only this button asks GitHub (lib/updates.ts). On Android the new
 // version downloads, is checked and installs over this one; on a computer and Sailfish OS the
 // download page opens, and the note says which file there updates this one. The web app updates
-// itself (pwa/), so it has no button.
+// itself (pwa/), so it has no button, nor has the F-Droid build, which F-Droid updates.
 
-const supported = Platform.OS === 'android' || SHELL !== null;
+const supported = (Platform.OS === 'android' && !FDROID) || SHELL !== null;
 // This app's version and its build number (app.config.js sets both for releases).
 const VERSION = Constants.expoConfig?.version ?? '0.0.0';
 const CURRENT_BUILD = buildNumber(Constants.expoConfig?.extra?.build, VERSION);
@@ -166,6 +167,10 @@ export default function UpdatesScreen() {
             <Button title={t('Check for updates')} onPress={() => void check()} loading={checking} />
           )}
           {note ? <Text tone="muted">{note}</Text> : null}
+        </Card>
+      ) : FDROID ? (
+        <Card>
+          <Text tone="muted">{t('This Erevos comes from F-Droid, which updates it: a new version shows in F-Droid, under Updates.')}</Text>
         </Card>
       ) : (
         <Card>

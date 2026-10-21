@@ -250,15 +250,19 @@ The desktop app, from `app/`:
 The Android app is built by `.github/workflows/android.yml` (pull requests and by hand) and by the
 release workflow: `npx expo prebuild --platform android`, then Gradle, with cargo-ndk and Go for
 lyrebird.
+With `EREVOS_DISTRIBUTION=fdroid` set for the prebuild and Gradle, it is the F-Droid build, which
+F-Droid updates: Updates has no **Check for updates** and the app may not install packages
+(`app/app.config.js`). Every build leaves out the Google Play services entry that expo-image-picker
+puts in the manifest (`app/plugins/with-no-gms-entry.js`).
 
 ## Releases
 
 `.github/workflows/release.yml` (workflow `release`) builds every package and publishes them as a
-GitHub release, `v0.1.<run number>`: the Android APK, Linux (Arch package and AppImage), the macOS
-disk image, Windows (installer and portable .exe), the Sailfish OS RPM and the web app, with
-`SHA256SUMS`. A package whose job fails is left out and the others still go. The workflow is set to
-run every night at 02:30 UTC when main has changed, while it is enabled on GitHub, and by hand
-(Actions, release, Run workflow). The five newest releases stay. Some run numbers have no release;
+GitHub release, `v2.0.0` and then the next number (`v2.0.1`…) unless one is given: the Android
+APK, Linux (Arch package and AppImage), the macOS disk image, Windows (installer and portable
+.exe), the Sailfish OS RPM and the web app, with `SHA256SUMS`. A package whose job fails is left
+out and the others still go. The workflow is set to run every night at 02:30 UTC when main has
+changed, while it is enabled on GitHub, and by hand (Actions, release, Run workflow). The five newest releases stay. Some run numbers have no release;
 [CHANGELOG.md](CHANGELOG.md) lists the ones there are.
 
 The web app comes unsigned: the release computer, which holds the web release key, signs it and

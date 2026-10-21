@@ -64,6 +64,52 @@ test("the running app's build number: apart from the version since 2.0.0, in it 
   }
 });
 
+const appJson = () => (JSON.parse(readFileSync(join(import.meta.dirname, '../app.json'), 'utf8')) as { expo: Record<string, unknown> }).expo;
+const INSTALL_PACKAGES = 'android.permission.REQUEST_INSTALL_PACKAGES';
+
+test('the F-Droid build may not install packages, and knows F-Droid updates it; the release build may', () => {
+  const config = createRequire(import.meta.url)('../app.config.js') as (c: { config: Record<string, unknown> }) => Record<string, any>;
+  const env = { ...process.env };
+  try {
+    delete process.env.EREVOS_DISTRIBUTION;
+    const release = config({ config: appJson() });
+    assert.ok(release.android.permissions.includes(INSTALL_PACKAGES));
+    assert.equal(release.android.blockedPermissions, undefined);
+    assert.equal(release.extra?.distribution, undefined);
+    process.env.EREVOS_DISTRIBUTION = 'fdroid';
+    const fdroid = config({ config: appJson() });
+    assert.equal(fdroid.android.permissions.includes(INSTALL_PACKAGES), false);
+    assert.deepEqual(fdroid.android.blockedPermissions, [INSTALL_PACKAGES]);
+    assert.equal(fdroid.extra.distribution, 'fdroid');
+    // A misspelt one fails the build rather than making the release build by mistake.
+    process.env.EREVOS_DISTRIBUTION = 'f-droid';
+    assert.throws(() => config({ config: appJson() }), /only "fdroid"/);
+  } finally {
+    process.env = env;
+  }
+  const workflow = readFileSync(join(import.meta.dirname, '../../.github/workflows/release.yml'), 'utf8');
+  assert.equal(workflow.includes('EREVOS_DISTRIBUTION'), false);
+});
+
+test("no build's manifest names Google Play services: expo-image-picker's service is taken out", async () => {
+  const require = createRequire(import.meta.url);
+  const config = require('../app.config.js') as (c: { config: Record<string, unknown> }) => Record<string, any>;
+  assert.ok(config({ config: appJson() }).plugins.includes('./plugins/with-no-gms-entry'));
+  const picker = readFileSync(join(import.meta.dirname, '../node_modules/expo-image-picker/android/src/main/AndroidManifest.xml'), 'utf8');
+  const named = [...picker.matchAll(/<service\s+android:name="(com\.google\.android\.gms[^"]*)"/g)].map((found) => found[1]);
+  const plugin = require('../plugins/with-no-gms-entry.js') as (c: Record<string, unknown>) => { mods: { android: { manifest: (c: unknown) => Promise<any> } } };
+  const made = await plugin({ name: 'Erevos', slug: 'erevos' }).mods.android.manifest({
+    modResults: { manifest: { $: { 'xmlns:android': 'http://schemas.android.com/apk/res/android' }, application: [{ $: {} }] } },
+    modRequest: { platform: 'android', modName: 'manifest' },
+    modRawConfig: {},
+  });
+  const manifest = made.modResults.manifest;
+  assert.equal(manifest.$['xmlns:tools'], 'http://schemas.android.com/tools');
+  const removed = (manifest.application[0].service as { $: Record<string, string> }[]).filter((service) => service.$['tools:node'] === 'remove').map((service) => service.$['android:name']);
+  // Whatever service of Google's the picker names now, the merged manifest leaves it out.
+  for (const name of named) assert.ok(removed.includes(name), name);
+});
+
 test('a package from anywhere else, or without its SHA-256, is not offered', () => {
   for (const apk of [
     { url: 'https://example.com/erevos.apk', size: 1, sha256: SHA },

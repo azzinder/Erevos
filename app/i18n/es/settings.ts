@@ -205,6 +205,7 @@ export const settings: Record<string, string> = {
   'For other things': 'Para otras cosas',
   'All permissions': 'Todos los permisos',
   'This web app updates itself: a new signed version is taken the next time Erevos opens.': 'Esta app web se actualiza sola: una nueva versión firmada se carga la próxima vez que se abre Erevos.',
+  'This Erevos comes from F-Droid, which updates it: a new version shows in F-Droid, under Updates.': 'Este Erevos viene de F-Droid, que lo actualiza: una versión nueva aparece en F-Droid, en Actualizaciones.',
   'How updating works': 'Cómo funcionan las actualizaciones',
   'The SMS on this phone could not be read. Make Erevos the SMS app under SMS in the menu.': 'No se pudieron leer los SMS de este teléfono. Haz que Erevos sea la app de SMS en «SMS» del menú.',
   'No phone number.': 'No hay número de teléfono.',

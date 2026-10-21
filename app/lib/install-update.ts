@@ -3,13 +3,14 @@ import { Directory, File, FileMode, Paths } from 'expo-file-system';
 import { startActivityAsync } from 'expo-intent-launcher';
 import { Platform } from 'react-native';
 
+import { FDROID } from './distribution';
 import type { Release } from './updates';
 import { t } from './i18n';
 
 // Android installs the new APK itself, as in LPHL FASOULI; elsewhere the download page opens
-// instead (install-update.web.ts).
+// instead (install-update.web.ts). The F-Droid build never does: F-Droid updates it.
 
-export const canInstall = Platform.OS === 'android';
+export const canInstall = Platform.OS === 'android' && !FDROID;
 
 const FLAG_GRANT_READ_URI_PERMISSION = 1;
 const folder = () => new Directory(Paths.cache, 'updates');
@@ -71,6 +72,7 @@ export async function downloadAndInstall(
   signal: AbortSignal,
 ): Promise<void> {
   const apk = release.apk;
+  if (FDROID) throw new Error(t('This Erevos comes from F-Droid, which updates it: a new version shows in F-Droid, under Updates.'));
   if (!apk) throw new Error(t('This release has no Android package.'));
   const dir = folder();
   if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
