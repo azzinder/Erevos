@@ -51,6 +51,22 @@ On main, not released yet. The next release is **2.0.0**.
   in, up to 100. They go end-to-end encrypted as photos do, marked as stickers, in chats and
   groups; an Erevos from before shows them as photos. **Add to my stickers** keeps one you were sent.
 
+- **SMS in the Erevos chat**: with a contact whose number is linked to them, or is on their contact
+  card, the chat shows the SMS and MMS with that number among its messages, by time, each edged and
+  marked SMS (not encrypted), with its ✓ marks and photos. They are read from the phone's SMS,
+  never kept in the chat's history; held down, one is copied, forwarded or deleted as in the SMS
+  conversation, and the chat's search finds them. Only the conversation with that one number, only
+  while Erevos is the SMS app or may read SMS, and never in hidden chats; the latest 50 first, and
+  **Show earlier SMS** for more. New ones show as they come, also while another app is the SMS
+  app: the chat and the SMS conversation hear when Android's SMS store changes, and read it again
+  as Erevos comes back.
+  **Plain SMS** in the chat's details opens the SMS conversation itself, to write one there, and
+  **Attach** → **Send as SMS** sends what is typed as a plain SMS, naming the SIM when there are
+  two. Before, once a number was linked, its SMS could no longer be reached from the chat. The
+  home screen's **Erevos** list keeps a contact whose last message was an SMS, which it used to
+  drop. No hidden SMS invite goes to an Erevos contact's number any more, linked or on their
+  contact card.
+
 - **Android updates need the release computer's signature**: Check for updates installs an APK
   only once `deploy/web/publish.sh` on the release computer has signed its build and SHA-256 with
   the web app's offline key (`android-update.json`, served beside the web app). Until then it says

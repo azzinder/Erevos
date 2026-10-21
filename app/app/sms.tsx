@@ -1,14 +1,15 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MoreIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LaterPicker } from '../components/later-picker';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
+import { deleteSms, erevosNumber, maySendSms, onSmsChangedElsewhere, sendSmsAgain, SmsForward } from '../components/sms-message';
 import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
-import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
+import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
 import { isContactNumber, sealedNamer } from '../lib/contact-book';
 import { newContactHref } from '../lib/contacts';
@@ -20,6 +21,7 @@ import { Held } from '../lib/held';
 import { locale, plural, t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { relayKey } from '../lib/relay';
+import { deletingSms, linkedContact, smsFailed, smsLineId, smsMark } from '../lib/sms-chat';
 import { onSmsOrderChanged, shownMessages, smsFolder, trashOf } from '../lib/sms-folders';
 import { groupName, sameConversation, smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
@@ -34,19 +36,15 @@ import { LATER_TEXT, type LaterSms, type SmsData } from '../lock/sms-data';
 import {
   blockedNumbers,
   contactCards,
-  deleteSmsMessages,
   markSmsRead,
   mmsReady,
   onSmsEvent,
-  resendSms,
   sendMms,
   sendSms,
   sendSmsData,
   smsMessages,
-  smsPictureBytes,
   smsSims,
   smsStatus,
-  smsToolsReady,
   type Sim,
   type SmsMessage,
 } from '../modules/erevos-sms';
@@ -54,9 +52,11 @@ import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // One SMS conversation, with a number. A number linked to an Erevos contact opens that contact's
-// chat instead, unless `plain` asks for the SMS. Messages here are plain SMS: the phone company can
-// read them. The first one to a number that is no contact also carries a hidden invite
-// (lib/sms-invite.ts), when invites are on. A contact can be linked to the number by hand. A photo
+// chat instead, where its SMS show among the chat's messages (lib/sms-chat.ts), unless `plain`
+// asks for the SMS, as the chat's details and the contact card do to write one. Messages here are
+// plain SMS: the phone company can read them. The first one to a number that is no Erevos contact's
+// also carries a hidden invite (lib/sms-invite.ts), when invites are on. A contact can be linked to
+// the number by hand. A photo
 // goes as an MMS, as plain as an SMS. With two SIMs, the one to send on is chosen here, and kept
 // for the number. The number shows the name and picture the phone's contacts give it, when that is
 // turned on. With several numbers (`to` comma-separated) it is a group's conversation: every
@@ -68,7 +68,9 @@ import { useStyles, useTheme } from '../theme/context';
 // What is typed and not sent is kept, sealed in the space, as the conversation's draft. A message
 // sent waits the seconds chosen under SMS (5 at first), shown at the end, and can be taken back in
 // that time; one that did not go is sent again with a tap. Held down, a message can be passed on to
-// another number or into an Erevos chat, or deleted from the phone, with Undo for a few seconds.
+// another number or into an Erevos chat, or deleted from the phone, with Undo for a few seconds
+// (components/sms-message.tsx, as in a contact's chat).
+// SMS another app writes, while it is the SMS app, show as Erevos hears of them, or as it comes back.
 // ⋮ pins, archives, marks as spam, blocks or deletes the conversation (components/sms-actions.tsx);
 // the part of it in the Trash does not show here. A sender that writes with a name instead of a
 // number (a bank, say) shows its SMS, and cannot be answered.
@@ -78,20 +80,14 @@ type Picture = { bytes: Uint8Array; mime: string };
 /** An SMS waiting its seconds before it goes, in the space it was written in. */
 type Outgoing = { id: string; to: string; text: string; photo: Picture | null; sim: number; group: boolean; space: number };
 
-// SMS waiting to go and messages waiting to be deleted, whatever screen shows (lib/held.ts); when
-// Erevos goes to the background, they are done at once.
+// SMS waiting to go, whatever screen shows (lib/held.ts); when Erevos goes to the background, they
+// go at once, as messages waiting to be deleted do (components/sms-message.tsx).
 const outbox = new Held<Outgoing>();
-const deleting = new Held<{ id: string; to: string }>();
-AppState.addEventListener('change', (state) => {
-  if (state !== 'background') return;
-  outbox.flush();
-  deleting.flush();
-});
+AppState.addEventListener('change', (state) => state === 'background' && outbox.flush());
 // The open conversation hears which went and which could not.
 const delivered = new Set<(sms: Outgoing, error: unknown) => void>();
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
-const messageId = (m: SmsMessage) => `${m.kind ?? 'sms'}:${m.id}`;
 
 // The open space's SMS data, while it is still the space the SMS was written in.
 async function spaceLink(space: number): Promise<SmsLink | null> {
@@ -105,7 +101,7 @@ async function spaceLink(space: number): Promise<SmsLink | null> {
 }
 
 // Sends an SMS whose seconds are up: as one MMS with a photo or to a group, else as an SMS; then,
-// with the first SMS to a number, the hidden invite. One that could not go is kept as the
+// with the first SMS to a number that is no contact, the hidden invite. One that could not go is kept as the
 // conversation's draft, so it is not lost.
 async function deliver(sms: Outgoing): Promise<void> {
   try {
@@ -122,10 +118,14 @@ async function deliver(sms: Outgoing): Promise<void> {
 }
 
 // With the first SMS to a number that is no contact: a hidden invite, answered through the relay
-// if that phone has Erevos. Without a relay queue there is nowhere to answer, so none is sent.
+// if that phone has Erevos. None to an Erevos contact's number, linked or on their contact card,
+// whose relay and queue it would tell in plain. Without a relay queue there is nowhere to answer,
+// so none is sent.
 async function invite(to: string, space: number) {
   const sms = await spaceLink(space);
   if (!sms || !sms.wantsInvite(to)) return;
+  const { contacts } = await loadE2EData('space', space, currentSpace().key);
+  if (await erevosNumber(to, contacts)) return;
   const data = await loadCurrentSpaceData();
   if (!data.url || !data.ownQueue) return;
   let key = '';
@@ -174,12 +174,11 @@ export default function Sms() {
   const [blocked, setBlocked] = useState<string[]>([]);
   // What waits to go, and what waits to be deleted, of this conversation.
   const [pending, setPending] = useState(() => outbox.list());
-  const [going, setGoing] = useState(() => deleting.list());
+  const [going, setGoing] = useState(() => deletingSms.list());
   const [now, setNow] = useState(Date.now());
   // The message held down, the one being passed on, and the conversation's own actions (⋮).
   const [chosen, setChosen] = useState<SmsMessage | null>(null);
   const [forwarding, setForwarding] = useState<SmsMessage | null>(null);
-  const [forwardNumber, setForwardNumber] = useState('');
   const [menu, setMenu] = useState<SmsTarget | null>(null);
   const link = useRef<SmsLink | null>(null);
   // Whether the draft kept for the conversation was read: until then nothing is saved over it.
@@ -228,8 +227,8 @@ export default function Sms() {
     load();
     loadE2EData('space', space, key)
       .then((data) => {
-        const linked = group || sender ? undefined : data.contacts.find((c) => c.phone && sameNumber(c.phone, to));
-        if (linked && params.plain !== '1') {
+        const linked = linkedContact(data.contacts, to, params.plain === '1');
+        if (linked) {
           // What was passed on to the number goes into the contact's chat instead.
           if (forwarded) forwardTo(`contact:${linked.identity}`, { text: forwarded.text, photo: null });
           router.replace(`/chat?contact=${linked.identity}`);
@@ -264,12 +263,14 @@ export default function Sms() {
     const ours = (address: string) => (numbers.length > 0 ? numbers.some((n) => sameNumber(address, n)) : sameConversation(address, to));
     const subscriptions = [onSmsEvent('onSms', ({ address }) => ours(address) && load()), onSmsEvent('onSmsSent', () => load()), onSmsEvent('onSmsDelivered', () => load())];
     const stopLater = onLaterSent(load);
+    // Written by another SMS app, while Erevos shows or before it came back.
+    const stopElsewhere = onSmsChangedElsewhere(load);
     const stopOrder = onSmsOrderChanged(() => {
       load();
       void blockedNumbers().then(setBlocked);
     });
     const stopOutbox = outbox.onChange(() => setPending(outbox.list()));
-    const stopDeleting = deleting.onChange(() => setGoing(deleting.list()));
+    const stopDeleting = deletingSms.onChange(() => setGoing(deletingSms.list()));
     // One that went shows as the phone has it; one that could not go comes back into the field.
     const heard = (sms: Outgoing, error: unknown) => {
       if (!sameConversation(sms.to, to)) return;
@@ -283,6 +284,7 @@ export default function Sms() {
     return () => {
       subscriptions.forEach((s) => s?.remove());
       stopLater();
+      stopElsewhere();
       stopOrder();
       stopOutbox();
       stopDeleting();
@@ -324,7 +326,7 @@ export default function Sms() {
 
   const trashed = order ? trashOf(to, order) : null;
   const hidden = new Set(going.filter((g) => sameConversation(g.item.to, to)).map((g) => g.item.id));
-  const shown = shownMessages(messages, trashed).filter((m) => !hidden.has(messageId(m)));
+  const shown = shownMessages(messages, trashed).filter((m) => !hidden.has(smsLineId(m)));
   const title = group ? groupName(numbers, names) : names[to] || to;
   // Where the conversation is, by its latest message: in the list, archived, in Spam, or in the
   // Trash with nothing after.
@@ -366,14 +368,6 @@ export default function Sms() {
     }
   }
 
-  // Erevos may send SMS: it is the SMS app, or the owner allows it now.
-  async function maySend() {
-    if (!smsStatus()?.isDefault && Platform.OS === 'android') {
-      const answer = await PermissionsAndroid.request('android.permission.SEND_SMS');
-      if (answer !== PermissionsAndroid.RESULTS.GRANTED) throw new Error(t('Erevos may not send SMS. Allow it, or make Erevos the SMS app.'));
-    }
-  }
-
   // Sends what is typed, after the seconds chosen to take it back (none: at once).
   async function send() {
     const text = draft.trim();
@@ -381,7 +375,7 @@ export default function Sms() {
     setSending(true);
     setNote('');
     try {
-      await maySend();
+      await maySendSms();
       if (group && !mmsReady()) throw new Error(t('This build of Erevos cannot send to several numbers yet.'));
       // A group's message goes to everyone as one MMS, even without a photo.
       const sms: Outgoing = { id: toBase64Url(randomBytes(9)), to, text, photo, sim, group, space: currentSpace().space };
@@ -416,7 +410,7 @@ export default function Sms() {
     setNote('');
     try {
       if (text.length > LATER_TEXT) throw new Error(t('It is too long to send later.'));
-      await maySend();
+      await maySendSms();
       if (!(await sms.addLater({ to, text, at, sim }))) throw new Error(t('{n} SMS already wait to go later.', { n: sms.later.length }));
       setDraft('');
       setLater(sms.later.filter((l) => sameNumber(l.to, to)));
@@ -454,76 +448,17 @@ export default function Sms() {
   // One of ours that did not go, or did not reach their phone, goes again, in its place.
   function sendAgain(m: SmsMessage) {
     setChosen(null);
-    ask(t('Send it again?'), m.text || t('Picture'), [
-      { text: t('Cancel'), style: 'cancel' },
-      {
-        text: t('Send again'),
-        onPress: () =>
-          void (async () => {
-            setNote('');
-            try {
-              await maySend();
-              if (smsToolsReady()) await resendSms(m, sim);
-              else if (m.kind !== 'mms') await sendSms(to, m.text, sim);
-              else throw new Error(t('This build of Erevos cannot send an MMS again yet.'));
-              load();
-            } catch (error) {
-              setNote(t('Not sent. {error}', { error: errorText(error) }));
-            }
-          })(),
-      },
-    ]);
+    sendSmsAgain(m, to, sim, { sent: load, note: setNote });
   }
 
   // Deletes a message from the phone after the seconds Undo shows; until then it only hides.
   function deleteOne(m: SmsMessage) {
     setChosen(null);
-    if (!smsStatus()?.isDefault || !smsToolsReady()) {
-      setNote(smsToolsReady() ? t('Only the SMS app can delete SMS: make Erevos the SMS app under SMS in the menu.') : t('This build of Erevos cannot delete SMS yet.'));
-      return;
-    }
-    const id = messageId(m);
-    deleting.hold({ id, to }, UNDO_SHOWS * 1000, () => deleteSmsMessages([id]).then(load));
-    offerUndo({ text: t('Message deleted.'), undo: () => deleting.take(id) });
-  }
-
-  // Passes a message on: to a number, as an SMS (its picture as an MMS) to write in that
-  // conversation; or into an Erevos chat, its words only. A number linked to a contact goes to
-  // the contact's chat.
-  async function forward(m: SmsMessage, where: { number: string } | { contact: string }) {
-    setForwarding(null);
-    setForwardNumber('');
-    if ('contact' in where) {
-      forwardTo(`contact:${where.contact}`, { text: m.text, photo: null });
-      router.push(`/chat?contact=${where.contact}`);
-      return;
-    }
-    const chosenNumbers = smsNumbers(where.number);
-    if (chosenNumbers.length === 0) {
-      setNote(t('Type a phone number.'));
-      return;
-    }
-    const address = smsAddress(chosenNumbers);
-    const linked = chosenNumbers.length === 1 ? contacts.find((c) => c.phone && sameNumber(c.phone, address)) : undefined;
-    if (linked) {
-      forwardTo(`contact:${linked.identity}`, { text: m.text, photo: null });
-      router.push(`/chat?contact=${linked.identity}`);
-      return;
-    }
-    const picture = m.pictures?.[0];
-    let bytes: Picture | null = null;
-    if (picture && mmsReady() && smsToolsReady()) {
-      bytes = await smsPictureBytes(picture.uri)
-        .then((data) => ({ bytes: data, mime: picture.type }))
-        .catch(() => null);
-    }
-    forwardTo(address, { text: m.text, photo: bytes });
-    router.push(`/sms?to=${encodeURIComponent(address)}`);
+    const why = deleteSms(m, to, load);
+    if (why) setNote(why);
   }
 
   const mayAnswer = numbers.length > 0;
-  const ourFailed = (m: SmsMessage) => m.mine && (m.state === 'failed' || m.state === 'undelivered');
-  const chats = contacts.filter((c) => !c.request);
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
       <ScrollView ref={thread} contentContainerStyle={styles.thread} onContentSizeChange={() => thread.current?.scrollToEnd({ animated: false })}>
@@ -583,10 +518,10 @@ export default function Sms() {
         ) : null}
         {shown.map((m) => (
           <Pressable
-            key={messageId(m)}
-            onPress={ourFailed(m) ? () => sendAgain(m) : undefined}
+            key={smsLineId(m)}
+            onPress={smsFailed(m) ? () => sendAgain(m) : undefined}
             onLongPress={() => setChosen(m)}
-            accessibilityRole={ourFailed(m) ? 'button' : undefined}
+            accessibilityRole={smsFailed(m) ? 'button' : undefined}
             style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}
           >
             {(m.pictures ?? []).map((p) => (
@@ -607,9 +542,9 @@ export default function Sms() {
             <Text variant="caption" tone="faint">
               {new Date(m.at).toLocaleString(locale())}
               {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}
-              {m.mine ? smsMark(m.state) : ''}
+              {m.mine && smsMark(m.state) ? ` · ${smsMark(m.state)}` : ''}
             </Text>
-            {ourFailed(m) ? (
+            {smsFailed(m) ? (
               <Text variant="caption" color={colors.danger}>
                 {t('Tap to send it again.')}
               </Text>
@@ -696,7 +631,7 @@ export default function Sms() {
             >
               <Text variant="bodyStrong">{t('Forward')}</Text>
             </Pressable>
-            {ourFailed(chosen) ? (
+            {smsFailed(chosen) ? (
               <Pressable accessibilityRole="button" onPress={() => sendAgain(chosen)} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
                 <Text variant="bodyStrong">{t('Send again')}</Text>
               </Pressable>
@@ -709,49 +644,10 @@ export default function Sms() {
           </>
         ) : null}
       </Sheet>
-      <Sheet visible={forwarding !== null} onClose={() => setForwarding(null)} title={t('Forward')}>
-        {forwarding ? (
-          <>
-            <Text variant="caption" tone="muted">
-              {(forwarding.pictures ?? []).length > 0
-                ? t('It opens in the conversation you choose, to read and send there. To a number its picture goes too, as an MMS; into a chat only its words.')
-                : t('It opens in the conversation you choose, to read and send there.')}
-            </Text>
-            <Row>
-              <Input value={forwardNumber} onChangeText={setForwardNumber} keyboardType="phone-pad" placeholder={t('Phone number')} style={styles.input} />
-              <Button title={t('Write')} compact onPress={() => void forward(forwarding, { number: forwardNumber })} />
-            </Row>
-            {chats.length > 0 ? (
-              <>
-                <Text variant="label" tone="muted">
-                  {t('Into an Erevos chat')}
-                </Text>
-                <Row wrap>
-                  {chats.map((c) => (
-                    <Chip
-                      key={c.identity}
-                      label={c.name ? cleanName(c.name) : t('contact {id}', { id: c.identity.slice(0, 8) })}
-                      onPress={() => void forward(forwarding, { contact: c.identity })}
-                    />
-                  ))}
-                </Row>
-              </>
-            ) : null}
-          </>
-        ) : null}
-      </Sheet>
+      <SmsForward message={forwarding} contacts={contacts} onClose={() => setForwarding(null)} onNote={setNote} />
       <SmsActions target={menu} onClose={() => setMenu(null)} onTrashed={() => router.canGoBack() && router.back()} />
     </KeyboardPaddedView>
   );
-}
-
-// Where one of ours is: on its way, went (✓), reached their phone (✓✓✓), or not.
-function smsMark(state: SmsMessage['state']): string {
-  if (state === 'failed') return ` · ${t('not sent')}`;
-  if (state === 'sending') return ` · ${t('sending')}`;
-  if (state === 'undelivered') return ` · ${t('not delivered')}`;
-  if (state === 'delivered') return ' · ✓✓✓';
-  return state === 'sent' ? ' · ✓' : '';
 }
 
 const makeStyles = (colors: Colors) =>

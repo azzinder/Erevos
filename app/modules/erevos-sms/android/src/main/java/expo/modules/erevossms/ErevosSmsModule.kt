@@ -3,6 +3,7 @@ package expo.modules.erevossms
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
+import android.database.ContentObserver
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -16,12 +17,47 @@ import expo.modules.kotlin.modules.ModuleDefinition
  */
 class ErevosSmsModule : Module() {
   private val main = Handler(Looper.getMainLooper())
+  @Volatile private var observer: ContentObserver? = null
 
   private fun context(): Context = appContext.reactContext ?: throw IllegalStateException("No app context")
 
+  // While another app is the SMS app, the SMS it writes reach Erevos only from Android's SMS store:
+  // each change there is told a moment after, once for several together, while it is listened to.
+  @Synchronized
+  private fun watch() {
+    val context = appContext.reactContext ?: return
+    if (observer != null || SmsStore.isDefault(context)) return
+    val watching = object : ContentObserver(main) {
+      private var due = false
+
+      override fun onChange(selfChange: Boolean) {
+        if (due) return
+        due = true
+        main.postDelayed({
+          due = false
+          if (observer === this) sendEvent("onSmsChanged", mapOf<String, Any?>())
+        }, 500)
+      }
+    }
+    try {
+      context.contentResolver.registerContentObserver(Telephony.Sms.CONTENT_URI, true, watching)
+      context.contentResolver.registerContentObserver(Telephony.Mms.CONTENT_URI, true, watching)
+      observer = watching
+    } catch (_: SecurityException) {
+      // Not allowed to read SMS yet: watched once it is, and listened to again.
+      context.contentResolver.unregisterContentObserver(watching)
+    }
+  }
+
+  @Synchronized
+  private fun unwatch() {
+    observer?.let { appContext.reactContext?.contentResolver?.unregisterContentObserver(it) }
+    observer = null
+  }
+
   override fun definition() = ModuleDefinition {
     Name("ErevosSms")
-    Events("onSms", "onSmsSent", "onSmsDelivered", "onSmsLaterSent", "onInvite")
+    Events("onSms", "onSmsSent", "onSmsDelivered", "onSmsLaterSent", "onInvite", "onSmsChanged")
 
     OnCreate {
       SmsStore.listener = { name, body -> main.post { sendEvent(name, body) } }
@@ -31,7 +67,11 @@ class ErevosSmsModule : Module() {
 
     OnDestroy {
       SmsStore.listener = null
+      unwatch()
     }
+
+    OnStartObserving("onSmsChanged") { watch() }
+    OnStopObserving("onSmsChanged") { unwatch() }
 
     Function("status") {
       val context = appContext.reactContext

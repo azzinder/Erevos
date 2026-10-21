@@ -30,8 +30,9 @@ The home screen is the list of your chats, the one that moved last at the top. E
 the last message with its marks, when it came, and how many of their messages you have not read. A clock beside it
 means its messages disappear. **Search chats** finds a chat by its name or its last message, and, under the chats,
 the messages that have what you type in them, in all the space's chats: tap one to open its chat at it. In a chat, its
-details have **Search in this chat**: ▲ and ▼ go to what it found earlier and later. Either looks only on this phone,
-in what it keeps sealed; hidden chats are searched only from inside them.
+details have **Search in this chat**: ▲ and ▼ go to what it found earlier and later. Either looks only on this phone:
+in what it keeps sealed, and **Search in this chat** in the SMS a contact's chat shows too; hidden chats are searched
+only from inside them.
 
 - **The picture** is drawn from the contact's key: the same key always gives the same colours and moon (in greens under Matrix), so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
@@ -39,7 +40,8 @@ in what it keeps sealed; hidden chats are searched only from inside them.
 - **New chat**, at the bottom, opens the relay settings and adding a contact.
 - **The handset and the person** at the top, on Android, open **Phone** and **Contacts** at once.
 - **All messages**, **SMS** and **Erevos**, above the chats once there are SMS conversations too, show all of them,
-  only the SMS (with the chats whose last message was an SMS), or only the Erevos chats.
+  only the SMS (with the chats whose last message was an SMS), or only the Erevos chats, every contact's whatever
+  came last.
 - **The widget**, on Android: add Erevos from your home screen's widgets. Its four buttons open **Phone**, the
   **SMS**, the Erevos **Messages** and **Contacts**, after the password like any link (the Phone without it, if you
   let it). Over the first three it shows how many missed calls, unread SMS and new messages there are, never who or
@@ -712,10 +714,21 @@ chats in one list.
   sent as RCS ("chat" in Google Messages) stay in that app and do not show. The **SMS** screen says how many SMS
   conversations Erevos reads, or why it could not read them.
 - **Writing to someone with Erevos:** it goes through Erevos, end-to-end encrypted, once their number is linked to
-  their contact. Link it by hand in the SMS conversation, or let a hidden invite find it.
+  their contact. Link it by hand in the SMS conversation, or let a hidden invite find it. From then on their SMS
+  conversation opens their chat.
+- **Their SMS in the chat:** the SMS and MMS with their number, those from before and those that come, show among
+  the chat's messages by time, each edged and marked **SMS (not encrypted)**, with its ✓ and its photos. Hold one
+  down to copy, forward or delete it, as in the SMS conversation. They stay in the phone's SMS, never in the
+  chat's sealed history; only the conversation with that one number shows, not a group MMS, and only while Erevos
+  is the SMS app or may read SMS, never in hidden chats. The latest show first: **Show earlier SMS**, above them,
+  brings more, and the chat's search finds them too. A number on their contact card does the same, without linking
+  it.
+- **A plain SMS to them:** when there is no internet, say. **Plain SMS** in the chat's **Details** opens their SMS
+  conversation to write it there, and **Attach** → **Send as SMS** sends what you typed as one, after asking. It
+  shows in the chat as an SMS. The phone company can read it.
 - **Hidden invites:** with the first SMS to a number that is not a contact, Erevos also sends a short hidden
-  invite. A phone without Erevos shows nothing; a phone with Erevos answers through the relay and the two become
-  contacts. Each number is asked once a month at most, and **Turn invites off** stops them.
+  invite. None goes to an Erevos contact's number, linked or on their contact card. A phone without Erevos shows
+  nothing; a phone with Erevos answers through the relay and the two become contacts. Each number is asked once a month at most, and **Turn invites off** stops them.
 - **Everyone else:** a plain SMS, marked SMS. The phone company can read it, as it reads every SMS.
 - **✓ and ✓✓✓:** an SMS of yours shows ✓ once it went, and ✓✓✓ once the network's delivery report says it reached
   their phone, or "not delivered". Some phone companies send no delivery reports; then it stays ✓. SMS cannot say

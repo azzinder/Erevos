@@ -59,6 +59,9 @@ export type SmsEvents = {
   /** An SMS sent for later went, held by Android until its time (`id`: lock/sms-data.ts's). */
   onSmsLaterSent: (event: { id: string }) => void;
   onInvite: (event: { from: string }) => void;
+  /** The phone's SMS or MMS changed, a moment before, while another app is the SMS app: watched
+   *  only while this is listened to. */
+  onSmsChanged: () => void;
 };
 
 type NativeSms = {

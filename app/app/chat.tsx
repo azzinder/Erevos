@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,6 +37,8 @@ import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '
 import { LaterPicker } from '../components/later-picker';
 import { LinkedText } from '../components/linked-text';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
+import { deleteSms, maySendSms, sendSmsAgain, SmsForward, useChatSms } from '../components/sms-message';
+import { UndoBar } from '../components/undo-bar';
 import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from '../components/message-parts';
 import { PhotoSticker, PLAYS_LAST, StickerPicker, StickerView } from '../components/stickers';
 import { PollCard, PollSheet } from '../components/poll';
@@ -48,6 +50,7 @@ import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
 import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { searchMessages } from '../lib/message-search';
+import { chatLines, isSmsLine, plainSmsHref, smsFailed, smsFindables, smsLineId, smsMark } from '../lib/sms-chat';
 import { canForward, forwardedTo, forwardToGroup, takeForward, voiceCopy, type Forwardable } from '../lib/forward';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
@@ -104,6 +107,7 @@ import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
 import { ChatTheme } from '../theme/chat-theme';
+import { sendSms, type SmsMessage } from '../modules/erevos-sms';
 import type { Look } from '../theme/look';
 import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
@@ -139,6 +143,12 @@ import { t, plural, mark } from '../lib/i18n';
 // A chat brought in from another messenger (lock/archive.ts) can go on with one of the space's
 // contacts: its messages show ahead of theirs, only to read, and a contact without a name takes
 // the imported chat's. They are never sent, and stay when this chat's messages are deleted.
+//
+// While Erevos may read the phone's SMS, the SMS and MMS with a contact's number (linked to them,
+// or on a contact card of theirs) show among their messages by time, each marked as a plain SMS
+// (lib/sms-chat.ts, components/sms-message.tsx). They stay in the phone's SMS, never in the chat's
+// history, and never show in hidden chats. The details open the plain SMS conversation, to write
+// one there, and Attach sends what is typed as an SMS.
 
 // `tag` names a message with a contact on both phones (lock/history.ts).
 // `until`: when it disappears, milliseconds, or 0. `lasts`: seconds it lasts once read, while it
@@ -514,7 +524,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // gone to, lit a moment.
   const [menuFor, setMenuFor] = useState<Message | null>(null);
   const [replying, setReplying] = useState<Message | null>(null);
-  const [lit, setLit] = useState<number | null>(null);
+  // One of the SMS among the messages held down, and the one being passed on (lib/sms-chat.ts).
+  const [smsMenuFor, setSmsMenuFor] = useState<SmsMessage | null>(null);
+  const [smsForwarding, setSmsForwarding] = useState<SmsMessage | null>(null);
+  const [lit, setLit] = useState<number | string | null>(null);
   // Which of the pinned messages shows over the thread, counted from the latest.
   const [pinShown, setPinShown] = useState(0);
   // What is looked for in the chat (null: no search), and which of what it found is gone to, from the latest.
@@ -522,6 +535,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [searchAt, setSearchAt] = useState(0);
   // Where each message is in the thread, by id, to go to it, and the one to go to once it shows.
   const placed = useRef(new Map<number, number>());
+  const smsPlaced = useRef(new Map<string, number>());
+  // How far above the chat's bottom its thread ends, where Undo shows (components/undo-bar.tsx).
+  const edges = useRef({ height: 0, end: 0 });
+  const [undoAt, setUndoAt] = useState(0);
   const goal = useRef(at);
   const receipts = useRef<Receipts>({});
   // Contacts who asked whether this phone is open, to answer with the next look at the relay.
@@ -1537,20 +1554,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     toDevices(message.peer, { tag: message.tag, starred: on });
   }
 
-  // Goes to one of the chat's messages, by its tag, and lights it a moment.
+  // Goes to one of the chat's messages, by its tag, or to one of the SMS among them, by its id,
+  // and lights it a moment.
   function goTo(peer: string, tag: string) {
-    const target = visible.find((m) => m.peer === peer && m.tag === tag);
-    const y = target ? placed.current.get(target.id) : undefined;
-    if (!target || y === undefined) {
+    const target = isSmsLine(tag) ? tag : visible.find((m) => m.peer === peer && m.tag === tag)?.id;
+    const y = target === undefined ? undefined : typeof target === 'string' ? smsPlaced.current.get(target) : placed.current.get(target);
+    if (target === undefined || y === undefined) {
       setNote(t('That message is not on this phone.'));
       return;
     }
     thread.current?.scrollTo({ y: Math.max(0, y - 96), animated: true });
-    setLit(target.id);
+    setLit(target);
   }
 
-  async function copy(message: Message) {
-    setNote((await copyText(shownLine(message.text))) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
+  async function copy(text: string) {
+    setNote((await copyText(text)) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
   }
 
   // What can be done with a message, in its menu (held down).
@@ -1560,10 +1578,54 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (forwardable(message)) actions.push({ title: t('Forward'), onPress: () => startForward(message) });
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
-    if (CAN_COPY && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
+    if (CAN_COPY && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(shownLine(message.text)) });
     if (message.file?.sticker && !message.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(message.file!) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
+  }
+
+  // What can be done with one of the SMS among the messages, held down, as on the SMS screen: it is
+  // the phone's, so it goes on only as a copy, and is deleted from the phone with Undo.
+  function smsActions(m: SmsMessage): MenuAction[] {
+    const actions: MenuAction[] = [];
+    if (CAN_COPY && m.text) actions.push({ title: t('Copy'), onPress: () => void copy(m.text) });
+    actions.push({ title: t('Forward'), onPress: () => setSmsForwarding(m) });
+    if (smsFailed(m)) actions.push({ title: t('Send again'), onPress: () => sendSmsLineAgain(m) });
+    actions.push({
+      title: t('Delete'),
+      danger: true,
+      onPress: () => {
+        const why = deleteSms(m, chatSms.number, chatSms.dropped);
+        if (why) setNote(why);
+      },
+    });
+    return actions;
+  }
+
+  // One of ours that did not go, or did not reach their phone, goes again, on the SIM it was for.
+  function sendSmsLineAgain(m: SmsMessage) {
+    sendSmsAgain(m, chatSms.number, -1, { sent: chatSms.reload, note: setNote });
+  }
+
+  // Sends what is typed as a plain SMS to their number, once the owner says so: not encrypted, so
+  // the phone company can read it. It shows among the messages as an SMS, as the phone keeps it.
+  // With two SIMs it says which it goes on.
+  async function sendAsSms() {
+    const text = draft.trim();
+    const to = chatSms.number;
+    if (!text || !to) return;
+    const plainly = chatSms.simName
+      ? t('It goes to {number} on {sim} as a plain SMS, not encrypted: the phone company can read it.', { number: to, sim: chatSms.simName })
+      : t('It goes to {number} as a plain SMS, not encrypted: the phone company can read it.', { number: to });
+    if (!(await choose(t('Send as SMS?'), plainly, t('Cancel'), t('Send')))) return;
+    try {
+      await maySendSms();
+      await sendSms(to, text, chatSms.sim);
+      setDraft((typed) => (typed.trim() === text ? '' : typed));
+      chatSms.reload();
+    } catch (error) {
+      setNote(t('Not sent. {error}', { error: errorText(error) }));
+    }
   }
 
   // Shows what went, and empties the field when it was what is typed (`typed`).
@@ -2840,11 +2902,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Theirs that came before the time it was sent for shows then (lib/later.ts, showsAt).
   const shownBy = Date.now();
   const visible = messages.filter((message) => message.peer === selected && (message.mine || message.at <= shownBy));
+  // The SMS with their number, among the messages by time (lib/sms-chat.ts): never in hidden chats.
+  const smsWith = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
+  const chatSms = useChatSms({
+    identity: smsWith,
+    phone: (smsWith && e2e?.phones().find((p) => p.identity === smsWith)?.phone) || '',
+    hidden: !!hiddenKey,
+    seen: shown && appActive,
+  });
+  const lines = chatLines(visible, chatSms.messages, chatSms.more);
   // The messages pinned to the top, the latest first, and the one that shows.
   const pins = visible.filter((m) => m.pinned).sort((a, b) => b.pinned! - a.pinned!);
   const pinnedNow = pins.length > 0 ? pins[pinShown % pins.length] : null;
   const starredHere = visible.filter((m) => m.starred).reverse();
-  const hits = searching ? searchMessages(visible, searching) : [];
+  const hits = searching ? searchMessages([...visible, ...smsFindables(selected ?? '', chatSms.messages)], searching) : [];
   // Goes to what the search found, the `n`th from the latest.
   const goToHit = (n: number) => {
     const hit = hits[n];
@@ -2929,8 +3000,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     });
   }, [shown, e2e, selectedIdentity, selectedLook, onLook]);
 
+  // Undo shows just above the thread's end.
+  const measured = (change: Partial<typeof edges.current>) => {
+    edges.current = { ...edges.current, ...change };
+    setUndoAt(Math.max(0, edges.current.height - edges.current.end));
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={(event) => measured({ height: event.nativeEvent.layout.height })}>
       <Modal visible={styling && shown} animationType="slide" statusBarTranslucent onRequestClose={() => setStyling(false)}>
         <ScreenBackdrop>
           <View style={{ flex: 1, backgroundColor: colors.ground }}>
@@ -3179,6 +3256,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                       <>
                         <View style={styles.rule} />
                         <DetailRow title={t('Export chat')} onPress={() => void exportChat()} />
+                      </>
+                    ) : null}
+                    {chatSms.number ? (
+                      <>
+                        <View style={styles.rule} />
+                        <DetailRow
+                          title={t('Plain SMS')}
+                          value={chatSms.number}
+                          onPress={() => {
+                            setDetails(false);
+                            router.push(plainSmsHref(chatSms.number));
+                          }}
+                        />
+                        <Text variant="caption" tone="muted" style={styles.rowMore}>
+                          {t('The SMS with this number show in the chat too, marked SMS. This opens their SMS conversation, to write one when there is no internet, say. An SMS is not encrypted: the phone company can read it.')}
+                        </Text>
                       </>
                     ) : null}
                   </View>
@@ -3675,6 +3768,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         ref={thread}
         style={styles.thread}
         contentContainerStyle={styles.threadContent}
+        onLayout={(event) => measured({ end: event.nativeEvent.layout.y + event.nativeEvent.layout.height })}
         onContentSizeChange={() => {
           if (holdScroll.current) holdScroll.current = false;
           else thread.current?.scrollToEnd({ animated: true });
@@ -3716,7 +3810,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             {t('Continued in Erevos')}
           </Text>
         ) : null}
-        {selected && visible.length === 0 && imported.length === 0 ? (
+        {selected && visible.length === 0 && imported.length === 0 && chatSms.messages.length === 0 ? (
           <View style={styles.hello}>
             <ShieldIcon color={colors.textFaint} size={28} />
             <Text variant="caption" tone="muted" style={styles.divider}>
@@ -3724,12 +3818,63 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             </Text>
           </View>
         ) : null}
-        {visible.map((message, i) => {
-          const before = visible[i - 1];
-          const after = visible[i + 1];
-          const newDay = !before || dayOf(before.at) !== dayOf(message.at);
-          // The last of a run from one side gets the bubble's tail, and room after it.
-          const tail = !after || after.mine !== message.mine || dayOf(after.at) !== dayOf(message.at);
+        {lines.map((line, i) => {
+          const before = lines[i - 1];
+          const after = lines[i + 1];
+          const newDay = !before || dayOf(before.at) !== dayOf(line.at);
+          // The last of a run from one side gets the bubble's tail, and room after it; an SMS and a
+          // message of the chat are never one run.
+          const tail = !after || after.mine !== line.mine || after.kind !== line.kind || dayOf(after.at) !== dayOf(line.at);
+          if (line.kind === 'sms') {
+            const m = line.sms;
+            const id = smsLineId(m);
+            const ink = m.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
+            return (
+              <View key={`sms-${id}`} onLayout={(event) => smsPlaced.current.set(id, event.nativeEvent.layout.y)}>
+                {line.earlier ? (
+                  <TextButton
+                    title={t('Show earlier SMS')}
+                    onPress={() => {
+                      holdScroll.current = true;
+                      chatSms.earlier();
+                    }}
+                  />
+                ) : null}
+                {newDay ? (
+                  <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
+                    {dayLabel(m.at)}
+                  </Text>
+                ) : null}
+                <Pressable
+                  onPress={smsFailed(m) ? () => sendSmsLineAgain(m) : undefined}
+                  onLongPress={() => setSmsMenuFor(m)}
+                  accessibilityHint={smsFailed(m) ? t('Tap to send it again.') : t('Hold for more')}
+                  style={[
+                    styles.bubble,
+                    m.mine ? b.mine : b.theirs,
+                    tail && (m.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+                    styles.sms,
+                    lit === id && styles.lit,
+                  ]}
+                >
+                  {(m.pictures ?? []).map((p) => (
+                    <Image key={p.uri} source={{ uri: p.uri }} style={styles.smsPicture} resizeMode="cover" accessibilityLabel={t('Picture')} />
+                  ))}
+                  {m.text ? (
+                    <Text style={ink}>
+                      <LinkedText text={m.text} />
+                    </Text>
+                  ) : null}
+                  {/* Marked plain: what the SMS screen says of every SMS, and its marks. */}
+                  <Text style={[ink, styles.time]}>
+                    {[m.kind === 'mms' ? t('MMS (not encrypted)') : t('SMS (not encrypted)'), clock(m.at), m.mine ? smsMark(m.state) : ''].filter(Boolean).join('  ·  ')}
+                  </Text>
+                  {smsFailed(m) ? <Text style={[styles.time, { color: colors.danger }]}>{t('Tap to send it again.')}</Text> : null}
+                </Pressable>
+              </View>
+            );
+          }
+          const message = line.message;
           const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
           const quoted = message.re ? visible.find((m) => m.tag === message.re) : undefined;
           // A sticker, built in or made from a photo, shows on its own, with no bubble.
@@ -3775,7 +3920,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   />
                 ) : null}
                 {message.sticker ? (
-                  <StickerView name={message.sticker} fallback={message.text} play={visible.length - i <= PLAYS_LAST} tap onLongPress={() => setMenuFor(message)} />
+                  <StickerView name={message.sticker} fallback={message.text} play={lines.length - i <= PLAYS_LAST} tap onLongPress={() => setMenuFor(message)} />
                 ) : message.file?.sticker ? (
                   <PhotoSticker uri={photos[message.file.id]} status={comingText(message.file, taking[`${message.peer}|${message.tag}`])} />
                 ) : message.place ? (
@@ -3881,6 +4026,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         onReact={menuFor && theyHave(menuFor) ? (emoji) => void react(menuFor, emoji) : undefined}
         actions={menuFor ? menuActions(menuFor) : []}
       />
+      <MessageMenu
+        visible={smsMenuFor !== null && shown}
+        onClose={() => setSmsMenuFor(null)}
+        line={smsMenuFor ? smsMenuFor.text.split('\n')[0].trim() || t('Picture') : ''}
+        actions={smsMenuFor ? smsActions(smsMenuFor) : []}
+      />
+      <SmsForward
+        message={shown ? smsForwarding : null}
+        contacts={shownContacts.map((c) => ({ identity: c.identity, name: c.name, request: c.request, phone: e2e?.phones().find((p) => p.identity === c.identity)?.phone }))}
+        onClose={() => setSmsForwarding(null)}
+        onNote={setNote}
+        onChat={(identity, text) => {
+          setSelected(`${CONTACT_PREFIX}${identity}`);
+          setDraft((typed) => (typed.trim() ? `${typed}\n${text}` : text));
+        }}
+      />
       <Sheet visible={sendMenu} onClose={() => setSendMenu(false)} title={t('Send')}>
         {draft.trim() ? (
           <>
@@ -3920,6 +4081,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             <Button title={t('Sticker')} kind="secondary" compact onPress={() => afterSheet(() => setStickering(true))} />
             {CAN_PLACE ? <Button title={t('Location')} kind="secondary" compact onPress={() => afterSheet(() => void locate())} /> : null}
             <Button title={t('Poll')} kind="secondary" compact onPress={() => afterSheet(() => setPolling(true))} />
+            {chatSms.number ? <Button title={t('Send as SMS')} kind="secondary" compact disabled={!draft.trim()} onPress={() => afterSheet(() => void sendAsSms())} /> : null}
           </>
         }
       />
@@ -3967,6 +4129,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           </>
         ) : null}
       </Sheet>
+      {shown ? <UndoBar bottom={undoAt + space.sm} /> : null}
       <FileViewer
         file={viewing?.file ?? viewingImported}
         uri={viewing?.file ? photos[viewing.file.id] : viewingImported ? photos[viewingImported.id] : undefined}
@@ -4280,6 +4443,18 @@ const makeStyles = (colors: Colors) =>
     found: {
       gap: 2,
       paddingVertical: space.sm,
+    },
+    // One of the phone's SMS among the messages: edged, as it is plain (lib/sms-chat.ts).
+    sms: {
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.warning,
+    },
+    smsPicture: {
+      width: 220,
+      height: 220,
+      borderRadius: radius.md,
+      backgroundColor: colors.border,
     },
     // A message gone to, lit a moment.
     lit: {

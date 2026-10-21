@@ -18,7 +18,7 @@ import { copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
-import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type InboxGroup, type InboxRow, type InboxSms } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, showsIn, shownName, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { checksOffered, HAS_CHECKS, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
@@ -122,11 +122,10 @@ async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
 // the phone once each time.
 const trashLooked = new Set<number>();
 
-// Which of the list shows: all of it, the SMS conversations (and the chats whose last message was
-// an SMS), or the Erevos chats. Erevos's widget opens on one of them (erevos://?show=sms).
-type Show = 'all' | 'sms' | 'erevos';
-const showOf = (show: unknown): Show => (show === 'sms' || show === 'erevos' ? show : 'all');
-const isSms = (row: InboxRow) => row.sms !== '' || row.lastSms;
+// Which of the list shows: all of it, the SMS, or the Erevos chats (lib/inbox.ts, showsIn).
+// Erevos's widget opens on one of them (erevos://?show=sms).
+const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' ? show : 'all');
+const isSms = (row: InboxRow) => showsIn(row, 'sms');
 
 export default function Home() {
   const styles = useStyles(makeStyles);
@@ -137,7 +136,7 @@ export default function Home() {
   const [relay, setRelay] = useState<Relay>('none');
   const [query, setQuery] = useState('');
   const params = useLocalSearchParams<{ show?: string }>();
-  const [show, setShow] = useState<Show>(showOf(params.show));
+  const [show, setShow] = useState<InboxShow>(showOf(params.show));
   useEffect(() => {
     if (typeof params.show === 'string') setShow(showOf(params.show));
   }, [params.show]);
@@ -327,7 +326,7 @@ export default function Home() {
 
   const shown = useMemo(() => {
     const found = filterInbox(rows ?? [], query);
-    return show === 'all' ? found : found.filter((row) => (show === 'sms') === isSms(row));
+    return found.filter((row) => showsIn(row, show));
   }, [rows, query, show]);
   // The choice shows once the list has SMS and Erevos chats both, or while one of them is chosen.
   const mixed = show !== 'all' || ((rows ?? []).some(isSms) && (rows ?? []).some((row) => !row.sms));

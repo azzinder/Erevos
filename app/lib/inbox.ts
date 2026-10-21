@@ -132,6 +132,20 @@ function preview(message: Pick<InboxMessage, 'text' | 'voice' | 'file'> | undefi
   return shownLine(message?.text ?? '');
 }
 
+/** Which of the list shows (app/index.tsx): all of it, the SMS, or the Erevos chats. */
+export type InboxShow = 'all' | 'sms' | 'erevos';
+
+/**
+ * Whether a row shows in that part of the list. The SMS are the SMS conversations, and the chats
+ * whose last message was an SMS; the Erevos chats are every contact's and every group's, whatever
+ * came last, so a contact whose number's SMS came after stays among them.
+ */
+export function showsIn(row: Pick<InboxRow, 'sms' | 'lastSms'>, show: InboxShow): boolean {
+  if (show === 'sms') return row.sms !== '' || row.lastSms;
+  if (show === 'erevos') return row.sms === '';
+  return true;
+}
+
 /** A row's name, or the start of the contact's key when it has none. */
 export function shownName(row: { identity: string; name: string }): string {
   return row.name || t('contact {id}', { id: row.identity.slice(0, 8) });
