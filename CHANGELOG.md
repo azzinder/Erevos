@@ -1,0 +1,151 @@
+# Changelog
+
+What each release changed, newest first, for whoever taps **Update**. Releases are numbered
+`0.1.<run of the release workflow>`, so some numbers have none: 0.1.1 went out only on the
+private repository, without an Android app, and 0.1.3, 0.1.9, 0.1.13 and 0.1.15 never came out.
+No release so far has a macOS build. **Not audited.**
+
+## Unreleased
+
+On main, not released yet.
+
+- **Relay**: closes connections left quiet for 5 minutes or slow in their handshake, and takes at
+  most 512 at once (128 without a token). `FORWARD` and `FILE_VIA` refuse addresses that are not
+  on the public internet, unless `EREVOS_RELAY_PRIVATE_PEERS=allow`. At most 100,000 queues, and
+  queues no one has read for 180 days are removed. A relay that panics while holding a lock stops,
+  for its service manager to start it again. Its journal changes shape: an older relay no longer
+  reads it. See [deploy/relay/README.md](deploy/relay/README.md).
+- **Lent places** are off unless the relay's operator turns them on (`EREVOS_RELAY_LEND=on`). A
+  lent place may put 50 MB of files a day, its counts last across restarts, and the operator can
+  revoke a ticket in a file. Lent tokens are longer, so those given before stop working. In the
+  app, a ticket goes into a contact link only when you turn on **Share a place on my relay with
+  this link**, for the link shown then.
+- **After a backup is restored**, each chat skips ahead past the sending keys used since the
+  backup, so no message key is used twice.
+- **No link starts a call** any more: a call starts only from a tap inside Erevos.
+- **Screen privacy** (Android): while hidden chats are open, and while a space with a password lock
+  is open unless turned off, Erevos stays out of screenshots and of the recent-apps preview.
+- Hidden chats' contact names no longer show on the call screen or in call notices.
+- **Backup passwords** need at least 12 characters.
+- **Stored sizes**: every space's and hidden chats' value in a sealed file is the same size, used or
+  not; what is larger goes to pages among the history's.
+- An old first message a relay sends again is refused however many new contacts came since.
+- A group's keeper cannot leave or take itself out, and hands the group only to a member who stays.
+- An MMS with a length past its end is refused at once. A new fingerprint key opens only while the
+  phone is unlocked.
+- **Carrying messages for phones nearby** is off unless turned on, and then goes only to relays on
+  the internet over TLS (`wss://`).
+- A README that matches the code, this changelog, and a threat model (`docs/threat-model.md`).
+
+## 0.1.16 (2026-10-20)
+
+- Imported Telegram and WhatsApp chats bring their photos, videos, voice messages and files, up to
+  1 GB each. An export larger than the phone's memory can be read.
+- A phone with no relay of its own can chat over the internet through a place lent on its
+  contact's relay. That relay must run this version.
+- Adding a link whose relay gives no place adds the contact for nearby use, instead of refusing it.
+
+## 0.1.14 (2026-10-20)
+
+- Hidden chats: a chat's Details has **Move back to my chats**.
+- Erevos keeps receiving messages and ringing for calls after you swipe it away from the recent
+  apps.
+- The Phone and Contacts icons open the keypad and the contacts every time.
+
+## 0.1.12 (2026-10-20)
+
+- Hidden chats can say that a message came (**Say when a message comes**, Android), with the same
+  "New message" notice as other chats.
+- The home menu no longer goes under the status bar.
+- Reading a QR code from a photo works again.
+- No more Bluetooth crashes on Android 17, and a Bluetooth scan Android refuses starts again later.
+- Long lists no longer close Erevos on Android.
+
+## 0.1.11 (2026-10-20)
+
+- The Phone can open without the password, if you allow it in the phone settings.
+- Recents show at once.
+- A home-screen widget: Phone, SMS, Messages and Contacts, with how many are new.
+- The chat list can show only SMS or only Erevos chats.
+- **Names** above the list shows contact names on SMS, also of contacts kept only in Erevos. Off
+  unless turned on.
+
+## 0.1.10 (2026-10-20)
+
+- A link Erevos opens with (the Phone and Contacts icons, `tel:` links, an SMS notice, a scanned
+  code) waits for the password and then opens, instead of being lost.
+- Phone and Contacts have their own icons, and buttons on the home screen.
+- A contact can have an Erevos ID: paste their contact link or read their QR code from a photo.
+- **Add to contacts** for a number that is no contact, from its SMS or its calls.
+
+## 0.1.8 (2026-10-19)
+
+- German, French, Spanish, Italian and Portuguese.
+- **Linked devices**: link a computer or a browser to the phone by QR code.
+- **Public groups**, joined by a link or QR code, with admins.
+- Messages: replies, reactions, pins, stars, polls, stickers, sending a place, forwarding, search
+  in a chat and in all chats, exporting a chat, and "typing…".
+- Link previews, off unless turned on. Links in chats and SMS can be tapped, and ask before they
+  open.
+- **Send later**, held on the relay (it needs an updated relay), and SMS later.
+- Photos, files and voice messages in group chats, and the same message menu there.
+- Erevos can be the phone app (its own call screen, two SIMs, Recents with filters, blocking) and
+  the contacts app (groups, birthdays, duplicates, `.vcf` files, the SIM card, contacts kept only in
+  Erevos).
+- SMS: drafts, a few seconds to take one back, sending again, forwarding, pin, archive, Trash, a
+  spam filter and blocked numbers.
+- Tor bridges (obfs4, Snowflake, or your own).
+- Fingerprint or face unlock on Android, off unless turned on.
+- Material You style on Android 12 and later.
+- Windows: an installer and a portable `.exe`.
+- Backups can hold the phone's SMS and MMS. A backup from a newer Erevos opens, leaving out what
+  this one does not know.
+
+## 0.1.7 (2026-10-19)
+
+- SMS notices while Erevos runs in the background, and **Allow notifications** when Android holds
+  them back.
+- No crash when a phone knocks over Wi-Fi Aware on Android 17.
+
+## 0.1.6 (2026-10-19)
+
+- Nothing new on the phone. The web app is now built with every release, at the same version, and
+  signed on the release computer.
+
+## 0.1.5 (2026-10-19)
+
+- The whole app in English or Greek: Home → Menu → Language. The first start follows the phone's
+  language.
+- SMS: Android now counts Erevos as the SMS app, and Erevos says how to choose it in Default apps.
+
+## 0.1.4 (2026-10-19)
+
+- Web app: notifications while it is closed, through Web Push, off unless turned on.
+- **Check for updates** works on a computer and on Sailfish OS.
+- Linux: the icon shows in the launcher and the task bar.
+- SMS: Erevos says when Android holds back reading the SMS and how to allow it, and one MMS it
+  cannot read no longer empties the list.
+- Typing a relay address no longer closes Erevos.
+
+## 0.1.2 (2026-10-19)
+
+The first release with a signed Android app in the public download repository, and the first that
+**Check for updates** finds. Packages: Android, Linux and Sailfish OS. It had:
+
+- 1:1 chats through a relay, end-to-end encrypted (PQXDH, then the double ratchet), with marks for
+  sent, came and read, online status, appearing offline, and message requests.
+- Voice messages, photos and files, voice and video calls, a walkie-talkie, and calls without
+  internet on the same Wi-Fi.
+- Group chats (MLS), group voice and video calls.
+- Disappearing messages.
+- A second password for a second space, and hidden chats: four places per space, each with its own
+  PIN.
+- Backups, by hand and automatic.
+- Imports of Telegram and WhatsApp chats (text only).
+- Nearby without internet: Bluetooth, Wi-Fi Aware, the same Wi-Fi, Wi-Fi Direct and LoRa, with
+  messages carried by phones nearby.
+- Tor on Android, a second relay to send through, and a spare relay.
+- Receiving and ringing in the background on Android.
+- Erevos as the phone's SMS app, with MMS and two SIMs.
+- The desktop app, the web app and Sailfish OS, built from the same code.
+- A user guide in English and Greek. The app itself was in English.
