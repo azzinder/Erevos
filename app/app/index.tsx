@@ -1,4 +1,4 @@
-import { router, useFocusEffect, useLocalSearchParams, type Href } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams, useNavigation, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,7 @@ import { handOverHidden } from '../lib/hidden-handoff';
 import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
 import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, type InboxGroup, type InboxRow, type InboxSms } from '../lib/inbox';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
+import { checksOffered, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
@@ -74,6 +75,7 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
   { title: mark('Appearance'), detail: mark('Style, colours, glass'), href: '/appearance' },
   { title: mark('Lock and second password'), detail: mark('Password, second space'), href: '/security' },
   { title: mark('Backups'), detail: mark('Make one, automatic backups, restore'), href: '/backup' },
+  { title: mark('Permissions'), detail: mark('What Android lets Erevos do, for calls to ring while it is closed'), href: '/permissions', phone: true },
   { title: mark('Updates'), detail: mark('This version, and Check for updates'), href: '/updates' },
   { title: mark('User guide'), detail: mark('How Erevos works, and what is not protected yet'), href: '/guide' },
   { title: mark('Relay test'), detail: mark('For testing a relay'), href: '/relay' },
@@ -132,6 +134,24 @@ export default function Home() {
   useEffect(() => {
     if (typeof params.show === 'string') setShow(showOf(params.show));
   }, [params.show]);
+  // After a new version, the permissions check shows by itself once, when calls and messages in
+  // the background need something (lib/permissions.ts). A moment later, and only if nothing else
+  // opened meanwhile (a link, the widget, a call): then the next start offers it.
+  const navigation = useNavigation();
+  useEffect(() => {
+    let active = true;
+    const wait = setTimeout(() => {
+      void offerChecks().then((offer) => {
+        if (!offer || !active || !navigation.isFocused()) return;
+        void checksOffered();
+        router.push('/permissions?after=update');
+      });
+    }, 1500);
+    return () => {
+      active = false;
+      clearTimeout(wait);
+    };
+  }, [navigation]);
   // The space's messages as last read, and its chats' names, for the search.
   const [searched, setSearched] = useState<{ messages: Findable[]; names: Map<string, string> }>({ messages: [], names: new Map() });
 

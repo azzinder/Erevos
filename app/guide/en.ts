@@ -458,9 +458,16 @@ a missed call.
   **Receive and ring** (the default) or **Only while Erevos shows**, and **Say a message came** (the default) or **No
   notice**. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
   screen**.
-- **Where it cannot ring:** stopped by Android (or by the phone's battery saving), in another space, or on a computer
-  or in the web app while closed. A call there shows as a missed call once Erevos opens. A message request cannot
-  call you until you accept it.
+- **Where it cannot ring:** stopped by Android (or by the phone's battery saving, or the phone maker's own setting),
+  after the phone restarts until you open Erevos and the space once, in another space, or on a computer or in the web
+  app while closed. A call there shows as a missed call once Erevos opens. A message request cannot call you until you
+  accept it.
+- **Permissions (Android):** menu → **Permissions** shows what Android lets Erevos do for calls and messages in the
+  background (notices, the call notice, calls over the lock screen, running on battery, mobile data in the background,
+  the microphone) and for other things (camera, phones nearby, contacts, exact times), each with why and a button that
+  opens Android's own question or setting. On Huawei, Honor, Xiaomi, OPPO, realme, OnePlus, vivo, Samsung and ASUS
+  phones it also says where the maker's own setting is, which Erevos cannot read: tap **I did it** once it is set. After
+  each new version, and the first time, it opens by itself when calls need something.
 - **One call at a time.** A call goes on while you move between screens of the space. It ends when the space closes,
   and a call in hidden chats when they close, as they do when Erevos goes to the background. Swiping Erevos away from
   the recent apps ends a call too.

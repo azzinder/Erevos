@@ -10,6 +10,14 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet. The next release is **2.0.0**.
 
+- **Permissions** (Android, menu → Permissions): what Android lets Erevos do for calls and messages
+  in the background (notices, the call notice, calls over the lock screen, battery saving, Data
+  Saver, the microphone) and for other things (camera, phones nearby, contacts, exact times), each
+  with why and a button for Android's own question or setting. On Huawei, Honor, Xiaomi, OPPO,
+  realme, OnePlus, vivo, Samsung and ASUS it also says where the maker's own background setting is,
+  and opens it. After each new version, and the first time, it opens by itself when calls need
+  something. Also under Lock and second password → In the background → All permissions.
+
 - **Version numbers**: the next release is 2.0.0, and each one after it the next number (2.0.1,
   2.0.2…) unless it is given one when started (Actions, release, Run workflow, version). Every
   release still has its own build number, the run's, so Android installs it over the one before.

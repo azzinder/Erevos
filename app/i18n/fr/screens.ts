@@ -24,6 +24,7 @@ export const screens: Record<string, string> = {
   'Make one, automatic backups, restore': 'En créer une, sauvegardes automatiques, restaurer',
   Updates: 'Mises à jour',
   'This version, and Check for updates': 'Cette version, et rechercher des mises à jour',
+  'What Android lets Erevos do, for calls to ring while it is closed': "Ce qu'Android permet à Erevos, pour que les appels sonnent quand il est fermé",
   'User guide': 'Guide d’utilisation',
   'How Erevos works, and what is not protected yet': 'Comment fonctionne Erevos, et ce qui n’est pas encore protégé',
   'Relay test': 'Test du relais',

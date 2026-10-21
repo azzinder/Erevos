@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, View } from 'react-native';
 
@@ -344,6 +345,11 @@ function BackgroundCalls() {
           <Text variant="caption" tone="muted" style={hint}>
             {t("Without it, Android's battery saving may stop Erevos after a while in the background.")}
           </Text>
+        ) : null}
+        {on ? (
+          <Row wrap>
+            <Button title={t('All permissions')} kind="ghost" compact onPress={() => router.push('/permissions')} />
+          </Row>
         ) : null}
       </Card>
     </>

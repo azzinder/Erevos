@@ -165,6 +165,9 @@ const RADIO_PERMISSIONS: Parameters<typeof PermissionsAndroid.requestMultiple>[0
   'android.permission.ACCESS_LOCAL_NETWORK' as (typeof RADIO_PERMISSIONS)[number],
 ];
 
+/** What the links to phones nearby ask for on this phone (the permissions check reads them too, lib/permissions.ts). */
+export const nearbyPermissions = (): Permissions => radioPermissions(RADIO_PERMISSIONS);
+
 type DeskEvent = { seq: number; kind: 'link' | 'gone' | 'text'; link: string; text?: string };
 
 // The desktop app's side: the links up, the last event taken, and which start is current.

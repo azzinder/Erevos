@@ -2,7 +2,9 @@ package expo.modules.erevoscall
 
 import android.app.Activity
 import android.app.Application
+import android.app.AlarmManager
 import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
@@ -10,6 +12,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
+import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -157,16 +160,24 @@ class ErevosCallModule : Module() {
       showOverLock(on)
     }
 
-    // What Android lets Erevos do for ringing in the background: show notices, show a call over
-    // the lock screen, and keep running when the battery saver would stop it.
+    // What Android lets Erevos do for ringing in the background: show notices, the call notice
+    // among them, show a call over the lock screen, keep running when the battery saver would stop
+    // it, and use mobile data while in the background (Data Saver). Also exact alarms, and who made
+    // the phone, whose own settings may stop apps in the background too (lib/permissions.ts).
     Function("backgroundState") {
       val context = context ?: return@Function mapOf("notices" to false, "fullScreen" to false, "battery" to false)
       val notices = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
       val power = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+      val network = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+      val alarms = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
       mapOf(
         "notices" to (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || notices.areNotificationsEnabled()),
+        "calls" to Notices.callsShown(context),
         "fullScreen" to (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE || notices.canUseFullScreenIntent()),
         "battery" to (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || power.isIgnoringBatteryOptimizations(context.packageName)),
+        "data" to (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || network.restrictBackgroundStatus != ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED),
+        "alarms" to (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()),
+        "maker" to Build.MANUFACTURER.lowercase(),
       )
     }
 
@@ -189,6 +200,79 @@ class ErevosCallModule : Module() {
       context.startActivity(intent)
       null
     }
+
+    // Android's screen for one of the settings backgroundState reads: Erevos's notices, its call
+    // notice, its mobile data in the background, its exact alarms; anything else, or a phone
+    // without that screen, opens Erevos's page in Android's settings ("app"). False if none opened.
+    Function("openSettings") { which: String ->
+      val context = context ?: return@Function false
+      val app = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
+      val sdk = Build.VERSION.SDK_INT
+      val intent = when {
+        which == "notices" && sdk >= Build.VERSION_CODES.O ->
+          Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        which == "calls" && sdk >= Build.VERSION_CODES.O ->
+          Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .putExtra(Settings.EXTRA_CHANNEL_ID, Notices.CALLS_CHANNEL)
+        which == "data" && sdk >= Build.VERSION_CODES.N ->
+          Intent(Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS, Uri.parse("package:${context.packageName}"))
+        which == "alarms" && sdk >= Build.VERSION_CODES.S ->
+          Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}"))
+        else -> app
+      }
+      open(context, intent) || open(context, app)
+    }
+
+    // The phone maker's own screen for apps that may run in the background, where it has one that
+    // is known (dontkillmyapp.com): Huawei's App launch, Xiaomi's Autostart and the like. False
+    // when none opened; lib/permissions.ts then opens Erevos's page in Android's settings.
+    Function("openMaker") {
+      val context = context ?: return@Function false
+      makerScreens(Build.MANUFACTURER.lowercase()).any { open(context, Intent().setComponent(it)) }
+    }
+  }
+
+  private fun open(context: Context, intent: Intent): Boolean =
+    try {
+      context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+      true
+    } catch (e: Exception) {
+      // Not on this phone, or not open to other apps.
+      false
+    }
+
+  // Each maker's screens, newest first; a phone has at most one of them.
+  private fun makerScreens(maker: String): List<ComponentName> = when (maker) {
+    "huawei", "honor" -> listOf(
+      ComponentName("com.hihonor.systemmanager", "com.hihonor.systemmanager.startupmgr.ui.StartupNormalAppListActivity"),
+      ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"),
+      ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.appcontrol.activity.StartupAppControlActivity"),
+      ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity"),
+    )
+    "xiaomi", "redmi", "poco" -> listOf(
+      ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"),
+    )
+    "oppo", "realme", "oneplus" -> listOf(
+      ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity"),
+      ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity"),
+      ComponentName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity"),
+      ComponentName("com.oneplus.security", "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity"),
+    )
+    "vivo", "iqoo" -> listOf(
+      ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"),
+      ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager"),
+      ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"),
+    )
+    "samsung" -> listOf(
+      ComponentName("com.samsung.android.lool", "com.samsung.android.sm.battery.ui.BatteryActivity"),
+      ComponentName("com.samsung.android.sm", "com.samsung.android.sm.battery.ui.BatteryActivity"),
+    )
+    "asus" -> listOf(
+      ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.autostart.AutoStartActivity"),
+      ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.entry.FunctionActivity"),
+    )
+    else -> emptyList()
   }
 
   // React Native stops the app's timers while it is in the background, unless a background task

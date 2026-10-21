@@ -18,7 +18,7 @@ object Notices {
   const val RINGING_ID = 7102
   const val MESSAGES_ID = 7103
   private const val RECEIVING_CHANNEL = "erevos-receiving"
-  private const val CALLS_CHANNEL = "erevos-calls"
+  const val CALLS_CHANNEL = "erevos-calls"
   private const val MESSAGES_CHANNEL = "erevos-messages"
   // The same notice, for messages sent without sound: a channel that never sounds.
   private const val QUIET_CHANNEL = "erevos-messages-quiet"
@@ -43,6 +43,13 @@ object Notices {
   private var named: Boolean? = null
 
   private fun manager(context: Context) = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+  /** Whether the call notice may show: its channel not turned off. A channel not made yet is made as it should be. */
+  fun callsShown(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
+    val channel = manager(context).getNotificationChannel(CALLS_CHANNEL) ?: return true
+    return channel.importance != NotificationManager.IMPORTANCE_NONE
+  }
 
   private fun channels(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return

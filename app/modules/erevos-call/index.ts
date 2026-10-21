@@ -1,7 +1,21 @@
 import { requireOptionalNativeModule } from 'expo-modules-core';
 
-/** What Android lets Erevos do for ringing in the background. */
-export type BackgroundState = { notices: boolean; fullScreen: boolean; battery: boolean };
+/** What Android lets Erevos do for ringing in the background. What came later is missing in a build made before it. */
+export type BackgroundState = {
+  notices: boolean;
+  fullScreen: boolean;
+  battery: boolean;
+  /** The call notice's channel is not turned off. */
+  calls?: boolean;
+  /** Mobile data in the background is not cut by Data Saver. */
+  data?: boolean;
+  alarms?: boolean;
+  /** Who made the phone, in lowercase ("huawei", "google"). */
+  maker?: string;
+};
+
+/** The settings screens openSettings opens; "app" is Erevos's own page in Android's settings. */
+export type SettingsScreen = 'notices' | 'calls' | 'data' | 'alarms' | 'app';
 
 // What came after the first calls is missing in a build made before it, so it is optional.
 type CallAudio = {
@@ -29,6 +43,10 @@ type CallAudio = {
   askBattery?(): void;
   /** Android's setting to let Erevos show a call over the lock screen. */
   askFullScreen?(): void;
+  /** Opens Android's screen for that setting, or Erevos's page in the settings; false if neither opened. */
+  openSettings?(which: SettingsScreen): boolean;
+  /** Opens the phone maker's own screen for apps that may run in the background; false if it has none known. */
+  openMaker?(): boolean;
 };
 
 // The phone's side of a call on Android (sound route, screen, ringing in the background). Null in
