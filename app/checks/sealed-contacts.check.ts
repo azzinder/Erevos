@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import { EMPTY_FIELDS, type Fields } from '../lib/contacts';
 import { randomBytes, setHardCost, setPbkdf2, webCryptoPbkdf2 } from '../lib/crypto';
 import { setOpenHiddenPlace } from '../lib/hidden-contacts';
-import { linkPhoneContact, linkSealed, loadPlace, placeOf, removeSealed, saveSealed, sealedNames, setSealedPhoto, spacePlace, starSealed } from '../lib/sealed-contacts';
+import { linkCard, linkPhoneContact, linkSealed, loadPlace, placeOf, removeSealed, saveSealed, sealedNames, setSealedPhoto, spacePlace, starSealed } from '../lib/sealed-contacts';
 import { loadPhoto } from '../lock/avatar-photos';
 import { backupKey, makeBackup, openBackup } from '../lock/backup';
 import { FILE, loadContactsData } from '../lock/contacts-data';
@@ -35,7 +35,7 @@ const t = (name: string, fn: () => Promise<void>) =>
 
 const person = (given: string, number = ''): Fields => ({ ...EMPTY_FIELDS, given, phones: number ? [{ value: number, kind: 'mobile', label: '' }] : [] });
 
-const hiddenPlace = (key: Uint8Array) => ({ space: 0, pocket: 1, key, erevos: () => [], messages: () => [], open: () => undefined });
+const hiddenPlace = (key: Uint8Array) => ({ space: 0, pocket: 1, key, erevos: () => [], messages: () => [], open: () => undefined, takeName: async () => '' });
 
 const IDENTITY = 'ab'.repeat(32);
 
@@ -111,6 +111,22 @@ t('a phone contact or a sealed one is linked to one Erevos contact, or none', as
   const id = await saveSealed(spacePlace(), null, person('Eleni'));
   await linkSealed(spacePlace(), id, IDENTITY);
   assert.equal((await loadPlace(spacePlace())).contacts[0].erevos, IDENTITY);
+});
+
+t('a contact is connected where it is kept: a phone contact in the space only, never in hidden chats, and its link moves', async () => {
+  setCurrentSpace(0, randomBytes(32));
+  const other = 'cd'.repeat(32);
+  assert.equal(await linkCard(spacePlace(), { phone: { lookup: 'L1' }, sealed: null }, IDENTITY), true);
+  assert.deepEqual((await loadPlace(spacePlace())).links, [{ lookup: 'L1', identity: IDENTITY }]);
+  assert.equal(await linkCard(spacePlace(), { phone: { lookup: 'L1' }, sealed: null }, other), true);
+  assert.deepEqual((await loadPlace(spacePlace())).links, [{ lookup: 'L1', identity: other }], 'it moves');
+  const hidden = placeOf(hiddenPlace(randomBytes(32)));
+  assert.equal(await linkCard(hidden, { phone: { lookup: 'L2' }, sealed: null }, IDENTITY), false);
+  assert.deepEqual((await loadPlace(hidden)).links, []);
+  assert.deepEqual((await loadPlace(spacePlace())).links, [{ lookup: 'L1', identity: other }], "the space's are as they were");
+  const id = await saveSealed(hidden, null, person('Hidden'));
+  assert.equal(await linkCard(hidden, { phone: null, sealed: { id } }, IDENTITY), true);
+  assert.equal((await loadPlace(hidden)).contacts[0].erevos, IDENTITY);
 });
 
 t('a backup holds the sealed contacts, and leaves the file out when there is none', async () => {

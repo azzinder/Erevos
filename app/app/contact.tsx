@@ -1,15 +1,26 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 
+import { ConnectPicker, useCanConnect } from '../components/connect-picker';
 import { Button, Field, Page, Text, TextButton } from '../components/ui';
+import { amongPlace, type Among, type Card as ContactCard } from '../lib/contact-book';
 import { checkContact, offerContact } from '../lib/contact-code';
+import { useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
+import { linkCard } from '../lib/sealed-contacts';
 
 // Opens from a scanned contact code, erevos://contact?id=...&relay=...&key=... (see lib/contact-code.ts).
-// Nothing is added until the person confirms, because any link can open this screen.
+// Nothing is added until the person confirms, because any link can open this screen. Or added and
+// connected to one of my contacts, whose name it then takes (components/connect-picker.tsx).
 
 export default function Contact() {
   const { id, relay, key, rk } = useLocalSearchParams<{ id?: string; relay?: string; key?: string; rk?: string }>();
   const code = checkContact(id, relay ?? '', key ?? '', rk ?? '');
+  // The chats it goes to: open hidden chats beneath take it, so their contacts are offered; else the space's.
+  const hiddenOpen = useOpenHiddenPlace();
+  const among: Among = hiddenOpen ?? 'space';
+  const canConnect = useCanConnect(among);
+  const [picking, setPicking] = useState(false);
 
   if (!code) {
     return (
@@ -19,6 +30,16 @@ export default function Contact() {
         <Button title={t('Close')} onPress={() => router.dismissTo('/')} />
       </Page>
     );
+  }
+
+  // Added, linked to the contact chosen, and named after it while it has no name of its own: the
+  // chat it goes to does both, for its own contacts only (lib/contact-code.ts, offerFor).
+  function addAndConnect(card: ContactCard) {
+    const into = amongPlace(among);
+    if (!code || !into) return;
+    offerContact(code, { place: into, name: card.name, added: (identity) => void linkCard(into, card, identity).catch(() => undefined) });
+    setPicking(false);
+    router.dismissTo('/chat');
   }
 
   return (
@@ -51,7 +72,9 @@ export default function Contact() {
           router.dismissTo('/chat');
         }}
       />
+      {!!code.key && canConnect ? <Button title={t('Add and connect to one of my contacts')} kind="secondary" onPress={() => setPicking(true)} /> : null}
       <TextButton title={t('Cancel')} onPress={() => router.dismissTo('/')} />
+      <ConnectPicker visible={picking} among={among} onPick={addAndConnect} onClose={() => setPicking(false)} />
     </Page>
   );
 }

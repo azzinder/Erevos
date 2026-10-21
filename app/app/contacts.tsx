@@ -8,7 +8,7 @@ import { readErevosId } from '../components/erevos-id';
 import { LockIcon, MoreIcon, PlusIcon, SearchIcon, ShieldIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
-import { byName, cardHref, erevosPeople, groupsByTitle, groupTitles, phoneCards, sealedCard, withErevos, type Card as ContactCard } from '../lib/contact-book';
+import { allowPhoneContacts, byName, cardHref, erevosPeople, groupsByTitle, groupTitles, phoneCards, sealedCard, withErevos, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
 import { askedFields, birthdayComing, daysToBirthday, fillText, fieldsName, matches, mergeFields, parseBirthday } from '../lib/contacts';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
@@ -119,8 +119,7 @@ export default function Contacts() {
   // Android asks once for reading and changing the contacts, as one permission.
   async function allow() {
     setNote('');
-    const answers = await PermissionsAndroid.requestMultiple(['android.permission.READ_CONTACTS', 'android.permission.WRITE_CONTACTS']).catch(() => null);
-    if (answers?.['android.permission.READ_CONTACTS'] !== PermissionsAndroid.RESULTS.GRANTED) {
+    if (!(await allowPhoneContacts())) {
       setNote(t("Without it, Erevos cannot show the phone's contacts. Allow Contacts in Erevos's App info."));
       return;
     }

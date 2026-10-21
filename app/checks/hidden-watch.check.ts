@@ -37,6 +37,7 @@ const place = (space: number, pocket: number): OpenHiddenPlace => ({
   erevos: () => [],
   messages: () => [],
   open: () => undefined,
+  takeName: async () => '',
 });
 
 test('every space has the entry, of one size whether its pockets are waited on or not', { skip: !relayReady }, async () => {

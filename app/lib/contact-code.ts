@@ -76,31 +76,58 @@ export function parseContact(text: string): ContactCode | null {
 }
 
 // Hands a contact from the screen a scanned link opens, or from a contact's Erevos ID
-// (app/contact-card.tsx), to the chat screen, which owns the contact list. Kept in memory only: the
-// chat saves the contact once it has it, and then tells `added` who it is, to link the contact to.
+// (app/contact-card.tsx, app/contact-edit.tsx), to the chat screen, which owns the contact list. Kept
+// in memory only: the chat saves the contact once it has it. Then, for the chats the offer was made
+// for only (`place`: the space's, or hidden chats'), it gives the contact the name that came with
+// it when it has none (lib/linked-name.ts) and tells `added` who it is, to link a contact to it.
 
 /** What is told who the contact added is (its identity), once it is. */
 export type Added = (identity: string) => void;
-type Listener = (code: ContactCode, added?: Added) => void;
 
-let waiting: { code: ContactCode; added?: Added } | null = null;
+/** Where a link and a name handed over with a contact belong: a space's chats or its hidden chats (lib/sealed-contacts.ts, Place). */
+export type OfferPlace = { holder: string; space: number };
+
+/**
+ * What may come with a contact handed to the chat, for the chats of `place` only: who is told who
+ * the contact is once added (`added`, to link a contact to it), and the name it takes if it has
+ * none of its own (`name`).
+ */
+export type Offer = { place: OfferPlace; added?: Added; name?: string };
+
+type Listener = (code: ContactCode, offer?: Offer) => void;
+
+let waiting: { code: ContactCode; offer?: Offer } | null = null;
 let listener: Listener | null = null;
 
 /** Gives a contact to the chat: now if the chat is open, otherwise when it next opens. */
-export function offerContact(code: ContactCode, added?: Added): void {
-  if (listener) listener(code, added);
-  else waiting = { code, added };
+export function offerContact(code: ContactCode, offer?: Offer): void {
+  if (listener) listener(code, offer);
+  else waiting = { code, offer };
 }
 
 /** For the chat: receives offered contacts until unsubscribed, starting with one that waited. */
 export function onContactOffered(next: Listener): () => void {
   listener = next;
   if (waiting) {
-    const { code, added } = waiting;
+    const { code, offer } = waiting;
     waiting = null;
-    next(code, added);
+    next(code, offer);
   }
   return () => {
     if (listener === next) listener = null;
   };
+}
+
+/**
+ * What of an offer the chats of `here` take: all of it when it was made for them, else nothing but
+ * the contact (null), so a link or a name made for hidden chats never goes to the space's chats, or
+ * the other way, as when hidden chats closed before their chat took it.
+ */
+export function offerFor(offer: Offer | undefined, here: OfferPlace): Offer | null {
+  return offer && offer.place.holder === here.holder && offer.place.space === here.space ? offer : null;
+}
+
+/** The space locks: a contact handed over and not taken yet goes, with the name and link that came with it. */
+export function forgetOffered(): void {
+  waiting = null;
 }

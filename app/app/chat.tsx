@@ -30,6 +30,7 @@ import { saveFile, saveText } from '../lib/save-file';
 import { chatText, exportName } from '../lib/chat-export';
 import { Attachment, comingText, FileViewer, shownOf, useShownPhotos } from '../components/attachment';
 import { Composer, ComposerPanel, IconButton, type ComposerTile, type ComposerWay, type SendWay } from '../components/composer';
+import { ConnectPicker, useCanConnect } from '../components/connect-picker';
 import { KeyboardAwareScrollView, KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
@@ -58,7 +59,7 @@ import { canForward, forwardedTo, forwardToGroup, takeForward, voiceCopy, type F
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
-import { contactLink, onContactOffered, parseContact, type Added, type ContactCode } from '../lib/contact-code';
+import { contactLink, offerFor, onContactOffered, parseContact, type ContactCode, type Offer } from '../lib/contact-code';
 import { canRelaySeal, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
@@ -76,7 +77,10 @@ import { cleanName, MAX_NAME, type Avatar } from '../lock/e2e-data';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
-import { setOpenHiddenPlace } from '../lib/hidden-contacts';
+import { setOpenHiddenPlace, useOpenHiddenPlace } from '../lib/hidden-contacts';
+import { giveLinkedName } from '../lib/linked-name';
+import { linkCard, type Place as SealedPlace } from '../lib/sealed-contacts';
+import type { Among, Card as ContactCard } from '../lib/contact-book';
 import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
@@ -502,6 +506,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const typedViaToken = useTyped(viaToken, setViaToken);
   const [ownQueue, setOwnQueue] = useState<Queue | null>(null);
   const [contactDraft, setContactDraft] = useState('');
+  // Whose contacts these chats' are (lib/sealed-contacts.ts): the space's, or these hidden chats' only.
+  const contactsPlace = useMemo<SealedPlace>(() => {
+    const { space, key } = currentSpace();
+    return { holder: hiddenKey ? hiddenHolder(pocket) : 'space', space, key: hiddenKey ?? key };
+  }, [hiddenKey, pocket]);
+  // A contact just added here, under Relay and new contacts, that has no name: offered to connect
+  // to one of my contacts (components/connect-picker.tsx), whose name it then takes. Its chat shows
+  // the offer until another chat shows, it gets a name, or Not now.
+  const [connecting, setConnecting] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [pickNote, setPickNote] = useState('');
+  // The hidden chats lent to the contacts screens, which are these when hidden (null until they are).
+  const hiddenLent = useOpenHiddenPlace();
+  const among: Among = hiddenKey ? hiddenLent : 'space';
+  const canConnect = useCanConnect(among);
   const [showQr, setShowQr] = useState(false);
   const [safety, setSafety] = useState<{ peer: string; number: string } | null>(null);
   // The contact being named, and the name typed so far.
@@ -726,8 +745,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setDirectKept(on).catch(() => setNote(t('Changed until Erevos closes: the phone could not keep it.')));
   }
 
-  // Adds a contact from a code: typed or pasted here, or scanned and opened on the contact screen.
-  async function acceptContact(code: ContactCode, then?: Added) {
+  // Adds a contact from a code: typed or pasted here, or read from a photo of it (`asked`: offering
+  // then to connect it to one of my contacts), or handed over (lib/contact-code.ts) with a contact
+  // to link it to and the name it takes, which only these chats' own may give (offerFor).
+  async function acceptContact(code: ContactCode, offered?: Offer, asked = false) {
     if (!e2e) {
       setNote(t(NO_CORE));
       return;
@@ -786,14 +807,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setOwnQueue(queue);
       }
       const { identity, added } = await e2e.addContact(code, queue?.senderHex ?? '', target ? here(url) : here(''));
+      const offer = offerFor(offered, contactsPlace);
+      // The name of the contact it is linked to, while it has none of its own (lib/linked-name.ts).
+      if (offer?.name) await giveLinkedName(e2e, identity, { name: offer.name }).catch(() => '');
       setContacts(e2e.contacts());
       // A contact of the phone's, or one kept only in Erevos, whose Erevos ID this was is linked to it.
-      then?.(identity);
+      offer?.added?.(identity);
       setSelected(`${CONTACT_PREFIX}${identity}`);
+      if (asked && added && canConnect && !e2e.contacts().find((c) => c.identity === identity)?.name) setConnecting(identity);
       if (target) await sendPending(e2e, target);
       const nearbyOnly = !target || !code.senderHex;
+      // Connected as it was added, from the screen a scanned link opens: said after the note.
+      const linked = offer?.name && offer.added ? ` ${t('Connected to {name}.', { name: cleanName(offer.name) })}` : '';
       setNote(
-        added
+        (added
           ? nearbyOnly
             ? noPlace
               ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. Their relay gave no place: {error}. Until you have a relay, you reach each other nearby only.', {
@@ -803,7 +830,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             : lent
               ? t("Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay of your own, you now have a place on theirs, lent through their link.")
               : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
-          : t('Already a contact. Where to reach them is updated.'),
+          : t('Already a contact. Where to reach them is updated.')) + linked,
       );
     } catch (error) {
       setNote(t('Not added. {error}', { error: errorText(error) }));
@@ -954,10 +981,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, []);
 
   // Hidden chats lend themselves to their contacts screens while open (lib/hidden-contacts.ts):
-  // their contacts and messages, and a way to open a chat, or call, from a contact card.
+  // their contacts and messages, a way to open a chat, or call, from a contact card, and to give a
+  // contact the name of the one linked to it.
   const pendingCall = useRef<{ peer: string; video: boolean } | null>(initial && initialCall ? { peer: initial, video: initialCall === 'video' } : null);
   useEffect(() => {
     if (!hiddenKey || !loaded || !e2e) return;
+    let lending = true;
     setOpenHiddenPlace({
       space: currentSpace().space,
       pocket,
@@ -976,8 +1005,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setDetails(false);
         setSelected(peer);
       },
+      // Once they have closed, nothing: their chats would save from a copy no screen uses any more.
+      takeName: async (identity, name) => {
+        if (!lending) return '';
+        const given = await giveLinkedName(e2e, identity, { name });
+        if (given) setContacts(e2e.contacts());
+        return given;
+      },
     });
-    return () => setOpenHiddenPlace(null);
+    return () => {
+      lending = false;
+      setOpenHiddenPlace(null);
+    };
   }, [hiddenKey, loaded, e2e]);
   // The call asked for starts once its chat is open.
   useEffect(() => {
@@ -988,7 +1027,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [loaded, e2e, selected]);
 
   // Another chat starts with its latest imported messages and pinned message, and answers nothing yet.
+  // The offer to connect a contact just added stays with its own chat only.
   useEffect(() => {
+    setConnecting((c) => (c && selected === `${CONTACT_PREFIX}${c}` ? c : null));
     setImportedShown(IMPORTED_PAGE);
     setReplying(null);
     setPinShown(0);
@@ -1049,7 +1090,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // cannot overwrite it.
   useEffect(() => {
     if (!loaded || !shown) return;
-    return onContactOffered((code, added) => void acceptContact(code, added));
+    return onContactOffered((code, offer) => void acceptContact(code, offer));
   }, [loaded, shown, relayUrl, relayToken, ownQueue, e2e]);
 
   useEffect(() => {
@@ -2925,7 +2966,28 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return;
     }
     setContactDraft('');
-    void acceptContact(code);
+    void acceptContact(code, undefined, true);
+  }
+
+  // The contact just added here, connected to one of my contacts: linked to it, and named after it
+  // while it has no name of its own. Hidden chats link only their own (lib/sealed-contacts.ts, linkCard).
+  async function connectTo(card: ContactCard) {
+    const identity = connecting;
+    if (!e2e || !identity) return;
+    setPickNote('');
+    try {
+      // Named only once linked: a phone contact is never linked, nor named after, in hidden chats.
+      if (!(await linkCard(contactsPlace, card, identity))) return;
+      await giveLinkedName(e2e, identity, card);
+      setContacts(e2e.contacts());
+      setPicking(false);
+      setConnecting(null);
+      // After the note that they were added, which may say what their relay gave, not in its place.
+      const connected = t('Connected to {name}.', { name: card.name });
+      setNote((current) => (current ? `${current} ${connected}` : connected));
+    } catch (error) {
+      setPickNote(errorText(error));
+    }
   }
 
   // Their QR code, photographed or chosen from the photos, adds them at once (lib/read-qr.ts).
@@ -2987,6 +3049,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const talkie = selectedContact ? talkies.has(selectedContact) : false;
   listening.current = shown && appActive ? selectedContact : null;
   const selectedTimer = contacts.find((c) => c.identity === selectedIdentity)?.timer ?? 0;
+  // Under the note that it was added, while its chat shows and it has no name: given one in its details (Rename), it goes.
+  const connectShown = shown && !!connecting && selected === `${CONTACT_PREFIX}${connecting}` && canConnect && !contacts.find((c) => c.identity === connecting)?.name;
   const firstImported = Math.max(0, imported.length - importedShown);
   // Without a relay queue the link has only the keys: who adds it reaches this phone nearby.
   const ownLink = !e2e
@@ -4138,6 +4202,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         })}
       </ScrollView>
       {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
+      {connectShown ? (
+        <Row wrap>
+          <TextButton
+            title={t('Connect to one of my contacts')}
+            onPress={() => {
+              setPickNote('');
+              setPicking(true);
+            }}
+          />
+          <TextButton title={t('Not now')} onPress={() => setConnecting(null)} />
+        </Row>
+      ) : null}
       {selectedContact ? (
         <View style={styles.dock}>
           <Composer
@@ -4254,6 +4330,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           </>
         ) : null}
       </Sheet>
+      <ConnectPicker visible={picking && shown && !!connecting} among={among} identity={connecting ?? ''} onPick={(card) => void connectTo(card)} onClose={() => setPicking(false)} note={pickNote} />
       <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
         <StickerPicker onPick={sendSticker} mine={{ place: stickerPlace, onPick: sendOwnSticker }} />
       </Sheet>

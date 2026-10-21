@@ -4,7 +4,7 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ErevosIdInput, erevosIdText, readErevosId } from '../components/erevos-id';
 import { Button, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
-import { sealedFields } from '../lib/contact-book';
+import { nameErevos, sealedFields } from '../lib/contact-book';
 import { offerContact } from '../lib/contact-code';
 import { askedFields, birthdayText, CHOSEN_KINDS, cleanFields, EMPTY_FIELDS, fieldsName, kindLabel, MAX_ENTRIES, mergeFields, parseBirthday, phoneFields, phoneSave, type Entry, type Fields } from '../lib/contacts';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
@@ -19,11 +19,12 @@ import { useStyles, useTheme } from '../theme/context';
 // owner chooses, or only in Erevos, sealed in the space (`sealed`, lib/sealed-contacts.ts). Among
 // the hidden chats' screens (`hidden`), it is always theirs, sealed with them. Another app (or a
 // QR code) can start one with fields of its own (`fill`), which are kept only once the owner saves;
-// one made from an Erevos contact's card (`erevos`) is that Erevos contact once saved. What another
-// app asks to add to a contact (`add`) is added to the one being changed, kept once saved. Its
-// Erevos ID, their contact link pasted, read from their QR code or from a QR code read in Contacts
-// (`code`), adds them to the space's Erevos chats once saved, which then open, and links the
-// contact to them (components/erevos-id.tsx).
+// one made from an Erevos contact's card (`erevos`) is that Erevos contact once saved, which then
+// takes its name if it has none of its own (lib/linked-name.ts). What another app asks to add to a
+// contact (`add`) is added to the one being changed, kept once saved. Its Erevos ID, their contact
+// link pasted, read from their QR code or from a QR code read in Contacts (`code`), adds them to
+// the space's Erevos chats once saved, which then open, and links the contact to them, whose name
+// they take (components/erevos-id.tsx).
 
 type ListName = 'phones' | 'emails' | 'addresses';
 
@@ -158,8 +159,10 @@ export default function ContactEdit() {
       if (keptSealed) {
         if (!place) throw new Error(t('The hidden chats are closed.'));
         const kept = await saveSealed(place, sealedId || null, clean, erevos ? { erevos } : {});
+        // The Erevos contact it is takes its name if it has none.
+        if (erevos && !sealedId) await nameErevos(hidden ? hiddenOpen : 'space', erevos, { name: fieldsName(clean) }).catch(() => '');
         if (code) {
-          offerContact(code, (identity) => void linkSealed(place, kept, identity).catch(() => undefined));
+          offerContact(code, { place, name: fieldsName(clean), added: (identity) => void linkSealed(place, kept, identity).catch(() => undefined) });
           router.replace('/chat');
         } else if (sealedId && !added) router.back();
         else router.replace(`/contact-card?sealed=${kept}${hidden ? '&hidden=1' : ''}`);
@@ -167,10 +170,15 @@ export default function ContactEdit() {
       }
       const saved = await savePhoneContact(phoneSave(clean, phone, account, phone?.starred ?? false));
       const lookup = phone?.lookup || ((erevos && !phone) || code ? ((await phoneContact(saved).catch(() => null))?.lookup ?? '') : '');
-      if (lookup && erevos && !phone) await linkPhoneContact(spacePlace(), lookup, erevos).catch(() => undefined);
+      // The Erevos contact it is takes its name if it has none.
+      if (lookup && erevos && !phone) {
+        await linkPhoneContact(spacePlace(), lookup, erevos)
+          .then(() => nameErevos('space', erevos, { name: fieldsName(clean) }))
+          .catch(() => undefined);
+      }
       if (code && lookup) {
         const into = spacePlace();
-        offerContact(code, (identity) => void linkPhoneContact(into, lookup, identity).catch(() => undefined));
+        offerContact(code, { place: into, name: fieldsName(clean), added: (identity) => void linkPhoneContact(into, lookup, identity).catch(() => undefined) });
         router.replace('/chat');
       } else if (phone && !added) router.back();
       else router.replace(`/contact-card?id=${saved}`);

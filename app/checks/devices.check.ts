@@ -60,6 +60,7 @@ import {
   type GroupMirror,
   type Synced,
 } from '../lib/link-wire';
+import { giveLinkedName } from '../lib/linked-name';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import { isSealedPacket } from '../lib/sealed-packet';
 import type { SpaceChats } from '../lib/space-chats';
@@ -416,12 +417,16 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
   });
   assert.deepEqual(await take(carol), []);
 
-  // A contact added on the computer is added by the phone, which starts the conversation.
+  // A contact added on the computer is added by the phone, which starts the conversation. The name
+  // the computer gives it right away, as one of its contacts linked to it (lib/linked-name.ts), is
+  // the phone's too, once it has added them.
   const dave = await phone(3, false);
   const daveId = dave.chats.e2e.identityHex();
   await dell.chats.e2e.addContact({ senderHex: dave.queue.senderHex, key: toBase64Url(dave.chats.e2e.bundle), relayUrl: url }, dell.queue.senderHex, where);
+  assert.equal(await giveLinkedName(dell.chats.e2e, daveId, { name: 'Dave Δ.' }), 'Dave Δ.');
   await take(pixel);
   assert.ok(pixel.chats.e2e.contacts().some((c) => c.identity === daveId));
+  assert.equal(pixel.chats.e2e.contacts().find((c) => c.identity === daveId)?.name, 'Dave Δ.');
   await write(dell, daveId, 'hi Dave');
   await take(pixel);
   const toDave = await take(dave);

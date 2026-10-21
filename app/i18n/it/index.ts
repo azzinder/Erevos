@@ -13,5 +13,6 @@ import { groups } from './groups';
 import { devices } from './devices';
 import { publicGroups } from './public-groups';
 import { contacts } from './contacts';
+import { linkContact } from './link-contact';
 
-export const IT: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts };
+export const IT: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact };

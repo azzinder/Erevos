@@ -7,8 +7,9 @@ import { spaceChats } from './space-chats';
 import { phoneContacts, savePhoneContact, takeOverContacts, type PhoneContact, type PhoneGroup } from '../modules/erevos-contacts';
 import { contactCards } from '../modules/erevos-sms';
 import type { ContactLink, SealedContact } from '../lock/contacts-data';
+import { giveLinkedName } from './linked-name';
 import { sameNumber } from './sms-invite';
-import { loadPlace, placeNames, spacePlace, type Place } from './sealed-contacts';
+import { loadPlace, placeNames, placeOf, spacePlace, type Place } from './sealed-contacts';
 
 // The contacts screen's book (app/contacts.tsx): the phone's contacts, from Android's contacts
 // (modules/erevos-contacts), those kept only in Erevos, sealed in the open space or hidden chats
@@ -91,6 +92,37 @@ export async function erevosPeople(hidden: OpenHiddenPlace | null): Promise<Erev
   } catch {
     return [];
   }
+}
+
+/** Whose contacts: the space's, the open hidden chats' (lib/hidden-contacts.ts), or none (null) while the hidden chats meant are closed. */
+export type Among = 'space' | OpenHiddenPlace | null;
+
+/** Where the contacts of `among` are kept, or null: none, or no space open. */
+export function amongPlace(among: Among): Place | null {
+  if (!among) return null;
+  if (among !== 'space') return placeOf(among);
+  try {
+    return spacePlace();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Gives the Erevos contact `identity` the name of `contact`, linked to it, while it has none of its
+ * own (lib/linked-name.ts): in the space's chats, or in the open hidden chats' for theirs, and in
+ * none while those are closed. Returns the name given, or ''.
+ */
+export async function nameErevos(among: Among, identity: string, contact: { name: string }): Promise<string> {
+  if (!among) return '';
+  if (among !== 'space') return among.takeName(identity, contact.name);
+  return giveLinkedName((await spaceChats()).e2e, identity, contact);
+}
+
+/** Asks Android once to let Erevos read and change the phone's contacts, as one permission. Whether it may read them now. */
+export async function allowPhoneContacts(): Promise<boolean> {
+  const answers = await PermissionsAndroid.requestMultiple(['android.permission.READ_CONTACTS', 'android.permission.WRITE_CONTACTS']).catch(() => null);
+  return answers?.['android.permission.READ_CONTACTS'] === PermissionsAndroid.RESULTS.GRANTED;
 }
 
 /** The Erevos contact a card is: linked by hand (`links`, for the phone's), else by a number. */

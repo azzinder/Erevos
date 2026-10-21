@@ -488,6 +488,19 @@ export function erevosFor(linked: string, phones: Entry[], people: ErevosPerson[
   return people.find((p) => p.phone && phones.some((e) => sameNumber(e.value, p.phone)))?.identity ?? '';
 }
 
+/**
+ * The contacts an Erevos contact can be connected to (components/connect-picker.tsx): the phone's
+ * and those kept only in Erevos, or in hidden chats (`hidden`) only theirs, never the phone's.
+ */
+export function linkChoices<T extends Fields & { name: string }>(phone: T[], sealed: T[], hidden: boolean): T[] {
+  return [...(hidden ? [] : phone), ...sealed];
+}
+
+/** Whether choosing a contact moves its link: it is another Erevos contact than `identity` now ('' while that is not known yet). */
+export function linkedElsewhere(card: { erevos: string }, identity: string): boolean {
+  return card.erevos !== '' && card.erevos !== identity;
+}
+
 /** A line of a contact's history: a call in the phone's call log, an SMS, or a message in Erevos. */
 export type HistoryLine = { key: string; at: number; kind: 'call' | 'sms' | 'erevos'; mine: boolean; missed: boolean; text: string; number: string };
 

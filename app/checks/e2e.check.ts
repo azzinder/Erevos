@@ -12,6 +12,7 @@ import { accountBundle, accountIdentity, accountSign, bundleVerify, canSign, new
 import { randomBytes, toHex, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
 import { E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, PREKEYS_EVERY, toBase64Url, type Received } from '../lib/e2e';
+import { giveLinkedName } from '../lib/linked-name';
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
 import { checkedAvatar, FILE, loadE2EData, MAX_NAME, saveE2EData } from '../lock/e2e-data';
 import { lastRestore, markRestore } from '../lock/restored';
@@ -408,6 +409,23 @@ t('a contact keeps the name this chat gives it, sealed, through new messages and
   await again.rename(identity, '   ');
   assert.equal((await E2E.open('space', 0, key)).contacts()[0].name, '');
   await assert.rejects(again.rename('00'.repeat(32), 'nobody'));
+});
+
+t('a contact added from a link takes the name of the contact linked to it, and keeps one given in Erevos', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  assert.equal(await giveLinkedName(alice.e2e, identity, { name: 'Bob Βασιλείου' }), 'Bob Βασιλείου');
+  assert.equal((await E2E.open('space', 0, key)).contacts()[0].name, 'Bob Βασιλείου');
+
+  await alice.e2e.rename(identity, 'Bobby');
+  assert.equal(await giveLinkedName(alice.e2e, identity, { name: 'Robert' }), '');
+  assert.equal(alice.e2e.contacts()[0].name, 'Bobby');
+  // Adding their link again ("Already a contact") keeps it too.
+  assert.equal((await alice.e2e.addContact(bob.code, alice.from)).added, false);
+  assert.equal((await E2E.open('space', 0, key)).contacts()[0].name, 'Bobby');
+  assert.equal(await giveLinkedName(alice.e2e, '00'.repeat(32), { name: 'Nobody' }), '');
 });
 
 t('a chat keeps its own look, sealed, until given the space\'s again', async () => {

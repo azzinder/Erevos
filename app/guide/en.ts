@@ -196,7 +196,8 @@ your phone's address. A phone with no relay gets a place on its contact's, see *
    \`wss://relay.example.org\` for one on the internet. Add the **Token** if the relay needs one.
 3. Tap **Create my relay queue**. Erevos says **Your relay queue is ready**.
 4. Tap **Show my QR code**: it opens over the screen. Let the other phone scan it with its camera, then open the link in Erevos. The
-   **Add a contact** screen shows what it holds: tap **Add to chat** only if you scanned it yourself.
+   **Add a contact** screen shows what it holds: tap **Add to chat** only if you scanned it yourself. **Add and connect
+   to one of my contacts** adds them too, linked to the contact you choose, whose name the chat takes.
 5. If their camera only shows the text, or they are far away, tap **Share my contact link** and send it to them.
    They paste it into **erevos://contact link** and tap **Add**.
 6. Or the other way round: under **Add**, tap **Take a photo of the QR code** on their screen, or **Choose a photo of the
@@ -204,9 +205,13 @@ your phone's address. A phone with no relay gets a place on its contact's, see *
    Sailfish OS and in the web app there is only **Choose a photo of the QR code**; on an iPhone it offers the camera too.
    Hidden chats have neither, as a photo leaves Erevos, which closes them: paste their link there.
 
-The new chat appears on the home screen named **contact** and the first characters of their key. It is enough that one
-phone adds the other: adding a link starts an encrypted conversation and tells the other phone how to answer, so it
-lists the chat the next time it looks at its queue, which it does every few seconds.
+The new chat appears on the home screen named **contact** and the first characters of their key, until it has a name:
+**Rename** in its details gives it one. Right after you add them here, **Connect to one of my contacts** under the note
+that they were added lets you choose one of your contacts instead (**Not now** leaves it): the chat takes that
+contact's name, if it has none of its own, and the contact's card shows the chat. Hidden chats offer only their own
+contacts, never the phone's. It is enough that one phone adds the other: adding a link starts an encrypted
+conversation and tells the other phone how to answer, so it lists the chat the next time it looks at its queue, which
+it does every few seconds.
 
 **What the relay sees of a chat:** all your contacts write to your one queue. Once each phone has had a message from
 the other, every message between them is sealed once more for the phone it goes to, with a key that phone gave inside
@@ -302,7 +307,8 @@ It is set for each chat, on this phone only. Turn it off again and they see what
 ### Names and deleting
 
 Open a chat, tap its name and then **Rename** to give it a name. The name stays on this phone, sealed with the chat: the other phone
-does not see it. An empty name brings back the start of their key.
+does not see it. An empty name brings back the start of their key, unless one of your contacts is linked to them: then they take its
+name again the next time its card opens, while the link stays (see [Contacts](#contacts)).
 
 Tap its name and then **Picture** to give them a picture of your own choosing, a sign on a colour, instead of the one drawn
 from their key. Or tap **Photo** (or **Take photo**) for a photo: cut square, made small and drawn anew, so nothing it said besides its
@@ -966,14 +972,16 @@ password, once you type it.
 - **Erevos ID:** a contact's Erevos ID is the contact link their Erevos shows, under **Copy my contact link** or as
   their QR code. On a contact's card, or under **Erevos ID** when you write one, paste it, or read it with **Take a photo
   of the QR code** or **Choose a photo of the QR code**: **Add to Erevos** (or **Save**) adds them to your Erevos chats,
-  which open with them, and links the contact to them. A contact that is an Erevos contact shows the start of their
-  key as **Erevos ID**.
+  which open with them, and links the contact to them, and the chat takes the contact's name if it has none of its
+  own. A contact that is an Erevos contact shows the start of their key as **Erevos ID**.
 - **Erevos contacts:** a contact that is the same person as one of your chats' Erevos contacts shows as one card with
   it: by a number linked to them in Erevos, by their Erevos ID, or with **Choose from my Erevos chats** on its card, a
   link sealed in the space, never in Android's contacts (**Not this Erevos contact** undoes it). The card then has
   **Message**, **Call** and **Video**, end-to-end encrypted through Erevos instead of the phone company. A chats' contact that no contact is
-  has a card of its own, with the shield, where **Add to contacts** makes one; the **Erevos contacts** chip lists them
-  all. In hidden chats, these are the hidden chats' own contacts, and their chat opens there.
+  has a card of its own, with the shield, where **Add to contacts** makes one and **Connect to one of my contacts**
+  links it to one you have, whose card then shows it; the **Erevos contacts** chip lists them all. An Erevos contact without a name of its own takes the name of the contact linked to it, as they are linked or
+  as that contact's card opens; a name you gave it in Erevos stays, and one you emptied comes back from the contact
+  then. In hidden chats, these are the hidden chats' own contacts, and their chat opens there.
 - **History:** a contact's card lists its latest calls in the phone's call log, its SMS and its messages in Erevos,
   the newest first; tap one to call back, write an SMS or open the chat. The calls show once you let Erevos read the
   call log (**Show calls**). Erevos only reads them to show them, and keeps no copy.

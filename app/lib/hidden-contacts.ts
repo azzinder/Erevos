@@ -18,6 +18,12 @@ export type OpenHiddenPlace = {
   messages(identity: string): Message[];
   /** Opens that contact's chat in the hidden chats, and starts a call in it when asked. */
   open(identity: string, call?: 'voice' | 'video'): void;
+  /**
+   * Gives a contact of the hidden chats the name of the contact linked to it, while it has none of
+   * its own (lib/linked-name.ts), and shows it in them. Returns the name given, or '' (also once
+   * they have closed).
+   */
+  takeName(identity: string, name: string): Promise<string>;
 };
 
 let place: OpenHiddenPlace | null = null;

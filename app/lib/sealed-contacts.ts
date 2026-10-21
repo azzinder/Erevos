@@ -116,6 +116,22 @@ export async function linkSealed(place: Place, id: string, identity: string): Pr
 }
 
 /**
+ * Makes a contact the Erevos contact `identity` in `place`: one kept only in Erevos (`sealed`) in its
+ * place; one of the phone's (its lookup key) in the space only, never from hidden chats, whose
+ * contacts never touch the phone's. Any link it had to another Erevos contact goes. Whether it was
+ * linked: a phone contact outside the space is not.
+ */
+export async function linkCard(place: Place, card: { phone: { lookup: string } | null; sealed: { id: string } | null }, identity: string): Promise<boolean> {
+  if (card.sealed) {
+    await linkSealed(place, card.sealed.id, identity);
+    return true;
+  }
+  if (!card.phone || place.holder !== 'space') return false;
+  await linkPhoneContact(place, card.phone.lookup, identity);
+  return true;
+}
+
+/**
  * The names the contacts kept in Erevos give numbers, for the calls screen to show who calls
  * (in memory only): the open space's, and the open hidden chats' when they are. A number is
  * written as kept, without what people put between its digits (+306912345678); compare with

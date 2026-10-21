@@ -12,6 +12,7 @@ import { startBackground } from '../lib/background';
 import { runAutoBackup } from '../lib/backup-folder';
 import { currentCall } from '../lib/call';
 import { endCall, onCallChange } from '../lib/calls';
+import { forgetOffered } from '../lib/contact-code';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { forgetLinks } from '../lib/devices';
 import { endGroupCall } from '../lib/group-calls';
@@ -136,6 +137,7 @@ export default function RootLayout() {
     // A link Erevos came back with opens after the password (lib/open-link.ts).
     lockingKeepsLink();
     forgetSpaceChats();
+    forgetOffered();
     forgetLinks();
     forgetSpaceGroups();
     forgetSmsLink();

@@ -10,6 +10,17 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet. The next release is **2.0.0**.
 
+- **A new Erevos contact can take the name of one of your contacts**: adding someone by their
+  Erevos ID, from a scanned link (**Add and connect to one of my contacts**) or under **Relay and
+  new contacts** (**Connect to one of my contacts**, under the note that they were added), lets you
+  choose one of your contacts, the phone's or those kept only in Erevos (in hidden chats only
+  theirs, never the phone's). The two are linked, and the chat takes that contact's name instead of
+  "contact 1a2b3c4d" in the chat list, the chat, the search and calls. An Erevos contact that is no
+  contact yet has the same on its card. **Add to Erevos** and **Choose from my Erevos chats** on a
+  contact's card name the chat too, and a card linked before to a nameless Erevos contact names it
+  once opened. A name you gave in Erevos is never changed. On a linked computer the name goes to
+  the phone too.
+
 - **Permissions in the web app** (menu → Permissions): what the browser lets Erevos do, each with
   why and the browser's own question, or where its setting is once it no longer asks: running from
   the home screen, notifications while closed for a space that turned them on, the microphone, the
