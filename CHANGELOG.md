@@ -15,6 +15,9 @@ On main, not released yet.
   queues no one has read for 180 days are removed. A relay that panics while holding a lock stops,
   for its service manager to start it again. Its journal changes shape: an older relay no longer
   reads it. See [deploy/relay/README.md](deploy/relay/README.md).
+- **A token for each phone** (relay): `erevos-relay new-token NAME` makes one, and the relay keeps
+  only its hash in the file `EREVOS_RELAY_TOKENS` names, beside its one token. Deleting a phone's
+  line takes its access back, from the next connection on, without touching the others.
 - **Lent places** are off unless the relay's operator turns them on (`EREVOS_RELAY_LEND=on`). A
   lent place may put 50 MB of files a day, its counts last across restarts, and the operator can
   revoke a ticket in a file. Lent tokens are longer, so those given before stop working. In the
