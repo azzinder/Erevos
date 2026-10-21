@@ -619,7 +619,7 @@ fn read_status(stream: &mut impl Read, reply: &mut Vec<u8>) -> io::Result<()> {
     Ok(())
 }
 
-fn tls_config() -> Arc<rustls::ClientConfig> {
+pub(crate) fn tls_config() -> Arc<rustls::ClientConfig> {
     static CONFIG: std::sync::OnceLock<Arc<rustls::ClientConfig>> = std::sync::OnceLock::new();
     Arc::clone(CONFIG.get_or_init(|| {
         let roots = rustls::RootCertStore {

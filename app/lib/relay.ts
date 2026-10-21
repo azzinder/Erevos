@@ -26,6 +26,20 @@
 // phone, so sends to contacts on other relays go straight to their /sealed path, and their files
 // come straight from their /files path; it holds nothing for later and gives no call relay.
 //
+// Invites (crates/erevos-relay/src/invites.rs): a phone with a token of its own on a relay that
+// invites makes an invite for one more phone (makeInvite), shown as a QR code (lib/relay-invite.ts).
+// The phone that takes it makes a token for itself and gives the relay only its SHA-256 with the
+// invite, on the /join path, which needs no token (redeemInvite): the relay adds a line for it to
+// its file of tokens, and the token goes where the relay's token goes from then on. The inviter
+// sees its invites (listInvites) and takes back one (takeBackInvite), which for one already used
+// cuts that phone off.
+//
+// Signing in (crates/erevos-relay/src/signin.rs): a relay may let phones sign in with a provider,
+// such as LPHL, for a token of their own (signInOffer). The browser signs in on the relay's pages,
+// which then show a code; the phone claims the token on the /join path with the claim secret it
+// made before and the code typed from the page (claimSignIn, lib/relay-signin.ts), giving the relay
+// only the new token's SHA-256. The relay drops the sign-in after 5 wrong codes.
+//
 // Marks: a send may say what it carries (Mark), for a web app's notice while it is closed
 // (lib/web-push.web.ts): a message someone reads, which the relay counts in the push, word between
 // phones, which pushes nothing, or a call that rings, which pushes, counts as no message, and has
@@ -41,8 +55,9 @@
 // connection: when Tor cannot reach the relay, the request fails.
 
 import { relaySeal, tor } from './core';
-import { randomBytes } from './crypto';
+import { randomBytes, sha256Bytes } from './crypto';
 import { t } from './i18n';
+import { isSignInPage } from './relay-signin';
 
 const CREATE = 1;
 const SEND = 2;
@@ -64,6 +79,12 @@ const UNLATER = 17;
 const FILE_KEEP = 18;
 const LEND = 19;
 const BORROW = 20;
+const INVITE = 21;
+const INVITES = 22;
+const UNINVITE = 23;
+const REDEEM = 24;
+const SIGN_IN = 25;
+const CLAIM = 26;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
 const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
@@ -74,6 +95,8 @@ const NOT_FOUND = 1;
 const FULL = 2;
 const FAILED = 3;
 const UNREACHABLE = 4;
+// For a claim only: not the code the relay's page shows (crates/erevos-relay/src/server.rs).
+const WRONG = 5;
 
 // Same limit as the relay's MAX_MESSAGE.
 const MAX_MESSAGE = 64 * 1024;
@@ -629,6 +652,183 @@ export async function borrowPlace(url: string, ticket: string): Promise<{ queue:
   return { queue: { recipientId: reply.slice(1, 25), senderId: reply.slice(25, 49) }, token };
 }
 
+/** The longest name an invite may carry, bytes of UTF-8, as the relay's MAX_TYPED. */
+const MAX_INVITE_NAME = 64;
+
+/** An invite as its inviter sees it: `id` (hex) to take it back with, the name on the line it
+ *  gives, when it expires, and when it was used (milliseconds; 0 while it was not). */
+export type InviteListed = { id: string; name: string; expires: number; used: number };
+
+// Unix seconds as 8 bytes at `at`, in milliseconds, without BigInt.
+function secondsAt(view: DataView, at: number): number {
+  return (view.getUint32(at) * 2 ** 32 + view.getUint32(at + 4)) * 1000;
+}
+
+/**
+ * An invite for one more phone, named `name` (cut to what the relay takes), with the relay's token
+ * of this phone's own: its secret (64 hex characters) and when it expires (milliseconds). Null when
+ * this phone cannot invite here: the relay does not invite, the token is not one of its own, or the
+ * relay is from before invites (it closes the connection, as for any request it does not know).
+ * Throws when the phone made all the invites it may for now, or the relay let in all the phones it
+ * lets in by invite (FULL), or the relay cannot be reached.
+ */
+export async function makeInvite(relay: Relay, name: string): Promise<{ code: string; expires: number } | null> {
+  let letters = Array.from(name.trim());
+  while (utf8Encode(letters.join('')).length > MAX_INVITE_NAME) letters = letters.slice(0, -1);
+  const bytes = utf8Encode(letters.join(''));
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(INVITE, bytes.length, ...bytes));
+  } catch (error) {
+    if (await fromBefore(relay, error)) return null;
+    throw error;
+  }
+  if (reply[0] === NOT_FOUND) return null;
+  if (reply[0] === FULL) throw new RelayError(t('No invite now: you may have 5 waiting at once and make 10 a day, and this relay lets in only so many phones by invite.'), FULL);
+  check(reply, 'invite');
+  const code = utf8Decode(reply.slice(9));
+  if (reply.length < 9 || !/^[0-9a-f]{64}$/.test(code)) throw new RelayError('invite: unexpected reply');
+  return { code, expires: secondsAt(new DataView(reply.buffer, reply.byteOffset, reply.byteLength), 1) };
+}
+
+/**
+ * This phone's invites on the relay, the oldest first: those waiting and those used whose phone is
+ * still let in. Null when this phone cannot invite here, as for makeInvite.
+ */
+export async function listInvites(relay: Relay): Promise<InviteListed[] | null> {
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(INVITES));
+  } catch (error) {
+    if (await fromBefore(relay, error)) return null;
+    throw error;
+  }
+  if (reply[0] === NOT_FOUND) return null;
+  check(reply, 'invites');
+  const view = new DataView(reply.buffer, reply.byteOffset, reply.byteLength);
+  const unexpected = () => new RelayError('invites: unexpected reply');
+  if (reply.length < 3) throw unexpected();
+  const count = view.getUint16(1);
+  const listed: InviteListed[] = [];
+  let at = 3;
+  for (let i = 0; i < count; i++) {
+    if (at + 33 > reply.length) throw unexpected();
+    const length = reply[at + 32];
+    if (at + 33 + length > reply.length) throw unexpected();
+    listed.push({
+      id: toHex(reply.slice(at, at + 16)),
+      expires: secondsAt(view, at + 16),
+      used: secondsAt(view, at + 24),
+      name: utf8Decode(reply.slice(at + 33, at + 33 + length)),
+    });
+    at += 33 + length;
+  }
+  return listed;
+}
+
+/** Takes back one of this phone's invites: one used cuts its phone off. False when the relay has no
+ *  such invite of this phone's (it expired, or was taken back already). */
+export async function takeBackInvite(relay: Relay, id: string): Promise<boolean> {
+  if (!/^[0-9a-f]{32}$/.test(id)) return false;
+  const reply = await request(relay, Uint8Array.of(UNINVITE, ...id.match(/../g)!.map((pair) => parseInt(pair, 16))));
+  if (reply[0] === NOT_FOUND) return false;
+  check(reply, 'invite');
+  return true;
+}
+
+// The token made for each invite taken, or sign-in claimed, here while Erevos runs, so taking one
+// again after the answer was lost gives the same token, which the relay answers again.
+const madeFor = new Map<string, string>();
+
+/** A token of this phone's own, as `erevos-relay new-token` makes one: 64 hex characters. */
+export function newPhoneToken(): string {
+  return toHex(randomBytes(32));
+}
+
+/**
+ * Takes the invite `code` (64 hex characters) on the relay at `url`: makes a token of this phone's
+ * own and has the relay add a line for it, from the /join path, which needs no token. Returns the
+ * token, for where the relay's token goes, and the name on its line there. Throws when the invite
+ * is no longer good (NOT_FOUND), another phone took it (FULL), or the relay cannot be reached.
+ */
+export async function redeemInvite(url: string, code: string): Promise<{ token: string; name: string }> {
+  if (!/^[0-9a-f]{64}$/.test(code)) throw new RelayError(t('That is not an invite to a relay.'));
+  const token = madeFor.get(code) ?? newPhoneToken();
+  madeFor.set(code, token);
+  const secret = Uint8Array.from(code.match(/../g)!, (pair) => parseInt(pair, 16));
+  const reply = await request(relayPath(url, '/join'), Uint8Array.of(REDEEM, ...secret, ...sha256Bytes(utf8Encode(token))));
+  if (reply[0] === NOT_FOUND) throw new RelayError(t('The invite is no longer good: it lasts 7 days, for one phone, and can be taken back. Ask for a new one.'), NOT_FOUND);
+  if (reply[0] === FULL) throw new RelayError(t('Another phone took this invite already. Ask for a new one.'), FULL);
+  check(reply, 'invite');
+  madeFor.delete(code);
+  return { token, name: utf8Decode(reply.slice(1)) };
+}
+
+/**
+ * Whether the relay at `url` lets phones sign in with a provider for a token of their own: the
+ * provider's name, and the page the browser opens to sign in. Null when it does not, is from
+ * before signing in, or cannot be reached now. Asked on the /join path, which needs no token.
+ * The page must be an https:// one on the relay's own host (lib/relay-signin.ts, isSignInPage).
+ */
+export async function signInOffer(url: string): Promise<{ name: string; start: string } | null> {
+  let reply: Uint8Array;
+  try {
+    reply = await request(relayPath(url, '/join'), Uint8Array.of(SIGN_IN));
+  } catch {
+    return null;
+  }
+  if (reply[0] !== OK || reply.length < 4) return null;
+  const at = 2 + reply[1];
+  const name = utf8Decode(reply.slice(2, at));
+  const start = utf8Decode(reply.slice(at + 2, at + 2 + ((reply[at] << 8) | reply[at + 1])));
+  if (!name.trim() || !isSignInPage(url, start)) return null;
+  return { name, start };
+}
+
+/**
+ * Claims, on the relay at `url`, what was signed in in the browser with the claim secret `claim`
+ * (64 hex characters) and the six digits `code` the relay's page showed: makes a token of this
+ * phone's own and has the relay add a line for it, in place of the line of `oldToken`, this phone's
+ * token before on that relay (lib/relay-signin.ts, oldToken), when that line is the same account's.
+ * Returns the token and the name on its line; `wrong` with the tries left when the code is not the
+ * page's, the sign-in being over at none; null when nothing was signed in with that secret yet, or
+ * `code` is not six digits. Throws when the account has all the phones it may there (FULL), or the
+ * relay cannot be reached.
+ */
+export async function claimSignIn(
+  url: string,
+  claim: string,
+  code: string,
+  oldToken = '',
+): Promise<{ token: string; name: string } | { wrong: number } | null> {
+  const digits = code.replace(/\s/g, '');
+  if (!/^[0-9a-f]{64}$/.test(claim) || !/^\d{6}$/.test(digits)) return null;
+  const token = madeFor.get(claim) ?? newPhoneToken();
+  madeFor.set(claim, token);
+  const old = oldToken.trim() && !isLentToken(oldToken) ? sha256Bytes(utf8Encode(oldToken.trim())) : new Uint8Array(32);
+  const secret = Uint8Array.from(claim.match(/../g)!, (pair) => parseInt(pair, 16));
+  const reply = await request(
+    relayPath(url, '/join'),
+    Uint8Array.of(CLAIM, ...secret, ...sha256Bytes(utf8Encode(token)), ...old, ...utf8Encode(digits)),
+  );
+  if (reply[0] === NOT_FOUND) return null;
+  if (reply[0] === WRONG && reply.length === 2) return { wrong: reply[1] };
+  if (reply[0] === FULL) throw new RelayError(t('This account is signed in on all the phones it may be on this relay. Ask whoever runs it to take one off.'), FULL);
+  check(reply, 'claim');
+  madeFor.delete(claim);
+  return { token, name: utf8Decode(reply.slice(1)) };
+}
+
+// A relay from before a request closes the connection, as for any it does not know: then one that
+// answers a plain request is from before it. Throws what failed when that relay cannot be reached.
+async function fromBefore(relay: Relay, error: unknown): Promise<boolean> {
+  if (!(error instanceof RelayUnreachableError)) return false;
+  await request(relay, Uint8Array.of(KEY)).catch(() => {
+    throw error;
+  });
+  return true;
+}
+
 /** Deletes the queue. Later sends to it fail. */
 export async function deleteQueue(relay: Relay, recipientId: Uint8Array): Promise<void> {
   const bytes = new Uint8Array(1 + 24);
@@ -653,8 +853,9 @@ export function ticketExpires(ticket: string): number {
   return parseInt(ticket.slice(7, 23), 16) * 1000;
 }
 
-/** The path of the relay at `url` that other relays use: `/sealed` for sealed sends, `/files` for files. No token. */
-export function relayPath(url: string, path: '/sealed' | '/files'): Relay {
+/** The path of the relay at `url` that other relays use: `/sealed` for sealed sends, `/files` for files; and `/join`, where a
+ *  phone takes an invite. No token. */
+export function relayPath(url: string, path: '/sealed' | '/files' | '/join'): Relay {
   return { url: `${url.trim().replace(/\/+$/, '')}${path}` };
 }
 

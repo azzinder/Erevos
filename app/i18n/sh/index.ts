@@ -17,5 +17,6 @@ import { publicGroups } from './public-groups';
 import { contacts } from './contacts';
 import { linkContact } from './link-contact';
 import { hiddenRing } from './hidden-ring';
+import { relayInvites } from './relay-invites';
 
-export const SH: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing };
+export const SH: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...relayInvites };

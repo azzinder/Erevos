@@ -15,13 +15,56 @@
 //! that each phone's access can be taken back alone (see `tokens.rs`): one
 //! token's SHA-256 a line, read again when the file changes, taken beside
 //! `EREVOS_RELAY_TOKEN`. `erevos-relay new-token NAME` makes one, printing the
-//! token for the phone and the line for the file.
+//! token for the phone and the line for the file. A phone whose line goes is
+//! cut off at its next request, on a connection already open too.
+//!
+//! Set `EREVOS_RELAY_INVITES=on` beside it to let every phone with a token of
+//! its own invite more phones, one an invite (see `invites.rs`): an invite is a
+//! QR code with the relay's address and a secret, good for one phone for 7
+//! days, and the phone that takes it gets a line of its own in the file, named
+//! as the inviter typed and saying who invited it. That line lasts only as long
+//! as the inviter's: when the inviter's line goes, for whatever reason, the
+//! lines it invited go too, and those they invited. That goes by the token, so
+//! a line put in place of another with a new token takes the old one's
+//! invited lines with it; `erevos-relay free-line NAME`, run with the relay
+//! stopped, frees a line from the line that invited it. The relay lets in at most
+//! `EREVOS_RELAY_MAX_INVITED` phones by invite at once (100 unless set),
+//! counting invites still open. The relay then writes the file itself, through
+//! a file beside it and a rename, so the file must be in a folder the relay can
+//! write (with the systemd unit in `deploy/relay`, `/var/lib/erevos-relay/`,
+//! not `/etc`), and must be the file itself: the relay does not start when the
+//! path is a symbolic link. The invites are kept in `<file>.invites`, and read
+//! even with invites off, so turning them off frees no one from their inviter.
+//! Off unless set.
+//!
+//! Set `EREVOS_RELAY_OIDC_ISSUER` beside it to let phones sign in with an
+//! OpenID Connect provider for a token of their own (see `signin.rs`), with
+//! `EREVOS_RELAY_OIDC_CLIENT_ID` and `EREVOS_RELAY_OIDC_CLIENT_SECRET` (a
+//! confidential client whose redirect URI is `<public URL>/signin/callback`),
+//! `EREVOS_RELAY_PUBLIC_URL` (where browsers reach the relay, as
+//! `https://erevos.example.org`) and `EREVOS_RELAY_OIDC_NAME` (the name on
+//! the app's button and before each line's name, `OIDC` unless set). The
+//! WebSocket port then answers the browser's requests on `/signin/` too, so
+//! a proxy in front must pass that path as plain HTTP. The page there shows a
+//! code, which the person types in Erevos. Each phone that signs in gets a
+//! line `<name>:<user name>`, and every hour the relay asks the provider
+//! whether the account may still sign in, taking the line out when it may not,
+//! or when the provider could not say so for 72 hours and then at two more
+//! checks of that line an hour apart. One browser may start 10 sign-ins a
+//! minute, told by its address, or by the last one in `X-Forwarded-For` when
+//! the connection comes from a proxy on this machine. Set
+//! `EREVOS_RELAY_OIDC_GROUP` to let in only accounts in that group, as the
+//! provider's userinfo names them in `groups` (Authentik does for the
+//! `profile` scope), at sign-in and at every check. What the check needs is
+//! kept in `<file>.signins`, the refresh tokens sealed with a key made from the
+//! client secret; a line named `<name>:` with no record there is said at
+//! start. Off unless set.
 //!
 //! Each connection has a thread of its own, so the relay takes at most
 //! `EREVOS_RELAY_MAX_CONNECTIONS` at once (512 unless set), both front ends
 //! together, and of those at most `EREVOS_RELAY_MAX_TOKENLESS_CONNECTIONS`
-//! (128 unless set) on the paths that need no token (`/sealed` and
-//! `/files`). Past that, a new connection is closed at once. A connection
+//! (128 unless set) on the paths that need no token (`/sealed`, `/files`
+//! and `/join`). Past that, a new connection is closed at once. A connection
 //! that sends nothing for five minutes is closed (see `server.rs`).
 //!
 //! Set `EREVOS_RELAY_JOURNAL` to a file path to keep queues and waiting
@@ -81,14 +124,18 @@
 //! Without them, phones can only call directly, on the same network.
 
 mod files;
+mod invites;
 mod journal;
 mod later;
 mod lend;
 mod lock;
+mod oidc;
+mod pages;
 mod peers;
 mod push;
 mod queue;
 mod server;
+mod signin;
 mod tokens;
 mod turn;
 
@@ -149,6 +196,108 @@ fn load_key(path: &Path) -> io::Result<RelayKey> {
     }
 }
 
+/// `erevos-relay free-line NAME`: drops the invite that made the line named
+/// `name` in the file of tokens (`EREVOS_RELAY_TOKENS`), so that it no longer
+/// goes with the line of the phone that invited it and is as a line the
+/// operator wrote. Run with the relay stopped, since a running relay writes
+/// its own invites over the file; as root, the file of invites stays its
+/// owner's.
+fn free_line(name: &str) -> ExitCode {
+    let Some(path) = env::var("EREVOS_RELAY_TOKENS")
+        .ok()
+        .filter(|path| !path.is_empty())
+    else {
+        eprintln!("erevos-relay: free-line needs EREVOS_RELAY_TOKENS set to the file of tokens the relay uses");
+        return ExitCode::FAILURE;
+    };
+    if name.is_empty() {
+        eprintln!("erevos-relay: free-line needs the name on the line, as in erevos-relay free-line maria");
+        return ExitCode::FAILURE;
+    }
+    let lines = tokens::Tokens::new(PathBuf::from(&path)).named(name);
+    let line = match lines.as_slice() {
+        [line] => *line,
+        [] => {
+            eprintln!("erevos-relay: no line of {path} is named {name:?}");
+            return ExitCode::FAILURE;
+        }
+        _ => {
+            eprintln!(
+                "erevos-relay: {} lines of {path} are named {name:?}; give all but one another name first",
+                lines.len()
+            );
+            return ExitCode::FAILURE;
+        }
+    };
+    let kept = PathBuf::from(format!("{path}.invites"));
+    let owner = owner_of(&kept);
+    let invites = match invites::Invites::open(&kept, false, usize::MAX) {
+        Ok(invites) => invites,
+        Err(e) => {
+            eprintln!(
+                "erevos-relay: cannot read the invites {}: {e}",
+                kept.display()
+            );
+            return ExitCode::FAILURE;
+        }
+    };
+    match invites.free(&line) {
+        Ok(by) if by.is_empty() => {
+            println!(
+                "No invite kept in {} made the line {name:?}: it goes with no other line already.",
+                kept.display()
+            );
+            ExitCode::SUCCESS
+        }
+        Ok(by) => {
+            give_back(&kept, owner);
+            println!(
+                "The line {name:?} no longer goes with the line that invited it ({}). Start the relay again.",
+                by.join(", ")
+            );
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            eprintln!(
+                "erevos-relay: cannot write the invites {}: {e}",
+                kept.display()
+            );
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// Who owns the file at `path`, if it is there.
+#[cfg(unix)]
+fn owner_of(path: &Path) -> Option<(u32, u32)> {
+    use std::os::unix::fs::MetadataExt;
+    fs::metadata(path).ok().map(|meta| (meta.uid(), meta.gid()))
+}
+
+#[cfg(not(unix))]
+fn owner_of(_: &Path) -> Option<(u32, u32)> {
+    None
+}
+
+/// Gives the file at `path`, written again, back to `owner` when it is now
+/// another's: written by root for the relay's own user, it must stay that
+/// user's.
+#[cfg(unix)]
+fn give_back(path: &Path, owner: Option<(u32, u32)>) {
+    if let Some((uid, gid)) = owner.filter(|owner| owner_of(path) != Some(*owner)) {
+        // lchown: a link put there since changes the link, never what it points to.
+        if let Err(e) = std::os::unix::fs::lchown(path, Some(uid), Some(gid)) {
+            eprintln!(
+                "erevos-relay: cannot give {} back to its owner: {e}",
+                path.display()
+            );
+        }
+    }
+}
+
+#[cfg(not(unix))]
+fn give_back(_: &Path, _: Option<(u32, u32)>) {}
+
 fn main() -> ExitCode {
     if env::args().nth(1).as_deref() == Some("new-token") {
         let name = env::args().skip(2).collect::<Vec<_>>().join(" ");
@@ -156,6 +305,9 @@ fn main() -> ExitCode {
         println!("The phone's token, to type in its Relay settings:\n{token}\n");
         println!("Its line, to add to the file EREVOS_RELAY_TOKENS names (the relay keeps only this):\n{line}");
         return ExitCode::SUCCESS;
+    }
+    if env::args().nth(1).as_deref() == Some("free-line") {
+        return free_line(&env::args().skip(2).collect::<Vec<_>>().join(" "));
     }
     let tcp_addr = env::args()
         .nth(1)
@@ -370,11 +522,91 @@ fn main() -> ExitCode {
     );
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
     let store = Shared::new(store, files, key, turn, limits);
-    if let Some(path) = phones {
-        let tokens = tokens::Tokens::new(PathBuf::from(&path));
+    let inviting = match invites::wanted(env::var("EREVOS_RELAY_INVITES").ok().as_deref()) {
+        Ok(on) => on,
+        Err(e) => {
+            eprintln!("erevos-relay: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let Some(most_invited) = number("EREVOS_RELAY_MAX_INVITED", invites::MAX_INVITED as u64, 1)
+    else {
+        return ExitCode::FAILURE;
+    };
+    if let Some(path) = &phones {
+        // The relay writes the file through a rename, which would put a file where a link was.
+        if let Err(e) = tokens::plain_file(Path::new(path)) {
+            eprintln!("erevos-relay: cannot use the phones' tokens: {e}");
+            return ExitCode::FAILURE;
+        }
+        let tokens = tokens::Tokens::new(PathBuf::from(path));
         // Read now, so how many it holds, and a line it cannot read, is said at start.
         tokens.count();
         let _ = store.tokens.set(tokens);
+    }
+    let kept_invites = phones.as_ref().map(|path| format!("{path}.invites"));
+    match (&kept_invites, inviting) {
+        // Invites kept from before, with invites off now, still say who invited whom.
+        (Some(kept), on) if on || Path::new(kept).exists() => {
+            let most = most_invited.try_into().unwrap_or(usize::MAX);
+            match invites::Invites::open(Path::new(kept), on, most) {
+                Ok(invites) => {
+                    if on {
+                        eprintln!("erevos-relay: phones with tokens of their own may invite others, {most} at most let in by invite, {} invites kept in {kept}", invites.len());
+                    } else {
+                        eprintln!("erevos-relay: invites are off, but the phones let in by invite before, kept in {kept}, still go with the phones that invited them");
+                    }
+                    if let Some(tokens) = store.tokens.get() {
+                        tokens.set_invited(invites.edges(tokens));
+                    }
+                    let _ = store.invites.set(invites);
+                }
+                Err(e) => {
+                    eprintln!("erevos-relay: cannot read the invites {kept}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+        (None, true) => eprintln!(
+            "erevos-relay: EREVOS_RELAY_INVITES=on but no EREVOS_RELAY_TOKENS set, nobody may invite"
+        ),
+        _ => {}
+    }
+    let signing = match oidc::Config::from(|name| env::var(name).ok()) {
+        Ok(config) => config,
+        Err(e) => {
+            eprintln!("erevos-relay: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    match (&phones, signing) {
+        (Some(path), Some(config)) => {
+            let kept = format!("{path}.signins");
+            let name = config.name.clone();
+            match signin::SignIn::open(config, Some(PathBuf::from(&kept))) {
+                Ok(signin) => {
+                    eprintln!("erevos-relay: phones may sign in with {name} for tokens of their own, {} signed in, kept in {kept}", signin.len());
+                    if let Some(tokens) = store.tokens.get() {
+                        // Lines the relay was taking out when it stopped go now, not at the first look.
+                        signin.cut_pending(tokens);
+                    }
+                    for line in store.tokens.get().map(|t| signin.unrecorded(t)).unwrap_or_default() {
+                        eprintln!("erevos-relay: the line {line:?} is named as a sign-in with {name}, but {kept} has no record of it, so it is never checked with {name}: take it out unless you wrote it yourself");
+                    }
+                    let _ = store.signin.set(signin);
+                    let checked = Arc::clone(&store);
+                    thread::spawn(move || server::run_signin_checks(checked));
+                }
+                Err(e) => {
+                    eprintln!("erevos-relay: cannot read the sign-ins {kept}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+        (None, Some(_)) => eprintln!(
+            "erevos-relay: EREVOS_RELAY_OIDC_ISSUER is set but no EREVOS_RELAY_TOKENS, nobody may sign in"
+        ),
+        (_, None) => {}
     }
     let lending = match lend::wanted(env::var("EREVOS_RELAY_LEND").ok().as_deref()) {
         Ok(on) => on,

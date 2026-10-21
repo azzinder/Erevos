@@ -34,6 +34,8 @@ import { ConnectPicker, useCanConnect } from '../components/connect-picker';
 import { KeyboardAwareScrollView, KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
+import { RelayInvites } from '../components/relay-invites';
+import { RelaySignIn } from '../components/relay-signin';
 import { BackIcon, MoreIcon, PhoneIcon, ShieldIcon, TimerIcon, VideoIcon } from '../components/icons';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton, Toggle } from '../components/ui';
@@ -60,6 +62,8 @@ import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
 import { contactLink, offerFor, onContactOffered, parseContact, type ContactCode, type Offer } from '../lib/contact-code';
+import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
+import { ownToken } from '../lib/relay-signin';
 import { canRelaySeal, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
@@ -97,6 +101,7 @@ import {
   isQueueNotFound,
   lendTicket,
   receiveMessage,
+  redeemInvite,
   relayKey,
   sameRelay,
   sendMessage,
@@ -843,6 +848,65 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  // Takes an invite to a relay (lib/relay-invite.ts) for a token of this phone's own there. A relay
+  // already set, or a token of its own, is replaced only once the owner says so.
+  async function joinRelay(invite: Invite) {
+    const ours = relayUrl.trim();
+    const same = !!ours && sameRelay(ours, invite.relayUrl);
+    if (ours && (!same || (relayToken.trim() && !isLentToken(relayToken)))) {
+      const go = await choose(
+        t('Use the relay in the invite?'),
+        same
+          ? t('This phone has a token for this relay already. The invite gives it one of its own instead.')
+          : t('This phone uses the relay at {url}. With the invite it uses the one at {other} instead, and contacts learn your new queue from your next message.', {
+              url: ours,
+              other: invite.relayUrl,
+            }),
+        t('Cancel'),
+        t('Use it'),
+      );
+      if (!go) return;
+    }
+    let token: string;
+    let name: string;
+    try {
+      ({ token, name } = await redeemInvite(invite.relayUrl, invite.code));
+    } catch (error) {
+      setNote(t('The invite was not taken. {error}', { error: errorText(error) }));
+      return;
+    }
+    await tookToken(invite.relayUrl, token, name);
+  }
+
+  // A token of this phone's own on the relay at `url`, from an invite or a sign-in, named `name`
+  // there: it goes where the relay's token goes and is kept sealed with the space's relay settings,
+  // with a queue there when this phone has none on that relay. Which token it is, and from which
+  // relay, is kept too, so signing in there again names only this one as the phone's before.
+  async function tookToken(url: string, token: string, name: string) {
+    const same = !!relayUrl.trim() && sameRelay(relayUrl.trim(), url);
+    setRelayUrl(url);
+    setRelayToken(token);
+    const own = { ownToken: ownToken(url, token) };
+    (hiddenKey ? updateHiddenData(currentSpace().space, pocket, hiddenKey, own) : updateCurrentSpaceData(own)).catch(() => {
+      // Not kept: signing in again there gives this phone one more line instead of its own again.
+    });
+    setShowRelay(true);
+    const joined = t('This phone now uses the relay at {url}, with a token of its own, named {name} there.', { url, name });
+    if (same && ownQueue) {
+      setNote(joined);
+      return;
+    }
+    // A queue on another relay is no use on this one: contacts learn the new one from the next message.
+    try {
+      const ids = await createQueue({ url, token });
+      setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
+      setNote(joined);
+    } catch (error) {
+      setOwnQueue(null);
+      setNote(`${joined} ${t('Its queue could not be made yet: {error}. Tap Create my relay queue.', { error: errorText(error) })}`);
+    }
+  }
+
   // The links nearby are up while the space is open, whatever screen shows (lib/nearby-links.ts).
   // What comes on them, this screen opens itself while it is open, as it shows it at once; the
   // receiver beside the screens does meanwhile (lib/receiver.ts). Hidden chats use the relay only.
@@ -1111,6 +1175,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!loaded || !shown) return;
     return onContactOffered((code, offer) => void acceptContact(code, offer));
   }, [loaded, shown, relayUrl, relayToken, ownQueue, e2e]);
+
+  // Takes an invite to a relay opened from a scanned link (app/relay-invite.tsx), once the saved
+  // relay settings are loaded so they cannot overwrite it. Hidden chats take none.
+  useEffect(() => {
+    if (!loaded || !shown || hiddenKey) return;
+    return onInviteOffered(currentSpace().space, (invite) => void joinRelay(invite));
+  }, [loaded, shown, relayUrl, relayToken, ownQueue]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => setAppActive(state === 'active'));
@@ -3030,6 +3101,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   function addContact(text = contactDraft) {
+    const invite = parseInvite(text);
+    if (invite) {
+      setContactDraft('');
+      if (hiddenKey) setNote(t('An invite to a relay is taken in the chats of the space, not in hidden chats.'));
+      else void joinRelay(invite);
+      return;
+    }
     const code = parseContact(text);
     if (!code) {
       setNote(t('That is not an Erevos contact link.'));
@@ -3066,7 +3144,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       const text = await readQrPhoto(from);
       if (text === null) return;
-      if (text && parseContact(text)) addContact(text);
+      if (text && (parseContact(text) || parseInvite(text))) addContact(text);
       else setNote(text ? t('That QR code holds no Erevos ID.') : t('No QR code was found in the photo. Take it again closer, with all of the code in it.'));
     } catch (error) {
       setNote(errorText(error));
@@ -3874,6 +3952,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     />
                   </Field>
                 )}
+                {!hiddenKey && relayUrl.trim() ? (
+                  <RelaySignIn
+                    url={relayUrl.trim()}
+                    token={relayToken.trim()}
+                    onToken={(token, name) => void tookToken(relayUrl.trim(), token, name)}
+                    onNote={setNote}
+                  />
+                ) : null}
+                {!hiddenKey && relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? (
+                  <RelayInvites relay={{ url: relayUrl.trim(), token: relayToken.trim() }} onNote={setNote} />
+                ) : null}
                 <Field label={t('Second relay (optional)')}>
                   <Input
                     value={typedVia.shown}

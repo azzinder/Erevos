@@ -4,7 +4,11 @@
 //! `SEALED_SEND` request, already end-to-end encrypted, kept with its time
 //! and a random 16-byte id from the phone, which may drop it before then
 //! (`UNLATER`). The relay sees when each goes, as it would see it come then;
-//! it learns nothing more than a message sent then would tell it.
+//! it learns nothing more than a message sent then would tell it. A request
+//! held on a phone's own token (see `tokens.rs`) goes only while that phone
+//! still has its line: `server.rs` keeps in memory which phone held it, as
+//! the connection that brought it said, and nothing of that on disk, so one
+//! held before a restart goes whatever became of the line since.
 //!
 //! The relay runs each request at its time, as if it came then. One that
 //! cannot go then (the other relay is down, the queue is full) is tried again
@@ -202,6 +206,11 @@ impl Held {
     /// How many requests it holds.
     pub fn len(&self) -> usize {
         self.items.len() + self.running.len()
+    }
+
+    /// Whether it holds the request with `id`, waiting or running.
+    pub fn holds(&self, id: &HeldId) -> bool {
+        self.by_id.contains_key(id) || self.running.contains_key(id)
     }
 
     /// Holds `request` to run at `at` (Unix seconds). One with an id it

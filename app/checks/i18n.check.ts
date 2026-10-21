@@ -16,6 +16,7 @@ import { messages } from '../i18n/el/messages';
 import { smsTools } from '../i18n/el/sms-tools';
 import { more } from '../i18n/el/more';
 import { contacts } from '../i18n/el/contacts';
+import { relayInvites } from '../i18n/el/relay-invites';
 import { groups } from '../i18n/el/groups';
 import { devices } from '../i18n/el/devices';
 import { publicGroups } from '../i18n/el/public-groups';
@@ -42,7 +43,7 @@ test('no Greek word is left that the app no longer shows', () => {
 
 test('each English word has its Greek in one file only', () => {
   // Otherwise the later file wins, unseen, in EL.
-  const lists = [app, chat, screens, settings, parts, phone, messages, smsTools, more, groups, devices, publicGroups, contacts, linkContact, hiddenRing];
+  const lists = [app, chat, screens, settings, parts, phone, messages, smsTools, more, groups, devices, publicGroups, contacts, linkContact, hiddenRing, relayInvites];
   const twice = Object.keys(EL).filter((english) => lists.filter((list) => english in list).length > 1);
   assert.deepEqual(twice, []);
 });

@@ -54,6 +54,10 @@
 //!   whole `SEND`, `FORWARD` or `SEALED_SEND` request. The relay holds the
 //!   request and runs it at that time, as if it came then (see `later.rs`),
 //!   so a message sent for later goes then though the phone is off by then.
+//!   Held on a phone's own token, it goes only while that phone has its line
+//!   in force: it waits while the line is refused, and is dropped once the
+//!   line is gone from the file. Which phone held it is kept in memory only,
+//!   so a request held before a restart goes as one on the relay's token.
 //!   Reply: `OK` (also when it holds that id already, so a phone may ask
 //!   again), `FULL` (it holds `MAX_HELD` requests or `HELD_CAP` bytes), or
 //!   `FAILED`. A time more than `MAX_AHEAD` ahead closes the connection.
@@ -75,6 +79,47 @@
 //!   text of the lent token for it to the end, or `FULL` when the ticket gave
 //!   all its places, or the relay holds all the queues it may (which uses
 //!   none of the ticket's places).
+//! - `INVITE`: a 1-byte length and a name, as typed (at most `MAX_TYPED`
+//!   bytes of UTF-8), on a connection whose token is a phone's own (see
+//!   `invites.rs`). Reply: when the invite expires (8-byte Unix seconds),
+//!   then its secret in hex to the end; `FULL` when the phone has all the
+//!   invites open, or made all, that it may, or the relay let in all the
+//!   phones by invite it may; `FAILED` when it could not be written;
+//!   `NOT_FOUND` when the relay does not invite, or the token is not a
+//!   phone's own (the relay's one token, say), as for the two below.
+//! - `INVITES`: no fields. Reply: a 2-byte count, then for each of this
+//!   phone's invites its id (16 bytes), when it expires and when it was used
+//!   (8-byte Unix seconds each, 0 while it was not), and the name on its line
+//!   after a 1-byte length.
+//! - `UNINVITE`: an invite's id. One not used yet goes; one used takes the
+//!   line of the phone it let in out of the file of tokens, with the lines
+//!   that phone invited, so they are refused from then on. Reply: `OK`,
+//!   `NOT_FOUND` if this phone made no such invite, or `FAILED`.
+//! - `REDEEM`: on the `/join` path, an invite's secret (32 bytes) and the
+//!   SHA-256 of the token the phone made for itself (32 bytes). The relay adds
+//!   a line for that token to the file of tokens, which lasts as long as the
+//!   inviter's. Reply: the name on the line, to the end; the same again for
+//!   the same token; `FULL` when another phone took the invite; `NOT_FOUND`
+//!   when there is no such invite now (expired, taken back, its inviter's line
+//!   gone, past what the relay lets in by invite, or the relay does not
+//!   invite); `FAILED` when the line could not be written, or the file has a
+//!   line for that token already.
+//! - `SIGN_IN`: on the `/join` path, no fields. Reply: the provider's name
+//!   after a 1-byte length, then after a 2-byte length the address the app
+//!   opens the browser at to sign in (see `signin.rs`); `NOT_FOUND` when the
+//!   relay has no sign-in.
+//! - `CLAIM`: on the `/join` path, the claim secret the app made before it
+//!   opened the browser (32 bytes), the SHA-256 of the token the phone made
+//!   for itself (32 bytes), the SHA-256 of its token before on this relay, or
+//!   32 zeros (32 bytes), and the six digits the relay's page showed, as
+//!   typed (6 bytes of ASCII). The relay adds a line for the new token to the
+//!   file of tokens, in place of the old one when that is a line of the same
+//!   account. Reply: the name on the line, to the end; the same again for the
+//!   same token; `WRONG` and how many tries are left (1 byte) when the digits
+//!   are not the page's, the sign-in ending at none; `NOT_FOUND` when nothing
+//!   was signed in with that secret, yet or any more; `FULL` when the account
+//!   has all the phones it may; `FAILED` when the line could not be written,
+//!   or the file has a line for that token already.
 //!
 //! Marks: over WebSocket, and in a request held for later, a `SEND`,
 //! `SEALED_SEND`, `FORWARD` or `LATER` request may end with one more byte
@@ -104,6 +149,19 @@
 //! relay, not the contact's phone. The `/files` path needs no token, since
 //! the chunk id is what guards a chunk, and takes only `FILE_GET` and
 //! `FILE_DELETE`.
+//!
+//! Invites (see `invites.rs`): a connection whose token is on a line of the
+//! file of tokens may ask for invites; one with the relay's own token may
+//! not. The `/join` path needs no token, so a phone with none can take an
+//! invite there, and takes only `REDEEM`, `SIGN_IN` and `CLAIM`. A connection
+//! whose token is a phone's own is closed at its next request once that line
+//! is gone from the file, so taking a line out cuts the phone off at once.
+//!
+//! Signing in (see `signin.rs`): with a provider set up, the WebSocket port
+//! answers a browser's plain requests for `/signin/start`,
+//! `/signin/callback` and `/signin/confirm` too, told from WebSocket
+//! handshakes by their request line, on the places of the paths that need
+//! no token. Without one, every connection is a WebSocket as before.
 //!
 //! Lent places (see `lend.rs`): a connection whose token is a ticket may only
 //! `BORROW` (and ask for the `KEY`); one whose token is a lent token may use
@@ -140,6 +198,7 @@
 //!
 //! Not audited.
 
+use std::collections::HashMap;
 use std::io::{self, Cursor, ErrorKind, Read, Write};
 use std::net::{Shutdown, TcpListener, TcpStream, ToSocketAddrs};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -156,13 +215,15 @@ use tungstenite::protocol::CloseFrame;
 use tungstenite::Message;
 
 use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
+use crate::invites::{InviteError, Invites, RedeemError, MAX_TYPED};
 use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
 use crate::lend::{Lend, Nonce, Pass};
 use crate::lock::{lock, wait_timeout};
 use crate::peers;
 use crate::push::{Came, Keys, Push, SetError, AUTH_LEN, MAX_ENDPOINT, P256DH_LEN};
 use crate::queue::{system_now, QueueError, QueueId, Store};
-use crate::tokens::Tokens;
+use crate::signin::{self, ClaimError, SignIn};
+use crate::tokens::{to_hex, Phone, Tokens};
 use crate::turn::Turn;
 
 /// What every connection shares: the queues, the file store, the key for
@@ -182,10 +243,19 @@ pub struct Shared {
     /// The phones' tokens of their own, beside the relay's (`tokens.rs`), if
     /// the operator keeps them (set once, after start).
     pub tokens: std::sync::OnceLock<Tokens>,
+    /// Invites from the phones with tokens of their own, if the relay invites
+    /// (set once, after start).
+    pub invites: std::sync::OnceLock<Invites>,
+    /// Signing in with a provider for a token of a phone's own, if the
+    /// operator set one up (set once, after start).
+    pub signin: std::sync::OnceLock<SignIn>,
     /// Requests held for later; `held_changed` wakes `run_held` when one
     /// comes or goes.
     pub held: Mutex<Held>,
     pub held_changed: Condvar,
+    /// For each request held for later on a phone's own token, by its id,
+    /// that token's SHA-256: in memory only.
+    held_by: Mutex<HashMap<HeldId, [u8; 32]>>,
     pub limits: Limits,
     /// Connections open now, and of those, the ones on paths that need no
     /// token.
@@ -226,7 +296,7 @@ pub struct Limits {
     /// Connections at once, both front ends together.
     pub connections: usize,
     /// Of those, connections at once on the paths that need no token
-    /// (`/sealed` and `/files`).
+    /// (`/sealed`, `/files` and `/join`).
     pub tokenless: usize,
     /// See `IDLE_TIMEOUT`.
     pub idle: Duration,
@@ -281,6 +351,7 @@ impl Drop for Slot {
 const STORE_LOCK: &str = "queue store lock";
 const FILES_LOCK: &str = "file store lock";
 const HELD_LOCK: &str = "lock of requests held for later";
+const HELD_BY_LOCK: &str = "lock of the phones that held requests for later";
 
 impl Shared {
     pub fn new(
@@ -299,8 +370,11 @@ impl Shared {
             push: std::sync::OnceLock::new(),
             lend: std::sync::OnceLock::new(),
             tokens: std::sync::OnceLock::new(),
+            invites: std::sync::OnceLock::new(),
+            signin: std::sync::OnceLock::new(),
             held: Mutex::new(Held::default()),
             held_changed: Condvar::new(),
+            held_by: Mutex::default(),
             limits,
             connections: Arc::new(AtomicUsize::new(0)),
             tokenless: Arc::new(AtomicUsize::new(0)),
@@ -317,6 +391,10 @@ impl Shared {
 
     pub fn held(&self) -> MutexGuard<'_, Held> {
         lock(&self.held, HELD_LOCK)
+    }
+
+    fn held_by(&self) -> MutexGuard<'_, HashMap<HeldId, [u8; 32]>> {
+        lock(&self.held_by, HELD_BY_LOCK)
     }
 }
 
@@ -344,6 +422,12 @@ pub const UNLATER: u8 = 17;
 pub const FILE_KEEP: u8 = 18;
 pub const LEND: u8 = 19;
 pub const BORROW: u8 = 20;
+pub const INVITE: u8 = 21;
+pub const INVITES: u8 = 22;
+pub const UNINVITE: u8 = 23;
+pub const REDEEM: u8 = 24;
+pub const SIGN_IN: u8 = 25;
+pub const CLAIM: u8 = 26;
 
 /// The marks a send may end with (see the module's doc).
 pub const MESSAGE: u8 = 1;
@@ -381,6 +465,8 @@ pub const NOT_FOUND: u8 = 1;
 pub const FULL: u8 = 2;
 pub const FAILED: u8 = 3;
 pub const UNREACHABLE: u8 = 4;
+/// A sign-in's code that is not the one its page showed (`CLAIM` only).
+pub const WRONG: u8 = 5;
 
 /// Largest sealed send: a full message and the sealing.
 pub const MAX_SEALED: usize = MAX_MESSAGE + OVERHEAD;
@@ -390,6 +476,10 @@ const MAX_ADDRESS: usize = 512;
 pub const SEALED_PATH: &str = "/sealed";
 /// The WebSocket path other relays use to take and delete chunks.
 pub const FILES_PATH: &str = "/files";
+/// The WebSocket path a phone with no token takes an invite on.
+pub const JOIN_PATH: &str = "/join";
+/// Invites listed at most in one reply, the latest.
+const MAX_LISTED: usize = 500;
 const FORWARD_TIMEOUT: Duration = Duration::from_secs(15);
 /// A chunk can take longer to come than a message.
 const FILE_TIMEOUT: Duration = Duration::from_secs(60);
@@ -403,11 +493,17 @@ const HELD_LOOK: u64 = 60;
 /// What a connection may ask for.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Access {
+    /// The relay's own token, or none where none is needed.
     All,
+    /// A phone's own token (`tokens.rs`), by its SHA-256: what `All` may, and
+    /// invites too.
+    Phone([u8; 32]),
     /// The `/sealed` path: `KEY` and `SEALED_SEND` only.
     Sealed,
     /// The `/files` path: `FILE_GET` and `FILE_DELETE` only.
     Files,
+    /// The `/join` path: `REDEEM` only.
+    Join,
     /// A ticket for a place, which expires then (Unix seconds): `KEY` and
     /// `BORROW` only.
     Ticket(Nonce, u64),
@@ -531,10 +627,26 @@ impl Write for Timed {
 fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Result<()> {
     let limits = store.limits;
     stream.set_write_timeout(Some(WRITE_TIMEOUT))?;
+    let deadline = Instant::now() + limits.handshake;
+    if let Some(signin) = store.signin.get() {
+        if signin::is_page(&stream, deadline)? {
+            // Anyone may come here, as on the paths that need no token.
+            let Some(_slot) = Slot::take(&store.tokenless, limits.tokenless) else {
+                return Ok(());
+            };
+            let peer = stream.peer_addr()?.ip();
+            let mut stream = Timed {
+                stream,
+                idle: limits.idle,
+                deadline: Some(deadline),
+            };
+            return signin.serve(&mut stream, peer, system_now());
+        }
+    }
     let stream = Timed {
         stream,
         idle: limits.idle,
-        deadline: Some(Instant::now() + limits.handshake),
+        deadline: Some(deadline),
     };
     let mut access = Access::All;
     // Held until the connection ends, on the paths that need no token.
@@ -551,6 +663,8 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
             Some(Access::Sealed)
         } else if path.ends_with(FILES_PATH) {
             Some(Access::Files)
+        } else if path.ends_with(JOIN_PATH) {
+            Some(Access::Join)
         } else {
             None
         };
@@ -579,15 +693,17 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
             }
             None => {}
         }
-        // The relay's token, or a phone's own; with neither set, anyone.
+        // A phone's own token, or the relay's; with neither set, anyone.
         let phones = store.tokens.get();
-        if token.is_none() && phones.is_none() {
+        if let Some(phone) = phones
+            .zip(presented_token(request))
+            .and_then(|(phones, presented)| phones.find(&presented))
+        {
+            access = Access::Phone(phone.hash);
             return Ok(response);
         }
-        if token.is_some_and(|expected| is_authorized(request, expected))
-            || phones
-                .zip(presented_token(request))
-                .is_some_and(|(phones, presented)| phones.has(&presented))
+        if (token.is_none() && phones.is_none())
+            || token.is_some_and(|expected| is_authorized(request, expected))
         {
             return Ok(response);
         }
@@ -616,6 +732,17 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
         };
         match message {
             Message::Binary(bytes) => {
+                // A phone whose line went since it connected is cut off now, not at its next connection.
+                if let (Access::Phone(hash), Some(phones)) = (access, store.tokens.get()) {
+                    if !phones.holds(&hash) {
+                        let _ = socket.close(Some(CloseFrame {
+                            code: CloseCode::Policy,
+                            reason: "token taken back".into(),
+                        }));
+                        let _ = socket.flush();
+                        return Ok(());
+                    }
+                }
                 let request: &[u8] = bytes.as_ref();
                 let Some(reply) = respond(&mut Cursor::new(request), store, access, true)? else {
                     return Ok(());
@@ -645,9 +772,10 @@ fn respond(
         Err(e) => return Err(e),
     }
     let allowed = match access {
-        Access::All => op[0] != BORROW,
+        Access::All | Access::Phone(_) => !matches!(op[0], BORROW | REDEEM | SIGN_IN | CLAIM),
         Access::Sealed => matches!(op[0], KEY | SEALED_SEND),
         Access::Files => matches!(op[0], FILE_GET | FILE_DELETE),
+        Access::Join => matches!(op[0], REDEEM | SIGN_IN | CLAIM),
         Access::Ticket(..) => matches!(op[0], KEY | BORROW),
         Access::Lent(_) => matches!(
             op[0],
@@ -878,12 +1006,18 @@ fn respond(
                 request.push(mark);
             }
             let held = shared.held().hold(id, at, request);
+            if let (Ok(()), Access::Phone(phone)) = (&held, access) {
+                shared.held_by().insert(id, phone);
+            }
             shared.held_changed.notify_all();
             vec![held.map_or_else(held_code, |()| OK)]
         }
         UNLATER => {
             let id = read_held_id(r)?;
             let dropped = shared.held().drop_held(&id);
+            if dropped == Ok(true) {
+                shared.held_by().remove(&id);
+            }
             shared.held_changed.notify_all();
             match dropped {
                 Ok(true) => vec![OK],
@@ -953,9 +1087,149 @@ fn respond(
                 None => vec![FULL],
             }
         }
+        INVITE => {
+            let typed = read_name(r)?;
+            match (invites_of(shared, access), shared.tokens.get()) {
+                (Some((invites, phone)), Some(tokens)) => {
+                    match invites.make(&phone, &typed, tokens, system_now()) {
+                        Ok((secret, expires)) => {
+                            let mut out = vec![OK];
+                            out.extend_from_slice(&expires.to_be_bytes());
+                            out.extend_from_slice(to_hex(&secret).as_bytes());
+                            out
+                        }
+                        Err(InviteError::Full) => vec![FULL],
+                        Err(InviteError::Storage) => vec![FAILED],
+                    }
+                }
+                _ => vec![NOT_FOUND],
+            }
+        }
+        INVITES => match (invites_of(shared, access), shared.tokens.get()) {
+            (Some((invites, phone)), Some(tokens)) => {
+                let listed = invites.list(&phone.hash, tokens, system_now());
+                let listed = &listed[listed.len().saturating_sub(MAX_LISTED)..];
+                let mut out = vec![OK];
+                out.extend_from_slice(&(listed.len() as u16).to_be_bytes());
+                for invite in listed {
+                    out.extend_from_slice(&invite.id);
+                    out.extend_from_slice(&invite.expires.to_be_bytes());
+                    out.extend_from_slice(&invite.used.to_be_bytes());
+                    let name = &invite.name.as_bytes()[..invite.name.len().min(255)];
+                    out.push(name.len() as u8);
+                    out.extend_from_slice(name);
+                }
+                out
+            }
+            _ => vec![NOT_FOUND],
+        },
+        UNINVITE => {
+            let mut id = [0u8; 16];
+            r.read_exact(&mut id)?;
+            match (invites_of(shared, access), shared.tokens.get()) {
+                (Some((invites, phone)), Some(tokens)) => {
+                    match invites.take_back(&phone.hash, &id, tokens) {
+                        Ok(true) => vec![OK],
+                        Ok(false) => vec![NOT_FOUND],
+                        Err(_) => vec![FAILED],
+                    }
+                }
+                _ => vec![NOT_FOUND],
+            }
+        }
+        REDEEM => {
+            let mut secret = [0u8; 32];
+            r.read_exact(&mut secret)?;
+            let mut line = [0u8; 32];
+            r.read_exact(&mut line)?;
+            match (shared.invites.get(), shared.tokens.get()) {
+                (Some(invites), Some(tokens)) => {
+                    match invites.redeem(&secret, &line, tokens, system_now()) {
+                        Ok(name) => {
+                            let mut out = vec![OK];
+                            out.extend_from_slice(name.as_bytes());
+                            out
+                        }
+                        Err(RedeemError::NotFound) => vec![NOT_FOUND],
+                        Err(RedeemError::Used) => vec![FULL],
+                        Err(RedeemError::Taken | RedeemError::Storage) => vec![FAILED],
+                    }
+                }
+                _ => vec![NOT_FOUND],
+            }
+        }
+        SIGN_IN => match shared.signin.get() {
+            Some(signin) => {
+                let name = signin.name().as_bytes();
+                let url = signin.start_url();
+                let mut out = vec![OK, name.len() as u8];
+                out.extend_from_slice(name);
+                out.extend_from_slice(&(url.len() as u16).to_be_bytes());
+                out.extend_from_slice(url.as_bytes());
+                out
+            }
+            None => vec![NOT_FOUND],
+        },
+        CLAIM => {
+            let mut secret = [0u8; 32];
+            r.read_exact(&mut secret)?;
+            let mut line = [0u8; 32];
+            r.read_exact(&mut line)?;
+            let mut old = [0u8; 32];
+            r.read_exact(&mut old)?;
+            let mut code = [0u8; 6];
+            r.read_exact(&mut code)?;
+            match (shared.signin.get(), shared.tokens.get()) {
+                (Some(signin), Some(tokens)) => {
+                    let invites = shared.invites.get();
+                    let had_old = tokens.holds(&old);
+                    match signin.claim(&secret, &line, &old, &code, tokens, invites, system_now()) {
+                        Ok(name) => {
+                            if had_old && !tokens.in_file(&old) {
+                                // The old line went for the new one: what it held for later is the new one's.
+                                for phone in shared.held_by().values_mut().filter(|p| **p == old) {
+                                    *phone = line;
+                                }
+                            }
+                            let mut out = vec![OK];
+                            out.extend_from_slice(name.as_bytes());
+                            out
+                        }
+                        Err(ClaimError::NotFound) => vec![NOT_FOUND],
+                        Err(ClaimError::Wrong(left)) => vec![WRONG, left],
+                        Err(ClaimError::Full) => vec![FULL],
+                        Err(ClaimError::Taken | ClaimError::Storage) => vec![FAILED],
+                    }
+                }
+                _ => vec![NOT_FOUND],
+            }
+        }
         _ => return Err(io::Error::new(ErrorKind::InvalidData, "unknown opcode")),
     };
     Ok(Some(reply))
+}
+
+/// The invites, and the phone asking, when the relay invites and the
+/// connection's token is a phone's own that is still on its line.
+fn invites_of(shared: &Shared, access: Access) -> Option<(&Invites, Phone)> {
+    let Access::Phone(hash) = access else {
+        return None;
+    };
+    let invites = shared.invites.get().filter(|invites| invites.on())?;
+    let name = shared.tokens.get()?.name_of(&hash)?;
+    Some((invites, Phone { hash, name }))
+}
+
+/// A name after its 1-byte length, at most `MAX_TYPED` bytes of UTF-8.
+fn read_name(r: &mut impl Read) -> io::Result<String> {
+    let mut len = [0u8; 1];
+    r.read_exact(&mut len)?;
+    if usize::from(len[0]) > MAX_TYPED {
+        return Err(io::Error::new(ErrorKind::InvalidData, "name too long"));
+    }
+    let mut bytes = vec![0u8; usize::from(len[0])];
+    r.read_exact(&mut bytes)?;
+    String::from_utf8(bytes).map_err(|_| io::Error::new(ErrorKind::InvalidData, "name is not text"))
 }
 
 /// Whether a connection may do what `may` says of its lent token: always,
@@ -1154,6 +1428,20 @@ pub fn sweep(shared: &Shared) {
         }
     }
     shared.files().expire();
+    if let (Some(invites), Some(tokens)) = (shared.invites.get(), shared.tokens.get()) {
+        invites.sweep(tokens, system_now());
+    }
+}
+
+/// Checks the phones signed in with a provider as their time comes (see
+/// `signin.rs`), until the relay stops.
+pub fn run_signin_checks(shared: SharedStore) {
+    loop {
+        thread::sleep(signin::LOOK_EVERY);
+        if let (Some(signin), Some(tokens)) = (shared.signin.get(), shared.tokens.get()) {
+            signin.check(tokens, system_now());
+        }
+    }
 }
 
 /// Runs the requests held for later as their time comes, until the relay
@@ -1180,6 +1468,24 @@ pub fn run_held(shared: SharedStore) {
             }
         };
         for request in due {
+            // Held on a phone's own token: it waits while the phone's line is refused, and goes
+            // with the line once that is gone from the file.
+            let by = shared.held_by().get(&request.id).copied();
+            if let (Some(phone), Some(tokens)) = (by, shared.tokens.get()) {
+                if !tokens.holds(&phone) {
+                    let gone = tokens.gone(&phone);
+                    let mut held = shared.held();
+                    if gone {
+                        held.went(&request.id);
+                    } else {
+                        held.failed(&request.id);
+                    }
+                    if !held.holds(&request.id) {
+                        shared.held_by().remove(&request.id);
+                    }
+                    continue;
+                }
+            }
             let reply = respond(
                 &mut Cursor::new(&request.request),
                 &shared,
@@ -1192,6 +1498,9 @@ pub fn run_held(shared: SharedStore) {
                 held.went(&request.id);
             } else {
                 held.failed(&request.id);
+            }
+            if !held.holds(&request.id) {
+                shared.held_by().remove(&request.id);
             }
         }
     }
@@ -1653,16 +1962,155 @@ mod tests {
             assert!(connect(addr, Some(pixel_line.split(' ').next().unwrap())).is_err());
             assert!(connect(addr, Some(&other)).is_ok());
         }
-        // The Pixel's line taken out: from the next connection on it is refused, the other phone is not.
+        // The Pixel's line taken out: from the next connection on it is refused, the other phone is not,
+        // and a connection the Pixel has open is closed at its next request.
         let addr = start_ws_tokens(Some("s3cret"), None, Limits::default(), Some(list.clone()));
-        assert!(connect(addr, Some(&pixel)).is_ok());
+        let mut open = connect(addr, Some(&pixel)).unwrap();
+        ws_create(&mut open);
+        let mut theirs = connect(addr, Some(&other)).unwrap();
         std::fs::write(&list, format!("# the Pixel was lost\n{other_line}\n")).unwrap();
         let file = std::fs::File::options().write(true).open(&list).unwrap();
         file.set_modified(std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(2_000_000))
             .unwrap();
+        assert!(refused(&mut open, vec![CREATE]));
+        ws_create(&mut theirs);
         assert!(connect(addr, Some(&pixel)).is_err());
         assert!(connect(addr, Some(&other)).is_ok());
         assert!(connect(addr, Some("s3cret")).is_ok());
+        let _ = std::fs::remove_file(&list);
+    }
+
+    /// A relay whose phones with tokens of their own in `tokens` may invite,
+    /// keeping the invites in memory, beside the relay's own `token`.
+    fn start_ws_inviting(token: &str, tokens: std::path::PathBuf) -> SocketAddr {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let store = Shared::new(
+            Store::default(),
+            FileStore::default(),
+            None,
+            None,
+            Limits::default(),
+        );
+        let _ = store.tokens.set(Tokens::new(tokens));
+        let _ = store.invites.set(Invites::in_memory());
+        let token: Option<Arc<str>> = Some(Arc::from(token));
+        thread::spawn(move || serve_ws(listener, store, token));
+        addr
+    }
+
+    fn invite_request(name: &str) -> Vec<u8> {
+        let mut req = vec![INVITE, name.len() as u8];
+        req.extend_from_slice(name.as_bytes());
+        req
+    }
+
+    fn redeem_request(secret: &[u8], token: &str) -> Vec<u8> {
+        use sha2::Digest;
+        let mut req = vec![REDEEM];
+        req.extend_from_slice(secret);
+        req.extend_from_slice(&sha2::Sha256::digest(token.as_bytes()));
+        req
+    }
+
+    /// This phone's invites, as `INVITES` lists them: id, name and when used.
+    fn invites_listed(ws: &mut Ws) -> Vec<([u8; 16], String, u64)> {
+        let r = ws_call(ws, vec![INVITES]);
+        assert_eq!(r[0], OK);
+        let count = u16::from_be_bytes([r[1], r[2]]) as usize;
+        let mut at = 3;
+        let mut out = Vec::new();
+        for _ in 0..count {
+            let id: [u8; 16] = r[at..at + 16].try_into().unwrap();
+            let used = u64::from_be_bytes(r[at + 24..at + 32].try_into().unwrap());
+            let len = r[at + 32] as usize;
+            let name = String::from_utf8(r[at + 33..at + 33 + len].to_vec()).unwrap();
+            out.push((id, name, used));
+            at += 33 + len;
+        }
+        assert_eq!(at, r.len());
+        out
+    }
+
+    fn unhex(hex: &str) -> Vec<u8> {
+        (0..hex.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
+            .collect()
+    }
+
+    #[test]
+    fn a_phone_with_a_token_of_its_own_invites_one_more_phone_by_name() {
+        use sha2::Digest;
+        let list = std::env::temp_dir().join(format!("erevos-invited-{}", std::process::id()));
+        let (pixel, pixel_line) = crate::tokens::new_token("pixel");
+        std::fs::write(&list, format!("{pixel_line}\n")).unwrap();
+        let addr = start_ws_inviting("s3cret", list.clone());
+        // The relay's one token may not invite: the relay says it does not.
+        let mut shared = connect_with_token(addr, "", "s3cret");
+        assert_eq!(
+            ws_call(&mut shared, invite_request("maria")),
+            vec![NOT_FOUND]
+        );
+        assert_eq!(ws_call(&mut shared, vec![INVITES]), vec![NOT_FOUND]);
+        // A phone of its own may.
+        let mut ws = connect_with_token(addr, "", &pixel);
+        assert!(invites_listed(&mut ws).is_empty());
+        let r = ws_call(&mut ws, invite_request("Μαρία"));
+        assert_eq!(r[0], OK);
+        let expires = u64::from_be_bytes(r[1..9].try_into().unwrap());
+        assert!(expires >= system_now() + 7 * 24 * 3600 - 60);
+        let secret = unhex(std::str::from_utf8(&r[9..]).unwrap());
+        assert_eq!(secret.len(), 32);
+
+        // The new phone, with no token, takes it on the /join path, with a token it made.
+        let (maria, _) = crate::tokens::new_token("");
+        assert!(tungstenite::connect(format!("ws://{addr}")).is_err());
+        let (mut join, _) = tungstenite::connect(format!("ws://{addr}{JOIN_PATH}")).unwrap();
+        let reply = ws_call(&mut join, redeem_request(&secret, &maria));
+        assert_eq!((reply[0], &reply[1..]), (OK, &b"maria"[..]));
+        // Asked again, as when the answer was lost on the way: the same.
+        assert_eq!(ws_call(&mut join, redeem_request(&secret, &maria)), reply);
+        // Another phone with it is refused, and a secret that is none is not there.
+        assert_eq!(
+            ws_call(&mut join, redeem_request(&secret, "another")),
+            vec![FULL]
+        );
+        assert_eq!(
+            ws_call(&mut join, redeem_request(&[7; 32], "another")),
+            vec![NOT_FOUND]
+        );
+        // The join path takes nothing else.
+        assert!(refused(&mut join, vec![CREATE]));
+        let line = std::fs::read_to_string(&list).unwrap();
+        assert!(line.contains(&format!(
+            "{} maria # invited by pixel on ",
+            to_hex(&sha2::Sha256::digest(maria.as_bytes()))
+        )));
+
+        // Maria's phone comes in with its token, and may invite in turn.
+        let mut theirs = connect_with_token(addr, "", &maria);
+        ws_create(&mut theirs);
+        assert_eq!(ws_call(&mut theirs, invite_request("anna"))[0], OK);
+        // Pixel sees its invite used, and takes it back: Maria's phone is refused from then on.
+        let listed = invites_listed(&mut ws);
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].1, "maria");
+        assert!(listed[0].2 > 0);
+        let mut back = vec![UNINVITE];
+        back.extend_from_slice(&listed[0].0);
+        // Maria's phone cannot take back Pixel's.
+        assert_eq!(ws_call(&mut theirs, back.clone()), vec![NOT_FOUND]);
+        assert_eq!(ws_call(&mut ws, back.clone()), vec![OK]);
+        assert_eq!(ws_call(&mut ws, back), vec![NOT_FOUND]);
+        // The connection Maria's phone has open is closed at its next request.
+        assert!(refused(&mut theirs, vec![INVITES]));
+        let mut request = format!("ws://{addr}").into_client_request().unwrap();
+        request
+            .headers_mut()
+            .insert("authorization", format!("Bearer {maria}").parse().unwrap());
+        assert!(tungstenite::connect(request).is_err());
+        assert!(invites_listed(&mut ws).is_empty());
         let _ = std::fs::remove_file(&list);
     }
 
@@ -1909,13 +2357,14 @@ mod tests {
             req
         };
 
-        for text in [&b"one"[..], b"two"] {
-            let message = marked(send_request(&sender, text), MESSAGE);
-            assert_eq!(ws_call(&mut ws, message), vec![OK]);
-        }
+        let message = marked(send_request(&sender, b"one"), MESSAGE);
+        assert_eq!(ws_call(&mut ws, message), vec![OK]);
         let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
         let (_, round, count, _, _) = said(&secret, &keys, &body);
         assert_eq!(count, 1);
+        // The second within the gap, after the first push went: it waits.
+        let message = marked(send_request(&sender, b"two"), MESSAGE);
+        assert_eq!(ws_call(&mut ws, message), vec![OK]);
         // Both read on the screen before the gap is over: the second push
         // would tell of a message already read, so it does not go.
         assert_eq!(ws_call(&mut ws, receive_shown())[..2], [OK, 1]);
@@ -2019,6 +2468,123 @@ mod tests {
         let (recipient, sender) = ws_create(&mut ws);
         assert_eq!(ws_send(&mut ws, &sender, b"hi"), OK);
         assert_eq!(ws_receive(&mut ws, &recipient).as_deref(), Some(&b"hi"[..]));
+    }
+
+    /// A plain HTTP request to the WebSocket port, as a browser in Greek
+    /// makes one: the status, the `Location` if any, and the body; a status
+    /// of 0 when the relay closed without an answer.
+    fn browse(addr: SocketAddr, method: &str, target: &str, body: &str) -> (u16, String, String) {
+        let mut stream = TcpStream::connect(addr).unwrap();
+        write!(
+            stream,
+            "{method} {target} HTTP/1.1\r\nHost: erevos.example.org\r\nAccept-Language: el-GR,el;q=0.9\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        )
+        .unwrap();
+        let mut reply = Vec::new();
+        let _ = stream.read_to_end(&mut reply);
+        let reply = String::from_utf8_lossy(&reply).to_string();
+        let Some((head, body)) = reply.split_once("\r\n\r\n") else {
+            return (0, String::new(), String::new());
+        };
+        let status = head.split(' ').nth(1).unwrap().parse().unwrap();
+        let location = head
+            .lines()
+            .find_map(|l| l.strip_prefix("Location: "))
+            .unwrap_or_default()
+            .to_string();
+        (status, location, body.to_string())
+    }
+
+    #[test]
+    fn a_phone_signs_in_with_a_provider_in_the_browser_and_claims_its_token_on_join() {
+        use sha2::Digest;
+        let fake = crate::signin::tests::Fake::start();
+        let list = std::env::temp_dir().join(format!("erevos-signed-in-{}", std::process::id()));
+        let _ = std::fs::remove_file(&list);
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let public = format!("http://127.0.0.1:{}", addr.port());
+        let store = Shared::new(
+            Store::default(),
+            FileStore::default(),
+            None,
+            None,
+            Limits::default(),
+        );
+        let _ = store.tokens.set(Tokens::new(list.clone()));
+        let _ = store
+            .signin
+            .set(SignIn::open(fake.config(&public), None).unwrap());
+        thread::spawn(move || serve_ws(listener, store, None));
+
+        // The app asks on /join what to open.
+        let (mut join, _) = tungstenite::connect(format!("ws://{addr}{JOIN_PATH}")).unwrap();
+        let r = ws_call(&mut join, vec![SIGN_IN]);
+        assert_eq!((r[0], r[1]), (OK, 4));
+        assert_eq!(&r[2..6], b"LPHL");
+        assert_eq!(u16::from_be_bytes([r[6], r[7]]) as usize, r.len() - 8);
+        assert_eq!(
+            std::str::from_utf8(&r[8..]).unwrap(),
+            format!("{public}/signin/start")
+        );
+
+        // The browser: the start, the provider, and back to the relay, which shows a code.
+        let secret = [5u8; 32];
+        let claim = to_hex(&sha2::Sha256::digest(secret));
+        let (status, location, _) =
+            browse(addr, "GET", &format!("/signin/start?claim={claim}"), "");
+        assert_eq!(status, 302);
+        let back = fake.authorize(&location);
+        let (status, _, page) = browse(addr, "GET", back.strip_prefix(&public).unwrap(), "");
+        assert_eq!(status, 200);
+        assert!(page.contains("Συνδέθηκες στο LPHL ως Nekten."));
+        let at = page.find("<p class=\"code\">").unwrap() + 16;
+        let code: Vec<u8> = page[at..at + 7]
+            .bytes()
+            .filter(u8::is_ascii_digit)
+            .collect();
+        assert_eq!(code.len(), 6);
+        // Nothing is left to post from the page.
+        assert!(!page.contains("<form"));
+
+        // Back in the app, the claim, with a token the phone made and the code typed.
+        let (token, _) = crate::tokens::new_token("");
+        let claim_with = |code: &[u8]| {
+            let mut claim = vec![CLAIM];
+            claim.extend_from_slice(&secret);
+            claim.extend_from_slice(&sha2::Sha256::digest(token.as_bytes()));
+            claim.extend_from_slice(&[0u8; 32]);
+            claim.extend_from_slice(code);
+            claim
+        };
+        let wrong: Vec<u8> = code.iter().map(|d| b'0' + (d - b'0' + 1) % 10).collect();
+        assert_eq!(ws_call(&mut join, claim_with(&wrong)), vec![WRONG, 4]);
+        // The right one: it works from then on.
+        let r = ws_call(&mut join, claim_with(&code));
+        assert_eq!((r[0], &r[1..]), (OK, &b"lphl:nekten"[..]));
+        let mut ws = connect_with_token(addr, "", &token);
+        ws_create(&mut ws);
+        // A connection with a token does not sign in; the join path still takes nothing else.
+        assert!(refused(&mut ws, vec![SIGN_IN]));
+        assert!(refused(&mut join, vec![CREATE]));
+        let _ = std::fs::remove_file(&list);
+    }
+
+    #[test]
+    fn a_relay_without_sign_in_says_so_and_has_no_pages() {
+        let list = std::env::temp_dir().join(format!("erevos-no-sign-in-{}", std::process::id()));
+        let addr = start_ws_inviting("s3cret", list);
+        let (mut join, _) = tungstenite::connect(format!("ws://{addr}{JOIN_PATH}")).unwrap();
+        assert_eq!(ws_call(&mut join, vec![SIGN_IN]), vec![NOT_FOUND]);
+        let mut claim = vec![CLAIM];
+        claim.extend_from_slice(&[1u8; 96]);
+        claim.extend_from_slice(b"123456");
+        assert_eq!(ws_call(&mut join, claim), vec![NOT_FOUND]);
+        // A browser's request is a WebSocket handshake that fails, as before.
+        let (status, location, body) = browse(addr, "GET", "/signin/start?claim=00", "");
+        assert_ne!(status, 302);
+        assert!(location.is_empty() && !body.contains("Erevos"));
     }
 
     /// A request the connection may not make: it is closed, with no reply.
@@ -2586,6 +3152,40 @@ mod tests {
         assert_eq!(ws_receive(&mut ws, &recipient), None);
         // Gone, so there is nothing to drop.
         assert_eq!(ws_call(&mut ws, unlater_request(&[1; 16])), vec![NOT_FOUND]);
+    }
+
+    #[test]
+    fn a_message_a_phone_sent_for_later_goes_only_while_the_phone_has_its_line() {
+        let list = std::env::temp_dir().join(format!("erevos-held-by-{}", std::process::id()));
+        let (pixel, pixel_line) = crate::tokens::new_token("pixel");
+        let (other, other_line) = crate::tokens::new_token("other");
+        std::fs::write(&list, format!("{pixel_line}\n{other_line}\n")).unwrap();
+        let addr = start_ws_tokens(Some("s3cret"), None, Limits::default(), Some(list.clone()));
+        let mut relay = connect_with_token(addr, "", "s3cret");
+        let (recipient, sender) = ws_create(&mut relay);
+        let at = system_now() + 2;
+        let mut ws = connect_with_token(addr, "", &pixel);
+        let held = later_request(at, &[7; 16], &send_request(&sender, b"from the pixel"));
+        assert_eq!(ws_call(&mut ws, held), vec![OK]);
+        let mut theirs = connect_with_token(addr, "", &other);
+        let held = later_request(at, &[8; 16], &send_request(&sender, b"from the other"));
+        assert_eq!(ws_call(&mut theirs, held), vec![OK]);
+        // The Pixel's line taken out before its time: its message is dropped, the other phone's goes.
+        std::fs::write(&list, format!("{other_line}\n")).unwrap();
+        let file = std::fs::File::options().write(true).open(&list).unwrap();
+        file.set_modified(std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(2_000_000))
+            .unwrap();
+        thread::sleep(Duration::from_millis(3500));
+        assert_eq!(
+            ws_receive(&mut relay, &recipient).as_deref(),
+            Some(&b"from the other"[..])
+        );
+        assert_eq!(ws_receive(&mut relay, &recipient), None);
+        assert_eq!(
+            ws_call(&mut relay, unlater_request(&[7; 16])),
+            vec![NOT_FOUND]
+        );
+        let _ = std::fs::remove_file(&list);
     }
 
     #[test]

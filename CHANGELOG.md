@@ -21,6 +21,49 @@ On main, not released yet. The next release is **2.0.0**.
   once opened. A name you gave in Erevos is never changed. On a linked computer the name goes to
   the phone too.
 
+- **Sign in to the relay with LPHL**: on a relay whose operator set up an OpenID Connect provider
+  (`EREVOS_RELAY_OIDC_ISSUER` and the rest, such as LPHL's Authentik), **Sign in with LPHL** shows
+  under the token in **Relay and new contacts**. It opens the provider's sign-in page in the
+  browser, where the name and password are typed, never in Erevos; the relay's page then shows six
+  digits of its own making, typed back in Erevos under **Code from the page** (coming back puts you
+  there) with **Finish signing in**, and the phone claims a token of its own over the WebSocket with
+  them and a secret it made first, so no token is ever in an address, and a sign-in link someone
+  sends gives nothing to a phone that did not sign in itself. Five wrong codes end the sign-in. The
+  relay adds the line `lphl:<user name>` for it (signing in again on the phone replaces it, when its
+  token is the one it got from that relay; 10 phones at most for one account) and every hour
+  refreshes the account's token, checks it is still active and asks userinfo whose it is, taking
+  the line out once the account is closed or disabled, is not in the group the operator names
+  (`EREVOS_RELAY_OIDC_GROUP`), or the provider could not be asked for 3 days and then failed two
+  more checks of that line an hour apart: no line goes for another's check, nor all at once after
+  the relay was off or the clock moved. It keeps only the account's id, user name and refresh
+  token, sealed with a key from the client secret, and writes that down before the line, with a
+  mark while a line is to go, so a restart before it is out of the file takes it out again. One
+  browser starts 10 sign-ins a minute at most, told by `X-Forwarded-For` from a proxy on the same
+  machine. The pages are on `/signin/`, which a proxy in front passes as plain HTTP; Erevos opens
+  them only over https on the relay's own host.
+
+- **Invites to the relay**: on a relay whose operator turns invites on (`EREVOS_RELAY_INVITES=on`,
+  with a file of phones' own tokens), a phone with a token of its own has **Invite to the relay**
+  under its token in **Relay and new contacts**. It names who the invite is for and shows a QR
+  code, good for one phone for 7 days; the phone that scans it (with its camera, a photo of it in
+  Erevos, or its link pasted) makes a token of its own, keeps it sealed in its space with the
+  relay's address, and makes its queue there, typing nothing. The relay keeps only a fingerprint
+  of the invite and of the token, and adds a line for the phone to its file of tokens, named as
+  typed, made safe and unique, saying who invited it. The inviter lists their invites and takes
+  back one waiting, or the phone that took one. A phone let in by an invite uses the relay only as
+  long as the phone that invited it: once that one's line goes (taken back, signed out, or taken out
+  of the file by hand), the lines it invited go too, and theirs, and a connection a phone has open
+  is closed at its next request once its line is gone, and a message it sent for later no longer
+  goes. That goes by the token, so a line put in place of another with a new token cuts what the
+  old one invited; `erevos-relay free-line NAME`, run with the relay stopped, frees a line from its
+  inviter. The relay never writes the file of tokens because it read it: it takes refused lines out
+  of it only once the file stayed unchanged for a minute and is as it read it, so a save it reads
+  halfway loses no line, and who invited whom stays through a failed write or a restart, signing in
+  again too. At most 5 waiting at once and 10 a day for each phone, and 100 phones let in by invite
+  on the relay (`EREVOS_RELAY_MAX_INVITED`). An invite names a wss:// relay, or a ws:// one on a
+  home network only. The relay refuses a file of tokens that is a symbolic link. Older relays and
+  phones are unchanged: the button does not show.
+
 - **Permissions in the web app** (menu → Permissions): what the browser lets Erevos do, each with
   why and the browser's own question, or where its setting is once it no longer asks: running from
   the home screen, notifications while closed for a space that turned them on, the microphone, the

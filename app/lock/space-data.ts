@@ -1,5 +1,6 @@
 import { checkedBridges, NO_BRIDGES, type Bridges } from '../lib/bridges';
 import { decryptText, encryptText, randomBytes } from '../lib/crypto';
+import { NO_OWN_TOKEN, type OwnToken } from '../lib/relay-signin';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';
 
 import { checkedLook, type Look } from '../theme/look';
@@ -27,6 +28,9 @@ export type Queue = { recipientHex: string; senderHex: string };
 export type SpaceData = {
   url: string;
   token: string;
+  // Which token this space got as its own from which relay, by an invite or a sign-in
+  // (lib/relay-signin.ts): only that one is named when signing in there again. None unless so.
+  ownToken: OwnToken;
   // A second relay that sends go through first, so the relay never sees this phone's address.
   // Empty when not used.
   via: string;
@@ -65,6 +69,7 @@ export const NO_LENDING: Lending = { relay: '', ticket: '' };
 export const EMPTY_SPACE: SpaceData = {
   url: '',
   token: '',
+  ownToken: NO_OWN_TOKEN,
   via: '',
   viaToken: '',
   ownQueue: null,
@@ -114,6 +119,7 @@ function checked(value: unknown): SpaceData {
   return {
     url: typeof v.url === 'string' ? v.url : '',
     token: typeof v.token === 'string' ? v.token : '',
+    ownToken: checkedOwnToken(v.ownToken),
     via: typeof v.via === 'string' ? v.via : '',
     viaToken: typeof v.viaToken === 'string' ? v.viaToken : '',
     ownQueue: q && isHex(q.recipientHex, 48) && isHex(q.senderHex, 48) ? { recipientHex: q.recipientHex, senderHex: q.senderHex } : null,
@@ -130,6 +136,11 @@ function checked(value: unknown): SpaceData {
     previews: v.previews === true,
     lend: checkedLending(v.lend),
   };
+}
+
+function checkedOwnToken(value: unknown): OwnToken {
+  const v = (value ?? {}) as Partial<Record<keyof OwnToken, unknown>>;
+  return typeof v.relay === 'string' && isHex(v.hash, 64) ? { relay: v.relay, hash: v.hash } : NO_OWN_TOKEN;
 }
 
 function checkedLending(value: unknown): Lending {

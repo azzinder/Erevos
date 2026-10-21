@@ -15,6 +15,7 @@ import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { plural, t } from '../lib/i18n';
 import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
 import { readQrPhoto } from '../lib/read-qr';
+import { parseInvite } from '../lib/relay-invite';
 import { loadPlace, onSealedChange, placeOf, spacePlace, type Place } from '../lib/sealed-contacts';
 import { contactFromQr } from '../lib/vcard';
 import { contactsReady, contactsStatus, onContactsEvent, phoneGroups, setBirthdayReminders, watchContacts, type PhoneGroup } from '../modules/erevos-contacts';
@@ -175,9 +176,12 @@ export default function Contacts() {
       if (text === null) return;
       setReadingQr(false);
       const card = text ? contactFromQr(text) : null;
+      const invite = text ? parseInvite(text) : null;
       if (card) router.push(`/contact-edit?fill=${encodeURIComponent(fillText(card))}`);
       // Someone's Erevos QR code starts a contact with their Erevos ID.
       else if (text && readErevosId(text)) router.push(`/contact-edit?code=${encodeURIComponent(text)}`);
+      // An invite to a relay asks first, as when the camera opens it (app/relay-invite.tsx).
+      else if (invite) router.push(`/relay-invite?relay=${encodeURIComponent(invite.relayUrl)}&code=${invite.code}`);
       else setNote(text ? t('This QR code holds no contact.') : t('No QR code was found in the photo. Take it again closer, with all of the code in it.'));
     } catch (error) {
       setReadingQr(false);

@@ -350,20 +350,44 @@ fn read_day(r: &mut impl Read) -> io::Result<u64> {
 /// so a crash leaves either the old file or the new one, never half of it.
 /// Only the owner can read it.
 pub fn write_whole(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    write_whole_then(path, bytes, |_| Ok(()))
+}
+
+/// As `write_whole`, with `ready` called on the new file once it is written,
+/// just before it takes the old one's place: an error from it leaves the old
+/// file as it was.
+pub fn write_whole_then(
+    path: &Path,
+    bytes: &[u8],
+    ready: impl FnOnce(&File) -> io::Result<()>,
+) -> io::Result<()> {
     let mut tmp = path.as_os_str().to_owned();
     tmp.push(".tmp");
     let tmp = PathBuf::from(tmp);
     let mut file = private_file(&tmp)?;
     file.write_all(bytes)?;
     file.sync_all()?;
+    if let Err(e) = ready(&file) {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(e);
+    }
     std::fs::rename(&tmp, path)?;
     sync_dir(path)
 }
 
-/// Creates or truncates a file only its owner can read.
+/// Creates a new file only its owner can read.
+///
+/// A file or link left at `path` is removed first and the new one is made
+/// with `create_new`, which never follows a link: run as root (`free-line`),
+/// a link someone left there cannot have root write over the file it points to.
 fn private_file(path: &Path) -> io::Result<File> {
+    match std::fs::remove_file(path) {
+        Ok(()) => {}
+        Err(e) if e.kind() == ErrorKind::NotFound => {}
+        Err(e) => return Err(e),
+    }
     let mut options = OpenOptions::new();
-    options.write(true).create(true).truncate(true);
+    options.write(true).create_new(true);
     #[cfg(unix)]
     std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
     options.open(path)
@@ -382,4 +406,26 @@ fn sync_dir(path: &Path) -> io::Result<()> {
     #[cfg(not(unix))]
     let _ = path;
     Ok(())
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_link_left_where_the_new_file_goes_is_never_written_through() {
+        let dir = std::env::temp_dir().join(format!("erevos-journal-link-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let other = dir.join("someone-elses");
+        std::fs::write(&other, b"keep me").unwrap();
+        let path = dir.join("phones.tokens.invites");
+        let mut tmp = path.as_os_str().to_owned();
+        tmp.push(".tmp");
+        std::os::unix::fs::symlink(&other, PathBuf::from(tmp)).unwrap();
+        write_whole(&path, b"new").unwrap();
+        assert_eq!(std::fs::read(&other).unwrap(), b"keep me");
+        assert_eq!(std::fs::read(&path).unwrap(), b"new");
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 }

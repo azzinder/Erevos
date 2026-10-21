@@ -244,6 +244,56 @@ takes a place there, with no token.
 - **A link without a ticket** (from an older relay or Erevos): a relay that needs no token is used as it is;
   otherwise you reach each other nearby only, until you have a relay.
 
+### Invites to the relay
+
+A phone with a token of its own on a relay that takes invites can let one more phone use that relay, with a token of
+that phone's own, so no token is typed or passed on.
+
+- **To invite:** under **Relay and new contacts**, below the **Token**, tap **Invite to the relay**, type who it is
+  for and tap **Make the invite**. A QR code opens: let their phone scan it with its camera and open the link in
+  Erevos, or tap **Share the invite** and send it to them. It is good for one phone for 7 days, and whoever takes it
+  first has it, so show it to them only.
+- **To take one:** the link opens **Invite to a relay**, with the relay's address: tap **Use this relay** only if it
+  came from someone you know. In Erevos, **Take a photo of the QR code** and **Choose a photo of the QR code** under
+  **Add** read an invite too, and its link can be pasted into **erevos://contact link**. Erevos makes a token for this
+  phone, keeps it with the relay's address in this space only, makes your queue there and says the name the relay gave
+  the phone. If the phone uses another relay, it asks first, and contacts learn your new queue from your next message.
+  Erevos takes an invite to a wss:// relay, or to a ws:// one on a home network only (such as
+  \`ws://192.168.1.10:7879\`). Hidden chats take no invites.
+- **Your invites:** listed under the button, waiting or in use. **Take back** takes back one still waiting, or cuts off
+  the phone that took it at once, and the phones it invited in turn.
+- **For as long as yours:** a phone you invited uses the relay only while yours may. When your line goes, because the
+  phone that invited you took it back, the account you signed in with may no longer use the relay, or its operator took
+  it out, the lines of the phones you invited go too, and those of the phones they invited. Signing in again on your
+  phone keeps them.
+- **What the relay keeps:** the name you typed, in Latin letters (Μαρία is \`maria\`), that you invited that phone,
+  and a fingerprint of its token, not the token. Whoever runs the relay sees this, and can take any phone off it. A
+  phone may have 5 invites waiting at once, and make 10 a day, and the relay lets in only so many phones by invite
+  (100, unless its operator chose otherwise).
+- **Who can invite:** a phone with a token of its own, on a relay whose operator turned invites on (see [Running your
+  own relay](#own-relay)). With the relay's one token for all, or a lent place, there is no **Invite to the relay**.
+
+### Signing in to the relay
+
+A relay can let phones sign in with an account its operator trusts, such as LPHL, for a token of their own, with
+nothing to type in Erevos.
+
+- **To sign in:** type the relay's address under **Relay**. When the relay offers it, **Sign in with LPHL** shows
+  below the **Token**. Tap it: the browser opens the sign-in page, where you type your name and password, which
+  Erevos never sees. The relay's page then shows six digits. Back in Erevos, which puts you straight in **Code from the
+  page**, type them there and tap **Finish signing in**: the phone keeps its token with the relay's address in this
+  space only, and makes your queue there. Type the code only in Erevos on your own phone and give it to no one, even if
+  asked: whoever types it uses the relay as you. After 5 wrong codes the sign-in is over: sign in again. Erevos opens
+  only a sign-in page on the relay's own address, over https.
+- **Signing in again** on the same phone takes the place of its line on the relay, when its token is the one it got
+  from that relay. Each phone gets a line of its own, 10 at most for one account.
+- **What the relay and LPHL see:** the relay names the phone's line after your user name (\`lphl:nekten\`), and every
+  hour it asks LPHL whether the account may still use it: once the account is closed or disabled, or LPHL cannot be
+  asked for 3 days, the line goes, and the phone can no longer use the relay, nor can the phones it invited. LPHL sees
+  each sign-in and these checks, but nothing of your spaces, chats or contacts. Signing in from another space with
+  the same account shows the relay that both are yours.
+- **Hidden chats** do not sign in.
+
 ### The safety number
 
 Open the chat, tap its name and then **Show safety number**. Both phones show the same 60 digits for the two of you. Compare them
@@ -267,7 +317,8 @@ at the relay, or at once when they are nearby. A message counts as read once its
   waits on this phone and goes to the relay once one can be reached. With nothing typed, the time you choose is for
   the next photo, file or voice message: a photo or file goes to your relay at once and stays there until they take
   it, 14 days after its time at most. Hidden chats have it too, but there the relay has to be reachable when you
-  schedule. Until its time, delete it to take it back from the relay, and it never goes. A message without sound
+  schedule. Until its time, delete it to take it back from the relay, and it never goes. With a token of this phone's
+  own, it goes only if the phone still has its line on that relay then. A message without sound
   stays without sound. A relay from before this keeps nothing for later: then the message waits on this phone and
   goes at its time while Erevos runs, in the background too while **In the background** is on **Receive and ring**
   (below), or when Erevos next opens.
@@ -673,6 +724,21 @@ Queues and waiting messages are kept on the server's disk, and so are the encryp
 they are taken (1024 MB together at most), so a restart loses nothing, and no request is logged.
 Messages sent for later are kept there until their time too, 10,000 or 256 MB at most: the relay sees when
 each is to go, not what it says.
+
+**Invites:** the relay can let each phone have a token of its own, in a file of tokens, and then let those phones
+invite more, each invite for one phone (see [Invites to the relay](#relay)). Turn it on with
+\`EREVOS_RELAY_INVITES=on\` beside \`EREVOS_RELAY_TOKENS\`; the relay then writes the lines of invited phones in that
+file itself, with who invited them and when, and taking a line out cuts that phone off, and the phones it invited. It
+lets in 100 phones by invite at most (\`EREVOS_RELAY_MAX_INVITED\`). Who invited whom goes by the token, not the name: a
+line put in place of another with a new token cuts the phones the old one invited, unless
+\`erevos-relay free-line NAME\`, run with the relay stopped, frees them first. \`deploy/relay/README.md\` says how.
+
+**Signing in:** with a file of tokens, the relay can also let phones sign in with an OpenID Connect provider, such as
+Authentik, for a token of their own, and checks each account every hour, taking its phones off after 3 days without an
+answer and two more checks of each phone that fail an hour apart (see [Signing in to the relay](#relay)). One browser
+may start 10 sign-ins a minute. With \`EREVOS_RELAY_OIDC_GROUP\`, only the accounts in that group may.
+It needs a client at the provider, a few settings, and \`/signin/\` passed to the relay as plain HTTP:
+\`deploy/relay/README.md\` says how.
 
 > Never post the token where others can read it. Whoever runs the server sees the IP addresses that connect, the
 > queue ids, and when and how much arrives. They cannot read the messages, which are end-to-end encrypted.

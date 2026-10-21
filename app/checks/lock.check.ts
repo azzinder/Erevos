@@ -257,10 +257,20 @@ t('a first start moves the chat settings kept before spaces into the first space
   store.set('erevos.relay', JSON.stringify(older));
   const key = await firstSpaceKey();
   assert.equal(store.has('erevos.relay'), false);
-  assert.deepEqual(await loadSpaceData(0, key), { ...older, via: '', viaToken: '', look: null, tor: false, bridges: { use: 'none', own: '' }, spare: { url: '', token: '', queue: null }, push: false, previews: false, lend: { relay: '', ticket: '' }, ringQueue: null });
+  assert.deepEqual(await loadSpaceData(0, key), { ...older, via: '', viaToken: '', look: null, tor: false, bridges: { use: 'none', own: '' }, spare: { url: '', token: '', queue: null }, push: false, previews: false, lend: { relay: '', ticket: '' }, ringQueue: null, ownToken: { relay: '', hash: '' } });
   assert.ok(!store.get('erevos.space.0')!.includes('t0ken'));
   // The next start finds the same key.
   assert.deepEqual(await firstSpaceKey(), key);
+});
+
+t('a space keeps which token it got as its own from which relay, and nothing of another shape', async () => {
+  const key = await firstSpaceKey();
+  const own = { relay: 'wss://relay.example.org', hash: 'ab'.repeat(32) };
+  await saveSpaceData(0, key, { ...EMPTY_SPACE, url: own.relay, token: 'mine', ownToken: own });
+  assert.deepEqual((await loadSpaceData(0, key)).ownToken, own);
+  await saveSpaceData(0, key, { ...EMPTY_SPACE, ownToken: { relay: own.relay, hash: 'mine' } });
+  assert.deepEqual((await loadSpaceData(0, key)).ownToken, { relay: '', hash: '' });
+  await saveSpaceData(0, key, EMPTY_SPACE);
 });
 
 t('each space sees only its own data, and every entry looks alike', async () => {
