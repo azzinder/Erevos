@@ -167,8 +167,9 @@ class ErevosBiometricModule : Module() {
   }
 
   // A 256-bit AES key that only a strong fingerprint or face check opens, for each single use,
-  // and that Android drops when fingerprints or faces change. In the phone's separate security
-  // chip where it has one (StrongBox), else in its secure area.
+  // only while the phone itself is unlocked, and that Android drops when fingerprints or faces
+  // change. In the phone's separate security chip where it has one (StrongBox), else in its
+  // secure area.
   private fun newKey(): SecretKey {
     fun spec(strongBox: Boolean) = KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
       .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
@@ -177,6 +178,7 @@ class ErevosBiometricModule : Module() {
       .setUserAuthenticationRequired(true)
       .setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
       .setInvalidatedByBiometricEnrollment(true)
+      .setUnlockedDeviceRequired(true)
       .setIsStrongBoxBacked(strongBox)
       .build()
     val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE)

@@ -184,6 +184,12 @@ internal object MmsPdu {
       }
       throw Malformed("Bad length")
     }
+    /** A length or a count, which is never more than the bytes left, so it fits an Int. */
+    fun size(): Int {
+      val v = uintvar()
+      if (v > end - at) throw Malformed("Cut short")
+      return v.toInt()
+    }
     fun textBytes(): ByteArray {
       if (peek() == 0x7F || peek() == 0x22) at++
       val start = at
@@ -197,7 +203,7 @@ internal object MmsPdu {
     fun valueLength(): Int {
       val c = peek()
       if (c < 31) { at++; return c }
-      if (c == 31) { at++; return uintvar().toInt() }
+      if (c == 31) { at++; return size() }
       return -1
     }
     fun longInteger(): Long {
@@ -214,7 +220,7 @@ internal object MmsPdu {
       val c = peek()
       when {
         c < 31 -> { at++; at += c }
-        c == 31 -> { at++; at += uintvar().toInt() }
+        c == 31 -> { at++; at += size() }
         c < 0x80 -> textBytes()
         else -> at++
       }
@@ -274,11 +280,11 @@ internal object MmsPdu {
   }
 
   private fun readParts(input: In): List<Part> {
-    val count = input.uintvar().toInt()
+    val count = input.size()
     val parts = ArrayList<Part>()
     repeat(count) {
-      val headersLength = input.uintvar().toInt()
-      val dataLength = input.uintvar().toInt()
+      val headersLength = input.size()
+      val dataLength = input.size()
       val headersEnd = input.at + headersLength
       if (headersEnd > input.end) throw Malformed("Cut short")
       val headers = In(input.b, input.at, headersEnd)
