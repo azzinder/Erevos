@@ -238,12 +238,16 @@ struct Slot(Arc<AtomicUsize>);
 impl Slot {
     /// A place in `count`, if fewer than `max` are taken.
     fn take(count: &Arc<AtomicUsize>, max: usize) -> Option<Slot> {
-        count
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
-                (n < max).then_some(n + 1)
-            })
-            .ok()
-            .map(|_| Slot(Arc::clone(count)))
+        // A loop of its own rather than fetch_update, which newer Rust renames:
+        // the same code builds with every toolchain.
+        let mut n = count.load(Ordering::Acquire);
+        while n < max {
+            match count.compare_exchange_weak(n, n + 1, Ordering::AcqRel, Ordering::Acquire) {
+                Ok(_) => return Some(Slot(Arc::clone(count))),
+                Err(now) => n = now,
+            }
+        }
+        None
     }
 }
 
