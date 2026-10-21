@@ -1,3 +1,4 @@
+import { bitmapOf } from './bitmap.web';
 import { cleanJpeg, cleanPng, isJpeg, isPng, photoSize } from './photo';
 import { t } from './i18n';
 
@@ -24,7 +25,7 @@ function choose(): Promise<globalThis.File | null> {
 }
 
 async function reencode(file: Blob, quality: number): Promise<PickedPhoto> {
-  const image = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const image = await bitmapOf(file);
   const canvas = document.createElement('canvas');
   canvas.width = image.width;
   canvas.height = image.height;

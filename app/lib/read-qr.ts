@@ -6,7 +6,7 @@ import { NoCameraError } from './pick-photo';
 import { readQrCode } from '../modules/erevos-contacts';
 
 // A QR code read from a photo of it, taken with the camera or picked from the phone's photos
-// (app/contacts.tsx): the photo is read on the phone (modules/erevos-contacts, with ZXing) and the
+// (app/contacts.tsx, app/chat.tsx, components/erevos-id.tsx): the photo is read on the phone (modules/erevos-contacts, with ZXing) and the
 // picker's copy deleted at once; it is not kept anywhere.
 
 /** The QR code's text, '' when the photo has none, or null if the owner went back. */

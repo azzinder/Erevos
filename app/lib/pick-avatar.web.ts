@@ -1,3 +1,4 @@
+import { bitmapOf } from './bitmap.web';
 import { t } from './i18n';
 import { fitSticker, STICKER_SIDE } from './own-stickers';
 // A photo for a contact's picture, as pick-avatar.ts, on a computer: from the computer's files,
@@ -16,7 +17,7 @@ async function jpeg(canvas: HTMLCanvasElement, quality: number): Promise<Uint8Ar
 export async function pickWallpaper(): Promise<Uint8Array | null> {
   const file = await choose();
   if (!file) return null;
-  const image = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const image = await bitmapOf(file);
   const scale = Math.min(1, WALL / image.width);
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(image.width * scale);
@@ -39,7 +40,7 @@ function choose(): Promise<globalThis.File | null> {
 
 // The middle of the photo, cut square and drawn `size` points wide.
 async function squareOf(file: Blob, size: number): Promise<HTMLCanvasElement> {
-  const image = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const image = await bitmapOf(file);
   const side = Math.min(image.width, image.height);
   const canvas = document.createElement('canvas');
   canvas.width = size;

@@ -204,6 +204,9 @@ export function Button({ title, onPress, onLongPress, kind = 'primary', disabled
           alignItems: 'center',
           justifyContent: shape.buttonAlign,
           opacity: disabled ? 0.45 : 1,
+          // A long label on a narrow phone goes on two lines instead of out of the screen.
+          maxWidth: '100%',
+          paddingVertical: 4,
         },
         // Neon and Matrix: a lit button glows in its colour.
         shape.glow && kind === 'primary' && !disabled ? { boxShadow: `0px 0px 14px ${withAlpha(colors.primary, 0.55)}` } : null,
@@ -215,7 +218,7 @@ export function Button({ title, onPress, onLongPress, kind = 'primary', disabled
           <ActivityIndicator color={c.fg} />
         ) : (
           // An outlined label turns to the accent's pale end on the wash, as on the LPHL site.
-          <Text variant="label" color={pressed && c.line ? colors.primaryPressed : c.fg} style={{ fontSize: compact ? 15 : 16 }}>
+          <Text variant="label" color={pressed && c.line ? colors.primaryPressed : c.fg} style={{ fontSize: compact ? 15 : 16, flexShrink: 1, textAlign: shape.buttonAlign === 'center' ? 'center' : undefined }}>
             {title}
           </Text>
         )

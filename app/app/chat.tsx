@@ -23,6 +23,7 @@ import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, sendFile, takeF
 import { canRingInBackground, isNews, messageCameAt } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileMeta, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
+import { readQrPhoto } from '../lib/read-qr';
 import { pickSource, TooLargeError } from '../lib/pick-file';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { saveFile, saveText } from '../lib/save-file';
@@ -2932,14 +2933,27 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  function addContact() {
-    const code = parseContact(contactDraft);
+  function addContact(text = contactDraft) {
+    const code = parseContact(text);
     if (!code) {
       setNote(t('That is not an Erevos contact link.'));
       return;
     }
     setContactDraft('');
     void acceptContact(code);
+  }
+
+  // Their QR code, photographed or chosen from the photos, adds them at once (lib/read-qr.ts).
+  async function addFromQr(from: 'camera' | 'photos') {
+    setNote('');
+    try {
+      const text = await readQrPhoto(from);
+      if (text === null) return;
+      if (text && parseContact(text)) addContact(text);
+      else setNote(text ? t('That QR code holds no Erevos ID.') : t('No QR code was found in the photo. Take it again closer, with all of the code in it.'));
+    } catch (error) {
+      setNote(errorText(error));
+    }
   }
 
   // Theirs that came before the time it was sent for shows then (lib/later.ts, showsAt).
@@ -3836,8 +3850,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     autoCorrect={false}
                     style={styles.grow}
                   />
-                  <Button title={t('Add')} compact onPress={addContact} />
+                  <Button title={t('Add')} compact onPress={() => addContact()} />
                 </Row>
+                {/* Not in hidden chats: a photo leaves Erevos, which closes them. */}
+                {!hiddenKey ? (
+                  <Row wrap>
+                    {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('camera')} /> : null}
+                    <Button title={t('Choose a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
+                  </Row>
+                ) : null}
                 {HAS_LINKS && !hiddenKey ? (
                   <View>
                     <DetailRow title={t('Find Erevos on the same Wi-Fi')} checked={lanOn} onPress={() => changeLan(!lanOn)} />
@@ -4510,6 +4531,8 @@ const makeStyles = (colors: Colors) =>
     },
     grow: {
       flex: 1,
+      // A browser's field otherwise keeps its own width and pushes the button beside it out.
+      minWidth: 0,
     },
     // Under the messages: the message bar (components/composer.tsx), across the screen, and the
     // panel "+" opens under it.

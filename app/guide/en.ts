@@ -199,6 +199,10 @@ your phone's address. A phone with no relay gets a place on its contact's, see *
    **Add a contact** screen shows what it holds: tap **Add to chat** only if you scanned it yourself.
 5. If their camera only shows the text, or they are far away, tap **Share my contact link** and send it to them.
    They paste it into **erevos://contact link** and tap **Add**.
+6. Or the other way round: under **Add**, tap **Take a photo of the QR code** on their screen, or **Choose a photo of the
+   QR code** for a screenshot or a photo of it they sent you. Erevos reads it and adds them at once. On a computer, on
+   Sailfish OS and in the web app there is only **Choose a photo of the QR code**; on an iPhone it offers the camera too.
+   Hidden chats have neither, as a photo leaves Erevos, which closes them: paste their link there.
 
 The new chat appears on the home screen named **contact** and the first characters of their key. It is enough that one
 phone adds the other: adding a link starts an encrypted conversation and tells the other phone how to answer, so it

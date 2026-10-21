@@ -47,16 +47,24 @@ On main, not released yet. The next release is **2.0.0**.
 - **A new chat screen**: one bar at the top with the contact's picture and name, whether they are
   online, nearby or typing, and buttons for a video and a voice call, with ⋯ (⋮ on Android) set
   apart for the chat's details. Under the messages, one floating bar: **+** opens, where the
-  keyboard was, what to send (photo, camera, file, sticker, location, poll) and how the next
-  message goes (disappearing, Talkie, send later, and as an SMS for a contact with a number); the smiley opens the stickers, the stopwatch
-  makes the next message disappear, and the microphone, held, records a voice message. Slide left
-  to drop it; under a second sends nothing, and TalkBack starts and stops it with a tap. With
-  something typed it is the send arrow, which held sends without sound, later, disappearing or as
-  an SMS. A
-  disappearing message can now be a voice message (a walkie-talkie one too), photo, file, sticker,
-  place or poll, sent now or later. Groups
-  have the same bars, with their video call under ⋯. Switches show their knob when off on dark
-  glass, and a light color of your own takes dark text on its buttons in the dark too.
+  keyboard was, what to send (photo, camera, file, sticker, location, poll) and how the next message
+  goes (disappearing, Talkie, send later, and as an SMS for a contact with a number); the smiley
+  opens the stickers, the stopwatch makes the next message disappear, and the microphone, held,
+  records a voice message. Slide left to drop it; under a second sends nothing, and TalkBack starts
+  and stops it with a tap. With something typed it is the send arrow, which held sends without
+  sound, later, disappearing or as an SMS. A disappearing message can now be a voice message (a
+  walkie-talkie one too), photo, file, sticker, place or poll, sent now or later. Groups have the
+  same bars, with their video call under ⋯. Switches show their knob when off on dark glass, and a
+  light color of your own takes dark text on its buttons in the dark too.
+
+- **Add a contact from a photo of their QR code**: under the contact link field in **Relay and new
+  contacts**, **Take a photo of the QR code** and **Choose a photo of the QR code** read it and add
+  them at once (not in hidden chats, which a photo would close). The computer app, the web app and
+  the Sailfish OS app read QR codes from a photo now too, with **Choose a photo of the QR code**,
+  which on an iPhone offers the camera as well; until now they could not. There, photos sent at a
+  smaller size, contacts' pictures, your own stickers and wallpapers now also work in older browsers
+  (an older Safari, Sailfish OS), which refused them. A button's long label goes on two lines on a
+  narrow phone instead of out of the screen.
 
 - **Group keys made new every week**: in every group, private or public, the admin's phone makes
   its own keys new, and each member's phone asks the admin to put it in anew with new ones. So keys
