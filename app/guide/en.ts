@@ -1346,11 +1346,12 @@ send changed code. Erevos does not take that code on trust:
 - **Only while it is open:** iOS stops web apps in the background, so messages arrive when you open Erevos; they wait
   on the relay until then.
 - **Notifications** while Erevos is closed are off unless you turn them on: **Lock and second password → Notifications
-  while closed → Turn on** (iOS 16.4 or later, from the home screen). When a message comes, your relay sends an empty
-  push through Apple, and Erevos shows **New message**, or **New messages** once more came since you last opened it,
-  in the app's language, nothing more. Apple sees when something comes for your iPhone, and that it uses Erevos, never
-  what or from whom. They are per space, never for hidden chats, and your relay must be
-  set up to send them.
+  while closed → Turn on** (iOS 16.4 or later, from the home screen). When messages come, your relay sends a push
+  through Apple, and Erevos shows how many came since you last opened it (**3 new messages**), or **Call** when only
+  a call rang, in the app's language, nothing more. The count is encrypted for your iPhone: Apple sees when something
+  comes for your iPhone, and that it uses Erevos, never what or from whom. A relay or a sender's Erevos older than
+  2.0.0 cannot count; then Erevos shows **New message**, or **New messages** once more came, until you open it. They
+  are per space, never for hidden chats, and your relay must be set up to send them.
 - **Permissions:** menu → **Permissions** shows what the browser lets Erevos do: whether it runs from the home screen,
   notifications while closed (needed once this space turned them on), the microphone for calls, the camera for video
   calls, and whether the browser keeps Erevos's data for good. Without that, Safari may clear the data when the iPhone

@@ -277,7 +277,7 @@ function relayMarkOf(m: Json): RelayMark | undefined {
 
 // How a packet for a device goes, kept with it in the outbox: nothing for one that is quiet.
 function outMarkOf(mark: RelayMark | undefined): OutMark | undefined {
-  return mark === 'quiet' ? undefined : (mark ?? 'none');
+  return mark === 'quiet' ? undefined : mark === 'message' ? 'message' : 'none';
 }
 
 // A peer without what of its outbox went, nor the marks of those.

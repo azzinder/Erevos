@@ -66,12 +66,14 @@ app from a store is installed once and changes only when updated.
   unless turned on): the relay pushes through the browser's push service, at most once in 15
   seconds (`crates/erevos-relay/src/push.rs`, `lib/web-push.web.ts`). Each push holds how many
   messages came, encrypted for the browser, as the sending phones marked them: a message someone
-  reads counts, word between phones (that a message came or was read, new keys) pushes nothing.
-  The service worker then shows "3 new messages", in the app's language. It shows "New message",
+  reads counts, word between phones (that a message came or was read, new keys) pushes nothing,
+  and a call that rings pushes and says so without counting. The service worker then shows "3 new
+  messages", in the app's language, or "Call" when only a call rang. It shows "New message",
   or "New messages" once more came since Erevos was last open, without a number, when the push
   is empty (a relay from before the counts) or the relay could not count all of it (a sender's
   Erevos from before the marks), until Erevos is open again. The push service sees when a message
-  comes, and that the device uses Erevos; never what, how many or from whom.
+  comes, and that the device uses Erevos; never what or from whom (though pushes more than 15
+  seconds apart can be counted).
 - **No Bluetooth, nearby link or SMS**, which Safari does not allow, and no automatic backups: a
   browser gives out a file only after a tap.
 

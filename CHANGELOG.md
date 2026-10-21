@@ -22,23 +22,28 @@ On main, not released yet. The next release is **2.0.0**.
   the lock screen and calls through Do Not Disturb, and says when the phone is on silent or
   vibrate, or battery saver or Do Not Disturb is on.
 
-- **The web app's notice in your language**: while Erevos is closed, its one notice says "New
-  message", or "New messages" once more came since it was last open, in the app's language, and
-  opening Erevos starts again. It gives no number, which would often be wrong: the relay also
-  pushes when word comes that a message arrived, and at most once in 15 seconds. An iPhone keeps
-  every notice, so the older ones are closed once the new one shows (an iPhone keeps those less
-  than 30 seconds old).
+- **The web app's notice says how many**: while Erevos is closed, its one notice says how many
+  messages came since it was last open, such as "3 new messages", in the app's language, or "Call"
+  when only a call rang, and opening Erevos starts again. The relay counts what the sending phones
+  marked as messages (below) and puts the count in the push, encrypted for the browser and always
+  the same size, so the push service (Apple's on an iPhone) sees only that something came, and
+  when. Receipts, typing and new keys push nothing, and messages read on the screen end a push
+  still waiting. At most one push every 15 seconds goes to a browser, for all its spaces on one
+  relay. A relay or a sender's Erevos older than 2.0.0 cannot count: the notice then says "New
+  message", or "New messages" once more came, until Erevos is open again. An iPhone keeps every
+  notice, so the older ones are closed once the new one shows (an iPhone keeps those less than 30
+  seconds old).
 
 - Each send now tells the relay what it carries: a message someone reads (a text, a voice message
   in its parts, a photo or file, a sticker, place or poll, a group's message), or word between
   phones (that it came or was read, typing, reactions, new keys, a group's own changes, what goes
-  between linked devices), which pushes nothing; a call that rings pushes without being counted.
+  between linked devices), which pushes nothing; a call that rings pushes, counted as no message.
   What waits for the relay, or is sent for later, says it when it goes, and so does a contact's
   message the phone passes on to a linked computer, and each group message, however many reach it
   at once. What a linked device writes goes to the phone as word between them, as it is the
   account's own, and the phone counts it once as it passes it on, a voice message too when one of
   its parts had to wait. So a relay that counts can say in a closed web app's push how many
-  messages came. Nothing shows differently yet.
+  messages came (above).
 
 - **Newer keys every month**: each chat's account makes new prekeys (X25519 and ML-KEM-768) every
   30 days and gives them to its contacts inside their chats, whose Erevos starts a new conversation

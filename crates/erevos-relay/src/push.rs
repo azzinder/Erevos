@@ -7,8 +7,9 @@
 //! 8030), signed with its key (VAPID, RFC 8292). A web app that also gave its
 //! browser's keys for the address gets a count in the push, encrypted for the
 //! browser (RFC 8291): how many messages came since the queue was last
-//! emptied, and whether something came that did not say whether it is a
-//! message (see `Mark` in `server.rs`). The push is always the same size, so
+//! emptied, how many sends that did not say whether they are a message (see
+//! `Mark` in `server.rs`), and how many calls rang. The push is always the
+//! same size, so
 //! the browser's push service (Apple's, Google's, Mozilla's) sees only that
 //! something came, and when; without the keys the push is empty, as for the
 //! web apps before.
@@ -72,13 +73,11 @@ const TIMEOUT: Duration = Duration::from_secs(15);
 /// its authentication secret, as `PushSubscription.getKey` gives them.
 pub const P256DH_LEN: usize = 65;
 pub const AUTH_LEN: usize = 16;
-/// What an encrypted push says, before encryption: a version, flags, the
-/// queue's stream, its round and its count (see `payload`).
-pub const PAYLOAD_LEN: usize = 18;
+/// What an encrypted push says, before encryption: a version, flags (none
+/// yet), the queue's stream, its round and the round's counts (see
+/// `payload`).
+pub const PAYLOAD_LEN: usize = 26;
 const PAYLOAD_VERSION: u8 = 1;
-/// Flag: something came since the queue was last emptied that did not say
-/// whether it is a message, so the count may be short of it.
-pub const UNSURE: u8 = 1;
 /// The record size an encrypted push names (RFC 8188): more than it holds.
 const RECORD_SIZE: u32 = 4096;
 
@@ -119,14 +118,29 @@ struct Address {
     keys: Option<Keys>,
 }
 
+/// What came into a queue, as its sender said.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Came {
+    /// A message someone reads.
+    Message,
+    /// A call that rings.
+    Ring,
+    /// It did not say: perhaps a message.
+    Unknown,
+}
+
 /// What came into a queue since it was last emptied. A new round starts with
 /// a new random number, so a web app that missed pushes, or the relay
 /// restarting, never makes it count a message twice.
 #[derive(Clone, Copy, Debug)]
 struct Tally {
     round: u32,
+    /// Messages.
     count: u32,
-    unsure: bool,
+    /// Sends that did not say what they carry.
+    unmarked: u32,
+    /// Calls that rang.
+    rings: u32,
     /// Something came that no push has said yet.
     fresh: bool,
     /// The queue was emptied since: the round ends with the push that says
@@ -233,9 +247,8 @@ impl Push {
         self.tallies().remove(queue);
     }
 
-    /// Something came into `queue`: push, if it has an address. `counted`
-    /// when the sender said it is a message; otherwise the count is unsure.
-    pub fn arrived(&self, queue: &QueueId, counted: bool) {
+    /// Something came into `queue`: push, if it has an address.
+    pub fn arrived(&self, queue: &QueueId, came: Came) {
         if !self.endpoints().contains_key(queue) {
             return;
         }
@@ -244,15 +257,17 @@ impl Push {
             let tally = tallies.entry(*queue).or_insert_with(|| Tally {
                 round: rand::random(),
                 count: 0,
-                unsure: false,
+                unmarked: 0,
+                rings: 0,
                 fresh: false,
                 drained: false,
             });
-            if counted {
-                tally.count = tally.count.saturating_add(1);
-            } else {
-                tally.unsure = true;
-            }
+            let counted = match came {
+                Came::Message => &mut tally.count,
+                Came::Ring => &mut tally.rings,
+                Came::Unknown => &mut tally.unmarked,
+            };
+            *counted = counted.saturating_add(1);
             // Came before the push that ends the round went: it goes on, and
             // that push says this too.
             tally.fresh = true;
@@ -527,16 +542,20 @@ pub fn stream(queue: &QueueId) -> [u8; 8] {
     hash.finalize()[..8].try_into().expect("8 bytes")
 }
 
-/// What an encrypted push says: the version, the flags, the queue's stream,
-/// the round and the count since the queue was last emptied. A web app that
-/// missed a push loses nothing: the next one says all it did.
+/// What an encrypted push says: the version, the flags (none yet), the
+/// queue's stream, the round, and since the queue was last emptied, how many
+/// messages came, how many sends that did not say what they carry, and how
+/// many calls rang. Totals, not what is new: a web app that missed a push
+/// loses nothing, as the next one says all it did, and one that gets a push
+/// twice counts nothing twice.
 fn payload(queue: &QueueId, tally: Tally) -> [u8; PAYLOAD_LEN] {
     let mut out = [0u8; PAYLOAD_LEN];
     out[0] = PAYLOAD_VERSION;
-    out[1] = if tally.unsure { UNSURE } else { 0 };
     out[2..10].copy_from_slice(&stream(queue));
     out[10..14].copy_from_slice(&tally.round.to_be_bytes());
     out[14..18].copy_from_slice(&tally.count.to_be_bytes());
+    out[18..22].copy_from_slice(&tally.unmarked.to_be_bytes());
+    out[22..26].copy_from_slice(&tally.rings.to_be_bytes());
     out
 }
 
@@ -837,20 +856,23 @@ pub(crate) mod tests {
         (secret, keys)
     }
 
-    /// An encrypted push's version, flags, stream, round and count.
+    /// What an encrypted push says: its stream, round, and the round's
+    /// messages, unmarked sends and calls that rang.
     pub(crate) fn said(
         secret: &SecretKey,
         keys: &Keys,
         body: &[u8],
-    ) -> (u8, u8, [u8; 8], u32, u32) {
+    ) -> ([u8; 8], u32, u32, u32, u32) {
         let text = decrypt(secret, &keys.auth, body).expect("a push the browser can open");
         assert_eq!(text.len(), PAYLOAD_LEN);
+        assert_eq!(text[..2], [PAYLOAD_VERSION, 0]);
+        let word = |at: usize| u32::from_be_bytes(text[at..at + 4].try_into().unwrap());
         (
-            text[0],
-            text[1],
             text[2..10].try_into().unwrap(),
-            u32::from_be_bytes(text[10..14].try_into().unwrap()),
-            u32::from_be_bytes(text[14..18].try_into().unwrap()),
+            word(10),
+            word(14),
+            word(18),
+            word(22),
         )
     }
 
@@ -1036,8 +1058,8 @@ pub(crate) mod tests {
         let p = push(&[&address], None);
         let q = [3u8; 24];
         p.set(&q, &format!("{address}push/abc"), None).unwrap();
-        p.arrived(&q, true);
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
+        p.arrived(&q, Came::Message);
         let (request, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
         assert!(
             request.starts_with("POST /push/abc HTTP/1.1\r\n"),
@@ -1052,13 +1074,13 @@ pub(crate) mod tests {
         // The second came within the gap: it waits for the gap to end.
         assert!(requests.recv_timeout(Duration::from_millis(500)).is_err());
         // A queue with no address: nothing.
-        p.arrived(&[4u8; 24], true);
+        p.arrived(&[4u8; 24], Came::Message);
         assert!(requests.recv_timeout(Duration::from_millis(300)).is_err());
 
         let (gone, requests) = service(410);
         let p = push(&[&gone], None);
         p.set(&q, &format!("{gone}x"), None).unwrap();
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         requests.recv_timeout(Duration::from_secs(5)).unwrap();
         thread::sleep(Duration::from_millis(200));
         assert!(p.endpoints.lock().unwrap().is_empty());
@@ -1074,50 +1096,50 @@ pub(crate) mod tests {
         p.set(&q, &format!("{address}k"), Some(keys.clone()))
             .unwrap();
 
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         let (head, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
         assert!(head.contains("Content-Encoding: aes128gcm\r\n"), "{head}");
         // Always the same size: the push service learns nothing from it.
         assert_eq!(body.len(), 86 + PAYLOAD_LEN + 1 + 16);
         assert!(head.contains(&format!("Content-Length: {}\r\n", body.len())));
-        let (version, flags, stream_id, round, count) = said(&secret, &keys, &body);
-        assert_eq!((version, flags, stream_id, count), (1, 0, stream(&q), 1));
+        let (stream_id, round, count, unmarked, rings) = said(&secret, &keys, &body);
+        assert_eq!((stream_id, count, unmarked, rings), (stream(&q), 1, 0, 0));
 
         // Two more within the gap, one that said nothing of what it is, and
         // word between phones that the server keeps from the push: one more
         // push once the gap is over, which says all of it.
-        p.arrived(&q, true);
-        p.arrived(&q, false);
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
+        p.arrived(&q, Came::Unknown);
+        p.arrived(&q, Came::Message);
         let (_, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, flags, _, again, count) = said(&secret, &keys, &body);
-        assert_eq!((flags, again, count), (UNSURE, round, 3));
+        let (_, again, count, unmarked, _) = said(&secret, &keys, &body);
+        assert_eq!((again, count, unmarked), (round, 3, 1));
         assert!(requests
             .recv_timeout(gap + Duration::from_millis(200))
             .is_err());
 
         // The web app took the messages: a new round starts from nothing.
         p.drained(&q, false);
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         let (_, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, flags, _, next, count) = said(&secret, &keys, &body);
-        assert_eq!((flags, count), (0, 1));
+        let (_, next, count, unmarked, _) = said(&secret, &keys, &body);
+        assert_eq!((count, unmarked), (1, 0));
         assert_ne!(next, round);
 
         // Taken while a push waits for the gap, perhaps out of sight: the push
         // still goes, and says it, and the round ends with it.
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         p.drained(&q, false);
         let (_, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, _, _, again, count) = said(&secret, &keys, &body);
+        let (_, again, count, _, _) = said(&secret, &keys, &body);
         assert_eq!((again, count), (next, 2));
         assert!(p.tallies().get(&q).is_none());
 
         // A push that would say nothing new does not go: the one before said it.
         thread::sleep(gap);
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         let (_, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, _, _, third, count) = said(&secret, &keys, &body);
+        let (_, third, count, _, _) = said(&secret, &keys, &body);
         assert_ne!(third, next);
         assert_eq!(count, 1);
         let _ = p.queue.lock().unwrap().send(q);
@@ -1130,12 +1152,33 @@ pub(crate) mod tests {
         thread::sleep(gap);
 
         // Each push is encrypted afresh.
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         let (_, first) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         let (_, second) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_ne!(first[..16], second[..16]);
         assert_ne!(first[21..86], second[21..86]);
+    }
+
+    #[test]
+    fn a_call_that_rings_is_counted_apart_from_the_messages() {
+        let (address, requests) = service(201);
+        let p = push_with_gap(&[&address], None, Duration::from_millis(300));
+        let q = [11u8; 24];
+        let (secret, keys) = browser();
+        p.set(&q, &format!("{address}c"), Some(keys.clone()))
+            .unwrap();
+        p.arrived(&q, Came::Ring);
+        let (_, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
+        let (_, round, count, _, rings) = said(&secret, &keys, &body);
+        assert_eq!((count, rings), (0, 1));
+
+        // A message after it: counted in the same round, which still says
+        // one call rang.
+        p.arrived(&q, Came::Message);
+        let (_, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
+        let (_, again, count, unmarked, rings) = said(&secret, &keys, &body);
+        assert_eq!((again, count, unmarked, rings), (round, 1, 0, 1));
     }
 
     #[test]
@@ -1147,13 +1190,13 @@ pub(crate) mod tests {
         let (secret, keys) = browser();
         p.set(&q, &format!("{address}s"), Some(keys.clone()))
             .unwrap();
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         let (_, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, _, _, round, _) = said(&secret, &keys, &body);
+        let (_, round, _, _, _) = said(&secret, &keys, &body);
 
         // One more within the gap, read on the screen before it is over:
         // nothing left to say.
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         p.drained(&q, true);
         assert!(p.tallies().get(&q).is_none());
         assert!(requests
@@ -1161,9 +1204,9 @@ pub(crate) mod tests {
             .is_err());
 
         // What comes next starts a new round.
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         let (_, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, _, _, next, count) = said(&secret, &keys, &body);
+        let (_, next, count, _, _) = said(&secret, &keys, &body);
         assert_ne!(next, round);
         assert_eq!(count, 1);
     }
@@ -1177,12 +1220,12 @@ pub(crate) mod tests {
         let (secret, keys) = browser();
         p.set(&q, &format!("{address}r"), Some(keys.clone()))
             .unwrap();
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         let (_, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, _, _, round, _) = said(&secret, &keys, &body);
+        let (_, round, _, _, _) = said(&secret, &keys, &body);
 
         // Notifications turned off while a push waits, and the messages taken.
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         p.set(&q, "", None).unwrap();
         assert!(requests
             .recv_timeout(gap + Duration::from_millis(300))
@@ -1194,9 +1237,9 @@ pub(crate) mod tests {
         let (secret, keys) = browser();
         p.set(&q, &format!("{address}r2"), Some(keys.clone()))
             .unwrap();
-        p.arrived(&q, true);
+        p.arrived(&q, Came::Message);
         let (_, body) = requests.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, _, _, next, count) = said(&secret, &keys, &body);
+        let (_, next, count, _, _) = said(&secret, &keys, &body);
         assert_ne!(next, round);
         assert_eq!(count, 1);
     }
@@ -1220,16 +1263,16 @@ pub(crate) mod tests {
             .unwrap();
         p.set(&b, &format!("{address}one"), Some(keys.clone()))
             .unwrap();
-        p.arrived(&a, true);
+        p.arrived(&a, Came::Message);
         thread::sleep(Duration::from_millis(50));
-        p.arrived(&b, true);
+        p.arrived(&b, Came::Message);
         thread::sleep(Duration::from_millis(50));
-        p.arrived(&a, true);
+        p.arrived(&a, Came::Message);
 
         let mut went = Vec::new();
         for _ in 0..3 {
             let (at, _, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
-            let (_, _, from, _, count) = said(&secret, &keys, &body);
+            let (from, _, count, _, _) = said(&secret, &keys, &body);
             went.push((at, from, count));
         }
         // a at once, then b, then a's second: never closer than the gap.
@@ -1247,8 +1290,8 @@ pub(crate) mod tests {
         // Another browser's address keeps its own gap.
         let c = [10u8; 24];
         p.set(&c, &format!("{address}two"), None).unwrap();
-        p.arrived(&a, true);
-        p.arrived(&c, true);
+        p.arrived(&a, Came::Message);
+        p.arrived(&c, Came::Message);
         let first = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
         let second = pushes
             .recv_timeout(gap / 2)

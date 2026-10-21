@@ -106,7 +106,7 @@ test('a send that says what it carries reaches the queue as any, now, through a 
   const ids = await createQueue(own);
   await sendMessage(own, ids.senderId, Uint8Array.of(1), 'message');
   await sendMessage(own, ids.senderId, Uint8Array.of(2), 'quiet');
-  await sendMessage({ url: far, via: { url: near } }, ids.senderId, Uint8Array.of(3), 'message');
+  await sendMessage({ url: far, via: { url: near } }, ids.senderId, Uint8Array.of(3), 'ring');
   for (const n of [1, 2, 3]) assert.deepEqual(await receiveMessage(own, ids.recipientId), Uint8Array.of(n));
   await sendMessageLater(own, ids.senderId, [Uint8Array.of(4), Uint8Array.of(5)], Date.now() + 1000, 'message');
   let got: Uint8Array | null = null;

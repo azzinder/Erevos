@@ -1,6 +1,7 @@
 // The web app's notice while it is closed (pwa/sw.js): how many messages came since Erevos was last
 // open ("3 new messages"), as a relay that counts says in its pushes, or else "New message", or
-// "New messages" once more pushes came, in the app's language, on an iPhone as on other browsers.
+// "New messages" once more pushes came, or "Call" when only a call rang, in the app's language, on an
+// iPhone as on other browsers.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -68,16 +69,18 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>()) {
   };
 }
 
-// What a relay that counts puts in a push (crates/erevos-relay/src/push.rs): version 1, flags (1:
-// not all of it counted), the queue's stream, the round, and the round's total so far.
-function counted(stream: number, round: number, total: number, unsure = false): Uint8Array {
-  const bytes = new Uint8Array(18);
+// What a relay that counts puts in a push (crates/erevos-relay/src/push.rs): version 1, flags
+// (none), the queue's stream, the round, and the round's totals so far: messages, sends that did
+// not say what they carry, and calls that rang.
+function counted(stream: number, round: number, total: number, unmarked = 0, rings = 0): Uint8Array {
+  const bytes = new Uint8Array(26);
   const view = new DataView(bytes.buffer);
   bytes[0] = 1;
-  bytes[1] = unsure ? 1 : 0;
   view.setUint32(6, stream);
   view.setUint32(10, round);
   view.setUint32(14, total);
+  view.setUint32(18, unmarked);
+  view.setUint32(22, rings);
   return bytes;
 }
 
@@ -140,18 +143,18 @@ test("the notice speaks the app's language, kept when the worker starts again", 
 });
 
 test("every app language has the notice's words", async () => {
-  const words: Record<string, [string, string, string]> = {
-    en: ['New message', 'New messages', '3 new messages'],
-    el: ['Νέο μήνυμα', 'Νέα μηνύματα', '3 νέα μηνύματα'],
-    de: ['Neue Nachricht', 'Neue Nachrichten', '3 neue Nachrichten'],
-    es: ['Mensaje nuevo', 'Mensajes nuevos', '3 mensajes nuevos'],
-    fr: ['Nouveau message', 'Nouveaux messages', '3 nouveaux messages'],
-    it: ['Nuovo messaggio', 'Nuovi messaggi', '3 nuovi messaggi'],
-    pt: ['Nova mensagem', 'Novas mensagens', '3 novas mensagens'],
-    sh: ['Nova poruka', 'Nove poruke', '3 nove poruke'],
+  const words: Record<string, [string, string, string, string]> = {
+    en: ['New message', 'New messages', '3 new messages', 'Call'],
+    el: ['Νέο μήνυμα', 'Νέα μηνύματα', '3 νέα μηνύματα', 'Κλήση'],
+    de: ['Neue Nachricht', 'Neue Nachrichten', '3 neue Nachrichten', 'Anruf'],
+    es: ['Mensaje nuevo', 'Mensajes nuevos', '3 mensajes nuevos', 'Llamada'],
+    fr: ['Nouveau message', 'Nouveaux messages', '3 nouveaux messages', 'Appel'],
+    it: ['Nuovo messaggio', 'Nuovi messaggi', '3 nuovi messaggi', 'Chiamata'],
+    pt: ['Nova mensagem', 'Novas mensagens', '3 novas mensagens', 'Chamada'],
+    sh: ['Nova poruka', 'Nove poruke', '3 nove poruke', 'Poziv'],
   };
   assert.deepEqual(Object.keys(words).sort(), [...LANGS].sort());
-  for (const [lang, [one, more, three]] of Object.entries(words)) {
+  for (const [lang, [one, more, three, call]] of Object.entries(words)) {
     const other = browser('other');
     await other.tell({ erevos: 'lang', lang });
     await other.push();
@@ -163,6 +166,9 @@ test("every app language has the notice's words", async () => {
     assert.deepEqual(other.shown(), [one]);
     await other.push(counted(1, 1, 3));
     assert.deepEqual(other.shown(), [three]);
+    await other.tell({ erevos: 'seen' });
+    await other.push(counted(2, 1, 0, 0, 1));
+    assert.deepEqual(other.shown(), [call]);
   }
 });
 
@@ -232,25 +238,74 @@ test('a push come late, from this round or the one before, adds only what it had
   assert.deepEqual(again.shown(), ['6 new messages']);
 });
 
-test('a push the relay could not count, or an empty one, leaves the number out until Erevos is open', async () => {
+test('a send that did not say what it carries, or an empty push, leaves the number out until Erevos is open', async () => {
   const other = browser('other');
-  await other.push(counted(1, 1, 1));
-  await other.push(counted(1, 1, 2, true));
-  assert.deepEqual(other.shown(), ['New messages']);
-  await other.push(counted(1, 1, 3));
-  assert.deepEqual(other.shown(), ['New messages']);
-  await other.tell({ erevos: 'seen' });
-  await other.push(counted(1, 1, 4));
+  await other.push(counted(1, 1, 0, 1));
   assert.deepEqual(other.shown(), ['New message']);
+  await other.push(counted(1, 1, 1, 1));
+  assert.deepEqual(other.shown(), ['New messages']);
+  await other.push(counted(1, 1, 2, 1));
+  assert.deepEqual(other.shown(), ['New messages']);
+  // Opened: the round goes on, and the send told of before is not told again.
+  await other.tell({ erevos: 'seen' });
+  await other.push(counted(1, 1, 4, 1));
+  assert.deepEqual(other.shown(), ['2 new messages']);
   await other.push();
   assert.deepEqual(other.shown(), ['New messages']);
   // What is not a count this worker knows is as an empty push.
   await other.tell({ erevos: 'seen' });
   const later = counted(1, 1, 9);
   later[0] = 2;
-  for (const bytes of [later, counted(1, 1, 9).slice(0, 17), new Uint8Array(0)]) await other.push(bytes);
+  for (const bytes of [later, counted(1, 1, 9).slice(0, 25), counted(1, 1, 9).slice(0, 18), new Uint8Array(0)]) await other.push(bytes);
   assert.deepEqual(other.shown(), ['New messages']);
-  assert.equal(other.count(), 3);
+  assert.equal(other.count(), 4);
+});
+
+test('a call that rang, with no message since Erevos was open, says so; with messages, the number', async () => {
+  const other = browser('other');
+  await other.push(counted(1, 5, 0, 0, 1));
+  assert.deepEqual(other.shown(), ['Call']);
+  // The same push come twice.
+  await other.push(counted(1, 5, 0, 0, 1));
+  assert.deepEqual(other.shown(), ['Call']);
+  await other.push(counted(1, 5, 2, 0, 1));
+  assert.deepEqual(other.shown(), ['2 new messages']);
+  // Another call: the messages are still what to tell of.
+  await other.push(counted(1, 5, 2, 0, 2));
+  assert.deepEqual(other.shown(), ['2 new messages']);
+  // Opening Erevos starts again: a message alone is a message, and the calls of the round before
+  // are not told again.
+  await other.tell({ erevos: 'seen' });
+  await other.push(counted(1, 6, 1));
+  assert.deepEqual(other.shown(), ['New message']);
+  await other.tell({ erevos: 'seen' });
+  await other.push(counted(1, 5, 2, 0, 2));
+  assert.deepEqual(other.shown(), ['New message']);
+  assert.equal(other.count(), 1);
+  // With a send that did not say what it carries, no number and no call: one thing came, in
+  // whichever order the pushes come.
+  const orders = [
+    [counted(1, 7, 0, 1, 1)],
+    [counted(1, 8, 0, 0, 1), counted(1, 8, 0, 1, 1)],
+    [counted(1, 9, 0, 1), counted(1, 9, 0, 1, 1)],
+  ];
+  for (const pushes of orders) {
+    await other.tell({ erevos: 'seen' });
+    for (const bytes of pushes) await other.push(bytes);
+    assert.deepEqual(other.shown(), ['New message']);
+  }
+  // Nor with an empty push.
+  await other.tell({ erevos: 'seen' });
+  await other.push(counted(1, 10, 0, 0, 1));
+  await other.push();
+  assert.deepEqual(other.shown(), ['New message']);
+  // A call while Erevos is on the screen is not kept for later.
+  await other.tell({ erevos: 'seen' });
+  other.windows.push({ visibilityState: 'visible' });
+  await other.push(counted(2, 1, 0, 0, 1));
+  other.windows.pop();
+  await other.push(counted(2, 1, 1, 0, 1));
+  assert.deepEqual(other.shown(), ['New message']);
 });
 
 test('a count kept by the worker before counts were sent goes on without a number', async () => {

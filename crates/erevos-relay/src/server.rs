@@ -79,12 +79,13 @@
 //! Marks: over WebSocket, and in a request held for later, a `SEND`,
 //! `SEALED_SEND`, `FORWARD` or `LATER` request may end with one more byte
 //! that says what it carries: `MESSAGE` (something a person reads, counted in
-//! the web app's notice) or `QUIET` (word between phones, such as that a
-//! message came or new keys, which pushes nothing). Without one, the relay
-//! pushes as for a message but cannot count it. A `FORWARD` passes its mark
-//! on to the other relay. Older relays read no further than the request, and
-//! push for everything. The TCP front end takes no mark: its requests follow
-//! each other with nothing between.
+//! the web app's notice), `QUIET` (word between phones, such as that a
+//! message came or new keys, which pushes nothing) or `RING` (a call that
+//! rings: it pushes, and is counted apart from the messages). Without one,
+//! the relay pushes, and counts it apart as a send that did not say. A
+//! `FORWARD` passes its mark on to the other relay. Older relays read no
+//! further than the request, and push for everything. The TCP front end takes
+//! no mark: its requests follow each other with nothing between.
 //!
 //! In the same way a `RECEIVE` over WebSocket may end with `SHOWN`: the app
 //! takes the messages on the screen, so when it finds the queue empty, a push
@@ -159,7 +160,7 @@ use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
 use crate::lend::{Lend, Nonce, Pass};
 use crate::lock::{lock, wait_timeout};
 use crate::peers;
-use crate::push::{Keys, Push, SetError, AUTH_LEN, MAX_ENDPOINT, P256DH_LEN};
+use crate::push::{Came, Keys, Push, SetError, AUTH_LEN, MAX_ENDPOINT, P256DH_LEN};
 use crate::queue::{system_now, QueueError, QueueId, Store};
 use crate::tokens::Tokens;
 use crate::turn::Turn;
@@ -347,6 +348,7 @@ pub const BORROW: u8 = 20;
 /// The marks a send may end with (see the module's doc).
 pub const MESSAGE: u8 = 1;
 pub const QUIET: u8 = 2;
+pub const RING: u8 = 3;
 /// The mark a `RECEIVE` may end with (see the module's doc).
 pub const SHOWN: u8 = 1;
 
@@ -357,6 +359,7 @@ enum Mark {
     Unknown,
     Message,
     Quiet,
+    Ring,
 }
 
 impl Mark {
@@ -365,6 +368,7 @@ impl Mark {
             Mark::Unknown => None,
             Mark::Message => Some(MESSAGE),
             Mark::Quiet => Some(QUIET),
+            Mark::Ring => Some(RING),
         }
     }
 }
@@ -983,10 +987,16 @@ fn queue_message(
     let sent = {
         let mut store = shared.store();
         let sent = store.send(sender, msg);
-        if sent.is_ok() && mark != Mark::Quiet {
+        let came = match mark {
+            Mark::Quiet => None,
+            Mark::Message => Some(Came::Message),
+            Mark::Ring => Some(Came::Ring),
+            Mark::Unknown => Some(Came::Unknown),
+        };
+        if let (true, Some(came)) = (sent.is_ok(), came) {
             if let Some(push) = shared.push.get() {
                 if let Some(recipient) = store.recipient_of(sender) {
-                    push.arrived(&recipient, mark == Mark::Message);
+                    push.arrived(&recipient, came);
                 }
             }
         }
@@ -1004,6 +1014,7 @@ fn read_mark(r: &mut impl Read, framed: bool) -> io::Result<Mark> {
     Ok(match read_byte(r, framed)? {
         Some(MESSAGE) => Mark::Message,
         Some(QUIET) => Mark::Quiet,
+        Some(RING) => Mark::Ring,
         _ => Mark::Unknown,
     })
 }
@@ -1790,8 +1801,8 @@ mod tests {
 
     #[test]
     fn a_web_app_with_its_keys_is_told_how_many_messages_came_but_not_of_word_between_phones() {
+        use crate::push::stream;
         use crate::push::tests::{browser, said, service};
-        use crate::push::{stream, UNSURE};
         let (service, pushes) = service(201);
         let gap = Duration::from_millis(300);
         let addr = start_ws_pushing(&service, None, gap);
@@ -1826,20 +1837,22 @@ mod tests {
         assert_eq!(ws_call(&mut ws, message), vec![OK]);
         let (head, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
         assert!(head.starts_with("POST /k HTTP/1.1\r\n"), "{head}");
-        let (_, flags, from, round, count) = said(&secret, &keys, &body);
-        assert_eq!((flags, from, count), (0, stream(&recipient), 1));
+        let (from, round, count, unmarked, _) = said(&secret, &keys, &body);
+        assert_eq!((from, count, unmarked), (stream(&recipient), 1, 0));
 
         // A send that says nothing of what it is, as from an older phone, or
-        // with a mark this relay does not know: a push, which says the count
-        // is not sure.
-        for request in [
+        // with a mark this relay does not know: a push, which counts it apart.
+        for (n, request) in [
             send_request(&sender, b"old"),
             marked(send_request(&sender, b"new"), 9),
-        ] {
+        ]
+        .into_iter()
+        .enumerate()
+        {
             assert_eq!(ws_call(&mut ws, request), vec![OK]);
             let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
-            let (_, flags, _, again, count) = said(&secret, &keys, &body);
-            assert_eq!((flags, again, count), (UNSURE, round, 1));
+            let (_, again, count, unmarked, _) = said(&secret, &keys, &body);
+            assert_eq!((again, count, unmarked), (round, 1, n as u32 + 1));
         }
 
         // The web app took its messages: the count starts again, in a new round.
@@ -1851,9 +1864,31 @@ mod tests {
         let message = marked(send_request(&sender, b"next"), MESSAGE);
         assert_eq!(ws_call(&mut ws, message), vec![OK]);
         let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, flags, _, next, count) = said(&secret, &keys, &body);
-        assert_eq!((flags, count), (0, 1));
+        let (_, next, count, unmarked, _) = said(&secret, &keys, &body);
+        assert_eq!((count, unmarked), (1, 0));
         assert_ne!(next, round);
+    }
+
+    #[test]
+    fn a_call_that_rings_pushes_and_says_so_but_counts_no_message() {
+        use crate::push::tests::{browser, said, service};
+        let (service, pushes) = service(201);
+        let addr = start_ws_pushing(&service, None, Duration::from_millis(100));
+        let mut ws = connect_with_token(addr, "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        let (secret, keys) = browser();
+        let set = push_set_request(&recipient, &format!("{service}r"), &key_bytes(&keys));
+        assert_eq!(ws_call(&mut ws, set), vec![OK, 1]);
+
+        let ring = marked(send_request(&sender, b"offer"), RING);
+        assert_eq!(ws_call(&mut ws, ring), vec![OK]);
+        let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
+        let (_, _, count, unmarked, rings) = said(&secret, &keys, &body);
+        assert_eq!((count, unmarked, rings), (0, 0, 1));
+        assert_eq!(
+            ws_receive(&mut ws, &recipient).as_deref(),
+            Some(&b"offer"[..])
+        );
     }
 
     #[test]
@@ -1879,7 +1914,7 @@ mod tests {
             assert_eq!(ws_call(&mut ws, message), vec![OK]);
         }
         let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, _, _, round, count) = said(&secret, &keys, &body);
+        let (_, round, count, _, _) = said(&secret, &keys, &body);
         assert_eq!(count, 1);
         // Both read on the screen before the gap is over: the second push
         // would tell of a message already read, so it does not go.
@@ -1893,7 +1928,7 @@ mod tests {
         let message = marked(send_request(&sender, b"three"), MESSAGE);
         assert_eq!(ws_call(&mut ws, message), vec![OK]);
         let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, _, _, next, count) = said(&secret, &keys, &body);
+        let (_, next, count, _, _) = said(&secret, &keys, &body);
         assert_eq!(count, 1);
         assert_ne!(next, round);
     }
@@ -1930,8 +1965,8 @@ mod tests {
         );
         assert_eq!(r, vec![OK]);
         let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, flags, _, _, count) = said(&secret, &keys, &body);
-        assert_eq!((flags, count), (0, 1));
+        let (_, _, count, unmarked, _) = said(&secret, &keys, &body);
+        assert_eq!((count, unmarked), (1, 0));
     }
 
     #[test]
@@ -1958,8 +1993,8 @@ mod tests {
         assert!(pushes.recv_timeout(Duration::from_millis(300)).is_err());
 
         let (_, body) = pushes.recv_timeout(Duration::from_secs(5)).unwrap();
-        let (_, flags, _, _, count) = said(&secret, &keys, &body);
-        assert_eq!((flags, count), (0, 1));
+        let (_, _, count, unmarked, _) = said(&secret, &keys, &body);
+        assert_eq!((count, unmarked), (1, 0));
         assert_eq!(
             ws_receive(&mut ws, &recipient).as_deref(),
             Some(&b"later"[..])

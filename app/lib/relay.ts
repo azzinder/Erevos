@@ -27,8 +27,9 @@
 // come straight from their /files path; it holds nothing for later and gives no call relay.
 //
 // Marks: a send may say what it carries (Mark), for a web app's notice while it is closed
-// (lib/web-push.web.ts): a message someone reads, which the relay counts in the push, or word
-// between phones, which pushes nothing. The mark is one byte after the request; a relay from before
+// (lib/web-push.web.ts): a message someone reads, which the relay counts in the push, word between
+// phones, which pushes nothing, or a call that rings, which pushes, counts as no message, and has
+// the push say a call rang. The mark is one byte after the request; a relay from before
 // marks reads no further than the request, and one that holds a message for later keeps the mark
 // for when it goes. Without a mark the relay pushes, but says it could not count it. A web app on
 // the screen also says so when it takes its messages (receiveMessage): finding the queue empty
@@ -64,7 +65,7 @@ const LEND = 19;
 const BORROW = 20;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
-const MARKS = { message: 1, quiet: 2 } as const;
+const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
 const SHOWN = 1;
 
 const OK = 0;
@@ -323,7 +324,7 @@ export async function relayKey(relay: Relay): Promise<Uint8Array | null> {
   return key;
 }
 
-/** What a send carries: a message someone reads, or word between phones (see Marks above). */
+/** What a send carries: a message someone reads, word between phones, or a call that rings (see Marks above). */
 export type Mark = keyof typeof MARKS;
 
 // The request with its mark after it, if it has one.
