@@ -55,6 +55,8 @@ pub enum Error {
     NotAdmin,
     #[error("the group's keeper cannot take itself out")]
     OwnLeaf,
+    #[error("the group's next keeper must be a member who stays in it")]
+    NoKeeper,
     #[error("not a group message")]
     Malformed,
     #[error("group: {0}")]
@@ -168,6 +170,17 @@ fn rules_in(extensions: &Extensions<GroupContext>) -> Option<(u32, Vec<u8>)> {
 // The leaf whose commits count in a group: its keeper's in a public group, the admin's otherwise.
 fn keeper_of(group: &MlsGroup) -> u32 {
     rules_in(group.extensions()).map_or(ADMIN, |(keeper, _)| keeper)
+}
+
+// The leaves of the members who asked to leave, which the keeper's next commit takes out.
+fn leaving(group: &MlsGroup) -> Vec<u32> {
+    group
+        .pending_proposals()
+        .filter_map(|p| match p.proposal() {
+            Proposal::Remove(remove) => Some(remove.removed().u32()),
+            _ => None,
+        })
+        .collect()
 }
 
 // The key this member signs with in a group.
@@ -336,8 +349,16 @@ impl Member {
     /// members, empty when there are none. The keeper never takes itself out: it hands over first.
     pub fn commit(&mut self, id: &[u8], key_packages: &[&[u8]], removes: &[u32], rules: Option<(u32, &[u8])>) -> Result<(Vec<u8>, Vec<u8>)> {
         let mut group = self.keeper_group(id)?;
-        if removes.contains(&group.own_leaf_index().u32()) {
+        let own = group.own_leaf_index().u32();
+        let leaving = leaving(&group);
+        if removes.contains(&own) || leaving.contains(&own) {
             return Err(Error::OwnLeaf);
+        }
+        // A leaf left empty is filled by whoever is added next, so the keeper is one who stays.
+        if let Some((keeper, _)) = rules {
+            if removes.contains(&keeper) || leaving.contains(&keeper) || !group.members().any(|m| m.index.u32() == keeper) {
+                return Err(Error::NoKeeper);
+            }
         }
         let packages = key_packages.iter().map(|bytes| self.checked_package(bytes)).collect::<Result<Vec<_>>>()?;
         let extensions = match rules {
@@ -423,6 +444,9 @@ impl Member {
     /// Takes members out by their leaves: the commit for everyone in the group before it. Admin only.
     pub fn remove(&mut self, id: &[u8], leaves: &[u32]) -> Result<Vec<u8>> {
         let mut group = self.keeper_group(id)?;
+        if leaves.contains(&group.own_leaf_index().u32()) {
+            return Err(Error::OwnLeaf);
+        }
         let leaves: Vec<LeafNodeIndex> = leaves.iter().map(|&l| LeafNodeIndex::new(l)).collect();
         let signer = self.group_signer(&group)?;
         let (commit, _, _) = group.remove_members(&self.provider, signer.as_ref().unwrap_or(&self.signer), &leaves).map_err(mls)?;
@@ -435,6 +459,9 @@ impl Member {
         let mut group = self.keeper_group(id)?;
         if group.pending_proposals().next().is_none() {
             return Ok(None);
+        }
+        if leaving(&group).contains(&group.own_leaf_index().u32()) {
+            return Err(Error::OwnLeaf);
         }
         let signer = self.group_signer(&group)?;
         let (commit, _, _) = group.commit_to_pending_proposals(&self.provider, signer.as_ref().unwrap_or(&self.signer)).map_err(mls)?;
@@ -472,9 +499,13 @@ impl Member {
     }
 
     /// Asks the admin to take this member out. The group stays here until the admin's commit
-    /// comes (`Opened::Removed`), or the app forgets it.
+    /// comes (`Opened::Removed`), or the app forgets it. The keeper itself hands the group over
+    /// first: none could take it out.
     pub fn leave(&mut self, id: &[u8]) -> Result<Vec<u8>> {
         let mut group = self.group(id)?;
+        if group.own_leaf_index().u32() == keeper_of(&group) {
+            return Err(Error::OwnLeaf);
+        }
         let signer = self.group_signer(&group)?;
         let message = group.leave_group(&self.provider, signer.as_ref().unwrap_or(&self.signer)).map_err(mls)?;
         message.to_bytes().map_err(mls)
@@ -755,6 +786,11 @@ mod tests {
 
         // The keeper does not take itself out, and hands the group over to Bob.
         assert!(matches!(alice.commit(&id, &[], &[0], None), Err(Error::OwnLeaf)));
+        assert!(matches!(alice.remove(&id, &[0]), Err(Error::OwnLeaf)));
+        assert!(matches!(alice.leave(&id), Err(Error::OwnLeaf)));
+        // Nor to a leaf no one is in, or to one it takes out: whoever came there next would keep it.
+        assert!(matches!(alice.commit(&id, &[], &[], Some((5, b"no one"))), Err(Error::NoKeeper)));
+        assert!(matches!(alice.commit(&id, &[], &[2], Some((2, b"carol, going"))), Err(Error::NoKeeper)));
         let (handed, _) = alice.commit(&id, &[], &[], Some((1, b"bob keeps it"))).unwrap();
         for member in [&mut bob, &mut carol] {
             assert_eq!(member.open(&handed).unwrap(), Opened::Changed { group: id.clone() });
@@ -768,6 +804,7 @@ mod tests {
         // A member who asks to leave goes with the keeper's next commit.
         let leaving = alice.leave(&id).unwrap();
         assert_eq!(bob.open(&leaving).unwrap(), Opened::Leaving { group: id.clone(), sender: 0 });
+        assert!(matches!(bob.commit(&id, &[], &[], Some((0, b"alice, going"))), Err(Error::NoKeeper)));
         let commit = bob.commit(&id, &[], &[], Some((1, b"bob alone"))).unwrap().0;
         assert_eq!(alice.open(&commit).unwrap(), Opened::Removed { group: id.clone() });
         assert_eq!(bob.members(&id).unwrap().0.len(), 1);
