@@ -68,11 +68,17 @@ Canonical JSON, keys in this order:
 - Signed as `accountSign(account, "devices", body)`; on the wire `{b: body, s: signature, r?}`.
 - `n = max(previous + 1, now in ms)`. The last `n` is kept with the account (`E2EData.list`), which
   backups carry, so a primary put back from a backup still signs higher.
-- At most 4 entries, sorted by `i`, no names. Flags: 1 messages, 2 calls, 4 group member (later).
-- **Always 4 entries** (the owner's choice, 2026-10-21): empty places hold
-  endpoints made only for the list, whose secrets are thrown away and whose queues no one reads,
-  so a contact cannot count the devices from the list. They cost contacts one copy of each message
-  per empty place. A contact can still tell, over time, which places answer.
+- At most 4 entries, sorted by `i`, no names. Flags: 1 messages, 2 calls, 4 group member (later);
+  0 while only own devices are given the list (phase 1), as no endpoint takes anything directly yet.
+- **Always 4 entries** (the owner's choice, 2026-10-21; `PAD_LIST` in lib/device-list.ts): empty
+  places hold endpoints made only for the list, whose secrets are thrown away and whose queues no
+  one reads, so a contact cannot count the devices from the list. They carry the devices' flags
+  and are sorted with them. Only the primary knows which entries are its devices' (`real`, kept in
+  `E2EData.list`, not in the list), and it tells its own devices, in `list`, never contacts. Each
+  new list keeps the filling entries of the one before, but one at random for each device that
+  takes a place, so linking a device and unlinking one both show as one entry replaced. They cost
+  contacts one copy of each message per empty place. A contact can still tell, over time, which
+  places answer.
 - `r` holds where each endpoint reads (`{id: {s, relay, rk}}`), deliberately unsigned: after the
   first message each endpoint's own messages say it, per conversation, as `from`, `relay`,
   `relayKey` and `spare` do today.
@@ -100,10 +106,13 @@ optional `to`, for one endpoint only.
 
 Older versions ignore an unknown `k`.
 
-- `endpoint` (device → primary): its endpoint bundle, for links made before this.
-- `list` (primary → devices, and passed on between devices): the signed list and the account's
-  bundle; a device checks the bundle names the account it linked to (`hello`, over the link whose
-  safety code was compared).
+- `endpoint` (device → primary): its endpoint's bundle, once the codes match, and once from a
+  link made before this. Said again when a list does not name it.
+- `list` (primary → devices, and passed on between devices): the signed list, the account's
+  bundle (`ak`) and which entries are the devices' (`real`); a device checks the bundle names the
+  account it linked to (`hello`, over the link whose safety code was compared), then the list
+  against it, and keeps it (`E2EData.own`). The primary keeps the `n` each device was last told
+  (`Peer.listed`), and the endpoint each said (`Peer.endpoint`).
 - `peer` (any endpoint → its siblings): what it learned of a contact's endpoints and whether that
   contact writes to it directly.
 - `out`, `set`, `call`, `took`, `changed` may now come from any endpoint, with a time each, so
@@ -183,9 +192,10 @@ signed list does.
 ## Own devices
 
 All with all: the primary's links to each device (safety codes compared) stay, and devices start
-conversations with each other from the list's bundles; the one with the lower id starts, the other
-takes a first packet only from an id in the current list. lib/siblings.ts holds them; `Links.say`
-writes to the primary and every sibling; link packets are sealed with sealed-packet marks.
+conversations with each other from the bundles of the list's `real` entries; the one with the
+lower id starts, the other takes a first packet only from an id in the current list.
+lib/siblings.ts holds them; `Links.say` writes to the primary and every sibling; link packets are
+sealed with sealed-packet marks.
 
 What settles how: messages by (chat, tag), marks only go up; contact fields last writer first per
 field; an accepted request stays accepted; removing a contact leaves a tombstone a deliberate re-add
@@ -196,17 +206,22 @@ never go over the space's link.
 
 - Contact: `bundle` (their account bundle), `list` (their checked list), `endpoints` (theirs, each
   with its route and conversations), `dv`, `solo`, field times.
-- Space: `endpoint` (a linked device's own account), `own` (its account's bundle and list), `list`
-  (the primary's last signed list), `unverified`.
+- Space: `endpoint` (a linked device's own account), `own` (its account's identity and bundle, and
+  the list as last checked, with `real`), `list` (the primary's last signed list, with `real`),
+  `unverified`.
 - lock/fanout-data.ts: the copies for other endpoints waiting for the relay, at most 300 per
   endpoint and 1000 in all. The conversations are saved before the outbox: a crash in between
   loses copies, which is safe; the other order would reuse message keys.
 - Links made before this need no relinking: a device with no endpoint makes one and sends
-  `endpoint`; an older primary ignores it and keeps passing on. New links carry the endpoint's
-  bundle in the QR's key, which keeps its format.
-- A device's backup put back elsewhere drops its endpoint and its endpoints' conversations before
-  sealing anything, so two machines never seal as one device. A primary put back on another phone
-  has listed devices but no links: it signs an empty list.
+  `endpoint`; an older primary ignores it and keeps passing on. A new link takes the same way: the
+  QR's key stays the link's own, and the device makes its endpoint once the codes match. That key
+  is the identity of the link's conversation and the one its safety code covers, so it stays that
+  and nothing else; and an older device throws it away once linked, so a primary could not list a
+  device from its QR alone.
+- A device's backup put back elsewhere drops its endpoint, what it checked of its account and its
+  endpoints' conversations before sealing anything, so two machines never seal as one device. A
+  primary put back on another phone has listed devices but no links: it signs a list without them,
+  their places filled anew. A device unlinked drops its endpoint too.
 
 ## Hidden places (phase 5)
 

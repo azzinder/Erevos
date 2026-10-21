@@ -3,8 +3,8 @@
 // version from before linking, through a real relay and the real core: linking with the codes
 // compared, the history brought over, messages both ways and on both devices, contacts kept alike,
 // photos and files deleted from the relay once each took them, calls on either, the phone's groups
-// on the computer too, what is done later to messages reaching it, unlinking, and a computer's own
-// backup restored elsewhere.
+// on the computer too, what is done later to messages reaching it, unlinking, a computer's own
+// backup restored elsewhere, and each device's own endpoint in the list the phone signs.
 // Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
@@ -18,6 +18,7 @@ import type { CallSignal } from '../lib/call-signal';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { bytesSource, FileGoneError, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
+import { bodyOf, verifyList, type Body } from '../lib/device-list';
 import { Links, type HistoryChoice } from '../lib/devices';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { sendGroupFile, takeGroupFile } from '../lib/group-media';
@@ -60,6 +61,8 @@ import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib
 import type { SpaceChats } from '../lib/space-chats';
 import { VoiceAssembler } from '../lib/voice';
 import { newFileId, type FileRef } from '../lock/attachment-files';
+import { loadDevicesData } from '../lock/devices-data';
+import { loadE2EData, saveE2EData, type E2EData } from '../lock/e2e-data';
 import { EMPTY_GROUPS, type Group, type GroupMessage } from '../lock/group-data';
 import { History } from '../lock/history';
 import { loadClip, saveClip } from '../lock/voice-clips';
@@ -70,11 +73,15 @@ import { ready as relayReady, relayNote, startRelay } from './real-relay';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const coreReady = existsSync(built);
+// The core, and the same core as a build made before it signed as an account, as an Erevos from
+// before endpoints has it.
+let wasmCore: Core | null = null;
+let unsignedCore: Core | null = null;
 if (coreReady) {
   const wasm = createRequire(import.meta.url)(built.pathname) as Record<string, (...args: never[]) => unknown>;
-  setCore(
-    Object.fromEntries(Object.entries(wasm).map(([name, call]) => [name, async (...args: never[]) => call(...args)])) as unknown as Core,
-  );
+  wasmCore = Object.fromEntries(Object.entries(wasm).map(([name, call]) => [name, async (...args: never[]) => call(...args)])) as unknown as Core;
+  unsignedCore = { ...wasmCore, accountSign: undefined, bundleVerify: undefined };
+  setCore(wasmCore);
 } else {
   console.log('Skipping the linked device checks: build the core first with node checks/build-core.mjs');
 }
@@ -192,10 +199,12 @@ async function setup() {
     const ids = await createQueue(relay);
     return { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
   };
-  const phone = async (space: number, linking = true): Promise<Phone> => {
+  // With `restored`, its chat's keys and contacts as a backup put them back (lock/e2e-data.ts), without links.
+  const phone = async (space: number, linking = true, restored?: E2EData): Promise<Phone> => {
     const key = randomBytes(32);
     const own = await queue();
     await saveSpaceData(space, key, { ...EMPTY_SPACE, url, ownQueue: own });
+    if (restored) await saveE2EData('space', space, key, restored);
     const chats = { e2e: await E2E.open('space', space, key), history: await History.open('space', space, key), voiceParts: new VoiceAssembler() };
     const links = await Links.open(space, key, chats, 60 * 60_000);
     opened.push(links);
@@ -1201,4 +1210,142 @@ test('groups on a linked computer: the phone\'s, read and written there through 
   await until(() => onDell.list().length === 0);
 
   for (const p of [pixel, dell]) p.links.close();
+});
+
+test('each linked device has an endpoint of its own, named in a list the phone signs: links from before too, not a device from before', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { relay, url, where, phone, take, write, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const carol = await phone(2, false);
+  const account = pixel.chats.e2e.identityHex();
+  const carolId = carol.chats.e2e.identityHex();
+  await carol.chats.e2e.addContact({ senderHex: pixel.queue.senderHex, key: toBase64Url(pixel.chats.e2e.bundle), relayUrl: url }, carol.queue.senderHex, where);
+  await write(carol, account, 'hello');
+  await take(pixel);
+  await pixel.chats.e2e.acceptRequest(carolId);
+  // The list a phone signed last, with what it says, and whether it names an endpoint.
+  const listOf = (p: Phone) => {
+    const list = p.chats.e2e.signedList();
+    return list && { ...list, body: bodyOf(list) as Body };
+  };
+  const names = (list: { body: Body }, id: string) => list.body.d.some((e) => e.i === id);
+  const filling = (list: { body: Body; real: string[] }) => list.body.d.filter((e) => !list.real.includes(e.i)).map((e) => e.i);
+  const reopen = async (p: Phone) => {
+    p.links.close();
+    p.links = await Links.open(p.space, p.key, p.chats, 60 * 60_000);
+    opened.push(p.links);
+    await p.links.settled();
+  };
+  // What a computer on an Erevos from before endpoints does, its core unable to sign.
+  const asOld = async <T>(call: () => Promise<T>): Promise<T> => {
+    setCore(unsignedCore);
+    try {
+      return await call();
+    } finally {
+      setCore(wasmCore);
+    }
+  };
+
+  // Linked by versions from before endpoints: none, and no list.
+  await asOld(async () => {
+    await linkUp(pixel, dell);
+    await until(async () => {
+      await take(dell);
+      return dell.chats.e2e.contacts().length === 1;
+    });
+  });
+  assert.equal(dell.chats.e2e.endpoint(), null);
+  assert.equal(pixel.chats.e2e.signedList(), null);
+
+  // Both updated, the link as it was: the computer makes its endpoint and says it, and the phone
+  // signs a list that names it, which the computer checks and keeps. Said once, nothing more goes.
+  await reopen(pixel);
+  await reopen(dell);
+  const endpoint = dell.chats.e2e.endpoint()!;
+  assert.ok(endpoint);
+  await take(pixel);
+  await take(dell);
+  const first = listOf(pixel)!;
+  assert.deepEqual([first.real, first.body.a, first.body.d.length, names(first, endpoint.id)], [[endpoint.id], account, 4, true]);
+  // Not the key of its link, which the phone knows it by.
+  assert.notEqual(endpoint.id, pixel.links.devices()[0].id);
+  assert.deepEqual(dell.chats.e2e.own(), { identity: account, bundle: toBase64Url(pixel.chats.e2e.bundle), list: { b: first.b, s: first.s, n: first.n, real: [endpoint.id] } });
+  assert.ok(await verifyList(pixel.chats.e2e.bundle, account, first));
+  await dell.links.settled();
+  assert.equal(await receiveMessage(relay, fromHex(pixel.queue.recipientHex)), null);
+  // Messages go through the phone as before.
+  await write(carol, account, 'through the phone');
+  await take(pixel);
+  assert.deepEqual(
+    (await take(dell)).map((m) => m.text),
+    ['through the phone'],
+  );
+
+  // The computer's backup put back on another: no link, so its endpoint goes as it opens.
+  const dellCopy = await phone(5, true, await loadE2EData('space', dell.space, dell.key));
+  assert.deepEqual([dellCopy.chats.e2e.endpoint(), dellCopy.chats.e2e.own(), dellCopy.links.copied()], [null, null, true]);
+  const kept = await loadE2EData('space', dellCopy.space, dellCopy.key);
+  assert.deepEqual(['endpoint' in kept, 'own' in kept, kept.contacts.length], [false, false, 1]);
+  dellCopy.links.close();
+
+  // The phone's backup put back on another, where nothing is linked: it signs a later list that
+  // names none of its devices, with the same endpoints filling its places.
+  const pixelCopy = await phone(6, true, await loadE2EData('space', pixel.space, pixel.key));
+  await pixelCopy.links.settled();
+  const elsewhere = listOf(pixelCopy)!;
+  assert.ok(elsewhere.n > first.n);
+  assert.deepEqual([elsewhere.real, elsewhere.body.d.length, names(elsewhere, endpoint.id)], [[], 4, false]);
+  assert.ok(filling(first).every((id) => names(elsewhere, id)));
+  assert.ok(await verifyList(pixel.chats.e2e.bundle, account, elsewhere, first.n));
+  pixelCopy.links.close();
+
+  // A computer on an Erevos from before endpoints says none, and is in no list; one on this version,
+  // linked now, says its endpoint once the codes match. The list names it in a place one that filled
+  // it held, and every device is told it.
+  const mac = await phone(7);
+  await asOld(() => linkUp(pixel, mac));
+  const lenovo = await phone(8);
+  await linkUp(pixel, lenovo);
+  await take(dell);
+  await asOld(() => take(mac));
+  const second = listOf(pixel)!;
+  const lenovos = lenovo.chats.e2e.endpoint()!;
+  assert.deepEqual(
+    [...second.real].sort(),
+    [endpoint.id, lenovos.id].sort(),
+  );
+  assert.deepEqual([second.body.d.length, filling(first).filter((id) => names(second, id)).length], [4, 2]);
+  assert.deepEqual([dell.chats.e2e.own()?.list?.n, lenovo.chats.e2e.own()?.list?.n], [second.n, second.n]);
+  assert.equal(mac.chats.e2e.endpoint(), null);
+  const peers = (await loadDevicesData(pixel.space, pixel.key)).devices;
+  assert.deepEqual(
+    peers.map((d) => d.endpoint?.id ?? ''),
+    [endpoint.id, '', lenovos.id],
+  );
+  assert.notEqual(peers[2].id, lenovos.id);
+  // Carol's messages reach every computer through the phone, the one from before too.
+  await write(carol, account, 'to every computer');
+  await take(pixel);
+  for (const p of [dell, lenovo]) assert.deepEqual((await take(p)).map((m) => m.text), ['to every computer']);
+  assert.deepEqual(
+    (await asOld(() => take(mac))).map((m) => m.text),
+    ['to every computer'],
+  );
+
+  // Unlinked on the phone: the list it signs next no longer names the computer, a new endpoint
+  // fills its place, and the computer lets go of its endpoint.
+  await pixel.links.unlink(peers[0].id);
+  await pixel.links.settled();
+  await take(dell);
+  await until(() => dell.links.role() === null);
+  await dell.links.settled();
+  assert.deepEqual([dell.chats.e2e.endpoint(), dell.chats.e2e.own()], [null, null]);
+  const third = listOf(pixel)!;
+  assert.ok(third.n > second.n);
+  assert.deepEqual([third.real, third.body.d.length, names(third, endpoint.id), names(third, lenovos.id)], [[lenovos.id], 4, false, true]);
+  assert.ok(filling(second).every((id) => names(third, id)));
+  await take(lenovo);
+  assert.equal(lenovo.chats.e2e.own()?.list?.n, third.n);
+
+  for (const p of [pixel, dell, mac, lenovo]) p.links.close();
 });

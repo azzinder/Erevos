@@ -74,6 +74,23 @@ Linking, by QR code and a safety check:
 4. Once the codes match and **They match** is tapped on the computer, it answers, and only then does
    the phone send its contacts and the history chosen.
 
+### The device list
+
+Once the codes match, the computer also makes a key of its own, its **endpoint** (a core account
+like the account's, never the account's own and never the link's), and says it to the phone in the
+link; a computer linked by a version from before does so the next time it opens, with no linking
+again. The phone signs a list of its devices' endpoints with the account's identity key
+(lib/device-list.ts), each time a device says one or is unlinked, and sends it in each link with
+the account's bundle and which of its places are the devices'. It always has four places: those no
+device takes hold keys made only for the list, whose secrets are thrown away. The computer keeps
+the list once the bundle is the account's it was linked to (said in the phone's first message, in
+the link whose codes were compared) and the bundle's key signed it, later than the one it has.
+
+Nothing is written to an endpoint yet, and no contact is given the list: it is the first step of
+docs/multi-device.md, towards devices that work with the phone off. A phone or a computer from
+before ignores what it does not know, and the phone keeps passing on for every device as below. A
+build whose core cannot sign as the account makes no endpoint and signs no list.
+
 ### Messages
 
 - **From a contact:** the phone opens it as always, keeps it, and passes it on to each linked device,
@@ -138,8 +155,9 @@ was read on that device or when another said it was read.
 
 On the phone, **Unlink** forgets the device's link at once: nothing more goes to it, and what it
 sends is not opened. That is how a lost device is cut off: it keeps what it had, behind its own lock,
-but gets nothing new. If it is still on, it is told, and forgets the account's chats. On the
-computer, **Unlink this device** does the same from that side.
+but gets nothing new. If it is still on, it is told, and forgets the account's chats and its
+endpoint. On the computer, **Unlink this device** does the same from that side. Either way the phone
+signs a list without it, a new filling key taking its place.
 
 ### Hidden chats and second passwords
 
@@ -230,12 +248,16 @@ is written there says why it cannot go (a contact as a device keeps it has no co
 own). Such a space links again as an empty one does: once the phone sends its contacts, the chats it
 has stay, the history brought over joins them, each message once, and the others go; the first
 `groups` after linking says all the groups there are (`all`), so a group the phone no longer has
-goes too.
+goes too. Such a copy lets go of the computer's endpoint as it opens, before it seals anything, so
+two computers never take one endpoint; linked again, it makes a new one. A phone's backup carries
+the device list it signed last, so restored on another phone, where no device is linked, it signs a
+later one that names none of them.
 
 ## Where it is in the code
 
 - `lib/link-code.ts`: the QR code's link, and the safety code.
 - `lib/link-wire.ts`: what goes between the devices, and which messages are passed on.
+- `lib/device-list.ts`: the device list, signed by the account and checked against its bundle.
 - `lib/linked-calls.ts`: on the phone, where each call signal goes: who rings, who has the call.
 - `lib/groups.ts`: on a linked device, the groups kept as the phone says them (`mirror`), and what
   is done in them goes through it (`GroupLink`).

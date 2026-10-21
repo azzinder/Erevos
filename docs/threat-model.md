@@ -42,6 +42,15 @@ Notes:
   never move. Groups are not post-quantum at all.
 - **One queue per space.** Every contact of a space writes to the same queue, so one relay sees all
   of them arrive there.
+- **Linked devices' own keys** (docs/multi-device.md). Each linked computer makes a key of its own,
+  never the account's secret, and the phone signs the list of them with the account's identity key.
+  A computer takes that list only as checked against the account's bundle that came in its link,
+  whose safety code was compared, and only if that bundle names the account the phone said there.
+  Whoever can use the account's key, with the phone open or with its backup and password, can sign
+  a list naming a key of their own. The list always has four places, those no device takes holding
+  keys whose secrets are thrown away, so it does not show how many devices there are; only the
+  phone and its devices know which are which. In this version only the account's own devices are
+  given the list, and being named in it lets a key do nothing.
 
 ## Out of scope
 

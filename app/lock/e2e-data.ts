@@ -5,8 +5,10 @@ import { sealedFile, type Holder } from './sealed-file';
 
 // What each space, and each space's hidden chats, keeps for end-to-end encryption (lib/e2e.ts):
 // its own account, whose public keys its contact link gives out, and a conversation with each
-// contact. Kept sealed in FILE, one value for each space and each hidden chats (sealed-file.ts),
-// in blocks of BLOCK bytes. A space whose key changed starts with a new account and no contacts.
+// contact; on a linked device also its own endpoint and what it checked of its account, and on the
+// phone that holds the account its device list (lib/device-list.ts). Kept sealed in FILE, one value
+// for each space and each hidden chats (sealed-file.ts), in blocks of BLOCK bytes. A space whose
+// key changed starts with a new account and no contacts.
 
 export type { Holder };
 
@@ -102,6 +104,20 @@ export function checkedAvatar(value: unknown): Avatar | null {
   return { kind: 'emoji', emoji, color };
 }
 
+/**
+ * The account's device list (lib/device-list.ts) as the primary signed it last, or as one of its
+ * linked devices last checked it: its body and the account's signature of it (base64url), its `n`,
+ * and which of its endpoints are the devices' (`real`, hex): the others only fill its places. Only
+ * the account's own devices know which.
+ */
+export type OwnList = { b: string; s: string; n: number; real: string[] };
+
+/** On a linked device: its account as the phone said it over the link (identity, hex; bundle, base64url), and the account's list as last checked. */
+export type Own = { identity: string; bundle: string; list: OwnList | null };
+
+/** A linked device's own endpoint (docs/multi-device.md) as others know it: its identity, hex, and its bundle, base64url. */
+export type Endpoint = { id: string; bundle: string };
+
 export type E2EData = {
   /** The account's secret keys, base64. Empty until the chat first opens. */
   account: string;
@@ -115,6 +131,15 @@ export type E2EData = {
    *  bundle (base64) and when it was made (ms): contacts start their next conversations with the
    *  newest, and a first packet opens with any kept. Missing in what was kept before them. */
   prekeys?: Prekeys[];
+  /** On a linked device: its own endpoint (docs/multi-device.md), a core account's secret keys,
+   *  base64, that the device made and no one else holds. Missing elsewhere, and in what was kept
+   *  before it. */
+  endpoint?: string;
+  /** On a linked device: its account, and the account's device list. */
+  own?: Own;
+  /** On the primary: the device list as last signed, which a backup carries, so a phone put back
+   *  from one signs a later one. */
+  list?: OwnList;
 };
 
 export type Prekeys = { secret: string; bundle: string; at: number };
@@ -144,6 +169,7 @@ export function cleanName(text: string): string {
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isBase64 = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9+/]*={0,2}$/.test(v);
 const isHex = (v: unknown): v is string => isText(v) && /^([0-9a-f]{2})*$/.test(v);
+const isBase64Url = (v: unknown, most: number): v is string => isText(v) && v.length > 0 && v.length <= most && /^[A-Za-z0-9_-]+$/.test(v);
 /** A relay address as contact links give it. */
 export const isRelay = (v: unknown): v is string => isText(v) && v.length <= 512 && /^wss?:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(v);
 /** A relay's public key for sealed sends: 32 bytes, base64url without padding. */
@@ -193,16 +219,40 @@ function checkedPrekeys(value: unknown): Prekeys | null {
   return isBase64(v.secret) && v.secret && isBase64(v.bundle) && v.bundle && isTime(v.at) ? { secret: v.secret, bundle: v.bundle, at: v.at } : null;
 }
 
+// A bundle is about 1800 characters, a list's body about four of them, and a list names at most
+// four devices (lib/device-list.ts).
+const MAX_BUNDLE = 4096;
+const MAX_LIST = 24 * 1024;
+const MAX_REAL = 4;
+
+function checkedList(value: unknown): OwnList | null {
+  const v = (value ?? {}) as Partial<Record<keyof OwnList, unknown>>;
+  if (!isBase64Url(v.b, MAX_LIST) || !isBase64Url(v.s, 128) || !Number.isSafeInteger(v.n) || (v.n as number) <= 0) return null;
+  const real = Array.isArray(v.real) ? v.real.filter((id): id is string => isHex(id) && id.length === 64).slice(0, MAX_REAL) : [];
+  return { b: v.b, s: v.s, n: v.n as number, real };
+}
+
+function checkedOwn(value: unknown): Own | null {
+  const v = (value ?? {}) as Partial<Record<keyof Own, unknown>>;
+  if (!isHex(v.identity) || v.identity.length !== 64 || !isBase64Url(v.bundle, MAX_BUNDLE)) return null;
+  return { identity: v.identity, bundle: v.bundle, list: checkedList(v.list) };
+}
+
 /** What was stored, with anything of the wrong shape left out. */
 function checked(value: unknown): E2EData {
   const v = (value ?? {}) as Partial<Record<keyof E2EData, unknown>>;
   const contacts = Array.isArray(v.contacts) ? v.contacts.map(checkedContact).filter((c): c is Contact => c !== null) : [];
+  const own = checkedOwn(v.own);
+  const list = checkedList(v.list);
   return {
     account: isBase64(v.account) ? v.account : '',
     contacts,
     seen: Array.isArray(v.seen) ? v.seen.filter(isHex) : [],
     restore: isHex(v.restore) && v.restore.length === 32 ? v.restore : '',
     ...(Array.isArray(v.prekeys) ? { prekeys: v.prekeys.map(checkedPrekeys).filter((p): p is Prekeys => p !== null).slice(0, MAX_PREKEYS) } : {}),
+    ...(isBase64(v.endpoint) && v.endpoint ? { endpoint: v.endpoint } : {}),
+    ...(own ? { own } : {}),
+    ...(list ? { list } : {}),
   };
 }
 

@@ -27,6 +27,7 @@ import { carriedOf } from './chat-parts';
 import { contactLink, type ContactCode } from './contact-code';
 import * as core from './core';
 import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { MAX_LISTED, nextList, signList, verifyList } from './device-list';
 import { fromBase64Url, OwnCodeError, toBase64Url, type Link, type Where } from './e2e';
 import { currentGroupCall } from './group-call';
 import { groupPartsOf } from './group-parts';
@@ -134,13 +135,25 @@ import { sendWaiting, type SendPlace } from './waiting';
 // Such a space links again: the chats the phone still has stay, with what came since, and the
 // others go.
 //
+// Each linked device also has an endpoint of its own (docs/multi-device.md): a core account it makes
+// once linked, never the key of its link, and says to the phone (`endpoint`). The phone signs, with
+// the account's own key, the list of its devices' endpoints (lib/device-list.ts), again each time a
+// device says one or is unlinked, or as the space opens if the list and the links differ (as on
+// another phone a backup was put back on), and tells each device the list and the account's bundle
+// (`list`). A device keeps the list once that bundle is the account's it was linked to and the
+// bundle's key signed it. A device from before says no endpoint and is in no list, and a phone from
+// before leaves the endpoint alone: either keeps passing on as before. A device's backup put back
+// elsewhere lets go of its endpoint as it opens. Only the account's own devices are given the list
+// in this version, and nothing is written to an endpoint yet; a build whose core cannot sign does
+// none of it.
+//
 // Three turns keep it straight: the chat's own (E2E), which may wait for this file's; this file's
 // (`run`), for the links and their keys, which never waits for the chat; and the work a message
 // brings (`act`: the history, sealing for contacts, the relay's file store), which waits for both.
 // A call's signals are work of their own (`ring`), which cannot wait behind the history.
 
-/** The most devices one account links. */
-export const MAX_DEVICES = 4;
+/** The most devices one account links: as many as its device list names. */
+export const MAX_DEVICES = MAX_LISTED;
 // How long a code shown on a device answers, how long a message sealed here waits to be kept as
 // sent before its devices are told, and how big a pack of the history grows.
 const OFFER_LASTS = 30 * 60_000;
@@ -280,10 +293,14 @@ export class Links implements Link, TakenFiles {
   /** The links of a space's chats (`chats`), sealed with `key`; from now on the chat reaches the devices through them. */
   static async open(space: number, key: Uint8Array, chats: SpaceChats, tick = TICK): Promise<Links> {
     const links = new Links(space, key, chats, await loadDevicesData(space, key));
+    // A space that is no linked device has no endpoint: one there is a linked device's backup put
+    // back elsewhere, without its link, and goes before anything is sealed, so two never seal as one.
+    if (!links.data.primary) await chats.e2e.dropEndpoint().catch(() => undefined);
     chats.e2e.useLink(links);
     links.stopCalls = onCallChange(() => links.callChanged());
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
+    links.act(() => links.listsAtOpen());
     return links;
   }
 
@@ -584,10 +601,14 @@ export class Links implements Link, TakenFiles {
       case 'group':
         this.act(() => this.groupFor(peer.id, said.id, said.ask));
         break;
+      case 'endpoint':
+        if (core.canSign()) await this.endpointFrom(peer.id, said.bundle);
+        break;
       case 'bye':
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
         this.act(() => this.letGo(peer.id, null));
         this.callSteps(this.calls.unlinked(peer.id));
+        this.act(() => this.signAgain());
         announce();
         break;
       default:
@@ -647,6 +668,9 @@ export class Links implements Link, TakenFiles {
       }
       case 'changed':
         this.act(() => this.changedFrom(said.chats, said.groups, said.whole));
+        break;
+      case 'list':
+        if (core.canSign()) this.act(() => this.listFrom(said));
         break;
       case 'bye':
         this.act(() => this.forget());
@@ -823,8 +847,10 @@ export class Links implements Link, TakenFiles {
       const synced = this.copied() ? Object.fromEntries(e2e.contacts().map((c) => [c.identity, syncedOf(e2e.record(c.identity)!)])) : {};
       const primary = await this.seal({ ...answer.peer, since: Date.now() }, { k: 'ready', name: this.data.offer?.name ?? '' });
       await this.save({ ...this.data, primary, account: answer.account, offer: null, answer: null, synced, packs: [], copySaid: false });
-    }).then(() => {
+    }).then(async () => {
       announce();
+      // Its own endpoint, a new one, said after the codes matched: a phone from before leaves it alone.
+      await this.newEndpoint(true).catch(() => undefined);
       return this.flush().catch(() => undefined);
     });
   }
@@ -931,20 +957,22 @@ export class Links implements Link, TakenFiles {
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
       });
       announce();
-      // What was left on the relay only for it, and a call it has.
+      // What was left on the relay only for it, and a call it has; the list no longer names it.
       this.act(() => this.letGo(peer.id, null));
       this.callSteps(this.calls.unlinked(peer.id));
+      this.act(() => this.signAgain());
     }
     return told;
   }
 
-  // On a linked device, unlinked: the account's chats go, contacts, messages and groups. The link
-  // goes first, so the contacts going is not said to the phone.
+  // On a linked device, unlinked: the account's chats go, contacts, messages and groups, and its
+  // endpoint. The link goes first, so the contacts going is not said to the phone.
   private async forget(): Promise<void> {
     const { e2e } = this.chats;
     await this.run(async () => {
       await this.save({ ...this.data, primary: null, account: '', link: '', synced: {}, packs: [], offer: null, answer: null, members: {} });
     });
+    await e2e.dropEndpoint().catch(() => undefined);
     const gone = e2e.contacts().map((c) => c.identity);
     for (const identity of gone) await e2e.removeContact(identity).catch(() => undefined);
     await this.groups?.groups.mirror(() => ({ groups: [], came: [] })).catch(() => undefined);
@@ -954,6 +982,112 @@ export class Links implements Link, TakenFiles {
   private async clearChats(identities: string[]): Promise<void> {
     for (const identity of identities) await this.chats.history.clear(peerOf(identity)).catch(() => undefined);
     announce({ gone: identities.map((identity) => ({ peer: peerOf(identity) })) });
+  }
+
+  // ---- Endpoints and the device list (lib/device-list.ts) ----
+
+  // As the space opens, in the work after. On a linked device: one linked before endpoints, or that
+  // did not say its endpoint yet, makes one or says it. On the primary: the device list is signed
+  // again if it does not name the linked devices as they are, and each is told it.
+  private async listsAtOpen(): Promise<void> {
+    if (!core.canSign()) return;
+    if (this.data.primary) await this.newEndpoint(false);
+    else await this.signAgain();
+  }
+
+  // On a linked device: makes its endpoint, a new one (`fresh`, as it is linked) or only if it has
+  // none, and says it to the phone.
+  private async newEndpoint(fresh: boolean): Promise<void> {
+    if (!core.canSign() || !this.data.primary) return;
+    if (fresh || !this.chats.e2e.endpoint()) await this.chats.e2e.makeEndpoint();
+    await this.tellEndpoint();
+  }
+
+  // On a linked device: says its endpoint to the phone, once for each it made, or `again` when a
+  // list the phone signed does not name it.
+  private async tellEndpoint(again = false): Promise<void> {
+    await this.run(async () => {
+      const primary = this.data.primary;
+      const endpoint = this.chats.e2e.endpoint();
+      if (!primary || !endpoint || (!again && primary.endpoint?.id === endpoint.id)) return;
+      const sealed = await this.seal(primary, { k: 'endpoint', bundle: endpoint.bundle });
+      await this.save({ ...this.data, primary: sealed.outbox.length > primary.outbox.length ? { ...sealed, endpoint } : sealed });
+    });
+    void this.flush().catch(() => undefined);
+  }
+
+  // On the primary, in the turn: a linked device said its endpoint. One whose bundle holds and that
+  // is neither the account nor another device's is kept with the device, which is told the list
+  // again; the work after signs one that names it.
+  private async endpointFrom(id: string, bundle: string): Promise<void> {
+    const peer = this.data.devices.find((d) => d.id === id && d.linked);
+    if (!peer) return;
+    const endpoint = await core.bundleIdentity(fromBase64Url(bundle)).then(toHex, () => '');
+    if (!endpoint || endpoint === this.chats.e2e.identityHex() || this.data.devices.some((d) => d.id !== id && d.endpoint?.id === endpoint)) return;
+    await this.keepPeer({ ...peer, endpoint: { id: endpoint, bundle }, listed: 0 });
+    this.act(() => this.signAgain());
+  }
+
+  // On the primary, in the work after: signs the device list again when it does not name the linked
+  // devices as they are, each by the endpoint it said: one said a new one, one was unlinked, or none
+  // is linked on the phone a backup was put back on. Then each is told the list it was not told yet.
+  private async signAgain(): Promise<void> {
+    if (this.data.primary || !core.canSign()) return;
+    const { e2e } = this.chats;
+    const held = e2e.signedList();
+    const devices = this.data.devices.flatMap((d) => (d.linked && d.endpoint ? [d.endpoint] : [])).slice(0, MAX_LISTED);
+    const real = devices.map((d) => d.id).sort();
+    if (held ? JSON.stringify([...held.real].sort()) !== JSON.stringify(real) : real.length > 0) {
+      const body = await nextList(e2e.identityHex(), devices, held);
+      const list = await signList((context, message) => e2e.sign(context, message), body);
+      await e2e.keepList({ b: list.b, s: list.s, n: body.n, real });
+    }
+    await this.tellList();
+  }
+
+  // On the primary: each linked device not told the device list as last signed is told it, with the
+  // account's bundle, whose key signed it, and which of its endpoints are the devices'. A device
+  // from before leaves it alone.
+  private async tellList(): Promise<void> {
+    const list = this.chats.e2e.signedList();
+    if (!list || this.data.primary) return;
+    const ak = toBase64Url(this.chats.e2e.bundle);
+    const told = await this.run(async () => {
+      const devices: Peer[] = [];
+      for (const d of this.data.devices) {
+        if (!d.linked || d.listed === list.n) {
+          devices.push(d);
+          continue;
+        }
+        const sealed = await this.seal(d, { k: 'list', list: { b: list.b, s: list.s }, ak, real: list.real });
+        devices.push(sealed.outbox.length > d.outbox.length ? { ...sealed, listed: list.n } : sealed);
+      }
+      if (devices.every((d, i) => d === this.data.devices[i])) return false;
+      await this.save({ ...this.data, devices });
+      return true;
+    });
+    if (told) void this.flush().catch(() => undefined);
+  }
+
+  // On a linked device, in the work after: the account's device list, from the phone. Kept once it
+  // holds: the bundle it came with is the account's this device was linked to (whose identity came
+  // in `hello`, in the link whose codes were compared), that bundle's key signed it, and it is later
+  // than the one kept. One that does not name this device's endpoint, the phone may not have had:
+  // it is said again.
+  private async listFrom(said: Extract<Envelope, { k: 'list' }>): Promise<void> {
+    const { e2e } = this.chats;
+    const account = this.data.account;
+    if (!this.data.primary || !account) return;
+    const bundle = fromBase64Url(said.ak);
+    if ((await core.bundleIdentity(bundle).then(toHex, () => '')) !== account) return;
+    const own = e2e.own();
+    const kept = own?.identity === account ? own.list : null;
+    const body = await verifyList(bundle, account, said.list, kept?.n ?? 0);
+    if (!body || body === 'same') return;
+    const real = said.real ? said.real.filter((id) => body.d.some((e) => e.i === id)) : body.d.map((e) => e.i);
+    await e2e.keepOwn({ identity: account, bundle: said.ak, list: { b: said.list.b, s: said.list.s, n: body.n, real } });
+    const endpoint = e2e.endpoint();
+    if (endpoint && !real.includes(endpoint.id)) await this.tellEndpoint(true);
   }
 
   // ---- Photos and files left on the relay (lib/attachments.ts, TakenFiles) ----
@@ -1120,6 +1254,9 @@ export class Links implements Link, TakenFiles {
     for (const d of this.data.devices) if (d.linked && d.history) this.act(() => this.bringHistory(d.id));
     if (this.later.length > 0) this.act(() => this.sendLater());
     if (this.groupsLate) this.groupsChanged();
+    // A device not told the device list as last signed, as one its outbox had no room for.
+    const list = !this.data.primary && core.canSign() ? this.chats.e2e.signedList() : null;
+    if (list && this.data.devices.some((d) => d.linked && d.listed !== list.n)) this.act(() => this.tellList());
   }
 
   // Seals word for a contact as the chat does, and hands it to their phone nearby when it is, and to the relay.

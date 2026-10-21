@@ -2,6 +2,7 @@ import { readOffer, type FileOffer } from '../lib/attachments';
 import { isGroupId } from '../lib/group-signal';
 import { checkedPlace, checkedSeat, checkedSynced, type GroupSeat, type Place, type Synced } from '../lib/link-wire';
 
+import type { Endpoint } from './e2e-data';
 import { sealedFile } from './sealed-file';
 
 // What each space keeps of its links to the account's other devices (lib/devices.ts): on the phone
@@ -45,6 +46,12 @@ export type Peer = {
   behind: number;
   /** On the primary: what it was last told of each group, by id. */
   groups: Record<string, Told>;
+  /** The linked device's own endpoint (docs/multi-device.md), as said in this link: its identity,
+   *  hex, and bundle, base64url. On the primary, the device's; on a linked device, its own as it
+   *  said it to the phone. Missing for a device from before it, which the list does not name. */
+  endpoint?: Endpoint;
+  /** On the primary: the `n` of the device list it was last told. */
+  listed?: number;
 };
 
 /**
@@ -120,10 +127,16 @@ function checkedTold(value: unknown): Record<string, Told> {
   return told;
 }
 
+function checkedEndpoint(value: unknown): Endpoint | null {
+  const v = (value ?? {}) as Partial<Record<keyof Endpoint, unknown>>;
+  return isHex(v.id, 64) && isText(v.bundle) && v.bundle.length <= 4096 && /^[A-Za-z0-9_-]+$/.test(v.bundle) ? { id: v.id, bundle: v.bundle } : null;
+}
+
 function checkedPeer(value: unknown): Peer | null {
   const v = (value ?? {}) as Partial<Record<keyof Peer, unknown>>;
   const at = checkedPlace(v.at);
   if (!isHex(v.id, 64) || !isBase64(v.conversation) || !v.conversation || !at) return null;
+  const endpoint = checkedEndpoint(v.endpoint);
   return {
     id: v.id,
     name: isText(v.name) ? v.name : '',
@@ -138,6 +151,8 @@ function checkedPeer(value: unknown): Peer | null {
     files: v.files === true,
     behind: isTime(v.behind) ? v.behind : 0,
     groups: checkedTold(v.groups),
+    ...(endpoint ? { endpoint } : {}),
+    ...(isTime(v.listed) && v.listed > 0 ? { listed: v.listed } : {}),
   };
 }
 

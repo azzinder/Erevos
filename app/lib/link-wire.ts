@@ -6,6 +6,7 @@ import { offerRef, readOffer, type FileFrom, type FileOffer } from './attachment
 import { carriedOf, checkedChoices } from './chat-parts';
 import { checkContact, checkSpare, type ContactCode } from './contact-code';
 import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { checkedList, MAX_LISTED, type DeviceList } from './device-list';
 import { groupPartsOf, markedOf, type Marked } from './group-parts';
 import { cleanGroupName, isGroupId } from './group-signal';
 
@@ -15,12 +16,13 @@ import { cleanGroupName, isGroupId } from './group-signal';
 // holds the account): its first message (`hello`), the contacts (`contacts`), a contact's message it
 // opened (`in`), one it sealed for a contact (`out`), a pack of the history on the relay's file store
 // (`history`), that a call was answered or turned down on another device (`call`), what changed in
-// the groups (`groups`), what changed in messages told already (`changed`), where it is now
-// (`here`) and that it unlinked the device (`bye`). From a
-// linked device: that the codes match (`ready`), a message for a contact (`send`), a contact to add
-// (`add`), a change to a contact (`set`), what to do in a group (`group`), the photos and files it
-// took (`took`), where it is (`here`) and that it unlinked itself (`bye`). An envelope too large for
-// one packet goes in parts (`part`).
+// the groups (`groups`), what changed in messages told already (`changed`), the account's device
+// list (`list`, lib/device-list.ts), where it is now (`here`) and that it unlinked the device
+// (`bye`). From a linked device: that the codes match (`ready`), its own endpoint (`endpoint`), a
+// message for a contact (`send`), a contact to add (`add`), a change to a contact (`set`), what to
+// do in a group (`group`), the photos and files it took (`took`), where it is (`here`) and that it
+// unlinked itself (`bye`). An envelope too large for one packet goes in parts (`part`). A version
+// from before leaves the kinds it does not know alone.
 //
 // A contact's message travels as the JSON lib/e2e.ts makes of it (`m`), without where the contact's
 // queue is, which only the primary needs. Which messages go on, and which are worth telling the
@@ -65,6 +67,8 @@ export type Envelope =
   | { k: 'groups'; list: GroupMirror[]; gone: string[]; entries: GroupEntry[]; all?: true }
   | { k: 'group'; id: string; ask: GroupAsk }
   | { k: 'changed'; chats: ChatChange[]; groups: GroupChange[]; whole: WholeGroup[] }
+  | { k: 'endpoint'; bundle: string }
+  | { k: 'list'; list: DeviceList; ak: string; real?: string[] }
   | { k: 'here' }
   | { k: 'bye' };
 
@@ -151,6 +155,8 @@ const isText = (v: unknown): v is string => typeof v === 'string';
 const isHex = (v: unknown, length: number): v is string => isText(v) && v.length === length && /^[0-9a-f]+$/.test(v);
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 const isObject = (v: unknown): v is Json => !!v && typeof v === 'object' && !Array.isArray(v);
+// A bundle as a contact link carries it: about 1800 characters of base64url.
+const isBundle = (v: unknown): v is string => isText(v) && v.length > 0 && v.length <= 4096 && /^[A-Za-z0-9_-]+$/.test(v);
 // A group message's tag as a member's phone may make it.
 const isGroupTag = (v: unknown): v is string => isText(v) && v.length > 0 && v.length <= 64;
 
@@ -279,6 +285,14 @@ function checkedEnvelope(v: Json): Envelope | null {
       const groups = Array.isArray(v.groups) ? v.groups.map(checkedGroupChange).filter((c): c is GroupChange => c !== null) : [];
       const whole = Array.isArray(v.whole) ? v.whole.map(checkedWhole).filter((w): w is WholeGroup => w !== null) : [];
       return chats.length + groups.length + whole.length > 0 ? { k: 'changed', chats, groups, whole } : null;
+    }
+    case 'endpoint':
+      return isBundle(v.bundle) ? { k: 'endpoint', bundle: v.bundle } : null;
+    case 'list': {
+      const list = checkedList(v.list);
+      if (!list || !isBundle(v.ak)) return null;
+      const real = Array.isArray(v.real) ? v.real.filter((id): id is string => isHex(id, 64)).slice(0, MAX_LISTED) : null;
+      return { k: 'list', list, ak: v.ak, ...(real ? { real } : {}) };
     }
     case 'here':
     case 'bye':

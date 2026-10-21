@@ -1,4 +1,4 @@
-import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, MAX_PREKEYS, MAX_SEEN_EACH, saveE2EData, type Avatar, type Contact, type E2EData, type Holder, type Spare } from '../lock/e2e-data';
+import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, MAX_PREKEYS, MAX_SEEN_EACH, saveE2EData, type Avatar, type Contact, type E2EData, type Endpoint, type Holder, type Own, type OwnList, type Spare } from '../lock/e2e-data';
 
 import { isReactionEmoji, isTag, newTag } from '../lock/history';
 
@@ -408,6 +408,11 @@ async function restoredContact(contact: Contact): Promise<Contact> {
   return { ...contact, conversations };
 }
 
+async function endpointOf(account: Uint8Array): Promise<Endpoint> {
+  const [identity, bundle] = await Promise.all([core.accountIdentity(account), core.accountBundle(account)]);
+  return { id: toHex(identity), bundle: toBase64Url(bundle) };
+}
+
 export class E2E {
   /** This account's identity key. */
   readonly identity: Uint8Array;
@@ -430,6 +435,8 @@ export class E2E {
   // When a packet that came unsealed was last tried in the conversations of contacts whose packets
   // come sealed: so few that one sent to tire the phone costs it little.
   private unsealedTries: number[] = [];
+  // On a linked device: its own endpoint, as its account (E2EData.endpoint) gives it.
+  private ownEndpoint: Endpoint | null = null;
 
   private constructor(data: E2EData, account: Uint8Array, identity: Uint8Array, bundle: Uint8Array, store: (data: E2EData) => Promise<void>) {
     this.data = data;
@@ -459,7 +466,9 @@ export class E2E {
       data = { ...data, prekeys: [{ secret: toBase64(made.secret), bundle: toBase64(made.bundle), at: Date.now() }, ...prekeys].slice(0, MAX_PREKEYS) };
       await store(data);
     }
-    return new E2E(data, account, await core.accountIdentity(account), await core.accountBundle(account), store);
+    const e2e = new E2E(data, account, await core.accountIdentity(account), await core.accountBundle(account), store);
+    if (data.endpoint) e2e.ownEndpoint = await endpointOf(fromBase64(data.endpoint)).catch(() => null);
+    return e2e;
   }
 
   /** Says this backup queue from now on in what tells contacts where this chat's queue is, or none. */
@@ -652,6 +661,65 @@ export class E2E {
   /** This account's identity key, hex. */
   identityHex(): string {
     return toHex(this.identity);
+  }
+
+  /** This account's signature of `message` under `context` (lib/core.ts accountSign): on the primary, of its device list. */
+  sign(context: string, message: Uint8Array): Promise<Uint8Array> {
+    return core.accountSign(this.account, context, message);
+  }
+
+  /** On a linked device: its own endpoint (docs/multi-device.md), or null while it has none. */
+  endpoint(): Endpoint | null {
+    return this.ownEndpoint;
+  }
+
+  /** On a linked device: makes it an endpoint of its own, in place of any it had. */
+  makeEndpoint(): Promise<Endpoint> {
+    return this.run(async () => {
+      const account = await core.newAccount();
+      const made = await endpointOf(account);
+      await this.save({ ...this.data, endpoint: toBase64(account) });
+      this.ownEndpoint = made;
+      return made;
+    });
+  }
+
+  /** Lets go of this device's endpoint and of what it checked of its account: unlinked, or a linked device's backup put back elsewhere. */
+  dropEndpoint(): Promise<void> {
+    return this.run(async () => {
+      this.ownEndpoint = null;
+      if (this.data.endpoint === undefined && this.data.own === undefined) return;
+      const { endpoint: _endpoint, own: _own, ...rest } = this.data;
+      await this.save(rest);
+    });
+  }
+
+  /** On a linked device: its account as the phone said it, and the account's device list as last checked, or null. */
+  own(): Own | null {
+    return this.data.own ?? null;
+  }
+
+  /** On a linked device: keeps its account and that account's list, unless the list kept is that account's and no older. Says whether it did. */
+  keepOwn(own: Own): Promise<boolean> {
+    return this.run(async () => {
+      const held = this.data.own;
+      if (held?.identity === own.identity && (held.list?.n ?? 0) >= (own.list?.n ?? 0)) return false;
+      await this.save({ ...this.data, own });
+      return true;
+    });
+  }
+
+  /** On the primary: the device list as last signed, or null. */
+  signedList(): OwnList | null {
+    return this.data.list ?? null;
+  }
+
+  /** On the primary: keeps the device list just signed, unless one kept is as late. */
+  keepList(list: OwnList): Promise<void> {
+    return this.run(async () => {
+      if ((this.data.list?.n ?? 0) >= list.n) return;
+      await this.save({ ...this.data, list });
+    });
   }
 
   /** A contact as kept, conversations and all, or null. */
