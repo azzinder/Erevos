@@ -79,6 +79,14 @@ pub fn conversation_seal(conversation: &[u8], plaintext: &[u8]) -> Result<Vec<u8
     Ok(parts(&[&conversation.to_secret_bytes(), &packet]))
 }
 
+/// A conversation put back from a backup, made safe to seal in again: its
+/// sending chain moved past the keys it may have sealed with since then.
+pub fn conversation_restored(conversation: &[u8]) -> Result<Vec<u8>> {
+    let mut conversation = Conversation::from_secret_bytes(conversation).map_err(fail)?;
+    conversation.restored().map_err(fail)?;
+    Ok(conversation.to_secret_bytes().to_vec())
+}
+
 /// Opens a following packet: the conversation as it is now, then the
 /// plaintext. A packet from someone else fails.
 pub fn conversation_open(conversation: &[u8], packet: &[u8]) -> Result<Vec<u8>> {

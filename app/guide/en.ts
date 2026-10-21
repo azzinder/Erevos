@@ -1024,7 +1024,9 @@ home screen's menu.
   folder still needs the spaces' passwords to read the chats.
 - **Chats that went on after the backup:** restoring puts back each conversation's keys as they were then. Messages
   that came after the backup and were already read are not in it, and a chat that went on may stop opening new
-  messages. Then ask the contact for their contact link again.
+  messages. Then ask the contact for their contact link again. Before a restored chat writes again, its conversations
+  skip ahead past the keys they may have used since the backup, so no key ever seals two messages: one sealed twice
+  would let whoever kept both packets read the two together.
 - **One phone at a time:** a backup restored on a second phone reads the same relay queues as the first, and each
   takes messages the other then never gets. Use it to move to a new phone, not to keep two.
 - **Discretion:** every space shows the same Backups screen, and a backup holds every space, so neither tells how

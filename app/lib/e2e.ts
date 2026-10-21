@@ -11,6 +11,7 @@ import { isVoicePart, splitVoice, type VoicePart } from './voice';
 import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import type { Look } from '../theme/look';
 import { deletePhoto } from '../lock/avatar-photos';
+import { lastRestore } from '../lock/restored';
 import { t } from './i18n';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
@@ -371,6 +372,16 @@ export class NoKeyError extends Error {
   }
 }
 
+// A contact's conversations as a restored backup put them back, each moved past the message keys
+// it may have sealed with since the backup was made, so none of them seals with a key twice. Their
+// phone opens what comes next as after lost messages. What their phone sent in a conversation that
+// moved on since the backup no longer opens here, nor what this one sends in it there: then adding
+// each other's link again starts a new one.
+async function restoredContact(contact: Contact): Promise<Contact> {
+  const conversations = await Promise.all(contact.conversations.map(async (c) => toBase64(await core.restored(fromBase64(c)))));
+  return { ...contact, conversations };
+}
+
 export class E2E {
   /** This account's identity key. */
   readonly identity: Uint8Array;
@@ -403,6 +414,11 @@ export class E2E {
     let data = await loadE2EData(holder, space, key);
     if (!data.account) {
       data = { ...data, account: toBase64(await core.newAccount()) };
+      await store(data);
+    }
+    const restore = await lastRestore();
+    if (restore && data.restore !== restore && core.canRestore()) {
+      data = { ...data, contacts: await Promise.all(data.contacts.map(restoredContact)), restore };
       await store(data);
     }
     const account = fromBase64(data.account);

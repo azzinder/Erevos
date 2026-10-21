@@ -46,6 +46,12 @@ pub struct Account {
 }
 
 /// Both sides of one conversation, from one side.
+/// Keys a conversation put back from a backup skips before it seals again
+/// (`Conversation::restored`): below `MAX_SKIP`, so the other side still opens
+/// what comes next even after a few lost messages.
+pub const RESTORE_SKIP: u32 = 900;
+const _: () = assert!(RESTORE_SKIP < crate::ratchet::MAX_SKIP);
+
 pub struct Conversation {
     session: Session,
     /// The initiator's identity key, then the responder's.
@@ -171,6 +177,13 @@ impl Conversation {
         Ok(packet)
     }
 
+    /// Makes a conversation put back from a backup safe to send in again:
+    /// its sending chain moves past `RESTORE_SKIP` keys, more than any one
+    /// chain is likely to have sealed with since the backup was made.
+    pub fn restored(&mut self) -> Result<(), Error> {
+        self.session.skip_sending(RESTORE_SKIP)
+    }
+
     /// Opens a message from the other person. A packet that is not theirs
     /// fails and leaves the conversation as it was.
     pub fn open(&mut self, packet: &[u8]) -> Result<Vec<u8>, Error> {
@@ -275,6 +288,35 @@ mod tests {
             assert_eq!(b2.open(&more).unwrap(), b"good");
             (a, b) = (a2, b2);
         }
+    }
+
+    #[test]
+    fn a_conversation_put_back_from_a_backup_never_seals_with_a_key_twice() {
+        let alice = Account::generate();
+        let mut bob = Account::generate();
+        let (mut a, first) = start(&alice, &bob.bundle(), b"hi").unwrap();
+        let (mut b, _) = accept(&mut bob, &first).unwrap();
+        let backup = reload(&a);
+        // After the backup, Alice goes on writing; Bob reads it all.
+        let mut sent = Vec::new();
+        for i in 0..5 {
+            let packet = a.seal(format!("after the backup {i}").as_bytes()).unwrap();
+            assert_eq!(b.open(&packet).unwrap(), format!("after the backup {i}").as_bytes());
+            sent.push(packet);
+        }
+        // The backup is put back: what it seals next is under keys no packet used.
+        let mut restored = reload(&backup);
+        restored.restored().unwrap();
+        let again = restored.seal(b"after the restore").unwrap();
+        let header = |p: &[u8]| Header::from_bytes(&p[2..2 + Header::LEN]).unwrap();
+        assert!(sent.iter().all(|p| header(p).n < header(&again).n));
+        assert_eq!(header(&again).n, header(&sent[0]).n + RESTORE_SKIP);
+        // Bob opens it as after lost messages, and the conversation goes on both ways.
+        assert_eq!(b.open(&again).unwrap(), b"after the restore");
+        let reply = b.seal(b"got it").unwrap();
+        assert_eq!(restored.open(&reply).unwrap(), b"got it");
+        // Unrestored, the backup's next packet would have been the first one sent after it.
+        assert_eq!(header(&reload(&backup).seal(b"x").unwrap()).n, header(&sent[0]).n);
     }
 
     #[test]

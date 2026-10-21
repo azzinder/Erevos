@@ -90,9 +90,12 @@ export type E2EData = {
   contacts: Contact[];
   /** The ids of the first packets opened here, hex, oldest first, so a replayed one is dropped. */
   seen: string[];
+  /** The restore of a backup (lock/restored.ts) the conversations were last moved past, or ''.
+   *  Missing in what was kept before it. */
+  restore: string;
 };
 
-export const EMPTY_E2E: E2EData = { account: '', contacts: [], seen: [] };
+export const EMPTY_E2E: E2EData = { account: '', contacts: [], seen: [], restore: '' };
 
 export const FILE = 'erevos-e2e';
 const BLOCK = 16 * 1024;
@@ -157,6 +160,7 @@ function checked(value: unknown): E2EData {
     account: isBase64(v.account) ? v.account : '',
     contacts,
     seen: Array.isArray(v.seen) ? v.seen.filter(isHex) : [],
+    restore: isHex(v.restore) && v.restore.length === 32 ? v.restore : '',
   };
 }
 

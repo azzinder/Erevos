@@ -9,17 +9,19 @@ import { test } from 'node:test';
 
 import { contactLink, parseContact } from '../lib/contact-code';
 import { setCore, type Core } from '../lib/core';
-import { randomBytes, utf8Encode } from '../lib/crypto';
+import { randomBytes, toHex, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
 import { E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
-import { checkedAvatar, FILE, loadE2EData, MAX_NAME } from '../lock/e2e-data';
+import { checkedAvatar, FILE, loadE2EData, MAX_NAME, saveE2EData } from '../lock/e2e-data';
+import { lastRestore, markRestore } from '../lock/restored';
 import { DEFAULT_LOOK } from '../theme/look';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { History, newTag } from '../lock/history';
 import { moveChat } from '../lock/move-chat';
 import { hiddenHolder } from '../lock/sealed-file';
 import { files } from './files-memory';
+import { store } from './secure-memory';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const ready = existsSync(built);
@@ -170,6 +172,45 @@ t('keeps the conversations between launches, sealed', async () => {
   assert.equal((await loadE2EData('space', 0, randomBytes(32))).account, '');
   const other = await E2E.open('space', 0, randomBytes(32));
   assert.notDeepEqual(other.identity, alice.e2e.identity);
+});
+
+t('a chat put back from a backup never seals with a message key it used after that backup', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(hello.identity);
+  const [aliceId] = alice.e2e.contacts().map((c) => c.identity);
+  const backup = await loadE2EData('space', 0, key);
+  // After the backup, Alice goes on writing, and Bob reads it.
+  const header = (packet: Uint8Array) => toHex(packet.slice(2, 42));
+  const after: string[] = [];
+  for (const text of ['one', 'two', 'three']) {
+    const sent = await alice.e2e.seal(aliceId, text, alice.from);
+    assert.equal(message(await bob.e2e.receive(sent.packet)).text, text);
+    after.push(header(sent.packet));
+  }
+  // Put back as it was, the conversation would seal under the first of those keys again.
+  await saveE2EData('space', 0, key, backup);
+  const unmarked = await E2E.open('space', 0, key);
+  assert.equal(header((await unmarked.seal(aliceId, 'x', alice.from)).packet), after[0]);
+  // Restoring a backup marks the phone, and the chat moves past those keys when it opens.
+  await saveE2EData('space', 0, key, backup);
+  await markRestore();
+  const restored = await E2E.open('space', 0, key);
+  const sent = await restored.seal(aliceId, 'after the restore', alice.from);
+  assert.ok(!after.includes(header(sent.packet)));
+  assert.equal(message(await bob.e2e.receive(sent.packet)).text, 'after the restore');
+  const reply = await bob.e2e.seal(hello.identity, 'got it', bob.from);
+  assert.equal(message(await restored.receive(reply.packet)).text, 'got it');
+  // Once moved, opening it again moves nothing more.
+  const kept = await loadE2EData('space', 0, key);
+  assert.equal(kept.restore, await lastRestore());
+  const again = await E2E.open('space', 0, key);
+  assert.deepEqual(await loadE2EData('space', 0, key), kept);
+  assert.ok(again);
+  store.delete('erevos.restored');
 });
 
 t('a contact keeps the name this chat gives it, sealed, through new messages and links', async () => {

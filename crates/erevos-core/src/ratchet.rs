@@ -125,6 +125,26 @@ impl Session {
         }
     }
 
+    /// Moves the sending chain `n` keys on without using them. A session
+    /// put back from a backup would otherwise seal with the keys it already
+    /// sealed with after that backup, and since the key and nonce both come
+    /// from the message key, two messages under one would give away both.
+    /// The other side opens what comes next as after lost messages, so `n`
+    /// stays below `MAX_SKIP`. A session that cannot send yet (no message
+    /// from the other side) has nothing to move.
+    pub fn skip_sending(&mut self, n: u32) -> Result<(), Error> {
+        let Some(mut ck) = self.cks.clone() else {
+            return Ok(());
+        };
+        let ns = self.ns.checked_add(n).ok_or(Error::ChainExhausted)?;
+        for _ in 0..n {
+            ck = kdf_ck(&ck).0;
+        }
+        self.cks = Some(ck);
+        self.ns = ns;
+        Ok(())
+    }
+
     /// Encrypts `plaintext`, binding `ad` (both identities, from the
     /// handshake) and the header into the tag.
     pub fn encrypt(&mut self, plaintext: &[u8], ad: &[u8]) -> Result<(Header, Vec<u8>), Error> {

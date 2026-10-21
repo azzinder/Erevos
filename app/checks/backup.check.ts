@@ -13,6 +13,7 @@ import { openHidden, prepareHidden, setHiddenPassword } from '../lock/hidden';
 import { EMPTY_SPACE, loadHiddenData, loadSpaceData, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
+import { lastRestore } from '../lock/restored';
 import { blobs, files } from './files-memory';
 import { store } from './secure-memory';
 
@@ -58,7 +59,11 @@ t('puts everything back: the lock opens the same space, with its relay, messages
   blobs.set('erevos-avatar-ffffffffffffffffffffffffffffffff', new Uint8Array([9]));
 
   await restoreBackup(await openBackup(file, 'backup-pass'));
-  assert.deepEqual(new Map(store), before);
+  // Besides, the phone is marked as restored (lock/restored.ts), so each chat moves past the
+  // message keys its conversations may have used since the backup.
+  const mark = await lastRestore();
+  assert.match(mark, /^[0-9a-f]{32}$/);
+  assert.deepEqual(new Map([...store].filter(([name]) => name !== 'erevos.restored')), before);
   assert.equal(files.has('erevos-archive'), false);
   assert.equal(blobs.has('erevos-voice-ffffffffffffffffffffffffffffffff'), false);
   assert.equal(blobs.has('erevos-avatar-ffffffffffffffffffffffffffffffff'), false);

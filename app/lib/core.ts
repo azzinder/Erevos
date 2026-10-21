@@ -16,6 +16,8 @@ export interface Core {
   conversationSeal(conversation: Uint8Array, plaintext: Uint8Array): Promise<Uint8Array>;
   conversationOpen(conversation: Uint8Array, packet: Uint8Array): Promise<Uint8Array>;
   conversationPeer(conversation: Uint8Array): Promise<Uint8Array>;
+  /** Missing in a build made before conversations were made safe after a restore. */
+  conversationRestored?(conversation: Uint8Array): Promise<Uint8Array>;
   packetKind(packet: Uint8Array): Promise<number>;
   firstMessageId(packet: Uint8Array): Promise<Uint8Array>;
   safetyNumber(ours: Uint8Array, theirs: Uint8Array): Promise<string>;
@@ -184,6 +186,19 @@ export async function acceptConversation(account: Uint8Array, packet: Uint8Array
 export async function seal(conversation: Uint8Array, plaintext: Uint8Array): Promise<Sealed> {
   const [next, packet] = splitParts(await need().conversationSeal(conversation, plaintext), 2);
   return { conversation: next, packet };
+}
+
+/** Whether this build can make a conversation put back from a backup safe to seal in again. */
+export function canRestore(): boolean {
+  return typeof core?.conversationRestored === 'function';
+}
+
+/** A conversation put back from a backup, moved past the message keys it may have used since
+ *  that backup was made, so none is used twice. */
+export function restored(conversation: Uint8Array): Promise<Uint8Array> {
+  const it = need();
+  if (!it.conversationRestored) throw new NoCoreError();
+  return it.conversationRestored(conversation);
 }
 
 /** Throws when the packet is not for this conversation, or was changed. */

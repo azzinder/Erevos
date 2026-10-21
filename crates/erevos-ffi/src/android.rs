@@ -57,6 +57,7 @@ bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationAccept => 
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationSeal => crate::conversation_seal, conversation, plaintext);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationOpen => crate::conversation_open, conversation, packet);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationPeer => crate::conversation_peer, conversation);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_conversationRestored => crate::conversation_restored, conversation);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_firstMessageId => crate::first_message_id, packet);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_importChats => crate::import_chats, name, data);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_relaySeal => crate::relay_seal, relay_key, sender_id, message);
