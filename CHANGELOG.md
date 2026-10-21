@@ -32,6 +32,10 @@ On main, not released yet.
 - **Backup passwords** need at least 12 characters.
 - **Stored sizes**: every space's and hidden chats' value in a sealed file is the same size, used or
   not; what is larger goes to pages among the history's.
+- **Messages sealed for the relay**: once each phone has had a message from the other, every
+  message in a chat is sealed once more for the phone it goes to, so the relay can no longer tell
+  from them which conversation they belong to, and the phone opens each in one chat only instead of
+  trying it in all. An older Erevos does not seal, and its messages are read as before.
 - An old first message a relay sends again is refused however many new contacts came since.
 - A group's keeper cannot leave or take itself out, and hands the group only to a member who stays.
 - An MMS with a length past its end is refused at once. A new fingerprint key opens only while the

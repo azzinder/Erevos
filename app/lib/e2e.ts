@@ -8,6 +8,7 @@ import { acts, carriedOf, toCarry, type Carried } from './chat-parts';
 import { decodeCall, type CallSignal } from './call-signal';
 import { decodeGroup, encodeGroup, type GroupSignal } from './group-signal';
 import { isVoicePart, splitVoice, type VoicePart } from './voice';
+import { isSealedPacket, openPacket, ownPacketKey, packetKeys, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
 import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import type { Look } from '../theme/look';
 import { deletePhoto } from '../lock/avatar-photos';
@@ -61,6 +62,10 @@ const MAX_CONVERSATIONS = 3;
 // First packets remembered, so the relay cannot replay one to show its message again. A replay
 // of an older one shows its message once more, in a conversation that goes nowhere.
 const MAX_SEEN = 100;
+// How many packets that came unsealed are tried, in an hour, in the conversations of contacts
+// whose packets come sealed (E2E.mayTryUnsealed).
+const UNSEALED_TRIES = 5;
+const UNSEALED_TRIES_FOR = 60 * 60 * 1000;
 
 /** What a message asks the other phone to delete: every message of the chat, or the one with this tag. */
 export type Erase = { all: true } | { tag: string };
@@ -113,6 +118,8 @@ type Message = {
   re?: string;
   react?: Reaction | null;
   more?: Carried;
+  /** The key the sender gave this chat for the packets it sends them (lib/sealed-packet.ts). */
+  pk?: string;
 };
 
 /** What else a message can carry. */
@@ -166,7 +173,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -190,6 +197,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(due ? { due } : {}),
       ...(re ? { re } : {}),
       ...(react ? { react } : {}),
+      ...(pk ? { pk } : {}),
       ...more,
     }),
   );
@@ -251,6 +259,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       re: isTag(value.re) ? value.re : '',
       react: decodeReaction(value.react),
       more: carriedOf(value),
+      pk: isRelayKey(value.pk) ? value.pk : '',
     };
   } catch {
     return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null };
@@ -399,6 +408,11 @@ export class E2E {
   private ownSpare: Spare | null = null;
   // The account's other devices, for the space's own chat (lib/devices.ts).
   private link: Link | null = null;
+  // The keys of packet keys (lib/sealed-packet.ts), by the packet key.
+  private readonly packetKeys = new Map<string, PacketKeys>();
+  // When a packet that came unsealed was last tried in the conversations of contacts whose packets
+  // come sealed: so few that one sent to tire the phone costs it little.
+  private unsealedTries: number[] = [];
 
   private constructor(data: E2EData, account: Uint8Array, identity: Uint8Array, bundle: Uint8Array, store: (data: E2EData) => Promise<void>) {
     this.data = data;
@@ -438,6 +452,30 @@ export class E2E {
   /** Reaches the account's other devices through `link` from now on, or no longer. */
   useLink(link: Link | null): void {
     this.link = link;
+  }
+
+  // The keys of a packet key, made once.
+  private keysOf(key: string): PacketKeys {
+    let keys = this.packetKeys.get(key);
+    if (!keys) {
+      keys = packetKeys(fromBase64Url(key));
+      this.packetKeys.set(key, keys);
+    }
+    return keys;
+  }
+
+  // The key this chat gives a contact for the packets they send it.
+  private ownPacketKey(contact: Pick<Contact, 'identity' | 'packetKey'>): string {
+    return contact.packetKey || toBase64Url(ownPacketKey(this.account, contact.identity));
+  }
+
+  // Whether a packet that came unsealed may still be tried in the conversations of contacts whose
+  // packets come sealed: one of theirs restored from an old backup may not have this chat's key.
+  private mayTryUnsealed(now = Date.now()): boolean {
+    this.unsealedTries = this.unsealedTries.filter((at) => now - at < UNSEALED_TRIES_FOR);
+    if (this.unsealedTries.length >= UNSEALED_TRIES) return false;
+    this.unsealedTries.push(now);
+    return true;
   }
 
   private run<T>(call: () => Promise<T>): Promise<T> {
@@ -663,10 +701,11 @@ export class E2E {
         await this.save(this.withContact({ ...known, ...where, request: false }));
         return { identity, added: false };
       }
+      const packetKey = this.ownPacketKey({ identity, packetKey: this.find(identity)?.packetKey ?? '' });
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ from, ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null }),
+        encodeMessage({ from, ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey }),
       );
       await this.save(
         this.withContact({
@@ -688,6 +727,9 @@ export class E2E {
           heldRead: [],
           phone: '',
           seen: this.find(identity)?.seen ?? [],
+          packetKey,
+          sealTo: this.find(identity)?.sealTo ?? '',
+          sealsIn: false,
         }),
       );
       return { identity, added: true };
@@ -851,6 +893,8 @@ export class E2E {
   private async sealFor(contact: Contact, messages: Message[], writes: boolean): Promise<Uint8Array[]> {
     const now = Date.now();
     const release = writes || !contact.hide;
+    const through = this.link?.through === true;
+    const packetKey = this.ownPacketKey(contact);
     const said = messages.map((message, i) => {
       const spare = message.from ? this.ownSpare : null;
       const on = writes ? Math.max(message.on, ONLINE_AFTER_WRITE) : contact.hide ? 0 : message.on;
@@ -863,9 +907,10 @@ export class E2E {
         ask: message.ask && !contact.hide,
         got: first ? tags([...message.got, ...contact.heldGot.filter((tag) => !contact.heldRead.includes(tag))]) : message.got,
         read: first ? tags([...message.read, ...contact.heldRead]) : message.read,
+        // Said until their packets come sealed with it; never a linked device's own.
+        pk: contact.sealsIn || through ? '' : packetKey,
       };
     });
-    const through = this.link?.through === true;
     // A linked device's chats restored from its backup have no conversation to write in (lib/devices.ts, copied).
     if (!through && !contact.conversations[0]) throw new Error(t('These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.'));
     let conversation = fromBase64(contact.conversations[0]);
@@ -878,11 +923,12 @@ export class E2E {
       }
       const sealed = await core.seal(conversation, plaintext);
       conversation = sealed.conversation;
-      packets.push(sealed.packet);
+      packets.push(contact.sealTo ? sealPacket(this.keysOf(contact.sealTo), sealed.packet) : sealed.packet);
     }
     const request = contact.request && !writes;
     const held = release ? { heldGot: [], heldRead: [] } : {};
-    await this.save(this.withContact({ ...contact, ...held, request, conversations: [toBase64(conversation), ...contact.conversations.slice(1)] }));
+    const kept = through ? {} : { packetKey };
+    await this.save(this.withContact({ ...contact, ...held, ...kept, request, conversations: [toBase64(conversation), ...contact.conversations.slice(1)] }));
     if (said.some((message) => message.on > 0)) this.told.set(contact.identity, now);
     if (!through) for (const plaintext of plaintexts) this.link?.sealed(contact.identity, plaintext);
     return packets;
@@ -914,9 +960,16 @@ export class E2E {
         return { kind: 'refused', reason: 'linked' };
       }
       if (linked) return this.open(packet, linked);
+      if (isSealedPacket(packet)) {
+        // Whose it is, by its mark: then only their conversations are tried.
+        const contact = this.data.contacts.find((c) => sealedWith(this.keysOf(this.ownPacketKey(c)), packet));
+        const inner = contact ? openPacket(this.keysOf(this.ownPacketKey(contact)), packet) : null;
+        if (!contact || !inner || (await core.packetKind(inner)) !== 'following') return { kind: 'refused', reason: 'unknown' };
+        return this.open(inner, null, { only: contact.identity, sealed: true });
+      }
       const kind = await core.packetKind(packet);
       if (kind === 'first') return this.accept(packet);
-      if (kind === 'following') return this.open(packet);
+      if (kind === 'following') return this.open(packet, null, { sealed: false });
       return { kind: 'refused', reason: 'plain' };
     });
   }
@@ -955,6 +1008,10 @@ export class E2E {
       heldRead: known?.heldRead ?? [],
       phone: known?.phone ?? '',
       seen: [...(known?.seen ?? []), id].slice(-MAX_SEEN_EACH),
+      packetKey: this.ownPacketKey({ identity, packetKey: known?.packetKey ?? '' }),
+      sealTo: message.pk || known?.sealTo || '',
+      // A new conversation from them: their phone may have lost this chat's key, so it is said again.
+      sealsIn: false,
     };
     await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
     this.link?.opened(identity, opened.plaintext);
@@ -980,9 +1037,20 @@ export class E2E {
   }
 
   // `given`: a contact's message the primary passed on, already opened (lib/devices.ts).
-  private async open(packet: Uint8Array, given: { identity: string; plaintext: Uint8Array } | null = null): Promise<Received> {
-    for (const contact of this.data.contacts) {
+  // `sealed`: whether the packet came sealed for this chat (lib/sealed-packet.ts), with `only` the
+  // contact it was sealed for; unsaid for one a linked device passed on.
+  private async open(packet: Uint8Array, given: { identity: string; plaintext: Uint8Array } | null = null, { only, sealed }: { only?: string; sealed?: boolean } = {}): Promise<Received> {
+    // One that came unsealed is tried first in the conversations of those who do not seal yet.
+    const unsealed = sealed === false;
+    const contacts = unsealed ? [...this.data.contacts.filter((c) => !c.sealsIn), ...this.data.contacts.filter((c) => c.sealsIn)] : this.data.contacts;
+    let triedSealing = false;
+    for (const contact of contacts) {
       if (given && contact.identity !== given.identity) continue;
+      if (only && contact.identity !== only) continue;
+      if (unsealed && contact.sealsIn && !triedSealing) {
+        if (!this.mayTryUnsealed()) break;
+        triedSealing = true;
+      }
       for (let i = 0; i < contact.conversations.length; i++) {
         let opened: core.Opened;
         try {
@@ -1003,6 +1071,9 @@ export class E2E {
             first: '',
             timer: timing.timer,
             timerAt: timing.timerAt,
+            sealTo: message.pk || contact.sealTo,
+            // Sealed: they have this chat's key, which need not be said any more; unsealed: they may not.
+            sealsIn: sealed ?? contact.sealsIn,
           }),
         );
         if (!given) this.link?.opened(contact.identity, opened.plaintext);

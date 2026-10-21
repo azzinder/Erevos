@@ -156,6 +156,47 @@ t('an old first packet sent again is refused even once the space has seen many o
   assert.equal(message(await alice.e2e.receive(after.packet)).text, 'still here');
 });
 
+t('once each has said its key, packets come sealed for the relay, and a few that come unsealed are still read', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const carol = await chat('space', 2);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  await carol.e2e.addContact(alice.code, carol.from);
+  message(await alice.e2e.receive(carol.e2e.pending()[0].first));
+  const first = alice.e2e.pending()[0].first;
+  // A first packet is never sealed: it says the key Bob seals to Alice with.
+  assert.deepEqual([...first.slice(0, 2)], [1, 1]);
+  const hello = message(await bob.e2e.receive(first));
+  await alice.e2e.firstSent(bobId);
+  const reply = (await bob.e2e.seal(hello.identity, 'hi', bob.from)).packet;
+  assert.deepEqual([...reply.slice(0, 2)], [1, 4]);
+  assert.equal(message(await alice.e2e.receive(reply)).text, 'hi');
+  // Alice learned Bob's key from that: hers to him are sealed too.
+  const back = (await alice.e2e.seal(bobId, 'hello', alice.from)).packet;
+  assert.deepEqual([...back.slice(0, 2)], [1, 4]);
+  assert.equal(message(await bob.e2e.receive(back)).text, 'hello');
+  // Carol's chat with Alice is not Bob's: his sealed packet does not open there.
+  assert.deepEqual(await carol.e2e.receive(reply), { kind: 'refused', reason: 'unknown' });
+  assert.equal((await loadE2EData('space', 0, alice.key)).contacts.find((c) => c.identity === bobId)!.sealsIn, true);
+
+  // Bob back from a backup made before he had Alice's key: his packets come unsealed again.
+  const kept = await loadE2EData('space', 1, bob.key);
+  await saveE2EData('space', 1, bob.key, { ...kept, contacts: kept.contacts.map((c) => ({ ...c, sealTo: '' })) });
+  const restored = await E2E.open('space', 1, bob.key);
+  const unsealed = (await restored.seal(hello.identity, 'back', bob.from)).packet;
+  assert.deepEqual([...unsealed.slice(0, 2)], [1, 2]);
+  // Packets sent only to tire Alice's phone use up the few tries an hour, and then even Bob's waits.
+  const junk = () => Uint8Array.of(1, 2, ...randomBytes(300));
+  for (let i = 0; i < 5; i++) assert.deepEqual(await alice.e2e.receive(junk()), { kind: 'refused', reason: 'unknown' });
+  assert.deepEqual(await alice.e2e.receive(unsealed), { kind: 'refused', reason: 'unknown' });
+  // Later (here, a new start) it is read, and Alice says her key again, so Bob seals once more.
+  const later = await E2E.open('space', 0, alice.key);
+  assert.equal(message(await later.receive(unsealed)).text, 'back');
+  const again = (await later.seal(bobId, 'welcome back', alice.from)).packet;
+  assert.equal(message(await restored.receive(again)).text, 'welcome back');
+  assert.deepEqual([...(await restored.seal(hello.identity, 'sealed', bob.from)).packet.slice(0, 2)], [1, 4]);
+});
+
 t('both start a conversation at once and still read each other', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

@@ -91,9 +91,14 @@ cryptography. Do not rely on it to protect anyone yet.
 
 ### Encryption
 
-- 1:1 chats start with PQXDH (X25519 and ML-KEM-768), then use the double ratchet. The ratchet
-  header (its public key and counters) is not encrypted yet, so a relay can tell which messages in a
-  queue belong to the same conversation.
+- 1:1 chats start with PQXDH (X25519 and ML-KEM-768), then use the double ratchet. Once each phone
+  has had a message from the other, every packet is sealed once more for the phone it goes to
+  (AES-256-GCM, with a key that phone gave inside the chat, and a 16-byte mark only the two can
+  match), so a relay cannot tell from a packet which conversation in a queue it belongs to, and the
+  phone opens it in that one contact's conversation instead of trying every contact. A
+  conversation's first message, and any sent before the answer comes, still show the ratchet header
+  (its public key and counters). An unsealed packet is tried in the conversations of contacts who
+  seal at most 5 times an hour.
 - Accounts have **no one-time prekeys**: the keys in a contact link never change, and several people
   may use one link. So a relay could replay a conversation's first message. The app remembers the
   ids of the last 100 first messages it accepted, and each contact's last 16, and ignores one it

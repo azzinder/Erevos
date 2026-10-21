@@ -60,7 +60,8 @@ import { MAX_VOICE_MS } from './voice';
 // this device has no MLS state of its own, and makes and joins no group.
 
 /** The start of a group message, after which comes the message sealed for its member. A chat's
- *  packets start with 1 then 1 or 2 (crates/erevos-core). */
+ *  packets start with 1 then 1 or 2 (crates/erevos-core), or 1 then 4 once sealed for the relay
+ *  (lib/sealed-packet.ts). */
 const GROUP_PACKET = [1, 3];
 // The sender id inside the per-member seal: not used, the MLS message says who sent it.
 const NO_SENDER = new Uint8Array(24);

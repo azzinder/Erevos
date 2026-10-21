@@ -199,6 +199,12 @@ The new chat appears on the home screen named **contact** and the first characte
 phone adds the other: adding a link starts an encrypted conversation and tells the other phone how to answer, so it
 lists the chat the next time it looks at its queue, which it does every few seconds.
 
+**What the relay sees of a chat:** all your contacts write to your one queue. Once each phone has had a message from
+the other, every message between them is sealed once more for the phone it goes to, with a key that phone gave inside
+the chat, so to the relay each is random bytes of one of a few sizes, and it cannot tell from them which conversation
+they belong to. The first message of a chat, and any sent before the answer comes, still show it. The relay still sees
+which address puts each message in, and when.
+
 ### No relay of your own
 
 A phone with no relay chats over the internet all the same: adding the link of a contact whose relay lends places, it
@@ -1365,7 +1371,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | --- | --- | --- |
 | **Account, phone number, email** | None needed. Contacts are pairs of one-way relay queues. | |
 | **Contacts and their names, keys, relay settings, look** | Sealed on the phone with each space's key. | |
-| **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them. Not audited yet. | An outside audit. |
+| **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them, and once both phones have had a message from each other it cannot tell them apart by conversation either: each is sealed once more for the phone it goes to. Not audited yet. | An outside audit. |
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it, and over Wi-Fi Direct anyone who joins the phones' own Wi-Fi. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |

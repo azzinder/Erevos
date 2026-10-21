@@ -57,6 +57,12 @@ export type Contact = {
   /** Ids of the first messages taken from them, the latest MAX_SEEN_EACH: one a relay sends again
    *  is refused, however many others came since. */
   seen: string[];
+  /** The key this chat gave them for the packets they send it (lib/sealed-packet.ts), base64url,
+   *  once made; `sealTo`, the one they gave this chat, once said. `sealsIn`: their packets come
+   *  sealed, so one that does not is tried in their conversations only now and then. */
+  packetKey: string;
+  sealTo: string;
+  sealsIn: boolean;
 };
 
 /** A queue on a backup relay: its sender id (hex), the relay, and the relay's key (base64url, or
@@ -155,6 +161,9 @@ function checkedContact(value: unknown): Contact | null {
     heldRead: heldTags(v.heldRead),
     phone: isText(v.phone) && /^\+?\d{3,20}$/.test(v.phone) ? v.phone : '',
     seen: Array.isArray(v.seen) ? v.seen.filter(isHex).slice(-MAX_SEEN_EACH) : [],
+    packetKey: isRelayKey(v.packetKey) ? v.packetKey : '',
+    sealTo: isRelayKey(v.sealTo) ? v.sealTo : '',
+    sealsIn: v.sealsIn === true,
   };
 }
 
