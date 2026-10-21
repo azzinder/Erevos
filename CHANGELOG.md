@@ -37,13 +37,13 @@ On main, not released yet. The next release is **2.0.0**.
 - Each send now tells the relay what it carries: a message someone reads (a text, a voice message
   in its parts, a photo or file, a sticker, place or poll, a group's message), or word between
   phones (that it came or was read, typing, reactions, new keys, a group's own changes, what goes
-  between linked devices), which pushes nothing; a call that rings pushes, counted as no message.
-  What waits for the relay, or is sent for later, says it when it goes, and so does a contact's
-  message the phone passes on to a linked computer, and each group message, however many reach it
-  at once. What a linked device writes goes to the phone as word between them, as it is the
-  account's own, and the phone counts it once as it passes it on, a voice message too when one of
-  its parts had to wait. So a relay that counts can say in a closed web app's push how many
-  messages came (above).
+  between linked devices), which pushes nothing; a call that rings, a group's call that starts
+  too, pushes as a call, counted as no message. What waits for the relay, or is sent for later,
+  says it when it goes, and so does a contact's message the phone passes on to a linked computer,
+  and each group message, however many reach it at once. What a linked device writes goes to the
+  phone as word between them, as it is the account's own, and the phone counts it once as it
+  passes it on, a voice message too when one of its parts had to wait. So a relay that counts can
+  say in a closed web app's push how many messages came (above).
 
 - **Newer keys every month**: each chat's account makes new prekeys (X25519 and ML-KEM-768) every
   30 days and gives them to its contacts inside their chats, whose Erevos starts a new conversation

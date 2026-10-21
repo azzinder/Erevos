@@ -26,10 +26,10 @@ export type Told = { meta: string; last: string; at: number; marks: string };
 
 /**
  * How a packet in a device's outbox goes to the relay when it is not quiet word between the
- * devices (lib/relay.ts, Mark): as a message someone reads, counted in a web app's notice, or with
- * no mark, as a call that rings does.
+ * devices (lib/relay.ts, Mark): as a message someone reads, counted in a web app's notice, as a
+ * call that rings, or, kept by an Erevos from before calls rang so, with no mark.
  */
-export type OutMark = 'message' | 'none';
+export type OutMark = 'message' | 'ring' | 'none';
 
 export type Peer = {
   /** The identity of its link key, hex. */
@@ -159,7 +159,7 @@ function checkedMarks(value: unknown, outbox: string[]): Record<string, OutMark>
   const marks: Record<string, OutMark> = {};
   for (const packet of outbox) {
     const mark = Object.prototype.hasOwnProperty.call(v, packet) ? v[packet] : undefined;
-    if (mark === 'message' || mark === 'none') marks[packet] = mark;
+    if (mark === 'message' || mark === 'ring' || mark === 'none') marks[packet] = mark;
   }
   return Object.keys(marks).length > 0 ? marks : null;
 }

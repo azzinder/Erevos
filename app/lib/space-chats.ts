@@ -116,12 +116,12 @@ export function contactTarget(own: Relay, where: { relay: string; relayKey: stri
 
 /**
  * What a message sealed for a contact carries, as the relay is told (lib/relay.ts, Mark), by its
- * words and the call signal in it, if any: words someone reads are a message; a call's offer, which
- * rings, goes with no mark, so it pushes without being counted; all else is word between phones.
+ * words and the call signal in it, if any: words someone reads are a message; a call's offer rings,
+ * so it pushes, counted as a call and not a message; all else is word between phones.
  */
-export function markOf(text: string, call?: { kind: string } | null): Mark | undefined {
+export function markOf(text: string, call?: { kind: string } | null): Mark {
   if (text) return 'message';
-  return call?.kind === 'offer' ? undefined : 'quiet';
+  return call?.kind === 'offer' ? 'ring' : 'quiet';
 }
 
 // The chats that seal what they send a contact for the account's phone, as a linked device's do
@@ -140,7 +140,7 @@ export function linkChats(e2e: E2E, link: { readonly through: boolean } | null):
  * device, as it goes to the account's own queue, on its phone, which says what it carries as it
  * passes it on to the contact.
  */
-export function sentMark(e2e: E2E, mark: Mark | undefined): Mark | undefined {
+export function sentMark(e2e: E2E, mark: Mark): Mark {
   return links.get(e2e)?.through ? 'quiet' : mark;
 }
 
@@ -154,7 +154,7 @@ export async function sendSealed(
   own: Relay,
   sealed: { sender: string; relay: string; relayKey: string; spare?: Spare | null; first: Uint8Array | null },
   packets: Uint8Array[],
-  mark: Mark | undefined,
+  mark: Mark,
   firstSent: () => Promise<void>,
 ): Promise<void> {
   const to = contactTarget(own, sealed);

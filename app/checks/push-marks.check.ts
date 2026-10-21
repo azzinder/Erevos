@@ -66,7 +66,7 @@ let dropping: ((sent: Seen) => boolean) | null = null;
 function read(bytes: Uint8Array): Seen | null {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   // After the request, its mark, if any: a byte the relay does not know is none.
-  const markAt = (end: number): Mark | 'none' => (bytes[end] === 1 ? 'message' : bytes[end] === 2 ? 'quiet' : 'none');
+  const markAt = (end: number): Mark | 'none' => (bytes[end] === 1 ? 'message' : bytes[end] === 2 ? 'quiet' : bytes[end] === 3 ? 'ring' : 'none');
   switch (bytes[0]) {
     case SEND:
       return { to: toHex(bytes.subarray(1, 25)), mark: markAt(29 + view.getUint32(25)), later: false };
@@ -202,7 +202,7 @@ const call = (kind: 'offer' | 'answer'): CallSignal =>
 
 // ---- Chats ----
 
-test('a text and the first packet of its conversation count once; what is said of it counts none; a call rings uncounted', { skip: !ready }, async () => {
+test('a text and the first packet of its conversation count once; what is said of it counts none; a call rings, as a call', { skip: !ready }, async () => {
   const alice = await phone();
   const bob = await phone();
   const { identity: bobId } = await alice.chats.e2e.addContact({ senderHex: bob.queue.senderHex, key: toBase64Url(bob.chats.e2e.bundle), relayUrl: url }, alice.queue.senderHex, where);
@@ -234,9 +234,10 @@ test('a text and the first packet of its conversation count once; what is said o
   // Bob answers in words: one more, on Alice's queue.
   await write(bob, aliceId, 'hello');
   assert.deepEqual(counted(alice.queue.senderHex), { messages: 1, unsure: false });
-  // A call's offer rings: it pushes, but the relay cannot count it.
+  // A call's offer rings: it pushes, as a call, and no message, and the count stays sure.
   await write(bob, aliceId, '', { call: call('offer') });
-  assert.deepEqual(counted(alice.queue.senderHex), { messages: 1, unsure: true });
+  assert.deepEqual(counted(alice.queue.senderHex), { messages: 1, unsure: false });
+  assert.deepEqual(marks(alice.queue.senderHex).slice(-1), ['ring']);
   assert.deepEqual((await take(alice)).map((m) => [m.text, m.call?.kind ?? '']), [['hello', ''], ['', 'offer']]);
 });
 
@@ -322,7 +323,7 @@ test('a message sent for later says it is one, for when the relay sends it', { s
 
 type Member = { identity: string; queue: Queue; groups: Groups; transport: GroupTransport; data: GroupData };
 
-test('a group message to three members counts once on each; what is done to it none; a call that starts rings uncounted; one that waited keeps its mark', { skip: !ready, timeout: 60_000 }, async () => {
+test('a group message to three members counts once on each; what is done to it none; a call that starts rings, as a call; one that waited keeps its mark', { skip: !ready, timeout: 60_000 }, async () => {
   files.clear();
   const signals: { from: string; to: string; signal: Parameters<GroupTransport['signal']>[1] }[] = [];
   const members = new Map<string, Member>();
@@ -379,26 +380,30 @@ test('a group message to three members counts once on each; what is done to it n
   await alice.groups.rename(id, 'Old friends', alice.transport);
   for (const m of others) assert.deepEqual(counted(m.queue.senderHex), { messages: 1, unsure: false });
   await alice.groups.call(id, { id: '0123456789abcdef', kind: 'start', at: Date.now(), video: false }, alice.transport);
-  for (const m of others) assert.deepEqual(marks(m.queue.senderHex).slice(-1), ['none']);
+  for (const m of others) assert.deepEqual(marks(m.queue.senderHex).slice(-1), ['ring']);
+  for (const m of others) assert.deepEqual(counted(m.queue.senderHex), { messages: 1, unsure: false });
   await alice.groups.call(id, { id: '0123456789abcdef', kind: 'leave' }, alice.transport);
   await settle();
 
-  // The relay cannot be reached: the message waits in the group's outbox, with its mark, and so
-  // when Alice's phone opens the groups again; then it goes, and says it is a message.
+  // The relay cannot be reached: the message, and a call that starts, wait in the group's outbox,
+  // with their marks, and so when Alice's phone opens the groups again; then they go, and say they
+  // are a message and a ring.
   seen.length = 0;
   unreachable = true;
   await alice.groups.send(id, 'once more', alice.transport);
+  await alice.groups.call(id, { id: '1123456789abcdef', kind: 'start', at: Date.now(), video: false }, alice.transport);
   unreachable = false;
-  assert.equal(alice.data.groups[0].outbox.length, 3);
+  assert.equal(alice.data.groups[0].outbox.length, 6);
   const space = spaces++;
   const key = randomBytes(32);
   await saveGroupData(space, key, alice.data);
   const kept = await loadGroupData(space, key);
-  assert.deepEqual(kept.groups[0].outbox.map((o) => o.mark), ['message', 'message', 'message']);
+  assert.deepEqual(kept.groups[0].outbox.map((o) => o.mark), ['message', 'message', 'message', 'ring', 'ring', 'ring']);
   const again = new Groups(kept, async (data) => void (alice.data = data), async () => ({ id: alice.identity, sender: alice.queue.senderHex, relay: url, relayKey: '' }));
   members.set(alice.identity, { ...alice, groups: again });
   await again.flush(alice.transport);
   for (const m of others) assert.deepEqual(counted(m.queue.senderHex), { messages: 1, unsure: false });
+  for (const m of others) assert.deepEqual(marks(m.queue.senderHex), ['message', 'ring']);
   await settle();
   for (const m of others) assert.ok(m.groups.messages(id).some((x) => x.text === 'once more'));
 });
@@ -410,8 +415,9 @@ test("the space's group messages tell the relay what they carry", { skip: !ready
   const to: About = { id: toHex(randomBytes(32)), sender: toHex(ids.senderId), relay: url, relayKey: '', seal: toBase64Url(randomBytes(32)) };
   await spaceGroupTransport.post(to, Uint8Array.of(1, 3, 7), 'message');
   await spaceGroupTransport.post(to, Uint8Array.of(1, 3, 8), 'quiet');
-  await spaceGroupTransport.post(to, Uint8Array.of(1, 3, 9));
-  assert.deepEqual(marks(to.sender), ['message', 'quiet', 'none']);
+  await spaceGroupTransport.post(to, Uint8Array.of(1, 3, 9), 'ring');
+  await spaceGroupTransport.post(to, Uint8Array.of(1, 3, 10));
+  assert.deepEqual(marks(to.sender), ['message', 'quiet', 'ring', 'none']);
 });
 
 // ---- Linked devices ----
@@ -465,6 +471,18 @@ test("a linked computer's notice counts a contact's message the phone passes on 
   assert.deepEqual((await take(dell)).map((m) => m.text), ['hello both']);
   assert.deepEqual(counted(dell.queue.senderHex), { messages: 1, unsure: false });
   assert.equal((await loadDevicesData(pixel.space, pixel.key)).devices[0].marks, undefined);
+
+  // Carol calls: what the phone passes on waits as a ring, and rings the computer once it goes.
+  const since = seen.length;
+  await write(carol, account, '', { call: call('offer') });
+  unreachable = true;
+  await take(pixel);
+  const ringing = (await loadDevicesData(pixel.space, pixel.key)).devices[0];
+  assert.deepEqual(Object.values(ringing.marks ?? {}), ['ring']);
+  unreachable = false;
+  await pixel.links!.flush();
+  assert.deepEqual(marks(dell.queue.senderHex, since).filter((m) => m !== 'quiet'), ['ring']);
+  await take(dell);
 
   // That Carol read what the computer wrote, and that she types, reach it, and are no message.
   // What the computer wrote goes to the phone quiet: it is the account's own.
@@ -527,7 +545,12 @@ test('what a linked computer sends goes quiet to the phone, which counts it once
   // A call the computer starts goes quiet to the phone, which rings Carol.
   since = seen.length;
   await write(dell, carolId, '', { call: call('offer') });
-  assert.deepEqual(counted(pixel.queue.senderHex, since), { messages: 0, unsure: false });
+  assert.deepEqual(marks(pixel.queue.senderHex, since), ['quiet']);
+  await until(async () => {
+    await take(pixel);
+    return marks(carol.queue.senderHex, since).length > 0;
+  }, 15_000);
+  assert.deepEqual(marks(carol.queue.senderHex, since), ['ring']);
 });
 
 test("a linked computer's voice message counts once for the contact though a part could not go at first", { skip: !ready, timeout: 90_000 }, async () => {

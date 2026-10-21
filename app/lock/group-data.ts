@@ -205,7 +205,7 @@ export function checkedGroup(value: unknown): Group | null {
       (i) => {
         const o = (i ?? {}) as { to?: unknown; packet?: unknown; mark?: unknown };
         const to = checkedAbout(o.to);
-        const mark: { mark?: Mark } = o.mark === 'message' || o.mark === 'quiet' ? { mark: o.mark } : {};
+        const mark: { mark?: Mark } = o.mark === 'message' || o.mark === 'quiet' || o.mark === 'ring' ? { mark: o.mark } : {};
         return to && isBase64(o.packet) ? { to, packet: o.packet, ...mark } : null;
       },
       MAX_OUTBOX,

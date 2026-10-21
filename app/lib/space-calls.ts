@@ -12,8 +12,8 @@ import { t } from './i18n';
 
 // Calls in the open space's chats (lib/calls.ts): their signals go through the space's own
 // encryption, to the contact's phone nearby when it is (lib/nearby.ts), as on the same Wi-Fi with
-// no internet, and through the relay as its settings say, read when sent: an offer, which rings,
-// with no mark, so it pushes uncounted, and the rest quiet (lib/relay.ts, Mark); from a linked
+// no internet, and through the relay as its settings say, read when sent: an offer rings, so it
+// pushes, counted as a call, and the rest quiet (lib/relay.ts, Mark); from a linked
 // device all of it quiet, as it goes to the account's phone, which marks it as it passes it on
 // (lib/space-chats.ts, sentMark). Their lines are kept in its history. The chat screen, while
 // open, shows a line as it comes (onSpaceCallLine); the home screen hears of it as of a message.

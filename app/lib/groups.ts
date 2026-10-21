@@ -73,7 +73,7 @@ import { MAX_VOICE_MS } from './voice';
 //
 // Each group message tells the relay what it carries (lib/relay.ts, Mark), for a web app's notice
 // while it is closed: a member's words, photo, file or voice message, or an ask for one's contact
-// link, is a message; a call that starts rings, so it goes with no mark; all else (commits,
+// link, is a message; a call that starts rings, counted as a call; all else (commits,
 // welcomes, new keys, reactions, pins, names, admins' steps, an answer with a contact link) is quiet. What waits in the outbox keeps its mark for when it goes.
 //
 // Members who are not each other's contacts can ask for each other's contact links (`askContact`),
@@ -610,8 +610,8 @@ export class Groups {
       const members = await this.membersIn(id);
       const to = 'to' in signal ? members.filter((m) => m.about?.id === signal.to) : members;
       // Only `start` and `leave` are worth sending again later: the rest is stale by then. A call
-      // that starts rings, with no mark.
-      if (signal.kind === 'start' || signal.kind === 'leave') await this.deliver(id, to, sealed.message, transport, false, signal.kind === 'start' ? null : 'quiet');
+      // that starts rings.
+      if (signal.kind === 'start' || signal.kind === 'leave') await this.deliver(id, to, sealed.message, transport, false, signal.kind === 'start' ? 'ring' : 'quiet');
       else {
         for (const member of to) {
           if (member.me || !member.about) continue;
@@ -992,18 +992,18 @@ export class Groups {
   }
 
   // Sends one MLS message to each of `members` but this phone, sealed for each, and with `all`
-  // those sent nothing more too, saying what it carries (`mark`; null for none, as for what rings).
-  // What the relay does not take waits in the group's outbox, with its mark.
-  protected async deliver(id: string, members: GroupMember[], message: Uint8Array, transport: GroupTransport, all = false, mark: Mark | null = 'quiet') {
+  // those sent nothing more too, saying what it carries (`mark`). What the relay does not take
+  // waits in the group's outbox, with its mark.
+  protected async deliver(id: string, members: GroupMember[], message: Uint8Array, transport: GroupTransport, all = false, mark: Mark = 'quiet') {
     const failed: Group['outbox'] = [];
     const skip = all ? new Set<string>() : this.unreached(id);
     for (const member of members) {
       if (member.me || !member.about || skip.has(member.about.id)) continue;
       const packet = await this.sealFor(member.about, message);
       try {
-        await transport.post(member.about, packet, mark ?? undefined);
+        await transport.post(member.about, packet, mark);
       } catch {
-        failed.push({ to: member.about, packet: toBase64(packet), ...(mark ? { mark } : {}) });
+        failed.push({ to: member.about, packet: toBase64(packet), mark });
       }
     }
     const group = this.find(id);

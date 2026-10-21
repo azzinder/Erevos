@@ -187,7 +187,7 @@ import { sendWaiting, type SendPlace } from './waiting';
 //
 // Each packet tells the relay what it carries (lib/relay.ts, Mark), for a web app's notice while it
 // is closed, a linked one's too. On the primary, a contact's message passed on to the devices (`in`)
-// is a message, a voice message on its last part only; a call's offer rings, with no mark; a
+// is a message, a voice message on its last part only; a call's offer rings, counted as a call; a
 // member's message in a group goes in an envelope of its own, a message, as the relay counts one
 // for each packet. The rest between the devices is quiet, and a packet waiting in a device's
 // outbox keeps how it goes (`marks`). What a device wrote goes on to the contact marked as the
@@ -266,9 +266,9 @@ const tagsOf = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isTag) : [
 const peerOf = (identity: string) => `${CONTACT_PREFIX}${identity}`;
 
 // What a chat's message (`m`, as lib/e2e.ts says it) carries, as the relay is told: one the chat
-// keeps is a message, a voice message on its last part only; a call's offer rings, with no mark;
-// all else is quiet.
-function relayMarkOf(m: Json): RelayMark | undefined {
+// keeps is a message, a voice message on its last part only; a call's offer rings; all else is
+// quiet.
+function relayMarkOf(m: Json): RelayMark {
   if (isCall(m)) return markOf('', decodeCall(m.call));
   if (!isKept(m)) return 'quiet';
   const voice = m.voice;
@@ -276,8 +276,8 @@ function relayMarkOf(m: Json): RelayMark | undefined {
 }
 
 // How a packet for a device goes, kept with it in the outbox: nothing for one that is quiet.
-function outMarkOf(mark: RelayMark | undefined): OutMark | undefined {
-  return mark === 'quiet' ? undefined : mark === 'message' ? 'message' : 'none';
+function outMarkOf(mark: RelayMark): OutMark | undefined {
+  return mark === 'quiet' ? undefined : mark;
 }
 
 // A peer without what of its outbox went, nor the marks of those.
@@ -1679,7 +1679,7 @@ export class Links implements Link, TakenFiles {
     try {
       for (const packet of outbox) {
         const mark = marks?.[packet];
-        await sendMessage(to, fromHex(at.sender), fromBase64(packet), mark === 'message' ? 'message' : mark === 'none' ? undefined : 'quiet');
+        await sendMessage(to, fromHex(at.sender), fromBase64(packet), mark === 'none' ? undefined : (mark ?? 'quiet'));
         sent.add(packet);
       }
     } finally {
@@ -1731,7 +1731,7 @@ export class Links implements Link, TakenFiles {
 
   // Seals word for a contact as the chat does, and hands it to their phone nearby when it is, and
   // to the relay, saying what it carries (`mark`).
-  private async deliver(identity: string, sealed: { sender: string; relay: string; relayKey: string; spare: Contact['spare']; first: Uint8Array | null; packet: Uint8Array }, here: Here, mark: RelayMark | undefined) {
+  private async deliver(identity: string, sealed: { sender: string; relay: string; relayKey: string; spare: Contact['spare']; first: Uint8Array | null; packet: Uint8Array }, here: Here, mark: RelayMark) {
     const relay = sealed.sender ? () => sendSealed(here.sends, sealed, [sealed.packet], mark, () => this.chats.e2e.firstSent(identity)) : null;
     await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
   }

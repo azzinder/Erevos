@@ -1849,7 +1849,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     identity: string,
     sealed: { sender: string; relay: string; relayKey: string; first: Uint8Array | null },
     packets: Uint8Array[],
-    mark: RelayMark | undefined,
+    mark: RelayMark,
     carried = false,
   ): Promise<Delivery> {
     const relay = target && sealed.sender ? () => sendSealed(target, sealed, packets, sentMark(chats, mark), () => chats.firstSent(identity)) : null;
