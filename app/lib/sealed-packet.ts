@@ -20,6 +20,14 @@ import { decryptBytes, encryptBytes, sameBytes, utf8Encode } from './crypto';
 //
 // The key a phone gives a contact is drawn from its account's keys and the contact's identity, so
 // it is the same after a backup is restored, and the contact's copy stays good.
+//
+// What contacts send the endpoints of an account's device list (docs/multi-device.md) is sealed the
+// same way, with the key the list gives with where each reads until that endpoint gives one of its
+// own. That key too is each contact's own: the phone keeps one key for each entry (`seed`: a
+// device's, which it said, or a random one for a place that fills the list) and gives each contact
+// the key drawn from it and their identity (`entryKey`), so no contact, nor a relay that works with
+// one, opens what another seals for that endpoint. A device finds whose a packet is with one HMAC a
+// contact, as the phone does.
 
 export const SEALED_PACKET = [1, 4];
 const MARK = 16;
@@ -70,4 +78,9 @@ export function openPacket(keys: PacketKeys, packet: Uint8Array): Uint8Array | n
 /** The key this account gives the contact with `identity` (hex) for the packets they send it. */
 export function ownPacketKey(account: Uint8Array, identity: string): Uint8Array {
   return hmac(sha256, account, utf8Encode(`erevos packet key v1 ${identity}`));
+}
+
+/** The key a device list's entry whose kept key is `seed` gives the contact with `identity` (hex) for the packets they send that endpoint. */
+export function entryKey(seed: Uint8Array, identity: string): Uint8Array {
+  return hmac(sha256, seed, utf8Encode(`erevos entry key v1 ${identity}`));
 }

@@ -1,4 +1,4 @@
-// Two-hop sending, call relay credentials and waiting for a message (lib/relay.ts) against two real relays (crates/erevos-relay) and the real core
+// Two-hop sending, many messages on one connection, call relay credentials and waiting for a message (lib/relay.ts) against two real relays (crates/erevos-relay) and the real core
 // built to WebAssembly by checks/build-core.mjs. Skipped, with a note, when either build is
 // missing: build the relay with `cargo build -p erevos-relay`.
 // Run with: npm run check
@@ -19,10 +19,12 @@ import {
   canTryLater,
   canWaitAt,
   createQueue,
+  isQueueNotFound,
   isRelayAddress,
   receiveMessage,
   relayKey,
   RelayError,
+  RelaySends,
   RelayUnreachableError,
   sendMessage,
   sendMessageLater,
@@ -140,6 +142,30 @@ test('a web app on the screen takes its messages as any, from a relay that pushe
     assert.deepEqual(await receiveMessage(own, ids.recipientId, true), Uint8Array.of(6));
     assert.equal(await receiveMessage(own, ids.recipientId, true), null);
   }
+});
+
+test('many messages go on one connection to each relay, each answered as when sent alone, with what it carries or not, and one through a second relay as before', { skip: !ready }, async () => {
+  const [a, b] = [await createQueue({ url: far }), await createQueue({ url: far })];
+  const there = await createQueue({ url: near });
+  const sends = new RelaySends();
+  try {
+    await sends.send({ url: far }, a.senderId, Uint8Array.of(1), 'message');
+    await sends.send({ url: far }, b.senderId, Uint8Array.of(2), 'quiet');
+    // A queue the relay does not have says so, and the next goes on the same connection.
+    await assert.rejects(sends.send({ url: far }, Uint8Array.from({ length: 24 }, () => 7), Uint8Array.of(3)), (error) => isQueueNotFound(error));
+    await sends.send({ url: far }, a.senderId, Uint8Array.of(4));
+    await sends.send({ url: near }, there.senderId, Uint8Array.of(5));
+    await sends.send({ url: far, via: { url: near } }, b.senderId, Uint8Array.of(6), 'message');
+    await assert.rejects(sends.send({ url: `ws://127.0.0.1:${await freePort()}` }, a.senderId, Uint8Array.of(7)), RelayUnreachableError);
+  } finally {
+    sends.close();
+  }
+  const all = async (relay: Relay, recipient: Uint8Array) => {
+    const got: number[] = [];
+    for (let bytes = await receiveMessage(relay, recipient); bytes; bytes = await receiveMessage(relay, recipient)) got.push(...bytes);
+    return got;
+  };
+  assert.deepEqual([await all({ url: far }, a.recipientId), await all({ url: far }, b.recipientId), await all({ url: near }, there.recipientId)], [[1, 4], [2, 6], [5]]);
 });
 
 test('a relay without a key refuses two-hop sending instead of sending straight', { skip: !ready }, async () => {

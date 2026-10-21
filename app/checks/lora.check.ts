@@ -15,6 +15,7 @@ import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { keepRadio, Lora, piecesOf, type LoraTiming, type RadioStore, type SavedRadio } from '../lib/lora';
 import { ADMIN_APP, CONFIG_ONLY, fromRadio, PRIVATE_APP, quieted, readFromRadio, toRadioPacket, type FromRadio } from '../lib/meshtastic';
 import { framesOf, Nearby, NoWayError, TooLargeForLoraError } from '../lib/nearby';
+import { RelayError } from '../lib/relay';
 import { files } from './files-memory';
 
 const require = createRequire(import.meta.url);
@@ -391,6 +392,9 @@ test('a slow link gets nothing carried for others, and says when something is to
   only.linkUp('lora-00000001');
   await assert.rejects(only.deliver('someone', [randomBytes(4154)], null, null, true), TooLargeForLoraError);
   await assert.rejects(only.deliver('someone', [randomBytes(300)], null, null, false), NoWayError);
+  // And with the relay tried first: it holds what the relay said, so its queue full shows through.
+  const full = new RelayError('send: queue is full', 2);
+  await assert.rejects(only.deliver('someone', [randomBytes(4154)], () => Promise.reject(full), null, true), (error) => error instanceof TooLargeForLoraError && error.relayError === full);
 });
 
 /** The radio set, kept in memory as the phone's secure store would. */

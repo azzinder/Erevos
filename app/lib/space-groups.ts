@@ -117,7 +117,7 @@ export const spaceGroupTransport: GroupTransport = {
     const sealed = await e2e.seal(identity, '', place?.senderHex ?? '', { group: signal, at });
     // Asking for a key package, giving one, or a welcome: word between phones.
     const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], 'quiet', () => e2e.firstSent(identity)) : null;
-    await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
+    await e2e.copiesAfter(sealed.copies, nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay));
   },
   // The chats of the space open at each call: lib/group-contacts.ts refuses those of an account
   // other than the one the groups asking are.

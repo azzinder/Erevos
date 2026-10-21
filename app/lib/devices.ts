@@ -1,6 +1,6 @@
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
-import type { Contact } from '../lock/e2e-data';
+import { againAfter, type Contact, type OwnList, type Route } from '../lock/e2e-data';
 import type { Group, GroupMessage } from '../lock/group-data';
 import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
 import { loadSpaceData } from '../lock/space-data';
@@ -26,9 +26,10 @@ import { callsElsewhere, onCallChange } from './calls';
 import { carriedOf } from './chat-parts';
 import { contactLink, type ContactCode } from './contact-code';
 import * as core from './core';
-import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
-import { bodyOf, MAX_LISTED, nextList, signList, verifyList } from './device-list';
+import { fromBase64, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { bodyOf, flagsHold, MAX_LISTED, nextList, signList, verifyList, type DeviceList } from './device-list';
 import { fromBase64Url, OwnCodeError, toBase64Url, type Link, type Where } from './e2e';
+import { isCopied, waysFor } from './endpoints';
 import { currentGroupCall } from './group-call';
 import { groupPartsOf } from './group-parts';
 import type { GroupMember, Groups, GroupTransport } from './groups';
@@ -80,11 +81,13 @@ import {
   type Place,
   type Synced,
   type WholeGroup,
+  wayOf,
+  withWay,
 } from './link-wire';
 import { LinkedCalls, type CallStep } from './linked-calls';
 import { nearby } from './nearby';
 import { announceReceived } from './receiver';
-import { fromHex, relayKey, sendMessage, type Mark as RelayMark, type Relay } from './relay';
+import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sendMessage, type Mark as RelayMark, type Relay } from './relay';
 import { isSealedPacket, openPacket, packetKeys, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
 import {
   blankSynced,
@@ -92,6 +95,7 @@ import {
   changedBy,
   EARLY_LASTS,
   goesFor,
+  MAX_BEFORE,
   MAX_HELD,
   MAX_SEEN,
   removedAtOf,
@@ -108,7 +112,7 @@ import {
   type Sibling,
   type Siblings,
 } from './siblings';
-import { contactTarget, joinSpaceChats, linkChats, markOf, relayFor, sendSealed, spaceChats, type SpaceChats } from './space-chats';
+import { contactTarget, joinSpaceChats, markOf, relayFor, sendSealed, spaceChats, type SpaceChats } from './space-chats';
 import { spaceGroups, spaceGroupTransport } from './space-groups';
 import { spareCode } from './spare';
 import { isVoicePart, VoiceAssembler, type VoicePart } from './voice';
@@ -187,13 +191,15 @@ import { sendWaiting, type SendPlace } from './waiting';
 //
 // Each packet tells the relay what it carries (lib/relay.ts, Mark), for a web app's notice while it
 // is closed, a linked one's too. On the primary, a contact's message passed on to the devices (`in`)
-// is a message, a voice message on its last part only; a call's offer rings, counted as a call; a
-// member's message in a group goes in an envelope of its own, a message, as the relay counts one
-// for each packet. The rest between the devices is quiet, and a packet waiting in a device's
-// outbox keeps how it goes (`marks`). What a device wrote goes on to the contact marked as the
-// chat marks its own, a voice message once: on its last part, but for one that waits whole after
-// a part could not go, which is counted as it goes. To the phone, all a device sends is quiet, as
-// it goes to the account's own queue (lib/space-chats.ts, sentMark).
+// is a message, a voice message on its last part only, but quiet to a device the contact wrote it
+// to as well, which counts the one that came from them (copiedTo); a call's offer rings, counted
+// as a call; a member's message in a group goes in an envelope of its own, a message, as the relay
+// counts one for each packet. The rest between the devices is quiet, and a packet waiting in a
+// device's outbox keeps how it goes (`marks`). What a device wrote goes on to the contact marked
+// as the chat marks its own, a voice message once: on its last part, but for one that waits whole
+// after a part could not go, which is counted as it goes. To the phone, all a device sends is
+// quiet, as it goes to the account's own queue (lib/space-chats.ts, sentMark); what it writes to a
+// contact itself goes to them marked as the phone's own would.
 //
 // Three turns keep it straight: the chat's own (E2E), which may wait for this file's; this file's
 // (`run`), for the links and their keys, which never waits for the chat; and the work a message
@@ -220,10 +226,18 @@ const LATER_TRIES = 5;
 const LEFT_LASTS = 15 * 24 * 60 * 60_000;
 // How long a call answered or turned down on another device is remembered, should it ring here only after.
 const ENDED_LASTS = 2 * 60_000;
+// How often the primary empties the queues of the places that fill its device list, and the most it takes from one at a time.
+const DRAIN_EVERY = 60 * 60_000;
+const DRAIN_MOST = 1000;
 const CONTACT_PREFIX = 'contact:';
 // What a message a device wrote may say that need not be tried again: where it reads, that it is
 // open, the timer (which went with the contact here), and what came or was read (held for the next).
 const QUIET = new Set(['from', 'relay', 'relayKey', 'spare', 'text', 'tag', 'timer', 'timerAt', 'lasts', 'got', 'read', 'on', 'onAt', 'ask', 'quiet', 'due']);
+
+/** What a device was told of a contact's devices (`way`), in short (Peer.ways): enough to tell whether it changed since. */
+export function wayDigest(way: { dv: number; list?: DeviceList }): string {
+  return toHex(sha256Bytes(utf8Encode(JSON.stringify([way.dv, way.list?.s ?? '', way.list?.r ?? {}])))).slice(0, 16);
+}
 
 /** Which this space is: the phone that holds the account and has devices linked, a linked device, or neither. */
 export type Role = 'primary' | 'linked' | null;
@@ -237,7 +251,9 @@ export type LinkedChange = { gone: { peer: string; tag?: string }[] };
 /** What of the history a device is brought over: from `since` (milliseconds, 0 for all), or none (null), with photos and files or not. */
 export type HistoryChoice = { since: number | null; files: boolean };
 
-type Here = { own: Relay; sends: Relay; place: Place; where: Where };
+// Where this side reads, and whether the relay's key is known (`keyed`): asked of it and answered,
+// none or one. Not known, the place's key says none, which may not be so.
+type Here = { own: Relay; sends: Relay; place: Place; where: Where; keyed: boolean };
 // What is sealed for: a link, or another device directly.
 type Sealable = { conversation: string; outbox: string[]; marks?: Record<string, OutMark>; told: string; behind: number; key?: string; sealTo?: string };
 type Taken = Awaited<ReturnType<Link['open']>>;
@@ -365,6 +381,10 @@ export class Links implements Link, TakenFiles {
   // On the primary: when a device set what it changed of a contact, until the devices are told.
   private readonly stamps = new Map<string, { at: number; change: Change; added?: true }>();
   private keyOf: { url: string; key: string } | null = null;
+  // On the primary: when the queues of the places that fill the device list were last emptied, and
+  // whether a device is still to be told what is known of some contacts' devices (tellWays).
+  private drainedAt = 0;
+  private waysLeft = false;
   private flushing: Promise<void> | null = null;
   private again = false;
   private retries = 0;
@@ -393,7 +413,6 @@ export class Links implements Link, TakenFiles {
     const { siblings } = links.data;
     if (siblings && (!links.data.primary || siblings.of !== chats.e2e.endpoint()?.id)) await links.save(withoutSiblings(links.data));
     chats.e2e.useLink(links);
-    linkChats(chats.e2e, links);
     links.stopCalls = onCallChange(() => links.callChanged());
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
@@ -411,7 +430,6 @@ export class Links implements Link, TakenFiles {
     this.stopGroups?.();
     this.groups?.groups.useLink(null);
     this.chats.e2e.useLink(null);
-    linkChats(this.chats.e2e, null);
   }
 
   private run<T>(call: () => Promise<T>): Promise<T> {
@@ -509,10 +527,11 @@ export class Links implements Link, TakenFiles {
       const key = await relayKey(own).catch(() => undefined);
       if (key !== undefined) this.keyOf = { url, key: key ? toBase64Url(key) : '' };
     }
-    const rk = this.keyOf?.url === url ? this.keyOf.key : '';
+    const keyed = this.keyOf?.url === url;
+    const rk = keyed ? this.keyOf!.key : '';
     const place: Place = { sender: data.ownQueue.senderHex, relay: url, relayKey: rk, spare: this.chats.e2e.spare() };
     this.at = place;
-    return { own, sends, place, where: { relay: url, relayKey: rk } };
+    return { own, sends, place, where: { relay: url, relayKey: rk }, keyed };
   }
 
   private sendPlace(here: Here | null): SendPlace {
@@ -562,8 +581,8 @@ export class Links implements Link, TakenFiles {
   // Says something to each linked device (on the primary) or to the phone (on a linked device).
   // Returns the devices it was sealed for; the photos and files it tells of (`files`) are left on
   // the relay for them, in the same turn, so this phone taking one meanwhile does not delete it.
-  // What is not quiet (`mark`) is so only for the devices: to the phone it is.
-  private say(envelope: Envelope | ((peer: Peer) => Envelope), only?: string, files: Leaving[] = [], mark?: OutMark): Promise<string[]> {
+  // What is not quiet (`mark`, or as it says for each) is so only for the devices: to the phone it is.
+  private say(envelope: Envelope | ((peer: Peer) => Envelope), only?: string, files: Leaving[] = [], mark?: OutMark | ((peer: Peer) => OutMark | undefined)): Promise<string[]> {
     return this.run(async () => {
       const make = typeof envelope === 'function' ? envelope : () => envelope;
       if (this.data.primary) {
@@ -578,7 +597,7 @@ export class Links implements Link, TakenFiles {
           devices.push(d);
           continue;
         }
-        const sealed = await this.seal(d, make(d), mark);
+        const sealed = await this.seal(d, make(d), typeof mark === 'function' ? mark(d) : mark);
         if (sealed.outbox.length > d.outbox.length) told.push(d.id);
         devices.push(sealed);
       }
@@ -712,8 +731,12 @@ export class Links implements Link, TakenFiles {
         const at = said.at;
         place = (contacts) => contacts.map((c) => ({ ...c, sender: at.sender, relay: at.relay, relayKey: at.relayKey, spare: at.spare }));
       }
-      // On the primary, the device's others are told where it reads now.
-      else if (peer.endpoint) this.act(() => this.tellList());
+      // On the primary, the device's others are told where it reads now, and the contacts in time.
+      else if (peer.endpoint)
+        this.act(async () => {
+          await this.routeList();
+          await this.tellList();
+        });
     }
     if (said.pk && said.pk !== peer.sealTo) moved = { ...moved, sealTo: said.pk };
     if (moved !== peer) await this.keepPeer(moved);
@@ -750,7 +773,17 @@ export class Links implements Link, TakenFiles {
         this.act(() => this.groupFor(peer.id, said.id, said.ask));
         break;
       case 'endpoint':
-        if (core.canSign()) await this.endpointFrom(peer.id, said.bundle);
+        if (core.canSign()) await this.endpointFrom(peer.id, said.bundle, said.ek);
+        break;
+      case 'out':
+        // What the device wrote to a contact itself: this phone's own too, and the devices that do
+        // not reach it directly are told it as from here.
+        this.act(() => this.ownFrom(said.c, said.m, said.mark));
+        this.passOn(peer, { k: 'out', c: said.c, m: said.m, ...(said.mark ? { mark: said.mark } : {}) });
+        break;
+      case 'came':
+        this.act(() => this.cameHere(said.c, said.got));
+        this.passOn(peer, { k: 'in', c: said.c, m: { text: '', got: said.got } });
         break;
       case 'bye':
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
@@ -832,6 +865,13 @@ export class Links implements Link, TakenFiles {
       case 'list':
         if (core.canSign()) return { kind: 'taken', ...contactsOf(both(place, await this.listFrom(said))) };
         break;
+      case 'way': {
+        const { c } = said;
+        return { kind: 'taken', contacts: both(place, (contacts) => contacts.map((x) => (x.identity === c ? withWay(x, said) : x)))! };
+      }
+      case 'came':
+        this.act(() => this.cameHere(said.c, said.got));
+        break;
       case 'bye':
         this.act(() => this.forget());
         break;
@@ -887,18 +927,56 @@ export class Links implements Link, TakenFiles {
   }
 
   opened(identity: string, plaintext: Uint8Array): void {
-    if (this.data.primary || !this.data.devices.some((d) => d.linked)) return;
+    // On a linked device, what a contact's endpoint said came of what this device wrote to it
+    // itself: the phone and the other devices mark it too.
+    if (this.data.primary) {
+      const got = tagsOf(parse(plaintext)?.got);
+      if (got.length > 0) void this.tellOthers({ k: 'came', c: identity, got });
+      return;
+    }
+    if (!this.data.devices.some((d) => d.linked)) return;
     const m = parse(plaintext);
     const call = m && isCall(m) ? decodeCall(m.call) : null;
     if (call) this.callSteps(this.calls.contact(identity, call, this.linked().map((d) => d.id), !!(currentCall() || currentGroupCall())));
-    if (!m || isSignal(m)) return;
+    if (!m) return;
+    // What a call's or a group's signal says was read goes on as a receipt says it: the signal
+    // itself goes as lib/linked-calls.ts says, or not at all.
+    if (isSignal(m)) {
+      const read = tagsOf(m.read);
+      if (read.length > 0) void this.say({ k: 'in', c: identity, m: { text: '', read } }).catch(() => undefined);
+      return;
+    }
     // Their photo or file stays on the relay until each device took it, and this phone too.
     const offer = isObject(m.file) ? readOffer(m.file) : null;
-    void this.say({ k: 'in', c: identity, m: withoutPlace(m) }, undefined, offer ? [{ from: fromOf(offer), phone: true }] : [], outMarkOf(relayMarkOf(m))).catch(() => undefined);
+    // A device they wrote it to as well counts it as it comes from them: passed on, it is quiet there.
+    const mark = outMarkOf(relayMarkOf(m));
+    const copied = mark ? this.copiedTo(m) : new Set<string>();
+    void this.say({ k: 'in', c: identity, m: withoutPlace(m) }, undefined, offer ? [{ from: fromOf(offer), phone: true }] : [], (d) => (copied.has(d.id) ? undefined : mark)).catch(() => undefined);
+  }
+
+  // On the primary: the linked devices a contact's message (`m`) went to directly too, as their chat
+  // writes to the endpoints of the list it holds: one it copies (lib/endpoints.ts isCopied), from a
+  // chat that holds the list signed last (`dv`), to each device that list names as taking messages
+  // (waysFor) and that reads where it says, as one that said what the keys contacts seal for it
+  // with are drawn from does; one that did not reads none of it. Whether it went, only their chat knows: its outbox may
+  // have had no room for that device, or the device's queue was gone.
+  private copiedTo(m: Json): Set<string> {
+    const list = this.chats.e2e.signedList();
+    const body = list && m.dv === list.n && isCopied(m) ? bodyOf(list) : null;
+    if (!list || !body) return new Set();
+    const taking = new Set(waysFor(undefined, body.d, undefined).map((w) => w.id).filter((id) => list.real.includes(id)));
+    return new Set(this.data.devices.filter((d) => d.linked && d.endpoint?.ek && taking.has(d.endpoint.id)).map((d) => d.id));
   }
 
   sealed(identity: string, plaintext: Uint8Array): void {
-    if (this.data.primary || !this.data.devices.some((d) => d.linked)) return;
+    // On a linked device, what it wrote to a contact itself: the phone and the other devices keep it
+    // as their own, as what it writes through the phone.
+    if (this.data.primary) {
+      const m = parse(plaintext);
+      if (m && !isSignal(m) && !m.due && (isKept(m) || isWorthTelling(m))) void this.tellOthers({ k: 'out', c: identity, m: withoutPlace(m) }, identity, m);
+      return;
+    }
+    if (!this.data.devices.some((d) => d.linked)) return;
     const m = parse(plaintext);
     const call = m && isCall(m) ? decodeCall(m.call) : null;
     if (call) this.callSteps(this.calls.phone(identity, call));
@@ -919,10 +997,95 @@ export class Links implements Link, TakenFiles {
     const now = contacts.map(syncedOf);
     void this.run(async () => {
       if (this.data.primary) await this.tellChanges(now);
-      else await this.sendChanges(now);
+      else {
+        await this.sendChanges(now);
+        await this.tellWays(contacts);
+      }
     })
       .then(() => this.flush())
       .catch(() => undefined);
+  }
+
+  // On a linked device, in the turn: says something to the phone and to each other device, with
+  // the tags a message this device sealed for a contact erases (`m`), kept erased here.
+  private tellOthers(envelope: Envelope, identity = '', m?: Json): Promise<void> {
+    return this.run(async () => {
+      const primary = this.data.primary;
+      if (!primary) return;
+      const sealed = await this.seal(primary, envelope);
+      const siblings = await this.sealSiblings(envelope);
+      const erased = m ? this.erasedBy(identity, m) : this.data.erased;
+      await this.save({ ...this.data, primary: sealed, siblings, erased });
+    })
+      .then(() => this.flush())
+      .catch(() => undefined);
+  }
+
+  // On the primary: what a device said of a contact that its others hear from it directly, to the
+  // linked devices that do not: one from before, or one the list does not name. What came of what
+  // it wrote to them itself goes also to those from before contacts wrote to endpoints, which do
+  // not know it as said directly, as what came from them.
+  private passOn(from: Peer, envelope: Envelope): void {
+    const knows = (d: Peer) => envelope.k !== 'in' || !!d.endpoint?.ek;
+    const direct = new Set([from.id, ...this.othersOf(from).filter(knows).map((d) => d.id)]);
+    for (const d of this.linked()) if (!direct.has(d.id)) void this.say(envelope, d.id).catch(() => undefined);
+  }
+
+  // What a contact's endpoint said came of what one of this account's devices wrote to it itself:
+  // marked here as there.
+  private async cameHere(c: string, got: string[]): Promise<void> {
+    if (!this.chats.e2e.record(c)) return;
+    if ((await this.chats.history.mark(peerOf(c), true, 1, Date.now(), got)).length > 0) announce();
+  }
+
+  // On the primary, in the turn: what it knows of the devices of each contact's account (`way`,
+  // lib/link-wire.ts), to each linked device that takes contacts' conversations, as it changes and
+  // what that device was not told yet (Peer.ways), so a device writes to their endpoints, and to
+  // them itself, with the phone off. Never so much at once that it fills more than half of a
+  // device's outbox: the rest goes once it drained (tick), and nothing else waits for it.
+  private async tellWays(contacts: readonly Contact[] = this.contactsKept()): Promise<void> {
+    const relay = this.at?.relay ?? '';
+    const said = new Map<string, { way: ReturnType<typeof wayOf>; short: string }>();
+    for (const c of contacts) {
+      const way = wayOf(c, relay);
+      said.set(c.identity, { way, short: way ? wayDigest(way) : '' });
+    }
+    this.waysLeft = false;
+    let changed = false;
+    const devices: Peer[] = [];
+    for (const d of this.data.devices) {
+      if (!d.linked || !d.endpoint?.ek) {
+        devices.push(d);
+        continue;
+      }
+      let told = d;
+      const ways: Record<string, string> = {};
+      for (const [c, short] of Object.entries(d.ways ?? {})) if (said.has(c)) ways[c] = short;
+      for (const [c, { way, short }] of said) {
+        if ((ways[c] ?? '') === short) continue;
+        if (told.outbox.length >= MAX_OUTBOX / 2) {
+          this.waysLeft = true;
+          break;
+        }
+        told = await this.seal(told, { k: 'way', c, ...(way ?? {}) });
+        if (short) ways[c] = short;
+        else delete ways[c];
+      }
+      const same = JSON.stringify(ways) === JSON.stringify(d.ways ?? {});
+      if (told === d && same) devices.push(d);
+      else {
+        changed = true;
+        const { ways: _ways, ...rest } = told;
+        devices.push(Object.keys(ways).length > 0 ? { ...rest, ways } : rest);
+      }
+    }
+    if (changed) await this.save({ ...this.data, devices });
+  }
+
+  // On the primary: the chat's contacts as it keeps them.
+  private contactsKept(): Contact[] {
+    const { e2e } = this.chats;
+    return e2e.contacts().flatMap((c) => e2e.record(c.identity) ?? []);
   }
 
   // On a linked device: each change to a contact goes to the phone, field by field, and to the
@@ -1231,10 +1394,15 @@ export class Links implements Link, TakenFiles {
   }
 
   // On a linked device: makes its endpoint, a new one (`fresh`, as it is linked) or only if it has
-  // none, and says it to the phone.
+  // none, or if it said the one it has without what contacts' keys for it are drawn from, as the version
+  // before did: the phone listed that one as a place no device takes, contacts' ways to it were
+  // started for that place, and a new one, which takes an old one's place in the list as linking
+  // a device does, has them start anew with this device. Then it says it to the phone.
   private async newEndpoint(fresh: boolean): Promise<void> {
     if (!core.canSign() || !this.data.primary) return;
-    if (fresh || !this.chats.e2e.endpoint()) {
+    const made = this.chats.e2e.endpoint();
+    const said = this.data.primary.endpoint;
+    if (fresh || !made || (said?.id === made.id && !said.ek)) {
       await this.chats.e2e.makeEndpoint();
       // The other devices met as the endpoint before are met again, once the phone lists this one.
       await this.run(async () => {
@@ -1244,46 +1412,157 @@ export class Links implements Link, TakenFiles {
     await this.tellEndpoint();
   }
 
-  // On a linked device: says its endpoint to the phone, once for each it made, or `again` when a
-  // list the phone signed does not name it.
+  // On a linked device: says its endpoint to the phone, with what the key each contact seals for it
+  // with is drawn from (lib/sealed-packet.ts entryKey), so it takes their conversations: once for each it made, or `again` when a list the phone signed
+  // does not name it.
   private async tellEndpoint(again = false): Promise<void> {
     await this.run(async () => {
       const primary = this.data.primary;
-      const endpoint = this.chats.e2e.endpoint();
-      if (!primary || !endpoint || (!again && primary.endpoint?.id === endpoint.id)) return;
-      const sealed = await this.seal(primary, { k: 'endpoint', bundle: endpoint.bundle });
+      const made = this.chats.e2e.endpoint();
+      const ek = this.chats.e2e.endpointKey();
+      if (!primary || !made || !ek || (!again && primary.endpoint?.id === made.id && primary.endpoint.ek === ek)) return;
+      const endpoint = { ...made, ek };
+      const sealed = await this.seal(primary, { k: 'endpoint', bundle: endpoint.bundle, ek });
       await this.save({ ...this.data, primary: sealed.outbox.length > primary.outbox.length ? { ...sealed, endpoint } : sealed });
     });
     void this.flush().catch(() => undefined);
   }
 
-  // On the primary, in the turn: a linked device said its endpoint. One whose bundle holds and that
-  // is neither the account nor another device's is kept with the device, which is told the list
-  // again; the work after signs one that names it.
-  private async endpointFrom(id: string, bundle: string): Promise<void> {
+  // On the primary, in the turn: a linked device said its endpoint, and, one that takes contacts'
+  // conversations, what the key each seals for it with is drawn from (`ek`). One whose bundle holds and that is neither
+  // the account nor another device's is kept with the device, which is told the list again and
+  // what is known of each contact's devices; the work after signs one that names it.
+  private async endpointFrom(id: string, bundle: string, ek: string | undefined): Promise<void> {
     const peer = this.data.devices.find((d) => d.id === id && d.linked);
     if (!peer) return;
     const endpoint = await core.bundleIdentity(fromBase64Url(bundle)).then(toHex, () => '');
     if (!endpoint || endpoint === this.chats.e2e.identityHex() || this.data.devices.some((d) => d.id !== id && d.endpoint?.id === endpoint)) return;
-    await this.keepPeer({ ...peer, endpoint: { id: endpoint, bundle }, listed: 0 });
+    const { ways: _ways, ...told } = peer;
+    await this.keepPeer({ ...told, endpoint: { id: endpoint, bundle, ...(ek ? { ek } : {}) }, listed: 0 });
     this.act(() => this.signAgain());
+    if (ek) this.act(() => this.run(() => this.tellWays()));
   }
 
   // On the primary, in the work after: signs the device list again when it does not name the linked
   // devices as they are, each by the endpoint it said: one said a new one, one was unlinked, or none
-  // is linked on the phone a backup was put back on. Then each is told the list it was not told yet.
+  // is linked on the phone a backup was put back on; when it does not say of each that it takes
+  // messages, as one an Erevos before signed may not; when a backup was put back since it was
+  // signed, as a device linked after the backup was made is named no more then; and, on a phone a
+  // backup was put back on (lib/e2e.ts newestHeld), with none kept once a contact says they hold
+  // one, and with one kept once a contact still holds a later one, as with this phone's clock
+  // behind: that once more, above any a contact can say, so no contact makes it sign again. Then
+  // each is told the list it was not told yet.
   private async signAgain(): Promise<void> {
     if (this.data.primary || !core.canSign()) return;
     const { e2e } = this.chats;
     const held = e2e.signedList();
     const devices = this.data.devices.flatMap((d) => (d.linked && d.endpoint ? [d.endpoint] : [])).slice(0, MAX_LISTED);
     const real = devices.map((d) => d.id).sort();
-    if (held ? JSON.stringify([...held.real].sort()) !== JSON.stringify(real) : real.length > 0) {
-      const body = await nextList(e2e.identityHex(), devices, held);
+    const old = devices.filter((d) => !d.ek).map((d) => d.id);
+    const after = e2e.newestHeld();
+    const put = e2e.restoredSince() || after > (held?.n ?? 0);
+    const behind = !!held && !e2e.restoredSince() && after > held.n;
+    const differs = held ? JSON.stringify([...held.real].sort()) !== JSON.stringify(real) || !flagsHold(held) || put : real.length > 0 || after > 0;
+    if (differs) {
+      const body = await nextList(e2e.identityHex(), devices.map(({ id, bundle }) => ({ id, bundle })), held, { after: behind ? e2e.heldAtMost() : after });
       const list = await signList((context, message) => e2e.sign(context, message), body);
-      await e2e.keepList({ b: list.b, s: list.s, n: body.n, real });
+      // The queues of the places the next list fills as the last did stay theirs, and so does a
+      // device's that says no key for contacts, which reads as those do.
+      const filling = (id: string) => (!real.includes(id) || old.includes(id)) && body.d.some((e) => e.i === id);
+      const r = Object.fromEntries(Object.entries(held?.r ?? {}).filter(([id]) => filling(id)));
+      const q = Object.fromEntries(Object.entries(held?.q ?? {}).filter(([id]) => filling(id)));
+      // Contacts who hold a list that may name a device this one does not are given it before the
+      // places in it each have a queue: all of them, put back from a backup, as one signed since it
+      // was made may name any; otherwise those who hold the one before an unlinked device left.
+      const cut = put ? body.n - 1 : held && held.real.some((id) => !real.includes(id)) ? held.n : held?.cut;
+      await e2e.keepList({ b: list.b, s: list.s, n: body.n, real, ...(Object.keys(r).length > 0 ? { r } : {}), ...(Object.keys(q).length > 0 ? { q } : {}), ...(cut ? { cut } : {}) });
     }
+    await this.routeList();
     await this.tellList();
+  }
+
+  // On the primary: where each endpoint of the device list as last signed reads, as contacts are
+  // given it with the list, and the key kept for it, from which each contact is given a key of its
+  // own to seal what they send it with for the relay (lib/e2e.ts routesFor): each device where it
+  // said it reads, with the key it said, and each place that only fills the list, and a device that
+  // said no key for contacts, which takes nothing from them, a queue made for it on this phone's
+  // relay, which this phone empties now and then (drainFillers), with a random key of its own that
+  // no one reads with. So contacts write to every place alike, sealed alike, each with keys no other
+  // contact has, and the relay takes each, and nothing in the list says which is a device. A place's queue goes with this phone to
+  // another relay, or to one whose key is known only now (one whose key it could not ask is taken
+  // as the same); one that cannot be made now stays as it was, its key with it, and is made with a
+  // later tick (routesLeft), as is one that never had one; until then contacts are given no list,
+  // but those who may hold one naming a device it no longer names (lib/e2e.ts listFor).
+  private async routeList(): Promise<void> {
+    const { e2e } = this.chats;
+    const list = e2e.signedList();
+    const body = list && !this.data.primary && core.canSign() ? bodyOf(list) : null;
+    if (!list || !body) return;
+    const here = await this.here().catch(() => null);
+    const r: Record<string, Route> = {};
+    const q: Record<string, string> = {};
+    for (const { i } of body.d) {
+      const was = list.r?.[i];
+      const device = list.real.includes(i) ? this.data.devices.find((d) => d.linked && d.endpoint?.id === i) : undefined;
+      if (device?.endpoint?.ek) {
+        r[i] = { s: device.at.sender, relay: device.at.relay, rk: device.at.relayKey, pk: device.endpoint.ek };
+        continue;
+      }
+      if (list.real.includes(i) && !device) continue;
+      // Where a device read as it said, with its key, is no place this phone made: it gets one of its own.
+      const made = was?.pk && was.s !== device?.at.sender ? was : undefined;
+      if (list.q?.[i] && made && (!here || (made.relay === here.place.relay && (!here.keyed || made.rk === here.place.relayKey)))) {
+        r[i] = made;
+        q[i] = list.q[i];
+        continue;
+      }
+      const ids = here ? await createQueue(here.own).catch(() => null) : null;
+      if (ids && here) {
+        r[i] = { s: toHex(ids.senderId), relay: here.place.relay, rk: here.place.relayKey, pk: made?.pk ?? toBase64Url(randomBytes(32)) };
+        q[i] = toHex(ids.recipientId);
+      } else if (made) {
+        r[i] = made;
+        if (list.q?.[i]) q[i] = list.q[i];
+      }
+    }
+    await e2e.keepRoutes(list.n, r, q);
+  }
+
+  // On the primary: whether an endpoint of the device list as last signed has no route yet, or a
+  // place this phone made a queue for has none now, so routeList tries again.
+  private routesLeft(list: OwnList): boolean {
+    const keyed = (id: string) => this.data.devices.some((d) => d.linked && d.endpoint?.id === id && !!d.endpoint.ek);
+    return (bodyOf(list)?.d ?? []).some(({ i }) => !list.r?.[i] || (!keyed(i) && !list.q?.[i]));
+  }
+
+  /**
+   * On the primary: takes what came to the queues of the places that fill the device list, on this
+   * phone's relay as it reaches it, and drops it, so they never fill and the relay keeps them, as it
+   * keeps those their devices read. One the relay no longer has is made anew, as is one this phone
+   * left behind on a relay it no longer uses, which it does not connect to, each with the key
+   * contacts' keys for it are drawn from: they are told where it is with the list.
+   */
+  async drainFillers(): Promise<void> {
+    const list = this.chats.e2e.signedList();
+    if (!list || this.data.primary) return;
+    const here = await this.here().catch(() => null);
+    if (!here) return;
+    const lost: string[] = [];
+    let moved = (bodyOf(list)?.d ?? []).some((e) => !list.r?.[e.i]);
+    for (const [id, recipient] of Object.entries(list.q ?? {})) {
+      const route = list.r?.[id];
+      if (!route || route.relay !== here.place.relay || (here.keyed && route.rk !== here.place.relayKey) || !route.pk) {
+        moved = true;
+        continue;
+      }
+      try {
+        for (let n = 0; n < DRAIN_MOST && (await receiveMessage(here.own, fromHex(recipient))); n++);
+      } catch (error) {
+        if (isQueueNotFound(error)) lost.push(id);
+      }
+    }
+    if (lost.length > 0) await this.chats.e2e.keepRoutes(list.n, list.r ?? {}, Object.fromEntries(Object.entries(list.q ?? {}).filter(([id]) => !lost.includes(id))));
+    if (moved || lost.length > 0) await this.routeList();
   }
 
   // On the primary: each linked device not told the device list as last signed is told it, with the
@@ -1394,19 +1673,30 @@ export class Links implements Link, TakenFiles {
   }
 
   // Starts the conversation with another device, as the one with the lower id does: its first
-  // packet says where this one reads and the key it gives, then what waited for it goes.
+  // packet says where this one reads and the key it gives, then what waited for it goes. Started
+  // again (`again`), the one before is kept to open what the other sealed there while away (`before`).
   private async startSibling(sibling: Sibling): Promise<Sibling> {
     const first = encodeOne({ k: 'here' }, this.at, sibling.key);
     const started = first && (await this.chats.e2e.startAsEndpoint(fromBase64Url(sibling.bundle), first).catch(() => null));
     if (!started) return sibling;
-    let met: Sibling = { ...sibling, conversation: toBase64(started.conversation), outbox: [toBase64(started.packet)], held: [], told: this.at ? JSON.stringify(this.at) : '' };
+    const before = sibling.conversation ? [sibling.conversation, ...(sibling.before ?? [])].slice(0, MAX_BEFORE) : [];
+    // As for a contact's endpoint (lib/e2e.ts): by how many it had before this one.
+    const again = Date.now() + againAfter(sibling.conversation ? 1 + (sibling.before?.length ?? 0) : 0);
+    let met: Sibling = { ...sibling, ...(before.length > 0 ? { before } : {}), conversation: toBase64(started.conversation), outbox: [toBase64(started.packet)], held: [], told: this.at ? JSON.stringify(this.at) : '', again };
     for (const json of sibling.held) met = await this.seal(met, JSON.parse(json) as Envelope);
     return met;
   }
 
   // Seals an envelope for another device, in the turn; held while it is to start the conversation.
+  // One that has said nothing in the conversation this one started, a day after it went, may never
+  // have had its first packet: it starts again, and so on until it answers, ever less often.
   private async sealSibling(sibling: Sibling, envelope: Envelope): Promise<Sibling> {
     const own = this.chats.e2e.endpoint();
+    const again = !!own && starts(own.id, sibling.id) && !!sibling.conversation && sibling.outbox.length === 0 && sibling.again !== undefined && Date.now() >= sibling.again;
+    if (again) {
+      const started = await this.startSibling(sibling);
+      if (started.conversation !== sibling.conversation) return this.seal(started, envelope);
+    }
     if (sibling.conversation) return this.seal(sibling, envelope);
     if (own && starts(own.id, sibling.id)) {
       const started = await this.startSibling(sibling);
@@ -1426,8 +1716,11 @@ export class Links implements Link, TakenFiles {
 
   // On a linked device, in the turn: a first packet that may be another device's, starting a
   // conversation with this one's endpoint. Taken only from a device the list last checked names,
-  // one that should start it, and once; one from a device no list named yet is tried again with the
-  // next, a few for a while (`retry`). Null for one that is not for this endpoint.
+  // one that should start it, and once; one from a device that list names but that was not met yet
+  // (the phone said nothing of where it reads) is tried again with the next, a few for a while
+  // (`retry`). One from anyone else is dropped, so none can push those out: a device a later list
+  // names starts again a day or more later, as it heard nothing back. Null for one that is not for
+  // this endpoint.
   private async siblingFirst(packet: Uint8Array, retry = false): Promise<Taken> {
     const { e2e } = this.chats;
     const own = e2e.endpoint();
@@ -1438,6 +1731,9 @@ export class Links implements Link, TakenFiles {
     } catch {
       return null;
     }
+    // A contact's, or one of their endpoints', is the chat's (lib/e2e.ts).
+    const value = parse(opened.plaintext);
+    if (value?.v !== 1 || !isText(value.k)) return null;
     const from = toHex(await core.conversationPeer(opened.conversation));
     const id = toHex(await core.firstMessageId(packet)).slice(0, 32);
     const early = toBase64(packet);
@@ -1446,15 +1742,18 @@ export class Links implements Link, TakenFiles {
     const rest = siblings.early.filter((e) => e.packet !== early);
     const sibling = siblings.list.find((s) => s.id === from);
     if (!sibling && !siblings.seen.includes(id)) {
-      if (!retry) await this.save({ ...this.data, siblings: { ...siblings, early: withEarly(siblings.early, early, Date.now()) } });
+      const named = e2e.own()?.list?.real.includes(from) === true;
+      if (!retry && named) await this.save({ ...this.data, siblings: { ...siblings, early: withEarly(siblings.early, early, Date.now()) } });
       return { kind: 'taken' };
     }
     if (!sibling || siblings.seen.includes(id) || !starts(from, own.id)) {
       if (rest.length < siblings.early.length) await this.save({ ...this.data, siblings: { ...siblings, early: rest } });
       return { kind: 'taken' };
     }
-    // What was sealed in a conversation before this one, it no longer opens; what waited goes now.
-    let met: Sibling = { ...sibling, conversation: toBase64(opened.conversation), heard: Date.now(), outbox: [], held: [], told: '' };
+    // What was sealed in the one before still goes: one that started again keeps that to open in
+    // (`before`), and to one that lost it, it is nothing. What waited goes now.
+    const { again: _again, before: _before, ...was } = sibling;
+    let met: Sibling = { ...was, conversation: toBase64(opened.conversation), heard: Date.now(), held: [], told: '' };
     for (const json of sibling.held) met = await this.seal(met, JSON.parse(json) as Envelope);
     const list = siblings.list.map((s) => (s.id === from ? met : s));
     await this.save({ ...this.data, siblings: { ...siblings, list, seen: [...siblings.seen, id].slice(-MAX_SEEN), early: rest } });
@@ -1463,17 +1762,21 @@ export class Links implements Link, TakenFiles {
     return said ? this.fromSibling(met, said) : { kind: 'taken' };
   }
 
-  // A packet that continues another device's conversation, in the turn, or null if it does not.
+  // A packet that continues another device's conversation, in the turn, or null if it does not:
+  // in the one this device writes in, or one it started before that one.
   private async openFromSibling(sibling: Sibling, packet: Uint8Array): Promise<Taken> {
     if (!sibling.conversation) return null;
-    let opened: core.Opened;
-    try {
-      opened = await core.open(fromBase64(sibling.conversation), packet);
-    } catch {
-      return null;
-    }
+    const kept = [sibling.conversation, ...(sibling.before ?? [])];
+    let opened: core.Opened | null = null;
+    let at = -1;
+    while (!opened && ++at < kept.length) opened = await core.open(fromBase64(kept[at]), packet).catch(() => null);
+    if (!opened) return null;
     const now = Date.now();
-    const moved = { ...sibling, conversation: toBase64(opened.conversation), heard: now };
+    const conversation = toBase64(opened.conversation);
+    // It answered in the one this device writes in: it has the first packet, and none is started
+    // again. In one before: it was away, and has the first packet of the last one still to read.
+    const { again: _again, before: _before, ...answered } = sibling;
+    const moved: Sibling = at === 0 ? { ...answered, conversation, heard: now } : { ...sibling, before: kept.slice(1).map((c, j) => (j === at - 1 ? conversation : c)), heard: now };
     await this.keepSibling(moved);
     const said = this.parts.take(sibling.id, opened.plaintext, now);
     return said ? this.fromSibling(moved, said) : { kind: 'taken' };
@@ -1488,6 +1791,7 @@ export class Links implements Link, TakenFiles {
     if (said.pk && said.pk !== sibling.sealTo) moved = { ...moved, sealTo: said.pk };
     if (moved !== sibling) await this.keepSibling(moved);
     if (said.k === 'out') this.act(() => this.ownFrom(said.c, said.m, said.mark));
+    else if (said.k === 'came') this.act(() => this.cameHere(said.c, said.got));
     else if (said.k === 'set') return this.setFrom(said);
     return { kind: 'taken' };
   }
@@ -1709,6 +2013,17 @@ export class Links implements Link, TakenFiles {
   // device wrote that could not go yet, and a group's message that could not go to the devices yet.
   private tick(): void {
     if (this.closed) return;
+    // The places that fill the device list, emptied now and then, whether or not a device is
+    // linked, and made again where this phone reads now; one that has no queue yet, with each tick.
+    // A list this phone put back from a backup holds no longer, once a contact says they hold a
+    // later one.
+    const signed = this.chats.e2e.signedList();
+    if (!this.data.primary && signed && Date.now() - this.drainedAt >= DRAIN_EVERY) {
+      this.drainedAt = Date.now();
+      this.act(() => this.drainFillers());
+    } else if (!this.data.primary && signed && this.routesLeft(signed)) this.act(() => this.routeList());
+    if (!this.data.primary && core.canSign() && this.chats.e2e.newestHeld() > (signed?.n ?? 0)) this.act(() => this.signAgain());
+    if (this.waysLeft) this.act(() => this.run(() => this.tellWays()).then(() => this.flush()));
     // What the relay dropped by now.
     const old = Date.now() - LEFT_LASTS;
     if (this.data.left.some((l) => l.at < old)) {
@@ -1730,10 +2045,12 @@ export class Links implements Link, TakenFiles {
   }
 
   // Seals word for a contact as the chat does, and hands it to their phone nearby when it is, and
-  // to the relay, saying what it carries (`mark`).
-  private async deliver(identity: string, sealed: { sender: string; relay: string; relayKey: string; spare: Contact['spare']; first: Uint8Array | null; packet: Uint8Array }, here: Here, mark: RelayMark) {
+  // to the relay, saying what it carries (`mark`); then its copies for the endpoints of their
+  // account go too, and, with `waits`, also once the relay could take it only later, as it is tried
+  // again as it is (lib/e2e.ts copiesAfter).
+  private async deliver(identity: string, sealed: { sender: string; relay: string; relayKey: string; spare: Contact['spare']; first: Uint8Array | null; packet: Uint8Array; copies: number }, here: Here, mark: RelayMark, waits = false) {
     const relay = sealed.sender ? () => sendSealed(here.sends, sealed, [sealed.packet], mark, () => this.chats.e2e.firstSent(identity)) : null;
-    await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
+    await this.chats.e2e.copiesAfter(sealed.copies, nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay), waits);
   }
 
   // ---- On the primary: what a device wrote ----
@@ -1800,10 +2117,15 @@ export class Links implements Link, TakenFiles {
     // and counted then: its last part goes quiet now. Its parts come in turn, the last after those.
     const voiceKey = `${peer}|${m.tag as string}`;
     const says = part && this.voiceLate.has(voiceKey) ? 'quiet' : relayMarkOf(said);
+    // Its copies go though the relay could take it for them only later when it goes again as it is,
+    // with its tag: one kept, which waits, or one that says only what came or was read, held for the
+    // next message (lib/e2e.ts copiesAfter). Not a reaction, pin, vote or delete, tried again a few
+    // times below, as their copies would go with each try.
+    const waits = kept || !Object.keys(m).some((key) => !QUIET.has(key));
     let went = false;
     if (here) {
       try {
-        await this.deliver(c, await e2e.sealAs(c, utf8Encode(JSON.stringify(said)), here.place.sender, here.where), here, says);
+        await this.deliver(c, await e2e.sealAs(c, utf8Encode(JSON.stringify(said)), here.place.sender, here.where), here, says, waits);
         went = true;
       } catch {
         // It waits, below.

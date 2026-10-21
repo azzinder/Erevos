@@ -4,7 +4,8 @@ import { saveClip } from '../lock/voice-clips';
 import { offerRef } from './attachments';
 import { contentOf } from './chat-parts';
 import { canRelaySeal, hasCore } from './core';
-import { ONLINE, toBase64Url, type Extra, type Received, type Where } from './e2e';
+import { ONLINE, toBase64Url, type E2E, type Extra, type Received, type Where } from './e2e';
+import { sendCopies } from './fanout';
 import { nearby } from './nearby';
 import {
   canWaitAt,
@@ -194,7 +195,18 @@ export function announceReceived(): void {
   listeners.forEach((listener) => listener());
 }
 
-/** Calls `listener` with each message the receiver opens, after it is kept; not those the chat screen opens itself. */
+/**
+ * Whether what came is news to tell of: words, a voice message (once), a photo or file; not marks,
+ * deletes, calls or a group's setting up, nor a message that came already (`twice`), as one does
+ * on a linked device directly and again through the phone (docs/multi-device.md).
+ */
+export function isNews(received: Extract<Received, { kind: 'message' }>): boolean {
+  if (received.twice || received.erase || received.call || received.group) return false;
+  if (received.voice) return received.voice.part === 0;
+  return received.text.length > 0 || received.file !== null;
+}
+
+/** Calls `listener` with each message the receiver opens, after it is kept, said to come `twice` when it came already, by what the chat took or what the history holds; not those the chat screen opens itself. */
 export function onMessage(listener: (received: Extract<Received, { kind: 'message' }>) => void): () => void {
   messageListeners.add(listener);
   return () => {
@@ -291,10 +303,11 @@ async function openHere(link: string | null, packet: Uint8Array): Promise<void> 
   }
   if (!link) nearby.dropHeld(packet);
   if (received.kind === 'message' && link) nearby.heardOn(received.identity, link);
+  const came = cameBefore(chats, received);
   const changed = await keep(chats, received, nearbyState);
-  if (received.kind === 'message') {
-    messageListeners.forEach((listener) => listener(received));
-    if (received.group) await takeGroupSignal(received.identity, received.group, received.request).catch(() => undefined);
+  if (came) {
+    messageListeners.forEach((listener) => listener(came));
+    if (came.group) await takeGroupSignal(came.identity, came.group, came.request).catch(() => undefined);
   }
   if (changed) listeners.forEach((listener) => listener());
   await sendReceipts(chats, lastPlace, nearbyState);
@@ -339,6 +352,8 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   if (place.keyAsked) lastPlace = place;
   await sendPending(chats, place.sends);
   await sendKeys(chats, place);
+  watchCopies(chats.e2e);
+  await sendCopies(chats.e2e, place.sends).catch(() => 0);
   // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
   void nearby.uploadCarried((url, sealed, mark) => carryTo(place.sends, url, sealed, mark)).catch(() => undefined);
   // An SMS invite sent from the SMS screen since: its answer may be on its way.
@@ -364,8 +379,9 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
       if (received.kind === 'message' && received.added && (await linkInviter(chats.e2e, received.identity).catch(() => null))) {
         received = { ...received, request: false };
       }
+      const came = cameBefore(chats, received);
       changed = (await keep(chats, received, state)) || changed;
-      if (received.kind === 'message') messageListeners.forEach((listener) => listener(received));
+      if (came) messageListeners.forEach((listener) => listener(came));
       if (received.kind === 'message' && received.group) await takeGroupSignal(received.identity, received.group, received.request).catch(() => undefined);
     } catch {
       // This one is lost, as in the chat; the next ones still come.
@@ -404,8 +420,18 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   if (!failed && (await sendWaiting(chats, sendPlace(place, true)).catch(() => [])).length > 0) changed = true;
   lookWhenDue(nextDue(chats.history));
   await sendReceipts(chats, place, state);
+  await sendCopies(chats.e2e, place.sends).catch(() => 0);
   await flushGroups().catch(() => undefined);
   return changed;
+}
+
+// The chats whose copies for contacts' endpoints have the receiver look at once when there are more (lib/fanout.ts).
+const watched = new WeakSet<E2E>();
+
+function watchCopies(e2e: E2E) {
+  if (watched.has(e2e)) return;
+  watched.add(e2e);
+  e2e.onCopies(() => hurry?.());
 }
 
 // Where what waits goes from, as the last look found it: with no relay, to phones nearby only.
@@ -428,7 +454,16 @@ export function nearbyChanged(): void {
     .catch(() => undefined);
 }
 
+// A message as the listeners are told it, before it is kept: said to come twice when the chat took
+// it before or the history holds it. Null for what is no message.
+function cameBefore({ history }: SpaceChats, received: Received): Extract<Received, { kind: 'message' }> | null {
+  if (received.kind !== 'message') return null;
+  return { ...received, twice: received.twice || (!!received.tag && history.has(`${CONTACT_PREFIX}${received.identity}`, received.tag)) };
+}
+
 // Keeps what one message brought, as the chat's own handling does. Says whether anything changed.
+// One that came already, from their account and again from one of their endpoints, or through the
+// phone and again directly (docs/multi-device.md), is kept once, and said to have come once.
 async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received, { receipts, answers }: State): Promise<boolean> {
   if (received.kind === 'refused') return false;
   const peer = `${CONTACT_PREFIX}${received.identity}`;
@@ -439,7 +474,9 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   const hidden = e2e.contacts().some((contact) => contact.identity === identity && contact.hide);
   // Their phone says it is open: the home screen shows it.
   let changed = received.added || received.timerChanged || received.online > 0;
+  const twice = received.twice || history.has(peer, tag);
   const add = async (message: Partial<Message>) => {
+    if (twice) return;
     await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...message });
     // A message request hears nothing back, not even that its message came, until accepted.
     if (tag && !received.request) {
@@ -449,9 +486,13 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
     changed = true;
   };
   if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(identity), at)) answers.add(peer);
-  if (received.voice) {
+  // A voice message's parts are put together while the history does not hold it, those that came
+  // before too: sealed again after only some of it went, its parts are those of the first try
+  // (lib/voice.ts voiceIdOf). Kept once whole, unless every part came before, as of one that left
+  // the history since.
+  if (received.voice && !(tag && history.has(peer, tag))) {
     const whole = voiceParts.add(peer, received.voice);
-    if (whole) await add({ voice: await saveClip(whole.audio, whole.ms) });
+    if (whole && !twice) await add({ voice: await saveClip(whole.audio, whole.ms) });
   }
   if (received.file) await add({ file: offerRef(received.file) });
   if (received.text) await add({ text: received.text });
@@ -471,14 +512,20 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   return changed;
 }
 
+/** Keeps what one message brought as the receiver does, with what is to be said back (`receipts`), as the checks do. */
+export function keepReceived(chats: SpaceChats, received: Received, receipts: Record<string, string[]> = {}): Promise<boolean> {
+  return keep(chats, received, { place: null, seen: -1, receipts, answers: new Set(), waited: false, failures: 0 });
+}
+
 // Seals word for a contact and hands it to their phone nearby when it is, and to the relay, after
 // the first packet of the conversation if the relay has not taken that yet (lib/nearby.ts): quiet,
-// as it is no message (lib/relay.ts, Mark). With no `place`, it says nothing of where this phone's
-// queue is, and goes nearby only.
+// as it is no message (lib/relay.ts, Mark), and then its copies for the endpoints of their
+// account, also once the relay could take it only later, as it is said again with the next look.
+// With no `place`, it says nothing of where this phone's queue is, and goes nearby only.
 async function tell({ e2e }: SpaceChats, place: Place | null, identity: string, extra: Extra) {
   const sealed = await e2e.seal(identity, '', place?.queue.senderHex ?? '', { ...extra, at: place?.here ?? { relay: '', relayKey: '' } });
   const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], 'quiet', () => e2e.firstSent(identity)) : null;
-  await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
+  await e2e.copiesAfter(sealed.copies, nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay), true);
 }
 
 // Tells contacts' phones which of their messages came, and, while the app shows, that this phone

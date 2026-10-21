@@ -5,7 +5,7 @@ import { uploadFile } from './attachments';
 import { contentOf, withoutPreview } from './chat-parts';
 import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForLoraError } from './nearby';
-import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Relay } from './relay';
+import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, isQueueFull, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Mark, type Relay } from './relay';
 import { carriedFor, contactTarget, sendSealed, sentMark, type SpaceChats } from './space-chats';
 import { t } from './i18n';
 
@@ -31,11 +31,19 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // phone does not show it sooner. Only while no relay can hold it (none answers, or one from before
 // relays held messages) does it wait here, to go with the first look once its time came.
 //
+// Hidden chats keep nothing waiting, and go through the relay only (handOverHidden). But what the
+// relay could not take for a contact's account as their queue is full goes to the endpoints of
+// their account all the same, as from the space's chats: then it shows as sent, and is owed to
+// their account (Owed), tried again in memory only while hidden chats stay open, each contact's in
+// order and longer after each failed try, sealed anew with its tag each time, so it is the same
+// message there and no endpoint of theirs is copied it again. Closed before it went, their phone
+// never gets it. With the relay out of reach, it is not sent, as before.
+//
 // Whatever waits is something someone reads (a text, a voice message, a photo or file), so each
 // goes to the relay as a message (lib/relay.ts, Mark), however many tries it took: sealed anew each
-// time, it says so again. A message held for later says so when it goes. From a linked device all
-// of it goes quiet, to the account's phone, which says so as it passes it on (lib/space-chats.ts,
-// sentMark).
+// time, it says so again. A message held for later says so when it goes. From a linked device what
+// is sealed for the account's phone goes quiet, to it, and it says so as it passes it on
+// (lib/space-chats.ts, sentMark); what the device writes to a contact itself says so to them.
 
 const CONTACT_PREFIX = 'contact:';
 // The first wait after a failed try, and the longest, milliseconds.
@@ -138,7 +146,7 @@ export async function holdLater(e2e: E2E, place: SendPlace, identity: string, me
   const to = contactTarget(sends, queue);
   if (!(await canHoldAt(to.via ?? to))) throw new CannotHoldError(t('the relay at {url} cannot keep messages for later: update it', { url: (to.via ?? to).url }));
   const options = { tag: message.tag, lasts: message.lasts ?? 0, due: message.at, re: message.re, forwarded: message.forwarded };
-  let sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; timer: number };
+  let sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; timer: number; copies: number; through: boolean };
   let packets: Uint8Array[];
   if (message.voice) {
     const audio = await loadClip(message.voice);
@@ -158,11 +166,17 @@ export async function holdLater(e2e: E2E, place: SendPlace, identity: string, me
     packets = [text.packet];
   }
   const target = contactTarget(sends, sealed);
-  if (sealed.first) {
-    await sendMessage(target, fromHex(sealed.sender), sealed.first, 'quiet');
-    await e2e.firstSent(identity);
-  }
-  const held = await sendMessageLater(target, fromHex(sealed.sender), packets, message.at, sentMark(e2e, 'message'));
+  const held = await e2e.copiesAfter(
+    sealed.copies,
+    (async () => {
+      if (sealed.first) {
+        await sendMessage(target, fromHex(sealed.sender), sealed.first, 'quiet');
+        await e2e.firstSent(identity);
+      }
+      return sendMessageLater(target, fromHex(sealed.sender), packets, message.at, sentMark(sealed, 'message'));
+    })(),
+    true,
+  );
   return { lasts: sealed.timer, held };
 }
 
@@ -203,7 +217,7 @@ function throughRelay(place: SendPlace, queue: { sender: string; relay: string; 
 // without the preview, for LoRa. Returns how long it lasts once read, and whether it went so (`bare`).
 async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Message): Promise<{ lasts: number; bare: boolean }> {
   const options = { at: place.here, tag: message.tag, lasts: message.lasts ?? 0, re: message.re, forwarded: message.forwarded };
-  let sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; tag: string; timer: number };
+  let sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; tag: string; timer: number; copies: number; through: boolean };
   let packets: Uint8Array[];
   let worthCarrying = true;
   if (message.voice) {
@@ -225,17 +239,111 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     packets = [text.packet];
   }
   const sends = place.sends;
-  const relay = sends && sealed.sender ? () => sendSealed(sends, sealed, packets, sentMark(e2e, 'message'), () => e2e.firstSent(identity)) : null;
+  const relay = sends && sealed.sender ? () => sendSealed(sends, sealed, packets, sentMark(sealed, 'message'), () => e2e.firstSent(identity)) : null;
   const all = sealed.first ? [sealed.first, ...packets] : packets;
-  const carry = worthCarrying ? () => carriedFor(sealed, all, { url: place.own?.url ?? '', key: place.ownKey }, sentMark(e2e, 'message')) : null;
+  const carry = worthCarrying ? () => carriedFor(sealed, all, { url: place.own?.url ?? '', key: place.ownKey }, sentMark(sealed, 'message')) : null;
   try {
-    await nearby.deliver(identity, all, relay, carry, worthCarrying);
+    await e2e.copiesAfter(sealed.copies, nearby.deliver(identity, all, relay, carry, worthCarrying), true);
   } catch (error) {
     if (!(error instanceof TooLargeForLoraError) || !message.preview || message.voice || message.file) throw error;
     const bare = await e2e.seal(identity, message.text, place.senderHex, { ...options, quiet: message.quiet, more: withoutPreview(contentOf(message)) });
     const again = bare.first ? [bare.first, bare.packet] : [bare.packet];
-    await nearby.deliver(identity, again, null, () => carriedFor(bare, again, { url: place.own?.url ?? '', key: place.ownKey }, sentMark(e2e, 'message')), true);
+    await e2e.copiesAfter(bare.copies, nearby.deliver(identity, again, null, () => carriedFor(bare, again, { url: place.own?.url ?? '', key: place.ownKey }, sentMark(bare, 'message')), true), true);
     return { lasts: bare.timer, bare: true };
   }
   return { lasts: sealed.timer, bare: false };
+}
+
+/**
+ * In hidden chats, what the relay could not take for a contact's account as their queue is full, to
+ * go again as it is, whose copies went to the endpoints of their account all the same: shown as
+ * sent, and owed to their account (Owed). `reason`: what the relay said.
+ */
+export class OwedError extends Error {
+  readonly reason: unknown;
+
+  constructor(reason: unknown) {
+    super(reason instanceof Error ? reason.message : String(reason));
+    this.reason = reason;
+  }
+}
+
+/** What hidden chats sealed for a contact, and its packets, in order. */
+export type Resealed = { sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; copies: number; through: boolean }; packets: Uint8Array[] };
+
+/**
+ * Hands what hidden chats sealed for a contact to the relay, through `target`, after the
+ * conversation's first packet if the relay has not taken that yet, the last packet saying what they
+ * carry (`mark`), and then the copies for the endpoints of their account (lib/e2e.ts copiesAfter).
+ * With `waits` (it is to go again as it is, with its tag), those go though the relay said their
+ * queue is full, and when there were any, it throws OwedError. Otherwise it throws what failed: one
+ * with the relay out of reach, say, is not sent, and copies nothing, as hidden chats keep nothing
+ * waiting.
+ */
+export async function handOverHidden(e2e: E2E, target: Relay | null, identity: string, { sealed, packets }: Resealed, mark: Mark, waits: boolean): Promise<'relay'> {
+  if (!target || !sealed.sender) throw new Error(t('Type the relay address in Relay first.'));
+  try {
+    await e2e.copiesAfter(sealed.copies, sendSealed(target, sealed, packets, sentMark(sealed, mark), () => e2e.firstSent(identity)), waits && 'full');
+  } catch (error) {
+    throw waits && sealed.copies > 0 && isQueueFull(error) ? new OwedError(error) : error;
+  }
+  return 'relay';
+}
+
+/** What hidden chats owe contacts' accounts (OwedError), in memory only: tried again while they stay open. */
+export class Owed {
+  private items: { identity: string; tag: string; seal: () => Promise<Resealed>; count: number; next: number }[] = [];
+  private trying: Promise<string[]> | null = null;
+
+  /** Owes their account the message with `tag`, sealed again by `seal` for each try. */
+  add(identity: string, tag: string, seal: () => Promise<Resealed>, now = Date.now()): void {
+    this.items.push({ identity, tag, seal, count: 1, next: now + FIRST_WAIT });
+  }
+
+  /** The tags still owed, oldest first. */
+  tags(): string[] {
+    return this.items.map((item) => item.tag);
+  }
+
+  /** Owes their account no more of the contact's message with `tag`, or of any of theirs: deleted here, it never goes. */
+  forget(identity: string, tag?: string): void {
+    this.items = this.items.filter((item) => item.identity !== identity || (tag !== undefined && item.tag !== tag));
+  }
+
+  /**
+   * Tries again what is owed and due, through `target`, each contact's in order; one that can no
+   * longer go (their queue gone, the contact deleted) is let go of. Says the tags that went.
+   */
+  retry(e2e: E2E, target: Relay | null, now = Date.now()): Promise<string[]> {
+    this.trying ??= this.tryAll(e2e, target, now).finally(() => {
+      this.trying = null;
+    });
+    return this.trying;
+  }
+
+  private async tryAll(e2e: E2E, target: Relay | null, now: number): Promise<string[]> {
+    const went: string[] = [];
+    const stuck = new Set<string>();
+    for (const item of [...this.items]) {
+      if (stuck.has(item.identity)) continue;
+      if (item.next > now) {
+        stuck.add(item.identity);
+        continue;
+      }
+      try {
+        await handOverHidden(e2e, target, item.identity, await item.seal(), 'message', true);
+        this.items = this.items.filter((i) => i !== item);
+        went.push(item.tag);
+      } catch (error) {
+        if (error instanceof OwedError || canTryLater(error)) {
+          item.count += 1;
+          item.next = now + Math.min(LONGEST_WAIT, FIRST_WAIT * 2 ** (item.count - 1));
+          stuck.add(item.identity);
+        } else {
+          this.items = this.items.filter((i) => i !== item);
+        }
+      }
+    }
+    return went;
+  }
 }

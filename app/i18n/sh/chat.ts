@@ -83,6 +83,7 @@ export const chat: Record<string, string> = {
   '{what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. It comes only if {name}\'s is one of them.': '{what} Erevos telefonima u blizini, šifrirano s kraja na kraj, jer relay nije dostupan. Stiže samo ako je telefon kontakta {name} među njima.',
   'The relay does not have this contact\'s queue any more. Ask them to write to you, or for their new contact link.': 'Relay više nema red ovog kontakta. Zamolite ga da vam piše ili zatražite njegov novi link za kontakt.',
   'Not sent. {reason}': 'Nije poslano. {reason}',
+  'Sent to {name}\'s linked devices, if they have any, end-to-end encrypted, not yet to their phone ({reason}). While hidden chats stay open, it is tried again for their phone.': 'Poslano na povezane uređaje kontakta {name}, ako ih ima, šifrirano s kraja na kraj, ali još ne na telefon te osobe ({reason}). Dok su skriveni razgovori otvoreni, slanje na telefon se ponovo pokušava.',
   'Sent': 'Poslano',
   '{sent} It disappears from both phones {time} after it is read.': '{sent} Nestaje s oba telefona nakon čitanja ({time}).',
   'Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.': 'Na čekanju. {reason} Šalje se sama kad je može preuzeti relay ili telefon te osobe u blizini.',
@@ -187,6 +188,8 @@ export const chat: Record<string, string> = {
   'Privacy': 'Privatnost',
   'Safety number': 'Sigurnosni broj',
   'Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.': 'Provjerite ga s drugom osobom, uživo ili u pozivu: ako oba telefona prikazuju isti broj, između vas nema nikoga.',
+  'The list of their linked devices last changed on {day}. Your messages go to each place in it too, used by a device or not. If they did not link or unlink one then, ask them.':
+    'Popis povezanih uređaja te osobe posljednji put se promijenio {day}. Vaše poruke idu i na svako mjesto na tom popisu, bilo da ga zauzima uređaj ili ne. Ako tada nije povezala ni odvojila nijedan uređaj, pitajte je.',
   'Move to hidden chats': 'Premjesti u skrivene razgovore',
   'Move back to my chats': 'Vrati u moje razgovore',
   "The space's chats have no relay queue yet: create it under Relay there first.":

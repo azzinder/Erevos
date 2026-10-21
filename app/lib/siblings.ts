@@ -47,9 +47,13 @@ export type Sibling = {
   /** The key this device gave it for the packets it sends here, and the one it gave this device (lib/sealed-packet.ts), base64url; empty while not said. */
   key: string;
   sealTo: string;
+  /** From when, while it has not answered in the conversation this device started with it, the next envelope for it starts another (lock/e2e-data.ts WAY_AGAIN, againAfter): its first packet may have been lost after the relay took it. */
+  again?: number;
+  /** Those this device started with it before, base64, newest first, while it has not answered in the one it started last: what it sealed in them while away still opens here. */
+  before?: string[];
 };
 
-/** A first packet from an endpoint the list did not name yet, with when it came: tried again with the next list. */
+/** A first packet from an endpoint the list names, but not as one met yet (the phone said nothing of where it reads), with when it came: tried again with the next list. */
 export type Early = { packet: string; at: number };
 
 /** This device's siblings, met as the endpoint `of` (its id), from the list `n`; the first packets taken (`seen`) and those still to try (`early`). */
@@ -63,6 +67,8 @@ export const MAX_HELD = 100;
 /** The most first packets kept to try again, and for how long. */
 export const MAX_EARLY = 8;
 export const EARLY_LASTS = 14 * 24 * 60 * 60_000;
+/** The most conversations kept from before one started again (Sibling.before). */
+export const MAX_BEFORE = 2;
 /** First packets remembered, so the relay cannot replay one. */
 export const MAX_SEEN = 100;
 /** The most contacts remembered as removed, and tags as erased in each chat, and chats with tags erased. */
@@ -142,6 +148,8 @@ function checkedSibling(value: unknown): Sibling | null {
     held: Array.isArray(v.held) ? v.held.filter(isText).slice(-MAX_HELD) : [],
     key: v.key,
     sealTo: isRelayKey(v.sealTo) ? v.sealTo : '',
+    ...(isTime(v.again) && v.again > 0 ? { again: v.again } : {}),
+    ...(Array.isArray(v.before) && v.before.some((c) => isBase64(c) && c !== '') ? { before: v.before.filter((c): c is string => isBase64(c) && c !== '').slice(0, MAX_BEFORE) } : {}),
   };
 }
 

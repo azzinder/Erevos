@@ -298,7 +298,8 @@ nothing to type in Erevos.
 
 Open the chat, tap its name and then **Show safety number**. Both phones show the same 60 digits for the two of you. Compare them
 in person or on a call: if they match, no one is in between. If they differ, do not trust that chat, and add the
-link again, scanned from their own phone.
+link again, scanned from their own phone. Once they have linked a device, it also says when the list of their devices
+last changed: your messages go to each place in it too, so if they did not link or unlink one then, ask them.
 
 ### Sent, came and read
 
@@ -309,7 +310,10 @@ at the relay, or at once when they are nearby. A message counts as read once its
 - **Waiting:** a message nothing could take, as the relay cannot be reached and their phone is not near, stays in
   the chat marked **Waiting**, and goes by itself, in order, once the relay or their phone nearby can take it, while a
   space is open; then it shows **✓**. A text waits at once. A voice message, photo or file asks first: **Keep it
-  waiting** or **Delete it**. A waiting message is deleted on this phone only. Hidden chats keep nothing waiting.
+  waiting** or **Delete it**. A waiting message is deleted on this phone only. Hidden chats keep nothing waiting;
+  but when the contact's queue on the relay is full, a text, voice message, photo or file still goes to their linked
+  devices, if they have any, shows as sent, and is tried again for their phone while hidden chats stay open: closed
+  before it went, their phone never gets it.
 - **Send later:** hold the send arrow down and choose **Later…**, or tap **+** and then **Send later**. Choose a time
   at a tap (**In 1 hour**, **Tonight 20:00**, **Tomorrow 09:00**) or the day, hour and minutes, up to a year ahead, then **Send later**. The message stays in the chat marked
   **Scheduled** with its time. It goes encrypted to the relay, which keeps it and sends it at that time, even if this
@@ -1226,7 +1230,10 @@ home screen's menu.
   count of wrong passwords, and how automatic backups are set.
 - **Linked devices** are not in a backup: a link stays with the phone and the computer it was made on. After restoring
   a backup on another phone, link the computer again: on the computer, tap **Unlink this device**, then link it as the
-  first time, see [Linked devices](#devices). A linked computer's own backup holds the phone's chats as they were, but
+  first time, see [Linked devices](#devices). Contacts on this version then stop writing to your computers until you
+  do: the phone gives them a new list of its devices that names none. If this phone's clock is behind the lost one's,
+  that list goes once they write to it, and their chat details may say it changed the day after you restored. A
+  linked computer's own backup holds the phone's chats as they were, but
   not the link to write in them: restored, they can be read there but not written in, and Erevos says so once. To write
   in them, link that computer to the phone again: the chats the phone still has stay, with what came since, and the
   others go. On the phone, unlink the device it was before. Make the backups on the phone.
@@ -1345,9 +1352,11 @@ encrypted as on the phone, and keeps its contacts, messages and settings sealed 
 ## Linked devices {#devices}
 
 The same account on the phone and on a computer, or in a browser: the same chats, contacts and messages on both. The
-phone stays the account. It alone holds the keys of each conversation with a contact: it passes on to the computer,
-end-to-end encrypted, what comes and what it sent, and seals for the contact what the computer writes. Contacts see
-nothing new: the same account and the same safety number, whatever version of Erevos they have.
+phone stays the account: it alone adds contacts, and links and unlinks devices. Each linked device has keys of its
+own, which the phone signs into a list of the account's devices and gives its contacts. Contacts on this version then
+write to each device too, end-to-end encrypted, so it gets their messages with the phone off; for those on older
+versions the phone passes on to the computer what comes, and seals for them what the computer writes. Contacts see the
+same account and the same safety number, whatever version of Erevos they have.
 
 To link a computer:
 
@@ -1364,15 +1373,27 @@ To link a computer:
 
 The chats then come to the computer, and after them the messages chosen.
 
-- **Messages** from contacts come to both. What you write on the computer goes through the phone: the phone shows it
-  as yours, and the contact gets it from the account. What you write on the phone shows on the computer too. Read
-  marks, reactions, pins, votes, deleting from both phones, names, timers, chat looks and pictures, appearing offline
-  and accepting requests go both ways. A star, or deleting on **This phone**, done on the phone goes to the computer
-  too; done on the computer, it stays there.
-- **The phone has to be on** and reach the relay for the computer to send to contacts and get their messages. What
-  the computer writes meanwhile waits on the relay, and goes once the phone is back. Two or more linked devices also
-  reach each other directly: with the phone off, each still shows what the others write, read and react to, and the
-  changes they make to contacts.
+- **Messages** from contacts come to both, and each keeps them once: one that comes again within 30 days (up to 2000
+  from one contact) is not kept again, even after it disappeared or was deleted there. For that each keeps, for 30
+  days, which messages came and on what day, not what they said, also once they disappeared or were deleted, and in a
+  backup made meanwhile; the phone keeps it too for a contact who linked a device. What you write on the computer
+  goes to a contact on this version straight from it, once they wrote to the computer, and through the phone
+  otherwise: the phone shows it as yours, and the contact gets it from the account. What you write on the phone shows
+  on the computer too. Read marks, reactions, pins, votes, deleting from both phones, names, timers, chat looks and
+  pictures, appearing offline and accepting requests go both ways. A star, or deleting on **This phone**, done on the
+  phone goes to the computer too; done on the computer, it stays there.
+- **With the phone off**, contacts on this version still reach the computer, and the computer them: what they write,
+  read and react to comes, and what you write goes. If the phone stays off so long that its queue on the relay fills
+  (1000 messages), what they write and read still reaches the computer, a long voice message whole; what they react
+  to, pin, vote on or delete, and their calls, do not go through until the phone is on again. For contacts on older
+  versions, groups, calls, adding a contact and messages sent for later, **the phone has to be on** and reach the
+  relay: what the computer writes meanwhile waits on the relay, and goes once the phone is back. Two or more linked
+  devices also reach each other directly: with the phone off, each still shows what the others write, read and react
+  to, and the changes they make to contacts; one that missed the first message of another gets a new one a day or more
+  later. A computer that was off for longer than the relay keeps messages (14 days), or missed a contact's first
+  message to it, still gets what they write after: their Erevos starts again with it a day or more later, then ever
+  less often, until it answers. After a contact deletes you and adds you again, the computer starts again with their
+  devices too.
 - **Photos and files** that come stay on the relay until both the phone and the computer took them; then the phone
   deletes them there. One the computer never takes goes when it is unlinked, or after 14 days, as any not taken.
 - **Calls** ring on the phone and on the computer. Answer on either: the other stops ringing, and says it was
@@ -1386,13 +1407,20 @@ The chats then come to the computer, and after them the messages chosen.
   delete it for everyone) shows on the computer too, as does a star or deleting on **This phone** done on the phone. A
   message the phone could not send to the group (one closed meanwhile, say) shows on the computer as **Not sent by the
   phone**. Making a group, public groups and group calls stay on the phone for now.
-- **Hidden chats and second passwords** are never linked. A chat moved into hidden chats on the phone leaves the
-  computer. A space a second password opens links only from inside it, to devices of its own.
+- **Hidden chats and second passwords** are never linked. Hidden chats write to the devices of a contact on this
+  version as your other chats do, so those get them with the contact's phone off, and to the contact they look like
+  the chats of a phone that never linked a device. A chat moved into hidden chats on the phone leaves the computer.
+  Moved into hidden chats, or out of them into your chats, a chat writes to the contact's phone only, as an older
+  Erevos does, until it goes back to where it was made: their Erevos is told first, so their devices stop writing to
+  yours, and they can tell from it that the chat stopped knowing of linked devices: if it gave them the list of your
+  devices, that it went into hidden chats. A space a second password opens
+  links only from inside it, to devices of its own.
 - **Bring over messages again**, on the phone, sends a period of the history again, with its reactions, pins, votes
   and stars; what the computer has already is not kept twice.
-- **Unlink**, on the phone, cuts a device off at once: nothing more goes to it, and nothing it sends is taken. That is
-  how to cut off a lost computer. If it is on, it is told, and the account's chats leave it. On the computer,
-  **Unlink this device** does the same from there.
+- **Unlink**, on the phone, cuts a device off at once: nothing more goes to it, and nothing it sends is taken.
+  Contacts on this version are told the next time the phone reaches the relay: they stop writing to it, and take
+  nothing more from it. That is how to cut off a lost computer. If it is on, it is told, and the account's chats leave
+  it. On the computer, **Unlink this device** does the same from there.
 - **Up to four** devices link to one phone. A backup does not carry the links: after restoring one on another phone,
   tap **Unlink this device** on the computer and link it again, see [Backups](#backup).
 

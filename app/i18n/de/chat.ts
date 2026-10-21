@@ -83,6 +83,7 @@ export const chat: Record<string, string> = {
   '{what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. It comes only if {name}\'s is one of them.': '{what}: an die Erevos-Telefone in der Nähe, Ende-zu-Ende-verschlüsselt, weil das Relay nicht erreichbar war. Sie kommt nur an, wenn das Telefon von {name} dabei ist.',
   'The relay does not have this contact\'s queue any more. Ask them to write to you, or for their new contact link.': 'Das Relay hat die Warteschlange dieses Kontakts nicht mehr. Bitte ihn, dir zu schreiben, oder um seinen neuen Kontaktlink.',
   'Not sent. {reason}': 'Nicht gesendet. {reason}',
+  'Sent to {name}\'s linked devices, if they have any, end-to-end encrypted, not yet to their phone ({reason}). While hidden chats stay open, it is tried again for their phone.': 'An die verknüpften Geräte von {name} gesendet, falls es welche gibt, Ende-zu-Ende-verschlüsselt, aber noch nicht an das Telefon ({reason}). Solange die versteckten Chats offen bleiben, wird es für das Telefon erneut versucht.',
   'Sent': 'Gesendet',
   '{sent} It disappears from both phones {time} after it is read.': '{sent} Sie verschwindet {time} nach dem Lesen von beiden Telefonen.',
   'Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.': 'Wartet. {reason} Sie geht von selbst, sobald das Relay oder das andere Telefon in der Nähe sie annehmen kann.',
@@ -187,6 +188,7 @@ export const chat: Record<string, string> = {
   'Privacy': 'Privatsphäre',
   'Safety number': 'Sicherheitsnummer',
   'Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.': 'Vergleiche sie mit der deines Kontakts, persönlich oder bei einem Anruf: Zeigen beide Telefone dieselbe, sitzt niemand dazwischen.',
+  'The list of their linked devices last changed on {day}. Your messages go to each place in it too, used by a device or not. If they did not link or unlink one then, ask them.': 'Die Liste der verknüpften Geräte deines Kontakts hat sich zuletzt am {day} geändert. Deine Nachrichten gehen auch an jeden Platz darin, ob ein Gerät ihn hat oder nicht. Hat dein Kontakt damals keines verknüpft oder getrennt, frag nach.',
   'Move to hidden chats': 'In versteckte Chats verschieben',
   'Move back to my chats': 'Zurück in meine Chats verschieben',
   "The space's chats have no relay queue yet: create it under Relay there first.":

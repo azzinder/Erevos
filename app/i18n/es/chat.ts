@@ -83,6 +83,7 @@ export const chat: Record<string, string> = {
   '{what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. It comes only if {name}\'s is one of them.': '{what} a los teléfonos con Erevos cercanos, cifrado de extremo a extremo, porque el relay no estaba disponible. Solo llega si el de {name} está entre ellos.',
   'The relay does not have this contact\'s queue any more. Ask them to write to you, or for their new contact link.': 'El relay ya no tiene la cola de este contacto. Pídele que te escriba, o su nuevo enlace de contacto.',
   'Not sent. {reason}': 'No enviado. {reason}',
+  'Sent to {name}\'s linked devices, if they have any, end-to-end encrypted, not yet to their phone ({reason}). While hidden chats stay open, it is tried again for their phone.': 'Enviado a los dispositivos vinculados de {name}, si tiene alguno, cifrado de extremo a extremo, pero aún no a su teléfono ({reason}). Mientras los chats ocultos sigan abiertos, se vuelve a intentar para su teléfono.',
   'Sent': 'Enviado',
   '{sent} It disappears from both phones {time} after it is read.': '{sent} Desaparece de los dos teléfonos {time} después de leerse.',
   'Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.': 'En espera. {reason} Se enviará solo en cuanto el relay o su teléfono cercano puedan recibirlo.',
@@ -187,6 +188,7 @@ export const chat: Record<string, string> = {
   'Privacy': 'Privacidad',
   'Safety number': 'Número de seguridad',
   'Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.': 'Compáralo con el de tu contacto, en persona o en una llamada: si los dos teléfonos muestran el mismo, no hay nadie en medio.',
+  'The list of their linked devices last changed on {day}. Your messages go to each place in it too, used by a device or not. If they did not link or unlink one then, ask them.': 'La lista de dispositivos vinculados de tu contacto cambió por última vez el {day}. Tus mensajes también van a cada lugar de ella, lo ocupe un dispositivo o no. Si entonces no vinculó ni desvinculó ninguno, pregúntale.',
   'Move to hidden chats': 'Mover a chats ocultos',
   'Move back to my chats': 'Volver a mis chats',
   "The space's chats have no relay queue yet: create it under Relay there first.":

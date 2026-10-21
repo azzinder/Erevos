@@ -131,7 +131,40 @@ On main, not released yet. The next release is **2.0.0**.
 
 - Linked devices reach each other directly: with the phone off, each still shows what the others
   write, read, react to and change in contacts, and the contacts get it once the phone is back, as
-  before. With a phone or device from before, everything goes through the phone as now.
+  before. One that missed the first message of another gets a new one a day or more later. With a
+  phone or device from before, everything goes through the phone as now.
+
+- Contacts on this version write to each linked device too, so a computer gets their messages and
+  answers them with the phone off, also once the phone's queue on the relay is full: what they try
+  again reaches the computer all the same, once however often it is tried, and a voice message
+  reaches it whole, however long. A computer that was off for longer than the relay keeps messages,
+  or missed a contact's first message to it, still gets what they write after, as their Erevos
+  starts again with it a day or more later, then ever less often, until it answers; after a contact
+  deletes the account and adds it again, the computer starts again with their devices too. Each
+  message shows once, even after it disappeared, when it comes again within 30 days (up to 2000
+  from one contact, the oldest that came twice giving way first), as each keeps for 30 days which
+  messages came and on what day, not what they said, in a backup made meanwhile too; it counts once
+  in an Android device's notice, and a voice message sent again after only part of it went is put
+  together once. What came and was read shows on all, also what a call or a message sent for later
+  says was read. Only a linked device of the account takes what is written to it, so a list
+  naming someone else's account on this version has it read nothing. Under the safety number, a
+  chat's details say when the list of the contact's devices last changed. A phone put back from a
+  backup gives its contacts a new list, without the computers linked since, also when its clock is
+  behind the lost one's, once they write to it; a computer unlinked is left out of the list they
+  are given the next time the phone reaches the relay, even while the relay makes no new queue. Each
+  contact seals what they write to each device with a key no other contact has, so a relay that
+  works with one of them opens none of the others'. A device whose queue on the relay is full keeps
+  no other contact or device out of what waits to go, and a reaction, pin or vote a computer writes
+  through the phone goes to a contact's devices once it reaches the contact. Hidden chats write to a
+  contact's devices too, and to the contact look like the chats of a phone that never linked a
+  device; while a contact's queue is full, what they write still reaches the contact's devices and
+  is tried again for their phone while hidden chats stay open. A chat moved into hidden chats or out
+  of them writes only to the contact's phone until it goes back, and tells the contact's devices
+  first, who can tell from it, if it gave them its list, that it went into hidden chats. With contacts, phones or devices from before,
+  everything goes through the phone as now. What they write to each device, and what a computer
+  writes to them itself, tells the relay what it carries as the phone's messages do, for a closed
+  web app's notice to count; the phone passes a contact's message on quiet to a computer they wrote
+  it to as well.
 
 - **A new chat screen**: one bar at the top with the contact's picture and name, whether they are
   online, nearby or typing, and buttons for a video and a voice call, with ⋯ (⋮ on Android) set

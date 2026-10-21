@@ -40,8 +40,11 @@ is off waits in the phone's queue on the relay and goes when the phone is back.
 
 The second way comes on top of this, so linked devices work with the phone off: once contacts
 know device lists, the primary stops relaying for those contacts. docs/multi-device.md is how. Its
-first part is here already: the linked devices reach each other directly (Devices to each other,
-below), so with the phone off they still see what the others do.
+first parts are here already: the linked devices reach each other directly (Devices to each other,
+below), so with the phone off they still see what the others do; and contacts on this version are
+given the account's device list and write to each device too (Contacts and endpoints, below), so
+with the phone off a device still gets their messages and answers them. For contacts on older
+versions the phone goes on passing on, as below.
 
 ## How it works
 
@@ -49,8 +52,9 @@ below), so with the phone off they still see what the others do.
 
 The phone where the account lives is the **primary**. A **linked device** (the computer) has a
 space of its own whose chats are the primary's: it keeps a copy of the contacts (names, timers,
-looks, pictures, requests) and of the messages, in its own sealed history, and no keys of any
-conversation with a contact. Linking happens in one space on each side, the one open on each, and
+looks, pictures, requests) and of the messages, in its own sealed history, and never the keys of the
+account's conversations with contacts: only those of its own endpoint (below) with their accounts
+and their endpoints. Linking happens in one space on each side, the one open on each, and
 in no other: nothing of another space, of hidden chats or of what a second password opens goes to
 a linked device, and nothing on the screens of one space shows that another is linked.
 
@@ -91,9 +95,9 @@ device takes hold keys made only for the list, whose secrets are thrown away. Th
 the list once the bundle is the account's it was linked to (said in the phone's first message, in
 the link whose codes were compared) and the bundle's key signed it, later than the one it has.
 
-No contact is given the list yet, and nothing a contact sends goes to an endpoint: contacts reach
-the account only through the phone, as below. The devices' endpoints reach each other (Devices to
-each other, below). A phone or a computer from before ignores what it does not know, and the phone
+The phone also gives the list to each contact on this version, inside its conversation with them,
+and they write to each endpoint in it (Contacts and endpoints, below). The devices' endpoints reach
+each other (Devices to each other, below). A phone or a computer from before ignores what it does not know, and the phone
 keeps passing on for every device as below. A build whose core cannot sign as the account makes no
 endpoint and signs no list.
 
@@ -103,14 +107,17 @@ With the list, the phone tells each device where each other device in it reads (
 link, not in the signed list). Each two devices then have a conversation of the core's own kind
 between their endpoints (lib/siblings.ts): the one with the lower id starts it from the other's
 bundle in the list, and the other takes a first packet only from an endpoint the list it checked
-names, one that should start, and only once. Its packets are sealed for the relay as the link's
-are. What a device writes to a contact goes to the phone as before, and to each other device too,
-as its own: a message, what it read, reacted to, pinned, voted or deleted on both phones; so do
+names, one that should start, and only once; one from an endpoint no list names is dropped. One that
+said nothing in the conversation started with it, a day after, may never have had its first packet:
+the next thing for it starts another, and so on until it answers, less often each time, the ones
+before kept to open what it said there while away. Its packets are sealed for the relay as the
+link's are. What a device writes to a contact goes to the phone as before, and to each other device
+too, as its own: a message, what it read, reacted to, pinned, voted or deleted on both phones; so do
 the changes it makes to contacts (names, timers, looks, pictures, appearing offline, accepting a
 request, removing one) and where its queue is. So with the phone off, each device still shows what
-the others write and do; the contacts get it once the phone is back, as before. A message sent
-for later and a call's signals go through the phone only, and so does adding a contact, which
-needs the phone. Contacts' messages and groups still come only through the phone.
+the others write and do; the contacts get it once the phone is back, as before. A message sent for
+later and a call's signals go through the phone only, and so does adding a contact, which needs the
+phone. Groups still come only through the phone, as do the messages of contacts on older versions.
 
 As two devices may change the same thing with the phone off, each change says when it was made,
 and each field of a contact keeps when it was set: the later setting of each field wins, on every
@@ -124,7 +131,99 @@ A photo or file a device sends, when the list names other devices, stays on its 
 take, and expires there after 14 days. A phone from before gives no routes, so its devices go
 through it as before; a device from before meets no one, and is reached through the phone.
 
+### Contacts and endpoints
+
+A contact on this version says in each message which of the account's lists it holds (`dv`, none at
+first). The phone gives it the one it signed last, with the account's bundle and where each endpoint
+reads, in a message of its own inside their conversation; again a day later if they still say they
+hold an older one, and again when one of its devices reads elsewhere, each by which list went, not
+by the clock, so a clock set right after it was ahead gives it once more, not with every look. The contact takes it only
+there, in the conversation with the account's identity, and only as that identity's bundle signed
+it, for that account, later than the one it has. Then it writes every message to the account as
+before, and a copy to each endpoint in the list, each in a conversation of the core's own kind it
+starts with that endpoint, whose first message says for which account it is. An endpoint that has
+not answered in it a day after it started may never have had that first message (the relay drops
+what waits more than 14 days): the next copy starts another, and so on until it answers, less often
+each time, the ones before kept to open what it sends in them. It carries what it writes, reads,
+reacts to, pins, votes on, deletes and sets the timer of. That a message came goes back only the way
+it came, saying only that; that a phone is open or someone types, calls, groups and messages sent
+for later go to the account only, but for what they say was read, which goes to each endpoint alone,
+and came, only the way it came. A list's entry that names an account the contact knows, its own or
+one of its contacts', is written nothing. The copies are sealed only once what went to the account
+went, each endpoint's in the order they go, so what never went moves no conversation with an
+endpoint on; when the account's queue is full or its relay cannot be reached (as the relay said too
+when only LoRa was left and it was too large for it), what is tried again as it is (a text, a mark,
+what waits; of what a device wrote, what the phone keeps, not a reaction, pin, vote or delete) goes
+to the endpoints all the same, and once however often it is tried; in hidden chats only while the
+account's queue is full, as there it is then owed to the account, tried again while hidden chats
+stay open. They wait sealed in an outbox (lock/fanout-data.ts) until the relay takes them, saved
+after the conversations they were sealed in, for 14 days at most and 1000 in all, those for an
+endpoint whose queue the relay said is full giving way first when it is full, then the contact with
+the most; once 50 wait for one endpoint, or one waits while its queue is full, nothing new is copied
+to it, but a voice message goes on to its last part, so it reaches it whole or not at all. Those for one relay go
+on one connection. Each tells the relay what it carries as what went to the account does, a place
+that fills the list's as a device's, for a closed web app's notice on a device to count, and the
+phone passes the contact's message on quiet to a device it was written to as well. Should the
+contact still hold an older list that names the device too, or their copy not reach it, the device's
+notice counts that message twice, or not at all; twice too when their app tried it again after it
+was closed, as what went to each endpoint is kept in its memory only. An Android device's own notice
+in the background counts a message once, as one that came twice is no news.
+
+A device takes a conversation a contact's account starts with its endpoint, for its own account,
+from a contact it knows, and keeps it as its own way to them; one from a contact the phone has not
+told it of yet waits for the phone to, kept with the chat (the latest of each, 8 in all, 14 days). A
+new one from a contact it had one with, as when they deleted the account and added it again, starts
+each of its ways to their endpoints again with the next copy. Once the contact holds the list that
+names the device, the device writes to them itself in that way, and to their endpoints if their list
+names any; the phone and the other devices are told it as their own, and what came of it, so all of
+them mark it. What it writes to them so tells the relay what it carries as the phone's would, and
+the phone sends none of it again. With the phone off, a device so still gets their messages and
+answers them. Once the phone's queue on the relay is full, as with the phone off for long, what they
+try again as it is still reaches the devices: texts, marks, the keys, and a voice message or file
+once it waits for the phone; a reaction, pin, vote or delete, a walkie-talkie message or a call goes
+nowhere until the phone empties its queue. What comes both directly and through the phone is kept
+once, by its tag, even once the first left the history: each chat keeps the tags it took, with the
+day each came, for 30 days, 2000 of one contact at most, on a device of every contact and elsewhere
+of those whose account lists devices; once 2000 are kept, one that came twice gives way to a new
+one, and while none did, the new one is not kept, so a second copy of it shows again if it already
+left the history, as does one that comes later than 30 days. A voice message sealed again with its
+tag has the same parts, so what came of it before counts. Those tags stay after the messages left
+the history, in a backup too, until their 30 days are over: whoever opens the chat sees that a
+message came that day, not what it said. The phone tells each device what it knows of each contact's devices (`way`), so they
+write to those too.
+
+The places of the list no device takes are written to alike: the phone makes a queue for each on
+its own relay, with a key of its own as a device has, gives it with the list, and empties
+it every hour while it is open, so the relay keeps it and takes what is sent to it as it takes a
+device's; one lost, or left on a relay the phone no longer uses, is made again, with the same key.
+One the phone cannot make now (offline, the relay full, a lent place's queues for the day used up)
+keeps where it was, and is tried again every minute while the space is open; a relay whose key the
+phone could not ask, as it opens offline, counts as the one it was on. Until each place has a queue
+no contact is given the list, but one whose list may name a device it no longer names. Each
+contact is given, for each place and each device, a key to seal with drawn from that place's or
+device's own key and the contact's identity, so no two contacts have the same, and a relay that
+works with one of them opens only that one's copies; a device finds whose a copy is by its mark, as
+the phone does. A contact cannot
+tell them from devices by what it does or by what the relay answers; only by where each reads, as
+those sit on the phone's relay, and, over time, by which never answer. The phone's relay can: it
+sees the phone empty them, and no one does while the phone is not open.
+
+An endpoint of a contact's account that starts a conversation with this one, saying it speaks for
+that account, is taken only once that account's list as checked here names it; until a later list
+comes it waits (the latest of each endpoint, 4 of one account, 16 in all, 14 days), and then it is
+taken, or goes. Those that wait are the first that came: one made up, under as many keys as one
+likes, never pushes out another, though while they are full a real one is left out, and is taken
+when its endpoint starts again a day or more later. It is never a message request, and an account
+takes none, only a device. Unlinked, a device is left out of the next list, which the phone gives
+each contact the next time it reaches the relay, even before each place in it has a queue (they
+then see which has none): the contact lets go of the conversations with it,
+so nothing it sealed opens any more, and anything new it starts waits for a list that names it. The
+contact's details show, under the safety number, when the list it holds last changed.
+
 ### Messages
+
+These are the ways through the phone, for contacts on older versions, and for what goes to the
+account only.
 
 - **From a contact:** the phone opens it as always, keeps it, and passes it on to each linked device,
   end-to-end encrypted in that device's link. The device opens it as if it came from the contact:
@@ -195,7 +294,15 @@ signs a list without it, a new filling key taking its place.
 ### Hidden chats and second passwords
 
 Hidden chats have their own account and are never linked; nothing of them is passed on or brought
-over. A chat moved into hidden chats on the phone leaves the computer, messages and all. On a linked
+over. They write to the devices of contacts on this version as the space's chats do, and take what
+those write, so to a contact they are the chats of a phone that never linked a device. A chat moved
+into hidden chats on the phone leaves the computer, messages and all. Moved into hidden chats, or
+out of them, a chat is known to its contact by the identity of where it was made, and says nothing
+of devices to them, as an Erevos from before, until it goes back there: it tells them first, so
+their devices let go of its own, and they can see that it stopped knowing of devices; one it gave
+its list can tell from that it went into hidden chats, unless it was put back on an Erevos from
+before. While a contact's queue is full, what hidden chats write still reaches the contact's
+devices, but is tried again for their phone only while hidden chats stay open. On a linked
 computer, moving a chat into hidden chats is not offered (the chat is the phone's). A space opened by
 a second password has its own devices or none, and links only when its owner links it, from inside
 it.
@@ -203,15 +310,15 @@ it.
 ### Calls
 
 A contact's call rings on the phone and on every linked device: the phone passes its offer on to
-each, in their links, and rings itself. Whichever answers first takes the call. A device's answer
-goes to the phone, which seals it for the contact as the account's own, as long as no one answered
-before; the phone and the other devices then stop ringing, quietly, and show the call was answered
-on another device. If another was first, the device is told so, and stops. Turning a call down on
-one turns it down for the account, and the others stop too; a device that only stops ringing (no
-answer there, or in a call of its own) leaves the others ringing. A device calls a contact the same
-way: its offer goes to the phone, which seals it for the contact as the account's, and passes on to
-that device alone what the contact says of that call. lib/linked-calls.ts decides, on the phone,
-where each call signal goes.
+each, in their links, and rings itself; what the offer says was read it passes on as a receipt.
+Whichever answers first takes the call. A device's answer goes to the phone, which seals it for the
+contact as the account's own, as long as no one answered before; the phone and the other devices
+then stop ringing, quietly, and show the call was answered on another device. If another was first,
+the device is told so, and stops. Turning a call down on one turns it down for the account, and the
+others stop too; a device that only stops ringing (no answer there, or in a call of its own) leaves
+the others ringing. A device calls a contact the same way: its offer goes to the phone, which seals
+it for the contact as the account's, and passes on to that device alone what the contact says of
+that call. lib/linked-calls.ts decides, on the phone, where each call signal goes.
 
 This is sound end to end. A call's sound and picture go straight between the contact and the device
 that has the call (WebRTC, through the call relays as any call does), encrypted between the two with
@@ -266,10 +373,19 @@ stay on the phone for now; public groups are not told to the devices at all.
 ### Older versions
 
 Contacts on any older Erevos see nothing new: same identity, same queue, same ratchet, same safety
-number. Both the phone and the computer need this version to link. A device from before changes in
-messages told already leaves `changed` alone, and shows those done on it only, as before. Devices
-reach each other only when the phone and both of them have this version; otherwise everything goes
-through the phone, as before, and nothing is sealed once more on a link with a version from before.
+number. They never say `dv`, so they are given no list, and the phone passes on for them as before;
+a contact whose account stops saying it (an Erevos from before put back, or the chat moved into
+hidden chats or out of them, which tells their devices too first) has what was known of its devices dropped, and is
+written to at its account only. Both the phone and the computer need this version to link. A device
+from before changes in messages told already leaves `changed` alone, and shows those done on it
+only, as before. Devices reach each other only when the phone and both of them have this version;
+otherwise everything goes through the phone, as before, and nothing is sealed once more on a link
+with a version from before. A phone from before signs no list, so its contacts write to it alone; a
+device from before endpoints is in no list, and the phone passes on to it what the others wrote to
+contacts themselves and what came of it; one of the version before this, which says no key for
+contacts to seal with, is listed as a place no device takes is, so contacts' copies to it go to a
+queue the phone empties, and it gets their messages through the phone. Updated, it makes a new
+endpoint, which takes a place in the list as a device linked does.
 
 ### Backups
 
@@ -288,13 +404,18 @@ two computers never take one endpoint; linked again, it makes a new one. The con
 other devices are kept with the links, so a backup put back on the same computer finds them as
 they were, and one put back elsewhere has none. A phone's backup carries the device list it signed
 last, so restored on another phone, where no device is linked, it signs a later one that names none
-of them.
+of them, and once more should a contact say they hold a later one still, as when its clock is
+behind the lost phone's. What contacts say of the list they hold counts only there, after a backup
+was put back, only from a contact it accepted and up to a day after: one who says it falsely can
+have it sign a list of places only, or one dated a day later, once (docs/multi-device.md, Costs).
 
 ## Where it is in the code
 
 - `lib/link-code.ts`: the QR code's link, and the safety code.
 - `lib/link-wire.ts`: what goes between the devices, and which messages are passed on.
 - `lib/device-list.ts`: the device list, signed by the account and checked against its bundle.
+- `lib/endpoints.ts`: the ways to the endpoints of a contact's account, and what goes to them.
+- `lib/fanout.ts`, `lock/fanout-data.ts`: the copies for those endpoints, and sending them.
 - `lib/siblings.ts`: on a linked device, the account's other devices it reaches directly, and how
   what two of them change at once settles.
 - `lib/linked-calls.ts`: on the phone, where each call signal goes: who rings, who has the call.
@@ -309,5 +430,23 @@ of them.
   it (`watchTakenFiles`).
 - `app/app/devices.tsx`: Menu → Linked devices; `app/app/link.tsx` opens it from a scanned code.
 - `app/checks/devices.check.ts`: a phone, a computer and a contact on an older version, through a
-  real relay and the real core; devices reaching each other with the phone off.
+  real relay and the real core; devices reaching each other with the phone off; contacts writing to
+  every endpoint, each with keys of its own the computer finds them by, hidden chats among them, and
+  a device answering them with the phone off, and getting what they try again
+  once with the phone's queue full, told of once; what a computer writes through the phone to a
+  contact whose queue is full, a reaction copying nothing; hidden chats owing what a full queue
+  refused; a computer on an older version listed as a place; a phone put
+  back from a backup, its clock behind or not, signing a later list, and one never put back signing
+  none for what anyone says; a computer unlinked left out of the list before its place has a queue;
+  and the places keeping their queues and keys offline or while the relay's key is not known.
+- `app/checks/endpoints.check.ts`: what goes to which endpoint, and what is kept of them.
+- `app/checks/copies.check.ts`: what a chat writes to the endpoints of a contact's account, with the
+  real core and no relay: whose a list's entries can be, each contact's key of its own for each,
+  hidden chats writing to them as a space's chat that never linked a device and a chat moved in or
+  out saying nothing of devices, the copies hidden chats keep apart, when the copies are sealed and
+  go, what goes once however often it is tried, copies for a full queue keeping no one out, a voice
+  message whole and, sealed again, put together once, what is kept of what came and for how long,
+  each space's value in the outbox's file, and when the list is given:
+  by which list went, not by the clock, and what contacts say of the one they hold counting only
+  after a backup was put back.
 - `app/checks/siblings.check.ts`: which devices meet, and how their changes settle.

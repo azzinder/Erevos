@@ -58,9 +58,13 @@ export type Peer = {
   /** On the primary: what it was last told of each group, by id. */
   groups: Record<string, Told>;
   /** The linked device's own endpoint (docs/multi-device.md), as said in this link: its identity,
-   *  hex, and bundle, base64url. On the primary, the device's; on a linked device, its own as it
-   *  said it to the phone. Missing for a device from before it, which the list does not name. */
+   *  hex, and bundle, base64url, and what the key each contact seals for it with is drawn from
+   *  (lib/sealed-packet.ts entryKey), which a device that takes
+   *  nothing from contacts does not say. On the primary, the device's; on a linked device, its own
+   *  as it said it to the phone. Missing for a device from before it, which the list does not name. */
   endpoint?: Endpoint;
+  /** On the primary: the digest of what it was last told of the devices of each contact's account (lib/link-wire.ts `way`; lib/devices.ts wayDigest), by identity. */
+  ways?: Record<string, string>;
   /** On the primary: the `n` of the device list it was last told, and where the other devices it names read, as told with it (JSON). */
   listed?: number;
   routed?: string;
@@ -152,7 +156,8 @@ function checkedTold(value: unknown): Record<string, Told> {
 
 function checkedEndpoint(value: unknown): Endpoint | null {
   const v = (value ?? {}) as Partial<Record<keyof Endpoint, unknown>>;
-  return isHex(v.id, 64) && isText(v.bundle) && v.bundle.length <= 4096 && /^[A-Za-z0-9_-]+$/.test(v.bundle) ? { id: v.id, bundle: v.bundle } : null;
+  if (!isHex(v.id, 64) || !isText(v.bundle) || v.bundle.length > 4096 || !/^[A-Za-z0-9_-]+$/.test(v.bundle)) return null;
+  return { id: v.id, bundle: v.bundle, ...(isRelayKey(v.ek) ? { ek: v.ek } : {}) };
 }
 
 // The marks of the packets still in `outbox`; null when none is not quiet.
@@ -196,7 +201,16 @@ function checkedPeer(value: unknown, unmarked = false): Peer | null {
     ...(isText(v.routed) ? { routed: v.routed } : {}),
     ...(isRelayKey(v.key) ? { key: v.key } : {}),
     ...(isRelayKey(v.sealTo) ? { sealTo: v.sealTo } : {}),
+    ...(checkedWays(v.ways) ? { ways: checkedWays(v.ways)! } : {}),
   };
+}
+
+function checkedWays(value: unknown): Record<string, string> | null {
+  if (!value || typeof value !== 'object') return null;
+  const ways: Record<string, string> = {};
+  // One kept whole, by the version before, is no digest: that way is told once more.
+  for (const [id, said] of Object.entries(value)) if (isHex(id, 64) && isHex(said, 16)) ways[id] = said;
+  return Object.keys(ways).length > 0 ? ways : null;
 }
 
 function checked(value: unknown): DevicesData {

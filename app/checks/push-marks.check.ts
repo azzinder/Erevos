@@ -8,8 +8,10 @@
 // `unreachable`, it drops the sends, as a relay that cannot be reached, so what is tried again can
 // be seen to keep its mark; `dropping` drops only those it picks. The relay's own checks count
 // from the marks, and from one held for later when it goes; the screens are not run here. No push
-// address is given, so nothing is sent to a push service. Skipped, with a note, when the core or
-// the relay is not built.
+// address is given, so nothing is sent to a push service. Then a contact given the account's list
+// of devices (docs/multi-device.md): the copies to each place in it, a device's and those that
+// fill it alike, the phone passing their message on to a device that had it from them, and a
+// device that writes to them itself. Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -23,6 +25,7 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { Links } from '../lib/devices';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
+import { sendCopies } from '../lib/fanout';
 import { Groups, type GroupTransport } from '../lib/groups';
 import { carryTo, createQueue, fromHex, receiveMessage, relayKey, sendMessage, toHex, type Mark, type Relay } from '../lib/relay';
 import { carriedFor, markOf, ringOffer, sendSealed, sentMark, type SpaceChats } from '../lib/space-chats';
@@ -30,6 +33,7 @@ import { spaceGroupTransport } from '../lib/space-groups';
 import { VoiceAssembler } from '../lib/voice';
 import { holdLater, sendWaiting, type SendPlace } from '../lib/waiting';
 import { loadDevicesData, saveDevicesData } from '../lock/devices-data';
+import { loadFanoutData } from '../lock/fanout-data';
 import { EMPTY_GROUPS, loadGroupData, saveGroupData, type About, type GroupData } from '../lock/group-data';
 import { History, WAITING } from '../lock/history';
 import { setCurrentSpace } from '../lock/keys';
@@ -173,12 +177,22 @@ async function take(p: Phone & { links?: Links | null }): Promise<Opened[]> {
 }
 
 // Seals words, or word with `extra`, for a contact and hands it to the relay as the chat does,
-// and keeps the words.
+// then lets its copies for the endpoints of their account go, and keeps the words.
 async function write(p: Phone, identity: string, text: string, extra: Parameters<E2E['seal']>[3] = {}) {
   const sealed = await p.chats.e2e.seal(identity, text, p.queue.senderHex, { at: where, ...extra });
-  await sendSealed(relay, sealed, [sealed.packet], sentMark(p.chats.e2e, markOf(text, extra.call)), () => p.chats.e2e.firstSent(identity));
+  await sendSealed(relay, sealed, [sealed.packet], sentMark(sealed, markOf(text, extra.call)), () => p.chats.e2e.firstSent(identity));
+  await p.chats.e2e.copiesGo(sealed.copies);
   if (text) await p.chats.history.add({ peer: `contact:${identity}`, text, mine: true, at: Date.now(), tag: sealed.tag });
   return sealed;
+}
+
+// A voice message in parts, as the chat screen hands it over, then its copies.
+async function speak(p: Phone, identity: string) {
+  const voice = await p.chats.e2e.sealVoice(identity, randomBytes(25_000), 3000, p.queue.senderHex, { at: where });
+  assert.equal(voice.packets.length, 3);
+  await sendSealed(relay, voice, voice.packets, sentMark(voice, 'message'), () => p.chats.e2e.firstSent(identity));
+  await p.chats.e2e.copiesGo(voice.copies);
+  return voice;
 }
 
 // Alice adds Bob's link and writes once; Bob takes it and accepts. Says each one's id for the other.
@@ -635,7 +649,7 @@ test('what a linked computer sends goes quiet to the phone, which counts it once
   // A voice message in parts, as the chat screen hands it over.
   const voice = await dell.chats.e2e.sealVoice(carolId, randomBytes(25_000), 3000, dell.queue.senderHex, { at: where });
   assert.equal(voice.packets.length, 3);
-  await sendSealed(relay, voice, voice.packets, sentMark(dell.chats.e2e, 'message'), () => dell.chats.e2e.firstSent(carolId));
+  await sendSealed(relay, voice, voice.packets, sentMark(voice, 'message'), () => dell.chats.e2e.firstSent(carolId));
   // A text that waited, once the relay answers.
   await dell.chats.history.add({ peer, text: 'waited', mine: true, at: Date.now(), tag: 'dddddddddddd', mark: WAITING });
   assert.deepEqual((await sendWaiting(dell.chats, place)).map((w) => w.tag), ['dddddddddddd']);
@@ -680,7 +694,7 @@ test("a linked computer's voice message counts once for the contact though a par
   const { pixel, dell, carol, carolId } = await linkedWithCarol();
   const voice = await dell.chats.e2e.sealVoice(carolId, randomBytes(35_000), 4000, dell.queue.senderHex, { at: where });
   assert.equal(voice.packets.length, 4);
-  await sendSealed(relay, voice, voice.packets, sentMark(dell.chats.e2e, 'message'), () => dell.chats.e2e.firstSent(carolId));
+  await sendSealed(relay, voice, voice.packets, sentMark(voice, 'message'), () => dell.chats.e2e.firstSent(carolId));
   // The phone passes on each part as it comes; the first cannot reach the relay, the others go.
   // Once all came, the phone sends the voice message again whole, as it waited.
   seen.length = 0;
@@ -772,4 +786,200 @@ test("group messages that reach a linked computer together count one each", { sk
   });
   assert.deepEqual(theirs().map((m) => m.text), ['one', 'two', 'three', 'four', 'five']);
   assert.deepEqual(counted(dell.queue.senderHex), { messages: 5, unsure: false });
+});
+
+// ---- A contact given the account's list of devices ----
+
+// The phone and a computer of this version linked to it, named in the list the phone signs, and
+// Carol, on this version too, who wrote to the phone before and is given that list, quiet, as the
+// receiver gives it (lib/receiver.ts sendKeys): from then on she writes to every place in it. Says
+// the account's id for Carol, Carol's for the account, and the queues (by their sender ids) of the
+// places that fill the list.
+async function listedForCarol() {
+  const pixel = await phone(true);
+  const dell = await phone(true);
+  const carol = await phone();
+  const { identity: account } = await carol.chats.e2e.addContact({ senderHex: pixel.queue.senderHex, key: toBase64Url(pixel.chats.e2e.bundle), relayUrl: url }, carol.queue.senderHex, where);
+  await write(carol, account, 'before the computer');
+  const [first] = await take(pixel);
+  const carolId = first.identity;
+  await pixel.chats.e2e.acceptRequest(carolId);
+  await linkUp(pixel, dell, () => dell.chats.history.messages().length === 1);
+  await until(async () => {
+    await take(pixel);
+    await take(dell);
+    const list = pixel.chats.e2e.signedList();
+    return !!list && list.real.length === 1 && Object.keys(list.r ?? {}).length === 4 && dell.chats.e2e.own()?.list?.n === list.n;
+  });
+  await pixel.links!.settled();
+  assert.ok(pixel.chats.e2e.keysDue().includes(carolId));
+  const keys = await pixel.chats.e2e.seal(carolId, '', pixel.queue.senderHex, { at: where, keys: true });
+  await sendSealed(relay, keys, [keys.packet], 'quiet', () => pixel.chats.e2e.firstSent(carolId));
+  await pixel.chats.e2e.copiesGo(keys.copies);
+  await pixel.chats.e2e.keysGiven(carolId);
+  await take(carol);
+  assert.equal(carol.chats.e2e.record(account)?.endpoints?.length, 4);
+  const list = pixel.chats.e2e.signedList()!;
+  const fillers = Object.entries(list.r!).flatMap(([id, r]) => (list.real.includes(id) ? [] : [r.s]));
+  assert.equal(fillers.length, 3);
+  assert.ok(!fillers.includes(dell.queue.senderHex));
+  return { pixel, dell, carol, account, carolId, fillers };
+}
+
+test("a contact's copies say what they carry as what goes to the phone, to the computer and the places that fill the list alike, kept while the relay cannot be reached, and the computer counts each message once", { skip: !ready, timeout: 120_000 }, async () => {
+  files.clear();
+  blobs.clear();
+  const { pixel, dell, carol, account, fillers } = await listedForCarol();
+  const places = [dell.queue.senderHex, ...fillers];
+  seen.length = 0;
+
+  // A text, a voice message in parts and a reaction, each to the phone and a copy to each place.
+  const text = await write(carol, account, 'to every endpoint');
+  const voice = await speak(carol, account);
+  await write(carol, account, '', { react: { tag: text.tag, emoji: '👍' } });
+  // To the phone, the text and the voice message count once each.
+  assert.deepEqual(counted(pixel.queue.senderHex), { messages: 2, unsure: false });
+  // Each place gets the way's first packet and the text, the voice message's parts and the
+  // reaction: quiet but for the text and the voice message's last part.
+  const each = ['quiet', 'message', 'quiet', 'quiet', 'message', 'quiet'];
+
+  // The relay cannot be reached: the copies wait, and keep what they carry.
+  unreachable = true;
+  assert.equal(await sendCopies(carol.chats.e2e, relay), 0);
+  unreachable = false;
+  const waiting = new Map<string, string[]>();
+  for (const c of (await loadFanoutData('space', carol.space, carol.key)).copies) waiting.set(c.w, [...(waiting.get(c.w) ?? []), c.mark ?? 'quiet']);
+  assert.deepEqual([...waiting.values()], places.map(() => each));
+
+  // Then they go, a device's and those of the places that fill the list alike.
+  const before = seen.length;
+  assert.equal(await sendCopies(carol.chats.e2e, relay), places.length * each.length);
+  const copies = seen.slice(before);
+  for (const place of places) assert.deepEqual(copies.filter((s) => s.to === place).map((s) => s.mark), each);
+  assert.equal(copies.length, places.length * each.length);
+
+  // The phone passes them on to the computer quiet: they count there once, as they came from her.
+  await take(pixel);
+  await until(async () => {
+    await take(dell);
+    return dell.chats.history.messages().some((m) => m.tag === text.tag) && dell.chats.history.messages().some((m) => m.tag === voice.tag && m.voice);
+  });
+  await pixel.links!.settled();
+  assert.deepEqual(counted(dell.queue.senderHex), { messages: 2, unsure: false });
+});
+
+test('a linked computer that writes to a contact itself, the phone off or on, counts once for her, and the phone sends none of it again', { skip: !ready, timeout: 120_000 }, async () => {
+  files.clear();
+  blobs.clear();
+  const { pixel, dell, carol, account, carolId } = await listedForCarol();
+  // What she writes to every place starts the computer's own way to her.
+  await write(carol, account, 'to every endpoint');
+  await sendCopies(carol.chats.e2e, relay);
+  await take(pixel);
+  await until(async () => {
+    await take(dell);
+    return dell.chats.e2e.record(carolId)?.direct?.sender === carol.queue.senderHex;
+  });
+  await pixel.links!.settled();
+  await take(dell);
+  const peer = `contact:${carolId}`;
+  const place: SendPlace = { sends: relay, own: relay, senderHex: dell.queue.senderHex, here: where, ownKey: '', relayUp: true };
+  const pixelPlace: SendPlace = { sends: relay, own: relay, senderHex: pixel.queue.senderHex, here: where, ownKey: '', relayUp: true };
+
+  // The phone on: the computer's text goes to her as a message, and to the phone quiet.
+  seen.length = 0;
+  const on = await write(dell, carolId, 'answered with the phone on');
+  assert.equal(on.through, false);
+  assert.equal(on.sender, carol.queue.senderHex);
+  assert.deepEqual(counted(carol.queue.senderHex), { messages: 1, unsure: false });
+  await dell.links!.settled();
+  await until(async () => {
+    await take(pixel);
+    return pixel.chats.history.messages().some((m) => m.tag === on.tag && m.mine);
+  });
+  assert.deepEqual(await sendWaiting(pixel.chats, pixelPlace), []);
+  await pixel.links!.settled();
+  assert.deepEqual(counted(carol.queue.senderHex), { messages: 1, unsure: false });
+  assert.deepEqual(counted(pixel.queue.senderHex), { messages: 0, unsure: false });
+
+  // The phone off: a text, a voice message in parts and one that waited each count once for her.
+  pixel.links!.close();
+  seen.length = 0;
+  const off = await write(dell, carolId, 'answered with the phone off');
+  const voice = await speak(dell, carolId);
+  assert.equal(voice.through, false);
+  await dell.chats.history.add({ peer, text: 'waited', mine: true, at: Date.now(), tag: 'ffffffffffff', mark: WAITING });
+  assert.deepEqual((await sendWaiting(dell.chats, place)).map((w) => w.tag), ['ffffffffffff']);
+  await dell.links!.settled();
+  assert.deepEqual(marks(carol.queue.senderHex), ['message', 'quiet', 'quiet', 'message', 'message']);
+  assert.deepEqual(counted(pixel.queue.senderHex), { messages: 0, unsure: false });
+  const came = await take(carol);
+  assert.deepEqual(
+    came.filter((m) => m.text).map((m) => [m.identity, m.text]),
+    [[account, 'answered with the phone on'], [account, 'answered with the phone off'], [account, 'waited']],
+  );
+  assert.ok(carol.chats.history.messages().some((m) => m.voice));
+
+  // The phone on again keeps them as its own, and sends none of them to her again.
+  pixel.links = await Links.open(pixel.space, pixel.key, pixel.chats, 60 * 60_000);
+  opened.push(pixel.links);
+  await until(async () => {
+    await take(pixel);
+    const mine = pixel.chats.history.messages().filter((m) => m.mine && m.peer === peer);
+    return [off.tag, voice.tag, 'ffffffffffff'].every((tag) => mine.some((m) => m.tag === tag));
+  });
+  assert.deepEqual(await sendWaiting(pixel.chats, pixelPlace), []);
+  await pixel.links.settled();
+  assert.deepEqual(counted(carol.queue.senderHex), { messages: 3, unsure: false });
+  assert.deepEqual((await take(carol)).filter((m) => m.text || m.voice), []);
+});
+
+test("a contact's call, given the list, rings the phone as a call and goes to no place in it, and the phone has it ring the computer; the computer's own call goes quiet through the phone, though it writes to her itself, and rings her", { skip: !ready, timeout: 120_000 }, async () => {
+  files.clear();
+  blobs.clear();
+  const { pixel, dell, carol, account, carolId, fillers } = await listedForCarol();
+  const places = [dell.queue.senderHex, ...fillers];
+  // What she writes to every place starts the computer's own way to her.
+  await write(carol, account, 'to every endpoint');
+  await sendCopies(carol.chats.e2e, relay);
+  await take(pixel);
+  await until(async () => {
+    await take(dell);
+    return dell.chats.e2e.record(carolId)?.direct?.sender === carol.queue.senderHex;
+  });
+  await pixel.links!.settled();
+  await take(dell);
+
+  // Her offer rings the phone, as a call, and is copied to no place: none is to ring from her. The
+  // phone has it ring the computer, as a call too; its end goes on quiet.
+  seen.length = 0;
+  const offer = await write(carol, account, '', { call: call('offer') });
+  assert.equal(offer.copies, 0);
+  assert.equal(await sendCopies(carol.chats.e2e, relay), 0);
+  assert.deepEqual(marks(pixel.queue.senderHex), ['ring']);
+  for (const place of places) assert.deepEqual(marks(place), []);
+  await take(pixel);
+  await until(() => marks(dell.queue.senderHex).includes('ring'));
+  assert.deepEqual(marks(dell.queue.senderHex).filter((m) => m !== 'quiet'), ['ring']);
+  await take(dell);
+  const ended = await write(carol, account, '', { call: { id: '0123456789abcdef', kind: 'end', reason: 'hangup' } });
+  assert.equal(ended.copies, 0);
+  await take(pixel);
+  await take(dell);
+  for (const place of fillers) assert.deepEqual(marks(place), []);
+  assert.deepEqual(marks(dell.queue.senderHex).filter((m) => m !== 'quiet'), ['ring']);
+
+  // The computer calls her: the offer goes to the phone, quiet, not to her in its own way, and the
+  // phone rings her with it.
+  const since = seen.length;
+  const own = await write(dell, carolId, '', { call: { ...call('offer'), id: 'fedcba9876543210' } });
+  assert.equal(own.through, true);
+  assert.equal(own.copies, 0);
+  assert.deepEqual(marks(pixel.queue.senderHex, since), ['quiet']);
+  assert.deepEqual(marks(carol.queue.senderHex, since), []);
+  await until(async () => {
+    await take(pixel);
+    return marks(carol.queue.senderHex, since).length > 0;
+  }, 15_000);
+  assert.deepEqual(marks(carol.queue.senderHex, since), ['ring']);
 });

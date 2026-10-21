@@ -1,3 +1,4 @@
+import { MAX_PARTS } from '../lib/voice';
 import { checkedLook, type Look } from '../theme/look';
 import { isPhotoRef, type PhotoRef } from './avatar-photos';
 import { isTag } from './history';
@@ -6,9 +7,11 @@ import { sealedFile, type Holder } from './sealed-file';
 // What each space, and each space's hidden chats, keeps for end-to-end encryption (lib/e2e.ts):
 // its own account, whose public keys its contact link gives out, and a conversation with each
 // contact; on a linked device also its own endpoint and what it checked of its account, and on the
-// phone that holds the account its device list (lib/device-list.ts). Kept sealed in FILE, one value
-// for each space and each hidden chats (sealed-file.ts), in blocks of BLOCK bytes. A space whose
-// key changed starts with a new account and no contacts.
+// phone that holds the account its device list (lib/device-list.ts). Of a contact whose account
+// lists devices, also that list as checked here and a way to each endpoint it names (`Way`), and on
+// a linked device its endpoint's own way to their account (docs/multi-device.md). Kept sealed in
+// FILE, one value for each space and each hidden chats (sealed-file.ts), in blocks of BLOCK bytes.
+// A space whose key changed starts with a new account and no contacts.
 
 export type { Holder };
 
@@ -54,7 +57,8 @@ export type Contact = {
   phone: string;
   /** The identity key, hex, they know this chat by, when it is not this account's: a chat moved
    *  here from the space (into its hidden chats) keeps the space's, so the safety number stays the
-   *  same. Empty for this account's own. */
+   *  same, and one moved from hidden chats into the space keeps theirs; to them the chat says nothing
+   *  of devices (lib/e2e.ts partOf). Empty for this account's own; on a linked device, its account's. */
   ownIdentity: string;
   /** Ids of the first messages taken from them, the latest MAX_SEEN_EACH: one a relay sends again
    *  is refused, however many others came since. */
@@ -79,7 +83,100 @@ export type Contact = {
   /** The first packet of a conversation started here with their newer prekeys, base64, until the
    *  relay has taken it. Nothing waits for it: it goes on its own. */
   renew?: string;
+  /** The `n` of this chat's account's device list they last said they hold (`dv`), 0 for none;
+   *  missing while what they send says nothing of devices (an Erevos before, or a chat of theirs
+   *  moved into or out of hidden chats), and with one this chat says nothing of devices to. */
+  dv?: number;
+  /** Their account's device list as last checked here, against `bundle`. */
+  list?: TheirList;
+  /** A way to each endpoint their list names, devices and the places that fill it alike. */
+  endpoints?: Way[];
+  /** On a linked device: its own endpoint's way to their account, once it writes to them itself. */
+  direct?: Way;
+  /** On the primary: when this chat last gave them its account's list (ms), so one they still do
+   *  not hold is given again a day later; and which it gave, its `n` and its `rAt` (OwnList), so the
+   *  same is not given again, but a later one, or where its endpoints read changed since, is. */
+  listSent?: number;
+  listGiven?: { n: number; rAt: number };
+  /** On a linked device, and from a contact whose account lists devices (`list`): their messages
+   *  taken here, each once by its tag, with the day it first came, for as long as another copy of
+   *  it may still come (TOOK_LASTS), and of a voice message not all taken yet the parts that were;
+   *  so one that comes again, through the phone and directly, or from their account and from one
+   *  of their endpoints, is taken once, whether or not it is still kept. */
+  took?: Took[];
 };
+
+/**
+ * A message of a contact's taken here (Contact.took): its tag (`t`), the day it first came (`at`,
+ * ms at the start of that day, UTC: no more than the day is kept), of a voice message not all taken
+ * yet the parts that were (`p`), and whether it came again since (`two`).
+ */
+export type Took = { t: string; at: number; p?: number[]; two?: true };
+
+/** A contact's device list as checked: its body and the account's signature (base64url), and its `n`. */
+export type TheirList = { b: string; s: string; n: number };
+
+/**
+ * One endpoint of a contact's account, as their list names it, or their account itself from a
+ * linked device: its identity (hex) and bundle (base64url, empty for their account); where it reads (its relay queue's sender
+ * id, hex, empty until known; the relay; the relay's key, base64url); the conversations with it,
+ * base64, newest first; the first packet of one started here, until the relay has taken it; the ids
+ * of the first packets taken from it; the key it gave this chat for the packets it sends it
+ * (`sealTo`), and whether its packets come sealed (`sealsIn`). `again`: from when the next copy
+ * starts another conversation with it, those it has kept to open in, until it answers in one: a
+ * day after one was started here, should it never answer in it (its first packet may have been
+ * lost after the relay took it), longer as more were before it (`againAfter`), and at once when
+ * its side may have lost them.
+ */
+export type Way = {
+  id: string;
+  bundle: string;
+  sender: string;
+  relay: string;
+  relayKey: string;
+  spare?: Spare | null;
+  conversations: string[];
+  first: string;
+  seen: string[];
+  sealTo: string;
+  sealsIn: boolean;
+  again?: number;
+};
+
+/** How long a conversation started with an endpoint, or with another of the account's devices, waits for an answer in it before the next packet for it starts another (Way.again): a day, and as more are kept from before it to open in (`before`), two, four, then eight days, so one that never answers costs ever less, and a device away for long still finds one the relay kept (14 days). */
+export const WAY_AGAIN = 24 * 60 * 60_000;
+export const againAfter = (before: number): number => WAY_AGAIN * 2 ** Math.min(before, 3);
+
+/** A first packet from an endpoint (`peer`, hex) its account's list could not be checked to name yet: tried again with that account's next list. */
+export type Unverified = { packet: string; acct: string; peer: string; at: number };
+
+/** The most first packets kept to try again, in all and from one account, and for how long. */
+export const MAX_UNVERIFIED = 16;
+export const MAX_UNVERIFIED_EACH = 4;
+export const UNVERIFIED_LASTS = 14 * 24 * 60 * 60_000;
+
+/** On a linked device: a first packet a contact's account (`identity`, hex) started with its endpoint before the phone said who they are: tried again once it does. */
+export type Early = { packet: string; identity: string; at: number };
+
+/** The most of those kept, and for how long. */
+export const MAX_EARLY = 8;
+export const EARLY_LASTS = UNVERIFIED_LASTS;
+
+/**
+ * The most of a contact's messages kept as taken (`took`), and for how long after the day one came:
+ * as long as its second copy may take within what this version and its relay keep, one waiting in
+ * the contact's outbox (lock/fanout-data.ts COPIES_LAST) and then in a device's queue on the relay,
+ * or in the phone's queue and then, passed on, in the device's, 14 days each, and two days more. A
+ * copy can come later still: one the phone passes on after it was off, or its queue full, for
+ * longer, as the contact's phone tries it again until it takes it, or one from a relay that keeps
+ * messages longer.
+ */
+export const MAX_TOOK = 2000;
+export const TOOK_LASTS = 30 * 24 * 60 * 60_000;
+export const TOOK_DAY = 24 * 60 * 60_000;
+
+/** The start of the day (UTC) `ms` is in, as Took.at says when a message came. */
+export const tookDay = (ms: number): number => ms - (ms % TOOK_DAY);
 
 /** A queue on a backup relay: its sender id (hex), the relay, and the relay's key (base64url, or
  *  empty when it has none). */
@@ -115,13 +212,28 @@ export function checkedAvatar(value: unknown): Avatar | null {
  * and which of its endpoints are the devices' (`real`, hex): the others only fill its places. Only
  * the account's own devices know which.
  */
-export type OwnList = { b: string; s: string; n: number; real: string[] };
+export type OwnList = { b: string; s: string; n: number; real: string[]; r?: Record<string, Route>; q?: Record<string, string>; rAt?: number; restore?: string; cut?: number };
+
+/**
+ * Where an endpoint reads, as a list says it to contacts (lib/device-list.ts Route): its queue's
+ * sender id (hex), its relay, that relay's key, and the key contacts seal what they send it with
+ * for that relay (`pk`, lib/sealed-packet.ts), each contact's its own. On the primary `r` holds one
+ * for each endpoint its list names, with the key each contact's is drawn from (entryKey: a device's
+ * `ek`, a random one for a place that fills the list), `q` the recipient id (hex) of each queue it made for a place that fills the list, on
+ * the relay `r` says, `rAt` when the list was signed or `r` last changed (later each time, whatever
+ * the clock says), `restore` the restore of a backup (E2EData.restore) the list was signed after,
+ * and `cut` the `n` of the last list before it that may name a device it does not (one unlinked, or
+ * one a phone put back from a backup does not know of): a contact who holds that one or an older
+ * one is given it even while a place in it has no route yet.
+ */
+export type Route = { s: string; relay: string; rk: string; pk?: string };
 
 /** On a linked device: its account as the phone said it over the link (identity, hex; bundle, base64url), and the account's list as last checked. */
 export type Own = { identity: string; bundle: string; list: OwnList | null };
 
 /** A linked device's own endpoint (docs/multi-device.md) as others know it: its identity, hex, and its bundle, base64url. */
-export type Endpoint = { id: string; bundle: string };
+/** A linked device's endpoint: its identity (hex) and bundle (base64url), and what the key each contact seals what they send it with for the relay is drawn from (`ek`, base64url, lib/sealed-packet.ts entryKey), which a device from before does not say. */
+export type Endpoint = { id: string; bundle: string; ek?: string };
 
 export type E2EData = {
   /** The account's secret keys, base64. Empty until the chat first opens. */
@@ -145,6 +257,14 @@ export type E2EData = {
   /** On the primary: the device list as last signed, which a backup carries, so a phone put back
    *  from one signs a later one. */
   list?: OwnList;
+  /** When a backup was last put back under this account (ms, by this phone's clock then): its
+   *  contacts may hold a later list than the one kept, signed after the backup was made. Missing on
+   *  one never put back, and on an account made since. */
+  putBack?: number;
+  /** First packets from endpoints of contacts' accounts, their lists not checked to name them yet. */
+  unverified?: Unverified[];
+  /** On a linked device: first packets from contacts' accounts it did not know yet. */
+  early?: Early[];
 };
 
 export type Prekeys = { secret: string; bundle: string; at: number };
@@ -217,7 +337,72 @@ function checkedContact(value: unknown): Contact | null {
     ...(isBase64(v.bundle) && v.bundle ? { bundle: v.bundle } : {}),
     ...(isTime(v.bundleSent) ? { bundleSent: v.bundleSent } : {}),
     ...(isBase64(v.renew) && v.renew ? { renew: v.renew } : {}),
+    ...(isCount(v.dv) ? { dv: v.dv } : {}),
+    ...(checkedTheirList(v.list) ? { list: checkedTheirList(v.list)! } : {}),
+    ...(Array.isArray(v.endpoints) ? { endpoints: v.endpoints.map(checkedWay).filter((w): w is Way => w !== null).slice(0, MAX_REAL) } : {}),
+    ...(checkedWay(v.direct) ? { direct: checkedWay(v.direct)! } : {}),
+    ...(isCount(v.listSent) ? { listSent: v.listSent } : {}),
+    ...(checkedGiven(v.listGiven) ? { listGiven: checkedGiven(v.listGiven)! } : {}),
+    ...(Array.isArray(v.took) ? { took: v.took.map(checkedTook).filter((t): t is Took => t !== null).slice(-MAX_TOOK) } : {}),
   };
+}
+
+const isCount = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= 0;
+
+function checkedGiven(value: unknown): { n: number; rAt: number } | null {
+  const v = (value ?? {}) as Partial<Record<'n' | 'rAt', unknown>>;
+  return isCount(v.n) && isCount(v.rAt) ? { n: v.n, rAt: v.rAt } : null;
+}
+
+// One kept by the version before, with the time it came to the millisecond, is kept with its day only.
+function checkedTook(value: unknown): Took | null {
+  const v = (value ?? {}) as Partial<Record<keyof Took, unknown>>;
+  if (!isTag(v.t) || !isTime(v.at)) return null;
+  const parts = Array.isArray(v.p) ? v.p.filter((p): p is number => isCount(p)).slice(0, MAX_PARTS) : null;
+  return { t: v.t, at: tookDay(v.at), ...(parts ? { p: parts } : {}), ...(v.two === true ? { two: true as const } : {}) };
+}
+
+function checkedTheirList(value: unknown): TheirList | null {
+  const v = (value ?? {}) as Partial<Record<keyof TheirList, unknown>>;
+  return isBase64Url(v.b, MAX_LIST) && isBase64Url(v.s, 128) && isCount(v.n) && v.n > 0 ? { b: v.b, s: v.s, n: v.n } : null;
+}
+
+/** A way as kept, checked: null when it is not one. */
+export function checkedWay(value: unknown): Way | null {
+  const v = (value ?? {}) as Partial<Record<keyof Way, unknown>>;
+  // A linked device's way to their account has no bundle: their account started it.
+  if (!isHex(v.id) || v.id.length !== 64 || !(v.bundle === '' || isBase64Url(v.bundle, MAX_BUNDLE))) return null;
+  return {
+    id: v.id,
+    bundle: v.bundle as string,
+    sender: isHex(v.sender) && v.sender.length === 48 ? v.sender : '',
+    relay: isRelay(v.relay) ? v.relay : '',
+    relayKey: isRelayKey(v.relayKey) ? v.relayKey : '',
+    spare: checkedSpare(v.spare),
+    conversations: Array.isArray(v.conversations) ? v.conversations.filter((c): c is string => isBase64(c) && c !== '').slice(0, 3) : [],
+    first: isBase64(v.first) ? v.first : '',
+    seen: Array.isArray(v.seen) ? v.seen.filter(isHex).slice(-MAX_SEEN_EACH) : [],
+    sealTo: isRelayKey(v.sealTo) ? v.sealTo : '',
+    sealsIn: v.sealsIn === true,
+    ...(isTime(v.again) && v.again > 0 ? { again: v.again } : {}),
+  };
+}
+
+function checkedRoute(value: unknown): Route | null {
+  const v = (value ?? {}) as Partial<Record<keyof Route, unknown>>;
+  return isHex(v.s) && v.s.length === 48 && isRelay(v.relay) ? { s: v.s, relay: v.relay, rk: isRelayKey(v.rk) ? v.rk : '', ...(isRelayKey(v.pk) ? { pk: v.pk } : {}) } : null;
+}
+
+function checkedUnverified(value: unknown): Unverified | null {
+  const v = (value ?? {}) as Partial<Record<keyof Unverified, unknown>>;
+  if (!isBase64(v.packet) || !v.packet || !isHex(v.acct) || v.acct.length !== 64 || !isTime(v.at)) return null;
+  return { packet: v.packet, acct: v.acct, peer: isHex(v.peer) && v.peer.length === 64 ? v.peer : '', at: v.at };
+}
+
+function checkedEarly(value: unknown): Early | null {
+  const v = (value ?? {}) as Partial<Record<keyof Early, unknown>>;
+  if (!isBase64(v.packet) || !v.packet || !isHex(v.identity) || v.identity.length !== 64 || !isTime(v.at)) return null;
+  return { packet: v.packet, identity: v.identity, at: v.at };
 }
 
 function checkedPrekeys(value: unknown): Prekeys | null {
@@ -235,7 +420,28 @@ function checkedList(value: unknown): OwnList | null {
   const v = (value ?? {}) as Partial<Record<keyof OwnList, unknown>>;
   if (!isBase64Url(v.b, MAX_LIST) || !isBase64Url(v.s, 128) || !Number.isSafeInteger(v.n) || (v.n as number) <= 0) return null;
   const real = Array.isArray(v.real) ? v.real.filter((id): id is string => isHex(id) && id.length === 64).slice(0, MAX_REAL) : [];
-  return { b: v.b, s: v.s, n: v.n as number, real };
+  const r: Record<string, Route> = {};
+  const q: Record<string, string> = {};
+  if (v.r && typeof v.r === 'object') {
+    for (const [id, route] of Object.entries(v.r).slice(0, MAX_REAL)) {
+      const checked = isHex(id) && id.length === 64 ? checkedRoute(route) : null;
+      if (checked) r[id] = checked;
+    }
+  }
+  if (v.q && typeof v.q === 'object') {
+    for (const [id, recipient] of Object.entries(v.q).slice(0, MAX_REAL)) if (isHex(id) && id.length === 64 && isHex(recipient) && recipient.length === 48) q[id] = recipient;
+  }
+  return {
+    b: v.b,
+    s: v.s,
+    n: v.n as number,
+    real,
+    ...(Object.keys(r).length > 0 ? { r } : {}),
+    ...(Object.keys(q).length > 0 ? { q } : {}),
+    ...(isTime(v.rAt) && v.rAt > 0 ? { rAt: v.rAt } : {}),
+    ...(isText(v.restore) && v.restore ? { restore: v.restore } : {}),
+    ...(isCount(v.cut) && v.cut > 0 ? { cut: v.cut } : {}),
+  };
 }
 
 function checkedOwn(value: unknown): Own | null {
@@ -259,6 +465,9 @@ function checked(value: unknown): E2EData {
     ...(isBase64(v.endpoint) && v.endpoint ? { endpoint: v.endpoint } : {}),
     ...(own ? { own } : {}),
     ...(list ? { list } : {}),
+    ...(isTime(v.putBack) && v.putBack > 0 ? { putBack: v.putBack } : {}),
+    ...(Array.isArray(v.unverified) ? { unverified: v.unverified.map(checkedUnverified).filter((u): u is Unverified => u !== null).slice(-MAX_UNVERIFIED) } : {}),
+    ...(Array.isArray(v.early) ? { early: v.early.map(checkedEarly).filter((e): e is Early => e !== null).slice(-MAX_EARLY) } : {}),
   };
 }
 

@@ -83,6 +83,7 @@ export const chat: Record<string, string> = {
   '{what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. It comes only if {name}\'s is one of them.': '{what} στα κοντινά τηλέφωνα με Erevos, κρυπτογραφημένο από άκρη σε άκρη, γιατί το relay δεν ήταν διαθέσιμο. Φτάνει μόνο αν το τηλέφωνο του/της {name} είναι ανάμεσά τους.',
   'The relay does not have this contact\'s queue any more. Ask them to write to you, or for their new contact link.': 'Το relay δεν έχει πια την ουρά αυτής της επαφής. Ζήτησέ της να σου γράψει, ή τον νέο σύνδεσμο επαφής της.',
   'Not sent. {reason}': 'Δεν στάλθηκε. {reason}',
+  'Sent to {name}\'s linked devices, if they have any, end-to-end encrypted, not yet to their phone ({reason}). While hidden chats stay open, it is tried again for their phone.': 'Στάλθηκε στις συνδεδεμένες συσκευές του/της {name}, αν έχει, κρυπτογραφημένο από άκρη σε άκρη, όχι ακόμη στο τηλέφωνό του/της ({reason}). Όσο οι κρυφές συνομιλίες μένουν ανοιχτές, ξαναδοκιμάζεται για το τηλέφωνό του/της.',
   'Sent': 'Στάλθηκε',
   '{sent} It disappears from both phones {time} after it is read.': '{sent} Εξαφανίζεται και από τα δύο τηλέφωνα {time} αφού διαβαστεί.',
   'Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.': 'Σε αναμονή. {reason} Φεύγει μόνο του μόλις το πάρει το relay ή το τηλέφωνό τους από κοντά.',
@@ -187,6 +188,7 @@ export const chat: Record<string, string> = {
   'Privacy': 'Ιδιωτικότητα',
   'Safety number': 'Αριθμός ασφαλείας',
   'Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.': 'Σύγκρινέ τον με τον δικό τους, από κοντά ή σε κλήση: αν και τα δύο τηλέφωνα δείχνουν τον ίδιο, δεν μπαίνει κανείς ενδιάμεσα.',
+  'The list of their linked devices last changed on {day}. Your messages go to each place in it too, used by a device or not. If they did not link or unlink one then, ask them.': 'Η λίστα των συνδεδεμένων συσκευών τους άλλαξε τελευταία φορά στις {day}. Τα μηνύματά σου πηγαίνουν και σε κάθε θέση της, είτε την έχει μια συσκευή είτε όχι. Αν δεν σύνδεσαν ή αποσύνδεσαν κάποια τότε, ρώτησέ τους.',
   'Move to hidden chats': 'Μεταφορά στις κρυφές συνομιλίες',
   'Move back to my chats': 'Μεταφορά πίσω στις συνομιλίες μου',
   "The space's chats have no relay queue yet: create it under Relay there first.":

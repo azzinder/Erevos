@@ -58,10 +58,10 @@ export const spaceCalls: CallPlace = {
     const place = await settings().catch(() => null);
     const at = place ? await soon(where(place.own), RELAY_WAIT, { relay: place.own.url, relayKey: '' }) : { relay: '', relayKey: '' };
     const sealed = await e2e.seal(identity, '', place?.senderHex ?? '', { call: signal, at });
-    const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], sentMark(e2e, markOf('', signal)), () => e2e.firstSent(identity)) : null;
+    const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], sentMark(sealed, markOf('', signal)), () => e2e.firstSent(identity)) : null;
     // A hidden contact that rings: wake it too, so it rings while its hidden chats are closed.
     if (place) void ringOffer(e2e, place.sends, identity, signal, sealed.packet.length).catch(() => undefined);
-    await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
+    await e2e.copiesAfter(sealed.copies, nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay));
   },
   async callRelay() {
     const { own } = await settings();

@@ -2,13 +2,12 @@ import { AppRegistry, AppState, PermissionsAndroid, Platform } from 'react-nativ
 
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
 import { currentCall, RING_MS } from './call';
-import type { Received } from './e2e';
 import { currentGroupCall } from './group-call';
 import { startHiddenNotices } from './hidden-notices';
 import { hiddenRinging, onHiddenRingingChange, setHiddenRinging } from './hidden-ring';
 import { startHiddenRinging } from './hidden-ring-notices';
 import { showsAt } from './later';
-import { appShown, onMessage } from './receiver';
+import { appShown, isNews, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
 import { onSpaceGroupMessage } from './space-groups';
 
@@ -66,13 +65,6 @@ export async function saveMessageNotices(on: boolean): Promise<void> {
 // since Erevos last showed.
 let telling = false;
 let unseen = 0;
-
-/** Whether what came is news to tell of: words, a voice message (once), a photo or file; not marks, deletes, calls or a group's setting up. */
-export function isNews(received: Extract<Received, { kind: 'message' }>): boolean {
-  if (received.erase || received.call || received.group) return false;
-  if (received.voice) return received.voice.part === 0;
-  return received.text.length > 0 || received.file !== null;
-}
 
 /**
  * A message came in the open space, from a contact or in a group: while Erevos is in the

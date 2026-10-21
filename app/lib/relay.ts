@@ -190,6 +190,11 @@ export function canTryLater(error: unknown): boolean {
   return error instanceof RelayError && (error.status === FULL || error.status === FAILED || error.status === UNREACHABLE);
 }
 
+/** Whether the relay said the queue is full: as many wait there as it keeps for one, unread. */
+export function isQueueFull(error: unknown): boolean {
+  return error instanceof RelayError && error.status === FULL;
+}
+
 /** Whether the relay said the queue does not exist: it was deleted, or the relay lost it. */
 export function isQueueNotFound(error: unknown): boolean {
   return error instanceof RelayError && error.status === NOT_FOUND;
@@ -941,6 +946,46 @@ export class RelaySession {
         .torClose(id)
         .catch(() => undefined);
     } else this.socket?.close();
+  }
+}
+
+/**
+ * Queues messages one after another as `sendMessage` does, each with its `mark`, those for one
+ * relay on one connection (RelaySession), until `close`: the copies of what a chat sealed for the
+ * endpoints of a contact's account, which go to the same few relays (lib/fanout.ts). One through a
+ * second relay (`via`), or one a connection could not take, goes as `sendMessage` sends it, with
+ * its fallbacks.
+ */
+export class RelaySends {
+  private readonly sessions = new Map<string, Promise<RelaySession | null>>();
+
+  async send(relay: Relay, senderId: Uint8Array, message: Uint8Array, mark?: Mark): Promise<void> {
+    if (relay.via || message.length > MAX_MESSAGE) return sendMessage(relay, senderId, message, mark);
+    const key = `${relay.url}\n${relay.token ?? ''}`;
+    let opened = this.sessions.get(key);
+    if (!opened) {
+      opened = RelaySession.open(relay).catch(() => null);
+      this.sessions.set(key, opened);
+    }
+    const session = await opened;
+    if (session) {
+      try {
+        const { bytes } = await sendRequest(relay, senderId, message);
+        check(await session.call(marked(bytes, mark)), 'send');
+        return;
+      } catch (error) {
+        // What the relay answered stands, unless there is somewhere else to try; a connection
+        // lost is opened again for the next.
+        if (error instanceof RelayUnreachableError) this.sessions.delete(key);
+        else if (!relay.fallback?.length) throw error;
+      }
+    }
+    return sendMessage(relay, senderId, message, mark);
+  }
+
+  close(): void {
+    for (const opened of this.sessions.values()) void opened.then((session) => session?.close());
+    this.sessions.clear();
   }
 }
 

@@ -10,7 +10,7 @@ import { test } from 'node:test';
 
 import { accountBundle, accountIdentity, accountSign, newAccount } from '../lib/core';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
-import { bodyBytes, bodyOf, checkedList, MAX_LISTED, nextList, nextN, PAD_LIST, readBody, signList, verifyList, type Body, type Entry } from '../lib/device-list';
+import { bodyBytes, bodyOf, checkedList, flagsHold, MAX_LISTED, nextList, nextN, PAD_LIST, readBody, signList, verifyList, type Body, type Entry } from '../lib/device-list';
 import { fromBase64Url, toBase64Url } from '../lib/e2e';
 import { encodeEnvelope, Parts, type Envelope } from '../lib/link-wire';
 import { EMPTY_E2E, loadE2EData, saveE2EData, type E2EData, type OwnList } from '../lock/e2e-data';
@@ -153,6 +153,16 @@ t('every list has its places filled, and keeps the endpoints that fill them whil
   // Without filling, a list names its devices only.
   assert.deepEqual(ids(await nextList(owner.id, devices(mac), null, { pad: false })), [mac.id]);
   assert.deepEqual((await nextList(owner.id, [], null, { pad: false })).d, []);
+
+  // Each entry says it takes messages, a device's as a filling one's, so none says which it is; one
+  // signed once a contact said they hold a later list than the one kept is later still.
+  const later = await nextList(owner.id, devices(mac, dell), null, { now: 50, after: 200 });
+  assert.deepEqual([later.n, later.d.every((e) => e.f === first.d[0].f)], [201, true]);
+  assert.equal(flagsHold(await kept(owner.secret, later, [mac.id, dell.id])), true);
+  // One that said a device of the version before takes nothing, as an Erevos before this one signed
+  // it, is signed again.
+  const fromBefore = await kept(owner.secret, { ...later, d: later.d.map((e) => (e.i === mac.id ? { ...e, f: 0 } : e)) }, [mac.id, dell.id]);
+  assert.equal(flagsHold(fromBefore), false);
 });
 
 t('the link carries a device\'s endpoint and the list, and a kind it does not know is nothing', async () => {

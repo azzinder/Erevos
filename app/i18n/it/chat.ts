@@ -83,6 +83,7 @@ export const chat: Record<string, string> = {
   '{what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. It comes only if {name}\'s is one of them.': '{what} ai telefoni con Erevos vicini, crittografato end-to-end, perché il relay non era raggiungibile. Arriva solo se quello di {name} è tra loro.',
   'The relay does not have this contact\'s queue any more. Ask them to write to you, or for their new contact link.': 'Il relay non ha più la coda di questo contatto. Chiedigli di scriverti, o il suo nuovo link di contatto.',
   'Not sent. {reason}': 'Non inviato. {reason}',
+  'Sent to {name}\'s linked devices, if they have any, end-to-end encrypted, not yet to their phone ({reason}). While hidden chats stay open, it is tried again for their phone.': 'Inviato ai dispositivi collegati di {name}, se ne ha, crittografato end-to-end, ma non ancora al suo telefono ({reason}). Finché le chat nascoste restano aperte, l’invio al suo telefono viene ritentato.',
   'Sent': 'Inviato',
   '{sent} It disappears from both phones {time} after it is read.': '{sent} Scompare da entrambi i telefoni {time} dopo la lettura.',
   'Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.': 'In attesa. {reason} Partirà da solo appena il relay o il suo telefono vicino potrà riceverlo.',
@@ -187,6 +188,7 @@ export const chat: Record<string, string> = {
   'Privacy': 'Privacy',
   'Safety number': 'Codice di sicurezza',
   'Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.': 'Confrontalo con quello del tuo contatto, di persona o durante una chiamata: se entrambi i telefoni mostrano lo stesso, nessuno è in mezzo.',
+  'The list of their linked devices last changed on {day}. Your messages go to each place in it too, used by a device or not. If they did not link or unlink one then, ask them.': 'L’elenco dei dispositivi collegati del tuo contatto è cambiato l’ultima volta il {day}. I tuoi messaggi vanno anche a ogni posto dell’elenco, che lo occupi un dispositivo o no. Se allora non ne ha collegato né scollegato nessuno, chiediglielo.',
   'Move to hidden chats': 'Sposta nelle chat nascoste',
   'Move back to my chats': 'Riporta nelle mie chat',
   "The space's chats have no relay queue yet: create it under Relay there first.":

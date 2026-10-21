@@ -142,24 +142,14 @@ export async function ringOffer(e2e: E2E, own: Relay, identity: string, signal: 
   await sendMessage(to, fromHex(ring.sender), randomBytes(length), 'ring');
 }
 
-// The chats that seal what they send a contact for the account's phone, as a linked device's do
-// (lib/e2e.ts, Link), by the link that says so: their links tell this file as they open and close
-// (lib/devices.ts), so it need not know them.
-const links = new WeakMap<E2E, { readonly through: boolean }>();
-
-/** From now on `link` says whether what `e2e` sends goes through the account's phone; with null, none does. */
-export function linkChats(e2e: E2E, link: { readonly through: boolean } | null): void {
-  if (link) links.set(e2e, link);
-  else links.delete(e2e);
-}
-
 /**
- * How what `e2e` sends a contact goes to the relay: as `mark` says, but all quiet from a linked
- * device, as it goes to the account's own queue, on its phone, which says what it carries as it
- * passes it on to the contact.
+ * How what was sealed for a contact goes to the relay: as `mark` says, but all quiet when a linked
+ * device sealed it for the account's phone (lib/e2e.ts, `through`), as it goes to the account's
+ * own queue, on its phone, which says what it carries as it passes it on to the contact. What a
+ * device writes to a contact itself, with the phone off too, goes to their queue as `mark` says.
  */
-export function sentMark(e2e: E2E, mark: Mark): Mark {
-  return links.get(e2e)?.through ? 'quiet' : mark;
+export function sentMark(sealed: { through: boolean }, mark: Mark): Mark {
+  return sealed.through ? 'quiet' : mark;
 }
 
 /**

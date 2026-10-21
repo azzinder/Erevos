@@ -7,8 +7,8 @@ import { fromBase64Url, toBase64Url } from './e2e';
 // core account the device made for itself, by its bundle, signed by the account's own identity key
 // (lib/core.ts accountSign). The phone that holds the account (the primary) alone signs it, again
 // each time a device says its endpoint, is unlinked or is gone, each time with a higher `n`. The
-// account's own devices take it from the phone, over their links (lib/devices.ts); in this version
-// no one else is given it.
+// account's own devices take it from the phone, over their links (lib/devices.ts), and contacts
+// inside their conversation with the account (lib/e2e.ts), to write to each endpoint it names.
 //
 // Its body is JSON in one form only, keys in a fixed order and the endpoints sorted by identity, so
 // the same list is always the same bytes, and a body in any other form is refused. It names no
@@ -28,9 +28,11 @@ export const PAD_LIST = true;
 /** What the account signs a list as (lib/core.ts accountSign). */
 export const LIST_CONTEXT = 'devices';
 
-// What each endpoint takes from contacts directly (1 messages, 2 calls, 4 a group's): nothing yet,
-// while only the account's own devices are given the list. The places no device takes say the same.
-const FLAGS = 0;
+// What each endpoint takes from contacts directly (1 messages, 2 calls, 4 a group's): messages, as
+// contacts write to each endpoint. The places no device takes say the same, and so does a device of
+// the version before, which says no key for contacts and takes nothing from them: it reads where a
+// place no device takes does (lib/devices.ts routeList), so no entry says it is a device.
+const FLAGS = 1;
 // A bundle is about 1800 characters, and a list's body about four of them.
 const MAX_BUNDLE = 4096;
 const MAX_BODY = 24 * 1024;
@@ -41,8 +43,8 @@ export type Entry = { i: string; b: string; f: number };
 /** What a list says: whose it is (the account's identity, hex), which it is (`n`, higher each time), and the endpoints. */
 export type Body = { a: string; n: number; d: Entry[] };
 
-/** Where an endpoint reads: its queue's sender id (hex), its relay, and that relay's key (base64url, or empty). */
-export type Route = { s: string; relay: string; rk: string };
+/** Where an endpoint reads: its queue's sender id (hex), its relay, that relay's key (base64url, or empty), and the key what is sent it is sealed with for the relay (base64url, lib/sealed-packet.ts): as a contact is given it, theirs alone; as the primary keeps it, what each contact's is drawn from (entryKey). */
+export type Route = { s: string; relay: string; rk: string; pk?: string };
 
 /** A list as it travels: its body and the account's signature of it, base64url, and, not signed, where each endpoint reads (by identity). */
 export type DeviceList = { b: string; s: string; r?: Record<string, Route> };
@@ -143,17 +145,29 @@ function shuffled(entries: Entry[]): Entry[] {
 
 /**
  * The account's next list, after the one it signed last (`held`, or null), naming the endpoints of
- * `devices` (at most MAX_LISTED). With `pad`, the places left hold the filling endpoints of the list
- * before, those a device now takes left out at random, and new ones for the rest.
+ * `devices` (at most MAX_LISTED), each as taking messages. With `pad`, the places left hold the
+ * filling endpoints of the list before, those a device now takes left out at random, and new ones
+ * for the rest. Its `n` is later than any a contact says it holds (`after`), as a phone put back
+ * from a backup may hold an older list than they do.
  */
-export async function nextList(account: string, devices: { id: string; bundle: string }[], held: OwnList | null, { now = Date.now(), pad = PAD_LIST }: { now?: number; pad?: boolean } = {}): Promise<Body> {
+export async function nextList(
+  account: string,
+  devices: { id: string; bundle: string }[],
+  held: OwnList | null,
+  { now = Date.now(), pad = PAD_LIST, after = 0 }: { now?: number; pad?: boolean; after?: number } = {},
+): Promise<Body> {
   const real: Entry[] = devices.slice(0, MAX_LISTED).map(({ id, bundle }) => ({ i: id, b: bundle, f: FLAGS }));
   const taken = new Set(real.map((e) => e.i));
   const before = held ? bodyOf(held) : null;
   const filling = pad && before?.a === account ? before.d.filter((e) => !held!.real.includes(e.i) && !taken.has(e.i)) : [];
   const d = [...real, ...shuffled(filling).slice(0, MAX_LISTED - real.length).map((e) => ({ ...e, f: FLAGS }))];
   while (pad && d.length < MAX_LISTED) d.push(await filler());
-  return { a: account, n: nextN(held?.n ?? 0, now), d: d.sort(byIdentity) };
+  return { a: account, n: nextN(Math.max(held?.n ?? 0, after), now), d: d.sort(byIdentity) };
+}
+
+/** Whether a list says of each endpoint what this version's lists say it takes: one that does not, as one that said a device of the version before takes nothing, is signed again. */
+export function flagsHold(list: Pick<DeviceList, 'b'>): boolean {
+  return bodyOf(list)?.d.every((e) => e.f === FLAGS) ?? false;
 }
 
 /** A list as said, its shape checked (not its signature): null when it is not one. Where its endpoints read is left out where it is not that. */
@@ -164,7 +178,7 @@ export function checkedList(value: unknown): DeviceList | null {
   if (v.r && typeof v.r === 'object' && !Array.isArray(v.r)) {
     for (const [id, route] of Object.entries(v.r).slice(0, MAX_LISTED)) {
       const r = (route ?? {}) as Partial<Record<keyof Route, unknown>>;
-      if (isHex(id, 64) && isHex(r.s, 48) && isRelay(r.relay)) routes[id] = { s: r.s, relay: r.relay, rk: isRelayKey(r.rk) ? r.rk : '' };
+      if (isHex(id, 64) && isHex(r.s, 48) && isRelay(r.relay)) routes[id] = { s: r.s, relay: r.relay, rk: isRelayKey(r.rk) ? r.rk : '', ...(isRelayKey(r.pk) ? { pk: r.pk } : {}) };
     }
   }
   return { b: v.b, s: v.s, ...(Object.keys(routes).length > 0 ? { r: routes } : {}) };

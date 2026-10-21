@@ -177,10 +177,13 @@ export class NoWayError extends Error {
   }
 }
 
-/** Only a slow link was up, and it does not take something this large. */
+/** Only a slow link was up, and it does not take something this large. `relayError`: what the relay said, when it was tried first, or null. */
 export class TooLargeForLoraError extends Error {
-  constructor() {
+  readonly relayError: unknown;
+
+  constructor(relayError: unknown = null) {
     super(t('Too large for LoRa, which takes only text. It can go once the relay can be reached, or near their phone.'));
+    this.relayError = relayError;
   }
 }
 
@@ -321,7 +324,9 @@ export class Nearby {
    * Otherwise it waits for the relay, and if the relay fails, a copy that went to the phones
    * nearby will do: then `carry`, when given, seals them for the contact's relay, and the phones
    * nearby take those too, to hand over. With `slow`, the slow links take them too then, when
-   * they are small enough. Throws the relay's error, or NoWayError, when nothing took them.
+   * they are small enough. Throws the relay's error, or NoWayError, when nothing took them; or,
+   * when only a slow link was up and they are too large for it, TooLargeForLoraError, which holds
+   * the relay's error if the relay was tried.
    */
   async deliver(
     identity: string,
@@ -353,7 +358,7 @@ export class Nearby {
     }
     if (far) return 'lora';
     const total = packets.reduce((sum, packet) => sum + packet.length, 0);
-    if (slow && total > MAX_SLOW && [...this.links].some(isSlow)) throw new TooLargeForLoraError();
+    if (slow && total > MAX_SLOW && [...this.links].some(isSlow)) throw new TooLargeForLoraError(relay ? failed : null);
     throw failed;
   }
 

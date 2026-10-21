@@ -83,6 +83,7 @@ export const chat: Record<string, string> = {
   '{what} to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached. It comes only if {name}\'s is one of them.': '{what} aos celulares com Erevos por perto, criptografada de ponta a ponta, porque o relay não estava acessível. Ela só chega se o de {name} estiver entre eles.',
   'The relay does not have this contact\'s queue any more. Ask them to write to you, or for their new contact link.': 'O relay não tem mais a fila deste contato. Peça que ele escreva para você, ou peça o novo link de contato dele.',
   'Not sent. {reason}': 'Não enviada. {reason}',
+  'Sent to {name}\'s linked devices, if they have any, end-to-end encrypted, not yet to their phone ({reason}). While hidden chats stay open, it is tried again for their phone.': 'Enviado aos dispositivos conectados de {name}, se houver algum, com criptografia de ponta a ponta, mas ainda não ao celular ({reason}). Enquanto as conversas ocultas ficarem abertas, o envio ao celular é tentado de novo.',
   'Sent': 'Enviada',
   '{sent} It disappears from both phones {time} after it is read.': '{sent} Ela desaparece dos dois celulares {time} depois de lida.',
   'Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.': 'Aguardando. {reason} Ela sai sozinha assim que o relay ou o celular da outra pessoa por perto puder recebê-la.',
@@ -187,6 +188,7 @@ export const chat: Record<string, string> = {
   'Privacy': 'Privacidade',
   'Safety number': 'Número de segurança',
   'Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.': 'Compare com o do seu contato, pessoalmente ou numa chamada: se os dois celulares mostrarem o mesmo, não há ninguém no meio.',
+  'The list of their linked devices last changed on {day}. Your messages go to each place in it too, used by a device or not. If they did not link or unlink one then, ask them.': 'A lista de dispositivos conectados do seu contato mudou pela última vez em {day}. Suas mensagens também vão para cada lugar dela, ocupado por um dispositivo ou não. Se ele não conectou nem desconectou nenhum nessa data, pergunte a ele.',
   'Move to hidden chats': 'Mover para conversas ocultas',
   'Move back to my chats': 'Voltar para minhas conversas',
   "The space's chats have no relay queue yet: create it under Relay there first.":

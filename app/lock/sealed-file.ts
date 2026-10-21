@@ -41,6 +41,8 @@ export interface SealedFile<T> {
   load(holder: Holder, space: number, key: Uint8Array): Promise<T>;
   /** Replaces a space's data, or its hidden chats'. The others' values are kept as they are. */
   save(holder: Holder, space: number, key: Uint8Array, data: T): Promise<void>;
+  /** Whether a space's value, or its hidden chats', is sealed with `key`: not for a slot no one wrote, nor with no file. */
+  opens(holder: Holder, space: number, key: Uint8Array): Promise<boolean>;
 }
 
 type Values = Record<Holder, string[]>;
@@ -217,6 +219,16 @@ export function sealedFile<T>({ name, empty, checked, block, fixed = false }: {
         });
       writes = run;
       return run;
+    },
+    async opens(holder, space, key) {
+      await writes.catch(() => undefined);
+      const sealed = (await loadValues(space + 1))[holder][space];
+      try {
+        decryptText(key, sealed);
+        return true;
+      } catch {
+        return false;
+      }
     },
   };
 }

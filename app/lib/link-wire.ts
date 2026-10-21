@@ -6,7 +6,8 @@ import { offerRef, readOffer, type FileFrom, type FileOffer } from './attachment
 import { carriedOf, checkedChoices } from './chat-parts';
 import { checkContact, checkSpare, type ContactCode } from './contact-code';
 import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
-import { checkedList, MAX_LISTED, type DeviceList } from './device-list';
+import { bodyOf, checkedList, MAX_LISTED, type DeviceList } from './device-list';
+import { waysFor, withRoutes } from './endpoints';
 import { groupPartsOf, markedOf, type Marked } from './group-parts';
 import { cleanGroupName, isGroupId } from './group-signal';
 
@@ -80,8 +81,10 @@ export type Envelope =
   | { k: 'groups'; list: GroupMirror[]; gone: string[]; entries: GroupEntry[]; all?: true }
   | { k: 'group'; id: string; ask: GroupAsk }
   | { k: 'changed'; chats: ChatChange[]; groups: GroupChange[]; whole: WholeGroup[] }
-  | { k: 'endpoint'; bundle: string }
+  | { k: 'endpoint'; bundle: string; ek?: string }
   | { k: 'list'; list: DeviceList; ak: string; real?: string[]; routes?: Record<string, Place> }
+  | { k: 'way'; c: string; dv?: number; list?: DeviceList }
+  | { k: 'came'; c: string; got: string[] }
   | { k: 'here' }
   | { k: 'bye' };
 
@@ -156,6 +159,8 @@ const MAX_PARTS = 128;
 const PARTS_STALE = 30 * 60_000;
 /** The most files one `took` says. */
 export const MAX_TOOK = 50;
+// The most tags one `came` says, as a message says at most.
+const MAX_CAME = 200;
 // About how large the messages of one `groups`, or the changes of one `changed`, grow, so that one goes in a few parts.
 const GROUP_BYTES = 200 * 1024;
 // The most members a group's message is said to have a reaction or a vote of, as lock/group-data.ts keeps.
@@ -310,7 +315,7 @@ function checkedEnvelope(v: Json): Envelope | null {
       return chats.length + groups.length + whole.length > 0 ? { k: 'changed', chats, groups, whole } : null;
     }
     case 'endpoint':
-      return isBundle(v.bundle) ? { k: 'endpoint', bundle: v.bundle } : null;
+      return isBundle(v.bundle) ? { k: 'endpoint', bundle: v.bundle, ...(isRelayKey(v.ek) ? { ek: v.ek } : {}) } : null;
     case 'list': {
       const list = checkedList(v.list);
       if (!list || !isBundle(v.ak)) return null;
@@ -324,12 +329,52 @@ function checkedEnvelope(v: Json): Envelope | null {
       }
       return { k: 'list', list, ak: v.ak, ...(real ? { real } : {}), ...(Object.keys(routes).length > 0 ? { routes } : {}) };
     }
+    case 'way': {
+      if (!isHex(v.c, 64)) return null;
+      const list = v.list !== undefined ? checkedList(v.list) : null;
+      return { k: 'way', c: v.c, ...(Number.isSafeInteger(v.dv) && (v.dv as number) >= 0 ? { dv: v.dv as number } : {}), ...(list ? { list } : {}) };
+    }
+    case 'came': {
+      const got = Array.isArray(v.got) ? v.got.filter(isTag).slice(0, MAX_CAME) : [];
+      return isHex(v.c, 64) && got.length > 0 ? { k: 'came', c: v.c, got } : null;
+    }
     case 'here':
     case 'bye':
       return { k: v.k };
     default:
       return null;
   }
+}
+
+/**
+ * A contact as a linked device keeps it once the primary said what it knows of the devices of their
+ * account (`way`): which of this account's lists they hold, and their account's list as the primary
+ * checked it, with where its endpoints read. A later list takes the place of the one kept, the ways
+ * to the endpoints it still names staying as they were; the same one says where they read now. Said
+ * with no `dv`, they know nothing of devices now: what was kept of theirs goes, with this device's
+ * own way to their account.
+ */
+export function withWay(contact: Contact, said: { dv?: number; list?: DeviceList }): Contact {
+  const { dv: _dv, list: _list, endpoints: _endpoints, direct: _direct, ...plain } = contact;
+  if (said.dv === undefined) return plain;
+  const body = said.list ? bodyOf(said.list) : null;
+  if (!said.list || !body || body.a !== contact.identity || body.n < (contact.list?.n ?? 0)) return { ...contact, dv: said.dv };
+  if (body.n === contact.list?.n) return { ...contact, dv: said.dv, endpoints: withRoutes(contact.endpoints, said.list.r) };
+  return { ...contact, dv: said.dv, list: { b: said.list.b, s: said.list.s, n: body.n }, endpoints: waysFor(contact.endpoints, body.d, said.list.r) };
+}
+
+/**
+ * What the primary says of the devices of a contact's account (`way`), or null while they know
+ * nothing of devices: where an endpoint reads on the primary's own relay, as their messages may say
+ * it, said with that relay (`relay`), and the key the primary seals for it with, which seals for it
+ * from any of this account's devices.
+ */
+export function wayOf(contact: Contact, relay: string): { dv: number; list?: DeviceList } | null {
+  if (contact.dv === undefined) return null;
+  const r = Object.fromEntries(
+    (contact.endpoints ?? []).filter((w) => w.sender && (w.relay || relay)).map((w) => [w.id, { s: w.sender, relay: w.relay || relay, rk: w.relayKey, ...(w.sealTo ? { pk: w.sealTo } : {}) }]),
+  );
+  return { dv: contact.dv, ...(contact.list ? { list: { b: contact.list.b, s: contact.list.s, ...(Object.keys(r).length > 0 ? { r } : {}) } } : {}) };
 }
 
 /** A group's member as said, checked: null when it is not one. */
@@ -561,12 +606,15 @@ function readSaid(value: Json): Said | null {
   return { ...envelope, ...(at ? { at } : {}), ...(isRelayKey(value.pk) ? { pk: value.pk } : {}) };
 }
 
-// What says where a contact's queue is, in a message: only the primary keeps it.
+// What says where a contact's queue is, in a message: only the primary keeps it. And what says what
+// each side of a conversation knows of the other's keys and devices (lib/e2e.ts), which each
+// endpoint says for itself.
 const PLACE_KEYS = ['from', 'relay', 'relayKey', 'spare'];
+const OWN_KEYS = ['pk', 'ak', 'dv', 'dl', 'acct', 'to'];
 // What a message carries that is not worth telling the account's other devices on its own: it says
 // that messages came, that a phone is open or someone types, or asks, with the chat's timer, which
 // the contacts carry.
-const QUIET_KEYS = new Set([...PLACE_KEYS, 'text', 'tag', 'timer', 'timerAt', 'lasts', 'got', 'on', 'onAt', 'ask', 'quiet', 'due', 'typing']);
+const QUIET_KEYS = new Set([...PLACE_KEYS, ...OWN_KEYS, 'text', 'tag', 'timer', 'timerAt', 'lasts', 'got', 'on', 'onAt', 'ask', 'quiet', 'due', 'typing']);
 
 /** Whether a message is a call's or a group's signal: not kept in the history, and not told of as other messages are. */
 export function isSignal(m: Json): boolean {
@@ -578,10 +626,10 @@ export function isCall(m: Json): boolean {
   return m.call !== undefined && m.group === undefined;
 }
 
-/** A contact's message without where their queue is. */
+/** A contact's message without where their queue is, nor what it says of keys and devices. */
 export function withoutPlace(m: Json): Json {
   const out: Json = {};
-  for (const [key, value] of Object.entries(m)) if (!PLACE_KEYS.includes(key)) out[key] = value;
+  for (const [key, value] of Object.entries(m)) if (!PLACE_KEYS.includes(key) && !OWN_KEYS.includes(key)) out[key] = value;
   return out;
 }
 

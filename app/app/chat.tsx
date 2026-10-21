@@ -8,7 +8,7 @@ import { keepPrivate } from '../lib/screen-privacy';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
 import { nearbySettings, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
-import { canWait, holdLater, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
+import { canWait, handOverHidden, holdLater, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { callPermissions } from '../lib/call-permissions';
@@ -19,8 +19,8 @@ import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, MIN_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
-import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, sendFile, takeFile, bytesSource, refSource, type Source } from '../lib/attachments';
-import { canRingInBackground, isNews, messageCameAt } from '../lib/background';
+import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, sendFile, takeFile, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
+import { canRingInBackground, messageCameAt } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileMeta, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { readQrPhoto } from '../lib/read-qr';
@@ -68,6 +68,7 @@ import { canRelaySeal, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
 import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
+import { sendCopies } from '../lib/fanout';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
@@ -78,7 +79,7 @@ import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/stic
 import { moveChat } from '../lock/move-chat';
 import { SamePasswordError } from '../lock/config';
 import { LockedOutError, lockedOutMessage } from '../lock/tries';
-import { cleanName, MAX_NAME, type Avatar } from '../lock/e2e-data';
+import { cleanName, MAX_NAME, type Avatar, type Spare } from '../lock/e2e-data';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
@@ -113,7 +114,7 @@ import {
   type Mark as RelayMark,
   type Relay,
 } from '../lib/relay';
-import { answersAsk, appShown, awayPace, holdReceiver, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
+import { answersAsk, appShown, awayPace, holdReceiver, isNews, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
 import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
@@ -125,7 +126,7 @@ import { sendSms, type SmsMessage } from '../modules/erevos-sms';
 import type { Look } from '../theme/look';
 import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
-import { t, plural, mark } from '../lib/i18n';
+import { t, plural, mark, locale } from '../lib/i18n';
 
 // Chat with contacts, end-to-end encrypted (lib/e2e.ts), through the relay and, while their phone
 // is near, over the radio link too (lib/nearby.ts), where phones nearby may also carry a message
@@ -533,7 +534,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const among: Among = hiddenKey ? hiddenLent : 'space';
   const canConnect = useCanConnect(among);
   const [showQr, setShowQr] = useState(false);
-  const [safety, setSafety] = useState<{ peer: string; number: string } | null>(null);
+  // With when their account's linked devices last changed (`devices`, ms), or 0 while it has none this chat knows of.
+  const [safety, setSafety] = useState<{ peer: string; number: string; devices: number } | null>(null);
   // The contact being named, and the name typed so far.
   const [renaming, setRenaming] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState('');
@@ -584,6 +586,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Now, a few seconds behind at most: until when a contact shows open is checked against it.
   const [now, setNow] = useState(Date.now());
   const voiceParts = useRef(new VoiceAssembler());
+  // In hidden chats: what a contact's phone could not take yet, though it went to their linked
+  // devices, tried again for it while they stay open (lib/waiting.ts Owed).
+  const owed = useRef(new Owed());
   const recorder = useVoiceRecorder();
   // Walkie-talkie (Talkie): smaller recordings that play as they come where the chat is open.
   const talkRecorder = useVoiceRecorder(true);
@@ -678,7 +683,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       delete receipts.current[peer];
       answers.current.delete(peer);
       try {
-        await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', { got, read, on: appShown() ? ONLINE : 0 });
+        await sendToContact(target, peer.slice(CONTACT_PREFIX.length), '', { got, read, on: appShown() ? ONLINE : 0 }, true);
       } catch {
         if (got.length + read.length === 0) continue;
         const now = receipts.current[peer] ?? { got: [], read: [] };
@@ -693,7 +698,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!e2e) return;
     for (const identity of e2e.keysDue()) {
       try {
-        await sendToContact(target, identity, '', { keys: true });
+        await sendToContact(target, identity, '', { keys: true }, true);
         await e2e.keysGiven(identity);
       } catch {
         // Tried again with the next look.
@@ -1337,6 +1342,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       const spare = () => lookAtSpare(e2e, take, () => !active, spareStore).catch(() => undefined);
       try {
         await sendPending(e2e, sends);
+        await sendCopies(e2e, sends).catch(() => 0);
         // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
         if (!hiddenKey) void nearby.uploadCarried((url, sealed, mark) => carryTo(sends, url, sealed, mark)).catch(() => undefined);
         // An SMS invite sent from the SMS screen since: its answer may be on its way.
@@ -1359,6 +1365,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         void sendWaitingNow.current(true);
         await sendReceipts(sends);
         await sendKeys(sends);
+        await sendCopies(e2e, sends).catch(() => 0);
         failures = 0;
       } catch (error) {
         failures++;
@@ -1397,6 +1404,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       );
     }
     next();
+    // The copies for contacts' endpoints of what was just sealed go at once (lib/fanout.ts).
+    const stopCopies = e2e.onCopies(() => void sendCopies(e2e, sends).catch(() => 0));
     // Shown again: looks at once, not after a wait meant for the background.
     const shown = AppState.addEventListener('change', (state) => {
       if (state !== 'active' || !timer) return;
@@ -1408,6 +1417,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return () => {
       active = false;
       shown.remove();
+      stopCopies();
       if (timer) clearTimeout(timer);
     };
   }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e]);
@@ -1423,7 +1433,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // Erevos in the background: the notice says one more came (lib/background.ts), at its time
     // for one sent for later that a relay sent too soon (lib/later.ts), and so it shows.
     const shows = showsAt(received.due);
-    if (!hiddenKey && isNews(received)) messageCameAt(shows, received.quiet);
+    // One that came already, from their account and again from one of their endpoints, or through
+    // the phone and again directly, is shown once (docs/multi-device.md).
+    const twice = received.twice || (!!received.tag && !!history.current?.has(peer, received.tag));
+    if (!hiddenKey && !twice && isNews(received)) messageCameAt(shows, received.quiet);
     setContacts(e2e.contacts());
     setSelected((current) => current ?? peer);
     if (received.call) {
@@ -1437,28 +1450,32 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
     // What else it is: an answer to one of the chat's messages, a sticker.
     const parts: Parts = { ...(received.re ? { re: received.re } : {}), ...contentOf(received.more) };
-    if (received.voice) {
+    // Put together while the history does not hold it, from what came before too, and kept once
+    // whole, as the receiver does (lib/receiver.ts).
+    if (received.voice && !(received.tag && history.current?.has(peer, received.tag))) {
       const whole = voiceParts.current.add(peer, received.voice);
       const { tag, timer } = received;
-      if (whole) {
+      if (whole && !twice) {
         if (whole.talk && listening.current === peer) {
           stopPlaying.current?.();
           stopPlaying.current = playVoice(whole.audio, () => undefined);
         }
         saveClip(whole.audio, whole.ms)
           .then((voice) => {
+            // Its other copy, whole meanwhile.
+            if (tag && history.current?.has(peer, tag)) return deleteClip(voice.id);
             addMessage(peer, '', false, tag, timer, voice, undefined, 0, shows, parts);
             if (tag) receipt(peer, 'got', [tag]);
           })
           .catch((error) => setNote(t('A voice message came but could not be kept. {error}', { error: errorText(error) })));
       }
     }
-    if (received.file) {
+    if (received.file && !twice) {
       // Taken from the relay by the effect that watches for files waiting.
       const tag = addMessage(peer, '', false, received.tag, received.timer, undefined, offerRef(received.file), 0, shows, parts);
       receipt(peer, 'got', [tag]);
     }
-    if (received.text) {
+    if (received.text && !twice) {
       addMessage(peer, received.text, false, received.tag, received.timer, undefined, undefined, 0, shows, parts);
       if (received.tag) receipt(peer, 'got', [received.tag]);
     }
@@ -1557,14 +1574,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return history.current?.mark(peer, mine, mark, now, tags) ?? Promise.resolve([]);
   }
 
+  // Deleted here, what hidden chats still owe the contact's phone of it never goes.
   function forgetChat(peer: string) {
     setMessages((list) => list.filter((message) => message.peer !== peer));
     history.current?.clear(peer).catch((error) => setNote(errorText(error)));
+    owed.current.forget(peer.slice(CONTACT_PREFIX.length));
   }
 
   function forgetMessage(message: Message) {
     setMessages((list) => list.filter((m) => m.id !== message.id && !(message.tag && m.peer === message.peer && m.tag === message.tag)));
     if (message.tag) history.current?.remove(message.peer, message.tag).catch((error) => setNote(errorText(error)));
+    if (message.tag) owed.current.forget(message.peer.slice(CONTACT_PREFIX.length), message.tag);
   }
 
   // What is done on this phone only, which the contact is not told of, the account's linked devices
@@ -1957,15 +1977,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // Seals a message for a contact and hands it to their phone (handOver). Returns the message's
-  // tag, how long it lasts, and how it went.
-  async function sendToContact(target: Relay | null, identity: string, text: string, extra: Extra = {}): Promise<{ tag: string; timer: number; way: Delivery }> {
+  // tag, how long it lasts, and how it went. `waits`: should it fail, it is tried again as it is.
+  async function sendToContact(target: Relay | null, identity: string, text: string, extra: Extra = {}, waits = false): Promise<{ tag: string; timer: number; way: Delivery }> {
     if (!e2e) throw new Error(t(NO_CORE));
     // A hidden place that rings says its ring queue (lock/hidden-ring.ts); '' tells contacts it no
     // longer rings. The space's own chats never ring, so they say nothing of one.
     const rf = hiddenKey ? (ringing && ringQueue ? ringQueue.senderHex : '') : undefined;
     const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here(), rf });
     // What is only a mark, or asks whether their phone is open, is not worth carrying for days.
-    const way = await handOver(e2e, target, identity, sealed, [sealed.packet], markOf(text, extra.call), !!text || !!extra.erase);
+    const way = await handOver(e2e, target, identity, sealed, [sealed.packet], markOf(text, extra.call), !!text || !!extra.erase, waits);
     // A call to a hidden contact that rings: wake it too, so it rings while its hidden chats are closed.
     if (target && extra.call) void ringOffer(e2e, target, identity, extra.call, sealed.packet.length).catch(() => undefined);
     // Writing, reacting or pinning in a message request accepts it.
@@ -1975,28 +1995,29 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Hands a contact's packets to their phone, after the first packet of the conversation if the
   // relay has not taken that yet: nearby when they are, and through the relay (lib/nearby.ts),
-  // the last packet saying what they carry (`mark`, lib/relay.ts), or, from a linked device, where
-  // all goes to the account's phone, quiet (sentMark). When neither, and they went to the phones
+  // the last packet saying what they carry (`mark`, lib/relay.ts), or, sealed on a linked device for
+  // the account's phone, where all goes, quiet (sentMark). When neither, and they went to the phones
   // nearby, those phones may carry them to the contact's relay too (`carried`). Hidden chats go
-  // through the relay only.
+  // through the relay only (lib/waiting.ts handOverHidden). Once they went, the copies for the
+  // endpoints of the contact's account go too (lib/e2e.ts copiesAfter), and, with `waits`, also once
+  // the relay could take them only later, as what is tried again as it is goes to those endpoints
+  // once: in hidden chats it then throws OwedError, owed to the contact's phone.
   function handOver(
     chats: E2E,
     target: Relay | null,
     identity: string,
-    sealed: { sender: string; relay: string; relayKey: string; first: Uint8Array | null },
+    sealed: { sender: string; relay: string; relayKey: string; spare?: Spare | null; first: Uint8Array | null; copies: number; through: boolean },
     packets: Uint8Array[],
     mark: RelayMark,
     carried = false,
+    waits = false,
   ): Promise<Delivery> {
-    const relay = target && sealed.sender ? () => sendSealed(target, sealed, packets, sentMark(chats, mark), () => chats.firstSent(identity)) : null;
-    if (hiddenKey) {
-      if (!relay) return Promise.reject(new Error(t('Type the relay address in Relay first.')));
-      return relay().then(() => 'relay');
-    }
+    if (hiddenKey) return handOverHidden(chats, target, identity, { sealed: { ...sealed, spare: sealed.spare ?? null }, packets }, mark, waits);
+    const relay = target && sealed.sender ? () => sendSealed(target, sealed, packets, sentMark(sealed, mark), () => chats.firstSent(identity)) : null;
     const all = sealed.first ? [sealed.first, ...packets] : packets;
-    const carry = carried ? () => carriedFor(sealed, all, { url: relayUrl, key: ownRelayKey }, sentMark(chats, mark)) : null;
+    const carry = carried ? () => carriedFor(sealed, all, { url: relayUrl, key: ownRelayKey }, sentMark(sealed, mark)) : null;
     // What is worth carrying is worth LoRa's air time too, when it is small (lib/lora.ts).
-    return nearby.deliver(identity, all, relay, carry, carried);
+    return chats.copiesAfter(sealed.copies, nearby.deliver(identity, all, relay, carry, carried), waits);
   }
 
   // A call's line in the chat, kept with its messages. It needs no read mark, and it disappears
@@ -2115,6 +2136,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return t('Not sent. {reason}', { reason: notSentReason(error) });
   }
 
+  // In hidden chats: what went to the contact's linked devices, if they have any, but not yet to
+  // their phone, which is owed it while hidden chats stay open.
+  function owedNote(peer: string, error: OwedError): string {
+    return t("Sent to {name}'s linked devices, if they have any, end-to-end encrypted, not yet to their phone ({reason}). While hidden chats stay open, it is tried again for their phone.", {
+      name: label(peer, contacts),
+      reason: notSentReason(error.reason),
+    });
+  }
+
   // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it
   // is read: unless given, as the stopwatch in the bar says. `quiet`, it comes without sound, also
   // when it has to wait. Given `content`, it sends
@@ -2135,25 +2165,38 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const carried = content ? contentOf(content) : await previewOf(text);
     const parts = { ...answer, ...carried };
     const identity = to.slice(CONTACT_PREFIX.length);
+    // Kept with the message should it wait, or be owed to their phone, so what of it went meanwhile is the same message.
+    const sealedAs = newTag();
+    const extra = { lasts, quiet, ...answer, more: carried, tag: sealedAs };
     try {
       let bare = false;
-      const { tag, timer, way } = await sendToContact(relayTarget(), identity, text, { lasts, quiet, ...answer, more: carried }).catch((error: unknown) => {
+      const { tag, timer, way } = await sendToContact(relayTarget(), identity, text, extra, true).catch((error: unknown) => {
         if (!(error instanceof TooLargeForLoraError) || !carried.preview) throw error;
         // Sealed anew without it, for LoRa only: the relay just failed.
         bare = true;
-        return sendToContact(null, identity, text, { lasts, quiet, ...answer, more: withoutPreview(carried) });
+        return sendToContact(null, identity, text, { ...extra, more: withoutPreview(carried) }, true);
       });
       keep(to, text, tag, timer, bare ? { ...answer, ...withoutPreview(carried) } : parts, !content);
       const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(to, contacts));
       const said = timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer) }) : sent;
       setNote(bare ? `${said} ${t('It went without the link’s preview, which is too much for LoRa.')}` : said);
     } catch (error) {
+      if (error instanceof OwedError && e2e) {
+        const chats = e2e;
+        keep(to, text, sealedAs, lasts || timerOf(to), parts, !content);
+        owed.current.add(identity, sealedAs, async () => {
+          const sealed = await chats.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here() });
+          return { sealed, packets: [sealed.packet] };
+        });
+        setNote(owedNote(to, error));
+        return;
+      }
       if (!canWait(error) || hiddenKey) {
         setNote(notSent(error));
         return;
       }
       // Nothing could take it now: it waits, and goes by itself (lib/waiting.ts).
-      addMessage(to, text, true, newTag(), lasts || timerOf(to), undefined, undefined, WAITING, Date.now(), { quiet, ...parts });
+      addMessage(to, text, true, sealedAs, lasts || timerOf(to), undefined, undefined, WAITING, Date.now(), { quiet, ...parts });
       if (!content) setDraft('');
       setReplying(null);
       setNote(t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason: waitingReason(error, to, t('It is too long for LoRa.')) }));
@@ -2264,11 +2307,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // Sends what waits that can go now (lib/waiting.ts), and shows it as gone, or as held by the
-  // relay till its time. Says what went. Hidden chats keep nothing waiting.
+  // relay till its time. Says what went. Hidden chats keep nothing waiting: what they owe a
+  // contact's phone is tried again instead (Owed), and shows as sent already.
   const sendWaitingNow = useRef((_relayUp: boolean) => Promise.resolve([] as Went[]));
   sendWaitingNow.current = async (relayUp) => {
     const kept = history.current;
-    if (hiddenKey || !e2e || !kept) return [];
+    if (hiddenKey) {
+      if (e2e && relayUp) await owed.current.retry(e2e, relayTarget()).catch(() => undefined);
+      return [];
+    }
+    if (!e2e || !kept) return [];
     const went = await sendWaiting({ e2e, history: kept }, waitingPlace(relayUp)).catch(() => [] as Went[]);
     if (went.length > 0) {
       setMessages((list) =>
@@ -2304,7 +2352,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return;
     }
     try {
-      setSafety({ peer, number: await e2e.safetyNumber(peer.slice(CONTACT_PREFIX.length)) });
+      const identity = peer.slice(CONTACT_PREFIX.length);
+      setSafety({ peer, number: await e2e.safetyNumber(identity), devices: e2e.devicesChanged(identity) });
     } catch (error) {
       setNote(errorText(error));
     }
@@ -2456,15 +2505,28 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     const identity = peer.slice(CONTACT_PREFIX.length);
     const parts: Parts = forwarded ? { forwarded } : answering(peer);
+    const sealedAs = newTag();
     try {
-      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { lasts, at: here(), talk, re: parts.re, forwarded });
-      const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets, 'message', true);
+      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { lasts, at: here(), talk, re: parts.re, forwarded, tag: sealedAs });
+      // In hidden chats, owed to their phone should it take it only later; a walkie-talkie message is for now only.
+      const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets, 'message', true, !!hiddenKey && !talk);
       addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms), undefined, 0, Date.now(), parts);
       setReplying(null);
       // Writing to a message request accepts it.
       setContacts(e2e.contacts());
       setNote(sentNote(way, talk ? t('Walkie-talkie message sent') : t('Voice message sent'), label(peer, contacts)));
     } catch (error) {
+      if (error instanceof OwedError) {
+        const chats = e2e;
+        addMessage(peer, '', true, sealedAs, lasts || timerOf(peer), await saveClip(audio, ms), undefined, 0, Date.now(), parts);
+        setReplying(null);
+        owed.current.add(identity, sealedAs, async () => {
+          const sealed = await chats.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { lasts, at: here(), re: parts.re, forwarded, tag: sealedAs });
+          return { sealed, packets: sealed.packets };
+        });
+        setNote(owedNote(peer, error));
+        return;
+      }
       // A walkie-talkie message is for now only.
       if (!canWait(error) || talk || hiddenKey) {
         setNote(notSent(error));
@@ -2475,7 +2537,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return;
       }
       try {
-        addMessage(peer, '', true, newTag(), lasts || timerOf(peer), await saveClip(audio, ms), undefined, WAITING, Date.now(), parts);
+        addMessage(peer, '', true, sealedAs, lasts || timerOf(peer), await saveClip(audio, ms), undefined, WAITING, Date.now(), parts);
         setReplying(null);
         setNote(t('The voice message waits, and goes by itself once the relay or their phone nearby can take it.'));
       } catch (failed) {
@@ -2654,7 +2716,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return;
     }
     let kept: FileRef | null = null;
+    let offer: FileOffer | null = null;
     const parts: Parts = forwarded ? { forwarded } : answering(peer);
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    const sealedAs = newTag();
     try {
       if (picked.source.size > MAX_FILE) throw new TooLargeError();
       setNote(picked.sticker ? t('Sending the sticker…') : what === 'photo' ? t('Sending the photo…') : t('Sending the file…'));
@@ -2665,9 +2730,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         }
       });
       kept = sent.ref;
-      const identity = peer.slice(CONTACT_PREFIX.length);
-      const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { lasts, at: here(), re: parts.re, forwarded });
-      await handOver(e2e, target, identity, sealed, [sealed.packet], 'message');
+      offer = sent.offer;
+      const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { lasts, at: here(), re: parts.re, forwarded, tag: sealedAs });
+      // In hidden chats, owed to their phone should it take it only later.
+      await handOver(e2e, target, identity, sealed, [sealed.packet], 'message', false, !!hiddenKey);
       addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, sent.ref, 0, Date.now(), parts);
       setReplying(null);
       kept = null;
@@ -2681,6 +2747,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             : t('File sent through the relay, end-to-end encrypted.'),
       );
     } catch (error) {
+      if (error instanceof OwedError && kept && offer) {
+        const [chats, given] = [e2e, offer];
+        addMessage(peer, '', true, sealedAs, lasts || timerOf(peer), undefined, kept, 0, Date.now(), parts);
+        setReplying(null);
+        owed.current.add(identity, sealedAs, async () => {
+          const sealed = await chats.sealFile(identity, given, ownQueue?.senderHex ?? '', { lasts, at: here(), re: parts.re, forwarded, tag: sealedAs });
+          return { sealed, packets: [sealed.packet] };
+        });
+        setNote(owedNote(peer, error));
+        return;
+      }
       if (kept) await deleteChunks(kept.id, kept.count).catch(() => undefined);
       if (!canWait(error) || hiddenKey) {
         setNote(error instanceof TooLargeError ? t('Not sent. Files can be 100 MB at most.') : notSent(error));
@@ -2895,6 +2972,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       await updateHiddenData(space, pocket, key, { ...settings, ownQueue: queue });
       const hiddenChats = await E2E.open(hiddenHolder(pocket), space, key);
       const hiddenHistory = await History.open(hiddenHolder(pocket), space, key);
+      // A contact who knows about devices is told first, by the space's chat, as the hidden chats
+      // will say it to one who knows them by the space's identity: nothing of devices. Their devices
+      // then stop writing to this account's, and to this account themselves, though their phone is
+      // off (docs/multi-device.md).
+      const sends = relayTarget();
+      if (sends && e2e.record(identity)?.dv !== undefined) {
+        await sendToContact(sends, identity, '', { leaving: true })
+          .then(() => sendCopies(e2e, sends))
+          .catch(() => undefined);
+      }
       await moveChat(identity, { e2e, history: history.current, archive }, { e2e: hiddenChats, history: hiddenHistory });
       setMessages((list) => list.filter((m) => m.peer !== peer));
       setContacts(e2e.contacts());
@@ -2938,6 +3025,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       const target = relayFor(data.url, data.token, data.via, data.viaToken);
       if (!target || !data.ownQueue) throw new Error(t("The space's chats have no relay queue yet: create it under Relay there first."));
       const space = await spaceChats();
+      // A contact who knows about devices is told first, as the move into hidden chats tells them:
+      // nothing of devices, as the space's chat will say it to one who knows it by this identity.
+      const sends = relayTarget();
+      if (sends && e2e.record(identity)?.dv !== undefined) {
+        await sendToContact(sends, identity, '', { leaving: true })
+          .then(() => sendCopies(e2e, sends))
+          .catch(() => undefined);
+      }
       await moveChat(identity, { e2e, history: history.current, archive: null }, { e2e: space.e2e, history: space.history });
       setMessages((list) => list.filter((m) => m.peer !== peer));
       setContacts(e2e.contacts());
@@ -3647,6 +3742,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         <Text selectable variant="mono" style={styles.safety}>
                           {safety.number.split(' ').reduce((lines, group, i) => lines + (i === 0 ? '' : i % 4 === 0 ? '\n' : '  ') + group, '')}
                         </Text>
+                        {safety.devices > 0 ? (
+                          <Text variant="caption" tone="muted">
+                            {t('The list of their linked devices last changed on {day}. Your messages go to each place in it too, used by a device or not. If they did not link or unlink one then, ask them.', { day: dayText(safety.devices) })}
+                          </Text>
+                        ) : null}
                       </View>
                     ) : null}
                     {!hiddenKey ? (
@@ -4620,6 +4720,15 @@ function SearchStep({ sign, label, onPress }: { sign: string; label: string; onP
 }
 
 const dayOf = (at: number) => new Date(at).toDateString();
+
+// A day as the chat's details say it, in the app's language: 21 October 2026.
+function dayText(at: number): string {
+  try {
+    return new Date(at).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch {
+    return new Date(at).toLocaleDateString();
+  }
+}
 
 const clock = (at: number) => {
   const d = new Date(at);

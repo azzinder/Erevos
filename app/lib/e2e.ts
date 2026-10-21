@@ -1,4 +1,5 @@
-import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, MAX_PREKEYS, MAX_SEEN_EACH, saveE2EData, type Avatar, type Contact, type E2EData, type Endpoint, type Holder, type Own, type OwnList, type Spare } from '../lock/e2e-data';
+import { againAfter, checkedAvatar, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, MAX_PREKEYS, MAX_SEEN_EACH, MAX_TOOK, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Contact, type E2EData, type Endpoint, type Holder, type Own, type OwnList, type Route, type Spare, type Took, type Way } from '../lock/e2e-data';
+import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
 
 import { isReactionEmoji, isTag, newTag } from '../lock/history';
 
@@ -7,9 +8,13 @@ import { readOffer, type FileOffer } from './attachments';
 import { acts, carriedOf, toCarry, type Carried } from './chat-parts';
 import { decodeCall, type CallSignal } from './call-signal';
 import { decodeGroup, encodeGroup, type GroupSignal } from './group-signal';
-import { isVoicePart, splitVoice, type VoicePart } from './voice';
-import { isSealedPacket, openPacket, ownPacketKey, packetKeys, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
-import { fromBase64, fromHex, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { isVoicePart, splitVoice, voiceIdOf, type VoicePart } from './voice';
+import { entryKey, isSealedPacket, openPacket, ownPacketKey, packetKeys, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
+import { bodyOf, checkedList, verifyList, type DeviceList } from './device-list';
+import { blankWay, copiedAs, waysFor, withEarlyFirst, withRoutes, withUnverified } from './endpoints';
+import { fromBase64, fromHex, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { canTryLater, isQueueFull } from './relay';
+import { TooLargeForLoraError } from './nearby';
 import type { Look } from '../theme/look';
 import { deletePhoto } from '../lock/avatar-photos';
 import { lastRestore } from '../lock/restored';
@@ -61,6 +66,26 @@ import { t } from './i18n';
 // prekeys are thrown away, and with them what a stolen phone would have given of the ML-KEM half of
 // the conversations they started. An Erevos before this ignores `ak` and stays in its conversation.
 //
+// The space's chat also knows about the linked devices of its contacts' accounts, and of its own
+// (docs/multi-device.md). Hidden chats know about their contacts' as the space's chat does, but
+// never link a device, so they say what a space's chat that never linked one says: contacts cannot
+// tell them from one. Each says in each message which list of the contact's account it holds
+// (`dv`), but to a contact who knows it by another identity, as a chat moved here from the space's
+// or from hidden chats: to them it says nothing of devices, as an Erevos from before, since no way
+// to their endpoints could start from an identity that is not this chat's. The phone that holds
+// the account gives a contact who holds an older one, or none, its bundle and its signed list
+// (`ak`, `dl`) in a message of their own, as with newer prekeys. A contact's list is taken only
+// from inside the conversation with their account, checked against their account's bundle, and
+// from then on the chat writes to every endpoint it names as well as to their account
+// (lib/endpoints.ts), and takes a conversation one of them starts, which says whose it is (`acct`):
+// only once the list names it, never as a message request. A linked device's endpoint takes conversations too: from a contact who knows its
+// account's list, and from their endpoints. Once a contact started one with it, and holds the list
+// this device holds, the device writes to them itself rather than through the primary. A
+// conversation started with an endpoint says whose endpoint it is meant for (`to`): only an
+// endpoint of that account takes it, and an account never takes one that says either `to` or
+// `acct`, as no list names its own account. So a list that names someone else's key makes that key
+// read nothing, and a list's entry that names a contact's account is no endpoint.
+//
 // Every call runs after the one before it ends, so two calls never move the same conversation
 // from the same state. A message key is never used twice: a packet is only handed back once the
 // conversation that sealed it has been saved past it.
@@ -77,6 +102,18 @@ const MAX_SEEN = 100;
 // whose packets come sealed (E2E.mayTryUnsealed).
 const UNSEALED_TRIES = 5;
 const UNSEALED_TRIES_FOR = 60 * 60 * 1000;
+// How long after giving a contact the account's list it is given again, should they still say they
+// hold an older one; and how much later than a backup was put back a list they say they hold can be.
+const LIST_AGAIN = 24 * 60 * 60 * 1000;
+// The messages of contacts remembered with the endpoint each came from, so what says they came
+// goes back that way.
+const MAX_CAME = 2000;
+// The seals whose copies wait for what went to the account (E2E.copiesAfter), at most, and for how long.
+export const MAX_PENDING = 64;
+export const PENDING_LASTS = 10 * 60_000;
+// What went to the endpoints of contacts' accounts remembered, so what is sealed again copies none
+// of it again (E2E.copied), at most.
+const MAX_COPIED = 2000;
 
 /** What a message asks the other phone to delete: every message of the chat, or the one with this tag. */
 export type Erase = { all: true } | { tag: string };
@@ -137,6 +174,14 @@ type Message = {
    *  contacts' calls while it is closed (lock/hidden-ring.ts): empty to say it no longer rings,
    *  and absent from a chat that does not ring at all. An older Erevos ignores it. */
   rf?: string;
+  /** The `n` of the other account's device list the sender holds, 0 for none (docs/multi-device.md). An Erevos before, and a chat moved into or out of hidden chats, say none. */
+  dv?: number;
+  /** The sender's account's device list, signed, with where each endpoint reads. */
+  dl?: DeviceList;
+  /** In the first message of a conversation a linked device's endpoint starts: the account it is one of (hex). */
+  acct?: string;
+  /** In the first message of a conversation started with an endpoint: the account it is for (hex), so a list that names someone else's endpoint makes it read nothing. */
+  to?: string;
 };
 
 /** What else a message can carry. */
@@ -166,6 +211,10 @@ export type Extra = {
   /** Says this chat's ring queue sender id (hex), or '' that it no longer rings (lock/hidden-ring.ts):
    *  a hidden place sends it so contacts can ring it while it is closed. Absent says nothing of one. */
   rf?: string;
+  /** Says nothing of devices, as the chat will where it goes, to them and to each endpoint of their
+   *  account it speaks to already: the chat moves into hidden chats, or out of them, and they stop
+   *  writing to this account's devices, and their devices to this account (docs/multi-device.md). */
+  leaving?: boolean;
 };
 
 /** Where a chat's own queue is: its relay and that relay's key for sealed sends (base64url). */
@@ -195,7 +244,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, dl, acct, to }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -222,6 +271,10 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(pk ? { pk } : {}),
       ...(ak ? { ak } : {}),
       ...(rf !== undefined ? { rf } : {}),
+      ...(dv !== undefined ? { dv } : {}),
+      ...(dl ? { dl } : {}),
+      ...(acct ? { acct } : {}),
+      ...(to ? { to } : {}),
       ...more,
     }),
   );
@@ -293,6 +346,11 @@ function decodeMessage(bytes: Uint8Array): Message {
       ak: typeof value.ak === 'string' && value.ak.length <= MAX_BUNDLE && /^[A-Za-z0-9_-]+$/.test(value.ak) ? value.ak : '',
       // Absent (`undefined`) says nothing of a ring queue; present says it, a sender id or '' for none.
       rf: 'rf' in value ? (typeof value.rf === 'string' && /^[0-9a-f]{48}$/.test(value.rf) ? value.rf : '') : undefined,
+      ...(Number.isSafeInteger(value.dv) && (value.dv as number) >= 0 ? { dv: value.dv as number } : {}),
+      ...(checkedList(value.dl) ? { dl: checkedList(value.dl)! } : {}),
+      // Said but not an identity: said still, as nothing an account takes.
+      ...(value.acct !== undefined ? { acct: typeof value.acct === 'string' && /^[0-9a-f]{64}$/.test(value.acct) ? value.acct : '' } : {}),
+      ...(value.to !== undefined ? { to: typeof value.to === 'string' && /^[0-9a-f]{64}$/.test(value.to) ? value.to : '' } : {}),
     };
   } catch {
     return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null };
@@ -370,6 +428,11 @@ export type Received =
       react: Reaction | null;
       // What else it carries (lib/chat-parts.ts).
       more: Carried;
+      // The endpoint of their account it came through (its identity), or '' for their account.
+      from: string;
+      // It came before, from their account and again from one of their endpoints, or through the
+      // phone and again directly (docs/multi-device.md): taken once, whether still kept or not.
+      twice: boolean;
     }
   // Not encrypted (as messages before this version were), not for this account, or a replay. Or
   // `linked`: between this account's own devices, and taken by their link (lib/devices.ts).
@@ -414,14 +477,147 @@ export class NoKeyError extends Error {
   }
 }
 
+// Now, or later than `before` should the clock have been set back since: what the list's `rAt`
+// says, so each change of it is told apart from the one before.
+function laterThan(before = 0): number {
+  return Math.max(Date.now(), before + 1);
+}
+
 // A contact's conversations as a restored backup put them back, each moved past the message keys
 // it may have sealed with since the backup was made, so none of them seals with a key twice. Their
 // phone opens what comes next as after lost messages. What their phone sent in a conversation that
 // moved on since the backup no longer opens here, nor what this one sends in it there: then adding
 // each other's link again starts a new one.
 async function restoredContact(contact: Contact): Promise<Contact> {
-  const conversations = await Promise.all(contact.conversations.map(async (c) => toBase64(await core.restored(fromBase64(c)))));
-  return { ...contact, conversations };
+  const restored = (list: string[]) => Promise.all(list.map(async (c) => toBase64(await core.restored(fromBase64(c)))));
+  const conversations = await restored(contact.conversations);
+  const endpoints = contact.endpoints && (await Promise.all(contact.endpoints.map(async (w) => ({ ...w, conversations: await restored(w.conversations) }))));
+  const direct = contact.direct && { ...contact.direct, conversations: await restored(contact.direct.conversations) };
+  return { ...contact, conversations, ...(endpoints ? { endpoints } : {}), ...(direct ? { direct } : {}) };
+}
+
+// A contact's ways to the endpoints of their account (lib/endpoints.ts) as none of them was spoken
+// to: what a linked device's endpoint that is gone, or another now, started with them it no longer
+// opens or seals in.
+function unspoken({ direct: _direct, ...contact }: Contact): Contact {
+  return contact.endpoints ? { ...contact, endpoints: contact.endpoints.map(blankAgain) } : contact;
+}
+
+// A way as no conversation was started with its endpoint, where it reads and the key it was sealed for kept.
+function blankAgain(w: Way): Way {
+  return { ...blankWay(w.id, w.bundle, w.sender ? { s: w.sender, relay: w.relay, rk: w.relayKey } : undefined), sealTo: w.sealTo };
+}
+
+/** Which of a contact's conversations a packet opened in: their account's, or one of their endpoints' (by its identity). */
+type Slot = { contact: Contact; way: Way | null };
+
+/**
+ * What a sealing gives: the packets, in order, where they go, the first packet of the conversation
+ * if the relay has not taken it yet, the number the copies for the endpoints of their account
+ * wait under until those went (E2E.copiesAfter), 0 for none, and whether they were sealed for the
+ * account's phone, on a linked device, which passes them on (`through`), or for the contact.
+ */
+type Sealed = { packets: Uint8Array[]; sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; copies: number; through: boolean };
+
+/** A copy as it goes: where the way to its endpoint says it reads now (its queue's sender id, hex; its relay, empty for this chat's own; that relay's key). */
+export type Outgoing = Copy & { s: string; relay: string; rk: string };
+
+// Whether a copy is the last packet of a message someone reads, as the relay is told (lib/relay.ts,
+// Mark): words, a photo or file, a voice message's last part. All else a copy carries is quiet.
+function readsAs(m: Message): boolean {
+  if (!m.tag) return false;
+  return m.voice ? m.voice.part === m.voice.parts - 1 : !!m.text || !!m.file;
+}
+
+// What a copy says of a message that goes to an endpoint only for what came from it (`got`) and
+// what was read (`read`): that, with where this chat reads and the chat's timer, and nothing more.
+function receiptOf(m: Message, got: string[], read: string[], pk: string): Message {
+  return { from: m.from, relay: m.relay, relayKey: m.relayKey, spare: m.spare, text: '', tag: '', erase: null, timer: m.timer, timerAt: m.timerAt, lasts: 0, got, read, voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk, ...(m.dv !== undefined ? { dv: m.dv } : {}) };
+}
+
+// What a whole copy is once it went to an endpoint, so it goes there once (E2E.copied): a message
+// someone reads, by its tag, or the account's keys and list it gives. Empty for what may be said
+// again, as a reaction taken back and given again.
+function copyKey(m: Message): string {
+  if (m.tag) return m.tag;
+  return m.ak || m.dl ? `keys ${toHex(sha256Bytes(utf8Encode(JSON.stringify([m.ak ?? '', m.dl ?? null]))))}` : '';
+}
+
+/**
+ * A copy a sealing is to make for one endpoint once what went to the account went (E2E.copiesGo),
+ * not sealed yet, so one that never goes moves no conversation on: the message as it goes there
+ * (`m`), what it is (`key`, copyKey; empty for what says what came and was read, kept by their
+ * tags), the part of a voice message it is (`part`), and whether it is the last packet of a
+ * message someone reads (`mark`).
+ */
+type ToCopy = { m: Message; key: string; part?: number; mark?: 'message' };
+
+/** What a sealing is to copy: for its contact (`c`), to each endpoint (`w`), and what a conversation started with one says first (`like`, with `packetKey`), none when `leaving`. */
+type Held = { c: string; ways: { w: string; items: ToCopy[] }[]; like: Message; packetKey: string; leaving: boolean; at: number };
+
+// A contact once one of their messages was taken here, and whether it was taken before. Only where
+// one can come twice: on a linked device, from every contact, directly and again through the phone;
+// and from a contact whose account lists devices, from their account and from one of their
+// endpoints. There its tag is kept once, with the day it first came and no more of when, for as
+// long as another copy of it may still come (TOOK_LASTS, from the end of that day), and of a voice
+// message the parts taken until all were. One taken again stays where it was, marked so (`two`).
+// Once MAX_TOOK are kept, the oldest so marked gives way to a new one, and while none is, the new
+// one is not kept: so what comes a second time, in the order it first came, pushes out nothing
+// still to come again.
+function tookIn(contact: Contact, message: Message, device: boolean, now = Date.now()): { contact: Contact; twice: boolean } {
+  if (!contact.list && !device) {
+    const { took: _took, ...rest } = contact;
+    return { contact: rest, twice: false };
+  }
+  const tag = message.tag;
+  if (!tag) return { contact, twice: false };
+  const kept = (contact.took ?? []).filter((t) => now - t.at < TOOK_LASTS + TOOK_DAY);
+  const was = kept.find((t) => t.t === tag);
+  const voice = message.voice;
+  if (was && (!voice || !was.p || was.p.includes(voice.part))) {
+    return { contact: { ...contact, took: was.two ? kept : kept.map((t) => (t === was ? { ...t, two: true as const } : t)) }, twice: true };
+  }
+  // A part of a voice message not taken yet: with the others, until all were.
+  const parts = [...(was?.p ?? []), ...(voice ? [voice.part] : [])];
+  const took: Took = { t: tag, at: was?.at ?? tookDay(now), ...(voice && parts.length < voice.parts ? { p: parts } : {}), ...(was?.two ? { two: true as const } : {}) };
+  if (was) return { contact: { ...contact, took: kept.map((t) => (t === was ? took : t)) }, twice: false };
+  if (kept.length < MAX_TOOK) return { contact: { ...contact, took: [...kept, took] }, twice: false };
+  const gives = kept.findIndex((t) => t.two);
+  return { contact: { ...contact, took: gives < 0 ? kept : [...kept.slice(0, gives), ...kept.slice(gives + 1), took] }, twice: false };
+}
+
+// A way to an endpoint once a packet opened in one of its conversations (`at`): written to where
+// its messages say it reads, in the one it last sent in, which also means it has the first packet,
+// so none is started again for want of an answer.
+function heardWay({ again: _again, ...way }: Way, at: number, opened: core.Opened, message: Message, sealed: boolean | undefined): Way {
+  const others = way.conversations.filter((_, j) => j !== at);
+  return {
+    ...way,
+    ...(message.from ? { sender: message.from, ...whereOf(message), spare: message.spare ?? null } : {}),
+    conversations: [toBase64(opened.conversation), ...others].slice(0, MAX_CONVERSATIONS),
+    first: '',
+    sealTo: message.pk || way.sealTo,
+    sealsIn: sealed ?? way.sealsIn,
+  };
+}
+
+// Whether the next copy for a way starts another conversation with its endpoint (`Way.again`): the
+// relay took the first packet of the one started here, and it has not answered in it for a day, or
+// its side may have lost what it spoke in them.
+function startsAgain(way: Way, now: number): boolean {
+  return way.conversations.length > 0 && !way.first && way.again !== undefined && now >= way.again;
+}
+
+// Where each endpoint of this account's list reads as one contact (`identity`) is given it: the key
+// to seal with each contact's own, drawn from the one kept for that entry (lib/sealed-packet.ts
+// entryKey), so neither another contact nor a relay that works with one opens what they seal for it.
+function routesFor(r: Record<string, Route>, identity: string): Record<string, Route> {
+  return Object.fromEntries(Object.entries(r).map(([id, route]) => [id, route.pk ? { ...route, pk: entryKeyOf(route.pk, identity) } : route]));
+}
+
+// The key an entry whose kept key is `seed` (base64url) gives the contact with `identity`, base64url.
+function entryKeyOf(seed: string, identity: string): string {
+  return toBase64Url(entryKey(fromBase64Url(seed), identity));
 }
 
 async function endpointOf(account: Uint8Array): Promise<Endpoint> {
@@ -453,26 +649,57 @@ export class E2E {
   private unsealedTries: number[] = [];
   // On a linked device: its own endpoint, as its account (E2EData.endpoint) gives it.
   private ownEndpoint: Endpoint | null = null;
+  // Whether this chat knows about the linked devices of accounts (docs/multi-device.md): the space's
+  // and hidden chats alike, with a core that signs; with each contact only as `partOf` says.
+  private readonly takesPart: boolean;
+  // The copies for contacts' endpoints that wait for the relay (lock/fanout-data.ts), kept after the
+  // conversations they were sealed in; and who is told when there are more.
+  private fanout: FanoutData = EMPTY_FANOUT;
+  private readonly keepFanout: (data: FanoutData) => Promise<void>;
+  private readonly copyListeners = new Set<() => void>();
+  // The endpoint each of a contact's messages came through ('' for their account), by contact and
+  // tag, so what says it came goes back that way. Only in memory.
+  private readonly cameFrom = new Map<string, string>();
+  // The contacts given this account's list in what `seal` sealed with `keys`, with when, and which
+  // list it was, its `n` and `rAt`, until `keysGiven`.
+  private readonly listSealed = new Map<string, { at: number; n: number; rAt: number }>();
+  // The copies of each seal that wait for what it sealed for the account to go (`copiesAfter`), by
+  // the seal's number, not sealed yet. Only in memory: lost, those endpoints miss them.
+  private readonly heldCopies = new Map<number, Held>();
+  private nextPending = 1;
+  // What went to each endpoint of contacts' accounts (`copiesGo`), by contact, endpoint and what it
+  // is (ToCopy.key; `got` and `read` with a tag): of a voice message, how many of its parts; 1 for
+  // all else. The last MAX_COPIED, only in memory.
+  private readonly copied = new Map<string, number>();
+  // The endpoints whose queue the relay said was full the last time a copy went to it, by contact,
+  // endpoint and where it read then, until it takes one there (`copiesSent`). Only in memory.
+  private readonly refused = new Set<string>();
+  // The endpoints the device list as last signed names, read from it once.
+  private listed: { b: string; ids: string[] } | null = null;
 
-  private constructor(data: E2EData, account: Uint8Array, identity: Uint8Array, bundle: Uint8Array, store: (data: E2EData) => Promise<void>) {
+  private constructor(data: E2EData, account: Uint8Array, identity: Uint8Array, bundle: Uint8Array, store: (data: E2EData) => Promise<void>, takesPart: boolean, keepFanout: (data: FanoutData) => Promise<void>) {
     this.data = data;
     this.account = account;
     this.identity = identity;
     this.bundle = bundle;
     this.store = store;
+    this.takesPart = takesPart;
+    this.keepFanout = keepFanout;
   }
 
   /** The space's own chat, or its hidden chats (`holder`), sealed with `key`. Makes the account the first time. */
   static async open(holder: Holder, space: number, key: Uint8Array): Promise<E2E> {
     const store = (data: E2EData) => saveE2EData(holder, space, key, data);
     let data = await loadE2EData(holder, space, key);
-    if (!data.account) {
+    const made = !data.account;
+    if (made) {
       data = { ...data, account: toBase64(await core.newAccount()) };
       await store(data);
     }
     const restore = await lastRestore();
     if (restore && data.restore !== restore && core.canRestore()) {
-      data = { ...data, contacts: await Promise.all(data.contacts.map(restoredContact)), restore };
+      // An account made only now was not in the backup: no contact holds a list of it.
+      data = { ...data, contacts: await Promise.all(data.contacts.map(restoredContact)), restore, ...(made ? {} : { putBack: Date.now() }) };
       await store(data);
     }
     const account = fromBase64(data.account);
@@ -482,8 +709,12 @@ export class E2E {
       data = { ...data, prekeys: [{ secret: toBase64(made.secret), bundle: toBase64(made.bundle), at: Date.now() }, ...prekeys].slice(0, MAX_PREKEYS) };
       await store(data);
     }
-    const e2e = new E2E(data, account, await core.accountIdentity(account), await core.accountBundle(account), store);
+    const takesPart = core.canSign();
+    const keepFanout = (fanout: FanoutData) => (takesPart ? saveFanoutData(holder, space, key, fanout) : Promise.resolve());
+    const e2e = new E2E(data, account, await core.accountIdentity(account), await core.accountBundle(account), store, takesPart, keepFanout);
     if (data.endpoint) e2e.ownEndpoint = await endpointOf(fromBase64(data.endpoint)).catch(() => null);
+    if (takesPart) e2e.fanout = await loadFanoutData(holder, space, key);
+    if (takesPart && holder === 'space') await keepFanoutFile(space, key, e2e.fanout).catch(() => undefined);
     return e2e;
   }
 
@@ -537,6 +768,7 @@ export class E2E {
     this.data = data;
     this.link?.changed(data.contacts);
     await this.store(data);
+    await this.dropStale();
   }
 
   private find(identity: string): Contact | undefined {
@@ -696,24 +928,31 @@ export class E2E {
     return this.ownEndpoint;
   }
 
-  /** On a linked device: makes it an endpoint of its own, in place of any it had. */
+  /** On a linked device: makes it an endpoint of its own, in place of any it had, which spoke to no contact's endpoints yet. */
   makeEndpoint(): Promise<Endpoint> {
     return this.run(async () => {
       const account = await core.newAccount();
       const made = await endpointOf(account);
-      await this.save({ ...this.data, endpoint: toBase64(account) });
+      const { unverified: _unverified, early: _early, ...rest } = this.data;
+      await this.save({ ...rest, contacts: this.data.endpoint ? this.data.contacts.map(unspoken) : this.data.contacts, endpoint: toBase64(account) });
+      await this.dropCopies(() => true);
       this.ownEndpoint = made;
       return made;
     });
   }
 
-  /** Lets go of this device's endpoint and of what it checked of its account: unlinked, or a linked device's backup put back elsewhere. */
+  /**
+   * Lets go of this device's endpoint, of what it checked of its account, and of what it started
+   * as that endpoint with contacts' accounts and their endpoints: unlinked, or a linked device's
+   * backup put back elsewhere. Nothing on a phone that has no endpoint.
+   */
   dropEndpoint(): Promise<void> {
     return this.run(async () => {
       this.ownEndpoint = null;
       if (this.data.endpoint === undefined && this.data.own === undefined) return;
-      const { endpoint: _endpoint, own: _own, ...rest } = this.data;
-      await this.save(rest);
+      const { endpoint: _endpoint, own: _own, unverified: _unverified, early: _early, ...rest } = this.data;
+      await this.save({ ...rest, contacts: this.data.endpoint ? this.data.contacts.map(unspoken) : this.data.contacts });
+      await this.dropCopies(() => true);
     });
   }
 
@@ -751,12 +990,51 @@ export class E2E {
     return this.data.list ?? null;
   }
 
-  /** On the primary: keeps the device list just signed, unless one kept is as late. */
+  /** On the primary: keeps the device list just signed, unless one kept is as late, with the backup put back before it was. */
   keepList(list: OwnList): Promise<void> {
     return this.run(async () => {
-      if ((this.data.list?.n ?? 0) >= list.n) return;
-      await this.save({ ...this.data, list });
+      const held = this.data.list;
+      if ((held?.n ?? 0) >= list.n) return;
+      const { restore: _restore, ...signed } = list;
+      await this.save({ ...this.data, list: { ...signed, rAt: laterThan(held?.rAt), ...(this.data.restore ? { restore: this.data.restore } : {}) } });
     });
+  }
+
+  /**
+   * On the primary put back from a backup: the newest of this account's lists a contact it accepted
+   * says they hold (`dv`), 0 for none, which may be later than the one kept, signed after the backup
+   * was made. On a phone no backup was put back on none can be, so there it is 0, and what contacts
+   * say never moves the `n` of the next list. One a message request says is left out, and so is one
+   * said to be from more than a day after the backup was put back, by this clock then (`heldAtMost`):
+   * no list this account signed.
+   */
+  newestHeld(): number {
+    const most = this.heldAtMost();
+    return this.data.contacts.reduce((n, c) => (!c.request && c.dv !== undefined && c.dv <= most ? Math.max(n, c.dv) : n), 0);
+  }
+
+  /** On the primary put back from a backup: the latest a list of this account a contact holds can be (`newestHeld`); 0 on one never put back. */
+  heldAtMost(): number {
+    return this.data.putBack ? this.data.putBack + LIST_AGAIN : 0;
+  }
+
+  /** On the primary: whether a backup was put back since the device list kept was signed. */
+  restoredSince(): boolean {
+    return !!this.data.list && !!this.data.restore && this.data.list.restore !== this.data.restore;
+  }
+
+  /**
+   * On a linked device: what the keys contacts seal what they send its endpoint with for the relay
+   * are drawn from, each contact's its own (lib/sealed-packet.ts entryKey), which the phone gives
+   * each with where it reads; drawn from the endpoint, '' without one. Only the phone is told it.
+   */
+  endpointKey(): string {
+    return this.data.endpoint ? toBase64Url(ownPacketKey(fromBase64(this.data.endpoint), 'endpoint')) : '';
+  }
+
+  /** About when a contact's account signed the list of its devices this chat holds (its `n`, ms), or 0 while it holds none. */
+  devicesChanged(identity: string): number {
+    return this.find(identity)?.list?.n ?? 0;
   }
 
   /** A contact as kept, conversations and all, or null. */
@@ -778,10 +1056,18 @@ export class E2E {
     });
   }
 
-  /** Puts in a contact taken out of another chat, in place of any with the same key. */
+  /**
+   * Puts in a contact taken out of another chat, in place of any with the same key. What was kept of
+   * their devices goes: they know this chat by the other's identity, and it says nothing of devices
+   * to them (`partOf`); back where it was first, known by its own again, it and they give each other
+   * their lists anew once each says it holds none.
+   */
   putIn(contact: Contact): Promise<void> {
     return this.run(async () => {
-      await this.save(this.withContact(contact));
+      const { dv: _dv, list: _list, endpoints: _endpoints, direct: _direct, listSent: _sent, listGiven: _given, took: _took, ...plain } = contact;
+      // Back where it was first: they know this chat by its own identity again.
+      const own = contact.ownIdentity === this.identityHex() ? { ownIdentity: '' } : {};
+      await this.save(this.withContact({ ...plain, ...own }));
     });
   }
 
@@ -833,7 +1119,7 @@ export class E2E {
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ from, ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey }),
+        encodeMessage({ from, ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined) }),
       );
       await this.save(
         this.withContact({
@@ -874,13 +1160,16 @@ export class E2E {
    * (seconds), after the first packet of the conversation if the relay has not taken that yet.
    * Send that one first, then call `firstSent`. Where to send it has no sender id while the
    * contact has said no relay queue: then it can only go to their phone nearby (lib/nearby.ts).
+   * The copies for the endpoints of their account (`copies`) are sealed once that went, however it
+   * went (`copiesAfter`), and then wait for the relay. On a linked device it may be sealed for the account's phone,
+   * which passes it on (`through`), or for the contact, which this device writes to itself.
    */
   seal(
     identity: string,
     text: string,
     from: string,
-    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false, due = 0, re = '', react = null, more = {}, keys = false, rf }: Extra = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
+    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false, due = 0, re = '', react = null, more = {}, keys = false, rf, leaving = false }: Extra = {},
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number; copies: number; through: boolean }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
@@ -889,6 +1178,8 @@ export class E2E {
       const { timer, timerAt } = contact;
       const once = text ? lasts : 0;
       const signal = text ? null : call;
+      const keyed = !text && keys ? this.keysFor(contact) : null;
+      const list = keyed?.dl && this.data.list ? { n: this.data.list.n, rAt: this.data.list.rAt ?? 0 } : null;
       const message = {
         from,
         ...at,
@@ -912,20 +1203,21 @@ export class E2E {
         re: text && isTag(re) ? re : '',
         react: text ? null : react,
         more: toCarry(more, !!text),
-        ak: !text && keys && this.keysFor(contact) ? toBase64Url(fromBase64(this.data.prekeys![0].bundle)) : '',
+        ...(keyed ?? {}),
         rf,
       };
       // Writing, reacting, pinning or calling accepts a request; telling them only what came or was read never does.
-      const [packet] = await this.sealFor(contact, [message], !!text || !!message.react || acts(message.more) || signal?.kind === 'offer');
-      const first = contact.first ? fromBase64(contact.first) : null;
-      const { sender, relay, relayKey } = contact;
-      return { sender, relay, relayKey, spare: contact.spare ?? null, first, packet, tag, timer: once || timer };
+      const sealed = await this.sealFor(contact, [message], !!text || !!message.react || acts(message.more) || signal?.kind === 'offer', leaving);
+      if (list) this.listSealed.set(identity, { ...list, at: Date.now() });
+      const { packets: [packet], sender, relay, relayKey, spare, first, copies, through } = sealed;
+      return { sender, relay, relayKey, spare, first, packet, tag, timer: once || timer, copies, through };
     });
   }
 
   /**
    * Seals a voice message for a contact: its sound (`audio`, `ms` long) in parts, one packet
-   * each, to send in order. Otherwise as `seal`.
+   * each, to send in order, whose id is drawn from its tag (lib/voice.ts voiceIdOf). Otherwise as
+   * `seal`.
    */
   sealVoice(
     identity: string,
@@ -933,14 +1225,14 @@ export class E2E {
     ms: number,
     from: string,
     { lasts = 0, at = { relay: '', relayKey: '' }, talk = false, tag: given, due = 0, re = '', forwarded = false }: { lasts?: number; at?: Where; talk?: boolean; tag?: string; due?: number; re?: string; forwarded?: boolean } = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number; copies: number; through: boolean }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
       if (!isTimer(lasts)) throw new Error(t('Not a time Erevos keeps messages for.'));
       const tag = isTag(given) ? given : newTag();
       const { timer, timerAt } = contact;
-      const messages = splitVoice(audio, ms, talk).map((voice) => ({
+      const messages = splitVoice(audio, ms, talk, voiceIdOf(tag)).map((voice) => ({
         from,
         ...at,
         text: '',
@@ -958,10 +1250,8 @@ export class E2E {
         re: isTag(re) ? re : '',
         more: forwarded ? { forwarded: true as const } : {},
       }));
-      const packets = await this.sealFor(contact, messages, true);
-      const first = contact.first ? fromBase64(contact.first) : null;
-      const { sender, relay, relayKey } = contact;
-      return { sender, relay, relayKey, spare: contact.spare ?? null, first, packets, tag, timer: lasts || timer };
+      const { packets, sender, relay, relayKey, spare, first, copies, through } = await this.sealFor(contact, messages, true);
+      return { sender, relay, relayKey, spare, first, packets, tag, timer: lasts || timer, copies, through };
     });
   }
 
@@ -974,7 +1264,7 @@ export class E2E {
     offer: FileOffer,
     from: string,
     { lasts = 0, at = { relay: '', relayKey: '' }, tag: given, due = 0, re = '', forwarded = false }: { lasts?: number; at?: Where; tag?: string; due?: number; re?: string; forwarded?: boolean } = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number; copies: number; through: boolean }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
@@ -982,10 +1272,8 @@ export class E2E {
       const tag = isTag(given) ? given : newTag();
       const { timer, timerAt } = contact;
       const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...SAYS_NOTHING, call: null, group: null, due, re: isTag(re) ? re : '', more: forwarded ? { forwarded: true as const } : {} };
-      const [packet] = await this.sealFor(contact, [message], true);
-      const first = contact.first ? fromBase64(contact.first) : null;
-      const { sender, relay, relayKey } = contact;
-      return { sender, relay, relayKey, spare: contact.spare ?? null, first, packet, tag, timer: lasts || timer };
+      const { packets: [packet], sender, relay, relayKey, spare, first, copies, through } = await this.sealFor(contact, [message], true);
+      return { sender, relay, relayKey, spare, first, packet, tag, timer: lasts || timer, copies, through };
     });
   }
 
@@ -1000,32 +1288,76 @@ export class E2E {
     plaintext: Uint8Array,
     from: string,
     at: Where,
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; copies: number; through: boolean }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
-      const message = decodeMessage(plaintext);
+      // What only this chat says of the account and its devices, it says itself.
+      const { ak: _ak, dl: _dl, acct: _acct, to: _to, dv: _dv, ...message } = decodeMessage(plaintext);
       const { timer, timerAt } = timerOf(message, contact);
       // Writing, reacting or calling accepts a request, as from this phone.
       const writes = !!message.text || !!message.voice || !!message.file || !!message.react || acts(message.more ?? {}) || message.call?.kind === 'offer';
-      const [packet] = await this.sealFor({ ...contact, timer, timerAt }, [{ ...message, from, ...at, timer, timerAt }], writes);
-      const first = contact.first ? fromBase64(contact.first) : null;
-      const { sender, relay, relayKey } = contact;
-      return { sender, relay, relayKey, spare: contact.spare ?? null, first, packet };
+      const { packets: [packet], sender, relay, relayKey, spare, first, copies, through } = await this.sealFor({ ...contact, timer, timerAt }, [{ ...message, from, ...at, timer, timerAt }], writes);
+      return { sender, relay, relayKey, spare, first, packet, copies, through };
     });
+  }
+
+  // What this chat says in every message of the devices of a contact's account: which list of it
+  // it holds (`dv`, 0 for none); to one it does not take part with (`partOf`), nothing.
+  private saysDevices(contact: Contact | undefined): { dv?: number } {
+    return this.partOf(contact) ? { dv: contact?.list?.n ?? 0 } : {};
+  }
+
+  // Whether this chat takes part with a contact (`takesPart`): with one made here, as a new one
+  // (undefined), and on a linked device with every contact of its account; not with one who knows it
+  // by another identity, a chat moved here from the space's or from hidden chats, as no way to their
+  // endpoints could start from that identity, which is not this chat's (docs/multi-device.md).
+  private partOf(contact: Pick<Contact, 'ownIdentity'> | undefined): boolean {
+    return this.takesPart && (!contact?.ownIdentity || this.link?.through === true || contact.ownIdentity === this.data.own?.identity);
+  }
+
+  // Whether a list's entry names this chat's own account (on a linked device, its account too), or
+  // a contact's, or the one a contact knows this chat by: no endpoint of anyone's, but someone a
+  // list would have this chat write to as though it were (docs/threat-model.md).
+  private isAccount(id: string): boolean {
+    return id === this.identityHex() || id === this.data.own?.identity || this.data.contacts.some((c) => c.identity === id || c.ownIdentity === id);
   }
 
   // Seals messages in turn in the conversation to send in, and keeps it moved past them. Writing
   // to them (`writes`) accepts their request, if they made one, and says this phone is open for a
   // while. A chat that appears offline says nothing else of being open; what it held goes with
   // what it writes, and once it shows again with whatever goes next. On a linked device each goes
-  // sealed for the primary instead, which seals it for the contact.
-  private async sealFor(contact: Contact, messages: Message[], writes: boolean): Promise<Uint8Array[]> {
+  // sealed for the primary instead, which seals it for the contact, unless this device writes to
+  // them itself (`isDirect`): then it goes in this device's own way to their account.
+  //
+  // A contact whose account lists devices is copied each message for each endpoint their list
+  // names, devices and the places that fill it alike, that it goes to (lib/endpoints.ts copiedAs):
+  // the whole message, or what it says of what came from that one and of what was read. The copies
+  // wait under the number the sealing gives (`copiesAfter`) until what went to the account went, not
+  // sealed yet; only then are they sealed (`copiesGo`), each in a conversation with that endpoint of
+  // its own, started then if there is none, whose first message says whose endpoint it is for
+  // (`to`), and from a linked device the account it speaks for (`acct`), and wait for the relay
+  // (`copies`). So what never goes moves none of those conversations on, and each endpoint's copies
+  // are sealed in the order they go. One whose first packet the relay took, but which has not
+  // answered in its conversation a day later, may never have had it: the next copy starts
+  // another (`Way.again`, `startsAgain`), and so on until it answers, two days later, then four,
+  // then every eight, those it has kept to open in. What went to an endpoint goes there once
+  // (`copied`): a message sealed again, as one tried again, is copied there no more. Once
+  // MAX_COPIES_EACH wait for an endpoint nothing new is copied to it, but a voice message goes
+  // on to its last part, so one message is copied whole or not at all. A copy says nothing of
+  // being open, nor asks. Each tells the relay what it carries as what went to the account does,
+  // to a device and a place that fills the list alike: the last packet of a message someone
+  // reads is one (`mark`), a way's first packet and all else quiet. `leaving`: says nothing of
+  // devices, and starts nothing with an endpoint.
+  private async sealFor(contact: Contact, messages: Message[], writes: boolean, leaving = false): Promise<Sealed> {
     const now = Date.now();
+    // Those too old to go go first, so they leave room.
+    await this.dropStale(now);
     const release = writes || !contact.hide;
-    const through = this.link?.through === true;
+    const direct = this.isDirect(contact, messages) ? contact.direct! : null;
+    const through = this.link?.through === true && !direct;
     const packetKey = this.ownPacketKey(contact);
-    const said = messages.map((message, i) => {
+    const said: Message[] = messages.map((message, i) => {
       const spare = message.from ? this.ownSpare : null;
       const on = writes ? Math.max(message.on, ONLINE_AFTER_WRITE) : contact.hide ? 0 : message.on;
       const first = i === 0 && release;
@@ -1037,56 +1369,471 @@ export class E2E {
         ask: message.ask && !contact.hide,
         got: first ? tags([...message.got, ...contact.heldGot.filter((tag) => !contact.heldRead.includes(tag))]) : message.got,
         read: first ? tags([...message.read, ...contact.heldRead]) : message.read,
-        // Said until their packets come sealed with it; never a linked device's own.
-        pk: contact.sealsIn || through ? '' : packetKey,
+        ...(leaving ? {} : this.saysDevices(contact)),
       };
     });
     // A linked device's chats restored from its backup have no conversation to write in (lib/devices.ts, copied).
-    if (!through && !contact.conversations[0]) throw new Error(t('These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.'));
-    let conversation = fromBase64(contact.conversations[0]);
+    if (!this.link?.through && !contact.conversations[0]) throw new Error(t('These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.'));
+    // What goes to each endpoint of theirs with a queue and room for it, and which messages' `got`
+    // went to the one they came from (`routed`, by message and endpoint): their account is not told those.
+    const cameOf = (tag: string) => this.cameFrom.get(`${contact.identity}|${tag}`) ?? '';
+    const waiting = this.waitingFor(contact.identity);
+    const copying = this.partOf(contact) && contact.dv !== undefined && (!this.link?.through || !!direct);
+    const ways: Held['ways'] = [];
+    const routed = new Set<string>();
+    let count = 0;
+    for (const way of copying ? (contact.endpoints ?? []) : []) {
+      if (!way.sender || this.isAccount(way.id) || (leaving && way.conversations.length === 0)) continue;
+      const waits = waiting.get(way.id) ?? 0;
+      const items = this.toCopy(contact.identity, way, said, cameOf, waits >= MAX_COPIES_EACH || (waits > 0 && this.isRefused(contact.identity, way)), routed, packetKey);
+      if (items.length === 0) continue;
+      // And its first packet, should one start, or the outbox have lost it (sealCopies).
+      const starts = way.conversations.length === 0 || (!leaving && startsAgain(way, now)) || (!!way.first && !this.fanout.copies.some((c) => c.c === contact.identity && c.w === way.id && c.first));
+      count += items.length + (starts ? 1 : 0);
+      ways.push({ w: way.id, items });
+    }
+    if (count > 0 && !(await this.roomFor(contact.identity, count))) {
+      ways.length = 0;
+      routed.clear();
+    }
+    // What goes to their account, sealed in the conversation it goes in.
+    const main = said.map((m, i) => ({ ...m, got: m.got.filter((tag) => !routed.has(`${i}|${cameOf(tag)}`)), pk: through || (direct ?? contact).sealsIn ? '' : packetKey }));
+    const plaintexts = main.map(encodeMessage);
+    const sealTo = (direct ?? contact).sealTo;
+    let conversation = through ? null : fromBase64((direct ?? contact).conversations[0]);
     const packets: Uint8Array[] = [];
-    const plaintexts = said.map(encodeMessage);
     for (const plaintext of plaintexts) {
       if (through) {
         packets.push(await this.link!.wrap(contact.identity, plaintext));
         continue;
       }
-      const sealed = await core.seal(conversation, plaintext);
+      const sealed = await core.seal(conversation!, plaintext);
       conversation = sealed.conversation;
-      packets.push(contact.sealTo ? sealPacket(this.keysOf(contact.sealTo), sealed.packet) : sealed.packet);
+      packets.push(sealTo ? sealPacket(this.keysOf(sealTo), sealed.packet) : sealed.packet);
     }
     const request = contact.request && !writes;
     const held = release ? { heldGot: [], heldRead: [] } : {};
-    const kept = through ? {} : { packetKey };
-    await this.save(this.withContact({ ...contact, ...held, ...kept, request, conversations: [toBase64(conversation), ...contact.conversations.slice(1)] }));
+    const kept = this.link?.through ? {} : { packetKey };
+    const sentIn = direct
+      ? { direct: { ...direct, conversations: [toBase64(conversation!), ...direct.conversations.slice(1)] } }
+      : through
+        ? {}
+        : { conversations: [toBase64(conversation!), ...contact.conversations.slice(1)] };
+    await this.save(this.withContact({ ...contact, ...held, ...kept, request, ...sentIn }));
     if (said.some((message) => message.on > 0)) this.told.set(contact.identity, now);
     if (!through) for (const plaintext of plaintexts) this.link?.sealed(contact.identity, plaintext);
-    return packets;
+    const to = direct ?? contact;
+    const copies = this.holdCopies({ c: contact.identity, ways, like: said[0], packetKey, leaving, at: now });
+    return { packets, sender: to.sender, relay: to.relay, relayKey: to.relayKey, spare: to.spare ?? null, first: !direct && contact.first ? fromBase64(contact.first) : null, copies, through };
   }
 
-  // Whether this chat's newest prekeys are still to go to a contact. Not from a linked device, nor
-  // to one who knows this chat by the space's identity (who starts nothing with this account), nor
-  // to a request not accepted.
-  private keysFor(contact: Contact): boolean {
-    const newest = this.data.prekeys?.[0];
-    return !this.link?.through && !contact.ownIdentity && !contact.request && contact.conversations.length > 0 && newest !== undefined && (contact.bundleSent ?? 0) < newest.at;
+  // What of `said` goes to one endpoint of the contact's account (`way`), as lib/endpoints.ts
+  // copiedAs says: each message copied whole, and what one says of what came from that endpoint and
+  // of what was read; none of it that went there before, nor a voice message's part but the one
+  // after those that went. Once as many wait for it as one endpoint holds, or one waits for it
+  // while the relay says its queue is full (`full`), only a voice message's next part. Says in
+  // `routed` which messages' `got` is that endpoint's and went there.
+  private toCopy(c: string, way: Way, said: Message[], cameOf: (tag: string) => string, full: boolean, routed: Set<string>, packetKey: string): ToCopy[] {
+    const pk = way.sealsIn ? '' : packetKey;
+    const sofar = new Map<string, number>();
+    const had = (key: string) => (sofar.has(key) ? sofar.get(key) : this.wentTo(c, way.id, key));
+    const items: ToCopy[] = [];
+    for (const [i, m] of said.entries()) {
+      const as = copiedAs({ ...m, ...m.more });
+      const came = m.got.filter((tag) => cameOf(tag) === way.id);
+      const got = came.filter((tag) => had(`got ${tag}`) === undefined);
+      const read = m.read.filter((tag) => had(`read ${tag}`) === undefined);
+      const key = as === 'whole' ? copyKey(m) : '';
+      const part = key && m.voice ? m.voice.part : 0;
+      const next = part > 0 ? had(key) === part : !full && (!key || had(key) === undefined);
+      let item: ToCopy | null = null;
+      if (as === 'whole' && next) item = { m: { ...m, ...SAYS_NOTHING, got, read, pk }, key, ...(key && m.voice ? { part } : {}), ...(readsAs(m) ? { mark: 'message' as const } : {}) };
+      else if (!full && got.length + read.length > 0) item = { m: receiptOf(m, got, read, pk), key: '' };
+      if (item) {
+        items.push(item);
+        if (item.key) sofar.set(item.key, part + 1);
+        for (const tag of got) sofar.set(`got ${tag}`, 1);
+        for (const tag of read) sofar.set(`read ${tag}`, 1);
+      }
+      if (came.length > 0 && (item || got.length === 0)) routed.add(`${i}|${way.id}`);
+    }
+    return items;
+  }
+
+  // Starts a conversation with an endpoint of a contact's account, as this account, or on a linked
+  // device as its endpoint: its first message says where this chat reads, the key it gives, which
+  // list of their account it holds, whose endpoint it is for, and from a device the account it
+  // speaks for. Null when it cannot be started.
+  private async startWay(contact: Contact, way: Way, like: Message, packetKey: string): Promise<core.Sealed | null> {
+    const device = this.link?.through === true;
+    const account = device ? this.data.endpoint : null;
+    const acct = device ? this.data.own?.identity : undefined;
+    if (device && (!account || !acct)) return null;
+    const opening: Message = {
+      from: like.from,
+      relay: like.relay,
+      relayKey: like.relayKey,
+      spare: like.spare,
+      text: '',
+      tag: '',
+      erase: null,
+      timer: null,
+      timerAt: 0,
+      lasts: 0,
+      got: [],
+      read: [],
+      voice: null,
+      file: null,
+      ...SAYS_NOTHING,
+      call: null,
+      group: null,
+      pk: packetKey,
+      ...this.saysDevices(contact),
+      to: contact.identity,
+      ...(acct ? { acct } : {}),
+    };
+    return core.startConversation(account ? fromBase64(account) : this.account, fromBase64Url(way.bundle), encodeMessage(opening)).catch(() => null);
+  }
+
+  // Whether a linked device writes these to a contact itself, not through the primary: their
+  // account started a conversation with this device's endpoint, which the list this device holds
+  // names, and they hold that list too. Never a call's or a group's signal, nor one sent for later,
+  // which the primary sends.
+  private isDirect(contact: Contact, messages: Message[]): boolean {
+    const own = this.data.own?.list;
+    const endpoint = this.ownEndpoint;
+    if (!this.link?.through || !this.takesPart || !endpoint || !own?.real.includes(endpoint.id) || contact.dv !== own.n) return false;
+    if (!contact.direct?.conversations[0] || !contact.direct.sender) return false;
+    return messages.every((m) => !m.call && !m.group && !m.due);
+  }
+
+  // Keeps what a sealing is to copy until what it sealed for the account went (`copiesAfter`): the
+  // number it waits under, 0 for none. What waited too long, or the oldest past MAX_PENDING, goes
+  // unsent, and so never sealed.
+  private holdCopies(held: Held): number {
+    for (const [n, h] of this.heldCopies) if (held.at - h.at >= PENDING_LASTS) this.heldCopies.delete(n);
+    if (held.ways.length === 0) return 0;
+    while (this.heldCopies.size >= MAX_PENDING) this.heldCopies.delete(this.heldCopies.keys().next().value!);
+    const n = this.nextPending++;
+    this.heldCopies.set(n, held);
+    return n;
+  }
+
+  // How many copies wait for each endpoint of a contact's: for the relay, and for what went to the account.
+  private waitingFor(identity: string): Map<string, number> {
+    const counts = new Map<string, number>();
+    const add = (w: string, n: number) => counts.set(w, (counts.get(w) ?? 0) + n);
+    for (const c of this.fanout.copies) if (c.c === identity) add(c.w, 1);
+    for (const held of this.heldCopies.values()) if (held.c === identity) for (const { w, items } of held.ways) add(w, items.length);
+    return counts;
+  }
+
+  // Whether the relay said the queue of a contact's endpoint is full the last time a copy went to
+  // it where it reads now.
+  private isRefused(c: string, way: Way): boolean {
+    return this.refused.has(`${c}|${way.id}|${way.sender}|${way.relay}`);
+  }
+
+  // Makes room in the outbox for `count` more of a contact's copies: when there is none, those for
+  // an endpoint whose queue the relay said is full give way first, whoever's they are, the oldest
+  // first and a conversation's first packets last, as what no one takes now should keep no one else
+  // out; then the oldest of the contact with the most, while they have more than this one would,
+  // first packets last. Says whether there is room.
+  private async roomFor(identity: string, count: number): Promise<boolean> {
+    const held = [...this.heldCopies.values()].reduce((n, h) => n + h.ways.reduce((m, w) => m + w.items.length, 0), 0);
+    let over = this.fanout.copies.length + held + count - MAX_COPIES;
+    if (over <= 0) return true;
+    const ways = this.waysNow();
+    const stuck = this.fanout.copies.filter((c) => {
+      const way = ways.get(`${c.c}|${c.w}`);
+      return !!way && this.isRefused(c.c, way);
+    });
+    const gone = new Set<number>();
+    for (const c of [...stuck.filter((c) => !c.first), ...stuck.filter((c) => c.first)]) {
+      if (over <= 0) break;
+      gone.add(c.n);
+      over--;
+    }
+    const counts = new Map<string, number>();
+    for (const c of this.fanout.copies) if (!gone.has(c.n)) counts.set(c.c, (counts.get(c.c) ?? 0) + 1);
+    const theirs = (counts.get(identity) ?? 0) + count;
+    while (over > 0) {
+      let most = '';
+      for (const [c, n] of counts) if (c !== identity && n > (counts.get(most) ?? 0)) most = c;
+      if (!most || (counts.get(most) ?? 0) <= theirs) return false;
+      const oldest = this.fanout.copies.find((c) => c.c === most && !c.first && !gone.has(c.n)) ?? this.fanout.copies.find((c) => c.c === most && !gone.has(c.n));
+      if (!oldest) return false;
+      gone.add(oldest.n);
+      counts.set(most, counts.get(most)! - 1);
+      over--;
+    }
+    await this.dropCopies((c) => gone.has(c.n));
+    return true;
   }
 
   /**
-   * The contacts this chat's newest prekeys are still to go to: each in a message of its own
-   * (`seal` with `keys`), as they make it larger than a text alone, through the relay or to their
-   * phone nearby, never over LoRa. Then `keysGiven`.
+   * The copies a sealing made for the endpoints of the contact's account (its `copies`) are sealed
+   * and go to the relay once what it sealed for their account went (`going`), however it went. If
+   * that fails they never go, and none of those endpoints' conversations moved on: the message,
+   * sealed again when it is tried again, makes them anew. Unless it can go later (lib/relay.ts
+   * canTryLater: their queue is full, or a relay cannot be reached, as the relay said too when
+   * only LoRa was left and it is too large for LoRa) and is to go again as it is (`waits`, its tag
+   * kept): then they go all the same, so their endpoints have it while their account cannot take
+   * it yet, and what is sealed for it again copies none of it. With `waits` 'full', only once the
+   * relay said their queue is full, as hidden chats do (lib/waiting.ts handOverHidden).
+   */
+  async copiesAfter<T>(copies: number, going: Promise<T>, waits: boolean | 'full' = false): Promise<T> {
+    let went: T;
+    try {
+      went = await going;
+    } catch (error) {
+      const later = canTryLater(error) || (error instanceof TooLargeForLoraError && canTryLater(error.relayError));
+      if (waits === 'full' ? isQueueFull(error) : waits && later) await this.copiesGo(copies).catch(() => undefined);
+      else this.heldCopies.delete(copies);
+      throw error;
+    }
+    await this.copiesGo(copies).catch(() => undefined);
+    return went;
+  }
+
+  /** The copies a sealing made (its `copies`) are sealed and go to the relay: what it sealed for the account went. */
+  copiesGo(copies: number): Promise<void> {
+    return this.run(async () => {
+      const held = this.heldCopies.get(copies);
+      this.heldCopies.delete(copies);
+      if (held) await this.sealCopies(held);
+    });
+  }
+
+  // Seals what a sealing is to copy, for each endpoint in its conversation as it is now: started now
+  // if there is none, or another if it is to start again (`startsAgain`), its first packet first
+  // again if the outbox lost it, and none of it that went there meanwhile. Keeps the conversations
+  // moved past them, then puts them after those that wait.
+  private async sealCopies(held: Held): Promise<void> {
+    const now = Date.now();
+    await this.dropStale(now);
+    const contact = this.find(held.c);
+    if (!contact?.endpoints) return;
+    const copies: Omit<Copy, 'n'>[] = [];
+    const went: { w: string; key: string; n: number }[] = [];
+    const moved = new Map<string, Way>();
+    for (const { w: id, items } of held.ways) {
+      let w = contact.endpoints.find((way) => way.id === id);
+      if (!w?.sender) continue;
+      const sofar = new Map<string, number>();
+      const had = (key: string) => (sofar.has(key) ? sofar.get(key) : this.wentTo(held.c, id, key));
+      const due = items.filter((item) => {
+        if (item.key && had(item.key) !== (item.part || undefined)) return false;
+        if (item.key) sofar.set(item.key, (item.part ?? 0) + 1);
+        return true;
+      });
+      if (due.length === 0) continue;
+      const of = { c: held.c, w: id, at: now };
+      if (w.conversations.length === 0 || (!held.leaving && startsAgain(w, held.at))) {
+        if (held.leaving) continue;
+        const started = await this.startWay(contact, w, held.like, held.packetKey);
+        if (!started) continue;
+        // Until it answers in it: those it has open what it sends in them still.
+        w = { ...w, conversations: [toBase64(started.conversation), ...w.conversations].slice(0, MAX_CONVERSATIONS), first: toBase64(started.packet), again: now + againAfter(w.conversations.length) };
+        copies.push({ ...of, p: w.first, first: true });
+      } else if (w.first && !this.fanout.copies.some((c) => c.c === held.c && c.w === id && c.first)) copies.push({ ...of, p: w.first, first: true });
+      let inWay = fromBase64(w.conversations[0]);
+      for (const item of due) {
+        const sealed = await core.seal(inWay, encodeMessage(item.m));
+        inWay = sealed.conversation;
+        copies.push({ ...of, p: toBase64(w.sealTo ? sealPacket(this.keysOf(w.sealTo), sealed.packet) : sealed.packet), ...(item.mark ? { mark: item.mark } : {}) });
+        if (item.key) went.push({ w: id, key: item.key, n: (item.part ?? 0) + 1 });
+        for (const tag of item.m.got) went.push({ w: id, key: `got ${tag}`, n: 1 });
+        for (const tag of item.m.read) went.push({ w: id, key: `read ${tag}`, n: 1 });
+      }
+      moved.set(id, { ...w, conversations: [toBase64(inWay), ...w.conversations.slice(1)] });
+    }
+    if (moved.size === 0) return;
+    await this.save(this.withContact({ ...contact, endpoints: contact.endpoints.map((w) => moved.get(w.id) ?? w) }));
+    for (const { w, key, n } of went) this.keepWent(held.c, w, key, n);
+    await this.addCopies(copies);
+  }
+
+  // How far what `key` names went to a contact's endpoint `w` (`copied`): how many of a voice
+  // message's parts, 1 for all else, none if it did not.
+  private wentTo(c: string, w: string, key: string): number | undefined {
+    const at = `${c}|${w}|${key}`;
+    const n = this.copied.get(at);
+    // Asked of again, it is remembered as long as what went last.
+    if (n !== undefined) this.keepWent(c, w, key, n);
+    return n;
+  }
+
+  private keepWent(c: string, w: string, key: string, n: number): void {
+    const at = `${c}|${w}|${key}`;
+    this.copied.delete(at);
+    this.copied.set(at, n);
+    if (this.copied.size > MAX_COPIED) this.copied.delete(this.copied.keys().next().value!);
+  }
+
+  // The ways to contacts' endpoints, by contact and endpoint.
+  private waysNow(): Map<string, Way> {
+    const ways = new Map<string, Way>();
+    for (const c of this.data.contacts) for (const w of c.endpoints ?? []) ways.set(`${c.identity}|${w.id}`, w);
+    return ways;
+  }
+
+  // Puts copies after those that wait for the relay, once the conversations they were sealed in
+  // are kept, and says there are more. Not kept, they are lost: those endpoints miss them. Those
+  // for an endpoint their list no longer names go.
+  private async addCopies(copies: Omit<Copy, 'n'>[]): Promise<void> {
+    const ways = this.waysNow();
+    let next = this.fanout.next;
+    const added = copies.filter((c) => ways.has(`${c.c}|${c.w}`)).map((c) => ({ ...c, n: next++ }));
+    if (added.length === 0) return;
+    this.fanout = { copies: [...this.fanout.copies, ...added], next };
+    await this.keepFanout(this.fanout).catch(() => undefined);
+    this.copyListeners.forEach((listener) => listener());
+  }
+
+  // Lets go of the copies `gone` says.
+  private async dropCopies(gone: (copy: Copy) => boolean): Promise<void> {
+    if (!this.fanout.copies.some(gone)) return;
+    this.fanout = { ...this.fanout, copies: this.fanout.copies.filter((c) => !gone(c)) };
+    await this.keepFanout(this.fanout).catch(() => undefined);
+  }
+
+  // Lets go of the copies older than the relay keeps a message, and of those for an endpoint no
+  // list of their contact's names now, so one unlinked meanwhile gets nothing more, or whose
+  // conversations were let go.
+  private async dropStale(now = Date.now()): Promise<void> {
+    if (this.fanout.copies.length === 0) return;
+    const ways = this.waysNow();
+    await this.dropCopies((c) => !ways.get(`${c.c}|${c.w}`)?.conversations.length || now - c.at >= COPIES_LAST);
+  }
+
+  /**
+   * The copies of what this chat sealed for the endpoints of contacts' accounts that wait for the
+   * relay, oldest first (lock/fanout-data.ts), each with where its endpoint reads now: none for one
+   * whose queue the relay does not have, until where it reads is said again. Send them, then
+   * `copiesSent`.
+   */
+  copies(now = Date.now()): Outgoing[] {
+    const ways = this.waysNow();
+    return this.fanout.copies.flatMap((c) => {
+      const w = ways.get(`${c.c}|${c.w}`);
+      return w?.sender && now - c.at < COPIES_LAST ? [{ ...c, s: w.sender, relay: w.relay, rk: w.relayKey }] : [];
+    });
+  }
+
+  /**
+   * The relay took the copies `sent`, and has no queue for those `gone` (or none can be reached):
+   * nothing more goes to that endpoint, nor is sealed for it, until where it reads is said again.
+   * Of one that went where its endpoint no longer reads, by the time it went, nothing changes: it
+   * goes again where it reads now. For those `full` the relay said that endpoint's queue is full:
+   * they wait, but nothing new is copied to it while one does, and they give way first should the
+   * outbox fill (`roomFor`), until the relay takes one there.
+   */
+  copiesSent(sent: Outgoing[], gone: Outgoing[] = [], full: Outgoing[] = []): Promise<void> {
+    return this.run(async () => {
+      const ways = this.waysNow();
+      const current = (o: Outgoing) => {
+        const w = ways.get(`${o.c}|${o.w}`);
+        return !!w && w.sender === o.s && w.relay === o.relay && w.relayKey === o.rk;
+      };
+      for (const o of sent) this.refused.delete(`${o.c}|${o.w}|${o.s}|${o.relay}`);
+      for (const o of full.filter(current)) this.refused.add(`${o.c}|${o.w}|${o.s}|${o.relay}`);
+      const key = (o: Pick<Copy, 'c' | 'w'>) => `${o.c}|${o.w}`;
+      const lost = new Set(gone.filter(current).map(key));
+      const firsts = new Set(sent.filter((o) => o.first && current(o)).map(key));
+      const done = new Set([...sent, ...gone].filter(current).map((o) => o.n));
+      let changed = false;
+      const contacts = this.data.contacts.map((contact) => {
+        const touched = (w: Way) => lost.has(`${contact.identity}|${w.id}`) || firsts.has(`${contact.identity}|${w.id}`);
+        if (!contact.endpoints || !contact.endpoints.some(touched)) return contact;
+        changed = true;
+        const endpoints = contact.endpoints.map((w) => {
+          const at = `${contact.identity}|${w.id}`;
+          if (lost.has(at)) return { ...w, sender: '' };
+          return firsts.has(at) ? { ...w, first: '' } : w;
+        });
+        return { ...contact, endpoints };
+      });
+      if (changed) await this.save({ ...this.data, contacts });
+      await this.dropCopies((c) => done.has(c.n) || lost.has(key(c)));
+    });
+  }
+
+  /** Calls `listener` each time copies were added to those that wait for the relay. Returns how to stop. */
+  onCopies(listener: () => void): () => void {
+    this.copyListeners.add(listener);
+    return () => {
+      this.copyListeners.delete(listener);
+    };
+  }
+
+  // What of this account a contact is still to be given, in a message of its own: its newest
+  // prekeys, and its device list with its bundle, whose key signed it (`ak`, `dl`). Not from a
+  // linked device, nor to one who knows this chat by the space's identity (who starts nothing with
+  // this account), nor to a request not accepted.
+  private keysFor(contact: Contact): { ak: string; dl?: DeviceList } | null {
+    if (this.link?.through || contact.ownIdentity || contact.request || !contact.conversations[0]) return null;
+    const newest = this.data.prekeys?.[0];
+    const prekeys = newest !== undefined && (contact.bundleSent ?? 0) < newest.at;
+    const list = this.listFor(contact);
+    if (!prekeys && !list) return null;
+    const ak = toBase64Url(newest ? fromBase64(newest.bundle) : this.bundle);
+    return { ak, ...(list ? { dl: { b: list.b, s: list.s, ...(list.r ? { r: routesFor(list.r, contact.identity) } : {}) } } : {}) };
+  }
+
+  // The device list a contact is still to be given: to one who says which of this account's lists
+  // they hold (`dv`) when it is an older one, or none, once and again a day after should they still
+  // say so; or the same one, when where its endpoints read changed since they were given it. Each
+  // by which list was given, its `n` and `rAt`, not by the clock, which may have been set back
+  // since. None while where one of its endpoints reads is not known: one without, which only a
+  // place that fills it could be, would say which that is; but to one whose list may name a device
+  // this one does not (`cut`), it goes all the same, as cutting off a device comes first.
+  private listFor(contact: Contact, now = Date.now()): OwnList | null {
+    const list = this.data.list;
+    if (!this.takesPart || !list || contact.dv === undefined) return null;
+    if (!this.routed(list) && !(contact.dv > 0 && contact.dv <= (list.cut ?? 0))) return null;
+    const given = contact.listGiven;
+    const same = given?.n === list.n && given.rAt === (list.rAt ?? 0);
+    const sent = contact.listSent ?? 0;
+    const due = contact.dv < list.n ? !same || now - sent >= LIST_AGAIN || sent > now : contact.dv === list.n && !same;
+    return due ? list : null;
+  }
+
+  /**
+   * The contacts this chat's newest prekeys, or the account's device list, are still to go to: each
+   * in a message of its own (`seal` with `keys`), as they make it larger than a text alone, through
+   * the relay or to their phone nearby, never over LoRa. Then `keysGiven`.
    */
   keysDue(): string[] {
     return this.data.contacts.filter((contact) => this.keysFor(contact)).map((contact) => contact.identity);
   }
 
-  /** The newest prekeys went to this contact. */
+  // Whether where each endpoint of the list reads is known.
+  private routed(list: OwnList): boolean {
+    if (this.listed?.b !== list.b) this.listed = { b: list.b, ids: bodyOf(list)?.d.map((e) => e.i) ?? [] };
+    return this.listed.ids.length > 0 && this.listed.ids.every((id) => !!list.r?.[id]);
+  }
+
+  /** What `seal` sealed with `keys` for this contact went: given as it was when it was sealed, so a list or a route changed since is given too. */
   keysGiven(identity: string): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
       const newest = this.data.prekeys?.[0];
-      if (contact && newest) await this.save(this.withContact({ ...contact, bundleSent: newest.at }));
+      const sealed = this.listSealed.get(identity);
+      this.listSealed.delete(identity);
+      const list = sealed ? { listSent: sealed.at, listGiven: { n: sealed.n, rAt: sealed.rAt } } : {};
+      if (contact && (newest || sealed)) await this.save(this.withContact({ ...contact, ...(newest ? { bundleSent: newest.at } : {}), ...list }));
+    });
+  }
+
+  /** On the primary: keeps where each endpoint of the device list as last signed (`n`) reads, and the queues made for those only filling it (`q`). */
+  keepRoutes(n: number, r: Record<string, Route>, q: Record<string, string>): Promise<void> {
+    return this.run(async () => {
+      const list = this.data.list;
+      if (!list || list.n !== n) return;
+      const moved = JSON.stringify(list.r ?? {}) !== JSON.stringify(r);
+      if (!moved && JSON.stringify(list.q ?? {}) === JSON.stringify(q)) return;
+      await this.save({ ...this.data, list: { ...list, r, q, ...(moved ? { rAt: laterThan(list.rAt) } : {}) } });
     });
   }
 
@@ -1113,7 +1860,16 @@ export class E2E {
       // changes them here, and a contact's message the primary passed on opens as theirs.
       const linked = this.link ? await this.link.open(packet).catch(() => null) : null;
       if (linked?.kind === 'taken') {
-        if (linked.contacts) await this.save({ ...this.data, contacts: linked.contacts(this.data.contacts) });
+        if (linked.contacts) {
+          const held = new Map(this.data.contacts.map((c) => [c.identity, c.list?.n ?? 0]));
+          // The entries of a list the phone gave that name an account are no endpoints, as here.
+          const contacts = linked.contacts(this.data.contacts);
+          const account = (id: string) => id === this.identityHex() || id === this.data.own?.identity || contacts.some((o) => o.identity === id || o.ownIdentity === id);
+          await this.save({ ...this.data, contacts: contacts.map((c) => (c.endpoints?.some((w) => account(w.id)) ? { ...c, endpoints: c.endpoints.filter((w) => !account(w.id)) } : c)) });
+          // A contact's list given by the phone: what their endpoints started with this one may be taken now.
+          for (const c of this.data.contacts) if ((c.list?.n ?? 0) > (held.get(c.identity) ?? 0)) await this.retryUnverified(c.identity);
+          await this.retryEarly();
+        }
         return { kind: 'refused', reason: 'linked' };
       }
       if (linked) return this.open(packet, linked);
@@ -1121,8 +1877,15 @@ export class E2E {
         // Whose it is, by its mark: then only their conversations are tried.
         const contact = this.data.contacts.find((c) => sealedWith(this.keysOf(this.ownPacketKey(c)), packet));
         const inner = contact ? openPacket(this.keysOf(this.ownPacketKey(contact)), packet) : null;
-        if (!contact || !inner || (await core.packetKind(inner)) !== 'following') return { kind: 'refused', reason: 'unknown' };
-        return this.open(inner, null, { only: contact.identity, sealed: true });
+        if (contact && inner && (await core.packetKind(inner)) === 'following') return this.open(inner, null, { only: contact.identity, sealed: true });
+        // On a linked device, one sealed with the key the account's list gives a contact with where
+        // its endpoint reads, by them or an endpoint of theirs not given another yet: whose it is, by
+        // its mark, as that key is each contact's own (lib/sealed-packet.ts entryKey).
+        const seed = !contact && this.link?.through ? this.endpointKey() : '';
+        const listed = seed ? this.data.contacts.find((c) => sealedWith(this.keysOf(entryKeyOf(seed, c.identity)), packet)) : undefined;
+        const opened = listed ? openPacket(this.keysOf(entryKeyOf(seed, listed.identity)), packet) : null;
+        if (listed && opened && (await core.packetKind(opened)) === 'following') return this.open(opened, null, { only: listed.identity });
+        return { kind: 'refused', reason: 'unknown' };
       }
       const kind = await core.packetKind(packet);
       if (kind === 'first') return this.accept(packet);
@@ -1131,20 +1894,39 @@ export class E2E {
     });
   }
 
-  private async accept(packet: Uint8Array): Promise<Received> {
+  // A first packet: a contact starting a conversation with this account, or someone new who has its
+  // link (a message request). On a linked device, whose endpoint alone takes them, one a contact's
+  // account starts with it, or one of their endpoints (`acct`); each only when it says it is for
+  // this device's account (`to`). An account takes none that says either: no list names it, so one
+  // that does was meant for an endpoint of someone else's.
+  private async accept(packet: Uint8Array, retry = false): Promise<Received> {
     const id = toHex(await core.firstMessageId(packet)).slice(0, 32);
     if (this.data.seen.includes(id)) return { kind: 'refused', reason: 'replay' };
+    const device = this.link?.through === true;
+    if (device && (!this.takesPart || !this.data.endpoint)) return { kind: 'refused', reason: 'unknown' };
     let opened: core.Opened;
     try {
-      opened = await core.acceptConversation(this.account, packet, (this.data.prekeys ?? []).map((p) => fromBase64(p.secret)));
+      opened = device
+        ? await core.acceptConversation(fromBase64(this.data.endpoint!), packet)
+        : await core.acceptConversation(this.account, packet, (this.data.prekeys ?? []).map((p) => fromBase64(p.secret)));
     } catch {
       return { kind: 'refused', reason: 'unknown' };
     }
     const identity = toHex(await core.conversationPeer(opened.conversation));
+    const message = decodeMessage(opened.plaintext);
+    if (device) {
+      const account = this.data.own?.identity;
+      if (!account || message.to !== account) return { kind: 'refused', reason: 'unknown' };
+      if (message.acct !== undefined) return message.acct ? this.acceptEndpoint(identity, message.acct, opened, message, id, toBase64(packet), retry) : { kind: 'refused', reason: 'unknown' };
+      const known = this.find(identity);
+      if (known) return this.acceptDirect(known, opened, message, id);
+      if (!retry) await this.save({ ...this.data, early: withEarlyFirst(this.data.early, toBase64(packet), identity, Date.now()) });
+      return { kind: 'refused', reason: 'unknown' };
+    }
+    if (message.to !== undefined || message.acct !== undefined) return { kind: 'refused', reason: 'unknown' };
     const known = this.find(identity);
     // The space's list moves on with every new contact: theirs keeps what they sent.
     if (known?.seen.includes(id)) return { kind: 'refused', reason: 'replay' };
-    const message = decodeMessage(opened.plaintext);
     const timing = timerOf(message, known);
     const contact: Contact = {
       identity,
@@ -1170,18 +1952,164 @@ export class E2E {
       // A new conversation from them: their phone may have lost this chat's key, so it is said again.
       sealsIn: false,
       ...(ringSenderOf(message, known) ? { ringSender: ringSenderOf(message, known) } : {}),
+      // What is known of their devices stays with them. Added again on their side, saying where
+      // they read, their account's devices may have lost what they spoke with this chat's
+      // endpoints in: those conversations start again.
+      ...(known?.dv !== undefined ? { dv: known.dv } : {}),
+      ...(known?.list ? { list: known.list } : {}),
+      ...(known?.endpoints ? { endpoints: message.from ? known.endpoints.map(blankAgain) : known.endpoints } : {}),
+      ...(known?.listSent ? { listSent: known.listSent } : {}),
+      ...(known?.listGiven ? { listGiven: known.listGiven } : {}),
+      ...(known?.took ? { took: known.took } : {}),
     };
-    await this.save({ ...this.withContact(contact), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
+    const learned = this.partOf(contact) ? await this.heardOf(contact, message) : {};
+    const { contact: next, twice } = tookIn({ ...contact, ...learned }, message, this.link?.through === true);
+    await this.save({ ...this.withContact(next), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
+    if (next.list && next.list.n !== known?.list?.n) await this.retryUnverified(identity);
     this.link?.opened(identity, opened.plaintext);
+    if (message.tag) this.noteCame(identity, message.tag, '');
+    return this.receivedOf(next, message, timing.received, !known, '', twice);
+  }
+
+  // On a linked device: a conversation a contact's account started with its endpoint, as it writes
+  // to every endpoint this account's list names: this device's own way to them from then on. One
+  // started while this device had one already: their side started its way here again, as when it
+  // added this account again and its devices may have lost what they spoke with this one, or as
+  // this one never answered. Each way to their endpoints then starts again with the next copy,
+  // those it has kept to open in (`Way.again`), as on the phone when their account starts anew.
+  private async acceptDirect(contact: Contact, opened: core.Opened, message: Message, id: string): Promise<Received> {
+    const was = contact.direct;
+    if (was?.seen.includes(id)) return { kind: 'refused', reason: 'replay' };
+    const now = Date.now();
+    const endpoints = was?.conversations.length ? contact.endpoints?.map((w) => (w.conversations.length > 0 ? { ...w, again: now } : w)) : contact.endpoints;
+    const direct: Way = {
+      id: contact.identity,
+      bundle: '',
+      sender: message.from || was?.sender || '',
+      ...(message.from ? whereOf(message) : { relay: was?.relay ?? '', relayKey: was?.relayKey ?? '' }),
+      spare: message.from ? (message.spare ?? null) : (was?.spare ?? null),
+      conversations: [toBase64(opened.conversation), ...(was?.conversations ?? [])].slice(0, MAX_CONVERSATIONS),
+      first: '',
+      seen: [...(was?.seen ?? []), id].slice(-MAX_SEEN_EACH),
+      sealTo: message.pk || was?.sealTo || '',
+      sealsIn: false,
+    };
+    return this.tookFirst({ ...contact, direct, ...(endpoints ? { endpoints } : {}) }, contact, opened, message, id, '', '');
+  }
+
+  // On a linked device: a conversation an endpoint of a contact's account (`acct`) started with
+  // this one: taken only once the list of that account checked here names it, never as a message
+  // request. One of a contact who knows about devices that the list cannot be checked to name yet
+  // waits for the account's next list (E2EData.unverified), in place of one before from the same
+  // endpoint; tried again (`retry`), it waits no more.
+  private async acceptEndpoint(identity: string, acct: string, opened: core.Opened, message: Message, id: string, packet: string, retry: boolean): Promise<Received> {
+    const contact = this.find(acct);
+    const way = contact?.endpoints?.find((w) => w.id === identity);
+    if (!contact || !way) {
+      if (!retry && contact?.dv !== undefined) await this.save({ ...this.data, unverified: withUnverified(this.data.unverified, packet, acct, identity, Date.now()) });
+      return { kind: 'refused', reason: 'unknown' };
+    }
+    if (way.seen.includes(id)) return { kind: 'refused', reason: 'replay' };
+    // What goes to it goes in the one it started, which it has: none is to start again.
+    const { again: _again, ...kept } = way;
+    const moved: Way = {
+      ...kept,
+      ...(message.from ? { sender: message.from, ...whereOf(message), spare: message.spare ?? null } : {}),
+      conversations: [toBase64(opened.conversation), ...way.conversations].slice(0, MAX_CONVERSATIONS),
+      seen: [...way.seen, id].slice(-MAX_SEEN_EACH),
+      sealTo: message.pk || way.sealTo,
+      sealsIn: false,
+    };
+    return this.tookFirst({ ...contact, endpoints: contact.endpoints!.map((w) => (w.id === identity ? moved : w)) }, contact, opened, message, id, identity, packet);
+  }
+
+  // Keeps what a first packet from one of a contact's endpoints, or from their account to this
+  // device's endpoint (`from` empty), brought; one that waited for their list (`packet`) waits no more.
+  private async tookFirst(contact: Contact, was: Contact, opened: core.Opened, message: Message, id: string, from: string, packet: string): Promise<Received> {
+    const timing = timerOf(message, contact);
+    const learned = from ? {} : await this.heardOf(contact, message);
+    const { contact: next, twice } = tookIn({ ...contact, ...learned, timer: timing.timer, timerAt: timing.timerAt }, message, this.link?.through === true);
+    const unverified = this.data.unverified?.filter((u) => u.packet !== packet);
+    await this.save({ ...this.withContact(next), seen: [...this.data.seen, id].slice(-MAX_SEEN), ...(unverified ? { unverified } : {}) });
+    if (next.list && next.list.n !== was.list?.n) await this.retryUnverified(next.identity);
+    this.link?.opened(next.identity, opened.plaintext);
+    if (message.tag) this.noteCame(next.identity, message.tag, from);
+    return this.receivedOf(next, message, timing.received, false, from, twice);
+  }
+
+  // The first packets from endpoints of an account that waited for its list, tried again once it
+  // has a later one: those it names are taken, the others go. What they say is not shown: a
+  // conversation's first message has no text.
+  private async retryUnverified(acct: string): Promise<void> {
+    const now = Date.now();
+    const waiting = (this.data.unverified ?? []).filter((u) => u.acct === acct && now - u.at < UNVERIFIED_LASTS);
+    if (!this.data.unverified?.some((u) => u.acct === acct)) return;
+    await this.save({ ...this.data, unverified: this.data.unverified.filter((u) => u.acct !== acct) });
+    for (const u of waiting) await this.accept(fromBase64(u.packet), true).catch(() => undefined);
+  }
+
+  // On a linked device: the first packets of contacts it did not know yet (E2EData.early), tried
+  // again once the phone said who one is: a new contact may have had the list, and written here,
+  // before that came. Those of others wait on, until they are too old.
+  private async retryEarly(): Promise<void> {
+    const now = Date.now();
+    const held = this.data.early ?? [];
+    const waits = held.filter((e) => now - e.at < EARLY_LASTS && !this.find(e.identity));
+    if (waits.length === held.length) return;
+    const known = held.filter((e) => now - e.at < EARLY_LASTS && this.find(e.identity));
+    const { early: _early, ...rest } = this.data;
+    await this.save(waits.length > 0 ? { ...rest, early: waits } : rest);
+    for (const e of known) await this.accept(fromBase64(e.packet), true).catch(() => undefined);
+  }
+
+  // What a message from a contact's account says of the devices of either: which of this account's
+  // lists they hold (`dv`), and their account's own list (`dl`), checked against the bundle that
+  // came with it (`ak`) or the one kept, both from inside the conversation with their account, so
+  // the ways to the endpoints it names follow it. One that says nothing of devices is from a chat
+  // that knows nothing of them (an Erevos before, or theirs moved into or out of hidden chats): what
+  // was kept of their devices goes, and nothing more goes to those.
+  private async heardOf(contact: Contact, message: Message): Promise<Partial<Contact>> {
+    if (message.dv === undefined) return { dv: undefined, list: undefined, endpoints: undefined, direct: undefined, listSent: undefined, listGiven: undefined };
+    const learned: Partial<Contact> = { dv: message.dv };
+    // They hold an older list than they said: given it again.
+    if (contact.dv !== undefined && message.dv < contact.dv) Object.assign(learned, { listSent: 0, listGiven: undefined });
+    if (!message.dl) return learned;
+    const bundles = [...(message.ak ? [fromBase64Url(message.ak)] : []), ...(contact.bundle ? [fromBase64(contact.bundle)] : [])];
+    for (const bundle of bundles) {
+      const body = await verifyList(bundle, contact.identity, message.dl, contact.list?.n ?? 0).catch(() => null);
+      if (!body) continue;
+      if (body === 'same') learned.endpoints = withRoutes(contact.endpoints, message.dl.r);
+      else {
+        learned.list = { b: message.dl.b, s: message.dl.s, n: body.n };
+        // An entry that names an account, this one or a contact's, is none of their endpoints.
+        learned.endpoints = waysFor(contact.endpoints, body.d, message.dl.r, (id) => this.isAccount(id));
+      }
+      // On a linked device, where no conversation starts with it, the bundle that holds is kept here.
+      if (this.link?.through) learned.bundle = toBase64(bundle);
+      break;
+    }
+    return learned;
+  }
+
+  // Remembers which way one of a contact's messages came, by its tag ('' for their account).
+  private noteCame(identity: string, tag: string, from: string): void {
+    const key = `${identity}|${tag}`;
+    this.cameFrom.delete(key);
+    this.cameFrom.set(key, from);
+    if (this.cameFrom.size > MAX_CAME) this.cameFrom.delete(this.cameFrom.keys().next().value!);
+  }
+
+  // A contact's message, as the chat takes it: `twice` when it was taken before.
+  private receivedOf(contact: Contact, message: Message, timing: { timer: number; timerChanged: boolean }, added: boolean, from: string, twice = false): Received {
+    const { identity, request } = contact;
     const { text, tag, erase, got, read, voice, file, ask, call, group } = message;
-    const { request } = contact;
     const online = this.heard(identity, message);
     const quiet = message.quiet === true;
     const due = message.due ?? 0;
     const re = message.re ?? '';
     const react = message.react ?? null;
     const more = message.more ?? {};
-    return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, online, ask, call, group, quiet, due, re, react, more, ...timing.received };
+    return { kind: 'message', identity, text, tag, added, request, erase, got, read, voice, file, online, ask, call, group, quiet, due, re, react, more, from, twice, ...timing };
   }
 
   // A contact's newer prekeys (`ak`), given in their conversation: kept, and a new conversation
@@ -1201,7 +2129,7 @@ export class E2E {
       return null;
     }
     if (toBase64(bundle) === contact.bundle) return null;
-    const first = { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: this.ownPacketKey(contact) };
+    const first = { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: this.ownPacketKey(contact), ...this.saysDevices(contact) };
     const started = await core.startConversation(this.account, bundle, encodeMessage(first));
     const [sending, ...older] = contact.conversations;
     return { bundle: toBase64(bundle), conversations: [sending, toBase64(started.conversation), ...older].slice(0, MAX_CONVERSATIONS), renew: toBase64(started.packet) };
@@ -1219,57 +2147,81 @@ export class E2E {
 
   // `given`: a contact's message the primary passed on, already opened (lib/devices.ts).
   // `sealed`: whether the packet came sealed for this chat (lib/sealed-packet.ts), with `only` the
-  // contact it was sealed for; unsaid for one a linked device passed on.
+  // contact it was sealed for; unsaid for one a linked device passed on. Tried in the conversations
+  // with their account, but on a linked device, which has none, and in those with the endpoints of
+  // their account and, on a device, its own way to their account.
   private async open(packet: Uint8Array, given: { identity: string; plaintext: Uint8Array } | null = null, { only, sealed }: { only?: string; sealed?: boolean } = {}): Promise<Received> {
-    // One that came unsealed is tried first in the conversations of those who do not seal yet.
-    const unsealed = sealed === false;
-    const contacts = unsealed ? [...this.data.contacts.filter((c) => !c.sealsIn), ...this.data.contacts.filter((c) => c.sealsIn)] : this.data.contacts;
-    let triedSealing = false;
-    for (const contact of contacts) {
+    const device = this.link?.through === true;
+    const slots: Slot[] = [];
+    for (const contact of this.data.contacts) {
       if (given && contact.identity !== given.identity) continue;
       if (only && contact.identity !== only) continue;
-      if (unsealed && contact.sealsIn && !triedSealing) {
+      if (given || !device) slots.push({ contact, way: null });
+      if (given || !this.partOf(contact)) continue;
+      if (contact.direct) slots.push({ contact, way: contact.direct });
+      for (const way of contact.endpoints ?? []) if (way.conversations.length > 0) slots.push({ contact, way });
+    }
+    // One that came unsealed is tried first in the conversations of those who do not seal yet.
+    const unsealed = sealed === false;
+    const sealsIn = ({ contact, way }: Slot) => (way ?? contact).sealsIn;
+    const ordered = unsealed ? [...slots.filter((s) => !sealsIn(s)), ...slots.filter(sealsIn)] : slots;
+    let triedSealing = false;
+    for (const slot of ordered) {
+      if (unsealed && sealsIn(slot) && !triedSealing) {
         if (!this.mayTryUnsealed()) break;
         triedSealing = true;
       }
-      for (let i = 0; i < contact.conversations.length; i++) {
+      const conversations = (slot.way ?? slot.contact).conversations;
+      for (let i = 0; i < conversations.length; i++) {
         let opened: core.Opened;
         try {
-          opened = given ? { conversation: fromBase64(contact.conversations[i]), plaintext: given.plaintext } : await core.open(fromBase64(contact.conversations[i]), packet);
+          opened = given ? { conversation: fromBase64(conversations[i]), plaintext: given.plaintext } : await core.open(fromBase64(conversations[i]), packet);
         } catch {
           continue;
         }
-        const message = decodeMessage(opened.plaintext);
-        const others = contact.conversations.filter((_, j) => j !== i);
-        const timing = timerOf(message, contact);
-        const updated: Contact = {
-          ...contact,
-          sender: message.from || contact.sender,
-          ...(message.from ? placeOf(message) : {}),
-          // Send in the one they last sent in. Their answer also means they have the first packet.
-          conversations: [toBase64(opened.conversation), ...others],
-          first: '',
-          timer: timing.timer,
-          timerAt: timing.timerAt,
-          sealTo: message.pk || contact.sealTo,
-          // Sealed: they have this chat's key, which need not be said any more; unsealed: they may not.
-          sealsIn: sealed ?? contact.sealsIn,
-          // A ring queue they said: set it, or '' clears it (they no longer ring); absent keeps it.
-          ringSender: message.rf === undefined ? contact.ringSender : message.rf || undefined,
-        };
-        await this.save(this.withContact({ ...updated, ...(given ? null : await this.startedAgain(updated, message)) }));
-        if (!given) this.link?.opened(contact.identity, opened.plaintext);
-        const { identity, request } = contact;
-        const { text, tag, erase, got, read, voice, file, ask, call, group } = message;
-        const online = this.heard(identity, message);
-        const quiet = message.quiet === true;
-        const due = message.due ?? 0;
-        const re = message.re ?? '';
-        const react = message.react ?? null;
-        const more = message.more ?? {};
-        return { kind: 'message', identity, text, tag, added: false, request, erase, got, read, voice, file, online, ask, call, group, quiet, due, re, react, more, ...timing.received };
+        return this.heardIn(slot, i, opened, !!given, sealed);
       }
     }
     return { kind: 'refused', reason: 'unknown' };
+  }
+
+  // What a packet that opened in a contact's conversation (`at`, of `slot`) brings: the
+  // conversation kept moved past it, they written to where they read now, the chat's timer if set
+  // later, and from their account what they say of devices.
+  private async heardIn({ contact, way }: Slot, at: number, opened: core.Opened, given: boolean, sealed: boolean | undefined): Promise<Received> {
+    const message = decodeMessage(opened.plaintext);
+    const timing = timerOf(message, contact);
+    const times = { timer: timing.timer, timerAt: timing.timerAt };
+    const direct = !!way && way === contact.direct;
+    let updated: Contact;
+    if (way && direct) updated = { ...contact, ...times, direct: heardWay(way, at, opened, message, sealed) };
+    else if (way) updated = { ...contact, ...times, endpoints: contact.endpoints!.map((w) => (w === way ? heardWay(w, at, opened, message, sealed) : w)) };
+    else {
+      const others = contact.conversations.filter((_, j) => j !== at);
+      updated = {
+        ...contact,
+        sender: message.from || contact.sender,
+        ...(message.from ? placeOf(message) : {}),
+        // Send in the one they last sent in. Their answer also means they have the first packet.
+        conversations: [toBase64(opened.conversation), ...others],
+        first: '',
+        ...times,
+        sealTo: message.pk || contact.sealTo,
+        // Sealed: they have this chat's key, which need not be said any more; unsealed: they may not.
+        sealsIn: sealed ?? contact.sealsIn,
+        // A ring queue they said: set it, or '' clears it (they no longer ring); absent keeps it.
+        ringSender: message.rf === undefined ? contact.ringSender : message.rf || undefined,
+      };
+    }
+    const account = !given && (!way || direct);
+    const renewed = account && !way ? await this.startedAgain(updated, message) : null;
+    const learned = account && this.partOf(updated) ? await this.heardOf(updated, message) : null;
+    const { contact: next, twice } = tookIn({ ...updated, ...renewed, ...learned }, message, this.link?.through === true);
+    await this.save(this.withContact(next));
+    if (next.list && next.list.n !== contact.list?.n) await this.retryUnverified(contact.identity);
+    if (!given) this.link?.opened(contact.identity, opened.plaintext);
+    const from = way && !direct ? way.id : '';
+    if (message.tag && !given) this.noteCame(contact.identity, message.tag, from);
+    return this.receivedOf(next, message, timing.received, false, from, twice);
   }
 }

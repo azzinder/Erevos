@@ -429,6 +429,11 @@ export class History {
     return run;
   }
 
+  /** Whether a chat (`peer`) has a message with this tag: one that came twice, from a contact's account and one of their endpoints, or through the phone and directly, is kept once. */
+  has(peer: string, tag: string): boolean {
+    return !!tag && (this.data.chats[peer]?.some((m) => m[3] === tag) ?? false);
+  }
+
   /** Every message, oldest first. */
   messages(): Message[] {
     return Object.entries(this.data.chats)
