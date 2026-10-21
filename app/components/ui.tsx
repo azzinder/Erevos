@@ -263,7 +263,7 @@ export function TextButton({ title, onPress }: { title: string; onPress: () => v
   );
 }
 
-export function Chip({ label, selected, onPress, disabled, mono }: {
+export function Chip({ label, selected, onPress, disabled, mono, fit }: {
   label: string;
   selected?: boolean;
   onPress?: () => void;
@@ -271,6 +271,8 @@ export function Chip({ label, selected, onPress, disabled, mono }: {
   disabled?: boolean;
   /** An id rather than a word. */
   mono?: boolean;
+  /** Shares a narrow row with the others: as wide as its label allows, which shrinks to fit. */
+  fit?: boolean;
 }) {
   const colors = useColors();
   // The chosen chip's label: the accent's small-text step, or, under Nocturne, its palest step on the wash.
@@ -285,8 +287,9 @@ export function Chip({ label, selected, onPress, disabled, mono }: {
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 14,
+        paddingHorizontal: fit ? 8 : 14,
         minHeight: 38,
+        ...(fit ? { flexGrow: 1, flexShrink: 1, justifyContent: 'center' as const } : null),
         borderRadius: radius.chip,
         borderWidth: 1,
         borderColor: on ? colors.primary : colors.border,
@@ -295,7 +298,13 @@ export function Chip({ label, selected, onPress, disabled, mono }: {
         boxShadow: on && shape.glow ? `0px 0px 10px ${withAlpha(colors.primary, 0.5)}` : undefined,
       })}
     >
-      <Text variant={mono ? 'mono' : 'label'} color={on ? ink : colors.text} style={mono ? { fontSize: 13 } : { fontSize: 14 }}>
+      <Text
+        variant={mono ? 'mono' : 'label'}
+        color={on ? ink : colors.text}
+        style={mono || fit ? { fontSize: 13 } : { fontSize: 14 }}
+        numberOfLines={fit ? 1 : undefined}
+        adjustsFontSizeToFit={fit}
+      >
         {label}
       </Text>
     </Pressable>

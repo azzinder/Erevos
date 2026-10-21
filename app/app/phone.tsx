@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AppState, FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text, TextButton } from '../components/ui';
@@ -148,6 +148,23 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
   const [chosen, setChosen] = useState('');
   // The number to call once its SIM is chosen.
   const [choosing, setChoosing] = useState<string | null>(null);
+  // The height left for the keypad under the title, card and tabs, and those of its SIM chips and
+  // note, once laid out.
+  const [room, setRoom] = useState(0);
+  const [simHeight, setSimHeight] = useState(0);
+  const [noteHeight, setNoteHeight] = useState(0);
+  const keypad = useRef<ScrollView>(null);
+  // The keys' scroll: its height on the screen, and its content's.
+  const keysFrame = useRef(0);
+  const keysContent = useRef(0);
+  const screenSize = useWindowDimensions();
+  // A short phone has no room for the card's explanation above the keypad, on any tab, so the tabs
+  // stay where they are: its title alone, which opens the settings that say the rest. A tablet on
+  // its side is short too, but has the room.
+  const brief = screenSize.height < BRIEF_BELOW && screenSize.width < WIDE;
+  // A narrow one, or one with large text, has no room for the tabs side by side as they are: they
+  // share the row.
+  const narrow = screenSize.width / Math.max(1, screenSize.fontScale) < NARROW_BELOW;
 
   useEffect(() => {
     if (typeof params.number !== 'string') return;
@@ -188,6 +205,11 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
     const kept = sims?.accountFor(number) ?? '';
     if (kept && accounts.some((a) => a.id === kept)) setChosen(kept);
   }, [number, sims, accounts]);
+
+  // "Type a phone number." goes as soon as one is typed.
+  useEffect(() => {
+    if (number) setNote((shown) => (shown === t('Type a phone number.') ? '' : shown));
+  }, [number]);
 
   if (Platform.OS !== 'android' || !phoneReady()) {
     return (
@@ -240,11 +262,26 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
     setAccounts(await phoneAccounts().catch(() => []));
   }
 
+  // On a small screen, or with large text, the keys shrink to fit the room left under the top
+  // (down to 70%); below that the keys scroll under the number, kept at their end so Call shows,
+  // and never run over the card and tabs.
+  const simRow = accounts.length >= 2 || (status?.slots ?? 0) >= 2;
+  const sized = keypadSizes(room, simRow ? simHeight || CHIP_HEIGHT : 0, note ? noteHeight || NOTE_LINE : 0);
+  // Heights as laid out, without the fractions of a pixel that rounding to the screen's pixels
+  // moves back and forth: those would size the keys again, and lay them out again, for ever.
+  const measured = (set: (change: (old: number) => number) => void) => (event: LayoutChangeEvent) => {
+    const height = event.nativeEvent.layout.height;
+    set((old) => (Math.abs(old - height) < 1 ? old : height));
+  };
+  const keepEnd = () => {
+    if (keysContent.current > keysFrame.current + 1) keypad.current?.scrollToEnd({ animated: false });
+  };
+
   return (
     <View style={[styles.screen, { paddingBottom: insets.bottom + space.md }]}>
       <View style={styles.top}>
         <Row style={styles.titleRow}>
-          <Text variant="title" style={styles.title}>
+          <Text variant="title" style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
             {t('Phone')}
           </Text>
           {locked ? (
@@ -258,15 +295,39 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
         </Row>
         {status && status.calls > 0 ? <Button title={t('Back to the call')} onPress={showCall} /> : null}
         {status && !status.isDefault ? (
-          <Card>
-            <Text variant="bodyStrong">{t('Erevos is not the phone app')}</Text>
-            <Text tone="muted">{t("Calls made here show on Android's own call screen until you make Erevos the phone app, under Settings.")}</Text>
-          </Card>
+          brief && locked ? (
+            <Card>
+              <Text variant="bodyStrong">{t('Erevos is not the phone app')}</Text>
+            </Card>
+          ) : brief ? (
+            <Pressable
+              onPress={() => router.push('/phone-settings')}
+              accessibilityRole="button"
+              accessibilityHint={t("Calls made here show on Android's own call screen until you make Erevos the phone app, under Settings.")}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            >
+              <Card>
+                <Row>
+                  <Text variant="bodyStrong" style={styles.cardTitle}>
+                    {t('Erevos is not the phone app')}
+                  </Text>
+                  <Text variant="heading" tone="muted">
+                    ›
+                  </Text>
+                </Row>
+              </Card>
+            </Pressable>
+          ) : (
+            <Card>
+              <Text variant="bodyStrong">{t('Erevos is not the phone app')}</Text>
+              <Text tone="muted">{t("Calls made here show on Android's own call screen until you make Erevos the phone app, under Settings.")}</Text>
+            </Card>
+          )
         ) : null}
         {locked ? null : <GroupBlocks />}
-        <Row style={styles.tabs}>
+        <Row style={narrow ? styles.tabsNarrow : styles.tabs}>
           {TABS.map((each) => (
-            <Chip key={each.tab} label={t(each.label)} selected={tab === each.tab} onPress={() => setTab(each.tab)} />
+            <Chip key={each.tab} label={t(each.label)} selected={tab === each.tab} onPress={() => setTab(each.tab)} fit={narrow} />
           ))}
         </Row>
         {note && tab !== 'keypad' ? <Text tone="muted">{note}</Text> : null}
@@ -285,14 +346,14 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
       ) : tab === 'favourites' ? (
         <Favourites onCall={(to) => void call(to)} />
       ) : (
-        <View style={styles.keypad}>
+        <View style={styles.keypad} onLayout={measured(setRoom)}>
           <View style={styles.numberLine}>
             <TextInput
               value={number}
               onChangeText={(text) => setNumber(dialNumber(text))}
               // The keys below type; held down, the field still pastes a number.
               showSoftInputOnFocus={false}
-              style={[styles.number, { color: colors.text }, fontStyle('400')]}
+              style={[styles.number, sized.number, { color: colors.text }, fontStyle('400')]}
               placeholder={t('Number')}
               placeholderTextColor={colors.textFaint}
               textAlign="center"
@@ -311,55 +372,76 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
               </Text>
             </Pressable>
           </View>
-          {KEYS.map((keys) => (
-            <View key={keys.join('')} style={styles.keys}>
-              {keys.map((key) => (
-                <Pressable
-                  key={key}
-                  onPress={() => setNumber((n) => typeKey(n, key))}
-                  onLongPress={key === '0' ? () => setNumber((n) => typeKey(n, '+')) : undefined}
-                  accessibilityRole="button"
-                  accessibilityLabel={key}
-                  style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}
-                >
-                  <Text style={styles.keyText}>{key}</Text>
-                  {key === '0' ? (
-                    <Text variant="caption" tone="faint" style={styles.keyPlus}>
-                      +
-                    </Text>
-                  ) : null}
-                </Pressable>
-              ))}
+          <ScrollView
+            ref={keypad}
+            style={styles.keysScroll}
+            contentContainerStyle={styles.keysColumn}
+            // Taller than its room even at the smallest keys: Call, and what it said, stay in sight,
+            // under the number.
+            onLayout={(event) => {
+              keysFrame.current = event.nativeEvent.layout.height;
+              keepEnd();
+            }}
+            onContentSizeChange={(_, height) => {
+              keysContent.current = height;
+              keepEnd();
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {KEYS.map((keys) => (
+              <View key={keys.join('')} style={styles.keys}>
+                {keys.map((key) => (
+                  <Pressable
+                    key={key}
+                    onPress={() => setNumber((n) => typeKey(n, key))}
+                    onLongPress={key === '0' ? () => setNumber((n) => typeKey(n, '+')) : undefined}
+                    accessibilityRole="button"
+                    accessibilityLabel={key}
+                    style={({ pressed }) => [styles.key, sized.key, pressed && styles.keyPressed]}
+                  >
+                    <Text style={sized.keyText}>{key}</Text>
+                    {key === '0' ? (
+                      <Text variant="caption" tone="faint" style={[styles.keyPlus, sized.plus]}>
+                        +
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                ))}
+              </View>
+            ))}
+            {accounts.length >= 2 ? (
+              <View onLayout={measured(setSimHeight)}>
+                <Row wrap style={styles.sims}>
+                  {accounts.map((a) => (
+                    <Chip key={a.id} label={accountLabel(a)} selected={chosen === a.id} onPress={() => setChosen(a.id)} />
+                  ))}
+                </Row>
+              </View>
+            ) : (status?.slots ?? 0) >= 2 ? (
+              <View onLayout={measured(setSimHeight)}>
+                <Row wrap style={styles.sims}>
+                  <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
+                </Row>
+              </View>
+            ) : null}
+            <View style={styles.keys}>
+              <Pressable
+                onPress={() => void call(number, accounts.some((a) => a.id === chosen) ? chosen : undefined)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Call')}
+                style={({ pressed }) => [styles.callButton, sized.callButton, { opacity: pressed ? 0.75 : 1 }]}
+              >
+                <Text variant="label" color="#FFFFFF" style={styles.callText} numberOfLines={1} adjustsFontSizeToFit>
+                  {t('Call')}
+                </Text>
+              </Pressable>
             </View>
-          ))}
-          {accounts.length >= 2 ? (
-            <Row wrap style={styles.sims}>
-              {accounts.map((a) => (
-                <Chip key={a.id} label={accountLabel(a)} selected={chosen === a.id} onPress={() => setChosen(a.id)} />
-              ))}
-            </Row>
-          ) : (status?.slots ?? 0) >= 2 ? (
-            <Row wrap style={styles.sims}>
-              <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
-            </Row>
-          ) : null}
-          <View style={styles.keys}>
-            <Pressable
-              onPress={() => void call(number, accounts.some((a) => a.id === chosen) ? chosen : undefined)}
-              accessibilityRole="button"
-              accessibilityLabel={t('Call')}
-              style={({ pressed }) => [styles.callButton, { opacity: pressed ? 0.75 : 1 }]}
-            >
-              <Text variant="label" color="#FFFFFF" style={styles.callText}>
-                {t('Call')}
+            {note ? (
+              <Text tone="muted" style={styles.note} onLayout={measured(setNoteHeight)}>
+                {note}
               </Text>
-            </Pressable>
-          </View>
-          {note ? (
-            <Text tone="muted" style={styles.note}>
-              {note}
-            </Text>
-          ) : null}
+            ) : null}
+          </ScrollView>
         </View>
       )}
 
@@ -897,6 +979,43 @@ function Favourites({ onCall }: { onCall: (number: string) => void }) {
   );
 }
 
+// Below this window height (dp) the card above the keypad shows its title alone; below this width,
+// the tabs share the row.
+const BRIEF_BELOW = 860;
+const WIDE = 600;
+const NARROW_BELOW = 400;
+
+// The keypad's height (styles.keypad): what shrinks, the number line, four rows of keys and Call;
+// what does not, the SIM chips if any (`sims` high), the note under Call (`note` high), the gaps
+// and the room above the number.
+const NUMBER_LINE = 56;
+const KEY_HEIGHT = 64;
+const CALL_SIZE = 76;
+const CHIP_HEIGHT = 38;
+const NOTE_LINE = 20;
+// The erase button beside the number is never smaller.
+const ERASE = 44;
+
+function keypadSizes(room: number, sims: number, note: number) {
+  const parts = 6 + (sims > 0 ? 1 : 0) + (note > 0 ? 1 : 0);
+  const fixed = space.sm + (parts - 1) * space.sm + space.sm + sims + note;
+  const fit = (top: number) => Math.min(1, Math.max(0.7, top));
+  let scale = room > 0 ? fit((room - fixed) / (NUMBER_LINE + 4 * KEY_HEIGHT + CALL_SIZE)) : 1;
+  // A number line at its least leaves the keys and Call the rest.
+  if (NUMBER_LINE * scale < ERASE) scale = fit((room - fixed - ERASE) / (4 * KEY_HEIGHT + CALL_SIZE));
+  // Rounded down, so what fits is never a little too high.
+  const key = Math.floor(KEY_HEIGHT * scale);
+  const call = Math.floor(CALL_SIZE * scale);
+  const line = Math.max(ERASE, Math.floor(NUMBER_LINE * scale));
+  return {
+    number: { fontSize: Math.round(32 * scale), height: line },
+    key: { height: key, borderRadius: key / 2 },
+    keyText: { fontSize: Math.round(28 * scale), lineHeight: Math.round(34 * scale) },
+    plus: { fontSize: Math.round(13 * scale), bottom: Math.max(2, Math.round(4 * scale)) },
+    callButton: { width: call, height: call, borderRadius: call / 2 },
+  };
+}
+
 // A contact's photo, or the first letter of the name, or the phone's sign for a bare number.
 function Face({ name, photo, size }: { name: string; photo: string; size: number }) {
   const styles = useStyles(makeStyles);
@@ -932,8 +1051,14 @@ const makeStyles = (colors: Colors) =>
     title: {
       flex: 1,
     },
+    cardTitle: {
+      flex: 1,
+    },
     tabs: {
       gap: space.sm,
+    },
+    tabsNarrow: {
+      gap: 6,
     },
     tabBody: {
       paddingHorizontal: space.xl - 4,
@@ -1007,7 +1132,16 @@ const makeStyles = (colors: Colors) =>
       flex: 1,
       justifyContent: 'flex-end',
       gap: space.sm,
+      paddingTop: space.sm,
       paddingHorizontal: space.xl,
+    },
+    // As high as the keys, or the room under the number if less.
+    keysScroll: {
+      flexGrow: 0,
+      flexShrink: 1,
+    },
+    keysColumn: {
+      gap: space.sm,
     },
     numberLine: {
       flexDirection: 'row',
@@ -1017,8 +1151,8 @@ const makeStyles = (colors: Colors) =>
     },
     number: {
       flex: 1,
-      fontSize: 32,
-      minHeight: 56,
+      // As high as keypadSizes says: Android's own padding would add to it.
+      paddingVertical: 0,
     },
     erase: {
       width: 44,
@@ -1032,18 +1166,12 @@ const makeStyles = (colors: Colors) =>
     },
     key: {
       width: 76,
-      height: 64,
-      borderRadius: 32,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.surfaceAlt,
     },
     keyPressed: {
       backgroundColor: colors.surfacePressed,
-    },
-    keyText: {
-      fontSize: 28,
-      lineHeight: 34,
     },
     keyPlus: {
       position: 'absolute',
@@ -1053,9 +1181,6 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
     },
     callButton: {
-      width: 76,
-      height: 76,
-      borderRadius: 38,
       marginTop: space.sm,
       alignItems: 'center',
       justifyContent: 'center',
@@ -1063,6 +1188,7 @@ const makeStyles = (colors: Colors) =>
     },
     callText: {
       fontSize: 14,
+      paddingHorizontal: space.xs,
     },
     note: {
       textAlign: 'center',

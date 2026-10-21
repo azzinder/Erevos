@@ -814,7 +814,8 @@ phone app**. Every call then shows on Erevos's own call screen, and tel: links a
 Erevos's keypad. **Phone** opens from the handset at the top of the home screen too, and has an icon of its own in
 the phone's apps, **Phone** with a handset on Erevos's icon, which opens the keypad. Each of these, like a tel: link,
 opens it once Erevos is unlocked: with a password, after you type it, unless the Phone opens without it (see Erevos's
-password, below).
+password, below). Until then a card at the top says **Erevos is not the phone app**; on a small phone it shows only
+that title, and tapping it opens the Phone's **Settings**.
 
 - **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them; while
   Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them, and so does the

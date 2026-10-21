@@ -66,6 +66,12 @@ On main, not released yet. The next release is **2.0.0**.
   (an older Safari, Sailfish OS), which refused them. A button's long label goes on two lines on a
   narrow phone instead of out of the screen.
 
+- **The Phone screen fits a small phone**: on a short screen (360×640 to 360×800) the keypad no
+  longer runs up over the tabs and the "Erevos is not the phone app" card. That card shows only its
+  title there, with a > that opens the phone settings; the keys, the number and Call shrink to what
+  is left, down to 70%, and scroll past that. The title stays on one line, the three tabs share one
+  row, and "Type a phone number." goes as soon as one is typed.
+
 - **Group keys made new every week**: in every group, private or public, the admin's phone makes
   its own keys new, and each member's phone asks the admin to put it in anew with new ones. So keys
   taken from a phone once stop reading the group within a week. Members see no one leave or join.
