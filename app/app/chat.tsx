@@ -465,8 +465,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [relayToken, setRelayToken] = useState('');
   // Our relay's key for sealed sends, put in our link so contacts on other relays can reach us.
   const [ownRelayKey, setOwnRelayKey] = useState('');
-  // A ticket for a place on our relay, put in our link for whoever adds us with no relay of their own.
+  // A ticket for a place on our relay, put in our link for whoever adds us with no relay of their own,
+  // only once chosen for the link shown now: each time the chat opens, the link goes without one.
+  const [sharePlace, setSharePlace] = useState(false);
   const [ownTicket, setOwnTicket] = useState('');
+  const [placeNote, setPlaceNote] = useState('');
   // The second relay for two-hop sending (lib/relay.ts), empty when not used.
   const [viaUrl, setViaUrl] = useState('');
   const [viaToken, setViaToken] = useState('');
@@ -1066,14 +1069,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     };
   }, [relayUrl, relayToken]);
 
-  // Asks our relay for a ticket for a place on it, for our link, so whoever adds us with no relay
-  // of their own takes one (lib/relay.ts, lendTicket). It is kept with the space's data while it
-  // has more than a week left, so the link stays the same; then a new one is asked for. A place
-  // lent to us lends none on, and hidden chats lend none.
+  // Once a place is chosen for the link, asks our relay for a ticket for one, so whoever adds us
+  // with no relay of their own takes one (lib/relay.ts, lendTicket). A link is passed on, so the
+  // ticket is a key to the relay for whoever sees it: never put in by itself. It is kept with the
+  // space's data while it has more than a week left, so the link stays the same; then a new one is
+  // asked for. A place lent to us lends none on, and hidden chats lend none.
+  const canSharePlace = loaded && !hiddenKey && !!relayUrl.trim() && !isLentToken(relayToken);
   useEffect(() => {
     const url = relayUrl.trim();
     setOwnTicket('');
-    if (!loaded || hiddenKey || !url || isLentToken(relayToken)) return;
+    setPlaceNote('');
+    if (!sharePlace || !canSharePlace) return;
     let active = true;
     void (async () => {
       const kept = (await loadCurrentSpaceData()).lend;
@@ -1086,16 +1092,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         const ticket = await lendTicket({ url, token: relayToken.trim() || undefined });
         if (!active) return;
         setOwnTicket(ticket ?? '');
+        if (!ticket) setPlaceNote(t('Your relay lends no places: its operator has not turned lending on.'));
         await updateCurrentSpaceData({ lend: ticket ? { relay: url, ticket } : NO_LENDING });
       } catch {
         // The relay cannot be reached: the one kept, while it lasts, and asked again next time.
-        if (active && left > 0) setOwnTicket(kept.ticket);
+        if (!active) return;
+        if (left > 0) setOwnTicket(kept.ticket);
+        else setPlaceNote(t('Your relay cannot be reached, so the link has no place in it.'));
       }
     })().catch(() => undefined);
     return () => {
       active = false;
     };
-  }, [loaded, relayUrl, relayToken]);
+  }, [sharePlace, canSharePlace, relayUrl, relayToken]);
 
   // Looks at our own relay queue every few seconds and opens what came. Without the core nothing
   // could open it, so the queue is left alone, and its messages wait on the relay.
@@ -3495,6 +3504,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         onPress={() => void shareLink(ownLink)}
                       />
                     </Row>
+                    {ownQueue && canSharePlace ? (
+                      <View>
+                        <DetailRow
+                          title={t('Share a place on my relay with this link')}
+                          right={<Toggle on={sharePlace} />}
+                          onPress={() => setSharePlace(!sharePlace)}
+                        />
+                        <Text variant="caption" tone="muted">
+                          {sharePlace
+                            ? t('For a month, whoever adds you with this link and has no relay of their own can take a place on your relay. Anyone who sees the link can, so give it only to whom you mean to.')
+                            : t('The link has no place on your relay in it. Turn this on for someone with no relay of their own.')}
+                        </Text>
+                        {placeNote ? <Text variant="caption" tone="muted">{placeNote}</Text> : null}
+                      </View>
+                    ) : null}
                   </View>
                 ) : null}
                 <Text tone="muted">{t('Add a contact by the contact link they gave you:')}</Text>

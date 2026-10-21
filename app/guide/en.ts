@@ -207,9 +207,11 @@ takes a place there, with no token.
 - **How:** add their link as in 4 and 5, with nothing under **Relay**. Erevos says you now have a place on their
   relay, lent through their link, and uses it as its own from then on: your own link names it, so others reach you
   there too.
-- **Who lends:** your link carries a ticket for a place on your relay, when it has a key for two-hop sending and is
-  up to date, unless whoever runs it turned lending off. A ticket lasts 30 days and gives up to four places; your
-  link takes a new one by itself before then.
+- **Who lends:** your link carries a ticket for a place on your relay only when you turn on **Share a place on my
+  relay with this link**, under your link in **Relay and new contacts**, and only for the link shown then: the next
+  time the chat opens, it is off again. The relay needs a key for two-hop sending, and whoever runs it decides
+  whether it lends at all. A ticket lasts 30 days and gives up to four places. Anyone who sees a link with a ticket
+  can take a place with it, so give such a link only to whom you mean to.
 - **What a lent place does not do:** messages to contacts on other relays go straight to their relay, which then sees
   your phone's address. It keeps nothing for later (a message sent later waits on the phone), gives no call relay
   (calls go straight between the phones), and makes 4 more queues and sends 1 GB of files a day at most. Your link
