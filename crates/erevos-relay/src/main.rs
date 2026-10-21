@@ -56,6 +56,7 @@ mod files;
 mod journal;
 mod later;
 mod lend;
+mod lock;
 mod push;
 mod queue;
 mod server;
@@ -265,7 +266,7 @@ fn main() -> ExitCode {
             "erevos-relay: no EREVOS_RELAY_KEY set, no places are lent to phones without a relay"
         ),
     }
-    *store.held.lock().expect("held lock") = held;
+    *store.held() = held;
     let held_store = Arc::clone(&store);
     thread::spawn(move || server::run_held(held_store));
     match env::var("EREVOS_RELAY_PUSH_KEY") {
@@ -300,8 +301,8 @@ fn main() -> ExitCode {
     let sweep_store = Arc::clone(&store);
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(60 * 60));
-        sweep_store.store.lock().expect("store lock").expire();
-        sweep_store.files.lock().expect("files lock").expire();
+        sweep_store.store().expire();
+        sweep_store.files().expire();
     });
     let ws_store = Arc::clone(&store);
     thread::spawn(move || {

@@ -33,6 +33,8 @@ use sha2::Sha256;
 
 use erevos_core::relay_seal::RelayKey;
 
+use crate::lock::lock;
+
 pub type Nonce = [u8; 16];
 
 /// How long a ticket lasts, days.
@@ -90,7 +92,7 @@ impl Lend {
     }
 
     fn counts(&self) -> std::sync::MutexGuard<'_, Counts> {
-        self.counts.lock().expect("counts lock")
+        lock(&self.counts, "lock of the counts of lent places")
     }
 
     fn code(&self, kind: u8, fields: &[u8]) -> [u8; CODE_LEN] {

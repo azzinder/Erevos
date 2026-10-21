@@ -31,7 +31,11 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use p256::ecdsa::signature::Signer;
 use p256::ecdsa::{Signature, SigningKey};
 
+use crate::lock::lock;
 use crate::queue::QueueId;
+
+/// What the push locks are called if one is poisoned (see `lock.rs`).
+const PUSH_LOCK: &str = "push lock";
 
 /// The push services whose addresses are taken.
 pub const PUSH_SERVICES: &[&str] = &[
@@ -108,7 +112,7 @@ impl Push {
         if !endpoint.is_empty() && !self.takes(endpoint) {
             return Err(SetError::Refused);
         }
-        let mut endpoints = self.endpoints.lock().expect("push lock");
+        let mut endpoints = self.endpoints();
         let before = if endpoint.is_empty() {
             endpoints.remove(queue)
         } else {
@@ -126,7 +130,7 @@ impl Push {
 
     /// Forgets the queue's push address, if any (the queue was deleted).
     pub fn forget(&self, queue: &QueueId) {
-        let mut endpoints = self.endpoints.lock().expect("push lock");
+        let mut endpoints = self.endpoints();
         if endpoints.remove(queue).is_some() {
             let _ = self.save(&endpoints);
         }
@@ -134,14 +138,13 @@ impl Push {
 
     /// A message came into `queue`: push, if it has an address.
     pub fn arrived(&self, queue: &QueueId) {
-        if self
-            .endpoints
-            .lock()
-            .expect("push lock")
-            .contains_key(queue)
-        {
-            let _ = self.queue.lock().expect("push lock").send(*queue);
+        if self.endpoints().contains_key(queue) {
+            let _ = lock(&self.queue, PUSH_LOCK).send(*queue);
         }
+    }
+
+    fn endpoints(&self) -> std::sync::MutexGuard<'_, HashMap<QueueId, String>> {
+        lock(&self.endpoints, PUSH_LOCK)
     }
 
     fn takes(&self, endpoint: &str) -> bool {
@@ -184,18 +187,12 @@ impl Push {
             }
             last.insert(queue, Instant::now());
             last.retain(|_, at| at.elapsed() < PUSH_GAP);
-            let Some(endpoint) = self
-                .endpoints
-                .lock()
-                .expect("push lock")
-                .get(&queue)
-                .cloned()
-            else {
+            let Some(endpoint) = self.endpoints().get(&queue).cloned() else {
                 continue;
             };
             match self.send(&endpoint) {
                 Ok(404 | 410) => {
-                    let mut endpoints = self.endpoints.lock().expect("push lock");
+                    let mut endpoints = self.endpoints();
                     if endpoints.get(&queue) == Some(&endpoint) {
                         endpoints.remove(&queue);
                         let _ = self.save(&endpoints);

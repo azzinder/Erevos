@@ -107,7 +107,7 @@
 
 use std::io::{self, Cursor, ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream, ToSocketAddrs};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -120,6 +120,7 @@ use tungstenite::Message;
 use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
 use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
 use crate::lend::{Lend, Nonce, Pass};
+use crate::lock::{lock, wait_timeout};
 use crate::push::{Push, SetError, MAX_ENDPOINT};
 use crate::queue::{system_now, QueueError, QueueId, Store};
 use crate::turn::Turn;
@@ -146,6 +147,12 @@ pub struct Shared {
 
 pub type SharedStore = Arc<Shared>;
 
+/// What the shared locks are called in the line the relay prints if one is
+/// poisoned (see `lock.rs`).
+const STORE_LOCK: &str = "queue store lock";
+const FILES_LOCK: &str = "file store lock";
+const HELD_LOCK: &str = "lock of requests held for later";
+
 impl Shared {
     pub fn new(
         store: Store,
@@ -166,16 +173,16 @@ impl Shared {
         })
     }
 
-    fn store(&self) -> std::sync::MutexGuard<'_, Store> {
-        self.store.lock().expect("store lock")
+    pub fn store(&self) -> MutexGuard<'_, Store> {
+        lock(&self.store, STORE_LOCK)
     }
 
-    fn files(&self) -> std::sync::MutexGuard<'_, FileStore> {
-        self.files.lock().expect("files lock")
+    pub fn files(&self) -> MutexGuard<'_, FileStore> {
+        lock(&self.files, FILES_LOCK)
     }
 
-    fn held(&self) -> std::sync::MutexGuard<'_, Held> {
-        self.held.lock().expect("held lock")
+    pub fn held(&self) -> MutexGuard<'_, Held> {
+        lock(&self.held, HELD_LOCK)
     }
 }
 
@@ -445,11 +452,7 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
                 if left.is_zero() {
                     break vec![OK, 0];
                 }
-                store = shared
-                    .arrived
-                    .wait_timeout(store, left)
-                    .expect("store lock")
-                    .0;
+                store = wait_timeout(&shared.arrived, store, left, STORE_LOCK);
             }
         }
         DELETE => {
@@ -779,11 +782,12 @@ pub fn run_held(shared: SharedStore) {
                     Some(at) if at <= now => break held.take_due(),
                     next => {
                         let wait = next.map_or(HELD_LOOK, |at| (at - now).min(HELD_LOOK));
-                        held = shared
-                            .held_changed
-                            .wait_timeout(held, Duration::from_secs(wait))
-                            .expect("held lock")
-                            .0;
+                        held = wait_timeout(
+                            &shared.held_changed,
+                            held,
+                            Duration::from_secs(wait),
+                            HELD_LOCK,
+                        );
                     }
                 }
             }
