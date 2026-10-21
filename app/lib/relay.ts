@@ -31,7 +31,8 @@
 // phones, which pushes nothing, or a call that rings, which pushes, counts as no message, and has
 // the push say a call rang. The mark is one byte after the request; a relay from before
 // marks reads no further than the request, and one that holds a message for later keeps the mark
-// for when it goes. Without a mark the relay pushes, but says it could not count it. A web app on
+// for when it goes. Without a mark the relay pushes, but says it could not count it, as for what
+// another phone carried there (carryTo), which cannot know what it holds. A web app on
 // the screen also says so when it takes its messages (receiveMessage): finding the queue empty
 // then, the relay drops a push still waiting, which would tell of messages already read.
 //

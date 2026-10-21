@@ -357,17 +357,17 @@ self.addEventListener('message', (event) => {
 // keys for the push address (lib/web-push.web.ts), the push carries, encrypted for this browser,
 // what came into that queue since the app last took it: the queue's stream, a round that starts
 // again each time the queue is emptied, and the round's totals so far: messages, sends that did not
-// say what they carry, and calls that rang. So a push that was lost, or that comes twice, never
-// counts anything twice, and word between phones (that a message came or was read, new keys)
-// counts for nothing. The notice then says how many: "3 new messages", or "Call" when only a call
-// rang. Otherwise it says "New message", or "New messages" once more came since Erevos was last
-// open, without a number: when a push came empty (an older relay, or a browser that gave no keys),
-// or a send did not say what it carries (a sender's Erevos too old to say), until Erevos is open
-// again. In the app's language, which the app tells this worker ('lang');
-// the app says when it is open again ('seen'). The count is kept apart from the release state
-// above, so a release check never undoes it, and not in the notices themselves: an iPhone keeps
-// every notice of the same tag and may list them in any order, and swiping one away would start
-// it again.
+// say what they carry, and calls that rang. So a push that was lost, or that comes late or twice,
+// does not count anything twice, and word between phones (that a message came or was read, new
+// keys) counts for nothing. The notice then says how many: "3 new messages", or "Call" when only a
+// call rang. Otherwise it says "New message", or "New messages" once more came since Erevos was
+// last open, without a number: when a push came empty (an older relay, or a browser that gave no
+// keys), or a send did not say what it carries (a sender's Erevos too old to say, or a message
+// phones nearby carried to the relay, which cannot know what it holds), until Erevos is open again.
+// In the app's language, which the app tells this worker ('lang'); the app says when it is open
+// again ('seen'). The count is kept apart from the release state above, so a release check never
+// undoes it, and not in the notices themselves: an iPhone keeps every notice of the same tag and
+// may list them in any order, and swiping one away would start it again.
 const NOTICE = 'erevos-new-message';
 const NOTICE_STATE = '/__erevos/notice';
 // For each language: one message, more than one with no number, so many, and a call.
@@ -397,8 +397,10 @@ const NOTICE_WORDS = {
 // calls that rang.
 const COUNT_LENGTH = 26;
 const TOTALS = ['total', 'unmarked', 'rings'];
-// Streams kept to tell a round's next push from a new round: a few queues per space.
+// Streams kept to tell a round's next push from a new round: a few queues per space. And for each,
+// its last rounds, so a push come late after newer rounds adds only what it had not said.
 const STREAMS = 32;
+const ROUNDS = 8;
 
 const knownLang = (lang) => typeof lang === 'string' && Object.hasOwn(NOTICE_WORDS, lang);
 const whole = (n) => (Number.isSafeInteger(n) && n > 0 ? n : 0);
@@ -412,13 +414,13 @@ function keptRound(at) {
   return round;
 }
 
+// Each stream's rounds, the newest first. A worker from before kept a round and the one before it.
 function keptStreams(read) {
   const streams = {};
   if (read && typeof read === 'object' && !Array.isArray(read)) {
     for (const [stream, at] of Object.entries(read).slice(-STREAMS)) {
-      const now = keptRound(at);
-      const before = keptRound(at?.before);
-      if (/^[0-9a-f]{16}$/.test(stream) && now) streams[stream] = before ? { ...now, before } : now;
+      const rounds = (Array.isArray(at) ? at : [at, at?.before]).slice(0, ROUNDS).map(keptRound).filter(Boolean);
+      if (/^[0-9a-f]{16}$/.test(stream) && rounds.length > 0) streams[stream] = rounds;
     }
   }
   return streams;
@@ -436,20 +438,12 @@ function adding(kept, said) {
   return { added, round };
 }
 
-// What a push adds to its stream, and the stream as it is then. A push from the round before, come
-// late, adds only what that round had not said yet; one of the same round says its totals so far,
-// so one come late or twice adds nothing.
-function counting(kept, said) {
-  if (kept?.round === said.round) {
-    const { added, round } = adding(kept, said);
-    return { added, stream: kept.before ? { ...round, before: kept.before } : round };
-  }
-  if (kept?.before?.round === said.round) {
-    const { added, round } = adding(kept.before, said);
-    return { added, stream: { ...keptRound(kept), before: round } };
-  }
-  const { added, round } = adding(null, said);
-  return { added, stream: kept ? { ...round, before: keptRound(kept) } : round };
+// What a push adds to its stream, and the stream's rounds as they are then. A push says its round's
+// totals so far, so one come late or twice, of a round kept, adds only what it had not said yet.
+function counting(kept = [], said) {
+  const at = kept.findIndex((round) => round.round === said.round);
+  const { added, round } = adding(at < 0 ? null : kept[at], said);
+  return { added, stream: at < 0 ? [round, ...kept].slice(0, ROUNDS) : kept.map((was, i) => (i === at ? round : was)) };
 }
 
 let notice = null;
@@ -534,16 +528,21 @@ function showNotice(said) {
     try {
       const kept = await readNotice();
       const next = { ...kept, streams: { ...kept.streams } };
+      const onScreen = await erevosOnScreen();
       let added = { total: 0, unmarked: 0, rings: 0 };
       if (said) {
         const counted = counting(kept.streams[said.stream], said);
         added = counted.added;
-        // The latest last, so the oldest go first.
-        delete next.streams[said.stream];
-        next.streams[said.stream] = counted.stream;
-        for (const stream of Object.keys(next.streams).slice(0, -STREAMS)) delete next.streams[stream];
+        // Not kept while Erevos is on the screen, which says 'seen' as it leaves it: its own queues
+        // are emptied there, so a new round starts.
+        if (!onScreen) {
+          // The latest last, so the oldest go first.
+          delete next.streams[said.stream];
+          next.streams[said.stream] = counted.stream;
+          for (const stream of Object.keys(next.streams).slice(0, -STREAMS)) delete next.streams[stream];
+        }
       }
-      if (!(await erevosOnScreen())) {
+      if (!onScreen) {
         // A push that holds no count is one thing that came, not said what.
         const others = said === null ? 1 : added.unmarked;
         next.pushes = kept.pushes + 1;
@@ -552,7 +551,9 @@ function showNotice(said) {
         next.exact = kept.exact && others === 0;
         next.rang = kept.rang || added.rings > 0;
       }
-      words = noticeWords(next);
+      // On the screen nothing is kept for later, but a push that only rang is still a call.
+      const onlyRang = said !== null && added.rings > 0 && added.total === 0 && added.unmarked === 0;
+      words = noticeWords(onScreen ? { lang: next.lang, pushes: 0, messages: 0, others: 0, exact: true, rang: onlyRang } : next);
       await writeNotice(next);
     } catch {
       // The notice below shows all the same.
@@ -564,12 +565,16 @@ function showNotice(said) {
   });
 }
 
+// Erevos open, or left, starts the count again. The streams go too: kept, they would show anyone who
+// can read this browser's storage how many queues got messages, and so that it may hold more than
+// one space. A round that goes on after, of a queue Erevos did not empty, then counts again what
+// came before, which is still not read.
 function noticeSeen() {
   return inTurn(async () => {
     await closeNotices().catch(() => undefined);
     const kept = await readNotice();
-    if (kept.pushes !== 0 || kept.messages !== 0 || kept.others !== 0 || !kept.exact || kept.rang) {
-      await writeNotice({ ...kept, pushes: 0, messages: 0, others: 0, exact: true, rang: false });
+    if (kept.pushes !== 0 || kept.messages !== 0 || kept.others !== 0 || !kept.exact || kept.rang || Object.keys(kept.streams).length > 0) {
+      await writeNotice({ ...kept, pushes: 0, messages: 0, others: 0, exact: true, rang: false, streams: {} });
     }
   });
 }

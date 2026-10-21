@@ -212,7 +212,10 @@ lists the chat the next time it looks at its queue, which it does every few seco
 the other, every message between them is sealed once more for the phone it goes to, with a key that phone gave inside
 the chat, so to the relay each is random bytes of one of a few sizes, and it cannot tell from them which conversation
 they belong to. The first message of a chat, and any sent before the answer comes, still show it. The relay still sees
-which address puts each message in, and when.
+which address puts each message in, and when. And each one tells the relay, in a byte it reads, what it carries: a
+message someone reads, word between phones (that a message came or was read, typing, being online, reactions, new
+keys), or a call that rings. So the relay sees which are messages, and when a call starts, whether notifications are
+on or not: it is how a closed web app's notice can count them.
 
 ### No relay of your own
 
@@ -1346,12 +1349,13 @@ send changed code. Erevos does not take that code on trust:
 - **Only while it is open:** iOS stops web apps in the background, so messages arrive when you open Erevos; they wait
   on the relay until then.
 - **Notifications** while Erevos is closed are off unless you turn them on: **Lock and second password → Notifications
-  while closed → Turn on** (iOS 16.4 or later, from the home screen). When messages come, your relay sends a push
-  through Apple, and Erevos shows how many came since you last opened it (**3 new messages**), or **Call** when only
-  a call rang, in the app's language, nothing more. The count is encrypted for your iPhone: Apple sees when something
-  comes for your iPhone, and that it uses Erevos, never what or from whom. A relay or a sender's Erevos older than
-  2.0.0 cannot count; then Erevos shows **New message**, or **New messages** once more came, until you open it. They
-  are per space, never for hidden chats, and your relay must be set up to send them.
+  while closed → Turn on** (iOS 16.4 or later, from the home screen). When messages come, or a call rings, your relay
+  sends a push through Apple, and Erevos shows how many messages came since you last opened it (**3 new messages**), or
+  **Call** when only a call rang, in the app's language, nothing more. The count is encrypted for your iPhone: Apple
+  sees when something comes for your iPhone, and that it uses Erevos, never what or from whom. With a relay or a
+  sender's Erevos older than 2.0.0, or a message that other phones carried to the relay, there is no number: Erevos
+  shows **New message**, or **New messages** once more came, until you open it. They are per space, never for hidden
+  chats, and your relay must be set up to send them.
 - **Permissions:** menu → **Permissions** shows what the browser lets Erevos do: whether it runs from the home screen,
   notifications while closed (needed once this space turned them on), the microphone for calls, the camera for video
   calls, and whether the browser keeps Erevos's data for good. Without that, Safari may clear the data when the iPhone
@@ -1462,7 +1466,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | --- | --- | --- |
 | **Account, phone number, email** | None needed. Contacts are pairs of one-way relay queues. | |
 | **Contacts and their names, keys, relay settings, look** | Sealed on the phone with each space's key. | |
-| **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them, and once both phones have had a message from each other it cannot tell them apart by conversation either: each is sealed once more for the phone it goes to. Not audited yet. | An outside audit. |
+| **Messages through a relay** | End-to-end encrypted: PQXDH with ML-KEM-768 to start, then the double ratchet. The relay cannot read them, and once both phones have had a message from each other it cannot tell them apart by conversation either: each is sealed once more for the phone it goes to. It sees which are messages someone reads, which are word between phones, and which are calls that ring, as each says. Not audited yet. | An outside audit. |
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it, and over Wi-Fi Direct anyone who joins the phones' own Wi-Fi. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
@@ -1482,9 +1486,9 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
 | **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same "New message": whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does, but never by a name only hidden chats know: a call from one of their contacts shows the number. | |
 | **Widget and Phone (Android)** | The widget, once added, shows how many missed calls, unread SMS and new messages there are, never who or what. The Phone opens without the password only if you let it: then anyone holding the unlocked phone sees the calls and favourites Android keeps, with the names of the phone's contacts only. | |
-| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
+| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. The relays see when a call starts ringing. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |
-| **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. | Video with more than four people, through a server; more than eight people. |
+| **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. The relays see when one starts. | Video with more than four people, through a server; more than eight people. |
 | **Public groups** | As group chats, and anyone with the link can ask to join and read from when let in. Requests come to the owner's relay sealed for the owner's phone: the relay sees how many and when, not from whom. Members see each other's chosen names, keys made for that group alone, relay addresses and queue sender ids. Not audited. | |
 | **Link previews** | Off unless turned on. Then, as you send a link, your phone fetches its page straight from the site, which sees your IP address and when, not who the message is for. The preview goes inside the encrypted message; the phone that gets it fetches nothing. None while the space goes through Tor, and none in hidden chats. | Previews through Tor. |
 

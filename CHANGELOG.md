@@ -29,10 +29,12 @@ On main, not released yet. The next release is **2.0.0**.
   the same size, so the push service (Apple's on an iPhone) sees only that something came, and
   when. Receipts, typing and new keys push nothing, and messages read on the screen end a push
   still waiting. At most one push every 15 seconds goes to a browser, for all its spaces on one
-  relay. A relay or a sender's Erevos older than 2.0.0 cannot count: the notice then says "New
-  message", or "New messages" once more came, until Erevos is open again. An iPhone keeps every
-  notice, so the older ones are closed once the new one shows (an iPhone keeps those less than 30
-  seconds old).
+  relay. With a relay or a sender's Erevos older than 2.0.0, or a message other phones carried to
+  the relay, there is no number: the notice says "New message", or "New messages" once more came,
+  until Erevos is open again. The browser keeps a short tag of each queue that pushed, to count
+  each message once, only until Erevos next opens or closes: until then, how many there are may
+  show more than one space. An iPhone keeps every notice, so the older ones are closed once the new
+  one shows (an iPhone keeps those less than 30 seconds old).
 
 - Each send now tells the relay what it carries: a message someone reads (a text, a voice message
   in its parts, a photo or file, a sticker, place or poll, a group's message), or word between
@@ -46,7 +48,8 @@ On main, not released yet. The next release is **2.0.0**.
   nearby says it when this phone hands its own copy to the relay; a phone carrying it for another
   cannot know, so says nothing. What 0.1.16 kept waiting for a linked computer says nothing either
   when it goes after the update, so it still pushes. So a relay that counts can say in a closed web
-  app's push how many messages came (above).
+  app's push how many messages came (above). The relay sees these marks on every system,
+  notifications on or not: which packets are messages, and when a call starts.
 
 - **Newer keys every month**: each chat's account makes new prekeys (X25519 and ML-KEM-768) every
   30 days and gives them to its contacts inside their chats, whose Erevos starts a new conversation

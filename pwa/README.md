@@ -71,9 +71,11 @@ app from a store is installed once and changes only when updated.
   messages", in the app's language, or "Call" when only a call rang. It shows "New message",
   or "New messages" once more came since Erevos was last open, without a number, when the push
   is empty (a relay from before the counts) or the relay could not count all of it (a sender's
-  Erevos from before the marks), until Erevos is open again. The push service sees when a message
-  comes, and that the device uses Erevos; never what or from whom (though pushes more than 15
-  seconds apart can be counted).
+  Erevos from before the marks, or a message other phones carried to the relay, which cannot say
+  what it holds), until Erevos is open again. The worker keeps which queues pushed, to count each
+  message once, only until Erevos opens or closes. The push service sees when a message comes,
+  and that the device uses Erevos; never what or from whom (though pushes more than 15 seconds
+  apart can be counted).
 - **No Bluetooth, nearby link or SMS**, which Safari does not allow, and no automatic backups: a
   browser gives out a file only after a tap.
 

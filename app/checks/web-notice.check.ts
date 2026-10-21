@@ -66,6 +66,8 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>()) {
     shown: () => notices.filter((notice) => !notice.closed).map((notice) => notice.body),
     // The pushes counted since Erevos was last open, as the worker keeps them.
     count: () => (JSON.parse(store.get('/__erevos/notice') ?? '{"pushes":0}') as { pushes: number }).pushes,
+    // The streams the worker keeps, as anyone who can read the browser's storage sees them.
+    streams: () => Object.keys((JSON.parse(store.get('/__erevos/notice') ?? '{}') as { streams?: object }).streams ?? {}),
   };
 }
 
@@ -204,20 +206,17 @@ test('a relay that counts: the notice says how many messages came, and a push lo
   // Another space's queue counts apart.
   await iphone.push(counted(2, 9, 2));
   assert.deepEqual(iphone.shown(), ['5 new messages']);
-  // Opened, but the messages not yet taken from the relay: the round goes on.
+  // Opened and taken: the relay starts a new round.
   await iphone.tell({ erevos: 'seen' });
-  await iphone.push(counted(1, 7, 4));
-  assert.deepEqual(iphone.shown(), ['New message']);
-  // Taken: the relay starts a new round.
   await iphone.push(counted(1, 8, 2));
-  assert.deepEqual(iphone.shown(), ['3 new messages']);
+  assert.deepEqual(iphone.shown(), ['2 new messages']);
   // Kept when the worker starts again.
   const again = browser('iphone', iphone.store);
   await again.push(counted(1, 8, 3));
-  assert.deepEqual(again.shown(), ['4 new messages']);
+  assert.deepEqual(again.shown(), ['3 new messages']);
 });
 
-test('a push come late, from this round or the one before, adds only what it had not said', async () => {
+test('a push come late, from this round or the ones before, adds only what it had not said', async () => {
   const other = browser('other');
   const said: string[] = [];
   for (const [round, total] of [[7, 3], [7, 4], [7, 3], [7, 5]]) {
@@ -236,6 +235,37 @@ test('a push come late, from this round or the one before, adds only what it had
   const again = browser('other', other.store);
   await again.push(counted(1, 8, 4));
   assert.deepEqual(again.shown(), ['6 new messages']);
+  // Come late after more rounds than one: an open tab out of sight empties the queue each time.
+  await again.tell({ erevos: 'seen' });
+  said.length = 0;
+  for (const [round, total] of [[1, 1], [2, 1], [3, 1], [1, 2], [2, 1], [4, 2]]) {
+    await again.push(counted(1, round, total));
+    said.push(again.shown()[0]);
+  }
+  assert.deepEqual(said, ['New message', '2 new messages', '3 new messages', '4 new messages', '4 new messages', '6 new messages']);
+});
+
+test('the rounds kept by the worker before it kept several go on', async () => {
+  const before = { round: 7, total: 3, unmarked: 0, rings: 0, before: { round: 6, total: 1 } };
+  const store = new Map([['/__erevos/notice', JSON.stringify({ pushes: 2, messages: 4, exact: true, lang: 'en', streams: { '0000000000000001': before } })]]);
+  const other = browser('other', store);
+  await other.push(counted(1, 7, 4));
+  assert.deepEqual(other.shown(), ['5 new messages']);
+  await other.push(counted(1, 6, 2));
+  assert.deepEqual(other.shown(), ['6 new messages']);
+});
+
+test('opening Erevos forgets which queues pushed, so its storage does not keep them from one open to the next', async () => {
+  const other = browser('other');
+  await other.push(counted(1, 1, 1));
+  await other.push(counted(2, 1, 2));
+  assert.equal(other.streams().length, 2);
+  await other.tell({ erevos: 'seen' });
+  assert.deepEqual(other.streams(), []);
+  // A queue Erevos did not empty, of a space not opened: its round goes on, and counts again what
+  // came before, still not read.
+  await other.push(counted(2, 1, 3));
+  assert.deepEqual(other.shown(), ['3 new messages']);
 });
 
 test('a send that did not say what it carries, or an empty push, leaves the number out until Erevos is open', async () => {
@@ -246,9 +276,9 @@ test('a send that did not say what it carries, or an empty push, leaves the numb
   assert.deepEqual(other.shown(), ['New messages']);
   await other.push(counted(1, 1, 2, 1));
   assert.deepEqual(other.shown(), ['New messages']);
-  // Opened: the round goes on, and the send told of before is not told again.
+  // Opened and taken: a new round, with a number again.
   await other.tell({ erevos: 'seen' });
-  await other.push(counted(1, 1, 4, 1));
+  await other.push(counted(1, 2, 2));
   assert.deepEqual(other.shown(), ['2 new messages']);
   await other.push();
   assert.deepEqual(other.shown(), ['New messages']);
@@ -273,15 +303,10 @@ test('a call that rang, with no message since Erevos was open, says so; with mes
   // Another call: the messages are still what to tell of.
   await other.push(counted(1, 5, 2, 0, 2));
   assert.deepEqual(other.shown(), ['2 new messages']);
-  // Opening Erevos starts again: a message alone is a message, and the calls of the round before
-  // are not told again.
+  // Opening Erevos starts again: a message alone is a message.
   await other.tell({ erevos: 'seen' });
   await other.push(counted(1, 6, 1));
   assert.deepEqual(other.shown(), ['New message']);
-  await other.tell({ erevos: 'seen' });
-  await other.push(counted(1, 5, 2, 0, 2));
-  assert.deepEqual(other.shown(), ['New message']);
-  assert.equal(other.count(), 1);
   // With a send that did not say what it carries, no number and no call: one thing came, in
   // whichever order the pushes come.
   const orders = [
@@ -299,12 +324,18 @@ test('a call that rang, with no message since Erevos was open, says so; with mes
   await other.push(counted(1, 10, 0, 0, 1));
   await other.push();
   assert.deepEqual(other.shown(), ['New message']);
-  // A call while Erevos is on the screen is not kept for later.
+  // A call while Erevos is on the screen says so, but is not kept for later.
   await other.tell({ erevos: 'seen' });
   other.windows.push({ visibilityState: 'visible' });
   await other.push(counted(2, 1, 0, 0, 1));
-  other.windows.pop();
+  assert.deepEqual(other.shown(), ['Call']);
   await other.push(counted(2, 1, 1, 0, 1));
+  assert.deepEqual(other.shown(), ['New message']);
+  other.windows.pop();
+  assert.equal(other.count(), 0);
+  // Erevos left the screen, having taken its messages: a new round.
+  await other.tell({ erevos: 'seen' });
+  await other.push(counted(2, 2, 1));
   assert.deepEqual(other.shown(), ['New message']);
 });
 
@@ -315,7 +346,7 @@ test('a count kept by the worker before counts were sent goes on without a numbe
   assert.deepEqual(iphone.shown(), ['Νέα μηνύματα']);
   assert.equal(iphone.count(), 3);
   await iphone.tell({ erevos: 'seen' });
-  await iphone.push(counted(1, 1, 3));
+  await iphone.push(counted(1, 2, 2));
   assert.deepEqual(iphone.shown(), ['2 νέα μηνύματα']);
 });
 
@@ -331,13 +362,12 @@ test('a push while Erevos is on the screen still shows, but is not counted', asy
   await other.push();
   assert.deepEqual(other.shown(), ['New messages']);
 
-  // Nor are the messages it says came, when the next push comes with Erevos closed.
+  // Nor is the queue it came for kept.
   const counting = browser('other');
   counting.windows.push({ visibilityState: 'visible' });
   await counting.push(counted(1, 1, 2));
-  counting.windows[0].visibilityState = 'hidden';
-  await counting.push(counted(1, 1, 3));
   assert.deepEqual(counting.shown(), ['New message']);
+  assert.deepEqual(counting.streams(), []);
 });
 
 test('without its cache the worker still shows a notice for every push', async () => {
