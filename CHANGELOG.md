@@ -1,13 +1,20 @@
 # Changelog
 
-What each release changed, newest first, for whoever taps **Update**. Releases are numbered
-`0.1.<run of the release workflow>`, so some numbers have none: 0.1.1 went out only on the
-private repository, without an Android app, and 0.1.3, 0.1.9, 0.1.13 and 0.1.15 never came out.
+What each release changed, newest first, for whoever taps **Update**. After 0.1.16 comes 2.0.0.
+Until then releases were numbered `0.1.<run of the release workflow>`, so some numbers have none:
+0.1.1 went out only on the private repository, without an Android app, and 0.1.3, 0.1.9, 0.1.13
+and 0.1.15 never came out.
 No release so far has a macOS build. **Not audited.**
 
 ## Unreleased
 
-On main, not released yet.
+On main, not released yet. The next release is **2.0.0**.
+
+- **Version numbers**: the next release is 2.0.0, and each one after it the next number (2.0.1,
+  2.0.2…) unless it is given one when started (Actions, release, Run workflow, version). Every
+  release still has its own build number, the run's, so Android installs it over the one before.
+  Updates → Check for updates in 0.1.16 and before offers 2.0.0 as **0.1.<build>** (the only kind
+  of number they read); it is 2.0.0 all the same, and shows as 2.0.0 once installed.
 
 - **Relay**: closes connections left quiet for 5 minutes or slow in their handshake, and takes at
   most 512 at once (128 without a token). `FORWARD` and `FILE_VIA` refuse addresses that are not

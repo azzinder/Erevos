@@ -4,10 +4,10 @@
 // and release.json, which lists every file with its SHA-256. pwa/release.mjs then signs
 // release.json. See README.md.
 //
-//   node pwa/build.mjs <web build> <out> [--key <public key file>] [--version <n>] [--label <0.1.N>]
+//   node pwa/build.mjs <web build> <out> [--key <public key file>] [--version <n>] [--label <2.0.0>]
 //
 // The key defaults to pwa/release-key.pub. The version, which must grow from one release to the
-// next, defaults to the time in seconds. The label names the GitHub release (v0.1.N) the web app
+// next, defaults to the time in seconds. The label names the GitHub release (v2.0.0) the web app
 // goes out with, so it carries the same number as the other packages; the app shows it.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -35,7 +35,7 @@ const label = option('--label', null);
 const [from, out] = args;
 if (!from || !out) fail('usage: node pwa/build.mjs <web build> <out> [--key <public key file>] [--version <n>]');
 if (!Number.isSafeInteger(version) || version < 1) fail('The version must be a whole number above 0.');
-if (label !== null && !/^\d+\.\d+\.\d+$/.test(label)) fail('The label must look like 0.1.7.');
+if (label !== null && !/^\d+\.\d+\.\d+$/.test(label)) fail('The label must look like 2.0.0.');
 if (!fs.existsSync(keyFile)) fail(`No public key at ${keyFile}. Make the release key first: node pwa/release.mjs keygen <private key file>`);
 const publicKey = fs.readFileSync(keyFile, 'utf8').trim();
 if (Buffer.from(publicKey, 'base64').length !== 32) fail(`${keyFile} does not hold an Ed25519 public key (32 bytes, base64).`);

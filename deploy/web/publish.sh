@@ -1,9 +1,9 @@
 #!/bin/sh
-# Serves the web app of a GitHub release (v0.1.N, made by .github/workflows/release.yml from the
-# same commit as the other packages) from your own server. Run it on the computer that holds the
+# Serves the web app of a GitHub release (v2.0.0 and up, or v0.1.N before, made by
+# .github/workflows/release.yml from the same commit as the other packages) from your own server. Run it on the computer that holds the
 # release key:
 #
-#   deploy/web/publish.sh [--files-only] 0.1.N user@server app.example.org [private key file]
+#   deploy/web/publish.sh [--files-only] 2.0.0 user@server app.example.org [private key file]
 #
 # It downloads erevos-web.tar.gz from the public download repository, checks it against the
 # release's SHA256SUMS and its number, signs it with the release key (default
@@ -23,12 +23,12 @@ key=${4:-$HOME/.erevos/web-release.key}
 case $version in
 [0-9]*.[0-9]*.[0-9]*) ;;
 *)
-	echo "usage: deploy/web/publish.sh [--files-only] <0.1.N> <user@server> <domain> [private key file]" >&2
+	echo "usage: deploy/web/publish.sh [--files-only] <version, e.g. 2.0.0> <user@server> <domain> [private key file]" >&2
 	exit 2
 	;;
 esac
 if [ -z "$target" ] || [ -z "$domain" ]; then
-	echo "usage: deploy/web/publish.sh [--files-only] <0.1.N> <user@server> <domain> [private key file]" >&2
+	echo "usage: deploy/web/publish.sh [--files-only] <version, e.g. 2.0.0> <user@server> <domain> [private key file]" >&2
 	exit 2
 fi
 if [ ! -f "$key" ]; then

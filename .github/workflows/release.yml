@@ -1,6 +1,6 @@
 name: release
 
-# Builds every Erevos package and publishes them together as a GitHub release, v0.1.<build>:
+# Builds every Erevos package and publishes them together as a GitHub release, v<version>:
 # the Android APK (signed with the release key, see scripts/make-release-keystore.sh), Linux
 # (Arch package and AppImage), the macOS disk image, Windows (installer and portable .exe), the
 # Sailfish OS RPM and the web app (to be signed on the release computer, deploy/web/publish.sh).
@@ -11,6 +11,10 @@ name: release
 # (Actions, release, Run workflow). Not on every push: a full build takes over an hour of
 # Actions minutes, and main moves many times a day.
 #
+# The version: the one named when started by hand (Run workflow, version), else the one after the
+# latest release, 2.0.1 after 2.0.0. Releases until 0.1.16 were 0.1.<run number>; the one after them
+# is 2.0.0. Every build still has its own number, the run's, which Android and Check for updates go by.
+#
 # The jobs hand their files to the publish job through a draft release, build-<run number>:
 # artifacts would fill the account's Actions storage, release files do not count toward it.
 # The five newest releases stay.
@@ -20,6 +24,11 @@ on:
     # 02:30 UTC, after the day's work.
     - cron: '30 2 * * *'
   workflow_dispatch:
+    inputs:
+      version:
+        description: The release's version, e.g. 2.1.0. Empty for the one after the latest (2.0.0 → 2.0.1).
+        required: false
+        default: ''
 
 # Each job asks for what it needs: contents: write where it uses gh release.
 permissions: {}
@@ -28,9 +37,9 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+# Each job also has EREVOS_VERSION, from the version job.
 env:
   EREVOS_BUILD: ${{ github.run_number }}
-  EREVOS_VERSION: 0.1.${{ github.run_number }}
   EXPO_NO_TELEMETRY: "1"
 
 jobs:
@@ -41,17 +50,36 @@ jobs:
       contents: write
     outputs:
       build: ${{ steps.check.outputs.build }}
+      version: ${{ steps.check.outputs.version }}
     steps:
-      - name: Check the branch, and whether main changed since the last release
+      - name: Check the branch, whether main changed since the last release, and the version
         id: check
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          WANTED: ${{ inputs.version }}
         run: |
           if [ "$GITHUB_REF_NAME" != main ]; then
             echo "::error::Releases are built only from main, not from $GITHUB_REF_NAME"; exit 1
           fi
-          last=$(gh api "repos/$GH_REPO/releases/latest" --jq .target_commitish 2>/dev/null || true)
+          read -r latest last <<< "$(gh api "repos/$GH_REPO/releases/latest" --jq '"\(.tag_name) \(.target_commitish)"' 2>/dev/null || true)"
+          latest=${latest#v}
+          if [ -n "$WANTED" ]; then
+            version=${WANTED#v}
+          elif [[ "$latest" =~ ^[1-9][0-9]*\.[0-9]+\.[0-9]+$ ]]; then
+            version="${latest%.*}.$((10#${latest##*.} + 1))"
+          else
+            version=2.0.0
+          fi
+          if [[ ! "$version" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Not a version: $version. It looks like 2.1.0."; exit 1
+          fi
+          newest=$(printf '%s\n%s\n' "$latest" "$version" | sort -V | tail -n1)
+          if [ "$version" = "$latest" ] || [ "$newest" != "$version" ]; then
+            echo "::error::$version is not newer than the latest release, $latest."; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "This release: $version (build $EREVOS_BUILD; the latest is ${latest:-none})."
           if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$last" = "$GITHUB_SHA" ]; then
             echo "main has not changed since the last release (${GITHUB_SHA::7}): nothing to build."
             echo "build=false" >> "$GITHUB_OUTPUT"
@@ -79,6 +107,8 @@ jobs:
   apk:
     needs: version
     if: ${{ needs.version.outputs.build == 'true' }}
+    env:
+      EREVOS_VERSION: ${{ needs.version.outputs.version }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -182,6 +212,8 @@ jobs:
   linux:
     needs: version
     if: ${{ needs.version.outputs.build == 'true' }}
+    env:
+      EREVOS_VERSION: ${{ needs.version.outputs.version }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -260,6 +292,8 @@ jobs:
   macos:
     needs: [version, linux]
     if: ${{ !cancelled() && needs.version.outputs.build == 'true' && vars.EREVOS_MACOS != 'off' }}
+    env:
+      EREVOS_VERSION: ${{ needs.version.outputs.version }}
     runs-on: macos-latest
     timeout-minutes: 30
     permissions:
@@ -322,6 +356,8 @@ jobs:
   windows:
     needs: [version, linux]
     if: ${{ !cancelled() && needs.version.outputs.build == 'true' && vars.EREVOS_WINDOWS != 'off' }}
+    env:
+      EREVOS_VERSION: ${{ needs.version.outputs.version }}
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
@@ -367,6 +403,8 @@ jobs:
   sailfish:
     needs: version
     if: ${{ needs.version.outputs.build == 'true' }}
+    env:
+      EREVOS_VERSION: ${{ needs.version.outputs.version }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -412,6 +450,7 @@ jobs:
     permissions:
       contents: write
     env:
+      EREVOS_VERSION: ${{ needs.version.outputs.version }}
       # Writes to the public download repository that Updates → Check for updates reads
       # (app/lib/updates.ts); without the token that step is skipped.
       RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
@@ -428,17 +467,19 @@ jobs:
             echo "::error::No job made a package: nothing to publish"; exit 1
           fi
           (cd files && sha256sum erevos-* > SHA256SUMS && cat SHA256SUMS)
-          # What Updates → Check for updates reads to find a new version (app/lib/updates.ts): the
-          # APK's address in the public repository, its size and SHA-256, which the app checks.
+          # What Updates → Check for updates reads to find a new version (app/lib/updates.ts): its
+          # name and build number, the APK's address in the public repository, its size and
+          # SHA-256, which the app checks. `version` is for Erevos 0.1.16 and before, which read
+          # only 0.1.<build>: they offer this release under that number.
           APK=null
           if [ -f files/erevos-android.apk ]; then
             APK=$(jq -n --arg url "https://github.com/$RELEASES_REPO/releases/download/v$EREVOS_VERSION/erevos-android.apk" \
               --argjson size "$(stat -c %s files/erevos-android.apk)" --arg sha256 "$(sha256sum files/erevos-android.apk | cut -d' ' -f1)" \
               '{url: $url, size: $size, sha256: $sha256}')
           fi
-          jq -n --arg version "$EREVOS_VERSION" --argjson build "$EREVOS_BUILD" --arg date "$(TZ=Europe/Athens date +%F)" \
-            --arg commit "${GITHUB_SHA::7}" --argjson apk "$APK" \
-            '{version: $version, build: $build, date: $date, commit: $commit, apk: $apk}' > files/version.json
+          jq -n --arg name "$EREVOS_VERSION" --arg version "0.1.$EREVOS_BUILD" --argjson build "$EREVOS_BUILD" \
+            --arg date "$(TZ=Europe/Athens date +%F)" --arg commit "${GITHUB_SHA::7}" --argjson apk "$APK" \
+            '{name: $name, version: $version, build: $build, date: $date, commit: $commit, apk: $apk}' > files/version.json
           cat files/version.json
           : > packages.md
           package() { if [ -f "files/$1" ]; then echo "- $2" >> packages.md; fi; }

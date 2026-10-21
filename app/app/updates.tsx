@@ -8,7 +8,7 @@ import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
 import { SHELL, shellFetch, shellSystem } from '../lib/shell';
-import { buildOf, fetchLatestRelease, formatSize, isNewer, packageFile, RELEASES_PAGE, type Release } from '../lib/updates';
+import { buildNumber, fetchLatestRelease, formatSize, isNewer, packageFile, RELEASES_PAGE, type Release } from '../lib/updates';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -20,9 +20,9 @@ import { useColors } from '../theme/context';
 // itself (pwa/), so it has no button.
 
 const supported = Platform.OS === 'android' || SHELL !== null;
-// This app's version (app.config.js sets it for releases) and its build number.
+// This app's version and its build number (app.config.js sets both for releases).
 const VERSION = Constants.expoConfig?.version ?? '0.0.0';
-const CURRENT_BUILD = buildOf(VERSION);
+const CURRENT_BUILD = buildNumber(Constants.expoConfig?.extra?.build, VERSION);
 // A page cannot read GitHub's downloads itself, so on a computer and Sailfish OS the shell asks.
 const latestFrom = (SHELL ? (_url: unknown, init?: RequestInit) => shellFetch('/__latest', init) : fetch) as typeof fetch;
 

@@ -2,10 +2,11 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { buildOf, isNewer, isReleaseFile, PACKAGE_FILES, packageFile, parseRelease, RELEASES_REPO } from '../lib/updates';
+import { buildNumber, buildOf, isNewer, isReleaseFile, PACKAGE_FILES, packageFile, parseRelease, RELEASES_REPO } from '../lib/updates';
 
 const SHA = 'a'.repeat(64);
 const url = (name: string) => `https://github.com/${RELEASES_REPO}/releases/download/v0.1.7/${name}`;
@@ -20,6 +21,47 @@ test('the version and build must agree', () => {
   assert.equal(parseRelease(json({ build: 8 })), null);
   assert.equal(parseRelease(json({ version: '1.0.7' })), null);
   assert.equal(parseRelease('not json'), null);
+});
+
+test('since 2.0.0 a release is read by its name, and Erevos 0.1.16 and before still find it', () => {
+  const v2 = json({ name: '2.0.0', version: '0.1.17', build: 17 });
+  assert.equal(parseRelease(v2)?.version, '2.0.0');
+  assert.equal(parseRelease(v2)?.build, 17);
+  assert.equal(isNewer(parseRelease(v2)!, 16), true);
+  // What those versions check: a 0.1.<build> version with the same build, which the workflow writes.
+  assert.equal(buildOf('0.1.17'), 17);
+  const workflow = readFileSync(join(import.meta.dirname, '../../.github/workflows/release.yml'), 'utf8');
+  assert.ok(workflow.includes('--arg name "$EREVOS_VERSION" --arg version "0.1.$EREVOS_BUILD" --argjson build "$EREVOS_BUILD"'));
+  for (const name of ['2.0', 'v2.0.0', '2.0.0-beta', '02.0.0', 2]) {
+    assert.equal(parseRelease(json({ name, version: '2.0.0', build: 17 })), null, String(name));
+  }
+  assert.equal(parseRelease(json({ name: '2.0.0', build: 0 })), null);
+});
+
+test("the running app's build number: apart from the version since 2.0.0, in it before", () => {
+  assert.equal(buildNumber(17, '2.0.0'), 17);
+  assert.equal(buildNumber(undefined, '0.1.16'), 16);
+  assert.equal(buildNumber(undefined, '2.0.0'), 0);
+  assert.equal(buildNumber('17', '2.0.0'), 0);
+  assert.equal(buildNumber(undefined, '0.0.1'), 0);
+  // app.config.js puts a release's build in extra.build and Android's versionCode.
+  const config = createRequire(import.meta.url)('../app.config.js') as (c: { config: Record<string, unknown> }) => Record<string, any>;
+  const env = { ...process.env };
+  try {
+    Object.assign(process.env, { EREVOS_BUILD: '17', EREVOS_VERSION: '2.0.0' });
+    const made = config({ config: { version: '0.0.1', android: {}, extra: { other: 1 }, plugins: [] } });
+    assert.equal(made.version, '2.0.0');
+    assert.equal(made.android.versionCode, 17);
+    assert.deepEqual(made.extra, { other: 1, build: 17 });
+    delete process.env.EREVOS_BUILD;
+    delete process.env.EREVOS_VERSION;
+    const local = config({ config: { version: '0.0.1', android: {}, plugins: [] } });
+    assert.equal(local.version, '0.0.1');
+    assert.equal(local.android.versionCode, undefined);
+    assert.equal(buildNumber(local.extra?.build, local.version), 0);
+  } finally {
+    process.env = env;
+  }
 });
 
 test('a package from anywhere else, or without its SHA-256, is not offered', () => {

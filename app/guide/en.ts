@@ -1319,7 +1319,7 @@ Erevos never looks for updates on its own: a regular check would tell the place 
 or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI:
 
 1. Open **Updates** in the home screen's menu (or **Check for updates** at the bottom of this guide's first screen).
-   It shows the version you have, **Erevos 0.1.N**.
+   It shows the version you have, such as **Erevos 2.0.0**.
 2. Tap **Check for updates**. GitHub then sees this device's internet address, nothing else. While Tor is on in the
    space, Erevos does not check, since that would go around Tor.
 3. When there is a new version: on Android tap **Install**. It downloads, is checked against the release (its size and
@@ -1329,7 +1329,7 @@ or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI
 
 The rest of this section is for updating by hand.
 
-**Where new versions are:** on Erevos's releases page, \`https://github.com/azzinder/erevos-releases/releases\`. The newest is at the top, **Erevos 0.1.N**, with a file for each
+**Where new versions are:** on Erevos's releases page, \`https://github.com/azzinder/erevos-releases/releases\`. The newest is at the top, such as **Erevos 2.0.0**, with a file for each
 system. The five newest stay there.
 
 **Check the file** if you can, on a computer: each release has \`SHA256SUMS\`, and in the folder with the downloaded

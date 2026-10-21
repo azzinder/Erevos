@@ -1,7 +1,7 @@
 // What the web app's service worker (pwa/sw.js) says about the code it runs, as lib/integrity.web.ts
 // tells it. The phone and desktop apps are installed whole and have none of this.
 
-/** label: the GitHub release it came with (0.1.N), when it came with one. */
+/** label: the GitHub release it came with (2.0.0; 0.1.N before), when it came with one. */
 export type Release = { version: number; label: string | null; created: string | null; commit: string | null };
 
 export type IntegrityStatus = {

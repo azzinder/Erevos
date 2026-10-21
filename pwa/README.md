@@ -80,11 +80,11 @@ Keep `~/.erevos/web-release.key` and its passphrase, and a copy of both offline.
 update can be signed, and every installed app would have to be removed and added again with a
 new key. The fingerprint it shows is the one people compare.
 
-Then, for each release: every GitHub release `v0.1.N` (`.github/workflows/release.yml`) carries
-the web app built from the same commit as the other packages, numbered `0.1.N`, but not signed
-(`erevos-web.tar.gz`). On the computer with the key:
+Then, for each release: every GitHub release, `v2.0.0` and up (`.github/workflows/release.yml`),
+carries the web app built from the same commit as the other packages, numbered like them, but not
+signed (`erevos-web.tar.gz`). On the computer with the key:
 
-    deploy/web/publish.sh 0.1.N root@<server> <app.example.org>
+    deploy/web/publish.sh 2.0.0 root@<server> <app.example.org>
 
 It downloads it, checks it against the release's `SHA256SUMS` and its number, signs it, checks
 it, copies it to the server, serves it with Caddy (Let's Encrypt, HSTS, the headers above) and
