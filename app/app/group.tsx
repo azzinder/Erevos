@@ -211,12 +211,14 @@ export default function GroupScreen() {
           const first = !before || before.note || before.from !== m.from;
           const ink = mine ? b.mineText : b.theirsText;
           const caption = parts.caption(m);
+          // A sticker, built in or made from a photo, shows on its own, with no bubble.
+          const stuck = !!m.sticker || !!m.file?.sticker;
           return (
             <View key={i} onLayout={parts.placedAt(m)}>
               <Pressable
                 onLongPress={() => parts.hold(m)}
                 accessibilityHint={t('Hold for more')}
-                style={[styles.bubble, mine ? b.mine : b.theirs, m.file?.kind === 'photo' && (mine || !first) && styles.photoBubble, m.sticker && styles.stickerBubble, parts.litStyle(m)]}
+                style={[styles.bubble, mine ? b.mine : b.theirs, m.file?.kind === 'photo' && !stuck && (mine || !first) && styles.photoBubble, stuck && styles.stickerBubble, parts.litStyle(m)]}
               >
                 {!mine && first ? (
                   <Text variant="label" color={colors.accentText}>
@@ -231,7 +233,7 @@ export default function GroupScreen() {
                     </Text>
                   )}
                 {parts.preview(m, ink)}
-                <Text style={[ink, styles.time, m.sticker && { color: colors.textMuted }]}>{caption ? `${clock(m.at)}  ·  ${caption}` : clock(m.at)}</Text>
+                <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>{caption ? `${clock(m.at)}  ·  ${caption}` : clock(m.at)}</Text>
               </Pressable>
               {parts.reactions(m)}
             </View>

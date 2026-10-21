@@ -13,6 +13,7 @@ import { FILE as PUBLIC_GROUPS } from './public-group-data';
 import { markRestore } from './restored';
 import { POCKETS } from './sealed-file';
 import { ORDER_FILE as SMS_ORDER } from './sms-data';
+import { FILE as STICKERS } from './sticker-data';
 import { PREFIX as AVATAR } from './avatar-photos';
 import { PREFIX as VOICE } from './voice-clips';
 
@@ -61,9 +62,10 @@ const SLOTTED = Array.from({ length: MOST_SLOTS }, (_, n) => [
 ]).flat();
 const KEYS = [...FIXED, ...OTHER_POCKETS.map((p) => `erevos.hidden-lock.${p}`), ...SLOTTED];
 
-// The sealed files that are text; voice messages' sounds are bytes. A file not on the phone is
-// left out, so the backup of a phone that keeps no contacts in Erevos still opens in older versions.
-const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS];
+// The sealed files that are text; voice messages' sounds, pictures and stickers' pictures are
+// bytes. A file not on the phone is left out, so the backup of a phone that keeps no contacts, or
+// made no stickers, in Erevos still opens in older versions.
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS];
 
 const KIND_KEY = 0;
 const KIND_TEXT = 1;

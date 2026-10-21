@@ -1,193 +1,295 @@
-import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { AccessibilityInfo, Animated, Easing, Image, Platform, Pressable, ScrollView, Text as RNText, View, type ViewStyle } from 'react-native';
 
+import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
-import { STICKERS, stickerOf } from '../lib/stickers';
-import { space } from '../theme/colors';
+import { stickerPhoto } from '../lib/own-stickers';
+import { photoUri, releaseUri } from '../lib/photo-uri';
+import { pickSticker } from '../lib/pick-avatar';
+import { ART, type Corners, type Shape } from '../lib/sticker-art';
+import { MOTIONS, motionFor, type Move } from '../lib/sticker-motion';
+import { SETS, stickerOf, stickersIn, wordsSize, type StickerSet } from '../lib/stickers';
+import { addOwnSticker, loadOwnStickers, MAX_OWN_STICKERS, openOwnSticker, removeOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
+import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
-import { Text } from './ui';
+import { Button, Chip, font, Row, Text } from './ui';
 
-// The built-in stickers (lib/stickers.ts), drawn here out of plain views on a grid of 100 by 100,
-// scaled to the size asked: a moon with its faces, a heart, a sun, a coffee and a tick. They are
-// their own colours, the same in every look, as a picture is. One this Erevos does not have shows
-// the emoji that came with it.
+// The stickers: the built-in ones (lib/stickers.ts), drawn here from their shapes on a grid of 100
+// by 100 (lib/sticker-art.ts) scaled to the size asked, and those made from photos
+// (lib/own-stickers.ts). One this Erevos does not have shows the emoji that came with it.
+//
+// A built-in sticker that moves (lib/sticker-motion.ts) plays once for a few seconds when it is
+// asked to as it shows (the thread's last few, one that comes, the picker's), and again when it is
+// tapped; then it rests, still, and nothing runs. With the phone's reduce motion setting on it
+// never moves. Only its parts' turn, shift, size and fading move, which the phone draws itself.
 
-const MOON = '#F4CF57';
-const MOON_EDGE = '#D9A441';
-const CRATER = '#E8BC45';
-const INK = '#3B2A1A';
-const CHEEK = '#F29A8B';
-const TEAR = '#6FB1E8';
-const RED = '#E5484D';
-const WHITE = '#FFFFFF';
-const BROWN = '#6B4A33';
-const STEAM = '#B9AFA3';
-const GREEN = '#2F9E6E';
-const SUN = '#F7B733';
+/** How large a sticker shows in a thread. */
+export const STICKER_SIZE = 128;
 
-type Draw = (k: number) => ReactNode;
+/** How many of a thread's last messages play their sticker as they show: about a screenful. */
+export const PLAYS_LAST = 8;
 
-/** A disc centred at x, y, `d` across. */
-const dot = (k: number, x: number, y: number, d: number, color: string, key: string | number) => (
-  <View
-    key={key}
-    style={{ position: 'absolute', left: (x - d / 2) * k, top: (y - d / 2) * k, width: d * k, height: d * k, borderRadius: (d * k) / 2, backgroundColor: color }}
-  />
-);
+// Whether the phone asks for less motion: null until it said, and then whenever it changes.
+let reduceMotion: boolean | null = null;
+const watchers = new Set<() => void>();
+let watching = false;
 
-/** A stroke from x1, y1 to x2, y2, `w` thick, with round ends. */
-function bar(k: number, x1: number, y1: number, x2: number, y2: number, w: number, color: string, key: string | number) {
-  const length = Math.hypot(x2 - x1, y2 - y1) + w;
-  const angle = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
-  return (
-    <View
-      key={key}
-      style={{
-        position: 'absolute',
-        left: ((x1 + x2) / 2 - length / 2) * k,
-        top: ((y1 + y2) / 2 - w / 2) * k,
-        width: length * k,
-        height: w * k,
-        borderRadius: (w * k) / 2,
-        backgroundColor: color,
-        transform: [{ rotate: `${angle}deg` }],
-      }}
-    />
-  );
+function setReduceMotion(on: boolean) {
+  reduceMotion = on;
+  for (const watcher of watchers) watcher();
 }
 
-/** One side of a ring centred at x, y, `d` across: its bottom is a smile, its top a frown or a closed eye. */
-const arc = (k: number, x: number, y: number, d: number, w: number, side: 'top' | 'bottom', key: string | number) => (
-  <View
-    key={key}
-    style={{
-      position: 'absolute',
-      left: (x - d / 2) * k,
-      top: (y - d / 2) * k,
-      width: d * k,
-      height: d * k,
-      borderRadius: (d * k) / 2,
-      borderWidth: w * k,
-      borderColor: 'transparent',
-      ...(side === 'top' ? { borderTopColor: INK } : { borderBottomColor: INK }),
-    }}
-  />
-);
-
-/** A heart centred at x, y, about `s` across: a square turned on its corner, with two discs. */
-function heart(k: number, x: number, y: number, s: number, color: string, key: string | number) {
-  const a = s / 1.5;
-  return (
-    <View
-      key={key}
-      style={{ position: 'absolute', left: (x - 0.75 * a) * k, top: (y - 0.65 * a) * k, width: 1.5 * a * k, height: 1.5 * a * k, transform: [{ rotate: '45deg' }] }}
-    >
-      <View style={{ position: 'absolute', left: 0.5 * a * k, top: 0.5 * a * k, width: a * k, height: a * k, backgroundColor: color }} />
-      <View style={{ position: 'absolute', left: 0, top: 0.5 * a * k, width: a * k, height: a * k, borderRadius: (a * k) / 2, backgroundColor: color }} />
-      <View style={{ position: 'absolute', left: 0.5 * a * k, top: 0, width: a * k, height: a * k, borderRadius: (a * k) / 2, backgroundColor: color }} />
-    </View>
-  );
+function watchReduceMotion(watcher: () => void): () => void {
+  watchers.add(watcher);
+  if (!watching) {
+    watching = true;
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion, () => setReduceMotion(true));
+    AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+  }
+  return () => watchers.delete(watcher);
 }
 
-// The moon's face: its disc, its edge and craters, under what makes the face.
-const moon = (k: number, face: ReactNode[], color = MOON) => [
-  <View
-    key="disc"
-    style={{ position: 'absolute', left: 6 * k, top: 6 * k, width: 88 * k, height: 88 * k, borderRadius: 44 * k, backgroundColor: color, borderWidth: 3 * k, borderColor: MOON_EDGE }}
-  />,
-  dot(k, 18, 50, 8, CRATER, 'c1'),
-  dot(k, 76, 26, 7, CRATER, 'c2'),
-  dot(k, 74, 78, 9, CRATER, 'c3'),
-  ...face,
+/** Whether the phone's reduce motion setting is on; null until it is known. */
+export function useReduceMotion(): boolean | null {
+  return useSyncExternalStore(watchReduceMotion, () => reduceMotion, () => null);
+}
+
+// Turned, grown or shifted on the web the phone's way; the native driver is the phone's.
+const NATIVE = Platform.OS !== 'web';
+// Each step of a move eases in and out.
+const EASE = Easing.inOut(Easing.sin);
+
+type Layer = (part: string, nodes: ReactNode[]) => ReactNode;
+
+const full = (k: number): ViewStyle => ({ position: 'absolute', left: 0, top: 0, width: 100 * k, height: 100 * k });
+
+// What turns a layer about a point of the grid: there and back around what it does.
+const about = (k: number, [x, y]: [number, number], turns: object[]) => [
+  { translateX: (x - 50) * k },
+  { translateY: (y - 50) * k },
+  ...turns,
+  { translateX: -(x - 50) * k },
+  { translateY: -(y - 50) * k },
 ];
 
-const eyes = (k: number, d = 9) => [dot(k, 36, 40, d, INK, 'e1'), dot(k, 64, 40, d, INK, 'e2')];
-const cheeks = (k: number) => [dot(k, 26, 58, 10, CHEEK, 'k1'), dot(k, 74, 58, 10, CHEEK, 'k2')];
-const smile = (k: number) => arc(k, 50, 50, 36, 5, 'bottom', 'm');
+/** How a move shows as `progress` goes from 0 to 1: its part's shift, turn, size and fading. */
+function moveStyle(move: Move, progress: Animated.Value, k: number) {
+  const along = <T extends number | string>(values: T[]) => progress.interpolate({ inputRange: move.at, outputRange: values as number[] | string[], easing: EASE });
+  const shifts = [
+    ...(move.x ? [{ translateX: along(move.x.map((x) => x * k)) }] : []),
+    ...(move.y ? [{ translateY: along(move.y.map((y) => y * k)) }] : []),
+  ];
+  const turns = [
+    ...(move.turn ? [{ rotate: along(move.turn.map((turn) => `${turn}deg`)) }] : []),
+    ...(move.scale ? [{ scale: along(move.scale) }] : []),
+    ...(move.sx ? [{ scaleX: along(move.sx) }] : []),
+    ...(move.sy ? [{ scaleY: along(move.sy) }] : []),
+  ];
+  return {
+    transform: [...shifts, ...(turns.length > 0 ? about(k, move.about ?? [50, 50], turns) : [])],
+    ...(move.opacity ? { opacity: along(move.opacity) } : {}),
+  } as unknown as Animated.WithAnimatedObject<ViewStyle>;
+}
 
-const DRAWN: Record<string, Draw> = {
-  'moon-smile': (k) => moon(k, [...eyes(k), ...cheeks(k), smile(k)]),
-  'moon-laugh': (k) =>
-    moon(k, [
-      arc(k, 36, 44, 16, 4, 'top', 'e1'),
-      arc(k, 64, 44, 16, 4, 'top', 'e2'),
-      ...cheeks(k),
-      <View
-        key="m"
-        style={{ position: 'absolute', left: 32 * k, top: 56 * k, width: 36 * k, height: 20 * k, borderBottomLeftRadius: 18 * k, borderBottomRightRadius: 18 * k, backgroundColor: INK, overflow: 'hidden' }}
-      >
-        <View style={{ position: 'absolute', left: 10 * k, top: 11 * k, width: 16 * k, height: 12 * k, borderRadius: 6 * k, backgroundColor: RED }} />
-      </View>,
-    ]),
-  'moon-love': (k) => moon(k, [heart(k, 35, 40, 18, RED, 'e1'), heart(k, 65, 40, 18, RED, 'e2'), smile(k)]),
-  'moon-wink': (k) => moon(k, [dot(k, 36, 40, 9, INK, 'e1'), bar(k, 58, 41, 70, 41, 4, INK, 'e2'), ...cheeks(k), smile(k)]),
-  'moon-wow': (k) =>
-    moon(k, [
-      dot(k, 36, 40, 13, INK, 'e1'),
-      dot(k, 64, 40, 13, INK, 'e2'),
-      dot(k, 38, 38, 4, WHITE, 'g1'),
-      dot(k, 66, 38, 4, WHITE, 'g2'),
-      <View key="m" style={{ position: 'absolute', left: 41 * k, top: 58 * k, width: 18 * k, height: 20 * k, borderRadius: 10 * k, borderWidth: 5 * k, borderColor: INK }} />,
-    ]),
-  'moon-sad': (k) =>
-    moon(k, [
-      ...eyes(k),
-      arc(k, 50, 80, 34, 5, 'top', 'm'),
-      <View
-        key="t"
-        style={{ position: 'absolute', left: 61 * k, top: 48 * k, width: 9 * k, height: 9 * k, borderRadius: 4.5 * k, borderTopLeftRadius: 0, backgroundColor: TEAR, transform: [{ rotate: '45deg' }] }}
-      />,
-    ]),
-  'moon-angry': (k) =>
-    moon(
-      k,
-      [...eyes(k), bar(k, 26, 28, 42, 34, 5, INK, 'b1'), bar(k, 74, 28, 58, 34, 5, INK, 'b2'), arc(k, 50, 78, 30, 5, 'top', 'm')],
-      '#F5B556',
-    ),
-  'moon-sleep': (k) => [
-    ...moon(k, [bar(k, 30, 42, 42, 42, 4, INK, 'e1'), bar(k, 58, 42, 70, 42, 4, INK, 'e2'), ...cheeks(k), dot(k, 50, 64, 8, INK, 'm')]),
-    bar(k, 74, 6, 84, 6, 3, INK, 'z1'),
-    bar(k, 84, 6, 74, 16, 3, INK, 'z2'),
-    bar(k, 74, 16, 84, 16, 3, INK, 'z3'),
-    bar(k, 88, 20, 95, 20, 2.5, INK, 'z4'),
-    bar(k, 95, 20, 88, 27, 2.5, INK, 'z5'),
-    bar(k, 88, 27, 95, 27, 2.5, INK, 'z6'),
-  ],
-  heart: (k) => [heart(k, 50, 46, 60, RED, 'h'), dot(k, 34, 36, 9, '#F27D80', 'g')],
-  sun: (k) => [
-    ...[0, 45, 90, 135, 180, 225, 270, 315].map((turn) => (
-      <View key={`r${turn}`} style={{ position: 'absolute', left: 0, top: 0, width: 100 * k, height: 100 * k, transform: [{ rotate: `${turn}deg` }] }}>
-        {bar(k, 50, 4, 50, 16, 8, SUN, 'r')}
-      </View>
-    )),
-    dot(k, 50, 50, 56, SUN, 'disc'),
-    dot(k, 42, 46, 6, INK, 'e1'),
-    dot(k, 58, 46, 6, INK, 'e2'),
-    arc(k, 50, 52, 22, 3.5, 'bottom', 'm'),
-  ],
-  coffee: (k) => [
-    bar(k, 34, 14, 36, 28, 4, STEAM, 's1'),
-    bar(k, 48, 8, 50, 26, 4, STEAM, 's2'),
-    bar(k, 62, 14, 64, 28, 4, STEAM, 's3'),
-    <View key="handle" style={{ position: 'absolute', left: 62 * k, top: 46 * k, width: 24 * k, height: 24 * k, borderRadius: 12 * k, borderWidth: 6 * k, borderColor: BROWN }} />,
-    <View
-      key="cup"
-      style={{ position: 'absolute', left: 18 * k, top: 36 * k, width: 56 * k, height: 46 * k, borderBottomLeftRadius: 22 * k, borderBottomRightRadius: 22 * k, borderTopLeftRadius: 4 * k, borderTopRightRadius: 4 * k, backgroundColor: WHITE, borderWidth: 4 * k, borderColor: BROWN }}
-    />,
-    <View key="top" style={{ position: 'absolute', left: 24 * k, top: 41 * k, width: 44 * k, height: 7 * k, borderRadius: 3.5 * k, backgroundColor: BROWN }} />,
-    heart(k, 46, 62, 14, RED, 'h'),
-    <View key="saucer" style={{ position: 'absolute', left: 8 * k, top: 84 * k, width: 76 * k, height: 8 * k, borderRadius: 4 * k, backgroundColor: BROWN }} />,
-  ],
-  check: (k) => [dot(k, 50, 50, 86, GREEN, 'disc'), bar(k, 30, 52, 44, 66, 9, WHITE, 'a'), bar(k, 44, 66, 72, 36, 9, WHITE, 'b')],
-};
+const corners = (r: Corners, k: number): ViewStyle =>
+  typeof r === 'number'
+    ? { borderRadius: r * k }
+    : { borderTopLeftRadius: r[0] * k, borderTopRightRadius: r[1] * k, borderBottomRightRadius: r[2] * k, borderBottomLeftRadius: r[3] * k };
 
-/** A sticker by its name, `size` across; one this Erevos does not have shows `fallback`, the emoji that came with it. */
-export function StickerView({ name, size = 128, fallback = '' }: { name: string; size?: number; fallback?: string }) {
+/** A sticker's shapes as views, `k` points to a step of the grid. `words` are a Words sticker's, `layer` wraps its parts. */
+function drawn(shapes: Shape[], k: number, words: string, layer: Layer, prefix = ''): ReactNode[] {
+  return shapes.map((shape, i) => {
+    const key = `${prefix}${i}`;
+    switch (shape.s) {
+      case 'dot': {
+        const { x, y, d, c } = shape;
+        return <View key={key} style={{ position: 'absolute', left: (x - d / 2) * k, top: (y - d / 2) * k, width: d * k, height: d * k, borderRadius: (d * k) / 2, backgroundColor: c }} />;
+      }
+      case 'oval': {
+        // A disc as wide as the oval, pressed to its height.
+        const { x, y, w, h, c, turn = 0 } = shape;
+        return (
+          <View
+            key={key}
+            style={{ position: 'absolute', left: (x - w / 2) * k, top: (y - w / 2) * k, width: w * k, height: w * k, borderRadius: (w * k) / 2, backgroundColor: c, transform: [{ rotate: `${turn}deg` }, { scaleY: h / w }] }}
+          />
+        );
+      }
+      case 'ring': {
+        const { x, y, d, w, c } = shape;
+        return <View key={key} style={{ position: 'absolute', left: (x - d / 2) * k, top: (y - d / 2) * k, width: d * k, height: d * k, borderRadius: (d * k) / 2, borderWidth: w * k, borderColor: c }} />;
+      }
+      case 'arc': {
+        const { x, y, d, w, side, c } = shape;
+        return (
+          <View
+            key={key}
+            style={{
+              position: 'absolute',
+              left: (x - d / 2) * k,
+              top: (y - d / 2) * k,
+              width: d * k,
+              height: d * k,
+              borderRadius: (d * k) / 2,
+              borderWidth: w * k,
+              borderColor: 'transparent',
+              ...(side === 'top' ? { borderTopColor: c } : { borderBottomColor: c }),
+            }}
+          />
+        );
+      }
+      case 'tri': {
+        // A box of no size whose bottom border is the triangle, its sides clear.
+        const { x, y, w, h, c, turn = 0 } = shape;
+        return (
+          <View
+            key={key}
+            style={{
+              position: 'absolute',
+              left: (x - w / 2) * k,
+              top: (y - h / 2) * k,
+              width: 0,
+              height: 0,
+              borderLeftWidth: (w / 2) * k,
+              borderRightWidth: (w / 2) * k,
+              borderBottomWidth: h * k,
+              borderLeftColor: 'transparent',
+              borderRightColor: 'transparent',
+              borderBottomColor: c,
+              transform: [{ rotate: `${turn}deg` }],
+            }}
+          />
+        );
+      }
+      case 'heart': {
+        // A square turned on its corner, with two discs.
+        const { x, y, size, c } = shape;
+        const a = size / 1.5;
+        return (
+          <View key={key} style={{ position: 'absolute', left: (x - 0.75 * a) * k, top: (y - 0.65 * a) * k, width: 1.5 * a * k, height: 1.5 * a * k, transform: [{ rotate: '45deg' }] }}>
+            <View style={{ position: 'absolute', left: 0.5 * a * k, top: 0.5 * a * k, width: a * k, height: a * k, backgroundColor: c }} />
+            <View style={{ position: 'absolute', left: 0, top: 0.5 * a * k, width: a * k, height: a * k, borderRadius: (a * k) / 2, backgroundColor: c }} />
+            <View style={{ position: 'absolute', left: 0.5 * a * k, top: 0, width: a * k, height: a * k, borderRadius: (a * k) / 2, backgroundColor: c }} />
+          </View>
+        );
+      }
+      case 'box': {
+        const { x, y, w, h, c, r = 0, turn = 0, edge, inside } = shape;
+        return (
+          <View
+            key={key}
+            style={{
+              position: 'absolute',
+              left: x * k,
+              top: y * k,
+              width: w * k,
+              height: h * k,
+              backgroundColor: c,
+              ...corners(r, k),
+              ...(edge ? { borderWidth: edge.w * k, borderColor: edge.c } : {}),
+              ...(turn ? { transform: [{ rotate: `${turn}deg` }] } : {}),
+              ...(inside ? { overflow: 'hidden' as const } : {}),
+            }}
+          >
+            {inside ? drawn(inside, k, words, layer, `${key}.`) : null}
+          </View>
+        );
+      }
+      case 'bar': {
+        // A rounded box as long as the stroke and its round ends, turned along it.
+        const { x1, y1, x2, y2, w, c } = shape;
+        const length = Math.hypot(x2 - x1, y2 - y1) + w;
+        const angle = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+        return (
+          <View
+            key={key}
+            style={{
+              position: 'absolute',
+              left: ((x1 + x2) / 2 - length / 2) * k,
+              top: ((y1 + y2) / 2 - w / 2) * k,
+              width: length * k,
+              height: w * k,
+              borderRadius: (w * k) / 2,
+              backgroundColor: c,
+              transform: [{ rotate: `${angle}deg` }],
+            }}
+          />
+        );
+      }
+      case 'words': {
+        const { x, y, w, h, c } = shape;
+        const size = wordsSize(words);
+        return (
+          <View key={key} style={{ position: 'absolute', left: x * k, top: y * k, width: w * k, height: h * k, alignItems: 'center', justifyContent: 'center' }}>
+            <RNText
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              allowFontScaling={false}
+              style={[{ color: c, fontSize: size * k, lineHeight: size * 1.15 * k, textAlign: 'center' }, font('800')]}
+            >
+              {words}
+            </RNText>
+          </View>
+        );
+      }
+      case 'tilt':
+        return (
+          <View key={key} style={[full(k), { transform: about(k, shape.about, [{ rotate: `${shape.turn}deg` }]) as ViewStyle['transform'] }]}>
+            {drawn(shape.shapes, k, words, layer, `${key}.`)}
+          </View>
+        );
+      case 'part':
+        return <Fragment key={key}>{layer(shape.name, drawn(shape.shapes, k, words, layer, `${key}.`))}</Fragment>;
+    }
+  });
+}
+
+/**
+ * A sticker by its name, `size` across; one this Erevos does not have shows `fallback`, the emoji
+ * that came with it. With `play` it moves once as it shows; with `tap`, again when tapped, and
+ * `onLongPress` is what holding it does.
+ */
+export function StickerView({ name, size = STICKER_SIZE, fallback = '', play = false, tap = false, onLongPress }: {
+  name: string;
+  size?: number;
+  fallback?: string;
+  play?: boolean;
+  tap?: boolean;
+  onLongPress?: () => void;
+}) {
   const colors = useColors();
   const sticker = stickerOf(name);
-  const draw = DRAWN[name];
-  if (!sticker || !draw) {
+  const shapes = ART[name];
+  const reduce = useReduceMotion();
+  const motion = motionFor(name, reduce);
+  const progress = useRef(new Animated.Value(0)).current;
+  const k = size / 100;
+  // Each moving part's layers, one for each of its moves, made once for its size.
+  const styles = useMemo(() => {
+    const byPart = new Map<string, ReturnType<typeof moveStyle>[]>();
+    for (const move of MOTIONS[name]?.moves ?? []) byPart.set(move.part, [...(byPart.get(move.part) ?? []), moveStyle(move, progress, k)]);
+    return byPart;
+  }, [name, k]);
+
+  function run() {
+    if (!motion) return;
+    progress.stopAnimation();
+    progress.setValue(0);
+    Animated.timing(progress, { toValue: 1, duration: motion.ms, easing: Easing.linear, useNativeDriver: NATIVE }).start(() => progress.setValue(0));
+  }
+
+  // Plays once motion is known to be allowed; stops, still, once it is not.
+  useEffect(() => {
+    if (motion && play) run();
+    if (!motion) {
+      progress.stopAnimation();
+      progress.setValue(0);
+    }
+  }, [!!motion]);
+  useEffect(() => () => progress.stopAnimation(), []);
+
+  if (!sticker || !shapes) {
     return (
       <View
         accessibilityLabel={t('Sticker')}
@@ -197,29 +299,208 @@ export function StickerView({ name, size = 128, fallback = '' }: { name: string;
       </View>
     );
   }
+  // A part's shapes inside a layer for each of its moves, one in another.
+  const layer: Layer = (part, nodes) =>
+    (styles.get(part) ?? []).reduceRight<ReactNode>(
+      (inside, style, i) => (
+        <Animated.View key={`${part}${i}`} pointerEvents="none" style={[full(k), style]}>
+          {inside}
+        </Animated.View>
+      ),
+      <Fragment key={part}>{nodes}</Fragment>,
+    );
+  const label = t(sticker.label);
+  const body = (
+    <View accessible accessibilityRole="image" accessibilityLabel={label} style={{ width: size, height: size }}>
+      {layer('all', drawn(shapes, k, label, layer))}
+    </View>
+  );
+  if (!tap) return body;
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={t(sticker.label)} style={{ width: size, height: size }}>
-      {draw(size / 100)}
+    <Pressable onPress={run} onLongPress={onLongPress} accessibilityHint={t('Hold for more')}>
+      {body}
+    </Pressable>
+  );
+}
+
+/** A sticker made from a photo: its picture (`uri`, once it is read) or, until then, `status`. */
+export function PhotoSticker({ uri, size = STICKER_SIZE, status }: { uri?: string; size?: number; status?: string | null }) {
+  const colors = useColors();
+  if (uri) return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 8 }} resizeMode="contain" accessibilityLabel={t('Sticker')} />;
+  return (
+    <View
+      accessibilityLabel={t('Sticker')}
+      style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center', padding: space.sm, borderRadius: size / 8, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.border }}
+    >
+      <Text variant="caption" tone="muted" style={{ textAlign: 'center' }}>
+        {status ?? t('Sticker')}
+      </Text>
     </View>
   );
 }
 
-/** Every sticker, to pick one: tapped, it is `onPick`ed. */
-export function StickerPicker({ onPick }: { onPick: (name: string) => void }) {
+// The pictures of a place's own stickers, read into memory while the picker shows them, by id.
+function useOwnPictures(stickers: OwnSticker[]): Record<string, string> {
+  const [pictures, setPictures] = useState<Record<string, string>>({});
+  const held = useRef(pictures);
+  held.current = pictures;
+  const ids = stickers.map((sticker) => sticker.id).join(',');
+  useEffect(() => {
+    let active = true;
+    for (const sticker of stickers) {
+      if (held.current[sticker.id]) continue;
+      openOwnSticker(sticker)
+        .then((bytes) => {
+          if (!bytes || !active) return;
+          const uri = photoUri(bytes, stickerMime(bytes));
+          setPictures((now) => ({ ...now, [sticker.id]: uri }));
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      active = false;
+    };
+  }, [ids]);
+  useEffect(
+    () => () => {
+      for (const uri of Object.values(held.current)) releaseUri(uri);
+    },
+    [],
+  );
+  return pictures;
+}
+
+const stickerMime = (bytes: Uint8Array) => (bytes[0] === 0x89 ? 'image/png' : 'image/jpeg');
+
+type Tab = StickerSet | 'mine';
+
+// The set the picker showed last in each place, while the app is open: what hidden chats' picker
+// showed never shows outside them.
+const lastTabs = new Map<string, Tab>();
+
+/**
+ * Every sticker, to pick one, in its sets: tapped, a built-in one is `onPick`ed. With `mine`, the
+ * stickers made from photos in `mine.place`, in their own set: one tapped is `mine.onPick`ed, one
+ * held is deleted, and a new one is made from a photo.
+ */
+export function StickerPicker({ onPick, mine }: {
+  onPick: (name: string) => void;
+  mine?: { place: StickerPlace; onPick: (sticker: OwnSticker) => void };
+}) {
   const colors = useColors();
+  const place = mine?.place ?? null;
+  const where = place ? `${place.holder}/${place.space}` : '';
+  const [tab, setTab] = useState<Tab>(() => lastTabs.get(where) ?? 'moons');
+  const [own, setOwn] = useState<OwnSticker[]>([]);
+  const [note, setNote] = useState('');
+  const [making, setMaking] = useState(false);
+  const pictures = useOwnPictures(tab === 'mine' ? own : []);
+
+  const choose = (next: Tab) => {
+    lastTabs.set(where, next);
+    setTab(next);
+    setNote('');
+  };
+
+  useEffect(() => {
+    if (!place) return;
+    let active = true;
+    loadOwnStickers(place).then(
+      (list) => active && setOwn(list),
+      () => active && setOwn([]),
+    );
+    return () => {
+      active = false;
+    };
+  }, [place?.holder, place?.space, place?.key]);
+
+  async function make() {
+    if (!place || making) return;
+    if (own.length >= MAX_OWN_STICKERS) {
+      setNote(t('You have {n} stickers, the most there can be. Delete one to make room.', { n: MAX_OWN_STICKERS }));
+      return;
+    }
+    setMaking(true);
+    setNote('');
+    try {
+      const picture = await pickSticker();
+      if (!picture) return;
+      setNote(t('Making the sticker…'));
+      const made = await addOwnSticker(place, stickerPhoto(picture));
+      setOwn((list) => [...list, made]);
+      setNote('');
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setMaking(false);
+    }
+  }
+
+  function remove(sticker: OwnSticker) {
+    if (!place) return;
+    ask(t('Delete sticker'), t('Delete this sticker of yours? Where it was sent, it stays.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: t('Delete'),
+        style: 'destructive',
+        onPress: () =>
+          void removeOwnSticker(place, sticker.id).then(
+            () => setOwn((list) => list.filter((s) => s.id !== sticker.id)),
+            (error) => setNote(error instanceof Error ? error.message : String(error)),
+          ),
+      },
+    ]);
+  }
+
+  const cell = ({ pressed }: { pressed: boolean }) => ({ padding: 6, borderRadius: radius.md, backgroundColor: pressed ? colors.surfacePressed : 'transparent' });
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'center' }}>
-      {STICKERS.map((sticker) => (
-        <Pressable
-          key={sticker.name}
-          onPress={() => onPick(sticker.name)}
-          accessibilityRole="button"
-          accessibilityLabel={t(sticker.label)}
-          style={({ pressed }) => ({ padding: 6, borderRadius: 16, backgroundColor: pressed ? colors.surfacePressed : 'transparent' })}
-        >
-          <StickerView name={sticker.name} size={72} />
-        </Pressable>
-      ))}
+    <View style={{ gap: space.md }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
+        {SETS.map(({ set, label }) => (
+          <Chip key={set} label={t(label)} selected={tab === set} onPress={() => choose(set)} />
+        ))}
+        {mine ? <Chip label={t('Mine')} selected={tab === 'mine'} onPress={() => choose('mine')} /> : null}
+      </ScrollView>
+      {tab !== 'mine' ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'center' }}>
+          {stickersIn(tab).map((sticker) => (
+            <Pressable key={sticker.name} onPress={() => onPick(sticker.name)} accessibilityRole="button" accessibilityLabel={t(sticker.label)} style={cell}>
+              <StickerView name={sticker.name} size={72} play />
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <>
+          <Row wrap>
+            <Button title={t('New sticker from a photo')} compact loading={making} onPress={() => void make()} />
+          </Row>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'center' }}>
+            {own.map((sticker) => (
+              <Pressable
+                key={sticker.id}
+                onPress={() => mine?.onPick(sticker)}
+                onLongPress={() => remove(sticker)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Sticker')}
+                accessibilityHint={t('Tap to send, hold to delete')}
+                style={cell}
+              >
+                <PhotoSticker uri={pictures[sticker.id]} size={72} status="" />
+              </Pressable>
+            ))}
+          </View>
+          <Text variant="caption" tone="muted">
+            {place?.holder === 'space'
+              ? t('Stickers you make from photos stay in this space, sealed, and go end-to-end encrypted as photos do. Hold one to delete it.')
+              : t('Stickers you make here stay in these hidden chats only, sealed, and go end-to-end encrypted as photos do. Hold one to delete it.')}
+          </Text>
+        </>
+      )}
+      {note ? (
+        <Text variant="caption" tone="muted">
+          {note}
+        </Text>
+      ) : null}
     </View>
   );
 }

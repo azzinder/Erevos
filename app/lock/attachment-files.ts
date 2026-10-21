@@ -6,11 +6,23 @@ import { deleteFile, readBytes, writeBytes } from '../lib/files';
 // name and its size are kept only in the message (lock/history.ts), itself sealed in its space:
 // without them a chunk is noise, and its name tells nothing. Deleting the message deletes its
 // chunks. How many there are tells roughly how much the phone keeps, in all its spaces together.
+//
+// A photo can be a sticker made from a photo (lib/own-stickers.ts): small, and marked so in what it
+// says of itself, which travels with it. An Erevos from before reads a file's fields one by one and
+// leaves the mark out, so to it the sticker is a photo like any other.
 
 export type FileKind = 'photo' | 'file';
 
-/** What a file is: its name, type and size, and for a photo how wide and high it is. */
-export type FileMeta = { name: string; mime: string; kind: FileKind; size: number; w?: number; h?: number };
+/** What a file is: its name, type and size, for a photo how wide and high it is, and whether it is a sticker. */
+export type FileMeta = { name: string; mime: string; kind: FileKind; size: number; w?: number; h?: number; sticker?: true };
+
+/** The largest photo that goes as a sticker. */
+export const MAX_STICKER = 100 * 1000;
+
+/** Whether a photo can be a sticker: a JPEG or a PNG, and small. */
+export function fitsSticker({ kind, mime, size }: Pick<FileMeta, 'kind' | 'mime' | 'size'>): boolean {
+  return kind === 'photo' && (mime === 'image/jpeg' || mime === 'image/png') && size <= MAX_STICKER;
+}
 
 /**
  * Where a message's file is: the id of its chunks here, its key (hex), how big each chunk is and
@@ -87,7 +99,8 @@ export function isFileMeta(value: unknown): value is FileMeta {
     (v.kind === 'photo' || v.kind === 'file') &&
     whole(v.size, Number.MAX_SAFE_INTEGER) &&
     (v.w === undefined || whole(v.w, 100_000)) &&
-    (v.h === undefined || whole(v.h, 100_000))
+    (v.h === undefined || whole(v.h, 100_000)) &&
+    (v.sticker === undefined || (v.sticker === true && fitsSticker(v as FileMeta)))
   );
 }
 

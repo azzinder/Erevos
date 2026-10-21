@@ -405,8 +405,17 @@ it. Photos and files have the same marks as the rest, and follow the chat's disa
 
 Under **Attach** there is more to send than photos and files:
 
-- **Sticker:** one of the stickers built into Erevos, drawn by each phone itself: only its name travels, so nothing is
-  ever downloaded. An Erevos from before this shows its emoji instead.
+- **Sticker:** one of the stickers built into Erevos, in sets (**Moons**, **Animals**, **Celebrations**, **Words** and
+  **Treats**), drawn by each phone itself: only its name travels, so nothing is ever downloaded. An Erevos from before
+  this shows its emoji instead. The moons, animals and celebrations move a little for a few seconds as they come and
+  when tapped, then rest; with the phone's reduce motion setting on, they stay still. The words show in the app's
+  language.
+- **Mine**, among the stickers, holds those you make from photos. **New sticker from a photo** cuts one square, makes it
+  small (512 by 512, about 100 KB at most) and keeps only its picture, nothing of where or with what it was taken. It is
+  kept sealed in the space, or in the hidden chats it was made in, and shows only there, up to 100 of them; hold one to
+  delete it. Like the rest, it goes into a backup, sealed, and never to the account's other devices. It goes as a photo
+  goes, end-to-end encrypted through the relay, marked as a sticker, so it shows on its own with no bubble; an Erevos
+  from before this shows it as a photo. Hold a sticker someone sent you and tap **Add to my stickers** to keep it.
 - **Location** (on Android): sends where you are, once, as a place. The first time, Android asks whether Erevos may use
   the location. The phone finds where it is by satellite when you allowed the precise location and it is on, otherwise
   as its location settings say, which on many phones asks Google or the phone's maker. Erevos looks only when you tap,

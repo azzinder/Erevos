@@ -18,6 +18,7 @@ import {
   cleanFileName,
   cleanMime,
   deleteChunks,
+  fitsSticker,
   isFileMeta,
   newFileId,
   readChunk,
@@ -132,7 +133,15 @@ export function readOffer(value: unknown): FileOffer | null {
   if (typeof v.key !== 'string' || !/^[0-9a-f]{64}$/.test(v.key) || typeof v.ids !== 'string' || !/^(?:[0-9a-f]{48})+$/.test(v.ids)) return null;
   const plan = chunkPlan(meta.size);
   if (v.chunk !== plan.chunk || v.ids.length !== plan.count * ID_HEX) return null;
-  return { ...meta, relay: v.relay, ids: v.ids, key: v.key, chunk: v.chunk };
+  // A sticker made from a photo, when it is small enough to be one; otherwise a photo.
+  const sticker = v.sticker === true && fitsSticker(meta) ? { sticker: true as const } : {};
+  return { ...meta, ...sticker, relay: v.relay, ids: v.ids, key: v.key, chunk: v.chunk };
+}
+
+// What a file to send says of itself, cleaned: a sticker only while it is small enough to be one.
+function shaped({ sticker, ...meta }: Omit<FileMeta, 'size'>, size: number): FileMeta {
+  const clean: FileMeta = { ...meta, name: cleanFileName(meta.name), mime: cleanMime(meta.mime), size };
+  return sticker && fitsSticker(clean) ? { ...clean, sticker } : clean;
 }
 
 /** Where a file that came is, until it is taken: its chunks are still on the relay. */
@@ -182,9 +191,7 @@ export async function sendFile(
   } finally {
     session.close();
   }
-  const name = cleanFileName(meta.name);
-  const mime = cleanMime(meta.mime);
-  const ref: FileRef = { ...meta, name, mime, size, id, key: toHex(key), chunk, count };
+  const ref: FileRef = { ...shaped(meta, size), id, key: toHex(key), chunk, count };
   const { id: _id, count: _count, ...shared } = ref;
   return { ref, offer: { ...shared, relay: own.url, ids: ids.join('') } };
 }
@@ -210,7 +217,7 @@ export async function keepFile(source: Source, meta: Omit<FileMeta, 'size'>, pro
     await deleteChunks(id, count).catch(() => undefined);
     throw error;
   }
-  return { ...meta, name: cleanFileName(meta.name), mime: cleanMime(meta.mime), size, id, key: toHex(key), chunk, count };
+  return { ...shaped(meta, size), id, key: toHex(key), chunk, count };
 }
 
 /**

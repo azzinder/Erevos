@@ -47,9 +47,10 @@ export function starredOf(messages: Findable[]): Found[] {
 const plain = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 // What a message is found by: its words, a file's name, a poll's question and options, a sticker's
-// words. A voice message and a place have none.
+// words, built in or made from a photo. A voice message and a place have none.
 function wordsOf(m: Findable): string {
   if (m.voice || m.place) return '';
+  if (m.file?.sticker) return messageLine(m);
   if (m.file) return m.file.name;
   if (m.poll) return [m.poll.q, ...m.poll.o].join('\n');
   if (m.sticker) return messageLine(m);

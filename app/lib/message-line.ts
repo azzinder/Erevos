@@ -10,7 +10,7 @@ import { voiceDuration } from './voice';
 export type LineOf = {
   text: string;
   voice?: { ms: number };
-  file?: { kind: 'photo' | 'file'; name: string };
+  file?: { kind: 'photo' | 'file'; name: string; sticker?: true };
   sticker?: string;
   place?: object;
   poll?: { q: string };
@@ -19,6 +19,7 @@ export type LineOf = {
 /** The message in one line: the first of its words, or what it carries. */
 export function messageLine(message: LineOf): string {
   if (message.voice) return t('Voice message, {time}', { time: voiceDuration(message.voice.ms) });
+  if (message.file?.sticker) return t('Sticker');
   if (message.file) return message.file.kind === 'photo' ? t('Photo') : t('File: {name}', { name: message.file.name });
   if (message.sticker) {
     const sticker = stickerOf(message.sticker);

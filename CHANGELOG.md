@@ -30,6 +30,15 @@ On main, not released yet. The next release is **2.0.0**.
   taken from a phone once stop reading the group within a week. Members see no one leave or join.
   An admin on 0.1.16 and before does not do it, and its members stay as before.
 
+- **Stickers in sets, that move, and your own**: 48 built-in stickers in five sets (Moons, Animals,
+  Celebrations, Words and Treats). The moons, animals and celebrations move a little for a few
+  seconds as they come and when tapped, then rest, and stay still with the phone's reduce motion
+  setting; the words show in the app's language. Each phone draws them, and only a sticker's name
+  travels. **Mine** holds stickers made from a photo: cut square, 512 by 512 and about 100 KB at
+  most, with nothing but the picture, kept sealed in the space or the hidden chats they were made
+  in, up to 100. They go end-to-end encrypted as photos do, marked as stickers, in chats and
+  groups; an Erevos from before shows them as photos. **Add to my stickers** keeps one you were sent.
+
 - **Android updates need the release computer's signature**: Check for updates installs an APK
   only once `deploy/web/publish.sh` on the release computer has signed its build and SHA-256 with
   the web app's offline key (`android-update.json`, served beside the web app). Until then it says

@@ -1,13 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Platform, Pressable, ScrollView, View, type LayoutChangeEvent, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { ask } from '../lib/alert';
-import { takeOffRelay } from '../lib/attachments';
+import { bytesSource, takeOffRelay } from '../lib/attachments';
 import { chatText, exportName } from '../lib/chat-export';
 import { choose as chooseOption, placeText, placeWords, pollWords, type Place, type Poll } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canForward, forwardToGroup, handForward, type Forwardable } from '../lib/forward';
+import { sendGroupFile } from '../lib/group-media';
 import { asChatMessage, type Marked } from '../lib/group-parts';
 import { memberName, type GroupInfo } from '../lib/groups';
 import { t } from '../lib/i18n';
@@ -15,21 +16,25 @@ import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { messageLine } from '../lib/message-line';
 import { searchMessages, type Findable } from '../lib/message-search';
+import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
 import { CAN_PLACE, findPlace } from '../lib/place';
 import { throughTor } from '../lib/relay';
 import { saveText } from '../lib/save-file';
 import { spaceChats } from '../lib/space-chats';
 import { groupRelay, spaceGroups, spaceGroupTransport } from '../lib/space-groups';
 import { stickerOf } from '../lib/stickers';
+import type { FileRef } from '../lock/attachment-files';
 import type { GroupMessage, GroupParts } from '../lock/group-data';
+import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
+import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 import { MessageMenu, type MenuAction } from './message-menu';
 import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from './message-parts';
 import { PollCard, PollSheet } from './poll';
-import { StickerPicker, StickerView } from './stickers';
+import { PLAYS_LAST, StickerPicker, StickerView } from './stickers';
 import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
 
 // What a group's messages do beyond words and files (lib/group-parts.ts), in its thread
@@ -37,7 +42,8 @@ import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
 // forward, star, pin, copy, delete), and its bubble shows what it answers, a sticker, a place, a
 // poll, a link's preview, its reactions, and that it was forwarded or is starred. The messages
 // pinned show over the thread; a search goes through the group's messages. Under Attach: a sticker,
-// where you are, a poll. Photos, files and voice messages themselves are components/group-media.tsx's.
+// built in or one of the space's made from photos (sent as a photo is), where you are, a poll.
+// Photos, files and voice messages themselves are components/group-media.tsx's.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 
@@ -91,6 +97,10 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
   const [asked, setAsked] = useState<Asked | null>(null);
 
   const out = !info || info.status !== 'in';
+  // The space's stickers made from photos: hidden chats have no groups.
+  const stickerPlace = useMemo<StickerPlace>(() => ({ holder: 'space', ...currentSpace() }), []);
+  // The last few messages play their sticker as they show.
+  const playing = new Set(messages.slice(-PLAYS_LAST).map((m) => m.tag));
 
   useEffect(() => {
     loadCurrentSpaceData().then(
@@ -228,6 +238,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
     actions.push({ title: m.starred ? t('Unstar') : t('Star'), onPress: () => star(m) });
     if (!out) actions.push({ title: m.pinned ? t('Unpin') : t('Pin'), onPress: () => void mark({ t: 'pin', tag: m.tag, on: !m.pinned }) });
     if (CAN_COPY && m.text && !m.sticker && !m.place && !m.poll) actions.push({ title: t('Copy'), onPress: () => void copy(m) });
+    if (m.file?.sticker && !m.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(m.file!) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => remove(m) });
     return actions;
   }
@@ -253,6 +264,31 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
 
   function sendParts(text: string, parts: GroupParts) {
     send(text, parts).catch((error) => onNote(errorText(error)));
+  }
+
+  // Sends a sticker made from a photo: as a photo goes, marked as a sticker (lib/own-stickers.ts).
+  async function sendOwnSticker(sticker: OwnSticker) {
+    setStickering(false);
+    try {
+      const picture = await openOwnSticker(sticker);
+      if (!picture) throw new Error(t('This sticker\'s picture is gone.'));
+      onNote(t('Sending the sticker…'));
+      await sendGroupFile(await spaceGroups(), id, await groupRelay(), bytesSource(picture), stickerMeta(picture), undefined, spaceGroupTransport);
+      stays.current = false;
+      onNote('');
+    } catch (error) {
+      onNote(t('Not sent. {reason}', { reason: errorText(error) }));
+    }
+  }
+
+  // Keeps a sticker that came as one of the space's own.
+  async function addToStickers(file: FileRef) {
+    try {
+      await keepAsSticker(stickerPlace, file);
+      onNote(t('Added to your stickers.'));
+    } catch (error) {
+      onNote(errorText(error));
+    }
   }
 
   async function locate() {
@@ -332,7 +368,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
     },
     /** A sticker, a place or a poll, in place of the words; null for others. */
     body: (m: GroupMessage, ink: StyleProp<TextStyle>): ReactNode => {
-      if (m.sticker) return <StickerView name={m.sticker} fallback={m.text} />;
+      if (m.sticker) return <StickerView name={m.sticker} fallback={m.text} play={playing.has(m.tag)} tap onLongPress={() => setMenuFor(m)} />;
       if (m.place) return <PlaceCard place={m.place} ink={ink} />;
       if (m.poll) {
         const voters = Object.entries(m.votes ?? {}).map(([member, chose]) => ({ name: member ? name(member) : t('You'), chose }));
@@ -440,6 +476,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
               const drawn = stickerOf(sticker);
               if (drawn) sendParts(drawn.emoji, { sticker });
             }}
+            mine={{ place: stickerPlace, onPick: (sticker) => void sendOwnSticker(sticker) }}
           />
         </Sheet>
         <PollSheet

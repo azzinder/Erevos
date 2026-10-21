@@ -1,6 +1,6 @@
-// Photos, files and voice messages in group chats (lib/group-media.ts, lib/groups.ts): three phones
-// with the real core, as in groups.check.ts, and real relays (crates/erevos-relay) for the files.
-// Skipped, with a note, without the core or the relay.
+// Photos, files, stickers made from photos and voice messages in group chats (lib/group-media.ts,
+// lib/groups.ts): three phones with the real core, as in groups.check.ts, and real relays
+// (crates/erevos-relay) for the files. Skipped, with a note, without the core or the relay.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -18,6 +18,7 @@ import { filesToTake, sendGroupFile, takeGroupFile, voiceMime } from '../lib/gro
 import { decodeGroup, encodeGroup, type GroupSignal } from '../lib/group-signal';
 import { Groups, type GroupTransport } from '../lib/groups';
 import { groupRows } from '../lib/inbox';
+import { stickerMeta } from '../lib/own-stickers';
 import { getChunk, RelaySession } from '../lib/relay';
 import { PREFIX, type FileRef } from '../lock/attachment-files';
 import { EMPTY_GROUPS, type About, type GroupData, type GroupMessage } from '../lock/group-data';
@@ -147,6 +148,34 @@ test('a photo goes to the group once, and each member takes it, leaving it for t
   const names = (identity: string) => (identity === alice.identity ? 'Alice' : 'someone');
   assert.equal(groupRows(bob.groups.list(), names, (text) => text)[0].last, 'Alice: Photo');
   assert.equal(groupRows(alice.groups.list(), names, (text) => text)[0].last, 'You: Photo');
+});
+
+test('a sticker made from a photo goes to the group as a photo does, marked, and shows as a sticker', { skip: !existsSync(built) || !ready }, async () => {
+  const net = network(() => mine);
+  const alice = net.phone('alice');
+  const bob = net.phone('bob');
+  const id = await alice.groups.create('g', [bob.identity], alice.transport);
+  await net.settle();
+
+  // A small JPEG, as lib/own-stickers.ts makes them.
+  const picture = Uint8Array.from([0xff, 0xd8, 0xff, 0xc0, 0, 11, 8, 2, 0, 2, 0, 1, 1, 0x11, 0, ...randomBytes(3000).map((b) => b & 0x7f), 0xff, 0xd9]);
+  await sendGroupFile(alice.groups, id, { url: mine }, bytesSource(picture), stickerMeta(picture), undefined, alice.transport);
+  assert.equal(said(alice, id)[0].file?.sticker, true);
+
+  // What goes says it is a photo, marked as a sticker: nothing else.
+  const packet = bob.queue.find((p) => p.length > 0)!;
+  const message = (await core.sealOpen(fromBase64(bob.data.seal), packet.slice(2))).message;
+  const opened = (await core.group.open(fromBase64(bob.data.state), message)).opened;
+  const inside = JSON.parse(utf8Decode((opened as { text: Uint8Array }).text)) as { file: Record<string, unknown> };
+  assert.deepEqual([inside.file.kind, inside.file.sticker], ['photo', true]);
+
+  await net.settle();
+  const [m] = said(bob, id);
+  assert.deepEqual([m.text, m.file?.kind, m.file?.sticker], ['', 'photo', true]);
+  const taken = (await takeGroupFile(bob.groups, id, { url: mine }, m.file!))!;
+  assert.equal(said(bob, id)[0].file?.sticker, true, 'still one once taken');
+  assert.deepEqual(await readFile(taken), picture);
+  assert.equal(groupRows(bob.groups.list(), () => 'Alice', (text) => text)[0].last, 'Alice: Sticker');
 });
 
 test('a voice message is a small file, and what leaves the group here takes its chunks', { skip: !existsSync(built) || !ready }, async () => {

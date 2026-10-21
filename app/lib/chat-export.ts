@@ -39,6 +39,7 @@ const UNDER = ' '.repeat(7);
 
 // What a message says, a line at a time: its words, or what it is in brackets.
 function linesOf(message: Written, them: string): string[] {
+  if (message.file?.sticker) return [`[${messageLine(message)}]`];
   if (message.file?.kind === 'photo') return [`[${t('Photo: {name}', { name: message.file.name })}]`];
   if (message.voice || message.file || message.sticker) return [`[${messageLine(message)}]`];
   if (message.place) return [`[${t('Location')}: ${placeText(message.place)}]`];

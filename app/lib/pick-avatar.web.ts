@@ -1,7 +1,8 @@
 import { t } from './i18n';
+import { fitSticker, STICKER_SIDE } from './own-stickers';
 // A photo for a contact's picture, as pick-avatar.ts, on a computer: from the computer's files,
 // cut square from its middle and drawn anew by the browser as a 256-point JPEG; a wallpaper's at
-// most 1080 points wide.
+// most 1080 points wide; a sticker's 512 points, small enough to be one.
 
 export const SIDE = 256;
 export const WALL = 1080;
@@ -36,9 +37,8 @@ function choose(): Promise<globalThis.File | null> {
   });
 }
 
-export async function pickAvatar(_from: 'photos' | 'camera', size = SIDE): Promise<Uint8Array | null> {
-  const file = await choose();
-  if (!file) return null;
+// The middle of the photo, cut square and drawn `size` points wide.
+async function squareOf(file: Blob, size: number): Promise<HTMLCanvasElement> {
   const image = await createImageBitmap(file, { imageOrientation: 'from-image' });
   const side = Math.min(image.width, image.height);
   const canvas = document.createElement('canvas');
@@ -46,5 +46,17 @@ export async function pickAvatar(_from: 'photos' | 'camera', size = SIDE): Promi
   canvas.height = size;
   canvas.getContext('2d')!.drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, size, size);
   image.close();
-  return jpeg(canvas, 0.85);
+  return canvas;
+}
+
+export async function pickAvatar(_from: 'photos' | 'camera', size = SIDE): Promise<Uint8Array | null> {
+  const file = await choose();
+  return file ? jpeg(await squareOf(file, size), 0.85) : null;
+}
+
+export async function pickSticker(): Promise<Uint8Array | null> {
+  const file = await choose();
+  if (!file) return null;
+  const canvas = await squareOf(file, STICKER_SIDE);
+  return fitSticker((quality) => jpeg(canvas, quality));
 }

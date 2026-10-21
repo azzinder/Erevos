@@ -29,7 +29,7 @@ export type InboxMessage = {
   lasts?: number;
   mark?: -1 | 0 | 1 | 2;
   voice?: { ms: number };
-  file?: { kind: 'photo' | 'file'; name: string };
+  file?: { kind: 'photo' | 'file'; name: string; sticker?: true };
 };
 
 export type InboxImported = { title: string; contact: string; last: number };
@@ -127,6 +127,7 @@ export function buildInbox(
 
 function preview(message: Pick<InboxMessage, 'text' | 'voice' | 'file'> | undefined): string {
   if (message?.voice) return t('Voice message, {time}', { time: voiceDuration(message.voice.ms) });
+  if (message?.file?.sticker) return t('Sticker');
   if (message?.file) return message.file.kind === 'photo' ? t('Photo') : t('File: {name}', { name: message.file.name });
   return shownLine(message?.text ?? '');
 }
@@ -149,7 +150,7 @@ export type InboxGroup = {
   id: string;
   name: string;
   status: 'in' | 'leaving' | 'out';
-  last: { at: number; from: string; text: string; note?: boolean; file?: { kind: 'photo' | 'file'; name: string }; ms?: number } | null;
+  last: { at: number; from: string; text: string; note?: boolean; file?: { kind: 'photo' | 'file'; name: string; sticker?: true }; ms?: number } | null;
   unread: number;
 };
 

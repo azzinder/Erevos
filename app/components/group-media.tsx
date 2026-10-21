@@ -14,7 +14,8 @@ import { groupRelay, spaceGroups, spaceGroupTransport } from '../lib/space-group
 import { MAX_VOICE_MS, voiceDuration } from '../lib/voice';
 import { cleanFileName, cleanMime, mimeOf, type FileMeta, type FileRef } from '../lock/attachment-files';
 import type { GroupMessage } from '../lock/group-data';
-import { AttachSheet, Attachment, comingText, FileViewer, SHOWN_PHOTOS, Tool, useShownPhotos } from './attachment';
+import { AttachSheet, Attachment, comingText, FileViewer, shownOf, Tool, useShownPhotos } from './attachment';
+import { PhotoSticker } from './stickers';
 import { Text } from './ui';
 
 // Photos, files and voice messages in a group's thread (app/group.tsx, lib/group-media.ts): the
@@ -284,8 +285,8 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     }
   }
 
-  // The photos shown: the latest in the thread, and the one looked at on its own.
-  const photoFiles = shown.flatMap((m) => (m.file?.kind === 'photo' && !m.file.from ? [m.file] : [])).slice(-SHOWN_PHOTOS);
+  // The photos shown: the latest photos and stickers in the thread, and the one looked at on its own.
+  const photoFiles = shownOf(shown.flatMap((m) => (m.file ? [m.file] : [])));
   if (viewing?.kind === 'photo' && !photoFiles.some((file) => file.id === viewing.id)) photoFiles.push(viewing);
   const photos = useShownPhotos(photoFiles, (error) => onError(t('Cannot show the photo. {error}', { error: errorText(error) })));
 
@@ -329,6 +330,8 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
             </Text>
             {coming ? <Text style={[ink, { fontSize: 13, opacity: 0.8 }]}>{coming}</Text> : null}
           </View>
+        ) : file.sticker ? (
+          <PhotoSticker uri={photos[file.id]} status={coming} />
         ) : (
           <Attachment file={file} uri={photos[file.id]} state={taking[file.id]} ink={ink} />
         )}

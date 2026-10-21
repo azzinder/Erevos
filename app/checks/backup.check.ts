@@ -13,6 +13,7 @@ import { openHidden, prepareHidden, setHiddenPassword } from '../lock/hidden';
 import { EMPTY_SPACE, loadHiddenData, loadSpaceData, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
+import { addOwnSticker, loadOwnStickers, openOwnSticker } from '../lock/sticker-data';
 import { lastRestore } from '../lock/restored';
 import { blobs, files } from './files-memory';
 import { store } from './secure-memory';
@@ -38,7 +39,7 @@ const wipe = () => {
   blobs.clear();
 };
 
-// A phone with a locked space, its relay, a message and a voice message.
+// A phone with a locked space, its relay, a message, a voice message and a sticker made from a photo.
 async function phone() {
   const key = randomBytes(32);
   await setLockPassword(0, 'real-1111', key);
@@ -48,11 +49,12 @@ async function phone() {
   await history.add({ peer: 'contact:aa', text: 'γεια σου', mine: true, at: 1, tag: newTag() });
   const clip = await saveClip(new Uint8Array([1, 2, 3, 4]), 1500);
   const photo = await savePhoto(new Uint8Array([5, 6, 7]));
-  return { key, clip, photo };
+  const sticker = await addOwnSticker({ holder: 'space', space: 0, key }, new Uint8Array([8, 9]));
+  return { key, clip, photo, sticker };
 }
 
-t('puts everything back: the lock opens the same space, with its relay, messages and voice', async () => {
-  const { key, clip, photo } = await phone();
+t('puts everything back: the lock opens the same space, with its relay, messages, voice and stickers', async () => {
+  const { key, clip, photo, sticker } = await phone();
   // Everything but the wrong tries, which stay with the phone.
   const before = new Map([...store].filter(([name]) => name !== 'erevos.lock-tries'));
   const file = await makeBackup(await backupKey('backup-pass'));
@@ -80,6 +82,8 @@ t('puts everything back: the lock opens the same space, with its relay, messages
   assert.deepEqual(history.messages().map((m) => m.text), ['γεια σου']);
   assert.deepEqual(await loadClip(clip), new Uint8Array([1, 2, 3, 4]));
   assert.deepEqual(await loadPhoto(photo), new Uint8Array([5, 6, 7]));
+  assert.deepEqual(await loadOwnStickers({ holder: 'space', space: 0, key }), [sticker]);
+  assert.deepEqual(await openOwnSticker(sticker), new Uint8Array([8, 9]));
 });
 
 t('shows nothing of what it holds, and leaves out the wrong tries and its own settings', async () => {

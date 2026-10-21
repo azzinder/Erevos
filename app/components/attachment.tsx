@@ -21,6 +21,15 @@ import { Button, Chip, Row, Sheet, Text } from './ui';
  *  others show when tapped. A computer has the memory for all of them. */
 export const SHOWN_PHOTOS = Platform.OS === 'web' ? 200 : 6;
 
+/** Stickers made from photos shown at once, the latest: they are small, so many more than photos. */
+export const SHOWN_STICKERS = Platform.OS === 'web' ? 200 : 40;
+
+/** Of a thread's files, oldest first, the photos here to show: the latest photos, and the latest stickers. */
+export function shownOf(files: FileRef[]): FileRef[] {
+  const here = files.filter((file) => file.kind === 'photo' && !file.from);
+  return [...here.filter((file) => !file.sticker).slice(-SHOWN_PHOTOS), ...here.filter((file) => file.sticker).slice(-SHOWN_STICKERS)];
+}
+
 /** How far a file that is not here yet has come: `state` is how far it is ('40%'), or 'failed' or
  *  'gone' if it did not come. Null once it is here. */
 export function comingText(file: FileRef, state?: string): string | null {

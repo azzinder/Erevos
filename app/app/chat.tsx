@@ -21,13 +21,13 @@ import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, sendFile, takeFile, bytesSource, refSource, type Source } from '../lib/attachments';
 import { canRingInBackground, isNews, messageCameAt } from '../lib/background';
-import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileRef } from '../lock/attachment-files';
+import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileMeta, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { saveFile, saveText } from '../lib/save-file';
 import { chatText, exportName } from '../lib/chat-export';
-import { AttachSheet, Attachment, FileViewer, SHOWN_PHOTOS, Tool, useShownPhotos } from '../components/attachment';
+import { AttachSheet, Attachment, comingText, FileViewer, shownOf, Tool, useShownPhotos } from '../components/attachment';
 import { KeyboardAwareScrollView, KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
@@ -38,12 +38,13 @@ import { LaterPicker } from '../components/later-picker';
 import { LinkedText } from '../components/linked-text';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from '../components/message-parts';
-import { StickerPicker, StickerView } from '../components/stickers';
+import { PhotoSticker, PLAYS_LAST, StickerPicker, StickerView } from '../components/stickers';
 import { PollCard, PollSheet } from '../components/poll';
 import { acts, checkedChoices, choose as chooseOption, contentOf, placeText, placeWords, pollWords, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { CAN_PLACE, findPlace } from '../lib/place';
+import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
 import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { searchMessages } from '../lib/message-search';
@@ -61,6 +62,7 @@ import { Archive } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
 import { isWatchedQueue, loadWatched, unwatchPocket, watchPocket } from '../lock/hidden-watch';
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
+import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
 import { moveChat } from '../lock/move-chat';
 import { SamePasswordError } from '../lock/config';
 import { LockedOutError, lockedOutMessage } from '../lock/tries';
@@ -1559,6 +1561,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
     if (CAN_COPY && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(message) });
+    if (message.file?.sticker && !message.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(message.file!) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
   }
@@ -1613,7 +1616,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     const file = message.file;
     if (file) {
-      await sendAttachment(file.kind, async () => ({ name: file.name, mime: file.mime, source: refSource(file), w: file.w, h: file.h }), peer, true);
+      await sendAttachment(file.kind, async () => ({ name: file.name, mime: file.mime, source: refSource(file), w: file.w, h: file.h, sticker: file.sticker }), peer, true);
       return;
     }
     await send(0, false, { ...contentOf(message), forwarded: true, text: message.text }, peer);
@@ -1685,6 +1688,33 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setStickering(false);
     const sticker = stickerOf(name);
     if (sticker) void send(0, false, { text: sticker.emoji, sticker: name });
+  }
+
+  // Whose stickers made from photos these are: the space's, or these hidden chats' only.
+  const stickerPlace = useMemo<StickerPlace>(() => {
+    const { space, key } = currentSpace();
+    return { holder: hiddenKey ? hiddenHolder(pocket) : 'space', space, key: hiddenKey ?? key };
+  }, [hiddenKey, pocket]);
+
+  // Sends a sticker made from a photo: as a photo goes, marked as a sticker (lib/own-stickers.ts).
+  function sendOwnSticker(sticker: OwnSticker) {
+    setStickering(false);
+    void sendAttachment('photo', async () => {
+      const picture = await openOwnSticker(sticker);
+      if (!picture) throw new Error(t('This sticker\'s picture is gone.'));
+      const { name, mime, w, h } = stickerMeta(picture);
+      return { name, mime, source: bytesSource(picture), w, h, sticker: true };
+    });
+  }
+
+  // Keeps a sticker that came as one of this place's own.
+  async function addToStickers(file: FileRef) {
+    try {
+      await keepAsSticker(stickerPlace, file);
+      setNote(t('Added to your stickers.'));
+    } catch (error) {
+      setNote(errorText(error));
+    }
   }
 
   // The preview of the first link in words typed, when this phone makes them: never in hidden
@@ -2325,11 +2355,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     savePhotoQuality(next).catch((error) => setNote(errorText(error)));
   }
 
-  type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; close?: () => void };
+  type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; sticker?: true; close?: () => void };
 
   // Sends a photo or file to the contact picked, or to `to` when it is `forwarded` there: its chunks
   // to our relay, then, end-to-end encrypted, where they are and their key. Kept here as it went.
-  // If any of it cannot go, nothing is kept.
+  // If any of it cannot go, nothing is kept. A sticker made from a photo goes as a photo, marked.
   async function sendAttachment(kind: FileKind, get: () => Promise<Picked | null>, to = selectedContact, forwarded = false) {
     const peer = to;
     const target = relayTarget();
@@ -2357,6 +2387,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     if (!picked) return;
     const what = kind === 'photo' ? 'photo' : 'file';
+    const meta: Omit<FileMeta, 'size'> = {
+      name: picked.name,
+      mime: picked.mime,
+      kind,
+      ...(picked.w && picked.h ? { w: picked.w, h: picked.h } : {}),
+      ...(picked.sticker ? { sticker: true as const } : {}),
+    };
     // Picked to go later (laterFor): kept here, and handed to the relay for then.
     const later = forwarded ? null : takeLaterFor();
     if (!forwarded && laterFor !== null && later === null) {
@@ -2366,8 +2403,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (later !== null) {
       try {
         if (picked.source.size > MAX_FILE) throw new TooLargeError();
-        const size = picked.w && picked.h ? { w: picked.w, h: picked.h } : {};
-        const ref = await keepFile(picked.source, { name: picked.name, mime: picked.mime, kind, ...size }, (done, count) => {
+        const ref = await keepFile(picked.source, meta, (done, count) => {
           if (count > 1) {
             const percent = Math.floor((done / count) * 100);
             setNote(what === 'photo' ? t('Keeping the photo, {percent}%', { percent }) : t('Keeping the file, {percent}%', { percent }));
@@ -2385,9 +2421,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const parts: Parts = forwarded ? { forwarded } : answering(peer);
     try {
       if (picked.source.size > MAX_FILE) throw new TooLargeError();
-      setNote(what === 'photo' ? t('Sending the photo…') : t('Sending the file…'));
-      const size = picked.w && picked.h ? { w: picked.w, h: picked.h } : {};
-      const sent = await sendFile(own, picked.source, { name: picked.name, mime: picked.mime, kind, ...size }, (done, count) => {
+      setNote(picked.sticker ? t('Sending the sticker…') : what === 'photo' ? t('Sending the photo…') : t('Sending the file…'));
+      const sent = await sendFile(own, picked.source, meta, (done, count) => {
         if (count > 1) {
           const percent = Math.floor((done / count) * 100);
           setNote(what === 'photo' ? t('Sending the photo, {percent}%', { percent }) : t('Sending the file, {percent}%', { percent }));
@@ -2402,7 +2437,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       kept = null;
       // Writing to a message request accepts it.
       setContacts(e2e.contacts());
-      setNote(kind === 'photo' ? t('Photo sent through the relay, end-to-end encrypted.') : t('File sent through the relay, end-to-end encrypted.'));
+      setNote(
+        picked.sticker
+          ? t('Sticker sent through the relay, end-to-end encrypted.')
+          : kind === 'photo'
+            ? t('Photo sent through the relay, end-to-end encrypted.')
+            : t('File sent through the relay, end-to-end encrypted.'),
+      );
     } catch (error) {
       if (kept) await deleteChunks(kept.id, kept.count).catch(() => undefined);
       if (!canWait(error) || hiddenKey) {
@@ -2418,8 +2459,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return;
       }
       try {
-        const size = picked.w && picked.h ? { w: picked.w, h: picked.h } : {};
-        const ref = await keepFile(picked.source, { name: picked.name, mime: picked.mime, kind, ...size }, (done, count) => {
+        const ref = await keepFile(picked.source, meta, (done, count) => {
           if (count > 1) {
             const percent = Math.floor((done / count) * 100);
             setNote(what === 'photo' ? t('Keeping the photo, {percent}%', { percent }) : t('Keeping the file, {percent}%', { percent }));
@@ -2813,11 +2853,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     holdScroll.current = true;
     goTo(hit.peer, hit.tag);
   };
-  // The photos shown: the latest in the thread, and the one looked at on its own.
-  const shownPhotos = visible
-    .filter((m) => m.file?.kind === 'photo' && !m.file.from)
-    .slice(-SHOWN_PHOTOS)
-    .map((m) => m.file!);
+  // The photos shown: the latest photos and stickers in the thread, and the one looked at on its own.
+  const shownPhotos = shownOf(visible.flatMap((m) => (m.file ? [m.file] : [])));
   if (viewing?.file?.kind === 'photo' && !viewing.file.from) shownPhotos.push(viewing.file);
   if (viewingImported?.kind === 'photo') shownPhotos.push(viewingImported);
   // Each read into memory to show it (components/attachment.tsx).
@@ -3695,6 +3732,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           const tail = !after || after.mine !== message.mine || dayOf(after.at) !== dayOf(message.at);
           const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
           const quoted = message.re ? visible.find((m) => m.tag === message.re) : undefined;
+          // A sticker, built in or made from a photo, shows on its own, with no bubble.
+          const stuck = !!message.sticker || !!message.file?.sticker;
           return (
             <View
               key={message.id}
@@ -3720,9 +3759,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 style={[
                   styles.bubble,
                   message.mine ? b.mine : b.theirs,
-                  message.file?.kind === 'photo' && styles.photoBubble,
-                  tail && !message.sticker && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
-                  message.sticker && styles.stickerBubble,
+                  message.file?.kind === 'photo' && !stuck && styles.photoBubble,
+                  tail && !stuck && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+                  stuck && styles.stickerBubble,
                   (message.myReaction || message.theirReaction) && styles.reacted,
                   lit === message.id && styles.lit,
                 ]}
@@ -3736,7 +3775,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   />
                 ) : null}
                 {message.sticker ? (
-                  <StickerView name={message.sticker} fallback={message.text} />
+                  <StickerView name={message.sticker} fallback={message.text} play={visible.length - i <= PLAYS_LAST} tap onLongPress={() => setMenuFor(message)} />
+                ) : message.file?.sticker ? (
+                  <PhotoSticker uri={photos[message.file.id]} status={comingText(message.file, taking[`${message.peer}|${message.tag}`])} />
                 ) : message.place ? (
                   <PlaceCard place={message.place} ink={ink} />
                 ) : message.poll ? (
@@ -3762,7 +3803,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   </Text>
                 )}
                 {message.preview && !message.voice && !message.file ? <PreviewCard preview={message.preview} ink={ink} /> : null}
-                <Text style={[ink, styles.time, message.sticker && { color: colors.textMuted }]}>
+                <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>
                   {[message.forwarded ? t('Forwarded') : '', message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}
                 </Text>
               </Pressable>
@@ -3904,7 +3945,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         ) : null}
       </Sheet>
       <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
-        <StickerPicker onPick={sendSticker} />
+        <StickerPicker onPick={sendSticker} mine={{ place: stickerPlace, onPick: sendOwnSticker }} />
       </Sheet>
       <Sheet visible={!!forwarding && shown} onClose={() => setForwarding(null)} title={t('Forward to')}>
         {forwarding ? (
