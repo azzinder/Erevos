@@ -90,7 +90,9 @@
 //! `BORROW` (and ask for the `KEY`); one whose token is a lent token may use
 //! its queues and files as a phone with the relay's token does, but not
 //! `FORWARD`, `FILE_VIA`, `LATER`, `UNLATER`, `CALL_RELAY` or `LEND`, and may
-//! make only so many queues and files a day (`FULL` past that).
+//! make only so many queues and files a day (`FULL` past that). Only a relay
+//! whose operator turned lending on lends. A ticket the operator revoked, and
+//! every lent token it gave, is refused at the handshake as a wrong token is.
 //!
 //! Reply status: `OK`, `NOT_FOUND` (no such queue or chunk), `FULL` (the
 //! queue holds `MAX_QUEUED` messages, the relay all the queues it may, or the
@@ -1280,7 +1282,7 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
         let store = Shared::new(Store::default(), FileStore::default(), key, None, limits);
-        // A relay with a key lends, as one started by main does.
+        // A relay with a key lends here, as one started with EREVOS_RELAY_LEND=on does.
         if let Some(key) = &store.key {
             let _ = store.lend.set(Lend::new(key));
         }
@@ -1642,11 +1644,52 @@ mod tests {
         let mut request = format!("ws://{addr}").into_client_request().unwrap();
         request.headers_mut().insert(
             "authorization",
-            format!("Bearer lent.{}", "0".repeat(64)).parse().unwrap(),
+            format!("Bearer lent.{}", "0".repeat(96)).parse().unwrap(),
         );
         assert!(tungstenite::connect(request).is_err());
         // The relay's own token takes no place.
         assert!(refused(&mut owner, vec![BORROW]));
+    }
+
+    #[test]
+    fn a_revoked_ticket_and_its_places_are_refused_from_the_next_connection() {
+        let dir = std::env::temp_dir();
+        let pid = std::process::id();
+        let counts = dir.join(format!("erevos-relay-test-{pid}.lent-counts"));
+        let list = dir.join(format!("erevos-relay-test-{pid}.revoked"));
+        let _ = std::fs::remove_file(&list);
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let key = RelayKey::generate();
+        let shared = Shared::new(
+            Store::default(),
+            FileStore::default(),
+            None,
+            None,
+            Limits::default(),
+        );
+        let lend = Lend::open(&key, &counts, crate::lend::Revoked::new(list.clone())).unwrap();
+        let _ = shared.lend.set(lend);
+        thread::spawn(move || serve_ws(listener, shared, Some(Arc::from("t"))));
+        let ticket = ticket_of(addr, "t");
+        let (_, sender, token) = borrow(addr, &ticket);
+        let mut lent = connect_with_token(addr, "", &token);
+        assert_eq!(ws_send(&mut lent, &sender, b"before"), OK);
+
+        // The operator puts the ticket's nonce, from the contact link, on the list.
+        std::fs::write(&list, format!("{}\n", &ticket[7 + 16..7 + 48])).unwrap();
+        for refused_token in [&ticket, &token] {
+            let mut request = format!("ws://{addr}").into_client_request().unwrap();
+            request.headers_mut().insert(
+                "authorization",
+                format!("Bearer {refused_token}").parse().unwrap(),
+            );
+            assert!(tungstenite::connect(request).is_err());
+        }
+        // A connection already open goes on until it ends.
+        assert_eq!(ws_send(&mut lent, &sender, b"after"), OK);
+        let _ = std::fs::remove_file(&list);
+        let _ = std::fs::remove_file(&counts);
     }
 
     #[test]

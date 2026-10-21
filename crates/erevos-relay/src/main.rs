@@ -42,11 +42,14 @@
 //! `peers.rs`). Set `EREVOS_RELAY_PRIVATE_PEERS=allow` where relays reach
 //! each other at private addresses, as on a home network.
 //!
-//! A relay with a key also lends places to phones that have no relay of
-//! their own (see `lend.rs`): its phones put a ticket in their contact links,
-//! and whoever adds them without a relay takes a queue here with it. Set
-//! `EREVOS_RELAY_LEND=off` to lend none. A new key takes back every place
-//! lent.
+//! Set `EREVOS_RELAY_LEND=on` on a relay with a key to lend places to phones
+//! that have no relay of their own (see `lend.rs`): its phones put a ticket
+//! in their contact links, and whoever adds them without a relay takes a
+//! queue here with it. Off unless set. How many places each ticket gave and
+//! what each place used today are kept in `<key file>.lent-counts`. A new key
+//! takes back every place lent; to take back the places of one ticket only,
+//! put its nonce on a line of `EREVOS_RELAY_LEND_REVOKED` (`<key
+//! file>.revoked` unless set), which the relay reads again when it changes.
 //!
 //! Set `EREVOS_RELAY_FILES` to a folder to keep the chunks of files that
 //! phones send (see `files.rs`) there. Without it, they live in memory and are
@@ -85,7 +88,7 @@ use std::env;
 use std::fs;
 use std::io::{self, Write};
 use std::net::TcpListener;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
 use std::thread;
@@ -349,14 +352,43 @@ fn main() -> ExitCode {
     );
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
     let store = Shared::new(store, files, key, turn, limits);
-    let lending = env::var("EREVOS_RELAY_LEND").map_or(true, |on| on != "off");
-    match &store.key {
-        Some(key) if lending => {
-            let _ = store.lend.set(lend::Lend::new(key));
+    let lending = match lend::wanted(env::var("EREVOS_RELAY_LEND").ok().as_deref()) {
+        Ok(on) => on,
+        Err(e) => {
+            eprintln!("erevos-relay: {e}");
+            return ExitCode::FAILURE;
         }
-        Some(_) => eprintln!("erevos-relay: EREVOS_RELAY_LEND=off, no places are lent"),
-        None => eprintln!(
-            "erevos-relay: no EREVOS_RELAY_KEY set, no places are lent to phones without a relay"
+    };
+    match (&store.key, lending) {
+        (Some(key), true) => {
+            // Lending needs the key, so what it keeps goes beside the key's file.
+            let key_path = env::var("EREVOS_RELAY_KEY").unwrap_or_default();
+            let counts = format!("{key_path}.lent-counts");
+            let revoked = env::var("EREVOS_RELAY_LEND_REVOKED")
+                .ok()
+                .filter(|path| !path.is_empty())
+                .unwrap_or_else(|| format!("{key_path}.revoked"));
+            let list = lend::Revoked::new(PathBuf::from(&revoked));
+            match lend::Lend::open(key, Path::new(&counts), list) {
+                Ok(lend) => {
+                    eprintln!("erevos-relay: lending places to phones without a relay, counting them in {counts}, revoked tickets in {revoked}");
+                    // Read now, so what it holds, and a line it cannot read, is said at start.
+                    if let Some(revoked) = lend.revoked() {
+                        revoked.count();
+                    }
+                    let _ = store.lend.set(lend);
+                }
+                Err(e) => {
+                    eprintln!("erevos-relay: cannot read the counts of lent places {counts}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+        (None, true) => eprintln!(
+            "erevos-relay: EREVOS_RELAY_LEND=on but no EREVOS_RELAY_KEY set, no places are lent"
+        ),
+        (_, false) => eprintln!(
+            "erevos-relay: no EREVOS_RELAY_LEND=on set, no places are lent to phones without a relay"
         ),
     }
     *store.held() = held;

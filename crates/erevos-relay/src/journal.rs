@@ -345,6 +345,21 @@ fn read_day(r: &mut impl Read) -> io::Result<u64> {
     }
 }
 
+/// Writes `bytes` as the whole of the file at `path`, as the journal is
+/// rewritten: to a file beside it first, then put in its place in one rename,
+/// so a crash leaves either the old file or the new one, never half of it.
+/// Only the owner can read it.
+pub fn write_whole(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let mut tmp = path.as_os_str().to_owned();
+    tmp.push(".tmp");
+    let tmp = PathBuf::from(tmp);
+    let mut file = private_file(&tmp)?;
+    file.write_all(bytes)?;
+    file.sync_all()?;
+    std::fs::rename(&tmp, path)?;
+    sync_dir(path)
+}
+
 /// Creates or truncates a file only its owner can read.
 fn private_file(path: &Path) -> io::Result<File> {
     let mut options = OpenOptions::new();

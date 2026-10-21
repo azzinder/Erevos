@@ -599,9 +599,10 @@ export async function deleteQueue(relay: Relay, recipientId: Uint8Array): Promis
   check(await request(relay, bytes), 'delete');
 }
 
-/** Whether `token` is a lent token, for a place lent on a relay, rather than the relay's own token. */
+/** Whether `token` is a lent token, for a place lent on a relay, rather than the relay's own token:
+ *  `lent.` and, in hex, its ticket's nonce, its own nonce and its code (crates/erevos-relay lend.rs). */
 export function isLentToken(token: string | undefined): boolean {
-  return !!token && /^lent\.[0-9a-f]{64}$/.test(token.trim());
+  return !!token && /^lent\.[0-9a-f]{96}$/.test(token.trim());
 }
 
 /** Whether `text` is a ticket for a place on a relay, as a contact link carries. */
