@@ -6,6 +6,7 @@ import { ES } from '../i18n/es/index';
 import { FR } from '../i18n/fr/index';
 import { IT } from '../i18n/it/index';
 import { PT } from '../i18n/pt/index';
+import { SH } from '../i18n/sh/index';
 import { secureGet, secureSet } from './secure';
 
 /**
@@ -18,10 +19,10 @@ import { secureGet, secureSet } from './secure';
  * these; the choice (Home → Menu → Language) is kept on the phone, outside every space, so the
  * password screen shows it too.
  */
-export type Lang = 'en' | 'el' | 'de' | 'es' | 'fr' | 'it' | 'pt';
+export type Lang = 'en' | 'el' | 'de' | 'es' | 'fr' | 'it' | 'pt' | 'sh';
 
 /** As the language switch lists them: the two the guide is written in first, then the others. */
-export const LANGS: Lang[] = ['el', 'en', 'de', 'es', 'fr', 'it', 'pt'];
+export const LANGS: Lang[] = ['el', 'en', 'de', 'es', 'fr', 'it', 'pt', 'sh'];
 /** Each language by its own name. */
 export const LANG_LABELS: Record<Lang, string> = {
   el: 'Ελληνικά',
@@ -31,25 +32,71 @@ export const LANG_LABELS: Record<Lang, string> = {
   fr: 'Français',
   it: 'Italiano',
   pt: 'Português',
+  sh: 'Srpskohrvatski',
 };
 
-const WORDS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { el: EL, de: DE, es: ES, fr: FR, it: IT, pt: PT };
+const WORDS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { el: EL, de: DE, es: ES, fr: FR, it: IT, pt: PT, sh: SH };
 
 // How each writes dates and times, when the phone's own is another language. Portuguese is
-// Brazilian, as its words are.
-const LOCALES: Record<Exclude<Lang, 'en'>, string> = { el: 'el-GR', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-BR' };
+// Brazilian, as its words are. Serbo-Croatian writes them as Bosnian does: in Latin letters,
+// ijekavian as its words are (srijeda), the months named as in Bosnia, Montenegro and Serbia
+// (oktobar).
+const LOCALES: Record<Exclude<Lang, 'en'>, string> = { el: 'el-GR', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-BR', sh: 'bs-BA' };
+
+// Phones in Serbian, Croatian, Bosnian or Montenegrin start in Serbo-Croatian.
+const SAME_LANG = new Map<string, Lang>([
+  ['sr', 'sh'],
+  ['hr', 'sh'],
+  ['bs', 'sh'],
+  ['cnr', 'sh'],
+]);
 
 // Which counts take a word's first form, as plural() is given it: 1 alone, unless the language
 // counts otherwise here. French and Brazilian Portuguese say 0 and 1 alike ("0 message").
 const zeroAndOne = (n: number) => Math.abs(n) < 2;
 const ONE: Partial<Record<Lang, (n: number) => boolean>> = { fr: zeroAndOne, pt: zeroAndOne };
 
+// Languages whose words for a count have three forms, by how the count ends: Serbo-Croatian says
+// 21 kontakt, 22 kontakta, 25 kontakata, and 11 to 14 as 25. There 1 alone takes plural()'s first
+// form, and the words for its second form hold the three for every other count, split by ' | ':
+// '{n} contacts': '{n} kontakt | {n} kontakta | {n} kontakata', for 21, 31…, for 2 to 4, 22 to
+// 24…, and for the rest. Each gives the form a count takes there: 0, 1 or 2.
+const FORMS: Partial<Record<Lang, (n: number) => number>> = {
+  sh: (n) => {
+    const ten = n % 10;
+    const hundred = n % 100;
+    if (ten === 1 && hundred !== 11) return 0;
+    return ten >= 2 && ten <= 4 && (hundred < 12 || hundred > 14) ? 1 : 2;
+  },
+};
+/** How the forms are split in the words of plural()'s second form. */
+export const FORM_SPLIT = ' | ';
+
+/** How many forms the words of plural()'s second form hold in `l`: 1, or 3 (FORMS above). */
+export function formsOf(l: Lang): number {
+  return FORMS[l] ? 3 : 1;
+}
+
 const KEY = 'erevos.lang';
 
-/** The language of a locale such as 'de-AT', if Erevos has it; English otherwise. */
+/** The language of a locale such as 'de-AT' or 'hr-HR', if Erevos has it; English otherwise. */
 export function langOf(locale: string): Lang {
   const code = locale.toLowerCase().split(/[-_]/)[0];
-  return (LANGS as string[]).includes(code) ? (code as Lang) : 'en';
+  const same = SAME_LANG.get(code) ?? code;
+  return (LANGS as string[]).includes(same) ? (same as Lang) : 'en';
+}
+
+/**
+ * Whether dates are written in the phone's own locale: one of the app's language, and for
+ * Serbo-Croatian, in Latin letters too. A Serbian phone writes in Cyrillic unless it says Latn
+ * (sr-Latn-RS), and Croatian and Bosnian ones in Latin unless they say Cyrl. A Montenegrin or
+ * Serbo-Croatian one (cnr, sh) is not known everywhere, so it takes LOCALES' instead.
+ */
+export function phoneWrites(phone: string, l: Lang): boolean {
+  if (langOf(phone) !== l) return false;
+  if (l !== 'sh') return true;
+  const tag = phone.toLowerCase().replace(/_/g, '-');
+  return /^(hr|bs)(-|$)/.test(tag) ? !/-cyrl(-|$)/.test(tag) : /^sr-latn(-|$)/.test(tag);
 }
 
 function phoneLocale(): string | null {
@@ -115,12 +162,13 @@ export function words(l: Lang): Record<string, string> {
 
 /**
  * The locale dates and times are written in, for toLocaleString: the phone's own in English, or
- * when the phone is in the app's language (so de-AT stays Austrian), else the language's own.
+ * when the phone is in the app's language (so de-AT stays Austrian, and hr-HR Croatian), else
+ * the language's own.
  */
 export function locale(): string | undefined {
   if (current === 'en') return undefined;
   const phone = phoneLocale();
-  return phone && langOf(phone) === current ? phone : LOCALES[current];
+  return phone && phoneWrites(phone, current) ? phone : LOCALES[current];
 }
 
 /**
@@ -141,11 +189,19 @@ export function mark<T extends string>(text: T): T {
 /**
  * The count's form of a word: plural(n, '{n} chat', '{n} chats'), both forms written for the
  * check. The language decides which counts take the first (ONE above); each language then has
- * its own words for both forms.
+ * its own words for both forms. In a language of three forms (FORMS above) the second form's
+ * words hold the three, and every count but 1 takes the one it counts with.
  */
 export function plural(n: number, one: string, many: string, vars?: Record<string, string | number>): string {
+  const all = { n, ...vars };
+  const form = FORMS[current];
+  if (form && n !== 1) {
+    // English, until the language has the words: one form, for every count.
+    const forms = (words(current)[many] ?? many).split(FORM_SPLIT);
+    return fill(forms[Math.min(form(Math.abs(n)), forms.length - 1)], all);
+  }
   const first = ONE[current] ?? ((count: number) => count === 1);
-  return t(first(n) ? one : many, { n, ...vars });
+  return t(first(n) ? one : many, all);
 }
 
 function fill(text: string, vars: Record<string, string | number>): string {

@@ -19,29 +19,45 @@ function files(dir: string): string[] {
 
 // A JS string literal: '…', "…" or `…` without ${}.
 const LITERAL = String.raw`('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|\`(?:[^\`\\$]|\\.)*\`)`;
-const CALLS = [
-  new RegExp(String.raw`\b(?:t|mark)\(\s*` + LITERAL, 'g'),
-  new RegExp(String.raw`\bplural\(\s*[^,]+,\s*` + LITERAL + String.raw`\s*,\s*` + LITERAL, 'g'),
-];
+const SAID = new RegExp(String.raw`\b(?:t|mark)\(\s*` + LITERAL, 'g');
+const PLURAL = new RegExp(String.raw`\bplural\(\s*[^,]+,\s*` + LITERAL + String.raw`\s*,\s*` + LITERAL, 'g');
 
 function unquote(literal: string): string {
   if (literal.startsWith('`')) return literal.slice(1, -1).replace(/\\`/g, '`');
   return JSON.parse(literal.startsWith("'") ? `"${literal.slice(1, -1).replace(/\\'/g, "'").replace(/"/g, '\\"')}"` : literal);
 }
 
-/** Each English word the code shows, with a file it is in. */
-export function englishInCode(): Map<string, string> {
+/** Each file of the code that shows words, by its path in the app, with its source. */
+function sources(): [string, string][] {
+  // lib/i18n.ts itself only shows how t is called.
+  const paths = DIRS.flatMap((dir) => files(join(ROOT, dir))).filter((p) => !p.endsWith(join('lib', 'i18n.ts')));
+  return paths.map((path) => [path.slice(ROOT.length + 1), readFileSync(path, 'utf8')]);
+}
+
+/** The English the calls of `patterns` show, each with a file it is in. */
+function inCode(patterns: RegExp[]): Map<string, string> {
   const found = new Map<string, string>();
-  for (const dir of DIRS) {
-    // lib/i18n.ts itself only shows how t is called.
-    for (const path of files(join(ROOT, dir)).filter((p) => !p.endsWith(join('lib', 'i18n.ts')))) {
-      const source = readFileSync(path, 'utf8');
-      for (const pattern of CALLS) {
-        for (const match of source.matchAll(pattern)) {
-          for (const literal of match.slice(1)) if (literal) found.set(unquote(literal), path.slice(ROOT.length + 1));
-        }
+  for (const [path, source] of sources()) {
+    for (const pattern of patterns) {
+      for (const match of source.matchAll(pattern)) {
+        for (const literal of match.slice(1)) if (literal) found.set(unquote(literal), path);
       }
     }
+  }
+  return found;
+}
+
+/** Each English word the code shows, with a file it is in. */
+export const englishInCode = () => inCode([SAID, PLURAL]);
+
+/** The English the code shows in t('…') and mark('…'), not in a count's words. */
+export const saidInCode = () => inCode([SAID]);
+
+/** The English of each count the code shows, plural(n, one, many): each many with its one. */
+export function pluralsInCode(): Map<string, string> {
+  const found = new Map<string, string>();
+  for (const [, source] of sources()) {
+    for (const match of source.matchAll(PLURAL)) found.set(unquote(match[2]), unquote(match[1]));
   }
   return found;
 }

@@ -326,7 +326,7 @@ export default function SmsSettings() {
         </Text>
         <Row wrap>
           {UNDO_SECONDS.map((seconds) => (
-            <Chip key={seconds} label={seconds ? t('{n} seconds', { n: seconds }) : t('Off')} selected={undo === seconds} onPress={() => void chooseUndo(seconds)} />
+            <Chip key={seconds} label={seconds ? plural(seconds, '{n} second', '{n} seconds') : t('Off')} selected={undo === seconds} onPress={() => void chooseUndo(seconds)} />
           ))}
         </Row>
       </Card>

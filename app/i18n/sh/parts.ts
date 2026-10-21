@@ -1,0 +1,236 @@
+// Serbo-Croatian for parts (lib/i18n.ts).
+export const parts: Record<string, string> = {
+  // The password screen and the password sheet (lock/gate.tsx, components/PasswordSheet.tsx).
+  'Enter your password': 'Upišite lozinku',
+  Unlock: 'Otključaj',
+  'Wrong password': 'Pogrešna lozinka',
+  'Use at least {n} characters.': 'Lozinka je prekratka. Najmanji broj znakova: {n}.',
+  'The passwords do not match.': 'Lozinke se ne podudaraju.',
+  'Use a different password.': 'Koristite drugu lozinku.',
+  'New password': 'Nova lozinka',
+  'Repeat password': 'Ponovite lozinku',
+  'Too many attempts. Try again in {n} minute.': 'Previše pokušaja. Pokušajte ponovo za {n} minutu.',
+  'Too many attempts. Try again in {n} minutes.': 'Previše pokušaja. Pokušajte ponovo za {n} minutu. | Previše pokušaja. Pokušajte ponovo za {n} minute. | Previše pokušaja. Pokušajte ponovo za {n} minuta.',
+  'Too many attempts. Try again in {n} second.': 'Previše pokušaja. Pokušajte ponovo za {n} sekundu.',
+  'Too many attempts. Try again in {n} seconds.': 'Previše pokušaja. Pokušajte ponovo za {n} sekundu. | Previše pokušaja. Pokušajte ponovo za {n} sekunde. | Previše pokušaja. Pokušajte ponovo za {n} sekundi.',
+
+  // Small parts of screens.
+  'QR code': 'QR kod',
+  Group: 'Grupa',
+
+  // Calls (components/call-screen.tsx, components/group-call-screen.tsx).
+  'Call ended': 'Poziv je završen',
+  'They hung up': 'Druga strana je prekinula',
+  'Turned down': 'Odbijeno',
+  'They turned it down': 'Druga strana je odbila poziv',
+  'They are in another call': 'Osoba koju zovete je u drugom pozivu',
+  'Not answered': 'Nema odgovora',
+  'The call could not connect': 'Poziv se nije mogao uspostaviti',
+  'The call could not connect on their phone': 'Poziv se nije mogao uspostaviti na telefonu druge osobe',
+  'Calling…': 'Pozivanje…',
+  'Ringing…': 'Zvoni…',
+  'Incoming video call': 'Dolazni videopoziv',
+  'Incoming voice call': 'Dolazni glasovni poziv',
+  'Connecting…': 'Povezivanje…',
+  'Missed call': 'Propušteni poziv',
+  Decline: 'Odbij',
+  Answer: 'Javi se',
+  Unmute: 'Uključi mikrofon',
+  Mute: 'Isključi mikrofon',
+  Speaker: 'Zvučnik',
+  'Camera on': 'Uključi kameru',
+  'Camera off': 'Isključi kameru',
+  Flip: 'Promijeni kameru',
+  End: 'Prekini',
+  'You started a group video call': 'Pokrenuli ste grupni videopoziv',
+  'You started a group call': 'Pokrenuli ste grupni poziv',
+  '{name} started a group video call': '{name} poziva grupu na videopoziv',
+  '{name} started a group call': '{name} poziva grupu',
+  'Waiting for others · {time}': 'Čeka se na ostale · {time}',
+  'Missed group call': 'Propušteni grupni poziv',
+  'Could not open the microphone': 'Mikrofon se nije mogao uključiti',
+  'Pictures pause with more than {n} in the call': 'Slika se pauzira kad broj osoba u pozivu premaši {n}',
+  'Group video call · end-to-end encrypted': 'Grupni videopoziv · šifrirano s kraja na kraj',
+  'Group voice call · end-to-end encrypted': 'Grupni glasovni poziv · šifrirano s kraja na kraj',
+  'In the call': 'U pozivu',
+  Join: 'Pridruži se',
+  '{name} tried to call. Accept their message request to take calls from them.':
+    '{name}: pokušaj poziva. Prihvatite zahtjev za razgovor da biste od te osobe primali pozive.',
+  'The call ended.': 'Poziv je završen.',
+  'The call has ended.': 'Poziv je završen.',
+  'Calls are set up through the relay. Type its address in Relay first.': 'Pozivi se uspostavljaju preko relaya. Prvo upišite njegovu adresu u „Relay“.',
+
+  // The web app's card (components/integrity-card.tsx, lib/integrity.web.ts).
+  'This web app': 'Ova web-aplikacija',
+  'Release {version}, checked': 'Izdanje {version}, provjereno',
+  'Not checked: no service worker runs Erevos here': 'Nije provjereno: ovdje nijedan service worker ne pokreće Erevos',
+  "Erevos runs only code signed with its release key, kept on this device. The key's fingerprint is":
+    'Erevos pokreće samo kod potpisan svojim ključem za izdanja, koji se čuva na ovom uređaju. Otisak ključa je',
+  '. It must match the one you were given with the address of this server.': '. Mora se podudarati s onim koji ste dobili uz adresu ovog servera.',
+  'Release {version} is checked and starts the next time Erevos opens.': 'Izdanje {version} je provjereno i pokreće se sljedeći put kad se Erevos otvori.',
+  'Last looked for updates {when}.': 'Ažuriranja su posljednji put provjerena {when}.',
+  'Refused:': 'Odbijeno:',
+  'Looking…': 'Provjera…',
+  'Look for an update': 'Potraži ažuriranje',
+  'Notifications while closed': 'Obavijesti dok je Erevos zatvoren',
+  'On in this space': 'Uključeno u ovom prostoru',
+  'Off in this space': 'Isključeno u ovom prostoru',
+  'When a message comes while Erevos is closed, your relay sends an empty push through this browser\'s push service (Apple\'s on an iPhone), and Erevos shows "New message", nothing more. The push carries no message and no sender, but the push service sees when something comes for this device, and that it uses Erevos. Hidden chats never get notifications. Turned on in more than one space with the same relay, the relay can tell those spaces are on one device.':
+    'Kad stigne poruka dok je Erevos zatvoren, vaš relay šalje prazan push preko push servisa ovog preglednika (Appleovog na iPhoneu), a Erevos prikazuje „New message“, ništa više. Push ne nosi ni poruku ni ime onoga koji je šalje, ali push servis vidi kad nešto stigne za ovaj uređaj i da on koristi Erevos. Skriveni razgovori nikad nemaju obavijesti. Ako je ovo uključeno u više prostora s istim relayem, relay može zaključiti da su ti prostori na jednom uređaju.',
+  'Turn off': 'Isključi',
+  'Turn on': 'Uključi',
+  'Erevos was tampered with': 'Erevos je izmijenjen bez dozvole',
+  'The server sent this device a new service worker, the part of Erevos that checks its code, and no signed release lists it. Erevos goes on with the checked code while it is open, but once it is closed the browser may start the new one, which could show a fake Erevos. Do not open Erevos from this server again, and do not type your passwords into it, until whoever runs the server knows why. Your chats stay sealed with your password.':
+    'Server je ovom uređaju poslao novi service worker, dio Erevosa koji provjerava njegov kod, a nijedno potpisano izdanje ga ne navodi. Erevos nastavlja s provjerenim kodom dok je otvoren, ali kad se zatvori, preglednik može pokrenuti novi, koji bi mogao prikazati lažni Erevos. Ne otvarajte ponovo Erevos s ovog servera i ne upisujte u njega lozinke dok onaj koji vodi server ne sazna zašto se to dogodilo. Vaši razgovori ostaju zapečaćeni vašom lozinkom.',
+  'I understand': 'Razumijem',
+  'Update refused': 'Ažuriranje odbijeno',
+  '{reason} Erevos keeps the release it has. Lock → This web app shows what was refused.':
+    '{reason} Erevos zadržava izdanje koje ima. „Zaključavanje → Ova web-aplikacija“ prikazuje pojedinosti o odbijenom.',
+
+  // Files and photos (lib/attachments.ts, lib/photo*.ts, lib/pick-*.ts, lib/save-file*.ts, lib/backup-place.web.ts).
+  'Files can be 100 MB at most.': 'Datoteke mogu imati najviše 100 MB.',
+  'The file was changed on the way, so it was not kept.': 'Datoteka je izmijenjena na putu, pa nije sačuvana.',
+  'The file is not on the relay any more. Files wait there 14 days.': 'Datoteka više nije na relayu. Datoteke tamo čekaju 14 dana.',
+  'This file is not on this phone.': 'Ova datoteka nije na ovom telefonu.',
+  'This file is not on this computer.': 'Ova datoteka nije na ovom računaru.',
+  // Shown after "in", as „u {folder}“: in the locative.
+  'the place you chose': 'mjestu koje ste izabrali',
+  'the downloads folder': 'folderu za preuzimanja',
+  'Not saved: the share sheet was closed.': 'Nije sačuvano: prozor za dijeljenje je zatvoren.',
+  'That folder is not there any more. Choose it again.': 'Taj folder više ne postoji. Ponovo ga izaberite.',
+  'Ready to save.': 'Spremno za čuvanje.',
+  Original: 'Original',
+  'Original: the photo as it was, full size, with only its place, phone and time taken out.':
+    'Original: fotografija kakva je bila, u punoj veličini, samo bez podataka o mjestu, telefonu i vremenu snimanja.',
+  '{quality}%: a new, smaller photo, quicker to send. It says nothing but its picture.':
+    '{quality}%: nova, manja fotografija, brža za slanje. Ne otkriva ništa osim same slike.',
+  'This photo does not get small enough for an MMS.': 'Ova fotografija ne može se dovoljno smanjiti za MMS.',
+  'Erevos may not use the camera. Allow it in the phone settings to take photos.': 'Erevos ne smije koristiti kameru. Dozvolite to u postavkama telefona da biste snimali fotografije.',
+  'Voice message': 'Glasovna poruka',
+  Sticker: 'Naljepnica',
+  'File: {name}': 'Datoteka: {name}',
+  'That voice message is too long.': 'Ta glasovna poruka je preduga.',
+
+  // When a message or an SMS sent for later goes (components/later-picker.tsx, lib/later.ts).
+  'In 1 hour': 'Za 1 sat',
+  'Tonight 20:00': 'Večeras u 20:00',
+  'Tomorrow 09:00': 'Sutra u 09:00',
+  Day: 'Dan',
+  Hour: 'Sat',
+  Minutes: 'Minute',
+  'Goes on {when}.': 'Šalje se {when}.',
+  'That time has gone by. Choose one ahead.': 'To vrijeme je prošlo. Izaberite vrijeme u budućnosti.',
+  'At most a year ahead.': 'Najviše godinu dana unaprijed.',
+  // The home screen's list (lib/inbox.ts).
+  'You: {text}': 'Vi: {text}',
+  Sun: 'Ned',
+  Mon: 'Pon',
+  Tue: 'Uto',
+  Wed: 'Sri',
+  Thu: 'Čet',
+  Fri: 'Pet',
+  Sat: 'Sub',
+
+  // Contacts and chats (lib/e2e.ts, lib/space-chats.ts, lock/).
+  "That is this chat's own contact link.": 'To je vaš vlastiti link za kontakt.',
+  'That code has no key. Ask for their contact link or QR code from this version of Erevos.':
+    'Taj kod nema ključ. Zatražite link za kontakt ili QR kod iz ove verzije Erevosa.',
+  'No such contact.': 'Takav kontakt ne postoji.',
+  'Not a contact.': 'Nije kontakt.',
+  'That is not a phone number.': 'To nije broj telefona.',
+  'Not a time Erevos keeps messages for.': 'Erevos ne nudi to vrijeme za čuvanje poruka.',
+  'No conversation with this contact.': 'Nema razgovora s ovim kontaktom.',
+  'That contact uses the relay at {relay}, and its link has no key for it. Ask them for a new link.':
+    'Taj kontakt koristi relay {relay}, a njegov link nema ključ za taj relay. Zatražite novi link.',
+  'Wrong password for this backup.': 'Pogrešna lozinka za ovu rezervnu kopiju.',
+
+  // Groups (lib/groups.ts, lib/space-groups.ts).
+  'No groups here yet.': 'Ovdje još nema grupa.',
+  'Give the group a name.': 'Dajte grupi naziv.',
+  'You made the group.': 'Napravili ste grupu.',
+  'Only the group’s admin adds members.': 'Samo admin grupe dodaje članove.',
+  'You are not in this group any more.': 'Više niste u ovoj grupi.',
+  'Only the group’s admin renames it.': 'Samo admin grupe može je preimenovati.',
+  'Only the group’s admin takes members out.': 'Samo admin grupe uklanja članove.',
+  'You closed the group.': 'Zatvorili ste grupu.',
+  'You asked to leave. The group closes here once the admin takes you out.': 'Zatražili ste izlazak. Grupa se ovdje zatvara kad vas admin ukloni.',
+  'You left the group.': 'Napustili ste grupu.',
+  'You are no longer in the group.': 'Više niste u grupi.',
+  'member {id}': 'član {id}',
+  '{who} added you to the group.': 'Admin {who} vas je dodao u grupu.',
+  '{who} joined.': '{who} je sada u grupi.',
+  '{who} left.': '{who} više nije u grupi.',
+  'Groups go through the relay. Type its address in Relay first.': 'Grupe idu preko relaya. Prvo upišite njegovu adresu u „Relay“.',
+
+  // The build and updates (lib/core.ts, lib/crypto.ts, lib/install-update*.ts, lib/updates.ts, lib/shell.ts).
+  'This build has no Erevos core, so it cannot encrypt. Rebuild the app.': 'Ova verzija nema jezgru Erevosa, pa ne može šifrirati. Ponovo izgradite aplikaciju.',
+  'The Erevos core gave back something unexpected.': 'Jezgra Erevosa vratila je nešto neočekivano.',
+  'This build of Erevos has no Tor.': 'Ova verzija Erevosa nema Tor.',
+  'This build has no secure random source. Rebuild the app so it includes expo-crypto.':
+    'Ova verzija nema siguran izvor slučajnih brojeva. Ponovo izgradite aplikaciju tako da sadrži expo-crypto.',
+  'This release has no Android package.': 'Ovo izdanje nema Android paket.',
+  'The download was cut short.': 'Preuzimanje je prekinuto.',
+  'The downloaded package is not the one the release published. Nothing was installed.':
+    'Preuzeti paket nije onaj koji je izdanje objavilo. Ništa nije instalirano.',
+  'This version installs from the download page.': 'Ova verzija se instalira sa stranice za preuzimanje.',
+  'GitHub answered {status}.': 'GitHub je odgovorio: {status}.',
+  "The web app's server answered {status}.": 'Server web-aplikacije je odgovorio: {status}.',
+  'The desktop app answered {status}.': 'Aplikacija za računar je odgovorila: {status}.',
+  'This computer has no keyring to seal Erevos’s keys with, so Erevos keeps none. Start a keyring (KWallet, or GNOME Keyring with --password-store=gnome-libsecret), or start Erevos with --plain-secrets to keep them unsealed, readable by your user, and set a password lock.': 'Ovaj računar nema keyring kojim bi zapečatio ključeve Erevosa, pa Erevos ne čuva nijedan. Pokrenite keyring (KWallet ili GNOME Keyring s --password-store=gnome-libsecret) ili pokrenite Erevos s --plain-secrets da ih čuva nezapečaćene, čitljive vašem korisniku, i postavite zaključavanje lozinkom.',
+  'The browser did not open its storage.': 'Preglednik nije otvorio svoj prostor za podatke.',
+
+  // LoRa and nearby phones (lib/lora.ts, lib/nearby.ts).
+  'The radio restarts with its new settings, and links again.': 'Radio se ponovo pokreće s novim postavkama i ponovo povezuje.',
+  'There is no relay, and no Erevos phone is linked nearby. Type the relay address in Relay, or come near their phone.':
+    'Nema relaya, a u blizini nije povezan nijedan Erevos telefon. Upišite adresu relaya u „Relay“ ili priđite telefonu druge osobe.',
+  'Too large for LoRa, which takes only text. It can go once the relay can be reached, or near their phone.':
+    'Preveliko za LoRa vezu, koja prenosi samo tekst. Može se poslati kad relay bude dostupan ili u blizini telefona druge osobe.',
+
+  // The relay (lib/relay.ts, lib/sms-invite.ts); {what} is the request's name.
+  'An id is 48 hex characters.': 'ID ima 48 heksadecimalnih znakova.',
+  'Through Tor: {reason}': 'Preko Tora: {reason}',
+  'cannot reach the relay at {url}, or the token is wrong': 'relay {url} nije dostupan ili je token pogrešan',
+  'message is not held': 'poruka se ne čuva za kasnije',
+  'the relay at {url} cannot keep messages for later: update it': 'relay {url} ne može čuvati poruke za kasnije: ažurirajte ga',
+  'The relay at {url} that keeps it is no longer set here.': 'Relay {url} koji je čuva više nije postavljen ovdje.',
+  'the relay closed the connection': 'relay je zatvorio vezu',
+  'lost the connection to the relay': 'veza s relayem je izgubljena',
+  '{what}: queue not found': '{what}: red nije pronađen',
+  '{what}: queue is full': '{what}: red je pun',
+  '{what}: the relay could not save it, try again later': '{what}: relay to nije mogao sačuvati, pokušajte ponovo kasnije',
+  '{what}: the second relay could not reach your relay, try again later': '{what}: drugi relay nije mogao doći do vašeg relaya, pokušajte ponovo kasnije',
+  '{what}: the file is not on the relay any more': '{what}: datoteka više nije na relayu',
+  '{what}: the relay has no room for files now, try again later': '{what}: relay trenutno nema mjesta za datoteke, pokušajte ponovo kasnije',
+  '{what}: the relay could not keep it, try again later': '{what}: relay to nije mogao zadržati, pokušajte ponovo kasnije',
+  '{what}: your relay could not reach the relay the file is on': '{what}: vaš relay nije mogao doći do relaya na kojem je datoteka',
+  '{reason}. A relay older than this app cannot take files: update it.': '{reason}. Relay stariji od ove aplikacije ne može primati datoteke: ažurirajte ga.',
+  'message is too large': 'poruka je prevelika',
+  'your relay has no key for two-hop sending, so it was not sent through the second relay':
+    'vaš relay nema ključ za slanje u dva skoka, pa nije poslano preko drugog relaya',
+  'the link has given all its places on its relay. Ask them for a new link': 'link više nema slobodnih mjesta na svom relayu. Zatražite novi link',
+  'The relay address is too long for an SMS invite.': 'Adresa relaya je preduga za SMS pozivnicu.',
+
+  // Notifications in the web app (lib/web-push*.ts).
+  'Notifications through the browser are for the web app.': 'Obavijesti preko preglednika postoje samo za web-aplikaciju.',
+  'Your relay does not send notifications. It needs a newer version, set up with a push key.':
+    'Vaš relay ne šalje obavijesti. Potrebna mu je novija verzija, postavljena s push ključem.',
+  'This browser cannot show notifications for a closed web app. On an iPhone, add Erevos to the home screen first.':
+    'Ovaj preglednik ne može prikazivati obavijesti za zatvorenu web-aplikaciju. Na iPhoneu prvo dodajte Erevos na početni ekran.',
+  'Notifications are not allowed for Erevos. Allow them in the settings of this browser or phone.':
+    'Obavijesti za Erevos nisu dozvoljene. Dozvolite ih u postavkama ovog preglednika ili telefona.',
+  'Set up the relay first, under Relay.': 'Prvo postavite relay, pod „Relay“.',
+  'Notifications could not be turned on: {reason}': 'Obavijesti se nisu mogle uključiti: {reason}',
+  // Calls' lines in a chat (lib/call-lines.ts).
+  'Voice call': 'Glasovni poziv',
+  'Video call': 'Videopoziv',
+  'Group call': 'Grupni poziv',
+  'Group video call': 'Grupni videopoziv',
+  'Missed voice call': 'Propušteni glasovni poziv',
+  'Missed video call': 'Propušteni videopoziv',
+  'Missed group video call': 'Propušteni grupni videopoziv',
+  '{missed}, while in another call': '{missed}, dok je trajao drugi poziv',
+  'turned down': 'odbijen',
+  'could not connect': 'nije uspostavljen',
+  'they were in another call': 'osoba je bila u drugom pozivu',
+  'not answered': 'bez odgovora',
+};

@@ -49,7 +49,7 @@ in what it keeps sealed; hidden chats are searched only from inside them.
 
 | In the menu | What it opens |
 | --- | --- |
-| **Language · Γλώσσα** | The app's language: English, Greek, German, French, Spanish, Italian or Portuguese. See Language below. |
+| **Language · Γλώσσα** | The app's language: English, Greek, German, French, Spanish, Italian, Portuguese or Serbo-Croatian. See Language below. |
 | **New group** | A group chat with your contacts. See [Group chats](#groups). |
 | **Public groups** | A group anyone with its link can ask to join, with an owner and admins. See [Public groups](#public-groups). |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
@@ -80,11 +80,13 @@ A good first hour:
 
 ### Language
 
-Erevos is in English, Greek, German, French, Spanish, Italian and Portuguese. The first time it starts, it follows
-the phone's language if it is one of these, and is in English otherwise. To change it, open the menu (the three
-dots) and tap its first row, **Language · Γλώσσα**: in the other languages it is named in that language and in
-English, such as **Sprache · Language**. Then tap the language, each named in its own words: **Ελληνικά**,
-**English**, **Deutsch**, **Español**, **Français**, **Italiano** or **Português**. The whole app changes at once.
+Erevos is in English, Greek, German, French, Spanish, Italian, Portuguese and Serbo-Croatian. The first time it
+starts, it follows the phone's language if it is one of these (a phone in Serbian, Croatian, Bosnian or Montenegrin
+starts in Serbo-Croatian), and is in English otherwise. To change it, open the menu (the three dots) and tap its
+first row, **Language · Γλώσσα**: in the other languages it is named in that language and in English, such as
+**Sprache · Language**. Then tap the language, each named in its own words: **Ελληνικά**, **English**,
+**Deutsch**, **Español**, **Français**, **Italiano**, **Português** or **Srpskohrvatski**. The whole app changes
+at once.
 
 - **This guide** is in English and Greek only: in the other languages it shows in English, and names the buttons as
   the app does in English. A word new to the app may also show in English in those languages for a while, until it

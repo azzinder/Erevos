@@ -115,6 +115,7 @@ class ErevosWidget : AppWidgetProvider() {
         "fr" -> listOf("Téléphone", "SMS", "Messages", "Contacts")
         "it" -> listOf("Telefono", "SMS", "Messaggi", "Contatti")
         "pt" -> listOf("Telefone", "SMS", "Mensagens", "Contatos")
+        "sh" -> listOf("Telefon", "SMS", "Poruke", "Kontakti")
         else -> listOf("Phone", "SMS", "Messages", "Contacts")
       }
   }

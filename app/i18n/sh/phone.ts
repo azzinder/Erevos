@@ -1,0 +1,142 @@
+// The Serbo-Croatian of the Phone and Contacts screens (app/phone.tsx and what goes with it) (i18n/sh/index.ts).
+export const phone: Record<string, string> = {
+  // The Phone screen (app/phone.tsx) and its place in the menu.
+  Phone: 'Telefon',
+  'Erevos as the phone app: the keypad, the calls and the favourites': 'Erevos kao aplikacija za telefon: tastatura, pozivi i favoriti',
+  'This build of Erevos has no phone part yet. It comes with the next build of the app.':
+    'Ova verzija Erevosa još nema dio za telefon. Dolazi sa sljedećom verzijom aplikacije.',
+  'Only Android lets another app be the phone app.': 'Samo Android dozvoljava da druga aplikacija bude aplikacija za telefon.',
+  'Erevos may not make calls. Make it the phone app under Settings.':
+    'Erevos ne smije upućivati pozive. Postavite ga kao aplikaciju za telefon u postavkama.',
+  'Not called. {error}': 'Poziv nije upućen. {error}',
+  Contacts: 'Kontakti',
+  Settings: 'Postavke',
+  'Back to the call': 'Nazad na poziv',
+  'Erevos is not the phone app': 'Erevos nije aplikacija za telefon',
+  "Calls made here show on Android's own call screen until you make Erevos the phone app, under Settings.":
+    'Pozivi upućeni odavde prikazuju se na Androidovom ekranu za pozive dok ne postavite Erevos kao aplikaciju za telefon, u postavkama.',
+  Number: 'Broj',
+  'Call on': 'Pozovi preko',
+  "Without that, calls go on the phone's default SIM.": 'Bez toga pozivi idu preko zadane SIM kartice telefona.',
+  'Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.':
+    'Erevos pamti ovu SIM karticu za taj broj, zapečaćenu u ovom prostoru, i sljedeći put ga zove preko iste SIM kartice.',
+  Keypad: 'Tastatura',
+  Recents: 'Nedavni',
+  Favourites: 'Favoriti',
+
+  // The calls (Android's call history) and the favourites, on the Phone screen (lib/phone-log.ts).
+  All: 'Svi',
+  Missed: 'Propušteni',
+  Incoming: 'Dolazni',
+  Outgoing: 'Odlazni',
+  Blocked: 'Blokirani',
+  'Incoming call': 'Dolazni poziv',
+  'Outgoing call': 'Odlazni poziv',
+  'Declined call': 'Odbijeni poziv',
+  'Blocked call': 'Blokirani poziv',
+  'Private number': 'Skriveni broj',
+  Payphone: 'Javna govornica',
+  'Unknown number': 'Nepoznat broj',
+  'Wi-Fi calling': 'Wi-Fi pozivanje',
+  'HD voice': 'HD glas',
+  'Android does not let Erevos read the call history yet.': 'Android još ne dozvoljava Erevosu da čita popis poziva.',
+  'Allow the call history': 'Dozvoli popis poziva',
+  'Android did not allow it. Under Settings, Allow calls and contacts says how to.':
+    'Android to nije dozvolio. Kako to učiniti, piše u postavkama pod „Dozvoli pozive i kontakte“.',
+  'No calls of this kind.': 'Nema poziva ove vrste.',
+  'No calls yet.': 'Još nema poziva.',
+  'Call on {sim}': 'Pozovi preko {sim}',
+  'Call {name}': 'Pozovi: {name}',
+  'Send an SMS': 'Pošalji SMS',
+  'Change the number before calling': 'Izmijeni broj prije poziva',
+  'Block this number': 'Blokiraj ovaj broj',
+  'Unblock this number': 'Odblokiraj ovaj broj',
+  'Blocked {who}.': 'Blokirano: {who}.',
+  'Unblocked {who}.': 'Odblokirano: {who}.',
+  'Delete this call': 'Obriši ovaj poziv',
+  'Delete these {n} calls': 'Obriši ovaj {n} poziv | Obriši ova {n} poziva | Obriši ovih {n} poziva',
+  'Delete every call with this number': 'Obriši sve pozive s ovim brojem',
+  'Call deleted.': 'Poziv je obrisan.',
+  '{n} calls deleted.': 'Obrisan je {n} poziv. | Obrisana su {n} poziva. | Obrisano je {n} poziva.',
+  'The calls with {who} were deleted.': 'Obrisani su svi pozivi: {who}.',
+  'The calls were not deleted. {error}': 'Pozivi nisu obrisani. {error}',
+  "Android does not let Erevos read the phone's contacts yet.": 'Android još ne dozvoljava Erevosu da čita kontakte telefona.',
+  'Allow the contacts': 'Dozvoli kontakte',
+  'No favourites yet. The contacts you star show here, to call at a tap.':
+    'Još nema favorita. Ovdje se prikazuju kontakti koje označite zvjezdicom, da ih pozovete jednim dodirom.',
+
+  // The phone's settings (app/phone-settings.tsx).
+  'Phone settings': 'Postavke telefona',
+  'Erevos is the phone app': 'Erevos je aplikacija za telefon',
+  "As the phone app, Erevos shows every call on its own screen: who calls, with their photo, over the lock screen too, without unlocking Erevos. Its Phone screen, with the keypad, the calls and the favourites, stays behind Erevos's password, unless you let it open without it, below. Phone calls are plain phone calls: the phone company carries them, as it carries every call.":
+    'Kao aplikacija za telefon, Erevos svaki poziv prikazuje na vlastitom ekranu, s imenom i fotografijom kontakta, i preko zaključanog ekrana, bez otključavanja Erevosa. Njegov ekran Telefon, s tastaturom, pozivima i favoritima, ostaje iza lozinke Erevosa, osim ako mu ispod ne dozvolite da se otvara bez nje. Telefonski pozivi su obični telefonski pozivi: prenosi ih mobilni operater, kao i svaki drugi poziv.',
+  'Make Erevos the phone app': 'Postavi Erevos kao aplikaciju za telefon',
+  'Android did not make Erevos the phone app': 'Android nije postavio Erevos kao aplikaciju za telefon',
+  "Choose Erevos in Android's Default apps → Phone app. If Android says it is a restricted setting, open Erevos's App info, tap ⋮ at the top right → Allow restricted settings, and choose Erevos again.":
+    'Izaberite Erevos u Androidovim zadanim aplikacijama, pod aplikacijom za telefon. Ako Android kaže da je to ograničena postavka, otvorite informacije o aplikaciji Erevos, dodirnite ⋮ gore desno → dozvolite ograničene postavke i ponovo izaberite Erevos.',
+  "Android did not allow it all. In Erevos's App info, under Permissions, call logs may say Restricted setting: then go back, tap ⋮ at the top right → Allow restricted settings, and allow Phone, Call logs and Contacts under Permissions.":
+    'Android nije dozvolio sve. U informacijama o aplikaciji Erevos, pod dozvolama, uz popis poziva možda piše da je postavka ograničena: tada se vratite, dodirnite ⋮ gore desno → dozvolite ograničene postavke i pod dozvolama dozvolite telefon, popis poziva i kontakte.',
+  'Android holds back part of what the phone app needs': 'Android uskraćuje dio onoga što treba aplikaciji za telefon',
+  'Calls, the SIMs, the call history or the names of your contacts may not show. Android holds this back from an app installed from a browser, until you allow it.':
+    'Pozivi, SIM kartice, popis poziva ili imena vaših kontakata možda se neće prikazivati. Android to uskraćuje aplikaciji instaliranoj iz preglednika dok to ne dozvolite.',
+  'Allow calls and contacts': 'Dozvoli pozive i kontakte',
+  'So a call that comes shows no Answer and Decline outside the call screen.':
+    'Zato dolazni poziv izvan ekrana za pozive ne prikazuje „Javi se“ i „Odbij“.',
+  'Android does not let Erevos show a call that comes over the lock screen: it shows as a notice only.':
+    'Android ne dozvoljava Erevosu da dolazni poziv prikaže preko zaključanog ekrana: prikazuje se samo kao obavijest.',
+  'This device has no phone part, so it cannot make calls.': 'Ovaj uređaj ne podržava telefoniju, pa ne može upućivati pozive.',
+  'Quick replies': 'Brzi odgovori',
+  'Message, on the call screen of a call that rings, declines it with one of these, which the phone sends the caller as an SMS. They are kept on the phone, not sealed, as the call screen shows them with Erevos locked.':
+    '„Poruka“ na ekranu poziva koji zvoni odbija poziv jednim od ovih odgovora, koji telefon šalje kao SMS onome koji zove. Čuvaju se na telefonu, nezapečaćeni, jer ih ekran za pozive prikazuje dok je Erevos zaključan.',
+  Remove: 'Ukloni',
+  'Add a reply': 'Dodaj odgovor',
+  'Use the usual replies': 'Koristi uobičajene odgovore',
+
+  // Opening the Phone without the password (app/phone-settings.tsx, lib/phone-open.ts).
+  'Open Erevos': 'Otvori Erevos',
+  'Open the Phone without the password': 'Otvaraj Telefon bez lozinke',
+  "With Erevos locked, the Phone's icon, a tel: link and the notice of a missed call then open the keypad, the calls and the favourites, which Android keeps for every phone app. Anyone holding the unlocked phone sees your calls and favourites, with the names of the phone's contacts only, never those kept only in Erevos or in hidden chats. Calls can be made there, nothing changed; everything else stays behind the password.":
+    'Dok je Erevos zaključan, ikona Telefona, tel: link i obavijest o propuštenom pozivu tada otvaraju tastaturu, pozive i favorite, koje Android čuva za svaku aplikaciju za telefon. Osoba koja drži otključan telefon vidi vaše pozive i favorite, samo s imenima iz kontakata telefona, nikad s imenima onih koji se čuvaju samo u Erevosu ili u skrivenim razgovorima. Odatle se može pozivati, ali ništa se ne može mijenjati; sve ostalo ostaje iza lozinke.',
+  'The Phone opens without the password.': 'Telefon se otvara bez lozinke.',
+  'Keep the Phone behind the password': 'Drži Telefon iza lozinke',
+
+  // Blocking calls (app/phone-settings.tsx, lib/phone-rules.ts).
+  Blocking: 'Blokiranje',
+  "A blocked call does not ring and leaves no notice; it shows under Blocked in the calls. The telemarketing ranges and your prefixes never block a number in the phone's contacts. What is blocked is the same in every space, and keeps no names.":
+    'Blokirani poziv ne zvoni i ne ostavlja obavijest; prikazuje se pod „Blokirani“ u pozivima. Rasponi za telemarketing i vaši prefiksi nikad ne blokiraju broj iz kontakata telefona. Ono što je blokirano isto je u svakom prostoru i ne čuva imena.',
+  'Block telemarketing': 'Blokiraj telemarketing',
+  'Stop blocking telemarketing': 'Prestani blokirati telemarketing',
+  'The numbers these countries keep for telemarketing calls:': 'Brojevi koje ove zemlje namjenjuju telemarketinškim pozivima:',
+  France: 'Francuska',
+  Spain: 'Španija',
+  Chile: 'Čile',
+  India: 'Indija',
+  Brazil: 'Brazil',
+  'optional for the callers since August 2025': 'od augusta 2025. nije obavezno za telemarketere',
+  'Numbers starting with': 'Brojevi koji počinju s',
+  Block: 'Blokiraj',
+  'Type the start of the numbers to block, with the country code or as you dial it here: +33 162 or 0162.':
+    'Upišite početak brojeva koje želite blokirati, s pozivnim brojem zemlje ili onako kako ga ovdje birate: +33 162 ili 0162.',
+  'Erevos does not screen calls yet, so a blocked call rings a moment before Erevos ends it.':
+    'Erevos još ne filtrira pozive, pa blokirani poziv zazvoni na trenutak prije nego što ga Erevos prekine.',
+  'Let Erevos screen calls': 'Dozvoli Erevosu da filtrira pozive',
+  "Android's own blocked numbers, the same list as under SMS: Android rejects their calls before they ring, and their SMS and MMS. Every space sees the same list.":
+    'Androidovi blokirani brojevi, isti popis kao pod „SMS“: Android odbija njihove pozive prije nego što zazvone, kao i njihove SMS i MMS poruke. Svaki prostor vidi isti popis.',
+  'Only the phone app or the SMS app may see them: make Erevos the phone app above.':
+    'Samo aplikacija za telefon ili SMS aplikacija ih smije vidjeti: gore postavite Erevos kao aplikaciju za telefon.',
+  'Block a contact group': 'Blokiraj grupu kontakata',
+  "The calls of a group's contacts, as your phone's contacts label them, are blocked for a while: for an hour, until tomorrow morning, or until you lift it.":
+    'Pozivi članova grupe iz kontakata vašeg telefona blokiraju se na neko vrijeme:na sat vremena, do sutra ujutro ili dok ne ukinete blokadu.',
+  'Your phone has no contact groups yet.': 'Vaš telefon još nema grupa kontakata.',
+  Lift: 'Ukini',
+  '{n} contact': '{n} kontakt',
+  '{n} contacts': '{n} kontakt | {n} kontakta | {n} kontakata',
+  'For an hour': 'Na sat vremena',
+  'Until tomorrow morning': 'Do sutra ujutro',
+  'Until I lift it': 'Dok ne ukinem blokadu',
+  'Blocked until you lift it': 'Blokirano dok ne ukinete blokadu',
+  'Blocked until {time}': 'Blokirano do {time}',
+  'Blocked until tomorrow, {time}': 'Blokirano do sutra, {time}',
+  'Calls from the group {group} are blocked': 'Pozivi iz grupe {group} su blokirani',
+  'Calls from a contact group are blocked': 'Pozivi iz grupe kontakata su blokirani',
+};

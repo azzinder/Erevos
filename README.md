@@ -58,9 +58,9 @@ cryptography. Do not rely on it to protect anyone yet.
   SHA-256 against `version.json`, and opens Android's installer.
 - **Fingerprint or face unlock** (Android), off unless turned on. It opens only the first
   password's space.
-- **Seven languages**: English, Greek, German, French, Spanish, Italian and Portuguese. The first
-  start follows the phone's language, and Home → Menu → Language switches it. The user guide is in
-  English and Greek.
+- **Eight languages**: English, Greek, German, French, Spanish, Italian, Portuguese and
+  Serbo-Croatian. The first start follows the phone's language, and Home → Menu → Language
+  switches it. The user guide is in English and Greek.
 
 ## How it works
 

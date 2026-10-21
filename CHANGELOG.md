@@ -65,6 +65,13 @@ On main, not released yet. The next release is **2.0.0**.
   and opens it. After each new version, and the first time, it opens by itself when calls need
   something. Also under Lock and second password → In the background → All permissions.
 
+- **Serbo-Croatian** (Srpskohrvatski): the whole app, in Latin letters and ijekavian, in words
+  understood alike in Croatia, Bosnia and Herzegovina, Montenegro and Serbia. A phone in Serbian,
+  Croatian, Bosnian or Montenegrin starts in it. A count takes the form its last digits ask for
+  (1 kontakt, 2 kontakta, 5 kontakata, 21 kontakt), and dates are written as in Bosnia unless the
+  phone itself writes Croatian, Bosnian or Serbian in Latin letters. The user guide shows in
+  English, and Android's notices too, as in the other languages besides Greek.
+
 - **Version numbers**: the next release is 2.0.0, and each one after it the next number (2.0.1,
   2.0.2…) unless it is given one when started (Actions, release, Run workflow, version). Every
   release still has its own build number, the run's, so Android installs it over the one before.
