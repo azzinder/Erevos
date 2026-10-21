@@ -11,6 +11,12 @@
 //! can use the relay. The TCP front end has no token, so keep it on
 //! `127.0.0.1` anywhere others can reach the machine.
 //!
+//! Set `EREVOS_RELAY_TOKENS` to a file of the phones' tokens of their own, so
+//! that each phone's access can be taken back alone (see `tokens.rs`): one
+//! token's SHA-256 a line, read again when the file changes, taken beside
+//! `EREVOS_RELAY_TOKEN`. `erevos-relay new-token NAME` makes one, printing the
+//! token for the phone and the line for the file.
+//!
 //! Each connection has a thread of its own, so the relay takes at most
 //! `EREVOS_RELAY_MAX_CONNECTIONS` at once (512 unless set), both front ends
 //! together, and of those at most `EREVOS_RELAY_MAX_TOKENLESS_CONNECTIONS`
@@ -82,6 +88,7 @@ mod peers;
 mod push;
 mod queue;
 mod server;
+mod tokens;
 mod turn;
 
 use std::env;
@@ -142,6 +149,13 @@ fn load_key(path: &Path) -> io::Result<RelayKey> {
 }
 
 fn main() -> ExitCode {
+    if env::args().nth(1).as_deref() == Some("new-token") {
+        let name = env::args().skip(2).collect::<Vec<_>>().join(" ");
+        let (token, line) = tokens::new_token(&name);
+        println!("The phone's token, to type in its Relay settings:\n{token}\n");
+        println!("Its line, to add to the file EREVOS_RELAY_TOKENS names (the relay keeps only this):\n{line}");
+        return ExitCode::SUCCESS;
+    }
     let tcp_addr = env::args()
         .nth(1)
         .unwrap_or_else(|| "127.0.0.1:7878".to_string());
@@ -168,8 +182,11 @@ fn main() -> ExitCode {
         .ok()
         .filter(|t| !t.is_empty())
         .map(|t| Arc::from(t.as_str()));
-    if token.is_none() {
-        eprintln!("erevos-relay: no EREVOS_RELAY_TOKEN set, the WebSocket accepts anyone");
+    let phones = env::var("EREVOS_RELAY_TOKENS")
+        .ok()
+        .filter(|path| !path.is_empty());
+    if token.is_none() && phones.is_none() {
+        eprintln!("erevos-relay: no EREVOS_RELAY_TOKEN or EREVOS_RELAY_TOKENS set, the WebSocket accepts anyone");
     }
     let ttl = match env::var("EREVOS_RELAY_TTL_DAYS") {
         Ok(days) if !days.is_empty() => match days.parse::<u64>() {
@@ -352,6 +369,12 @@ fn main() -> ExitCode {
     );
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
     let store = Shared::new(store, files, key, turn, limits);
+    if let Some(path) = phones {
+        let tokens = tokens::Tokens::new(PathBuf::from(&path));
+        // Read now, so how many it holds, and a line it cannot read, is said at start.
+        tokens.count();
+        let _ = store.tokens.set(tokens);
+    }
     let lending = match lend::wanted(env::var("EREVOS_RELAY_LEND").ok().as_deref()) {
         Ok(on) => on,
         Err(e) => {

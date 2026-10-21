@@ -143,6 +143,7 @@ use crate::lock::{lock, wait_timeout};
 use crate::peers;
 use crate::push::{Push, SetError, MAX_ENDPOINT};
 use crate::queue::{system_now, QueueError, QueueId, Store};
+use crate::tokens::Tokens;
 use crate::turn::Turn;
 
 /// What every connection shares: the queues, the file store, the key for
@@ -159,6 +160,9 @@ pub struct Shared {
     /// Places lent to phones with no relay, if the relay lends (set once,
     /// after start).
     pub lend: std::sync::OnceLock<Lend>,
+    /// The phones' tokens of their own, beside the relay's (`tokens.rs`), if
+    /// the operator keeps them (set once, after start).
+    pub tokens: std::sync::OnceLock<Tokens>,
     /// Requests held for later; `held_changed` wakes `run_held` when one
     /// comes or goes.
     pub held: Mutex<Held>,
@@ -271,6 +275,7 @@ impl Shared {
             turn,
             push: std::sync::OnceLock::new(),
             lend: std::sync::OnceLock::new(),
+            tokens: std::sync::OnceLock::new(),
             held: Mutex::new(Held::default()),
             held_changed: Condvar::new(),
             limits,
@@ -523,10 +528,19 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
             }
             None => {}
         }
-        match token {
-            Some(expected) if !is_authorized(request, expected) => Err(unauthorized()),
-            _ => Ok(response),
+        // The relay's token, or a phone's own; with neither set, anyone.
+        let phones = store.tokens.get();
+        if token.is_none() && phones.is_none() {
+            return Ok(response);
         }
+        if token.is_some_and(|expected| is_authorized(request, expected))
+            || phones
+                .zip(presented_token(request))
+                .is_some_and(|(phones, presented)| phones.has(&presented))
+        {
+            return Ok(response);
+        }
+        Err(unauthorized())
     };
     let mut socket = tungstenite::accept_hdr(stream, check).map_err(to_io)?;
     let timed = socket.get_mut();
@@ -1279,9 +1293,22 @@ mod tests {
     }
 
     fn start_ws_limited(token: Option<&str>, key: Option<RelayKey>, limits: Limits) -> SocketAddr {
+        start_ws_tokens(token, key, limits, None)
+    }
+
+    /// With `tokens`, the file of the phones' own tokens too.
+    fn start_ws_tokens(
+        token: Option<&str>,
+        key: Option<RelayKey>,
+        limits: Limits,
+        tokens: Option<std::path::PathBuf>,
+    ) -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
         let store = Shared::new(Store::default(), FileStore::default(), key, None, limits);
+        if let Some(path) = tokens {
+            let _ = store.tokens.set(Tokens::new(path));
+        }
         // A relay with a key lends here, as one started with EREVOS_RELAY_LEND=on does.
         if let Some(key) = &store.key {
             let _ = store.lend.set(Lend::new(key));
@@ -1444,6 +1471,47 @@ mod tests {
         let (recipient, sender) = ws_create(&mut ws);
         assert_eq!(ws_send(&mut ws, &sender, b"hi"), OK);
         assert_eq!(ws_receive(&mut ws, &recipient).as_deref(), Some(&b"hi"[..]));
+    }
+
+    #[test]
+    fn a_phone_with_a_token_of_its_own_comes_in_until_the_operator_takes_its_line_out() {
+        let list = std::env::temp_dir().join(format!("erevos-phones-{}", std::process::id()));
+        let (pixel, pixel_line) = crate::tokens::new_token("pixel");
+        let (other, other_line) = crate::tokens::new_token("other");
+        std::fs::write(&list, format!("{pixel_line}\n{other_line}\n")).unwrap();
+        let connect = |addr: SocketAddr, token: Option<&str>| {
+            let mut request = format!("ws://{addr}").into_client_request().unwrap();
+            if let Some(token) = token {
+                request
+                    .headers_mut()
+                    .insert("authorization", format!("Bearer {token}").parse().unwrap());
+            }
+            tungstenite::connect(request).map(|(ws, _)| ws)
+        };
+        for shared in [Some("s3cret"), None] {
+            let addr = start_ws_tokens(shared, None, Limits::default(), Some(list.clone()));
+            // A phone's own token works as the relay's does, which still works.
+            let mut ws = connect(addr, Some(&pixel)).unwrap();
+            let (recipient, sender) = ws_create(&mut ws);
+            assert_eq!(ws_send(&mut ws, &sender, b"hi"), OK);
+            assert_eq!(ws_receive(&mut ws, &recipient).as_deref(), Some(&b"hi"[..]));
+            assert_eq!(connect(addr, Some("s3cret")).is_ok(), shared.is_some());
+            // With a file of tokens, a connection with none, or a wrong one, is refused.
+            assert!(connect(addr, None).is_err());
+            assert!(connect(addr, Some(pixel_line.split(' ').next().unwrap())).is_err());
+            assert!(connect(addr, Some(&other)).is_ok());
+        }
+        // The Pixel's line taken out: from the next connection on it is refused, the other phone is not.
+        let addr = start_ws_tokens(Some("s3cret"), None, Limits::default(), Some(list.clone()));
+        assert!(connect(addr, Some(&pixel)).is_ok());
+        std::fs::write(&list, format!("# the Pixel was lost\n{other_line}\n")).unwrap();
+        let file = std::fs::File::options().write(true).open(&list).unwrap();
+        file.set_modified(std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(2_000_000))
+            .unwrap();
+        assert!(connect(addr, Some(&pixel)).is_err());
+        assert!(connect(addr, Some(&other)).is_ok());
+        assert!(connect(addr, Some("s3cret")).is_ok());
+        let _ = std::fs::remove_file(&list);
     }
 
     #[test]

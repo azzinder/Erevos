@@ -67,11 +67,42 @@ relay.example.org` from the top of it instead.
 - Token: the part after `EREVOS_RELAY_TOKEN=` in the output of
   `sudo cat /etc/erevos-relay.env` on the server.
 
-Every phone uses the same address and token. Do not post the token where
-others can read it.
+Every phone uses the same address. With only the relay's token, every phone
+uses that one too; give each phone a token of its own instead (see
+[Phones' own tokens](#phones-own-tokens)) to take one phone's access back
+without touching the others. Do not post a token where others can read it.
 
-To change the token, run `sudo rm /etc/erevos-relay.env` on the server, run
-the install again, and type the new token into every phone.
+To change the relay's token, run `sudo rm /etc/erevos-relay.env` on the
+server, run the install again, and type the new token into every phone that
+used it.
+
+## Phones' own tokens
+
+Each phone can have a token of its own, beside the relay's one, which keeps
+working. Add a line to `/etc/erevos-relay.env`:
+
+    EREVOS_RELAY_TOKENS=/etc/erevos-relay.tokens
+
+and restart. Then, for each phone, run on the server:
+
+    erevos-relay new-token Nekten-Pixel
+
+It prints the phone's token, to type into its Relay settings as the token, and
+a line to add to `/etc/erevos-relay.tokens`:
+
+    echo '<the line it printed>' | sudo tee -a /etc/erevos-relay.tokens
+
+The file holds only each token's SHA-256 and the name you gave, so reading it
+does not let anyone connect. The relay reads it again whenever it changes,
+with no restart, and says in its log how many tokens it holds. To take a
+phone's access back, delete its line: from the next connection on its token is
+refused, as a wrong one is, and a connection already open goes on until it
+ends, five minutes after its last request at most. Lines that start with `#`
+are left out. The relay must be able to read the file: if its log says it
+cannot, run `sudo chmod 644 /etc/erevos-relay.tokens`.
+
+Once every phone has its own, remove `EREVOS_RELAY_TOKEN` from
+`/etc/erevos-relay.env` and restart: then only the phones on the list come in.
 
 ## Where things are
 
@@ -121,6 +152,7 @@ which. The ones below are all optional.
 
 | Setting | Unless set | What it does |
 | --- | --- | --- |
+| `EREVOS_RELAY_TOKENS` | none | The file of the phones' own tokens. |
 | `EREVOS_RELAY_TTL_DAYS` | 14 | Days a message, or a chunk of a file, waits for its contact. |
 | `EREVOS_RELAY_FILES_MB` | 1024 | Room for chunks of files, all together. |
 | `EREVOS_RELAY_MAX_CONNECTIONS` | 512 | Connections at once. |
