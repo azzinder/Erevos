@@ -81,7 +81,7 @@ export const parts: Record<string, string> = {
   'Turn on': 'Ενεργοποίηση',
   'Erevos was tampered with': 'Κάποιος πείραξε το Erevos',
   'The server sent this device a new service worker, the part of Erevos that checks its code, and no signed release lists it. Erevos goes on with the checked code while it is open, but once it is closed the browser may start the new one, which could show a fake Erevos. Do not open Erevos from this server again, and do not type your passwords into it, until whoever runs the server knows why. Your chats stay sealed with your password.':
-    'Ο server έστειλε σε αυτή τη συσκευή νέο service worker, το κομμάτι του Erevos που ελέγχει τον κώδικά του, και καμία υπογεγραμμένη έκδοση δεν τον αναφέρει. Το Erevos συνεχίζει με τον ελεγμένο κώδικα όσο είναι ανοιχτό, αλλά μόλις κλείσει ο browser μπορεί να ξεκινήσει τον νέο, που θα μπορούσε να δείξει ένα ψεύτικο Erevos. Μην ανοίξεις ξανά το Erevos από αυτόν τον server, και μη γράψεις εκεί τους κωδικούς σου, μέχρι να μάθει γιατί όποιος τρέχει τον server. Οι συνομιλίες σου μένουν σφραγισμένες με τον κωδικό σου.',
+    'Ο server έστειλε σε αυτή τη συσκευή νέο service worker, το κομμάτι του Erevos που ελέγχει τον κώδικά του, και καμία υπογεγραμμένη έκδοση δεν τον αναφέρει. Το Erevos συνεχίζει με τον ελεγμένο κώδικα όσο είναι ανοιχτό, αλλά μόλις κλείσει ο browser μπορεί να ξεκινήσει τον νέο, που θα μπορούσε να δείξει ένα ψεύτικο Erevos. Μην ανοίξεις ξανά το Erevos από αυτόν τον server, και μη γράψεις εκεί τους κωδικούς σου, μέχρι να μάθει γιατί όποιος τρέχει τον server. Οι συνομιλίες σου μένουν κρυπτογραφημένες με τον κωδικό σου.',
   'I understand': 'Κατάλαβα',
   'Update refused': 'Η ενημέρωση απορρίφθηκε',
   '{reason} Erevos keeps the release it has. Lock → This web app shows what was refused.':
@@ -176,7 +176,7 @@ export const parts: Record<string, string> = {
   'GitHub answered {status}.': 'Το GitHub απάντησε {status}.',
   "The web app's server answered {status}.": 'Ο server της web εφαρμογής απάντησε {status}.',
   'The desktop app answered {status}.': 'Η εφαρμογή υπολογιστή απάντησε {status}.',
-  'This computer has no keyring to seal Erevos’s keys with, so Erevos keeps none. Start a keyring (KWallet, or GNOME Keyring with --password-store=gnome-libsecret), or start Erevos with --plain-secrets to keep them unsealed, readable by your user, and set a password lock.': 'Αυτός ο υπολογιστής δεν έχει κλειδοθήκη για να σφραγίσει τα κλειδιά του Erevos, οπότε το Erevos δεν κρατά κανένα. Ξεκίνα μια κλειδοθήκη (KWallet, ή GNOME Keyring με --password-store=gnome-libsecret), ή ξεκίνα το Erevos με --plain-secrets για να τα κρατά ασφράγιστα, αναγνώσιμα από τον χρήστη σου, και βάλε κλείδωμα με κωδικό.',
+  'This computer has no keyring to seal Erevos’s keys with, so Erevos keeps none. Start a keyring (KWallet, or GNOME Keyring with --password-store=gnome-libsecret), or start Erevos with --plain-secrets to keep them unsealed, readable by your user, and set a password lock.': 'Αυτός ο υπολογιστής δεν έχει κλειδοθήκη για να κρυπτογραφήσει τα κλειδιά του Erevos, οπότε το Erevos δεν κρατά κανένα. Ξεκίνα μια κλειδοθήκη (KWallet, ή GNOME Keyring με --password-store=gnome-libsecret), ή ξεκίνα το Erevos με --plain-secrets για να τα κρατά χωρίς κρυπτογράφηση, αναγνώσιμα από τον χρήστη σου, και βάλε κλείδωμα με κωδικό.',
   'The browser did not open its storage.': 'Ο browser δεν άνοιξε τον χώρο αποθήκευσής του.',
 
   // LoRa and nearby phones (lib/lora.ts, lib/nearby.ts).

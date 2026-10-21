@@ -18,7 +18,7 @@ export const phone: Record<string, string> = {
   'Call on': 'Κλήση από',
   "Without that, calls go on the phone's default SIM.": 'Χωρίς αυτό, οι κλήσεις γίνονται από την προεπιλεγμένη SIM του τηλεφώνου.',
   'Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.':
-    'Το Erevos κρατά αυτή τη SIM για τον αριθμό, σφραγισμένη σε αυτόν τον χώρο, και την επόμενη φορά τον καλεί από την ίδια SIM.',
+    'Το Erevos κρατά αυτή τη SIM για τον αριθμό, κρυπτογραφημένη σε αυτόν τον χώρο, και την επόμενη φορά τον καλεί από την ίδια SIM.',
   Keypad: 'Πληκτρολόγιο',
   Recents: 'Πρόσφατα',
   Favourites: 'Αγαπημένα',
@@ -86,7 +86,7 @@ export const phone: Record<string, string> = {
   'This device has no phone part, so it cannot make calls.': 'Αυτή η συσκευή δεν έχει τηλέφωνο, οπότε δεν μπορεί να κάνει κλήσεις.',
   'Quick replies': 'Γρήγορες απαντήσεις',
   'Message, on the call screen of a call that rings, declines it with one of these, which the phone sends the caller as an SMS. They are kept on the phone, not sealed, as the call screen shows them with Erevos locked.':
-    'Το «Μήνυμα», στην οθόνη μιας κλήσης που χτυπά, την απορρίπτει με μία από αυτές, που το τηλέφωνο στέλνει σε όποιον καλεί ως SMS. Φυλάγονται στο τηλέφωνο χωρίς σφράγισμα, γιατί η οθόνη κλήσης τις δείχνει με το Erevos κλειδωμένο.',
+    'Το «Μήνυμα», στην οθόνη μιας κλήσης που χτυπά, την απορρίπτει με μία από αυτές, που το τηλέφωνο στέλνει σε όποιον καλεί ως SMS. Φυλάγονται στο τηλέφωνο χωρίς κρυπτογράφηση, γιατί η οθόνη κλήσης τις δείχνει με το Erevos κλειδωμένο.',
   Remove: 'Αφαίρεση',
   'Add a reply': 'Προσθήκη απάντησης',
   'Use the usual replies': 'Οι συνηθισμένες απαντήσεις',

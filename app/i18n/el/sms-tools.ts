@@ -79,7 +79,7 @@ export const smsTools: Record<string, string> = {
     'Μαζί με τα ονόματα έρχονται και οι εικόνες των επαφών σου, στη λίστα και στη συνομιλία. Κι αυτές διαβάζονται μόνο για να φανούν.',
   'Archived, Spam and Trash': 'Αρχειοθετημένες, ανεπιθύμητα και κάδος',
   "In the list, swipe an SMS conversation to the right to archive it, to the left to delete it, or hold it down to pin it at the top and more. This space keeps its own pins, archived conversations, Trash and spam marks, sealed with its password; the SMS stay in the phone's SMS, where another space sees them as they are.":
-    'Στη λίστα, σύρε μια συνομιλία SMS δεξιά για να την αρχειοθετήσεις, αριστερά για να τη διαγράψεις, ή κράτα την πατημένη για να την καρφιτσώσεις στην κορυφή και άλλα. Αυτός ο χώρος κρατά τα δικά του καρφιτσώματα, αρχειοθετημένες συνομιλίες, κάδο και σημάνσεις ανεπιθύμητων, σφραγισμένα με τον κωδικό του· τα SMS μένουν στα SMS του τηλεφώνου, όπου ένας άλλος χώρος τα βλέπει όπως είναι.',
+    'Στη λίστα, σύρε μια συνομιλία SMS δεξιά για να την αρχειοθετήσεις, αριστερά για να τη διαγράψεις, ή κράτα την πατημένη για να την καρφιτσώσεις στην κορυφή και άλλα. Αυτός ο χώρος κρατά τα δικά του καρφιτσώματα, αρχειοθετημένες συνομιλίες, κάδο και σημάνσεις ανεπιθύμητων, κρυπτογραφημένα με τον κωδικό του· τα SMS μένουν στα SMS του τηλεφώνου, όπου ένας άλλος χώρος τα βλέπει όπως είναι.',
   'Spam filter': 'Φίλτρο ανεπιθύμητων',
   'It works on this phone alone, by rules, and sends nothing anywhere. An SMS from a number that is no contact and was never answered goes to Spam when it has a link with words that try to fool, like a parcel held or a prize, or one of your words below. A number you marked as spam always goes there, one you marked not spam never does.':
     'Δουλεύει μόνο σε αυτό το τηλέφωνο, με κανόνες, και δεν στέλνει τίποτα πουθενά. Ένα SMS από αριθμό που δεν είναι επαφή και στον οποίο δεν απάντησες ποτέ πηγαίνει στα «Ανεπιθύμητα» όταν έχει σύνδεσμο με λόγια που πάνε να ξεγελάσουν, όπως ένα δέμα που κρατιέται ή ένα έπαθλο, ή μία από τις λέξεις σου παρακάτω. Ένας αριθμός που σημείωσες ως ανεπιθύμητο πηγαίνει πάντα εκεί, ένας που σημείωσες ότι δεν είναι ποτέ.',
@@ -112,7 +112,7 @@ export const smsTools: Record<string, string> = {
   // The phone's SMS in backups (app/backup.tsx).
   "The phone's SMS": 'Τα SMS του τηλεφώνου',
   "Backups can hold the phone's SMS and MMS too, with up to {mb} MB of their pictures, sealed with the backup's password. Restoring the backup puts back into the phone's SMS each one it does not have, and deletes none.":
-    'Τα αντίγραφα μπορούν να έχουν και τα SMS και τα MMS του τηλεφώνου, με έως {mb} MB από τις εικόνες τους, σφραγισμένα με τον κωδικό του αντιγράφου. Η επαναφορά του αντιγράφου βάζει πίσω στα SMS του τηλεφώνου όσα δεν έχει, και δεν διαγράφει κανένα.',
+    'Τα αντίγραφα μπορούν να έχουν και τα SMS και τα MMS του τηλεφώνου, με έως {mb} MB από τις εικόνες τους, κρυπτογραφημένα με τον κωδικό του αντιγράφου. Η επαναφορά του αντιγράφου βάζει πίσω στα SMS του τηλεφώνου όσα δεν έχει, και δεν διαγράφει κανένα.',
   'Erevos reads them only while it is the SMS app: make it the SMS app under SMS in the menu.': 'Το Erevos τα διαβάζει μόνο όσο είναι η εφαρμογή SMS: κάνε το εφαρμογή SMS από το SMS στο μενού.',
   'Put the SMS in backups': 'Να μπαίνουν τα SMS στα αντίγραφα',
   'Leave the SMS out': 'Να μη μπαίνουν τα SMS',

@@ -16,7 +16,7 @@ export const contacts: Record<string, string> = {
   'No favourites yet. Tap the star on a contact.': 'Καμία αγαπημένη ακόμα. Πάτα το αστέρι σε μια επαφή.',
   'No contacts yet.': 'Καμία επαφή ακόμα.',
   "These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them. Those with a lock are kept only in Erevos, sealed in this space.":
-    'Αυτές είναι οι επαφές του τηλεφώνου, στις επαφές του ίδιου του Android: τις βλέπει κάθε εφαρμογή που έχει άδεια να τις διαβάζει, και μπορεί να τις συγχρονίζει ένας λογαριασμός (Google). Όσες έχουν λουκέτο φυλάγονται μόνο στο Erevos, σφραγισμένες σε αυτόν τον χώρο.',
+    'Αυτές είναι οι επαφές του τηλεφώνου, στις επαφές του ίδιου του Android: τις βλέπει κάθε εφαρμογή που έχει άδεια να τις διαβάζει, και μπορεί να τις συγχρονίζει ένας λογαριασμός (Google). Όσες έχουν λουκέτο φυλάγονται μόνο στο Erevos, κρυπτογραφημένες σε αυτόν τον χώρο.',
   'New contact': 'Νέα επαφή',
 
   // One contact.
@@ -190,7 +190,7 @@ export const contacts: Record<string, string> = {
   // Kept only in Erevos, and in hidden chats.
   'Only in Erevos': 'Μόνο στο Erevos',
   "Sealed in this space, and not in the phone's contacts: no other app sees it, nor any account the phone syncs with.":
-    'Σφραγισμένη σε αυτόν τον χώρο, και όχι στις επαφές του τηλεφώνου: δεν τη βλέπει άλλη εφαρμογή, ούτε κάποιος λογαριασμός με τον οποίο συγχρονίζεται το τηλέφωνο.',
+    'Φυλάγεται κρυπτογραφημένη σε αυτόν τον χώρο, και όχι στις επαφές του τηλεφώνου: δεν τη βλέπει άλλη εφαρμογή, ούτε κάποιος λογαριασμός με τον οποίο συγχρονίζεται το τηλέφωνο.',
   'No contact is kept only in Erevos yet. Choose Only in Erevos when you make one.':
     'Καμία επαφή δεν φυλάγεται ακόμα μόνο στο Erevos. Διάλεξε «Μόνο στο Erevos» όταν φτιάχνεις μία.',
   'Erevos keeps {n} contacts of its own at most.': 'Το Erevos κρατά το πολύ {n} δικές του επαφές.',
@@ -198,18 +198,18 @@ export const contacts: Record<string, string> = {
   'Delete {name}? It is kept only in Erevos, and cannot be brought back.': 'Να διαγραφεί η επαφή {name}; Φυλάγεται μόνο στο Erevos, και δεν θα μπορεί να επανέλθει.',
   'Keep only in Erevos': 'Κράτα τη μόνο στο Erevos',
   "Move {name} into Erevos? It is sealed in this space and deleted from the phone's contacts, from every account it is kept in: other apps no longer see it, and the phone no longer shows its name when it calls.":
-    'Να μεταφερθεί η επαφή {name} στο Erevos; Σφραγίζεται σε αυτόν τον χώρο και διαγράφεται από τις επαφές του τηλεφώνου, από κάθε λογαριασμό όπου φυλάγεται: δεν τη βλέπουν πια άλλες εφαρμογές, και το τηλέφωνο δεν δείχνει πια το όνομά της όταν καλεί.',
+    'Να μεταφερθεί η επαφή {name} στο Erevos; Αποθηκεύεται κρυπτογραφημένη σε αυτόν τον χώρο και διαγράφεται από τις επαφές του τηλεφώνου, από κάθε λογαριασμό όπου φυλάγεται: δεν τη βλέπουν πια άλλες εφαρμογές, και το τηλέφωνο δεν δείχνει πια το όνομά της όταν καλεί.',
   "Move to the phone's contacts": 'Μεταφορά στις επαφές του τηλεφώνου',
   "Move {name} to the phone's contacts? Every app allowed to read them sees it there, and it is no longer kept in Erevos.":
     'Να μεταφερθεί η επαφή {name} στις επαφές του τηλεφώνου; Εκεί τη βλέπει κάθε εφαρμογή που έχει άδεια να τις διαβάζει, και δεν φυλάγεται πια στο Erevos.',
-  "Kept only in Erevos, sealed in this space. Not in the phone's contacts.": 'Φυλάγεται μόνο στο Erevos, σφραγισμένη σε αυτόν τον χώρο. Δεν είναι στις επαφές του τηλεφώνου.',
+  "Kept only in Erevos, sealed in this space. Not in the phone's contacts.": 'Φυλάγεται μόνο στο Erevos, κρυπτογραφημένη σε αυτόν τον χώρο. Δεν είναι στις επαφές του τηλεφώνου.',
   'The photo is sealed with the contact, in a file of its own: only Erevos shows it.':
-    'Η φωτογραφία σφραγίζεται μαζί με την επαφή, σε δικό της αρχείο: μόνο το Erevos τη δείχνει.',
+    'Η φωτογραφία κρυπτογραφείται μαζί με την επαφή, σε δικό της αρχείο: μόνο το Erevos τη δείχνει.',
   'Hidden contacts': 'Κρυφές επαφές',
   'The hidden chats are closed.': 'Οι κρυφές συνομιλίες έκλεισαν.',
   "Kept only here, sealed with the hidden chats: they show nowhere else, not even in the space's contacts.":
-    'Φυλάγονται μόνο εδώ, σφραγισμένες μαζί με τις κρυφές συνομιλίες: δεν φαίνονται πουθενά αλλού, ούτε καν στις επαφές του χώρου.',
-  'Kept only in these hidden chats, sealed.': 'Φυλάγεται μόνο σε αυτές τις κρυφές συνομιλίες, σφραγισμένη.',
+    'Φυλάγονται μόνο εδώ, κρυπτογραφημένες μαζί με τις κρυφές συνομιλίες: δεν φαίνονται πουθενά αλλού, ούτε καν στις επαφές του χώρου.',
+  'Kept only in these hidden chats, sealed.': 'Φυλάγεται μόνο σε αυτές τις κρυφές συνομιλίες, κρυπτογραφημένη.',
   'favourite': 'αγαπημένη',
   'only in Erevos': 'μόνο στο Erevos',
 
@@ -230,7 +230,7 @@ export const contacts: Record<string, string> = {
     'Ένας από τους αριθμούς της είναι συνδεδεμένος με αυτή την επαφή Erevos, στη συνομιλία της.',
   'Link to an Erevos contact': 'Σύνδεση με επαφή Erevos',
   "The same person in your Erevos chats: this card then shows their chat and calls. The link is sealed in Erevos, never in the phone's contacts.":
-    'Το ίδιο πρόσωπο στις συνομιλίες σου στο Erevos: αυτή η κάρτα δείχνει τότε τη συνομιλία και τις κλήσεις του. Η σύνδεση σφραγίζεται στο Erevos, ποτέ στις επαφές του τηλεφώνου.',
+    'Το ίδιο πρόσωπο στις συνομιλίες σου στο Erevos: αυτή η κάρτα δείχνει τότε τη συνομιλία και τις κλήσεις του. Η σύνδεση φυλάγεται κρυπτογραφημένη στο Erevos, ποτέ στις επαφές του τηλεφώνου.',
   'Add to contacts': 'Προσθήκη στις επαφές',
   'History': 'Ιστορικό',
   'No calls or messages with this contact yet.': 'Καμία κλήση ή μήνυμα με αυτή την επαφή ακόμα.',
