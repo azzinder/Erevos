@@ -16,7 +16,7 @@ import { setCore, type Core } from '../lib/core';
 import { fromBase64, fromHex, randomBytes, toHex, utf8Encode } from '../lib/crypto';
 import { fromBase64Url, toBase64Url } from '../lib/e2e';
 import { decodeGroup, encodeGroup, type GroupSignal } from '../lib/group-signal';
-import { noteText, type GroupTransport } from '../lib/groups';
+import { noteText, RENEW_EVERY, type GroupTransport } from '../lib/groups';
 import { setLang } from '../lib/i18n';
 import { relayDoors } from '../lib/public-doors';
 import { PublicGroups } from '../lib/public-groups';
@@ -417,6 +417,37 @@ test('the owner leaving closes the group for everyone', live, async () => {
   assert.equal(status(bob, id), 'out');
   const carol = await net.phone('Carol', one);
   await assert.rejects(carol.groups.ask(link, 'Carol'), /no longer works/);
+});
+
+test('keys in a public group are made new every week, with the same members, names and roles', live, async () => {
+  const net = network();
+  const bob = await net.phone('Bob', two);
+  const carol = await net.phone('Carol', one);
+  const { alice, id } = await club(net, [bob, carol]);
+  await alice.groups.mute(id, await keyOf(alice, id, 'Carol'), true, alice.transport);
+  await net.settle();
+  const shown = async (p: Phone) => (await p.groups.publicMembers(id)).map((m) => [m.key, m.name, m.role, m.muted, m.me].join()).sort();
+  const before = await Promise.all([alice, bob, carol].map(shown));
+  const said = [alice, bob, carol].map((p) => notes(p, id));
+  const due = Date.now() + RENEW_EVERY + 1000;
+
+  // Members ask the owner, a muted one too; then the owner makes its own new.
+  for (const p of [bob, carol, alice]) {
+    await p.groups.renewKeys(p.transport, due);
+    await net.settle();
+    assert.equal(p.groups.all().find((g) => g.id === id)?.renewing, undefined, p.name);
+  }
+  assert.deepEqual(await Promise.all([alice, bob, carol].map(shown)), before);
+  assert.deepEqual([alice, bob, carol].map((p) => notes(p, id)), said);
+  await bob.groups.send(id, 'still here', bob.transport);
+  await net.settle();
+  assert.ok(texts(alice, id).includes('still here'));
+  assert.ok(texts(carol, id).includes('still here'));
+  // The owner still lets in whoever asks.
+  const dave = await net.phone('Dave', two);
+  await dave.groups.ask(linkOf(alice, id), 'Dave');
+  await net.settle();
+  assert.equal(status(dave, id), 'in');
 });
 
 test('a private group goes as before beside public ones', live, async () => {

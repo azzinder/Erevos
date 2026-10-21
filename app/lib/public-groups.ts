@@ -273,6 +273,7 @@ export class PublicGroups extends Groups {
         outbox: [],
         messages: [{ at: Date.now(), from: '', text: mark('You made the group.'), tag: '', note: true }],
         readAt: Date.now(),
+        keysAt: Date.now(),
       };
       await this.save({ ...this.withGroup(group), state: toBase64(made.state) });
       await this.keepGroup({ ...fresh(id, key), door, approve, names: { [key]: about.name } });
@@ -538,6 +539,8 @@ export class PublicGroups extends Groups {
       if (mod) await this.moderate(id, mod, from.id, epoch, transport);
       return true;
     }
+    // Asking the owner for new keys, which a muted member does too.
+    if (said.t === 'renew') return false;
     if (said.t === 'name') {
       // Only the owner names the group.
       const name = typeof said.name === 'string' ? cleanGroupName(said.name) : '';
@@ -588,6 +591,7 @@ export class PublicGroups extends Groups {
       outbox: [],
       messages: this.trimmed([...(group?.messages ?? []), { at: Date.now(), from: '', text: mark('You joined the group.'), tag: '', note: true }]),
       readAt: 0,
+      keysAt: Date.now(),
     };
     await this.save({ ...this.withGroup(now), state: toBase64(joined.state) });
     const old = this.record(answer.group);
@@ -599,6 +603,23 @@ export class PublicGroups extends Groups {
     await this.save({ ...this.data, orphans: [] });
     for (const orphan of orphans) await this.openLocked(fromBase64(orphan), transport);
     return true;
+  }
+
+  protected async keeperLeaf(id: string): Promise<number> {
+    if (!this.record(id)) return super.keeperLeaf(id);
+    return (await core.publicGroup.rules(this.kept(), fromHex(id))).keeper;
+  }
+
+  // In a public group, a member says the key made for it as its id, and the name it chose there.
+  protected async renewedAbout(id: string): Promise<Uint8Array> {
+    const kept = this.record(id);
+    if (!kept) return super.renewedAbout(id);
+    const own = (await this.seats(id)).find((s) => s.me);
+    return encodePublicAbout(await this.aboutAs(kept.me, own?.about?.name ?? kept.names[kept.me] ?? ''));
+  }
+
+  protected async committed(id: string, transport: GroupTransport): Promise<void> {
+    if (this.record(id)) await this.refresh(id, transport);
   }
 
   protected unreached(id: string): Set<string> {

@@ -40,6 +40,11 @@ Notes:
   is open only in the conversation started with the link (until the first renewal, usually the
   first answer) and in those started with prekeys still kept, or kept in a backup made then. Contacts on an older Erevos
   never move. Groups are not post-quantum at all.
+- **Group keys taken once** read the group until that phone's keys are next made new: within a
+  week (lib/groups.ts `RENEW_EVERY`) for the keeper, and for a member whose keeper's Erevos does it
+  too (2.0.0 and later), as both phones are on. A member's renewal is the keeper taking its leaf
+  out and putting a key package of its own in, so the keeper decides when it happens; a member
+  whose keeper never does it stays as before.
 - **One queue per space.** Every contact of a space writes to the same queue, so one relay sees all
   of them arrive there.
 - **Linked devices' own keys** (docs/multi-device.md). Each linked computer makes a key of its own,

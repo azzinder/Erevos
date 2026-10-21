@@ -40,6 +40,14 @@ import { MAX_VOICE_MS } from './voice';
 // after. A message from a member that comes before the admin's change it was written after waits
 // here (`later`) until the change comes.
 //
+// Keys change every RENEW_EVERY, so a phone's group keys taken once read nothing for long after
+// (post-compromise security): the admin gives its own leaf new keys with a commit of its own, and
+// each member asks the admin, in a group message only it gets, to put it in anew with a key package
+// made for that (`renew`). The admin commits it out and in again, and sends it the welcome sealed
+// for it as group messages are; the member takes the group back from it, and what came meanwhile
+// waits. The others see the same member, as before. An admin from before leaves such a message
+// alone, and the member asks again after RENEW_EVERY.
+//
 // Photos, files and voice messages go as with a contact (lib/attachments.ts): encrypted with a key
 // of their own and put on the sender's relay, and only where they are and the key go in the
 // group's message. Each member takes them from there (lib/group-media.ts) and leaves them for the
@@ -67,6 +75,10 @@ const GROUP_PACKET = [1, 3];
 const NO_SENDER = new Uint8Array(24);
 /** The longest text sent in a group. */
 export const MAX_GROUP_TEXT = 4000;
+/** How often this phone's keys in each group are made new: its own as the admin, or by asking it. */
+export const RENEW_EVERY = 7 * 24 * 3600_000;
+// The longest key package a member asks to be put in anew with, base64: about 1 KB.
+const MAX_RENEWAL = 8192;
 
 /** How group messages leave this phone: to a member's queue, and to a contact inside their chat. */
 export type GroupTransport = {
@@ -105,6 +117,7 @@ type Said =
   | { t: 'name'; name: string }
   | { t: 'call'; call: GroupCallSignal }
   | ({ t: 'file'; file: FileOffer; tag: string; ms?: number } & GroupParts)
+  | { t: 'renew'; kp: string }
   | Marked;
 
 function encodeSaid(said: Said): Uint8Array {
@@ -118,6 +131,7 @@ function decodeSaid(bytes: Uint8Array): Said | null {
       return { t: 'text', text: v.text.slice(0, MAX_GROUP_TEXT), tag: typeof v.tag === 'string' ? v.tag : '', ...groupPartsOf(v, true) };
     }
     if (v.t === 'name' && typeof v.name === 'string') return { t: 'name', name: cleanGroupName(v.name) };
+    if (v.t === 'renew' && typeof v.kp === 'string' && v.kp.length <= MAX_RENEWAL && /^[A-Za-z0-9+/]+={0,2}$/.test(v.kp)) return { t: 'renew', kp: v.kp };
     if (v.t === 'call') {
       const call = decodeGroupCall(v.call);
       if (call) return { t: 'call', call };
@@ -146,6 +160,28 @@ function aboutOf(bytes: Uint8Array | string): About | null {
 /** Whether a packet from the relay is a group message. */
 export function isGroupPacket(packet: Uint8Array): boolean {
   return packet.length > 2 && packet[0] === GROUP_PACKET[0] && packet[1] === GROUP_PACKET[1];
+}
+
+// The admin's welcome after a member's renewal, sealed for it as a group message is: a line of
+// JSON as a public group's answers start (lib/public-rules.ts), a 0, then the welcome.
+function encodeRenewed(group: string, welcome: Uint8Array): Uint8Array {
+  const head = utf8Encode(JSON.stringify({ v: 1, group, kind: 'renewed' }));
+  const out = new Uint8Array(head.length + 1 + welcome.length);
+  out.set(head, 0);
+  out.set(welcome, head.length + 1);
+  return out;
+}
+
+function decodeRenewed(bytes: Uint8Array): { group: string; welcome: Uint8Array } | null {
+  const end = bytes[0] === 0x7b ? bytes.indexOf(0) : -1;
+  if (end < 0) return null;
+  try {
+    const v = JSON.parse(utf8Decode(bytes.subarray(0, end))) as Record<string, unknown>;
+    const welcome = bytes.slice(end + 1);
+    return v.v === 1 && v.kind === 'renewed' && isGroupId(v.group) && welcome.length > 0 ? { group: v.group, welcome } : null;
+  } catch {
+    return null;
+  }
 }
 
 // Public groups (lib/public-groups.ts) are these groups with more to them: what they need here is
@@ -299,6 +335,20 @@ export class Groups {
     return new Set();
   }
 
+  /** The leaf of the member whose commits count in a group: its admin's. */
+  protected async keeperLeaf(_id: string): Promise<number> {
+    return 0;
+  }
+
+  /** What this phone says about itself in a group it asks new keys for: what it says in every group now. */
+  protected async renewedAbout(_id: string): Promise<Uint8Array> {
+    const me = await this.me();
+    return utf8Encode(JSON.stringify({ ...me, seal: toBase64Url(await core.sealPublic(fromBase64(this.data.seal))) } satisfies About));
+  }
+
+  /** After a commit this phone made or a group it took back, in a new epoch. */
+  protected async committed(_id: string, _transport: GroupTransport): Promise<void> {}
+
   /** A group's members as its MLS state has them; none once out of it. */
   async members(id: string): Promise<GroupMember[]> {
     const link = this.through();
@@ -346,6 +396,7 @@ export class Groups {
         outbox: [],
         messages: [{ at: Date.now(), from: '', text: mark('You made the group.'), tag: '', note: true }],
         readAt: Date.now(),
+        keysAt: Date.now(),
       };
       await this.save({ ...this.withGroup(group), state: toBase64(made.state) });
       this.changed();
@@ -587,6 +638,100 @@ export class Groups {
     });
   }
 
+  /**
+   * Makes this phone's keys new in each group it is in where they are due (RENEW_EVERY): as the
+   * admin, with a commit of its own; as a member, by asking the admin. `now` for checks.
+   */
+  renewKeys(transport: GroupTransport, now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      if (!core.canRenewGroups() || !this.data.state || this.through()) return;
+      for (const { id } of this.data.groups) {
+        const group = this.find(id);
+        if (!group || group.status !== 'in' || now - Math.max(group.keysAt ?? 0, group.renewing ?? 0) < RENEW_EVERY) continue;
+        try {
+          if (group.admin) await this.selfUpdate(id, transport);
+          else await this.askRenewal(id, transport);
+        } catch {
+          // Tried again once RENEW_EVERY has gone by.
+          const failed = this.find(id);
+          if (failed) await this.save(this.withGroup({ ...failed, renewing: Date.now() }));
+        }
+      }
+    });
+  }
+
+  // On the admin's phone: new keys for its own leaf, in a commit that also takes out whoever asked to leave.
+  private async selfUpdate(id: string, transport: GroupTransport) {
+    const before = await this.membersIn(id);
+    const made = await core.groupKeys.selfUpdate(this.kept(), fromHex(id));
+    const { renewing: _, ...group } = this.find(id)!;
+    await this.save({ ...this.withGroup({ ...group, keysAt: Date.now() }), state: toBase64(made.state) });
+    // Everyone who was in, those taken out too.
+    await this.deliver(id, before, made.commit, transport);
+    const after = new Set((await this.membersIn(id)).map((m) => m.about?.id ?? ''));
+    for (const m of before) if (m.about && !after.has(m.about.id)) await this.note(id, 'left', m.about.id);
+    await this.committed(id, transport);
+  }
+
+  // On a member's phone: asks the admin, in a group message only it gets, to put it in anew with
+  // a key package made for that.
+  private async askRenewal(id: string, transport: GroupTransport) {
+    const keeper = await this.keeperLeaf(id);
+    const admin = (await this.membersIn(id)).find((m) => m.leaf === keeper && !m.me && m.about);
+    if (!admin) throw new Error('No admin to ask.');
+    const made = await core.groupKeys.renewal(this.kept(), fromHex(id), await this.renewedAbout(id));
+    const sealed = await core.group.seal(made.state, fromHex(id), encodeSaid({ t: 'renew', kp: toBase64(made.keyPackage) }));
+    await this.save({ ...this.withGroup({ ...this.find(id)!, renewing: Date.now() }), state: toBase64(sealed.state) });
+    await this.deliver(id, [admin], sealed.message, transport, true);
+  }
+
+  // On the admin's phone: a member asks to be put in anew with `keyPackage`, from the leaf
+  // `sender` in the epoch it wrote in. Its leaf is the one that says the same id now; the core
+  // takes the key package only if that leaf signs with its key.
+  private async renewMember(id: string, sender: number, from: string, keyPackage: Uint8Array, members: GroupMember[], transport: GroupTransport) {
+    if (!core.canRenewGroups() || this.unreached(id).has(from)) return;
+    let about: About | null;
+    try {
+      about = aboutOf((await core.publicGroup.packageAbout(keyPackage)).about);
+    } catch {
+      return;
+    }
+    if (!about || about.id !== from) return;
+    const leaves = [...new Set([...members.filter((m) => !m.me && m.about?.id === from).map((m) => m.leaf), sender])];
+    for (const leaf of leaves) {
+      let made: Awaited<ReturnType<typeof core.groupKeys.renew>>;
+      try {
+        made = await core.groupKeys.renew(this.kept(), fromHex(id), leaf, keyPackage);
+      } catch {
+        continue;
+      }
+      await this.save({ ...this.data, state: toBase64(made.state) });
+      // The welcome first, to where it says it is now; then the commit, to everyone who was in.
+      await this.deliver(id, [{ leaf: -1, about, me: false }], encodeRenewed(id, made.welcome), transport, true);
+      await this.deliver(id, members, made.commit, transport);
+      await this.committed(id, transport);
+      return;
+    }
+  }
+
+  // On a member's phone: the admin's welcome after it asked for new keys. The group as it is now
+  // takes the place of the one here, then what waited for it opens.
+  private async rejoined(id: string, welcome: Uint8Array, transport: GroupTransport) {
+    const group = this.find(id);
+    if (!group || group.status !== 'in' || !group.renewing || !core.canRenewGroups()) return;
+    let state: Uint8Array;
+    try {
+      state = await core.groupKeys.rejoin(this.kept(), fromHex(id), welcome);
+    } catch {
+      return;
+    }
+    const { renewing: _, ...rest } = group;
+    await this.save({ ...this.withGroup({ ...rest, keysAt: Date.now(), later: [] }), state: toBase64(state) });
+    await this.committed(id, transport);
+    for (const waiting of group.later) await this.openLocked(fromBase64(waiting), transport);
+    this.changed();
+  }
+
   // Seals `text` for the group and sends it to every other member.
   private async broadcast(id: string, text: Uint8Array, transport: GroupTransport) {
     const sealed = await core.group.seal(this.kept(), fromHex(id), text);
@@ -684,6 +829,7 @@ export class Groups {
         outbox: [],
         messages: [{ at: Date.now(), from: '', text: `${identity}|added you`, tag: '', note: true }],
         readAt: 0,
+        keysAt: Date.now(),
       };
       await this.save({ ...this.withGroup(group), state: toBase64(joined.state), given: this.data.given.filter((g) => !g.startsWith(`${signal.group}:`)) });
       this.changed();
@@ -703,6 +849,11 @@ export class Groups {
         message = (await core.sealOpen(fromBase64(this.data.seal), packet.slice(2))).message;
       } catch {
         return false;
+      }
+      const renewed = decodeRenewed(message);
+      if (renewed) {
+        await this.rejoined(renewed.group, renewed.welcome, transport);
+        return true;
       }
       if (await this.unsealed(message, transport)) return true;
       await this.openLocked(message, transport);
@@ -739,6 +890,10 @@ export class Groups {
       const from = aboutOf(opened.about)?.id;
       if (!said || !from) return;
       const now = this.find(id)!;
+      if (said.t === 'renew') {
+        if (now.admin) await this.renewMember(id, opened.sender, from, fromBase64(said.kp), before, transport);
+        return;
+      }
       if (said.t === 'call') {
         const signal = said.call;
         if ('to' in signal && signal.to !== (await this.me()).id) return;
@@ -785,6 +940,9 @@ export class Groups {
       const now = this.find(id)!;
       await this.save(this.withGroup({ ...now, later: [] }));
       for (const waiting of now.later) await this.openLocked(fromBase64(waiting), transport);
+    } else if (opened.kind === 'renewing') {
+      // Put in anew, with new keys: the admin's welcome brings the group back (`rejoined`), and what
+      // comes meanwhile waits for it.
     } else if (opened.kind === 'removed') {
       const leaving = this.find(id)?.status === 'leaving';
       // The core forgot the group already.

@@ -21,6 +21,11 @@ On main, not released yet. The next release is **2.0.0**.
   key, a first step towards linked devices that work with the phone off. Nothing changes yet in
   what they do; devices linked before need no linking again.
 
+- **Group keys made new every week**: in every group, private or public, the admin's phone makes
+  its own keys new, and each member's phone asks the admin to put it in anew with new ones. So keys
+  taken from a phone once stop reading the group within a week. Members see no one leave or join.
+  An admin on 0.1.16 and before does not do it, and its members stay as before.
+
 - **Android updates need the release computer's signature**: Check for updates installs an APK
   only once `deploy/web/publish.sh` on the release computer has signed its build and SHA-256 with
   the web app's offline key (`android-update.json`, served beside the web app). Until then it says

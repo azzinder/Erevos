@@ -494,7 +494,9 @@ then shows on their home screen, with a note of who added them. Groups go throug
   talk in the group, and show by the start of their key until a name is given in a chat with them.
 - **End-to-end encrypted for the group:** MLS (RFC 9420). Each message is encrypted once for the group, then sealed
   again for each member, so what reaches each member's queue looks like nothing the others get, and no relay can tell
-  who is in a group. It goes straight to each member's queue, through your relay.
+  who is in a group. It goes straight to each member's queue, through your relay. Every week each phone's keys in the
+  group are made new, the admin's by itself and each member's through the admin, so keys taken from a phone once stop
+  reading the group.
 - **Members:** tap the group's name at the top. The admin adds contacts, takes members out and renames the group. A
   member taken out reads nothing the group says from then on, and the group stays on their phone, read only, until
   they delete it.

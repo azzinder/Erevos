@@ -407,6 +407,36 @@ mod group {
         Ok(parts(&[&member.to_bytes(), &id]))
     }
 
+    /// The state, then a key package for the keeper to put this member in the group anew with,
+    /// saying `about`, so its keys are new.
+    pub fn group_renewal(state: &[u8], id: &[u8], about: &[u8]) -> Result<Vec<u8>> {
+        let member = member(state)?;
+        let package = member.renewal(id, about).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &package]))
+    }
+
+    /// The state, the commit, then the welcome that put the member at `leaf` in anew with the key
+    /// package it gave for that. Keeper only.
+    pub fn group_renew(state: &[u8], id: &[u8], leaf_bytes: &[u8], key_package: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let (commit, welcome) = member.renew(id, leaf(leaf_bytes)?, key_package).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &commit, &welcome]))
+    }
+
+    /// The state, then the commit that gives the keeper's own leaf new keys. Keeper only.
+    pub fn group_self_update(state: &[u8], id: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let commit = member.self_update(id).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &commit]))
+    }
+
+    /// The state with the group taken back from the keeper's welcome after this member's renewal.
+    pub fn group_rejoin(state: &[u8], id: &[u8], welcome: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        member.rejoin(id, welcome).map_err(fail)?;
+        Ok(member.to_bytes())
+    }
+
     /// The state, then the sealed message.
     pub fn group_seal(state: &[u8], id: &[u8], text: &[u8]) -> Result<Vec<u8>> {
         let mut member = member(state)?;
@@ -521,7 +551,8 @@ mod group {
     /// Opens a group message: the state, then one byte for what it was, the group's id, the
     /// sender's leaf, what the sender says about itself, and the text. The byte: 1 a message,
     /// 2 the group changed, 3 this member was taken out, 4 a member asks to leave, 5 to try again
-    /// after the next commit, 0 nothing to show.
+    /// after the next commit, 6 this member was put in anew and waits for its welcome, 0 nothing
+    /// to show.
     pub fn group_open(state: &[u8], message: &[u8]) -> Result<Vec<u8>> {
         let mut member = member(state)?;
         let opened = member.open(message).map_err(fail)?;
@@ -532,6 +563,7 @@ mod group {
             Opened::Removed { group } => (3, group.as_slice(), 0, none, none),
             Opened::Leaving { group, sender } => (4, group.as_slice(), *sender, none, none),
             Opened::Later { group } => (5, group.as_slice(), 0, none, none),
+            Opened::Renewing { group } => (6, group.as_slice(), 0, none, none),
             Opened::Nothing => (0, none, 0, none, none),
         };
         Ok(parts(&[&member.to_bytes(), &[kind], id, &sender.to_be_bytes(), about, text]))
@@ -737,6 +769,29 @@ mod tests {
         let [_, _, welcome]: [Vec<u8>; 3] = split(&group_commit(&alice, &id, &[], &1u32.to_be_bytes(), &[]).unwrap()).try_into().unwrap();
         assert!(welcome.is_empty());
         assert!(group_commit(&alice, &id, &[], &[1, 2], &[]).is_err());
+    }
+
+    #[test]
+    fn a_member_renews_its_keys_through_bytes_only() {
+        let alice = group_new(b"alice").unwrap();
+        let [alice, id]: [Vec<u8>; 2] = split(&group_create(&alice).unwrap()).try_into().unwrap();
+        let [bob, package]: [Vec<u8>; 2] = split(&group_key_package(&group_new(b"bob").unwrap()).unwrap()).try_into().unwrap();
+        let [alice, _, welcome]: [Vec<u8>; 3] = split(&group_add(&alice, &id, &package).unwrap()).try_into().unwrap();
+        let [bob, _]: [Vec<u8>; 2] = split(&group_join(&bob, &welcome).unwrap()).try_into().unwrap();
+
+        let [bob, package]: [Vec<u8>; 2] = split(&group_renewal(&bob, &id, b"bob, renewed").unwrap()).try_into().unwrap();
+        let [alice, commit, welcome]: [Vec<u8>; 3] = split(&group_renew(&alice, &id, &1u32.to_be_bytes(), &package).unwrap()).try_into().unwrap();
+        // The commit first: Bob waits for the welcome (6).
+        let opened = split(&group_open(&bob, &commit).unwrap());
+        assert_eq!((opened[1].as_slice(), opened[2].as_slice()), (&[6u8][..], id.as_slice()));
+        let bob = group_rejoin(&opened[0], &id, &welcome).unwrap();
+        let [alice, commit]: [Vec<u8>; 2] = split(&group_self_update(&alice, &id).unwrap()).try_into().unwrap();
+        let opened = split(&group_open(&bob, &commit).unwrap());
+        assert_eq!(opened[1], [2]);
+        let [_, message]: [Vec<u8>; 2] = split(&group_seal(&opened[0], &id, b"hi").unwrap()).try_into().unwrap();
+        let opened = split(&group_open(&alice, &message).unwrap());
+        assert_eq!((opened[1].as_slice(), opened[4].as_slice(), opened[5].as_slice()), (&[1u8][..], &b"bob, renewed"[..], &b"hi"[..]));
+        assert!(group_renew(&alice, &id, &[1], &package).is_err());
     }
 
     #[test]

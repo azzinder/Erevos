@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, toHex } from '../lib/crypto';
 import { decodeGroup, encodeGroup, type GroupSignal } from '../lib/group-signal';
-import { Groups, isGroupPacket, noteText, type GroupTransport } from '../lib/groups';
+import { Groups, isGroupPacket, noteText, RENEW_EVERY, type GroupTransport } from '../lib/groups';
 import { EMPTY_GROUPS, type About } from '../lock/group-data';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -132,6 +132,72 @@ test('a message written before the commit reached a member waits for it', { skip
   bob.queue.reverse();
   await net.settle();
   assert.deepEqual(texts(bob, id), ['early']);
+});
+
+test('each phone’s keys in a group are made new every week, and the others see the same members', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const alice = net.phone('alice');
+  const bob = net.phone('bob');
+  const carol = net.phone('carol');
+  const id = await alice.groups.create('g', [bob.identity, carol.identity], alice.transport);
+  await net.settle();
+  const notes = (p: Phone) => p.groups.messages(id).filter((m) => m.note).map((m) => m.text);
+  const before = [alice, bob, carol].map(notes);
+  const due = Date.now() + RENEW_EVERY + 1000;
+
+  // Not due yet: nothing goes.
+  await bob.groups.renewKeys(bob.transport);
+  assert.equal(alice.queue.length, 0);
+  // Bob asks Alice only, who puts him in anew.
+  await bob.groups.renewKeys(bob.transport, due);
+  assert.equal(alice.queue.length, 1);
+  assert.equal(carol.queue.length, 0);
+  assert.ok(bob.groups.all()[0].renewing);
+  await net.settle();
+  assert.equal(bob.groups.all()[0].renewing, undefined);
+  // Alice makes her own new, then Carol asks.
+  await alice.groups.renewKeys(alice.transport, due);
+  await carol.groups.renewKeys(carol.transport, due);
+  await net.settle();
+  assert.equal(carol.groups.all()[0].renewing, undefined);
+
+  for (const p of [alice, bob, carol]) {
+    const members = await p.groups.members(id);
+    assert.deepEqual(members.map((m) => m.about?.id).sort(), [alice, bob, carol].map((q) => q.identity).sort());
+  }
+  assert.deepEqual([alice, bob, carol].map(notes), before, 'no one joined or left');
+  await bob.groups.send(id, 'new keys', bob.transport);
+  await alice.groups.send(id, 'mine too', alice.transport);
+  await net.settle();
+  assert.deepEqual(texts(carol, id), ['new keys', 'mine too']);
+  assert.deepEqual(texts(bob, id), ['new keys', 'mine too']);
+  // Not again until a week has gone by.
+  for (const p of [alice, bob, carol]) await p.groups.renewKeys(p.transport);
+  assert.deepEqual([alice, bob, carol].map((p) => p.queue.length), [0, 0, 0]);
+});
+
+test('a member put in anew before its welcome comes keeps what is written meanwhile', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const alice = net.phone('alice');
+  const bob = net.phone('bob');
+  const carol = net.phone('carol');
+  const id = await alice.groups.create('g', [bob.identity, carol.identity], alice.transport);
+  await net.settle();
+  const notes = bob.groups.messages(id).filter((m) => m.note).length;
+
+  await bob.groups.renewKeys(bob.transport, Date.now() + RENEW_EVERY + 1000);
+  await net.settle([alice, carol]);
+  await carol.groups.send(id, 'meanwhile', carol.transport);
+  // Bob's queue has the welcome, the commit, then Carol's message: the welcome comes last.
+  assert.equal(bob.queue.length, 3);
+  bob.queue.push(bob.queue.shift()!);
+  await net.settle();
+  assert.equal(bob.groups.list()[0].status, 'in');
+  assert.deepEqual(texts(bob, id), ['meanwhile']);
+  assert.equal(bob.groups.messages(id).filter((m) => m.note).length, notes, 'he never left');
+  await bob.groups.send(id, 'back', bob.transport);
+  await net.settle();
+  assert.deepEqual(texts(alice, id), ['meanwhile', 'back']);
 });
 
 test('a member leaves through the admin, and only the admin renames', { skip: !existsSync(built) }, async () => {

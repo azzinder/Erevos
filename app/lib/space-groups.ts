@@ -145,10 +145,12 @@ export async function takeGroupSignal(identity: string, signal: GroupSignal, req
   await (await spaceGroups()).signal(identity, signal, request, spaceGroupTransport);
 }
 
-/** Sends again what the relay did not take. */
+/** Sends again what the relay did not take, and makes keys new in the groups where they are due. */
 export async function flushGroups(): Promise<void> {
   if (!canGroup() || !opened) return;
-  await (await spaceGroups()).flush(spaceGroupTransport);
+  const groups = await spaceGroups();
+  await groups.flush(spaceGroupTransport);
+  await groups.renewKeys(spaceGroupTransport);
 }
 
 /** Group calls in the open space's groups (lib/group-calls.ts). */

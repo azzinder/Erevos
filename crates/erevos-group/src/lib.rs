@@ -23,6 +23,13 @@
 //!   is in cannot be told apart by its key, and what it says of itself there is its own to choose.
 //! - The keeper commits adds, removals and new rules together (`commit`).
 //!
+//! Keys that change (post-compromise security): the keeper gives its own leaf new keys with a
+//! commit of its own (`self_update`). A member, whose proposals only the keeper could commit, and
+//! which a member from before would not take, is put in again instead: it gives the keeper a key
+//! package signed with the key it signs with there (`renewal`), the keeper commits its leaf out and
+//! the key package in (`renew`), and the member takes the group back from the welcome
+//! (`rejoin`). Members from before see a member go and come back in one commit, as the same one.
+//!
 //! Not audited.
 
 use std::collections::HashMap;
@@ -32,6 +39,7 @@ use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_memory_storage::MemoryStorage;
 use openmls_rust_crypto::RustCrypto;
+use openmls_traits::storage::StorageProvider as _;
 use openmls_traits::OpenMlsProvider;
 
 const CIPHERSUITE: Ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -44,6 +52,9 @@ pub const ADMIN: u32 = 0;
 /// The group context extension of a public group: its keeper's leaf (4 bytes, big-endian), then
 /// the app's rules. In the range RFC 9420 leaves for private use.
 pub const RULES: u16 = 0xf001;
+// Where the state keeps, beside OpenMLS's own values, the key package a member gave for its
+// renewal in a group (`renewal`), by its reference: the group's id comes after it.
+const RENEWING: &[u8] = b"erevos/renewing/";
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -59,6 +70,10 @@ pub enum Error {
     NoKeeper,
     #[error("not a group message")]
     Malformed,
+    #[error("no member there signs with that key package's key")]
+    NotTheMember,
+    #[error("not the welcome of a renewal asked here")]
+    NotRenewing,
     #[error("group: {0}")]
     Mls(String),
 }
@@ -113,6 +128,9 @@ pub enum Opened {
     Leaving { group: Vec<u8>, sender: u32 },
     /// From an epoch this member has not reached: to try again after the next commit.
     Later { group: Vec<u8> },
+    /// The keeper put this member in anew, with the key package it gave (`renewal`): the group
+    /// stays here as it was until the welcome comes (`rejoin`).
+    Renewing { group: Vec<u8> },
     /// From before this member joined, or too old, or its own: nothing to show.
     Nothing,
 }
@@ -297,6 +315,28 @@ impl Member {
             return Ok(None);
         }
         self.signer_kept(&key).map(Some)
+    }
+
+    // The key package this member gave for its renewal in a group, if it waits for the welcome.
+    fn renewing(&self, id: &[u8]) -> Option<KeyPackageRef> {
+        let values = self.provider.storage.values.read().unwrap();
+        values.get(&[RENEWING, id].concat()).and_then(|r| KeyPackageRef::tls_deserialize_exact(r).ok())
+    }
+
+    // Keeps `asked` as the key package of this member's renewal in a group, or none; the one
+    // before goes, with its secrets.
+    fn set_renewing(&self, id: &[u8], asked: Option<&KeyPackageRef>) -> Result<()> {
+        if let Some(before) = self.renewing(id) {
+            self.provider.storage().delete_key_package(&before).map_err(mls)?;
+        }
+        let asked = asked.map(|r| r.tls_serialize_detached()).transpose().map_err(mls)?;
+        let mut values = self.provider.storage.values.write().unwrap();
+        let key = [RENEWING, id].concat();
+        match asked {
+            Some(asked) => values.insert(key, asked),
+            None => values.remove(&key),
+        };
+        Ok(())
     }
 
     /// A new key to sign with in one public group. Returns its public half, which the app says of
@@ -490,6 +530,94 @@ impl Member {
         Ok(group.group_id().as_slice().to_vec())
     }
 
+    /// A key package for the keeper to put this member in its group anew with (`renew`), so
+    /// that its leaf has new keys: signed with the key it signs with there, saying `about`. Not
+    /// for the keeper, which renews its own leaf itself (`self_update`). One made again replaces
+    /// the one before.
+    pub fn renewal(&self, id: &[u8], about: &[u8]) -> Result<Vec<u8>> {
+        let group = self.group(id)?;
+        if !group.is_active() {
+            return Err(Error::NoGroup);
+        }
+        if group.own_leaf_index().u32() == keeper_of(&group) {
+            return Err(Error::OwnLeaf);
+        }
+        let signer = self.group_signer(&group)?;
+        let signer = signer.as_ref().unwrap_or(&self.signer);
+        let mut builder = KeyPackage::builder();
+        if rules_in(group.extensions()).is_some() {
+            builder = builder.leaf_node_capabilities(public_capabilities());
+        }
+        let bundle = builder.build(CIPHERSUITE, &self.provider, signer, credential_with(about, signer)).map_err(mls)?;
+        let package = bundle.key_package();
+        self.set_renewing(id, Some(&package.hash_ref(self.provider.crypto()).map_err(mls)?))?;
+        package.tls_serialize_detached().map_err(mls)
+    }
+
+    /// Puts the member at `leaf` in the group anew with the key package it gave for that
+    /// (`renewal`): one commit takes its leaf out and the key package in, so its keys are new.
+    /// The key package must be signed with the key that leaf signs with, which only the member
+    /// has. Keeper only. Returns the commit, then the member's welcome.
+    pub fn renew(&mut self, id: &[u8], leaf: u32, key_package: &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
+        let group = self.keeper_group(id)?;
+        let package = self.checked_package(key_package)?;
+        let key = group.members().find(|m| m.index.u32() == leaf).map(|m| m.signature_key);
+        if leaf == group.own_leaf_index().u32() || leaving(&group).contains(&leaf) || key.as_deref() != Some(package.leaf_node().signature_key().as_slice()) {
+            return Err(Error::NotTheMember);
+        }
+        self.commit(id, &[key_package], &[leaf], None)
+    }
+
+    /// New keys for the keeper's own leaf, and so for every member's path to it: a commit that
+    /// takes out those who asked to leave too. Keeper only: members renew theirs with `renewal`.
+    pub fn self_update(&mut self, id: &[u8]) -> Result<Vec<u8>> {
+        let mut group = self.keeper_group(id)?;
+        if leaving(&group).contains(&group.own_leaf_index().u32()) {
+            return Err(Error::OwnLeaf);
+        }
+        let signer = self.group_signer(&group)?;
+        let bundle = group
+            .self_update(&self.provider, signer.as_ref().unwrap_or(&self.signer), LeafNodeParameters::default())
+            .map_err(mls)?;
+        group.merge_pending_commit(&self.provider).map_err(mls)?;
+        let (commit, _, _) = bundle.into_messages();
+        commit.to_bytes().map_err(mls)
+    }
+
+    /// Takes the group back from the keeper's welcome after this member's renewal, in place of
+    /// the one kept here: only with the key package of the renewal asked here, for the same group
+    /// and of the same kind, from the same keeper, at a later epoch, and with this member signing
+    /// with the same key.
+    pub fn rejoin(&mut self, id: &[u8], welcome: &[u8]) -> Result<()> {
+        let mut old = self.group(id)?;
+        let asked = self.renewing(id).ok_or(Error::NotRenewing)?;
+        let keeper = keeper_of(&old);
+        let keeper_key = old.members().find(|m| m.index.u32() == keeper).map(|m| m.signature_key).ok_or(Error::State)?;
+        let own = own_key(&old).ok_or(Error::State)?;
+        let message = MlsMessageIn::tls_deserialize_exact(welcome).map_err(|_| Error::Malformed)?;
+        let MlsMessageBodyIn::Welcome(welcome) = message.extract() else {
+            return Err(Error::Malformed);
+        };
+        let builder = StagedWelcome::build_from_welcome(&self.provider, &join_config(), welcome).map_err(mls)?;
+        let crypto = self.provider.crypto();
+        if !builder.processed_welcome().own_key_package().is_some_and(|p| p.hash_ref(crypto).is_ok_and(|r| r == asked)) {
+            return Err(Error::NotRenewing);
+        }
+        let staged = builder.replace_old_group().build().map_err(mls)?;
+        let context = staged.group_context();
+        let same = context.group_id().as_slice() == id
+            && context.epoch().as_u64() > old.epoch().as_u64()
+            && rules_in(context.extensions()).is_some() == rules_in(old.extensions()).is_some()
+            && staged.welcome_sender().is_ok_and(|s| s.signature_key().as_slice() == keeper_key)
+            && staged.own_leaf_node().is_some_and(|l| l.signature_key().as_slice() == own);
+        if !same {
+            return Err(Error::NotRenewing);
+        }
+        old.delete(self.provider.storage()).map_err(mls)?;
+        staged.into_group(&self.provider).map_err(mls)?;
+        self.set_renewing(id, None)
+    }
+
     /// Seals a message to the group.
     pub fn seal(&mut self, id: &[u8], text: &[u8]) -> Result<Vec<u8>> {
         let mut group = self.group(id)?;
@@ -517,7 +645,7 @@ impl Member {
             self.forget_signer(own_key(&group))?;
             group.delete(self.provider.storage()).map_err(mls)?;
         }
-        Ok(())
+        self.set_renewing(id, None)
     }
 
     // Forgets a key made for one public group, once out of it; never this member's own.
@@ -581,11 +709,21 @@ impl Member {
                     return Err(Error::NotAdmin);
                 }
                 let removed = staged.self_removed();
+                // Out and in again, with the key package of its renewal: the welcome puts it back.
+                let crypto = self.provider.crypto();
+                if removed
+                    && self.renewing(&id).is_some_and(|asked| {
+                        staged.add_proposals().any(|p| p.add_proposal().key_package().hash_ref(crypto).is_ok_and(|r| r == asked))
+                    })
+                {
+                    return Ok(Opened::Renewing { group: id });
+                }
                 let own = own_key(&group);
                 group.merge_staged_commit(&self.provider, *staged).map_err(mls)?;
                 if removed {
                     self.forget_signer(own)?;
                     group.delete(self.provider.storage()).map_err(mls)?;
+                    self.set_renewing(&id, None)?;
                     Ok(Opened::Removed { group: id })
                 } else {
                     Ok(Opened::Changed { group: id })
@@ -808,6 +946,152 @@ mod tests {
         let commit = bob.commit(&id, &[], &[], Some((1, b"bob alone"))).unwrap().0;
         assert_eq!(alice.open(&commit).unwrap(), Opened::Removed { group: id.clone() });
         assert_eq!(bob.members(&id).unwrap().0.len(), 1);
+    }
+
+    // Alice's group with Bob at leaf 1 and Carol at leaf 2, each kept through bytes.
+    fn three() -> (Member, Member, Member, Vec<u8>) {
+        let mut alice = Member::new(b"alice").unwrap();
+        let mut bob = Member::new(b"bob").unwrap();
+        let mut carol = Member::new(b"carol").unwrap();
+        let id = alice.create().unwrap();
+        let (_, welcome) = alice.add(&id, &[&bob.key_package().unwrap(), &carol.key_package().unwrap()]).unwrap();
+        bob.join(&welcome).unwrap();
+        carol.join(&welcome).unwrap();
+        (kept(&alice), kept(&bob), kept(&carol), id)
+    }
+
+    #[test]
+    fn a_member_renews_its_keys_through_the_keeper() {
+        let (mut alice, bob, mut carol, id) = three();
+        // What someone who took Bob's state before the renewal has.
+        let mut stolen = kept(&bob);
+
+        let package = bob.renewal(&id, b"bob, renewed").unwrap();
+        let mut bob = kept(&bob);
+        let (commit, welcome) = alice.renew(&id, 1, &package).unwrap();
+        // The welcome first, as the app sends it: the commit then finds the group past it.
+        bob.rejoin(&id, &welcome).unwrap();
+        let mut bob = kept(&bob);
+        assert!(!matches!(bob.open(&commit), Ok(Opened::Removed { .. })));
+        // Carol, who knows nothing of renewals, sees the same member, saying what it says now.
+        assert_eq!(carol.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
+        let (seats, _) = carol.members(&id).unwrap();
+        let renewed = seats.iter().find(|s| s.key == bob.signer.public()).unwrap();
+        assert_eq!(renewed.about, b"bob, renewed");
+        assert_eq!(seats.len(), 3);
+
+        let hello = bob.seal(&id, b"new keys").unwrap();
+        for member in [&mut alice, &mut carol] {
+            assert!(matches!(member.open(&hello).unwrap(), Opened::Message { text, about, .. } if text == b"new keys" && about == b"bob, renewed"));
+        }
+        let back = alice.seal(&id, b"welcome back").unwrap();
+        assert!(matches!(bob.open(&back).unwrap(), Opened::Message { text, .. } if text == b"welcome back"));
+        // The state taken before reads none of it.
+        assert_eq!(stolen.open(&commit).unwrap(), Opened::Removed { group: id.clone() });
+        assert!(matches!(stolen.open(&back), Err(Error::NoGroup)));
+        // Nothing is left of the renewal: a welcome again finds none asked.
+        assert!(matches!(bob.rejoin(&id, &welcome), Err(Error::NotRenewing)));
+        assert!(bob.renewing(&id).is_none());
+    }
+
+    #[test]
+    fn a_renewal_whose_commit_comes_first_waits_for_its_welcome() {
+        let (mut alice, mut bob, mut carol, id) = three();
+        let package = bob.renewal(&id, b"bob").unwrap();
+        let (commit, welcome) = alice.renew(&id, 1, &package).unwrap();
+        assert_eq!(bob.open(&commit).unwrap(), Opened::Renewing { group: id.clone() });
+        carol.open(&commit).unwrap();
+        // What the others write meanwhile waits.
+        let early = carol.seal(&id, b"while you were out").unwrap();
+        assert_eq!(bob.open(&early).unwrap(), Opened::Later { group: id.clone() });
+        let mut bob = kept(&bob);
+        bob.rejoin(&id, &welcome).unwrap();
+        assert!(matches!(bob.open(&early).unwrap(), Opened::Message { text, .. } if text == b"while you were out"));
+        let reply = bob.seal(&id, b"back").unwrap();
+        assert!(matches!(alice.open(&reply).unwrap(), Opened::Message { .. }));
+    }
+
+    #[test]
+    fn only_the_member_renews_itself_and_only_from_its_keeper() {
+        let (mut alice, mut bob, carol, id) = three();
+        assert!(matches!(alice.renewal(&id, b"alice"), Err(Error::OwnLeaf)));
+        let bobs = bob.renewal(&id, b"bob").unwrap();
+        let carols = carol.renewal(&id, b"carol").unwrap();
+        // A key package of another member, or for the keeper's own leaf, or one not from a renewal.
+        assert!(matches!(alice.renew(&id, 1, &carols), Err(Error::NotTheMember)));
+        assert!(matches!(alice.renew(&id, 0, &bobs), Err(Error::NotTheMember)));
+        assert!(matches!(alice.renew(&id, 7, &bobs), Err(Error::NotTheMember)));
+        assert!(matches!(bob.renew(&id, 2, &carols), Err(Error::NotAdmin)));
+        // A welcome to another group, from one asked for nothing.
+        let mut dave = Member::new(b"dave").unwrap();
+        let other = dave.create().unwrap();
+        let (_, welcome) = dave.add(&other, &[&bob.key_package().unwrap()]).unwrap();
+        assert!(matches!(bob.rejoin(&id, &welcome), Err(Error::NotRenewing)));
+        // A renewal asked again replaces the one before: the first key package no longer joins.
+        bob.renewal(&id, b"bob").unwrap();
+        let (_, stale) = alice.renew(&id, 1, &bobs).unwrap();
+        assert!(bob.rejoin(&id, &stale).is_err());
+    }
+
+    #[test]
+    fn a_member_taken_out_while_it_renews_is_out() {
+        let (mut alice, mut bob, _carol, id) = three();
+        bob.renewal(&id, b"bob").unwrap();
+        let commit = alice.remove(&id, &[1]).unwrap();
+        assert_eq!(bob.open(&commit).unwrap(), Opened::Removed { group: id.clone() });
+        assert!(bob.renewing(&id).is_none());
+    }
+
+    #[test]
+    fn the_keeper_renews_its_own_keys() {
+        let (mut alice, mut bob, mut carol, id) = three();
+        let mut stolen = kept(&alice);
+        assert!(matches!(bob.self_update(&id), Err(Error::NotAdmin)));
+        let commit = alice.self_update(&id).unwrap();
+        for member in [&mut bob, &mut carol] {
+            assert_eq!(member.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
+        }
+        let hello = bob.seal(&id, b"hi").unwrap();
+        assert!(matches!(alice.open(&hello).unwrap(), Opened::Message { .. }));
+        assert!(matches!(carol.open(&hello).unwrap(), Opened::Message { .. }));
+        // The state taken before cannot follow it.
+        assert!(!matches!(stolen.open(&commit), Ok(Opened::Changed { .. })));
+        assert!(!matches!(stolen.open(&hello), Ok(Opened::Message { .. })));
+        // Who asked to leave goes with it.
+        let leaving = carol.leave(&id).unwrap();
+        for member in [&mut alice, &mut bob] {
+            assert_eq!(member.open(&leaving).unwrap(), Opened::Leaving { group: id.clone(), sender: 2 });
+        }
+        let commit = alice.self_update(&id).unwrap();
+        assert_eq!(carol.open(&commit).unwrap(), Opened::Removed { group: id.clone() });
+        assert_eq!(bob.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
+    }
+
+    #[test]
+    fn a_public_group_renews_too() {
+        let mut alice = Member::new(b"a").unwrap();
+        let mut bob = Member::new(b"b").unwrap();
+        let key = alice.new_signer().unwrap();
+        let id = alice.create_public(&key, b"alice", b"r").unwrap();
+        let (bob_key, package) = asking(&mut bob, b"bob");
+        let (_, welcome) = alice.commit(&id, &[&package], &[], None).unwrap();
+        bob.join(&welcome).unwrap();
+
+        let package = bob.renewal(&id, b"bob, renewed").unwrap();
+        assert_eq!(Member::package_about(&package).unwrap(), (b"bob, renewed".to_vec(), bob_key.clone()));
+        let (commit, welcome) = alice.renew(&id, 1, &package).unwrap();
+        bob.rejoin(&id, &welcome).unwrap();
+        let _ = bob.open(&commit);
+        // Bob signs with the key made for the group still, and the rules stay.
+        assert_eq!(bob.members(&id).unwrap().0[1].key, bob_key);
+        assert_eq!(bob.rules(&id).unwrap().rules, b"r");
+        let commit = alice.self_update(&id).unwrap();
+        assert_eq!(bob.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
+        let (commit, _) = alice.commit(&id, &[], &[], Some((0, b"r2"))).unwrap();
+        assert_eq!(bob.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
+        assert_eq!(bob.rules(&id).unwrap().rules, b"r2");
+        let hello = bob.seal(&id, b"hi").unwrap();
+        assert!(matches!(alice.open(&hello).unwrap(), Opened::Message { about, .. } if about == b"bob, renewed"));
     }
 
     #[test]

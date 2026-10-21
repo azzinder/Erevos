@@ -118,9 +118,11 @@ cryptography. Do not rely on it to protect anyone yet.
   and the restore would still meet used keys.
 - **Groups** use MLS (RFC 9420) through OpenMLS, with the classical ciphersuite
   `MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519`. Group messages are **not** post-quantum. Only the
-  group's keeper (its maker, or a public group's owner) commits. Members never send updates of
-  their own keys, so a member whose group keys leak does not heal from it while it stays in the
-  group.
+  group's keeper (its maker, or a public group's owner) commits. Every week each phone's keys in
+  each group are made new: the keeper's with a commit of its own, a member's by the keeper putting
+  it in anew, in one commit, with a key package the member gives for that. So a member whose group
+  keys leak heals within a week, once the keeper's Erevos does this too; members on an older one
+  see the same member as before.
 
 ### Calls
 

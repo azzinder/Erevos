@@ -61,6 +61,11 @@ export type Group = {
   messages: GroupMessage[];
   /** Until when this phone read the group, milliseconds. */
   readAt: number;
+  /** When this phone's keys in the group were last new (lib/groups.ts RENEW_EVERY), ms. Missing in
+   *  what was kept before it, and so due. */
+  keysAt?: number;
+  /** When this phone last asked the keeper for new keys, ms, while it waits for the welcome. */
+  renewing?: number;
 };
 
 export type GroupData = {
@@ -175,6 +180,8 @@ function checkedGroup(value: unknown): Group | null {
     ),
     messages: list(v.messages, checkedMessage, MAX_GROUP_MESSAGES),
     readAt: isTime(v.readAt) ? v.readAt : 0,
+    ...(isTime(v.keysAt) ? { keysAt: v.keysAt } : {}),
+    ...(isTime(v.renewing) ? { renewing: v.renewing } : {}),
   };
 }
 

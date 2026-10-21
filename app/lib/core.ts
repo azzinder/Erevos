@@ -64,6 +64,11 @@ export interface Core {
   groupCommit?(state: Uint8Array, id: Uint8Array, keyPackages: Uint8Array, removes: Uint8Array, rules: Uint8Array): Promise<Uint8Array>;
   groupPackageAbout?(keyPackage: Uint8Array): Promise<Uint8Array>;
   groupEpoch?(message: Uint8Array): Promise<Uint8Array>;
+  /** New keys in groups (lib/groups.ts RENEW_EVERY): missing in a build made before them. */
+  groupRenewal?(state: Uint8Array, id: Uint8Array, about: Uint8Array): Promise<Uint8Array>;
+  groupRenew?(state: Uint8Array, id: Uint8Array, leaf: Uint8Array, keyPackage: Uint8Array): Promise<Uint8Array>;
+  groupSelfUpdate?(state: Uint8Array, id: Uint8Array): Promise<Uint8Array>;
+  groupRejoin?(state: Uint8Array, id: Uint8Array, welcome: Uint8Array): Promise<Uint8Array>;
   /** Relay requests through Tor: only in the Android app, and not in a build made before it. Bridges one per line. */
   torStart?(bridges: string): Promise<void>;
   torStatus?(): Promise<string>;
@@ -316,7 +321,7 @@ function groups(): GroupCalls {
 /** What a group message was, once opened (lib/groups.ts). */
 export type GroupOpened =
   | { kind: 'message'; group: Uint8Array; sender: number; about: Uint8Array; text: Uint8Array }
-  | { kind: 'changed' | 'removed' | 'later'; group: Uint8Array }
+  | { kind: 'changed' | 'removed' | 'later' | 'renewing'; group: Uint8Array }
   | { kind: 'leaving'; group: Uint8Array; sender: number }
   | { kind: 'nothing' };
 
@@ -382,9 +387,45 @@ export const group = {
               ? { kind: 'leaving', group: id, sender: leaf }
               : kind[0] === 5
                 ? { kind: 'later', group: id }
-                : { kind: 'nothing' };
+                : kind[0] === 6
+                  ? { kind: 'renewing', group: id }
+                  : { kind: 'nothing' };
     return { state: next, opened };
   },
+};
+
+/** Whether this build's core gives group members new keys: one built before it does not. */
+export function canRenewGroups(): boolean {
+  return canGroup() && typeof core?.groupRenewal === 'function' && typeof core?.groupRenew === 'function' && typeof core?.groupSelfUpdate === 'function' && typeof core?.groupRejoin === 'function';
+}
+
+type RenewCalls = Required<Pick<Core, 'groupRenewal' | 'groupRenew' | 'groupSelfUpdate' | 'groupRejoin'>>;
+
+function renewCalls(): RenewCalls {
+  const it = need();
+  if (!canRenewGroups()) throw new NoCoreError();
+  return it as RenewCalls;
+}
+
+/** New keys in groups, on the same state as `group`'s. Those that change it give it back first. */
+export const groupKeys = {
+  /** A key package for the keeper to put this member in anew with, saying `about`. */
+  renewal: async (state: Uint8Array, id: Uint8Array, about: Uint8Array) => {
+    const [next, keyPackage] = splitParts(await renewCalls().groupRenewal(state, id, about), 2);
+    return { state: next, keyPackage };
+  },
+  /** The keeper puts the member at `leaf` in anew with the key package it gave: the commit, then its welcome. */
+  renew: async (state: Uint8Array, id: Uint8Array, leaf: number, keyPackage: Uint8Array) => {
+    const [next, commit, welcome] = splitParts(await renewCalls().groupRenew(state, id, leafBytes(leaf), keyPackage), 3);
+    return { state: next, commit, welcome };
+  },
+  /** New keys for the keeper's own leaf: the commit. */
+  selfUpdate: async (state: Uint8Array, id: Uint8Array) => {
+    const [next, commit] = splitParts(await renewCalls().groupSelfUpdate(state, id), 2);
+    return { state: next, commit };
+  },
+  /** The group taken back from the keeper's welcome after this member's renewal. */
+  rejoin: async (state: Uint8Array, id: Uint8Array, welcome: Uint8Array) => renewCalls().groupRejoin(state, id, welcome),
 };
 
 /** Whether this build's core has public groups (docs/public-groups.md): one built before them has not. */

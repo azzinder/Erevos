@@ -77,6 +77,12 @@ class ErevosCoreModule : Module() {
     }
     AsyncFunction("groupPackageAbout") { keyPackage: ByteArray -> ErevosCoreNative.groupPackageAbout(keyPackage) }
     AsyncFunction("groupEpoch") { message: ByteArray -> ErevosCoreNative.groupEpoch(message) }
+    AsyncFunction("groupRenewal") { state: ByteArray, id: ByteArray, about: ByteArray -> ErevosCoreNative.groupRenewal(state, id, about) }
+    AsyncFunction("groupRenew") { state: ByteArray, id: ByteArray, leaf: ByteArray, keyPackage: ByteArray ->
+      ErevosCoreNative.groupRenew(state, id, leaf, keyPackage)
+    }
+    AsyncFunction("groupSelfUpdate") { state: ByteArray, id: ByteArray -> ErevosCoreNative.groupSelfUpdate(state, id) }
+    AsyncFunction("groupRejoin") { state: ByteArray, id: ByteArray, welcome: ByteArray -> ErevosCoreNative.groupRejoin(state, id, welcome) }
 
     // Relay requests through Tor (crates/erevos-tor), through the bridges given one per line, if
     // any. Tor keeps its state in the app's own folders. The pluggable transports for bridges
@@ -164,6 +170,10 @@ internal object ErevosCoreNative {
   @JvmStatic external fun groupCommit(state: ByteArray, id: ByteArray, keyPackages: ByteArray, removes: ByteArray, rules: ByteArray): ByteArray
   @JvmStatic external fun groupPackageAbout(keyPackage: ByteArray): ByteArray
   @JvmStatic external fun groupEpoch(message: ByteArray): ByteArray
+  @JvmStatic external fun groupRenewal(state: ByteArray, id: ByteArray, about: ByteArray): ByteArray
+  @JvmStatic external fun groupRenew(state: ByteArray, id: ByteArray, leaf: ByteArray, keyPackage: ByteArray): ByteArray
+  @JvmStatic external fun groupSelfUpdate(state: ByteArray, id: ByteArray): ByteArray
+  @JvmStatic external fun groupRejoin(state: ByteArray, id: ByteArray, welcome: ByteArray): ByteArray
   @JvmStatic external fun torStart(stateDir: ByteArray, cacheDir: ByteArray, bridges: ByteArray, transports: ByteArray): ByteArray
   @JvmStatic external fun torStatus(): String
   @JvmStatic external fun torStop()

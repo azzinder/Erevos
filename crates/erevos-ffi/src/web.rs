@@ -227,3 +227,23 @@ pub fn group_package_about(key_package: &[u8]) -> Result<Vec<u8>, JsError> {
 pub fn group_epoch(message: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::group_epoch(message))
 }
+
+#[wasm_bindgen(js_name = groupRenewal)]
+pub fn group_renewal(state: &[u8], id: &[u8], about: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_renewal(state, id, about))
+}
+
+#[wasm_bindgen(js_name = groupRenew)]
+pub fn group_renew(state: &[u8], id: &[u8], leaf: &[u8], key_package: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_renew(state, id, leaf, key_package))
+}
+
+#[wasm_bindgen(js_name = groupSelfUpdate)]
+pub fn group_self_update(state: &[u8], id: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_self_update(state, id))
+}
+
+#[wasm_bindgen(js_name = groupRejoin)]
+pub fn group_rejoin(state: &[u8], id: &[u8], welcome: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_rejoin(state, id, welcome))
+}

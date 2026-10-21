@@ -105,6 +105,12 @@ group's but the door and the messages on their way.
   phone the keeper; that phone then makes a door of its own, on its own relay, so the link changes.
   The old owner is an admin from then on, and its old door is deleted, with the requests that
   waited at it for an admin.
+- **New keys every week:** the keeper's phone commits new keys for its own leaf, and each member
+  asks it, in a group message only it gets, to put it in anew with a key package signed with the
+  key made for the group: one commit takes its leaf out and the key package in, and the welcome
+  goes to it alone, sealed to its key. The member keeps its key, its name and its role, and what
+  the others write meanwhile waits for the welcome. A muted member asks too; one taken out or
+  banned is not let in again this way.
 - If the owner's phone is lost for good, nobody can let people in again or change the rules; the
   group goes on for those in it, and the admins still mute, take out (for every phone that hears)
   and delete. Hand the group over before changing phones.
