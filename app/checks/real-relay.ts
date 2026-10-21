@@ -37,11 +37,17 @@ after(() => {
 /** Starts a relay and returns its address once it answers. Node's WebSocket cannot send the
  *  token header that React Native's does, so it takes none, unless given one (`token`), which
  *  goes as a browser's does. With `withKey`, it has a key for sealed sends, as relays that take
- *  messages from other relays do, and lends places. */
+ *  messages from other relays do, and lends places. All of them reach each other on 127.0.0.1,
+ *  which a relay forwards to only when allowed private peers. */
 export async function startRelay(withKey = false, token = ''): Promise<string> {
   const [tcp, ws] = [await freePort(), await freePort()];
   keys ??= withKey ? mkdtempSync(join(tmpdir(), 'erevos-relay-keys-')) : null;
-  const env = { ...process.env, EREVOS_RELAY_TOKEN: token, EREVOS_RELAY_KEY: withKey && keys ? join(keys, `key-${ws}`) : '' };
+  const env = {
+    ...process.env,
+    EREVOS_RELAY_TOKEN: token,
+    EREVOS_RELAY_KEY: withKey && keys ? join(keys, `key-${ws}`) : '',
+    EREVOS_RELAY_PRIVATE_PEERS: 'allow',
+  };
   const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
   relays.push(child);
   const url = `ws://127.0.0.1:${ws}`;

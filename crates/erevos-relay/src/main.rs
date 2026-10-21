@@ -31,6 +31,11 @@
 //! Without it, the relay still forwards for its own phones but cannot take
 //! sealed sends from other relays.
 //!
+//! A forward (and taking a file through this relay) goes only to relays at
+//! addresses on the internet, not to this machine or its network (see
+//! `peers.rs`). Set `EREVOS_RELAY_PRIVATE_PEERS=allow` where relays reach
+//! each other at private addresses, as on a home network.
+//!
 //! A relay with a key also lends places to phones that have no relay of
 //! their own (see `lend.rs`): its phones put a ticket in their contact links,
 //! and whoever adds them without a relay takes a queue here with it. Set
@@ -64,6 +69,7 @@ mod journal;
 mod later;
 mod lend;
 mod lock;
+mod peers;
 mod push;
 mod queue;
 mod server;
@@ -291,9 +297,21 @@ fn main() -> ExitCode {
     ) else {
         return ExitCode::FAILURE;
     };
+    let private_peers = match env::var("EREVOS_RELAY_PRIVATE_PEERS").as_deref() {
+        Ok("allow") => {
+            eprintln!("erevos-relay: EREVOS_RELAY_PRIVATE_PEERS=allow, forwards may go to relays on this machine and its network");
+            true
+        }
+        Ok("" | "deny") | Err(_) => false,
+        Ok(_) => {
+            eprintln!("erevos-relay: EREVOS_RELAY_PRIVATE_PEERS must be allow or deny");
+            return ExitCode::FAILURE;
+        }
+    };
     let limits = Limits {
         connections: connections.try_into().unwrap_or(usize::MAX),
         tokenless: tokenless.try_into().unwrap_or(usize::MAX),
+        private_peers,
         ..Limits::default()
     };
     eprintln!(

@@ -47,7 +47,8 @@ const relays: ChildProcess[] = [];
 const dir = mkdtempSync(join(tmpdir(), 'erevos-relay-check-'));
 
 /** Starts a relay and returns its WebSocket address once it answers. With `key`, it has a key
- *  for sealed sends and a call relay beside it. */
+ *  for sealed sends and a call relay beside it. Both forward to each other on 127.0.0.1, which a
+ *  relay does only when allowed private peers. */
 async function startRelay(key: boolean): Promise<string> {
   const [tcp, ws] = [await freePort(), await freePort()];
   const env = {
@@ -55,6 +56,7 @@ async function startRelay(key: boolean): Promise<string> {
     EREVOS_RELAY_KEY: key ? join(dir, `key-${ws}`) : '',
     EREVOS_TURN_URLS: key ? 'turn:127.0.0.1:3478,turn:127.0.0.1:3478?transport=tcp' : '',
     EREVOS_TURN_SECRET: key ? 'secret' : '',
+    EREVOS_RELAY_PRIVATE_PEERS: 'allow',
   };
   const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
   relays.push(child);

@@ -23,7 +23,9 @@
 //! - `FORWARD`: a 2-byte length and a relay address (`ws://` or `wss://`),
 //!   then a 4-byte length and a sealed send for that relay (see
 //!   `erevos_core::relay_seal`). This relay passes the sealed send on and
-//!   replies with that relay's status, or `UNREACHABLE`.
+//!   replies with that relay's status, or `UNREACHABLE`, also when the
+//!   address is not on the internet and the operator did not allow private
+//!   peers (see `peers.rs`).
 //! - `SEALED_SEND`: a 4-byte length and a sealed send. The relay opens it and
 //!   queues the message as `SEND` would.
 //! - `FILE_PUT`: a 4-byte length and a chunk of an encrypted file, at most
@@ -35,7 +37,7 @@
 //! - `FILE_VIA`: a 2-byte length and a relay address (`ws://` or `wss://`),
 //!   then a whole `FILE_GET` or `FILE_DELETE` request. This relay passes the
 //!   request to `<address>/files` and replies with that relay's reply, or
-//!   `UNREACHABLE`.
+//!   `UNREACHABLE`, as for `FORWARD`.
 //! - `PUSH_KEY`: no fields. Reply: the relay's key for Web Push (65 bytes,
 //!   an uncompressed P-256 point), or `NOT_FOUND` if the relay does not push.
 //! - `PUSH_SET`: recipient id, then a 2-byte length and a push address made
@@ -133,6 +135,7 @@ use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
 use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
 use crate::lend::{Lend, Nonce, Pass};
 use crate::lock::{lock, wait_timeout};
+use crate::peers;
 use crate::push::{Push, SetError, MAX_ENDPOINT};
 use crate::queue::{system_now, QueueError, QueueId, Store};
 use crate::turn::Turn;
@@ -188,7 +191,8 @@ const WRITE_TIMEOUT: Duration = Duration::from_secs(60);
 /// could not take one (out of file descriptors, say).
 const ACCEPT_PAUSE: Duration = Duration::from_millis(200);
 
-/// How many connections the relay takes, and how long they may stay quiet.
+/// How many connections the relay takes, how long they may stay quiet, and
+/// where it may connect for them.
 #[derive(Clone, Copy, Debug)]
 pub struct Limits {
     /// Connections at once, both front ends together.
@@ -200,6 +204,10 @@ pub struct Limits {
     pub idle: Duration,
     /// See `HANDSHAKE_TIMEOUT`.
     pub handshake: Duration,
+    /// Whether a forward may go to a relay at an address off the internet,
+    /// on this machine or its network (`EREVOS_RELAY_PRIVATE_PEERS=allow`,
+    /// see `peers.rs`). Off unless set.
+    pub private_peers: bool,
 }
 
 impl Default for Limits {
@@ -209,6 +217,7 @@ impl Default for Limits {
             tokenless: DEFAULT_MAX_TOKENLESS,
             idle: IDLE_TIMEOUT,
             handshake: HANDSHAKE_TIMEOUT,
+            private_peers: false,
         }
     }
 }
@@ -667,7 +676,7 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
         FORWARD => {
             let address = read_address(r)?;
             let sealed = read_sealed(r)?;
-            vec![forward(&address, &sealed)]
+            vec![forward(shared, &address, &sealed)]
         }
         SEALED_SEND => {
             let sealed = read_sealed(r)?;
@@ -723,7 +732,7 @@ fn respond(r: &mut impl Read, shared: &Shared, access: Access) -> io::Result<Opt
                 return Err(io::Error::new(ErrorKind::InvalidData, "not a file request"));
             }
             let id = read_id(r)?;
-            file_via(&address, op[0], &id)
+            file_via(shared, &address, op[0], &id)
         }
         PUSH_KEY => match shared.push.get() {
             Some(push) => {
@@ -1026,12 +1035,12 @@ fn read_address(r: &mut impl Read) -> io::Result<String> {
 }
 
 /// Passes a sealed send to the relay at `address` and returns its status.
-fn forward(address: &str, sealed: &[u8]) -> u8 {
+fn forward(shared: &Shared, address: &str, sealed: &[u8]) -> u8 {
     let url = format!("{}{SEALED_PATH}", address.trim_end_matches('/'));
     let mut request = vec![SEALED_SEND];
     request.extend_from_slice(&(sealed.len() as u32).to_be_bytes());
     request.extend_from_slice(sealed);
-    match call_relay(&url, request, FORWARD_TIMEOUT) {
+    match call_relay(shared, &url, request, FORWARD_TIMEOUT) {
         Ok(reply) if reply.len() == 1 && reply[0] <= FAILED => reply[0],
         _ => UNREACHABLE,
     }
@@ -1039,11 +1048,11 @@ fn forward(address: &str, sealed: &[u8]) -> u8 {
 
 /// Passes a `FILE_GET` or `FILE_DELETE` to the relay at `address` and returns
 /// its reply, if it is one such a request can have.
-fn file_via(address: &str, op: u8, id: &ChunkId) -> Vec<u8> {
+fn file_via(shared: &Shared, address: &str, op: u8, id: &ChunkId) -> Vec<u8> {
     let url = format!("{}{FILES_PATH}", address.trim_end_matches('/'));
     let mut request = vec![op];
     request.extend_from_slice(id);
-    match call_relay(&url, request, FILE_TIMEOUT) {
+    match call_relay(shared, &url, request, FILE_TIMEOUT) {
         Ok(reply) if reply.len() == 1 && reply[0] != OK && reply[0] <= FAILED => reply,
         Ok(reply) if op == FILE_DELETE && reply == [OK] => reply,
         Ok(reply) if op == FILE_GET && reply.len() >= 5 && reply[0] == OK => {
@@ -1058,8 +1067,15 @@ fn file_via(address: &str, op: u8, id: &ChunkId) -> Vec<u8> {
     }
 }
 
-/// Sends one request to the relay at `url` and returns its reply.
-fn call_relay(url: &str, request: Vec<u8>, timeout: Duration) -> io::Result<Vec<u8>> {
+/// Sends one request to the relay at `url` and returns its reply. Only to an
+/// address on the internet, unless the operator allows private peers (see
+/// `peers.rs`); one that is not is an error, as one that cannot be reached is.
+fn call_relay(
+    shared: &Shared,
+    url: &str,
+    request: Vec<u8>,
+    timeout: Duration,
+) -> io::Result<Vec<u8>> {
     let uri: tungstenite::http::Uri = url.parse().map_err(to_io)?;
     let host = uri.host().ok_or_else(|| to_io("no host"))?;
     let host = host.trim_start_matches('[').trim_end_matches(']');
@@ -1070,10 +1086,13 @@ fn call_relay(url: &str, request: Vec<u8>, timeout: Duration) -> io::Result<Vec<
         } else {
             80
         });
+    // Resolved once: the address checked is the one connected to, and the
+    // name is not looked up again, by this or by the WebSocket client.
+    let private_peers = shared.limits.private_peers;
     let addr = (host, port)
         .to_socket_addrs()?
-        .next()
-        .ok_or_else(|| to_io("no address"))?;
+        .find(|addr| private_peers || peers::global(addr.ip()))
+        .ok_or_else(|| to_io("no address the relay may connect to"))?;
     let stream = TcpStream::connect_timeout(&addr, FORWARD_TIMEOUT)?;
     stream.set_read_timeout(Some(timeout))?;
     stream.set_write_timeout(Some(timeout))?;
@@ -1216,6 +1235,19 @@ mod tests {
 
     fn start_ws_with(token: Option<&str>, key: Option<RelayKey>) -> SocketAddr {
         start_ws_limited(token, key, Limits::default())
+    }
+
+    /// A relay that may forward to relays on this machine, as the other
+    /// relays in these tests are: its operator allowed private peers.
+    fn start_ws_lan(token: Option<&str>) -> SocketAddr {
+        start_ws_limited(
+            token,
+            None,
+            Limits {
+                private_peers: true,
+                ..Limits::default()
+            },
+        )
     }
 
     fn start_ws_limited(token: Option<&str>, key: Option<RelayKey>, limits: Limits) -> SocketAddr {
@@ -1695,7 +1727,7 @@ mod tests {
         let key = RelayKey::generate();
         let public = key.public();
         let far = start_ws_with(Some("far"), Some(key));
-        let near = start_ws_with(Some("near"), None);
+        let near = start_ws_lan(Some("near"));
 
         let mut far_ws = connect_with_token(far, "", "far");
         let r = ws_call(&mut far_ws, vec![KEY]);
@@ -1728,7 +1760,7 @@ mod tests {
 
     #[test]
     fn a_forward_to_nowhere_is_unreachable() {
-        let near = start_ws_with(None, None);
+        let near = start_ws_lan(None);
         let (mut ws, _) = tungstenite::connect(format!("ws://{near}")).unwrap();
         let closed = TcpListener::bind("127.0.0.1:0")
             .unwrap()
@@ -1926,7 +1958,7 @@ mod tests {
     #[test]
     fn a_chunk_on_another_relay_is_taken_through_ones_own() {
         let far = start_ws(Some("far"));
-        let near = start_ws(Some("near"));
+        let near = start_ws_lan(Some("near"));
         let mut sender = connect_with_token(far, "", "far");
         let chunk = vec![7u8; 300_000];
         let id = ws_call(&mut sender, put_request(&chunk))[1..].to_vec();
@@ -2036,7 +2068,7 @@ mod tests {
         let key = RelayKey::generate();
         let public = key.public();
         let far = start_ws_with(Some("far"), Some(key));
-        let near = start_ws_with(Some("near"), None);
+        let near = start_ws_lan(Some("near"));
         let mut far_ws = connect_with_token(far, "", "far");
         let (recipient, sender) = ws_create(&mut far_ws);
         let mut near_ws = connect_with_token(near, "", "near");
@@ -2226,6 +2258,52 @@ mod tests {
             Ok(Message::Close(Some(frame))) => assert_eq!(frame.code, CloseCode::Away),
             other => panic!("expected a close frame, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn a_relay_forwards_to_nothing_on_its_own_machine_unless_allowed() {
+        let key = RelayKey::generate();
+        let public = key.public();
+        let far = start_ws_with(None, Some(key));
+        let mut far_ws = connect_with_token(far, "", "");
+        let (recipient, sender) = ws_create(&mut far_ws);
+        let id = ws_call(&mut far_ws, put_request(b"chunk"))[1..].to_vec();
+        let near = start_ws(Some("near"));
+        let mut near_ws = connect_with_token(near, "", "near");
+        let sealed = seal(&public, &sender, b"to 127.0.0.1").unwrap();
+
+        // The far relay listens, but on 127.0.0.1, by number or by name: answered as
+        // one that cannot be reached, and nothing gets there.
+        for address in [
+            format!("ws://{far}"),
+            format!("ws://localhost:{}", far.port()),
+        ] {
+            let r = ws_call(&mut near_ws, forward_request(&address, &sealed));
+            assert_eq!(r, vec![UNREACHABLE]);
+            let r = ws_call(
+                &mut near_ws,
+                via_request(&address, &id_request(FILE_GET, &id)),
+            );
+            assert_eq!(r, vec![UNREACHABLE]);
+        }
+        let held = forward_request(&format!("ws://{far}"), &sealed);
+        let r = ws_call(&mut near_ws, later_request(system_now(), &[8; 16], &held));
+        assert_eq!(r, vec![OK]);
+        thread::sleep(Duration::from_millis(1500));
+        assert_eq!(ws_receive(&mut far_ws, &recipient), None);
+        assert_eq!(
+            chunk_of(&ws_call(&mut far_ws, id_request(FILE_GET, &id))),
+            b"chunk"
+        );
+
+        // Allowed, the same forward goes.
+        let mut lan = connect_with_token(start_ws_lan(Some("lan")), "", "lan");
+        let r = ws_call(&mut lan, forward_request(&format!("ws://{far}"), &sealed));
+        assert_eq!(r, vec![OK]);
+        assert_eq!(
+            ws_receive(&mut far_ws, &recipient).as_deref(),
+            Some(&b"to 127.0.0.1"[..])
+        );
     }
 
     #[test]
