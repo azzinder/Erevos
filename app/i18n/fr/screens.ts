@@ -92,8 +92,8 @@ export const screens: Record<string, string> = {
     'Il n’y a que toi qui vois ceci. Envoie le tien si tu sais qui c’est : vous serez chacun dans les contacts de l’autre. Sinon, ce membre n’est pas prévenu.',
   '{n} more member asks too, in the members list.': '{n} autre membre le demande aussi, dans la liste des membres.',
   '{n} more members ask too, in the members list.': '{n} autres membres le demandent aussi, dans la liste des membres.',
-  'Members who are not your contacts show by the start of their key. Tap Add as contact beside one to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
-    'Les membres qui ne sont pas tes contacts s’affichent avec le début de leur clé. Touche « Ajouter comme contact » à côté de l’un d’eux pour lui demander son lien de contact, dans un message que lui seul reçoit. Dès qu’il l’envoie, vous êtes chacun dans les contacts de l’autre, et « Nom » lui donne un nom.',
+  'Members who are not your contacts show by the start of their key. Tap Add as contact under a member’s name to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
+    'Les membres qui ne sont pas tes contacts s’affichent avec le début de leur clé. Touche « Ajouter comme contact » sous le nom d’un membre pour lui demander son lien de contact, dans un message que lui seul reçoit. Dès qu’il l’envoie, vous êtes chacun dans les contacts de l’autre, et « Nom » lui donne un nom.',
   'Members who are not your contacts show by the start of their key. Ask them for their contact links on the phone that holds this account.':
     'Les membres qui ne sont pas tes contacts s’affichent avec le début de leur clé. Demande-leur leurs liens de contact depuis le téléphone qui détient ce compte.',
   'This build of Erevos has no group chats yet. Update it to make one.': 'Cette version d’Erevos n’a pas encore de discussions de groupe. Mets-la à jour pour en créer une.',

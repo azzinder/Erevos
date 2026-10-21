@@ -92,8 +92,8 @@ export const screens: Record<string, string> = {
     'Solo tú ves esto. Envía el tuyo si sabes quién es: cada uno quedará en los contactos del otro. Si no, no se le avisa.',
   '{n} more member asks too, in the members list.': '{n} miembro más también lo pide, en la lista de miembros.',
   '{n} more members ask too, in the members list.': '{n} miembros más también lo piden, en la lista de miembros.',
-  'Members who are not your contacts show by the start of their key. Tap Add as contact beside one to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
-    'Los miembros que no son tus contactos aparecen con el principio de su clave. Toca «Añadir como contacto» junto a uno para pedirle su enlace de contacto, en un mensaje que solo recibe ese miembro. Cuando lo envíe, cada uno quedará en los contactos del otro, y con «Nombre» le das un nombre.',
+  'Members who are not your contacts show by the start of their key. Tap Add as contact under a member’s name to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
+    'Los miembros que no son tus contactos aparecen con el principio de su clave. Toca «Añadir como contacto» bajo el nombre de un miembro para pedirle su enlace de contacto, en un mensaje que solo recibe ese miembro. Cuando lo envíe, cada uno quedará en los contactos del otro, y con «Nombre» le das un nombre.',
   'Members who are not your contacts show by the start of their key. Ask them for their contact links on the phone that holds this account.':
     'Los miembros que no son tus contactos aparecen con el principio de su clave. Pídeles sus enlaces de contacto desde el teléfono que tiene esta cuenta.',
   'This build of Erevos has no group chats yet. Update it to make one.': 'Esta versión de Erevos aún no tiene chats de grupo. Actualízala para crear uno.',

@@ -13,7 +13,7 @@ import { KeyFace } from '../components/key-face';
 import { LinkedText } from '../components/linked-text';
 import { usePublicGroup } from '../components/public-group';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
-import { confirm } from '../lib/alert';
+import { choose, confirm } from '../lib/alert';
 import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
@@ -50,8 +50,15 @@ import { ContactPicker, groupableContacts } from '../components/contact-picker';
 
 type Contact = { identity: string; name: string };
 
-// What asking for a contact link says, on the card and before Send in the members sheet.
-const askTitle = (who: string) => t('{who} asks for your contact link', { who });
+// What asking for a contact link says, on the card and before Send in the members sheet: `who` is
+// a member's label, which starts in small letters.
+const askTitle = (who: string) => upperFirst(t('{who} asks for your contact link', { who }));
+const upperFirst = (text: string) => {
+  const [first = '', ...rest] = [...text];
+  return first.toLocaleUpperCase() + rest.join('');
+};
+// The touch area around a control under a member's name: the line is short, the finger is not.
+const TALL = { top: 14, bottom: 14, left: 8, right: 8 };
 const askBody = () => t('Only you see this. Send yours if you know who they are: you become each other’s contacts. If you don’t, they are not told.');
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -90,6 +97,9 @@ export default function GroupScreen() {
   // A public group (app/public-group.tsx): its members by the names they chose, and its own screen for them.
   const pub = usePublicGroup(id);
   const name = (identity: string) => (pub.isPublic ? pub.name(identity) : memberName(identity, contacts));
+  // The name a member's picture takes its letter from: none for one who is not a named contact, as
+  // "member 1a2b…" would give each the same letter.
+  const faceName = (identity: string) => (pub.isPublic ? pub.name(identity) : (contacts.find((c) => c.identity === identity)?.name ?? ''));
   // Replies, reactions, pins, stickers, places, polls and the rest: the menu, sheets, and bubble parts.
   const parts = useGroupMessages({ id, info, messages, name, onNote: setNote, scroll, at });
   // Photos, files and voice messages: the panel under the bar, the microphone, sheets, and their place in the bubbles.
@@ -292,7 +302,7 @@ export default function GroupScreen() {
       {asker ? (
         <View style={styles.ask}>
           <Row>
-            <KeyFace identity={asker.id} name={name(asker.id)} size={36} />
+            <KeyFace identity={asker.id} name={faceName(asker.id)} size={36} />
             <Text variant="bodyStrong" style={{ flex: 1 }}>
               {askTitle(name(asker.id))}
             </Text>
@@ -305,9 +315,10 @@ export default function GroupScreen() {
             <Button title={t('Don’t')} kind="secondary" compact disabled={answering} onPress={() => void answer(asker.id, false)} />
           </Row>
           {asks.length > 1 ? (
-            <Text variant="caption" tone="muted">
-              {plural(asks.length - 1, '{n} more member asks too, in the members list.', '{n} more members ask too, in the members list.')}
-            </Text>
+            <TextButton
+              title={plural(asks.length - 1, '{n} more member asks too, in the members list.', '{n} more members ask too, in the members list.')}
+              onPress={openMembers}
+            />
           ) : null}
         </View>
       ) : null}
@@ -392,8 +403,10 @@ export default function GroupScreen() {
       <MembersSheet
         visible={sheet}
         onClose={() => setSheet(false)}
+        onOpen={() => setSheet(true)}
         info={info}
         name={name}
+        faceName={faceName}
         contacts={contacts}
         onContacts={readContacts}
         onNote={setNote}
@@ -427,11 +440,14 @@ export default function GroupScreen() {
   );
 }
 
-function MembersSheet({ visible, onClose, info, name, contacts, onContacts, onNote, onSearch, onExport, onVideo }: {
+function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts, onContacts, onNote, onSearch, onExport, onVideo }: {
   visible: boolean;
   onClose: () => void;
+  onOpen: () => void;
   info: GroupInfo;
   name: (identity: string) => string;
+  /** The name a member's picture takes its letter from (GroupScreen `faceName`). */
+  faceName: (identity: string) => string;
   /** The space's contacts, and how to read them again once one is named here. */
   contacts: Contact[];
   onContacts: () => void;
@@ -485,13 +501,22 @@ function MembersSheet({ visible, onClose, info, name, contacts, onContacts, onNo
     onClose();
     return confirm(title, message, action);
   };
+  // As closeThenConfirm, for what destroys nothing (asking for a contact link, sending one): over the
+  // sheet on a phone, so the member's row shows what came of it, and on the web the sheet opens again.
+  const thenChoose = async (title: string, message: string, action: string) => {
+    if (Platform.OS !== 'web') return choose(title, message, t('Cancel'), action);
+    onClose();
+    const ok = await choose(title, message, t('Cancel'), action);
+    onOpen();
+    return ok;
+  };
 
   const out = info.status !== 'in';
   const linked = linkedRole() === 'linked';
 
   // Asks a member for their contact link, once they said what it does.
   const askFor = (identity: string) =>
-    void closeThenConfirm(
+    void thenChoose(
       t('Add as contact'),
       t('Erevos asks {name} for their contact link, in a message only they get, and gives them yours. If they send theirs, you are each other’s contacts. If they don’t, you are not told.', {
         name: name(identity),
@@ -509,6 +534,7 @@ function MembersSheet({ visible, onClose, info, name, contacts, onContacts, onNo
       return contact.name ? null : (
         <TextButton
           title={t('Name')}
+          hitSlop={TALL}
           onPress={() => {
             setNaming(identity);
             setContactName('');
@@ -525,8 +551,9 @@ function MembersSheet({ visible, onClose, info, name, contacts, onContacts, onNo
           </Text>
           <TextButton
             title={t('Send')}
+            hitSlop={TALL}
             onPress={() =>
-              void closeThenConfirm(askTitle(name(identity)), askBody(), t('Send')).then((ok) => {
+              void thenChoose(askTitle(name(identity)), askBody(), t('Send')).then((ok) => {
                 if (ok) void run(async () => (await spaceGroups()).answerContact(info.id, identity, spaceGroupTransport));
               })
             }
@@ -542,7 +569,7 @@ function MembersSheet({ visible, onClose, info, name, contacts, onContacts, onNo
         </Text>
       );
     }
-    return <TextButton title={asked ? t('Ask again') : t('Add as contact')} onPress={() => askFor(identity)} />;
+    return <TextButton title={asked ? t('Ask again') : t('Add as contact')} hitSlop={TALL} onPress={() => askFor(identity)} />;
   };
 
   return (
@@ -605,7 +632,7 @@ function MembersSheet({ visible, onClose, info, name, contacts, onContacts, onNo
             {members.map((m) => (
               <View key={m.leaf} style={{ gap: space.sm }}>
                 <Row>
-                  <KeyFace identity={m.about?.id ?? ''} name={m.me ? t('You') : name(m.about?.id ?? '')} size={36} />
+                  <KeyFace identity={m.about?.id ?? ''} name={m.me ? t('You') : faceName(m.about?.id ?? '')} size={36} />
                   <View style={{ flex: 1, minWidth: 0, alignItems: 'flex-start', gap: 2 }}>
                     <Text numberOfLines={1} style={{ alignSelf: 'stretch' }}>
                       {m.me ? t('You') : name(m.about?.id ?? '')}
@@ -650,6 +677,13 @@ function MembersSheet({ visible, onClose, info, name, contacts, onContacts, onNo
                 ) : null}
               </View>
             ))}
+            {out ? null : (
+              <Text variant="caption" color={colors.textFaint}>
+                {linked
+                  ? t('Members who are not your contacts show by the start of their key. Ask them for their contact links on the phone that holds this account.')
+                  : t('Members who are not your contacts show by the start of their key. Tap Add as contact under a member’s name to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.')}
+              </Text>
+            )}
             {info.asked.length > 0 ? (
               <Text variant="caption" tone="muted">
                 {t('Asked, joining once Erevos is open on their phone: {names}', { names: info.asked.map(name).join(', ') })}
@@ -725,13 +759,6 @@ function MembersSheet({ visible, onClose, info, name, contacts, onContacts, onNo
                   })
                 }
               />
-            )}
-            {out ? null : (
-              <Text variant="caption" color={colors.textFaint}>
-                {linked
-                  ? t('Members who are not your contacts show by the start of their key. Ask them for their contact links on the phone that holds this account.')
-                  : t('Members who are not your contacts show by the start of their key. Tap Add as contact beside one to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.')}
-              </Text>
             )}
           </>
         )}

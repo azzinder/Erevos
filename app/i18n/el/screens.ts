@@ -87,13 +87,13 @@ export const screens: Record<string, string> = {
   'Asks for your contact link': 'Ζητά τον σύνδεσμο επαφής σου',
   'Erevos asks {name} for their contact link, in a message only they get, and gives them yours. If they send theirs, you are each other’s contacts. If they don’t, you are not told.':
     'Το Erevos ζητά από το {name} τον σύνδεσμο επαφής του, με μήνυμα που παίρνει μόνο αυτό το μέλος, και του δίνει τον δικό σου. Αν στείλει τον δικό του, θα έχετε ο ένας τον άλλον στις επαφές. Αν όχι, δεν ειδοποιείσαι.',
-  '{who} asks for your contact link': '{who}: ζητά τον σύνδεσμο επαφής σου',
+  '{who} asks for your contact link': 'Το {who} ζητά τον σύνδεσμο επαφής σου',
   'Only you see this. Send yours if you know who they are: you become each other’s contacts. If you don’t, they are not told.':
     'Αυτό το βλέπεις μόνο εσύ. Στείλε τον δικό σου αν ξέρεις ποιος είναι: θα έχετε ο ένας τον άλλον στις επαφές. Αν όχι, δεν θα το μάθει.',
   '{n} more member asks too, in the members list.': '{n} ακόμα μέλος το ζητά: δες τη λίστα των μελών.',
   '{n} more members ask too, in the members list.': '{n} ακόμα μέλη το ζητούν: δες τη λίστα των μελών.',
-  'Members who are not your contacts show by the start of their key. Tap Add as contact beside one to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
-    'Τα μέλη που δεν είναι επαφές σου φαίνονται με την αρχή του κλειδιού τους. Πάτα «Προσθήκη ως επαφή» δίπλα σε ένα μέλος για να του ζητήσεις τον σύνδεσμο επαφής του, με μήνυμα που παίρνει μόνο αυτό. Μόλις τον στείλει, έχετε ο ένας τον άλλον στις επαφές, και με το «Όνομα» του δίνεις όνομα.',
+  'Members who are not your contacts show by the start of their key. Tap Add as contact under a member’s name to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
+    'Τα μέλη που δεν είναι επαφές σου φαίνονται με την αρχή του κλειδιού τους. Πάτα «Προσθήκη ως επαφή» κάτω από το όνομα ενός μέλους για να του ζητήσεις τον σύνδεσμο επαφής του, με μήνυμα που παίρνει μόνο αυτό. Μόλις τον στείλει, έχετε ο ένας τον άλλον στις επαφές, και με το «Όνομα» του δίνεις όνομα.',
   'Members who are not your contacts show by the start of their key. Ask them for their contact links on the phone that holds this account.':
     'Τα μέλη που δεν είναι επαφές σου φαίνονται με την αρχή του κλειδιού τους. Για να τους ζητήσεις τον σύνδεσμο επαφής τους, χρησιμοποίησε το τηλέφωνο που έχει τον λογαριασμό.',
   'This build of Erevos has no group chats yet. Update it to make one.': 'Αυτή η έκδοση του Erevos δεν έχει ακόμα ομαδικές συνομιλίες. Ενημέρωσέ το για να φτιάξεις μία.',

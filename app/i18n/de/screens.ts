@@ -92,8 +92,8 @@ export const screens: Record<string, string> = {
     'Nur du siehst das. Schick deinen, wenn du weißt, wer es ist: Dann habt ihr euch gegenseitig als Kontakte. Wenn nicht, erfährt das Mitglied nichts davon.',
   '{n} more member asks too, in the members list.': '{n} weiteres Mitglied fragt auch, in der Mitgliederliste.',
   '{n} more members ask too, in the members list.': '{n} weitere Mitglieder fragen auch, in der Mitgliederliste.',
-  'Members who are not your contacts show by the start of their key. Tap Add as contact beside one to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
-    'Mitglieder, die nicht deine Kontakte sind, erscheinen mit dem Anfang ihres Schlüssels. Tippe bei einem auf „Als Kontakt hinzufügen“, um es in einer Nachricht nur an dieses Mitglied nach seinem Kontaktlink zu fragen. Sobald es ihn schickt, habt ihr euch gegenseitig als Kontakte, und mit „Name“ gibst du ihm einen Namen.',
+  'Members who are not your contacts show by the start of their key. Tap Add as contact under a member’s name to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
+    'Mitglieder, die nicht deine Kontakte sind, erscheinen mit dem Anfang ihres Schlüssels. Tippe unter dem Namen eines Mitglieds auf „Als Kontakt hinzufügen“, um es in einer Nachricht nur an dieses Mitglied nach seinem Kontaktlink zu fragen. Sobald es ihn schickt, habt ihr euch gegenseitig als Kontakte, und mit „Name“ gibst du ihm einen Namen.',
   'Members who are not your contacts show by the start of their key. Ask them for their contact links on the phone that holds this account.':
     'Mitglieder, die nicht deine Kontakte sind, erscheinen mit dem Anfang ihres Schlüssels. Frag sie auf dem Telefon, das dieses Konto hat, nach ihren Kontaktlinks.',
   'This build of Erevos has no group chats yet. Update it to make one.': 'Diese Version von Erevos hat noch keine Gruppenchats. Aktualisiere sie, um einen zu erstellen.',

@@ -93,8 +93,8 @@ export const screens: Record<string, string> = {
   '{n} more member asks too, in the members list.': 'Još {n} član traži isto: pogledajte popis članova.',
   '{n} more members ask too, in the members list.':
     'Još {n} član traži isto: pogledajte popis članova. | Još {n} člana traže isto: pogledajte popis članova. | Još {n} članova traži isto: pogledajte popis članova.',
-  'Members who are not your contacts show by the start of their key. Tap Add as contact beside one to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
-    'Članovi koji nisu vaši kontakti prikazuju se po početku svog ključa. Dodirnite „Dodaj u kontakte“ uz člana da od njega, u poruci koju prima samo on, zatražite link za kontakt. Kad ga pošalje, imate jedno drugo u kontaktima, a dodirom na „Ime“ dajete mu ime.',
+  'Members who are not your contacts show by the start of their key. Tap Add as contact under a member’s name to ask them, in a message only they get, for their contact link. Once they send it, you are each other’s contacts, and Name gives them a name.':
+    'Članovi koji nisu vaši kontakti prikazuju se po početku svog ključa. Dodirnite „Dodaj u kontakte“ ispod imena člana da od njega, u poruci koju prima samo on, zatražite link za kontakt. Kad ga pošalje, imate jedno drugo u kontaktima, a dodirom na „Ime“ dajete mu ime.',
   'Members who are not your contacts show by the start of their key. Ask them for their contact links on the phone that holds this account.':
     'Članovi koji nisu vaši kontakti prikazuju se po početku svog ključa. Linkove za kontakt od njih tražite na telefonu na kojem je ovaj račun.',
   'This build of Erevos has no group chats yet. Update it to make one.': 'Ova verzija Erevosa još nema grupne razgovore. Ažurirajte je da biste napravili grupu.',

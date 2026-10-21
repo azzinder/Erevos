@@ -9,6 +9,7 @@ import {
   Text as RNText,
   TextInput,
   View,
+  type PressableProps,
   type StyleProp,
   type TextInputProps,
   type TextProps,
@@ -252,10 +253,10 @@ export function Toggle({ on }: { on: boolean }) {
 }
 
 /** A link-like action: the accent as text. */
-export function TextButton({ title, onPress }: { title: string; onPress: () => void }) {
+export function TextButton({ title, onPress, hitSlop = 8 }: { title: string; onPress: () => void; hitSlop?: PressableProps['hitSlop'] }) {
   const colors = useColors();
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" hitSlop={8} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+    <Pressable onPress={onPress} accessibilityRole="button" hitSlop={hitSlop} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
       <Text variant="label" color={colors.accentText}>
         {title}
       </Text>
