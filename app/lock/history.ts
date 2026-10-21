@@ -4,7 +4,7 @@ import { deleteFile, readBytes, writeBytes } from '../lib/files';
 import { isRelayAddress, type HeldAt } from '../lib/relay';
 
 import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
-import { sealedFile, sealedSize, type Holder } from './sealed-file';
+import { PAGE, PAGE_PREFIX, sealedFile, sealedSize, type Holder } from './sealed-file';
 import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
 
 // The messages each chat keeps on the phone, a space's own chat and its hidden chats, with no limit
@@ -237,8 +237,8 @@ export const isReactionEmoji = (value: unknown): value is string => typeof value
 
 export const FILE = 'erevos-history';
 export const SIZE = 64 * 1024;
-export const PAGE = 16 * 1024;
-export const PAGE_PREFIX = 'erevos-page-';
+// The same pages as those of other values too large for their file (sealed-file.ts), among them.
+export { PAGE, PAGE_PREFIX };
 
 const PAGE_ID = /^[0-9a-f]{24}$/;
 

@@ -465,7 +465,9 @@ a missed call.
 
 > The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
 > kept in this space, sealed. History has no limit: it is kept in sealed pages of the same size, mixed with the pages
-> of the other spaces and hidden chats, so only how much they all take together shows, not whose they are. Deleted
+> of the other spaces and hidden chats, so only how much they all take together shows, not whose they are. The rest
+> is kept the same size for every space and hidden chats, used or not; what is larger goes to pages like the
+> history's, among them. Deleted
 > messages can stay for a while in the phone's storage, sealed like the rest, until something is written over them.
 > Messages sent or received nearby are kept the same way.
 
