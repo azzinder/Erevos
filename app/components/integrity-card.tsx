@@ -112,7 +112,7 @@ export function IntegrityCard() {
             <Text variant="bodyStrong">{push ? t('On in this space') : t('Off in this space')}</Text>
             <Text variant="caption" tone="muted" style={hint}>
               {t(
-                'When a message comes while Erevos is closed, your relay sends an empty push through this browser\'s push service (Apple\'s on an iPhone), and Erevos shows "New message", nothing more. The push carries no message and no sender, but the push service sees when something comes for this device, and that it uses Erevos. Hidden chats never get notifications. Turned on in more than one space with the same relay, the relay can tell those spaces are on one device.',
+                'When a message comes while Erevos is closed, your relay sends an empty push through this browser\'s push service (Apple\'s on an iPhone), and Erevos shows "New message", or "New messages" once more came since you last opened it, nothing more. The push carries no message and no sender, but the push service sees when something comes for this device, and that it uses Erevos. Hidden chats never get notifications. Turned on in more than one space with the same relay, the relay can tell those spaces are on one device.',
               )}
             </Text>
             {pushNote ? (

@@ -22,6 +22,13 @@ On main, not released yet. The next release is **2.0.0**.
   the lock screen and calls through Do Not Disturb, and says when the phone is on silent or
   vibrate, or battery saver or Do Not Disturb is on.
 
+- **The web app's notice in your language**: while Erevos is closed, its one notice says "New
+  message", or "New messages" once more came since it was last open, in the app's language, and
+  opening Erevos starts again. It gives no number, which would often be wrong: the relay also
+  pushes when word comes that a message arrived, and at most once in 15 seconds. An iPhone keeps
+  every notice, so the older ones are closed once the new one shows (an iPhone keeps those less
+  than 30 seconds old).
+
 - **Newer keys every month**: each chat's account makes new prekeys (X25519 and ML-KEM-768) every
   30 days and gives them to its contacts inside their chats, whose Erevos starts a new conversation
   with them; keys older than the last three are thrown away. So a phone or backup taken later no

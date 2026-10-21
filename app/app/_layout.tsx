@@ -21,6 +21,7 @@ import { startNearbyLinks } from '../lib/nearby-links';
 import { linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, takeLink } from '../lib/open-link';
 import { phoneOpensLocked } from '../lib/phone-open';
 import { forgetHistory } from '../lib/phone-log';
+import { noticeLanguage, noticeSeen } from '../lib/push-notice';
 import { watchKnownNames } from '../lib/known-names';
 import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
@@ -210,7 +211,17 @@ export default function RootLayout() {
     callAudio?.setLanguage?.(lang);
     // The widget's words follow the app's language (modules/erevos-widget).
     refreshWidget();
+    // So does the web app's notice while it is closed (pwa/sw.js).
+    noticeLanguage(lang);
   }, [lang]);
+
+  // The web app's notice tells of what came since Erevos was last on the screen: from nothing again
+  // when it shows, and when it leaves (not when it opens in a tab out of sight).
+  useEffect(() => {
+    if (AppState.currentState === 'active') noticeSeen();
+    const subscription = AppState.addEventListener('change', () => noticeSeen());
+    return () => subscription.remove();
+  }, []);
 
   // The web app's service worker refused code from the server: said at once, locked or open.
   useEffect(() => startIntegrityAlarm(), []);

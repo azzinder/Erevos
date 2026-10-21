@@ -7,9 +7,10 @@ import { t } from './i18n';
 // Notifications for the web app while it is closed (an iPhone stops it as soon as it leaves the
 // screen). The browser makes a push address for the relay's key; the relay sends that address an
 // empty push whenever a message comes into the space's queue (crates/erevos-relay/src/push.rs), and
-// the service worker shows "New message" (pwa/sw.js). The push goes through the browser's push
-// service (Apple's on an iPhone), which sees when something comes, never what or from whom. Off
-// unless turned on, per space, for the space's own queue only: never for hidden chats.
+// the service worker shows "New message", or "New messages" once more came since Erevos was last
+// open (pwa/sw.js). The push goes through the browser's push service (Apple's on an iPhone), which
+// sees when something comes, never what or from whom. Off unless turned on, per space, for the
+// space's own queue only: never for hidden chats.
 
 const supported = typeof window !== 'undefined' && 'PushManager' in window && 'Notification' in window && 'serviceWorker' in navigator;
 

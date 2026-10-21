@@ -65,7 +65,9 @@ app from a store is installed once and changes only when updated.
   the app opens. Notifications can say that one came (Lock → Notifications while closed, off
   unless turned on): the relay sends an empty push through the browser's push service
   (`crates/erevos-relay/src/push.rs`, `lib/web-push.web.ts`), and the service worker shows "New
-  message". The push service sees when, and that the device uses Erevos; never what or from whom.
+  message", or "New messages" once more came since Erevos was last open, in the app's language,
+  without a number: a push comes for word that a message arrived too, and at most once in 15
+  seconds. The push service sees when, and that the device uses Erevos; never what or from whom.
 - **No Bluetooth, nearby link or SMS**, which Safari does not allow, and no automatic backups: a
   browser gives out a file only after a tap.
 

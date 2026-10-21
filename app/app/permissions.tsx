@@ -112,7 +112,7 @@ function why(id: CheckId, browser: Browser | null): string {
         ? t('On an iPhone, only Erevos added to the home screen can show notifications while it is closed. And Safari clears what a site keeps in a tab after 7 days without a visit, but not what an app on the home screen keeps.')
         : t('Installed, Erevos opens in a window of its own, as an app does, and the browser keeps its data more readily.');
     case 'push':
-      return t('When a message comes while Erevos is closed, your relay sends an empty push and Erevos shows "New message", nothing more. Turned on for each space under Lock → Notifications while closed, never for hidden chats.');
+      return t('When a message comes while Erevos is closed, your relay sends an empty push and Erevos shows "New message", or "New messages" once more came since you last opened it, nothing more. Turned on for each space under Lock → Notifications while closed, never for hidden chats.');
     case 'storage':
       return t("Without it, the browser may clear Erevos's data when the device runs low on space, Safari above all, and your chats would be gone with it. A backup (menu → Backups) is the safety net.");
   }

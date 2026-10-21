@@ -334,6 +334,8 @@ self.addEventListener('message', (event) => {
   const answer = (value) => event.ports[0]?.postMessage(value);
   if (ask === 'status') event.waitUntil(status().then(answer));
   else if (ask === 'check') event.waitUntil(check().then(status).then(answer));
+  else if (ask === 'lang') event.waitUntil(noticeLanguage(event.data.lang).then(() => true, () => false).then(answer));
+  else if (ask === 'seen') event.waitUntil(noticeSeen().then(() => true, () => false).then(answer));
   else if (ask === 'check-loader') {
     event.waitUntil(
       knownLoader(String(event.data.hash)).then(async (known) => {
@@ -351,11 +353,108 @@ self.addEventListener('message', (event) => {
 });
 
 // A push from the relay (crates/erevos-relay/src/push.rs) carries nothing: it only says that a
-// message waits. A browser must show something for each push, and nothing more is known here.
+// packet came, a message or only word that one arrived, and at most once in 15 seconds. A browser
+// must show something for each push, and nothing more is known here, so the notice says "New
+// message", or "New messages" once more came since Erevos was last open, without a number that
+// would often be wrong, in the app's language. The app tells this worker its language ('lang') and
+// that it is open again ('seen'). The count is kept apart from the release state above, so a
+// release check never undoes it, and not in the notices themselves: an iPhone keeps every notice
+// of the same tag and may list them in any order, and swiping one away would start it again.
+const NOTICE = 'erevos-new-message';
+const NOTICE_STATE = '/__erevos/notice';
+const NOTICE_WORDS = {
+  en: ['New message', 'New messages'],
+  el: ['Νέο μήνυμα', 'Νέα μηνύματα'],
+  de: ['Neue Nachricht', 'Neue Nachrichten'],
+  es: ['Mensaje nuevo', 'Mensajes nuevos'],
+  fr: ['Nouveau message', 'Nouveaux messages'],
+  it: ['Nuovo messaggio', 'Nuovi messaggi'],
+  pt: ['Nova mensagem', 'Novas mensagens'],
+  sh: ['Nova poruka', 'Nove poruke'],
+};
+
+const knownLang = (lang) => typeof lang === 'string' && Object.hasOwn(NOTICE_WORDS, lang);
+
+let notice = null;
+
+async function readNotice() {
+  if (notice) return notice;
+  const kept = await (await caches.open(META)).match(NOTICE_STATE);
+  const read = kept ? await kept.json().catch(() => null) : null;
+  notice = { count: Number.isSafeInteger(read?.count) && read.count > 0 ? read.count : 0, lang: knownLang(read?.lang) ? read.lang : 'en' };
+  return notice;
+}
+
+async function writeNotice(next) {
+  notice = next;
+  await (await caches.open(META)).put(NOTICE_STATE, new Response(JSON.stringify(next), { headers: { 'Content-Type': 'application/json' } }));
+}
+
+// One change of the count at a time: two pushes, or a push and 'seen', must not both read the old
+// count and the later write undo the other.
+let noticeTurn = Promise.resolve();
+
+function inTurn(work) {
+  const run = noticeTurn.then(work);
+  noticeTurn = run.catch(() => undefined);
+  return run;
+}
+
+// An iPhone keeps every notice of the same tag where other browsers replace it, so the older ones
+// are closed once the new one shows. Best effort: an iPhone ignores this for a notice shown less
+// than 30 seconds ago.
+async function closeNotices(keep) {
+  for (const shown of await self.registration.getNotifications({ tag: NOTICE })) {
+    if (keep === undefined || shown.data?.shown !== keep) shown.close();
+  }
+}
+
+// Erevos on the screen sees the message itself, so it is not counted; the notice still shows,
+// since a browser may stop the pushes of a worker that shows nothing.
+async function erevosOnScreen() {
+  const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  return open.some((client) => client.visibilityState === 'visible');
+}
+
+let shownLast = 0;
+
+function showNotice() {
+  return inTurn(async () => {
+    let count = 1;
+    let lang = 'en';
+    try {
+      const kept = await readNotice();
+      lang = kept.lang;
+      count = (await erevosOnScreen()) ? kept.count : kept.count + 1;
+      if (count !== kept.count) await writeNotice({ ...kept, count });
+    } catch {
+      // The notice below shows all the same.
+    }
+    const shown = Math.max(Date.now(), shownLast + 1);
+    shownLast = shown;
+    await self.registration.showNotification('Erevos', { body: NOTICE_WORDS[lang][count > 1 ? 1 : 0], tag: NOTICE, icon: '/icon-192.png', data: { shown } });
+    await closeNotices(shown).catch(() => undefined);
+  });
+}
+
+function noticeSeen() {
+  return inTurn(async () => {
+    await closeNotices().catch(() => undefined);
+    const kept = await readNotice();
+    if (kept.count !== 0) await writeNotice({ ...kept, count: 0 });
+  });
+}
+
+function noticeLanguage(lang) {
+  if (!knownLang(lang)) return Promise.resolve();
+  return inTurn(async () => {
+    const kept = await readNotice();
+    if (kept.lang !== lang) await writeNotice({ ...kept, lang });
+  });
+}
+
 self.addEventListener('push', (event) => {
-  event.waitUntil(
-    self.registration.showNotification('Erevos', { body: 'New message', tag: 'erevos-new-message', icon: '/icon-192.png' }),
-  );
+  event.waitUntil(showNotice());
 });
 
 self.addEventListener('notificationclick', (event) => {
