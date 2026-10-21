@@ -214,6 +214,9 @@ struct Seen {
     stamp: Option<(SystemTime, u64)>,
     /// Whether it was read at all yet.
     read: bool,
+    /// Whether the relay already said it cannot read the file, so it says so
+    /// once until the file can be read again, not on every connection.
+    complained: bool,
     nonces: HashSet<Nonce>,
 }
 
@@ -250,10 +253,10 @@ impl Revoked {
             Err(e) if e.kind() == ErrorKind::NotFound => None,
             Err(e) => {
                 // Unreadable for now: what was revoked stays revoked.
-                eprintln!(
-                    "erevos-relay: cannot look at the revoked tickets in {}: {e}",
+                seen.complain(&format!(
+                    "cannot look at the revoked tickets in {}: {e}",
                     self.path.display()
-                );
+                ));
                 return;
             }
         };
@@ -265,10 +268,10 @@ impl Revoked {
             Some(_) => match fs::read_to_string(&self.path) {
                 Ok(text) => text,
                 Err(e) => {
-                    eprintln!(
-                        "erevos-relay: cannot read the revoked tickets in {}: {e}",
+                    seen.complain(&format!(
+                        "cannot read the revoked tickets in {}: {e}",
                         self.path.display()
-                    );
+                    ));
                     return;
                 }
             },
@@ -299,6 +302,18 @@ impl Revoked {
         }
         seen.stamp = stamp;
         seen.read = true;
+        seen.complained = false;
+    }
+}
+
+impl Seen {
+    /// Says `what` went wrong with the file, unless it was said already since
+    /// the file was last read.
+    fn complain(&mut self, what: &str) {
+        if !self.complained {
+            eprintln!("erevos-relay: {what}");
+            self.complained = true;
+        }
     }
 }
 
@@ -715,6 +730,28 @@ mod tests {
         let again = Lend::open(&key, &state.0, Revoked::new(list.0.clone())).unwrap();
         assert_eq!(again.check(&token, NOW), None);
         assert!(again.check(&kept_token, NOW).is_some());
+    }
+
+    #[test]
+    fn a_file_of_revoked_tickets_that_cannot_be_read_keeps_what_was_revoked() {
+        let list = TempPath::new("revoked-unreadable");
+        let revoked = Revoked::new(list.0.clone());
+        write_revoked(&list.0, &format!("{}\n", "ab".repeat(16)));
+        assert_eq!(revoked.count(), 1);
+
+        // A folder in its place cannot be read as the file: the relay says so
+        // once, not on every connection, and the ticket stays revoked.
+        fs::remove_file(&list.0).unwrap();
+        fs::create_dir(&list.0).unwrap();
+        assert_eq!(revoked.count(), 1);
+        assert!(lock(&revoked.seen, REVOKED_LOCK).complained);
+        assert_eq!(revoked.count(), 1);
+
+        // Readable again, it is read, and a later failure is said again.
+        fs::remove_dir(&list.0).unwrap();
+        write_revoked(&list.0, "");
+        assert_eq!(revoked.count(), 0);
+        assert!(!lock(&revoked.seen, REVOKED_LOCK).complained);
     }
 
     #[test]
