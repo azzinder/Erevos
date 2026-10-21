@@ -94,8 +94,9 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
     await bob.e2e.acceptRequest(bob.e2e.contacts()[0].identity);
     const againTag = await write('still there?');
     await until(() => bob.history.messages().length === 2);
+    // Bob's newer prekeys may come first, in a message of their own with nothing else in it.
     let receipt: Awaited<ReturnType<typeof toAlice>> = null;
-    await until(async () => !!(receipt = await toAlice()));
+    await until(async () => (receipt = await toAlice()) !== null && receipt.got.length > 0);
     assert.deepEqual(receipt!.got, [againTag]);
 
     // Told while the app shows, so it says the phone is open; an ask so soon after needs no answer.

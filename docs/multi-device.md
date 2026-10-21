@@ -69,7 +69,7 @@ Canonical JSON, keys in this order:
 - `n = max(previous + 1, now in ms)`. The last `n` is kept with the account (`E2EData.list`), which
   backups carry, so a primary put back from a backup still signs higher.
 - At most 4 entries, sorted by `i`, no names. Flags: 1 messages, 2 calls, 4 group member (later).
-- **Always 4 entries** (default, pending the owner's word, 2026-10-21): empty places hold
+- **Always 4 entries** (the owner's choice, 2026-10-21): empty places hold
   endpoints made only for the list, whose secrets are thrown away and whose queues no one reads,
   so a contact cannot count the devices from the list. They cost contacts one copy of each message
   per empty place. A contact can still tell, over time, which places answer.
@@ -87,7 +87,7 @@ Older versions drop fields they do not know (`decodeMessage`), so all of these a
 | Field | Meaning | Rule |
 |---|---|---|
 | `dv` | "I know about devices, and hold your list `n`" (0: none) | In every message from an endpoint of this version. |
-| `ak` | The sender's account bundle | From the account's own endpoint only; taken only inside the conversation with the account's identity, and only if it names it. Sent when the peer says `dv: 0`. |
+| `ak` | The sender's account bundle (its newer prekeys, lib/e2e.ts, which also start the next conversation) | From the account's own endpoint only; taken only inside the conversation with the account's identity, and only if it names it. Sent once for each newer prekeys (`keysDue`), and when the peer says `dv: 0`. |
 | `dl` | The signed list | From any endpoint, when the peer's `dv` is below its own `n`; as a quiet message of its own. |
 | `acct` | The account a device speaks for | In the first message of a conversation a device starts. |
 | `solo` | "Write only to my account" | From the account (chats moved into hidden chats). |

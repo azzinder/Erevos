@@ -32,6 +32,10 @@ export interface Core {
   hardKey?(input: Uint8Array, salt: Uint8Array, cost: Uint8Array): Promise<Uint8Array>;
   /** One byte, 1 when `signature` is the Ed25519 signature of `message` by `key`. Missing in a build made before it. */
   signatureVerify?(key: Uint8Array, message: Uint8Array, signature: Uint8Array): Promise<Uint8Array>;
+  /** Fresh prekeys signed by the account (their secret, then their bundle), and accepting a first
+   *  packet with any of them or the contact link's: missing in a build made before prekeys changed. */
+  accountPrekeys?(account: Uint8Array): Promise<Uint8Array>;
+  conversationAcceptAny?(account: Uint8Array, prekeys: Uint8Array, packet: Uint8Array): Promise<Uint8Array>;
   /** An account's Ed25519 signature of `message` under `context`, and the check of one against a
    *  bundle (its identity key, or nothing when it does not hold): missing in a build made before
    *  linked devices that work with the primary off (docs/multi-device.md). */
@@ -239,11 +243,30 @@ export async function startConversation(account: Uint8Array, bundle: Uint8Array,
   return { conversation, packet };
 }
 
-/** Opens a first packet sent to this account: the conversation it starts, and its plaintext. */
-export async function acceptConversation(account: Uint8Array, packet: Uint8Array): Promise<Opened> {
-  const [conversation, plaintext] = splitParts(await need().conversationAccept(account, packet), 2);
+/**
+ * Opens a first packet sent to this account: the conversation it starts, and its plaintext.
+ * `prekeys` are the account's newer prekeys (`newPrekeys`), tried before its contact link's.
+ */
+export async function acceptConversation(account: Uint8Array, packet: Uint8Array, prekeys: Uint8Array[] = []): Promise<Opened> {
+  const it = need();
+  const opened = prekeys.length > 0 && it.conversationAcceptAny ? await it.conversationAcceptAny(account, joinParts(prekeys), packet) : await it.conversationAccept(account, packet);
+  const [conversation, plaintext] = splitParts(opened, 2);
   return { conversation, plaintext };
 }
+
+/** Whether the core can make newer prekeys for an account, and accept first packets with them. */
+export function canRenewPrekeys(): boolean {
+  return typeof core?.accountPrekeys === 'function' && typeof core?.conversationAcceptAny === 'function';
+}
+
+/** Fresh prekeys signed by the account: their secret, to keep, and their bundle, for its contacts. */
+export async function newPrekeys(account: Uint8Array): Promise<{ secret: Uint8Array; bundle: Uint8Array }> {
+  const it = need();
+  if (!it.accountPrekeys) throw new NoCoreError();
+  const [secret, bundle] = splitParts(await it.accountPrekeys(account), 2);
+  return { secret, bundle };
+}
+
 
 export async function seal(conversation: Uint8Array, plaintext: Uint8Array): Promise<Sealed> {
   const [next, packet] = splitParts(await need().conversationSeal(conversation, plaintext), 2);

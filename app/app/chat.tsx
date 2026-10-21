@@ -626,6 +626,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  // Gives this chat's newest prekeys to the contacts who have not had them (lib/e2e.ts keysDue),
+  // each in a message of its own. What cannot go now goes with the next look at the relay.
+  async function sendKeys(target: Relay | null) {
+    if (!e2e) return;
+    for (const identity of e2e.keysDue()) {
+      try {
+        await sendToContact(target, identity, '', { keys: true });
+        await e2e.keysGiven(identity);
+      } catch {
+        // Tried again with the next look.
+      }
+    }
+  }
+
   function receipt(peer: string, kind: 'got' | 'read', tags: string[]) {
     if (tags.length === 0) return;
     const contact = e2e?.contacts().find((c) => `${CONTACT_PREFIX}${c.identity}` === peer);
@@ -1179,6 +1193,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         // What waited to go, now that the relay answers.
         void sendWaitingNow.current(true);
         await sendReceipts(sends);
+        await sendKeys(sends);
         failures = 0;
       } catch (error) {
         failures++;

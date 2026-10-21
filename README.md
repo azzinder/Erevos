@@ -103,6 +103,13 @@ cryptography. Do not rely on it to protect anyone yet.
   may use one link. So a relay could replay a conversation's first message. The app remembers the
   ids of the last 100 first messages it accepted, and each contact's last 16, and ignores one it
   has seen.
+- Each account also makes **newer prekeys** (a signed X25519 prekey and an ML-KEM-768 key) every 30
+  days, and gives them to each contact inside their chat. The contact's Erevos then starts a new
+  conversation with them, a new PQXDH, and both move to it once one answers there; the safety
+  number stays the same. Each phone keeps its last three, and throws older ones away, with the
+  ML-KEM secrets of the conversations they started. The contact link's own prekeys are kept for as
+  long as the account, for anyone new who has the link. Contacts on an older Erevos stay in the
+  conversation they have. Each renewal is a first packet the relay can see, once a month per contact.
 - Every message is padded to one of four sizes: 256, 1024, 4096 or 16384 bytes.
 - Each pair of contacts has a safety number to compare.
 - A backup holds each chat's ratchet as it was then, and the phone used later keys since. So after

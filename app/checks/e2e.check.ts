@@ -11,7 +11,7 @@ import { contactLink, parseContact } from '../lib/contact-code';
 import { accountBundle, accountIdentity, accountSign, bundleVerify, canSign, newAccount, setCore, type Core } from '../lib/core';
 import { randomBytes, toHex, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
-import { E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, toBase64Url, type Received } from '../lib/e2e';
+import { E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, PREKEYS_EVERY, toBase64Url, type Received } from '../lib/e2e';
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
 import { checkedAvatar, FILE, loadE2EData, MAX_NAME, saveE2EData } from '../lock/e2e-data';
 import { lastRestore, markRestore } from '../lock/restored';
@@ -135,6 +135,108 @@ t('someone new who writes first is a message request until accepted, refused or 
     kind: 'refused',
     reason: 'unknown',
   });
+});
+
+t('the account makes newer prekeys every month and keeps the last three', async () => {
+  const alice = await chat('space', 0);
+  const made = (await loadE2EData('space', 0, alice.key)).prekeys!;
+  assert.equal(made.length, 1);
+  // Opened again within the month: the same.
+  await E2E.open('space', 0, alice.key);
+  assert.deepEqual((await loadE2EData('space', 0, alice.key)).prekeys, made);
+  // A month on, each time: newer ones in front, at most three kept.
+  for (let i = 0; i < 4; i++) {
+    const kept = await loadE2EData('space', 0, alice.key);
+    await saveE2EData('space', 0, alice.key, { ...kept, prekeys: kept.prekeys!.map((p) => ({ ...p, at: p.at - PREKEYS_EVERY })) });
+    await E2E.open('space', 0, alice.key);
+  }
+  const now = (await loadE2EData('space', 0, alice.key)).prekeys!;
+  assert.equal(now.length, 3);
+  assert.ok(now[0].at > now[1].at && now[1].at > now[2].at);
+  assert.ok(!now.some((p) => p.secret === made[0].secret));
+});
+
+t('a contact given newer prekeys starts a new conversation with them, and both move to it', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(bobId);
+  const aliceId = hello.identity;
+  // A request is given nothing, and neither is a contact of a first packet still waiting.
+  assert.deepEqual(bob.e2e.keysDue(), []);
+  await bob.e2e.acceptRequest(aliceId);
+  assert.deepEqual(bob.e2e.keysDue(), [aliceId]);
+
+  // Bob's prekeys, in a message of their own with nothing to show.
+  const keys = await bob.e2e.seal(aliceId, '', bob.from, { keys: true });
+  await bob.e2e.keysGiven(aliceId);
+  assert.deepEqual(bob.e2e.keysDue(), []);
+  const given = message(await alice.e2e.receive(keys.packet));
+  assert.deepEqual([given.text, given.tag, given.got], ['', '', []]);
+  // Alice started a new conversation with them; its first packet goes through the relay on its own.
+  const [renew] = alice.e2e.pending();
+  assert.equal(renew.identity, bobId);
+  // Meanwhile she goes on in the conversation they have, and nothing waits for the new one.
+  const before = await alice.e2e.seal(bobId, 'still the old one', alice.from);
+  assert.equal(before.first, null);
+  assert.equal(message(await bob.e2e.receive(before.packet)).text, 'still the old one');
+  // Given again, the same prekeys start nothing more.
+  const again = await bob.e2e.seal(aliceId, '', bob.from, { keys: true });
+  await alice.e2e.receive(again.packet);
+  assert.equal(alice.e2e.pending().length, 1);
+
+  // The relay takes it; Bob opens it with his newer prekeys, then writes in it, and Alice moves to it.
+  await alice.e2e.firstSent(bobId);
+  assert.deepEqual(alice.e2e.pending(), []);
+  const started = message(await bob.e2e.receive(renew.first));
+  assert.deepEqual([started.identity, started.text, started.added, started.request], [aliceId, '', false, false]);
+  const answer = await bob.e2e.seal(aliceId, 'in the new one', bob.from);
+  assert.equal(message(await alice.e2e.receive(answer.packet)).text, 'in the new one');
+  const back = await alice.e2e.seal(bobId, 'here too', alice.from);
+  assert.equal(message(await bob.e2e.receive(back.packet)).text, 'here too');
+  const kept = await loadE2EData('space', 0, alice.key);
+  assert.equal(kept.contacts[0].conversations.length, 2);
+  // The safety number stays the same.
+  assert.equal(await alice.e2e.safetyNumber(bobId), await bob.e2e.safetyNumber(aliceId));
+});
+
+t('a first packet started with prekeys no longer kept does not open, and the link\'s always do', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const aliceId = message(await bob.e2e.receive(alice.e2e.pending()[0].first)).identity;
+  await alice.e2e.firstSent(bobId);
+  await bob.e2e.acceptRequest(aliceId);
+  await alice.e2e.receive((await bob.e2e.seal(aliceId, '', bob.from, { keys: true })).packet);
+  const [renew] = alice.e2e.pending();
+  // Bob's phone has thrown those prekeys away (newer ones made since).
+  const kept = await loadE2EData('space', 1, bob.key);
+  await saveE2EData('space', 1, bob.key, { ...kept, prekeys: [] });
+  const later = await E2E.open('space', 1, bob.key);
+  assert.deepEqual(await later.receive(renew.first), { kind: 'refused', reason: 'unknown' });
+  // Alice, unanswered there, still writes in the old conversation, which Bob opens.
+  assert.equal(message(await later.receive((await alice.e2e.seal(bobId, 'fine', alice.from)).packet)).text, 'fine');
+  // Someone new with the link still starts a conversation.
+  const carol = await chat('space', 2);
+  await carol.e2e.addContact(bob.code, carol.from);
+  assert.equal(message(await later.receive(carol.e2e.pending()[0].first)).added, true);
+});
+
+t('prekeys that are not the contact\'s own start nothing', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const mallory = await chat('space', 2);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const aliceId = message(await bob.e2e.receive(alice.e2e.pending()[0].first)).identity;
+  await alice.e2e.firstSent(bobId);
+  await bob.e2e.acceptRequest(aliceId);
+  // Bob passes on someone else's prekeys as his own: Alice's Erevos starts nothing with them.
+  const stored = await loadE2EData('space', 2, mallory.key);
+  await saveE2EData('space', 1, bob.key, { ...(await loadE2EData('space', 1, bob.key)), prekeys: stored.prekeys });
+  const lying = await E2E.open('space', 1, bob.key);
+  await alice.e2e.receive((await lying.seal(aliceId, '', bob.from, { keys: true })).packet);
+  assert.deepEqual(alice.e2e.pending(), []);
 });
 
 t('a first packet the relay did not take goes again before the next message', async () => {

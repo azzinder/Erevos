@@ -338,6 +338,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   }
   if (place.keyAsked) lastPlace = place;
   await sendPending(chats, place.sends);
+  await sendKeys(chats, place);
   // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
   void nearby.uploadCarried((url, sealed) => carryTo(place.sends, url, sealed)).catch(() => undefined);
   // An SMS invite sent from the SMS screen since: its answer may be on its way.
@@ -504,6 +505,19 @@ async function sendReceipts(chats: SpaceChats, place: Place | null, { receipts, 
       await tell(chats, place, identity, { got, on: shows ? ONLINE : 0 });
     } catch {
       if (got.length > 0) receipts[peer] = [...got, ...(receipts[peer] ?? [])];
+    }
+  }
+}
+
+// This chat's newest prekeys, to the contacts who have not had them (lib/e2e.ts keysDue). What
+// cannot go now goes with the next look.
+async function sendKeys(chats: SpaceChats, place: Place) {
+  for (const identity of chats.e2e.keysDue()) {
+    try {
+      await tell(chats, place, identity, { keys: true });
+      await chats.e2e.keysGiven(identity);
+    } catch {
+      // Tried again with the next look.
     }
   }
 }

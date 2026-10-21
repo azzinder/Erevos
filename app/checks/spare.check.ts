@@ -125,15 +125,15 @@ test('while the main relay is down, messages come through the home relay, and re
     await bob.e2e.acceptRequest(toHex(alice.identity));
     const again = await alice.seal(bobId, 'and again', aliceQueue.senderHex, { at: where });
     await sendMessage(contactTarget(own, again), fromHex(again.sender), again.packet);
-    let receipt: Uint8Array | null = null;
-    for (let i = 0; i < 200 && !receipt; i++) {
-      receipt = await receiveMessage({ url: alicesRelay }, ids.recipientId);
-      if (!receipt) await new Promise((r) => setTimeout(r, 25));
+    // Bob's newer prekeys may come first, in a message of their own with nothing else in it.
+    let got: Awaited<ReturnType<typeof alice.receive>> | null = null;
+    for (let i = 0; i < 200 && !(got?.kind === 'message' && got.got.length > 0); i++) {
+      const bytes = await receiveMessage({ url: alicesRelay }, ids.recipientId);
+      if (bytes) got = await alice.receive(bytes);
+      else await new Promise((r) => setTimeout(r, 25));
     }
-    assert.ok(receipt);
-    const got = await alice.receive(receipt);
-    assert.equal(got.kind, 'message');
-    assert.ok(got.kind === 'message' && got.got.includes(again.tag));
+    assert.equal(got?.kind, 'message');
+    assert.ok(got?.kind === 'message' && got.got.includes(again.tag));
     // What Bob writes says the home relay too, so Alice keeps it.
     assert.deepEqual((await alice.seal(bobId, '', aliceQueue.senderHex, { at: where })).spare, said);
   } finally {

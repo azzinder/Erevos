@@ -1,4 +1,4 @@
-import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, MAX_SEEN_EACH, saveE2EData, type Avatar, type Contact, type E2EData, type Holder, type Spare } from '../lock/e2e-data';
+import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, MAX_PREKEYS, MAX_SEEN_EACH, saveE2EData, type Avatar, type Contact, type E2EData, type Holder, type Spare } from '../lock/e2e-data';
 
 import { isReactionEmoji, isTag, newTag } from '../lock/history';
 
@@ -54,11 +54,22 @@ import { t } from './i18n';
 // chat set to appear offline (Contact.hide) says nothing of the kind, asks nothing, and holds what
 // came and was read until it next writes: then it shows open for ONLINE_AFTER_WRITE.
 //
+// The contact link's prekeys stay as they are, since anyone with the link starts with them. The
+// account also makes newer prekeys every PREKEYS_EVERY and gives them to each contact inside their
+// conversation (`ak`, its bundle), and a contact that gets them starts a new conversation with them
+// at once, quietly: a new PQXDH, with a new ML-KEM secret. Once older than the last MAX_PREKEYS,
+// prekeys are thrown away, and with them what a stolen phone would have given of the ML-KEM half of
+// the conversations they started. An Erevos before this ignores `ak` and stays in its conversation.
+//
 // Every call runs after the one before it ends, so two calls never move the same conversation
 // from the same state. A message key is never used twice: a packet is only handed back once the
 // conversation that sealed it has been saved past it.
 
 const MAX_CONVERSATIONS = 3;
+/** How often the account makes newer prekeys for its contacts' next conversations. */
+export const PREKEYS_EVERY = 30 * 24 * 3600 * 1000;
+// The longest bundle a message may give, in base64url characters (a bundle is about 1,350 bytes).
+const MAX_BUNDLE = 4096;
 // First packets remembered, so the relay cannot replay one to show its message again. A replay
 // of an older one shows its message once more, in a conversation that goes nowhere.
 const MAX_SEEN = 100;
@@ -120,6 +131,8 @@ type Message = {
   more?: Carried;
   /** The key the sender gave this chat for the packets it sends them (lib/sealed-packet.ts). */
   pk?: string;
+  /** The sender's newer prekeys, its bundle (base64url), to start the next conversation with. */
+  ak?: string;
 };
 
 /** What else a message can carry. */
@@ -144,6 +157,8 @@ export type Extra = {
   re?: string;
   react?: Reaction | null;
   more?: Carried;
+  /** Gives them this chat's newest prekeys (`keysDue`), in a message with nothing else to show. */
+  keys?: boolean;
 };
 
 /** Where a chat's own queue is: its relay and that relay's key for sealed sends (base64url). */
@@ -173,7 +188,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -198,6 +213,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(re ? { re } : {}),
       ...(react ? { react } : {}),
       ...(pk ? { pk } : {}),
+      ...(ak ? { ak } : {}),
       ...more,
     }),
   );
@@ -260,6 +276,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       react: decodeReaction(value.react),
       more: carriedOf(value),
       pk: isRelayKey(value.pk) ? value.pk : '',
+      ak: typeof value.ak === 'string' && value.ak.length <= MAX_BUNDLE && /^[A-Za-z0-9_-]+$/.test(value.ak) ? value.ak : '',
     };
   } catch {
     return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null };
@@ -436,6 +453,12 @@ export class E2E {
       await store(data);
     }
     const account = fromBase64(data.account);
+    const prekeys = data.prekeys ?? [];
+    if (core.canRenewPrekeys() && (prekeys.length === 0 || Date.now() - prekeys[0].at >= PREKEYS_EVERY)) {
+      const made = await core.newPrekeys(account);
+      data = { ...data, prekeys: [{ secret: toBase64(made.secret), bundle: toBase64(made.bundle), at: Date.now() }, ...prekeys].slice(0, MAX_PREKEYS) };
+      await store(data);
+    }
     return new E2E(data, account, await core.accountIdentity(account), await core.accountBundle(account), store);
   }
 
@@ -751,7 +774,7 @@ export class E2E {
     identity: string,
     text: string,
     from: string,
-    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false, due = 0, re = '', react = null, more = {} }: Extra = {},
+    { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false, due = 0, re = '', react = null, more = {}, keys = false }: Extra = {},
   ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number }> {
     return this.run(async () => {
       const contact = this.find(identity);
@@ -784,6 +807,7 @@ export class E2E {
         re: text && isTag(re) ? re : '',
         react: text ? null : react,
         more: toCarry(more, !!text),
+        ak: !text && keys && this.keysFor(contact) ? toBase64Url(fromBase64(this.data.prekeys![0].bundle)) : '',
       };
       // Writing, reacting, pinning or calling accepts a request; telling them only what came or was read never does.
       const [packet] = await this.sealFor(contact, [message], !!text || !!message.react || acts(message.more) || signal?.kind === 'offer');
@@ -934,18 +958,45 @@ export class E2E {
     return packets;
   }
 
-  /** The first packet still waiting for the relay, if any, and where it goes. */
-  pending(): { identity: string; sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array }[] {
-    return this.data.contacts
-      .filter((contact) => contact.first && contact.sender)
-      .map(({ identity, sender, relay, relayKey, spare, first }) => ({ identity, sender, relay, relayKey, spare: spare ?? null, first: fromBase64(first) }));
+  // Whether this chat's newest prekeys are still to go to a contact. Not from a linked device, nor
+  // to one who knows this chat by the space's identity (who starts nothing with this account), nor
+  // to a request not accepted.
+  private keysFor(contact: Contact): boolean {
+    const newest = this.data.prekeys?.[0];
+    return !this.link?.through && !contact.ownIdentity && !contact.request && contact.conversations.length > 0 && newest !== undefined && (contact.bundleSent ?? 0) < newest.at;
   }
 
-  /** The relay took the first packet of the conversation with this contact. */
+  /**
+   * The contacts this chat's newest prekeys are still to go to: each in a message of its own
+   * (`seal` with `keys`), as they make it larger than a text alone, through the relay or to their
+   * phone nearby, never over LoRa. Then `keysGiven`.
+   */
+  keysDue(): string[] {
+    return this.data.contacts.filter((contact) => this.keysFor(contact)).map((contact) => contact.identity);
+  }
+
+  /** The newest prekeys went to this contact. */
+  keysGiven(identity: string): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      const newest = this.data.prekeys?.[0];
+      if (contact && newest) await this.save(this.withContact({ ...contact, bundleSent: newest.at }));
+    });
+  }
+
+  /** The first packets still waiting for the relay, if any, and where they go: a new conversation's, or a newer one's (`renew`). */
+  pending(): { identity: string; sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array }[] {
+    return this.data.contacts
+      .filter((contact) => (contact.first || contact.renew) && contact.sender)
+      .map(({ identity, sender, relay, relayKey, spare, first, renew }) => ({ identity, sender, relay, relayKey, spare: spare ?? null, first: fromBase64(first || renew!) }));
+  }
+
+  /** The relay took the first packet `pending` gave for this contact. */
   firstSent(identity: string): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (contact?.first) await this.save(this.withContact({ ...contact, first: '' }));
+      else if (contact?.renew) await this.save(this.withContact({ ...contact, renew: '' }));
     });
   }
 
@@ -979,7 +1030,7 @@ export class E2E {
     if (this.data.seen.includes(id)) return { kind: 'refused', reason: 'replay' };
     let opened: core.Opened;
     try {
-      opened = await core.acceptConversation(this.account, packet);
+      opened = await core.acceptConversation(this.account, packet, (this.data.prekeys ?? []).map((p) => fromBase64(p.secret)));
     } catch {
       return { kind: 'refused', reason: 'unknown' };
     }
@@ -1026,6 +1077,29 @@ export class E2E {
     return { kind: 'message', identity, text, tag, added: !known, request, erase, got, read, voice, file, online, ask, call, group, quiet, due, re, react, more, ...timing.received };
   }
 
+  // A contact's newer prekeys (`ak`), given in their conversation: kept, and a new conversation
+  // started with them at once, with nothing in it. Its first packet goes on its own, through the
+  // relay (`renew`, see `pending`), and nothing waits for it: this chat goes on sending in the one it
+  // sends in, and moves to the new one once they answer in it, as their Erevos does once it has the
+  // first packet. Not on a linked device, whose conversations the primary starts; nor for one who
+  // knows this chat by the space's identity, nor a request not accepted (who hears nothing back),
+  // nor while their conversation's own first packet still waits.
+  private async startedAgain(contact: Contact, message: Message): Promise<Pick<Contact, 'bundle' | 'conversations' | 'renew'> | null> {
+    if (!message.ak || this.link?.through || contact.ownIdentity || contact.request || contact.first) return null;
+    let bundle: Uint8Array;
+    try {
+      bundle = fromBase64Url(message.ak);
+      if (toHex(await core.bundleIdentity(bundle)) !== contact.identity) return null;
+    } catch {
+      return null;
+    }
+    if (toBase64(bundle) === contact.bundle) return null;
+    const first = { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: this.ownPacketKey(contact) };
+    const started = await core.startConversation(this.account, bundle, encodeMessage(first));
+    const [sending, ...older] = contact.conversations;
+    return { bundle: toBase64(bundle), conversations: [sending, toBase64(started.conversation), ...older].slice(0, MAX_CONVERSATIONS), renew: toBase64(started.packet) };
+  }
+
   // Keeps until when a contact said their phone is open. Counted from when they said it, so a message
   // that waited on the relay says nothing any more; a clock ahead of this one's counts from now.
   private heard(identity: string, { on, onAt }: Message): number {
@@ -1061,21 +1135,20 @@ export class E2E {
         const message = decodeMessage(opened.plaintext);
         const others = contact.conversations.filter((_, j) => j !== i);
         const timing = timerOf(message, contact);
-        await this.save(
-          this.withContact({
-            ...contact,
-            sender: message.from || contact.sender,
-            ...(message.from ? placeOf(message) : {}),
-            // Send in the one they last sent in. Their answer also means they have the first packet.
-            conversations: [toBase64(opened.conversation), ...others],
-            first: '',
-            timer: timing.timer,
-            timerAt: timing.timerAt,
-            sealTo: message.pk || contact.sealTo,
-            // Sealed: they have this chat's key, which need not be said any more; unsealed: they may not.
-            sealsIn: sealed ?? contact.sealsIn,
-          }),
-        );
+        const updated: Contact = {
+          ...contact,
+          sender: message.from || contact.sender,
+          ...(message.from ? placeOf(message) : {}),
+          // Send in the one they last sent in. Their answer also means they have the first packet.
+          conversations: [toBase64(opened.conversation), ...others],
+          first: '',
+          timer: timing.timer,
+          timerAt: timing.timerAt,
+          sealTo: message.pk || contact.sealTo,
+          // Sealed: they have this chat's key, which need not be said any more; unsealed: they may not.
+          sealsIn: sealed ?? contact.sealsIn,
+        };
+        await this.save(this.withContact({ ...updated, ...(given ? null : await this.startedAgain(updated, message)) }));
         if (!given) this.link?.opened(contact.identity, opened.plaintext);
         const { identity, request } = contact;
         const { text, tag, erase, got, read, voice, file, ask, call, group } = message;

@@ -63,6 +63,15 @@ export type Contact = {
   packetKey: string;
   sealTo: string;
   sealsIn: boolean;
+  /** Their prekeys as they last gave them inside their conversation (their bundle, base64), when
+   *  newer than their link's: what the conversation started next with them starts with. Missing
+   *  until they give some. */
+  bundle?: string;
+  /** When the newest prekeys this chat gave them were made (`E2EData.prekeys`, ms), or 0. */
+  bundleSent?: number;
+  /** The first packet of a conversation started here with their newer prekeys, base64, until the
+   *  relay has taken it. Nothing waits for it: it goes on its own. */
+  renew?: string;
 };
 
 /** A queue on a backup relay: its sender id (hex), the relay, and the relay's key (base64url, or
@@ -102,7 +111,16 @@ export type E2EData = {
   /** The restore of a backup (lock/restored.ts) the conversations were last moved past, or ''.
    *  Missing in what was kept before it. */
   restore: string;
+  /** The account's newer prekeys (lib/e2e.ts PREKEYS_EVERY), newest first, each its secret and
+   *  bundle (base64) and when it was made (ms): contacts start their next conversations with the
+   *  newest, and a first packet opens with any kept. Missing in what was kept before them. */
+  prekeys?: Prekeys[];
 };
+
+export type Prekeys = { secret: string; bundle: string; at: number };
+
+/** The most newer prekeys kept: a first packet started with older ones no longer opens. */
+export const MAX_PREKEYS = 3;
 
 export const EMPTY_E2E: E2EData = { account: '', contacts: [], seen: [], restore: '' };
 
@@ -164,7 +182,15 @@ function checkedContact(value: unknown): Contact | null {
     packetKey: isRelayKey(v.packetKey) ? v.packetKey : '',
     sealTo: isRelayKey(v.sealTo) ? v.sealTo : '',
     sealsIn: v.sealsIn === true,
+    ...(isBase64(v.bundle) && v.bundle ? { bundle: v.bundle } : {}),
+    ...(isTime(v.bundleSent) ? { bundleSent: v.bundleSent } : {}),
+    ...(isBase64(v.renew) && v.renew ? { renew: v.renew } : {}),
   };
+}
+
+function checkedPrekeys(value: unknown): Prekeys | null {
+  const v = (value ?? {}) as Partial<Record<keyof Prekeys, unknown>>;
+  return isBase64(v.secret) && v.secret && isBase64(v.bundle) && v.bundle && isTime(v.at) ? { secret: v.secret, bundle: v.bundle, at: v.at } : null;
 }
 
 /** What was stored, with anything of the wrong shape left out. */
@@ -176,6 +202,7 @@ function checked(value: unknown): E2EData {
     contacts,
     seen: Array.isArray(v.seen) ? v.seen.filter(isHex) : [],
     restore: isHex(v.restore) && v.restore.length === 32 ? v.restore : '',
+    ...(Array.isArray(v.prekeys) ? { prekeys: v.prekeys.map(checkedPrekeys).filter((p): p is Prekeys => p !== null).slice(0, MAX_PREKEYS) } : {}),
   };
 }
 

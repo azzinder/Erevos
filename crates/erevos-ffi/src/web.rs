@@ -48,6 +48,16 @@ pub fn conversation_accept(account: &[u8], packet: &[u8]) -> Result<Vec<u8>, JsE
     js(crate::conversation_accept(account, packet))
 }
 
+#[wasm_bindgen(js_name = conversationAcceptAny)]
+pub fn conversation_accept_any(account: &[u8], prekeys: &[u8], packet: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::conversation_accept_any(account, prekeys, packet))
+}
+
+#[wasm_bindgen(js_name = accountPrekeys)]
+pub fn account_prekeys(account: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::account_prekeys(account))
+}
+
 #[wasm_bindgen(js_name = conversationSeal)]
 pub fn conversation_seal(conversation: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::conversation_seal(conversation, plaintext))

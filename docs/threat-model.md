@@ -31,6 +31,15 @@ Notes:
 - **Tor** is on Android only, per space, and carries only relay connections. Calls, through the
   call relay or direct, never go through Tor. Link previews are not made while Tor is on, and the
   update check refuses to run.
+- **Post-quantum, and a phone taken.** A chat starts with PQXDH, whose ML-KEM-768 half holds against
+  a future quantum computer only while the ML-KEM secret it used stays secret. The contact link's
+  is kept for as long as the account, so whoever takes the phone (or a backup) and has such a
+  computer could open the conversations started with the link. Erevos makes newer prekeys every 30
+  days, gives them to each contact in their chat, and the contact's Erevos starts a new conversation
+  with them; secrets older than the last three are thrown away. So, against that adversary, a chat
+  is open only in the conversation started with the link (until the first renewal, usually the
+  first answer) and in those started with prekeys still kept, or kept in a backup made then. Contacts on an older Erevos
+  never move. Groups are not post-quantum at all.
 - **One queue per space.** Every contact of a space writes to the same queue, so one relay sees all
   of them arrive there.
 

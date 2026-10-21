@@ -77,6 +77,23 @@ impl Account {
         PublicKey::from(&self.identity.dh).to_bytes()
     }
 
+    /// Fresh prekeys (a signed X25519 prekey and an ML-KEM key, no one-time
+    /// ones) signed by this account's identity, and their bundle. The account
+    /// keeps the prekeys of its contact link; these the app keeps beside it
+    /// and gives its contacts inside their conversations, so a first message
+    /// started with them opens only while the app keeps them ([`accept_with`]).
+    /// Thrown away later, they take what they opened with them, the ML-KEM
+    /// half included.
+    pub fn new_prekeys(&self) -> (Prekeys, PrekeyBundle) {
+        let (prekeys, mut bundles) = Prekeys::generate(&self.identity, 0);
+        (prekeys, bundles.remove(0))
+    }
+
+    /// The bundle of prekeys this account made ([`Account::new_prekeys`]).
+    pub fn bundle_of(&self, prekeys: &Prekeys) -> PrekeyBundle {
+        prekeys.bundle(&self.identity)
+    }
+
     /// Signs `message` under `context` with this account's identity key, for
     /// those who hold its bundle to check with [`PrekeyBundle::verify_signed`]
     /// (the list of an account's linked devices). Never the same bytes as a
@@ -137,12 +154,25 @@ pub fn start(me: &Account, bundle: &PrekeyBundle, plaintext: &[u8]) -> Result<(C
 
 /// Opens a first message sent to this account, and the conversation it starts.
 pub fn accept(me: &mut Account, packet: &[u8]) -> Result<(Conversation, Vec<u8>), Error> {
+    let identity_key = me.identity_key();
+    accept_using(&me.identity, identity_key, &mut me.prekeys, packet)
+}
+
+/// Opens a first message started with prekeys this account made
+/// ([`Account::new_prekeys`]) rather than those of its contact link. Which
+/// prekeys a message was started with shows only in whether it opens: with
+/// others, the keys come out different and its first message fails.
+pub fn accept_with(me: &Account, prekeys: &mut Prekeys, packet: &[u8]) -> Result<(Conversation, Vec<u8>), Error> {
+    accept_using(&me.identity, me.identity_key(), prekeys, packet)
+}
+
+fn accept_using(identity: &Identity, identity_key: [u8; 32], prekeys: &mut Prekeys, packet: &[u8]) -> Result<(Conversation, Vec<u8>), Error> {
     let (handshake, header, ciphertext) = split_first(packet)?;
     let handshake = InitialMessage::from_bytes(handshake)?;
-    let session = pqxdh::respond(&me.identity, &mut me.prekeys, &handshake)?;
+    let session = pqxdh::respond(identity, prekeys, &handshake)?;
     let mut conversation = Conversation {
         session,
-        ad: pair(handshake.identity_dh.as_bytes(), &me.identity_key()),
+        ad: pair(handshake.identity_dh.as_bytes(), &identity_key),
         peer: handshake.identity_dh.to_bytes(),
     };
     let plaintext = conversation.decrypt(&header, ciphertext)?;
@@ -402,6 +432,38 @@ mod tests {
         assert!(b.open(&damaged).is_err());
         assert_eq!(b.open(&next).unwrap(), b"y");
         assert!(accept(&mut bob, &first[..first.len() - 20]).is_err());
+    }
+
+    #[test]
+    fn a_conversation_started_with_newer_prekeys_opens_only_with_them() {
+        let alice = Account::generate();
+        let mut bob = Account::generate();
+        let (mut fresh, bundle) = bob.new_prekeys();
+        let bundle = PrekeyBundle::from_bytes(&bundle.to_bytes()).unwrap();
+        bundle.verify().unwrap();
+        assert_eq!(bundle.identity_dh.to_bytes(), bob.identity_key());
+        assert_eq!(bob.bundle_of(&fresh).to_bytes(), bundle.to_bytes());
+        assert_ne!(bundle.to_bytes(), bob.bundle().to_bytes());
+
+        let (mut a, first) = start(&alice, &bundle, b"again, with your new keys").unwrap();
+        // Not with the link's prekeys, nor with other new ones.
+        assert!(accept(&mut bob, &first).is_err());
+        let (mut other, _) = bob.new_prekeys();
+        assert!(accept_with(&bob, &mut other, &first).is_err());
+        // With the same prekeys, kept and loaded again.
+        let mut kept = Prekeys::from_secret_bytes(&fresh.to_secret_bytes()).unwrap();
+        let (mut b, text) = accept_with(&bob, &mut kept, &first).unwrap();
+        assert_eq!(text, b"again, with your new keys");
+        assert_eq!(b.peer(), alice.identity_key());
+        let reply = b.seal(b"got it").unwrap();
+        assert_eq!(a.open(&reply).unwrap(), b"got it");
+        // And it does not use up the prekeys: a second contact can start with them too.
+        let carol = Account::generate();
+        let (_, first) = start(&carol, &bundle, b"hi").unwrap();
+        assert_eq!(accept_with(&bob, &mut fresh, &first).unwrap().1, b"hi");
+        // The link's still open what was started with them.
+        let (_, first) = start(&carol, &bob.bundle(), b"by the link").unwrap();
+        assert_eq!(accept(&mut bob, &first).unwrap().1, b"by the link");
     }
 
     #[test]

@@ -27,6 +27,10 @@ class ErevosCoreModule : Module() {
     AsyncFunction("conversationAccept") { account: ByteArray, packet: ByteArray ->
       ErevosCoreNative.conversationAccept(account, packet)
     }
+    AsyncFunction("conversationAcceptAny") { account: ByteArray, prekeys: ByteArray, packet: ByteArray ->
+      ErevosCoreNative.conversationAcceptAny(account, prekeys, packet)
+    }
+    AsyncFunction("accountPrekeys") { account: ByteArray -> ErevosCoreNative.accountPrekeys(account) }
     AsyncFunction("conversationSeal") { conversation: ByteArray, plaintext: ByteArray ->
       ErevosCoreNative.conversationSeal(conversation, plaintext)
     }
@@ -124,6 +128,8 @@ internal object ErevosCoreNative {
   @JvmStatic external fun bundleVerify(bundle: ByteArray, context: ByteArray, message: ByteArray, signature: ByteArray): ByteArray
   @JvmStatic external fun conversationStart(account: ByteArray, bundle: ByteArray, plaintext: ByteArray): ByteArray
   @JvmStatic external fun conversationAccept(account: ByteArray, packet: ByteArray): ByteArray
+  @JvmStatic external fun conversationAcceptAny(account: ByteArray, prekeys: ByteArray, packet: ByteArray): ByteArray
+  @JvmStatic external fun accountPrekeys(account: ByteArray): ByteArray
   @JvmStatic external fun conversationSeal(conversation: ByteArray, plaintext: ByteArray): ByteArray
   @JvmStatic external fun conversationOpen(conversation: ByteArray, packet: ByteArray): ByteArray
   @JvmStatic external fun conversationPeer(conversation: ByteArray): ByteArray

@@ -10,7 +10,7 @@
 //! Not audited.
 
 use erevos_core::conversation::{self, Account, Conversation, Kind};
-use erevos_core::pqxdh::PrekeyBundle;
+use erevos_core::pqxdh::{PrekeyBundle, Prekeys};
 
 #[cfg(feature = "android")]
 mod android;
@@ -32,6 +32,18 @@ pub fn parts(items: &[&[u8]]) -> Vec<u8> {
         out.extend_from_slice(item);
     }
     out
+}
+
+/// The values of an array of length-prefixed parts.
+fn unparts(bytes: &[u8]) -> Result<Vec<&[u8]>> {
+    let mut out = Vec::new();
+    let mut rest = bytes;
+    while !rest.is_empty() {
+        let len = rest.get(..4).map(|l| u32::from_be_bytes(l.try_into().unwrap()) as usize).ok_or("damaged parts")?;
+        out.push(rest.get(4..4 + len).ok_or("damaged parts")?);
+        rest = &rest[4 + len..];
+    }
+    Ok(out)
 }
 
 /// A new account's secret keys.
@@ -86,6 +98,29 @@ pub fn conversation_start(account: &[u8], bundle: &[u8], plaintext: &[u8]) -> Re
 pub fn conversation_accept(account: &[u8], packet: &[u8]) -> Result<Vec<u8>> {
     // The account has no one-time prekeys, so accepting leaves it unchanged.
     let mut account = Account::from_secret_bytes(account).map_err(fail)?;
+    let (conversation, plaintext) = conversation::accept(&mut account, packet).map_err(fail)?;
+    Ok(parts(&[&conversation.to_secret_bytes(), &plaintext]))
+}
+
+/// Fresh prekeys signed by the account, for its contacts to start their
+/// next conversations with: their secret, then their bundle.
+pub fn account_prekeys(account: &[u8]) -> Result<Vec<u8>> {
+    let account = Account::from_secret_bytes(account).map_err(fail)?;
+    let (prekeys, bundle) = account.new_prekeys();
+    Ok(parts(&[&prekeys.to_secret_bytes(), &bundle.to_bytes()]))
+}
+
+/// Opens a first packet as `conversation_accept` does, trying each of the
+/// account's newer prekeys (`prekeys`, parts of what `account_prekeys` gave)
+/// in turn, then those of its contact link.
+pub fn conversation_accept_any(account: &[u8], prekeys: &[u8], packet: &[u8]) -> Result<Vec<u8>> {
+    let mut account = Account::from_secret_bytes(account).map_err(fail)?;
+    for secret in unparts(prekeys)? {
+        let mut keys = Prekeys::from_secret_bytes(secret).map_err(fail)?;
+        if let Ok((conversation, plaintext)) = conversation::accept_with(&account, &mut keys, packet) {
+            return Ok(parts(&[&conversation.to_secret_bytes(), &plaintext]));
+        }
+    }
     let (conversation, plaintext) = conversation::accept(&mut account, packet).map_err(fail)?;
     Ok(parts(&[&conversation.to_secret_bytes(), &plaintext]))
 }
@@ -564,6 +599,26 @@ mod tests {
         assert!(bundle_verify(&bundle, b"devices", b"list", &signature[..10]).is_err());
         assert!(bundle_verify(&bundle[..20], b"devices", b"list", &signature).is_err());
         assert!(account_sign(&account, b"", b"list").is_err());
+    }
+
+    #[test]
+    fn first_packets_open_with_newer_prekeys_or_the_links() {
+        let (alice, bob) = (account_new(), account_new());
+        let made = split(&account_prekeys(&bob).unwrap());
+        let (secret, bundle) = (&made[0], &made[1]);
+        assert_eq!(bundle_identity(bundle).unwrap(), account_identity(&bob).unwrap());
+        let older = split(&account_prekeys(&bob).unwrap());
+        let first = split(&conversation_start(&alice, bundle, b"hi").unwrap())[1].clone();
+        // Found among the newer ones, in any place, and not without them.
+        let kept = parts(&[&older[0], secret]);
+        assert_eq!(split(&conversation_accept_any(&bob, &kept, &first).unwrap())[1], b"hi");
+        assert!(conversation_accept_any(&bob, &parts(&[&older[0]]), &first).is_err());
+        assert!(conversation_accept(&bob, &first).is_err());
+        // The link's bundle still works, with or without newer ones.
+        let by_link = split(&conversation_start(&alice, &account_bundle(&bob).unwrap(), b"link").unwrap())[1].clone();
+        assert_eq!(split(&conversation_accept_any(&bob, &kept, &by_link).unwrap())[1], b"link");
+        assert_eq!(split(&conversation_accept_any(&bob, &[], &by_link).unwrap())[1], b"link");
+        assert!(conversation_accept_any(&bob, &[0, 0, 0, 9, 1], &by_link).is_err());
     }
 
     #[test]

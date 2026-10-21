@@ -10,6 +10,13 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet. The next release is **2.0.0**.
 
+- **Newer keys every month**: each chat's account makes new prekeys (X25519 and ML-KEM-768) every
+  30 days and gives them to its contacts inside their chats, whose Erevos starts a new conversation
+  with them; keys older than the last three are thrown away. So a phone or backup taken later no
+  longer opens, even with a quantum computer, what was said in conversations those keys started.
+  The safety number stays the same, and contact links keep working. Contacts on 0.1.16 and before
+  stay in the conversation they have.
+
 - **Android updates need the release computer's signature**: Check for updates installs an APK
   only once `deploy/web/publish.sh` on the release computer has signed its build and SHA-256 with
   the web app's offline key (`android-update.json`, served beside the web app). Until then it says
