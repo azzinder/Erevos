@@ -303,7 +303,7 @@ impl Held {
         let next = (self.clock)() + wait;
         let order = self.order;
         self.order += 1;
-        self.used += item.request.len() as u64;
+        // Its bytes were still counted while it ran: `went` is what takes them off.
         self.by_id.insert(*id, (next, order));
         self.items.insert((next, order), Item { tries, ..item });
     }
@@ -427,6 +427,23 @@ mod tests {
         // Past its time and the ttl: forgotten.
         held.failed(&id(1));
         assert_eq!(held.len(), 0);
+    }
+
+    #[test]
+    fn one_tried_again_counts_its_bytes_once() {
+        let start = clock();
+        let mut held = Held::in_memory(100);
+        held.clock = clock;
+        held.hold(id(1), start, b"four".to_vec()).unwrap();
+        assert_eq!(held.used, 4);
+        assert_eq!(held.take_due().len(), 1);
+        assert_eq!(held.used, 4);
+        held.failed(&id(1));
+        assert_eq!(held.used, 4);
+        wait(FIRST_RETRY);
+        assert_eq!(held.take_due().len(), 1);
+        held.went(&id(1));
+        assert_eq!(held.used, 0);
     }
 
     #[test]
