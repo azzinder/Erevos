@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { handOverCall, takeCall } from '../lib/call-handoff';
 import { splitLinks } from '../lib/links';
 import { holdLink, KEEP_MS, linkHref, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, takeLink } from '../lib/open-link';
 
@@ -84,4 +85,20 @@ test('a held link can be looked at, as the locked Phone does, and stays held', (
   assert.equal(peekLink(1000 + KEEP_MS + 1), null, 'too old');
   assert.equal(takeLink(2000), '/phone?tab=recents');
   assert.equal(peekLink(2000), null);
+});
+
+test('a call starts with a chat only when a tap in Erevos asked for it, once, for that contact', () => {
+  const alice = 'a'.repeat(64);
+  const bob = 'b'.repeat(64);
+  // A link from outside names a chat and nothing more: no call waits for it.
+  assert.deepEqual(linkParts(linkHref('erevos://chat?contact=' + alice + '&call=video')).params.call, 'video');
+  assert.equal(takeCall(alice), null);
+  handOverCall(alice, 'video', 1000);
+  assert.equal(takeCall(alice, 2000), 'video');
+  assert.equal(takeCall(alice, 2000), null);
+  handOverCall(alice, 'voice', 1000);
+  assert.equal(takeCall(bob, 2000), null);
+  assert.equal(takeCall(alice, 2000), null);
+  handOverCall(alice, 'voice', 1000);
+  assert.equal(takeCall(alice, 1000 + 31_000), null);
 });

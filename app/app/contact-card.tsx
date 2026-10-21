@@ -8,6 +8,7 @@ import { ShieldIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { QrCode } from '../components/QrCode';
 import { Button, Card, Page, Row, Sheet, Text, TextButton } from '../components/ui';
+import { handOverCall } from '../lib/call-handoff';
 import { confirm } from '../lib/alert';
 import { byName, cardErevos, erevosCard, erevosPeople, groupsByTitle, phoneCard, sealedCard, type Card as ContactCard } from '../lib/contact-book';
 import { offerContact } from '../lib/contact-code';
@@ -364,7 +365,8 @@ export default function ContactCardScreen() {
       router.dismiss(hiddenScreens());
       return;
     }
-    router.push(`/chat?contact=${card.erevos}${call ? `&call=${call}` : ''}`);
+    if (call) handOverCall(card.erevos, call);
+    router.push(`/chat?contact=${card.erevos}`);
   }
 
   const call = (number: string) => void Linking.openURL(`tel:${number.replace(/[^\d+*#,;]/g, '')}`).catch((error) => setNote(errorText(error)));

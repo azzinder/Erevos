@@ -16,12 +16,14 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
 import android.os.SystemClock
+import android.view.WindowManager
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.util.concurrent.atomic.AtomicBoolean
 
 // What a chat asks of the phone itself and React Native does not give: the clipboard, for Copy in
-// a message's menu, and where the phone is, once, to send as a place. What is copied is marked
+// a message's menu, where the phone is, once, to send as a place, and keeping Erevos's screen out
+// of screenshots and the recent apps preview (lib/screen-privacy.ts). What is copied is marked
 // sensitive, so Android's notice of a copy (Android 13 and later) does not show the words. Where
 // the phone is comes from its own location, by satellite when Erevos may and it is on, otherwise
 // as the phone's location settings find it; only when asked, and never followed after. Plain
@@ -52,6 +54,18 @@ class ErevosDeviceModule : Module() {
           }
           app.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(clip)
         }
+      }
+      true
+    }
+
+    // Keeps the app's window out of screenshots, screen recordings and the recent apps preview
+    // while `on` (FLAG_SECURE), on the main thread. False when no activity is showing; a new one,
+    // as when Erevos comes back after being swiped away, gets it when the app says again.
+    Function("setSecure") { on: Boolean ->
+      val activity = appContext.currentActivity ?: return@Function false
+      activity.runOnUiThread {
+        if (on) activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        else activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
       }
       true
     }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { PasswordSheet } from '../components/PasswordSheet';
+import { MIN_BACKUP_PASSWORD, PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask, choose as chooseOne, confirm } from '../lib/alert';
 import { locale, mark, plural, t } from '../lib/i18n';
@@ -348,6 +348,8 @@ export default function Backups() {
         visible={asking !== null}
         title={sheet?.kind === 'open' ? t('Open {name}', { name: sheet.name }) : sheet?.kind === 'auto' ? t('Password for automatic backups') : t('Password for this backup')}
         repeat={sheet?.kind !== 'open'}
+        least={MIN_BACKUP_PASSWORD}
+        hint={t('A backup holds every space and all its chats, and once the file is elsewhere its password is all that guards it: use at least {n} characters, or four words.', { n: MIN_BACKUP_PASSWORD })}
         submitLabel={sheet?.kind === 'open' ? t('Open') : t('Save')}
         onClose={() => setAsking(null)}
         onSubmit={submit}

@@ -10,6 +10,8 @@ type Device = {
   copyText(text: string): boolean;
   /** Starts looking for where the phone is, once: '' when it did, else why not. Missing in a build before places. */
   findPlace?(): '' | 'permission' | 'off';
+  /** Keeps the app out of screenshots and the recent apps preview while on. False with no screen showing. Missing in a build before it. */
+  setSecure?(on: boolean): boolean;
   addListener<Name extends keyof DeviceEvents>(name: Name, listener: DeviceEvents[Name]): EventSubscription;
 };
 

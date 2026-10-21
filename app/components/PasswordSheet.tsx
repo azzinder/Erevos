@@ -7,12 +7,20 @@ import { useColors } from '../theme/context';
 import { Button, Field, Input, Row, Sheet, Text } from './ui';
 import { t } from '../lib/i18n';
 
-// A sheet that asks for a password: a new one, typed twice (`repeat`), or one to open something.
+/** The fewest characters a password, PIN or second password has. */
+export const MIN_PASSWORD = 4;
+/** The fewest a backup's password has: once the file is elsewhere, it is all that guards it. */
+export const MIN_BACKUP_PASSWORD = 12;
+
+// A sheet that asks for a password: a new one, typed twice (`repeat`), of at least `least`
+// characters, or one to open something. `hint` says what the new one is for, under its field.
 // `onSubmit` returns false when the password opens nothing, and throws for the errors it shows.
-export function PasswordSheet({ visible, title, repeat, submitLabel, onClose, onSubmit }: {
+export function PasswordSheet({ visible, title, repeat, least = MIN_PASSWORD, hint, submitLabel, onClose, onSubmit }: {
   visible: boolean;
   title: string;
   repeat: boolean;
+  least?: number;
+  hint?: string;
   submitLabel: string;
   onClose: () => void;
   onSubmit: (password: string) => Promise<boolean | void>;
@@ -36,7 +44,7 @@ export function PasswordSheet({ visible, title, repeat, submitLabel, onClose, on
 
   async function save() {
     if (busy) return;
-    if (repeat && first.length < 4) return setError(t('Use at least 4 characters.'));
+    if (repeat && [...first].length < least) return setError(t('Use at least {n} characters.', { n: least }));
     if (repeat && first !== second) return setError(t('The passwords do not match.'));
     setBusy(true);
     setError(null);
@@ -65,7 +73,7 @@ export function PasswordSheet({ visible, title, repeat, submitLabel, onClose, on
   const ready = !!first && (!repeat || !!second) && !busy;
   return (
     <Sheet visible={visible} onClose={close} title={title}>
-      <Field label={repeat ? t('New password') : t('Password')}>
+      <Field label={repeat ? t('New password') : t('Password')} hint={repeat ? hint : undefined}>
         <Input
           value={first}
           onChangeText={setFirst}

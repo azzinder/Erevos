@@ -3,6 +3,8 @@ import { AppState, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Vi
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { takeCall } from '../lib/call-handoff';
+import { keepPrivate } from '../lib/screen-privacy';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
 import { nearbySettings, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
@@ -289,19 +291,25 @@ export default function ChatScreen() {
   const router = useRouter();
   // A contact to open with (from the home screen, or an imported chat that goes on with them),
   // hidden chats opened from the home screen's search (their key handed over in memory), or the
-  // relay settings to show at once. `at`: the tag of a message to go to, starred or found;
-  // `call`: a call to start with the contact, from its contact card.
-  const { contact, hidden, setup, phone, at, call } = useLocalSearchParams<{
+  // relay settings to show at once. `at`: the tag of a message to go to, starred or found. A call
+  // to start with the contact comes only from a tap in Erevos (lib/call-handoff.ts), never from the
+  // address, which any app or web page can open.
+  const { contact, hidden, setup, phone, at } = useLocalSearchParams<{
     contact?: string;
     hidden?: string;
     setup?: string;
     phone?: string;
     at?: string;
-    call?: string;
   }>();
   const fromSearch = hidden === 'open';
   const [hiddenPlace, setHiddenPlace] = useState<HiddenPlace | null>(() => (fromSearch ? takeHidden() : null));
   const hiddenKey = hiddenPlace?.key ?? null;
+  // Hidden chats always keep out of screenshots and the recent apps preview while open.
+  useEffect(() => {
+    if (!hiddenKey) return;
+    keepPrivate('hidden', true);
+    return () => keepPrivate('hidden', false);
+  }, [hiddenKey]);
   // Hidden chats opened from the search close back to the home screen, with their contacts
   // screens over them (app/contacts.tsx).
   const closeHidden = () => {
@@ -312,7 +320,7 @@ export default function ChatScreen() {
   const initial = typeof contact === 'string' && /^[0-9a-f]{64}$/.test(contact) ? `${CONTACT_PREFIX}${contact}` : null;
   // A number linked by hand from its SMS conversation (app/sms.tsx).
   const linkNumber = initial && typeof phone === 'string' && /^\+?\d{3,20}$/.test(phone) ? phone : '';
-  const initialCall = initial && (call === 'voice' || call === 'video') ? call : null;
+  const [initialCall] = useState(() => (initial ? takeCall(contact!) : null));
   // The look of the chat in view (its own, or the space's), as the chat showing says.
   const [chatLook, setChatLook] = useState<ChatLook | null>(null);
 

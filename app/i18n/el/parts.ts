@@ -4,7 +4,7 @@ export const parts: Record<string, string> = {
   'Enter your password': 'Γράψε τον κωδικό σου',
   Unlock: 'Ξεκλείδωμα',
   'Wrong password': 'Λάθος κωδικός',
-  'Use at least 4 characters.': 'Χρησιμοποίησε τουλάχιστον 4 χαρακτήρες.',
+  'Use at least {n} characters.': 'Χρησιμοποίησε τουλάχιστον {n} χαρακτήρες.',
   'The passwords do not match.': 'Οι κωδικοί δεν ταιριάζουν.',
   'Use a different password.': 'Χρησιμοποίησε άλλον κωδικό.',
   'New password': 'Νέος κωδικός',

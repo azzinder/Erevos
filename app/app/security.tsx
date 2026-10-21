@@ -6,6 +6,7 @@ import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { t } from '../lib/i18n';
+import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy, saveScreenPrivacy } from '../lib/screen-privacy';
 import {
   askBattery,
   askFullScreen,
@@ -46,10 +47,20 @@ export default function Security() {
   // Whether a fingerprint or face opens Erevos: null where the phone cannot.
   const [biometric, setBiometric] = useState<boolean | null>(null);
 
+  // Whether this phone keeps a locked space out of screenshots (lib/screen-privacy.ts).
+  const [screenPrivate, setScreenPrivate] = useState<boolean | null>(null);
+
   const reload = async () => {
     setConfig(await loadLockConfig());
     setBiometric(biometricSealer.available() ? await biometricOn(biometricSealer) : null);
+    setScreenPrivate(await loadScreenPrivacy());
   };
+
+  async function setScreenPrivacy(on: boolean) {
+    await saveScreenPrivacy(on);
+    keepPrivate('lock', on);
+    setScreenPrivate(on);
+  }
   useEffect(() => {
     reload();
   }, []);
@@ -163,6 +174,21 @@ export default function Security() {
               <Button title={t('Lock now')} kind="secondary" compact onPress={lockNow} />
             </Row>
           </Card>
+
+          {CAN_KEEP_PRIVATE && screenPrivate !== null ? (
+            <Card>
+              <Text variant="bodyStrong">{t('Screen privacy')}</Text>
+              <Text variant="caption" tone="muted" style={hint}>
+                {screenPrivate
+                  ? t('On: Erevos stays out of screenshots, screen recordings and the recent apps, so no one sees its last screen there.')
+                  : t('Off: screenshots work, and the recent apps show the last screen of Erevos.')}{' '}
+                {t('Hidden chats always stay out of them.')}
+              </Text>
+              <Row wrap>
+                <Button title={screenPrivate ? t('Turn off') : t('Turn on')} kind="secondary" compact onPress={() => void setScreenPrivacy(!screenPrivate)} />
+              </Row>
+            </Card>
+          ) : null}
 
           {biometric !== null ? (
             <Card>

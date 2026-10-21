@@ -296,12 +296,15 @@ export function Field({ label, hint, children }: { label?: string; hint?: string
   );
 }
 
-/** A text field. In a row beside a button, give it `style={{ flex: 1 }}`. */
+/** A text field. In a row beside a button, give it `style={{ flex: 1 }}`. A secret one (a
+ *  password, PIN or token) is never offered to the phone's password manager: one that kept two
+ *  passwords for Erevos would show there is a second space, and one kept the PIN of hidden chats. */
 export function Input({ style, ...props }: TextInputProps) {
   const colors = useColors();
   return (
     <TextInput
       placeholderTextColor={colors.textFaint}
+      importantForAutofill={props.secureTextEntry ? 'no' : undefined}
       {...props}
       style={[
         {

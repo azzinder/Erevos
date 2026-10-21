@@ -45,6 +45,7 @@ import { space as gap } from '../theme/colors';
 import { ThemeProvider, useTheme } from '../theme/context';
 import { ensureStyleFonts } from '../theme/fonts';
 import { DEFAULT_LOOK, loadLockScreenLook, saveLockScreenLook, type Look } from '../theme/look';
+import { keepPrivate, loadScreenPrivacy } from '../lib/screen-privacy';
 import { PhoneView } from './phone';
 
 setupCrypto();
@@ -87,6 +88,17 @@ export default function RootLayout() {
   useEffect(() => {
     lookRef.current = look;
   }, [look]);
+  // A space with a password lock keeps its screens out of screenshots and the recent apps
+  // preview, unless turned off in Lock (lib/screen-privacy.ts).
+  const privateLock = phase.kind === 'open' && phase.passwordLock;
+  useEffect(() => {
+    let live = true;
+    if (!privateLock) keepPrivate('lock', false);
+    else void loadScreenPrivacy().then((on) => live && keepPrivate('lock', on)).catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [privateLock]);
 
   const fail = useCallback((e: unknown) => {
     stopSpaceRunning();

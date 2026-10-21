@@ -926,6 +926,14 @@ Under **Lock and second password**, **Lock when Erevos opens** has two choices: 
 > There is no way to recover a forgotten password: nothing is stored that could open the data without it. Only a
 > fingerprint or face, while it is on, still opens the first space (see below).
 
+### Screen privacy
+
+With the password lock on, Android keeps Erevos out of screenshots, screen recordings and the recent apps: there the
+last screen of Erevos shows blank, so whoever holds the unlocked phone a moment does not see your chats in it. Under
+**Screen privacy**, **Turn off** lets screenshots work again (to send one, say), and **Turn on** brings it back. Hidden
+chats always stay out of them while they are open, whatever the setting. The setting is the phone's, the same in
+every space. On a computer and in the web app it does not exist.
+
 ### Fingerprint or face
 
 On Android 11 and later, with a fingerprint or face set up in the phone's settings, Erevos can open with it too. It
@@ -1010,7 +1018,8 @@ sealed with its own password, and the file is sealed again with a password of it
 home screen's menu.
 
 1. **Make a backup:** tap **Make a backup**, choose a folder (on the phone, a memory card, or a cloud app that shows
-   its folders there; on a computer, any folder), type a password for the backup twice and tap **Save**.
+   its folders there; on a computer, any folder), type a password for the backup twice (at least 12 characters, or
+   four words) and tap **Save**.
 2. **Automatic backups:** choose **Every day** or **Every week**, then a folder and a password. Erevos makes one when
    it opens and the last one is older than that, and the folder keeps the 3 newest. Under them are **Back up now**,
    **Change folder** and **Change password**; **Off** stops them, and the ones made stay in the folder.
@@ -1019,7 +1028,8 @@ home screen's menu.
    then.
 
 - **Keep the backup's password:** nothing opens a backup without it, and no one can recover it. Without a password
-  lock, the backup's password is all that protects it.
+  lock, the backup's password is all that protects it. Whoever has the file can try passwords on it as fast as their
+  computer goes, with no phone to slow them down, so a short one does not hold: Erevos takes none under 12 characters.
 - **Automatic backups keep their password on the phone,** so they need no password each time. Whoever opens their
   folder still needs the spaces' passwords to read the chats.
 - **Chats that went on after the backup:** restoring puts back each conversation's keys as they were then. Messages
@@ -1367,7 +1377,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
-| **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same "New message": whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does. | |
+| **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same "New message": whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does, but never by a name only hidden chats know: a call from one of their contacts shows the number. | |
 | **Widget and Phone (Android)** | The widget, once added, shows how many missed calls, unread SMS and new messages there are, never who or what. The Phone opens without the password only if you let it: then anyone holding the unlocked phone sees the calls and favourites Android keeps, with the names of the phone's contacts only. | |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |

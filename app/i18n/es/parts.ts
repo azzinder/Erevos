@@ -4,7 +4,7 @@ export const parts: Record<string, string> = {
   'Enter your password': 'Introduce tu contraseña',
   Unlock: 'Desbloquear',
   'Wrong password': 'Contraseña incorrecta',
-  'Use at least 4 characters.': 'Usa al menos 4 caracteres.',
+  'Use at least {n} characters.': 'Usa al menos {n} caracteres.',
   'The passwords do not match.': 'Las contraseñas no coinciden.',
   'Use a different password.': 'Usa una contraseña distinta.',
   'New password': 'Contraseña nueva',
