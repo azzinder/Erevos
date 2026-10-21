@@ -55,7 +55,13 @@ Notes:
   a list naming a key of their own. The list always has four places, those no device takes holding
   keys whose secrets are thrown away, so it does not show how many devices there are; only the
   phone and its devices know which are which. In this version only the account's own devices are
-  given the list, and being named in it lets a key do nothing.
+  given the list, and no contact writes to a key in it. A key the phone names to its devices as one
+  of theirs, in their links and with where it reads, gets from each of them, in a conversation of
+  their own, what it writes to contacts and the changes it makes to them. Naming one so takes the
+  account's key and the links both, which whoever holds the open phone already has; the account's
+  key alone, from a backup, does not. Packets between devices, and on a device's link to the
+  phone, are sealed once more for the relay after a conversation's first, as between contacts; the
+  relay still sees which queues write to which, the devices' to each other too.
 
 ## Out of scope
 

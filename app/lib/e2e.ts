@@ -694,6 +694,20 @@ export class E2E {
     });
   }
 
+  /**
+   * On a linked device: starts, as its endpoint, a conversation with another of the account's
+   * devices from that one's bundle (lib/siblings.ts), or null with no endpoint. Not in the chat's
+   * turn, as the links keep that conversation, and moves nothing the chat keeps.
+   */
+  startAsEndpoint(bundle: Uint8Array, plaintext: Uint8Array): Promise<core.Sealed | null> {
+    return this.data.endpoint ? core.startConversation(fromBase64(this.data.endpoint), bundle, plaintext) : Promise.resolve(null);
+  }
+
+  /** On a linked device: opens, as its endpoint, a first packet another of the account's devices started a conversation with, as `startAsEndpoint`. Throws for one that is not. */
+  acceptAsEndpoint(packet: Uint8Array): Promise<core.Opened> {
+    return this.data.endpoint ? core.acceptConversation(fromBase64(this.data.endpoint), packet) : Promise.reject(new Error('no endpoint'));
+  }
+
   /** On a linked device: its account as the phone said it, and the account's device list as last checked, or null. */
   own(): Own | null {
     return this.data.own ?? null;

@@ -1,13 +1,15 @@
 import { readOffer, type FileOffer } from '../lib/attachments';
 import { isGroupId } from '../lib/group-signal';
 import { checkedPlace, checkedSeat, checkedSynced, type GroupSeat, type Place, type Synced } from '../lib/link-wire';
+import { checkedErased, checkedRemoved, checkedSiblings, type Siblings } from '../lib/siblings';
 
-import type { Endpoint } from './e2e-data';
+import { isRelayKey, type Endpoint } from './e2e-data';
 import { sealedFile } from './sealed-file';
 
 // What each space keeps of its links to the account's other devices (lib/devices.ts): on the phone
 // that holds the account (the primary), each linked device; on a linked device, the primary. For
-// each, the conversation of the link, where it reads, and what waits to go to it. Kept sealed with the
+// each, the conversation of the link, where it reads, and what waits to go to it; on a linked device,
+// the account's other linked devices it reaches directly too (lib/siblings.ts). Kept sealed with the
 // space's key in FILE, one value for each space (sealed-file.ts), in blocks of BLOCK bytes. Hidden
 // chats have none: they are never linked. A backup leaves this file out, and restoring one leaves it
 // as it is: on another phone there is none, and the devices are linked again.
@@ -50,8 +52,12 @@ export type Peer = {
    *  hex, and bundle, base64url. On the primary, the device's; on a linked device, its own as it
    *  said it to the phone. Missing for a device from before it, which the list does not name. */
   endpoint?: Endpoint;
-  /** On the primary: the `n` of the device list it was last told. */
+  /** On the primary: the `n` of the device list it was last told, and where the other devices it names read, as told with it (JSON). */
   listed?: number;
+  routed?: string;
+  /** The key this side gave it for the packets it sends here, and the one it gave this side (lib/sealed-packet.ts), base64url. Missing while not said: a version from before says none, and is sealed nothing. */
+  key?: string;
+  sealTo?: string;
 };
 
 /**
@@ -88,6 +94,11 @@ export type DevicesData = {
   members: Record<string, GroupSeat[]>;
   /** In a space whose chats are a linked device's copy, from its backup (lib/devices.ts, copied): whether that was said. */
   copySaid: boolean;
+  /** On a linked device: the account's other linked devices, reached directly (lib/siblings.ts). */
+  siblings?: Siblings;
+  /** On a linked device: when each contact was removed, by identity, and the tags erased in each chat, by its peer, so a late word of them does not bring them back. */
+  removed?: Record<string, number>;
+  erased?: Record<string, string[]>;
 };
 
 export const EMPTY_DEVICES: DevicesData = { devices: [], primary: null, account: '', link: '', offer: null, answer: null, synced: {}, packs: [], left: [], members: {}, copySaid: false };
@@ -153,6 +164,9 @@ function checkedPeer(value: unknown): Peer | null {
     groups: checkedTold(v.groups),
     ...(endpoint ? { endpoint } : {}),
     ...(isTime(v.listed) && v.listed > 0 ? { listed: v.listed } : {}),
+    ...(isText(v.routed) ? { routed: v.routed } : {}),
+    ...(isRelayKey(v.key) ? { key: v.key } : {}),
+    ...(isRelayKey(v.sealTo) ? { sealTo: v.sealTo } : {}),
   };
 }
 
@@ -168,6 +182,9 @@ function checked(value: unknown): DevicesData {
       if (one && one.identity === id) synced[id] = one;
     }
   }
+  const siblings = checkedSiblings(v.siblings);
+  const removed = checkedRemoved(v.removed);
+  const erased = checkedErased(v.erased);
   const members: Record<string, GroupSeat[]> = {};
   if (v.members && typeof v.members === 'object') {
     for (const [id, seats] of Object.entries(v.members)) {
@@ -186,6 +203,9 @@ function checked(value: unknown): DevicesData {
     left: Array.isArray(v.left) ? v.left.map(checkedLeft).filter((l): l is Left => l !== null).slice(-MAX_LEFT) : [],
     members,
     copySaid: v.copySaid === true,
+    ...(siblings ? { siblings } : {}),
+    ...(Object.keys(removed).length > 0 ? { removed } : {}),
+    ...(Object.keys(erased).length > 0 ? { erased } : {}),
   };
 }
 

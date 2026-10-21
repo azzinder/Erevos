@@ -17,12 +17,17 @@ import { cleanGroupName, isGroupId } from './group-signal';
 // opened (`in`), one it sealed for a contact (`out`), a pack of the history on the relay's file store
 // (`history`), that a call was answered or turned down on another device (`call`), what changed in
 // the groups (`groups`), what changed in messages told already (`changed`), the account's device
-// list (`list`, lib/device-list.ts), where it is now (`here`) and that it unlinked the device
-// (`bye`). From a linked device: that the codes match (`ready`), its own endpoint (`endpoint`), a
-// message for a contact (`send`), a contact to add (`add`), a change to a contact (`set`), what to
-// do in a group (`group`), the photos and files it took (`took`), where it is (`here`) and that it
-// unlinked itself (`bye`). An envelope too large for one packet goes in parts (`part`). A version
-// from before leaves the kinds it does not know alone.
+// list (`list`, lib/device-list.ts, with where each of the devices it names reads), where it is now
+// (`here`) and that it unlinked the device (`bye`). From a linked device: that the codes match
+// (`ready`), its own endpoint (`endpoint`), a message for a contact (`send`), a contact to add
+// (`add`), a change to a contact (`set`), what to do in a group (`group`), the photos and files it
+// took (`took`), where it is (`here`) and that it unlinked itself (`bye`). Between two linked
+// devices, in their endpoints' own conversation (lib/siblings.ts): what one sealed for a contact
+// (`out`), a change it made to a contact (`set`) and where it is (`here`). A change to a contact
+// says when it was made (`when`), and the contacts when each field was set (`at`), so changes made
+// at once settle the later first. An envelope too large for one packet goes in parts (`part`). Each
+// also says the key its sender gives the other for the packets it sends back (`pk`,
+// lib/sealed-packet.ts). A version from before leaves the kinds and the fields it does not know alone.
 //
 // A contact's message travels as the JSON lib/e2e.ts makes of it (`m`), without where the contact's
 // queue is, which only the primary needs. Which messages go on, and which are worth telling the
@@ -47,7 +52,15 @@ export type Synced = {
   look: Look | null;
   avatar?: Avatar | null;
   hide: boolean;
+  /** When each field was last set, and when the contact was added, as a primary of this version says them (lib/siblings.ts). */
+  at?: FieldTimes;
 };
+
+/** The fields of a contact that settle by when each was set, the later first; the timer has its own time (`timerAt`). */
+export const TIMED = ['name', 'look', 'avatar', 'hide'] as const;
+
+/** When each of a contact's TIMED fields was last set, and when it was added (`added`), milliseconds, by the clock of the device that did it. */
+export type FieldTimes = Partial<Record<(typeof TIMED)[number] | 'added', number>>;
 
 /** A contact's message, as JSON. */
 export type Json = Record<string, unknown>;
@@ -59,8 +72,8 @@ export type Envelope =
   | { k: 'in'; c: string; m: Json }
   | { k: 'out'; c: string; m: Json; mark?: Mark }
   | { k: 'send'; c: string; m: Json }
-  | { k: 'add'; code: ContactCode }
-  | { k: 'set'; c: string; change: Partial<Omit<Synced, 'identity'>>; remove?: boolean }
+  | { k: 'add'; code: ContactCode; when?: number }
+  | { k: 'set'; c: string; change: Partial<Omit<Synced, 'identity' | 'at'>>; remove?: boolean; when?: number; added?: true }
   | { k: 'history'; offer: FileOffer; last: boolean }
   | { k: 'took'; ids: string[] }
   | { k: 'call'; id: string; done: 'answered' | 'declined' }
@@ -68,7 +81,7 @@ export type Envelope =
   | { k: 'group'; id: string; ask: GroupAsk }
   | { k: 'changed'; chats: ChatChange[]; groups: GroupChange[]; whole: WholeGroup[] }
   | { k: 'endpoint'; bundle: string }
-  | { k: 'list'; list: DeviceList; ak: string; real?: string[] }
+  | { k: 'list'; list: DeviceList; ak: string; real?: string[]; routes?: Record<string, Place> }
   | { k: 'here' }
   | { k: 'bye' };
 
@@ -130,7 +143,7 @@ export type GroupAsk =
   | { t: 'forget' }
   | { t: 'read' };
 
-type Said = Envelope & { at?: Place };
+type Said = Envelope & { at?: Place; pk?: string };
 type Part = { k: 'part'; id: string; n: number; of: number; d: string };
 
 /** The largest envelope one packet takes: the core's largest padding bucket holds 16383 bytes. */
@@ -167,6 +180,13 @@ export function checkedPlace(value: unknown): Place | null {
   return { sender: v.sender, relay: v.relay, relayKey: isRelayKey(v.relayKey) ? v.relayKey : '', spare: checkedSpare(v.spare) };
 }
 
+function checkedTimes(value: unknown): FieldTimes | null {
+  if (!isObject(value)) return null;
+  const times: FieldTimes = {};
+  for (const field of [...TIMED, 'added'] as const) if (isTime(value[field])) times[field] = value[field];
+  return times;
+}
+
 /** What every device keeps alike of a contact. */
 export function syncedOf(contact: Pick<Contact, 'identity' | 'name' | 'timer' | 'timerAt' | 'request' | 'look' | 'avatar' | 'hide'>): Synced {
   const { identity, name, timer, timerAt, request, look, avatar, hide } = contact;
@@ -177,6 +197,7 @@ export function syncedOf(contact: Pick<Contact, 'identity' | 'name' | 'timer' | 
 export function checkedSynced(value: unknown): Synced | null {
   const v = (value ?? {}) as Partial<Record<keyof Synced, unknown>>;
   if (!isHex(v.identity, 64)) return null;
+  const at = checkedTimes(v.at);
   return {
     identity: v.identity,
     name: isText(v.name) ? cleanName(v.name) : '',
@@ -186,12 +207,13 @@ export function checkedSynced(value: unknown): Synced | null {
     look: isObject(v.look) ? checkedLook(v.look) : null,
     ...('avatar' in v ? { avatar: v.avatar === null ? null : checkedAvatar(v.avatar) } : {}),
     hide: v.hide === true,
+    ...(at ? { at } : {}),
   };
 }
 
 /** The fields of `now` that differ from `before`, a contact as last said. */
-export function changedFields(before: Synced, now: Synced): Partial<Omit<Synced, 'identity'>> {
-  const change: Partial<Omit<Synced, 'identity'>> = {};
+export function changedFields(before: Synced, now: Synced): Partial<Omit<Synced, 'identity' | 'at'>> {
+  const change: Partial<Omit<Synced, 'identity' | 'at'>> = {};
   for (const field of ['name', 'timer', 'timerAt', 'request', 'look', 'avatar', 'hide'] as const) {
     if (field === 'avatar' && !('avatar' in now)) continue;
     if (JSON.stringify(before[field] ?? null) !== JSON.stringify(now[field] ?? null)) (change as Record<string, unknown>)[field] = now[field] ?? null;
@@ -246,19 +268,20 @@ function checkedEnvelope(v: Json): Envelope | null {
     case 'add': {
       const code = isObject(v.code) ? checkContact(v.code.senderHex, v.code.relayUrl ?? '', v.code.key ?? '', v.code.relayKey ?? '') : null;
       const spare = code && isObject(v.code) && isObject(v.code.spare) ? checkSpare(v.code.spare.senderHex, v.code.spare.relayUrl, v.code.spare.relayKey ?? '') : null;
-      return code?.key ? { k: 'add', code: spare ? { ...code, spare } : code } : null;
+      return code?.key ? { k: 'add', code: spare ? { ...code, spare } : code, ...(isTime(v.when) ? { when: v.when } : {}) } : null;
     }
     case 'set': {
       if (!isHex(v.c, 64)) return null;
-      if (v.remove === true) return { k: 'set', c: v.c, change: {}, remove: true };
+      const when = isTime(v.when) ? { when: v.when } : {};
+      if (v.remove === true) return { k: 'set', c: v.c, change: {}, remove: true, ...when };
       const said = isObject(v.change) ? v.change : {};
       const full = checkedSynced({ ...said, identity: v.c });
       if (!full) return null;
-      const change: Partial<Omit<Synced, 'identity'>> = {};
+      const change: Partial<Omit<Synced, 'identity' | 'at'>> = {};
       for (const field of ['name', 'timer', 'timerAt', 'request', 'look', 'avatar', 'hide'] as const) {
         if (field in said) (change as Record<string, unknown>)[field] = full[field] ?? null;
       }
-      return { k: 'set', c: v.c, change };
+      return { k: 'set', c: v.c, change, ...when, ...(v.added === true ? { added: true as const } : {}) };
     }
     case 'history': {
       const offer = readOffer(v.offer);
@@ -292,7 +315,14 @@ function checkedEnvelope(v: Json): Envelope | null {
       const list = checkedList(v.list);
       if (!list || !isBundle(v.ak)) return null;
       const real = Array.isArray(v.real) ? v.real.filter((id): id is string => isHex(id, 64)).slice(0, MAX_LISTED) : null;
-      return { k: 'list', list, ak: v.ak, ...(real ? { real } : {}) };
+      const routes: Record<string, Place> = {};
+      if (isObject(v.routes)) {
+        for (const [id, place] of Object.entries(v.routes).slice(0, MAX_LISTED)) {
+          const checked = isHex(id, 64) ? checkedPlace(place) : null;
+          if (checked) routes[id] = checked;
+        }
+      }
+      return { k: 'list', list, ak: v.ak, ...(real ? { real } : {}), ...(Object.keys(routes).length > 0 ? { routes } : {}) };
     }
     case 'here':
     case 'bye':
@@ -444,9 +474,12 @@ function checkedAsk(value: unknown): GroupAsk | null {
   }
 }
 
-/** One envelope, with where its sender reads, as it goes in a packet or in parts. */
-export function encodeEnvelope(envelope: Envelope, at: Place | null): Uint8Array[] {
-  const bytes = utf8Encode(JSON.stringify({ v: 1, ...envelope, ...(at ? { at } : {}) }));
+/**
+ * One envelope, with where its sender reads and the key it gives the other for the packets it sends
+ * back (`pk`, lib/sealed-packet.ts), as it goes in a packet or in parts.
+ */
+export function encodeEnvelope(envelope: Envelope, at: Place | null, pk = ''): Uint8Array[] {
+  const bytes = utf8Encode(JSON.stringify({ v: 1, ...envelope, ...(at ? { at } : {}), ...(pk ? { pk } : {}) }));
   if (bytes.length <= SPLIT_OVER) return [bytes];
   const id = toHex(randomBytes(8));
   const of = Math.ceil(bytes.length / PART_BYTES);
@@ -461,9 +494,9 @@ export function encodeEnvelope(envelope: Envelope, at: Place | null): Uint8Array
  * One envelope in one packet, for a message a linked device writes to a contact: with where its
  * sender reads when that still fits, else without. Null when it does not fit at all.
  */
-export function encodeOne(envelope: Envelope, at: Place | null): Uint8Array | null {
+export function encodeOne(envelope: Envelope, at: Place | null, pk = ''): Uint8Array | null {
   for (const where of at ? [at, null] : [null]) {
-    const bytes = utf8Encode(JSON.stringify({ v: 1, ...envelope, ...(where ? { at: where } : {}) }));
+    const bytes = utf8Encode(JSON.stringify({ v: 1, ...envelope, ...(where ? { at: where } : {}), ...(pk ? { pk } : {}) }));
     if (bytes.length <= MAX_ENVELOPE) return bytes;
   }
   return null;
@@ -525,7 +558,7 @@ function readSaid(value: Json): Said | null {
   const envelope = checkedEnvelope(value);
   if (!envelope) return null;
   const at = checkedPlace(value.at);
-  return at ? { ...envelope, at } : envelope;
+  return { ...envelope, ...(at ? { at } : {}), ...(isRelayKey(value.pk) ? { pk: value.pk } : {}) };
 }
 
 // What says where a contact's queue is, in a message: only the primary keeps it.

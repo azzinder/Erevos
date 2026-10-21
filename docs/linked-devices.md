@@ -39,7 +39,9 @@ the background (lib/background.ts), so in practice it is. What the computer writ
 is off waits in the phone's queue on the relay and goes when the phone is back.
 
 The second way comes on top of this, so linked devices work with the phone off: once contacts
-know device lists, the primary stops relaying for those contacts. docs/multi-device.md is how.
+know device lists, the primary stops relaying for those contacts. docs/multi-device.md is how. Its
+first part is here already: the linked devices reach each other directly (Devices to each other,
+below), so with the phone off they still see what the others do.
 
 ## How it works
 
@@ -57,7 +59,10 @@ a linked device, and nothing on the screens of one space shows that another is l
 Every link is a conversation of the core's own kind (PQXDH, then the double ratchet), between a
 key the computer makes for the link and a key the phone makes for it, through the relay like any
 other: the relay sees packets of the same sizes as messages between people, on queues it cannot
-tie to an account. The core's padding and two-hop sending apply as they do to contacts.
+tie to an account. The core's padding and two-hop sending apply as they do to contacts. Once both
+sides have this version, each gives the other a key of its own in the link (`pk`), and every packet
+after the conversation's first is sealed once more with it for the relay (lib/sealed-packet.ts), as
+between contacts, so the relay cannot tell which packets in a queue belong to one link.
 
 Linking, by QR code and a safety check:
 
@@ -86,10 +91,38 @@ device takes hold keys made only for the list, whose secrets are thrown away. Th
 the list once the bundle is the account's it was linked to (said in the phone's first message, in
 the link whose codes were compared) and the bundle's key signed it, later than the one it has.
 
-Nothing is written to an endpoint yet, and no contact is given the list: it is the first step of
-docs/multi-device.md, towards devices that work with the phone off. A phone or a computer from
-before ignores what it does not know, and the phone keeps passing on for every device as below. A
-build whose core cannot sign as the account makes no endpoint and signs no list.
+No contact is given the list yet, and nothing a contact sends goes to an endpoint: contacts reach
+the account only through the phone, as below. The devices' endpoints reach each other (Devices to
+each other, below). A phone or a computer from before ignores what it does not know, and the phone
+keeps passing on for every device as below. A build whose core cannot sign as the account makes no
+endpoint and signs no list.
+
+### Devices to each other
+
+With the list, the phone tells each device where each other device in it reads (`routes`, in the
+link, not in the signed list). Each two devices then have a conversation of the core's own kind
+between their endpoints (lib/siblings.ts): the one with the lower id starts it from the other's
+bundle in the list, and the other takes a first packet only from an endpoint the list it checked
+names, one that should start, and only once. Its packets are sealed for the relay as the link's
+are. What a device writes to a contact goes to the phone as before, and to each other device too,
+as its own: a message, what it read, reacted to, pinned, voted or deleted on both phones; so do
+the changes it makes to contacts (names, timers, looks, pictures, appearing offline, accepting a
+request, removing one) and where its queue is. So with the phone off, each device still shows what
+the others write and do; the contacts get it once the phone is back, as before. A message sent
+for later and a call's signals go through the phone only, and so does adding a contact, which
+needs the phone. Contacts' messages and groups still come only through the phone.
+
+As two devices may change the same thing with the phone off, each change says when it was made,
+and each field of a contact keeps when it was set: the later setting of each field wins, on every
+device and on the phone. A request accepted on one stays accepted. A contact removed on one stays
+removed for what comes of it later, until someone adds it again. A message deleted stays deleted,
+should a copy come late. A message that comes both from a device and through the phone is kept
+once, by its tag. Device names stay on each device. Hidden chats and second passwords never use
+these conversations.
+
+A photo or file a device sends, when the list names other devices, stays on its relay for them to
+take, and expires there after 14 days. A phone from before gives no routes, so its devices go
+through it as before; a device from before meets no one, and is reached through the phone.
 
 ### Messages
 
@@ -234,7 +267,9 @@ stay on the phone for now; public groups are not told to the devices at all.
 
 Contacts on any older Erevos see nothing new: same identity, same queue, same ratchet, same safety
 number. Both the phone and the computer need this version to link. A device from before changes in
-messages told already leaves `changed` alone, and shows those done on it only, as before.
+messages told already leaves `changed` alone, and shows those done on it only, as before. Devices
+reach each other only when the phone and both of them have this version; otherwise everything goes
+through the phone, as before, and nothing is sealed once more on a link with a version from before.
 
 ### Backups
 
@@ -249,15 +284,19 @@ own). Such a space links again as an empty one does: once the phone sends its co
 has stay, the history brought over joins them, each message once, and the others go; the first
 `groups` after linking says all the groups there are (`all`), so a group the phone no longer has
 goes too. Such a copy lets go of the computer's endpoint as it opens, before it seals anything, so
-two computers never take one endpoint; linked again, it makes a new one. A phone's backup carries
-the device list it signed last, so restored on another phone, where no device is linked, it signs a
-later one that names none of them.
+two computers never take one endpoint; linked again, it makes a new one. The conversations with the
+other devices are kept with the links, so a backup put back on the same computer finds them as
+they were, and one put back elsewhere has none. A phone's backup carries the device list it signed
+last, so restored on another phone, where no device is linked, it signs a later one that names none
+of them.
 
 ## Where it is in the code
 
 - `lib/link-code.ts`: the QR code's link, and the safety code.
 - `lib/link-wire.ts`: what goes between the devices, and which messages are passed on.
 - `lib/device-list.ts`: the device list, signed by the account and checked against its bundle.
+- `lib/siblings.ts`: on a linked device, the account's other devices it reaches directly, and how
+  what two of them change at once settles.
 - `lib/linked-calls.ts`: on the phone, where each call signal goes: who rings, who has the call.
 - `lib/groups.ts`: on a linked device, the groups kept as the phone says them (`mirror`), and what
   is done in them goes through it (`GroupLink`).
@@ -270,4 +309,5 @@ later one that names none of them.
   it (`watchTakenFiles`).
 - `app/app/devices.tsx`: Menu → Linked devices; `app/app/link.tsx` opens it from a scanned code.
 - `app/checks/devices.check.ts`: a phone, a computer and a contact on an older version, through a
-  real relay and the real core.
+  real relay and the real core; devices reaching each other with the phone off.
+- `app/checks/siblings.check.ts`: which devices meet, and how their changes settle.

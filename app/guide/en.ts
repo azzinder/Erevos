@@ -1227,8 +1227,10 @@ The chats then come to the computer, and after them the messages chosen.
   marks, reactions, pins, votes, deleting from both phones, names, timers, chat looks and pictures, appearing offline
   and accepting requests go both ways. A star, or deleting on **This phone**, done on the phone goes to the computer
   too; done on the computer, it stays there.
-- **The phone has to be on** and reach the relay for the computer to send and receive. What the computer writes
-  meanwhile waits on the relay, and goes once the phone is back.
+- **The phone has to be on** and reach the relay for the computer to send to contacts and get their messages. What
+  the computer writes meanwhile waits on the relay, and goes once the phone is back. Two or more linked devices also
+  reach each other directly: with the phone off, each still shows what the others write, read and react to, and the
+  changes they make to contacts.
 - **Photos and files** that come stay on the relay until both the phone and the computer took them; then the phone
   deletes them there. One the computer never takes goes when it is unlinked, or after 14 days, as any not taken.
 - **Calls** ring on the phone and on the computer. Answer on either: the other stops ringing, and says it was

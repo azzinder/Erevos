@@ -21,6 +21,10 @@ On main, not released yet. The next release is **2.0.0**.
   key, a first step towards linked devices that work with the phone off. Nothing changes yet in
   what they do; devices linked before need no linking again.
 
+- Linked devices reach each other directly: with the phone off, each still shows what the others
+  write, read, react to and change in contacts, and the contacts get it once the phone is back, as
+  before. With a phone or device from before, everything goes through the phone as now.
+
 - **Group keys made new every week**: in every group, private or public, the admin's phone makes
   its own keys new, and each member's phone asks the admin to put it in anew with new ones. So keys
   taken from a phone once stop reading the group within a week. Members see no one leave or join.

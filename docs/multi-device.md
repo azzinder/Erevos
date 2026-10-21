@@ -108,15 +108,27 @@ Older versions ignore an unknown `k`.
 
 - `endpoint` (device → primary): its endpoint's bundle, once the codes match, and once from a
   link made before this. Said again when a list does not name it.
-- `list` (primary → devices, and passed on between devices): the signed list, the account's
-  bundle (`ak`) and which entries are the devices' (`real`); a device checks the bundle names the
-  account it linked to (`hello`, over the link whose safety code was compared), then the list
-  against it, and keeps it (`E2EData.own`). The primary keeps the `n` each device was last told
-  (`Peer.listed`), and the endpoint each said (`Peer.endpoint`).
+- `list` (primary → devices): the signed list, the account's bundle (`ak`), which entries are the
+  devices' (`real`) and where each of the other devices reads (`routes`, by endpoint id, from the
+  primary's `Peer.at`; in the envelope over the link, not in `r` of the signed body); a device
+  checks the bundle names the account it linked to (`hello`, over the link whose safety code was
+  compared), then the list against it, and keeps it (`E2EData.own`). The primary keeps the `n`
+  each device was last told (`Peer.listed`), the endpoint each said (`Peer.endpoint`) and the
+  routes it was last told (`Peer.routed`), and tells the list again when a device's route
+  changes. Devices do not pass the list on to each other.
 - `peer` (any endpoint → its siblings): what it learned of a contact's endpoints and whether that
   contact writes to it directly.
-- `out`, `set`, `call`, `took`, `changed` may now come from any endpoint, with a time each, so
-  they settle last writer first.
+- Between devices, in their endpoints' conversation: `out` (what one sealed for a contact), `set`
+  (a change it made to a contact) and `here` (where it reads). A `set` says when it was made
+  (`when`), as does an `add` to the primary, and each contact in `contacts` says when each of its
+  fields was set (`at`: `name`, `look`, `avatar`, `hide`, and `added`), so changes made at once
+  settle last writer first. `call`, `took` and `changed` still go between a device and the
+  primary only (phase 4 for calls).
+- `pk`, in every envelope of this version, on the primary's links and between devices: the key its
+  sender gives the other for the packets it sends back (lib/sealed-packet.ts, a random one for each
+  link, kept with it). Once a side has the other's, every packet but a conversation's first goes to
+  it sealed, and the receiver finds whose it is by its mark. A version from before never says it,
+  so nothing is sealed for it.
 
 ### How a contact finds and checks the devices
 
@@ -191,16 +203,50 @@ signed list does.
 
 ## Own devices
 
-All with all: the primary's links to each device (safety codes compared) stay, and devices start
-conversations with each other from the bundles of the list's `real` entries; the one with the
-lower id starts, the other takes a first packet only from an id in the current list.
-lib/siblings.ts holds them; `Links.say` writes to the primary and every sibling; link packets are
-sealed with sealed-packet marks.
+All with all (phase 2): the primary's links to each device (safety codes compared) stay, and
+devices start conversations with each other, endpoint to endpoint, from the bundles of the list's
+`real` entries the primary gave a route for; the one with the lower id starts, the other takes a
+first packet only from an id in the list it last checked, and only from one that should start.
+lib/siblings.ts holds them, as a device's **siblings**.
 
-What settles how: messages by (chat, tag), marks only go up; contact fields last writer first per
-field; an accepted request stays accepted; removing a contact leaves a tombstone a deliberate re-add
-overrides; erase wins; groups the primary decides. Device names stay on each device. Hidden places
-never go over the space's link.
+- A device meets its siblings as soon as it keeps a list (or the same list again with new
+  routes). What is for a sibling that has not started yet waits (`held`, the last 100), and goes
+  sealed once its first packet came. A first packet from an id the list does not name yet waits
+  too (`early`, at most 8, 14 days), and is tried again with the next list. The first packets
+  taken are remembered (`seen`, 100), so the relay cannot replay one.
+- What a device writes goes to the primary and to every sibling: `out` for what it sealed for a
+  contact (not a call's signal, nor one sent for later, `due`, which the siblings see once the
+  primary sends it), `set` for each contact change, `here` when its queue changes. `add` goes to
+  the primary only, which adds the contact and tells every device.
+- A photo or file a device sends is left on its relay when the list names others, for them to
+  take, and expires there after 14 days; the primary takes its copy without deleting it.
+- Kept in lock/devices-data.ts (`siblings`), with the links, not in `E2EData`: that file is in no
+  backup, so a backup put back on the same device finds them as they were and no conversation
+  goes back to keys it used (nothing goes through `core.restored`), and a copy put back elsewhere
+  has none. They name the endpoint they were made with (`of`), and go when the device's endpoint
+  is another or none (a restored copy, forget, unlink, a new endpoint).
+- A primary from before gives no routes, so its devices meet no one and go through it as today. A
+  device from before is never met, and is reached through the primary as today.
+
+What settles how:
+
+- Messages by (chat, tag), so what comes from a sibling and again through the primary is kept once;
+  marks only go up.
+- Contact fields last writer first per field: `name`, `look`, `avatar` and `hide` each keep when
+  they were set (`at`), by the clock of the device that set them and always after a time it knew
+  of; an older change to a field is dropped. The timer takes the later setting (`timerAt`).
+- A request accepted on one device stays accepted.
+- Removing a contact leaves a tombstone (lock/devices-data.ts `removed`, 500 at most): what comes
+  of it later is dropped while its `added` time is not after the removal. A deliberate re-add
+  (`add`, then the primary's `contacts`, or a sibling's `set` with `added`) says a later one, and
+  overrides it.
+- Erase wins: each chat keeps the tags erased on this device (`erased`, 500 tags in each of 200
+  chats), so a late copy from a sibling or the primary does not bring one back. Erasing a chat's
+  messages covers the tags it had then.
+- Groups the primary decides: nothing of groups goes between devices.
+
+Device names stay on each device. Hidden places never go over the space's link. Contacts see
+nothing new, and their messages still reach devices only through the primary (phase 3).
 
 ## Data
 
@@ -209,6 +255,11 @@ never go over the space's link.
 - Space: `endpoint` (a linked device's own account), `own` (its account's identity and bundle, and
   the list as last checked, with `real`), `list` (the primary's last signed list, with `real`),
   `unverified`.
+- Links (lock/devices-data.ts, in no backup): on a linked device `siblings`, `removed` and `erased`
+  (Own devices, above), and each contact's field times (`at`, in `synced`); on each link its
+  sealing keys (`key`, `sealTo`), and on the primary the routes each device was told (`routed`).
+  The endpoints' bundles stay as made: newer prekeys (`E2E.open`, `PREKEYS_EVERY`) are the
+  account's only.
 - lock/fanout-data.ts: the copies for other endpoints waiting for the relay, at most 300 per
   endpoint and 1000 in all. The conversations are saved before the outbox: a crash in between
   loses copies, which is safe; the other order would reuse message keys.
@@ -244,6 +295,9 @@ so the contact stops writing to the space's devices.
   packets instead of 1 or 2, and up to 4 delivered marks back.
 - A device off for long fills its queue faster (1000 messages, 14 days); what came directly and was
   dropped comes back from the primary's history once it is on.
+- With siblings, a device's photos and files stay on its relay until they expire (14 days), not
+  only until the primary took them. Packets a sibling sends after its first, should they come
+  before that first one is taken, are lost; what they said comes again through the primary.
 - The relay can tie an account's queues together (every contact writes to all of them at once).
   R4 (a sender id per contact) is the first relay change worth making after this.
 
