@@ -22,6 +22,9 @@ import { t } from './i18n';
 // it links with later (two more at most), and hands it to that relay through its own relay once it
 // can (carryTo in lib/relay.ts). It cannot open it, nor tell who it is from or for: it sees only
 // the relay's address. The phone that sent it keeps it too, and hands it over itself the same way.
+// Carrying for others is off unless the owner turns it on, and then only for relays on the internet
+// over TLS (isCarriable): a stranger nearby never has this phone, or its relay, reach a relay on a
+// local network or on the phone itself.
 //
 // Slow links: a LoRa radio (lib/lora.ts) reaches phones kilometres away, but a few hundred bytes
 // take seconds on the air, and the law allows a radio only so much air time. So a slow link is the
@@ -37,6 +40,25 @@ export type Delivery = 'nearby' | 'relay' | 'spread' | 'carried' | 'lora';
 
 /** A packet sealed for the contact's relay (relaySeal), to hand to the relay at `url` from wherever there is internet. */
 export type Carried = { url: string; sealed: Uint8Array };
+
+/** Whether a phone nearby may have this phone carry a message to this relay: one on the internet,
+ *  over TLS (wss://), named or at a public address. A stranger's packet never sends this phone,
+ *  or its relay, to a relay on this phone itself, on a local network or in plain text. */
+export function isCarriable(url: string): boolean {
+  const match = /^wss:\/\/(\[[^\]]*\]|[^/:?#\s]+)(:\d{1,5})?(\/[^\s]*)?$/i.exec(url.trim());
+  if (!match) return false;
+  const host = match[1].toLowerCase().replace(/\.$/, '');
+  if (host.startsWith('[')) {
+    const ip = host.slice(1, -1);
+    // Loopback, unspecified, link-local, unique local, and IPv4 written as IPv6.
+    return !/^(::1?|fe[89ab][0-9a-f]?:.*|f[cd][0-9a-f]{2}:.*|::ffff:.*|.*::)$/.test(ip) && ip.includes(':');
+  }
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.lan') || host.endsWith('.home.arpa') || !host.includes('.')) return false;
+  const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (!v4) return true;
+  const [a, b] = [Number(v4[1]), Number(v4[2])];
+  return !(a === 0 || a === 10 || a === 127 || a >= 224 || (a === 100 && b >= 64 && b < 128) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b < 32) || (a === 192 && b === 168));
+}
 
 /** Hands a carried packet to its relay (carryTo): true when taken, false when it never will be. Throws to try again later. */
 export type Upload = (url: string, sealed: Uint8Array) => Promise<boolean>;
@@ -172,7 +194,10 @@ export class Nearby {
   // Packets carried for their relays, oldest first; this phone's own among them.
   private items: Item[] = [];
   private readonly takenFrom = new Map<string, number>();
-  private carrying = true;
+  private carrying = false;
+  /** Which relays this phone carries packets of other phones to (isCarriable; checks with relays
+   *  on this computer let any). */
+  carriable: (url: string) => boolean = isCarriable;
   private uploading: Promise<number> | null = null;
   // Where carried packets stay: those for others, and the open space's own. Saved to only once
   // loaded, so what was kept is not written over first; `dirty`: those to save again.
@@ -408,7 +433,7 @@ export class Nearby {
     for (const { url, sealed, hops, until } of kept) {
       if (!RELAY_URL.test(url) || !(until > now) || !(sealed instanceof Uint8Array) || !Number.isInteger(hops)) continue;
       const key = keyOf(url, sealed);
-      if (known.has(key) || (!own && !this.carrying)) continue;
+      if (known.has(key) || (!own && (!this.carrying || !this.carriable(url)))) continue;
       known.add(key);
       const most = own ? MAX_HOPS : MAX_HOPS - 1;
       back.push({ url, sealed, key, hops: Math.max(0, Math.min(hops, most)), until: Math.min(until, now + CARRY_FOR), own, space: own ? store : null, from: null, offered: new Set(), triedAt: 0 });
@@ -449,7 +474,7 @@ export class Nearby {
   private carriedIn(link: string, bytes: Uint8Array, now: number) {
     if (!this.carrying || isSlow(link)) return;
     const item = decodeItem(bytes, now);
-    if (!item) return;
+    if (!item || !this.carriable(item.url)) return;
     const key = keyOf(item.url, item.sealed);
     if (this.seen.includes(key)) return;
     const taken = this.takenFrom.get(link) ?? 0;

@@ -17,7 +17,7 @@ import { contactLink, parseContact } from '../lib/contact-code';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, toBase64 } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
-import { framesOf, Nearby, NoWayError, type Carried } from '../lib/nearby';
+import { framesOf, isCarriable, Nearby, NoWayError, type Carried } from '../lib/nearby';
 import { carryTo, createQueue, receiveMessage, relayKey, toHex } from '../lib/relay';
 import { carriedFor } from '../lib/space-chats';
 import { files } from './files-memory';
@@ -40,8 +40,12 @@ function room() {
   const phones = new Map<string, { nearby: Nearby; came: { link: string; packet: Uint8Array }[]; up: boolean }>();
   // Each link id is the one the phone at that end calls it by, as the radio names them.
   const ends = new Map<string, { to: string; as: string }>();
-  const phone = (name: string) => {
+  // Each carries for others, as turned on, and to the relays these checks run on this computer.
+  // `asNew`: as a phone where nobody turned it on (freshPhone).
+  const make = (name: string, asNew: boolean) => {
     const nearby = new Nearby();
+    if (!asNew) nearby.setCarrying(true);
+    nearby.carriable = () => true;
     const kept = { nearby, came: [] as { link: string; packet: Uint8Array }[], up: true };
     phones.set(name, kept);
     nearby.start((link, text) => {
@@ -54,6 +58,8 @@ function room() {
     });
     return kept;
   };
+  const phone = (name: string) => make(name, false);
+  const freshPhone = (name: string) => make(name, true);
   // `again` names the link anew, as when two phones link a second time.
   const link = (a: string, b: string, again = '') => {
     const [ab, ba] = [`ble-link-${b}${again}`, `ble-link-${a}${again}`];
@@ -65,7 +71,7 @@ function room() {
   const drop = (name: string) => {
     phones.get(name)!.up = false;
   };
-  return { phone, link, drop };
+  return { phone, freshPhone, link, drop };
 }
 
 const message = (r: Received) => {
@@ -281,6 +287,42 @@ test('what could not go is carried by the phones nearby, two more at most, and h
   assert.deepEqual(d.nearby.carriedCount(), { own: 0, others: 0 });
   // The sender's own go once it reaches the relay, or after three days, unless a carrier was first.
   assert.deepEqual(a.nearby.carriedCount(Date.now() + 3 * DAY + 1000), { own: 0, others: 0 });
+});
+
+test('a phone carries for others only once turned on, and only to relays on the internet over TLS', async () => {
+  for (const url of ['wss://relay.example', 'wss://erevos.lphl.nekten.eu/sealed', 'wss://8.8.8.8:443', 'wss://[2001:db8::1]']) assert.equal(isCarriable(url), true, url);
+  for (const url of [
+    'ws://relay.example',
+    'wss://localhost',
+    'wss://relay.localhost',
+    'wss://printer.local',
+    'wss://box',
+    'wss://127.0.0.1',
+    'wss://10.1.2.3:7879',
+    'wss://172.16.0.9',
+    'wss://192.168.178.29',
+    'wss://100.64.0.1',
+    'wss://169.254.1.1',
+    'wss://0.0.0.0',
+    'wss://[::1]',
+    'wss://[fd00::1]',
+    'wss://[fe80::1]',
+    'wss://[::ffff:127.0.0.1]',
+  ]) {
+    assert.equal(isCarriable(url), false, url);
+  }
+  // A phone where nobody turned it on keeps nothing for others; one turned on keeps only what
+  // goes to a relay on the internet.
+  const { phone, freshPhone, link } = room();
+  const [a, c] = ['A', 'C'].map(phone);
+  const fresh = freshPhone('N');
+  c.nearby.carriable = isCarriable;
+  link('A', 'C');
+  link('A', 'N');
+  const carry = async (): Promise<Carried[]> => [{ url: 'wss://192.168.178.29', sealed: randomBytes(200) }, { url: 'wss://relay.example', sealed: randomBytes(200) }];
+  assert.equal(await a.nearby.deliver('bb', [randomBytes(100)], null, carry), 'carried');
+  assert.deepEqual(c.nearby.carriedCount(), { own: 0, others: 1 });
+  assert.deepEqual(fresh.nearby.carriedCount(), { own: 0, others: 0 });
 });
 
 test('a phone that carries nothing for others takes nothing, and nonsense is not carried', async () => {
