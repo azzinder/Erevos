@@ -24,6 +24,7 @@ import { cleanGroupName, isGroupId, type GroupSignal } from './group-signal';
 import { t, mark } from './i18n';
 import type { GroupAsk } from './link-wire';
 import { moderated } from './public-rules';
+import type { Mark } from './relay';
 import { MAX_VOICE_MS } from './voice';
 
 // Group chats, MLS (RFC 9420) in the Rust core (crates/erevos-group). Whoever makes a group is its
@@ -66,6 +67,11 @@ import { MAX_VOICE_MS } from './voice';
 // On a device linked to the phone that holds the account (lib/devices.ts), the groups here are the
 // phone's, kept as it says them (`mirror`), and what is done in one, the phone does (`GroupLink`):
 // this device has no MLS state of its own, and makes and joins no group.
+//
+// Each group message tells the relay what it carries (lib/relay.ts, Mark), for a web app's notice
+// while it is closed: a member's words, photo, file or voice message is a message; a call that
+// starts rings, so it goes with no mark; all else (commits, welcomes, new keys, reactions, pins,
+// names, admins' steps) is quiet. What waits in the outbox keeps its mark for when it goes.
 
 /** The start of a group message, after which comes the message sealed for its member. A chat's
  *  packets start with 1 then 1 or 2 (crates/erevos-core), or 1 then 4 once sealed for the relay
@@ -80,9 +86,10 @@ export const RENEW_EVERY = 7 * 24 * 3600_000;
 // The longest key package a member asks to be put in anew with, base64: about 1 KB.
 const MAX_RENEWAL = 8192;
 
-/** How group messages leave this phone: to a member's queue, and to a contact inside their chat. */
+/** How group messages leave this phone: to a member's queue, saying what it carries (`mark`, none
+ *  for what rings), and to a contact inside their chat. */
 export type GroupTransport = {
-  post(to: About, packet: Uint8Array): Promise<void>;
+  post(to: About, packet: Uint8Array, mark?: Mark): Promise<void>;
   signal(identity: string, signal: GroupSignal): Promise<void>;
 };
 
@@ -434,7 +441,7 @@ export class Groups {
       const carried = groupPartsOf(parts, true);
       const link = this.through();
       if (link) await link.ask(id, { t: 'text', text: said, tag, ...(Object.keys(carried).length > 0 ? { parts: carried } : {}) });
-      else await this.broadcast(id, encodeSaid({ t: 'text', text: said, tag, ...carried }), transport);
+      else await this.broadcast(id, encodeSaid({ t: 'text', text: said, tag, ...carried }), transport, 'message');
       const now = this.find(id)!;
       await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from: '', text: said, tag, ...carried }]), readAt: Date.now() }));
       this.changed();
@@ -502,7 +509,7 @@ export class Groups {
       const carried = groupPartsOf(parts, false);
       const link = this.through();
       if (link) await link.ask(id, { t: 'file', file: offer, tag, ...voice, ...(Object.keys(carried).length > 0 ? { parts: carried } : {}) });
-      else await this.broadcast(id, encodeSaid({ t: 'file', file: offer, tag, ...voice, ...carried }), transport);
+      else await this.broadcast(id, encodeSaid({ t: 'file', file: offer, tag, ...voice, ...carried }), transport, 'message');
       const now = this.find(id)!;
       const kept = { at: Date.now(), from: '', text: '', tag, file: ref, ...voice, ...carried, put: offer.ids };
       await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, kept]), readAt: Date.now() }));
@@ -533,12 +540,13 @@ export class Groups {
       await this.save({ ...this.data, state: toBase64(sealed.state) });
       const members = await this.membersIn(id);
       const to = 'to' in signal ? members.filter((m) => m.about?.id === signal.to) : members;
-      // Only `start` and `leave` are worth sending again later: the rest is stale by then.
-      if (signal.kind === 'start' || signal.kind === 'leave') await this.deliver(id, to, sealed.message, transport);
+      // Only `start` and `leave` are worth sending again later: the rest is stale by then. A call
+      // that starts rings, with no mark.
+      if (signal.kind === 'start' || signal.kind === 'leave') await this.deliver(id, to, sealed.message, transport, false, signal.kind === 'start' ? null : 'quiet');
       else {
         for (const member of to) {
           if (member.me || !member.about) continue;
-          await transport.post(member.about, await this.sealFor(member.about, sealed.message)).catch(() => undefined);
+          await transport.post(member.about, await this.sealFor(member.about, sealed.message), 'quiet').catch(() => undefined);
         }
       }
     });
@@ -628,7 +636,7 @@ export class Groups {
         const left: Group['outbox'] = [];
         for (const item of group.outbox) {
           try {
-            await transport.post(item.to, fromBase64(item.packet));
+            await transport.post(item.to, fromBase64(item.packet), item.mark);
           } catch {
             left.push(item);
           }
@@ -732,25 +740,26 @@ export class Groups {
     this.changed();
   }
 
-  // Seals `text` for the group and sends it to every other member.
-  private async broadcast(id: string, text: Uint8Array, transport: GroupTransport) {
+  // Seals `text` for the group and sends it to every other member, saying what it carries (`mark`).
+  private async broadcast(id: string, text: Uint8Array, transport: GroupTransport, mark: Mark = 'quiet') {
     const sealed = await core.group.seal(this.kept(), fromHex(id), text);
     await this.save({ ...this.data, state: toBase64(sealed.state) });
-    await this.deliver(id, await this.membersIn(id), sealed.message, transport);
+    await this.deliver(id, await this.membersIn(id), sealed.message, transport, false, mark);
   }
 
   // Sends one MLS message to each of `members` but this phone, sealed for each, and with `all`
-  // those sent nothing more too. What the relay does not take waits in the group's outbox.
-  protected async deliver(id: string, members: GroupMember[], message: Uint8Array, transport: GroupTransport, all = false) {
+  // those sent nothing more too, saying what it carries (`mark`; null for none, as for what rings).
+  // What the relay does not take waits in the group's outbox, with its mark.
+  protected async deliver(id: string, members: GroupMember[], message: Uint8Array, transport: GroupTransport, all = false, mark: Mark | null = 'quiet') {
     const failed: Group['outbox'] = [];
     const skip = all ? new Set<string>() : this.unreached(id);
     for (const member of members) {
       if (member.me || !member.about || skip.has(member.about.id)) continue;
       const packet = await this.sealFor(member.about, message);
       try {
-        await transport.post(member.about, packet);
+        await transport.post(member.about, packet, mark ?? undefined);
       } catch {
-        failed.push({ to: member.about, packet: toBase64(packet) });
+        failed.push({ to: member.about, packet: toBase64(packet), ...(mark ? { mark } : {}) });
       }
     }
     const group = this.find(id);

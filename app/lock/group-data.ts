@@ -1,4 +1,5 @@
 import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, isStickerName, type Place, type Poll, type Preview } from '../lib/chat-parts';
+import type { Mark } from '../lib/relay';
 import { isFileRef, type FileRef } from './attachment-files';
 import { isRelay, isRelayKey } from './e2e-data';
 import { isReactionEmoji, isTag } from './history';
@@ -55,8 +56,9 @@ export type Group = {
   asked: string[];
   /** Group messages from an epoch not reached yet, base64: tried again after the next commit. */
   later: string[];
-  /** Group messages the relay did not take yet, sealed for their member, base64. */
-  outbox: { to: About; packet: string }[];
+  /** Group messages the relay did not take yet, sealed for their member, base64, with what each
+   *  says it carries (lib/relay.ts, Mark): none for what rings, and for what was kept before marks. */
+  outbox: { to: About; packet: string; mark?: Mark }[];
   /** Oldest first. */
   messages: GroupMessage[];
   /** Until when this phone read the group, milliseconds. */
@@ -172,9 +174,10 @@ function checkedGroup(value: unknown): Group | null {
     outbox: list(
       v.outbox,
       (i) => {
-        const o = (i ?? {}) as { to?: unknown; packet?: unknown };
+        const o = (i ?? {}) as { to?: unknown; packet?: unknown; mark?: unknown };
         const to = checkedAbout(o.to);
-        return to && isBase64(o.packet) ? { to, packet: o.packet } : null;
+        const mark: { mark?: Mark } = o.mark === 'message' || o.mark === 'quiet' ? { mark: o.mark } : {};
+        return to && isBase64(o.packet) ? { to, packet: o.packet, ...mark } : null;
       },
       MAX_OUTBOX,
     ),

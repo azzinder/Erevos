@@ -100,11 +100,12 @@ import {
   toHex,
   type CallRelay,
   type HeldAt,
+  type Mark as RelayMark,
   type Relay,
 } from '../lib/relay';
 import { answersAsk, appShown, awayPace, holdReceiver, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
-import { carriedFor, contactTarget, relayFor, spaceChats } from '../lib/space-chats';
+import { carriedFor, contactTarget, markOf, relayFor, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
 import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
@@ -693,7 +694,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   async function sendPending(chats: E2E, target: Relay) {
     for (const { identity, sender, relay, relayKey: key, first } of chats.pending()) {
       try {
-        await sendMessage(contactTarget(target, { relay, relayKey: key }), fromHex(sender), first);
+        await sendMessage(contactTarget(target, { relay, relayKey: key }), fromHex(sender), first, 'quiet');
         await chats.firstSent(identity);
       } catch {
         // Tried again with the next message, or the next look at the relay.
@@ -1830,34 +1831,28 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!e2e) throw new Error(t(NO_CORE));
     const sealed = await e2e.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here() });
     // What is only a mark, or asks whether their phone is open, is not worth carrying for days.
-    const way = await handOver(e2e, target, identity, sealed, [sealed.packet], !!text || !!extra.erase);
+    const way = await handOver(e2e, target, identity, sealed, [sealed.packet], markOf(text, extra.call), !!text || !!extra.erase);
     // Writing, reacting or pinning in a message request accepts it.
     if (text || extra.react || acts(extra.more ?? {})) setContacts(e2e.contacts());
     return { tag: sealed.tag, timer: sealed.timer, way };
   }
 
   // Hands a contact's packets to their phone, after the first packet of the conversation if the
-  // relay has not taken that yet: nearby when they are, and through the relay (lib/nearby.ts).
-  // When neither, and they went to the phones nearby, those phones may carry them to the
-  // contact's relay too (`carried`). Hidden chats go through the relay only.
+  // relay has not taken that yet: nearby when they are, and through the relay (lib/nearby.ts),
+  // the last packet saying what they carry (`mark`, lib/relay.ts), or, from a linked device, where
+  // all goes to the account's phone, quiet (sentMark). When neither, and they went to the phones
+  // nearby, those phones may carry them to the contact's relay too (`carried`). Hidden chats go
+  // through the relay only.
   function handOver(
     chats: E2E,
     target: Relay | null,
     identity: string,
     sealed: { sender: string; relay: string; relayKey: string; first: Uint8Array | null },
     packets: Uint8Array[],
+    mark: RelayMark | undefined,
     carried = false,
   ): Promise<Delivery> {
-    const relay = target && sealed.sender
-      ? async () => {
-          const to = contactTarget(target, sealed);
-          if (sealed.first) {
-            await sendMessage(to, fromHex(sealed.sender), sealed.first);
-            await chats.firstSent(identity);
-          }
-          for (const packet of packets) await sendMessage(to, fromHex(sealed.sender), packet);
-        }
-      : null;
+    const relay = target && sealed.sender ? () => sendSealed(target, sealed, packets, sentMark(chats, mark), () => chats.firstSent(identity)) : null;
     if (hiddenKey) {
       if (!relay) return Promise.reject(new Error(t('Type the relay address in Relay first.')));
       return relay().then(() => 'relay');
@@ -2327,7 +2322,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const parts: Parts = forwarded ? { forwarded } : answering(peer);
     try {
       const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { lasts, at: here(), talk, re: parts.re, forwarded });
-      const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets, true);
+      const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets, 'message', true);
       addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms), undefined, 0, Date.now(), parts);
       setReplying(null);
       // Writing to a message request accepts it.
@@ -2536,7 +2531,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       kept = sent.ref;
       const identity = peer.slice(CONTACT_PREFIX.length);
       const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { lasts, at: here(), re: parts.re, forwarded });
-      await handOver(e2e, target, identity, sealed, [sealed.packet]);
+      await handOver(e2e, target, identity, sealed, [sealed.packet], 'message');
       addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, sent.ref, 0, Date.now(), parts);
       setReplying(null);
       kept = null;
@@ -2777,12 +2772,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       try {
         const where = { relay: settings.url.trim(), relayKey: settings.url.trim() === relayUrl.trim() ? ownRelayKey : '' };
         const sealed = await hiddenChats.seal(identity, '', queue.senderHex, { at: where });
-        const to = contactTarget(target, sealed);
-        if (sealed.first) {
-          await sendMessage(to, fromHex(sealed.sender), sealed.first);
-          await hiddenChats.firstSent(identity);
-        }
-        await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+        await sendSealed(target, sealed, [sealed.packet], 'quiet', () => hiddenChats.firstSent(identity));
         setNote(t('Moved to the hidden chats. Type their PIN in the search on the home screen to open them.'));
       } catch {
         setNote(t('Moved to the hidden chats. Their phone learns where to write when you next write to them from there.'));
@@ -2822,12 +2812,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       try {
         const key = await relayKey(target).catch(() => null);
         const sealed = await space.e2e.seal(identity, '', data.ownQueue.senderHex, { at: { relay: data.url.trim(), relayKey: key ? toBase64Url(key) : '' } });
-        const to = contactTarget(target, sealed);
-        if (sealed.first) {
-          await sendMessage(to, fromHex(sealed.sender), sealed.first);
-          await space.e2e.firstSent(identity);
-        }
-        await sendMessage(to, fromHex(sealed.sender), sealed.packet);
+        await sendSealed(target, sealed, [sealed.packet], 'quiet', () => space.e2e.firstSent(identity));
         setNote(t('Moved back to your chats.'));
       } catch {
         setNote(t('Moved back to your chats. Their phone learns where to write when you next write to them from there.'));

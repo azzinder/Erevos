@@ -6,7 +6,7 @@ import { contentOf, withoutPreview } from './chat-parts';
 import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForLoraError } from './nearby';
 import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Relay } from './relay';
-import { carriedFor, contactTarget, type SpaceChats } from './space-chats';
+import { carriedFor, contactTarget, sendSealed, sentMark, type SpaceChats } from './space-chats';
 import { t } from './i18n';
 
 type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
@@ -30,6 +30,12 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // there, not here, and goes then though this phone is off. It says when it should show, so their
 // phone does not show it sooner. Only while no relay can hold it (none answers, or one from before
 // relays held messages) does it wait here, to go with the first look once its time came.
+//
+// Whatever waits is something someone reads (a text, a voice message, a photo or file), so each
+// goes to the relay as a message (lib/relay.ts, Mark), however many tries it took: sealed anew each
+// time, it says so again. A message held for later says so when it goes. From a linked device all
+// of it goes quiet, to the account's phone, which says so as it passes it on (lib/space-chats.ts,
+// sentMark).
 
 const CONTACT_PREFIX = 'contact:';
 // The first wait after a failed try, and the longest, milliseconds.
@@ -153,10 +159,10 @@ export async function holdLater(e2e: E2E, place: SendPlace, identity: string, me
   }
   const target = contactTarget(sends, sealed);
   if (sealed.first) {
-    await sendMessage(target, fromHex(sealed.sender), sealed.first);
+    await sendMessage(target, fromHex(sealed.sender), sealed.first, 'quiet');
     await e2e.firstSent(identity);
   }
-  const held = await sendMessageLater(target, fromHex(sealed.sender), packets, message.at);
+  const held = await sendMessageLater(target, fromHex(sealed.sender), packets, message.at, sentMark(e2e, 'message'));
   return { lasts: sealed.timer, held };
 }
 
@@ -219,17 +225,7 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     packets = [text.packet];
   }
   const sends = place.sends;
-  const relay =
-    sends && sealed.sender
-      ? async () => {
-          const to = contactTarget(sends, sealed);
-          if (sealed.first) {
-            await sendMessage(to, fromHex(sealed.sender), sealed.first);
-            await e2e.firstSent(identity);
-          }
-          for (const packet of packets) await sendMessage(to, fromHex(sealed.sender), packet);
-        }
-      : null;
+  const relay = sends && sealed.sender ? () => sendSealed(sends, sealed, packets, sentMark(e2e, 'message'), () => e2e.firstSent(identity)) : null;
   const all = sealed.first ? [sealed.first, ...packets] : packets;
   const carry = worthCarrying ? () => carriedFor(sealed, all, { url: place.own?.url ?? '', key: place.ownKey }) : null;
   try {

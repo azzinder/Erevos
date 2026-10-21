@@ -55,7 +55,8 @@ export default function Relay() {
     const text = draft.trim();
     if (!relay || !text) return;
     attempt(async () => {
-      await sendMessage(relay, fromHex(sendTo), encodeEnvelope('', text));
+      // A try of the relay, which no chat shows: no message (lib/relay.ts, Mark).
+      await sendMessage(relay, fromHex(sendTo), encodeEnvelope('', text), 'quiet');
       setDraft('');
       return t('Sent: {text}', { text });
     });

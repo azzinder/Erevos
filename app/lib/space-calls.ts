@@ -1,21 +1,22 @@
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { soon } from './call';
 import { callLineMessage, CONTACT_PREFIX, type CallPlace } from './calls';
-import { callRelay, fromHex, relayKey, sendMessage } from './relay';
+import { callRelay, relayKey } from './relay';
 import { canRelaySeal } from './core';
 import { toBase64Url } from './e2e';
 import { nearby } from './nearby';
 import { announceReceived } from './receiver';
-import { contactTarget, relayFor, spaceChats } from './space-chats';
+import { markOf, relayFor, sendSealed, sentMark, spaceChats } from './space-chats';
 import type { Message } from '../lock/history';
 import { t } from './i18n';
 
 // Calls in the open space's chats (lib/calls.ts): their signals go through the space's own
 // encryption, to the contact's phone nearby when it is (lib/nearby.ts), as on the same Wi-Fi with
-// no internet, and through the relay as its settings say, read when sent. Their lines are kept in
-// its history. The
-// chat screen, while open, shows a line as it comes (onSpaceCallLine); the home screen hears of
-// it as of a message.
+// no internet, and through the relay as its settings say, read when sent: an offer, which rings,
+// with no mark, so it pushes uncounted, and the rest quiet (lib/relay.ts, Mark); from a linked
+// device all of it quiet, as it goes to the account's phone, which marks it as it passes it on
+// (lib/space-chats.ts, sentMark). Their lines are kept in its history. The chat screen, while
+// open, shows a line as it comes (onSpaceCallLine); the home screen hears of it as of a message.
 
 const lineListeners = new Set<(message: Message) => void>();
 
@@ -57,17 +58,7 @@ export const spaceCalls: CallPlace = {
     const place = await settings().catch(() => null);
     const at = place ? await soon(where(place.own), RELAY_WAIT, { relay: place.own.url, relayKey: '' }) : { relay: '', relayKey: '' };
     const sealed = await e2e.seal(identity, '', place?.senderHex ?? '', { call: signal, at });
-    const relay =
-      place && sealed.sender
-        ? async () => {
-            const to = contactTarget(place.sends, sealed);
-            if (sealed.first) {
-              await sendMessage(to, fromHex(sealed.sender), sealed.first);
-              await e2e.firstSent(identity);
-            }
-            await sendMessage(to, fromHex(sealed.sender), sealed.packet);
-          }
-        : null;
+    const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], sentMark(e2e, markOf('', signal)), () => e2e.firstSent(identity)) : null;
     await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
   },
   async callRelay() {

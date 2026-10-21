@@ -24,6 +24,13 @@ export type Job = { since: number; files: boolean; upTo: number; done: number };
  */
 export type Told = { meta: string; last: string; at: number; marks: string };
 
+/**
+ * How a packet in a device's outbox goes to the relay when it is not quiet word between the
+ * devices (lib/relay.ts, Mark): as a message someone reads, counted in a web app's notice, or with
+ * no mark, as a call that rings does.
+ */
+export type OutMark = 'message' | 'none';
+
 export type Peer = {
   /** The identity of its link key, hex. */
   id: string;
@@ -40,6 +47,8 @@ export type Peer = {
   linked: boolean;
   /** Packets for it, base64, oldest first, that the relay has not taken yet. */
   outbox: string[];
+  /** On the primary: those of its outbox that are not quiet, by packet, and how each goes. Missing: all quiet. */
+  marks?: Record<string, OutMark>;
   /** Where this side's queue was last said to it, as JSON, so a new one is said at once. */
   told: string;
   /** On the primary: what of the history still goes to it, whether photos and files were chosen to go, and since when the outbox had no room for it (0 if it had). */
@@ -143,11 +152,25 @@ function checkedEndpoint(value: unknown): Endpoint | null {
   return isHex(v.id, 64) && isText(v.bundle) && v.bundle.length <= 4096 && /^[A-Za-z0-9_-]+$/.test(v.bundle) ? { id: v.id, bundle: v.bundle } : null;
 }
 
+// The marks of the packets still in `outbox`; null when none is not quiet.
+function checkedMarks(value: unknown, outbox: string[]): Record<string, OutMark> | null {
+  if (!value || typeof value !== 'object') return null;
+  const v = value as Record<string, unknown>;
+  const marks: Record<string, OutMark> = {};
+  for (const packet of outbox) {
+    const mark = Object.prototype.hasOwnProperty.call(v, packet) ? v[packet] : undefined;
+    if (mark === 'message' || mark === 'none') marks[packet] = mark;
+  }
+  return Object.keys(marks).length > 0 ? marks : null;
+}
+
 function checkedPeer(value: unknown): Peer | null {
   const v = (value ?? {}) as Partial<Record<keyof Peer, unknown>>;
   const at = checkedPlace(v.at);
   if (!isHex(v.id, 64) || !isBase64(v.conversation) || !v.conversation || !at) return null;
   const endpoint = checkedEndpoint(v.endpoint);
+  const outbox = Array.isArray(v.outbox) ? v.outbox.filter(isBase64) : [];
+  const marks = checkedMarks(v.marks, outbox);
   return {
     id: v.id,
     name: isText(v.name) ? v.name : '',
@@ -156,7 +179,8 @@ function checkedPeer(value: unknown): Peer | null {
     since: isTime(v.since) ? v.since : 0,
     heard: isTime(v.heard) ? v.heard : 0,
     linked: v.linked === true,
-    outbox: Array.isArray(v.outbox) ? v.outbox.filter(isBase64) : [],
+    outbox,
+    ...(marks ? { marks } : {}),
     told: isText(v.told) ? v.told : '',
     history: checkedJob(v.history),
     files: v.files === true,

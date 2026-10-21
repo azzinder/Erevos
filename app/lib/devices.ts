@@ -1,5 +1,5 @@
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
-import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type DevicesData, type Left, type Peer } from '../lock/devices-data';
+import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
 import type { Contact } from '../lock/e2e-data';
 import type { Group, GroupMessage } from '../lock/group-data';
 import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
@@ -63,6 +63,7 @@ import {
   readGroupEntries,
   readPack,
   syncedOf,
+  tellsTheirs,
   TIMED,
   withoutPlace,
   wholeMarks,
@@ -83,7 +84,7 @@ import {
 import { LinkedCalls, type CallStep } from './linked-calls';
 import { nearby } from './nearby';
 import { announceReceived } from './receiver';
-import { fromHex, relayKey, sendMessage, type Relay } from './relay';
+import { fromHex, relayKey, sendMessage, type Mark as RelayMark, type Relay } from './relay';
 import { isSealedPacket, openPacket, packetKeys, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
 import {
   blankSynced,
@@ -107,7 +108,7 @@ import {
   type Sibling,
   type Siblings,
 } from './siblings';
-import { contactTarget, joinSpaceChats, relayFor, spaceChats, type SpaceChats } from './space-chats';
+import { contactTarget, joinSpaceChats, linkChats, markOf, relayFor, sendSealed, spaceChats, type SpaceChats } from './space-chats';
 import { spaceGroups, spaceGroupTransport } from './space-groups';
 import { spareCode } from './spare';
 import { isVoicePart, VoiceAssembler, type VoicePart } from './voice';
@@ -184,6 +185,16 @@ import { sendWaiting, type SendPlace } from './waiting';
 // chat does for contacts: to the relay they look like any contact's, and each opens in its own
 // conversation only. A version from before says none, and is sealed nothing.
 //
+// Each packet tells the relay what it carries (lib/relay.ts, Mark), for a web app's notice while it
+// is closed, a linked one's too. On the primary, a contact's message passed on to the devices (`in`)
+// is a message, a voice message on its last part only; a call's offer rings, with no mark; a
+// member's message in a group goes in an envelope of its own, a message, as the relay counts one
+// for each packet. The rest between the devices is quiet, and a packet waiting in a device's
+// outbox keeps how it goes (`marks`). What a device wrote goes on to the contact marked as the
+// chat marks its own, a voice message once: on its last part, but for one that waits whole after
+// a part could not go, which is counted as it goes. To the phone, all a device sends is quiet, as
+// it goes to the account's own queue (lib/space-chats.ts, sentMark).
+//
 // Three turns keep it straight: the chat's own (E2E), which may wait for this file's; this file's
 // (`run`), for the links and their keys, which never waits for the chat; and the work a message
 // brings (`act`: the history, sealing for contacts, the relay's file store), which waits for both.
@@ -228,7 +239,7 @@ export type HistoryChoice = { since: number | null; files: boolean };
 
 type Here = { own: Relay; sends: Relay; place: Place; where: Where };
 // What is sealed for: a link, or another device directly.
-type Sealable = { conversation: string; outbox: string[]; told: string; behind: number; key?: string; sealTo?: string };
+type Sealable = { conversation: string; outbox: string[]; marks?: Record<string, OutMark>; told: string; behind: number; key?: string; sealTo?: string };
 type Taken = Awaited<ReturnType<Link['open']>>;
 // A photo or file told of with an envelope, left on the relay for the devices it goes to; `phone`: this phone is still to take it too.
 type Leaving = { from: FileFrom; phone: boolean };
@@ -253,6 +264,29 @@ const isText = (v: unknown): v is string => typeof v === 'string';
 const isObject = (v: unknown): v is Json => !!v && typeof v === 'object' && !Array.isArray(v);
 const tagsOf = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isTag) : []);
 const peerOf = (identity: string) => `${CONTACT_PREFIX}${identity}`;
+
+// What a chat's message (`m`, as lib/e2e.ts says it) carries, as the relay is told: one the chat
+// keeps is a message, a voice message on its last part only; a call's offer rings, with no mark;
+// all else is quiet.
+function relayMarkOf(m: Json): RelayMark | undefined {
+  if (isCall(m)) return markOf('', decodeCall(m.call));
+  if (!isKept(m)) return 'quiet';
+  const voice = m.voice;
+  return !isObject(voice) || (typeof voice.parts === 'number' && voice.part === voice.parts - 1) ? 'message' : 'quiet';
+}
+
+// How a packet for a device goes, kept with it in the outbox: nothing for one that is quiet.
+function outMarkOf(mark: RelayMark | undefined): OutMark | undefined {
+  return mark === 'quiet' ? undefined : (mark ?? 'none');
+}
+
+// A peer without what of its outbox went, nor the marks of those.
+function withoutSent<T extends Sealable>(peer: T, sent: Set<string>): T {
+  const outbox = peer.outbox.filter((p) => !sent.has(p));
+  const { marks, ...rest } = peer;
+  const left = marks ? Object.entries(marks).filter(([p]) => !sent.has(p)) : [];
+  return { ...rest, outbox, ...(left.length > 0 ? { marks: Object.fromEntries(left) } : {}) } as T;
+}
 
 function parse(plaintext: Uint8Array): Json | null {
   try {
@@ -359,6 +393,7 @@ export class Links implements Link, TakenFiles {
     const { siblings } = links.data;
     if (siblings && (!links.data.primary || siblings.of !== chats.e2e.endpoint()?.id)) await links.save(withoutSiblings(links.data));
     chats.e2e.useLink(links);
+    linkChats(chats.e2e, links);
     links.stopCalls = onCallChange(() => links.callChanged());
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
@@ -376,6 +411,7 @@ export class Links implements Link, TakenFiles {
     this.stopGroups?.();
     this.groups?.groups.useLink(null);
     this.chats.e2e.useLink(null);
+    linkChats(this.chats.e2e, null);
   }
 
   private run<T>(call: () => Promise<T>): Promise<T> {
@@ -493,8 +529,9 @@ export class Links implements Link, TakenFiles {
 
   // Seals an envelope for a peer and puts it in its outbox, in the turn. One the outbox has no room
   // for is not sealed: the peer is behind from then on. Each says the key this side gives the peer,
-  // and once the peer said its own, each packet is sealed with it.
-  private async seal<T extends Sealable>(peer: T, envelope: Envelope): Promise<T> {
+  // and once the peer said its own, each packet is sealed with it. One that is not quiet (`mark`)
+  // goes so with its last packet.
+  private async seal<T extends Sealable>(peer: T, envelope: Envelope, mark?: OutMark): Promise<T> {
     if (peer.outbox.length >= MAX_OUTBOX) return { ...peer, behind: peer.behind || Date.now() };
     const key = peer.key || newPacketKey();
     let conversation = fromBase64(peer.conversation);
@@ -504,7 +541,8 @@ export class Links implements Link, TakenFiles {
       conversation = sealed.conversation;
       outbox.push(toBase64(this.sealedFor(peer, sealed.packet)));
     }
-    return { ...peer, key, conversation: toBase64(conversation), outbox, told: this.at ? JSON.stringify(this.at) : peer.told };
+    const marks = mark ? { ...peer.marks, [outbox[outbox.length - 1]]: mark } : peer.marks;
+    return { ...peer, key, conversation: toBase64(conversation), outbox, ...(marks ? { marks } : {}), told: this.at ? JSON.stringify(this.at) : peer.told };
   }
 
   // A packet as it goes to a peer: sealed with the key it gave, once it gave one.
@@ -524,7 +562,8 @@ export class Links implements Link, TakenFiles {
   // Says something to each linked device (on the primary) or to the phone (on a linked device).
   // Returns the devices it was sealed for; the photos and files it tells of (`files`) are left on
   // the relay for them, in the same turn, so this phone taking one meanwhile does not delete it.
-  private say(envelope: Envelope | ((peer: Peer) => Envelope), only?: string, files: Leaving[] = []): Promise<string[]> {
+  // What is not quiet (`mark`) is so only for the devices: to the phone it is.
+  private say(envelope: Envelope | ((peer: Peer) => Envelope), only?: string, files: Leaving[] = [], mark?: OutMark): Promise<string[]> {
     return this.run(async () => {
       const make = typeof envelope === 'function' ? envelope : () => envelope;
       if (this.data.primary) {
@@ -539,7 +578,7 @@ export class Links implements Link, TakenFiles {
           devices.push(d);
           continue;
         }
-        const sealed = await this.seal(d, make(d));
+        const sealed = await this.seal(d, make(d), mark);
         if (sealed.outbox.length > d.outbox.length) told.push(d.id);
         devices.push(sealed);
       }
@@ -855,7 +894,7 @@ export class Links implements Link, TakenFiles {
     if (!m || isSignal(m)) return;
     // Their photo or file stays on the relay until each device took it, and this phone too.
     const offer = isObject(m.file) ? readOffer(m.file) : null;
-    void this.say({ k: 'in', c: identity, m: withoutPlace(m) }, undefined, offer ? [{ from: fromOf(offer), phone: true }] : []).catch(() => undefined);
+    void this.say({ k: 'in', c: identity, m: withoutPlace(m) }, undefined, offer ? [{ from: fromOf(offer), phone: true }] : [], outMarkOf(relayMarkOf(m))).catch(() => undefined);
   }
 
   sealed(identity: string, plaintext: Uint8Array): void {
@@ -1140,7 +1179,7 @@ export class Links implements Link, TakenFiles {
       });
       if (here) {
         const to = contactTarget(here.sends, peer.at);
-        for (const packet of bye) await sendMessage(to, fromHex(peer.at.sender), fromBase64(packet));
+        for (const packet of bye) await sendMessage(to, fromHex(peer.at.sender), fromBase64(packet), 'quiet');
         told = true;
       }
     } catch {
@@ -1616,8 +1655,8 @@ export class Links implements Link, TakenFiles {
     if (!peer || peer.outbox.length === 0) return;
     await this.sendOut(here, peer.at, peer.outbox, async (sent) => {
       const now = find();
-      if (now) await this.keepPeer({ ...now, outbox: now.outbox.filter((p) => !sent.has(p)) });
-    });
+      if (now) await this.keepPeer(withoutSent(now, sent));
+    }, peer.marks);
   }
 
   // What waits for another device, to where it reads once that is known.
@@ -1632,14 +1671,15 @@ export class Links implements Link, TakenFiles {
     });
   }
 
-  // Sends what waits in an outbox to the queue at `at`, oldest first; `went` takes what went out of
-  // it, in the turn.
-  private async sendOut(here: Here, at: Place, outbox: string[], went: (sent: Set<string>) => Promise<void>): Promise<void> {
+  // Sends what waits in an outbox to the queue at `at`, oldest first, each quiet but as `marks`
+  // says; `went` takes what went out of it, in the turn.
+  private async sendOut(here: Here, at: Place, outbox: string[], went: (sent: Set<string>) => Promise<void>, marks?: Record<string, OutMark>): Promise<void> {
     const to = contactTarget(here.sends, at);
     const sent = new Set<string>();
     try {
       for (const packet of outbox) {
-        await sendMessage(to, fromHex(at.sender), fromBase64(packet));
+        const mark = marks?.[packet];
+        await sendMessage(to, fromHex(at.sender), fromBase64(packet), mark === 'message' ? 'message' : mark === 'none' ? undefined : 'quiet');
         sent.add(packet);
       }
     } finally {
@@ -1689,18 +1729,10 @@ export class Links implements Link, TakenFiles {
     if (list && this.data.devices.some((d) => d.linked && untold(d))) this.act(() => this.tellList());
   }
 
-  // Seals word for a contact as the chat does, and hands it to their phone nearby when it is, and to the relay.
-  private async deliver(identity: string, sealed: { sender: string; relay: string; relayKey: string; spare: Contact['spare']; first: Uint8Array | null; packet: Uint8Array }, here: Here) {
-    const relay = sealed.sender
-      ? async () => {
-          const to = contactTarget(here.sends, sealed);
-          if (sealed.first) {
-            await sendMessage(to, fromHex(sealed.sender), sealed.first);
-            await this.chats.e2e.firstSent(identity);
-          }
-          await sendMessage(to, fromHex(sealed.sender), sealed.packet);
-        }
-      : null;
+  // Seals word for a contact as the chat does, and hands it to their phone nearby when it is, and
+  // to the relay, saying what it carries (`mark`).
+  private async deliver(identity: string, sealed: { sender: string; relay: string; relayKey: string; spare: Contact['spare']; first: Uint8Array | null; packet: Uint8Array }, here: Here, mark: RelayMark | undefined) {
+    const relay = sealed.sender ? () => sendSealed(here.sends, sealed, [sealed.packet], mark, () => this.chats.e2e.firstSent(identity)) : null;
     await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
   }
 
@@ -1763,10 +1795,15 @@ export class Links implements Link, TakenFiles {
         return true;
       }
     }
+    const part = voiceOf(m.voice);
+    // A voice message one of whose parts could not go is sent again whole once all came (below),
+    // and counted then: its last part goes quiet now. Its parts come in turn, the last after those.
+    const voiceKey = `${peer}|${m.tag as string}`;
+    const says = part && this.voiceLate.has(voiceKey) ? 'quiet' : relayMarkOf(said);
     let went = false;
     if (here) {
       try {
-        await this.deliver(c, await e2e.sealAs(c, utf8Encode(JSON.stringify(said)), here.place.sender, here.where), here);
+        await this.deliver(c, await e2e.sealAs(c, utf8Encode(JSON.stringify(said)), here.place.sender, here.where), here, says);
         went = true;
       } catch {
         // It waits, below.
@@ -1782,14 +1819,12 @@ export class Links implements Link, TakenFiles {
     }
     let mark: Mark = went ? 0 : WAITING;
     let voice: VoiceRef | null = null;
-    const part = voiceOf(m.voice);
     if (part) {
       // A voice message is kept once all its parts came; it waits if any could not go.
-      const key = `${peer}|${m.tag as string}`;
-      if (!went) this.voiceLate.add(key);
+      if (!went) this.voiceLate.add(voiceKey);
       const whole = this.voiceParts.add(`send ${peer}`, part, now);
       if (!whole) return true;
-      mark = this.voiceLate.delete(key) ? WAITING : 0;
+      mark = this.voiceLate.delete(voiceKey) ? WAITING : 0;
       voice = await saveClip(whole.audio, whole.ms);
     }
     await this.keepAsSent(peer, m, file, voice, mark);
@@ -1849,7 +1884,7 @@ export class Links implements Link, TakenFiles {
     const first = e2e.pending().find((p) => p.identity === identity);
     if (first && here) {
       try {
-        await sendMessage(contactTarget(here.sends, first), fromHex(first.sender), first.first);
+        await sendMessage(contactTarget(here.sends, first), fromHex(first.sender), first.first, 'quiet');
         await e2e.firstSent(identity);
       } catch {
         // Sent later.
@@ -1899,7 +1934,7 @@ export class Links implements Link, TakenFiles {
     if (change.timer !== undefined && change.timerAt !== undefined && change.timerAt > contact.timerAt) {
       await e2e.setTimer(c, change.timer);
       const here = await this.here().catch(() => null);
-      if (here) await this.deliver(c, await e2e.seal(c, '', here.place.sender, { at: here.where }), here).catch(() => undefined);
+      if (here) await this.deliver(c, await e2e.seal(c, '', here.place.sender, { at: here.where }), here, 'quiet').catch(() => undefined);
     }
     announce();
   }
@@ -1934,7 +1969,8 @@ export class Links implements Link, TakenFiles {
       else if (step.to === 'done') {
         for (const id of step.ids) void this.say({ k: 'call', id: step.id, done: step.declined ? 'declined' : 'answered' }, id).catch(() => undefined);
       } else if (step.to === 'devices') {
-        for (const id of step.ids) void this.say({ k: 'in', c: step.c, m: { text: '', call: step.signal } }, id).catch(() => undefined);
+        // An offer rings there.
+        for (const id of step.ids) void this.say({ k: 'in', c: step.c, m: { text: '', call: step.signal } }, id, [], outMarkOf(markOf('', step.signal))).catch(() => undefined);
       } else {
         const said = m ?? { text: '', call: step.signal };
         this.ring(() => this.callTo(step.c, said));
@@ -1946,7 +1982,7 @@ export class Links implements Link, TakenFiles {
   private async callTo(c: string, m: Json): Promise<void> {
     const here = await this.here().catch(() => null);
     if (!here) return;
-    await this.deliver(c, await this.chats.e2e.sealAs(c, utf8Encode(JSON.stringify(m)), here.place.sender, here.where), here);
+    await this.deliver(c, await this.chats.e2e.sealAs(c, utf8Encode(JSON.stringify(m)), here.place.sender, here.where), here, relayMarkOf(m));
   }
 
   // A call answered or turned down on another device: it stops ringing here, now or as soon as it rings.
@@ -2104,7 +2140,8 @@ export class Links implements Link, TakenFiles {
         if (!peer?.linked || peer.behind || JSON.stringify(peer.groups) !== JSON.stringify(told)) return;
         let sealed = peer;
         const envelopes = [...(groups ? groupEnvelopes(list, gone, entries) : []), ...(changed ? changeEnvelopes([], changes, whole) : [])];
-        for (const envelope of envelopes) sealed = await this.seal(sealed, envelope);
+        // Each member's message is a message, in an envelope of its own; the rest is quiet.
+        for (const envelope of envelopes) sealed = await this.seal(sealed, envelope, tellsTheirs(envelope) ? 'message' : undefined);
         if (sealed.behind) {
           await this.keepPeer(sealed);
           return;

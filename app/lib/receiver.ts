@@ -22,7 +22,7 @@ import {
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
 import { isGroupPacket } from './groups';
 import { showsAt } from './later';
-import { contactTarget, relayFor, spaceChats, type SpaceChats } from './space-chats';
+import { contactTarget, relayFor, sendSealed, spaceChats, type SpaceChats } from './space-chats';
 import { lookAtSpare, spareBackup } from './spare';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 import { nextDue, sendWaiting, type SendPlace } from './waiting';
@@ -472,21 +472,12 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
 }
 
 // Seals word for a contact and hands it to their phone nearby when it is, and to the relay, after
-// the first packet of the conversation if the relay has not taken that yet (lib/nearby.ts). With
-// no `place`, it says nothing of where this phone's queue is, and goes nearby only.
+// the first packet of the conversation if the relay has not taken that yet (lib/nearby.ts): quiet,
+// as it is no message (lib/relay.ts, Mark). With no `place`, it says nothing of where this phone's
+// queue is, and goes nearby only.
 async function tell({ e2e }: SpaceChats, place: Place | null, identity: string, extra: Extra) {
   const sealed = await e2e.seal(identity, '', place?.queue.senderHex ?? '', { ...extra, at: place?.here ?? { relay: '', relayKey: '' } });
-  const relay =
-    place && sealed.sender
-      ? async () => {
-          const to = contactTarget(place.sends, sealed);
-          if (sealed.first) {
-            await sendMessage(to, fromHex(sealed.sender), sealed.first);
-            await e2e.firstSent(identity);
-          }
-          await sendMessage(to, fromHex(sealed.sender), sealed.packet);
-        }
-      : null;
+  const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], 'quiet', () => e2e.firstSent(identity)) : null;
   await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
 }
 
@@ -526,7 +517,7 @@ async function sendKeys(chats: SpaceChats, place: Place) {
 async function sendPending({ e2e }: SpaceChats, sends: Relay) {
   for (const { identity, sender, relay, relayKey: key, first } of e2e.pending()) {
     try {
-      await sendMessage(contactTarget(sends, { relay, relayKey: key }), fromHex(sender), first);
+      await sendMessage(contactTarget(sends, { relay, relayKey: key }), fromHex(sender), first, 'quiet');
       await e2e.firstSent(identity);
     } catch {
       // Tried again with the next look.

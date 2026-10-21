@@ -13,7 +13,7 @@ import { nearby } from './nearby';
 import { relayDoors } from './public-doors';
 import { PublicGroups } from './public-groups';
 import { callRelay, fromHex, relayKey, sendMessage, toHex, type Relay } from './relay';
-import { contactTarget, relayFor, spaceChats } from './space-chats';
+import { contactTarget, relayFor, sendSealed, spaceChats } from './space-chats';
 import { t } from './i18n';
 
 // The open space's group chats (lib/groups.ts), opened once while the space is, as its chats are
@@ -101,11 +101,11 @@ export function publicMemberName(key: string): string | null {
   return shown?.nameOf(key) ?? null;
 }
 
-/** How the open space's group messages leave the phone. */
+/** How the open space's group messages leave the phone, each saying to the relay what it carries. */
 export const spaceGroupTransport: GroupTransport = {
-  async post(to, packet) {
+  async post(to, packet, mark) {
     const place = await settings().catch(() => null);
-    const relay = place ? () => sendMessage(contactTarget(place.sends, to), fromHex(to.sender), packet) : null;
+    const relay = place ? () => sendMessage(contactTarget(place.sends, to), fromHex(to.sender), packet, mark) : null;
     await nearby.deliver(to.id, [packet], relay);
   },
   async signal(identity, signal) {
@@ -113,17 +113,8 @@ export const spaceGroupTransport: GroupTransport = {
     const place = await settings().catch(() => null);
     const at = place ? { relay: place.own.url, relayKey: place.relayKey } : { relay: '', relayKey: '' };
     const sealed = await e2e.seal(identity, '', place?.senderHex ?? '', { group: signal, at });
-    const relay =
-      place && sealed.sender
-        ? async () => {
-            const to = contactTarget(place.sends, sealed);
-            if (sealed.first) {
-              await sendMessage(to, fromHex(sealed.sender), sealed.first);
-              await e2e.firstSent(identity);
-            }
-            await sendMessage(to, fromHex(sealed.sender), sealed.packet);
-          }
-        : null;
+    // Asking for a key package, giving one, or a welcome: word between phones.
+    const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], 'quiet', () => e2e.firstSent(identity)) : null;
     await nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay);
   },
 };

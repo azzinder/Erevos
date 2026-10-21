@@ -83,7 +83,8 @@ export async function answerInvites(e2e: E2E, ownSender: string, here: Where, se
     try {
       const own = contactLink({ senderHex: ownSender, relayUrl: here.relay, key: toBase64Url(e2e.bundle), relayKey: here.relayKey || undefined });
       const sealed = await relaySeal(invite.key, fromHex(ownSender), inviteAnswer(own));
-      await sendMessage(contactTarget(sends, invite), fromHex(invite.sender), sealed);
+      // This chat's contact link, which their phone adds: no message (lib/relay.ts, Mark).
+      await sendMessage(contactTarget(sends, invite), fromHex(invite.sender), sealed, 'quiet');
       await link.answered(from, invite.sender);
     } catch {
       unanswered.push(item);

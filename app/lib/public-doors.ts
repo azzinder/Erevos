@@ -30,7 +30,8 @@ export function relayDoors(place: () => Promise<DoorRelay>): DoorPlace {
     },
     async knock(link, sealed) {
       const { sends } = await place();
-      await sendMessage(contactTarget(sends, link), fromHex(link.door), sealed);
+      // Asking to join, which the owner's phone answers: no message (lib/relay.ts, Mark).
+      await sendMessage(contactTarget(sends, link), fromHex(link.door), sealed, 'quiet');
     },
   };
 }

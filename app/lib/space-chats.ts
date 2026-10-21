@@ -4,7 +4,7 @@ import { canRelaySeal, relaySeal } from './core';
 import { E2E, fromBase64Url } from './e2e';
 import type { Carried } from './nearby';
 import type { Spare } from '../lock/e2e-data';
-import { fromHex, sameRelay, type Fallback, type Relay } from './relay';
+import { fromHex, sameRelay, sendMessage, type Fallback, type Mark, type Relay } from './relay';
 import { VoiceAssembler } from './voice';
 import { t } from './i18n';
 
@@ -112,6 +112,58 @@ export function contactTarget(own: Relay, where: { relay: string; relayKey: stri
   // The first route is the contact's main queue unless it could not be made.
   if (first.sender) throw failed;
   return fallback.length > 0 ? { ...first.relay, fallback } : first.relay;
+}
+
+/**
+ * What a message sealed for a contact carries, as the relay is told (lib/relay.ts, Mark), by its
+ * words and the call signal in it, if any: words someone reads are a message; a call's offer, which
+ * rings, goes with no mark, so it pushes without being counted; all else is word between phones.
+ */
+export function markOf(text: string, call?: { kind: string } | null): Mark | undefined {
+  if (text) return 'message';
+  return call?.kind === 'offer' ? undefined : 'quiet';
+}
+
+// The chats that seal what they send a contact for the account's phone, as a linked device's do
+// (lib/e2e.ts, Link), by the link that says so: their links tell this file as they open and close
+// (lib/devices.ts), so it need not know them.
+const links = new WeakMap<E2E, { readonly through: boolean }>();
+
+/** From now on `link` says whether what `e2e` sends goes through the account's phone; with null, none does. */
+export function linkChats(e2e: E2E, link: { readonly through: boolean } | null): void {
+  if (link) links.set(e2e, link);
+  else links.delete(e2e);
+}
+
+/**
+ * How what `e2e` sends a contact goes to the relay: as `mark` says, but all quiet from a linked
+ * device, as it goes to the account's own queue, on its phone, which says what it carries as it
+ * passes it on to the contact.
+ */
+export function sentMark(e2e: E2E, mark: Mark | undefined): Mark | undefined {
+  return links.get(e2e)?.through ? 'quiet' : mark;
+}
+
+/**
+ * Hands a contact's packets to the relay in turn, to where `sealed` says (contactTarget, from
+ * `own`), after the conversation's first packet if the relay has not taken that yet, then
+ * `firstSent`. `mark` goes with the last packet only, and the ones before it, the first packet
+ * too, are quiet: what comes in parts, as a voice message does, is one message.
+ */
+export async function sendSealed(
+  own: Relay,
+  sealed: { sender: string; relay: string; relayKey: string; spare?: Spare | null; first: Uint8Array | null },
+  packets: Uint8Array[],
+  mark: Mark | undefined,
+  firstSent: () => Promise<void>,
+): Promise<void> {
+  const to = contactTarget(own, sealed);
+  const sender = fromHex(sealed.sender);
+  if (sealed.first) {
+    await sendMessage(to, sender, sealed.first, 'quiet');
+    await firstSent();
+  }
+  for (const [i, packet] of packets.entries()) await sendMessage(to, sender, packet, i === packets.length - 1 ? mark : 'quiet');
 }
 
 /**

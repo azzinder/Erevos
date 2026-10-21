@@ -745,31 +745,45 @@ function digest(text: string): string {
   return a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0');
 }
 
-// Items in batches of about GROUP_BYTES each, at least one batch.
-function batched<T>(items: T[]): T[][] {
+// Items in batches of about GROUP_BYTES each, at least one batch; no two that `apart` picks in one.
+function batched<T>(items: T[], apart: (item: T) => boolean = () => false): T[][] {
   const out: T[][] = [];
   let batch: T[] = [];
   let size = 0;
+  let picked = false;
   for (const item of items) {
     const bytes = JSON.stringify(item).length;
-    if (batch.length > 0 && size + bytes > GROUP_BYTES) {
+    const pick = apart(item);
+    if (batch.length > 0 && (size + bytes > GROUP_BYTES || (pick && picked))) {
       out.push(batch);
       batch = [];
       size = 0;
+      picked = false;
     }
     batch.push(item);
     size += bytes;
+    picked ||= pick;
   }
   if (batch.length > 0 || out.length === 0) out.push(batch);
   return out;
 }
 
+// A member's message, as a device's notice counts it: not a note, nor the phone's own.
+const isTheirs = (e: GroupEntry) => !e.note && e.from !== '';
+
 /**
  * What changed in the groups, as envelopes: the groups as they are now and those gone with the
- * first, the messages after, a few at a time. With `all`, the groups said are all there are.
+ * first, the messages after, a few at a time. Each member's message goes in an envelope of its own,
+ * with the notes and the phone's own messages next to it, so the relay counts each for a device's
+ * notice (tellsTheirs). With `all`, the groups said are all there are.
  */
 export function groupEnvelopes(list: GroupMirror[], gone: string[], entries: GroupEntry[], all = false): Envelope[] {
-  return batched(entries).map((batch, i) => (i === 0 ? { k: 'groups', list, gone, entries: batch, ...(all ? { all: true as const } : {}) } : { k: 'groups', list: [], gone: [], entries: batch }));
+  return batched(entries, isTheirs).map((batch, i) => (i === 0 ? { k: 'groups', list, gone, entries: batch, ...(all ? { all: true as const } : {}) } : { k: 'groups', list: [], gone: [], entries: batch }));
+}
+
+/** Whether an envelope tells of a member's message (groupEnvelopes puts one in each at most): one a device's notice counts. */
+export function tellsTheirs(envelope: Envelope): boolean {
+  return envelope.k === 'groups' && envelope.entries.some(isTheirs);
 }
 
 /** What was done to a group's message since it went, as its devices are told of it. */
