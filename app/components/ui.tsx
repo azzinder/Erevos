@@ -153,7 +153,8 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
 
 type ButtonKind = 'primary' | 'secondary' | 'ghost' | 'danger';
 
-function buttonColors(kind: ButtonKind, colors: Colors): { bg: string; pressed: string; fg: string; line?: string } {
+/** A button's fill, its fill when pressed, its label and its outline, in the open style. */
+export function buttonColors(kind: ButtonKind, colors: Colors): { bg: string; pressed: string; fg: string; line?: string } {
   // Nocturne draws lines, not fills: an outlined accent button, the wash when pressed (nocturne.css §3).
   if (shape.lines && (kind === 'primary' || kind === 'secondary')) {
     return kind === 'primary'
@@ -220,6 +221,30 @@ export function Button({ title, onPress, onLongPress, kind = 'primary', disabled
         )
       }
     </Pressable>
+  );
+}
+
+/**
+ * A switch, drawn: on, it fills with the accent and its knob goes right. Off, its knob is in the
+ * muted ink, which shows on every ground (the surface's color would vanish under dark glass). The
+ * row it is in says what it switches, as a switch (accessibilityRole="switch", checked).
+ */
+export function Toggle({ on }: { on: boolean }) {
+  const colors = useColors();
+  return (
+    <View
+      style={{
+        width: 46,
+        height: 28,
+        borderRadius: 14,
+        padding: 3,
+        justifyContent: 'center',
+        alignItems: on ? 'flex-end' : 'flex-start',
+        backgroundColor: on ? colors.primary : withAlpha(colors.textMuted, 0.3),
+      }}
+    >
+      <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: on ? colors.onPrimary : colors.textMuted }} />
+    </View>
   );
 }
 

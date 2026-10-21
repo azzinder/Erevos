@@ -1,21 +1,20 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Image, Modal, Platform, Pressable, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Image, Modal, Platform, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fileSize, readFile } from '../lib/attachments';
 import { t } from '../lib/i18n';
-import { QUALITIES, qualityNote } from '../lib/photo-quality';
 import { photoUri, releaseUri } from '../lib/photo-uri';
-import { CAN_TAKE_PHOTOS, type PhotoQuality } from '../lib/pick-photo';
 import { CAN_CHOOSE_FOLDER } from '../lib/save-file';
 import type { FileRef } from '../lock/attachment-files';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors, useStyles } from '../theme/context';
-import { Button, Chip, Row, Sheet, Text } from './ui';
+import { Button, Row, Text } from './ui';
 
 // Photos and files in a thread, a contact's (app/chat.tsx) or a group's (app/group.tsx): each in
-// its bubble, the sheet they are sent from, and the one looked at on its own, to save. A photo is
-// read into memory to show, never written out unsealed, and let go of once it no longer shows.
+// its bubble, and the one looked at on its own, to save. They are sent from the panel under the
+// message bar (components/composer.tsx). A photo is read into memory to show, never written out
+// unsealed, and let go of once it no longer shows.
 
 /** Photos shown in the thread at once, the latest: each is held whole in memory while shown. The
  *  others show when tapped. A computer has the memory for all of them. */
@@ -113,42 +112,6 @@ export function useShownPhotos(files: FileRef[], onError: (error: unknown) => vo
   return photos;
 }
 
-/** The sheet a photo or file is sent from, with how photos go (lib/photo-quality.ts), and `note` last. */
-export function AttachSheet({ visible, onClose, onPhoto, onFile, quality, onQuality, note, more }: {
-  visible: boolean;
-  onClose: () => void;
-  onPhoto: (from: 'photos' | 'camera') => void;
-  onFile: () => void;
-  quality: PhotoQuality;
-  onQuality: (quality: PhotoQuality) => void;
-  note: string;
-  /** What else can be sent from here, under the photo and the file: a sticker, a place, a poll. */
-  more?: ReactNode;
-}) {
-  return (
-    <Sheet visible={visible} onClose={onClose} title={more ? t('Attach') : t('Send a photo or file')}>
-      <Row wrap>
-        <Button title={t('Photo')} compact onPress={() => onPhoto('photos')} />
-        {CAN_TAKE_PHOTOS ? <Button title={t('Take photo')} compact onPress={() => onPhoto('camera')} /> : null}
-        <Button title={t('File')} kind="secondary" compact onPress={onFile} />
-      </Row>
-      {more ? <Row wrap>{more}</Row> : null}
-      <Text variant="label">{t('Photo quality')}</Text>
-      <Row wrap>
-        {QUALITIES.map(({ value, label: shown }) => (
-          <Chip key={shown} label={t(shown)} selected={quality === value} onPress={() => onQuality(value)} />
-        ))}
-      </Row>
-      <Text variant="caption" tone="muted">
-        {qualityNote(quality)}
-      </Text>
-      <Text variant="caption" tone="muted">
-        {note}
-      </Text>
-    </Sheet>
-  );
-}
-
 /** A photo (`uri` once it is read) or file shown on its own, with how big it is, to save; none while `file` is null. */
 export function FileViewer({ file, uri, onSave, onClose }: { file: FileRef | null; uri?: string; onSave: (choose: boolean) => void; onClose: () => void }) {
   const styles = useStyles(makeStyles);
@@ -183,35 +146,6 @@ export function FileViewer({ file, uri, onSave, onClose }: { file: FileRef | nul
         </Row>
       </View>
     </Modal>
-  );
-}
-
-// A button under the message field: small, so a row of them fits beside Send. Voice is held, not tapped.
-type ToolProps = { title: string; on?: boolean; onPress?: () => void; onPressIn?: () => void; onPressOut?: () => void };
-
-export function Tool({ title, on = false, onPress, onPressIn, onPressOut }: ToolProps) {
-  const colors = useColors();
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      accessibilityRole="button"
-      accessibilityState={{ selected: on }}
-      style={({ pressed }) => ({
-        minHeight: 40,
-        paddingHorizontal: 12,
-        justifyContent: 'center',
-        borderRadius: radius.pill,
-        borderWidth: 1,
-        borderColor: on ? colors.primary : withAlpha(colors.border, 0.7),
-        backgroundColor: pressed ? colors.surfacePressed : on ? withAlpha(colors.primary, 0.14) : colors.surfaceAlt,
-      })}
-    >
-      <Text variant="label" color={on ? colors.accentText : colors.text} style={{ fontSize: 14 }}>
-        {title}
-      </Text>
-    </Pressable>
   );
 }
 

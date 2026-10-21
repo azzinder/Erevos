@@ -465,7 +465,10 @@ function customPalette(accent: string, scheme: 'light' | 'dark'): LphlModeColors
   const shades = ['100', '200', '300', '400', '500', '600', '700', '800', '900'] as const;
   const ordered = scheme === 'dark' ? [...ramp].reverse() : ramp;
   const accentRamp = Object.fromEntries(shades.map((s, i) => [s, ordered[i]])) as LphlModeColors['accentRamp'];
-  const onAccent = contrast(accent, '#FFFFFF') >= contrast(accent, house.text) ? '#FFFFFF' : house.text;
+  // White or the House's dark ink on it, whichever reads better: in the dark the House text is
+  // light too, so a light accent (a sky blue) would otherwise take white, at under 3:1.
+  const ink = LPHL_PALETTES.house.light.text;
+  const onAccent = contrast(accent, '#FFFFFF') >= contrast(accent, ink) ? '#FFFFFF' : ink;
   return { ...house, accent, accentField: accent, onAccent, accentRamp };
 }
 

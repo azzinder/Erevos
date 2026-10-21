@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Platform, Pressable, View, type StyleProp, type TextStyle } from 'react-native';
+import { Pressable, View, type StyleProp, type TextStyle } from 'react-native';
 
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { bytesSource, FileGoneError, MAX_FILE, readFile, type Source } from '../lib/attachments';
@@ -7,22 +7,23 @@ import { filesToTake, sendGroupFile, takeGroupFile, voiceMime } from '../lib/gro
 import { t } from '../lib/i18n';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { pickSource, TooLargeError } from '../lib/pick-file';
-import { NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
+import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import type { Relay } from '../lib/relay';
 import { saveFile } from '../lib/save-file';
 import { groupRelay, spaceGroups, spaceGroupTransport } from '../lib/space-groups';
-import { MAX_VOICE_MS, voiceDuration } from '../lib/voice';
+import { MAX_VOICE_MS, MIN_VOICE_MS, voiceDuration } from '../lib/voice';
 import { cleanFileName, cleanMime, mimeOf, type FileMeta, type FileRef } from '../lock/attachment-files';
 import type { GroupMessage } from '../lock/group-data';
-import { AttachSheet, Attachment, comingText, FileViewer, shownOf, Tool, useShownPhotos } from './attachment';
+import { Attachment, comingText, FileViewer, shownOf, useShownPhotos } from './attachment';
+import { ComposerPanel, type ComposerTile, type VoiceControl } from './composer';
 import { PhotoSticker } from './stickers';
 import { Text } from './ui';
 
 // Photos, files and voice messages in a group's thread (app/group.tsx, lib/group-media.ts): the
-// Attach and Voice buttons under its field, each one's place in its bubble, and the photo or file
-// looked at on its own. Others' up to AUTO_TAKE are taken from the relay while the group is open,
-// as they come; bigger ones when tapped. A voice message is recorded while Voice is held, and plays
-// when tapped. Nothing here is a group's message itself: where a file is, once taken, shows here
+// panel "+" opens under its message bar (components/composer.tsx), the bar's microphone, each
+// one's place in its bubble, and the photo or file looked at on its own. Others' up to AUTO_TAKE
+// are taken from the relay while the group is open, as they come; bigger ones when tapped. A voice
+// message is recorded while the microphone is held, and plays when tapped. Nothing here is a group's message itself: where a file is, once taken, shows here
 // at once, and is kept in the group (Groups.setFile) for the next time it opens.
 
 // How long what this says stays under the messages, milliseconds.
@@ -34,12 +35,12 @@ type Picked = { name: string; mime: string; source: Source; w?: number; h?: numb
 
 /**
  * The media of group `id`, whose messages are `messages`. `onError` shows what went wrong. Gives
- * the buttons for under the field (`tools`), what goes on now (`said`, for under the messages), the
- * sheets (`sheets`), and a message's photo, file or voice message for its bubble (`content`).
- * `more` gives what else Attach offers (components/group-messages.tsx), each opened once its sheet
- * has gone.
+ * the panel under the message bar (`panel`, shown while `attaching`), the microphone (`voice`),
+ * what goes on now (`said`, for under the messages), the sheets (`sheets`), and a message's photo,
+ * file or voice message for its bubble (`content`). `more` gives the panel's other tiles
+ * (components/group-messages.tsx), each opened once the panel has closed.
  */
-export function useGroupMedia(id: string, messages: GroupMessage[], onError: (text: string) => void, more?: (afterSheet: (then: () => void) => void) => ReactNode) {
+export function useGroupMedia(id: string, messages: GroupMessage[], onError: (text: string) => void, more?: (afterPanel: (then: () => void) => void) => ComposerTile[]) {
   const [own, setOwn] = useState<Relay | null>(null);
   const [quality, setQuality] = useState<PhotoQuality>('original');
   const [attaching, setAttaching] = useState(false);
@@ -54,11 +55,13 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   // Files already tried, so one that failed is taken again only when tapped.
   const tried = useRef(new Set<string>());
   const recorder = useVoiceRecorder();
-  // While Voice is held, and the recording it started.
+  // While the microphone is held, and the recording it started.
   const [talking, setTalking] = useState(false);
   const holding = useRef(false);
   const recording = useRef<Promise<boolean> | null>(null);
   const longest = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Let go of on purpose (slid away), so nothing is said of it.
+  const letGo = useRef(false);
   // The voice message playing, by its file's id, how far it has played, and how to stop it.
   const [playing, setPlaying] = useState<string | null>(null);
   const [played, setPlayed] = useState(0);
@@ -166,10 +169,10 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     }
   }
 
-  // The phone's picker opens once the sheet has gone.
+  // What is picked under "+" opens once the panel has closed.
   function afterSheet(then: () => void) {
     setAttaching(false);
-    setTimeout(then, Platform.OS === 'web' ? 0 : 350);
+    then();
   }
 
   function sendPhoto(from: 'photos' | 'camera') {
@@ -193,18 +196,19 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     );
   }
 
-  // Starts recording while Voice is held. Letting go sends it; a minute sends it anyway.
+  // Starts recording while the microphone is held. Letting go sends it; a minute sends it anyway.
   function startTalking() {
     holding.current = true;
+    letGo.current = false;
     const started = recorder.start().then((ok) => {
       if (!ok) {
         onError(t('Erevos may not use the microphone. Allow it in the phone settings to send voice messages.'));
         return false;
       }
       if (!holding.current) {
-        // Let go while the microphone was getting ready.
+        // Let go while the microphone was getting ready: too short to be meant.
         void recorder.stop().catch(() => undefined);
-        say(t('Hold Voice while you talk, and let go to send.'));
+        if (!letGo.current) say(t('Hold to record, and let go to send.'));
         return false;
       }
       setTalking(true);
@@ -217,8 +221,11 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     });
   }
 
-  async function stopTalking() {
+  // Stops recording and sends it, or, `cancel`led (slid away), lets it go. Under a second is
+  // taken for a slip, and is let go too.
+  async function stopTalking(cancel = false) {
     holding.current = false;
+    letGo.current = cancel;
     if (longest.current) clearTimeout(longest.current);
     longest.current = null;
     const started = recording.current;
@@ -227,8 +234,12 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     setTalking(false);
     try {
       const recorded = await recorder.stop();
-      if (!recorded) {
-        say(t('Hold Voice while you talk, and let go to send.'));
+      if (cancel) {
+        say(t('Recording cancelled.'));
+        return;
+      }
+      if (!recorded || recorded.ms < MIN_VOICE_MS) {
+        say(t('Hold to record, and let go to send.'));
         return;
       }
       await send('voice', bytesSource(recorded.audio), { name: 'voice', mime: voiceMime(recorded.audio), kind: 'file' }, recorded.ms);
@@ -290,25 +301,23 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   if (viewing?.kind === 'photo' && !photoFiles.some((file) => file.id === viewing.id)) photoFiles.push(viewing);
   const photos = useShownPhotos(photoFiles, (error) => onError(t('Cannot show the photo. {error}', { error: errorText(error) })));
 
-  const tools: ReactNode = (
-    <>
-      <Tool title={t('Attach')} on={attaching} onPress={() => setAttaching(true)} />
-      <Tool title={talking ? t('Let go to send') : t('Voice')} on={talking} onPressIn={startTalking} onPressOut={() => void stopTalking()} />
-    </>
+  const voice: VoiceControl = { recording: talking, start: startTalking, stop: (cancel) => void stopTalking(cancel) };
+
+  // What "+" opens under the bar: photos and files, then what `more` adds. A group has no ways to
+  // send but now, so no rows under them.
+  const tiles: ComposerTile[] = [{ key: 'photo', title: t('Photo'), icon: 'photo', onPress: () => sendPhoto('photos') }];
+  if (CAN_TAKE_PHOTOS) tiles.push({ key: 'camera', title: t('Camera'), icon: 'camera', onPress: () => sendPhoto('camera') });
+  tiles.push({ key: 'file', title: t('File'), icon: 'file', onPress: sendPickedFile }, ...(more?.(afterSheet) ?? []));
+  const panel: ReactNode = (
+    <ComposerPanel
+      tiles={tiles}
+      quality={{ value: quality, onChange: chooseQuality }}
+      foot={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, 14 days, for each member to take.')}
+    />
   );
 
   const sheets: ReactNode = (
     <>
-      <AttachSheet
-        visible={attaching}
-        onClose={() => setAttaching(false)}
-        onPhoto={sendPhoto}
-        onFile={sendPickedFile}
-        quality={quality}
-        onQuality={chooseQuality}
-        note={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, 14 days, for each member to take.')}
-        more={more?.(afterSheet)}
-      />
       <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onClose={() => setViewing(null)} />
     </>
   );
@@ -339,5 +348,5 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     );
   }
 
-  return { tools, said, sheets, content };
+  return { panel, attaching, setAttaching, voice, said, sheets, content };
 }

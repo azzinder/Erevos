@@ -77,6 +77,19 @@ test('builds a palette around your own color', () => {
   assert.ok(contrast(dark.hero, dark.heroText) >= 3);
 });
 
+test('puts dark text on a light color of your own, in the dark too', () => {
+  for (const scheme of SCHEMES) {
+    const c = buildColors('classic', scheme, 'custom', { customAccent: '#0EA5E9', frameText: 'palette' });
+    assert.ok(contrast(c.primary, c.onPrimary) >= 4.5, `${scheme}: button`);
+    assert.ok(contrast(c.hero, c.heroText) >= 4.5, `${scheme}: hero`);
+    const glass = withLook(c, { look: 'glass', style: 'classic', scheme, palette: 'custom', customAccent: '#0EA5E9' });
+    assert.ok(contrast(glass.primary, glass.onPrimary) >= 4.5, `${scheme} glass: button`);
+  }
+  // A dark color keeps white on it.
+  const deep = buildColors('classic', 'dark', 'custom', { customAccent: '#1E3A8A', frameText: 'palette' });
+  assert.equal(deep.onPrimary, '#FFFFFF');
+});
+
 test('reads well in every style, scheme, palette and text setting', () => {
   for (const style of STYLES) {
     for (const scheme of SCHEMES) {

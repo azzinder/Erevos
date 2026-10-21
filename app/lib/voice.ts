@@ -7,6 +7,8 @@ import { t } from './i18n';
 
 /** The longest voice message, milliseconds. */
 export const MAX_VOICE_MS = 60_000;
+/** A recording shorter than this is taken for a slip of the finger on the microphone, and not sent. */
+export const MIN_VOICE_MS = 1000;
 /** Bytes of sound in one part, small enough for its encrypted message with what else it carries. */
 export const PART_SIZE = 10_000;
 /** The most parts one voice message has: a minute of sound fits with room to spare. */

@@ -44,6 +44,20 @@ On main, not released yet. The next release is **2.0.0**.
   write, read, react to and change in contacts, and the contacts get it once the phone is back, as
   before. With a phone or device from before, everything goes through the phone as now.
 
+- **A new chat screen**: one bar at the top with the contact's picture and name, whether they are
+  online, nearby or typing, and buttons for a video and a voice call, with ⋯ (⋮ on Android) set
+  apart for the chat's details. Under the messages, one floating bar: **+** opens, where the
+  keyboard was, what to send (photo, camera, file, sticker, location, poll) and how the next
+  message goes (disappearing, Talkie, send later, and as an SMS for a contact with a number); the smiley opens the stickers, the stopwatch
+  makes the next message disappear, and the microphone, held, records a voice message. Slide left
+  to drop it; under a second sends nothing, and TalkBack starts and stops it with a tap. With
+  something typed it is the send arrow, which held sends without sound, later, disappearing or as
+  an SMS. A
+  disappearing message can now be a voice message (a walkie-talkie one too), photo, file, sticker,
+  place or poll, sent now or later. Groups
+  have the same bars, with their video call under ⋯. Switches show their knob when off on dark
+  glass, and a light color of your own takes dark text on its buttons in the dark too.
+
 - **Group keys made new every week**: in every group, private or public, the admin's phone makes
   its own keys new, and each member's phone asks the admin to put it in anew with new ones. So keys
   taken from a phone once stop reading the group within a week. Members see no one leave or join.
@@ -68,8 +82,9 @@ On main, not released yet. The next release is **2.0.0**.
   app: the chat and the SMS conversation hear when Android's SMS store changes, and read it again
   as Erevos comes back.
   **Plain SMS** in the chat's details opens the SMS conversation itself, to write one there, and
-  **Attach** → **Send as SMS** sends what is typed as a plain SMS, naming the SIM when there are
-  two. Before, once a number was linked, its SMS could no longer be reached from the chat. The
+  **+** → **Send as SMS** (or **As SMS**, holding the send arrow) sends what is typed as a plain
+  SMS, naming the SIM when there are two, and saying so first when the message was to disappear
+  or to answer one, which an SMS cannot. Before, once a number was linked, its SMS could no longer be reached from the chat. The
   home screen's **Erevos** list keeps a contact whose last message was an SMS, which it used to
   drop. No hidden SMS invite goes to an Erevos contact's number any more, linked or on their
   contact card.

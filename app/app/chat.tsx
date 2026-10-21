@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,7 +17,7 @@ import { shownLine } from '../lib/call-lines';
 import { onSpaceCallLine, spaceCalls } from '../lib/space-calls';
 import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
-import { MAX_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
+import { MAX_VOICE_MS, MIN_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, sendFile, takeFile, bytesSource, refSource, type Source } from '../lib/attachments';
 import { canRingInBackground, isNews, messageCameAt } from '../lib/background';
@@ -27,13 +27,15 @@ import { pickSource, TooLargeError } from '../lib/pick-file';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { saveFile, saveText } from '../lib/save-file';
 import { chatText, exportName } from '../lib/chat-export';
-import { AttachSheet, Attachment, comingText, FileViewer, shownOf, Tool, useShownPhotos } from '../components/attachment';
+import { Attachment, comingText, FileViewer, shownOf, useShownPhotos } from '../components/attachment';
+import { Composer, ComposerPanel, IconButton, type ComposerTile, type ComposerWay, type SendWay } from '../components/composer';
 import { KeyboardAwareScrollView, KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
-import { ShieldIcon, TimerIcon } from '../components/icons';
+import { BackIcon, MoreIcon, PhoneIcon, ShieldIcon, TimerIcon, VideoIcon } from '../components/icons';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
-import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton } from '../components/ui';
+import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton, Toggle } from '../components/ui';
+import { useGlassBlur } from '../components/glass';
 import { LaterPicker } from '../components/later-picker';
 import { LinkedText } from '../components/linked-text';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
@@ -124,8 +126,8 @@ import { t, plural, mark } from '../lib/i18n';
 // their phone says they came, and ✓✓✓ once it says they were read; theirs are read here while
 // their chat shows on the screen. A chat's new messages, or a single one, can disappear on both
 // phones a time after they are read (the timer in lib/e2e.ts). Voice messages are recorded while
-// Voice is held (lib/audio.ts), travel in parts (lib/voice.ts), and each one's sound is kept in a
-// sealed file of its own (lock/voice-clips.ts). Photos and files go through the relay's file store
+// the message bar's microphone is held (lib/audio.ts, components/composer.tsx), travel in parts
+// (lib/voice.ts), and each one's sound is kept in a sealed file of its own (lock/voice-clips.ts). Photos and files go through the relay's file store
 // (lib/attachments.ts): ours are kept here as they went, theirs are taken from the relay at once
 // up to AUTO_TAKE, larger ones when tapped. A photo shows from memory only, never written out
 // unsealed; Save puts a copy outside Erevos. Voice and video calls to a contact (lib/call.ts) are
@@ -421,7 +423,7 @@ function BackButton({ onPress }: { onPress?: () => void }) {
       hitSlop={8}
       style={({ pressed }) => [layout.back, pressed && { opacity: 0.6 }]}
     >
-      <Text style={{ fontSize: 34, lineHeight: 36, color: colors.text, marginTop: -4 }}>‹</Text>
+      <BackIcon color={colors.text} size={24} />
     </Pressable>
   );
 }
@@ -473,6 +475,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // The chat's own look being chosen, over the chat.
   const [styling, setStyling] = useState(false);
   const insets = useSafeAreaInsets();
+  // A narrow phone (360 wide): the top bar's picture is smaller, and "Encrypted" goes without its
+  // shield, so the word fits beside the three buttons.
+  const narrow = useWindowDimensions().width < 400;
   const [relayUrl, setRelayUrl] = useState('');
   const [relayToken, setRelayToken] = useState('');
   // Our relay's key for sealed sends, put in our link so contacts on other relays can reach us.
@@ -518,8 +523,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [importedShown, setImportedShown] = useState(IMPORTED_PAGE);
   // Set when earlier imported messages are shown, so the thread does not jump to its end.
   const holdScroll = useRef(false);
-  // Choosing how long a single message lasts, before sending it.
+  // The next message disappears, this long (seconds) after it is read: the stopwatch in the bar.
   const [vanishing, setVanishing] = useState(false);
+  const [vanishFor, setVanishFor] = useState(3600);
   // The message whose menu is open (held down), the one the next is an answer to, and the one just
   // gone to, lit a moment.
   const [menuFor, setMenuFor] = useState<Message | null>(null);
@@ -554,11 +560,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const recordingTalk = useRef(false);
   // The chat open and seen now, whose walkie-talkie messages play as they come.
   const listening = useRef<string | null>(null);
-  // While Voice is held, and the recording it started.
+  // While the microphone is held, and the recording it started.
   const [talking, setTalking] = useState(false);
   const holding = useRef(false);
   const recording = useRef<Promise<boolean> | null>(null);
   const longest = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Let go of on purpose (slid away), so nothing is said of it.
+  const letGo = useRef(false);
   // The voice message playing, and how to stop it.
   const [playingId, setPlayingId] = useState<number | null>(null);
   // How far the voice message playing has played, milliseconds.
@@ -580,8 +588,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
   const history = useRef<History | null>(null);
-  // The sheet for sending a photo or file, and how photos go.
+  // The panel under the message bar ("+"): what to send and how it goes, and choosing when it goes.
   const [attaching, setAttaching] = useState(false);
+  const [choosingLater, setChoosingLater] = useState(false);
   const [stickering, setStickering] = useState(false);
   // A message to forward, while its chat is picked, and the space's groups it can go to.
   const [forwarding, setForwarding] = useState<Message | null>(null);
@@ -592,9 +601,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Until when each contact shows typing, and when this phone last said it is typing to each.
   const [typing, setTyping] = useState<Record<string, number>>({});
   const typingSaid = useRef(new Map<string, number>());
-  // Send held down: later, or without sound.
-  const [sendMenu, setSendMenu] = useState(false);
-  // The time picked there for the next photo, file or voice message, when nothing was typed.
+  // The time picked under "+" for the next photo, file or voice message, when nothing was typed.
   const [laterFor, setLaterFor] = useState<number | null>(null);
   const [quality, setQuality] = useState<PhotoQuality>('original');
   // How far each file being taken from the relay is, by `${peer}|${tag}`; 'failed' or 'gone' if it did not come.
@@ -605,8 +612,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [viewing, setViewing] = useState<Message | null>(null);
   const [viewingImported, setViewingImported] = useState<FileRef | null>(null);
   const thread = useRef<ScrollView>(null);
+  // Whether the thread shows its end, so it keeps to it as it grows shorter.
+  const atEnd = useRef(true);
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
+  const barBlur = useGlassBlur();
   // How messages are drawn: the look's bubbles (theme/bubbles.ts).
   const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
   // Where this chat's home relay is kept (lib/spare.ts): the space's, or this hidden place's own.
@@ -981,6 +991,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setReplying(null);
     setPinShown(0);
     setSearching(null);
+    setAttaching(false);
+    setChoosingLater(false);
+    setVanishing(false);
   }, [selected]);
 
   // Typing shows only a few seconds after the last word that it does.
@@ -1609,19 +1622,27 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Sends what is typed as a plain SMS to their number, once the owner says so: not encrypted, so
   // the phone company can read it. It shows among the messages as an SMS, as the phone keeps it.
-  // With two SIMs it says which it goes on.
+  // With two SIMs it says which it goes on. An SMS cannot disappear, nor answer a message: with the
+  // stopwatch on, or a message being answered, it says so first, and once it went both are off, as
+  // after any message sent.
   async function sendAsSms() {
     const text = draft.trim();
     const to = chatSms.number;
     if (!text || !to) return;
-    const plainly = chatSms.simName
-      ? t('It goes to {number} on {sim} as a plain SMS, not encrypted: the phone company can read it.', { number: to, sim: chatSms.simName })
-      : t('It goes to {number} as a plain SMS, not encrypted: the phone company can read it.', { number: to });
-    if (!(await choose(t('Send as SMS?'), plainly, t('Cancel'), t('Send')))) return;
+    const said = [
+      chatSms.simName
+        ? t('It goes to {number} on {sim} as a plain SMS, not encrypted: the phone company can read it.', { number: to, sim: chatSms.simName })
+        : t('It goes to {number} as a plain SMS, not encrypted: the phone company can read it.', { number: to }),
+    ];
+    if (vanishing) said.push(t('An SMS cannot disappear: it stays on both phones.'));
+    if (replying && replying.peer === selected) said.push(t('It goes without the message it answers.'));
+    if (!(await choose(t('Send as SMS?'), said.join(' '), t('Cancel'), t('Send')))) return;
     try {
       await maySendSms();
       await sendSms(to, text, chatSms.sim);
       setDraft((typed) => (typed.trim() === text ? '' : typed));
+      setVanishing(false);
+      setReplying(null);
       chatSms.reload();
     } catch (error) {
       setNote(t('Not sent. {error}', { error: errorText(error) }));
@@ -1702,6 +1723,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return;
     }
     setNote('');
+    setAttaching(false);
     router.push(`/group?id=${id}`);
   }
 
@@ -1720,7 +1742,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Sends a poll, with its question and options as its words for an Erevos from before.
   function sendPoll(poll: Poll) {
     setPolling(false);
-    void send(0, false, { text: pollWords(poll), poll });
+    void send(undefined, false, { text: pollWords(poll), poll });
   }
 
   // Chooses an option of a poll, or takes the choice back, on both phones, as a reaction goes.
@@ -1742,14 +1764,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Sends the place found, with where it is as its words for an Erevos from before.
   function sendPlace(place: Place) {
     setPlaceFound(null);
-    void send(0, false, { text: placeWords(place), place });
+    void send(undefined, false, { text: placeWords(place), place });
   }
 
   // Sends a sticker: its name, with its emoji as its words for an Erevos from before.
   function sendSticker(name: string) {
     setStickering(false);
     const sticker = stickerOf(name);
-    if (sticker) void send(0, false, { text: sticker.emoji, sticker: name });
+    if (sticker) void send(undefined, false, { text: sticker.emoji, sticker: name });
   }
 
   // Whose stickers made from photos these are: the space's, or these hidden chats' only.
@@ -1962,12 +1984,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // Sends the message typed. With `lasts` (seconds), only this one disappears, that long after it
-  // is read; `quiet`, it comes without sound, also when it has to wait. Given `content`, it sends
+  // is read: unless given, as the stopwatch in the bar says. `quiet`, it comes without sound, also
+  // when it has to wait. Given `content`, it sends
   // that instead, a sticker, a place or a poll with its words (its emoji, where it is, or what it
   // asks), or words forwarded, and what is typed stays; with `to`, to that chat, not the one shown.
   // When only LoRa can take it, and it is too much for LoRa with its link's preview, the words go
   // without the preview rather than wait.
-  async function send(lasts = 0, quiet = false, content?: Content & { text: string }, to = selected) {
+  async function send(lasts = vanishing ? vanishFor : 0, quiet = false, content?: Content & { text: string }, to = selected) {
     const text = content ? content.text : draft.trim();
     if (!text || !to?.startsWith(CONTACT_PREFIX) || previewing.current) return;
     setVanishing(false);
@@ -2009,15 +2032,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // message (laterFor).
   async function sendLater(at: number) {
     const text = draft.trim();
-    setSendMenu(false);
+    setChoosingLater(false);
+    setAttaching(false);
     if (!selected?.startsWith(CONTACT_PREFIX) || !canPick(at)) return;
     if (!text) {
       setLaterFor(at);
-      setNote(t('Now pick a photo or file with Attach, or hold Voice: it goes on {when}.', { when: laterLabel(at) }));
+      setNote(t('Now pick a photo or file under +, or hold the microphone: it goes on {when}.', { when: laterLabel(at) }));
       return;
     }
-    setVanishing(false);
-    if (await schedule(selected, at, { text })) setDraft('');
+    const lasts = takeVanish();
+    if (await schedule(selected, at, { text, lasts })) setDraft('');
   }
 
   // Keeps a message to go at `at`: sealed and handed to the relay at once, to hold till then
@@ -2025,14 +2049,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // while no relay can take it, it waits here, and goes to the relay with the first look that
   // reaches one. Hidden chats keep nothing waiting: there it goes to the relay now, or is not kept,
   // and a voice message's sound or a file's chunks kept for it go. Says whether it is kept.
-  async function schedule(peer: string, at: number, what: { text?: string; voice?: VoiceRef; file?: FileRef }): Promise<boolean> {
+  async function schedule(peer: string, at: number, what: { text?: string; voice?: VoiceRef; file?: FileRef; lasts?: number }): Promise<boolean> {
     if (!e2e) {
       setNote(t(NO_CORE));
       return false;
     }
-    const { text = '', voice, file } = what;
+    // How long it lasts once read: the stopwatch's time for it (`lasts`), or else the chat's.
+    const { text = '', voice, file, lasts: once = 0 } = what;
     const tag = newTag();
-    const lasts = timerOf(peer);
+    const lasts = once || timerOf(peer);
     const when = laterLabel(at);
     const parts = answering(peer);
     const heldNote = t('Scheduled for {when}. The relay sends it then, even if this phone is off. Until then you can delete it here.', { when });
@@ -2205,13 +2230,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  // Starts recording while Voice is held. Letting go sends it; a minute sends it anyway.
+  // Starts recording while the microphone is held. Letting go sends it; a minute sends it anyway.
   function startTalking() {
     if (!selectedContact) {
       setNote(t('Voice messages go to contacts through the relay. Pick one first.'));
       return;
     }
     holding.current = true;
+    letGo.current = false;
     const talk = talkies.has(selectedContact);
     recordingTalk.current = talk;
     const started = (talk ? talkRecorder : recorder).start().then((ok) => {
@@ -2220,9 +2246,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return false;
       }
       if (!holding.current) {
-        // Let go while the microphone was getting ready.
+        // Let go while the microphone was getting ready: too short to be meant.
         void (talk ? talkRecorder : recorder).stop().catch(() => undefined);
-        setNote(t('Hold Voice while you talk, and let go to send.'));
+        if (!letGo.current) setNote(t('Hold to record, and let go to send.'));
         return false;
       }
       setTalking(true);
@@ -2235,8 +2261,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     });
   }
 
-  async function stopTalking() {
+  // Stops recording and sends it, or, `cancel`led (slid away), lets it go. Under a second is
+  // taken for a slip, and is let go too.
+  async function stopTalking(cancel = false) {
     holding.current = false;
+    letGo.current = cancel;
     if (longest.current) clearTimeout(longest.current);
     longest.current = null;
     const started = recording.current;
@@ -2246,14 +2275,25 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       const talk = recordingTalk.current;
       const recorded = await (talk ? talkRecorder : recorder).stop();
-      if (!recorded) {
-        setNote(t('Hold Voice while you talk, and let go to send.'));
+      if (cancel) {
+        setNote(t('Recording cancelled.'));
         return;
       }
-      await sendVoice(recorded.audio, recorded.ms, talk);
+      if (!recorded || recorded.ms < MIN_VOICE_MS) {
+        setNote(t('Hold to record, and let go to send.'));
+        return;
+      }
+      await sendVoice(recorded.audio, recorded.ms, talk, selectedContact, false, takeVanish());
     } catch (error) {
       setNote(t('Not sent. {reason}', { reason: errorText(error) }));
     }
+  }
+
+  // How long the next message lasts once read, as the stopwatch says, taken once: it is off again.
+  function takeVanish(): number {
+    if (!vanishing) return 0;
+    setVanishing(false);
+    return vanishFor;
   }
 
   // Walkie-talkie for a chat, on or off: what Voice records then plays on their phone as it comes,
@@ -2269,7 +2309,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Seals a voice message for the contact picked, or for `to` when it is `forwarded` there, hands
   // its parts to their phone in turn (nearby, or through the relay), and keeps its sound sealed. If
   // nothing took all of it, it is not kept.
-  async function sendVoice(audio: Uint8Array, ms: number, talk: boolean, to = selectedContact, forwarded = false) {
+  async function sendVoice(audio: Uint8Array, ms: number, talk: boolean, to = selectedContact, forwarded = false, lasts = 0) {
     const peer = to;
     if (!peer) return;
     if (!e2e) {
@@ -2279,13 +2319,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // Picked to go later (laterFor): kept, and handed to the relay for then.
     if (!talk && !forwarded && laterFor !== null) {
       const at = takeLaterFor();
-      if (at !== null) await schedule(peer, at, { voice: await saveClip(audio, ms) });
+      if (at !== null) await schedule(peer, at, { voice: await saveClip(audio, ms), lasts });
       return;
     }
     const identity = peer.slice(CONTACT_PREFIX.length);
     const parts: Parts = forwarded ? { forwarded } : answering(peer);
     try {
-      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { at: here(), talk, re: parts.re, forwarded });
+      const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { lasts, at: here(), talk, re: parts.re, forwarded });
       const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets, true);
       addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms), undefined, 0, Date.now(), parts);
       setReplying(null);
@@ -2303,7 +2343,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return;
       }
       try {
-        addMessage(peer, '', true, newTag(), timerOf(peer), await saveClip(audio, ms), undefined, WAITING, Date.now(), parts);
+        addMessage(peer, '', true, newTag(), lasts || timerOf(peer), await saveClip(audio, ms), undefined, WAITING, Date.now(), parts);
         setReplying(null);
         setNote(t('The voice message waits, and goes by itself once the relay or their phone nearby can take it.'));
       } catch (failed) {
@@ -2462,6 +2502,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       picked.close?.();
       return;
     }
+    // The stopwatch's time goes with it, now or later, and the stopwatch is off again.
+    const lasts = forwarded ? 0 : takeVanish();
     if (later !== null) {
       try {
         if (picked.source.size > MAX_FILE) throw new TooLargeError();
@@ -2471,7 +2513,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             setNote(what === 'photo' ? t('Keeping the photo, {percent}%', { percent }) : t('Keeping the file, {percent}%', { percent }));
           }
         });
-        await schedule(peer, later, { file: ref });
+        await schedule(peer, later, { file: ref, lasts });
       } catch (error) {
         setNote(error instanceof TooLargeError ? t('Not sent. Files can be 100 MB at most.') : t('Not scheduled. {reason}', { reason: errorText(error) }));
       } finally {
@@ -2492,7 +2534,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       });
       kept = sent.ref;
       const identity = peer.slice(CONTACT_PREFIX.length);
-      const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { at: here(), re: parts.re, forwarded });
+      const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { lasts, at: here(), re: parts.re, forwarded });
       await handOver(e2e, target, identity, sealed, [sealed.packet]);
       addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, sent.ref, 0, Date.now(), parts);
       setReplying(null);
@@ -2527,7 +2569,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             setNote(what === 'photo' ? t('Keeping the photo, {percent}%', { percent }) : t('Keeping the file, {percent}%', { percent }));
           }
         });
-        addMessage(peer, '', true, newTag(), timerOf(peer), undefined, ref, WAITING, Date.now(), parts);
+        addMessage(peer, '', true, newTag(), lasts || timerOf(peer), undefined, ref, WAITING, Date.now(), parts);
         setReplying(null);
         setNote(what === 'photo' ? t('The photo waits, and goes by itself once the relay can take it.') : t('The file waits, and goes by itself once the relay can take it.'));
       } catch (failed) {
@@ -2538,10 +2580,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  // The phone's picker opens once the sheet has gone.
+  // What is picked under "+" opens once the panel has closed.
   function afterSheet(then: () => void) {
     setAttaching(false);
-    setTimeout(then, Platform.OS === 'web' ? 0 : 350);
+    setChoosingLater(false);
+    then();
   }
 
   function sendPhoto(from: 'photos' | 'camera') {
@@ -2982,6 +3025,105 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             : t('End-to-end encrypted')
     : '';
 
+  // The bar under the name says less: whether they are typing, online or near, or that it is encrypted
+  // (with the stopwatch beside it when the chat's messages disappear). All of it is read out.
+  const headerSays = selectedTyping
+    ? t('typing…')
+    : selectedOnline
+      ? selectedNearby
+        ? t('Online · nearby')
+        : t('Online')
+      : selectedNearby
+        ? t('Nearby')
+        : t('Encrypted');
+
+  // What "+" opens under the message bar: what can be sent, as tiles, then how the next message
+  // goes, as rows. "Send as SMS" (a chat whose contact has a phone number linked) goes last of the
+  // rows and of the send arrow's menu, a plain grey tile, as it is the one way not end-to-end encrypted.
+  const tiles: ComposerTile[] = [{ key: 'photo', title: t('Photo'), icon: 'photo', onPress: () => sendPhoto('photos') }];
+  if (CAN_TAKE_PHOTOS) tiles.push({ key: 'camera', title: t('Camera'), icon: 'camera', onPress: () => sendPhoto('camera') });
+  tiles.push(
+    { key: 'file', title: t('File'), icon: 'file', onPress: sendPickedFile },
+    { key: 'sticker', title: t('Sticker'), icon: 'sticker', onPress: () => afterSheet(() => setStickering(true)) },
+  );
+  if (CAN_PLACE) tiles.push({ key: 'place', title: t('Location'), icon: 'place', onPress: () => afterSheet(() => void locate()) });
+  tiles.push({ key: 'poll', title: t('Poll'), icon: 'poll', onPress: () => afterSheet(() => setPolling(true)) });
+  const ways: ComposerWay[] = selectedContact
+    ? [
+        {
+          key: 'vanish',
+          title: t('Disappearing message'),
+          description: t('Deleted once it is read'),
+          icon: 'timer',
+          value: vanishing ? timerLabel(vanishFor) : t('Off'),
+          // On, it shows over the field, with how long; the panel gives way to it.
+          onPress: () => afterSheet(() => setVanishing(true)),
+        },
+        {
+          key: 'talkie',
+          title: t('Talkie'),
+          description: t('Your voice plays as soon as it arrives'),
+          icon: 'talkie',
+          on: talkie,
+          onPress: () => toggleTalkie(selectedContact),
+        },
+        {
+          key: 'later',
+          title: t('Send later'),
+          description: t('Goes at the time you choose'),
+          icon: 'later',
+          value: laterFor !== null ? laterLabel(laterFor) : undefined,
+          onPress: () => setChoosingLater(true),
+        },
+      ]
+    : [];
+  if (selectedContact && chatSms.number) {
+    ways.push({
+      key: 'sms',
+      title: t('Send as SMS'),
+      description: t('Not encrypted · {number}', { number: chatSms.number }),
+      icon: 'sms',
+      plain: true,
+      onPress: () => (draft.trim() ? afterSheet(() => void sendAsSms()) : setNote(t('Type the message first, then send it as an SMS.'))),
+    });
+  }
+  // Held down, the send arrow: what is typed goes without a sound, later, or disappearing.
+  const sendWays: SendWay[] = [
+    {
+      key: 'quiet',
+      title: t('Without sound'),
+      icon: 'quiet',
+      hint: t('Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, and sounds as usual.'),
+      onPress: () => void send(undefined, true),
+    },
+    {
+      key: 'later',
+      title: t('Later…'),
+      icon: 'later',
+      hint: t('Choose when it goes'),
+      onPress: () => {
+        setChoosingLater(true);
+        setAttaching(true);
+      },
+    },
+    {
+      key: 'vanish',
+      title: t('Disappear'),
+      icon: 'timer',
+      hint: t('Choose how long it stays once read, then send'),
+      onPress: () => setVanishing(true),
+    },
+  ];
+  if (selectedContact && chatSms.number) {
+    sendWays.push({
+      key: 'sms',
+      title: t('As SMS'),
+      icon: 'sms',
+      hint: t('A plain SMS to {number}, not encrypted', { number: chatSms.number }),
+      onPress: () => void sendAsSms(),
+    });
+  }
+
   const selectedLook = contacts.find((c) => c.identity === selectedIdentity)?.look ?? null;
   const selectedAvatar = contacts.find((c) => c.identity === selectedIdentity)?.avatar ?? null;
   const signAvatar = selectedAvatar?.kind === 'emoji' ? selectedAvatar : null;
@@ -3190,7 +3332,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     <View style={styles.rule} />
                     <DetailRow
                       title={t('Appear offline')}
-                      right={<Toggle on={selectedHidden} />}
+                      checked={selectedHidden}
                       onPress={() => void changeHidden(selectedContact, !selectedHidden)}
                     />
                     <Text variant="caption" tone="muted" style={styles.rowMore}>
@@ -3201,7 +3343,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     {CAN_PREVIEW && !hiddenKey ? (
                       <>
                         <View style={styles.rule} />
-                        <DetailRow title={t('Link previews')} right={<Toggle on={previews} />} onPress={() => changePreviews(!previews)} />
+                        <DetailRow title={t('Link previews')} checked={previews} onPress={() => changePreviews(!previews)} />
                         <Text variant="caption" tone="muted" style={styles.rowMore}>
                           {throughTor()
                             ? t('None while this space goes through Tor: Erevos sends only relay requests through it.')
@@ -3266,6 +3408,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                           value={chatSms.number}
                           onPress={() => {
                             setDetails(false);
+                            setAttaching(false);
                             router.push(plainSmsHref(chatSms.number));
                           }}
                         />
@@ -3437,60 +3580,76 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           ) : null}
         </Row>
       </Sheet>
-      {hiddenKey ? (
-        <Text variant="overline" tone="muted" style={styles.kicker}>
-          {t('Hidden chats')}
-        </Text>
-      ) : null}
-      <View style={styles.header}>
-        <BackButton
-          onPress={
-            selected && (hiddenKey || !initial) ? () => setSelected(null) : hiddenKey ? onHidden : undefined
-          }
-        />
-        {selected ? (
-          <Pressable
-            style={({ pressed }) => [styles.who, pressed && styles.pressed]}
-            onPress={() => setDetails(true)}
-            accessibilityRole="button"
-            accessibilityLabel={t('Chat details')}
-          >
-            <KeyFace identity={selectedIdentity} name={contactName(selected, shownContacts) ?? ''} size={42} avatar={selectedAvatar} />
-            <View style={styles.grow}>
-              <Text variant="heading" numberOfLines={1} style={!contactName(selected, shownContacts) && styles.monoName}>
-                {selectedName}
-              </Text>
-              <View style={styles.subtitle}>
-                {selectedContact ? <ShieldIcon color={colors.success} size={11} /> : null}
-                {selectedContact && selectedTimer ? <TimerIcon color={colors.textMuted} size={11} /> : null}
-                {selectedOnline ? <View style={[styles.onlineDot, { backgroundColor: colors.success }]} /> : null}
-                <Text variant="caption" tone="muted" numberOfLines={1} style={styles.grow}>
-                  {subtitle}
-                </Text>
-              </View>
-            </View>
-          </Pressable>
-        ) : (
-          <Text variant="title" style={styles.grow}>
-            {hiddenKey ? t('Hidden chats') : t('Chat')}
+      {/* The chat's bar, on the bars' glass from the top of the screen, behind the status bar. */}
+      <View style={[styles.topBar, { marginTop: -(insets.top + space.sm), paddingTop: insets.top + 2 }, barBlur]}>
+        {hiddenKey ? (
+          <Text variant="overline" tone="muted" style={styles.kicker}>
+            {t('Hidden chats')}
           </Text>
-        )}
-        {selected ? (
-          <Pressable
-            onPress={() => setDetails(true)}
-            accessibilityRole="button"
-            accessibilityLabel={t('Chat details')}
-            hitSlop={6}
-            style={({ pressed }) => [styles.more, pressed && styles.pressed]}
-          >
-            <Text style={styles.moreText}>⋯</Text>
-          </Pressable>
-        ) : hiddenKey && onChangePassword ? (
-          <>
-            <TextButton title={t('Contacts')} onPress={() => router.push('/contacts?hidden=1')} />
-            <TextButton title={t('Change PIN')} onPress={onChangePassword} />
-          </>
         ) : null}
+        <View style={styles.header}>
+          <BackButton
+            onPress={
+              selected && (hiddenKey || !initial) ? () => setSelected(null) : hiddenKey ? onHidden : undefined
+            }
+          />
+          {selected ? (
+            <Pressable
+              style={({ pressed }) => [styles.who, pressed && styles.pressed]}
+              onPress={() => setDetails(true)}
+              accessibilityRole="button"
+              accessibilityLabel={selectedContact ? `${selectedName}, ${subtitle}` : selectedName}
+              accessibilityHint={t('Chat details')}
+            >
+              <KeyFace identity={selectedIdentity} name={contactName(selected, shownContacts) ?? ''} size={narrow ? 36 : 40} avatar={selectedAvatar} />
+              <View style={styles.grow}>
+                <Text variant="heading" numberOfLines={1} style={[styles.name, !contactName(selected, shownContacts) && styles.monoName]}>
+                  {selectedName}
+                </Text>
+                {selectedContact ? (
+                  <View style={styles.subtitle}>
+                    {selectedOnline ? (
+                      <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
+                    ) : !selectedTyping && !narrow ? (
+                      <ShieldIcon color={colors.success} size={11} />
+                    ) : null}
+                    {selectedTimer ? <TimerIcon color={colors.textMuted} size={11} /> : null}
+                    <Text variant="caption" numberOfLines={1} color={selectedTyping ? colors.accentText : colors.textMuted} style={styles.grow}>
+                      {headerSays}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </Pressable>
+          ) : (
+            <Text variant="title" style={styles.grow}>
+              {hiddenKey ? t('Hidden chats') : t('Chat')}
+            </Text>
+          )}
+          {selectedContact ? (
+            <>
+              <IconButton label={t('Video call')} onPress={() => void startCall(true)}>
+                <VideoIcon color={colors.text} size={24} />
+              </IconButton>
+              <IconButton label={t('Voice call')} onPress={() => void startCall(false)}>
+                <PhoneIcon color={colors.text} size={21} />
+              </IconButton>
+            </>
+          ) : null}
+          {selected ? (
+            // Apart from the calls, so a slip calls no one; upright on Android, as its apps have it.
+            <View style={styles.moreGap}>
+              <IconButton label={t('Chat details')} onPress={() => setDetails(true)}>
+                <MoreIcon color={colors.text} size={Platform.OS === 'web' ? 20 : 18} upright={Platform.OS !== 'web'} />
+              </IconButton>
+            </View>
+          ) : hiddenKey && onChangePassword ? (
+            <View style={styles.headerLinks}>
+              <TextButton title={t('Contacts')} onPress={() => router.push('/contacts?hidden=1')} />
+              <TextButton title={t('Change PIN')} onPress={onChangePassword} />
+            </View>
+          ) : null}
+        </View>
       </View>
       {!selected ? (
         <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
@@ -3533,7 +3692,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           <View style={styles.panel}>
             {hiddenKey && canRingInBackground ? (
               <>
-                <DetailRow title={t('Say when a message comes')} right={<Toggle on={watched} />} onPress={() => void changeWatched(!watched)} />
+                <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />
                 <Text variant="caption" tone="muted">
                   {watched
                     ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", as for the other chats, until you open them. Whoever sees it and finds nothing new in your chats may guess there are more.')
@@ -3654,7 +3813,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                       <View>
                         <DetailRow
                           title={t('Share a place on my relay with this link')}
-                          right={<Toggle on={sharePlace} />}
+                          checked={sharePlace}
                           onPress={() => setSharePlace(!sharePlace)}
                         />
                         <Text variant="caption" tone="muted">
@@ -3681,7 +3840,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 </Row>
                 {HAS_LINKS && !hiddenKey ? (
                   <View>
-                    <DetailRow title={t('Find Erevos on the same Wi-Fi')} right={<Toggle on={lanOn} />} onPress={() => changeLan(!lanOn)} />
+                    <DetailRow title={t('Find Erevos on the same Wi-Fi')} checked={lanOn} onPress={() => changeLan(!lanOn)} />
                     <Text variant="caption" tone="muted">
                       {lanOn
                         ? t('While a space is open, Erevos phones and computers on the same Wi-Fi or hotspot find each other and talk directly, even with no internet. Anyone on that Wi-Fi can tell an Erevos app is there, not whose.')
@@ -3691,7 +3850,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     </Text>
                     {CAN_DIRECT && lanOn ? (
                       <>
-                        <DetailRow title={t('Make a Wi-Fi with phones nearby')} right={<Toggle on={directOn} />} onPress={() => changeDirect(!directOn)} />
+                        <DetailRow title={t('Make a Wi-Fi with phones nearby')} checked={directOn} onPress={() => changeDirect(!directOn)} />
                         <Text variant="caption" tone="muted">
                           {directOn
                             ? t('With no Wi-Fi in common, two Erevos phones near each other make a small Wi-Fi of their own (Wi-Fi Direct): faster than Bluetooth, and calls go over it with no internet. Anyone near can tell an Erevos phone is there and could join that Wi-Fi, getting only sealed bytes.')
@@ -3699,7 +3858,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         </Text>
                       </>
                     ) : null}
-                    <DetailRow title={t('Carry messages for others')} right={<Toggle on={carrying} />} onPress={() => changeCarrying(!carrying)} />
+                    <DetailRow title={t('Carry messages for others')} checked={carrying} onPress={() => changeCarrying(!carrying)} />
                     <Text variant="caption" tone="muted">
                       {carrying
                         ? t("When the relay cannot be reached, Erevos phones nearby give each other what they could not send, sealed for the contact's relay. This phone keeps those it gets, three days at most, and hands them to that relay through yours. It cannot read them, nor tell who they are from or for: it sees only the relay's address.")
@@ -3768,11 +3927,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         ref={thread}
         style={styles.thread}
         contentContainerStyle={styles.threadContent}
-        onLayout={(event) => measured({ end: event.nativeEvent.layout.y + event.nativeEvent.layout.height })}
+        onLayout={(event) => {
+          measured({ end: event.nativeEvent.layout.y + event.nativeEvent.layout.height });
+          if (atEnd.current) thread.current?.scrollToEnd({ animated: false });
+        }}
         onContentSizeChange={() => {
           if (holdScroll.current) holdScroll.current = false;
           else thread.current?.scrollToEnd({ animated: true });
         }}
+        // Read to the end, the thread stays at its end as the keyboard, the panel under the bar or
+        // what the bar shows over the field take room from it.
+        onScroll={(event) => {
+          const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+          atEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 48;
+        }}
+        scrollEventThrottle={100}
       >
         {firstImported > 0 ? (
           <TextButton
@@ -3963,61 +4132,77 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         })}
       </ScrollView>
       {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
-      <View style={styles.dock}>
-        {replying && replying.peer === selected ? (
-          <Quote
-            name={replying.mine ? t('You') : selectedName}
-            line={messageLine(replying)}
-            onPress={() => goTo(replying.peer, replying.tag)}
-            onClose={() => setReplying(null)}
+      {selectedContact ? (
+        <View style={styles.dock}>
+          <Composer
+            value={draft}
+            onChangeText={typed}
+            placeholder={t('Message {name}', { name: selectedName })}
+            maxLength={4000}
+            enterSends
+            onSend={() => void send()}
+            sendWays={sendWays}
+            voice={{ recording: talking, start: startTalking, stop: (cancel) => void stopTalking(cancel) }}
+            talkie={{ on: talkie, onOff: () => toggleTalkie(selectedContact) }}
+            vanish={{
+              on: vanishing,
+              seconds: vanishFor,
+              choices: TIMERS.slice(1),
+              label: timerLabel,
+              onToggle: () => setVanishing((on) => !on),
+              onChoose: setVanishFor,
+            }}
+            answering={
+              replying && replying.peer === selected
+                ? {
+                    name: replying.mine ? t('You') : selectedName,
+                    line: messageLine(replying),
+                    onPress: () => goTo(replying.peer, replying.tag),
+                    onClose: () => setReplying(null),
+                  }
+                : null
+            }
+            later={
+              laterFor !== null
+                ? { line: t('The next photo, file or voice message goes on {when}.', { when: laterLabel(laterFor) }), onCancel: () => setLaterFor(null) }
+                : null
+            }
+            onSticker={() => afterSheet(() => setStickering(true))}
+            panel={
+              <ComposerPanel
+                tiles={tiles}
+                quality={{ value: quality, onChange: chooseQuality }}
+                ways={ways}
+                foot={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
+                page={
+                  choosingLater
+                    ? {
+                        title: t('Send later'),
+                        onBack: () => setChoosingLater(false),
+                        children: (
+                          <>
+                            <LaterPicker onPick={(at) => void sendLater(at)} />
+                            <Text variant="caption" tone="muted">
+                              {draft.trim() ? '' : `${t('With nothing typed, the next photo, file or voice message goes then.')} `}
+                              {hiddenKey
+                                ? t('The relay keeps it and sends it at that time, even if this phone is off then. In hidden chats the relay has to be reachable now.')
+                                : t('The relay keeps it and sends it at that time, even if this phone is off then.')}
+                            </Text>
+                          </>
+                        ),
+                      }
+                    : null
+                }
+              />
+            }
+            panelOpen={attaching && shown}
+            onPanel={(open) => {
+              setAttaching(open);
+              if (!open) setChoosingLater(false);
+            }}
           />
-        ) : null}
-        <Input
-          value={draft}
-          onChangeText={typed}
-          onSubmitEditing={() => void send()}
-          placeholder={selected ? t('Message {name}', { name: selectedName }) : t('Message')}
-          maxLength={4000}
-          style={styles.field}
-        />
-        <Row style={styles.tools}>
-          <Row wrap style={[styles.grow, styles.toolsLeft]}>
-            {selectedContact ? <Tool title={t('Disappear')} on={vanishing} onPress={() => setVanishing((on) => !on)} /> : null}
-            {selectedContact ? <Tool title={t('Attach')} on={attaching} onPress={() => setAttaching(true)} /> : null}
-            <Tool title={talking ? t('Let go to send') : talkie ? t('Hold to talk') : t('Voice')} on={talking} onPressIn={startTalking} onPressOut={() => void stopTalking()} />
-            {selectedContact ? <Tool title={t('Talkie')} on={talkie} onPress={() => toggleTalkie(selectedContact)} /> : null}
-            <Tool title={t('Call')} onPress={() => void startCall(false)} />
-            <Tool title={t('Video')} onPress={() => void startCall(true)} />
-          </Row>
-          <Button
-            title={t('Send')}
-            compact
-            disabled={!draft.trim() || !selected}
-            onPress={() => void send()}
-            onLongPress={selectedContact ? () => setSendMenu(true) : undefined}
-            style={styles.action}
-          />
-        </Row>
-        {laterFor !== null && selectedContact ? (
-          <Row wrap>
-            <Text variant="caption" tone="muted">
-              {t('The next photo, file or voice message goes on {when}.', { when: laterLabel(laterFor) })}
-            </Text>
-            <TextButton title={t('Cancel')} onPress={() => setLaterFor(null)} />
-          </Row>
-        ) : null}
-        {vanishing && selectedContact ? (
-          <Row wrap>
-            <Text variant="caption" tone="muted">
-              {t('Disappears after it is read, in:')}
-            </Text>
-            {TIMERS.slice(1).map((timer) => (
-              <Chip key={timer} label={timerLabel(timer)} selected={false} onPress={() => void send(timer)} />
-            ))}
-            <TextButton title={t('Cancel')} onPress={() => setVanishing(false)} />
-          </Row>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
       <MessageMenu
         visible={menuFor !== null && shown}
         onClose={() => setMenuFor(null)}
@@ -4041,49 +4226,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           setSelected(`${CONTACT_PREFIX}${identity}`);
           setDraft((typed) => (typed.trim() ? `${typed}\n${text}` : text));
         }}
-      />
-      <Sheet visible={sendMenu} onClose={() => setSendMenu(false)} title={t('Send')}>
-        {draft.trim() ? (
-          <>
-            <Button
-              title={t('Send without sound')}
-              kind="secondary"
-              compact
-              onPress={() => {
-                setSendMenu(false);
-                void send(0, true);
-              }}
-            />
-            <Text variant="caption" tone="muted">
-              {t('Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, and sounds as usual.')}
-            </Text>
-          </>
-        ) : null}
-        <Text variant="label">{t('Send later')}</Text>
-        {sendMenu ? <LaterPicker onPick={(at) => void sendLater(at)} /> : null}
-        <Text variant="caption" tone="muted">
-          {draft.trim() ? '' : `${t('With nothing typed, the next photo, file or voice message goes then.')} `}
-          {hiddenKey
-            ? t('The relay keeps it and sends it at that time, even if this phone is off then. In hidden chats the relay has to be reachable now.')
-            : t('The relay keeps it and sends it at that time, even if this phone is off then.')}
-        </Text>
-      </Sheet>
-      <AttachSheet
-        visible={attaching}
-        onClose={() => setAttaching(false)}
-        onPhoto={sendPhoto}
-        onFile={sendPickedFile}
-        quality={quality}
-        onQuality={chooseQuality}
-        note={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
-        more={
-          <>
-            <Button title={t('Sticker')} kind="secondary" compact onPress={() => afterSheet(() => setStickering(true))} />
-            {CAN_PLACE ? <Button title={t('Location')} kind="secondary" compact onPress={() => afterSheet(() => void locate())} /> : null}
-            <Button title={t('Poll')} kind="secondary" compact onPress={() => afterSheet(() => setPolling(true))} />
-            {chatSms.number ? <Button title={t('Send as SMS')} kind="secondary" compact disabled={!draft.trim()} onPress={() => afterSheet(() => void sendAsSms())} /> : null}
-          </>
-        }
       />
       <PollSheet visible={polling && shown} onClose={() => setPolling(false)} onSend={sendPoll} />
       <Sheet visible={!!placeFound && shown} onClose={() => setPlaceFound(null)} title={t('Send where you are?')}>
@@ -4176,10 +4318,12 @@ function QuickAction({ title, sign, on = false, onPress }: { title: string; sign
 }
 
 // A row in a chat's details: its name, and its value or a switch, with an arrow when it opens more.
-function DetailRow({ title, value, right, open, danger = false, onPress }: {
+function DetailRow({ title, value, right, checked, open, danger = false, onPress }: {
   title: string;
   value?: string;
   right?: ReactNode;
+  /** A switch, on or off, in place of the arrow; the row is read out as a switch. */
+  checked?: boolean;
   /** Whether what it opens under it shows; without it, the row goes somewhere or acts at once. */
   open?: boolean;
   danger?: boolean;
@@ -4189,8 +4333,8 @@ function DetailRow({ title, value, right, open, danger = false, onPress }: {
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={open === undefined ? undefined : { expanded: open }}
+      accessibilityRole={checked === undefined ? 'button' : 'switch'}
+      accessibilityState={checked !== undefined ? { checked } : open === undefined ? undefined : { expanded: open }}
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
@@ -4208,14 +4352,14 @@ function DetailRow({ title, value, right, open, danger = false, onPress }: {
         </Text>
       ) : null}
       {right}
-      {!right && !danger ? (
+      {checked !== undefined ? <Toggle on={checked} /> : null}
+      {!right && checked === undefined && !danger ? (
         <Text style={{ fontSize: 20, lineHeight: 22, color: colors.textFaint, transform: [{ rotate: open ? '90deg' : '0deg' }] }}>›</Text>
       ) : null}
     </Pressable>
   );
 }
 
-// A switch, drawn: on, it fills with the accent and its knob goes right.
 /** A step of the search in a chat: to what it found earlier or later, or closing it. */
 function SearchStep({ sign, label, onPress }: { sign: string; label: string; onPress: () => void }) {
   const colors = useColors();
@@ -4223,25 +4367,6 @@ function SearchStep({ sign, label, onPress }: { sign: string; label: string; onP
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} style={({ pressed }) => ({ padding: 6, opacity: pressed ? 0.6 : 1 })}>
       <Text style={{ fontSize: 16, color: colors.accentText }}>{sign}</Text>
     </Pressable>
-  );
-}
-
-function Toggle({ on }: { on: boolean }) {
-  const colors = useColors();
-  return (
-    <View
-      style={{
-        width: 46,
-        height: 28,
-        borderRadius: 14,
-        padding: 3,
-        justifyContent: 'center',
-        alignItems: on ? 'flex-end' : 'flex-start',
-        backgroundColor: on ? colors.primary : withAlpha(colors.textMuted, 0.3),
-      }}
-    >
-      <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: on ? colors.onPrimary : colors.surface }} />
-    </View>
   );
 }
 
@@ -4268,7 +4393,7 @@ const layout = StyleSheet.create({
     display: 'none',
   },
   back: {
-    width: 32,
+    width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
@@ -4285,23 +4410,47 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.ground,
     },
     kicker: {
-      paddingHorizontal: 2,
+      paddingHorizontal: space.md,
     },
+    // The chat's bar at the top, across the screen and behind the status bar, on the bars' glass.
+    topBar: {
+      marginHorizontal: -space.lg,
+      backgroundColor: colors.sheet,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+    },
+    // The buttons' own room (44 across, the icon in the middle) spaces them, so the name has the rest.
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: space.sm,
+      minHeight: 60,
     },
     // The contact's picture and name: tapped, it shows or hides the chat's details.
     who: {
       flex: 1,
+      minWidth: 0,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: space.md,
-      paddingVertical: 4,
-      paddingRight: space.sm,
+      gap: 8,
+      paddingVertical: 6,
+      paddingLeft: 2,
+      paddingRight: 2,
       borderRadius: radius.lg,
+    },
+    name: {
+      fontSize: 17,
+      lineHeight: 22,
+    },
+    // ⋯ keeps apart from the calls beside it, so a slip on it calls no one.
+    moreGap: {
+      marginLeft: space.sm,
+    },
+    // Hidden chats' links at the bar's end, apart from each other and from the screen's edge.
+    headerLinks: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.lg,
+      paddingRight: space.lg,
     },
     pressed: {
       backgroundColor: colors.surfacePressed,
@@ -4362,35 +4511,11 @@ const makeStyles = (colors: Colors) =>
     grow: {
       flex: 1,
     },
-    // Under the messages: the message field across, and the buttons under it.
+    // Under the messages: the message bar (components/composer.tsx), across the screen, and the
+    // panel "+" opens under it.
     dock: {
-      gap: space.sm,
       marginHorizontal: -space.lg,
-      paddingHorizontal: space.lg,
-      paddingTop: space.md,
-      paddingBottom: space.sm,
-      borderTopLeftRadius: radius.xl,
-      borderTopRightRadius: radius.xl,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderBottomWidth: 0,
-      borderColor: withAlpha(colors.border, 0.5),
-    },
-    field: {
-      borderRadius: radius.pill,
-      paddingHorizontal: space.lg,
-    },
-    // The buttons under the message field, narrow enough for a row of them.
-    action: {
-      paddingHorizontal: space.md,
-      borderRadius: radius.pill,
-    },
-    // Send keeps to the right of the row, and the others wrap beside it when the phone is narrow.
-    tools: {
-      alignItems: 'flex-end',
-    },
-    toolsLeft: {
-      gap: 6,
+      marginTop: -space.xs,
     },
     // The chat's details between the title and the messages: they give way, and scroll, when the
     // keyboard leaves too little room, so the message field stays in view.
@@ -4515,19 +4640,6 @@ const makeStyles = (colors: Colors) =>
     note: {
       color: colors.accentText,
       paddingHorizontal: 2,
-    },
-    more: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: withAlpha(colors.surfaceAlt, 0.8),
-    },
-    moreText: {
-      fontSize: 22,
-      lineHeight: 24,
-      color: colors.text,
     },
     // A chat's details, over the chat.
     sheetBar: {

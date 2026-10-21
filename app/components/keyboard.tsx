@@ -1,5 +1,5 @@
 import type { ViewProps } from 'react-native';
-import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
+import { KeyboardController, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 import Reanimated, { useAnimatedStyle } from 'react-native-reanimated';
 
 /**
@@ -28,4 +28,13 @@ export function KeyboardPaddedView({ bottom = 0, inset = 0, style, ...props }: V
   const { height } = useReanimatedKeyboardAnimation();
   const margin = useAnimatedStyle(() => ({ marginBottom: Math.max(-height.value - inset - bottom, 0) }), [bottom, inset]);
   return <Reanimated.View style={[style, { paddingBottom: bottom }, margin]} {...props} />;
+}
+
+/**
+ * Closes the keyboard, and resolves once it is down (at once if it was closed), when what sat on it
+ * has moved down too. A keyboard that never says it went (a hardware one, say) is waited for half a
+ * second at most.
+ */
+export function dismissKeyboard(): Promise<void> {
+  return Promise.race([KeyboardController.dismiss(), new Promise<void>((done) => setTimeout(done, 500))]);
 }

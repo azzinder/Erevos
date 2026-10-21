@@ -31,6 +31,7 @@ import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/stic
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
+import type { Answering, ComposerTile } from './composer';
 import { MessageMenu, type MenuAction } from './message-menu';
 import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from './message-parts';
 import { PollCard, PollSheet } from './poll';
@@ -41,8 +42,9 @@ import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
 // (app/group.tsx), as in a contact's chat: a message held down opens its menu (react, reply,
 // forward, star, pin, copy, delete), and its bubble shows what it answers, a sticker, a place, a
 // poll, a link's preview, its reactions, and that it was forwarded or is starred. The messages
-// pinned show over the thread; a search goes through the group's messages. Under Attach: a sticker,
-// built in or one of the space's made from photos (sent as a photo is), where you are, a poll.
+// pinned show over the thread; a search goes through the group's messages. Under "+", and the
+// message bar's sticker button: a sticker, built in or one of the space's made from photos (sent as
+// a photo is); under "+" too, where you are, and a poll.
 // Photos, files and voice messages themselves are components/group-media.tsx's.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
@@ -427,16 +429,16 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
     },
     exportGroup: () => void exportGroup(),
     /** What the next message answers, over the field, with ✕ to drop it. */
-    replyBar: replying ? <Quote name={who(replying)} line={lineOf(replying)} onPress={() => goTo(replying.tag)} onClose={() => setReplying(null)} /> : null,
+    answering: replying ? ({ name: who(replying), line: lineOf(replying), onPress: () => goTo(replying.tag), onClose: () => setReplying(null) } satisfies Answering) : null,
     send,
-    /** The buttons under Attach: a sticker, where you are, a poll. */
-    attachMore: (afterSheet: (then: () => void) => void): ReactNode => (
-      <>
-        <Button title={t('Sticker')} kind="secondary" compact onPress={() => afterSheet(() => setStickering(true))} />
-        {CAN_PLACE ? <Button title={t('Location')} kind="secondary" compact onPress={() => afterSheet(() => void locate())} /> : null}
-        <Button title={t('Poll')} kind="secondary" compact onPress={() => afterSheet(() => setPolling(true))} />
-      </>
-    ),
+    /** Opens the stickers, from the message bar's button. */
+    openStickers: () => setStickering(true),
+    /** The panel's tiles after the photos and files: a sticker, where you are, a poll. */
+    attachMore: (afterPanel: (then: () => void) => void): ComposerTile[] => [
+      { key: 'sticker', title: t('Sticker'), icon: 'sticker', onPress: () => afterPanel(() => setStickering(true)) },
+      ...(CAN_PLACE ? [{ key: 'place', title: t('Location'), icon: 'place' as const, onPress: () => afterPanel(() => void locate()) }] : []),
+      { key: 'poll', title: t('Poll'), icon: 'poll', onPress: () => afterPanel(() => setPolling(true)) },
+    ],
     sheets: (
       <>
         <MessageMenu

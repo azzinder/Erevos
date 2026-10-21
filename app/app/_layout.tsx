@@ -357,6 +357,8 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="chat" options={{ headerShown: false }} />
+        {/* A group draws its own bar at the top, with its back arrow, as a chat does. */}
+        <Stack.Screen name="group" options={{ headerShown: false }} />
       </Stack>
       <OpenLink key={`link-${phase.space}-${lang}`} />
       <Receiver space={phase.space} />

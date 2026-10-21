@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
 // Small line icons drawn with views, in one colour, so they follow every look without an icon font.
@@ -56,10 +57,11 @@ export function LockIcon({ color, size = 20 }: Props) {
   );
 }
 
-export function MoreIcon({ color, size = 20 }: Props) {
+/** Three dots in a row, or, `upright`, one above another (Android's ⋮). */
+export function MoreIcon({ color, size = 20, upright = false }: Props & { upright?: boolean }) {
   const dot = Math.max(3, size / 5);
   return (
-    <View style={{ width: size, height: size, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+    <View style={{ width: size, height: size, flexDirection: upright ? 'column' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
       {[0, 1, 2].map((i) => (
         <View key={i} style={{ width: dot, height: dot, borderRadius: dot, backgroundColor: color }} />
       ))}
@@ -180,5 +182,282 @@ export function PersonIcon({ color, size = 20 }: Props) {
         }}
       />
     </View>
+  );
+}
+
+// The chat's own icons (its header, its message bar and the panel under "+"), each drawn on a grid
+// of 24 and scaled to `size`, from boxes alone: borders, rounded corners and turns.
+
+type Box = { x: number; y: number; w: number; h: number };
+
+/** A box at (x, y) on the grid of 24, `w` by `h`, scaled by `k`. */
+const box = (k: number, { x, y, w, h }: Box) => ({ position: 'absolute' as const, left: x * k, top: y * k, width: w * k, height: h * k });
+
+function Grid({ size, children }: { size: number; children: ReactNode }) {
+  return <View style={{ width: size, height: size }}>{children}</View>;
+}
+
+/** A filled box with rounded ends, on the grid. */
+function Bar({ k, color, x, y, w, h, r = 1 }: Box & { k: number; color: string; r?: number }) {
+  return <View style={[box(k, { x, y, w, h }), { borderRadius: r * k, backgroundColor: color }]} />;
+}
+
+/** A filled dot `d` across, its corner at (x, y). */
+function Dot({ k, color, x, y, d }: { k: number; color: string; x: number; y: number; d: number }) {
+  return <View style={[box(k, { x, y, w: d, h: d }), { borderRadius: d * k, backgroundColor: color }]} />;
+}
+
+/** A chevron pointing left: back. */
+export function BackIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 9.5, y: 6.5, w: 11, h: 11 }), { borderLeftWidth: 2.3 * k, borderBottomWidth: 2.3 * k, borderColor: color, borderRadius: 1.5 * k, transform: [{ rotate: '45deg' }] }]} />
+    </Grid>
+  );
+}
+
+/** A chevron: pointing right (a row that opens more), or down (a choice that opens). */
+export function ChevronIcon({ color, size = 16, down = false }: Props & { down?: boolean }) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View
+        style={[
+          box(k, down ? { x: 7.5, y: 4.5, w: 9, h: 9 } : { x: 6, y: 7.5, w: 9, h: 9 }),
+          { borderTopWidth: 2.4 * k, borderRightWidth: 2.4 * k, borderColor: color, borderRadius: k, transform: [{ rotate: down ? '135deg' : '45deg' }] },
+        ]}
+      />
+    </Grid>
+  );
+}
+
+/** A cross: to close or turn off. */
+export function CloseIcon({ color, size = 20 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      {['45deg', '-45deg'].map((rotate) => (
+        <View key={rotate} style={[box(k, { x: 4, y: 10.9, w: 16, h: 2.2 }), { borderRadius: 1.1 * k, backgroundColor: color, transform: [{ rotate }] }]} />
+      ))}
+    </Grid>
+  );
+}
+
+/** A camera on its side, its lens a wedge: a video call. */
+export function VideoIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 1.5, y: 6, w: 15, h: 12 }), { borderWidth: 2.1 * k, borderColor: color, borderRadius: 3.5 * k }]} />
+      <View
+        style={[
+          box(k, { x: 16.5, y: 7.5, w: 0, h: 0 }),
+          { borderTopWidth: 4.5 * k, borderBottomWidth: 4.5 * k, borderRightWidth: 6 * k, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderRightColor: color },
+        ]}
+      />
+    </Grid>
+  );
+}
+
+/** A stopwatch: the clock face of TimerIcon with a crown, for a message that disappears. */
+export function StopwatchIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 3.5, y: 4.5, w: 17, h: 17 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 17 * k }]} />
+      <Bar k={k} color={color} x={9.5} y={1.2} w={5} h={2} />
+      <Bar k={k} color={color} x={11} y={2.5} w={2} h={3} r={0} />
+      <Bar k={k} color={color} x={11} y={8} w={2} h={5.6} />
+      <Bar k={k} color={color} x={11} y={11.6} w={4.6} h={2} />
+      <View style={[box(k, { x: 17.2, y: 4.6, w: 3, h: 2 }), { borderRadius: k, backgroundColor: color, transform: [{ rotate: '45deg' }] }]} />
+    </Grid>
+  );
+}
+
+/** A smiling face: stickers. */
+export function SmileIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 2.5, y: 2.5, w: 19, h: 19 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 19 * k }]} />
+      <Dot k={k} color={color} x={8.2} y={8.6} d={2.6} />
+      <Dot k={k} color={color} x={13.2} y={8.6} d={2.6} />
+      <View
+        style={[
+          box(k, { x: 7.4, y: 7.6, w: 9.2, h: 8.8 }),
+          { borderWidth: 2 * k, borderColor: 'transparent', borderBottomColor: color, borderRadius: 9.2 * k },
+        ]}
+      />
+    </Grid>
+  );
+}
+
+/** A microphone: hold to record. */
+export function MicIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <Bar k={k} color={color} x={8.5} y={2} w={7} h={12} r={3.5} />
+      <View
+        style={[
+          box(k, { x: 5, y: 8.5, w: 14, h: 8.5 }),
+          { borderWidth: 2 * k, borderTopWidth: 0, borderColor: color, borderBottomLeftRadius: 7 * k, borderBottomRightRadius: 7 * k },
+        ]}
+      />
+      <Bar k={k} color={color} x={11} y={16.5} w={2} h={4} r={0} />
+      <Bar k={k} color={color} x={8} y={19.8} w={8} h={2} />
+    </Grid>
+  );
+}
+
+/** A paper dart: send. `cut` is the color behind it, for the notch in its tail. */
+export function SendIcon({ color, cut, size = 24 }: Props & { cut: string }) {
+  const k = size / 24;
+  const wedge = (x: number, y: number, half: number, long: number, fill: string) => (
+    <View
+      style={[
+        box(k, { x, y, w: 0, h: 0 }),
+        { borderTopWidth: half * k, borderBottomWidth: half * k, borderLeftWidth: long * k, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderLeftColor: fill },
+      ]}
+    />
+  );
+  return (
+    <Grid size={size}>
+      {wedge(3.5, 3.2, 8.8, 18.5, color)}
+      {wedge(3.5, 8.6, 3.4, 6.2, cut)}
+    </Grid>
+  );
+}
+
+/** A walkie-talkie: Talkie. */
+export function TalkieIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 6.5, y: 6, w: 12, h: 16 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 3 * k }]} />
+      <Bar k={k} color={color} x={8} y={1.5} w={2} h={6} />
+      <Bar k={k} color={color} x={9.5} y={10} w={6} h={2} />
+      <Bar k={k} color={color} x={9.5} y={13.5} w={6} h={2} />
+    </Grid>
+  );
+}
+
+/** A picture with a hill and the sun: a photo from the phone. */
+export function PhotoIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 2, y: 4, w: 20, h: 16 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 3.5 * k, overflow: 'hidden' }]}>
+        <View style={[box(k, { x: -0.5, y: 7, w: 9, h: 9 }), { backgroundColor: color, transform: [{ rotate: '45deg' }] }]} />
+        <View style={[box(k, { x: 6.5, y: 8.5, w: 8, h: 8 }), { backgroundColor: color, transform: [{ rotate: '45deg' }] }]} />
+        <Dot k={k} color={color} x={10.6} y={2} d={3.4} />
+      </View>
+    </Grid>
+  );
+}
+
+/** A camera: a photo taken now. */
+export function CameraIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 7.5, y: 3.2, w: 9, h: 4 }), { borderTopLeftRadius: 2 * k, borderTopRightRadius: 2 * k, backgroundColor: color }]} />
+      <View style={[box(k, { x: 2, y: 6.5, w: 20, h: 14.5 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 3.5 * k }]} />
+      <View style={[box(k, { x: 8, y: 9.6, w: 8, h: 8 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 8 * k }]} />
+    </Grid>
+  );
+}
+
+/** A page with its corner turned: a file. */
+export function FileIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View
+        style={[
+          box(k, { x: 4.5, y: 2, w: 15, h: 20 }),
+          { borderWidth: 2 * k, borderColor: color, borderRadius: 2.5 * k, borderTopRightRadius: 7 * k },
+        ]}
+      />
+      <Bar k={k} color={color} x={8.5} y={10} w={7} h={2} />
+      <Bar k={k} color={color} x={8.5} y={14} w={5} h={2} />
+    </Grid>
+  );
+}
+
+/** A map pin: where you are. */
+export function PlaceIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View
+        style={[
+          box(k, { x: 5, y: 3, w: 14, h: 14 }),
+          { borderWidth: 2.2 * k, borderColor: color, borderRadius: 7 * k, borderBottomLeftRadius: 0, transform: [{ rotate: '-45deg' }] },
+        ]}
+      />
+      <Dot k={k} color={color} x={10} y={8} d={4} />
+    </Grid>
+  );
+}
+
+/** Three bars of a chart: a poll. */
+export function PollIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <Bar k={k} color={color} x={3.5} y={10} w={4} h={10} r={2} />
+      <Bar k={k} color={color} x={10} y={4} w={4} h={16} r={2} />
+      <Bar k={k} color={color} x={16.5} y={13} w={4} h={7} r={2} />
+    </Grid>
+  );
+}
+
+/** A calendar page: to send later. */
+export function LaterIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 3, y: 4.5, w: 18, h: 17 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 3.5 * k }]} />
+      <Bar k={k} color={color} x={3} y={9} w={18} h={2} r={0} />
+      <Bar k={k} color={color} x={7.5} y={2} w={2} h={5} />
+      <Bar k={k} color={color} x={14.5} y={2} w={2} h={5} />
+      {[7, 10.8, 14.6].map((x) => (
+        <Dot key={x} k={k} color={color} x={x} y={13.5} d={2.6} />
+      ))}
+    </Grid>
+  );
+}
+
+/** A speech bubble with three dots: an SMS. */
+export function SmsIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 2, y: 3.5, w: 20, h: 14.5 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 4.5 * k }]} />
+      <View style={[box(k, { x: 5, y: 16.5, w: 0, h: 0 }), { borderTopWidth: 5.5 * k, borderRightWidth: 5 * k, borderTopColor: color, borderRightColor: 'transparent' }]} />
+      {[6.8, 10.75, 14.7].map((x) => (
+        <Dot key={x} k={k} color={color} x={x} y={9.6} d={2.5} />
+      ))}
+    </Grid>
+  );
+}
+
+/** A bell struck through: without sound. */
+export function QuietIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View
+        style={[
+          box(k, { x: 6, y: 3.5, w: 12, h: 13 }),
+          { borderWidth: 2 * k, borderBottomWidth: 0, borderColor: color, borderTopLeftRadius: 6 * k, borderTopRightRadius: 6 * k },
+        ]}
+      />
+      <Bar k={k} color={color} x={3.5} y={15.5} w={17} h={2} />
+      <Dot k={k} color={color} x={10.3} y={18.6} d={3.4} />
+      <View style={[box(k, { x: 1.5, y: 10.9, w: 21, h: 2.2 }), { borderRadius: 1.1 * k, backgroundColor: color, transform: [{ rotate: '45deg' }] }]} />
+    </Grid>
   );
 }

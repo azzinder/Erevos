@@ -66,9 +66,10 @@ only from inside them.
 | **User guide** | This guide. |
 | **Relay test**, **Radio test** | Tests of the connections. See [The test screens](#tests). |
 
-Inside a chat, its name and picture are at the top with how it travels: **End-to-end encrypted**, and **Nearby**
-while their phone is linked to yours over the radio. Tap the name, or **⋯** beside it, for the chat's **Details**: its
-picture (tap it to change it), **Call**, **Video**, **Rename** and **Picture**, then **Disappearing messages**,
+Inside a chat, its name and picture are at the top with how it travels: **Encrypted** (end to end), **Online**,
+**Nearby** while their phone is linked to yours over the radio, or **typing…**, with a stopwatch when the chat's
+messages disappear. Beside them, the camera starts a video call and the phone a voice call. Tap the name, or **⋯**
+after them (**⋮** on Android), for the chat's **Details**: its picture (tap it to change it), **Call**, **Video**, **Rename** and **Picture**, then **Disappearing messages**,
 **Appear offline**, **Chat look**, the **Safety number**, **Move to hidden chats** and **Delete messages**. **Done**
 closes them.
 
@@ -109,7 +110,7 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
 2. If you are not contacts yet, add each other: on one phone tap **Relay and new contacts**, then **Show my QR code**,
    and scan it with the other, as in [Chat through a relay](#relay). Without a relay the code holds only your keys,
    and you reach each other nearby only, until you have one.
-3. Pick the contact, type in **Message** and tap **Send**. Once their phone answers, the top of the chat says
+3. Pick the contact, type in the message bar at the bottom and tap the send arrow. Once their phone answers, the top of the chat says
    **Nearby**.
 
 - **While a space is open:** the links start when a space opens, whatever screen shows, and stop when it locks or
@@ -247,8 +248,8 @@ at the relay, or at once when they are nearby. A message counts as read once its
   the chat marked **Waiting**, and goes by itself, in order, once the relay or their phone nearby can take it, while a
   space is open; then it shows **✓**. A text waits at once. A voice message, photo or file asks first: **Keep it
   waiting** or **Delete it**. A waiting message is deleted on this phone only. Hidden chats keep nothing waiting.
-- **Send later:** hold **Send** down and choose a time at a tap (**In 1 hour**, **Tonight 20:00**, **Tomorrow
-  09:00**) or the day, hour and minutes, up to a year ahead, then **Send later**. The message stays in the chat marked
+- **Send later:** hold the send arrow down and choose **Later…**, or tap **+** and then **Send later**. Choose a time
+  at a tap (**In 1 hour**, **Tonight 20:00**, **Tomorrow 09:00**) or the day, hour and minutes, up to a year ahead, then **Send later**. The message stays in the chat marked
   **Scheduled** with its time. It goes encrypted to the relay, which keeps it and sends it at that time, even if this
   phone is off or locked then, and their phone shows it from that time, not sooner. With no relay reachable now, it
   waits on this phone and goes to the relay once one can be reached. With nothing typed, the time you choose is for
@@ -258,7 +259,7 @@ at the relay, or at once when they are nearby. A message counts as read once its
   stays without sound. A relay from before this keeps nothing for later: then the message waits on this phone and
   goes at its time while Erevos runs, in the background too while **In the background** is on **Receive and ring**
   (below), or when Erevos next opens.
-- **Send without sound:** hold **Send** down and choose **Send without sound**: their phone shows the notice without
+- **Send without sound:** hold the send arrow down and choose **Without sound**: their phone shows the notice without
   a sound or vibration. An Erevos from before it does not know this and sounds as usual, and so does Erevos as a web
   app, whose notice comes from the browser.
 - **Links:** a web address in a message is underlined. Tap it and Erevos shows it whole, to open in the browser
@@ -346,8 +347,11 @@ Reactions, replies and pins travel inside the encryption, like the messages.
 ### Disappearing messages
 
 Open a chat, tap its name and then **Disappearing: Off** to choose how long its new messages last once read: 5 minutes, 1 hour,
-1 day or 1 week. To make only one message disappear, type it and tap **Disappear** under the message field, then pick
-how long. Its time starts when the other phone shows it on the screen, and your copy starts when their phone says so
+1 day or 1 week. To make only the next message disappear, tap the stopwatch beside the message field (or
+**Disappearing message** under **+**, or **Disappear** in the send arrow's menu): **Disappears 1 hour after it is read**
+shows over the field. Tap the time to pick another, or **✕** to turn it off. It goes with the next message you send:
+words, a voice message, a photo or file, a sticker, a place or a poll, now or later. An SMS cannot disappear: sent as
+an SMS, it stays on both phones (Erevos says so first), and the stopwatch is off again. Its time starts when the other phone shows it on the screen, and your copy starts when their phone says so
 (**✓✓✓**). Each message says when it disappears. The other phone learns the chat's setting the next time it looks at
 the relay, and either phone can change it: the later change wins. Messages already in the chat stay.
 
@@ -359,8 +363,10 @@ the relay, and either phone can change it: the later change wins. Messages alrea
 
 ### Voice messages
 
-In a contact's chat, press and hold **Voice** while you talk, and let go to send. After a minute it sends by itself. The
-first time, Android asks whether Erevos may use the microphone: it records only while you hold **Voice**. Tap a voice
+In a contact's chat, with nothing typed, press and hold the microphone at the end of the message bar while you talk,
+and let go to send; slide left before you let go to drop it instead. A press of under a second is taken for a slip
+and sends nothing. After a minute it sends by itself. The first time, Android asks whether Erevos may use the
+microphone: it records only while you hold it. With TalkBack, tap it once to start and again to send. Tap a voice
 message to play it, and tap it again to stop. Voice messages have the same marks as the rest, and follow the chat's
 disappearing setting.
 
@@ -376,8 +382,9 @@ disappearing setting.
 
 ### Photos and files
 
-In a contact's chat, tap **Attach**, then **Photo** to pick one from the phone's photos, **Take photo** to take one
-with the camera, or **File** for anything else, up to 100 MB. Under them, **Photo quality** sets how photos go, and
+In a contact's chat, tap **+** beside the message field, which opens where the keyboard was, then **Photo** to pick one
+from the phone's photos, **Camera** to take one, or **File** for anything else, up to 100 MB. Under them, **Photo
+quality** sets how photos go, and
 Erevos remembers it:
 
 - **Original** (the default): the photo exactly as it was, full size, no quality lost. Only what it says besides its
@@ -405,9 +412,10 @@ it. Photos and files have the same marks as the rest, and follow the chat's disa
 - **Through the relay only:** files need its file store, even when the contact is nearby. A relay older than this
   version cannot take files: update it.
 
-### More under Attach
+### More under +
 
-Under **Attach** there is more to send than photos and files:
+Under **+** there is more to send than photos and files (the smiley at the end of the message field opens the
+stickers too):
 
 - **Sticker:** one of the stickers built into Erevos, in sets (**Moons**, **Animals**, **Celebrations**, **Words** and
   **Treats**), drawn by each phone itself: only its name travels, so nothing is ever downloaded. An Erevos from before
@@ -447,7 +455,7 @@ nothing: it shows what came. It is off unless you turn it on, and then it is on 
 
 ### Voice and video calls
 
-In a contact's chat, tap **Call** for a voice call or **Video** for a video call. The first time, Android asks whether
+In a contact's chat, tap the phone at the top for a voice call, or the camera beside it for a video call. The first time, Android asks whether
 Erevos may use the microphone, and the camera for video. Their phone rings while Erevos is open there, on any screen of
 the space: they tap **Answer** or **Decline**. During the call you can mute, switch the loudspeaker, turn your camera off, flip
 between the front and back camera, and **End**. Each call leaves a line in the chat, such as how long it lasted, or
@@ -488,8 +496,9 @@ a missed call.
 - **One call at a time.** A call goes on while you move between screens of the space. It ends when the space closes,
   and a call in hidden chats when they close, as they do when Erevos goes to the background. Swiping Erevos away from
   the recent apps ends a call too.
-- Calls do not go over a nearby phone or Bluetooth. There, **Talkie** under the message field turns the chat into a
-  walkie-talkie: hold **Hold to talk**, let go, and it plays on their phone as it comes, if the chat with you is open
+- Calls do not go over a nearby phone or Bluetooth. There, **Talkie** under **+** turns the chat into a
+  walkie-talkie, and **Talkie is on** shows over the field: hold the walkie-talkie at the end of the bar while you
+  talk, let go, and it plays on their phone as it comes, if the chat with you is open
   there; if not, it waits as a voice message. It is a smaller voice message (about 3 KB a second), so it goes
   everywhere a message goes, Bluetooth included.
 
@@ -514,19 +523,19 @@ then shows on their home screen, with a note of who added them. Groups go throug
   who is in a group. It goes straight to each member's queue, through your relay. Every week each phone's keys in the
   group are made new, the admin's by itself and each member's through the admin, so keys taken from a phone once stop
   reading the group.
-- **Members:** tap the group's name at the top. The admin adds contacts, takes members out and renames the group. A
+- **Members:** tap the group's name at the top, or **⋯** beside it. The admin adds contacts, takes members out and renames the group. A
   member taken out reads nothing the group says from then on, and the group stays on their phone, read only, until
   they delete it.
 - **Leaving:** **Leave the group** asks the admin, whose phone takes you out the next time Erevos is open there. The
   admin's own button is **Close the group**: it takes every member out.
-- **Group calls:** **Call** at the top of the group starts a voice call in it, **Video** a video call. It rings on the members' phones
+- **Group calls:** the phone at the top of the group starts a voice call in it, and **Video call** under **⋯** a video call. It rings on the members' phones
   where Erevos is open, and whoever answers is in it. A call going on shows at the top of the group, to join it
   later. Up to eight people: each phone connects to each other one, through the call relay, so no phone sees another's
   IP address; without a call relay, only on the same Wi-Fi. End-to-end encrypted between each two phones, their keys
   sent in the group's encryption. In a video call each phone sends its picture to each other one, so pictures show
   for up to four people; with more, they pause and the sound goes on, until a server for bigger video calls is set up.
-- **Photos, files and voice messages:** **Attach** under the field sends a photo or a file, as in a contact's chat,
-  with the same **Photo quality**; hold **Voice** while you talk, and let go to send. Each is encrypted with a key of
+- **Photos, files and voice messages:** **+** beside the field sends a photo or a file, as in a contact's chat,
+  with the same **Photo quality**; hold the microphone while you talk, and let go to send. Each is encrypted with a key of
   its own and put on your relay once, and only where it is and its key go to the group, in its encryption. Each
   member's phone takes it from there through its own relay: up to 16 MB by itself while the group is open, a bigger
   one when tapped. Tap a photo to see it whole, a file to save it, a voice message to play it.
@@ -539,7 +548,7 @@ then shows on their home screen, with a note of who added them. Groups go throug
   **Copy** and **Delete**. Each member has one reaction on a message, and a poll shows who chose what. A pin is for
   everyone, and any member can **Unpin** it. **Delete** asks **This phone** or, for your own message, **Everyone**:
   the members' Erevos delete it too, and a photo, file or voice message of yours leaves your relay at once instead of
-  in 14 days. **Attach** has **Sticker**, **Location** and **Poll** here too. Links are underlined and asked before
+  in 14 days. **+** has **Sticker**, **Location** and **Poll** here too. Links are underlined and asked before
   they open, and **Link previews**, when on, go with yours. In the members sheet, or a public group's own screen, **Search in this chat** goes through the group's messages and **Export chat**
   writes them out; **Starred messages** and the home screen's search take in the groups too. A member whose Erevos is
   from before this version sees the words, a sticker's emoji, a place's coordinates and a poll's question, and
@@ -597,7 +606,7 @@ and go to each member as in any group, and no relay learns who is in it.
 
 ## How Erevos picks the path {#paths}
 
-When you tap **Send**, Erevos picks the path by itself:
+When you send a message, Erevos picks the path by itself:
 
 1. **Their phone is near** (the top of the chat says **Nearby**): it goes over the nearby link, and through the relay
    too when there is one.
@@ -724,8 +733,9 @@ chats in one list.
   brings more, and the chat's search finds them too. A number on their contact card does the same, without linking
   it.
 - **A plain SMS to them:** when there is no internet, say. **Plain SMS** in the chat's **Details** opens their SMS
-  conversation to write it there, and **Attach** → **Send as SMS** sends what you typed as one, after asking. It
-  shows in the chat as an SMS. The phone company can read it.
+  conversation to write it there, and **+** → **Send as SMS**, or **As SMS** when you hold the send arrow, sends
+  what you typed as one, after asking. It shows in the chat as an SMS. The phone company can read it. An SMS cannot
+  disappear nor answer a message: with the stopwatch on, or a message being answered, Erevos says so when it asks.
 - **Hidden invites:** with the first SMS to a number that is not a contact, Erevos also sends a short hidden
   invite. None goes to an Erevos contact's number, linked or on their contact card. A phone without Erevos shows
   nothing; a phone with Erevos answers through the relay and the two become contacts. Each number is asked once a month at most, and **Turn invites off** stops them.

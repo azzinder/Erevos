@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView as PlainKeyboardAvoidingView, ScrollView, View, type ScrollViewProps, type ViewProps } from 'react-native';
+import { Keyboard, KeyboardAvoidingView as PlainKeyboardAvoidingView, ScrollView, View, type ScrollViewProps, type ViewProps } from 'react-native';
 
 /**
  * In browsers the keyboard library has nothing to do: the browser itself keeps the field being
@@ -20,4 +20,10 @@ export function KeyboardAwareScrollView(props: ScrollViewProps & { bottomOffset?
 
 export function KeyboardPaddedView({ bottom = 0, inset: _inset, style, ...props }: ViewProps & { bottom?: number; inset?: number }) {
   return <View style={[style, { paddingBottom: bottom }]} {...props} />;
+}
+
+// The browser moves nothing for its keyboard: closed, it is done.
+export function dismissKeyboard(): Promise<void> {
+  Keyboard.dismiss();
+  return Promise.resolve();
 }

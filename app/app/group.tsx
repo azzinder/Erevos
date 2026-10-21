@@ -1,10 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Composer, IconButton } from '../components/composer';
+import { useGlassBlur } from '../components/glass';
 import { useGroupMedia } from '../components/group-media';
 import { useGroupMessages } from '../components/group-messages';
+import { BackIcon, MoreIcon, PhoneIcon, ShieldIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { KeyFace } from '../components/key-face';
 import { LinkedText } from '../components/linked-text';
@@ -30,10 +33,11 @@ import { useStyles, useTheme } from '../theme/context';
 import { ContactPicker, groupableContacts } from '../components/contact-picker';
 
 // A group chat (lib/groups.ts): its messages, each of others' with the sender's name, notes of who
-// joined and left, and the field to write in. Its members sheet lists who is in it; the admin adds
-// contacts, takes members out and renames it, and anyone can leave. Its Call and Video buttons start
-// a call in the group (lib/group-calls.ts); the call going on shows above the messages, to join.
-// Attach and Voice under the field send photos, files and voice messages (components/group-media.tsx).
+// joined and left, and the message bar to write in (components/composer.tsx). Its members sheet,
+// under ⋯, lists who is in it; the admin adds contacts, takes members out and renames it, and
+// anyone can leave. The call button at the top starts a call in the group (lib/group-calls.ts), and
+// the members sheet a video call; the call going on shows above the messages, to join. "+" and the
+// microphone in the bar send photos, files and voice messages (components/group-media.tsx).
 // A message held down opens its menu, and its bubble shows what it answers, a sticker, a place, a
 // poll or a link's preview, and its reactions (components/group-messages.tsx). `at`: the tag of a
 // message to go to, starred or found.
@@ -46,18 +50,30 @@ const clock = (at: number) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+/** Back to the screen before, or home when the group was opened first. */
+function goBack() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
+}
+
 export default function GroupScreen() {
   const { id = '', at } = useLocalSearchParams<{ id?: string; at?: string }>();
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
+  const barBlur = useGlassBlur();
   const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
   const insets = useSafeAreaInsets();
+  // A narrow phone (360 wide): the top bar's picture is smaller, and what it is goes without its
+  // shield, so the words fit beside the buttons, as in a contact's chat.
+  const narrow = useWindowDimensions().width < 400;
   const [info, setInfo] = useState<GroupInfo | null>(null);
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
   const [sheet, setSheet] = useState(false);
+  // A public group's ⋯: its video call, and its own screen.
+  const [publicMenu, setPublicMenu] = useState(false);
   const [, setCalls] = useState(0);
   const scroll = useRef<ScrollView>(null);
   // A public group (app/public-group.tsx): its members by the names they chose, and its own screen for them.
@@ -65,7 +81,7 @@ export default function GroupScreen() {
   const name = (identity: string) => (pub.isPublic ? pub.name(identity) : memberName(identity, contacts));
   // Replies, reactions, pins, stickers, places, polls and the rest: the menu, sheets, and bubble parts.
   const parts = useGroupMessages({ id, info, messages, name, onNote: setNote, scroll, at });
-  // Photos, files and voice messages: their buttons, sheets, and their place in the bubbles.
+  // Photos, files and voice messages: the panel under the bar, the microphone, sheets, and their place in the bubbles.
   const media = useGroupMedia(id, messages, setNote, parts.attachMore);
 
   // A call going on in the group shows, until its members' phones go quiet.
@@ -158,33 +174,75 @@ export default function GroupScreen() {
     }
   }
 
+  // The bar at the top, on the bars' glass from the top of the screen, behind the status bar.
+  const bar = (children: ReactNode) => (
+    <View style={[styles.topBar, { marginTop: -insets.top, paddingTop: insets.top + 2 }, barBlur]}>
+      <View style={styles.header}>
+        <IconButton label={t('Back')} onPress={goBack}>
+          <BackIcon color={colors.text} size={24} />
+        </IconButton>
+        {children}
+      </View>
+    </View>
+  );
+
   if (!info) {
     return (
-      <View style={[styles.screen, styles.center]}>
-        <Text tone="muted">{note || t('This group is not here.')}</Text>
+      <View style={styles.screen}>
+        {bar(<View style={{ flex: 1 }} />)}
+        <View style={[styles.center, { flex: 1 }]}>
+          <Text tone="muted">{note || t('This group is not here.')}</Text>
+        </View>
       </View>
     );
   }
 
   const out = info.status !== 'in';
   const going = out ? null : groupCallGoingOn(id);
+  // The panel under "+" closes first: it is not left open under what opens.
+  const openMembers = () => {
+    media.setAttaching(false);
+    if (pub.isPublic) router.push(`/public-group?id=${id}`);
+    else setSheet(true);
+  };
+  const caption = out ? (info.status === 'leaving' ? t('Leaving') : t('You are not in this group')) : (pub.caption ?? t('Group · encrypted'));
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
-      <Row style={styles.head}>
-        <Pressable onPress={() => (pub.isPublic ? router.push(`/public-group?id=${id}`) : setSheet(true))} accessibilityRole="button" accessibilityHint={t('Members and settings')} style={({ pressed }) => [styles.top, pressed && styles.pressed]}>
-          <KeyFace identity={id} name={info.name} size={40} />
-          <View style={{ flex: 1 }}>
-            <Text variant="heading" numberOfLines={1}>
-              {info.name}
-            </Text>
-            <Text variant="caption" tone="muted">
-              {out ? (info.status === 'leaving' ? t('Leaving') : t('You are not in this group')) : (pub.caption ?? t('Group · end-to-end encrypted · tap for members'))}
-            </Text>
+      {bar(
+        <>
+          <Pressable
+            onPress={openMembers}
+            accessibilityRole="button"
+            accessibilityLabel={`${info.name}, ${out || pub.caption ? caption : t('Group · end-to-end encrypted')}`}
+            accessibilityHint={t('Members and settings')}
+            style={({ pressed }) => [styles.top, pressed && styles.pressed]}
+          >
+            <KeyFace identity={id} name={info.name} size={narrow ? 36 : 40} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text variant="heading" numberOfLines={1} style={styles.name}>
+                {info.name}
+              </Text>
+              <View style={styles.subtitle}>
+                {out || narrow ? null : <ShieldIcon color={colors.success} size={11} />}
+                <Text variant="caption" tone="muted" numberOfLines={1} style={{ flex: 1 }}>
+                  {caption}
+                </Text>
+              </View>
+            </View>
+          </Pressable>
+          {out ? null : (
+            <IconButton label={going ? (going.video ? t('A group video call is going on · Join') : t('A group call is going on · Join')) : t('Voice call')} onPress={() => void call(false)}>
+              <PhoneIcon color={colors.text} size={21} />
+            </IconButton>
+          )}
+          {/* Apart from the call, so a slip on it calls no one; upright on Android, as its apps have it. */}
+          <View style={styles.moreGap}>
+            <IconButton label={t('Members and settings')} onPress={() => (pub.isPublic && !out ? setPublicMenu(true) : openMembers())}>
+              <MoreIcon color={colors.text} size={Platform.OS === 'web' ? 20 : 18} upright={Platform.OS !== 'web'} />
+            </IconButton>
           </View>
-        </Pressable>
-        {out ? null : <TextButton title={t('Call')} onPress={() => void call(false)} />}
-        {out ? null : <TextButton title={t('Video')} onPress={() => void call(true)} />}
-      </Row>
+        </>,
+      )}
       {going ? (
         <Pressable onPress={() => void call(going.video)} accessibilityRole="button" style={({ pressed }) => [styles.going, pressed && styles.pressed]}>
           <Text variant="bodyStrong" color={colors.accentText}>
@@ -197,7 +255,14 @@ export default function GroupScreen() {
       ) : null}
       {parts.pinned}
       {parts.search}
-      <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={styles.list} onContentSizeChange={() => parts.follows() && scroll.current?.scrollToEnd({ animated: false })}>
+      <ScrollView
+        ref={scroll}
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.list}
+        onContentSizeChange={() => parts.follows() && scroll.current?.scrollToEnd({ animated: false })}
+        // It keeps to its end too as the keyboard or the panel under the bar take room from it.
+        onLayout={() => parts.follows() && scroll.current?.scrollToEnd({ animated: false })}
+      >
         {messages.map((m, i) => {
           if (m.note) {
             return (
@@ -250,16 +315,19 @@ export default function GroupScreen() {
         </Text>
       ) : null}
       {out ? null : (
-        <View style={styles.dock}>
-          {parts.replyBar}
-          <Input value={draft} onChangeText={setDraft} placeholder={t('Message {name}', { name: info.name })} maxLength={MAX_GROUP_TEXT} multiline />
-          <Row>
-            <Row wrap style={{ flex: 1 }}>
-              {media.tools}
-            </Row>
-            <Button title={t('Send')} compact disabled={!draft.trim()} onPress={() => void send()} />
-          </Row>
-        </View>
+        <Composer
+          value={draft}
+          onChangeText={setDraft}
+          placeholder={t('Message {name}', { name: info.name })}
+          maxLength={MAX_GROUP_TEXT}
+          onSend={() => void send()}
+          voice={media.voice}
+          answering={parts.answering}
+          onSticker={parts.openStickers}
+          panel={media.panel}
+          panelOpen={media.attaching}
+          onPanel={media.setAttaching}
+        />
       )}
       {media.sheets}
       {parts.sheets}
@@ -271,12 +339,35 @@ export default function GroupScreen() {
         onNote={setNote}
         onSearch={parts.startSearch}
         onExport={parts.exportGroup}
+        onVideo={() => void call(true)}
       />
+      <Sheet visible={publicMenu} onClose={() => setPublicMenu(false)} title={info.name}>
+        <Row wrap>
+          <Button
+            title={going ? t('A group video call is going on · Join') : t('Video call')}
+            kind="secondary"
+            compact
+            onPress={() => {
+              setPublicMenu(false);
+              void call(true);
+            }}
+          />
+          <Button
+            title={t('Members and settings')}
+            kind="secondary"
+            compact
+            onPress={() => {
+              setPublicMenu(false);
+              openMembers();
+            }}
+          />
+        </Row>
+      </Sheet>
     </KeyboardPaddedView>
   );
 }
 
-function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport }: {
+function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport, onVideo }: {
   visible: boolean;
   onClose: () => void;
   info: GroupInfo;
@@ -285,6 +376,8 @@ function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport
   /** Opens the search through the group's messages, and writes the group out as text. */
   onSearch: () => void;
   onExport: () => void;
+  /** Starts a video call in the group, or joins the call going on. */
+  onVideo: () => void;
 }) {
   const { colors } = useTheme();
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -373,6 +466,17 @@ function MembersSheet({ visible, onClose, info, name, onNote, onSearch, onExport
                     n: members.length,
                   })}
             </Text>
+            {out ? null : (
+              <Button
+                title={t('Video call')}
+                kind="secondary"
+                compact
+                onPress={() => {
+                  onClose();
+                  onVideo();
+                }}
+              />
+            )}
             {members.map((m) => (
               <Row key={m.leaf}>
                 <KeyFace identity={m.about?.id ?? ''} name={m.me ? t('You') : name(m.about?.id ?? '')} size={36} />
@@ -493,8 +597,30 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
       padding: space.xl,
     },
-    head: {
-      paddingRight: space.lg,
+    // The group's bar at the top, across the screen and behind the status bar, on the bars' glass.
+    topBar: {
+      backgroundColor: colors.sheet,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+    },
+    // The buttons' own room (44 across, the icon in the middle) spaces them, so the name has the rest.
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 60,
+    },
+    name: {
+      fontSize: 17,
+      lineHeight: 22,
+    },
+    subtitle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    // ⋯ keeps apart from the call beside it, so a slip on it calls no one.
+    moreGap: {
+      marginLeft: space.sm,
     },
     going: {
       marginHorizontal: space.lg,
@@ -504,14 +630,17 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: withAlpha(colors.primary, 0.16),
       gap: 2,
     },
+    // The group's picture and name: tapped, its members.
     top: {
       flex: 1,
+      minWidth: 0,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: space.md,
-      paddingHorizontal: space.lg,
-      paddingVertical: space.sm,
-      borderRadius: radius.md,
+      gap: 8,
+      paddingVertical: 6,
+      paddingLeft: 2,
+      paddingRight: 2,
+      borderRadius: radius.lg,
     },
     pressed: {
       backgroundColor: colors.surfacePressed,
@@ -554,10 +683,5 @@ const makeStyles = (colors: Colors) =>
     },
     noteText: {
       paddingHorizontal: space.lg,
-    },
-    dock: {
-      gap: space.sm,
-      paddingHorizontal: space.lg,
-      paddingVertical: space.sm,
     },
   });
