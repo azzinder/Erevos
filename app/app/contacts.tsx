@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ContactFace, useCardPhoto } from '../components/contact-face';
 import { readErevosId } from '../components/erevos-id';
 import { LockIcon, MoreIcon, PlusIcon, SearchIcon, ShieldIcon } from '../components/icons';
+import { KeyboardPaddedView } from '../components/keyboard';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
 import { byName, cardHref, erevosPeople, groupsByTitle, groupTitles, phoneCards, sealedCard, withErevos, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
@@ -265,8 +266,9 @@ export default function Contacts() {
   );
 
   const phoneMenu = phoneHere && allowed;
+  // The list ends above the keyboard while the search is typed in, and New contact floats above it.
   return (
-    <View style={styles.container}>
+    <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
       <FlatList
         data={shown}
         // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
@@ -379,7 +381,7 @@ export default function Contacts() {
         </View>
         {note ? <Text tone="muted">{note}</Text> : null}
       </Sheet>
-    </View>
+    </KeyboardPaddedView>
   );
 }
 

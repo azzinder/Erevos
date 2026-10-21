@@ -18,6 +18,6 @@ export function KeyboardAwareScrollView(props: ScrollViewProps & { bottomOffset?
   return <ScrollView {...rest} />;
 }
 
-export function KeyboardPaddedView({ bottom = 0, style, ...props }: ViewProps & { bottom?: number }) {
+export function KeyboardPaddedView({ bottom = 0, inset: _inset, style, ...props }: ViewProps & { bottom?: number; inset?: number }) {
   return <View style={[style, { paddingBottom: bottom }]} {...props} />;
 }

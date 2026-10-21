@@ -28,7 +28,7 @@ import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { saveFile, saveText } from '../lib/save-file';
 import { chatText, exportName } from '../lib/chat-export';
 import { AttachSheet, Attachment, FileViewer, SHOWN_PHOTOS, Tool, useShownPhotos } from '../components/attachment';
-import { KeyboardPaddedView } from '../components/keyboard';
+import { KeyboardAwareScrollView, KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
 import { ShieldIcon, TimerIcon } from '../components/icons';
@@ -352,7 +352,7 @@ export default function ChatScreen() {
     <ChatTheme look={chatLook?.look ?? null} onChange={(look) => chatLook?.save(look)}>
       <ScreenBackdrop>
         <ChatStatusBar />
-        <KeyboardPaddedView bottom={insets.bottom} style={[layout.screen, { paddingTop: insets.top }]}>
+        <KeyboardPaddedView bottom={insets.bottom} style={layout.screen}>
           <View style={[layout.screen, hiddenKey && layout.gone]}>
             <Chat
               hiddenKey={null}
@@ -2881,7 +2881,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     <View style={styles.container}>
       <Modal visible={styling && shown} animationType="slide" statusBarTranslucent onRequestClose={() => setStyling(false)}>
         <ScreenBackdrop>
-          <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.ground }}>
+          <View style={{ flex: 1, backgroundColor: colors.ground }}>
             <AppearanceEditor
               title={selectedName ? t('Look of {name}', { name: selectedName }) : t('Look of this chat')}
               top={
@@ -2915,7 +2915,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         onRequestClose={() => setDetails(false)}
       >
         <ScreenBackdrop>
-          <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.ground }}>
+          <View style={{ flex: 1, backgroundColor: colors.ground }}>
             <View style={styles.sheetBar}>
               <BackButton onPress={() => setDetails(false)} />
               <Text variant="heading" style={styles.grow}>
@@ -2923,9 +2923,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               </Text>
               <TextButton title={t('Done')} onPress={() => setDetails(false)} />
             </View>
-            <ScrollView
+            <KeyboardAwareScrollView
               contentContainerStyle={[styles.sheetContent, { paddingBottom: insets.bottom + space.xl }]}
               keyboardShouldPersistTaps="handled"
+              bottomOffset={space.xl}
             >
               <View style={styles.hero}>
                 <Pressable
@@ -3270,7 +3271,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   </View>
                 </>
               ) : null}
-            </ScrollView>
+            </KeyboardAwareScrollView>
           </View>
         </ScreenBackdrop>
       </Modal>

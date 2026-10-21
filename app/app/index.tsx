@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FoundRow } from '../components/found-row';
 import { LockIcon, MoreIcon, PersonIcon, PhoneIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
+import { KeyboardPaddedView } from '../components/keyboard';
 import { archiveConversation, SmsActions, trashConversation, type SmsTarget } from '../components/sms-actions';
 import { SwipeRow } from '../components/swipe-row';
 import { Chip, font, fontStyle, Row, Sheet, Text } from '../components/ui';
@@ -431,8 +432,9 @@ export default function Home() {
     else trashConversation(row.sms, row.at);
   }
 
+  // The list ends above the keyboard while the search is typed in, and New chat floats above it.
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
       <FlatList
         data={shown}
         // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
@@ -560,7 +562,7 @@ export default function Home() {
           </Pressable>
         ))}
       </Sheet>
-    </View>
+    </KeyboardPaddedView>
   );
 }
 

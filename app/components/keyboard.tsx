@@ -12,14 +12,20 @@ import Reanimated, { useAnimatedStyle } from 'react-native-reanimated';
 export { KeyboardAvoidingView, KeyboardAwareScrollView, KeyboardProvider } from 'react-native-keyboard-controller';
 
 /**
- * A screen that reaches the bottom of the window, padded at the bottom by the keyboard's height
- * while the keyboard is open and by `bottom` while it is closed. It reads only the keyboard's
- * height, as FASOULI's KeyboardStickyView bar does, so the header above the screen changes nothing.
- * The avoiding view works out where it sits instead, and under a header that left the chat's
- * message field behind the keyboard on the Pixel.
+ * A screen that reaches the bottom of the window, and ends above the keyboard while it is open. It
+ * reads only the keyboard's height, as FASOULI's KeyboardStickyView bar does, so the header above
+ * the screen changes nothing. The avoiding view works out where it sits instead, and under a header
+ * that left the chat's message field behind the keyboard on the Pixel.
+ *
+ * `bottom` pads a screen whose foot is a field or a bar (a chat) while the keyboard is closed: it
+ * clears the navigation bar then, and sits on the keyboard once it opens. `inset` is the room a
+ * screen keeps at its foot by itself (a list padded at its end by the navigation bar, a button
+ * floating above it): the keyboard covers the navigation bar, so that screen ends `inset` lower,
+ * and its list ends, and its buttons float, just above the keyboard. The screen shrinks by its
+ * margin rather than its padding, as a padding does not move what is placed absolutely in it.
  */
-export function KeyboardPaddedView({ bottom = 0, style, ...props }: ViewProps & { bottom?: number }) {
+export function KeyboardPaddedView({ bottom = 0, inset = 0, style, ...props }: ViewProps & { bottom?: number; inset?: number }) {
   const { height } = useReanimatedKeyboardAnimation();
-  const padding = useAnimatedStyle(() => ({ paddingBottom: Math.max(-height.value, bottom) }), [bottom]);
-  return <Reanimated.View style={[style, padding]} {...props} />;
+  const margin = useAnimatedStyle(() => ({ marginBottom: Math.max(-height.value - inset - bottom, 0) }), [bottom, inset]);
+  return <Reanimated.View style={[style, { paddingBottom: bottom }, margin]} {...props} />;
 }

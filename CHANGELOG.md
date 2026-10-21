@@ -73,6 +73,11 @@ On main, not released yet. The next release is **2.0.0**.
 - **Carrying messages for phones nearby** is off unless turned on, and then goes only to relays on
   the internet over TLS (`wss://`).
 - A README that matches the code, this changelog, and a threat model (`docs/threat-model.md`).
+- **The keyboard** no longer covers the end of the list while you search the chats on the home
+  screen or the contacts: the list ends above it, and **New chat**, **New contact** and Undo
+  float above it, as Undo now does in an SMS conversation too. The fields in a chat's details
+  scroll above it. The Phone opened while Erevos is locked, and the password and error screens,
+  start below the status bar, as the other screens do.
 
 ## 0.1.16 (2026-10-20)
 

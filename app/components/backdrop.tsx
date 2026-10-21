@@ -180,15 +180,19 @@ export function useBackdropSpec(): BackdropSpec | null {
 /**
  * A screen's backdrop (the root stack's screenLayout, the password screen): under a header, which
  * the look draws see-through over it, the screen starts below the header, and one pane at its
- * foot; without one, the pane starts below the status bar.
+ * foot; without one (the home screen, a chat and its full-screen sheets, the password and error
+ * screens, the Phone while Erevos is locked), the screen and the pane start below the status bar,
+ * which shows the screen's ground.
  */
 export function ScreenBackdrop({ children }: { children: ReactNode }) {
   const spec = useBackdropSpec();
+  const { colors } = useTheme();
   const headerHeight = useContext(HeaderHeightContext) ?? 0;
   const insets = useSafeAreaInsets();
+  const top = headerHeight > 0 ? 0 : insets.top;
   return (
     <Backdrop spec={spec} paneTop={headerHeight > 0 ? headerHeight : insets.top} contentTop={headerHeight}>
-      {children}
+      <View style={{ flex: 1, paddingTop: top, backgroundColor: colors.ground }}>{children}</View>
     </Backdrop>
   );
 }
