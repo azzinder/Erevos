@@ -1,7 +1,6 @@
 # erevos-widget
 
-Expo native module for Erevos's widget on the phone's home screen. Android only. Written without an Android SDK:
-it has been compiled against Android's framework classes, not built into the app or run yet.
+Expo native module for Erevos's widget on the phone's home screen. Android only. Built into the Android app.
 
 ## What it does
 

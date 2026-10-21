@@ -13,7 +13,7 @@ import java.util.IdentityHashMap
  * Erevos shows it (CallActivity, CallNotices). Telecom plays the ringtone itself, each contact's
  * own, and keeps Erevos's process running for as long as the service is bound. A call made shows
  * its screen at once; one that comes shows its notice, which Android turns into the screen over
- * the lock screen or while the screen is off. Not compiled or run yet.
+ * the lock screen or while the screen is off.
  */
 class CallService : InCallService() {
   private val callbacks = IdentityHashMap<Call, Call.Callback>()

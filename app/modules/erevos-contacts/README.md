@@ -1,7 +1,6 @@
 # erevos-contacts
 
-Expo native module for the phone's contacts. Android only. Written without an Android SDK: it has been
-compiled against Android 16's framework classes, not built into the app or run yet.
+Expo native module for the phone's contacts. Android only. Built into the Android app.
 
 ## What it does
 

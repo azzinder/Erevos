@@ -10,7 +10,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.provider.Telephony
 
-// The parts Android looks for in a default SMS app. Not compiled or run yet.
+// The parts Android looks for in a default SMS app.
 
 /** A text that came. Only the default SMS app gets SMS_DELIVER, and it keeps the message. */
 class SmsDeliverReceiver : BroadcastReceiver() {

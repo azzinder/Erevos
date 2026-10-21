@@ -18,7 +18,7 @@ import android.telecom.Call
  * screen and turned into the call screen while the screen is off (a full-screen intent); and one
  * while a call is on, with End, that opens the call screen. They name the caller as the call
  * screen does, as every phone app shows who calls. Telecom rings and vibrates itself, so the
- * channels make no sound. Missed calls are Telecom's own notice. Not compiled or run yet.
+ * channels make no sound. Missed calls are Telecom's own notice.
  */
 internal object CallNotices {
   private const val INCOMING_ID = 7201

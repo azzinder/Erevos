@@ -21,7 +21,7 @@ import android.telecom.TelecomManager
  * screen, which is behind its password unless its owner lets it open without it, and keeps no
  * copy; it changes only the history, when the owner deletes calls from it. Names come from the
  * phone's contacts as they are now, and from what Erevos knows of numbers while a space is open
- * (Calls.knownName). Not compiled or run yet.
+ * (Calls.knownName).
  */
 internal object History {
   /** The most calls read at once, newest first. */

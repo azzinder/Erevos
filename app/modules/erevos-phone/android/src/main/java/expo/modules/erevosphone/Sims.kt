@@ -16,7 +16,6 @@ internal class Account(val handle: PhoneAccountHandle, val id: String, val label
 /**
  * The SIMs the phone can call on, for choosing one per call. Telecom shows them only once Erevos
  * may read the phone's state; without that, the list is empty and calls go on the phone's default.
- * Not compiled or run yet.
  */
 internal object Sims {
   fun accounts(context: Context): List<Account> {

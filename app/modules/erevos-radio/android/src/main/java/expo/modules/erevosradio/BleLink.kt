@@ -27,7 +27,7 @@ import kotlin.random.Random
  * connection. The phone with the lower random nonce dials and writes to RX; the other
  * accepts and sends TX notifications. Frames keep the 4-byte length layout of Framing,
  * cut into chunks that fit the negotiated MTU. Only one write or notification is in
- * flight per link. All state lives on the main looper. Not compiled or run yet.
+ * flight per link. All state lives on the main looper.
  */
 @SuppressLint("MissingPermission")
 class BleLink(

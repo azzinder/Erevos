@@ -19,8 +19,7 @@ import android.widget.RemoteViews
  * screen, behind its password like any link. Over the first three, how many are new: missed calls
  * (Android's call history), unread SMS and MMS (Android's own store) and Erevos messages (as the
  * messages notice counts them, erevos-call Notices.kt). Never who, or what they say. Counts again
- * on Android's update, and on REFRESH, which the other modules send it by class name. Compiled
- * against Android's classes only; not run yet.
+ * on Android's update, and on REFRESH, which the other modules send it by class name.
  */
 class ErevosWidget : AppWidgetProvider() {
   override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {

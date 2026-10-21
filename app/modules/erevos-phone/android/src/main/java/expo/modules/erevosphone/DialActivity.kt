@@ -9,8 +9,7 @@ import android.provider.CallLog
 /**
  * What Android opens for the phone app: a tel: link to call, the phone's call button, the call
  * history from a missed-call notice. Erevos opens on its Phone screen (app/phone.tsx), with the
- * number typed in or on its history, once it is unlocked. Android asks this of a phone app. Not
- * compiled or run yet.
+ * number typed in or on its history, once it is unlocked. Android asks this of a phone app.
  */
 class DialActivity : Activity() {
   override fun onCreate(savedInstanceState: Bundle?) {

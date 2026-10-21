@@ -9,7 +9,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
 
 /**
  * JS API for the phone radio. Events are posted to the main looper, so JS
- * always receives them on its own thread. Not compiled or run yet.
+ * always receives them on its own thread.
  */
 class ErevosRadioModule : Module() {
   private val main = Handler(Looper.getMainLooper())

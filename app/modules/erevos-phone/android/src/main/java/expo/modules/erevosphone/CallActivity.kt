@@ -45,7 +45,7 @@ import android.widget.TextView
  * loudspeaker, a Bluetooth device, a headset), Hold, Add call, Merge or Swap, and End. It shows
  * over the phone's lock screen and turns the screen on, and needs no unlocking of Erevos: its own
  * task, apart from the app, which stays locked behind its password. While the phone is at the ear
- * the screen goes off. Not compiled or run yet.
+ * the screen goes off.
  */
 class CallActivity : Activity() {
   private val main = Handler(Looper.getMainLooper())

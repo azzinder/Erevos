@@ -29,7 +29,6 @@ import org.json.JSONObject
 /**
  * The phone's SMS, as the default SMS app keeps them: in Android's SMS provider, which the
  * default app must write itself. Reading needs READ_SMS, writing needs the default SMS role.
- * Not compiled or run yet.
  */
 internal object SmsStore {
   private const val TAG = "ErevosSms"

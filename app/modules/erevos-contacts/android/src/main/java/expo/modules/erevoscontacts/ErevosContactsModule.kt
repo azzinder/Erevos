@@ -20,8 +20,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
 private const val RINGTONE = 7301
 
 /**
- * JS API for the phone's contacts (ContactsStore). Events are posted to the main looper. Compiled
- * against Android's classes only; not run yet.
+ * JS API for the phone's contacts (ContactsStore). Events are posted to the main looper.
  */
 class ErevosContactsModule : Module() {
   private val main = Handler(Looper.getMainLooper())

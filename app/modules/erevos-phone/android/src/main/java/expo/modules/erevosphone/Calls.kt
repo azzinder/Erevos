@@ -22,7 +22,7 @@ internal class Route(val kind: Int, val name: String?, val target: Any?)
  * The phone's calls while Erevos is the phone app, as Android's Telecom gives them to CallService,
  * each with an id of ours; where their sound goes, and whether the microphone is off. In memory
  * only, in Erevos's process, which Telecom keeps running while a call lasts. Used on the main
- * thread, except `knownNames` and the marks of the screening service. Not compiled or run yet.
+ * thread, except `knownNames` and the marks of the screening service.
  */
 internal object Calls {
   const val EARPIECE = 1

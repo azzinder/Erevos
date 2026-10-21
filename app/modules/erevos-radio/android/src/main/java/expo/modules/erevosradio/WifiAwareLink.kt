@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * 3. The subscriber requests a Wi-Fi Aware network to the publisher and
  *    connects to its IPv6 address on that port.
  *
- * Each connected socket then carries frames (see Framing). Not compiled or run yet.
+ * Each connected socket then carries frames (see Framing).
  */
 @SuppressLint("NewApi", "MissingPermission")
 class WifiAwareLink(

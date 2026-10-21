@@ -10,7 +10,6 @@ import android.telecom.CallScreeningService
  * without ringing or a notice, and shows as blocked in the call history. With Erevos the phone
  * app too, Telecom gives this service the calls from the contacts as well. Calls made pass. A
  * call this service did not see, as when another app holds the role, is ended by CallService.
- * Not compiled or run yet.
  */
 class ScreeningService : CallScreeningService() {
   override fun onScreenCall(details: Call.Details) {

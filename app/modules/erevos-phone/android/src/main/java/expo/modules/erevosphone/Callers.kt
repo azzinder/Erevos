@@ -26,7 +26,7 @@ internal class Contact(val id: Long, val name: String?, val photo: String?, val 
 /**
  * Who calls, or is called: the name Erevos knows for the number while a space is open
  * (Calls.knownName), else the name and photo of the phone's contacts, else the name the network
- * gives, else the number. Looked up once per call, away from the main thread. Not compiled or run yet.
+ * gives, else the number. Looked up once per call, away from the main thread.
  */
 internal object Callers {
   private val main = Handler(Looper.getMainLooper())

@@ -16,7 +16,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
  * JS API for the phone's calls: being the phone app, making a call on a SIM, and what Erevos knows
  * of numbers while a space is open. The calls themselves are shown by the native call screen
  * (CallService, CallActivity), which works with Erevos locked. Events are posted to the main
- * looper. Not compiled or run yet.
+ * looper.
  */
 class ErevosPhoneModule : Module() {
   private val main = Handler(Looper.getMainLooper())

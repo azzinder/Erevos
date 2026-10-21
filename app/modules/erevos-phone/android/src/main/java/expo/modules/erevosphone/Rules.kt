@@ -11,8 +11,7 @@ import org.json.JSONObject
  * (`national`), unless it is in the phone's contacts or Erevos knows it while a space is open; and
  * the contacts of the contact groups blocked for now (`groups`). Kept in the module's own
  * preferences, as the app wrote them: only prefixes, group ids and times, no names. Read by the
- * screening service (ScreeningService) and, for a call it did not see, by CallService. Not
- * compiled or run yet.
+ * screening service (ScreeningService) and, for a call it did not see, by CallService.
  */
 internal object Rules {
   private const val KEY = "rules"

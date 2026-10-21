@@ -7,7 +7,6 @@ import org.json.JSONArray
  * The quick replies a call that rings can be declined with: Telecom sends the one chosen to the
  * caller as an SMS (Call.reject). The owner's own, else the usual ones in the app's language. Kept
  * in the module's own preferences, not sealed, as the call screen shows them with Erevos locked.
- * Not compiled or run yet.
  */
 internal object Replies {
   private const val KEY = "replies"

@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * Android sends to a Wi-Fi with no internet only through that network, not the mobile data the
  * phone may use meanwhile, so each socket goes on the network whose addresses hold the other's.
- * Link ids start with `lan-`. Not compiled for a phone or run yet.
+ * Link ids start with `lan-`.
  */
 class LanLink(
   private val context: Context,

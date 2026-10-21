@@ -33,8 +33,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 // Other apps' requests about contacts, as Android sends them to a contacts app: to add one (with
-// what they know of it), to add to one, to change one, to show one, and to pick one. Not built
-// into the app or run yet.
+// what they know of it), to add to one, to change one, to show one, and to pick one.
 
 private const val TAG = "ErevosContacts"
 

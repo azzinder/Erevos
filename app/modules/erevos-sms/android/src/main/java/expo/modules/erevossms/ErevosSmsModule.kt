@@ -12,8 +12,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
 
 /**
  * JS API for the phone's SMS: being the default SMS app, its conversations, sending, and the
- * hidden SMS invites between Erevos phones. Events are posted to the main looper. Not compiled
- * or run yet.
+ * hidden SMS invites between Erevos phones. Events are posted to the main looper.
  */
 class ErevosSmsModule : Module() {
   private val main = Handler(Looper.getMainLooper())
