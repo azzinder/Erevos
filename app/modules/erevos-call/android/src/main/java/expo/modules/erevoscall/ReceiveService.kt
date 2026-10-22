@@ -14,10 +14,23 @@ import android.os.PowerManager
 // shows the one quiet notice Android requires (Notices.receiving).
 class ReceiveService : Service() {
   private var awake: PowerManager.WakeLock? = null
+  // Started by the app in this process, not only by Android again.
+  private var receiving = false
 
   override fun onBind(intent: Intent?): IBinder? = null
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    if (intent == null) {
+      // Android closed Erevos while it received in the background (for memory, say) and starts
+      // this again on its own. The keys were in the app's memory only, so it can open nothing:
+      // it says so with a quiet notice, rather than the notice going without a word, and stops.
+      if (receiving) return START_STICKY
+      Notices.stopped(this)
+      stopSelf(startId)
+      return START_NOT_STICKY
+    }
+    receiving = true
+    Notices.clearStopped(this)
     val notice = Notices.receiving(this)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
       // Also linked to phones nearby (Bluetooth, Wi-Fi Aware, the same Wi-Fi), as Android asks a
@@ -41,9 +54,9 @@ class ReceiveService : Service() {
         it.acquire()
       }
     }
-    // Not restarted by Android if it is stopped: the keys are in the app's memory only, so a
-    // restarted service alone could open nothing.
-    return START_NOT_STICKY
+    // Started again by Android if it closes Erevos, only to say so (above): the keys are in the
+    // app's memory only, so a service started again alone could open nothing.
+    return START_STICKY
   }
 
   override fun onDestroy() {

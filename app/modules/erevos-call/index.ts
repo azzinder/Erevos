@@ -45,7 +45,10 @@ type CallAudio = {
   setSpeaker(speaker: boolean): void;
   /** Puts the sound and the screen back as they were before the call. */
   stop(): void;
-  /** Keeps Erevos running while it is in the background, with a quiet notice that says no more than its name. */
+  /** React Native's WebSocket and fetch keep no cookies from now on, so they load no WebView: how many of the two took it. */
+  noCookies?(): number;
+  /** Keeps Erevos running while it is in the background, with a quiet notice that says no more than its name.
+   *  If Android closes Erevos meanwhile, a quiet notice says so, until it receives again. */
   startReceiving?(): void;
   stopReceiving?(): void;
   /** Plays the phone's ringtone; with `notice`, also shows the call notice, over the lock screen. */

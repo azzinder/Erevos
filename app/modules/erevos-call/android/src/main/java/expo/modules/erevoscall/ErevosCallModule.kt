@@ -99,6 +99,11 @@ class ErevosCallModule : Module() {
       keepScreenOn(false)
     }
 
+    // Before the first connection to the relay: no cookies, and so no WebView in Erevos (NoCookies).
+    Function("noCookies") {
+      NoCookies.apply(appContext.reactContext)
+    }
+
     Function("startReceiving") {
       context?.let { ReceiveService.start(it) }
       keepTimers(true)

@@ -20,7 +20,8 @@ import { onSpaceGroupMessage } from './space-groups';
 // they are open; those that asked for it only say that a message came (lib/hidden-notices.ts).
 // On by default; switches on the Lock screen turn it off on this phone, or only the messages
 // notice. Swiped away from the recent apps, it goes on without its screens (lib/space-running.ts);
-// stopped by Android, Erevos looks at nothing and cannot ring.
+// stopped by Android, Erevos looks at nothing and cannot ring, and a quiet notice says so
+// (modules/erevos-call, ReceiveService).
 
 const KEY = 'erevos.ring-background';
 const NOTICES_KEY = 'erevos.message-notices';

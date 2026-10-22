@@ -9,19 +9,22 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.os.Build
 
-// The notices Erevos shows: that it keeps receiving while in the background, a call that rings,
-// and that messages came while it was in the background. None says who: no name, no message,
+// The notices Erevos shows: that it keeps receiving while in the background, or that Android
+// closed it while it did, a call that rings, and that messages came while it was in the background. None says who: no name, no message,
 // only what kind of call, or how many messages. Tapping one opens Erevos, which shows the rest
 // only once it is open. On a locked phone the messages notice says only "Erevos".
 object Notices {
   const val RECEIVING_ID = 7101
   const val RINGING_ID = 7102
   const val MESSAGES_ID = 7103
+  private const val STOPPED_ID = 7104
   private const val RECEIVING_CHANNEL = "erevos-receiving"
   const val CALLS_CHANNEL = "erevos-calls"
   const val MESSAGES_CHANNEL = "erevos-messages"
   // The same notice, for messages sent without sound: a channel that never sounds.
   private const val QUIET_CHANNEL = "erevos-messages-quiet"
+  // That Android closed Erevos while it received in the background: shows, without sound.
+  private const val STOPPED_CHANNEL = "erevos-stopped"
 
   // The app's language, as the app last set it: "el" for Greek, English otherwise. The SMS
   // module reads the same (erevos-sms SmsStore.kt).
@@ -76,6 +79,7 @@ object Notices {
       manager.getNotificationChannel(CALLS_CHANNEL)?.let { it.name = say(context, "Calls", "Κλήσεις"); manager.createNotificationChannel(it) }
       manager.getNotificationChannel(MESSAGES_CHANNEL)?.let { it.name = say(context, "Messages", "Μηνύματα"); manager.createNotificationChannel(it) }
       manager.getNotificationChannel(QUIET_CHANNEL)?.let { it.name = say(context, "Messages without sound", "Μηνύματα χωρίς ήχο"); manager.createNotificationChannel(it) }
+      manager.getNotificationChannel(STOPPED_CHANNEL)?.let { it.name = say(context, "Closed by Android", "Έκλεισε από το Android"); manager.createNotificationChannel(it) }
     }
     if (manager.getNotificationChannel(RECEIVING_CHANNEL) == null) {
       manager.createNotificationChannel(
@@ -114,6 +118,16 @@ object Notices {
         },
       )
     }
+    if (manager.getNotificationChannel(STOPPED_CHANNEL) == null) {
+      manager.createNotificationChannel(
+        NotificationChannel(STOPPED_CHANNEL, say(context, "Closed by Android", "Έκλεισε από το Android"), NotificationManager.IMPORTANCE_LOW).apply {
+          setSound(null, null as AudioAttributes?)
+          enableVibration(false)
+          setShowBadge(false)
+          lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+        },
+      )
+    }
   }
 
   // Opens Erevos where it was, or starts it.
@@ -140,6 +154,34 @@ object Notices {
       .setVisibility(Notification.VISIBILITY_SECRET)
       .setContentIntent(opening(context, 1))
       .build()
+  }
+
+  // Android closed Erevos while it received in the background (ReceiveService): until it is open
+  // again, no call rings and no message comes. On a locked phone it says only "Erevos".
+  fun stopped(context: Context) {
+    channels(context)
+    @Suppress("DEPRECATION")
+    val locked = builder(context, STOPPED_CHANNEL)
+      .setSmallIcon(context.applicationInfo.icon)
+      .setContentTitle("Erevos")
+      .setShowWhen(false)
+      .build()
+    @Suppress("DEPRECATION")
+    val notification = builder(context, STOPPED_CHANNEL)
+      .setSmallIcon(context.applicationInfo.icon)
+      .setContentTitle("Erevos")
+      .setContentText(say(context, "Closed by Android. Open it to receive calls and messages again.", "Το έκλεισε το Android. Άνοιξέ το για να λαμβάνεις ξανά κλήσεις και μηνύματα."))
+      .setPriority(Notification.PRIORITY_LOW)
+      .setVisibility(Notification.VISIBILITY_PRIVATE)
+      .setPublicVersion(locked)
+      .setAutoCancel(true)
+      .setContentIntent(opening(context, 4))
+      .build()
+    runCatching { manager(context).notify(STOPPED_ID, notification) }
+  }
+
+  fun clearStopped(context: Context) {
+    manager(context).cancel(STOPPED_ID)
   }
 
   fun ring(context: Context, video: Boolean) {

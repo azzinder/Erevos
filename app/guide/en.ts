@@ -585,8 +585,9 @@ a missed call.
   screen**.
 - **Where it cannot ring:** stopped by Android (or by the phone's battery saving, or the phone maker's own setting),
   after the phone restarts until you open Erevos and the space once, in another space, or on a computer or in the web
-  app while closed. A call there shows as a missed call once Erevos opens. A message request cannot call you until you
-  accept it.
+  app while closed. A call there shows as a missed call once Erevos opens. When Android closes Erevos while it
+  receives, a quiet notice says so: open Erevos and the space to receive again. A message request cannot call you until
+  you accept it.
 - **Permissions (Android):** menu → **Permissions** shows what Android lets Erevos do for calls and messages in the
   background (notices, the call notice and that it pops up, the message notice, calls over the lock screen, running on
   battery, running in the background with battery use not set to Restricted, not paused when unused, mobile data in the

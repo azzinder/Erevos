@@ -53,6 +53,9 @@ import { keepPrivate, loadScreenPrivacy } from '../lib/screen-privacy';
 import { PhoneView } from './phone';
 
 setupCrypto();
+// Erevos keeps no cookies, so its relay connections do not load the phone's WebView, which Android
+// would close Erevos with at each update of it, in the background too (modules/erevos-call, NoCookies).
+callAudio?.noCookies?.();
 
 // Lock again after the app has been in the background this long.
 const RELOCK_AFTER_MS = 30_000;

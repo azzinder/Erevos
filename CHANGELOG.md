@@ -10,6 +10,11 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet. The next release is **2.0.0**.
 
+- **An update of the phone's WebView no longer closes Erevos** while it receives in the
+  background, which took its notice away and with it calls and messages until you opened it. Erevos
+  keeps no cookies, so its relay connections no longer load the WebView (and hold less memory).
+  When Android closes Erevos all the same while it receives, for memory say, a quiet notice says so
+  from then on: open Erevos and the space to receive again.
 - **Deleting or blocking a contact gives you a new relay queue**: **Delete contact** and **Block
   contact** in a chat's details forget them and their chat, and Erevos makes a new queue at once,
   which your other contacts are told quietly, in a message with nothing in it, and again 7, 14 and
