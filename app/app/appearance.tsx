@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { LauncherIcons } from '../components/launcher-icons';
+import { WidgetOrder } from '../components/widget-order';
 import { Button, Card, Chip, Page, Row, SectionTitle, Sheet, Text, TextButton } from '../components/ui';
 import {
   buildColors,
@@ -367,8 +368,9 @@ export function AppearanceEditor({ title, top }: { title?: string; top?: ReactNo
         </Text>
       )}
 
-      {/* The phone's launcher icons: not a chat's look (Android only). */}
+      {/* The phone's launcher icons and widget: not a chat's look (Android only). */}
       {top ? null : <LauncherIcons />}
+      {top ? null : <WidgetOrder />}
 
       <Sheet visible={pickColor} onClose={() => setPickColor(false)} title={t('My color')}>
         <View style={styles.dots}>

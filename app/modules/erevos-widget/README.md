@@ -4,10 +4,12 @@ Expo native module for Erevos's widget on the phone's home screen. Android only.
 
 ## What it does
 
-- **Four buttons.** Phone, SMS, Messages and Contacts, each opening Erevos at that screen (erevos://phone,
+- **Four buttons.** Phone, SMS, Messages and Contacts, from left to right in the order the owner chose (Appearance →
+  Widget, `order()`/`setOrder()`, kept as `order` in the `erevos-widget` preferences; the layout has four places
+  that each draw whichever button sits there), each opening Erevos at that screen (erevos://phone,
   erevos://?show=sms, erevos://?show=erevos, erevos://contacts), behind its password like any link
   (app/+native-intent.ts), except the Phone when it may open without it. With missed calls, Phone opens Recents.
-- **How many are new.** Over each of the first three, a count: the missed calls Android's call history marks new,
+- **How many are new.** Over Phone, SMS and Messages, wherever they sit, a count: the missed calls Android's call history marks new,
   the unread SMS and MMS in Android's own store, and the Erevos messages the messages notice counts
   (erevos-call Notices.kt keeps it in the `erevos-widget` preferences). Never who, or what they say. A count shows
   only while Android lets Erevos read what it counts.

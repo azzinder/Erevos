@@ -343,4 +343,10 @@ export const settings: Record<string, string> = {
   'Green': 'Πράσινο',
   'Blue': 'Μπλε',
   'Violet': 'Μωβ',
+  'Widget': 'Widget',
+  "The order of the buttons on the home screen's widget, from left to right. Tap ↑ or ↓ to move a button.": 'Η σειρά των κουμπιών στο widget της αρχικής οθόνης, από αριστερά προς τα δεξιά. Πάτα ↑ ή ↓ για να μετακινήσεις ένα κουμπί.',
+  'Move up': 'Πάνω',
+  'Move down': 'Κάτω',
+  'This is how it will look:': 'Έτσι θα φαίνεται:',
+  'First order': 'Αρχική σειρά',
 };

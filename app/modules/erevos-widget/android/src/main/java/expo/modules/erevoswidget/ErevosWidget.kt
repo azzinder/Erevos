@@ -15,8 +15,8 @@ import android.view.View
 import android.widget.RemoteViews
 
 /**
- * Erevos's widget on the home screen: Phone, SMS, Messages and Contacts, each opening Erevos at that
- * screen, behind its password like any link. Over the first three, how many are new: missed calls
+ * Erevos's widget on the home screen: Phone, SMS, Messages and Contacts, in the order the owner chose
+ * (Appearance → Widget), each opening Erevos at that screen, behind its password like any link. Over the first three, how many are new: missed calls
  * (Android's call history), unread SMS and MMS (Android's own store) and Erevos messages (as the
  * messages notice counts them, erevos-call Notices.kt). Never who, or what they say. Counts again
  * on Android's update, and on REFRESH, which the other modules send it by class name.
@@ -47,25 +47,62 @@ class ErevosWidget : AppWidgetProvider() {
 
     private fun draw(context: Context, manager: AppWidgetManager, ids: IntArray) {
       val missed = missedCalls(context)
-      val sms = unreadSms(context)
-      val messages = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(MESSAGES, 0)
+      val counts = mapOf(
+        "phone" to missed,
+        "sms" to unreadSms(context),
+        "messages" to context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(MESSAGES, 0),
+        "contacts" to 0,
+      )
       val words = words(context)
+      val order = order(context)
       for (id in ids) {
         val views = RemoteViews(context.packageName, R.layout.erevos_widget)
-        views.setTextViewText(R.id.erevos_widget_phone_label, words[0])
-        views.setTextViewText(R.id.erevos_widget_sms_label, words[1])
-        views.setTextViewText(R.id.erevos_widget_messages_label, words[2])
-        views.setTextViewText(R.id.erevos_widget_contacts_label, words[3])
-        count(views, R.id.erevos_widget_phone_count, missed)
-        count(views, R.id.erevos_widget_sms_count, sms)
-        count(views, R.id.erevos_widget_messages_count, messages)
-        // With missed calls, the Phone opens on them.
-        views.setOnClickPendingIntent(R.id.erevos_widget_phone, opening(context, if (missed > 0) "erevos://phone?tab=recents" else "erevos://phone", 1))
-        views.setOnClickPendingIntent(R.id.erevos_widget_sms, opening(context, "erevos://?show=sms", 2))
-        views.setOnClickPendingIntent(R.id.erevos_widget_messages, opening(context, "erevos://?show=erevos", 3))
-        views.setOnClickPendingIntent(R.id.erevos_widget_contacts, opening(context, "erevos://contacts", 4))
+        order.forEachIndexed { place, button ->
+          views.setImageViewResource(SLOT_ICONS[place], ICONS.getValue(button))
+          views.setTextViewText(SLOT_LABELS[place], words[BUTTONS.indexOf(button)])
+          count(views, SLOT_COUNTS[place], counts.getValue(button))
+          // With missed calls, the Phone opens on them. Each button keeps its own request code
+          // wherever it sits, so its link never takes another's.
+          val link = when (button) {
+            "phone" -> if (missed > 0) "erevos://phone?tab=recents" else "erevos://phone"
+            "sms" -> "erevos://?show=sms"
+            "messages" -> "erevos://?show=erevos"
+            else -> "erevos://contacts"
+          }
+          views.setOnClickPendingIntent(SLOTS[place], opening(context, link, BUTTONS.indexOf(button) + 1))
+        }
         manager.updateAppWidget(id, views)
       }
+    }
+
+    /** The buttons, in the order Erevos first shows them. */
+    val BUTTONS = listOf("phone", "sms", "messages", "contacts")
+    /** Where the owner's order is kept (Appearance → Widget), as "phone,sms,messages,contacts". */
+    private const val ORDER = "order"
+
+    private val ICONS = mapOf(
+      "phone" to R.drawable.erevos_widget_phone,
+      "sms" to R.drawable.erevos_widget_sms,
+      "messages" to R.drawable.erevos_widget_messages,
+      "contacts" to R.drawable.erevos_widget_contacts,
+    )
+    private val SLOTS = listOf(R.id.erevos_widget_slot0, R.id.erevos_widget_slot1, R.id.erevos_widget_slot2, R.id.erevos_widget_slot3)
+    private val SLOT_ICONS = listOf(R.id.erevos_widget_slot0_icon, R.id.erevos_widget_slot1_icon, R.id.erevos_widget_slot2_icon, R.id.erevos_widget_slot3_icon)
+    private val SLOT_COUNTS = listOf(R.id.erevos_widget_slot0_count, R.id.erevos_widget_slot1_count, R.id.erevos_widget_slot2_count, R.id.erevos_widget_slot3_count)
+    private val SLOT_LABELS = listOf(R.id.erevos_widget_slot0_label, R.id.erevos_widget_slot1_label, R.id.erevos_widget_slot2_label, R.id.erevos_widget_slot3_label)
+
+    /** The owner's order, from left to right; the first one if what is kept is not all four buttons once each. */
+    fun order(context: Context): List<String> {
+      val kept = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(ORDER, null)?.split(',') ?: return BUTTONS
+      return if (kept.size == BUTTONS.size && kept.toSet() == BUTTONS.toSet()) kept else BUTTONS
+    }
+
+    /** Keeps a new order and draws the widgets with it; false if it is not all four buttons once each. */
+    fun setOrder(context: Context, order: List<String>): Boolean {
+      if (order.size != BUTTONS.size || order.toSet() != BUTTONS.toSet()) return false
+      context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(ORDER, order.joinToString(",")).apply()
+      refreshAll(context)
+      return true
     }
 
     private fun count(views: RemoteViews, id: Int, n: Int) {
@@ -106,7 +143,7 @@ class ErevosWidget : AppWidgetProvider() {
         0
       }
 
-    /** The buttons' words, in Erevos's language (the call module keeps it, erevos-call Notices.kt). */
+    /** The buttons' words, as BUTTONS, in Erevos's language (the call module keeps it, erevos-call Notices.kt). */
     private fun words(context: Context): List<String> =
       when (context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null)) {
         "el" -> listOf("Τηλέφωνο", "SMS", "Μηνύματα", "Επαφές")

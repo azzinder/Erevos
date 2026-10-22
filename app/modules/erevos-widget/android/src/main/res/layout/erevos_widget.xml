@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Erevos's widget (ErevosWidget.kt): four buttons, each with how many are new over the first three. -->
+<!-- Erevos's widget (ErevosWidget.kt): four places, from left to right, each showing one of Phone, SMS,
+     Messages and Contacts in the order the owner chose (Appearance → Widget), with how many are new. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
   android:id="@+id/erevos_widget"
   android:layout_width="match_parent"
@@ -10,7 +11,7 @@
   android:padding="6dp">
 
   <LinearLayout
-    android:id="@+id/erevos_widget_phone"
+    android:id="@+id/erevos_widget_slot0"
     android:layout_width="0dp"
     android:layout_height="match_parent"
     android:layout_weight="1"
@@ -23,13 +24,13 @@
       android:layout_height="34dp">
 
       <ImageView
+        android:id="@+id/erevos_widget_slot0_icon"
         android:layout_width="28dp"
         android:layout_height="28dp"
         android:layout_gravity="center"
-        android:importantForAccessibility="no"
-        android:src="@drawable/erevos_widget_phone" />
+        android:importantForAccessibility="no" />
       <TextView
-        android:id="@+id/erevos_widget_phone_count"
+        android:id="@+id/erevos_widget_slot0_count"
         android:layout_width="wrap_content"
         android:layout_height="18dp"
         android:layout_gravity="top|end"
@@ -45,7 +46,7 @@
     </FrameLayout>
 
     <TextView
-      android:id="@+id/erevos_widget_phone_label"
+      android:id="@+id/erevos_widget_slot0_label"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:ellipsize="end"
@@ -55,7 +56,7 @@
   </LinearLayout>
 
   <LinearLayout
-    android:id="@+id/erevos_widget_sms"
+    android:id="@+id/erevos_widget_slot1"
     android:layout_width="0dp"
     android:layout_height="match_parent"
     android:layout_weight="1"
@@ -68,13 +69,13 @@
       android:layout_height="34dp">
 
       <ImageView
+        android:id="@+id/erevos_widget_slot1_icon"
         android:layout_width="28dp"
         android:layout_height="28dp"
         android:layout_gravity="center"
-        android:importantForAccessibility="no"
-        android:src="@drawable/erevos_widget_sms" />
+        android:importantForAccessibility="no" />
       <TextView
-        android:id="@+id/erevos_widget_sms_count"
+        android:id="@+id/erevos_widget_slot1_count"
         android:layout_width="wrap_content"
         android:layout_height="18dp"
         android:layout_gravity="top|end"
@@ -90,7 +91,7 @@
     </FrameLayout>
 
     <TextView
-      android:id="@+id/erevos_widget_sms_label"
+      android:id="@+id/erevos_widget_slot1_label"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:ellipsize="end"
@@ -100,7 +101,7 @@
   </LinearLayout>
 
   <LinearLayout
-    android:id="@+id/erevos_widget_messages"
+    android:id="@+id/erevos_widget_slot2"
     android:layout_width="0dp"
     android:layout_height="match_parent"
     android:layout_weight="1"
@@ -113,13 +114,13 @@
       android:layout_height="34dp">
 
       <ImageView
+        android:id="@+id/erevos_widget_slot2_icon"
         android:layout_width="28dp"
         android:layout_height="28dp"
         android:layout_gravity="center"
-        android:importantForAccessibility="no"
-        android:src="@drawable/erevos_widget_messages" />
+        android:importantForAccessibility="no" />
       <TextView
-        android:id="@+id/erevos_widget_messages_count"
+        android:id="@+id/erevos_widget_slot2_count"
         android:layout_width="wrap_content"
         android:layout_height="18dp"
         android:layout_gravity="top|end"
@@ -135,7 +136,7 @@
     </FrameLayout>
 
     <TextView
-      android:id="@+id/erevos_widget_messages_label"
+      android:id="@+id/erevos_widget_slot2_label"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:ellipsize="end"
@@ -145,7 +146,7 @@
   </LinearLayout>
 
   <LinearLayout
-    android:id="@+id/erevos_widget_contacts"
+    android:id="@+id/erevos_widget_slot3"
     android:layout_width="0dp"
     android:layout_height="match_parent"
     android:layout_weight="1"
@@ -158,15 +159,29 @@
       android:layout_height="34dp">
 
       <ImageView
+        android:id="@+id/erevos_widget_slot3_icon"
         android:layout_width="28dp"
         android:layout_height="28dp"
         android:layout_gravity="center"
-        android:importantForAccessibility="no"
-        android:src="@drawable/erevos_widget_contacts" />
+        android:importantForAccessibility="no" />
+      <TextView
+        android:id="@+id/erevos_widget_slot3_count"
+        android:layout_width="wrap_content"
+        android:layout_height="18dp"
+        android:layout_gravity="top|end"
+        android:background="@drawable/erevos_widget_badge"
+        android:gravity="center"
+        android:minWidth="18dp"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
+        android:textColor="#FFFFFF"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
     </FrameLayout>
 
     <TextView
-      android:id="@+id/erevos_widget_contacts_label"
+      android:id="@+id/erevos_widget_slot3_label"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:ellipsize="end"

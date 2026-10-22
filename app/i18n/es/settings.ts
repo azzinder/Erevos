@@ -344,4 +344,10 @@ export const settings: Record<string, string> = {
   'Green': 'Verde',
   'Blue': 'Azul',
   'Violet': 'Violeta',
+  'Widget': 'Widget',
+  "The order of the buttons on the home screen's widget, from left to right. Tap ↑ or ↓ to move a button.": 'El orden de los botones del widget de la pantalla de inicio, de izquierda a derecha. Toca ↑ o ↓ para mover un botón.',
+  'Move up': 'Subir',
+  'Move down': 'Bajar',
+  'This is how it will look:': 'Así se verá:',
+  'First order': 'Orden inicial',
 };

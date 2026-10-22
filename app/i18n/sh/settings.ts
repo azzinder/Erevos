@@ -344,4 +344,10 @@ export const settings: Record<string, string> = {
   'Green': 'Zelena',
   'Blue': 'Plava',
   'Violet': 'Ljubičasta',
+  'Widget': 'Widget',
+  "The order of the buttons on the home screen's widget, from left to right. Tap ↑ or ↓ to move a button.": 'Redoslijed dugmadi na widgetu početnog ekrana, slijeva nadesno. Dodirnite ↑ ili ↓ da pomjerite dugme.',
+  'Move up': 'Gore',
+  'Move down': 'Dolje',
+  'This is how it will look:': 'Ovako će izgledati:',
+  'First order': 'Početni redoslijed',
 };
