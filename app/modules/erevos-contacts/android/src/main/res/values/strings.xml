@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <!-- The name of the Contacts icon in the launcher (ContactsLauncherActivity). -->
+  <!-- The name of the Contacts icon in the launcher (the ContactsLauncher aliases of ContactsOpenActivity). -->
   <string name="erevos_contacts_launcher">Contacts</string>
 </resources>

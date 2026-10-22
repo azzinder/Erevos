@@ -336,4 +336,12 @@ export const settings: Record<string, string> = {
   'Notifications are off': 'Obavijesti su isključene',
   'So nothing tells you when an SMS comes.': 'Zato vas ništa ne obavještava kad stigne SMS.',
   'Allow notifications': 'Dozvoli obavijesti',
+  'Launcher icons': 'Ikone u pokretaču',
+  "The color of each icon among the phone's apps. It is the phone's, not each space's, as the icons show before Erevos is unlocked.": 'Boja svake ikone među aplikacijama telefona. Važi za cijeli telefon, ne za svaki prostor posebno, jer se ikone vide prije nego što otključate Erevos.',
+  'After a change some launchers take the icon off the home screen: add it again from the list of apps. The change shows within a few seconds.': 'Nakon promjene neki pokretači uklone ikonu s početnog ekrana: dodajte je ponovo iz popisa aplikacija. Promjena se vidi za nekoliko sekundi.',
+  'Red': 'Crvena',
+  'Orange': 'Narandžasta',
+  'Green': 'Zelena',
+  'Blue': 'Plava',
+  'Violet': 'Ljubičasta',
 };

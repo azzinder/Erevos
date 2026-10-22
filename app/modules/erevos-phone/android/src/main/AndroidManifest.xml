@@ -42,20 +42,94 @@
          (taskAffinity ""), which ends as they close: in Erevos's task, a second tap on the icon
          only brought Erevos up as it was left, not on the keypad. -->
     <activity
-      android:name="expo.modules.erevosphone.PhoneLauncherActivity"
+      android:name="expo.modules.erevosphone.PhoneOpenActivity"
       android:taskAffinity=""
       android:exported="true"
       android:excludeFromRecents="true"
       android:noHistory="true"
-      android:icon="@mipmap/erevos_phone_launcher"
-      android:roundIcon="@mipmap/erevos_phone_launcher"
-      android:label="@string/erevos_phone_launcher"
-      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+    <!-- Phone's launcher icon, one per colour the owner can choose (Appearance → Launcher icons,
+         modules/erevos-icons): only one is on. The green one keeps the name the icon had before
+         colours, so an icon already on the home screen stays. -->
+    <activity-alias
+      android:name="expo.modules.erevosphone.PhoneLauncherRed"
+      android:targetActivity="expo.modules.erevosphone.PhoneOpenActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/erevos_phone_launcher_red"
+      android:roundIcon="@mipmap/erevos_phone_launcher_red"
+      android:label="@string/erevos_phone_launcher">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
-    </activity>
+    </activity-alias>
+    <activity-alias
+      android:name="expo.modules.erevosphone.PhoneLauncherOrange"
+      android:targetActivity="expo.modules.erevosphone.PhoneOpenActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/erevos_phone_launcher_orange"
+      android:roundIcon="@mipmap/erevos_phone_launcher_orange"
+      android:label="@string/erevos_phone_launcher">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name="expo.modules.erevosphone.PhoneLauncherActivity"
+      android:targetActivity="expo.modules.erevosphone.PhoneOpenActivity"
+      android:enabled="true"
+      android:exported="true"
+      android:icon="@mipmap/erevos_phone_launcher_green"
+      android:roundIcon="@mipmap/erevos_phone_launcher_green"
+      android:label="@string/erevos_phone_launcher">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name="expo.modules.erevosphone.PhoneLauncherBlue"
+      android:targetActivity="expo.modules.erevosphone.PhoneOpenActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/erevos_phone_launcher_blue"
+      android:roundIcon="@mipmap/erevos_phone_launcher_blue"
+      android:label="@string/erevos_phone_launcher">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name="expo.modules.erevosphone.PhoneLauncherViolet"
+      android:targetActivity="expo.modules.erevosphone.PhoneOpenActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/erevos_phone_launcher_violet"
+      android:roundIcon="@mipmap/erevos_phone_launcher_violet"
+      android:label="@string/erevos_phone_launcher">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name="expo.modules.erevosphone.PhoneLauncherDark"
+      android:targetActivity="expo.modules.erevosphone.PhoneOpenActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/erevos_phone_launcher_dark"
+      android:roundIcon="@mipmap/erevos_phone_launcher_dark"
+      android:label="@string/erevos_phone_launcher">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
 
     <activity
       android:name="expo.modules.erevosphone.DialActivity"

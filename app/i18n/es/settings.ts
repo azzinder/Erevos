@@ -336,4 +336,12 @@ export const settings: Record<string, string> = {
   'Notifications are off': 'Las notificaciones están desactivadas',
   'So nothing tells you when an SMS comes.': 'Así que nada te avisa cuando llega un SMS.',
   'Allow notifications': 'Permitir notificaciones',
+  'Launcher icons': 'Iconos del lanzador',
+  "The color of each icon among the phone's apps. It is the phone's, not each space's, as the icons show before Erevos is unlocked.": 'El color de cada icono entre las apps del teléfono. Es del teléfono, no de cada espacio, porque los iconos se ven antes de desbloquear Erevos.',
+  'After a change some launchers take the icon off the home screen: add it again from the list of apps. The change shows within a few seconds.': 'Tras un cambio, algunos lanzadores quitan el icono de la pantalla de inicio: vuelve a añadirlo desde la lista de apps. El cambio se ve en unos segundos.',
+  'Red': 'Rojo',
+  'Orange': 'Naranja',
+  'Green': 'Verde',
+  'Blue': 'Azul',
+  'Violet': 'Violeta',
 };

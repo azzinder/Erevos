@@ -85,7 +85,7 @@ class ContactIntentActivity : Activity() {
  * Erevos's Contacts as an app of its own in the phone's launcher, with an icon of its own: it
  * opens them (erevos://contacts), behind Erevos's lock, and closes at once.
  */
-class ContactsLauncherActivity : Activity() {
+class ContactsOpenActivity : Activity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     try {

@@ -335,4 +335,12 @@ export const settings: Record<string, string> = {
   'Notifications are off': 'Οι ειδοποιήσεις είναι κλειστές',
   'So nothing tells you when an SMS comes.': 'Γι’ αυτό τίποτα δεν σε ειδοποιεί όταν έρχεται SMS.',
   'Allow notifications': 'Να επιτρέπονται οι ειδοποιήσεις',
+  'Launcher icons': 'Εικονίδια εκκίνησης',
+  "The color of each icon among the phone's apps. It is the phone's, not each space's, as the icons show before Erevos is unlocked.": 'Το χρώμα κάθε εικονιδίου στις εφαρμογές του κινητού. Ισχύει για όλο το κινητό, όχι για κάθε χώρο ξεχωριστά, γιατί τα εικονίδια φαίνονται πριν ξεκλειδώσεις το Erevos.',
+  'After a change some launchers take the icon off the home screen: add it again from the list of apps. The change shows within a few seconds.': 'Μόλις αλλάξεις χρώμα, μερικοί launchers βγάζουν το εικονίδιο από την αρχική οθόνη: το ξαναβάζεις από τη λίστα των εφαρμογών. Η αλλαγή φαίνεται σε λίγα δευτερόλεπτα.',
+  'Red': 'Κόκκινο',
+  'Orange': 'Πορτοκαλί',
+  'Green': 'Πράσινο',
+  'Blue': 'Μπλε',
+  'Violet': 'Μωβ',
 };

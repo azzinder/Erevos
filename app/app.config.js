@@ -26,6 +26,6 @@ module.exports = ({ config }) => {
         : {}),
     },
     extra: { ...config.extra, ...(build > 0 ? { build } : {}), ...(fdroid ? { distribution } : {}) },
-    plugins: [...(config.plugins || []), './plugins/with-release-signing', './plugins/with-native-programs', './plugins/with-no-gms-entry'],
+    plugins: [...(config.plugins || []), './plugins/with-release-signing', './plugins/with-native-programs', './plugins/with-no-gms-entry', './plugins/with-launcher-icons'],
   };
 };

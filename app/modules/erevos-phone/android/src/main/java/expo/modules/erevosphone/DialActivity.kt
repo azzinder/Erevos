@@ -35,7 +35,7 @@ class DialActivity : Activity() {
  * Erevos's Phone as an app of its own in the phone's launcher, with an icon of its own: it opens
  * the keypad (erevos://phone), behind Erevos's lock, and closes at once.
  */
-class PhoneLauncherActivity : Activity() {
+class PhoneOpenActivity : Activity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     try {

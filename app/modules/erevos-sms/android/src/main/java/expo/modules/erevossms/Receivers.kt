@@ -89,7 +89,7 @@ class ComposeActivity : Activity() {
 }
 
 /** SMS as an icon of its own in the launcher: the home list with only the SMS conversations, as the widget's SMS button. */
-class SmsLauncherActivity : Activity() {
+class SmsOpenActivity : Activity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     try {

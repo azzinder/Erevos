@@ -13,20 +13,94 @@
          below hand a link to Erevos and close, in a task of their own (taskAffinity ""), so every
          tap opens the contacts, not Erevos as it was left. -->
     <activity
-      android:name="expo.modules.erevoscontacts.ContactsLauncherActivity"
+      android:name="expo.modules.erevoscontacts.ContactsOpenActivity"
       android:taskAffinity=""
       android:exported="true"
       android:excludeFromRecents="true"
       android:noHistory="true"
-      android:icon="@mipmap/erevos_contacts_launcher"
-      android:roundIcon="@mipmap/erevos_contacts_launcher"
-      android:label="@string/erevos_contacts_launcher"
-      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+    <!-- Contacts's launcher icon, one per colour the owner can choose (Appearance → Launcher icons,
+         modules/erevos-icons): only one is on. The violet one keeps the name the icon had before
+         colours, so an icon already on the home screen stays. -->
+    <activity-alias
+      android:name="expo.modules.erevoscontacts.ContactsLauncherRed"
+      android:targetActivity="expo.modules.erevoscontacts.ContactsOpenActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/erevos_contacts_launcher_red"
+      android:roundIcon="@mipmap/erevos_contacts_launcher_red"
+      android:label="@string/erevos_contacts_launcher">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
-    </activity>
+    </activity-alias>
+    <activity-alias
+      android:name="expo.modules.erevoscontacts.ContactsLauncherOrange"
+      android:targetActivity="expo.modules.erevoscontacts.ContactsOpenActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/erevos_contacts_launcher_orange"
+      android:roundIcon="@mipmap/erevos_contacts_launcher_orange"
+      android:label="@string/erevos_contacts_launcher">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name="expo.modules.erevoscontacts.ContactsLauncherGreen"
+      android:targetActivity="expo.modules.erevoscontacts.ContactsOpenActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/erevos_contacts_launcher_green"
+      android:roundIcon="@mipmap/erevos_contacts_launcher_green"
+      android:label="@string/erevos_contacts_launcher">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name="expo.modules.erevoscontacts.ContactsLauncherBlue"
+      android:targetActivity="expo.modules.erevoscontacts.ContactsOpenActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/erevos_contacts_launcher_blue"
+      android:roundIcon="@mipmap/erevos_contacts_launcher_blue"
+      android:label="@string/erevos_contacts_launcher">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name="expo.modules.erevoscontacts.ContactsLauncherActivity"
+      android:targetActivity="expo.modules.erevoscontacts.ContactsOpenActivity"
+      android:enabled="true"
+      android:exported="true"
+      android:icon="@mipmap/erevos_contacts_launcher_violet"
+      android:roundIcon="@mipmap/erevos_contacts_launcher_violet"
+      android:label="@string/erevos_contacts_launcher">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name="expo.modules.erevoscontacts.ContactsLauncherDark"
+      android:targetActivity="expo.modules.erevoscontacts.ContactsOpenActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/erevos_contacts_launcher_dark"
+      android:roundIcon="@mipmap/erevos_contacts_launcher_dark"
+      android:label="@string/erevos_contacts_launcher">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
     <!-- Other apps' requests to add a contact, add to one, change one or show one (ContactIntents.kt):
          opened in Erevos, behind its lock. -->
     <activity
