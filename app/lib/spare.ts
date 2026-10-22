@@ -41,6 +41,11 @@ export function spareBackup(store: SpareStore = spaceSpare()): Relay | undefined
   return ready.get(store.of)?.relay;
 }
 
+/** What to say of the backup queue, once it is ready: its sender id, the relay and the relay's key. Null while it is not. */
+export function spareSaid(store: SpareStore = spaceSpare()): Spare | null {
+  return ready.get(store.of)?.said ?? null;
+}
+
 /** The backup queue a contact link gives, from what the chat says of it. */
 export function spareCode(spare: Spare | null): SpareCode | undefined {
   return spare ? { senderHex: spare.sender, relayUrl: spare.relay, relayKey: spare.relayKey || undefined } : undefined;

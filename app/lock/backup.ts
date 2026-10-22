@@ -49,7 +49,8 @@ const MAGIC = utf8Encode('EREVOS BACKUP 2\n');
 const SALT = 16;
 
 // The keystore entries kept, in every space and slot whatever is in use: the lock, the spaces'
-// keys, the hidden chats' lock, the password screen's look, and each slot's space and hidden chats.
+// keys, the hidden chats' lock, the password screen's look, and each slot's space and hidden chats,
+// with the queues each moved away from and its contact link names (queues-data.ts).
 const FIXED = ['erevos.lock', 'erevos.space-keys', 'erevos.hidden-lock', 'erevos.look'];
 // The other pockets of hidden chats (hidden.ts): their locks, and their entries in every slot.
 const OTHER_POCKETS = Array.from({ length: POCKETS - 1 }, (_, i) => i + 1);
@@ -59,6 +60,8 @@ const SLOTTED = Array.from({ length: MOST_SLOTS }, (_, n) => [
   `erevos.space.${n}`,
   `erevos.hidden.${n}`,
   ...OTHER_POCKETS.map((p) => `erevos.hidden${p}.${n}`),
+  `erevos.queues.${n}`,
+  ...Array.from({ length: POCKETS }, (_, p) => `erevos.queues${p}.${n}`),
 ]).flat();
 const KEYS = [...FIXED, ...OTHER_POCKETS.map((p) => `erevos.hidden-lock.${p}`), ...SLOTTED];
 

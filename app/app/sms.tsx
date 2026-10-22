@@ -20,6 +20,7 @@ import { forwardedTo, forwardTo, type Forwarded } from '../lib/forward';
 import { Held } from '../lib/held';
 import { locale, plural, t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
+import { spaceLinkSender } from '../lib/queue-move';
 import { relayKey } from '../lib/relay';
 import { deletingSms, linkedContact, smsFailed, smsLineId, smsMark } from '../lib/sms-chat';
 import { onSmsOrderChanged, shownMessages, smsFolder, trashOf } from '../lib/sms-folders';
@@ -134,7 +135,8 @@ async function invite(to: string, space: number) {
     if (bytes) key = toBase64Url(bytes);
   }
   try {
-    await sms.invite(to, { senderHex: data.ownQueue.senderHex, relay: data.url, relayKey: key }, sendSmsData);
+    // Its answer comes to the queue the contact link names (lib/queue-move.ts), not the one contacts write to.
+    await sms.invite(to, { senderHex: await spaceLinkSender(data.ownQueue), relay: data.url, relayKey: key }, sendSmsData);
   } catch {
     // The SMS went; the invite goes with a later one.
   }

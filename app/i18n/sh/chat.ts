@@ -44,7 +44,6 @@ export const chat: Record<string, string> = {
   '{number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.': '{number} ima Erevos. Poruke na taj broj sada idu preko Erevosa, šifrirane s kraja na kraj.',
   '{number} has Erevos and is now a contact. Messages to that number go through Erevos.': '{number} ima Erevos i sada je kontakt. Poruke na taj broj idu preko Erevosa.',
   'The relay answers again.': 'Relay ponovo odgovara.',
-  'The relay had lost your queue, so a new one was made. Your contacts learn it from your next message to them.': 'Relay je izgubio vaš red, pa je napravljen novi. Vaši kontakti ga saznaju iz vaše sljedeće poruke.',
   'A message that was not end-to-end encrypted came, and was not shown.': 'Stigla je poruka koja nije bila šifrirana s kraja na kraj i nije prikazana.',
   'A voice message came but could not be kept. {error}': 'Stigla je glasovna poruka, ali se nije mogla sačuvati. {error}',
   '{name} set new messages in this chat to disappear {time} after they are read.': '{name}: nove poruke u ovom razgovoru sada nestaju nakon čitanja ({time}).',

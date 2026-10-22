@@ -25,6 +25,7 @@ import { phoneOpensLocked } from '../lib/phone-open';
 import { forgetHistory } from '../lib/phone-log';
 import { noticeLanguage, noticeSeen } from '../lib/push-notice';
 import { watchKnownNames } from '../lib/known-names';
+import { forgetSpaceMover } from '../lib/queue-move';
 import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
 import { startSmsLater } from '../lib/sms-later';
@@ -138,6 +139,7 @@ export default function RootLayout() {
     // A link Erevos came back with opens after the password (lib/open-link.ts).
     lockingKeepsLink();
     forgetSpaceChats();
+    forgetSpaceMover();
     forgetOffered();
     forgetLinks();
     forgetSpaceGroups();

@@ -1,4 +1,4 @@
-import { againAfter, checkedAvatar, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_HELD, MAX_PREKEYS, MAX_SEEN_EACH, MAX_TOOK, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Contact, type E2EData, type Endpoint, type Holder, type Own, type OwnList, type Route, type Spare, type Took, type Way } from '../lock/e2e-data';
+import { againAfter, checkedAvatar, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_SEEN_EACH, MAX_TOOK, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type OldFiller, type Own, type OwnList, type Route, type Spare, type Took, type Way } from '../lock/e2e-data';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
 
 import { isReactionEmoji, isTag, newTag } from '../lock/history';
@@ -18,6 +18,7 @@ import { TooLargeForLoraError } from './nearby';
 import type { Look } from '../theme/look';
 import { deletePhoto } from '../lock/avatar-photos';
 import { lastRestore } from '../lock/restored';
+import { takesPlace, tellDue, toldOnce } from './moves';
 import { t } from './i18n';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
@@ -182,6 +183,8 @@ type Message = {
   acct?: string;
   /** In the first message of a conversation started with an endpoint: the account it is for (hex), so a list that names someone else's endpoint makes it read nothing. */
   to?: string;
+  /** When the queue `from` names was made (ms, the hour, later each time: lib/moves.ts queueAge), said with `from`: a message that says an older one than the last (a late copy) leaves where they read as it was. An Erevos before says none, and takes `from` from every message. */
+  qa?: number;
 };
 
 /** What else a message can carry. */
@@ -244,7 +247,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, dl, acct, to }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, dl, acct, to, qa }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -275,6 +278,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(dl ? { dl } : {}),
       ...(acct ? { acct } : {}),
       ...(to ? { to } : {}),
+      ...(from && qa ? { qa } : {}),
       ...more,
     }),
   );
@@ -289,6 +293,12 @@ function placeOf(message: Message): Pick<Contact, 'relay' | 'relayKey' | 'spare'
  *  ''), or what was kept when it says nothing of one (`rf` absent). */
 function ringSenderOf(message: Message, known: Contact | undefined): string | undefined {
   return message.rf === undefined ? known?.ringSender : message.rf || undefined;
+}
+
+// A refusal of a packet that came sealed with a kept contact's mark: theirs, though it opened in
+// none of their conversations, as from a phone whose conversation broke (lib/moves.ts, no junk).
+function theirs(received: Received): Received {
+  return received.kind === 'refused' && received.reason === 'unknown' ? { ...received, theirs: true } : received;
 }
 
 /** Where a link or a message says a queue is. A queue said without a relay is on the same relay. */
@@ -351,6 +361,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       // Said but not an identity: said still, as nothing an account takes.
       ...(value.acct !== undefined ? { acct: typeof value.acct === 'string' && /^[0-9a-f]{64}$/.test(value.acct) ? value.acct : '' } : {}),
       ...(value.to !== undefined ? { to: typeof value.to === 'string' && /^[0-9a-f]{64}$/.test(value.to) ? value.to : '' } : {}),
+      ...(isTime(value.qa) && value.qa > 0 ? { qa: value.qa } : {}),
     };
   } catch {
     return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null };
@@ -435,8 +446,10 @@ export type Received =
       twice: boolean;
     }
   // Not encrypted (as messages before this version were), not for this account, or a replay. Or
-  // `linked`: between this account's own devices, and taken by their link (lib/devices.ts).
-  | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' | 'linked' };
+  // `linked`: between this account's own devices, and taken by their link (lib/devices.ts). Or
+  // `blocked`: a first packet from someone blocked here (E2E.deleteContact). `theirs`: sealed with
+  // the key a kept contact was given, so theirs, though it opened in none of their conversations.
+  | { kind: 'refused'; reason: 'plain' | 'unknown' | 'replay' | 'linked' | 'blocked'; theirs?: true };
 
 /**
  * How a chat reaches the other devices of its account (lib/devices.ts). A linked device seals
@@ -463,6 +476,8 @@ export interface Link {
   sealed(identity: string, plaintext: Uint8Array): void;
   /** The contacts as kept now, which may have changed. */
   changed(contacts: readonly Contact[]): void;
+  /** On a linked device: a contact was deleted here (E2E.deleteContact), or blocked, which the phone does too, and moves its queue. */
+  deleted?(identity: string, block: boolean): void;
 }
 
 export class OwnCodeError extends Error {
@@ -640,6 +655,11 @@ export class E2E {
   private readonly told = new Map<string, number>();
   // This chat's backup queue (lib/spare.ts), said in every message that says where its queue is.
   private ownSpare: Spare | null = null;
+  // When this chat's own queue was made (`qa`, lib/queue-move.ts), said with it; 0 while not known.
+  // Its sender id, and those it moved away from this run, by when each was made.
+  private ownAge = 0;
+  private ownFrom = '';
+  private readonly froms = new Map<string, number>();
   // The account's other devices, for the space's own chat (lib/devices.ts).
   private link: Link | null = null;
   // The keys of packet keys (lib/sealed-packet.ts), by the packet key.
@@ -733,6 +753,108 @@ export class E2E {
     this.link = link;
   }
 
+  /** Says from now on, in each message that says where this chat's queue is, when that queue was made (`qa`, lib/queue-move.ts), and which queue it is (`from`, its sender id). */
+  setQueueAge(qa: number, from = ''): void {
+    this.ownAge = qa;
+    if (!from) return;
+    this.ownFrom = from;
+    this.froms.set(from, qa);
+  }
+
+  // What a message says of where this chat reads, and when that queue was made: one it moved away
+  // from, as a screen that has not heard of the move yet says, is the one it moved to.
+  private fromNow(from: string): { from: string; qa: number } {
+    if (!from) return { from, qa: 0 };
+    const age = this.froms.get(from);
+    if (age !== undefined && age < this.ownAge && this.ownFrom) return { from: this.ownFrom, qa: this.ownAge };
+    return { from, qa: this.ownAge };
+  }
+
+  /** When this chat's own queue was made, as last said (`setQueueAge`), or 0. */
+  queueAge(): number {
+    return this.ownAge;
+  }
+
+  /** The backup put back that this chat's conversations were last moved past (lock/restored.ts), or ''. */
+  restoreId(): string {
+    return this.data.restore ?? '';
+  }
+
+  /** When a backup was put back here (ms), or 0: for a day after, junk is not counted (lib/moves.ts junkStep). */
+  putBackAt(): number {
+    return this.data.putBack ?? 0;
+  }
+
+  /** When a contact was deleted or blocked here and this chat's own queue is to move for it (lib/queue-move.ts), or 0. */
+  moveDue(): number {
+    return this.data.moveDue ?? 0;
+  }
+
+  /** The move that started at `started` (ms) is done: what was due by then is no more. */
+  moveDone(started: number): Promise<void> {
+    return this.run(async () => {
+      if (!this.data.moveDue || this.data.moveDue > started) return;
+      const { moveDue: _due, ...rest } = this.data;
+      await this.save(rest);
+    });
+  }
+
+  /** Whether this chat is a linked device's, which reaches contacts through the phone. */
+  onLinkedDevice(): boolean {
+    return this.link?.through === true;
+  }
+
+  /** On a linked device: its phone asks it to move its own queue (lib/devices.ts `move`), as a deletion does on the phone. */
+  moveSoon(): Promise<void> {
+    return this.run(async () => {
+      if (!this.data.moveDue) await this.save({ ...this.data, moveDue: Date.now() });
+    });
+  }
+
+  /** Who is blocked here, the latest last. */
+  blocked(): Blocked[] {
+    return this.data.blocked ?? [];
+  }
+
+  /** Lets someone blocked write again: a first packet from them comes as a message request. */
+  unblock(identity: string): Promise<void> {
+    return this.run(async () => {
+      const blocked = this.blocked().filter((b) => b.identity !== identity);
+      if (blocked.length === this.blocked().length) return;
+      const { blocked: _blocked, ...rest } = this.data;
+      await this.save(blocked.length > 0 ? { ...rest, blocked } : rest);
+    });
+  }
+
+  /** Whether `identity` is blocked here: what they ask through a group or an SMS invite is dropped too. */
+  isBlocked(identity: string): boolean {
+    return this.blocked().some((b) => b.identity === identity);
+  }
+
+  /**
+   * The kept contacts to tell where this chat reads now, in a message with nothing in it
+   * (lib/queue-move.ts): those not told the own queue made at `moved`, and again those not heard on
+   * it since (lib/moves.ts tellDue). None for the queue the first look found (`since`), none to a
+   * message request, and none on a linked device, whose phone tells them.
+   */
+  tellsDue(moved: number, since: number, now = Date.now()): string[] {
+    if (this.link?.through || moved <= 0) return [];
+    return this.data.contacts.filter((c) => !c.request && c.sender && c.conversations[0] && tellDue(c.told, c.onNew, moved, since, now)).map((c) => c.identity);
+  }
+
+  /** A contact was told the own queue made at `qa`: the relay took it. */
+  queueTold(identity: string, qa: number): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (contact) await this.save(this.withContact({ ...contact, told: toldOnce(contact.told, qa) }));
+    });
+  }
+
+  /** The `qa` of the own queue every kept contact was heard on at least: the least of theirs, Infinity with none (lib/moves.ts graceOver). */
+  heardSince(): number {
+    return this.data.contacts.filter((c) => !c.request && c.sender).reduce((least, c) => Math.min(least, c.onNew ?? 0), Infinity);
+  }
+
   // The keys of a packet key, made once.
   private keysOf(key: string): PacketKeys {
     let keys = this.packetKeys.get(key);
@@ -792,6 +914,9 @@ export class E2E {
   /** Where a contact's ring queue is, as they last said (lock/hidden-ring.ts), or null when they
    *  said none: on the same relay as their message queue, with its own sender id. */
   ringOf(identity: string): { sender: string; relay: string; relayKey: string } | null {
+    // A linked device's call goes through the phone, which does not ring it: should the device ring
+    // them itself, a call that the phone, off, never passes on would ring with nothing to answer.
+    if (this.link?.through) return null;
     const contact = this.find(identity);
     return contact?.ringSender ? { sender: contact.ringSender, relay: contact.relay, relayKey: contact.relayKey } : null;
   }
@@ -879,6 +1004,33 @@ export class E2E {
       const gone = this.find(identity)?.avatar;
       await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity) });
       if (gone?.kind === 'photo') await deletePhoto(gone.id);
+    });
+  }
+
+  /**
+   * Deletes a contact as `removeContact` does, and, in the same save, has this chat's own queue
+   * move (`moveDue`, lib/queue-move.ts), so they can no longer write to it: a crash leaves neither
+   * without the other. Not for a message request, never answered, which knows only the queue the
+   * contact link names. `block`: also keeps them blocked, so a first packet from them later is
+   * dropped, a request too. On a linked device the phone does both (Link.deleted): it holds the
+   * queues contacts write to.
+   */
+  deleteContact(identity: string, { block = false }: { block?: boolean } = {}): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact && !block) return;
+      const through = this.link?.through === true;
+      const now = Date.now();
+      const blocked = block && !through ? [...this.blocked().filter((b) => b.identity !== identity), { identity, name: contact?.name ?? '', at: now }].slice(-MAX_BLOCKED) : null;
+      // Said before the save, whose change of the contacts tells the phone of it.
+      if (contact) this.link?.deleted?.(identity, block);
+      await this.save({
+        ...this.data,
+        contacts: this.data.contacts.filter((c) => c.identity !== identity),
+        ...(through || !contact || contact.request ? {} : { moveDue: now }),
+        ...(blocked ? { blocked } : {}),
+      });
+      if (contact?.avatar?.kind === 'photo') await deletePhoto(contact.avatar.id);
     });
   }
 
@@ -995,8 +1147,9 @@ export class E2E {
     return this.run(async () => {
       const held = this.data.list;
       if ((held?.n ?? 0) >= list.n) return;
-      const { restore: _restore, ...signed } = list;
-      await this.save({ ...this.data, list: { ...signed, rAt: laterThan(held?.rAt), ...(this.data.restore ? { restore: this.data.restore } : {}) } });
+      const { restore: _restore, qWas: _was, ...signed } = list;
+      const qWas = held?.qWas;
+      await this.save({ ...this.data, list: { ...signed, rAt: laterThan(held?.rAt), ...(this.data.restore ? { restore: this.data.restore } : {}), ...(qWas ? { qWas } : {}) } });
     });
   }
 
@@ -1110,8 +1263,10 @@ export class E2E {
         return { identity, added: !known };
       }
       if (known) {
-        // Already talking: only where to reach them changes, if the link says. Adding their link accepts a request.
-        const where = code.senderHex ? { ...whereOf(code), sender: code.senderHex, spare: spareOf(code) } : {};
+        // Already talking: only where to reach them changes, if the link says and they never said
+        // when their queue was made (`qa`), as an Erevos before: a link of theirs names where they
+        // are asked to talk, not where they read. Adding their link accepts a request.
+        const where = code.senderHex && known.qa === undefined ? { ...whereOf(code), sender: code.senderHex, spare: spareOf(code) } : {};
         await this.save(this.withContact({ ...known, ...where, request: false }));
         return { identity, added: false };
       }
@@ -1119,7 +1274,7 @@ export class E2E {
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ from, ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined) }),
+        encodeMessage({ ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined), ...this.fromNow(from) }),
       );
       await this.save(
         this.withContact({
@@ -1364,6 +1519,8 @@ export class E2E {
       return {
         ...message,
         spare,
+        // Where this chat reads now, and when that queue was made: what a linked device wrote says this chat's.
+        ...this.fromNow(message.from),
         on,
         onAt: on > 0 ? now : 0,
         ask: message.ask && !contact.hide,
@@ -1837,6 +1994,16 @@ export class E2E {
     });
   }
 
+  /** On the primary: the queues the places that fill the list read on before, still emptied until each one's grace ends (lib/devices.ts drainFillers). */
+  keepOldFillers(qWas: OldFiller[]): Promise<void> {
+    return this.run(async () => {
+      const list = this.data.list;
+      if (!list || JSON.stringify(list.qWas ?? []) === JSON.stringify(qWas)) return;
+      const { qWas: _was, ...rest } = list;
+      await this.save({ ...this.data, list: { ...rest, ...(qWas.length > 0 ? { qWas: qWas.slice(-MAX_OLD_FILLERS) } : {}) } });
+    });
+  }
+
   /** The first packets still waiting for the relay, if any, and where they go: a new conversation's, or a newer one's (`renew`). */
   pending(): { identity: string; sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array }[] {
     return this.data.contacts
@@ -1853,9 +2020,17 @@ export class E2E {
     });
   }
 
-  /** Opens a packet from the relay. */
-  receive(packet: Uint8Array): Promise<Received> {
+  /**
+   * Opens a packet from the relay. `onOwn`: it came to this chat's own queue as it is now, so its
+   * sender is heard there (Contact.onNew). `old`: it came to a queue this chat moved away from, or
+   * to the one its contact link or its groups name (lib/queue-move.ts), and is read cheaply: one
+   * that came sealed opens only in the conversations of the contact whose mark it has, as always;
+   * one that came unsealed only in those of contacts whose packets do not come sealed, never in
+   * the few tries the others get (`mayTryUnsealed`).
+   */
+  receive(packet: Uint8Array, { onOwn = false, old = false }: { onOwn?: boolean; old?: boolean } = {}): Promise<Received> {
     return this.run(async () => {
+      const heard = onOwn && !old;
       // One between the account's devices, first (lib/devices.ts): what it says of the contacts
       // changes them here, and a contact's message the primary passed on opens as theirs.
       const linked = this.link ? await this.link.open(packet).catch(() => null) : null;
@@ -1872,24 +2047,26 @@ export class E2E {
         }
         return { kind: 'refused', reason: 'linked' };
       }
-      if (linked) return this.open(packet, linked);
+      if (linked) return this.open(packet, linked, { heard });
       if (isSealedPacket(packet)) {
-        // Whose it is, by its mark: then only their conversations are tried.
+        // Whose it is, by its mark: then only their conversations are tried. One with their mark
+        // that opens in none is still theirs: no junk (lib/moves.ts), as a broken conversation sends.
         const contact = this.data.contacts.find((c) => sealedWith(this.keysOf(this.ownPacketKey(c)), packet));
         const inner = contact ? openPacket(this.keysOf(this.ownPacketKey(contact)), packet) : null;
-        if (contact && inner && (await core.packetKind(inner)) === 'following') return this.open(inner, null, { only: contact.identity, sealed: true });
+        if (contact && inner && (await core.packetKind(inner)) === 'following') return theirs(await this.open(inner, null, { only: contact.identity, sealed: true, heard }));
+        if (contact) return { kind: 'refused', reason: 'unknown', theirs: true };
         // On a linked device, one sealed with the key the account's list gives a contact with where
         // its endpoint reads, by them or an endpoint of theirs not given another yet: whose it is, by
         // its mark, as that key is each contact's own (lib/sealed-packet.ts entryKey).
         const seed = !contact && this.link?.through ? this.endpointKey() : '';
         const listed = seed ? this.data.contacts.find((c) => sealedWith(this.keysOf(entryKeyOf(seed, c.identity)), packet)) : undefined;
         const opened = listed ? openPacket(this.keysOf(entryKeyOf(seed, listed.identity)), packet) : null;
-        if (listed && opened && (await core.packetKind(opened)) === 'following') return this.open(opened, null, { only: listed.identity });
+        if (listed && opened && (await core.packetKind(opened)) === 'following') return this.open(opened, null, { only: listed.identity, heard });
         return { kind: 'refused', reason: 'unknown' };
       }
       const kind = await core.packetKind(packet);
-      if (kind === 'first') return this.accept(packet);
-      if (kind === 'following') return this.open(packet, null, { sealed: false });
+      if (kind === 'first') return this.accept(packet, false, heard);
+      if (kind === 'following') return this.open(packet, null, { sealed: false, old, heard });
       return { kind: 'refused', reason: 'plain' };
     });
   }
@@ -1899,7 +2076,7 @@ export class E2E {
   // account starts with it, or one of their endpoints (`acct`); each only when it says it is for
   // this device's account (`to`). An account takes none that says either: no list names it, so one
   // that does was meant for an endpoint of someone else's.
-  private async accept(packet: Uint8Array, retry = false): Promise<Received> {
+  private async accept(packet: Uint8Array, retry = false, heard = false): Promise<Received> {
     const id = toHex(await core.firstMessageId(packet)).slice(0, 32);
     if (this.data.seen.includes(id)) return { kind: 'refused', reason: 'replay' };
     const device = this.link?.through === true;
@@ -1913,6 +2090,8 @@ export class E2E {
       return { kind: 'refused', reason: 'unknown' };
     }
     const identity = toHex(await core.conversationPeer(opened.conversation));
+    // Someone blocked here: dropped, kept nowhere, a request too.
+    if (this.isBlocked(identity)) return { kind: 'refused', reason: 'blocked' };
     const message = decodeMessage(opened.plaintext);
     if (device) {
       const account = this.data.own?.identity;
@@ -1928,10 +2107,13 @@ export class E2E {
     // The space's list moves on with every new contact: theirs keeps what they sent.
     if (known?.seen.includes(id)) return { kind: 'refused', reason: 'replay' };
     const timing = timerOf(message, known);
+    // Where they read, unless they said it before from a queue made later (a late copy).
+    const takes = takesPlace(message.qa, known?.qa);
+    const qa = takes && message.qa ? message.qa : known?.qa;
     const contact: Contact = {
       identity,
-      sender: message.from || known?.sender || '',
-      ...(message.from ? placeOf(message) : { relay: known?.relay ?? '', relayKey: known?.relayKey ?? '', spare: known?.spare ?? null }),
+      sender: (takes && message.from) || known?.sender || message.from || '',
+      ...(message.from && takes ? placeOf(message) : { relay: known?.relay ?? '', relayKey: known?.relayKey ?? '', spare: known?.spare ?? null }),
       conversations: [toBase64(opened.conversation), ...(known?.conversations ?? [])].slice(0, MAX_CONVERSATIONS),
       first: known?.first ?? '',
       name: known?.name ?? '',
@@ -1951,7 +2133,10 @@ export class E2E {
       sealTo: message.pk || known?.sealTo || '',
       // A new conversation from them: their phone may have lost this chat's key, so it is said again.
       sealsIn: false,
-      ...(ringSenderOf(message, known) ? { ringSender: ringSenderOf(message, known) } : {}),
+      ...((takes ? ringSenderOf(message, known) : known?.ringSender) ? { ringSender: takes ? ringSenderOf(message, known) : known?.ringSender } : {}),
+      ...(qa ? { qa } : {}),
+      ...(known?.told ? { told: known.told } : {}),
+      ...(heard && this.ownAge ? { onNew: this.ownAge } : known?.onNew ? { onNew: known.onNew } : {}),
       // What is known of their devices stays with them. Added again on their side, saying where
       // they read, their account's devices may have lost what they spoke with this chat's
       // endpoints in: those conversations start again.
@@ -2150,7 +2335,9 @@ export class E2E {
   // contact it was sealed for; unsaid for one a linked device passed on. Tried in the conversations
   // with their account, but on a linked device, which has none, and in those with the endpoints of
   // their account and, on a device, its own way to their account.
-  private async open(packet: Uint8Array, given: { identity: string; plaintext: Uint8Array } | null = null, { only, sealed }: { only?: string; sealed?: boolean } = {}): Promise<Received> {
+  // `old`: one that came unsealed to a queue read cheaply is tried only in those who do not seal yet.
+  // `heard`: it came to this chat's own queue as it is now.
+  private async open(packet: Uint8Array, given: { identity: string; plaintext: Uint8Array } | null = null, { only, sealed, old = false, heard = false }: { only?: string; sealed?: boolean; old?: boolean; heard?: boolean } = {}): Promise<Received> {
     const device = this.link?.through === true;
     const slots: Slot[] = [];
     for (const contact of this.data.contacts) {
@@ -2168,7 +2355,7 @@ export class E2E {
     let triedSealing = false;
     for (const slot of ordered) {
       if (unsealed && sealsIn(slot) && !triedSealing) {
-        if (!this.mayTryUnsealed()) break;
+        if (old || !this.mayTryUnsealed()) break;
         triedSealing = true;
       }
       const conversations = (slot.way ?? slot.contact).conversations;
@@ -2179,7 +2366,7 @@ export class E2E {
         } catch {
           continue;
         }
-        return this.heardIn(slot, i, opened, !!given, sealed);
+        return this.heardIn(slot, i, opened, !!given, sealed, heard);
       }
     }
     return { kind: 'refused', reason: 'unknown' };
@@ -2188,7 +2375,9 @@ export class E2E {
   // What a packet that opened in a contact's conversation (`at`, of `slot`) brings: the
   // conversation kept moved past it, they written to where they read now, the chat's timer if set
   // later, and from their account what they say of devices.
-  private async heardIn({ contact, way }: Slot, at: number, opened: core.Opened, given: boolean, sealed: boolean | undefined): Promise<Received> {
+  // Where they read is taken from it unless they said it before from a queue made later (`qa`): a
+  // late copy of an older message, carried nearby or held, never sends this chat back to it.
+  private async heardIn({ contact, way }: Slot, at: number, opened: core.Opened, given: boolean, sealed: boolean | undefined, heard = false): Promise<Received> {
     const message = decodeMessage(opened.plaintext);
     const timing = timerOf(message, contact);
     const times = { timer: timing.timer, timerAt: timing.timerAt };
@@ -2198,10 +2387,13 @@ export class E2E {
     else if (way) updated = { ...contact, ...times, endpoints: contact.endpoints!.map((w) => (w === way ? heardWay(w, at, opened, message, sealed) : w)) };
     else {
       const others = contact.conversations.filter((_, j) => j !== at);
+      const takes = takesPlace(message.qa, contact.qa);
       updated = {
         ...contact,
-        sender: message.from || contact.sender,
-        ...(message.from ? placeOf(message) : {}),
+        sender: (takes && message.from) || contact.sender,
+        ...(message.from && takes ? placeOf(message) : {}),
+        ...(takes && message.qa ? { qa: message.qa } : {}),
+        ...(heard && this.ownAge ? { onNew: this.ownAge } : {}),
         // Send in the one they last sent in. Their answer also means they have the first packet.
         conversations: [toBase64(opened.conversation), ...others],
         first: '',
@@ -2210,7 +2402,7 @@ export class E2E {
         // Sealed: they have this chat's key, which need not be said any more; unsealed: they may not.
         sealsIn: sealed ?? contact.sealsIn,
         // A ring queue they said: set it, or '' clears it (they no longer ring); absent keeps it.
-        ringSender: message.rf === undefined ? contact.ringSender : message.rf || undefined,
+        ringSender: message.rf === undefined || !takes ? contact.ringSender : message.rf || undefined,
       };
     }
     const account = !given && (!way || direct);

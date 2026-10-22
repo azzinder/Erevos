@@ -74,7 +74,7 @@ export type Envelope =
   | { k: 'out'; c: string; m: Json; mark?: Mark }
   | { k: 'send'; c: string; m: Json }
   | { k: 'add'; code: ContactCode; when?: number }
-  | { k: 'set'; c: string; change: Partial<Omit<Synced, 'identity' | 'at'>>; remove?: boolean; when?: number; added?: true }
+  | { k: 'set'; c: string; change: Partial<Omit<Synced, 'identity' | 'at'>>; remove?: boolean; when?: number; added?: true; del?: Deleted }
   | { k: 'history'; offer: FileOffer; last: boolean }
   | { k: 'took'; ids: string[] }
   | { k: 'call'; id: string; done: 'answered' | 'declined' }
@@ -86,7 +86,12 @@ export type Envelope =
   | { k: 'way'; c: string; dv?: number; list?: DeviceList }
   | { k: 'came'; c: string; got: string[] }
   | { k: 'here' }
+  | { k: 'move' }
   | { k: 'bye' };
+
+/** A contact a device removed by Delete contact (1) or Block contact (2), not from the address book
+ *  only: the phone deletes or blocks them too, and moves its queues (lib/queue-move.ts). */
+export type Deleted = 1 | 2;
 
 /** A member of a group as the primary tells its devices: its place in the group, its identity (empty if not known), and whether it is the account. */
 export type GroupSeat = { leaf: number; id: string; me: boolean };
@@ -278,7 +283,7 @@ function checkedEnvelope(v: Json): Envelope | null {
     case 'set': {
       if (!isHex(v.c, 64)) return null;
       const when = isTime(v.when) ? { when: v.when } : {};
-      if (v.remove === true) return { k: 'set', c: v.c, change: {}, remove: true, ...when };
+      if (v.remove === true) return { k: 'set', c: v.c, change: {}, remove: true, ...when, ...(v.del === 1 || v.del === 2 ? { del: v.del } : {}) };
       const said = isObject(v.change) ? v.change : {};
       const full = checkedSynced({ ...said, identity: v.c });
       if (!full) return null;
@@ -339,6 +344,7 @@ function checkedEnvelope(v: Json): Envelope | null {
       return isHex(v.c, 64) && got.length > 0 ? { k: 'came', c: v.c, got } : null;
     }
     case 'here':
+    case 'move':
     case 'bye':
       return { k: v.k };
     default:

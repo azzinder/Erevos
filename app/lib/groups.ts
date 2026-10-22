@@ -415,6 +415,11 @@ export class Groups {
     return true;
   }
 
+  /** Whether a group is a public one (lib/public-groups.ts), which says a queue of its own. */
+  isPublic(_id: string): boolean {
+    return false;
+  }
+
   /** What this phone says about itself in a group it asks new keys for: what it says in every group now. */
   protected async renewedAbout(_id: string): Promise<Uint8Array> {
     const me = await this.me();
@@ -912,10 +917,52 @@ export class Groups {
     });
   }
 
-  // On the admin's phone: new keys for its own leaf, in a commit that also takes out whoever asked to leave.
+  /**
+   * Has this phone make its keys new, with the next renewKeys, in each private group it is in
+   * (`group`), or each public one: each then says where this phone's group messages come to now
+   * (lib/queue-move.ts), as a member asks the admin with what it says now, and an admin's own
+   * commit says it too, with a core that can (core.canSetGroupAbout).
+   */
+  renewAgain(kind: 'group' | 'public'): Promise<void> {
+    return this.run(async () => {
+      if (!this.data.state || this.through()) return;
+      const due = (g: Group) => g.status === 'in' && this.isPublic(g.id) === (kind === 'public');
+      if (!this.data.groups.some(due)) return;
+      const groups = this.data.groups.map((g) => {
+        if (!due(g)) return g;
+        const { renewing: _renewing, ...rest } = g;
+        return { ...rest, keysAt: 0 };
+      });
+      await this.save({ ...this.data, groups });
+    });
+  }
+
+  /** The queues this phone says its group messages come to, in its own leaf of each group it is in, by sender id. */
+  ownSenders(): Promise<Set<string>> {
+    return this.run(async () => {
+      const senders = new Set<string>();
+      if (!this.data.state || this.through()) return senders;
+      for (const g of this.data.groups) {
+        if (g.status === 'out') continue;
+        try {
+          const json = JSON.parse(utf8Decode(await core.group.members(this.kept(), fromHex(g.id)))) as { own: number; members: { leaf: number; about: string }[] };
+          const mine = json.members.find((m) => m.leaf === json.own);
+          const sender = mine ? (JSON.parse(mine.about) as { sender?: unknown }).sender : undefined;
+          if (typeof sender === 'string') senders.add(sender);
+        } catch {
+          // A group the core no longer has, or a leaf that is not what an Erevos says.
+        }
+      }
+      return senders;
+    });
+  }
+
+  // On the admin's phone: new keys for its own leaf, in a commit that also takes out whoever asked
+  // to leave, saying where this phone's group messages come to now when the core can.
   private async selfUpdate(id: string, transport: GroupTransport) {
     const before = await this.membersIn(id);
-    const made = await core.groupKeys.selfUpdate(this.kept(), fromHex(id));
+    const about = core.canSetGroupAbout() ? await this.renewedAbout(id) : undefined;
+    const made = await core.groupKeys.selfUpdate(this.kept(), fromHex(id), about);
     const { renewing: _, ...group } = this.find(id)!;
     await this.save({ ...this.withGroup({ ...group, keysAt: Date.now() }), state: toBase64(made.state) });
     // Everyone who was in, those taken out too.

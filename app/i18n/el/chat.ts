@@ -44,7 +44,6 @@ export const chat: Record<string, string> = {
   '{number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.': 'Το {number} έχει Erevos. Τα μηνύματα προς αυτόν τον αριθμό πηγαίνουν πλέον μέσω Erevos, κρυπτογραφημένα από άκρη σε άκρη.',
   '{number} has Erevos and is now a contact. Messages to that number go through Erevos.': 'Το {number} έχει Erevos και είναι πλέον επαφή. Τα μηνύματα προς αυτόν τον αριθμό πηγαίνουν μέσω Erevos.',
   'The relay answers again.': 'Το relay απαντά ξανά.',
-  'The relay had lost your queue, so a new one was made. Your contacts learn it from your next message to them.': 'Το relay είχε χάσει την ουρά σου, οπότε φτιάχτηκε νέα. Οι επαφές σου τη μαθαίνουν από το επόμενο μήνυμά σου προς αυτές.',
   'A message that was not end-to-end encrypted came, and was not shown.': 'Ήρθε ένα μήνυμα που δεν ήταν κρυπτογραφημένο από άκρη σε άκρη, και δεν εμφανίστηκε.',
   'A voice message came but could not be kept. {error}': 'Ήρθε ένα φωνητικό μήνυμα, αλλά δεν μπόρεσε να κρατηθεί. {error}',
   '{name} set new messages in this chat to disappear {time} after they are read.': 'Ο/η {name} όρισε τα νέα μηνύματα αυτής της συνομιλίας να εξαφανίζονται {time} αφού διαβαστούν.',

@@ -112,6 +112,12 @@ export type DevicesData = {
   /** On a linked device: when each contact was removed, by identity, and the tags erased in each chat, by its peer, so a late word of them does not bring them back. */
   removed?: Record<string, number>;
   erased?: Record<string, string[]>;
+  /** On the primary, after its own queue moved for a contact deleted or blocked (lib/devices.ts
+   *  movedFor): since when a new device list is due, signed at most once an hour (`resignedAt`, when
+   *  the last was), and until when a device's new place is one it was asked to move to (`moving`). */
+  resign?: number;
+  resignedAt?: number;
+  moving?: number;
   /** Set in every file saved since packets said what they carry: in one from before (0.1.16), what
    *  waited for a device was kept with no marks, and goes with none (lib/relay.ts, Mark). */
   marked?: true;
@@ -249,6 +255,9 @@ function checked(value: unknown): DevicesData {
     ...(siblings ? { siblings } : {}),
     ...(Object.keys(removed).length > 0 ? { removed } : {}),
     ...(Object.keys(erased).length > 0 ? { erased } : {}),
+    ...(isTime(v.resign) && v.resign > 0 ? { resign: v.resign } : {}),
+    ...(isTime(v.resignedAt) && v.resignedAt > 0 ? { resignedAt: v.resignedAt } : {}),
+    ...(isTime(v.moving) && v.moving > 0 ? { moving: v.moving } : {}),
     marked: true,
   };
 }

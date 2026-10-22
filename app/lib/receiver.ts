@@ -1,5 +1,6 @@
 import { newTag, type Message } from '../lock/history';
-import { loadCurrentSpaceData, updateCurrentSpaceData, type Queue } from '../lock/space-data';
+import type { QueueKind } from '../lock/queues-data';
+import { loadCurrentSpaceData, type Queue } from '../lock/space-data';
 import { saveClip } from '../lock/voice-clips';
 import { offerRef } from './attachments';
 import { contentOf } from './chat-parts';
@@ -10,24 +11,25 @@ import { nearby } from './nearby';
 import {
   canWaitAt,
   carryTo,
-  createQueue,
   fromHex,
   isQueueNotFound,
   receiveMessage,
   relayKey,
+  sameRelay,
   sendMessage,
-  toHex,
   waitForMessage,
   type Relay,
 } from './relay';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
 import { isGroupPacket } from './groups';
 import { showsAt } from './later';
+import { linkOf, spaceMover, tookOf, type Took } from './queue-move';
 import { contactTarget, relayFor, sendSealed, spaceChats, type SpaceChats } from './space-chats';
 import { lookAtSpare, spareBackup } from './spare';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 import { nextDue, sendWaiting, type SendPlace } from './waiting';
 import { keepPush } from './web-push';
+import { t } from './i18n';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
 // itself while it is open, and holds this meanwhile (holdReceiver). Otherwise this looks at the
@@ -97,8 +99,14 @@ export function onAppShown(listener: (shown: boolean) => void): () => void {
   return () => shownListeners.delete(listener);
 }
 
+// The waits ended from outside, not by what came.
+const ended = new WeakSet<AbortController>();
+
 function endWaits() {
-  waits.forEach((wait) => wait.abort());
+  waits.forEach((wait) => {
+    ended.add(wait);
+    wait.abort();
+  });
   waits.clear();
 }
 
@@ -122,19 +130,24 @@ function lookWhenDue(at: number) {
 }
 
 /**
- * While Erevos is in the background, waits at the relay until something comes for the queue, or a
- * while: then a look takes it. Says whether it waited; false at once while the app shows, at a
- * relay that cannot wait, or once the wait was ended. Throws when the relay cannot be reached.
+ * While Erevos is in the background, waits at the relay until something comes for the queue, or
+ * for one of `others` (the groups' queue, lib/queue-move.ts), or a while: then a look takes it.
+ * Says whether it waited; false at once while the app shows, at a relay that cannot wait, or once
+ * the wait was ended. Throws when the relay cannot be reached.
  */
-export async function waitWhileAway(relay: Relay, recipient: Uint8Array): Promise<boolean> {
+export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others: Uint8Array[] = []): Promise<boolean> {
   if (shows || !canWaitAt(relay)) return false;
   const wait = new AbortController();
   waits.add(wait);
   try {
-    await waitForMessage(relay, recipient, WAIT_FOR, wait.signal);
-    return !wait.signal.aborted && canWaitAt(relay);
+    // The first that answers ends the others.
+    const each = [recipient, ...others].map((r) => waitForMessage(relay, r, WAIT_FOR, wait.signal).finally(() => wait.abort()));
+    for (const one of each) one.catch(() => undefined);
+    await Promise.race(each);
+    return canWaitAt(relay) && !ended.has(wait);
   } finally {
     waits.delete(wait);
+    ended.delete(wait);
   }
 }
 
@@ -355,26 +368,26 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   watchCopies(chats.e2e);
   await sendCopies(chats.e2e, place.sends).catch(() => 0);
   // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
-  void nearby.uploadCarried((url, sealed, mark) => carryTo(place.sends, url, sealed, mark)).catch(() => undefined);
+  const sends = place.sends;
+  void nearby.uploadCarried((url, sealed, mark) => carryTo(sends, url, sealed, mark)).catch(() => undefined);
   // An SMS invite sent from the SMS screen since: its answer may be on its way.
   await refreshSmsLink().catch(() => undefined);
   let changed = false;
   const here = place;
-  // One message from our queue, or from the backup queue.
-  const take = async (bytes: Uint8Array) => {
+  const mover = spaceMover(chats);
+  // One message from our queue (`own`), from one of the others (`old`, lib/queue-move.ts), or from
+  // the backup queue: what it was to the junk meter.
+  const take = async (bytes: Uint8Array, kind?: QueueKind | 'old'): Promise<Took> => {
     // A group's message (lib/groups.ts): the group screens hear of it themselves.
-    if (isGroupPacket(bytes)) {
-      await takeGroupPacket(bytes).catch(() => undefined);
-      return;
-    }
+    if (isGroupPacket(bytes)) return { junk: !(await takeGroupPacket(bytes).catch(() => true)) };
     // Taken from the relay, so kept whatever happens meanwhile.
     try {
       // An answer to an SMS invite sent from here: a new contact, linked to the number.
       if (await takeInviteAnswer(chats.e2e, bytes, here.queue.senderHex, here.here).catch(() => null)) {
         changed = true;
-        return;
+        return { junk: false };
       }
-      let received = await chats.e2e.receive(bytes);
+      let received = await chats.e2e.receive(bytes, kind === 'own' ? { onOwn: true } : { old: kind !== undefined });
       // Someone whose SMS invite was answered here: no message request.
       if (received.kind === 'message' && received.added && (await linkInviter(chats.e2e, received.identity).catch(() => null))) {
         received = { ...received, request: false };
@@ -383,39 +396,57 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
       changed = (await keep(chats, received, state)) || changed;
       if (came) messageListeners.forEach((listener) => listener(came));
       if (received.kind === 'message' && received.group) await takeGroupSignal(received.identity, received.group, received.request).catch(() => undefined);
+      return tookOf(received);
     } catch {
       // This one is lost, as in the chat; the next ones still come.
+      return { junk: false };
     }
   };
   const recipient = fromHex(place.queue.recipientHex);
+  const queues = await mover.queues().catch(() => null);
+  // In the background, what comes to the groups' queue wakes the look too.
+  const others = queues?.group && sameRelay(queues.group.url, place.own.url) ? [fromHex(queues.group.queue.recipientHex)] : [];
   let failed: unknown = null;
+  const found = { taken: 0, junk: 0 };
   state.waited = false;
   try {
-    if (!stop()) state.waited = await waitWhileAway(place.own, recipient);
+    if (!stop()) state.waited = await waitWhileAway(place.own, recipient, others);
     for (let i = 0; i < BATCH && !stop(); i++) {
       const bytes = await receiveMessage(place.own, recipient);
       if (!bytes) break;
-      await take(bytes);
+      found.taken++;
+      if ((await take(bytes, 'own')).junk) found.junk++;
     }
   } catch (error) {
     failed = error;
   }
   state.failures = failed ? state.failures + 1 : 0;
   // What came to the backup queue, whether or not our relay answered.
-  await lookAtSpare(chats.e2e, take, stop).catch(() => undefined);
+  await lookAtSpare(chats.e2e, (bytes) => take(bytes).then(() => undefined), stop).catch(() => undefined);
   // Our relay could not be reached: tried again with the next look. What came to the backup
   // queue still goes on, and so do the receipts, through the backup relay.
   if (failed && isQueueNotFound(failed)) {
-    // The relay no longer has our queue: a new one, which contacts learn from our next message.
-    const ids = await createQueue(place.own);
-    const queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
-    await updateCurrentSpaceData({ ownQueue: queue });
+    // The relay no longer has our queue: a new one, which contacts are told quietly.
+    const queue = await mover.lost(place.own);
+    if (!queue) return changed;
     state.place = { ...place, queue };
-    void keepPush(place.own, queue);
     if (state.place.keyAsked) lastPlace = state.place;
+    mover.hold([t('The relay had lost your queue, so you have a new one. Your contacts are told quietly.')]);
     return changed;
   }
-  await answerInvites(chats.e2e, place.queue.senderHex, place.here, place.sends).catch(() => undefined);
+  if (!failed && !stop()) {
+    const moved = await mover
+      .look({ own: place.own, found, take, tell: (identity) => tell(chats, here, identity, {}), shows, stop })
+      .catch(() => null);
+    if (moved?.queue) {
+      place = { ...place, queue: moved.queue };
+      state.place = place;
+      if (place.keyAsked) lastPlace = place;
+    }
+    if (moved) mover.hold(moved.notes);
+  }
+  const link = queues ? linkOf(queues, place.queue).senderHex : place.queue.senderHex;
+  await answerInvites(chats.e2e, link, place.here, place.sends).catch(() => undefined);
   // What waited to go, now that the relay answers (lib/waiting.ts).
   if (!failed && (await sendWaiting(chats, sendPlace(place, true)).catch(() => [])).length > 0) changed = true;
   lookWhenDue(nextDue(chats.history));

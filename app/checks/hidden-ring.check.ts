@@ -20,7 +20,8 @@ import { setHiddenRinging } from '../lib/hidden-ring';
 import { startHiddenRinging } from '../lib/hidden-ring-notices';
 import { setAppShown } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
-import { isRingedQueue, loadRinged, prepareRingEntries, ringPocket, unringPocket } from '../lock/hidden-ring';
+import { isQueueNotFound } from '../lib/relay';
+import { isRingedQueue, loadRinged, moveRingPocket, prepareRingEntries, ringPocket, unringPocket } from '../lock/hidden-ring';
 import { newSpaceKey, setCurrentSpace } from '../lock/keys';
 import { POCKETS } from '../lock/sealed-file';
 import { updateCurrentSpaceData } from '../lock/space-data';
@@ -71,6 +72,26 @@ test('every space has the entry, of one size whether its pockets ring or not', {
   const after = await unringPocket(0, key, 2, { url });
   assert.ok(after[2] && !isRingedQueue(after, 2, toHex(ids.recipientId)));
   assert.deepEqual(after.slice(0, 2), list.slice(0, 2));
+});
+
+test('a place that moves for a deletion gets a new ring queue, the old one gone at once, the other pockets as they were', { skip: !relayReady }, async () => {
+  store.clear();
+  await prepareRingEntries();
+  const unused = store.get('erevos.ring.0')!.length;
+  const url = await startRelay();
+  const key = newSpaceKey();
+  const ids = await createQueue({ url });
+  const own = { url, token: '', recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  const list = await ringPocket(0, key, 1, own);
+  const made = await moveRingPocket(0, key, 1, { url }, own.recipientHex);
+  const after = await loadRinged(0, key);
+  assert.ok(isRingedQueue(after, 1, made.recipientHex));
+  assert.notEqual(made.senderHex, own.senderHex);
+  assert.deepEqual([after[0], after[2], after[3]], [list[0], list[2], list[3]]);
+  assert.equal(store.get('erevos.ring.0')!.length, unused);
+  // The one deleted can no longer ring: the relay has no such queue.
+  await assert.rejects(sendMessage({ url }, fromHex(own.senderHex), randomBytes(64)), (error) => isQueueNotFound(error));
+  await sendMessage({ url }, fromHex(made.senderHex), randomBytes(64));
 });
 
 test('in the background a pocket rings when a call comes, drained so the next rings too, let be while a hidden call rings or its place is open, and ringing on any of the four queues and though the app shows', { skip: !relayReady }, async () => {

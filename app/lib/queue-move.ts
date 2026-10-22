@@ -1,0 +1,608 @@
+import { currentSpace } from '../lock/keys';
+import { spaceQueues, type KeptQueue, type OldQueue, type QueueKind, type QueuesData, type QueuesStore } from '../lock/queues-data';
+import type { Queue, SpaceData } from '../lock/space-data';
+import { packetKind } from './core';
+import type { E2E, Received } from './e2e';
+import { isGroupPacket } from './groups';
+import { locale, t } from './i18n';
+import { GRACE, HEAL_EVERY, JunkMeter, graceOver, junkStep, queueAge, withOld, type Look } from './moves';
+import { createQueue, deleteQueue, fromHex, isQueueNotFound, receiveMessage, sameRelay, toHex, type Relay } from './relay';
+import { isSealedPacket } from './sealed-packet';
+import { joinSpaceChats, type SpaceChats } from './space-chats';
+import { forgetSpare, readySpare, spareSaid, spaceSpare, type SpareStore } from './spare';
+
+// A space's own relay queue, or a hidden place's, moves to a new one when a contact is deleted or
+// blocked there, when junk fills it, and when the relay lost it or another relay is set: so the one
+// deleted or blocked, or whoever sent the junk, can no longer write to it (docs/threat-model.md).
+// On the same relay, with the space's token and Tor setting. The own queue's sender id is in no
+// link and no group: only in the `from` of each message (lib/e2e.ts), with when it was made (`qa`,
+// lib/moves.ts queueAge), so each kept contact is told the new one in a quiet message with nothing
+// in it, again 7, 14 and 21 days later while not heard on it, and at once when heard on an old one.
+//
+// The contact link names a queue of its own (`link`), which a delete or block leaves alone: the
+// first move makes the own queue as it was the link's, so every link and QR code given before
+// keeps working. It moves only for junk on it, or New contact link. The space's groups say a queue
+// of their own (`group`, lib/space-groups.ts), and its public groups another (`public`), each made
+// with the first look of this version, used or not, so every space shows the same set. A hidden
+// place has neither, as it has no groups. Each queue moved away from is read cheaply for GRACE
+// (lib/e2e.ts receive with `old`), or until every kept contact was heard on a later one, then
+// emptied and deleted; a group's once no group says it. All of it is kept in the queues entry
+// (lock/queues-data.ts); what is kept of each contact, with the contact (lock/e2e-data.ts).
+//
+// Each look of the chat screen, or of the receiver beside the other screens (lib/receiver.ts),
+// hands this what it found on the own queue, then this reads the others: the groups' with every
+// look, the rest every READ_EVERY while the app shows, and with every look in the background.
+
+const READ_EVERY = 10;
+// Packets taken from one of the other queues in one look, at most, and of them first packets
+// (requests, contact asks) and group packets; the rest are dropped unopened.
+const READ_MOST = 20;
+const OLD_FIRSTS = 3;
+const LINK_FIRSTS = 5;
+const OLD_GROUPS = 10;
+// An old queue is emptied before it is deleted: the relay holds this many at most (MAX_QUEUED).
+const DRAIN_MOST = 1000;
+// Kept contacts told in one look, at most, and how long one that could not be told waits.
+const TELLS_EACH = 20;
+const TELL_RETRY = 60_000;
+// How often the groups are asked which queues they say.
+const NAMED_EVERY = 60 * 60_000;
+
+/** What one packet that came to a queue was: junk (lib/moves.ts) or not, and the kept contact it came from, if it came from one. */
+export type Took = { junk: boolean; from?: string };
+
+/** Takes one packet from one of the queues, as the look takes one from the own queue: `old` for any but the own, read cheaply. */
+export type Take = (bytes: Uint8Array, kind: QueueKind | 'old') => Promise<Took>;
+
+/** What a packet the chat opened (or refused) is to the junk meter: not junk when it opened, when it
+ *  was a kept contact's though it opened in none of their conversations, a replay, or a word between
+ *  this account's devices. */
+export function tookOf(received: Received): Took {
+  if (received.kind === 'message') return { junk: false, ...(received.request ? {} : { from: received.identity }) };
+  return { junk: !received.theirs && (received.reason === 'unknown' || received.reason === 'plain' || received.reason === 'blocked') };
+}
+
+/** The space's groups, as a move needs them. */
+export type MoveGroups = {
+  /** Has each private group (`group`), or each public one, say where this phone reads now, as it renews its keys there (lib/groups.ts). */
+  renewAgain(kind: 'group' | 'public'): Promise<void>;
+  /** The queues the groups say this phone reads on, in its own leaf, by sender id. */
+  named(): Promise<Set<string>>;
+};
+
+/** Where a move happens: the space, or a hidden place. */
+export type MoveAt = {
+  e2e: E2E;
+  queues: QueuesStore;
+  /** Its settings (SpaceData), the own queue among them, and its backup relay (lib/spare.ts). */
+  data: SpareStore;
+  /** The space's groups; none in a hidden place. */
+  groups?: MoveGroups;
+  /** The web app's push address for a queue made, and none for one left (lib/web-push.web.ts): the space's only. */
+  push?: { keep(own: Relay, queue: Queue): Promise<void>; drop(own: Relay, queue: Queue): Promise<void> };
+  /** What moves with the own queue besides, and why it moved: a hidden place's ring queue and slots, a phone's linked devices. */
+  moved?: (queue: Queue, old: Queue | null, why: MoveWhy) => Promise<void>;
+};
+
+/** One look, as the chat screen or the receiver made it. */
+export type MoveLook = {
+  /** The space's relay, straight, with its token: where queues are made, read and deleted. */
+  own: Relay;
+  /** What the look found on the own queue. */
+  found: Look;
+  take: Take;
+  /** Tells a kept contact where this chat reads now: a quiet message with nothing in it. Throws when it did not go. */
+  tell: (identity: string) => Promise<void>;
+  /** Whether the app shows: the other queues are read less often then. */
+  shows: boolean;
+  stop?: () => boolean;
+};
+
+/** What a look did: the own queue it moved to, if it moved, and what to say. */
+export type MoveNews = { queue: Queue | null; notes: string[] };
+
+type Here = { url: string; token: string };
+// Why the own queue moves: a deletion or block, junk on it, the relay lost it, or a new contact link.
+type Why = 'due' | 'junk' | 'lost' | 'link';
+
+/** Why the own queue moved: a contact deleted or blocked (`due`), junk on it, the relay lost it, a new contact link, or it was made elsewhere (another relay, or by hand). */
+export type MoveWhy = Why | 'elsewhere';
+
+const same = (a: KeptQueue | null | undefined, queue: Queue) => !!a && a.queue.recipientHex === queue.recipientHex;
+const queueOf = (ids: { recipientId: Uint8Array; senderId: Uint8Array }): Queue => ({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
+const relayOf = (k: Here): Relay => ({ url: k.url, token: k.token || undefined });
+
+/** The queue the contact link names: the link's own, or the own queue while it is the link's. */
+export function linkOf(queues: QueuesData, own: Queue): Queue {
+  return queues.link?.queue ?? own;
+}
+
+// Whether a packet starts a conversation: a request, or a contact's new one. A sealed one never does.
+async function isFirst(bytes: Uint8Array): Promise<boolean> {
+  if (isSealedPacket(bytes) || isGroupPacket(bytes)) return false;
+  return (await packetKind(bytes).catch(() => 'none')) === 'first';
+}
+
+// The queues once the own queue moved to `next` (`why`), at `now`: the one before goes with its
+// grace, or, on the first move, stays the one the contact link names; one the relay lost goes. A
+// linked device names its queue in no link (`device`): its old one only goes with its grace.
+function finished(d: QueuesData, next: Queue, here: Here, why: Why, now: number, device = false): { data: QueuesData; early: OldQueue[] } {
+  const moved = queueAge(d.moved, now);
+  const kept = { queue: next, ...here };
+  const old = d.now;
+  if (!old || same(old, next) || why === 'lost') return { data: { ...d, now: kept, next: null, moved }, early: [] };
+  if (!d.link && why !== 'link' && !device && sameRelay(old.url, here.url)) return { data: { ...d, now: kept, link: old, next: null, moved }, early: [] };
+  const gone: OldQueue = why === 'link' ? { ...old, kind: 'link', until: now + GRACE } : { ...old, kind: 'own', until: now + GRACE, by: moved };
+  const { was, early } = withOld(d.was, gone);
+  return { data: { ...d, now: kept, was, next: null, moved, ...(why === 'link' ? { linkAt: now, linkUntil: now + GRACE } : {}) }, early };
+}
+
+// The queues once the own queue was made elsewhere: on another relay, where the link's and the
+// groups' go with it, made anew there; or on the same relay by hand, as a move.
+function elsewhere(d: QueuesData, own: Queue, here: Here, now: number, device = false): { data: QueuesData; early: OldQueue[] } {
+  const moved = queueAge(d.moved, now);
+  const kept = { queue: own, ...here };
+  const old = d.now!;
+  let was = d.was;
+  const early: OldQueue[] = [];
+  const add = (k: KeptQueue | null, kind: QueueKind, by?: number) => {
+    if (!k) return;
+    const made = withOld(was, { ...k, kind, until: now + GRACE, ...(by ? { by } : {}) });
+    was = made.was;
+    early.push(...made.early);
+  };
+  if (!sameRelay(old.url, here.url)) {
+    add(old, 'own', moved);
+    add(d.link, 'link');
+    add(d.group, 'group');
+    add(d.public, 'public');
+    return { data: { ...d, now: kept, link: null, group: null, public: null, was, next: null, moved }, early };
+  }
+  if (!d.link && !device) return { data: { ...d, now: kept, link: old, next: null, moved }, early };
+  add(old, 'own', moved);
+  return { data: { ...d, now: kept, was, next: null, moved }, early };
+}
+
+export class QueueMove {
+  private readonly meter = new JunkMeter();
+  private looks = 0;
+  // When each kept contact heard on an old queue was last told the new one, and when a tell that
+  // did not go may be tried again. Only in memory.
+  private readonly healed = new Map<string, number>();
+  private readonly failed = new Map<string, number>();
+  private named: { at: number; senders: Set<string> | null } | null = null;
+  // Old queues over the most kept, to empty and delete with the next look.
+  private early: OldQueue[] = [];
+  // What the receiver's looks had to say, for the chat screen to say once it opens.
+  private notes: string[] = [];
+  private turn: Promise<unknown> = Promise.resolve();
+
+  private readonly at: MoveAt;
+
+  constructor(at: MoveAt) {
+    this.at = at;
+  }
+
+  private run<T>(call: () => Promise<T>): Promise<T> {
+    const next = this.turn.catch(() => undefined).then(call);
+    this.turn = next;
+    return next;
+  }
+
+  /** The queues as kept. */
+  queues(): Promise<QueuesData> {
+    return this.at.queues.load();
+  }
+
+  /** Keeps what a look had to say while no screen could, to be said later (`said`). */
+  hold(notes: string[]): void {
+    this.notes = [...this.notes, ...notes].slice(-4);
+  }
+
+  /** What was kept to say, once. */
+  said(): string[] {
+    const notes = this.notes;
+    this.notes = [];
+    return notes;
+  }
+
+  /** One look: what it found on the own queue counted, a move made if one is due, kept contacts told, the other queues read. */
+  look(look: MoveLook): Promise<MoveNews> {
+    return this.run(() => this.lookNow(look));
+  }
+
+  /** The relay no longer has the own queue: a new one, which kept contacts are told. Null when it cannot be made now. */
+  lost(own: Relay): Promise<Queue | null> {
+    return this.run(async () => {
+      const space = await this.at.data.load();
+      const url = space.url.trim();
+      if (!url) return null;
+      const started = Date.now();
+      const ids = await createQueue(own).catch(() => null);
+      return ids ? this.settle(queueOf(ids), { url, token: space.token.trim() }, 'lost', started, own) : null;
+    });
+  }
+
+  /** A deletion or block just made: the move now, rather than with the next look. Says the own queue it moved to, or null with none due; throws when the relay cannot be reached. */
+  moveNow(own: Relay): Promise<Queue | null> {
+    return this.run(async () => {
+      if (this.at.e2e.moveDue() <= 0) return null;
+      const space = await this.at.data.load();
+      const url = space.url.trim();
+      if (!url || !space.ownQueue) return null;
+      const here = { url, token: space.token.trim() };
+      await this.reconcile(space, here, own);
+      const started = Date.now();
+      const ids = await createQueue(own);
+      return this.settle(queueOf(ids), here, 'due', started, own);
+    });
+  }
+
+  /**
+   * A new contact link: the queue the link names moves, and the one before is read until its grace
+   * ends, so the links and QR codes given before work until then. While the own queue is the link's,
+   * it moves itself, and kept contacts are told. Says until when the ones before work, and the own
+   * queue it moved to, if it did; throws when the relay cannot be reached.
+   */
+  newLink(own: Relay): Promise<{ until: number; queue: Queue | null }> {
+    return this.run(async () => {
+      const space = await this.at.data.load();
+      const url = space.url.trim();
+      if (!url || !space.ownQueue) throw new Error(t('Create your relay queue first, under Relay and new contacts.'));
+      const here = { url, token: space.token.trim() };
+      const { q } = await this.reconcile(space, here, own);
+      const started = Date.now();
+      const ids = await createQueue(own);
+      if (!q.link) return { until: started + GRACE, queue: await this.settle(queueOf(ids), here, 'link', started, own) };
+      await this.linkTo(queueOf(ids), here, started);
+      return { until: started + GRACE, queue: null };
+    });
+  }
+
+  private async lookNow(look: MoveLook): Promise<MoveNews> {
+    const notes: string[] = [];
+    const now = Date.now();
+    const space = await this.at.data.load();
+    const url = space.url.trim();
+    if (!url || !space.ownQueue) return { queue: null, notes };
+    const here = { url, token: space.token.trim() };
+    const e2e = this.at.e2e;
+    let { q, queue } = await this.reconcile(space, here, look.own);
+    let own = queue ?? space.ownQueue;
+    // Due since a contact was deleted or blocked: tried with every look until the relay answers.
+    if (e2e.moveDue() > 0) {
+      const ids = await createQueue(look.own).catch(() => null);
+      if (ids) own = queue = await this.settle(queueOf(ids), here, 'due', now, look.own);
+    }
+    // Junk on the own queue, as the look found it.
+    if (this.meter.look(`own:${own.recipientHex}`, look.found, now)) {
+      q = await this.at.queues.load();
+      const step = junkStep(q, 'own', e2e.putBackAt(), now);
+      if (step === 'move') {
+        const ids = await createQueue(look.own).catch(() => null);
+        if (ids) {
+          own = queue = await this.settle(queueOf(ids), here, 'junk', now, look.own);
+          await this.at.queues.update((d) => ({ ...d, junk: { ...d.junk, own: now } }));
+          notes.push(t('Junk filled your relay queue, so Erevos gave you a new one and told your contacts. Whoever sent it does not know the new one.'));
+        }
+      } else if (step === 'say') {
+        await this.at.queues.update((d) => ({ ...d, junkSaid: { ...d.junkSaid, own: now } }));
+        notes.push(t('Junk comes to your new queue too, so one of your contacts or the relay sends it. Erevos does not change it again before tomorrow.'));
+      }
+    }
+    q = await this.at.queues.load();
+    // A linked device is in no group itself: the phone is, for it.
+    if (this.at.groups && !e2e.onLinkedDevice()) q = await this.makeGroupQueues(q, look.own, here);
+    await this.tellAll(q, look);
+    // The other queues: the groups' with every look, the rest less often while the app shows.
+    this.looks++;
+    const all = !look.shows || this.looks % READ_EVERY === 1;
+    for (const kind of all ? (['group', 'link', 'public'] as const) : (['group'] as const)) {
+      const kept = q[kind];
+      if (!kept || look.stop?.()) continue;
+      const found = await this.read(look.own, kept.queue, kind, false, look);
+      if (found === 'gone') {
+        // The relay lost it: a link names the own queue again; the groups' are made anew.
+        await this.at.queues.update((d) => (same(d[kind], kept.queue) ? { ...d, [kind]: null } : d));
+        continue;
+      }
+      if (!found || !this.meter.look(`${kind}:${kept.queue.recipientHex}`, found, now)) continue;
+      const step = junkStep(await this.at.queues.load(), kind, e2e.putBackAt(), now);
+      if (step !== 'move') continue;
+      const ids = await createQueue(look.own).catch(() => null);
+      if (!ids) continue;
+      if (kind === 'link') {
+        await this.linkTo(queueOf(ids), here, now);
+        notes.push(t('Junk filled the queue your contact link names, so you have a new link. The links and QR codes you gave before work until {date}.', { date: new Date(now + GRACE).toLocaleDateString(locale()) }));
+      } else await this.groupsTo(kind, queueOf(ids), here, look.own, now);
+      await this.at.queues.update((d) => ({ ...d, junk: { ...d.junk, [kind]: now } }));
+    }
+    if (all) await this.readOld(look, now);
+    return { queue, notes };
+  }
+
+  // The queues as kept, set right with what the space says now: as the first look of this version
+  // found them; a move the app stopped in finished; an own queue made elsewhere taken as a move.
+  private async reconcile(space: SpaceData, here: Here, own: Relay): Promise<{ q: QueuesData; queue: Queue | null }> {
+    const e2e = this.at.e2e;
+    const ownQueue = space.ownQueue!;
+    const restore = e2e.restoreId();
+    let q = await this.at.queues.load();
+    if (!q.now) {
+      // Every contact knows the queue found now: nothing to tell of it.
+      q = await this.at.queues.update((d) => {
+        if (d.now) return d;
+        const moved = queueAge(d.moved);
+        return { ...d, now: { queue: ownQueue, ...here }, moved, since: moved, restore };
+      });
+      e2e.setQueueAge(q.moved, q.now?.queue.senderHex);
+      return { q, queue: null };
+    }
+    if (q.next) {
+      const queue = await this.settle(q.next, here, 'due', Date.now(), own);
+      return { q: await this.at.queues.load(), queue };
+    }
+    if (!same(q.now, ownQueue)) {
+      // One moved away from, written back by what held it before: the one it moved to again.
+      if (sameRelay(q.now.url, here.url) && (q.was.some((w) => same(w, ownQueue)) || same(q.link, ownQueue))) {
+        await this.at.data.update({ ownQueue: q.now.queue });
+        e2e.setQueueAge(q.moved, q.now?.queue.senderHex);
+        return { q, queue: q.now.queue };
+      }
+      const old = q.now;
+      q = await this.at.queues.update((d) => {
+        const made = elsewhere(d, ownQueue, here, Date.now(), e2e.onLinkedDevice());
+        this.early.push(...made.early);
+        return made.data;
+      });
+      e2e.setQueueAge(q.moved, q.now?.queue.senderHex);
+      await this.after(ownQueue, old, here, own, 'elsewhere');
+      return { q, queue: null };
+    }
+    if (q.now.url !== here.url || q.now.token !== here.token) q = await this.at.queues.update((d) => ({ ...d, now: { queue: ownQueue, ...here } }));
+    // A backup put back since: contacts may have learned a later queue meanwhile, so this one says a later `qa`.
+    if (q.restore !== restore) q = await this.at.queues.update((d) => ({ ...d, moved: queueAge(d.moved), restore }));
+    e2e.setQueueAge(q.moved, q.now?.queue.senderHex);
+    return { q, queue: null };
+  }
+
+  // The move's writes, each of which a stop after resumes from: `next` first, then the space's own
+  // queue, then the queues as they are after it. What was due by `started` is no more.
+  private async settle(next: Queue, here: Here, why: Why, started: number, own: Relay): Promise<Queue> {
+    const before = await this.at.queues.update((d) => ({ ...d, next }));
+    const old = same(before.now, next) ? null : before.now;
+    await this.at.data.update({ ownQueue: next });
+    const done = await this.at.queues.update((d) => {
+      const made = finished(d, next, here, why, Date.now(), this.at.e2e.onLinkedDevice());
+      this.early.push(...made.early);
+      return made.data;
+    });
+    this.at.e2e.setQueueAge(done.moved, next.senderHex);
+    await this.at.e2e.moveDone(started);
+    await this.after(next, old, here, own, why);
+    return next;
+  }
+
+  // What moves with the own queue: the backup queue on the home relay (not for one made on another
+  // relay), the web app's pushes, and what the place or the phone moves besides.
+  private async after(next: Queue, old: KeptQueue | null, here: Here, own: Relay, why: MoveWhy) {
+    if (why !== 'lost' && why !== 'elsewhere') await this.moveSpare().catch(() => undefined);
+    if (this.at.push) {
+      await this.at.push.keep(own, next).catch(() => undefined);
+      if (old && sameRelay(old.url, here.url)) await this.at.push.drop(own, old.queue).catch(() => undefined);
+    }
+    if (old) this.meter.forget(`own:${old.queue.recipientHex}`);
+    await this.at.moved?.(next, old?.queue ?? null, why).catch(() => undefined);
+  }
+
+  // The backup queue moves on the home relay: the one before is read through its grace there.
+  private async moveSpare() {
+    const store = this.at.data;
+    const { spare } = await store.load();
+    if (!spare.url.trim() || !spare.queue) return;
+    const was: OldQueue = { queue: spare.queue, url: spare.url.trim(), token: spare.token.trim(), kind: 'spare', until: Date.now() + GRACE };
+    await this.at.queues.update((d) => {
+      const made = withOld(d.was, was);
+      this.early.push(...made.early);
+      return { ...d, was: made.was };
+    });
+    await store.update({ spare: { ...spare, queue: null } });
+    forgetSpare(store);
+    await readySpare(store).catch(() => false);
+    this.at.e2e.setSpare(spareSaid(store));
+  }
+
+  // The contact link names `queue` from now on; the one before it is read through its grace.
+  private async linkTo(queue: Queue, here: Here, now: number) {
+    await this.at.queues.update((d) => {
+      const made = d.link ? withOld(d.was, { ...d.link, kind: 'link', until: now + GRACE }) : { was: d.was, early: [] };
+      this.early.push(...made.early);
+      return { ...d, link: { queue, ...here }, was: made.was, linkAt: now, linkUntil: now + GRACE };
+    });
+  }
+
+  // The groups' queue, or the public groups', is `queue` from now on: each group is told it as this
+  // phone renews its keys there, and the one before is read until no group says it.
+  private async groupsTo(kind: 'group' | 'public', queue: Queue, here: Here, own: Relay, now: number) {
+    let old: KeptQueue | null = null;
+    await this.at.queues.update((d) => {
+      old = d[kind];
+      const made = old ? withOld(d.was, { ...old, kind, until: now + GRACE }) : { was: d.was, early: [] };
+      this.early.push(...made.early);
+      return { ...d, [kind]: { queue, ...here }, was: made.was };
+    });
+    await this.at.push?.keep(own, queue).catch(() => undefined);
+    const before = old as KeptQueue | null;
+    if (before && sameRelay(before.url, here.url)) await this.at.push?.drop(own, before.queue).catch(() => undefined);
+    await this.at.groups?.renewAgain(kind).catch(() => undefined);
+    this.named = null;
+  }
+
+  // The groups' and the public groups' queues, made the first time, or again after the relay lost them.
+  private async makeGroupQueues(q: QueuesData, own: Relay, here: Here): Promise<QueuesData> {
+    for (const kind of ['group', 'public'] as const) {
+      if (q[kind]) continue;
+      const ids = await createQueue(own).catch(() => null);
+      if (!ids) return q;
+      await this.groupsTo(kind, queueOf(ids), here, own, Date.now());
+      q = await this.at.queues.load();
+    }
+    return q;
+  }
+
+  // Each kept contact not told the own queue yet, or due a tell again.
+  private async tellAll(q: QueuesData, look: MoveLook) {
+    const now = Date.now();
+    const due = this.at.e2e.tellsDue(q.moved, q.since, now).filter((id) => (this.failed.get(id) ?? 0) <= now);
+    for (const identity of due.slice(0, TELLS_EACH)) {
+      if (look.stop?.()) return;
+      try {
+        await look.tell(identity);
+        await this.at.e2e.queueTold(identity, q.moved);
+        this.failed.delete(identity);
+        this.healed.set(identity, Date.now());
+      } catch {
+        this.failed.set(identity, Date.now() + TELL_RETRY);
+      }
+    }
+  }
+
+  // A kept contact heard on a queue this chat moved away from is told the new one at once: an
+  // Erevos that knows nothing of `qa` may have gone back to it. At most once in HEAL_EVERY.
+  private async heal(identity: string, look: MoveLook) {
+    const now = Date.now();
+    if (now - (this.healed.get(identity) ?? 0) < HEAL_EVERY) return;
+    this.healed.set(identity, now);
+    await look.tell(identity).catch(() => undefined);
+  }
+
+  // Reads one queue of `kind` (in `was` when `old`): up to `most` packets, of which only the first
+  // few first packets, and on an old one group packets, are opened. What one look found there,
+  // 'gone' once the relay no longer has it, or null when it could not be reached.
+  private async read(relay: Relay, queue: Queue, kind: QueueKind, old: boolean, look: MoveLook, most = READ_MOST): Promise<Look | 'gone' | null> {
+    const firstsMost = !old && (kind === 'link' || kind === 'group') ? LINK_FIRSTS : OLD_FIRSTS;
+    const groupsMost = old ? OLD_GROUPS : Infinity;
+    const recipient = fromHex(queue.recipientHex);
+    let firsts = 0;
+    let groups = 0;
+    let taken = 0;
+    let junk = 0;
+    for (let i = 0; i < most && !look.stop?.(); i++) {
+      let bytes: Uint8Array | null;
+      try {
+        bytes = await receiveMessage(relay, recipient);
+      } catch (error) {
+        return isQueueNotFound(error) ? 'gone' : taken > 0 ? { taken, junk } : null;
+      }
+      if (!bytes) break;
+      taken++;
+      if (isGroupPacket(bytes) ? groups++ >= groupsMost : (await isFirst(bytes)) && firsts++ >= firstsMost) {
+        junk++;
+        continue;
+      }
+      try {
+        const took = await look.take(bytes, 'old');
+        if (took.junk) junk++;
+        else if (took.from && (old || kind === 'link')) await this.heal(took.from, look);
+      } catch {
+        // This one is lost, as from the own queue; the next ones still come.
+      }
+    }
+    return { taken, junk };
+  }
+
+  // The queues moved away from: read cheaply, and once their grace is over, emptied and deleted.
+  private async readOld(look: MoveLook, now: number) {
+    const q = await this.at.queues.load();
+    const heard = this.at.e2e.heardSince();
+    const named = q.was.some((w) => w.kind === 'group' || w.kind === 'public') ? await this.namedNow() : null;
+    // Those over the most kept go first, emptied too.
+    const early = this.early;
+    this.early = [];
+    const all = [...early, ...q.was];
+    for (const [i, w] of all.entries()) {
+      if (look.stop?.()) {
+        this.early.push(...early.slice(i));
+        return;
+      }
+      const relay = relayOf(w);
+      const over = i < early.length || graceOver(w, heard, !named || named.has(w.queue.senderHex), now);
+      const found = await this.read(relay, w.queue, w.kind, true, look, over ? DRAIN_MOST : READ_MOST);
+      if (found === null) continue;
+      if (found !== 'gone' && over) {
+        try {
+          await deleteQueue(relay, fromHex(w.queue.recipientHex));
+        } catch (error) {
+          if (!isQueueNotFound(error)) continue;
+        }
+      }
+      if (found === 'gone' || over) await this.at.queues.update((d) => ({ ...d, was: d.was.filter((x) => !same(x, w.queue)) }));
+    }
+  }
+
+  // The queues the groups say, asked once an hour; null when they could not say, so none goes.
+  private async namedNow(): Promise<Set<string> | null> {
+    if (!this.at.groups) return new Set();
+    if (this.named && Date.now() - this.named.at < NAMED_EVERY) return this.named.senders;
+    const senders = await this.at.groups.named().catch(() => null);
+    this.named = { at: Date.now(), senders };
+    return senders;
+  }
+}
+
+// ---- The space's ----
+
+const movedListeners = new Set<(queue: Queue, old: Queue | null, why: MoveWhy) => Promise<void>>();
+
+/** Has `listener` called each time the open space's own queue moved (lib/devices.ts). */
+export function onSpaceMoved(listener: (queue: Queue, old: Queue | null, why: MoveWhy) => Promise<void>): () => void {
+  movedListeners.add(listener);
+  return () => movedListeners.delete(listener);
+}
+
+let spaceGroups: MoveGroups | undefined;
+let spacePush: MoveAt['push'];
+
+/** How a space's move reaches its groups and the web app's pushes, set once by those (lib/space-groups.ts, lib/web-push.web.ts). */
+export function useForMoves({ groups, push }: { groups?: MoveGroups; push?: MoveAt['push'] }): void {
+  if (groups) spaceGroups = groups;
+  if (push) spacePush = push;
+}
+
+let opened: { of: object; e2e: E2E; mover: QueueMove } | null = null;
+
+/** The open space's moves, made once while its chats are open. */
+export function spaceMover({ e2e }: Pick<SpaceChats, 'e2e'>): QueueMove {
+  const current = currentSpace();
+  if (opened?.of !== current || opened.e2e !== e2e) {
+    const mover = new QueueMove({
+      e2e,
+      queues: spaceQueues(current.space, current.key),
+      data: spaceSpare(),
+      groups: spaceGroups,
+      push: spacePush,
+      moved: async (queue, old, why) => {
+        for (const listener of movedListeners) await listener(queue, old, why).catch(() => undefined);
+      },
+    });
+    opened = { of: current, e2e, mover };
+  }
+  return opened.mover;
+}
+
+/** Lets go of the space's moves when it closes. */
+export function forgetSpaceMover(): void {
+  opened = null;
+}
+
+/** The sender id the open space's contact link names (lib/sms-relay.ts, the SMS screen): the link queue's, or the own queue's while it is the link's. */
+export async function spaceLinkSender(own: Queue): Promise<string> {
+  const { space, key } = currentSpace();
+  return linkOf(await spaceQueues(space, key).load(), own).senderHex;
+}
+
+// The space's chats say when their own queue was made from the first, before any look.
+joinSpaceChats(async (chats, space, key) => {
+  const q = await spaceQueues(space, key).load();
+  if (q.moved > 0) chats.e2e.setQueueAge(q.moved, q.now?.queue.senderHex);
+});

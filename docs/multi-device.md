@@ -655,7 +655,11 @@ made is known by its own identity again, and each side gives the other its list 
   only until the primary took them. Packets a sibling sends after its first, should they come
   before that first one is taken, are lost; what they said comes again through the primary.
 - The relay can tie an account's queues together (every contact writes to all of them at once).
-  R4 (a sender id per contact) is the first relay change worth making after this.
+  A contact deleted or blocked keeps no way in: the phone's queue moves (lib/queue-move.ts), so do
+  the queues of the places that fill the list (the old ones emptied for 14 days, then deleted), each
+  linked device moves its own when the phone says `move`, and the list is signed again, `n` + 1, at
+  most once an hour, so contacts who held the one before take the new routes. All of it in band,
+  with no change to the relay.
 
 ## Phases
 

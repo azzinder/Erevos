@@ -23,7 +23,7 @@ import { bytesSource, sendFile } from '../lib/attachments';
 import type { CallSignal } from '../lib/call-signal';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
-import { Links } from '../lib/devices';
+import { forgetLinks, Links } from '../lib/devices';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { Groups, type GroupTransport } from '../lib/groups';
@@ -37,7 +37,10 @@ import { loadFanoutData } from '../lock/fanout-data';
 import { EMPTY_GROUPS, loadGroupData, saveGroupData, type About, type GroupData } from '../lock/group-data';
 import { History, WAITING } from '../lock/history';
 import { setCurrentSpace } from '../lock/keys';
-import { EMPTY_SPACE, saveSpaceData, type Queue } from '../lock/space-data';
+import { EMPTY_SPACE, loadSpaceData, saveSpaceData, type Queue } from '../lock/space-data';
+import { forgetSpaceMover } from '../lib/queue-move';
+import { holdReceiver, startReceiver } from '../lib/receiver';
+import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
 import { saveClip } from '../lock/voice-clips';
 import { blobs, files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
@@ -982,4 +985,39 @@ test("a contact's call, given the list, rings the phone as a call and goes to no
     return marks(carol.queue.senderHex, since).length > 0;
   }, 15_000);
   assert.deepEqual(marks(carol.queue.senderHex, since), ['ring']);
+});
+
+test('telling kept contacts where a space reads after its queue moved is quiet, and the one deleted is told nothing', { skip: !ready, timeout: 60_000 }, async () => {
+  // Alice's space is open, its chats those the receiver looks with (lib/receiver.ts).
+  const space = spaces++;
+  const key = randomBytes(32);
+  const ids = await createQueue(relay);
+  const queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  await saveSpaceData(space, key, { ...EMPTY_SPACE, url, ownQueue: queue });
+  setCurrentSpace(space, key);
+  const alice: Phone = { chats: await spaceChats(), queue, space, key };
+  const bob = await phone();
+  const carol = await phone();
+  const withBob = await meet(bob, alice);
+  const withCarol = await meet(carol, alice);
+  await alice.chats.e2e.deleteContact(withCarol.aliceId);
+  const since = seen.length;
+  const stop = startReceiver(30);
+  try {
+    await until(async () => (await loadSpaceData(space, key)).ownQueue!.senderHex !== queue.senderHex, 15_000);
+    await until(async () => {
+      await take(bob);
+      return bob.chats.e2e.record(withBob.bobId)!.sender !== queue.senderHex;
+    }, 15_000);
+    const told = marks(bob.queue.senderHex, since);
+    assert.ok(told.length > 0);
+    assert.ok(told.every((mark) => mark === 'quiet'));
+    assert.deepEqual(marks(carol.queue.senderHex, since), []);
+  } finally {
+    stop();
+    (await holdReceiver())();
+    forgetLinks();
+    forgetSpaceChats();
+    forgetSpaceMover();
+  }
 });

@@ -18,3 +18,7 @@ export function turnOffPush(): Promise<void> {
 export function keepPush(_own: Relay, _queue: Queue): Promise<void> {
   return Promise.resolve();
 }
+
+export function dropPush(_own: Relay, _queue: Queue): Promise<void> {
+  return Promise.resolve();
+}

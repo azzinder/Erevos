@@ -387,6 +387,33 @@ Either way Erevos asks where:
 - **Both phones:** their phone deletes them too, the next time it looks at the relay. Their Erevos does so, but a
   changed app, a screenshot or a copy can still keep them.
 
+### Deleting and blocking a contact
+
+Tap a chat's name and then **Delete contact** to forget them: their chat goes from this phone, and Erevos gives you a
+new relay queue at once. Your other contacts are told it quietly, in a message with nothing in it, and again 7, 14 and
+21 days later while they have not written to the new one; what they wrote to the old one meanwhile still shows for 14
+days. The one you deleted is not told, and nothing they send there shows. Your contact link stays as it was, so they
+can still ask to talk again with it, as a message request, like anyone who has it.
+
+- **Block contact**, under it, does the same, and also drops what they send later, a request too. **Block**, beside
+  **Refuse**, blocks a message request, and moves nothing: a request knows only your contact link. Whoever you blocked
+  is under **Blocked contacts** in **Relay and new contacts**, with **Unblock**.
+- **Groups:** someone in one of your groups can still write to you there. Erevos says in how many you are together:
+  leave them, or ask their admin to take them out.
+- **When the relay cannot be reached**, the queue changes as soon as it answers, and until then nothing they send
+  shows.
+- **Junk:** when your queue fills with what is for no one here, Erevos gives you a new one the same way and says so, at
+  most once a day. When junk fills the queue your contact link names, you get a new link instead.
+- **New contact link**, beside **Share my contact link**, gives you a new link: the links and QR codes you gave before
+  work for 14 more days, then no more. Your contacts are not affected.
+- **On a linked computer** it goes to the phone, which deletes or blocks them too and moves its queues, the computer's
+  as well; the phone keeps who is blocked.
+- **In hidden chats** only that place's queues move, its ring queue at once, so the one you deleted can no longer make
+  the phone ring. Nothing of the space or the other places moves.
+
+The contact card's **Delete** (see [Contacts](#contacts)) takes only the card away, not the chat. A backup made before
+a deletion or a block brings that contact back: delete or block them again after restoring it.
+
 ### A message's menu
 
 Press and hold a message for its menu: the reactions at the top, then what you can do with it.
@@ -676,8 +703,9 @@ and go to each member as in any group, and no relay learns who is in it.
 
 - **The link** shows the group's name and your relay's address to whoever sees it.
 - **Every member sees every member's** chosen name, a key made for this group alone, their relay's address and their
-  queue's sender id. The key says nothing of who they are in their chats, nor which other groups they are in; the
-  sender id is also in their contact link, so whoever has that can tell it is them.
+  queue's sender id. The key says nothing of who they are in their chats, nor which other groups they are in. The
+  queue is one their public groups alone read on, not the one in their contact link, the same in each of their public
+  groups (an Erevos before 2.0.0 says the one in its contact link).
 - **Names are chosen, not proven:** anyone can call themselves anything. The start of each member's key shows beside
   the name, and the owner and the admins are marked.
 - **Whatever is said can be copied** by anyone in the group: end-to-end encryption keeps the relays out, not the members.

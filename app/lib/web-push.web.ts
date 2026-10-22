@@ -1,7 +1,10 @@
+import { currentSpace } from '../lock/keys';
+import { spaceQueues } from '../lock/queues-data';
 import { loadCurrentSpaceData, updateCurrentSpaceData, type Queue } from '../lock/space-data';
 
 import { WEB_APP } from './integrity';
-import { fromHex, pushKey, setPush, type PushKeys, type Relay } from './relay';
+import { useForMoves } from './queue-move';
+import { fromHex, pushKey, sameRelay, setPush, type PushKeys, type Relay } from './relay';
 import { t } from './i18n';
 
 // Notifications for the web app while it is closed (an iPhone stops it as soon as it leaves the
@@ -12,7 +15,9 @@ import { t } from './i18n';
 // from an older relay the push is empty, and the notice says "New message", or "New messages" once
 // more came since Erevos was last open. The push goes through the browser's push service (Apple's
 // on an iPhone), which sees when a message comes, never what, how many or from whom. Off unless
-// turned on, per space, for the space's own queue only: never for hidden chats.
+// turned on, per space, for the space's own queue only, and the queues its groups and public
+// groups say (lib/queue-move.ts): never for hidden chats, nor for the queue the contact link names
+// (a request shows when the app opens), nor for one the space moved away from.
 
 const supported = typeof window !== 'undefined' && 'PushManager' in window && 'Notification' in window && 'serviceWorker' in navigator;
 
@@ -43,11 +48,19 @@ function keysOf(sub: PushSubscription): PushKeys | undefined {
   return { p256dh: new Uint8Array(p256dh), auth: new Uint8Array(auth) };
 }
 
+// The space's queues that push: `queue`, its own, and its groups' and public groups' on the same relay.
+async function pushed(own: Relay, queue: Queue): Promise<Queue[]> {
+  const { space, key } = currentSpace();
+  const queues = await spaceQueues(space, key).load().catch(() => null);
+  const more = [queues?.group, queues?.public].flatMap((k) => (k && sameRelay(k.url, own.url) ? [k.queue] : []));
+  return [queue, ...more.filter((q) => q.recipientHex !== queue.recipientHex)];
+}
+
 async function register(own: Relay, queue: Queue): Promise<string | null> {
   const key = await pushKey(own);
   if (!key) return t('Your relay does not send notifications. It needs a newer version, set up with a push key.');
   const sub = await subscription(key);
-  await setPush(own, fromHex(queue.recipientHex), sub.endpoint, keysOf(sub));
+  for (const q of await pushed(own, queue)) await setPush(own, fromHex(q.recipientHex), sub.endpoint, keysOf(sub));
   return null;
 }
 
@@ -78,7 +91,8 @@ export async function turnOffPush(): Promise<void> {
   const data = await loadCurrentSpaceData();
   await updateCurrentSpaceData({ push: false });
   if (data.url.trim() && data.ownQueue) {
-    await setPush(spaceRelay(data.url, data.token), fromHex(data.ownQueue.recipientHex), '').catch(() => undefined);
+    const own = spaceRelay(data.url, data.token);
+    for (const q of await pushed(own, data.ownQueue)) await setPush(own, fromHex(q.recipientHex), '').catch(() => undefined);
   }
 }
 
@@ -90,3 +104,11 @@ export async function keepPush(own: Relay, queue: Queue): Promise<void> {
   if (!data.push) return;
   await register(own, queue).catch(() => undefined);
 }
+
+/** The relay forgets the push address of a queue the space moved away from, so what comes there never wakes the closed web app. */
+export async function dropPush(own: Relay, queue: Queue): Promise<void> {
+  if (!PUSH_AVAILABLE) return;
+  await setPush(own, fromHex(queue.recipientHex), '').catch(() => undefined);
+}
+
+useForMoves({ push: { keep: keepPush, drop: dropPush } });

@@ -1,5 +1,5 @@
 import { randomBytes } from '../lib/crypto';
-import { createQueue, toHex, type Relay } from '../lib/relay';
+import { createQueue, deleteQueue, fromHex, toHex, type Relay } from '../lib/relay';
 import { decryptText, encryptText } from '../lib/crypto';
 import { secureGet, secureSet } from '../lib/secure';
 
@@ -105,6 +105,20 @@ export function ringPocket(space: number, key: Uint8Array, pocket: number, own: 
     for (let other = 0; other < POCKETS; other++) if (!out[other]) out[other] = await madeForNothing(relay);
     return out;
   });
+}
+
+/**
+ * A pocket that rings moved its queues for a contact deleted or blocked there, or junk
+ * (lib/queue-move.ts): a new ring queue on `relay` takes the place of the one before
+ * (`recipientHex`), which is deleted at once rather than kept a while, so the one deleted can no
+ * longer ring the phone. The other pockets' stay as they are. Says the new one; throws, with
+ * nothing changed, when the relay cannot be reached.
+ */
+export async function moveRingPocket(space: number, key: Uint8Array, pocket: number, relay: Relay, recipientHex: string): Promise<Ringed> {
+  const made = await madeForNothing(relay);
+  await ringPocket(space, key, pocket, made);
+  await deleteQueue(relay, fromHex(recipientHex)).catch(() => undefined);
+  return made;
 }
 
 /**

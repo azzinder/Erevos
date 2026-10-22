@@ -1,6 +1,7 @@
 import { loadGroupData, saveGroupData } from '../lock/group-data';
 import { currentSpace } from '../lock/keys';
 import { loadPublicGroupData, savePublicGroupData, type PublicData } from '../lock/public-group-data';
+import { spaceQueues } from '../lock/queues-data';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { soon } from './call';
 import { canGroup, canRelaySeal } from './core';
@@ -13,7 +14,8 @@ import type { GroupTransport } from './groups';
 import { nearby } from './nearby';
 import { relayDoors } from './public-doors';
 import { PublicGroups } from './public-groups';
-import { callRelay, fromHex, relayKey, sendMessage, toHex, type Relay } from './relay';
+import { useForMoves } from './queue-move';
+import { callRelay, fromHex, relayKey, sameRelay, sendMessage, toHex, type Relay } from './relay';
 import { contactTarget, relayFor, sendSealed, spaceChats } from './space-chats';
 import { t } from './i18n';
 
@@ -23,6 +25,8 @@ import { t } from './i18n';
 // with no internet, and through the space's relay settings, read when sent. Their photos, files and
 // voice messages go through the space's relay only, straight (lib/group-media.ts). A member asked
 // for its contact link is added to the space's own chats (lib/group-contacts.ts), never to hidden ones.
+// The groups say a queue of their own as where this phone reads, and the public groups another
+// (lib/queue-move.ts), never the one its contacts write to: the own queue, until those are made.
 
 let opened: { of: object; groups: Promise<PublicGroups> } | null = null;
 // The same once open, for what cannot wait for them (publicMemberName).
@@ -51,6 +55,7 @@ export function onSpaceGroupCall(listener: (group: string, from: string, signal:
 let ownKey: { url: string; key: string } | null = null;
 
 async function settings() {
+  const current = currentSpace();
   const data = await loadCurrentSpaceData();
   const url = data.url.trim();
   if (!url || !data.ownQueue) throw new Error(t('Groups go through the relay. Type its address in Relay first.'));
@@ -59,10 +64,15 @@ async function settings() {
     const key = await soon(relayKey(own).catch(() => null), 4000, null);
     if (key) ownKey = { url, key: toBase64Url(key) };
   }
+  const queues = await spaceQueues(current.space, current.key).load();
+  const on = (kept: typeof queues.group) => (kept && sameRelay(kept.url, url) ? kept.queue.senderHex : '');
+  const groupHex = on(queues.group) || data.ownQueue.senderHex;
   return {
     own,
     sends: relayFor(url, data.token, data.via, data.viaToken) ?? own,
     senderHex: data.ownQueue.senderHex,
+    groupHex,
+    publicHex: on(queues.public) || groupHex,
     relayKey: ownKey?.url === url ? ownKey.key : '',
   };
 }
@@ -73,12 +83,12 @@ export function spaceGroups(): Promise<PublicGroups> {
   if (opened?.of !== current) {
     const groups = (async () => {
       const [data, pub] = await Promise.all([loadGroupData(current.space, current.key), loadPublicGroupData(current.space, current.key)]);
-      const me = async () => {
+      const meAt = (kind: 'groupHex' | 'publicHex') => async () => {
         const [{ e2e }, place] = await Promise.all([spaceChats(), settings()]);
-        return { id: toHex(e2e.identity), sender: place.senderHex, relay: place.own.url, relayKey: place.relayKey };
+        return { id: toHex(e2e.identity), sender: place[kind], relay: place.own.url, relayKey: place.relayKey };
       };
       const save = (next: PublicData) => savePublicGroupData(current.space, current.key, next);
-      const made = new PublicGroups(data, (next) => saveGroupData(current.space, current.key, next), me, pub, save, relayDoors(settings));
+      const made = new PublicGroups(data, (next) => saveGroupData(current.space, current.key, next), meAt('groupHex'), pub, save, relayDoors(settings), meAt('publicHex'));
       made.onCall((group, from, signal) => callListeners.forEach((listener) => listener(group, from, signal)));
       made.onMessage(() => messageListeners.forEach((listener) => listener()));
       if (opened?.of === current) shown = made;
@@ -91,6 +101,16 @@ export function spaceGroups(): Promise<PublicGroups> {
   }
   return opened.groups;
 }
+
+// A move of the groups' queue, or the public groups', has each group say the new one (lib/queue-move.ts).
+useForMoves({
+  groups: {
+    renewAgain: async (kind) => {
+      if (canGroup()) await (await spaceGroups()).renewAgain(kind);
+    },
+    named: async () => (canGroup() ? (await spaceGroups()).ownSenders() : new Set<string>()),
+  },
+});
 
 /** Lets go of the space's groups when it closes. */
 export function forgetSpaceGroups(): void {

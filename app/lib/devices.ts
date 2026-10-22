@@ -1,8 +1,10 @@
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
-import { againAfter, type Contact, type OwnList, type Route } from '../lock/e2e-data';
+import { againAfter, type Contact, type OldFiller, type OwnList, type Route } from '../lock/e2e-data';
 import type { Group, GroupMessage } from '../lock/group-data';
 import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
+import { currentSpace } from '../lock/keys';
+import { spaceQueues } from '../lock/queues-data';
 import { loadSpaceData } from '../lock/space-data';
 import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import {
@@ -70,6 +72,7 @@ import {
   wholeMarks,
   writePack,
   type ChatChange,
+  type Deleted,
   type Envelope,
   type GroupAsk,
   type GroupChange,
@@ -87,7 +90,9 @@ import {
 import { LinkedCalls, type CallStep } from './linked-calls';
 import { nearby } from './nearby';
 import { announceReceived } from './receiver';
-import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sendMessage, type Mark as RelayMark, type Relay } from './relay';
+import { GRACE } from './moves';
+import { onSpaceMoved, type MoveWhy } from './queue-move';
+import { createQueue, deleteQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, type Mark as RelayMark, type Relay } from './relay';
 import { isSealedPacket, openPacket, packetKeys, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
 import {
   blankSynced,
@@ -229,6 +234,8 @@ const ENDED_LASTS = 2 * 60_000;
 // How often the primary empties the queues of the places that fill its device list, and the most it takes from one at a time.
 const DRAIN_EVERY = 60 * 60_000;
 const DRAIN_MOST = 1000;
+// After the phone's queue moved for a contact deleted or blocked, a new device list at most this often.
+const RESIGN_EVERY = 60 * 60_000;
 const CONTACT_PREFIX = 'contact:';
 // What a message a device wrote may say that need not be tried again: where it reads, that it is
 // open, the timer (which went with the contact here), and what came or was read (held for the next).
@@ -366,6 +373,9 @@ export class Links implements Link, TakenFiles {
   private readonly endedThere = new Map<string, { declined: boolean; at: number }>();
   private rings: Promise<unknown> = Promise.resolve();
   private stopCalls: (() => void) | null = null;
+  private stopMoves: (() => void) | null = null;
+  // On a linked device: the contacts deleted (1) or blocked (2) here, until the phone is told.
+  private readonly deletions = new Map<string, Deleted>();
   // The space's groups, and which of them go to the devices; on the primary, whether telling them is
   // under way, and whether a message could not go to them yet.
   private groups: { groups: Groups; transport: GroupTransport; shared: (id: string) => boolean } | null = null;
@@ -376,6 +386,8 @@ export class Links implements Link, TakenFiles {
   private readonly marked = new Map<string, { marks: Map<string, GroupMarked>; digest: string }>();
   // Where this side reads, as last found, said with what goes; and the relay's key, asked once for each relay.
   private at: Place | null = null;
+  // The queue the account's contact link names (lib/queue-move.ts): the own queue's while it is the link's.
+  private linkSender = '';
   // The keys of packet keys (lib/sealed-packet.ts), by the packet key.
   private readonly packetKeys = new Map<string, PacketKeys>();
   // On the primary: when a device set what it changed of a contact, until the devices are told.
@@ -414,6 +426,7 @@ export class Links implements Link, TakenFiles {
     if (siblings && (!links.data.primary || siblings.of !== chats.e2e.endpoint()?.id)) await links.save(withoutSiblings(links.data));
     chats.e2e.useLink(links);
     links.stopCalls = onCallChange(() => links.callChanged());
+    links.stopMoves = onSpaceMoved(async (_queue, _old, why) => links.spaceMoved(why));
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
     links.act(() => links.listsAtOpen());
@@ -427,6 +440,7 @@ export class Links implements Link, TakenFiles {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     if (this.echoTimer) clearTimeout(this.echoTimer);
     this.stopCalls?.();
+    this.stopMoves?.();
     this.stopGroups?.();
     this.groups?.groups.useLink(null);
     this.chats.e2e.useLink(null);
@@ -531,6 +545,8 @@ export class Links implements Link, TakenFiles {
     const rk = keyed ? this.keyOf!.key : '';
     const place: Place = { sender: data.ownQueue.senderHex, relay: url, relayKey: rk, spare: this.chats.e2e.spare() };
     this.at = place;
+    const link = (await spaceQueues(this.space, this.key).load().catch(() => null))?.link;
+    this.linkSender = link && sameRelay(link.url, url) ? link.queue.senderHex : place.sender;
     return { own, sends, place, where: { relay: url, relayKey: rk }, keyed };
   }
 
@@ -539,11 +555,11 @@ export class Links implements Link, TakenFiles {
     return { sends: here.sends, own: here.own, senderHex: here.place.sender, here: here.where, ownKey: here.where.relayKey, relayUp: true };
   }
 
-  // The account's contact link, as the primary's chat shows it.
+  // The account's contact link, as the primary's chat shows it: the queue the link names, not the one contacts write to.
   private ownLink(): string {
     if (!this.at) return '';
     const { sender, relay, relayKey: rk } = this.at;
-    return contactLink({ senderHex: sender, relayUrl: relay, key: toBase64Url(this.chats.e2e.bundle), relayKey: rk || undefined, spare: spareCode(this.chats.e2e.spare()) });
+    return contactLink({ senderHex: this.linkSender || sender, relayUrl: relay, key: toBase64Url(this.chats.e2e.bundle), relayKey: rk || undefined, spare: spareCode(this.chats.e2e.spare()) });
   }
 
   // Seals an envelope for a peer and puts it in its outbox, in the turn. One the outbox has no room
@@ -731,11 +747,13 @@ export class Links implements Link, TakenFiles {
         const at = said.at;
         place = (contacts) => contacts.map((c) => ({ ...c, sender: at.sender, relay: at.relay, relayKey: at.relayKey, spare: at.spare }));
       }
-      // On the primary, the device's others are told where it reads now, and the contacts in time.
+      // On the primary, the device's others are told where it reads now, and the contacts in time:
+      // with a new list, when it moved as this phone asked it to (movedFor).
       else if (peer.endpoint)
         this.act(async () => {
           await this.routeList();
           await this.tellList();
+          if ((this.data.moving ?? 0) > Date.now()) await this.resignSoon();
         });
     }
     if (said.pk && said.pk !== peer.sealTo) moved = { ...moved, sealTo: said.pk };
@@ -764,7 +782,7 @@ export class Links implements Link, TakenFiles {
         this.act(() => this.addFor(said.code, said.when));
         break;
       case 'set':
-        this.act(() => this.setFor(said.c, said.change, said.remove === true, said.when));
+        this.act(() => this.setFor(said.c, said.change, said.remove === true, said.when, said.del));
         break;
       case 'took':
         this.act(() => this.letGo(peer.id, said.ids));
@@ -871,6 +889,10 @@ export class Links implements Link, TakenFiles {
       }
       case 'came':
         this.act(() => this.cameHere(said.c, said.got));
+        break;
+      case 'move':
+        // The phone's queue moved for a contact deleted or blocked: this device's moves with its next look (lib/queue-move.ts).
+        this.act(() => this.chats.e2e.moveSoon());
         break;
       case 'bye':
         this.act(() => this.forget());
@@ -989,6 +1011,10 @@ export class Links implements Link, TakenFiles {
     } else if (isWorthTelling(m)) {
       void this.say({ k: 'out', c: identity, m: withoutPlace(m) }).catch(() => undefined);
     }
+  }
+
+  deleted(identity: string, block: boolean): void {
+    if (this.data.primary) this.deletions.set(identity, block ? 2 : 1);
   }
 
   changed(contacts: readonly Contact[]): void {
@@ -1121,7 +1147,10 @@ export class Links implements Link, TakenFiles {
     for (const id of Object.keys(synced)) {
       if (now.some((s) => s.identity === id)) continue;
       const at = removedAtOf(synced[id], time);
-      await tell({ k: 'set', c: id, change: {}, remove: true, when: at });
+      // Deleted or blocked, not only taken out of the address book: the phone does it too.
+      const del = this.deletions.get(id);
+      this.deletions.delete(id);
+      await tell({ k: 'set', c: id, change: {}, remove: true, when: at, ...(del ? { del } : {}) });
       removed = withRemoved(removed, id, at);
       delete synced[id];
       changes = true;
@@ -1452,17 +1481,18 @@ export class Links implements Link, TakenFiles {
   // one, and with one kept once a contact still holds a later one, as with this phone's clock
   // behind: that once more, above any a contact can say, so no contact makes it sign again. Then
   // each is told the list it was not told yet.
-  private async signAgain(): Promise<void> {
+  private async signAgain(force = false): Promise<void> {
     if (this.data.primary || !core.canSign()) return;
     const { e2e } = this.chats;
     const held = e2e.signedList();
+    if (force && !held) return;
     const devices = this.data.devices.flatMap((d) => (d.linked && d.endpoint ? [d.endpoint] : [])).slice(0, MAX_LISTED);
     const real = devices.map((d) => d.id).sort();
     const old = devices.filter((d) => !d.ek).map((d) => d.id);
     const after = e2e.newestHeld();
     const put = e2e.restoredSince() || after > (held?.n ?? 0);
     const behind = !!held && !e2e.restoredSince() && after > held.n;
-    const differs = held ? JSON.stringify([...held.real].sort()) !== JSON.stringify(real) || !flagsHold(held) || put : real.length > 0 || after > 0;
+    const differs = force || (held ? JSON.stringify([...held.real].sort()) !== JSON.stringify(real) || !flagsHold(held) || put : real.length > 0 || after > 0);
     if (differs) {
       const body = await nextList(e2e.identityHex(), devices.map(({ id, bundle }) => ({ id, bundle })), held, { after: behind ? e2e.heldAtMost() : after });
       const list = await signList((context, message) => e2e.sign(context, message), body);
@@ -1563,6 +1593,85 @@ export class Links implements Link, TakenFiles {
     }
     if (lost.length > 0) await this.chats.e2e.keepRoutes(list.n, list.r ?? {}, Object.fromEntries(Object.entries(list.q ?? {}).filter(([id]) => !lost.includes(id))));
     if (moved || lost.length > 0) await this.routeList();
+    await this.drainOldFillers(here);
+  }
+
+  // The queues the places that fill the list read on before this phone's queue moved for a contact
+  // deleted or blocked: emptied until each one's grace ends, then deleted. One on a relay this
+  // phone no longer uses is let go, as one the relay no longer has.
+  private async drainOldFillers(here: Here): Promise<void> {
+    const was = this.chats.e2e.signedList()?.qWas ?? [];
+    if (was.length === 0) return;
+    const kept: OldFiller[] = [];
+    for (const w of was) {
+      if (!sameRelay(w.relay, here.place.relay)) continue;
+      try {
+        for (let n = 0; n < DRAIN_MOST && (await receiveMessage(here.own, fromHex(w.q))); n++);
+        if (Date.now() < w.until) kept.push(w);
+        else await deleteQueue(here.own, fromHex(w.q));
+      } catch (error) {
+        if (!isQueueNotFound(error)) kept.push(w);
+      }
+    }
+    await this.chats.e2e.keepOldFillers(kept);
+  }
+
+  // Once the space's own queue moved (lib/queue-move.ts): the devices are told where this side
+  // reads now at once, and on the primary, for a contact deleted or blocked, the rest moves too.
+  private spaceMoved(why: MoveWhy): void {
+    if (this.closed || !this.isOpenSpace()) return;
+    if (why === 'due' && !this.data.primary) this.act(() => this.movedFor());
+    void this.flush().catch(() => undefined);
+  }
+
+  // Whether this is the open space's: only its queues move.
+  private isOpenSpace(): boolean {
+    try {
+      return currentSpace().space === this.space;
+    } catch {
+      return false;
+    }
+  }
+
+  // On the primary, its own queue moved for a contact deleted or blocked: they may know every place
+  // the device list says too. So the places that fill it get new queues (the old ones are emptied
+  // until their grace ends, drainOldFillers), each linked device is asked to move its own (`move`),
+  // and the list is signed anew, `n` + 1, so a contact who holds the one before is given it again
+  // (lib/e2e.ts listFor), with each device's new place once it moved.
+  private async movedFor(): Promise<void> {
+    const { e2e } = this.chats;
+    const list = e2e.signedList();
+    const now = Date.now();
+    if (list && core.canSign()) {
+      const fillers = Object.entries(list.q ?? {});
+      const old = fillers.flatMap(([id, q]) => {
+        const relay = list.r?.[id]?.relay;
+        return relay ? [{ q, relay, until: now + GRACE }] : [];
+      });
+      if (old.length > 0) await e2e.keepOldFillers([...(list.qWas ?? []), ...old]);
+      const r = Object.fromEntries(Object.entries(list.r ?? {}).filter(([id]) => !list.q?.[id]));
+      await e2e.keepRoutes(list.n, r, {});
+      await this.routeList();
+    }
+    if (this.linked().length > 0) await this.say({ k: 'move' });
+    await this.run(() => this.save({ ...this.data, moving: now + GRACE }));
+    await this.resignSoon();
+  }
+
+  // On the primary: a new list is due after a move, signed now unless one was within the hour; then with a later tick.
+  private async resignSoon(): Promise<void> {
+    if (this.data.primary || !this.chats.e2e.signedList()) return;
+    if (!this.data.resign) await this.run(() => this.save({ ...this.data, resign: Date.now() }));
+    await this.resignDue();
+  }
+
+  private async resignDue(): Promise<void> {
+    if (!this.data.resign || Date.now() - (this.data.resignedAt ?? 0) < RESIGN_EVERY) return;
+    await this.signAgain(true);
+    await this.run(async () => {
+      const { resign: _resign, ...rest } = this.data;
+      await this.save({ ...rest, resignedAt: Date.now() });
+    });
   }
 
   // On the primary: each linked device not told the device list as last signed is told it, with the
@@ -2023,6 +2132,7 @@ export class Links implements Link, TakenFiles {
       this.act(() => this.drainFillers());
     } else if (!this.data.primary && signed && this.routesLeft(signed)) this.act(() => this.routeList());
     if (!this.data.primary && core.canSign() && this.chats.e2e.newestHeld() > (signed?.n ?? 0)) this.act(() => this.signAgain());
+    if (!this.data.primary && this.data.resign && Date.now() - (this.data.resignedAt ?? 0) >= RESIGN_EVERY) this.act(() => this.resignDue());
     if (this.waysLeft) this.act(() => this.run(() => this.tellWays()).then(() => this.flush()));
     // What the relay dropped by now.
     const old = Date.now() - LEFT_LASTS;
@@ -2222,14 +2332,16 @@ export class Links implements Link, TakenFiles {
   // device that says when it made the change (`when`) has each field changed only if set later than
   // the one kept, and a contact removed only if not added again since; the devices are told the
   // change with that time.
-  private async setFor(c: string, said: Change, remove: boolean, at?: number): Promise<void> {
+  private async setFor(c: string, said: Change, remove: boolean, at?: number, del?: Deleted): Promise<void> {
     const { e2e, history } = this.chats;
     const contact = e2e.record(c);
     if (!contact) return;
     const kept = this.data.synced[c];
     if (remove) {
       if (at !== undefined && !goesFor(kept, at)) return;
-      await e2e.removeContact(c);
+      // One a device deleted or blocked: this phone's queues move for it, as for one deleted here.
+      if (del) await e2e.deleteContact(c, { block: del === 2 });
+      else await e2e.removeContact(c);
       await history.clear(peerOf(c));
       announce({ gone: [{ peer: peerOf(c) }] });
       return;

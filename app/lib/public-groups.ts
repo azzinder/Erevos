@@ -128,6 +128,9 @@ export class PublicGroups extends Groups {
   private pub: PublicData;
   private readonly pubStore: (data: PublicData) => Promise<void>;
   private readonly doors: DoorPlace;
+  // Where this phone's public group messages come to: a queue of their own (lib/queue-move.ts), as
+  // anyone with a public group's link learns it by joining; where the private groups' come without one.
+  private readonly publicMe: () => Promise<Me>;
   private looking: Promise<number> | null = null;
 
   constructor(
@@ -137,11 +140,13 @@ export class PublicGroups extends Groups {
     pub: PublicData,
     pubStore: (data: PublicData) => Promise<void>,
     doors: DoorPlace,
+    publicMe?: () => Promise<Me>,
   ) {
     super(data, store, me);
     this.pub = pub;
     this.pubStore = pubStore;
     this.doors = doors;
+    this.publicMe = publicMe ?? me;
   }
 
   private record(id: string): PublicGroup | undefined {
@@ -192,11 +197,11 @@ export class PublicGroups extends Groups {
     return group ? publicName(group.names[key], key) : null;
   }
 
-  // What this phone says about itself in a public group: where it is reached, as in every group,
-  // with the key made for this group as its id, and the name it chose. After `state`, which makes
-  // the seal.
+  // What this phone says about itself in a public group: where it is reached, the public groups'
+  // queue, with the key made for this group as its id, and the name it chose. After `state`, which
+  // makes the seal.
   private async aboutAs(key: string, name: string): Promise<PublicAbout> {
-    const me = await this.me();
+    const me = await this.publicMe();
     const seal = toBase64Url(await core.sealPublic(fromBase64(this.data.seal)));
     return { ...me, id: key, seal, name: cleanName(name) };
   }

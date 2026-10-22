@@ -90,7 +90,9 @@ import { EMPTY_GROUPS, type Group, type GroupMessage } from '../lock/group-data'
 import { History } from '../lock/history';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { markRestore } from '../lock/restored';
-import { EMPTY_SPACE, saveSpaceData, type Queue } from '../lock/space-data';
+import { EMPTY_SPACE, loadSpaceData, saveSpaceData, type Queue } from '../lock/space-data';
+import { setCurrentSpace } from '../lock/keys';
+import { forgetSpaceMover, spaceMover } from '../lib/queue-move';
 import { fakeRtc } from './fake-rtc';
 import { blobs, files } from './files-memory';
 import { store as secureStore } from './secure-memory';
@@ -3102,4 +3104,80 @@ test('the places that fill the list keep their queues and keys while the relay\'
   assert.deepEqual([remade.r![lostId].s !== before.r![lostId].s, remade.r![lostId].pk, remade.r![lostId].rk], [true, before.r![lostId].pk, relayKey]);
   assert.ok(Object.keys(before.q!).filter((id) => id !== lostId).every((id) => remade.q![id] === before.q![id]));
   pixel.links.close();
+});
+
+test('a contact blocked on the computer is blocked on the phone, whose queues all move: the places that fill the list, the computer\'s, and a new list; the computer never rings a contact itself', { skip: !coreReady || !relayReady, timeout: 120_000 }, async () => {
+  const { relay, url, where, phone, take, write, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const carol = await phone(2);
+  const account = pixel.chats.e2e.identityHex();
+  const carolId = carol.chats.e2e.identityHex();
+  await linkUp(pixel, dell);
+  await until(async () => {
+    await take(pixel);
+    await take(dell);
+    const list = pixel.chats.e2e.signedList();
+    return !!list && list.real.length === 1 && !!dell.chats.e2e.endpoint() && dell.chats.e2e.own()?.list?.n === list.n;
+  });
+  // Carol writes, saying her ring queue: the phone may ring her, the computer, which gets her message through it, not.
+  await carol.chats.e2e.addContact({ senderHex: pixel.queue.senderHex, key: toBase64Url(pixel.chats.e2e.bundle), relayUrl: url }, carol.queue.senderHex, where);
+  await write(carol, account, 'hello');
+  await take(pixel);
+  await pixel.chats.e2e.acceptRequest(carolId);
+  const ring = toHex((await createQueue(relay)).senderId);
+  const sealed = await carol.chats.e2e.seal(account, 'ring me', carol.queue.senderHex, { at: where, rf: ring });
+  await sendMessage(relay, fromHex(sealed.sender), sealed.packet);
+  await take(pixel);
+  await take(dell);
+  assert.equal(pixel.chats.e2e.ringOf(carolId)?.sender, ring);
+  assert.ok(dell.chats.e2e.record(carolId));
+  assert.equal(dell.chats.e2e.ringOf(carolId), null);
+
+  // The computer blocks her: the phone blocks her too, and its queue is due to move.
+  const before = pixel.chats.e2e.signedList()!;
+  const fillers = Object.values(before.q ?? {});
+  assert.ok(fillers.length > 0);
+  await dell.chats.e2e.deleteContact(carolId, { block: true });
+  assert.equal(dell.chats.e2e.moveDue(), 0);
+  await take(dell);
+  await take(pixel);
+  assert.equal(pixel.chats.e2e.record(carolId), null);
+  assert.equal(pixel.chats.e2e.isBlocked(carolId), true);
+  assert.ok(pixel.chats.e2e.moveDue() > 0);
+
+  // The phone's queue moves: the places that fill the list get new queues, the old ones still
+  // emptied, a new list is signed, and the computer is asked to move its own.
+  try {
+    setCurrentSpace(pixel.space, pixel.key);
+    const moved = (await spaceMover(pixel.chats).moveNow(relay))!;
+    assert.notEqual(moved.senderHex, pixel.queue.senderHex);
+    await pixel.links.settled();
+    const after = pixel.chats.e2e.signedList()!;
+    assert.ok(after.n > before.n);
+    assert.ok(Object.values(after.q ?? {}).every((q) => !fillers.includes(q)));
+    assert.deepEqual(after.qWas?.map((w) => w.q).sort(), [...fillers].sort());
+    assert.ok((await loadDevicesData(pixel.space, pixel.key)).moving! > Date.now());
+    pixel.queue = moved;
+    await take(dell);
+    assert.ok(dell.chats.e2e.moveDue() > 0);
+
+    // The computer moves its own with its next look, and the phone routes contacts there.
+    setCurrentSpace(dell.space, dell.key);
+    const computer = (await spaceMover(dell.chats).moveNow(relay))!;
+    assert.equal((await loadSpaceData(dell.space, dell.key)).ownQueue?.senderHex, computer.senderHex);
+    await dell.links.settled();
+    dell.queue = computer;
+    await take(pixel);
+    const endpoint = dell.chats.e2e.endpoint()!.id;
+    assert.equal(pixel.chats.e2e.signedList()!.r?.[endpoint]?.s, computer.senderHex);
+    // Within the hour of the last, the next new list waits for a later tick.
+    assert.ok((await loadDevicesData(pixel.space, pixel.key)).resign! > 0);
+    // The old places that fill the list are still emptied, then deleted once their grace is over.
+    await pixel.links.drainFillers();
+    assert.equal(pixel.chats.e2e.signedList()!.qWas?.length, fillers.length);
+  } finally {
+    forgetSpaceMover();
+  }
+  for (const p of [pixel, dell, carol]) p.links.close();
 });

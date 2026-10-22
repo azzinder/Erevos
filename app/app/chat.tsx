@@ -64,7 +64,7 @@ import { ask, choose } from '../lib/alert';
 import { contactLink, offerFor, onContactOffered, parseContact, type ContactCode, type Offer } from '../lib/contact-code';
 import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
 import { ownToken } from '../lib/relay-signin';
-import { canRelaySeal, hasCore } from '../lib/core';
+import { canGroup, canRelaySeal, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
 import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
@@ -73,13 +73,15 @@ import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
 import { isWatchedQueue, loadWatched, unwatchPocket, watchPocket } from '../lock/hidden-watch';
-import { isRingedQueue, loadRinged, ringPocket, unringPocket } from '../lock/hidden-ring';
+import { isRingedQueue, loadRinged, moveRingPocket, ringPocket, unringPocket } from '../lock/hidden-ring';
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
 import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
 import { moveChat } from '../lock/move-chat';
 import { SamePasswordError } from '../lock/config';
 import { LockedOutError, lockedOutMessage } from '../lock/tries';
-import { cleanName, MAX_NAME, type Avatar, type Spare } from '../lock/e2e-data';
+import { cleanName, MAX_NAME, type Avatar, type Blocked, type Spare } from '../lock/e2e-data';
+import { placeQueues, type QueueKind } from '../lock/queues-data';
+import { QueueMove, linkOf, spaceMover, tookOf, type MoveWhy, type Took } from '../lib/queue-move';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
@@ -97,6 +99,7 @@ import {
   callRelay,
   carryTo,
   createQueue,
+  deleteQueue,
   fromHex,
   isLentToken,
   isQueueNotFound,
@@ -517,6 +520,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const typedVia = useTyped(viaUrl, setViaUrl);
   const typedViaToken = useTyped(viaToken, setViaToken);
   const [ownQueue, setOwnQueue] = useState<Queue | null>(null);
+  // The queue the contact link names, while it is not the own queue (lib/queue-move.ts), and who is
+  // blocked here. The moves of this chat's own queue: the space's, or these hidden chats' own.
+  const [linkQueue, setLinkQueue] = useState<Queue | null>(null);
+  const [blocked, setBlocked] = useState<Blocked[]>([]);
+  const mover = useRef<QueueMove | null>(null);
   const [contactDraft, setContactDraft] = useState('');
   // Whose contacts these chats' are (lib/sealed-contacts.ts): the space's, or these hidden chats' only.
   const contactsPlace = useMemo<SealedPlace>(() => {
@@ -769,7 +777,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setNote(t(NO_CORE));
       return;
     }
-    if (code.senderHex === ownQueue?.senderHex) {
+    if (code.senderHex === ownQueue?.senderHex || (!!linkQueue && code.senderHex === linkQueue.senderHex)) {
       setNote(t("Not added. That is this chat's own code."));
       return;
     }
@@ -1042,6 +1050,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         ]);
         const chats = shared?.e2e ?? (await E2E.open(hiddenHolder(pocket), space, hiddenKey!));
         if (!active) return;
+        // Where its contact link and its old queues are (lib/queue-move.ts), and when its own queue was made, before anything is sealed.
+        if (hiddenKey) {
+          const queues = placeQueues(space, pocket, hiddenKey);
+          const kept = await queues.load();
+          if (kept.moved > 0) chats.setQueueAge(kept.moved, kept.now?.queue.senderHex);
+          mover.current = new QueueMove({ e2e: chats, queues, data: spareStore, moved: (queue, old, why) => hiddenMoved.current(queue, old, why) });
+        } else mover.current = spaceMover({ e2e: chats });
+        const queues = await mover.current.queues().catch(() => null);
+        if (!active) return;
+        setLinkQueue(queues?.link?.queue ?? null);
+        setBlocked(chats.blocked());
+        // What the receiver beside the other screens had to say of a move meanwhile.
+        const said = mover.current.said();
+        if (said.length > 0) setNote(said.join(' '));
         if (linkNumber && initial?.startsWith(CONTACT_PREFIX)) {
           await chats.linkPhone(initial.slice(CONTACT_PREFIX.length), linkNumber);
           setNote(t('Messages to {number} now go through Erevos, end-to-end encrypted.', { number: linkNumber }));
@@ -1315,31 +1337,40 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       // Once the backup relay is ready, sends go through it when ours cannot be reached.
       const backup = spareBackup(spareStore);
       if (backup && !sends.backup) sends = { ...sends, backup: { ...backup, via: sends.via } };
-      // One message from our queue, or from the backup queue.
-      const take = async (bytes: Uint8Array) => {
-        if (!e2e) return;
-        // A group's message (lib/groups.ts), to the space's queue only.
-        if (!hiddenKey && isGroupPacket(bytes)) {
-          await takeGroupPacket(bytes).catch(() => undefined);
-          return;
-        }
+      // One message from our queue (`own`), from one of the others (`old`, lib/queue-move.ts), or
+      // from the backup queue: what it was to the junk meter.
+      const take = async (bytes: Uint8Array, kind?: QueueKind | 'old'): Promise<Took> => {
+        if (!e2e) return { junk: false };
+        // A group's message (lib/groups.ts), to the space's queues only.
+        if (isGroupPacket(bytes)) return { junk: hiddenKey ? true : !(await takeGroupPacket(bytes).catch(() => true)) };
         // An answer to an SMS invite sent from here: their contact link.
         const invited = hiddenKey ? null : await takeInviteAnswer(e2e, bytes, ownSender, here()).catch(() => null);
         if (invited) {
           if (active) setContacts(e2e.contacts());
           if (active) setNote(t('{number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.', { number: invited.number }));
-          return;
+          return { junk: false };
         }
         // Taken from the relay, so kept even if the chat closed meanwhile.
-        let received = await e2e.receive(bytes);
+        let received = await e2e.receive(bytes, kind === 'own' ? { onOwn: true } : { old: kind !== undefined });
         // Someone whose SMS invite was answered here: a contact at once, not a message request.
         const number = !hiddenKey && received.kind === 'message' && received.added ? await linkInviter(e2e, received.identity).catch(() => null) : null;
         if (number && received.kind === 'message') received = { ...received, request: false };
         handle(received);
         if (number && active) setNote(t('{number} has Erevos and is now a contact. Messages to that number go through Erevos.', { number }));
+        return tookOf(received);
+      };
+      // Tells a kept contact where this chat reads now, in a quiet message with nothing in it: from
+      // the queue and the ring queue kept now, which a move just changed (lib/queue-move.ts).
+      const tellNow = async (identity: string) => {
+        const { space, key } = currentSpace();
+        const data = await (hiddenKey ? loadHiddenData(space, pocket, hiddenKey) : loadCurrentSpaceData());
+        const rf = hiddenKey ? (ringing && data.ringQueue ? data.ringQueue.senderHex : '') : undefined;
+        const sealed = await e2e.seal(identity, '', data.ownQueue?.senderHex ?? ownSender, { at: here(), rf });
+        await handOver(e2e, sends, identity, sealed, [sealed.packet], 'quiet');
       };
       // What came to the backup queue, whether or not our relay answers.
-      const spare = () => lookAtSpare(e2e, take, () => !active, spareStore).catch(() => undefined);
+      const spare = () => lookAtSpare(e2e, (bytes) => take(bytes).then(() => undefined), () => !active, spareStore).catch(() => undefined);
+      const found = { taken: 0, junk: 0 };
       try {
         await sendPending(e2e, sends);
         await sendCopies(e2e, sends).catch(() => 0);
@@ -1347,8 +1378,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         if (!hiddenKey) void nearby.uploadCarried((url, sealed, mark) => carryTo(sends, url, sealed, mark)).catch(() => undefined);
         // An SMS invite sent from the SMS screen since: its answer may be on its way.
         if (!hiddenKey) await refreshSmsLink().catch(() => undefined);
-        // In the background, out of a call: waits at the relay until something comes.
-        if (!hiddenKey && !currentCall() && !currentGroupCall()) waited = await waitWhileAway(own, recipient);
+        // In the background, out of a call: waits at the relay until something comes, to the groups' queue too.
+        const queues = await mover.current?.queues().catch(() => null);
+        const others = queues?.group && sameRelay(queues.group.url, url) ? [fromHex(queues.group.queue.recipientHex)] : [];
+        if (!hiddenKey && !currentCall() && !currentGroupCall()) waited = await waitWhileAway(own, recipient, others);
         for (let i = 0; i < RECEIVE_BATCH && active; i++) {
           const bytes = await receiveMessage(own, recipient);
           if (failed !== null && active) {
@@ -1357,10 +1390,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             failed = null;
           }
           if (!bytes) break;
-          await take(bytes);
+          found.taken++;
+          if ((await take(bytes, 'own')).junk) found.junk++;
         }
         await spare();
-        if (!hiddenKey) await answerInvites(e2e, ownSender, here(), sends).catch(() => undefined);
+        // A move due, kept contacts told, the other queues read (lib/queue-move.ts). Moved, the look
+        // starts again on the new queue.
+        const moved = active && mover.current ? await mover.current.look({ own, found, take, tell: tellNow, shows: appShown(), stop: () => !active }).catch(() => null) : null;
+        if (moved && active) {
+          if (moved.notes.length > 0) setNote(moved.notes.join(' '));
+          const after = await mover.current!.queues().catch(() => null);
+          if (active && after) setLinkQueue(after.link?.queue ?? null);
+          if (moved.queue) {
+            setOwnQueue(moved.queue);
+            return;
+          }
+        }
+        if (!hiddenKey) await answerInvites(e2e, queues ? linkOf(queues, ownQueue!).senderHex : ownSender, here(), sends).catch(() => undefined);
         // What waited to go, now that the relay answers.
         void sendWaitingNow.current(true);
         await sendReceipts(sends);
@@ -1377,14 +1423,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           return;
         }
         // The relay no longer has our queue (deleted, or a relay that keeps queues in memory
-        // was restarted). Make a new one so messages can reach us again.
+        // was restarted). Make a new one so messages can reach us again: contacts are told.
         try {
-          const ids = await createQueue(own);
-          if (!active) return;
-          setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
-          setNote(
-            t('The relay had lost your queue, so a new one was made. Your contacts learn it from your next message to them.'),
-          );
+          const queue = await mover.current?.lost(own);
+          if (!active || !queue) return;
+          setOwnQueue(queue);
+          setNote(t('The relay had lost your queue, so you have a new one. Your contacts are told quietly.'));
         } catch (retry) {
           if (active) setNote(errorText(retry));
         }
@@ -2378,6 +2422,117 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  // Deleting a contact forgets them and their chat here, and gives this chat a new relay queue, which
+  // the other contacts are told quietly (lib/queue-move.ts), so they can no longer write to it.
+  // Blocking also drops what they send later, a request too. Their phone is not told. Said with it:
+  // the groups they share with this phone, where they can still write.
+  function deleteContact(peer: string, block: boolean) {
+    const name = label(peer, shownContacts);
+    ask(
+      block ? t('Block contact') : t('Delete contact'),
+      block
+        ? t('Block {name}? As with deleting, and what they send later is dropped, a request too. You can unblock them under Blocked contacts.', { name })
+        : t('Delete {name}? Your chat with them goes from this phone. Erevos gives you a new relay queue and tells your other contacts quietly, so {name} can no longer write to you. With your contact link they can still ask to talk again.', { name }),
+      [
+        { text: t('Cancel'), style: 'cancel' },
+        { text: block ? t('Block') : t('Delete'), style: 'destructive', onPress: () => void deleted(peer, name, block) },
+      ],
+    );
+  }
+
+  async function deleted(peer: string, name: string, block: boolean) {
+    if (!e2e) return;
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    const shared = hiddenKey ? 0 : await sharedGroups(identity).catch(() => 0);
+    const request = e2e.contacts().some((c) => c.identity === identity && c.request);
+    try {
+      await e2e.deleteContact(identity, { block });
+    } catch (error) {
+      setNote(errorText(error));
+      return;
+    }
+    // What a relay holds for later to them goes no more.
+    const now = Date.now();
+    for (const m of messages) if (m.peer === peer && m.held && m.at > now) void takeBack(relayTarget(), m.held).catch(() => false);
+    forgetChat(peer);
+    setContacts(e2e.contacts());
+    setBlocked(e2e.blocked());
+    setDetails(false);
+    setSelected(null);
+    // A message request knows only the queue the contact link names: nothing moves for it. On a
+    // linked computer the phone moves.
+    const moves = !request && (e2e.moveDue() > 0 || !!accountLink());
+    let said = !moves
+      ? block
+        ? t('Blocked.')
+        : ''
+      : block
+        ? t('{name} is blocked. Your other contacts learn your new queue as soon as the relay answers.', { name })
+        : t('{name} is deleted. Your other contacts learn your new queue as soon as the relay answers.', { name });
+    const url = relayUrl.trim();
+    if (moves && url && ownQueue && mover.current) {
+      try {
+        const queue = await mover.current.moveNow({ url, token: relayToken.trim() || undefined });
+        if (queue) setOwnQueue(queue);
+      } catch {
+        said = t('The relay could not be reached, so your queue changes as soon as it can. Until then {name} can still write to it, but nothing they send shows.', { name });
+      }
+    }
+    if (shared > 0) {
+      said += `${said ? ' ' : ''}${plural(
+        shared,
+        '{name} is still in one of your groups, and can write to you there. Leave it, or ask its admin to take them out.',
+        '{name} is still in {n} of your groups, and can write to you there. Leave them, or ask their admins to take {name} out.',
+        { name, n: shared },
+      )}`;
+    }
+    if (said) setNote(said);
+  }
+
+  // The space's groups the contact `identity` is in with this phone, by who each member is.
+  async function sharedGroups(identity: string): Promise<number> {
+    if (!canGroup()) return 0;
+    const groups = await spaceGroups();
+    let shared = 0;
+    for (const group of groups.list()) {
+      if (group.status !== 'in') continue;
+      if ((await groups.members(group.id).catch(() => [])).some((m) => !m.me && m.about?.id === identity)) shared++;
+    }
+    return shared;
+  }
+
+  async function unblock(identity: string) {
+    if (!e2e) return;
+    await e2e.unblock(identity).catch((error) => setNote(errorText(error)));
+    setBlocked(e2e.blocked());
+  }
+
+  // A new contact link: the links and QR codes given before work for the relay's 14 days, then no more.
+  function newContactLink() {
+    const url = relayUrl.trim();
+    if (!url || !ownQueue || !mover.current) {
+      setNote(t('Create your relay queue first, under Relay and new contacts.'));
+      return;
+    }
+    const date = new Date(Date.now() + 14 * 24 * 3600_000).toLocaleDateString(locale());
+    ask(t('New contact link'), t('Make a new contact link? The links and QR codes you gave before work until {date}, then no more. Your contacts are not affected.', { date }), [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: t('New contact link'),
+        onPress: async () => {
+          try {
+            const made = await mover.current!.newLink({ url, token: relayToken.trim() || undefined });
+            if (made.queue) setOwnQueue(made.queue);
+            setLinkQueue((await mover.current!.queues()).link?.queue ?? null);
+            setNote(t('You have a new contact link. The links and QR codes you gave before work until {date}.', { date: new Date(made.until).toLocaleDateString(locale()) }));
+          } catch (error) {
+            setNote(errorText(error));
+          }
+        },
+      },
+    ]);
+  }
+
   // Refusing forgets them and their messages here. Their phone is not told.
   function refuseRequest(peer: string) {
     ask(t('Refuse request'), t('Refuse {name}? Their messages go, and anything they send later is not shown.', { name: label(peer, contacts) }), [
@@ -3105,6 +3260,30 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  // What moves with these hidden chats' own queue (lib/queue-move.ts): the watch slot says the new
+  // one, and a ring queue they ring with is made anew at once and the one before deleted, so whoever
+  // was deleted or blocked can no longer ring this phone. Kept contacts learn it with the tells.
+  const hiddenMoved = useRef(async (_queue: Queue, _old: Queue | null, _why: MoveWhy) => undefined as void);
+  hiddenMoved.current = async (queue, _old, why) => {
+    if (!hiddenKey) return;
+    const { space, key } = currentSpace();
+    const url = relayUrl.trim();
+    const token = relayToken.trim();
+    if (!url) return;
+    if (watched) await watchPocket(space, key, pocket, { url, token, recipientHex: queue.recipientHex }).catch(() => setWatched(false));
+    // A new contact link changes nothing of who may ring.
+    const before = (await loadHiddenData(space, pocket, hiddenKey)).ringQueue;
+    if (!ringing || !before || why === 'link') return;
+    try {
+      const made = await moveRingPocket(space, key, pocket, { url, token: token || undefined }, before.recipientHex);
+      const ring = { recipientHex: made.recipientHex, senderHex: made.senderHex };
+      await updateHiddenData(space, pocket, hiddenKey, { ringQueue: ring });
+      setRingQueue(ring);
+    } catch {
+      // The ring queue stays as it was until the next move.
+    }
+  };
+
   async function createOwnQueue() {
     // What was just typed counts, even before typing paused.
     for (const field of [typedRelay, typedToken, typedVia, typedViaToken]) field.done();
@@ -3302,7 +3481,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       ? accountLink()
       : ownQueue
       ? contactLink({
-          senderHex: ownQueue.senderHex,
+          // The queue the link names, which a deletion or a block leaves as it is (lib/queue-move.ts).
+          senderHex: (linkQueue ?? ownQueue).senderHex,
           relayUrl: relayUrl.trim(),
           key: toBase64Url(e2e.bundle),
           relayKey: ownRelayKey || undefined,
@@ -3867,6 +4047,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         deleteMessages(selectedContact);
                       }}
                     />
+                    <DetailRow title={t('Delete contact')} danger onPress={() => deleteContact(selectedContact, false)} />
+                    <DetailRow title={t('Block contact')} danger onPress={() => deleteContact(selectedContact, true)} />
                   </View>
                 </>
               ) : null}
@@ -4137,6 +4319,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         compact
                         onPress={() => void shareLink(ownLink)}
                       />
+                      {ownQueue && !accountLink() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}
                     </Row>
                     {ownQueue && canSharePlace ? (
                       <View>
@@ -4167,6 +4350,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   />
                   <Button title={t('Add')} compact onPress={() => addContact()} />
                 </Row>
+                {/* On a linked computer the phone keeps who is blocked. */}
+                {!accountLink() ? (
+                  <View style={styles.section}>
+                    <Text variant="label">{t('Blocked contacts')}</Text>
+                    {blocked.length === 0 ? (
+                      <Text variant="caption" tone="muted">
+                        {t('No one is blocked.')}
+                      </Text>
+                    ) : (
+                      blocked.map((b) => (
+                        <Row key={b.identity}>
+                          <Text style={[styles.grow, !b.name && styles.monoName]} numberOfLines={1}>
+                            {b.name || b.identity.slice(0, 16)}
+                          </Text>
+                          <TextButton title={t('Unblock')} onPress={() => void unblock(b.identity)} />
+                        </Row>
+                      ))
+                    )}
+                  </View>
+                ) : null}
                 {/* Not in hidden chats: a photo leaves Erevos, which closes them. */}
                 {!hiddenKey ? (
                   <Row wrap>
@@ -4223,6 +4426,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           <Row wrap>
             <TextButton title={t('Accept')} onPress={() => void acceptRequest(selectedContact)} />
             <TextButton title={t('Refuse')} onPress={() => refuseRequest(selectedContact)} />
+            <TextButton title={t('Block')} onPress={() => deleteContact(selectedContact, true)} />
           </Row>
         </View>
       ) : null}

@@ -98,6 +98,14 @@ export type Contact = {
    *  same is not given again, but a later one, or where its endpoints read changed since, is. */
   listSent?: number;
   listGiven?: { n: number; rAt: number };
+  /** The `qa` their messages last said (lib/moves.ts): when the queue they read on was made. A later
+   *  message that says an older one, as a late copy, leaves where they read as it is. Missing while
+   *  none said one (an Erevos before). */
+  qa?: number;
+  /** When this chat last told them its own queue (lib/queue-move.ts), and `onNew`: the `qa` of this
+   *  chat's own queue they were last heard on, so the old one goes once all were. */
+  told?: Told;
+  onNew?: number;
   /** On a linked device, and from a contact whose account lists devices (`list`): their messages
    *  taken here, each once by its tag, with the day it first came, for as long as another copy of
    *  it may still come (TOOK_LASTS), and of a voice message not all taken yet the parts that were;
@@ -112,6 +120,15 @@ export type Contact = {
  * yet the parts that were (`p`), and whether it came again since (`two`).
  */
 export type Took = { t: string; at: number; p?: number[]; two?: true };
+
+/** When a contact was told this chat's own queue: its `qa`, when first, and how many times (lib/moves.ts). */
+export type Told = { qa: number; at: number; n: number };
+
+/** Someone blocked (E2E.deleteContact): their identity (hex), the name they had here, and when. */
+export type Blocked = { identity: string; name: string; at: number };
+
+/** The most blocked kept: the oldest goes first. */
+export const MAX_BLOCKED = 200;
 
 /** A contact's device list as checked: its body and the account's signature (base64url), and its `n`. */
 export type TheirList = { b: string; s: string; n: number };
@@ -212,7 +229,15 @@ export function checkedAvatar(value: unknown): Avatar | null {
  * and which of its endpoints are the devices' (`real`, hex): the others only fill its places. Only
  * the account's own devices know which.
  */
-export type OwnList = { b: string; s: string; n: number; real: string[]; r?: Record<string, Route>; q?: Record<string, string>; rAt?: number; restore?: string; cut?: number };
+export type OwnList = { b: string; s: string; n: number; real: string[]; r?: Record<string, Route>; q?: Record<string, string>; rAt?: number; restore?: string; cut?: number; qWas?: OldFiller[] };
+
+/**
+ * A queue a place that fills the list read on before the phone's own queue moved for a contact
+ * deleted or blocked (lib/devices.ts): its recipient id (hex), on the relay it was made on, emptied
+ * now and then until `until` (ms), then deleted. Kept in `qWas`, at most MAX_OLD_FILLERS.
+ */
+export type OldFiller = { q: string; relay: string; until: number };
+export const MAX_OLD_FILLERS = 16;
 
 /**
  * Where an endpoint reads, as a list says it to contacts (lib/device-list.ts Route): its queue's
@@ -265,6 +290,12 @@ export type E2EData = {
   unverified?: Unverified[];
   /** On a linked device: first packets from contacts' accounts it did not know yet. */
   early?: Early[];
+  /** When a contact was deleted or blocked here (ms): this chat's own queue moves (lib/queue-move.ts)
+   *  once it has not since. Saved with the contact's removal, so neither is kept without the other.
+   *  Missing when no move is due. */
+  moveDue?: number;
+  /** Who is blocked: a first packet from them is dropped, and so is what they ask through a group or an SMS invite. */
+  blocked?: Blocked[];
 };
 
 export type Prekeys = { secret: string; bundle: string; at: number };
@@ -344,7 +375,20 @@ function checkedContact(value: unknown): Contact | null {
     ...(isCount(v.listSent) ? { listSent: v.listSent } : {}),
     ...(checkedGiven(v.listGiven) ? { listGiven: checkedGiven(v.listGiven)! } : {}),
     ...(Array.isArray(v.took) ? { took: v.took.map(checkedTook).filter((t): t is Took => t !== null).slice(-MAX_TOOK) } : {}),
+    ...(isTime(v.qa) ? { qa: v.qa } : {}),
+    ...(checkedTold(v.told) ? { told: checkedTold(v.told)! } : {}),
+    ...(isTime(v.onNew) ? { onNew: v.onNew } : {}),
   };
+}
+
+function checkedTold(value: unknown): Told | null {
+  const v = (value ?? {}) as Partial<Record<keyof Told, unknown>>;
+  return isTime(v.qa) && isTime(v.at) && isCount(v.n) ? { qa: v.qa, at: v.at, n: v.n } : null;
+}
+
+function checkedBlocked(value: unknown): Blocked | null {
+  const v = (value ?? {}) as Partial<Record<keyof Blocked, unknown>>;
+  return isHex(v.identity) && v.identity.length === 64 && isTime(v.at) ? { identity: v.identity, name: isText(v.name) ? cleanName(v.name) : '', at: v.at } : null;
 }
 
 const isCount = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= 0;
@@ -431,6 +475,7 @@ function checkedList(value: unknown): OwnList | null {
   if (v.q && typeof v.q === 'object') {
     for (const [id, recipient] of Object.entries(v.q).slice(0, MAX_REAL)) if (isHex(id) && id.length === 64 && isHex(recipient) && recipient.length === 48) q[id] = recipient;
   }
+  const qWas = Array.isArray(v.qWas) ? v.qWas.map(checkedOldFiller).filter((w): w is OldFiller => w !== null).slice(-MAX_OLD_FILLERS) : [];
   return {
     b: v.b,
     s: v.s,
@@ -441,7 +486,13 @@ function checkedList(value: unknown): OwnList | null {
     ...(isTime(v.rAt) && v.rAt > 0 ? { rAt: v.rAt } : {}),
     ...(isText(v.restore) && v.restore ? { restore: v.restore } : {}),
     ...(isCount(v.cut) && v.cut > 0 ? { cut: v.cut } : {}),
+    ...(qWas.length > 0 ? { qWas } : {}),
   };
+}
+
+function checkedOldFiller(value: unknown): OldFiller | null {
+  const v = (value ?? {}) as Partial<Record<keyof OldFiller, unknown>>;
+  return isHex(v.q) && v.q.length === 48 && isText(v.relay) && v.relay.length <= 2048 && isTime(v.until) ? { q: v.q, relay: v.relay, until: v.until } : null;
 }
 
 function checkedOwn(value: unknown): Own | null {
@@ -468,6 +519,8 @@ function checked(value: unknown): E2EData {
     ...(isTime(v.putBack) && v.putBack > 0 ? { putBack: v.putBack } : {}),
     ...(Array.isArray(v.unverified) ? { unverified: v.unverified.map(checkedUnverified).filter((u): u is Unverified => u !== null).slice(-MAX_UNVERIFIED) } : {}),
     ...(Array.isArray(v.early) ? { early: v.early.map(checkedEarly).filter((e): e is Early => e !== null).slice(-MAX_EARLY) } : {}),
+    ...(isTime(v.moveDue) && v.moveDue > 0 ? { moveDue: v.moveDue } : {}),
+    ...(Array.isArray(v.blocked) ? { blocked: v.blocked.map(checkedBlocked).filter((b): b is Blocked => b !== null).slice(-MAX_BLOCKED) } : {}),
   };
 }
 

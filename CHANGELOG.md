@@ -10,6 +10,24 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet. The next release is **2.0.0**.
 
+- **Deleting or blocking a contact gives you a new relay queue**: **Delete contact** and **Block
+  contact** in a chat's details forget them and their chat, and Erevos makes a new queue at once,
+  which your other contacts are told quietly, in a message with nothing in it, and again 7, 14 and
+  21 days later while they have not written there; what they wrote to the old one still shows for 14
+  days. The one deleted is not told and nothing they send there shows; your contact link stays, so
+  they can still ask to talk again, unless blocked: then what they send is dropped, a request too,
+  until **Unblock** under **Blocked contacts**. **Block** sits beside **Refuse** on a request, and
+  moves nothing, as a request knows only your link. The note says in how many of your groups they
+  still are. When junk fills your queue it moves the same way, at most once a day, and junk on the
+  queue your link names gives you a new link, as **New contact link** under **Relay and new
+  contacts** does: the old links and QR codes work 14 days more. Your groups and public groups each
+  say a queue of their own from now on, so a member no longer learns the one in your link, and a
+  group admin says it with new keys. On a linked computer, deleting or blocking goes to the phone,
+  which moves the places of its list and asks the computer to move its own; in hidden chats only
+  that place moves, its ring queue at once. A linked computer never rings a contact's ring queue
+  itself, so a call from it rings their closed hidden chats only once they are open, as the phone
+  does not pass it on to that queue.
+
 - **A new Erevos contact can take the name of one of your contacts**: adding someone by their
   Erevos ID, from a scanned link (**Add and connect to one of my contacts**) or under **Relay and
   new contacts** (**Connect to one of my contacts**, under the note that they were added), lets you

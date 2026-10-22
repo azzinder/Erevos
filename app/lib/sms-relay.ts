@@ -70,8 +70,8 @@ export async function linkInviter(e2e: E2E, identity: string): Promise<string | 
   return number;
 }
 
-/** Answers SMS invites from Erevos phones with this chat's contact link, sealed for the inviter. */
-export async function answerInvites(e2e: E2E, ownSender: string, here: Where, sends: Relay): Promise<void> {
+/** Answers SMS invites from Erevos phones with this chat's contact link, sealed for the inviter: the queue the link names (`linkSender`, lib/queue-move.ts). */
+export async function answerInvites(e2e: E2E, linkSender: string, here: Where, sends: Relay): Promise<void> {
   if (!canSealOpen()) return;
   const link = await spaceSmsLink();
   const pieces = (await takeSmsInvites()).map((p) => ({ from: p.from, data: fromBase64(p.data), at: p.at }));
@@ -81,8 +81,8 @@ export async function answerInvites(e2e: E2E, ownSender: string, here: Where, se
     const { from, invite } = item;
     if (e2e.phones().some((p) => sameNumber(p.phone, from))) continue;
     try {
-      const own = contactLink({ senderHex: ownSender, relayUrl: here.relay, key: toBase64Url(e2e.bundle), relayKey: here.relayKey || undefined });
-      const sealed = await relaySeal(invite.key, fromHex(ownSender), inviteAnswer(own));
+      const own = contactLink({ senderHex: linkSender, relayUrl: here.relay, key: toBase64Url(e2e.bundle), relayKey: here.relayKey || undefined });
+      const sealed = await relaySeal(invite.key, fromHex(linkSender), inviteAnswer(own));
       // This chat's contact link, which their phone adds: no message (lib/relay.ts, Mark).
       await sendMessage(contactTarget(sends, invite), fromHex(invite.sender), sealed, 'quiet');
       await link.answered(from, invite.sender);

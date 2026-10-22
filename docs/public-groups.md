@@ -140,9 +140,11 @@ Erevos join them as before. A public group needs this Erevos on every phone in i
   them in. Once someone has the link, it can be passed on: change it to stop that.
 - **The link shows the group's name and the owner's relay address** to whoever sees it.
 - **Every member sees every member's** chosen name, the key it signs with in this group, its relay's
-  address and its queue's sender id. The sender id is also in the member's contact link, so someone
-  who has that can tell it is them. The key is made for this group alone: it does not say who they
-  are in their chats, nor which other groups they are in.
+  address and its queue's sender id. From 2.0.0 that is a queue its public groups alone read on, not
+  the one in its contact link nor the one its contacts write to, so the link no longer tells who it
+  is; the same queue in each of its public groups, so members of two of them can tell it is the same
+  member. An Erevos before still says the queue of its contact link. The key is made for this group
+  alone: it does not say who they are in their chats, nor which other groups they are in.
 - **Members can write to each other's queues.** A member can fill another's queue with what it
   cannot read; the relay takes at most 1000 messages for a queue.
 - **Names are chosen, not proven.** Anyone can call themselves anything; the start of each member's

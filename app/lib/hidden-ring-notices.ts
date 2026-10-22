@@ -69,13 +69,15 @@ export function startHiddenRinging(ring: (space: number, pocket: number) => void
 
   async function watch(pocket: number) {
     let failures = 0;
+    // A queue the relay said it no longer has, as one a place moved away from (lib/queue-move.ts).
+    let gone = '';
     while (!stopped) {
       if (!mayRing(pocket)) {
         await pause(MOST_PAUSE);
         continue;
       }
       const kept = (await loadRinged(space, key).catch(() => null))?.[pocket] ?? null;
-      if (!kept) {
+      if (!kept || kept.recipientHex === gone) {
         await pause(MOST_PAUSE);
         continue;
       }
@@ -95,9 +97,10 @@ export function startHiddenRinging(ring: (space: number, pocket: number) => void
           ring(space, pocket);
         }
       } catch (error) {
-        // A queue the relay no longer has: waited on again, in case it comes back; the place can
-        // turn ringing off and on to make a new one.
-        if (!isQueueNotFound(error)) failures++;
+        // A queue the relay no longer has is not asked again until the slot names another: the
+        // place gave it a new one as it moved, or turning ringing off and on makes one.
+        if (isQueueNotFound(error)) gone = kept.recipientHex;
+        else failures++;
         await pause(Math.min(MOST_PAUSE, 5_000 * 2 ** failures));
       } finally {
         waits.delete(wait);

@@ -908,3 +908,131 @@ t('a chat moves into the hidden chats whole, with the same safety number, and go
   assert.equal(answer.sender, queue);
   assert.equal(message(await reopened.receive(answer.packet)).text, 'εδώ είμαι');
 });
+
+const HOUR = 60 * 60_000;
+
+t('deleting a contact has the queue move in the same save; a first packet from them is a request, from someone blocked dropped', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(bobId);
+  assert.equal(alice.e2e.moveDue(), 0);
+  const before = Date.now();
+  await alice.e2e.deleteContact(bobId);
+  const kept = await loadE2EData('space', 0, alice.key);
+  assert.ok((kept.moveDue ?? 0) >= before);
+  assert.equal(kept.contacts.length, 0);
+  assert.deepEqual(alice.e2e.blocked(), []);
+  // A move that started before it leaves it due; one after it is done.
+  await alice.e2e.moveDone(before - 1);
+  assert.ok(alice.e2e.moveDue() > 0);
+  await alice.e2e.moveDone(Date.now());
+  assert.equal(alice.e2e.moveDue(), 0);
+
+  // Bob, with Alice's link still, asks to talk again: a request.
+  const again = async () => {
+    await bob.e2e.removeContact(hello.identity);
+    await bob.e2e.addContact(alice.code, bob.from);
+    return alice.e2e.receive(bob.e2e.pending()[0].first);
+  };
+  assert.equal(message(await again()).request, true);
+  // Blocked: what he sends is dropped, a request too, until unblocked. A request knows only the
+  // queue the link names, so blocking it moves nothing.
+  await alice.e2e.deleteContact(bobId, { block: true });
+  assert.equal(alice.e2e.moveDue(), 0);
+  assert.deepEqual(
+    alice.e2e.blocked().map((b) => b.identity),
+    [bobId],
+  );
+  assert.equal(alice.e2e.isBlocked(bobId), true);
+  assert.deepEqual(await again(), { kind: 'refused', reason: 'blocked' });
+  assert.deepEqual(alice.e2e.contacts(), []);
+  // Kept as blocked when the chat opens again.
+  const reopened = await E2E.open('space', 0, alice.key);
+  assert.equal(reopened.isBlocked(bobId), true);
+  await reopened.unblock(bobId);
+  assert.deepEqual(reopened.blocked(), []);
+  await bob.e2e.removeContact(hello.identity);
+  await bob.e2e.addContact(alice.code, bob.from);
+  assert.equal(message(await reopened.receive(bob.e2e.pending()[0].first)).request, true);
+});
+
+t('a message from a queue made earlier keeps where the contact reads; one that says no `qa` takes it, as 0.1.16', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(bobId);
+  const aliceId = hello.identity;
+  const write = async (text: string, from: string) => message(await alice.e2e.receive((await bob.e2e.seal(aliceId, text, from)).packet));
+  // Bob's queue was made at 20h: Alice writes there.
+  const newer = sender();
+  bob.e2e.setQueueAge(20 * HOUR, newer);
+  await write('one', newer);
+  assert.equal(alice.e2e.record(bobId)!.sender, newer);
+  assert.equal(alice.e2e.record(bobId)!.qa, 20 * HOUR);
+  // A late copy from a queue made at 10h opens, and changes nothing of where he reads.
+  const older = sender();
+  bob.e2e.setQueueAge(10 * HOUR, older);
+  assert.equal((await write('late', older)).text, 'late');
+  assert.equal(alice.e2e.record(bobId)!.sender, newer);
+  // A screen that seals with a queue it moved away from says the one it moved to.
+  const newest = sender();
+  bob.e2e.setQueueAge(30 * HOUR, newest);
+  await write('moved', newer);
+  assert.equal(alice.e2e.record(bobId)!.sender, newest);
+  // An Erevos before R4 says no `qa`: it is taken, as it always was.
+  bob.e2e.setQueueAge(0);
+  await write('from before', older);
+  assert.equal(alice.e2e.record(bobId)!.sender, older);
+});
+
+t('a packet from an old queue opens in a kept contact’s conversation, says nothing of the new queue, and tries none of those whose packets come sealed', async () => {
+  const wasm = createRequire(import.meta.url)(built.pathname) as Record<string, (...args: never[]) => unknown>;
+  let opens = 0;
+  const useCore = (count: boolean) =>
+    setCore(
+      Object.fromEntries(
+        Object.entries(wasm).map(([name, call]) => [
+          name,
+          async (...args: never[]) => {
+            if (count && name === 'conversationOpen') opens++;
+            return call(...args);
+          },
+        ]),
+      ) as unknown as Core,
+    );
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(bobId);
+  alice.e2e.setQueueAge(10 * HOUR, alice.from);
+  const fromBob = async (text: string) => (await bob.e2e.seal(hello.identity, text, bob.from)).packet;
+  assert.equal(message(await alice.e2e.receive(await fromBob('old'), { old: true })).text, 'old');
+  assert.equal(alice.e2e.record(bobId)!.onNew, undefined);
+  assert.equal(message(await alice.e2e.receive(await fromBob('new'), { onOwn: true })).text, 'new');
+  assert.equal(alice.e2e.record(bobId)!.onNew, 10 * HOUR);
+  assert.equal(alice.e2e.heardSince(), 10 * HOUR);
+
+  // Carol writes to Dave; Alice's contact Bob sends sealed from now on.
+  const carol = await chat('space', 2);
+  const dave = await chat('space', 3);
+  const { identity: daveId } = await carol.e2e.addContact(dave.code, carol.from);
+  message(await dave.e2e.receive(carol.e2e.pending()[0].first));
+  await carol.e2e.firstSent(daveId);
+  const strange = (await carol.e2e.seal(daveId, 'not for Alice', carol.from)).packet;
+  const data = await loadE2EData('space', 0, alice.key);
+  await saveE2EData('space', 0, alice.key, { ...data, contacts: data.contacts.map((c) => ({ ...c, sealsIn: true })) });
+  const sealing = await E2E.open('space', 0, alice.key);
+  try {
+    useCore(true);
+    assert.deepEqual(await sealing.receive(strange, { old: true }), { kind: 'refused', reason: 'unknown' });
+    assert.equal(opens, 0);
+    assert.deepEqual(await sealing.receive(strange), { kind: 'refused', reason: 'unknown' });
+    assert.equal(opens, 1);
+  } finally {
+    useCore(false);
+  }
+});
