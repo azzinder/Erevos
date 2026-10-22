@@ -40,7 +40,7 @@ export function useHiddenRinging(): HiddenRinging | null {
 // The owner typed the right PIN on the ring screen: the next incoming call the hidden place opens
 // is answered at once, as they already chose to by opening it. Held a short while (the call rings
 // only so long), then it lapses.
-const KEEP_MS = 60_000;
+export const HIDDEN_ANSWER_MS = 60_000;
 let answer: number | null = null;
 
 /** The right PIN was typed to answer the ringing hidden call: the chat screen takes it to answer. */
@@ -52,5 +52,17 @@ export function answerHiddenCall(now = Date.now()): void {
 export function takeHiddenAnswer(now = Date.now()): boolean {
   const at = answer;
   answer = null;
-  return at !== null && now - at <= KEEP_MS;
+  return at !== null && now - at <= HIDDEN_ANSWER_MS;
+}
+
+/** When the right PIN was typed to answer a ringing hidden call that no call took yet, or null. */
+export function hiddenAnswerAt(): number | null {
+  return answer;
+}
+
+/** Clears the answer typed at `at` if no call took it, and says whether it was still there: a ring that brought no call. */
+export function lapseHiddenAnswer(at: number): boolean {
+  if (answer !== at) return false;
+  answer = null;
+  return true;
 }

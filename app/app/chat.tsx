@@ -82,6 +82,8 @@ import { LockedOutError, lockedOutMessage } from '../lock/tries';
 import { cleanName, MAX_NAME, type Avatar, type Blocked, type Spare } from '../lock/e2e-data';
 import { placeQueues, type QueueKind } from '../lock/queues-data';
 import { QueueMove, linkOf, spaceMover, tookOf, type MoveWhy, type Took } from '../lib/queue-move';
+import { FAKE_RINGS_WITHIN, fakeRings } from '../lib/moves';
+import { HIDDEN_ANSWER_MS, hiddenAnswerAt, lapseHiddenAnswer } from '../lib/hidden-ring';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
@@ -3260,29 +3262,76 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  // What moves with these hidden chats' own queue (lib/queue-move.ts): the watch slot says the new
-  // one, and a ring queue they ring with is made anew at once and the one before deleted, so whoever
-  // was deleted or blocked can no longer ring this phone. Kept contacts learn it with the tells.
-  const hiddenMoved = useRef(async (_queue: Queue, _old: Queue | null, _why: MoveWhy) => undefined as void);
-  hiddenMoved.current = async (queue, _old, why) => {
-    if (!hiddenKey) return;
+  // A new ring queue for these hidden chats, if they ring, made at once with the one before deleted,
+  // so whoever rang it can no longer ring this phone. Kept contacts learn it with the tells, and the
+  // rings that brought no call are forgotten. Says whether it moved.
+  const moveRing = useRef(async () => false);
+  moveRing.current = async () => {
+    if (!hiddenKey || !ringing) return false;
     const { space, key } = currentSpace();
     const url = relayUrl.trim();
     const token = relayToken.trim();
-    if (!url) return;
-    if (watched) await watchPocket(space, key, pocket, { url, token, recipientHex: queue.recipientHex }).catch(() => setWatched(false));
-    // A new contact link changes nothing of who may ring.
     const before = (await loadHiddenData(space, pocket, hiddenKey)).ringQueue;
-    if (!ringing || !before || why === 'link') return;
+    if (!url || !before) return false;
     try {
       const made = await moveRingPocket(space, key, pocket, { url, token: token || undefined }, before.recipientHex);
       const ring = { recipientHex: made.recipientHex, senderHex: made.senderHex };
       await updateHiddenData(space, pocket, hiddenKey, { ringQueue: ring });
       setRingQueue(ring);
+      await placeQueues(space, pocket, hiddenKey).update((d) => ({ ...d, rings: [] }));
+      return true;
     } catch {
       // The ring queue stays as it was until the next move.
+      return false;
     }
   };
+
+  // What moves with these hidden chats' own queue (lib/queue-move.ts): the watch slot says the new
+  // one, and the ring queue moves too, so whoever was deleted or blocked can no longer ring.
+  const hiddenMoved = useRef(async (_queue: Queue, _old: Queue | null, _why: MoveWhy) => undefined as void);
+  hiddenMoved.current = async (queue, _old, why) => {
+    if (!hiddenKey) return;
+    const { space, key } = currentSpace();
+    const url = relayUrl.trim();
+    if (!url) return;
+    if (watched) await watchPocket(space, key, pocket, { url, token: relayToken.trim(), recipientHex: queue.recipientHex }).catch(() => setWatched(false));
+    // A new contact link changes nothing of who may ring.
+    if (why !== 'link') await moveRing.current();
+  };
+
+  // A ring answered with the PIN that brought no call (lib/hidden-ring.ts) counts against the ring
+  // queue: three within a day and it moves (lib/moves.ts fakeRings), so whoever rings it for nothing
+  // can no longer. It counts when the answer lapses, or when these chats close before; it moves
+  // only while they are open.
+  useEffect(() => {
+    if (!hiddenKey || !loaded) return;
+    const queues = placeQueues(currentSpace().space, pocket, hiddenKey);
+    let open = true;
+    const moveIfFake = async (rings: number[]) => {
+      if (open && fakeRings(rings)) await moveRing.current();
+    };
+    void queues
+      .load()
+      .then((d) => moveIfFake(d.rings))
+      .catch(() => undefined);
+    const at = hiddenAnswerAt();
+    const count = () => {
+      if (at === null || !lapseHiddenAnswer(at)) return;
+      void queues
+        .update((d) => {
+          const now = Date.now();
+          return { ...d, rings: [...d.rings.filter((ring) => now - ring < FAKE_RINGS_WITHIN), now] };
+        })
+        .then((d) => moveIfFake(d.rings))
+        .catch(() => undefined);
+    };
+    const timer = at === null ? null : setTimeout(count, Math.max(0, at + HIDDEN_ANSWER_MS - Date.now()));
+    return () => {
+      open = false;
+      if (timer) clearTimeout(timer);
+      count();
+    };
+  }, [hiddenKey, loaded]);
 
   async function createOwnQueue() {
     // What was just typed counts, even before typing paused.

@@ -7,7 +7,9 @@
 // "Incoming call" notice, and the guard against ringing while a call is already in progress, are
 // played by lib/background.ts; the PIN that answers on the ring screen and a stale offer that
 // cannot connect are checked by lock.check.ts (searchHidden/SEARCH_TRIES) and call.check.ts
-// (OFFER_FRESH_MS). The relay part runs with a real relay, and is skipped, with a note, without one.
+// (OFFER_FRESH_MS); a ring the PIN answered that no call took counts towards moving the ring queue
+// (lib/moves.ts fakeRings, checked in moves.check.ts). The relay part runs with a real relay, and is
+// skipped, with a note, without one.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -16,7 +18,7 @@ import { test } from 'node:test';
 import type { OpenHiddenPlace } from '../lib/hidden-contacts';
 import { setOpenHiddenPlace } from '../lib/hidden-contacts';
 import { randomBytes } from '../lib/crypto';
-import { setHiddenRinging } from '../lib/hidden-ring';
+import { answerHiddenCall, HIDDEN_ANSWER_MS, hiddenAnswerAt, lapseHiddenAnswer, setHiddenRinging, takeHiddenAnswer } from '../lib/hidden-ring';
 import { startHiddenRinging } from '../lib/hidden-ring-notices';
 import { setAppShown } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
@@ -92,6 +94,19 @@ test('a place that moves for a deletion gets a new ring queue, the old one gone 
   // The one deleted can no longer ring: the relay has no such queue.
   await assert.rejects(sendMessage({ url }, fromHex(own.senderHex), randomBytes(64)), (error) => isQueueNotFound(error));
   await sendMessage({ url }, fromHex(made.senderHex), randomBytes(64));
+});
+
+test('a ring answered with the PIN that a call takes is no ring for nothing; one no call takes is, once', () => {
+  answerHiddenCall(1000);
+  assert.equal(hiddenAnswerAt(), 1000);
+  assert.equal(takeHiddenAnswer(1000 + HIDDEN_ANSWER_MS), true);
+  assert.equal(lapseHiddenAnswer(1000), false);
+  answerHiddenCall(5000);
+  assert.equal(lapseHiddenAnswer(4000), false);
+  assert.equal(lapseHiddenAnswer(5000), true);
+  assert.equal(lapseHiddenAnswer(5000), false);
+  assert.equal(hiddenAnswerAt(), null);
+  assert.equal(takeHiddenAnswer(5000), false);
 });
 
 test('in the background a pocket rings when a call comes, drained so the next rings too, let be while a hidden call rings or its place is open, and ringing on any of the four queues and though the app shows', { skip: !relayReady }, async () => {

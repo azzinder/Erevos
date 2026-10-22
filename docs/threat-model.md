@@ -60,7 +60,9 @@ Notes:
   so they can tell they were deleted, as they could from your silence. A move in hidden chats moves
   only that place's queues, its ring queue at once, and nothing of the space or the other places:
   someone with the space's password and two copies of its storage can tell which place's entries
-  changed, as when its notice or its ring is turned on or off.
+  changed, as when its notice or its ring is turned on or off. A place that rings also moves its
+  ring queue after three rings within a day that its PIN answered and no call came to, so whoever
+  rings it for nothing can no longer.
 - **One queue per space.** Every contact of a space writes to the same queue, so one relay sees all
   of them arrive there. The contact link names another once a contact was deleted or blocked, and
   the space's groups and public groups each read on one more, on the same relay and connection, so
