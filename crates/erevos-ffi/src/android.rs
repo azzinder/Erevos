@@ -93,6 +93,7 @@ bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_groupEpoch => crate::g
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_groupRenewal => crate::group_renewal, state, id, about);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_groupRenew => crate::group_renew, state, id, leaf, key_package);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_groupSelfUpdate => crate::group_self_update, state, id);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_groupSelfUpdateAs => crate::group_self_update_as, state, id, about);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_groupRejoin => crate::group_rejoin, state, id, welcome);
 #[cfg(feature = "tor")]
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torStart => crate::tor::start, state_dir, cache_dir, bridges, transports);

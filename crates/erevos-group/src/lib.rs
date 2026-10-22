@@ -570,15 +570,20 @@ impl Member {
 
     /// New keys for the keeper's own leaf, and so for every member's path to it: a commit that
     /// takes out those who asked to leave too. Keeper only: members renew theirs with `renewal`.
-    pub fn self_update(&mut self, id: &[u8]) -> Result<Vec<u8>> {
+    /// With `about`, the leaf says that of itself from then on, as a member's renewal does, signed
+    /// with the key it signs with there; without, what it said stays.
+    pub fn self_update(&mut self, id: &[u8], about: Option<&[u8]>) -> Result<Vec<u8>> {
         let mut group = self.keeper_group(id)?;
         if leaving(&group).contains(&group.own_leaf_index().u32()) {
             return Err(Error::OwnLeaf);
         }
         let signer = self.group_signer(&group)?;
-        let bundle = group
-            .self_update(&self.provider, signer.as_ref().unwrap_or(&self.signer), LeafNodeParameters::default())
-            .map_err(mls)?;
+        let signer = signer.as_ref().unwrap_or(&self.signer);
+        let parameters = match about {
+            Some(about) => LeafNodeParameters::builder().with_credential_with_key(credential_with(about, signer)).build(),
+            None => LeafNodeParameters::default(),
+        };
+        let bundle = group.self_update(&self.provider, signer, parameters).map_err(mls)?;
         group.merge_pending_commit(&self.provider).map_err(mls)?;
         let (commit, _, _) = bundle.into_messages();
         commit.to_bytes().map_err(mls)
@@ -1046,8 +1051,8 @@ mod tests {
     fn the_keeper_renews_its_own_keys() {
         let (mut alice, mut bob, mut carol, id) = three();
         let mut stolen = kept(&alice);
-        assert!(matches!(bob.self_update(&id), Err(Error::NotAdmin)));
-        let commit = alice.self_update(&id).unwrap();
+        assert!(matches!(bob.self_update(&id, None), Err(Error::NotAdmin)));
+        let commit = alice.self_update(&id, None).unwrap();
         for member in [&mut bob, &mut carol] {
             assert_eq!(member.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
         }
@@ -1062,9 +1067,45 @@ mod tests {
         for member in [&mut alice, &mut bob] {
             assert_eq!(member.open(&leaving).unwrap(), Opened::Leaving { group: id.clone(), sender: 2 });
         }
-        let commit = alice.self_update(&id).unwrap();
+        let commit = alice.self_update(&id, None).unwrap();
         assert_eq!(carol.open(&commit).unwrap(), Opened::Removed { group: id.clone() });
         assert_eq!(bob.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
+    }
+
+    #[test]
+    fn the_keeper_says_where_it_reads_now_with_its_new_keys() {
+        let (mut alice, mut bob, mut carol, id) = three();
+        // Members from before see the new `about` on the keeper's leaf, the same leaf and key.
+        let key = alice.members(&id).unwrap().0[0].key.clone();
+        let commit = alice.self_update(&id, Some(b"alice, moved")).unwrap();
+        for member in [&mut bob, &mut carol] {
+            assert_eq!(member.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
+            let seats = member.members(&id).unwrap().0;
+            assert_eq!((seats[0].leaf, seats[0].about.clone(), seats[0].key.clone()), (0, b"alice, moved".to_vec(), key.clone()));
+        }
+        let hello = alice.seal(&id, b"from the new queue").unwrap();
+        assert!(matches!(bob.open(&hello).unwrap(), Opened::Message { sender: 0, about, .. } if about == b"alice, moved"));
+        // Without one, what it said stays.
+        let commit = alice.self_update(&id, None).unwrap();
+        assert_eq!(carol.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
+        assert_eq!(carol.members(&id).unwrap().0[0].about, b"alice, moved");
+        assert!(matches!(bob.self_update(&id, Some(b"bob")), Err(Error::NotAdmin)));
+    }
+
+    #[test]
+    fn a_public_keeper_says_where_it_reads_now_with_the_key_made_for_the_group() {
+        let mut alice = Member::new(b"a").unwrap();
+        let mut bob = Member::new(b"b").unwrap();
+        let alice_key = alice.new_signer().unwrap();
+        let id = alice.create_public(&alice_key, b"alice", b"r").unwrap();
+        let (_, package) = asking(&mut bob, b"bob");
+        let (_, welcome) = alice.commit(&id, &[&package], &[], None).unwrap();
+        bob.join(&welcome).unwrap();
+        let commit = alice.self_update(&id, Some(b"alice, moved")).unwrap();
+        assert_eq!(bob.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
+        let seats = bob.members(&id).unwrap().0;
+        assert_eq!((seats[0].about.clone(), seats[0].key.clone()), (b"alice, moved".to_vec(), alice_key));
+        assert_eq!(bob.rules(&id).unwrap().rules, b"r");
     }
 
     #[test]
@@ -1085,7 +1126,7 @@ mod tests {
         // Bob signs with the key made for the group still, and the rules stay.
         assert_eq!(bob.members(&id).unwrap().0[1].key, bob_key);
         assert_eq!(bob.rules(&id).unwrap().rules, b"r");
-        let commit = alice.self_update(&id).unwrap();
+        let commit = alice.self_update(&id, None).unwrap();
         assert_eq!(bob.open(&commit).unwrap(), Opened::Changed { group: id.clone() });
         let (commit, _) = alice.commit(&id, &[], &[], Some((0, b"r2"))).unwrap();
         assert_eq!(bob.open(&commit).unwrap(), Opened::Changed { group: id.clone() });

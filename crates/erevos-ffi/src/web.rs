@@ -243,6 +243,11 @@ pub fn group_self_update(state: &[u8], id: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::group_self_update(state, id))
 }
 
+#[wasm_bindgen(js_name = groupSelfUpdateAs)]
+pub fn group_self_update_as(state: &[u8], id: &[u8], about: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::group_self_update_as(state, id, about))
+}
+
 #[wasm_bindgen(js_name = groupRejoin)]
 pub fn group_rejoin(state: &[u8], id: &[u8], welcome: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::group_rejoin(state, id, welcome))

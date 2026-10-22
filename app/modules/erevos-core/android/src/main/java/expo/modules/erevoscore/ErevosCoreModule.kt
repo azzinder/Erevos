@@ -82,6 +82,7 @@ class ErevosCoreModule : Module() {
       ErevosCoreNative.groupRenew(state, id, leaf, keyPackage)
     }
     AsyncFunction("groupSelfUpdate") { state: ByteArray, id: ByteArray -> ErevosCoreNative.groupSelfUpdate(state, id) }
+    AsyncFunction("groupSelfUpdateAs") { state: ByteArray, id: ByteArray, about: ByteArray -> ErevosCoreNative.groupSelfUpdateAs(state, id, about) }
     AsyncFunction("groupRejoin") { state: ByteArray, id: ByteArray, welcome: ByteArray -> ErevosCoreNative.groupRejoin(state, id, welcome) }
 
     // Relay requests through Tor (crates/erevos-tor), through the bridges given one per line, if
@@ -173,6 +174,7 @@ internal object ErevosCoreNative {
   @JvmStatic external fun groupRenewal(state: ByteArray, id: ByteArray, about: ByteArray): ByteArray
   @JvmStatic external fun groupRenew(state: ByteArray, id: ByteArray, leaf: ByteArray, keyPackage: ByteArray): ByteArray
   @JvmStatic external fun groupSelfUpdate(state: ByteArray, id: ByteArray): ByteArray
+  @JvmStatic external fun groupSelfUpdateAs(state: ByteArray, id: ByteArray, about: ByteArray): ByteArray
   @JvmStatic external fun groupRejoin(state: ByteArray, id: ByteArray, welcome: ByteArray): ByteArray
   @JvmStatic external fun torStart(stateDir: ByteArray, cacheDir: ByteArray, bridges: ByteArray, transports: ByteArray): ByteArray
   @JvmStatic external fun torStatus(): String

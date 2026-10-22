@@ -426,7 +426,14 @@ mod group {
     /// The state, then the commit that gives the keeper's own leaf new keys. Keeper only.
     pub fn group_self_update(state: &[u8], id: &[u8]) -> Result<Vec<u8>> {
         let mut member = member(state)?;
-        let commit = member.self_update(id).map_err(fail)?;
+        let commit = member.self_update(id, None).map_err(fail)?;
+        Ok(parts(&[&member.to_bytes(), &commit]))
+    }
+
+    /// As `group_self_update`, the leaf saying `about` of itself from then on.
+    pub fn group_self_update_as(state: &[u8], id: &[u8], about: &[u8]) -> Result<Vec<u8>> {
+        let mut member = member(state)?;
+        let commit = member.self_update(id, Some(about)).map_err(fail)?;
         Ok(parts(&[&member.to_bytes(), &commit]))
     }
 
@@ -788,10 +795,16 @@ mod tests {
         let [alice, commit]: [Vec<u8>; 2] = split(&group_self_update(&alice, &id).unwrap()).try_into().unwrap();
         let opened = split(&group_open(&bob, &commit).unwrap());
         assert_eq!(opened[1], [2]);
-        let [_, message]: [Vec<u8>; 2] = split(&group_seal(&opened[0], &id, b"hi").unwrap()).try_into().unwrap();
+        let [bob, message]: [Vec<u8>; 2] = split(&group_seal(&opened[0], &id, b"hi").unwrap()).try_into().unwrap();
         let opened = split(&group_open(&alice, &message).unwrap());
         assert_eq!((opened[1].as_slice(), opened[4].as_slice(), opened[5].as_slice()), (&[1u8][..], &b"bob, renewed"[..], &b"hi"[..]));
         assert!(group_renew(&alice, &id, &[1], &package).is_err());
+        // The keeper says where it reads now with its next keys.
+        let [alice, commit]: [Vec<u8>; 2] = split(&group_self_update_as(&opened[0], &id, b"alice, moved").unwrap()).try_into().unwrap();
+        let bob = split(&group_open(&bob, &commit).unwrap()).swap_remove(0);
+        let [_, message]: [Vec<u8>; 2] = split(&group_seal(&alice, &id, b"here").unwrap()).try_into().unwrap();
+        let opened = split(&group_open(&bob, &message).unwrap());
+        assert_eq!((opened[4].as_slice(), opened[5].as_slice()), (&b"alice, moved"[..], &b"here"[..]));
     }
 
     #[test]

@@ -68,6 +68,8 @@ export interface Core {
   groupRenewal?(state: Uint8Array, id: Uint8Array, about: Uint8Array): Promise<Uint8Array>;
   groupRenew?(state: Uint8Array, id: Uint8Array, leaf: Uint8Array, keyPackage: Uint8Array): Promise<Uint8Array>;
   groupSelfUpdate?(state: Uint8Array, id: Uint8Array): Promise<Uint8Array>;
+  /** The keeper's new keys saying a new `about` of its leaf: missing in a build made before queues moved (lib/queue-move.ts). */
+  groupSelfUpdateAs?(state: Uint8Array, id: Uint8Array, about: Uint8Array): Promise<Uint8Array>;
   groupRejoin?(state: Uint8Array, id: Uint8Array, welcome: Uint8Array): Promise<Uint8Array>;
   /** Relay requests through Tor: only in the Android app, and not in a build made before it. Bridges one per line. */
   torStart?(bridges: string): Promise<void>;
@@ -399,6 +401,11 @@ export function canRenewGroups(): boolean {
   return canGroup() && typeof core?.groupRenewal === 'function' && typeof core?.groupRenew === 'function' && typeof core?.groupSelfUpdate === 'function' && typeof core?.groupRejoin === 'function';
 }
 
+/** Whether this build's core lets the keeper of a group say a new `about` with its new keys (groupKeys.selfUpdate): one built before it keeps what it said. */
+export function canSetGroupAbout(): boolean {
+  return canRenewGroups() && typeof core?.groupSelfUpdateAs === 'function';
+}
+
 type RenewCalls = Required<Pick<Core, 'groupRenewal' | 'groupRenew' | 'groupSelfUpdate' | 'groupRejoin'>>;
 
 function renewCalls(): RenewCalls {
@@ -419,9 +426,11 @@ export const groupKeys = {
     const [next, commit, welcome] = splitParts(await renewCalls().groupRenew(state, id, leafBytes(leaf), keyPackage), 3);
     return { state: next, commit, welcome };
   },
-  /** New keys for the keeper's own leaf: the commit. */
-  selfUpdate: async (state: Uint8Array, id: Uint8Array) => {
-    const [next, commit] = splitParts(await renewCalls().groupSelfUpdate(state, id), 2);
+  /** New keys for the keeper's own leaf: the commit. With `about` (canSetGroupAbout), its leaf says that of itself from then on. */
+  selfUpdate: async (state: Uint8Array, id: Uint8Array, about?: Uint8Array) => {
+    const calls = renewCalls();
+    const made = about && canSetGroupAbout() ? await core!.groupSelfUpdateAs!(state, id, about) : await calls.groupSelfUpdate(state, id);
+    const [next, commit] = splitParts(made, 2);
     return { state: next, commit };
   },
   /** The group taken back from the keeper's welcome after this member's renewal. */
