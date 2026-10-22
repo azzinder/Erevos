@@ -88,6 +88,19 @@ class ComposeActivity : Activity() {
   }
 }
 
+/** SMS as an icon of its own in the launcher: the home list with only the SMS conversations, as the widget's SMS button. */
+class SmsLauncherActivity : Activity() {
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    try {
+      startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("erevos://?show=sms")).setPackage(packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (_: Exception) {
+      packageManager.getLaunchIntentForPackage(packageName)?.let(::startActivity)
+    }
+    finish()
+  }
+}
+
 /** The number in an sms:, smsto:, mms: or mmsto: address, the first one if there are several. */
 internal fun recipients(uri: Uri): String =
   Uri.decode(uri.schemeSpecificPart ?: "").substringBefore('?').split(',', ';').first().trim()

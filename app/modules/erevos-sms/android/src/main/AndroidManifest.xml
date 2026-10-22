@@ -75,6 +75,24 @@
       </intent-filter>
     </activity>
 
+    <!-- SMS as an icon of its own in the launcher (SmsLauncherActivity, Receivers.kt), in a task of its
+         own like Phone's and Contacts's, so each tap opens the SMS list, not Erevos as it was left. -->
+    <activity
+      android:name="expo.modules.erevossms.SmsLauncherActivity"
+      android:taskAffinity=""
+      android:exported="true"
+      android:excludeFromRecents="true"
+      android:noHistory="true"
+      android:icon="@mipmap/erevos_sms_launcher"
+      android:roundIcon="@mipmap/erevos_sms_launcher"
+      android:label="@string/erevos_sms_launcher"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+
     <!-- SMS invites between Erevos phones: data SMS to a port, which messaging apps do not show. -->
     <receiver
       android:name="expo.modules.erevossms.InviteReceiver"
