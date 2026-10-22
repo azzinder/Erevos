@@ -81,6 +81,17 @@ A good first hour:
    nearby, end-to-end encrypted, with no relay and no internet.
 4. To talk from further away, set up a relay as in [Chat through a relay](#relay).
 
+### Moving around with swipes
+
+- **Back:** swipe to the right anywhere on a screen to go back, as the back arrow does. A round arrow comes out at
+  the left; let go once it is whole, or flick, and you are back. Let go sooner and you stay. In a chat it does what
+  its back arrow does: back to the list of chats, or out of hidden chats, closing them. In a chat's **Details** it
+  closes them.
+- **Tabs:** swipe to the left or right to go to the tab beside, as tapping its chip does: **All messages**, **SMS**
+  and **Erevos** on the home screen, **Keypad**, **Recents** and **Favourites** in **Phone**, the filters in
+  **Contacts**, and the sets of stickers.
+- An SMS conversation in the list keeps its own swipes: to the right archives it, to the left deletes it.
+
 ### Language
 
 Erevos is in English, Greek, German, French, Spanish, Italian, Portuguese and Serbo-Croatian. The first time it

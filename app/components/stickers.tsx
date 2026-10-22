@@ -13,6 +13,7 @@ import { addOwnSticker, loadOwnStickers, MAX_OWN_STICKERS, openOwnSticker, remov
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
+import { SwipeTabs } from './swipe-tabs';
 import { Button, Chip, font, Row, Text } from './ui';
 
 // The stickers: the built-in ones (lib/stickers.ts), drawn here from their shapes on a grid of 100
@@ -452,6 +453,7 @@ export function StickerPicker({ onPick, mine }: {
     ]);
   }
 
+  const tabs: Tab[] = [...SETS.map(({ set }) => set), ...(mine ? ['mine' as const] : [])];
   const cell = ({ pressed }: { pressed: boolean }) => ({ padding: 6, borderRadius: radius.md, backgroundColor: pressed ? colors.surfacePressed : 'transparent' });
   return (
     <View style={{ gap: space.md }}>
@@ -461,41 +463,44 @@ export function StickerPicker({ onPick, mine }: {
         ))}
         {mine ? <Chip label={t('Mine')} selected={tab === 'mine'} onPress={() => choose('mine')} /> : null}
       </ScrollView>
-      {tab !== 'mine' ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'center' }}>
-          {stickersIn(tab).map((sticker) => (
-            <Pressable key={sticker.name} onPress={() => onPick(sticker.name)} accessibilityRole="button" accessibilityLabel={t(sticker.label)} style={cell}>
-              <StickerView name={sticker.name} size={72} play />
-            </Pressable>
-          ))}
-        </View>
-      ) : (
-        <>
-          <Row wrap>
-            <Button title={t('New sticker from a photo')} compact loading={making} onPress={() => void make()} />
-          </Row>
+      {/* A swipe to the side goes to the set beside, as its chip does. */}
+      <SwipeTabs tabs={tabs} current={tab} onChange={choose} grow={false}>
+        {tab !== 'mine' ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'center' }}>
-            {own.map((sticker) => (
-              <Pressable
-                key={sticker.id}
-                onPress={() => mine?.onPick(sticker)}
-                onLongPress={() => remove(sticker)}
-                accessibilityRole="button"
-                accessibilityLabel={t('Sticker')}
-                accessibilityHint={t('Tap to send, hold to delete')}
-                style={cell}
-              >
-                <PhotoSticker uri={pictures[sticker.id]} size={72} status="" />
+            {stickersIn(tab).map((sticker) => (
+              <Pressable key={sticker.name} onPress={() => onPick(sticker.name)} accessibilityRole="button" accessibilityLabel={t(sticker.label)} style={cell}>
+                <StickerView name={sticker.name} size={72} play />
               </Pressable>
             ))}
           </View>
-          <Text variant="caption" tone="muted">
-            {place?.holder === 'space'
-              ? t('Stickers you make from photos stay in this space, sealed, and go end-to-end encrypted as photos do. Hold one to delete it.')
-              : t('Stickers you make here stay in these hidden chats only, sealed, and go end-to-end encrypted as photos do. Hold one to delete it.')}
-          </Text>
-        </>
-      )}
+        ) : (
+          <>
+            <Row wrap>
+              <Button title={t('New sticker from a photo')} compact loading={making} onPress={() => void make()} />
+            </Row>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'center' }}>
+              {own.map((sticker) => (
+                <Pressable
+                  key={sticker.id}
+                  onPress={() => mine?.onPick(sticker)}
+                  onLongPress={() => remove(sticker)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Sticker')}
+                  accessibilityHint={t('Tap to send, hold to delete')}
+                  style={cell}
+                >
+                  <PhotoSticker uri={pictures[sticker.id]} size={72} status="" />
+                </Pressable>
+              ))}
+            </View>
+            <Text variant="caption" tone="muted">
+              {place?.holder === 'space'
+                ? t('Stickers you make from photos stay in this space, sealed, and go end-to-end encrypted as photos do. Hold one to delete it.')
+                : t('Stickers you make here stay in these hidden chats only, sealed, and go end-to-end encrypted as photos do. Hold one to delete it.')}
+            </Text>
+          </>
+        )}
+      </SwipeTabs>
       {note ? (
         <Text variant="caption" tone="muted">
           {note}

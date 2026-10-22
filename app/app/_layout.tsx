@@ -8,6 +8,7 @@ import { CallHost, watchCalls } from '../components/call-host';
 import { HiddenRingHost } from '../components/hidden-ring-screen';
 import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
 import { KeyboardProvider } from '../components/keyboard';
+import { SwipeBack } from '../components/swipe-back';
 import { Text } from '../components/ui';
 import { startBackground } from '../lib/background';
 import { runAutoBackup } from '../lib/backup-folder';
@@ -352,8 +353,18 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
     <LockContext.Provider value={lockState}>
       <Stack
         key={`${phase.space}-${lang}`}
-        // A chat draws its own backdrop, in its own look (theme/chat-theme.tsx).
-        screenLayout={({ children, route }) => (route.name === 'chat' ? children : <ScreenBackdrop>{children}</ScreenBackdrop>)}
+        // A chat draws its own backdrop, in its own look (theme/chat-theme.tsx), and goes back by a
+        // swipe in its own way, as its back arrow does. Every other screen goes back by a swipe to
+        // the right (components/swipe-back.tsx).
+        screenLayout={({ children, route }) =>
+          route.name === 'chat' ? (
+            children
+          ) : (
+            <ScreenBackdrop>
+              <SwipeBack>{children}</SwipeBack>
+            </ScreenBackdrop>
+          )
+        }
         screenOptions={{
           title: '',
           headerStyle: { backgroundColor: headerColor },

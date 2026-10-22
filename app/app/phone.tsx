@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SwipeTabs } from '../components/swipe-tabs';
 import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
@@ -80,6 +81,8 @@ const TABS: { tab: Tab; label: string }[] = [
   { tab: 'recents', label: mark('Recents') },
   { tab: 'favourites', label: mark('Favourites') },
 ];
+
+const TAB_ORDER = TABS.map((each) => each.tab);
 
 const tabOf = (tab: unknown): Tab => (tab === 'recents' || tab === 'favourites' ? tab : 'keypad');
 
@@ -333,117 +336,120 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
         {note && tab !== 'keypad' ? <Text tone="muted">{note}</Text> : null}
       </View>
 
-      {tab === 'recents' ? (
-        <Recents
-          accounts={accounts}
-          locked={!!locked}
-          onCall={(to, account) => void call(to, account)}
-          onEdit={(to) => {
-            setNumber(dialNumber(to));
-            setTab('keypad');
-          }}
-        />
-      ) : tab === 'favourites' ? (
-        <Favourites onCall={(to) => void call(to)} />
-      ) : (
-        <View style={styles.keypad} onLayout={measured(setRoom)}>
-          <View style={styles.numberLine}>
-            <TextInput
-              value={number}
-              onChangeText={(text) => setNumber(dialNumber(text))}
-              // The keys below type; held down, the field still pastes a number.
-              showSoftInputOnFocus={false}
-              style={[styles.number, sized.number, { color: colors.text }, fontStyle('400')]}
-              placeholder={t('Number')}
-              placeholderTextColor={colors.textFaint}
-              textAlign="center"
-            />
-            <Pressable
-              onPress={() => setNumber((n) => n.slice(0, -1))}
-              onLongPress={() => setNumber('')}
-              disabled={!number}
-              accessibilityRole="button"
-              accessibilityLabel={t('Delete')}
-              hitSlop={10}
-              style={({ pressed }) => [styles.erase, { opacity: !number ? 0.3 : pressed ? 0.6 : 1 }]}
-            >
-              <Text variant="heading" tone="muted">
-                ⌫
-              </Text>
-            </Pressable>
-          </View>
-          <ScrollView
-            ref={keypad}
-            style={styles.keysScroll}
-            contentContainerStyle={styles.keysColumn}
-            // Taller than its room even at the smallest keys: Call, and what it said, stay in sight,
-            // under the number.
-            onLayout={(event) => {
-              keysFrame.current = event.nativeEvent.layout.height;
-              keepEnd();
+      {/* A swipe to the side goes to the tab beside, as its chip does. */}
+      <SwipeTabs tabs={TAB_ORDER} current={tab} onChange={setTab}>
+        {tab === 'recents' ? (
+          <Recents
+            accounts={accounts}
+            locked={!!locked}
+            onCall={(to, account) => void call(to, account)}
+            onEdit={(to) => {
+              setNumber(dialNumber(to));
+              setTab('keypad');
             }}
-            onContentSizeChange={(_, height) => {
-              keysContent.current = height;
-              keepEnd();
-            }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {KEYS.map((keys) => (
-              <View key={keys.join('')} style={styles.keys}>
-                {keys.map((key) => (
-                  <Pressable
-                    key={key}
-                    onPress={() => setNumber((n) => typeKey(n, key))}
-                    onLongPress={key === '0' ? () => setNumber((n) => typeKey(n, '+')) : undefined}
-                    accessibilityRole="button"
-                    accessibilityLabel={key}
-                    style={({ pressed }) => [styles.key, sized.key, pressed && styles.keyPressed]}
-                  >
-                    <Text style={sized.keyText}>{key}</Text>
-                    {key === '0' ? (
-                      <Text variant="caption" tone="faint" style={[styles.keyPlus, sized.plus]}>
-                        +
-                      </Text>
-                    ) : null}
-                  </Pressable>
-                ))}
-              </View>
-            ))}
-            {accounts.length >= 2 ? (
-              <View onLayout={measured(setSimHeight)}>
-                <Row wrap style={styles.sims}>
-                  {accounts.map((a) => (
-                    <Chip key={a.id} label={accountLabel(a)} selected={chosen === a.id} onPress={() => setChosen(a.id)} />
-                  ))}
-                </Row>
-              </View>
-            ) : (status?.slots ?? 0) >= 2 ? (
-              <View onLayout={measured(setSimHeight)}>
-                <Row wrap style={styles.sims}>
-                  <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
-                </Row>
-              </View>
-            ) : null}
-            <View style={styles.keys}>
+          />
+        ) : tab === 'favourites' ? (
+          <Favourites onCall={(to) => void call(to)} />
+        ) : (
+          <View style={styles.keypad} onLayout={measured(setRoom)}>
+            <View style={styles.numberLine}>
+              <TextInput
+                value={number}
+                onChangeText={(text) => setNumber(dialNumber(text))}
+                // The keys below type; held down, the field still pastes a number.
+                showSoftInputOnFocus={false}
+                style={[styles.number, sized.number, { color: colors.text }, fontStyle('400')]}
+                placeholder={t('Number')}
+                placeholderTextColor={colors.textFaint}
+                textAlign="center"
+              />
               <Pressable
-                onPress={() => void call(number, accounts.some((a) => a.id === chosen) ? chosen : undefined)}
+                onPress={() => setNumber((n) => n.slice(0, -1))}
+                onLongPress={() => setNumber('')}
+                disabled={!number}
                 accessibilityRole="button"
-                accessibilityLabel={t('Call')}
-                style={({ pressed }) => [styles.callButton, sized.callButton, { opacity: pressed ? 0.75 : 1 }]}
+                accessibilityLabel={t('Delete')}
+                hitSlop={10}
+                style={({ pressed }) => [styles.erase, { opacity: !number ? 0.3 : pressed ? 0.6 : 1 }]}
               >
-                <Text variant="label" color="#FFFFFF" style={styles.callText} numberOfLines={1} adjustsFontSizeToFit>
-                  {t('Call')}
+                <Text variant="heading" tone="muted">
+                  ⌫
                 </Text>
               </Pressable>
             </View>
-            {note ? (
-              <Text tone="muted" style={styles.note} onLayout={measured(setNoteHeight)}>
-                {note}
-              </Text>
-            ) : null}
-          </ScrollView>
-        </View>
-      )}
+            <ScrollView
+              ref={keypad}
+              style={styles.keysScroll}
+              contentContainerStyle={styles.keysColumn}
+              // Taller than its room even at the smallest keys: Call, and what it said, stay in sight,
+              // under the number.
+              onLayout={(event) => {
+                keysFrame.current = event.nativeEvent.layout.height;
+                keepEnd();
+              }}
+              onContentSizeChange={(_, height) => {
+                keysContent.current = height;
+                keepEnd();
+              }}
+              keyboardShouldPersistTaps="handled"
+            >
+              {KEYS.map((keys) => (
+                <View key={keys.join('')} style={styles.keys}>
+                  {keys.map((key) => (
+                    <Pressable
+                      key={key}
+                      onPress={() => setNumber((n) => typeKey(n, key))}
+                      onLongPress={key === '0' ? () => setNumber((n) => typeKey(n, '+')) : undefined}
+                      accessibilityRole="button"
+                      accessibilityLabel={key}
+                      style={({ pressed }) => [styles.key, sized.key, pressed && styles.keyPressed]}
+                    >
+                      <Text style={sized.keyText}>{key}</Text>
+                      {key === '0' ? (
+                        <Text variant="caption" tone="faint" style={[styles.keyPlus, sized.plus]}>
+                          +
+                        </Text>
+                      ) : null}
+                    </Pressable>
+                  ))}
+                </View>
+              ))}
+              {accounts.length >= 2 ? (
+                <View onLayout={measured(setSimHeight)}>
+                  <Row wrap style={styles.sims}>
+                    {accounts.map((a) => (
+                      <Chip key={a.id} label={accountLabel(a)} selected={chosen === a.id} onPress={() => setChosen(a.id)} />
+                    ))}
+                  </Row>
+                </View>
+              ) : (status?.slots ?? 0) >= 2 ? (
+                <View onLayout={measured(setSimHeight)}>
+                  <Row wrap style={styles.sims}>
+                    <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
+                  </Row>
+                </View>
+              ) : null}
+              <View style={styles.keys}>
+                <Pressable
+                  onPress={() => void call(number, accounts.some((a) => a.id === chosen) ? chosen : undefined)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Call')}
+                  style={({ pressed }) => [styles.callButton, sized.callButton, { opacity: pressed ? 0.75 : 1 }]}
+                >
+                  <Text variant="label" color="#FFFFFF" style={styles.callText} numberOfLines={1} adjustsFontSizeToFit>
+                    {t('Call')}
+                  </Text>
+                </Pressable>
+              </View>
+              {note ? (
+                <Text tone="muted" style={styles.note} onLayout={measured(setNoteHeight)}>
+                  {note}
+                </Text>
+              ) : null}
+            </ScrollView>
+          </View>
+        )}
+      </SwipeTabs>
 
       <Sheet visible={choosing !== null} onClose={() => setChoosing(null)} title={t('Call on')}>
         {accounts.map((a) => (

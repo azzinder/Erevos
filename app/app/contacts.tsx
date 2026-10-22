@@ -7,6 +7,7 @@ import { ContactFace, useCardPhoto } from '../components/contact-face';
 import { readErevosId } from '../components/erevos-id';
 import { LockIcon, MoreIcon, PlusIcon, SearchIcon, ShieldIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
+import { SwipeTabs } from '../components/swipe-tabs';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
 import { allowPhoneContacts, byName, cardHref, erevosPeople, groupsByTitle, groupTitles, phoneCards, sealedCard, withErevos, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
@@ -269,65 +270,70 @@ export default function Contacts() {
   );
 
   const phoneMenu = phoneHere && allowed;
+  // The filters in the order of their chips.
+  const filters: Filter[] = ['all', 'starred', 'erevos', ...(hidden ? [] : ['sealed' as const]), 'birthdays', ...groups.map((g) => g.id)];
   // The list ends above the keyboard while the search is typed in, and New contact floats above it.
   return (
     <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
-      <FlatList
-        data={shown}
-        // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
-        removeClippedSubviews={false}
-        keyExtractor={(card) => card.key}
-        ListHeaderComponent={header}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
-        renderItem={({ item }) => (
-          <ContactRow
-            card={item}
-            birthday={filter === 'birthdays'}
-            hidden={hidden}
-            onPress={
-              adding
-                ? () =>
-                    router.replace(
-                      item.phone
-                        ? `/contact-edit?id=${item.phone.id}&add=${encodeURIComponent(adding.text)}`
-                        : item.sealed
-                          ? `/contact-edit?sealed=${item.sealed.id}&add=${encodeURIComponent(adding.text)}`
-                          : `/contact-edit?fill=${encodeURIComponent(fillText(mergeFields([item, adding.fields])))}&erevos=${item.erevos}`,
-                    )
-                : undefined
-            }
-          />
-        )}
-        initialNumToRender={20}
-        windowSize={11}
-        ListEmptyComponent={
-          cards === null ? null : (
-            <Text tone="muted" style={styles.empty}>
-              {query.trim()
-                ? t('No contact has “{query}” in it.', { query: query.trim() })
-                : filter === 'starred'
-                  ? t('No favourites yet. Tap the star on a contact.')
-                  : filter === 'birthdays'
-                    ? t('No contact has a birthday yet. Add one in Edit.')
-                    : filter === 'erevos'
-                      ? t('No Erevos contacts yet. Add one in Chat, with their link or QR code.')
-                    : filter === 'sealed'
-                      ? t('No contact is kept only in Erevos yet. Choose Only in Erevos when you make one.')
-                      : filter === 'all'
-                        ? t('No contacts yet.')
-                        : t('No one in this group yet.')}
-            </Text>
-          )
-        }
-        ListFooterComponent={
-          cards && cards.length > 0 && !query.trim() && filter === 'all' ? (
-            <Text variant="caption" tone="faint" style={styles.footer}>
-              {plural(cards.length, '{n} contact', '{n} contacts')}
-            </Text>
-          ) : null
-        }
-      />
+      {/* A swipe to the side goes to the filter beside, as its chip does. */}
+      <SwipeTabs tabs={filters} current={filter} onChange={setFilter}>
+        <FlatList
+          data={shown}
+          // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
+          removeClippedSubviews={false}
+          keyExtractor={(card) => card.key}
+          ListHeaderComponent={header}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
+          renderItem={({ item }) => (
+            <ContactRow
+              card={item}
+              birthday={filter === 'birthdays'}
+              hidden={hidden}
+              onPress={
+                adding
+                  ? () =>
+                      router.replace(
+                        item.phone
+                          ? `/contact-edit?id=${item.phone.id}&add=${encodeURIComponent(adding.text)}`
+                          : item.sealed
+                            ? `/contact-edit?sealed=${item.sealed.id}&add=${encodeURIComponent(adding.text)}`
+                            : `/contact-edit?fill=${encodeURIComponent(fillText(mergeFields([item, adding.fields])))}&erevos=${item.erevos}`,
+                      )
+                  : undefined
+              }
+            />
+          )}
+          initialNumToRender={20}
+          windowSize={11}
+          ListEmptyComponent={
+            cards === null ? null : (
+              <Text tone="muted" style={styles.empty}>
+                {query.trim()
+                  ? t('No contact has “{query}” in it.', { query: query.trim() })
+                  : filter === 'starred'
+                    ? t('No favourites yet. Tap the star on a contact.')
+                    : filter === 'birthdays'
+                      ? t('No contact has a birthday yet. Add one in Edit.')
+                      : filter === 'erevos'
+                        ? t('No Erevos contacts yet. Add one in Chat, with their link or QR code.')
+                      : filter === 'sealed'
+                        ? t('No contact is kept only in Erevos yet. Choose Only in Erevos when you make one.')
+                        : filter === 'all'
+                          ? t('No contacts yet.')
+                          : t('No one in this group yet.')}
+              </Text>
+            )
+          }
+          ListFooterComponent={
+            cards && cards.length > 0 && !query.trim() && filter === 'all' ? (
+              <Text variant="caption" tone="faint" style={styles.footer}>
+                {plural(cards.length, '{n} contact', '{n} contacts')}
+              </Text>
+            ) : null
+          }
+        />
+      </SwipeTabs>
       <Pressable
         onPress={() => router.push(hidden ? '/contact-edit?hidden=1' : '/contact-edit')}
         accessibilityRole="button"

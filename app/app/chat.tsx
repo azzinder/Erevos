@@ -45,6 +45,7 @@ import { LinkedText } from '../components/linked-text';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { deleteSms, maySendSms, sendSmsAgain, SmsForward, useChatSms } from '../components/sms-message';
 import { UndoBar } from '../components/undo-bar';
+import { SwipeBack } from '../components/swipe-back';
 import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from '../components/message-parts';
 import { PhotoSticker, PLAYS_LAST, StickerPicker, StickerView } from '../components/stickers';
 import { PollCard, PollSheet } from '../components/poll';
@@ -3730,1207 +3731,1216 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setUndoAt(Math.max(0, edges.current.height - edges.current.end));
   };
 
+  // What the back arrow and a swipe to the right do: out of a chat to the list of them when it was
+  // opened from there, out of hidden chats closes them, else the screen before.
+  const goBack =
+    selected && (hiddenKey || !initial)
+      ? () => setSelected(null)
+      : hiddenKey && onHidden
+        ? onHidden
+        : () => (router.canGoBack() ? router.back() : router.replace('/'));
+
   return (
-    <View style={styles.container} onLayout={(event) => measured({ height: event.nativeEvent.layout.height })}>
-      <Modal visible={styling && shown} animationType="slide" statusBarTranslucent onRequestClose={() => setStyling(false)}>
-        <ScreenBackdrop>
-          <View style={{ flex: 1, backgroundColor: colors.ground }}>
-            <AppearanceEditor
-              title={selectedName ? t('Look of {name}', { name: selectedName }) : t('Look of this chat')}
-              top={
-                <View style={styles.section}>
-                  <Text variant="caption" tone="muted">
-                    {selectedLook
-                      ? t('This chat has its own look, kept only on this phone. The rest of the app keeps its own.')
-                      : t("This chat follows the app's look. Change anything below to give it its own.")}
-                  </Text>
-                  <Row wrap>
-                    <Button title={t('Done')} compact onPress={() => setStyling(false)} />
-                    {selectedLook && e2e ? (
-                      <TextButton
-                        title={t('Same as the app')}
-                        onPress={() => {
-                          void e2e.setLook(selectedIdentity, null).then(() => setContacts(e2e.contacts()));
-                        }}
-                      />
-                    ) : null}
-                  </Row>
-                </View>
-              }
-            />
-          </View>
-        </ScreenBackdrop>
-      </Modal>
-      <Modal
-        visible={details && shown && !!selected}
-        animationType="slide"
-        statusBarTranslucent
-        onRequestClose={() => setDetails(false)}
-      >
-        <ScreenBackdrop>
-          <View style={{ flex: 1, backgroundColor: colors.ground }}>
-            <View style={styles.sheetBar}>
-              <BackButton onPress={() => setDetails(false)} />
-              <Text variant="heading" style={styles.grow}>
-                {t('Details')}
-              </Text>
-              <TextButton title={t('Done')} onPress={() => setDetails(false)} />
-            </View>
-            <KeyboardAwareScrollView
-              contentContainerStyle={[styles.sheetContent, { paddingBottom: insets.bottom + space.xl }]}
-              keyboardShouldPersistTaps="handled"
-              bottomOffset={space.xl}
-            >
-              <View style={styles.hero}>
-                <Pressable
-                  onPress={selectedContact ? () => setOpened((now) => (now === 'picture' ? null : 'picture')) : undefined}
-                  accessibilityRole={selectedContact ? 'button' : undefined}
-                  accessibilityLabel={selectedContact ? t('Change picture') : undefined}
-                >
-                  {selectedContact ? (
-                    <KeyFace identity={selectedIdentity} name={contactName(selectedContact, shownContacts) ?? ''} size={104} avatar={selectedAvatar} />
-                  ) : null}
-                  {selectedContact ? (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>✎</Text>
-                    </View>
-                  ) : null}
-                </Pressable>
-                <Text variant="title" numberOfLines={2} style={[styles.heroName, !contactName(selected ?? '', shownContacts) && styles.monoName]}>
-                  {selectedName}
-                </Text>
-                <View style={styles.subtitle}>
-                  {selectedContact ? <ShieldIcon color={colors.success} size={12} /> : null}
-                  {selectedOnline ? <View style={[styles.onlineDot, { backgroundColor: colors.success }]} /> : null}
-                  <Text variant="caption" tone="muted">
-                    {subtitle}
-                  </Text>
-                </View>
-              </View>
-              {selectedContact ? (
-                <>
-                  <View style={styles.actions}>
-                    <QuickAction title={t('Call')} sign="☏" onPress={() => {
-                      setDetails(false);
-                      void startCall(false);
-                    }} />
-                    <QuickAction title={t('Video')} sign="▶" onPress={() => {
-                      setDetails(false);
-                      void startCall(true);
-                    }} />
-                    <QuickAction title={t('Rename')} sign="✎" on={renaming === selectedContact} onPress={() => startRenaming(selectedContact)} />
-                    <QuickAction title={t('Picture')} sign="☺" on={opened === 'picture'} onPress={() => setOpened((now) => (now === 'picture' ? null : 'picture'))} />
-                  </View>
-                  {renaming === selectedContact ? (
-                    <View style={styles.group}>
-                      <Text variant="caption" tone="muted">
-                        {t('A name for them, only on this phone.')}
-                      </Text>
-                      <Row>
-                        <Input
-                          value={nameDraft}
-                          onChangeText={setNameDraft}
-                          onSubmitEditing={() => void rename(selectedContact)}
-                          placeholder={t('Name')}
-                          maxLength={MAX_NAME}
-                          autoFocus
-                          style={styles.grow}
-                        />
-                        <Button title={t('Save')} compact onPress={() => void rename(selectedContact)} />
-                      </Row>
-                    </View>
-                  ) : null}
-                  {opened === 'picture' ? (
-                    <View style={styles.group}>
-                      <Text variant="caption" tone="muted">
-                        {t('A picture for them, only on this phone. Without one, their picture is drawn from their key.')}
-                      </Text>
-                      <View style={styles.signs}>
-                        {AVATAR_SIGNS.map((emoji) => (
-                          <Pressable
-                            key={emoji}
-                            onPress={() => void changeAvatar(selectedContact, { kind: 'emoji', emoji, color: signAvatar?.color ?? AVATAR_COLORS[5] })}
-                            accessibilityRole="radio"
-                            accessibilityState={{ selected: signAvatar?.emoji === emoji }}
-                            accessibilityLabel={emoji}
-                            style={[styles.sign, signAvatar?.emoji === emoji && styles.signOn]}
-                          >
-                            <Text style={styles.signText}>{emoji}</Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                      {signAvatar ? (
-                        <View style={styles.signs}>
-                          {AVATAR_COLORS.map((color) => (
-                            <Pressable
-                              key={color}
-                              onPress={() => void changeAvatar(selectedContact, { ...signAvatar, color })}
-                              accessibilityRole="radio"
-                              accessibilityState={{ selected: signAvatar.color === color }}
-                              accessibilityLabel={t('Colour {color}', { color })}
-                              style={[styles.swatch, { backgroundColor: color }, signAvatar.color === color && styles.swatchOn]}
-                            />
-                          ))}
-                        </View>
-                      ) : null}
-                      <Row wrap>
-                        <Button title={t('Photo')} kind="secondary" compact onPress={() => void choosePhoto(selectedContact, 'photos')} />
-                        {CAN_TAKE_PHOTOS ? <Button title={t('Take photo')} kind="secondary" compact onPress={() => void choosePhoto(selectedContact, 'camera')} /> : null}
-                        {selectedAvatar ? <TextButton title={t('Picture from their key')} onPress={() => void changeAvatar(selectedContact, null)} /> : null}
-                      </Row>
-                    </View>
-                  ) : null}
-                  <Text variant="overline" tone="muted" style={styles.groupTitle}>
-                    {t('Chat')}
-                  </Text>
-                  <View style={styles.group}>
-                    <DetailRow
-                      title={t('Search in this chat')}
-                      onPress={() => {
-                        setDetails(false);
-                        setSearching('');
-                        setSearchAt(0);
-                      }}
-                    />
-                    <View style={styles.rule} />
-                    <DetailRow
-                      title={t('Disappearing messages')}
-                      value={timerLabel(selectedTimer)}
-                      open={opened === 'timer'}
-                      onPress={() => setOpened((now) => (now === 'timer' ? null : 'timer'))}
-                    />
-                    {opened === 'timer' ? (
-                      <View style={styles.rowMore}>
-                        <Text variant="caption" tone="muted">
-                          {t('New messages, sent or received, disappear from both phones this long after they are read. Messages already here stay.')}
-                        </Text>
-                        <Row wrap>
-                          {TIMERS.map((timer) => (
-                            <Chip key={timer} label={timerLabel(timer)} selected={timer === selectedTimer} onPress={() => void changeTimer(selectedContact, timer)} />
-                          ))}
-                        </Row>
-                      </View>
-                    ) : null}
-                    <View style={styles.rule} />
-                    <DetailRow
-                      title={t('Appear offline')}
-                      checked={selectedHidden}
-                      onPress={() => void changeHidden(selectedContact, !selectedHidden)}
-                    />
-                    <Text variant="caption" tone="muted" style={styles.rowMore}>
-                      {selectedHidden
-                        ? t('They do not see when you are online, nor that their messages came or were read, until you write. You do not see when they are online either.')
-                        : t('They see when you are online, and which of their messages you read.')}
-                    </Text>
-                    {CAN_PREVIEW && !hiddenKey ? (
-                      <>
-                        <View style={styles.rule} />
-                        <DetailRow title={t('Link previews')} checked={previews} onPress={() => changePreviews(!previews)} />
-                        <Text variant="caption" tone="muted" style={styles.rowMore}>
-                          {throughTor()
-                            ? t('None while this space goes through Tor: Erevos sends only relay requests through it.')
-                            : previews
-                              ? t("When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. In all chats of this space, not in hidden chats.")
-                              : t("Links go as they are. Turned on, this phone fetches a link's page as you send it, and the site sees this phone's internet address. The phone that gets it fetches nothing.")}
-                        </Text>
-                      </>
-                    ) : null}
-                    <View style={styles.rule} />
-                    <DetailRow
-                      title={t('Chat look')}
-                      value={selectedLook ? t('Its own') : t('Same as the app')}
-                      onPress={() => {
-                        setDetails(false);
-                        setStyling(true);
-                      }}
-                    />
-                    <View style={styles.rule} />
-                    <DetailRow
-                      title={t('Starred messages')}
-                      value={starredHere.length > 0 ? String(starredHere.length) : ''}
-                      open={opened === 'starred'}
-                      onPress={() => setOpened((now) => (now === 'starred' ? null : 'starred'))}
-                    />
-                    {opened === 'starred' ? (
-                      <View style={styles.rowMore}>
-                        {starredHere.length === 0 ? (
-                          <Text variant="caption" tone="muted">
-                            {t('No starred messages. Press and hold a message in a chat, then tap Star.')}
-                          </Text>
-                        ) : null}
-                        {starredHere.map((m) => (
-                          <Pressable
-                            key={m.id}
-                            onPress={() => {
-                              setDetails(false);
-                              setTimeout(() => goTo(m.peer, m.tag), 300);
-                            }}
-                            accessibilityRole="button"
-                            style={({ pressed }) => [styles.found, pressed && { opacity: 0.6 }]}
-                          >
-                            <Text numberOfLines={2}>{messageLine(m)}</Text>
-                            <Text variant="caption" tone="muted">
-                              {`${m.mine ? t('You') : selectedName} · ${dayLabel(m.at)} ${clock(m.at)}`}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                    ) : null}
-                    {!hiddenKey ? (
-                      <>
-                        <View style={styles.rule} />
-                        <DetailRow title={t('Export chat')} onPress={() => void exportChat()} />
-                      </>
-                    ) : null}
-                    {chatSms.number ? (
-                      <>
-                        <View style={styles.rule} />
-                        <DetailRow
-                          title={t('Plain SMS')}
-                          value={chatSms.number}
-                          onPress={() => {
-                            setDetails(false);
-                            setAttaching(false);
-                            router.push(plainSmsHref(chatSms.number));
-                          }}
-                        />
-                        <Text variant="caption" tone="muted" style={styles.rowMore}>
-                          {t('The SMS with this number show in the chat too, marked SMS. This opens their SMS conversation, to write one when there is no internet, say. An SMS is not encrypted: the phone company can read it.')}
-                        </Text>
-                      </>
-                    ) : null}
-                  </View>
-                  <Text variant="overline" tone="muted" style={styles.groupTitle}>
-                    {t('Privacy')}
-                  </Text>
-                  <View style={styles.group}>
-                    <DetailRow
-                      title={t('Safety number')}
-                      value={t('End-to-end encrypted')}
-                      open={safety?.peer === selectedContact}
-                      onPress={() => void toggleSafety(selectedContact)}
-                    />
-                    {safety?.peer === selectedContact ? (
-                      <View style={styles.rowMore}>
-                        <Text variant="caption" tone="muted">
-                          {t('Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.')}
-                        </Text>
-                        <Text selectable variant="mono" style={styles.safety}>
-                          {safety.number.split(' ').reduce((lines, group, i) => lines + (i === 0 ? '' : i % 4 === 0 ? '\n' : '  ') + group, '')}
-                        </Text>
-                        {safety.devices > 0 ? (
-                          <Text variant="caption" tone="muted">
-                            {t('The list of their linked devices last changed on {day}. Your messages go to each place in it too, used by a device or not. If they did not link or unlink one then, ask them.', { day: dayText(safety.devices) })}
-                          </Text>
-                        ) : null}
-                      </View>
-                    ) : null}
-                    {!hiddenKey ? (
-                      <>
-                        <View style={styles.rule} />
-                        <DetailRow
-                          title={t('Move to hidden chats')}
-                          open={opened === 'move'}
-                          onPress={() => {
-                            setOpened((now) => (now === 'move' ? null : 'move'));
-                            setMoveNote('');
-                            setStartingNew(false);
-                            setNewPocket(null);
-                          }}
-                        />
-                        {opened === 'move' ? (
-                          <View style={styles.rowMore}>
-                            <Text variant="caption" tone="muted">
-                              {t('The chat leaves this list and goes into the hidden chats, sealed with their PIN. To open them, type the PIN in the search on the home screen and press Enter. Nothing shows that they exist.')}
-                            </Text>
-                            <Input
-                              value={pinDraft}
-                              onChangeText={(text) => {
-                                setPinDraft(text);
-                                setMoveNote('');
-                              }}
-                              placeholder={t('PIN of the hidden chats, {n} or more characters', { n: MIN_PIN })}
-                              secureTextEntry
-                              autoCapitalize="none"
-                              autoCorrect={false}
-                              onSubmitEditing={() => !startingNew && void moveToHidden(selectedContact, pinDraft, null)}
-                            />
-                            {startingNew ? (
-                              <>
-                                <Text variant="caption" tone="muted">
-                                  {t('Pick a place for them, 1 to {n}, and remember it: Erevos cannot tell which are used.', { n: POCKETS })}
-                                </Text>
-                                <Row wrap>
-                                  {Array.from({ length: POCKETS }, (_, place) => (
-                                    <Chip key={place} label={t('Place {n}', { n: place + 1 })} selected={newPocket === place} onPress={() => setNewPocket(place)} />
-                                  ))}
-                                </Row>
-                                {newPocket !== null ? (
-                                  <Text variant="caption" style={{ color: colors.danger }}>
-                                    {t('New hidden chats start in place {n} with this PIN. If that place held hidden chats, they can no longer be opened.', { n: newPocket + 1 })}
-                                  </Text>
-                                ) : null}
-                              </>
-                            ) : null}
-                            {moveNote ? (
-                              <Text variant="caption" style={{ color: colors.danger }}>
-                                {moveNote}
-                              </Text>
-                            ) : null}
-                            <Row wrap>
-                              <Button
-                                title={startingNew ? t('Start and move') : t('Move')}
-                                compact
-                                loading={moving}
-                                disabled={pinDraft.length < MIN_PIN || (startingNew && newPocket === null)}
-                                onPress={() => void moveToHidden(selectedContact, pinDraft, startingNew ? newPocket : null)}
-                              />
-                              <Button
-                                title={startingNew ? t('Cancel') : t('New hidden chats')}
-                                kind="secondary"
-                                compact
-                                disabled={moving}
-                                onPress={() => {
-                                  setStartingNew((on) => !on);
-                                  setNewPocket(null);
-                                }}
-                              />
-                            </Row>
-                            <Text variant="caption" tone="muted">
-                              {t('Their phone is told at once where to write from now on. A message they send in that moment may not come.')}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </>
-                    ) : (
-                      <>
-                        <View style={styles.rule} />
-                        <DetailRow
-                          title={t('Move back to my chats')}
-                          open={opened === 'back'}
-                          onPress={() => {
-                            setOpened((now) => (now === 'back' ? null : 'back'));
-                            setMoveNote('');
-                          }}
-                        />
-                        {opened === 'back' ? (
-                          <View style={styles.rowMore}>
-                            <Text variant="caption" tone="muted">
-                              {t('The chat leaves the hidden chats with its messages, name, picture and look, and shows again among the chats of this space, which anyone who opens Erevos with its password sees. The safety number stays the same.')}
-                            </Text>
-                            {moveNote ? (
-                              <Text variant="caption" style={{ color: colors.danger }}>
-                                {moveNote}
-                              </Text>
-                            ) : null}
-                            <Row wrap>
-                              <Button title={t('Move')} compact loading={moving} onPress={() => void moveToSpace(selectedContact)} />
-                            </Row>
-                            <Text variant="caption" tone="muted">
-                              {t('Their phone is told at once where to write from now on. A message they send in that moment may not come.')}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </>
-                    )}
-                  </View>
-                  <View style={[styles.group, styles.groupGap]}>
-                    <DetailRow
-                      title={t('Delete messages')}
-                      danger
-                      onPress={() => {
-                        setDetails(false);
-                        deleteMessages(selectedContact);
-                      }}
-                    />
-                    <DetailRow title={t('Delete contact')} danger onPress={() => deleteContact(selectedContact, false)} />
-                    <DetailRow title={t('Block contact')} danger onPress={() => deleteContact(selectedContact, true)} />
-                  </View>
-                </>
-              ) : null}
-            </KeyboardAwareScrollView>
-          </View>
-        </ScreenBackdrop>
-      </Modal>
-      <Sheet visible={showQr && shown && !!ownLink} onClose={() => setShowQr(false)} title={t('My QR code')}>
-        {ownLink ? <QrCode text={ownLink} size={240} /> : null}
-        <Text variant="caption" tone="muted">
-          {t("Scan it with the other phone's camera and open the link in Erevos. If the camera only shows the text, copy it and paste it in Relay and new contacts on that phone.")}
-        </Text>
-        <Row wrap>
-          <Button title={t('Done')} compact onPress={() => setShowQr(false)} />
-          {ownLink ? (
-            <Button
-              title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
-              kind="secondary"
-              compact
-              onPress={() => void shareLink(ownLink)}
-            />
-          ) : null}
-        </Row>
-      </Sheet>
-      {/* The chat's bar, on the bars' glass from the top of the screen, behind the status bar. */}
-      <View style={[styles.topBar, { marginTop: -(insets.top + space.sm), paddingTop: insets.top + 2 }, barBlur]}>
-        {hiddenKey ? (
-          <Text variant="overline" tone="muted" style={styles.kicker}>
-            {t('Hidden chats')}
-          </Text>
-        ) : null}
-        <View style={styles.header}>
-          <BackButton
-            onPress={
-              selected && (hiddenKey || !initial) ? () => setSelected(null) : hiddenKey ? onHidden : undefined
-            }
-          />
-          {selected ? (
-            <Pressable
-              style={({ pressed }) => [styles.who, pressed && styles.pressed]}
-              onPress={() => setDetails(true)}
-              accessibilityRole="button"
-              accessibilityLabel={selectedContact ? `${selectedName}, ${subtitle}` : selectedName}
-              accessibilityHint={t('Chat details')}
-            >
-              <KeyFace identity={selectedIdentity} name={contactName(selected, shownContacts) ?? ''} size={narrow ? 36 : 40} avatar={selectedAvatar} />
-              <View style={styles.grow}>
-                <Text variant="heading" numberOfLines={1} style={[styles.name, !contactName(selected, shownContacts) && styles.monoName]}>
-                  {selectedName}
-                </Text>
-                {selectedContact ? (
-                  <View style={styles.subtitle}>
-                    {selectedOnline ? (
-                      <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
-                    ) : !selectedTyping && !narrow ? (
-                      <ShieldIcon color={colors.success} size={11} />
-                    ) : null}
-                    {selectedTimer ? <TimerIcon color={colors.textMuted} size={11} /> : null}
-                    <Text variant="caption" numberOfLines={1} color={selectedTyping ? colors.accentText : colors.textMuted} style={styles.grow}>
-                      {headerSays}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            </Pressable>
-          ) : (
-            <Text variant="title" style={styles.grow}>
-              {hiddenKey ? t('Hidden chats') : t('Chat')}
-            </Text>
-          )}
-          {selectedContact ? (
-            <>
-              <IconButton label={t('Video call')} onPress={() => void startCall(true)}>
-                <VideoIcon color={colors.text} size={24} />
-              </IconButton>
-              <IconButton label={t('Voice call')} onPress={() => void startCall(false)}>
-                <PhoneIcon color={colors.text} size={21} />
-              </IconButton>
-            </>
-          ) : null}
-          {selected ? (
-            // Apart from the calls, so a slip calls no one; upright on Android, as its apps have it.
-            <View style={styles.moreGap}>
-              <IconButton label={t('Chat details')} onPress={() => setDetails(true)}>
-                <MoreIcon color={colors.text} size={Platform.OS === 'web' ? 20 : 18} upright={Platform.OS !== 'web'} />
-              </IconButton>
-            </View>
-          ) : hiddenKey && onChangePassword ? (
-            <View style={styles.headerLinks}>
-              <TextButton title={t('Contacts')} onPress={() => router.push('/contacts?hidden=1')} />
-              <TextButton title={t('Change PIN')} onPress={onChangePassword} />
-            </View>
-          ) : null}
-        </View>
-      </View>
-      {!selected ? (
-        <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
-          {chips.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.faces} keyboardShouldPersistTaps="handled">
-              {chips.map((peer) => {
-                const named = contactName(peer, shownContacts);
-                return (
-                  <Pressable
-                    key={peer}
-                    onPress={() => setSelected(peer)}
-                    accessibilityRole="button"
-                    accessibilityLabel={label(peer, shownContacts)}
-                    style={styles.face}
-                  >
-                    <View style={styles.ring}>
-                      <KeyFace
-                        identity={peer.slice(CONTACT_PREFIX.length)}
-                        name={named ?? ''}
-                        size={48}
-                        avatar={contacts.find((c) => `${CONTACT_PREFIX}${c.identity}` === peer)?.avatar}
-                      />
-                    </View>
-                    <Text variant="caption" numberOfLines={1} style={[styles.faceName, !named && styles.monoSmall]}>
-                      {named ?? peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          ) : (
-            <Text tone="muted">
-              {hiddenKey
-                ? t('No hidden chats yet. Add a contact through the relay below, or move a chat here from its details.')
-                : Platform.OS === 'web'
-                  ? t('No chats yet. Add a contact through the relay, under Relay.')
-                  : t('No chats yet. Add a contact under Relay. Your contacts reach you nearby too, over Wi-Fi or Bluetooth, without the internet.')}
-            </Text>
-          )}
-          <View style={styles.panel}>
-            {hiddenKey && canRingInBackground ? (
-              <>
-                <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />
-                <Text variant="caption" tone="muted">
-                  {watched
-                    ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", as for the other chats, until you open them. Whoever sees it and finds nothing new in your chats may guess there are more.')
-                    : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
-                </Text>
-                {watchNote ? <Text variant="caption" tone="muted">{watchNote}</Text> : null}
-                <DetailRow title={t('Ring calls when closed')} checked={ringing} onPress={() => void changeRinging(!ringing)} />
-                <Text variant="caption" tone="muted">
-                  {ringing
-                    ? t('While these hidden chats are closed and Erevos is in the background, a call from one of their contacts makes the phone ring and show "Incoming call" with no name. On the ringing screen, tap the small sign and type the PIN to answer. Whoever holds the phone sees a call that is in none of your chats, and may guess there are more.')
-                    : t('Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.')}
-                </Text>
-                {ringNote ? <Text variant="caption" tone="muted">{ringNote}</Text> : null}
-              </>
-            ) : null}
-            <Row wrap>
-              <TextButton title={showRelay ? t('Hide relay') : t('Relay and new contacts')} onPress={() => setShowRelay((on) => !on)} />
-            </Row>
-            {showRelay ? (
-              <View style={styles.section}>
-                <Field label={t('Relay address')}>
-                  <Input
-                    value={typedRelay.shown}
-                    onChangeText={typedRelay.type}
-                    onBlur={typedRelay.done}
-                    placeholder="ws://computer-address:7879"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="url"
-                  />
-                </Field>
-                {isLentToken(relayToken) ? (
-                  <Text variant="caption" tone="muted">
-                    {t("A place lent on this relay through a contact's link: no token of your own is needed. Type another relay to use that one instead.")}
-                  </Text>
-                ) : (
-                  <Field label={t('Token (optional)')}>
-                    <Input
-                      value={typedToken.shown}
-                      onChangeText={typedToken.type}
-                      onBlur={typedToken.done}
-                      placeholder={t('Token, if the relay needs one')}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      secureTextEntry
-                    />
-                  </Field>
-                )}
-                {!hiddenKey && relayUrl.trim() ? (
-                  <RelaySignIn
-                    url={relayUrl.trim()}
-                    token={relayToken.trim()}
-                    onToken={(token, name) => void tookToken(relayUrl.trim(), token, name)}
-                    onNote={setNote}
-                  />
-                ) : null}
-                {!hiddenKey && relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? (
-                  <RelayInvites relay={{ url: relayUrl.trim(), token: relayToken.trim() }} onNote={setNote} />
-                ) : null}
-                <Field label={t('Second relay (optional)')}>
-                  <Input
-                    value={typedVia.shown}
-                    onChangeText={typedVia.type}
-                    onBlur={typedVia.done}
-                    placeholder="wss://another-relay"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="url"
-                  />
-                </Field>
-                {typedVia.shown.trim() ? (
-                  <Field label={t('Second relay token (optional)')}>
-                    <Input
-                      value={typedViaToken.shown}
-                      onChangeText={typedViaToken.type}
-                      onBlur={typedViaToken.done}
-                      placeholder={t('Token, if the second relay needs one')}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      secureTextEntry
-                    />
-                  </Field>
-                ) : null}
-                <Text variant="caption" tone="muted">
-                  {t("With a second relay, what you send goes through it first, sealed for your relay. Your relay then never sees your phone's address, and the second relay never sees who a message is for. Taking messages still goes straight to your relay.")}
-                </Text>
-                <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} />
-                {hiddenKey ? (
-                  <>
-                    <Field label={t('Home relay for these hidden chats (optional)')}>
-                      <Input
-                        value={homeUrl}
-                        onChangeText={setHomeUrl}
-                        placeholder="wss://relay.at-home.example"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        keyboardType="url"
-                      />
-                    </Field>
-                    {homeUrl.trim() ? (
-                      <Field label={t('Home relay token (optional)')}>
-                        <Input
-                          value={homeToken}
-                          onChangeText={setHomeToken}
-                          placeholder={t('Token, if the home relay needs one')}
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          secureTextEntry
-                        />
-                      </Field>
-                    ) : null}
-                    <Text variant="caption" tone="muted">
-                      {t("A second relay with a queue of their own, which contacts write to while your relay cannot be reached. It is kept with these hidden chats only, so the space knows nothing of it, and it is looked at while they are open. Use another one than the space's home relay.")}
-                    </Text>
-                    <Button title={t('Save home relay')} kind="secondary" compact onPress={() => void saveHome()} />
-                    {homeNote ? <Text variant="caption" tone="muted">{homeNote}</Text> : null}
-                  </>
-                ) : null}
-                {ownLink ? (
+    <SwipeBack onBack={goBack}>
+      <View style={styles.container} onLayout={(event) => measured({ height: event.nativeEvent.layout.height })}>
+        <Modal visible={styling && shown} animationType="slide" statusBarTranslucent onRequestClose={() => setStyling(false)}>
+          <ScreenBackdrop>
+            <View style={{ flex: 1, backgroundColor: colors.ground }}>
+              <AppearanceEditor
+                title={selectedName ? t('Look of {name}', { name: selectedName }) : t('Look of this chat')}
+                top={
                   <View style={styles.section}>
-                    <Text tone="muted">
-                      {ownQueue
-                        ? t('Your relay queue is ready. Give your contact link to whoever may write to you.')
-                        : t('No relay queue yet. Your contact link has only your keys: who adds it reaches you nearby, over Wi-Fi or Bluetooth, until you have a relay.')}
+                    <Text variant="caption" tone="muted">
+                      {selectedLook
+                        ? t('This chat has its own look, kept only on this phone. The rest of the app keeps its own.')
+                        : t("This chat follows the app's look. Change anything below to give it its own.")}
                     </Text>
                     <Row wrap>
-                      <Button title={t('Show my QR code')} compact onPress={() => setShowQr(true)} />
-                      <Button
-                        title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
-                        kind="secondary"
-                        compact
-                        onPress={() => void shareLink(ownLink)}
-                      />
-                      {ownQueue && !accountLink() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}
-                    </Row>
-                    {ownQueue && canSharePlace ? (
-                      <View>
-                        <DetailRow
-                          title={t('Share a place on my relay with this link')}
-                          checked={sharePlace}
-                          onPress={() => setSharePlace(!sharePlace)}
+                      <Button title={t('Done')} compact onPress={() => setStyling(false)} />
+                      {selectedLook && e2e ? (
+                        <TextButton
+                          title={t('Same as the app')}
+                          onPress={() => {
+                            void e2e.setLook(selectedIdentity, null).then(() => setContacts(e2e.contacts()));
+                          }}
                         />
-                        <Text variant="caption" tone="muted">
-                          {sharePlace
-                            ? t('For a month, whoever adds you with this link and has no relay of their own can take a place on your relay. Anyone who sees the link can, so give it only to whom you mean to.')
-                            : t('The link has no place on your relay in it. Turn this on for someone with no relay of their own.')}
-                        </Text>
-                        {placeNote ? <Text variant="caption" tone="muted">{placeNote}</Text> : null}
-                      </View>
-                    ) : null}
+                      ) : null}
+                    </Row>
                   </View>
-                ) : null}
-                <Text tone="muted">{t('Add a contact by the contact link they gave you:')}</Text>
-                <Row>
-                  <Input
-                    value={contactDraft}
-                    onChangeText={setContactDraft}
-                    placeholder={t('erevos://contact link')}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    style={styles.grow}
-                  />
-                  <Button title={t('Add')} compact onPress={() => addContact()} />
-                </Row>
-                {/* On a linked computer the phone keeps who is blocked. */}
-                {!accountLink() ? (
-                  <View style={styles.section}>
-                    <Text variant="label">{t('Blocked contacts')}</Text>
-                    {blocked.length === 0 ? (
+                }
+              />
+            </View>
+          </ScreenBackdrop>
+        </Modal>
+        <Modal
+          visible={details && shown && !!selected}
+          animationType="slide"
+          statusBarTranslucent
+          onRequestClose={() => setDetails(false)}
+        >
+          <ScreenBackdrop>
+            <SwipeBack onBack={() => setDetails(false)}>
+              <View style={{ flex: 1, backgroundColor: colors.ground }}>
+                <View style={styles.sheetBar}>
+                  <BackButton onPress={() => setDetails(false)} />
+                  <Text variant="heading" style={styles.grow}>
+                    {t('Details')}
+                  </Text>
+                  <TextButton title={t('Done')} onPress={() => setDetails(false)} />
+                </View>
+                <KeyboardAwareScrollView
+                  contentContainerStyle={[styles.sheetContent, { paddingBottom: insets.bottom + space.xl }]}
+                  keyboardShouldPersistTaps="handled"
+                  bottomOffset={space.xl}
+                >
+                  <View style={styles.hero}>
+                    <Pressable
+                      onPress={selectedContact ? () => setOpened((now) => (now === 'picture' ? null : 'picture')) : undefined}
+                      accessibilityRole={selectedContact ? 'button' : undefined}
+                      accessibilityLabel={selectedContact ? t('Change picture') : undefined}
+                    >
+                      {selectedContact ? (
+                        <KeyFace identity={selectedIdentity} name={contactName(selectedContact, shownContacts) ?? ''} size={104} avatar={selectedAvatar} />
+                      ) : null}
+                      {selectedContact ? (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>✎</Text>
+                        </View>
+                      ) : null}
+                    </Pressable>
+                    <Text variant="title" numberOfLines={2} style={[styles.heroName, !contactName(selected ?? '', shownContacts) && styles.monoName]}>
+                      {selectedName}
+                    </Text>
+                    <View style={styles.subtitle}>
+                      {selectedContact ? <ShieldIcon color={colors.success} size={12} /> : null}
+                      {selectedOnline ? <View style={[styles.onlineDot, { backgroundColor: colors.success }]} /> : null}
                       <Text variant="caption" tone="muted">
-                        {t('No one is blocked.')}
+                        {subtitle}
                       </Text>
-                    ) : (
-                      blocked.map((b) => (
-                        <Row key={b.identity}>
-                          <Text style={[styles.grow, !b.name && styles.monoName]} numberOfLines={1}>
-                            {b.name || b.identity.slice(0, 16)}
+                    </View>
+                  </View>
+                  {selectedContact ? (
+                    <>
+                      <View style={styles.actions}>
+                        <QuickAction title={t('Call')} sign="☏" onPress={() => {
+                          setDetails(false);
+                          void startCall(false);
+                        }} />
+                        <QuickAction title={t('Video')} sign="▶" onPress={() => {
+                          setDetails(false);
+                          void startCall(true);
+                        }} />
+                        <QuickAction title={t('Rename')} sign="✎" on={renaming === selectedContact} onPress={() => startRenaming(selectedContact)} />
+                        <QuickAction title={t('Picture')} sign="☺" on={opened === 'picture'} onPress={() => setOpened((now) => (now === 'picture' ? null : 'picture'))} />
+                      </View>
+                      {renaming === selectedContact ? (
+                        <View style={styles.group}>
+                          <Text variant="caption" tone="muted">
+                            {t('A name for them, only on this phone.')}
                           </Text>
-                          <TextButton title={t('Unblock')} onPress={() => void unblock(b.identity)} />
-                        </Row>
-                      ))
-                    )}
-                  </View>
-                ) : null}
-                {/* Not in hidden chats: a photo leaves Erevos, which closes them. */}
-                {!hiddenKey ? (
-                  <Row wrap>
-                    {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('camera')} /> : null}
-                    <Button title={t('Choose a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
-                  </Row>
-                ) : null}
-                {HAS_LINKS && !hiddenKey ? (
-                  <View>
-                    <DetailRow title={t('Find Erevos on the same Wi-Fi')} checked={lanOn} onPress={() => changeLan(!lanOn)} />
-                    <Text variant="caption" tone="muted">
-                      {lanOn
-                        ? t('While a space is open, Erevos phones and computers on the same Wi-Fi or hotspot find each other and talk directly, even with no internet. Anyone on that Wi-Fi can tell an Erevos app is there, not whose.')
-                        : HAS_RADIO
-                          ? t('Only Bluetooth and Wi-Fi Aware look for phones nearby.')
-                          : t('Nothing looks for Erevos nearby.')}
-                    </Text>
-                    {CAN_DIRECT && lanOn ? (
-                      <>
-                        <DetailRow title={t('Make a Wi-Fi with phones nearby')} checked={directOn} onPress={() => changeDirect(!directOn)} />
-                        <Text variant="caption" tone="muted">
-                          {directOn
-                            ? t('With no Wi-Fi in common, two Erevos phones near each other make a small Wi-Fi of their own (Wi-Fi Direct): faster than Bluetooth, and calls go over it with no internet. Anyone near can tell an Erevos phone is there and could join that Wi-Fi, getting only sealed bytes.')
-                            : t('Erevos phones meet only on a Wi-Fi they share, or over Bluetooth and Wi-Fi Aware.')}
+                          <Row>
+                            <Input
+                              value={nameDraft}
+                              onChangeText={setNameDraft}
+                              onSubmitEditing={() => void rename(selectedContact)}
+                              placeholder={t('Name')}
+                              maxLength={MAX_NAME}
+                              autoFocus
+                              style={styles.grow}
+                            />
+                            <Button title={t('Save')} compact onPress={() => void rename(selectedContact)} />
+                          </Row>
+                        </View>
+                      ) : null}
+                      {opened === 'picture' ? (
+                        <View style={styles.group}>
+                          <Text variant="caption" tone="muted">
+                            {t('A picture for them, only on this phone. Without one, their picture is drawn from their key.')}
+                          </Text>
+                          <View style={styles.signs}>
+                            {AVATAR_SIGNS.map((emoji) => (
+                              <Pressable
+                                key={emoji}
+                                onPress={() => void changeAvatar(selectedContact, { kind: 'emoji', emoji, color: signAvatar?.color ?? AVATAR_COLORS[5] })}
+                                accessibilityRole="radio"
+                                accessibilityState={{ selected: signAvatar?.emoji === emoji }}
+                                accessibilityLabel={emoji}
+                                style={[styles.sign, signAvatar?.emoji === emoji && styles.signOn]}
+                              >
+                                <Text style={styles.signText}>{emoji}</Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                          {signAvatar ? (
+                            <View style={styles.signs}>
+                              {AVATAR_COLORS.map((color) => (
+                                <Pressable
+                                  key={color}
+                                  onPress={() => void changeAvatar(selectedContact, { ...signAvatar, color })}
+                                  accessibilityRole="radio"
+                                  accessibilityState={{ selected: signAvatar.color === color }}
+                                  accessibilityLabel={t('Colour {color}', { color })}
+                                  style={[styles.swatch, { backgroundColor: color }, signAvatar.color === color && styles.swatchOn]}
+                                />
+                              ))}
+                            </View>
+                          ) : null}
+                          <Row wrap>
+                            <Button title={t('Photo')} kind="secondary" compact onPress={() => void choosePhoto(selectedContact, 'photos')} />
+                            {CAN_TAKE_PHOTOS ? <Button title={t('Take photo')} kind="secondary" compact onPress={() => void choosePhoto(selectedContact, 'camera')} /> : null}
+                            {selectedAvatar ? <TextButton title={t('Picture from their key')} onPress={() => void changeAvatar(selectedContact, null)} /> : null}
+                          </Row>
+                        </View>
+                      ) : null}
+                      <Text variant="overline" tone="muted" style={styles.groupTitle}>
+                        {t('Chat')}
+                      </Text>
+                      <View style={styles.group}>
+                        <DetailRow
+                          title={t('Search in this chat')}
+                          onPress={() => {
+                            setDetails(false);
+                            setSearching('');
+                            setSearchAt(0);
+                          }}
+                        />
+                        <View style={styles.rule} />
+                        <DetailRow
+                          title={t('Disappearing messages')}
+                          value={timerLabel(selectedTimer)}
+                          open={opened === 'timer'}
+                          onPress={() => setOpened((now) => (now === 'timer' ? null : 'timer'))}
+                        />
+                        {opened === 'timer' ? (
+                          <View style={styles.rowMore}>
+                            <Text variant="caption" tone="muted">
+                              {t('New messages, sent or received, disappear from both phones this long after they are read. Messages already here stay.')}
+                            </Text>
+                            <Row wrap>
+                              {TIMERS.map((timer) => (
+                                <Chip key={timer} label={timerLabel(timer)} selected={timer === selectedTimer} onPress={() => void changeTimer(selectedContact, timer)} />
+                              ))}
+                            </Row>
+                          </View>
+                        ) : null}
+                        <View style={styles.rule} />
+                        <DetailRow
+                          title={t('Appear offline')}
+                          checked={selectedHidden}
+                          onPress={() => void changeHidden(selectedContact, !selectedHidden)}
+                        />
+                        <Text variant="caption" tone="muted" style={styles.rowMore}>
+                          {selectedHidden
+                            ? t('They do not see when you are online, nor that their messages came or were read, until you write. You do not see when they are online either.')
+                            : t('They see when you are online, and which of their messages you read.')}
                         </Text>
-                      </>
-                    ) : null}
-                    <DetailRow title={t('Carry messages for others')} checked={carrying} onPress={() => changeCarrying(!carrying)} />
-                    <Text variant="caption" tone="muted">
-                      {carrying
-                        ? t("When the relay cannot be reached, Erevos phones nearby give each other what they could not send, sealed for the contact's relay. This phone keeps those it gets, three days at most, and hands them to that relay through yours. It cannot read them, nor tell who they are from or for: it sees only the relay's address.")
-                        : t('Off unless you turn it on: this phone keeps nothing for others. What it cannot send, phones nearby carry for you if theirs is on.')}
-                    </Text>
-                    {canLora() ? (
-                      <>
-                        <DetailRow title={t('LoRa radio')} value={t(LORA_SHOWN[lora.state().status])} onPress={() => router.push('/lora')} />
-                        <Text variant="caption" tone="muted">
-                          {t('With a Meshtastic radio, text goes kilometres with no internet, when nothing else takes it.')}
-                        </Text>
-                      </>
-                    ) : null}
-                  </View>
-                ) : null}
+                        {CAN_PREVIEW && !hiddenKey ? (
+                          <>
+                            <View style={styles.rule} />
+                            <DetailRow title={t('Link previews')} checked={previews} onPress={() => changePreviews(!previews)} />
+                            <Text variant="caption" tone="muted" style={styles.rowMore}>
+                              {throughTor()
+                                ? t('None while this space goes through Tor: Erevos sends only relay requests through it.')
+                                : previews
+                                  ? t("When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. In all chats of this space, not in hidden chats.")
+                                  : t("Links go as they are. Turned on, this phone fetches a link's page as you send it, and the site sees this phone's internet address. The phone that gets it fetches nothing.")}
+                            </Text>
+                          </>
+                        ) : null}
+                        <View style={styles.rule} />
+                        <DetailRow
+                          title={t('Chat look')}
+                          value={selectedLook ? t('Its own') : t('Same as the app')}
+                          onPress={() => {
+                            setDetails(false);
+                            setStyling(true);
+                          }}
+                        />
+                        <View style={styles.rule} />
+                        <DetailRow
+                          title={t('Starred messages')}
+                          value={starredHere.length > 0 ? String(starredHere.length) : ''}
+                          open={opened === 'starred'}
+                          onPress={() => setOpened((now) => (now === 'starred' ? null : 'starred'))}
+                        />
+                        {opened === 'starred' ? (
+                          <View style={styles.rowMore}>
+                            {starredHere.length === 0 ? (
+                              <Text variant="caption" tone="muted">
+                                {t('No starred messages. Press and hold a message in a chat, then tap Star.')}
+                              </Text>
+                            ) : null}
+                            {starredHere.map((m) => (
+                              <Pressable
+                                key={m.id}
+                                onPress={() => {
+                                  setDetails(false);
+                                  setTimeout(() => goTo(m.peer, m.tag), 300);
+                                }}
+                                accessibilityRole="button"
+                                style={({ pressed }) => [styles.found, pressed && { opacity: 0.6 }]}
+                              >
+                                <Text numberOfLines={2}>{messageLine(m)}</Text>
+                                <Text variant="caption" tone="muted">
+                                  {`${m.mine ? t('You') : selectedName} · ${dayLabel(m.at)} ${clock(m.at)}`}
+                                </Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                        ) : null}
+                        {!hiddenKey ? (
+                          <>
+                            <View style={styles.rule} />
+                            <DetailRow title={t('Export chat')} onPress={() => void exportChat()} />
+                          </>
+                        ) : null}
+                        {chatSms.number ? (
+                          <>
+                            <View style={styles.rule} />
+                            <DetailRow
+                              title={t('Plain SMS')}
+                              value={chatSms.number}
+                              onPress={() => {
+                                setDetails(false);
+                                setAttaching(false);
+                                router.push(plainSmsHref(chatSms.number));
+                              }}
+                            />
+                            <Text variant="caption" tone="muted" style={styles.rowMore}>
+                              {t('The SMS with this number show in the chat too, marked SMS. This opens their SMS conversation, to write one when there is no internet, say. An SMS is not encrypted: the phone company can read it.')}
+                            </Text>
+                          </>
+                        ) : null}
+                      </View>
+                      <Text variant="overline" tone="muted" style={styles.groupTitle}>
+                        {t('Privacy')}
+                      </Text>
+                      <View style={styles.group}>
+                        <DetailRow
+                          title={t('Safety number')}
+                          value={t('End-to-end encrypted')}
+                          open={safety?.peer === selectedContact}
+                          onPress={() => void toggleSafety(selectedContact)}
+                        />
+                        {safety?.peer === selectedContact ? (
+                          <View style={styles.rowMore}>
+                            <Text variant="caption" tone="muted">
+                              {t('Compare it with theirs, in person or on a call: if both phones show the same, no one is in between.')}
+                            </Text>
+                            <Text selectable variant="mono" style={styles.safety}>
+                              {safety.number.split(' ').reduce((lines, group, i) => lines + (i === 0 ? '' : i % 4 === 0 ? '\n' : '  ') + group, '')}
+                            </Text>
+                            {safety.devices > 0 ? (
+                              <Text variant="caption" tone="muted">
+                                {t('The list of their linked devices last changed on {day}. Your messages go to each place in it too, used by a device or not. If they did not link or unlink one then, ask them.', { day: dayText(safety.devices) })}
+                              </Text>
+                            ) : null}
+                          </View>
+                        ) : null}
+                        {!hiddenKey ? (
+                          <>
+                            <View style={styles.rule} />
+                            <DetailRow
+                              title={t('Move to hidden chats')}
+                              open={opened === 'move'}
+                              onPress={() => {
+                                setOpened((now) => (now === 'move' ? null : 'move'));
+                                setMoveNote('');
+                                setStartingNew(false);
+                                setNewPocket(null);
+                              }}
+                            />
+                            {opened === 'move' ? (
+                              <View style={styles.rowMore}>
+                                <Text variant="caption" tone="muted">
+                                  {t('The chat leaves this list and goes into the hidden chats, sealed with their PIN. To open them, type the PIN in the search on the home screen and press Enter. Nothing shows that they exist.')}
+                                </Text>
+                                <Input
+                                  value={pinDraft}
+                                  onChangeText={(text) => {
+                                    setPinDraft(text);
+                                    setMoveNote('');
+                                  }}
+                                  placeholder={t('PIN of the hidden chats, {n} or more characters', { n: MIN_PIN })}
+                                  secureTextEntry
+                                  autoCapitalize="none"
+                                  autoCorrect={false}
+                                  onSubmitEditing={() => !startingNew && void moveToHidden(selectedContact, pinDraft, null)}
+                                />
+                                {startingNew ? (
+                                  <>
+                                    <Text variant="caption" tone="muted">
+                                      {t('Pick a place for them, 1 to {n}, and remember it: Erevos cannot tell which are used.', { n: POCKETS })}
+                                    </Text>
+                                    <Row wrap>
+                                      {Array.from({ length: POCKETS }, (_, place) => (
+                                        <Chip key={place} label={t('Place {n}', { n: place + 1 })} selected={newPocket === place} onPress={() => setNewPocket(place)} />
+                                      ))}
+                                    </Row>
+                                    {newPocket !== null ? (
+                                      <Text variant="caption" style={{ color: colors.danger }}>
+                                        {t('New hidden chats start in place {n} with this PIN. If that place held hidden chats, they can no longer be opened.', { n: newPocket + 1 })}
+                                      </Text>
+                                    ) : null}
+                                  </>
+                                ) : null}
+                                {moveNote ? (
+                                  <Text variant="caption" style={{ color: colors.danger }}>
+                                    {moveNote}
+                                  </Text>
+                                ) : null}
+                                <Row wrap>
+                                  <Button
+                                    title={startingNew ? t('Start and move') : t('Move')}
+                                    compact
+                                    loading={moving}
+                                    disabled={pinDraft.length < MIN_PIN || (startingNew && newPocket === null)}
+                                    onPress={() => void moveToHidden(selectedContact, pinDraft, startingNew ? newPocket : null)}
+                                  />
+                                  <Button
+                                    title={startingNew ? t('Cancel') : t('New hidden chats')}
+                                    kind="secondary"
+                                    compact
+                                    disabled={moving}
+                                    onPress={() => {
+                                      setStartingNew((on) => !on);
+                                      setNewPocket(null);
+                                    }}
+                                  />
+                                </Row>
+                                <Text variant="caption" tone="muted">
+                                  {t('Their phone is told at once where to write from now on. A message they send in that moment may not come.')}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </>
+                        ) : (
+                          <>
+                            <View style={styles.rule} />
+                            <DetailRow
+                              title={t('Move back to my chats')}
+                              open={opened === 'back'}
+                              onPress={() => {
+                                setOpened((now) => (now === 'back' ? null : 'back'));
+                                setMoveNote('');
+                              }}
+                            />
+                            {opened === 'back' ? (
+                              <View style={styles.rowMore}>
+                                <Text variant="caption" tone="muted">
+                                  {t('The chat leaves the hidden chats with its messages, name, picture and look, and shows again among the chats of this space, which anyone who opens Erevos with its password sees. The safety number stays the same.')}
+                                </Text>
+                                {moveNote ? (
+                                  <Text variant="caption" style={{ color: colors.danger }}>
+                                    {moveNote}
+                                  </Text>
+                                ) : null}
+                                <Row wrap>
+                                  <Button title={t('Move')} compact loading={moving} onPress={() => void moveToSpace(selectedContact)} />
+                                </Row>
+                                <Text variant="caption" tone="muted">
+                                  {t('Their phone is told at once where to write from now on. A message they send in that moment may not come.')}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </>
+                        )}
+                      </View>
+                      <View style={[styles.group, styles.groupGap]}>
+                        <DetailRow
+                          title={t('Delete messages')}
+                          danger
+                          onPress={() => {
+                            setDetails(false);
+                            deleteMessages(selectedContact);
+                          }}
+                        />
+                        <DetailRow title={t('Delete contact')} danger onPress={() => deleteContact(selectedContact, false)} />
+                        <DetailRow title={t('Block contact')} danger onPress={() => deleteContact(selectedContact, true)} />
+                      </View>
+                    </>
+                  ) : null}
+                </KeyboardAwareScrollView>
+              </View>
+            </SwipeBack>
+          </ScreenBackdrop>
+        </Modal>
+        <Sheet visible={showQr && shown && !!ownLink} onClose={() => setShowQr(false)} title={t('My QR code')}>
+          {ownLink ? <QrCode text={ownLink} size={240} /> : null}
+          <Text variant="caption" tone="muted">
+            {t("Scan it with the other phone's camera and open the link in Erevos. If the camera only shows the text, copy it and paste it in Relay and new contacts on that phone.")}
+          </Text>
+          <Row wrap>
+            <Button title={t('Done')} compact onPress={() => setShowQr(false)} />
+            {ownLink ? (
+              <Button
+                title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
+                kind="secondary"
+                compact
+                onPress={() => void shareLink(ownLink)}
+              />
+            ) : null}
+          </Row>
+        </Sheet>
+        {/* The chat's bar, on the bars' glass from the top of the screen, behind the status bar. */}
+        <View style={[styles.topBar, { marginTop: -(insets.top + space.sm), paddingTop: insets.top + 2 }, barBlur]}>
+          {hiddenKey ? (
+            <Text variant="overline" tone="muted" style={styles.kicker}>
+              {t('Hidden chats')}
+            </Text>
+          ) : null}
+          <View style={styles.header}>
+            <BackButton onPress={goBack} />
+            {selected ? (
+              <Pressable
+                style={({ pressed }) => [styles.who, pressed && styles.pressed]}
+                onPress={() => setDetails(true)}
+                accessibilityRole="button"
+                accessibilityLabel={selectedContact ? `${selectedName}, ${subtitle}` : selectedName}
+                accessibilityHint={t('Chat details')}
+              >
+                <KeyFace identity={selectedIdentity} name={contactName(selected, shownContacts) ?? ''} size={narrow ? 36 : 40} avatar={selectedAvatar} />
+                <View style={styles.grow}>
+                  <Text variant="heading" numberOfLines={1} style={[styles.name, !contactName(selected, shownContacts) && styles.monoName]}>
+                    {selectedName}
+                  </Text>
+                  {selectedContact ? (
+                    <View style={styles.subtitle}>
+                      {selectedOnline ? (
+                        <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
+                      ) : !selectedTyping && !narrow ? (
+                        <ShieldIcon color={colors.success} size={11} />
+                      ) : null}
+                      {selectedTimer ? <TimerIcon color={colors.textMuted} size={11} /> : null}
+                      <Text variant="caption" numberOfLines={1} color={selectedTyping ? colors.accentText : colors.textMuted} style={styles.grow}>
+                        {headerSays}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              </Pressable>
+            ) : (
+              <Text variant="title" style={styles.grow}>
+                {hiddenKey ? t('Hidden chats') : t('Chat')}
+              </Text>
+            )}
+            {selectedContact ? (
+              <>
+                <IconButton label={t('Video call')} onPress={() => void startCall(true)}>
+                  <VideoIcon color={colors.text} size={24} />
+                </IconButton>
+                <IconButton label={t('Voice call')} onPress={() => void startCall(false)}>
+                  <PhoneIcon color={colors.text} size={21} />
+                </IconButton>
+              </>
+            ) : null}
+            {selected ? (
+              // Apart from the calls, so a slip calls no one; upright on Android, as its apps have it.
+              <View style={styles.moreGap}>
+                <IconButton label={t('Chat details')} onPress={() => setDetails(true)}>
+                  <MoreIcon color={colors.text} size={Platform.OS === 'web' ? 20 : 18} upright={Platform.OS !== 'web'} />
+                </IconButton>
+              </View>
+            ) : hiddenKey && onChangePassword ? (
+              <View style={styles.headerLinks}>
+                <TextButton title={t('Contacts')} onPress={() => router.push('/contacts?hidden=1')} />
+                <TextButton title={t('Change PIN')} onPress={onChangePassword} />
               </View>
             ) : null}
           </View>
-        </ScrollView>
-      ) : selectedContact && contacts.some((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === selectedContact) ? (
-        <View style={styles.panel}>
-          <Text>{t('Message request')}</Text>
-          <Text variant="caption" tone="muted">
-            {t('Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages came or were read. Writing to them accepts too.')}
-          </Text>
-          <Row wrap>
-            <TextButton title={t('Accept')} onPress={() => void acceptRequest(selectedContact)} />
-            <TextButton title={t('Refuse')} onPress={() => refuseRequest(selectedContact)} />
-            <TextButton title={t('Block')} onPress={() => deleteContact(selectedContact, true)} />
-          </Row>
         </View>
-      ) : null}
-      {searching !== null ? (
-        <Row style={styles.searchBar}>
-          <Input
-            value={searching}
-            onChangeText={(text) => {
-              setSearching(text);
-              setSearchAt(0);
-            }}
-            onSubmitEditing={() => goToHit(searchAt)}
-            placeholder={t('Search in this chat')}
-            autoFocus
-            returnKeyType="search"
-            style={styles.grow}
-          />
-          <Text variant="caption" tone="muted">
-            {searching.trim() ? (hits.length > 0 ? t('{n} of {count}', { n: searchAt + 1, count: hits.length }) : t('None')) : ''}
-          </Text>
-          <SearchStep sign="▲" label={t('Earlier')} onPress={() => goToHit(Math.min(hits.length - 1, searchAt + 1))} />
-          <SearchStep sign="▼" label={t('Later')} onPress={() => goToHit(Math.max(0, searchAt - 1))} />
-          <SearchStep sign="✕" label={t('Close')} onPress={() => setSearching(null)} />
-        </Row>
-      ) : null}
-      {pinnedNow ? (
-        <Pinned
-          line={messageLine(pinnedNow)}
-          index={pinShown % pins.length}
-          count={pins.length}
-          onPress={() => {
-            goTo(pinnedNow.peer, pinnedNow.tag);
-            setPinShown((n) => (n + 1) % pins.length);
-          }}
-        />
-      ) : null}
-      <ScrollView
-        ref={thread}
-        style={styles.thread}
-        contentContainerStyle={styles.threadContent}
-        onLayout={(event) => {
-          measured({ end: event.nativeEvent.layout.y + event.nativeEvent.layout.height });
-          if (atEnd.current) thread.current?.scrollToEnd({ animated: false });
-        }}
-        onContentSizeChange={() => {
-          if (holdScroll.current) holdScroll.current = false;
-          else thread.current?.scrollToEnd({ animated: true });
-        }}
-        // Read to the end, the thread stays at its end as the keyboard, the panel under the bar or
-        // what the bar shows over the field take room from it.
-        onScroll={(event) => {
-          const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
-          atEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 48;
-        }}
-        scrollEventThrottle={100}
-      >
-        {firstImported > 0 ? (
-          <TextButton
-            title={t('Show earlier imported messages ({n} more)', { n: firstImported })}
-            onPress={() => {
-              holdScroll.current = true;
-              setImportedShown((count) => count + IMPORTED_PAGE * 4);
-            }}
-          />
-        ) : null}
-        {imported.length > 0 ? (
-          <Text variant="caption" tone="muted" style={styles.divider}>
-            {t('Imported from {from}: only on this phone, only to read.', { from: importedFrom })}
-          </Text>
-        ) : null}
-        {imported.slice(firstImported).map((message, i) => {
-          const files = mediaText(message.media);
-          const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
-          return (
-            <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? b.mine : b.theirs, styles.imported]}>
-              {importedGroup && !message.mine && message.sender ? <Text style={[ink, styles.sender]}>{message.sender}</Text> : null}
-              {message.files.map((file, n) => (
-                <Pressable key={`${file.id}-${n}`} onPress={() => setViewingImported(file)} accessibilityRole="button">
-                  <Attachment file={file} uri={photos[file.id]} ink={ink} />
-                </Pressable>
-              ))}
-              {message.text ? <Text style={ink}>{message.text}</Text> : null}
-              {files ? <Text style={[ink, styles.files]}>{t('{files}, not imported', { files })}</Text> : null}
-              {message.at ? <Text style={[ink, styles.time]}>{shownTime(message.at)}</Text> : null}
+        {!selected ? (
+          <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
+            {chips.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.faces} keyboardShouldPersistTaps="handled">
+                {chips.map((peer) => {
+                  const named = contactName(peer, shownContacts);
+                  return (
+                    <Pressable
+                      key={peer}
+                      onPress={() => setSelected(peer)}
+                      accessibilityRole="button"
+                      accessibilityLabel={label(peer, shownContacts)}
+                      style={styles.face}
+                    >
+                      <View style={styles.ring}>
+                        <KeyFace
+                          identity={peer.slice(CONTACT_PREFIX.length)}
+                          name={named ?? ''}
+                          size={48}
+                          avatar={contacts.find((c) => `${CONTACT_PREFIX}${c.identity}` === peer)?.avatar}
+                        />
+                      </View>
+                      <Text variant="caption" numberOfLines={1} style={[styles.faceName, !named && styles.monoSmall]}>
+                        {named ?? peer.slice(CONTACT_PREFIX.length, CONTACT_PREFIX.length + 8)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            ) : (
+              <Text tone="muted">
+                {hiddenKey
+                  ? t('No hidden chats yet. Add a contact through the relay below, or move a chat here from its details.')
+                  : Platform.OS === 'web'
+                    ? t('No chats yet. Add a contact through the relay, under Relay.')
+                    : t('No chats yet. Add a contact under Relay. Your contacts reach you nearby too, over Wi-Fi or Bluetooth, without the internet.')}
+              </Text>
+            )}
+            <View style={styles.panel}>
+              {hiddenKey && canRingInBackground ? (
+                <>
+                  <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />
+                  <Text variant="caption" tone="muted">
+                    {watched
+                      ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", as for the other chats, until you open them. Whoever sees it and finds nothing new in your chats may guess there are more.')
+                      : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
+                  </Text>
+                  {watchNote ? <Text variant="caption" tone="muted">{watchNote}</Text> : null}
+                  <DetailRow title={t('Ring calls when closed')} checked={ringing} onPress={() => void changeRinging(!ringing)} />
+                  <Text variant="caption" tone="muted">
+                    {ringing
+                      ? t('While these hidden chats are closed and Erevos is in the background, a call from one of their contacts makes the phone ring and show "Incoming call" with no name. On the ringing screen, tap the small sign and type the PIN to answer. Whoever holds the phone sees a call that is in none of your chats, and may guess there are more.')
+                      : t('Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.')}
+                  </Text>
+                  {ringNote ? <Text variant="caption" tone="muted">{ringNote}</Text> : null}
+                </>
+              ) : null}
+              <Row wrap>
+                <TextButton title={showRelay ? t('Hide relay') : t('Relay and new contacts')} onPress={() => setShowRelay((on) => !on)} />
+              </Row>
+              {showRelay ? (
+                <View style={styles.section}>
+                  <Field label={t('Relay address')}>
+                    <Input
+                      value={typedRelay.shown}
+                      onChangeText={typedRelay.type}
+                      onBlur={typedRelay.done}
+                      placeholder="ws://computer-address:7879"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                    />
+                  </Field>
+                  {isLentToken(relayToken) ? (
+                    <Text variant="caption" tone="muted">
+                      {t("A place lent on this relay through a contact's link: no token of your own is needed. Type another relay to use that one instead.")}
+                    </Text>
+                  ) : (
+                    <Field label={t('Token (optional)')}>
+                      <Input
+                        value={typedToken.shown}
+                        onChangeText={typedToken.type}
+                        onBlur={typedToken.done}
+                        placeholder={t('Token, if the relay needs one')}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        secureTextEntry
+                      />
+                    </Field>
+                  )}
+                  {!hiddenKey && relayUrl.trim() ? (
+                    <RelaySignIn
+                      url={relayUrl.trim()}
+                      token={relayToken.trim()}
+                      onToken={(token, name) => void tookToken(relayUrl.trim(), token, name)}
+                      onNote={setNote}
+                    />
+                  ) : null}
+                  {!hiddenKey && relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? (
+                    <RelayInvites relay={{ url: relayUrl.trim(), token: relayToken.trim() }} onNote={setNote} />
+                  ) : null}
+                  <Field label={t('Second relay (optional)')}>
+                    <Input
+                      value={typedVia.shown}
+                      onChangeText={typedVia.type}
+                      onBlur={typedVia.done}
+                      placeholder="wss://another-relay"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                    />
+                  </Field>
+                  {typedVia.shown.trim() ? (
+                    <Field label={t('Second relay token (optional)')}>
+                      <Input
+                        value={typedViaToken.shown}
+                        onChangeText={typedViaToken.type}
+                        onBlur={typedViaToken.done}
+                        placeholder={t('Token, if the second relay needs one')}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        secureTextEntry
+                      />
+                    </Field>
+                  ) : null}
+                  <Text variant="caption" tone="muted">
+                    {t("With a second relay, what you send goes through it first, sealed for your relay. Your relay then never sees your phone's address, and the second relay never sees who a message is for. Taking messages still goes straight to your relay.")}
+                  </Text>
+                  <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} />
+                  {hiddenKey ? (
+                    <>
+                      <Field label={t('Home relay for these hidden chats (optional)')}>
+                        <Input
+                          value={homeUrl}
+                          onChangeText={setHomeUrl}
+                          placeholder="wss://relay.at-home.example"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          keyboardType="url"
+                        />
+                      </Field>
+                      {homeUrl.trim() ? (
+                        <Field label={t('Home relay token (optional)')}>
+                          <Input
+                            value={homeToken}
+                            onChangeText={setHomeToken}
+                            placeholder={t('Token, if the home relay needs one')}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            secureTextEntry
+                          />
+                        </Field>
+                      ) : null}
+                      <Text variant="caption" tone="muted">
+                        {t("A second relay with a queue of their own, which contacts write to while your relay cannot be reached. It is kept with these hidden chats only, so the space knows nothing of it, and it is looked at while they are open. Use another one than the space's home relay.")}
+                      </Text>
+                      <Button title={t('Save home relay')} kind="secondary" compact onPress={() => void saveHome()} />
+                      {homeNote ? <Text variant="caption" tone="muted">{homeNote}</Text> : null}
+                    </>
+                  ) : null}
+                  {ownLink ? (
+                    <View style={styles.section}>
+                      <Text tone="muted">
+                        {ownQueue
+                          ? t('Your relay queue is ready. Give your contact link to whoever may write to you.')
+                          : t('No relay queue yet. Your contact link has only your keys: who adds it reaches you nearby, over Wi-Fi or Bluetooth, until you have a relay.')}
+                      </Text>
+                      <Row wrap>
+                        <Button title={t('Show my QR code')} compact onPress={() => setShowQr(true)} />
+                        <Button
+                          title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
+                          kind="secondary"
+                          compact
+                          onPress={() => void shareLink(ownLink)}
+                        />
+                        {ownQueue && !accountLink() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}
+                      </Row>
+                      {ownQueue && canSharePlace ? (
+                        <View>
+                          <DetailRow
+                            title={t('Share a place on my relay with this link')}
+                            checked={sharePlace}
+                            onPress={() => setSharePlace(!sharePlace)}
+                          />
+                          <Text variant="caption" tone="muted">
+                            {sharePlace
+                              ? t('For a month, whoever adds you with this link and has no relay of their own can take a place on your relay. Anyone who sees the link can, so give it only to whom you mean to.')
+                              : t('The link has no place on your relay in it. Turn this on for someone with no relay of their own.')}
+                          </Text>
+                          {placeNote ? <Text variant="caption" tone="muted">{placeNote}</Text> : null}
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : null}
+                  <Text tone="muted">{t('Add a contact by the contact link they gave you:')}</Text>
+                  <Row>
+                    <Input
+                      value={contactDraft}
+                      onChangeText={setContactDraft}
+                      placeholder={t('erevos://contact link')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      style={styles.grow}
+                    />
+                    <Button title={t('Add')} compact onPress={() => addContact()} />
+                  </Row>
+                  {/* On a linked computer the phone keeps who is blocked. */}
+                  {!accountLink() ? (
+                    <View style={styles.section}>
+                      <Text variant="label">{t('Blocked contacts')}</Text>
+                      {blocked.length === 0 ? (
+                        <Text variant="caption" tone="muted">
+                          {t('No one is blocked.')}
+                        </Text>
+                      ) : (
+                        blocked.map((b) => (
+                          <Row key={b.identity}>
+                            <Text style={[styles.grow, !b.name && styles.monoName]} numberOfLines={1}>
+                              {b.name || b.identity.slice(0, 16)}
+                            </Text>
+                            <TextButton title={t('Unblock')} onPress={() => void unblock(b.identity)} />
+                          </Row>
+                        ))
+                      )}
+                    </View>
+                  ) : null}
+                  {/* Not in hidden chats: a photo leaves Erevos, which closes them. */}
+                  {!hiddenKey ? (
+                    <Row wrap>
+                      {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('camera')} /> : null}
+                      <Button title={t('Choose a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
+                    </Row>
+                  ) : null}
+                  {HAS_LINKS && !hiddenKey ? (
+                    <View>
+                      <DetailRow title={t('Find Erevos on the same Wi-Fi')} checked={lanOn} onPress={() => changeLan(!lanOn)} />
+                      <Text variant="caption" tone="muted">
+                        {lanOn
+                          ? t('While a space is open, Erevos phones and computers on the same Wi-Fi or hotspot find each other and talk directly, even with no internet. Anyone on that Wi-Fi can tell an Erevos app is there, not whose.')
+                          : HAS_RADIO
+                            ? t('Only Bluetooth and Wi-Fi Aware look for phones nearby.')
+                            : t('Nothing looks for Erevos nearby.')}
+                      </Text>
+                      {CAN_DIRECT && lanOn ? (
+                        <>
+                          <DetailRow title={t('Make a Wi-Fi with phones nearby')} checked={directOn} onPress={() => changeDirect(!directOn)} />
+                          <Text variant="caption" tone="muted">
+                            {directOn
+                              ? t('With no Wi-Fi in common, two Erevos phones near each other make a small Wi-Fi of their own (Wi-Fi Direct): faster than Bluetooth, and calls go over it with no internet. Anyone near can tell an Erevos phone is there and could join that Wi-Fi, getting only sealed bytes.')
+                              : t('Erevos phones meet only on a Wi-Fi they share, or over Bluetooth and Wi-Fi Aware.')}
+                          </Text>
+                        </>
+                      ) : null}
+                      <DetailRow title={t('Carry messages for others')} checked={carrying} onPress={() => changeCarrying(!carrying)} />
+                      <Text variant="caption" tone="muted">
+                        {carrying
+                          ? t("When the relay cannot be reached, Erevos phones nearby give each other what they could not send, sealed for the contact's relay. This phone keeps those it gets, three days at most, and hands them to that relay through yours. It cannot read them, nor tell who they are from or for: it sees only the relay's address.")
+                          : t('Off unless you turn it on: this phone keeps nothing for others. What it cannot send, phones nearby carry for you if theirs is on.')}
+                      </Text>
+                      {canLora() ? (
+                        <>
+                          <DetailRow title={t('LoRa radio')} value={t(LORA_SHOWN[lora.state().status])} onPress={() => router.push('/lora')} />
+                          <Text variant="caption" tone="muted">
+                            {t('With a Meshtastic radio, text goes kilometres with no internet, when nothing else takes it.')}
+                          </Text>
+                        </>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
             </View>
-          );
-        })}
-        {imported.length > 0 ? (
-          <Text variant="caption" tone="muted" style={styles.divider}>
-            {t('Continued in Erevos')}
-          </Text>
-        ) : null}
-        {selected && visible.length === 0 && imported.length === 0 && chatSms.messages.length === 0 ? (
-          <View style={styles.hello}>
-            <ShieldIcon color={colors.textFaint} size={28} />
-            <Text variant="caption" tone="muted" style={styles.divider}>
-              {t('No messages yet. What you write here is end-to-end encrypted, and kept sealed on this phone.')}
+          </ScrollView>
+        ) : selectedContact && contacts.some((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === selectedContact) ? (
+          <View style={styles.panel}>
+            <Text>{t('Message request')}</Text>
+            <Text variant="caption" tone="muted">
+              {t('Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages came or were read. Writing to them accepts too.')}
             </Text>
+            <Row wrap>
+              <TextButton title={t('Accept')} onPress={() => void acceptRequest(selectedContact)} />
+              <TextButton title={t('Refuse')} onPress={() => refuseRequest(selectedContact)} />
+              <TextButton title={t('Block')} onPress={() => deleteContact(selectedContact, true)} />
+            </Row>
           </View>
         ) : null}
-        {lines.map((line, i) => {
-          const before = lines[i - 1];
-          const after = lines[i + 1];
-          const newDay = !before || dayOf(before.at) !== dayOf(line.at);
-          // The last of a run from one side gets the bubble's tail, and room after it; an SMS and a
-          // message of the chat are never one run.
-          const tail = !after || after.mine !== line.mine || after.kind !== line.kind || dayOf(after.at) !== dayOf(line.at);
-          if (line.kind === 'sms') {
-            const m = line.sms;
-            const id = smsLineId(m);
-            const ink = m.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
+        {searching !== null ? (
+          <Row style={styles.searchBar}>
+            <Input
+              value={searching}
+              onChangeText={(text) => {
+                setSearching(text);
+                setSearchAt(0);
+              }}
+              onSubmitEditing={() => goToHit(searchAt)}
+              placeholder={t('Search in this chat')}
+              autoFocus
+              returnKeyType="search"
+              style={styles.grow}
+            />
+            <Text variant="caption" tone="muted">
+              {searching.trim() ? (hits.length > 0 ? t('{n} of {count}', { n: searchAt + 1, count: hits.length }) : t('None')) : ''}
+            </Text>
+            <SearchStep sign="▲" label={t('Earlier')} onPress={() => goToHit(Math.min(hits.length - 1, searchAt + 1))} />
+            <SearchStep sign="▼" label={t('Later')} onPress={() => goToHit(Math.max(0, searchAt - 1))} />
+            <SearchStep sign="✕" label={t('Close')} onPress={() => setSearching(null)} />
+          </Row>
+        ) : null}
+        {pinnedNow ? (
+          <Pinned
+            line={messageLine(pinnedNow)}
+            index={pinShown % pins.length}
+            count={pins.length}
+            onPress={() => {
+              goTo(pinnedNow.peer, pinnedNow.tag);
+              setPinShown((n) => (n + 1) % pins.length);
+            }}
+          />
+        ) : null}
+        <ScrollView
+          ref={thread}
+          style={styles.thread}
+          contentContainerStyle={styles.threadContent}
+          onLayout={(event) => {
+            measured({ end: event.nativeEvent.layout.y + event.nativeEvent.layout.height });
+            if (atEnd.current) thread.current?.scrollToEnd({ animated: false });
+          }}
+          onContentSizeChange={() => {
+            if (holdScroll.current) holdScroll.current = false;
+            else thread.current?.scrollToEnd({ animated: true });
+          }}
+          // Read to the end, the thread stays at its end as the keyboard, the panel under the bar or
+          // what the bar shows over the field take room from it.
+          onScroll={(event) => {
+            const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+            atEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 48;
+          }}
+          scrollEventThrottle={100}
+        >
+          {firstImported > 0 ? (
+            <TextButton
+              title={t('Show earlier imported messages ({n} more)', { n: firstImported })}
+              onPress={() => {
+                holdScroll.current = true;
+                setImportedShown((count) => count + IMPORTED_PAGE * 4);
+              }}
+            />
+          ) : null}
+          {imported.length > 0 ? (
+            <Text variant="caption" tone="muted" style={styles.divider}>
+              {t('Imported from {from}: only on this phone, only to read.', { from: importedFrom })}
+            </Text>
+          ) : null}
+          {imported.slice(firstImported).map((message, i) => {
+            const files = mediaText(message.media);
+            const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
             return (
-              <View key={`sms-${id}`} onLayout={(event) => smsPlaced.current.set(id, event.nativeEvent.layout.y)}>
-                {line.earlier ? (
-                  <TextButton
-                    title={t('Show earlier SMS')}
-                    onPress={() => {
-                      holdScroll.current = true;
-                      chatSms.earlier();
-                    }}
-                  />
-                ) : null}
-                {newDay ? (
+              <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? b.mine : b.theirs, styles.imported]}>
+                {importedGroup && !message.mine && message.sender ? <Text style={[ink, styles.sender]}>{message.sender}</Text> : null}
+                {message.files.map((file, n) => (
+                  <Pressable key={`${file.id}-${n}`} onPress={() => setViewingImported(file)} accessibilityRole="button">
+                    <Attachment file={file} uri={photos[file.id]} ink={ink} />
+                  </Pressable>
+                ))}
+                {message.text ? <Text style={ink}>{message.text}</Text> : null}
+                {files ? <Text style={[ink, styles.files]}>{t('{files}, not imported', { files })}</Text> : null}
+                {message.at ? <Text style={[ink, styles.time]}>{shownTime(message.at)}</Text> : null}
+              </View>
+            );
+          })}
+          {imported.length > 0 ? (
+            <Text variant="caption" tone="muted" style={styles.divider}>
+              {t('Continued in Erevos')}
+            </Text>
+          ) : null}
+          {selected && visible.length === 0 && imported.length === 0 && chatSms.messages.length === 0 ? (
+            <View style={styles.hello}>
+              <ShieldIcon color={colors.textFaint} size={28} />
+              <Text variant="caption" tone="muted" style={styles.divider}>
+                {t('No messages yet. What you write here is end-to-end encrypted, and kept sealed on this phone.')}
+              </Text>
+            </View>
+          ) : null}
+          {lines.map((line, i) => {
+            const before = lines[i - 1];
+            const after = lines[i + 1];
+            const newDay = !before || dayOf(before.at) !== dayOf(line.at);
+            // The last of a run from one side gets the bubble's tail, and room after it; an SMS and a
+            // message of the chat are never one run.
+            const tail = !after || after.mine !== line.mine || after.kind !== line.kind || dayOf(after.at) !== dayOf(line.at);
+            if (line.kind === 'sms') {
+              const m = line.sms;
+              const id = smsLineId(m);
+              const ink = m.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
+              return (
+                <View key={`sms-${id}`} onLayout={(event) => smsPlaced.current.set(id, event.nativeEvent.layout.y)}>
+                  {line.earlier ? (
+                    <TextButton
+                      title={t('Show earlier SMS')}
+                      onPress={() => {
+                        holdScroll.current = true;
+                        chatSms.earlier();
+                      }}
+                    />
+                  ) : null}
+                  {newDay ? (
+                    <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
+                      {dayLabel(m.at)}
+                    </Text>
+                  ) : null}
+                  <Pressable
+                    onPress={smsFailed(m) ? () => sendSmsLineAgain(m) : undefined}
+                    onLongPress={() => setSmsMenuFor(m)}
+                    accessibilityHint={smsFailed(m) ? t('Tap to send it again.') : t('Hold for more')}
+                    style={[
+                      styles.bubble,
+                      m.mine ? b.mine : b.theirs,
+                      tail && (m.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+                      styles.sms,
+                      lit === id && styles.lit,
+                    ]}
+                  >
+                    {(m.pictures ?? []).map((p) => (
+                      <Image key={p.uri} source={{ uri: p.uri }} style={styles.smsPicture} resizeMode="cover" accessibilityLabel={t('Picture')} />
+                    ))}
+                    {m.text ? (
+                      <Text style={ink}>
+                        <LinkedText text={m.text} />
+                      </Text>
+                    ) : null}
+                    {/* Marked plain: what the SMS screen says of every SMS, and its marks. */}
+                    <Text style={[ink, styles.time]}>
+                      {[m.kind === 'mms' ? t('MMS (not encrypted)') : t('SMS (not encrypted)'), clock(m.at), m.mine ? smsMark(m.state) : ''].filter(Boolean).join('  ·  ')}
+                    </Text>
+                    {smsFailed(m) ? <Text style={[styles.time, { color: colors.danger }]}>{t('Tap to send it again.')}</Text> : null}
+                  </Pressable>
+                </View>
+              );
+            }
+            const message = line.message;
+            const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
+            const quoted = message.re ? visible.find((m) => m.tag === message.re) : undefined;
+            // A sticker, built in or made from a photo, shows on its own, with no bubble.
+            const stuck = !!message.sticker || !!message.file?.sticker;
+            return (
+              <View
+                key={message.id}
+                onLayout={(event) => {
+                  placed.current.set(message.id, event.nativeEvent.layout.y);
+                  // Opened at this message (a starred one, or one found): gone to once the thread has settled.
+                  if (goal.current === message.tag) {
+                    goal.current = null;
+                    holdScroll.current = true;
+                    setTimeout(() => goTo(message.peer, message.tag), 400);
+                  }
+                }}
+              >
+                {newDay && message.at ? (
                   <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
-                    {dayLabel(m.at)}
+                    {dayLabel(message.at)}
                   </Text>
                 ) : null}
                 <Pressable
-                  onPress={smsFailed(m) ? () => sendSmsLineAgain(m) : undefined}
-                  onLongPress={() => setSmsMenuFor(m)}
-                  accessibilityHint={smsFailed(m) ? t('Tap to send it again.') : t('Hold for more')}
+                  onPress={message.voice ? () => void play(message) : message.file ? () => openFile(message) : undefined}
+                  onLongPress={() => setMenuFor(message)}
+                  accessibilityHint={message.voice ? t('Tap to play, hold for more') : message.file ? t('Tap to open, hold for more') : t('Hold for more')}
                   style={[
                     styles.bubble,
-                    m.mine ? b.mine : b.theirs,
-                    tail && (m.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
-                    styles.sms,
-                    lit === id && styles.lit,
+                    message.mine ? b.mine : b.theirs,
+                    message.file?.kind === 'photo' && !stuck && styles.photoBubble,
+                    tail && !stuck && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+                    stuck && styles.stickerBubble,
+                    (message.myReaction || message.theirReaction) && styles.reacted,
+                    lit === message.id && styles.lit,
                   ]}
                 >
-                  {(m.pictures ?? []).map((p) => (
-                    <Image key={p.uri} source={{ uri: p.uri }} style={styles.smsPicture} resizeMode="cover" accessibilityLabel={t('Picture')} />
-                  ))}
-                  {m.text ? (
-                    <Text style={ink}>
-                      <LinkedText text={m.text} />
-                    </Text>
+                  {message.re ? (
+                    <Quote
+                      name={quoted ? (quoted.mine ? t('You') : selectedName) : ''}
+                      line={quoted ? messageLine(quoted) : ''}
+                      ink={ink}
+                      onPress={() => goTo(message.peer, message.re!)}
+                    />
                   ) : null}
-                  {/* Marked plain: what the SMS screen says of every SMS, and its marks. */}
-                  <Text style={[ink, styles.time]}>
-                    {[m.kind === 'mms' ? t('MMS (not encrypted)') : t('SMS (not encrypted)'), clock(m.at), m.mine ? smsMark(m.state) : ''].filter(Boolean).join('  ·  ')}
+                  {message.sticker ? (
+                    <StickerView name={message.sticker} fallback={message.text} play={lines.length - i <= PLAYS_LAST} tap onLongPress={() => setMenuFor(message)} />
+                  ) : message.file?.sticker ? (
+                    <PhotoSticker uri={photos[message.file.id]} status={comingText(message.file, taking[`${message.peer}|${message.tag}`])} />
+                  ) : message.place ? (
+                    <PlaceCard place={message.place} ink={ink} />
+                  ) : message.poll ? (
+                    <PollCard
+                      poll={message.poll}
+                      voters={[
+                        { name: t('You'), chose: message.myVote ?? [] },
+                        { name: selectedName, chose: message.theirVote ?? [] },
+                      ]}
+                      mine={message.myVote ?? []}
+                      onChoose={theyHave(message) ? (option) => void vote(message, option) : undefined}
+                      ink={ink}
+                    />
+                  ) : message.file ? (
+                    <Attachment file={message.file} uri={photos[message.file.id]} state={taking[`${message.peer}|${message.tag}`]} ink={ink} />
+                  ) : (
+                    <Text style={ink}>
+                      {message.voice
+                        ? playingId === message.id
+                          ? `■  ${t('Playing, {time}', { time: voiceDuration(Math.max(0, message.voice.ms - played)) })}`
+                          : `▶  ${t('Voice message, {time}', { time: voiceDuration(message.voice.ms) })}`
+                        : <LinkedText text={shownLine(message.text)} />}
+                    </Text>
+                  )}
+                  {message.preview && !message.voice && !message.file ? <PreviewCard preview={message.preview} ink={ink} /> : null}
+                  <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>
+                    {[message.forwarded ? t('Forwarded') : '', message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}
                   </Text>
-                  {smsFailed(m) ? <Text style={[styles.time, { color: colors.danger }]}>{t('Tap to send it again.')}</Text> : null}
                 </Pressable>
+                <Reactions
+                  signs={[message.theirReaction, message.myReaction].filter((sign): sign is string => !!sign)}
+                  mine={message.myReaction}
+                  mineSide={message.mine}
+                  onPress={() => setMenuFor(message)}
+                />
               </View>
             );
-          }
-          const message = line.message;
-          const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
-          const quoted = message.re ? visible.find((m) => m.tag === message.re) : undefined;
-          // A sticker, built in or made from a photo, shows on its own, with no bubble.
-          const stuck = !!message.sticker || !!message.file?.sticker;
-          return (
-            <View
-              key={message.id}
-              onLayout={(event) => {
-                placed.current.set(message.id, event.nativeEvent.layout.y);
-                // Opened at this message (a starred one, or one found): gone to once the thread has settled.
-                if (goal.current === message.tag) {
-                  goal.current = null;
-                  holdScroll.current = true;
-                  setTimeout(() => goTo(message.peer, message.tag), 400);
-                }
+          })}
+        </ScrollView>
+        {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
+        {connectShown ? (
+          <Row wrap>
+            <TextButton
+              title={t('Connect to one of my contacts')}
+              onPress={() => {
+                setPickNote('');
+                setPicking(true);
               }}
-            >
-              {newDay && message.at ? (
-                <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
-                  {dayLabel(message.at)}
+            />
+            <TextButton title={t('Not now')} onPress={() => setConnecting(null)} />
+          </Row>
+        ) : null}
+        {selectedContact ? (
+          <View style={styles.dock}>
+            <Composer
+              value={draft}
+              onChangeText={typed}
+              placeholder={t('Message {name}', { name: selectedName })}
+              maxLength={4000}
+              enterSends
+              onSend={() => void send()}
+              sendWays={sendWays}
+              voice={{ recording: talking, start: startTalking, stop: (cancel) => void stopTalking(cancel) }}
+              talkie={{ on: talkie, onOff: () => toggleTalkie(selectedContact) }}
+              vanish={{
+                on: vanishing,
+                seconds: vanishFor,
+                choices: TIMERS.slice(1),
+                label: timerLabel,
+                onToggle: () => setVanishing((on) => !on),
+                onChoose: setVanishFor,
+              }}
+              answering={
+                replying && replying.peer === selected
+                  ? {
+                      name: replying.mine ? t('You') : selectedName,
+                      line: messageLine(replying),
+                      onPress: () => goTo(replying.peer, replying.tag),
+                      onClose: () => setReplying(null),
+                    }
+                  : null
+              }
+              later={
+                laterFor !== null
+                  ? { line: t('The next photo, file or voice message goes on {when}.', { when: laterLabel(laterFor) }), onCancel: () => setLaterFor(null) }
+                  : null
+              }
+              onSticker={() => afterSheet(() => setStickering(true))}
+              panel={
+                <ComposerPanel
+                  tiles={tiles}
+                  quality={{ value: quality, onChange: chooseQuality }}
+                  ways={ways}
+                  foot={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
+                  page={
+                    choosingLater
+                      ? {
+                          title: t('Send later'),
+                          onBack: () => setChoosingLater(false),
+                          children: (
+                            <>
+                              <LaterPicker onPick={(at) => void sendLater(at)} />
+                              <Text variant="caption" tone="muted">
+                                {draft.trim() ? '' : `${t('With nothing typed, the next photo, file or voice message goes then.')} `}
+                                {hiddenKey
+                                  ? t('The relay keeps it and sends it at that time, even if this phone is off then. In hidden chats the relay has to be reachable now.')
+                                  : t('The relay keeps it and sends it at that time, even if this phone is off then.')}
+                              </Text>
+                            </>
+                          ),
+                        }
+                      : null
+                  }
+                />
+              }
+              panelOpen={attaching && shown}
+              onPanel={(open) => {
+                setAttaching(open);
+                if (!open) setChoosingLater(false);
+              }}
+            />
+          </View>
+        ) : null}
+        <MessageMenu
+          visible={menuFor !== null && shown}
+          onClose={() => setMenuFor(null)}
+          line={menuFor ? messageLine(menuFor) : ''}
+          reaction={menuFor?.myReaction}
+          onReact={menuFor && theyHave(menuFor) ? (emoji) => void react(menuFor, emoji) : undefined}
+          actions={menuFor ? menuActions(menuFor) : []}
+        />
+        <MessageMenu
+          visible={smsMenuFor !== null && shown}
+          onClose={() => setSmsMenuFor(null)}
+          line={smsMenuFor ? smsMenuFor.text.split('\n')[0].trim() || t('Picture') : ''}
+          actions={smsMenuFor ? smsActions(smsMenuFor) : []}
+        />
+        <SmsForward
+          message={shown ? smsForwarding : null}
+          contacts={shownContacts.map((c) => ({ identity: c.identity, name: c.name, request: c.request, phone: e2e?.phones().find((p) => p.identity === c.identity)?.phone }))}
+          onClose={() => setSmsForwarding(null)}
+          onNote={setNote}
+          onChat={(identity, text) => {
+            setSelected(`${CONTACT_PREFIX}${identity}`);
+            setDraft((typed) => (typed.trim() ? `${typed}\n${text}` : text));
+          }}
+        />
+        <PollSheet visible={polling && shown} onClose={() => setPolling(false)} onSend={sendPoll} />
+        <Sheet visible={!!placeFound && shown} onClose={() => setPlaceFound(null)} title={t('Send where you are?')}>
+          {placeFound ? (
+            <>
+              <Text selectable>{placeText(placeFound)}</Text>
+              {placeFound.acc !== undefined ? (
+                <Text variant="caption" tone="muted">
+                  {t('Within about {m} m', { m: placeFound.acc })}
                 </Text>
               ) : null}
-              <Pressable
-                onPress={message.voice ? () => void play(message) : message.file ? () => openFile(message) : undefined}
-                onLongPress={() => setMenuFor(message)}
-                accessibilityHint={message.voice ? t('Tap to play, hold for more') : message.file ? t('Tap to open, hold for more') : t('Hold for more')}
-                style={[
-                  styles.bubble,
-                  message.mine ? b.mine : b.theirs,
-                  message.file?.kind === 'photo' && !stuck && styles.photoBubble,
-                  tail && !stuck && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
-                  stuck && styles.stickerBubble,
-                  (message.myReaction || message.theirReaction) && styles.reacted,
-                  lit === message.id && styles.lit,
-                ]}
-              >
-                {message.re ? (
-                  <Quote
-                    name={quoted ? (quoted.mine ? t('You') : selectedName) : ''}
-                    line={quoted ? messageLine(quoted) : ''}
-                    ink={ink}
-                    onPress={() => goTo(message.peer, message.re!)}
-                  />
-                ) : null}
-                {message.sticker ? (
-                  <StickerView name={message.sticker} fallback={message.text} play={lines.length - i <= PLAYS_LAST} tap onLongPress={() => setMenuFor(message)} />
-                ) : message.file?.sticker ? (
-                  <PhotoSticker uri={photos[message.file.id]} status={comingText(message.file, taking[`${message.peer}|${message.tag}`])} />
-                ) : message.place ? (
-                  <PlaceCard place={message.place} ink={ink} />
-                ) : message.poll ? (
-                  <PollCard
-                    poll={message.poll}
-                    voters={[
-                      { name: t('You'), chose: message.myVote ?? [] },
-                      { name: selectedName, chose: message.theirVote ?? [] },
-                    ]}
-                    mine={message.myVote ?? []}
-                    onChoose={theyHave(message) ? (option) => void vote(message, option) : undefined}
-                    ink={ink}
-                  />
-                ) : message.file ? (
-                  <Attachment file={message.file} uri={photos[message.file.id]} state={taking[`${message.peer}|${message.tag}`]} ink={ink} />
-                ) : (
-                  <Text style={ink}>
-                    {message.voice
-                      ? playingId === message.id
-                        ? `■  ${t('Playing, {time}', { time: voiceDuration(Math.max(0, message.voice.ms - played)) })}`
-                        : `▶  ${t('Voice message, {time}', { time: voiceDuration(message.voice.ms) })}`
-                      : <LinkedText text={shownLine(message.text)} />}
-                  </Text>
-                )}
-                {message.preview && !message.voice && !message.file ? <PreviewCard preview={message.preview} ink={ink} /> : null}
-                <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>
-                  {[message.forwarded ? t('Forwarded') : '', message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}
-                </Text>
-              </Pressable>
-              <Reactions
-                signs={[message.theirReaction, message.myReaction].filter((sign): sign is string => !!sign)}
-                mine={message.myReaction}
-                mineSide={message.mine}
-                onPress={() => setMenuFor(message)}
-              />
-            </View>
-          );
-        })}
-      </ScrollView>
-      {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
-      {connectShown ? (
-        <Row wrap>
-          <TextButton
-            title={t('Connect to one of my contacts')}
-            onPress={() => {
-              setPickNote('');
-              setPicking(true);
-            }}
-          />
-          <TextButton title={t('Not now')} onPress={() => setConnecting(null)} />
-        </Row>
-      ) : null}
-      {selectedContact ? (
-        <View style={styles.dock}>
-          <Composer
-            value={draft}
-            onChangeText={typed}
-            placeholder={t('Message {name}', { name: selectedName })}
-            maxLength={4000}
-            enterSends
-            onSend={() => void send()}
-            sendWays={sendWays}
-            voice={{ recording: talking, start: startTalking, stop: (cancel) => void stopTalking(cancel) }}
-            talkie={{ on: talkie, onOff: () => toggleTalkie(selectedContact) }}
-            vanish={{
-              on: vanishing,
-              seconds: vanishFor,
-              choices: TIMERS.slice(1),
-              label: timerLabel,
-              onToggle: () => setVanishing((on) => !on),
-              onChoose: setVanishFor,
-            }}
-            answering={
-              replying && replying.peer === selected
-                ? {
-                    name: replying.mine ? t('You') : selectedName,
-                    line: messageLine(replying),
-                    onPress: () => goTo(replying.peer, replying.tag),
-                    onClose: () => setReplying(null),
-                  }
-                : null
-            }
-            later={
-              laterFor !== null
-                ? { line: t('The next photo, file or voice message goes on {when}.', { when: laterLabel(laterFor) }), onCancel: () => setLaterFor(null) }
-                : null
-            }
-            onSticker={() => afterSheet(() => setStickering(true))}
-            panel={
-              <ComposerPanel
-                tiles={tiles}
-                quality={{ value: quality, onChange: chooseQuality }}
-                ways={ways}
-                foot={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
-                page={
-                  choosingLater
-                    ? {
-                        title: t('Send later'),
-                        onBack: () => setChoosingLater(false),
-                        children: (
-                          <>
-                            <LaterPicker onPick={(at) => void sendLater(at)} />
-                            <Text variant="caption" tone="muted">
-                              {draft.trim() ? '' : `${t('With nothing typed, the next photo, file or voice message goes then.')} `}
-                              {hiddenKey
-                                ? t('The relay keeps it and sends it at that time, even if this phone is off then. In hidden chats the relay has to be reachable now.')
-                                : t('The relay keeps it and sends it at that time, even if this phone is off then.')}
-                            </Text>
-                          </>
-                        ),
-                      }
-                    : null
-                }
-              />
-            }
-            panelOpen={attaching && shown}
-            onPanel={(open) => {
-              setAttaching(open);
-              if (!open) setChoosingLater(false);
-            }}
-          />
-        </View>
-      ) : null}
-      <MessageMenu
-        visible={menuFor !== null && shown}
-        onClose={() => setMenuFor(null)}
-        line={menuFor ? messageLine(menuFor) : ''}
-        reaction={menuFor?.myReaction}
-        onReact={menuFor && theyHave(menuFor) ? (emoji) => void react(menuFor, emoji) : undefined}
-        actions={menuFor ? menuActions(menuFor) : []}
-      />
-      <MessageMenu
-        visible={smsMenuFor !== null && shown}
-        onClose={() => setSmsMenuFor(null)}
-        line={smsMenuFor ? smsMenuFor.text.split('\n')[0].trim() || t('Picture') : ''}
-        actions={smsMenuFor ? smsActions(smsMenuFor) : []}
-      />
-      <SmsForward
-        message={shown ? smsForwarding : null}
-        contacts={shownContacts.map((c) => ({ identity: c.identity, name: c.name, request: c.request, phone: e2e?.phones().find((p) => p.identity === c.identity)?.phone }))}
-        onClose={() => setSmsForwarding(null)}
-        onNote={setNote}
-        onChat={(identity, text) => {
-          setSelected(`${CONTACT_PREFIX}${identity}`);
-          setDraft((typed) => (typed.trim() ? `${typed}\n${text}` : text));
-        }}
-      />
-      <PollSheet visible={polling && shown} onClose={() => setPolling(false)} onSend={sendPoll} />
-      <Sheet visible={!!placeFound && shown} onClose={() => setPlaceFound(null)} title={t('Send where you are?')}>
-        {placeFound ? (
-          <>
-            <Text selectable>{placeText(placeFound)}</Text>
-            {placeFound.acc !== undefined ? (
               <Text variant="caption" tone="muted">
-                {t('Within about {m} m', { m: placeFound.acc })}
+                {t('{name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.', { name: selectedName })}
               </Text>
-            ) : null}
-            <Text variant="caption" tone="muted">
-              {t('{name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.', { name: selectedName })}
-            </Text>
-            <Row wrap>
-              <Button title={t('Send')} compact onPress={() => sendPlace(placeFound)} />
-              <TextButton title={t('Open in maps')} onPress={() => openPlace(placeFound)} />
-              <TextButton title={t('Cancel')} onPress={() => setPlaceFound(null)} />
-            </Row>
-          </>
-        ) : null}
-      </Sheet>
-      <ConnectPicker visible={picking && shown && !!connecting} among={among} identity={connecting ?? ''} onPick={(card) => void connectTo(card)} onClose={() => setPicking(false)} note={pickNote} />
-      <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
-        <StickerPicker onPick={sendSticker} mine={{ place: stickerPlace, onPick: sendOwnSticker }} />
-      </Sheet>
-      <Sheet visible={!!forwarding && shown} onClose={() => setForwarding(null)} title={t('Forward to')}>
-        {forwarding ? (
-          <>
-            <Text variant="caption" tone="muted" numberOfLines={2}>
-              {messageLine(forwarding)}
-            </Text>
-            {shownContacts
-              .filter((c) => !c.request)
-              .map((c) => (
-                <TextButton key={c.identity} title={label(`${CONTACT_PREFIX}${c.identity}`, shownContacts)} onPress={() => void forwardTo(forwarding, `${CONTACT_PREFIX}${c.identity}`)} />
+              <Row wrap>
+                <Button title={t('Send')} compact onPress={() => sendPlace(placeFound)} />
+                <TextButton title={t('Open in maps')} onPress={() => openPlace(placeFound)} />
+                <TextButton title={t('Cancel')} onPress={() => setPlaceFound(null)} />
+              </Row>
+            </>
+          ) : null}
+        </Sheet>
+        <ConnectPicker visible={picking && shown && !!connecting} among={among} identity={connecting ?? ''} onPick={(card) => void connectTo(card)} onClose={() => setPicking(false)} note={pickNote} />
+        <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
+          <StickerPicker onPick={sendSticker} mine={{ place: stickerPlace, onPick: sendOwnSticker }} />
+        </Sheet>
+        <Sheet visible={!!forwarding && shown} onClose={() => setForwarding(null)} title={t('Forward to')}>
+          {forwarding ? (
+            <>
+              <Text variant="caption" tone="muted" numberOfLines={2}>
+                {messageLine(forwarding)}
+              </Text>
+              {shownContacts
+                .filter((c) => !c.request)
+                .map((c) => (
+                  <TextButton key={c.identity} title={label(`${CONTACT_PREFIX}${c.identity}`, shownContacts)} onPress={() => void forwardTo(forwarding, `${CONTACT_PREFIX}${c.identity}`)} />
+                ))}
+              {forwardGroups.map((group) => (
+                <TextButton key={group.id} title={t('{name} (group)', { name: group.name })} onPress={() => void forwardToGroupChat(forwarding, group.id)} />
               ))}
-            {forwardGroups.map((group) => (
-              <TextButton key={group.id} title={t('{name} (group)', { name: group.name })} onPress={() => void forwardToGroupChat(forwarding, group.id)} />
-            ))}
-            <Text variant="caption" tone="muted">
-              {t('It goes as a copy, sent anew and end-to-end encrypted, marked as forwarded but not from where.')}
-            </Text>
-          </>
-        ) : null}
-      </Sheet>
-      {shown ? <UndoBar bottom={undoAt + space.sm} /> : null}
-      <FileViewer
-        file={viewing?.file ?? viewingImported}
-        uri={viewing?.file ? photos[viewing.file.id] : viewingImported ? photos[viewingImported.id] : undefined}
-        onSave={(choose) => (viewing ? void saveAttachment(viewing, choose) : viewingImported && void saveImported(viewingImported, choose))}
-        onClose={() => {
-          setViewing(null);
-          setViewingImported(null);
-        }}
-      />
-    </View>
+              <Text variant="caption" tone="muted">
+                {t('It goes as a copy, sent anew and end-to-end encrypted, marked as forwarded but not from where.')}
+              </Text>
+            </>
+          ) : null}
+        </Sheet>
+        {shown ? <UndoBar bottom={undoAt + space.sm} /> : null}
+        <FileViewer
+          file={viewing?.file ?? viewingImported}
+          uri={viewing?.file ? photos[viewing.file.id] : viewingImported ? photos[viewingImported.id] : undefined}
+          onSave={(choose) => (viewing ? void saveAttachment(viewing, choose) : viewingImported && void saveImported(viewingImported, choose))}
+          onClose={() => {
+            setViewing(null);
+            setViewingImported(null);
+          }}
+        />
+      </View>
+    </SwipeBack>
   );
 }
 

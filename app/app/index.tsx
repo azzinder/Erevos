@@ -9,6 +9,7 @@ import { KeyFace } from '../components/key-face';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { archiveConversation, SmsActions, trashConversation, type SmsTarget } from '../components/sms-actions';
 import { SwipeRow } from '../components/swipe-row';
+import { SwipeTabs } from '../components/swipe-tabs';
 import { Chip, font, fontStyle, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
@@ -124,6 +125,7 @@ const trashLooked = new Set<number>();
 
 // Which of the list shows: all of it, the SMS, or the Erevos chats (lib/inbox.ts, showsIn).
 // Erevos's widget opens on one of them (erevos://?show=sms).
+const SHOWS: InboxShow[] = ['all', 'sms', 'erevos'];
 const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' ? show : 'all');
 const isSms = (row: InboxRow) => showsIn(row, 'sms');
 
@@ -441,70 +443,74 @@ export default function Home() {
   // The list ends above the keyboard while the search is typed in, and New chat floats above it.
   return (
     <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
-      <FlatList
-        data={shown}
-        // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
-        removeClippedSubviews={false}
-        keyExtractor={(row) => row.identity}
-        ListHeaderComponent={header}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
-        renderItem={({ item }) =>
-          item.sms ? (
-            <SwipeRow
-              ground={colors.ground}
-              right={{ label: t('Archive'), color: colors.primary, ink: colors.onPrimary, run: () => swiped(item, true) }}
-              left={{ label: t('Delete'), color: colors.danger, ink: colors.ground, run: () => swiped(item, false) }}
-            >
-              <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />
-            </SwipeRow>
-          ) : (
-            <ChatRow row={item} now={now} online={online.has(item.identity)} />
-          )
-        }
-        extraData={online}
-        ListEmptyComponent={
-          rows === null || hits.length > 0 ? null : query ? (
-            <Text tone="muted" style={styles.emptyText}>
-              {t('No chat has “{query}” in it.', { query: query.trim() })}
-            </Text>
-          ) : (
-            <View style={styles.empty}>
-              <Logo size={64} />
-              <Text variant="heading" style={styles.emptyText}>
-                {t('No chats yet')}
-              </Text>
+      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos); an SMS row swiped
+          keeps its own Archive and Delete. */}
+      <SwipeTabs tabs={mixed ? SHOWS : []} current={show} onChange={setShow}>
+        <FlatList
+          data={shown}
+          // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
+          removeClippedSubviews={false}
+          keyExtractor={(row) => row.identity}
+          ListHeaderComponent={header}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
+          renderItem={({ item }) =>
+            item.sms ? (
+              <SwipeRow
+                ground={colors.ground}
+                right={{ label: t('Archive'), color: colors.primary, ink: colors.onPrimary, run: () => swiped(item, true) }}
+                left={{ label: t('Delete'), color: colors.danger, ink: colors.ground, run: () => swiped(item, false) }}
+              >
+                <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />
+              </SwipeRow>
+            ) : (
+              <ChatRow row={item} now={now} online={online.has(item.identity)} />
+            )
+          }
+          extraData={online}
+          ListEmptyComponent={
+            rows === null || hits.length > 0 ? null : query ? (
               <Text tone="muted" style={styles.emptyText}>
-                {t("No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.")}
+                {t('No chat has “{query}” in it.', { query: query.trim() })}
               </Text>
-            </View>
-          )
-        }
-        ListFooterComponent={
-          <>
-            {hits.length > 0 ? (
-              <View style={styles.found}>
-                <Text variant="overline" tone="muted">
-                  {t('Messages')}
+            ) : (
+              <View style={styles.empty}>
+                <Logo size={64} />
+                <Text variant="heading" style={styles.emptyText}>
+                  {t('No chats yet')}
                 </Text>
-                {hits.map((hit) => (
-                  <FoundRow
-                    key={`${hit.peer}|${hit.tag}`}
-                    name={foundName(hit, nameOf(hit.peer))}
-                    line={hit.line}
-                    at={hit.at}
-                    now={now}
-                    onPress={() => router.push(foundAt(hit))}
-                  />
-                ))}
+                <Text tone="muted" style={styles.emptyText}>
+                  {t("No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.")}
+                </Text>
               </View>
-            ) : null}
-            <Text variant="caption" tone="faint" style={styles.footer}>
-              {t('A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.')}
-            </Text>
-          </>
-        }
-      />
+            )
+          }
+          ListFooterComponent={
+            <>
+              {hits.length > 0 ? (
+                <View style={styles.found}>
+                  <Text variant="overline" tone="muted">
+                    {t('Messages')}
+                  </Text>
+                  {hits.map((hit) => (
+                    <FoundRow
+                      key={`${hit.peer}|${hit.tag}`}
+                      name={foundName(hit, nameOf(hit.peer))}
+                      line={hit.line}
+                      at={hit.at}
+                      now={now}
+                      onPress={() => router.push(foundAt(hit))}
+                    />
+                  ))}
+                </View>
+              ) : null}
+              <Text variant="caption" tone="faint" style={styles.footer}>
+                {t('A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.')}
+              </Text>
+            </>
+          }
+        />
+      </SwipeTabs>
       <Pressable
         onPress={() => router.push('/chat?setup=1')}
         accessibilityRole="button"
