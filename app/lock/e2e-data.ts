@@ -107,6 +107,12 @@ export type Contact = {
    *  chat's own queue they were last heard on, so the old one goes once all were. */
   told?: Told;
   onNew?: number;
+  /** Moved here from the space or one of its hidden places (lock/move-chat.ts): the `qa` the other
+   *  said to them last. What this chat says them is later than it, so a late copy of what the other
+   *  sent never takes them back there, nor are this chat's moves lost on them. */
+  qaFloor?: number;
+  /** The place's ring queue moved since they were told it: the next tell says it (`rf`). */
+  ringTell?: true;
   /** On a linked device, and from a contact whose account lists devices (`list`): their messages
    *  taken here, each once by its tag, with the day it first came, for as long as another copy of
    *  it may still come (TOOK_LASTS), and of a voice message not all taken yet the parts that were;
@@ -391,6 +397,8 @@ function checkedContact(value: unknown): Contact | null {
     ...(isTime(v.qa) ? { qa: v.qa } : {}),
     ...(checkedTold(v.told) ? { told: checkedTold(v.told)! } : {}),
     ...(isTime(v.onNew) ? { onNew: v.onNew } : {}),
+    ...(isTime(v.qaFloor) && v.qaFloor > 0 ? { qaFloor: v.qaFloor } : {}),
+    ...(v.ringTell === true ? { ringTell: true as const } : {}),
   };
 }
 

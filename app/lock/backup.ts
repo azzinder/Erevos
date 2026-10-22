@@ -10,6 +10,7 @@ import { FILE as E2E } from './e2e-data';
 import { FILE as GROUPS } from './group-data';
 import { FILE as HISTORY, PAGE_PREFIX as PAGE } from './history';
 import { FILE as PUBLIC_GROUPS } from './public-group-data';
+import { prepareQueueEntries } from './queues-data';
 import { markRestore } from './restored';
 import { POCKETS } from './sealed-file';
 import { ORDER_FILE as SMS_ORDER } from './sms-data';
@@ -246,6 +247,9 @@ export async function restoreBackup({ entries }: Backup): Promise<void> {
   }
   for (const entry of entries) if (entry.kind === KIND_KEY) await secureSet(entry.name, utf8Decode(entry.data));
   for (const name of KEYS) if (!keep.has(name)) await secureDelete(name);
+  // One made before the queues entries were, or that held fewer spaces, has none for some: each is
+  // there again, sealed with a random key, before anything opens, so which are used shows nowhere.
+  await prepareQueueEntries();
   // The chats' conversations are as they were when the backup was made: each moves past the
   // message keys it may have used since, when its chat next opens.
   await markRestore();

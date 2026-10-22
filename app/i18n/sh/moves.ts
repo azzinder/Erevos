@@ -35,4 +35,12 @@ export const moves: Record<string, string> = {
     'Smeće je napunilo red koji navodi vaš link za kontakt, pa imate novi link. Linkovi i QR kodovi koje ste ranije dali rade do {date}.',
   'The relay had lost your queue, so you have a new one. Your contacts are told quietly.':
     'Relay je izgubio vaš red, pa imate novi. Vaši kontakti to saznaju tiho.',
+  // Adding someone who is blocked here.
+  '{name} is blocked here. Unblock them to add them again?':
+    'Kontakt {name} je ovdje blokiran. Želite li ga odblokirati i ponovo dodati?',
+  'This contact is blocked here. Unblock them to add them again?':
+    'Ovaj kontakt je ovdje blokiran. Želite li ga odblokirati i ponovo dodati?',
+  // The queue the contact link names, lost by the relay.
+  'The relay had lost the queue your contact link names, so you have a new link. The links and QR codes you gave before no longer work.':
+    'Relay je izgubio red koji navodi vaš link za kontakt, pa imate novi link. Linkovi i QR kodovi koje ste ranije dali više ne rade.',
 };

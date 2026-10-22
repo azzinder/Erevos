@@ -763,6 +763,8 @@ export class Groups {
     // is answered nothing, and two leaves that say one id are one who is not it.
     const leaves = await this.leavesOf(id, from);
     if (leaves.length !== 1 || leaves[0].leaf !== sender) return;
+    // Someone blocked here: dropped, shown nowhere, and never added, though it was asked from here.
+    if (await contacts.blocked(me, from)) return;
     const now = Date.now();
     // A contact made some other way meanwhile: what was asked goes, and nothing adds it again.
     if ((await contacts.accepted(me, from)) && (await this.dropContactAsks(from, now))) this.changed();
@@ -970,6 +972,29 @@ export class Groups {
     const after = new Set((await this.membersIn(id)).map((m) => m.about?.id ?? ''));
     for (const m of before) if (m.about && !after.has(m.about.id)) await this.note(id, 'left', m.about.id);
     await this.committed(id, transport);
+  }
+
+  // Whether the admin's leaf says the same id in `state` as in the state kept, and in a public group
+  // signs with the same key: what it says of where it reads may change, who it is never does.
+  private async keeperStays(id: string, state: Uint8Array): Promise<boolean> {
+    const keeper = await this.keeperLeaf(id);
+    const seat = async (of: Uint8Array) => {
+      const json = JSON.parse(utf8Decode(await core.group.members(of, fromHex(id)))) as { members: { leaf: number; about: string; key?: string }[] };
+      const found = json.members.find((m) => m.leaf === keeper);
+      if (!found) return null;
+      const said = (() => {
+        try {
+          return (JSON.parse(found.about) as { id?: unknown }).id;
+        } catch {
+          return undefined;
+        }
+      })();
+      return { id: typeof said === 'string' ? said : '', key: found.key ?? '' };
+    };
+    const was = await seat(this.kept());
+    if (!was) return true;
+    const now = await seat(state);
+    return !!now && now.id === was.id && (!this.isPublic(id) || now.key === was.key);
   }
 
   // On a member's phone: asks the admin, in a group message only it gets, to put it in anew with
@@ -1198,6 +1223,10 @@ export class Groups {
       return;
     }
     const { opened } = result;
+    // A commit after which the admin's leaf says another id, or in a public group signs with
+    // another key, as an admin that renews its leaf (selfUpdate) never makes: refused, kept nowhere,
+    // so its members are never told to write to someone else (lib/queue-move.ts moves only where it reads).
+    if (opened.kind === 'changed' && !(await this.keeperStays(id, result.state).catch(() => false))) return;
     await this.save({ ...this.data, state: toBase64(result.state) });
     if (opened.kind === 'message') {
       if (await this.heard(id, opened, message, transport)) return;

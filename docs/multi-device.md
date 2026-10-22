@@ -654,12 +654,16 @@ made is known by its own identity again, and each side gives the other its list 
 - With siblings, a device's photos and files stay on its relay until they expire (14 days), not
   only until the primary took them. Packets a sibling sends after its first, should they come
   before that first one is taken, are lost; what they said comes again through the primary.
-- The relay can tie an account's queues together (every contact writes to all of them at once).
-  A contact deleted or blocked keeps no way in: the phone's queue moves (lib/queue-move.ts), so do
-  the queues of the places that fill the list (the old ones emptied for 14 days, then deleted), each
+- The relay can tie an account's queues together (every contact writes to all of them at once). A
+  contact deleted or blocked keeps no way in: the phone's queue moves (lib/queue-move.ts), so do the
+  queues of the places that fill the list (the old ones emptied for 14 days, then deleted), each
   linked device moves its own when the phone says `move`, and the list is signed again, `n` + 1, at
-  most once an hour, so contacts who held the one before take the new routes. All of it in band,
-  with no change to the relay.
+  most once an hour, so contacts who held the one before take the new routes. A contact's devices
+  learn the account's new queue as its phone does: each tell is a message with nothing in it, copied
+  whole to every endpoint of theirs, and it says the new `from` with its `qa`, as the first message
+  of a way to an endpoint does, so a late copy from before the move takes none of them back. The
+  contact link a linked device shows carries the backup queue (`spare`) only while it names the
+  phone's own queue, as that one moves with it. All of it in band, with no change to the relay.
 
 ## Phases
 

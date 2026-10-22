@@ -14,8 +14,8 @@ import type { GroupTransport } from './groups';
 import { nearby } from './nearby';
 import { relayDoors } from './public-doors';
 import { PublicGroups } from './public-groups';
-import { useForMoves } from './queue-move';
-import { callRelay, fromHex, relayKey, sameRelay, sendMessage, toHex, type Relay } from './relay';
+import { groupSenders, useForMoves } from './queue-move';
+import { callRelay, fromHex, relayKey, sendMessage, toHex, type Relay } from './relay';
 import { contactTarget, relayFor, sendSealed, spaceChats } from './space-chats';
 import { t } from './i18n';
 
@@ -65,14 +65,11 @@ async function settings() {
     if (key) ownKey = { url, key: toBase64Url(key) };
   }
   const queues = await spaceQueues(current.space, current.key).load();
-  const on = (kept: typeof queues.group) => (kept && sameRelay(kept.url, url) ? kept.queue.senderHex : '');
-  const groupHex = on(queues.group) || data.ownQueue.senderHex;
   return {
     own,
     sends: relayFor(url, data.token, data.via, data.viaToken) ?? own,
     senderHex: data.ownQueue.senderHex,
-    groupHex,
-    publicHex: on(queues.public) || groupHex,
+    ...groupSenders(queues, data.ownQueue, url),
     relayKey: ownKey?.url === url ? ownKey.key : '',
   };
 }

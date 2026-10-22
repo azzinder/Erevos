@@ -38,9 +38,11 @@ export function useHiddenRinging(): HiddenRinging | null {
 }
 
 // The owner typed the right PIN on the ring screen: the next incoming call the hidden place opens
-// is answered at once, as they already chose to by opening it. Held a short while (the call rings
-// only so long), then it lapses.
+// is answered at once, as they already chose to by opening it, if it comes within HIDDEN_ANSWER_MS
+// (the call rings only so long). One that brought no call at all within HIDDEN_OFFER_MS, as a slow
+// relay or Tor can be late with it, is a ring for nothing (lib/moves.ts fakeRings).
 export const HIDDEN_ANSWER_MS = 60_000;
+export const HIDDEN_OFFER_MS = 120_000;
 let answer: number | null = null;
 
 /** The right PIN was typed to answer the ringing hidden call: the chat screen takes it to answer. */
@@ -60,9 +62,9 @@ export function hiddenAnswerAt(): number | null {
   return answer;
 }
 
-/** Clears the answer typed at `at` if no call took it, and says whether it was still there: a ring that brought no call. */
-export function lapseHiddenAnswer(at: number): boolean {
-  if (answer !== at) return false;
+/** Once HIDDEN_OFFER_MS went by since the answer typed at `at` and no call took it, clears it and says so: a ring that brought no call. Before, it stays. */
+export function lapseHiddenAnswer(at: number, now = Date.now()): boolean {
+  if (answer !== at || now - at < HIDDEN_OFFER_MS) return false;
   answer = null;
   return true;
 }

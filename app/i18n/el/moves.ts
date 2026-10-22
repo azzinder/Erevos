@@ -35,4 +35,12 @@ export const moves: Record<string, string> = {
     'Η ουρά που δείχνει ο σύνδεσμος επαφής σου γέμισε σκουπίδια, οπότε έχεις νέο σύνδεσμο. Οι σύνδεσμοι και οι κωδικοί QR που έδωσες πριν λειτουργούν ως τις {date}.',
   'The relay had lost your queue, so you have a new one. Your contacts are told quietly.':
     'Το relay είχε χάσει την ουρά σου, οπότε έχεις νέα. Οι επαφές σου ενημερώνονται αθόρυβα.',
+  // Adding someone who is blocked here.
+  '{name} is blocked here. Unblock them to add them again?':
+    'Έχεις αποκλείσει την επαφή {name}. Να αρθεί ο αποκλεισμός για να την προσθέσεις ξανά;',
+  'This contact is blocked here. Unblock them to add them again?':
+    'Έχεις αποκλείσει αυτή την επαφή. Να αρθεί ο αποκλεισμός για να την προσθέσεις ξανά;',
+  // The queue the contact link names, lost by the relay.
+  'The relay had lost the queue your contact link names, so you have a new link. The links and QR codes you gave before no longer work.':
+    'Το relay είχε χάσει την ουρά που δείχνει ο σύνδεσμος επαφής σου, οπότε έχεις νέο σύνδεσμο. Οι σύνδεσμοι και οι κωδικοί QR που έδωσες πριν δεν λειτουργούν πια.',
 };

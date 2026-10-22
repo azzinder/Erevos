@@ -285,6 +285,13 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
 }
 
 /** Where a message from a contact says their queues are: the backup one goes, or changes, with it. */
+// The `qa` a message says, from the own queue's (`own`, 0 while not known): to a contact moved here
+// from the space or a hidden place, later than what the other said them last (`floor`), so a late
+// copy of what it sent never takes them back to its queue, whichever of the two moved more lately.
+function saidAge(own: number, floor: number | undefined): number {
+  return floor ? Math.max(own, floor + 1) : own;
+}
+
 function placeOf(message: Message): Pick<Contact, 'relay' | 'relayKey' | 'spare'> {
   return { ...whereOf(message), spare: message.spare ?? null };
 }
@@ -492,6 +499,15 @@ export class NoKeyError extends Error {
   }
 }
 
+/** The contact of a link is blocked here: added only once unblocked (E2E.unblock). */
+export class BlockedContactError extends Error {
+  readonly identity: string;
+  constructor(identity: string, name: string) {
+    super(name ? t('{name} is blocked here. Unblock them to add them again?', { name }) : t('This contact is blocked here. Unblock them to add them again?'));
+    this.identity = identity;
+  }
+}
+
 // Now, or later than `before` should the clock have been set back since: what the list's `rAt`
 // says, so each change of it is told apart from the one before.
 function laterThan(before = 0): number {
@@ -660,6 +676,8 @@ export class E2E {
   private ownAge = 0;
   private ownFrom = '';
   private readonly froms = new Map<string, number>();
+  // Whether the own queue is the one the contact link names, as before the first move (lib/queue-move.ts).
+  private linkOwn = true;
   // The account's other devices, for the space's own chat (lib/devices.ts).
   private link: Link | null = null;
   // The keys of packet keys (lib/sealed-packet.ts), by the packet key.
@@ -761,13 +779,24 @@ export class E2E {
     this.froms.set(from, qa);
   }
 
+  /** Says whether the own queue is the one the contact link names (no queue of its own yet, lib/queue-move.ts): then someone who asked to talk through it knows it, so blocking them moves it. */
+  setLinkOwn(own: boolean): void {
+    this.linkOwn = own;
+  }
+
   // What a message says of where this chat reads, and when that queue was made: one it moved away
-  // from, as a screen that has not heard of the move yet says, is the one it moved to.
-  private fromNow(from: string): { from: string; qa: number } {
+  // from, as a screen that has not heard of the move yet says, is the one it moved to. To a contact
+  // moved here from the space or a hidden place, later than what the other said them last (`qaFloor`).
+  private fromNow(from: string, contact?: Pick<Contact, 'qaFloor'>): { from: string; qa: number } {
     if (!from) return { from, qa: 0 };
     const age = this.froms.get(from);
-    if (age !== undefined && age < this.ownAge && this.ownFrom) return { from: this.ownFrom, qa: this.ownAge };
-    return { from, qa: this.ownAge };
+    const moved = age !== undefined && age < this.ownAge && !!this.ownFrom;
+    return { from: moved ? this.ownFrom : from, qa: saidAge(this.ownAge, contact?.qaFloor) };
+  }
+
+  /** The `qa` this chat says a contact now (lib/move-chat.ts, as the chat moves away from here), or 0 while it says none. */
+  saidTo(identity: string): number {
+    return saidAge(this.ownAge, this.find(identity)?.qaFloor);
   }
 
   /** When this chat's own queue was made, as last said (`setQueueAge`), or 0. */
@@ -862,12 +891,30 @@ export class E2E {
     return this.data.contacts.filter((c) => !c.request && c.sender && c.conversations[0] && tellDue(c.told, c.onNew, moved, since, now)).map((c) => c.identity);
   }
 
-  /** A contact was told the own queue made at `qa`: the relay took it. */
+  /** A contact was told the own queue made at `qa`, and the ring queue as it is now: the relay took it. `qa` 0: only the ring queue was due. */
   queueTold(identity: string, qa: number): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
-      if (contact) await this.save(this.withContact({ ...contact, told: toldOnce(contact.told, qa) }));
+      if (!contact) return;
+      const { ringTell: _ring, ...rest } = contact;
+      await this.save(this.withContact({ ...rest, ...(qa > 0 ? { told: toldOnce(contact.told, qa) } : {}) }));
     });
+  }
+
+  /** The place's ring queue moved (lib/queue-move.ts ringMove): each kept contact is told the new one with the next tells (`ringTellsDue`). */
+  ringMoved(): Promise<void> {
+    return this.run(async () => {
+      if (this.link?.through) return;
+      const due = (c: Contact) => !c.request && !!c.sender && !!c.conversations[0];
+      if (!this.data.contacts.some((c) => due(c) && !c.ringTell)) return;
+      await this.save({ ...this.data, contacts: this.data.contacts.map((c) => (due(c) ? { ...c, ringTell: true as const } : c)) });
+    });
+  }
+
+  /** The kept contacts not told the ring queue since it moved. */
+  ringTellsDue(): string[] {
+    if (this.link?.through) return [];
+    return this.data.contacts.filter((c) => c.ringTell && !c.request && c.sender && c.conversations[0]).map((c) => c.identity);
   }
 
   /** The `qa` of the own queue every kept contact was heard on at least: the least of theirs, Infinity with none (lib/moves.ts graceOver). */
@@ -1034,8 +1081,8 @@ export class E2E {
    * Deletes a contact as `removeContact` does, and, in the same save, has this chat's own queue
    * move (`moveDue`, lib/queue-move.ts), so they can no longer write to it: a crash leaves neither
    * without the other. Not for a message request, never answered, which knows only the queue the
-   * contact link names. `block`: also keeps them blocked, so a first packet from them later is
-   * dropped, a request too. On a linked device the phone does both (Link.deleted): it holds the
+   * contact link names; but one blocked while that is the own queue (`setLinkOwn`), before the first
+   * move. `block`: also keeps them blocked, so a first packet from them later is dropped, a request too. On a linked device the phone does both (Link.deleted): it holds the
    * queues contacts write to. `held`: what a relay holds for later for them (lib/waiting.ts,
    * heldFor), kept to drop in the same save, so it goes to them no more though the relay cannot be
    * asked now.
@@ -1052,7 +1099,7 @@ export class E2E {
       await this.save({
         ...this.data,
         contacts: this.data.contacts.filter((c) => c.identity !== identity),
-        ...(through || !contact || contact.request ? {} : { moveDue: now }),
+        ...(through || !contact || (contact.request && !(block && this.linkOwn)) ? {} : { moveDue: now }),
         ...(blocked ? { blocked } : {}),
         ...this.withUndropped(held),
       });
@@ -1241,12 +1288,14 @@ export class E2E {
    * to them (`partOf`); back where it was first, known by its own again, it and they give each other
    * their lists anew once each says it holds none.
    */
-  putIn(contact: Contact): Promise<void> {
+  putIn(contact: Contact, said = 0): Promise<void> {
     return this.run(async () => {
-      const { dv: _dv, list: _list, endpoints: _endpoints, direct: _direct, listSent: _sent, listGiven: _given, took: _took, ...plain } = contact;
+      const { dv: _dv, list: _list, endpoints: _endpoints, direct: _direct, listSent: _sent, listGiven: _given, took: _took, told: _told, onNew: _onNew, qaFloor: _floor, ringTell: _ring, ...plain } = contact;
       // Back where it was first: they know this chat by its own identity again.
       const own = contact.ownIdentity === this.identityHex() ? { ownIdentity: '' } : {};
-      await this.save(this.withContact({ ...plain, ...own }));
+      // When they were told the other's queue, and heard on it, is nothing to this chat's own; what
+      // the other said them last (`said`, its `qa`) is what this chat says later than (Contact.qaFloor).
+      await this.save(this.withContact({ ...plain, ...own, ...(said > 0 ? { qaFloor: said } : {}) }));
     });
   }
 
@@ -1282,6 +1331,9 @@ export class E2E {
       const bundle = fromBase64Url(code.key);
       const identity = toHex(await core.bundleIdentity(bundle));
       if (identity === toHex(this.identity)) throw new OwnCodeError();
+      // Someone blocked here is added only once unblocked: a link, an SMS invite's answer or a group gives them no way back.
+      const blocked = this.blocked().find((b) => b.identity === identity);
+      if (blocked) throw new BlockedContactError(identity, blocked.name);
       const known = this.find(identity);
       // On a linked device the primary adds them and starts the conversation; the chat keeps them meanwhile.
       if (this.link?.through) {
@@ -1546,7 +1598,7 @@ export class E2E {
         ...message,
         spare,
         // Where this chat reads now, and when that queue was made: what a linked device wrote says this chat's.
-        ...this.fromNow(message.from),
+        ...this.fromNow(message.from, contact),
         on,
         onAt: on > 0 ? now : 0,
         ask: message.ask && !contact.hide,
@@ -1657,6 +1709,8 @@ export class E2E {
       relay: like.relay,
       relayKey: like.relayKey,
       spare: like.spare,
+      // And when that queue was made, as each message after it says.
+      ...(like.from && like.qa ? { qa: like.qa } : {}),
       text: '',
       tag: '',
       erase: null,
@@ -2047,16 +2101,17 @@ export class E2E {
   }
 
   /**
-   * Opens a packet from the relay. `onOwn`: it came to this chat's own queue as it is now, so its
-   * sender is heard there (Contact.onNew). `old`: it came to a queue this chat moved away from, or
+   * Opens a packet from the relay. `onOwn`: the sender id of the own queue it came to; when that is
+   * this chat's own queue as it is now (`setQueueAge`), its sender is heard there (Contact.onNew),
+   * and not when a look that started before a move read the one before. `old`: it came to a queue this chat moved away from, or
    * to the one its contact link or its groups name (lib/queue-move.ts), and is read cheaply: one
    * that came sealed opens only in the conversations of the contact whose mark it has, as always;
    * one that came unsealed only in those of contacts whose packets do not come sealed, never in
    * the few tries the others get (`mayTryUnsealed`).
    */
-  receive(packet: Uint8Array, { onOwn = false, old = false }: { onOwn?: boolean; old?: boolean } = {}): Promise<Received> {
+  receive(packet: Uint8Array, { onOwn = '', old = false }: { onOwn?: string; old?: boolean } = {}): Promise<Received> {
     return this.run(async () => {
-      const heard = onOwn && !old;
+      const heard = !!onOwn && !old && onOwn === this.ownFrom;
       // One between the account's devices, first (lib/devices.ts): what it says of the contacts
       // changes them here, and a contact's message the primary passed on opens as theirs.
       const linked = this.link ? await this.link.open(packet).catch(() => null) : null;
@@ -2103,7 +2158,10 @@ export class E2E {
   // this device's account (`to`). An account takes none that says either: no list names it, so one
   // that does was meant for an endpoint of someone else's.
   private async accept(packet: Uint8Array, retry = false, heard = false): Promise<Received> {
-    const id = toHex(await core.firstMessageId(packet)).slice(0, 32);
+    // Damaged, as junk can be: refused, so the look counts it (lib/moves.ts), never thrown.
+    const made = await core.firstMessageId(packet).catch(() => null);
+    if (!made) return { kind: 'refused', reason: 'unknown' };
+    const id = toHex(made).slice(0, 32);
     if (this.data.seen.includes(id)) return { kind: 'refused', reason: 'replay' };
     const device = this.link?.through === true;
     if (device && (!this.takesPart || !this.data.endpoint)) return { kind: 'refused', reason: 'unknown' };

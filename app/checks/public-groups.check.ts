@@ -474,7 +474,7 @@ test('members of a public group do not ask each other for contact links', live, 
   const added: string[] = [];
   const contacts = async (): Promise<GroupContacts> => {
     const key = toBase64Url(await core.accountBundle(await core.newAccount()));
-    return { bundle: async () => key, has: async () => false, accepted: async () => false, add: async (_me, about) => void added.push(about.id) };
+    return { bundle: async () => key, has: async () => false, accepted: async () => false, blocked: async () => false, add: async (_me, about) => void added.push(about.id) };
   };
   alice.transport.contacts = await contacts();
   bob.transport.contacts = await contacts();

@@ -11,8 +11,9 @@ import { contactLink, parseContact } from '../lib/contact-code';
 import { accountBundle, accountIdentity, accountSign, bundleVerify, canSign, newAccount, setCore, type Core } from '../lib/core';
 import { randomBytes, toHex, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
-import { E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, PREKEYS_EVERY, toBase64Url, type Received } from '../lib/e2e';
+import { BlockedContactError, E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, PREKEYS_EVERY, toBase64Url, type Received } from '../lib/e2e';
 import { giveLinkedName } from '../lib/linked-name';
+import { tookOf } from '../lib/queue-move';
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
 import { checkedAvatar, FILE, loadE2EData, MAX_NAME, saveE2EData } from '../lock/e2e-data';
 import { lastRestore, markRestore } from '../lock/restored';
@@ -938,7 +939,9 @@ t('deleting a contact has the queue move in the same save; a first packet from t
   };
   assert.equal(message(await again()).request, true);
   // Blocked: what he sends is dropped, a request too, until unblocked. A request knows only the
-  // queue the link names, so blocking it moves nothing.
+  // queue the link names: once that is a queue of its own, after the first move, blocking it moves
+  // nothing (before it, see below).
+  alice.e2e.setLinkOwn(false);
   await alice.e2e.deleteContact(bobId, { block: true });
   assert.equal(alice.e2e.moveDue(), 0);
   assert.deepEqual(
@@ -956,6 +959,15 @@ t('deleting a contact has the queue move in the same save; a first packet from t
   await bob.e2e.removeContact(hello.identity);
   await bob.e2e.addContact(alice.code, bob.from);
   assert.equal(message(await reopened.receive(bob.e2e.pending()[0].first)).request, true);
+  // Before the first move the link names the own queue, so whoever asked knew it: refused, nothing
+  // moves; blocked, the own queue does.
+  await reopened.removeContact(bobId);
+  assert.equal(reopened.moveDue(), 0);
+  await bob.e2e.removeContact(hello.identity);
+  await bob.e2e.addContact(alice.code, bob.from);
+  assert.equal(message(await reopened.receive(bob.e2e.pending()[0].first)).request, true);
+  await reopened.deleteContact(bobId, { block: true });
+  assert.ok(reopened.moveDue() > 0);
 });
 
 t('a message from a queue made earlier keeps where the contact reads; one that says no `qa` takes it, as 0.1.16', async () => {
@@ -1012,7 +1024,7 @@ t('a packet from an old queue opens in a kept contact’s conversation, says not
   const fromBob = async (text: string) => (await bob.e2e.seal(hello.identity, text, bob.from)).packet;
   assert.equal(message(await alice.e2e.receive(await fromBob('old'), { old: true })).text, 'old');
   assert.equal(alice.e2e.record(bobId)!.onNew, undefined);
-  assert.equal(message(await alice.e2e.receive(await fromBob('new'), { onOwn: true })).text, 'new');
+  assert.equal(message(await alice.e2e.receive(await fromBob('new'), { onOwn: alice.from })).text, 'new');
   assert.equal(alice.e2e.record(bobId)!.onNew, 10 * HOUR);
   assert.equal(alice.e2e.heardSince(), 10 * HOUR);
 
@@ -1035,4 +1047,94 @@ t('a packet from an old queue opens in a kept contact’s conversation, says not
   } finally {
     useCore(false);
   }
+});
+
+t('a chat moved between the space and its hidden chats says a later `qa` than the other did, both ways, so the contact follows, and a late copy never takes them back', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  const added = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(added.identity);
+  const history = await History.open('space', 0, key);
+  const where = () => bob.e2e.record(hello.identity)!.sender;
+  const told = async (e2e: E2E, from: string) => message(await bob.e2e.receive((await e2e.seal(added.identity, '', from)).packet));
+  // The space's own queue was made at 100h: Bob writes there.
+  const spaceQueue = sender();
+  alice.e2e.setQueueAge(100 * HOUR, spaceQueue);
+  await told(alice.e2e, spaceQueue);
+  assert.equal(where(), spaceQueue);
+  await alice.e2e.queueTold(added.identity, 100 * HOUR);
+  // One the space holds for later, sealed before the move: it comes after.
+  const late = await alice.e2e.seal(added.identity, 'late', spaceQueue);
+
+  // Into hidden chats whose queue was made earlier, at 50h, and moves at 51h: Bob follows each.
+  const hiddenKey = randomBytes(32);
+  const holder = hiddenHolder(1);
+  const hidden = { e2e: await E2E.open(holder, 0, hiddenKey), history: await History.open(holder, 0, hiddenKey) };
+  const hiddenQueue = sender();
+  hidden.e2e.setQueueAge(50 * HOUR, hiddenQueue);
+  await moveChat(added.identity, { e2e: alice.e2e, history, archive: null }, hidden);
+  // When the space told him its queue, and heard him on it, is nothing to the hidden chats' own.
+  assert.equal(hidden.e2e.record(added.identity)!.told, undefined);
+  await told(hidden.e2e, hiddenQueue);
+  assert.equal(where(), hiddenQueue);
+  const moved = sender();
+  hidden.e2e.setQueueAge(51 * HOUR, moved);
+  await told(hidden.e2e, moved);
+  assert.equal(where(), moved);
+  // The space's late one opens, and leaves where he writes as it is.
+  assert.equal(message(await bob.e2e.receive(late.packet)).text, 'late');
+  assert.equal(where(), moved);
+
+  // The hidden chats move past the space's 100h, then the chat goes back into the space, whose
+  // queue still says 100h: Bob follows it there too.
+  const later = sender();
+  hidden.e2e.setQueueAge(300 * HOUR, later);
+  await told(hidden.e2e, later);
+  assert.equal(where(), later);
+  await moveChat(added.identity, { e2e: hidden.e2e, history: hidden.history, archive: null }, { e2e: alice.e2e, history });
+  await told(alice.e2e, spaceQueue);
+  assert.equal(where(), spaceQueue);
+  // The space's own moves after reach him too.
+  const next = sender();
+  alice.e2e.setQueueAge(101 * HOUR, next);
+  await told(alice.e2e, next);
+  assert.equal(where(), next);
+});
+
+t('junk that looks like a first packet is refused, never thrown, so the look counts it', async () => {
+  const alice = await chat('space', 0);
+  for (const bytes of [Uint8Array.of(1, 1), Uint8Array.of(1, 1, 0xff, 0xff, 0xff, 0xff), Uint8Array.from([1, 1, ...randomBytes(200)]), Uint8Array.of(1, 2, 3), Uint8Array.of(9)]) {
+    const received = await alice.e2e.receive(bytes);
+    assert.equal(received.kind, 'refused');
+    assert.equal(tookOf(received).junk, true);
+  }
+});
+
+t('the link of someone blocked adds no one until they are unblocked', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  await alice.e2e.rename(identity, 'Bob');
+  await alice.e2e.deleteContact(identity, { block: true });
+  await assert.rejects(alice.e2e.addContact(bob.code, alice.from), (error) => error instanceof BlockedContactError && error.identity === identity && error.message.includes('Bob'));
+  assert.deepEqual(alice.e2e.contacts(), []);
+  await alice.e2e.unblock(identity);
+  assert.equal((await alice.e2e.addContact(bob.code, alice.from)).added, true);
+});
+
+t('a contact is heard on the own queue only from the one it is now, not from one a look read before a move', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(bobId);
+  const fromBob = async (text: string) => (await bob.e2e.seal(hello.identity, text, bob.from)).packet;
+  const first = sender();
+  alice.e2e.setQueueAge(10 * HOUR, first);
+  // The queue moved meanwhile: what the look read on the one before is not heard on the new one.
+  alice.e2e.setQueueAge(20 * HOUR, sender());
+  assert.equal(message(await alice.e2e.receive(await fromBob('before'), { onOwn: first })).text, 'before');
+  assert.equal(alice.e2e.record(bobId)!.onNew, undefined);
 });

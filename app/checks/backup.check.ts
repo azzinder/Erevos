@@ -14,6 +14,7 @@ import { EMPTY_SPACE, loadHiddenData, loadSpaceData, prepareSpaces, saveHiddenDa
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { addOwnSticker, loadOwnStickers, openOwnSticker } from '../lock/sticker-data';
+import { prepareQueueEntries } from '../lock/queues-data';
 import { lastRestore } from '../lock/restored';
 import { blobs, files } from './files-memory';
 import { store } from './secure-memory';
@@ -39,11 +40,13 @@ const wipe = () => {
   blobs.clear();
 };
 
-// A phone with a locked space, its relay, a message, a voice message and a sticker made from a photo.
+// A phone with a locked space, its relay, a message, a voice message and a sticker made from a photo;
+// and, as every start makes them, the queues entries (lock/queues-data.ts).
 async function phone() {
   const key = randomBytes(32);
   await setLockPassword(0, 'real-1111', key);
   await prepareSpaces(1);
+  await prepareQueueEntries();
   await saveSpaceData(0, key, { ...EMPTY_SPACE, url: 'wss://relay.example' });
   const history = await History.open('space', 0, key);
   await history.add({ peer: 'contact:aa', text: 'γεια σου', mine: true, at: 1, tag: newTag() });
@@ -84,6 +87,19 @@ t('puts everything back: the lock opens the same space, with its relay, messages
   assert.deepEqual(await loadPhoto(photo), new Uint8Array([5, 6, 7]));
   assert.deepEqual(await loadOwnStickers({ holder: 'space', space: 0, key }), [sticker]);
   assert.deepEqual(await openOwnSticker(sticker), new Uint8Array([8, 9]));
+});
+
+t('a backup from before the queues entries leaves none missing: each space and pocket has one again, all one size', async () => {
+  await phone();
+  // As one made before they were: none in it.
+  for (const name of [...store.keys()]) if (name.startsWith('erevos.queues')) store.delete(name);
+  const file = await makeBackup(await backupKey('backup-pass'));
+  wipe();
+  await restoreBackup(await openBackup(file, 'backup-pass'));
+  const names = [...store.keys()].filter((name) => name.startsWith('erevos.queues'));
+  // Four spaces, each with its own and its four hidden places'.
+  assert.equal(names.length, 4 * 5);
+  assert.equal(new Set(names.map((name) => store.get(name)!.length)).size, 1);
 });
 
 t('shows nothing of what it holds, and leaves out the wrong tries and its own settings', async () => {

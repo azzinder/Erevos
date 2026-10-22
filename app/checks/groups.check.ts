@@ -2,7 +2,8 @@
 // three phones, each with its own state, joined by an in-memory relay that keeps each queue in
 // order but lets the queues run at their own pace. Skipped, with a note, without the core. Phones
 // made from an account have the keys it says, and contacts kept in memory, to ask members for
-// their contact links.
+// their contact links, and those blocked, whose links add no one. An admin's new keys are followed
+// only while they say the same admin.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -44,6 +45,8 @@ type Phone = {
   known: Set<string>;
   requests: Set<string>;
   added: { about: About; key: string }[];
+  /** Those it blocked, by identity. */
+  blocked: Set<string>;
   /** How many times a member's message, or an ask for its contact link, came in a group. */
   heard: number;
   /** What each packet it posted told the relay it carries (lib/relay.ts, Mark), in turn. */
@@ -81,7 +84,7 @@ function network() {
         signals.push({ from: identity, to, signal: decodeGroup(JSON.parse(JSON.stringify(encodeGroup(signal))))! });
       },
     };
-    const it: Phone = { name, identity, says: claims ?? identity, sender, groups, queue: [], transport, bundle: made?.bundle ?? '', known: new Set(), requests: new Set(), added: [], heard: 0, marks: [] };
+    const it: Phone = { name, identity, says: claims ?? identity, sender, groups, queue: [], transport, bundle: made?.bundle ?? '', known: new Set(), requests: new Set(), added: [], blocked: new Set(), heard: 0, marks: [] };
     if (made && !old) {
       // Each asked as who the phone says it is in its groups.
       const self = (me: string) => assert.equal(me, it.says);
@@ -89,6 +92,7 @@ function network() {
         bundle: async (me) => (self(me), it.bundle),
         has: async (me, identity) => (self(me), it.known.has(identity) || it.requests.has(identity)),
         accepted: async (me, identity) => (self(me), it.known.has(identity)),
+        blocked: async (me, identity) => (self(me), it.blocked.has(identity)),
         async add(me, about, key) {
           self(me);
           it.added.push({ about, key });
@@ -399,6 +403,49 @@ test('Send adds both, each reached where the group says', { skip: !existsSync(bu
   for (const p of [bob, carol]) assert.deepEqual([info(p, id).wants, info(p, id).asks], [[], []]);
   assert.equal(noteText(notesOf(carol, id).at(-1)!, named(bob)), 'You sent bob your contact link. You are each other’s contacts now.');
   assert.equal(noteText(notesOf(bob, id).at(-1)!, named(carol)), 'carol sent their contact link. You are each other’s contacts now.');
+});
+
+test('a member blocked here asks for nothing, and nothing adds them, though they were asked from here', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const { bob, carol, id } = await trio(net);
+  // Carol blocked Bob: his ask is dropped, and shows nowhere.
+  carol.blocked.add(bob.identity);
+  const heard = carol.heard;
+  const notes = notesOf(carol, id).length;
+  await bob.groups.askContact(id, carol.identity, bob.transport);
+  await net.settle();
+  assert.deepEqual([info(carol, id).asks, carol.heard, notesOf(carol, id).length], [[], heard, notes]);
+  // Bob, who asked her, blocks her since: her ask, which would have added her at once, adds no one.
+  carol.blocked.delete(bob.identity);
+  bob.blocked.add(carol.identity);
+  await carol.groups.askContact(id, bob.identity, carol.transport);
+  await net.settle();
+  assert.deepEqual([bob.added.length, carol.added.length, info(bob, id).asks], [0, 0, []]);
+});
+
+test('an admin whose new keys say where it reads now is followed; one whose new keys would say it is someone else is refused', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const alice = net.phone('alice');
+  const bob = net.phone('bob');
+  const carol = net.phone('carol');
+  const id = await alice.groups.create('g', [bob.identity, carol.identity], alice.transport);
+  await net.settle();
+  type Me = { id: string; sender: string; relay: string; relayKey: string };
+  const admin = alice.groups as unknown as { me: () => Promise<Me> };
+  const was = admin.me;
+  const adminOn = async (p: Phone) => (await p.groups.members(id)).find((m) => m.leaf === 0)!.about;
+  // Alice's phone says where she reads now, as herself: her members write there.
+  const moved = toHex(randomBytes(24));
+  admin.me = async () => ({ ...(await was()), sender: moved });
+  const due = Date.now() + RENEW_EVERY + 1000;
+  await alice.groups.renewKeys(alice.transport, due);
+  await net.settle();
+  for (const p of [bob, carol]) assert.deepEqual([(await adminOn(p))?.id, (await adminOn(p))?.sender], [alice.identity, moved]);
+  // Then as someone else: refused, and kept as it was.
+  admin.me = async () => ({ ...(await was()), id: toHex(randomBytes(32)), sender: toHex(randomBytes(24)) });
+  await alice.groups.renewKeys(alice.transport, due + RENEW_EVERY + 1000);
+  await net.settle();
+  for (const p of [bob, carol]) assert.deepEqual([(await adminOn(p))?.id, (await adminOn(p))?.sender], [alice.identity, moved]);
 });
 
 test('Don’t tells the asker nothing, and keeps their asks quiet for a while', { skip: !existsSync(built) }, async () => {

@@ -7,8 +7,9 @@
 // what went to the account, go only once it went, not for ever, and no contact keeps the others'
 // out; they are sealed only as they go, each endpoint's in that order, so what never went moves no
 // conversation on; what waits to go again goes to the endpoints once; a voice message is copied
-// whole; an endpoint whose queue is gone, or that moved; what a copy says of a message that goes to
-// an endpoint only for what came from it or what was read, and what each tells the relay it
+// whole; an endpoint whose queue is gone, or that moved; the first message of a way says when the
+// queue it names was made, as each copy does; what a copy says of a message that goes to an
+// endpoint only for what came from it or what was read, and what each tells the relay it
 // carries; each message taken once, for as long as another copy of it may come; ways started again,
 // as their account starts anew and a day after an endpoint never answered; when the account's list
 // is given, by which list went and not by the clock; and what contacts say of the list they hold
@@ -506,6 +507,16 @@ t('an endpoint whose queue the relay does not have gets nothing more until where
   await carol.e2e.copiesSent(toY.slice(0, 1), toY.slice(1));
   assert.deepEqual([wayTo(y.id).sender, wayTo(y.id).first !== ''], [again.s, true]);
   assert.deepEqual(carol.e2e.copies().filter((c) => c.w === y.id).map((c) => c.s), [again.s, again.s]);
+});
+
+t('the first message of a way to an endpoint says when the queue it names was made, as each copy after it does, so a late copy from before a move is not taken there', async () => {
+  const { carol, mallory, ends: [x] } = await withEndpoints(1);
+  const HOUR = 60 * 60_000;
+  carol.e2e.setQueueAge(10 * HOUR, carol.sender);
+  await write(carol, mallory.id, 'after a move');
+  const [opening, copy] = await reader(x).open(carol.e2e.copies());
+  assert.deepEqual([opening?.from, opening?.qa, opening?.text], [carol.sender, 10 * HOUR, '']);
+  assert.deepEqual([copy?.from, copy?.qa, copy?.text], [carol.sender, 10 * HOUR, 'after a move']);
 });
 
 t('what goes to an endpoint only for what came from it says only that, a whole copy says nothing of being open, a message taken once is said to come twice, and their account starting anew starts each way anew', async () => {

@@ -6,7 +6,7 @@
 import { contactLink, parseContact } from './contact-code';
 import { canSealOpen, relaySeal } from './core';
 import { fromBase64 } from './crypto';
-import { toBase64Url, type E2E, type Where } from './e2e';
+import { BlockedContactError, toBase64Url, type E2E, type Where } from './e2e';
 import { fromHex, sendMessage, type Relay } from './relay';
 import { inviteAnswer, plainNumber, sameNumber, type SmsInvite } from './sms-invite';
 import { SmsLink } from './sms-link';
@@ -46,7 +46,8 @@ export async function refreshSmsLink(): Promise<void> {
 /**
  * Whether `bytes` from the relay answer an invite sent from here. If so, adds the contact from the
  * link it carries and links the number to it: their first packet goes with the next look. Returns
- * the number and the contact, or null when `bytes` are something else.
+ * the number and the contact, or null when `bytes` are something else, or the answer of someone
+ * blocked here, which is dropped (lib/e2e.ts BlockedContactError).
  */
 export async function takeInviteAnswer(e2e: E2E, bytes: Uint8Array, ownSender: string, here: Where): Promise<{ number: string; identity: string } | null> {
   const link = await spaceSmsLink();
@@ -54,7 +55,13 @@ export async function takeInviteAnswer(e2e: E2E, bytes: Uint8Array, ownSender: s
   const answer = await link.openAnswer(bytes);
   const code = answer ? parseContact(answer.link) : null;
   if (!answer || !code || code.senderHex === ownSender) return null;
-  const { identity } = await e2e.addContact(code, ownSender, here);
+  let identity: string;
+  try {
+    ({ identity } = await e2e.addContact(code, ownSender, here));
+  } catch (error) {
+    if (error instanceof BlockedContactError) return null;
+    throw error;
+  }
   await e2e.linkPhone(identity, plainNumber(answer.number));
   return { number: answer.number, identity };
 }

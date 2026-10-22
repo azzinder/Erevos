@@ -32,6 +32,10 @@ export type OldQueue = KeptQueue & { kind: QueueKind; until: number; by?: number
 /** The queues that move for junk on them. */
 export type MovingKind = Exclude<QueueKind, 'spare'>;
 
+/** Why the own queue moves (lib/queue-move.ts): a contact deleted or blocked, junk on it, the relay lost it, or a new contact link. */
+export type MoveReason = 'due' | 'junk' | 'lost' | 'link';
+const REASONS: MoveReason[] = ['due', 'junk', 'lost', 'link'];
+
 export type QueuesData = {
   /** The own queue (SpaceData.ownQueue) as the last move or look left it, with its relay: one set
    *  elsewhere since (a new relay, or the relay lost it) is a move too. Null until the first look. */
@@ -44,10 +48,17 @@ export type QueuesData = {
   public: KeptQueue | null;
   /** The queues moved away from, oldest first, at most MAX_WAS. */
   was: OldQueue[];
-  /** The own queue a move made, until it is the own queue (lib/queue-move.ts steps). */
+  /** Those let go of over the most kept (lib/moves.ts withOld): emptied, then deleted, with the next looks. */
+  early: OldQueue[];
+  /** The own queue a move made, until it is the own queue (lib/queue-move.ts steps), and why it moves. */
   next: Queue | null;
-  /** When the own queue was made (`qa`, ms, the hour), each later than the one before; 0 until the first look. */
+  nextWhy?: MoveReason;
+  /** When the own queue was made, as its `qa` says (lib/moves.ts queueAge): FIRST_QA for the one the
+   *  first look found, then the hour of each move, put off by `offset` and a few hours more at
+   *  random, each later than the one before; 0 until the first look. */
   moved: number;
+  /** This space's or place's own random number of hours (ms) its `qa` is put off by, made with the first look: two never line up. */
+  offset: number;
   /** The `moved` of the first look of this version: moves before it are none to tell of. */
   since: number;
   /** When each queue last moved for junk on it, and when junk on a new one was last said (T10). */
@@ -58,18 +69,23 @@ export type QueuesData = {
   linkUntil: number;
   /** In a hidden place that rings: when it opened to rings that brought no call (lib/moves.ts fakeRings). */
   rings: number[];
+  /** Its ring queue is due to move, as the relay could not be reached when it was to: tried with each look. */
+  ringDue: boolean;
   /** The backup put back (lock/restored.ts) when this was last looked at: one put back since makes
    *  the own queue say a later `moved`, so contacts who learned a later queue meanwhile take it. */
   restore: string;
 };
 
-export const EMPTY_QUEUES: QueuesData = { now: null, link: null, group: null, public: null, was: [], next: null, moved: 0, since: 0, junk: {}, junkSaid: {}, linkAt: 0, linkUntil: 0, rings: [], restore: '' };
+export const EMPTY_QUEUES: QueuesData = { now: null, link: null, group: null, public: null, was: [], early: [], next: null, moved: 0, offset: 0, since: 0, junk: {}, junkSaid: {}, linkAt: 0, linkUntil: 0, rings: [], ringDue: false, restore: '' };
 
-/** The length every entry is padded to. */
-export const SIZE = 4096;
-/** The most old queues kept, and of them old own queues (one more goes early, emptied first). */
-export const MAX_WAS = 6;
+/** The length every entry is padded to: what one holds at the most kept, on relays of long addresses, fits. */
+export const SIZE = 8192;
+/** The most old queues kept, and of them old own queues and old backup queues, which move with
+ *  each own one (one more goes early, emptied first): MAX_OLD_OWN of each, and the link's, the
+ *  groups' and the public groups' besides. */
+export const MAX_WAS = 12;
 export const MAX_OLD_OWN = 4;
+export const MAX_OLD_SPARE = 4;
 const MAX_RINGS = 8;
 
 const entry = (space: number) => `erevos.queues.${space}`;
@@ -112,28 +128,27 @@ export function checkedQueues(value: unknown): QueuesData {
     group: checkedKept(v.group),
     public: checkedKept(v.public),
     was: Array.isArray(v.was) ? v.was.map(checkedOld).filter((w): w is OldQueue => w !== null).slice(-MAX_WAS) : [],
+    early: Array.isArray(v.early) ? v.early.map(checkedOld).filter((w): w is OldQueue => w !== null).slice(-MAX_WAS) : [],
     next: checkedQueue(v.next),
+    ...(REASONS.includes(v.nextWhy as MoveReason) ? { nextWhy: v.nextWhy as MoveReason } : {}),
     moved: isTime(v.moved) ? v.moved : 0,
+    offset: isTime(v.offset) ? v.offset : 0,
     since: isTime(v.since) ? v.since : 0,
     junk: checkedTimes(v.junk),
     junkSaid: checkedTimes(v.junkSaid),
     linkAt: isTime(v.linkAt) ? v.linkAt : 0,
     linkUntil: isTime(v.linkUntil) ? v.linkUntil : 0,
     rings: Array.isArray(v.rings) ? v.rings.filter(isTime).slice(-MAX_RINGS) : [],
+    ringDue: v.ringDue === true,
     restore: typeof v.restore === 'string' && v.restore.length <= 64 ? v.restore : '',
   };
 }
 
-// Sealed, padded to SIZE. What would not fit, with relays of very long addresses, lets go of the
-// oldest queues moved away from first; what still would not, takes the next whole SIZE.
+// Sealed, padded to SIZE. Nothing is let go of to fit: what would not, with relays of very long
+// addresses, takes the next whole SIZE, as no old queue may be forgotten before it is deleted.
 function seal(key: Uint8Array, data: QueuesData): string {
-  let kept = data;
-  let json = JSON.stringify(kept);
-  while (json.length > SIZE && kept.was.length > 0) {
-    kept = { ...kept, was: kept.was.slice(1) };
-    json = JSON.stringify(kept);
-  }
-  return encryptText(key, json.padEnd(Math.ceil(json.length / SIZE) * SIZE, ' '));
+  const json = JSON.stringify(data);
+  return encryptText(key, json.padEnd(Math.max(1, Math.ceil(json.length / SIZE)) * SIZE, ' '));
 }
 
 async function load(name: string, key: Uint8Array): Promise<QueuesData> {
@@ -150,16 +165,18 @@ async function load(name: string, key: Uint8Array): Promise<QueuesData> {
 // Changes run one after another, each on what the one before left, as space-data.ts's do.
 const writes = new Map<string, Promise<unknown>>();
 
-function change(name: string, key: Uint8Array, update: (data: QueuesData) => QueuesData): Promise<QueuesData> {
-  const run = (writes.get(name) ?? Promise.resolve())
-    .catch(() => undefined)
-    .then(async () => {
-      const data = update(await load(name, key));
-      await secureSet(name, seal(key, data));
-      return data;
-    });
+function inTurn<T>(name: string, call: () => Promise<T>): Promise<T> {
+  const run = (writes.get(name) ?? Promise.resolve()).catch(() => undefined).then(call);
   writes.set(name, run);
   return run;
+}
+
+function change(name: string, key: Uint8Array, update: (data: QueuesData) => QueuesData): Promise<QueuesData> {
+  return inTurn(name, async () => {
+    const data = update(await load(name, key));
+    await secureSet(name, seal(key, data));
+    return data;
+  });
 }
 
 /** Where a space's queues are kept, or a hidden place's (`pocket`). */
@@ -175,11 +192,18 @@ export function placeQueues(space: number, pocket: number, key: Uint8Array): Que
   return { load: () => load(placeEntry(space, pocket), key), update: (next) => change(placeEntry(space, pocket), key, next) };
 }
 
-/** Every space up to `count` (and SLOTS) has an entry, and one for each of its pockets, used or not: sealed with random keys until used. */
+/**
+ * Every space up to `count` (and SLOTS) has an entry, and one for each of its pockets, used or not:
+ * sealed with random keys until used. Each in turn with the changes to it, so one a look writes
+ * meanwhile is never written over (lib/queue-move.ts). Run with each start, and after a backup is
+ * put back (lock/backup.ts), which may have none.
+ */
 export async function prepareQueueEntries(count = SLOTS): Promise<void> {
   for (let space = 0; space < Math.max(SLOTS, count); space++) {
     for (const name of [entry(space), ...Array.from({ length: POCKETS }, (_, pocket) => placeEntry(space, pocket))]) {
-      if (!(await secureGet(name))) await secureSet(name, seal(randomBytes(32), EMPTY_QUEUES));
+      await inTurn(name, async () => {
+        if (!(await secureGet(name))) await secureSet(name, seal(randomBytes(32), EMPTY_QUEUES));
+      });
     }
   }
 }

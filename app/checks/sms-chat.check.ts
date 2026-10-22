@@ -1,15 +1,21 @@
 // The phone's SMS with a contact's number in their Erevos chat (lib/sms-chat.ts), the way back to
-// the plain SMS conversation, the numbers no hidden invite goes to, and the home screen's Erevos
-// chats keeping a contact whose number's SMS came last (lib/inbox.ts). The SMS conversation's link
-// to the chat runs with the real core built to WebAssembly by checks/build-core.mjs, and is
-// skipped, with a note, without it.
+// the plain SMS conversation, the numbers no hidden invite goes to, an invite's answer from someone
+// blocked here, which adds no one, and the home screen's Erevos chats keeping a contact whose
+// number's SMS came last (lib/inbox.ts). The SMS conversation's link to the chat runs with the
+// real core built to WebAssembly by checks/build-core.mjs, and is skipped, with a note, without it.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { contactLink } from '../lib/contact-code';
+import { relaySeal } from '../lib/core';
 import { randomBytes, toHex } from '../lib/crypto';
 import { E2E, toBase64Url } from '../lib/e2e';
+import { fromHex } from '../lib/relay';
+import { collectInvites, inviteAnswer } from '../lib/sms-invite';
+import { forgetSmsLink, spaceSmsLink, takeInviteAnswer } from '../lib/sms-relay';
+import { setCurrentSpace } from '../lock/keys';
 import { buildInbox, showsIn } from '../lib/inbox';
 import { searchMessages } from '../lib/message-search';
 import {
@@ -227,4 +233,35 @@ test('linking a number sends its SMS conversation to the chat, and unlinking it 
   assert.equal(await opens('6900000001', true), null);
   await alice.linkPhone(identity, '');
   assert.equal(await opens('6900000001'), null);
+});
+
+test('the answer to an SMS invite from someone blocked here adds no one; anyone else’s adds them', { skip: !core }, async () => {
+  files.clear();
+  const key = randomBytes(32);
+  setCurrentSpace(0, key);
+  forgetSmsLink();
+  try {
+    const alice = await E2E.open('space', 0, key);
+    const own = { senderHex: toHex(randomBytes(24)), relay: 'wss://relay.example.org', relayKey: '' };
+    const here = { relay: own.relay, relayKey: '' };
+    // An invite from here to `number`, and its answer from `who`'s phone, with their contact link.
+    const answer = async (who: E2E, number: string) => {
+      const pieces: Uint8Array[] = [];
+      await (await spaceSmsLink()).invite(number, own, async (_to, piece) => void pieces.push(piece));
+      const { invites } = collectInvites(pieces.map((data) => ({ from: number, data, at: Date.now() })));
+      const theirs = contactLink({ senderHex: toHex(randomBytes(24)), relayUrl: own.relay, key: toBase64Url(who.bundle) });
+      return relaySeal(invites[0].invite.key, fromHex(own.senderHex), inviteAnswer(theirs));
+    };
+    const bob = await E2E.open('hidden', 0, randomBytes(32));
+    const carol = await E2E.open('hidden', 1, randomBytes(32));
+    await alice.deleteContact(carol.identityHex(), { block: true });
+    assert.equal(await takeInviteAnswer(alice, await answer(carol, '+306900000002'), own.senderHex, here), null);
+    assert.deepEqual(alice.contacts(), []);
+    const took = await takeInviteAnswer(alice, await answer(bob, '+306900000001'), own.senderHex, here);
+    assert.equal(took?.identity, bob.identityHex());
+    assert.deepEqual(alice.contacts().map((c) => c.identity), [bob.identityHex()]);
+  } finally {
+    setCurrentSpace(null);
+    forgetSmsLink();
+  }
 });

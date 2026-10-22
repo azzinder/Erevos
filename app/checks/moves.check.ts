@@ -1,8 +1,8 @@
 // When a relay queue moves, and what follows from it (lib/moves.ts): the junk meter that says a
 // queue is flooded, the time each own queue says it was made (`qa`), when each kept contact is
 // told the new one, how long an old queue is still read, and the queues entry (lock/queues-data.ts),
-// one size whether a space or place moved or not. The moves themselves, through a real relay, are
-// in queue-move.check.ts.
+// one size whether a space or place moved or not, the queues the groups say, and the backup queue
+// the contact link carries. The moves themselves, through a real relay, are in queue-move.check.ts.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -17,7 +17,12 @@ import {
   JUNK_WITHIN,
   JunkMeter,
   junkStep,
+  linkSpare,
+  newOffset,
+  QUEUE_JITTER,
+  QUEUE_OFFSET,
   queueAge,
+  randomHours,
   RESTORED_QUIET,
   takesPlace,
   TELL_AGAIN,
@@ -25,10 +30,10 @@ import {
   toldOnce,
   withOld,
 } from '../lib/moves';
-import { tookOf } from '../lib/queue-move';
+import { groupSenders, tookOf } from '../lib/queue-move';
 import type { Told } from '../lock/e2e-data';
-import { EMPTY_QUEUES, MAX_OLD_OWN, MAX_WAS, placeQueues, prepareQueueEntries, SIZE, spaceQueues, type OldQueue } from '../lock/queues-data';
-import { store } from './secure-memory';
+import { EMPTY_QUEUES, MAX_OLD_OWN, MAX_OLD_SPARE, MAX_WAS, placeQueues, prepareQueueEntries, SIZE, spaceQueues, type OldQueue } from '../lock/queues-data';
+import { slow, store } from './secure-memory';
 
 const HOUR = 60 * 60_000;
 const DAY = 24 * HOUR;
@@ -104,6 +109,22 @@ test('each own queue says it was made later than the one before, on the hour, wh
   assert.equal(takesPlace(6, undefined), true);
 });
 
+test('a qa tells no one when: a move says the hour put off by the place’s own offset and a few random hours, two places never alike, and never less than before', () => {
+  const now = 1000 * HOUR + 1234;
+  assert.equal(queueAge(0, now, 5 * HOUR, 2 * HOUR), 1007 * HOUR);
+  assert.equal(queueAge(2000 * HOUR, now, 5 * HOUR, 11 * HOUR), 2000 * HOUR + 1);
+  // Each place's offset: whole hours, one at least, under QUEUE_OFFSET; drawn apart for each.
+  const offsets = Array.from({ length: 64 }, () => newOffset());
+  assert.ok(offsets.every((o) => o >= HOUR && o < QUEUE_OFFSET && o % HOUR === 0));
+  assert.ok(new Set(offsets).size > 48);
+  assert.equal(newOffset(() => 0), HOUR);
+  // A move's few hours more: whole, under QUEUE_JITTER.
+  assert.equal(randomHours(QUEUE_JITTER, () => 0), 0);
+  assert.equal(randomHours(QUEUE_JITTER, () => 0.9999), QUEUE_JITTER - HOUR);
+  // After a backup was put back, later than any a move since could have made, at the same hour.
+  for (let i = 0; i < 32; i++) assert.ok(queueAge(0, now, 5 * HOUR, randomHours(QUEUE_JITTER)) < queueAge(0, now, 5 * HOUR, QUEUE_JITTER));
+});
+
 test('kept contacts are told at 0, 7, 14 and 21 days while not heard on the new queue', () => {
   const moved = 100 * DAY;
   const since = 10 * DAY;
@@ -130,18 +151,22 @@ test('kept contacts are told at 0, 7, 14 and 21 days while not heard on the new 
   assert.equal(tellDue(undefined, undefined, since, since, since + DAY), false);
 });
 
-test('an old queue is read for 14 days, or until every kept contact was heard on a later one; a group one while a group names it', () => {
+test('an old queue is read for 14 days, or until every kept contact was heard on a later one; any while a group names it', () => {
   const now = 200 * DAY;
   const moved = now - DAY;
   const own = old(1, 'own', moved + GRACE, moved);
-  assert.equal(graceOver(own, 0, true, now), false);
-  assert.equal(graceOver(own, moved - 1, true, now), false);
-  assert.equal(graceOver(own, moved, true, now), true);
-  assert.equal(graceOver(own, Infinity, true, now), true);
-  assert.equal(graceOver(own, 0, true, moved + GRACE), true);
+  assert.equal(graceOver(own, 0, false, now), false);
+  assert.equal(graceOver(own, moved - 1, false, now), false);
+  assert.equal(graceOver(own, moved, false, now), true);
+  assert.equal(graceOver(own, Infinity, false, now), true);
+  assert.equal(graceOver(own, 0, false, moved + GRACE), true);
   const link = old(2, 'link', moved + GRACE);
-  assert.equal(graceOver(link, Infinity, true, now), false);
-  assert.equal(graceOver(link, Infinity, true, moved + GRACE), true);
+  assert.equal(graceOver(link, Infinity, false, now), false);
+  assert.equal(graceOver(link, Infinity, false, moved + GRACE), true);
+  // One a group of this space still names stays, whatever kind it is now: the own queue from before
+  // this version, which the groups say until they renew there, became the link's, or an own one.
+  assert.equal(graceOver(link, Infinity, true, moved + GRACE * 4), false);
+  assert.equal(graceOver(own, Infinity, true, moved + GRACE * 4), false);
   const group = old(3, 'group', moved + GRACE);
   assert.equal(graceOver(group, Infinity, false, now), true);
   assert.equal(graceOver(group, Infinity, true, now), false);
@@ -149,26 +174,36 @@ test('an old queue is read for 14 days, or until every kept contact was heard on
   assert.equal(graceOver(old(4, 'public', moved + GRACE), Infinity, false, now), true);
 });
 
-test('at most four old own queues and six in all are kept: those over are emptied early, oldest first', () => {
+test('at most four old own queues, four old backup ones and twelve in all are kept: those over are emptied early, oldest first', () => {
   let was: OldQueue[] = [];
   const early: OldQueue[] = [];
-  for (let n = 1; n <= 6; n++) {
-    const made = withOld(was, old(n, 'own', n));
+  const add = (w: OldQueue) => {
+    const made = withOld(was, w);
     was = made.was;
     early.push(...made.early);
+  };
+  // Each move leaves an own queue and the backup queue that moved with it: four moves of each fit.
+  for (let n = 1; n <= 6; n++) {
+    add(old(n, 'own', n));
+    add(old(n + 100, 'spare', n));
   }
-  assert.equal(was.length, MAX_OLD_OWN);
+  assert.equal(was.filter((w) => w.kind === 'own').length, MAX_OLD_OWN);
+  assert.equal(was.filter((w) => w.kind === 'spare').length, MAX_OLD_SPARE);
   assert.deepEqual(
     early.map((w) => w.queue.recipientHex),
-    [hex(1), hex(2)],
+    [hex(1), hex(101), hex(2), hex(102)],
   );
-  for (let n = 7; n <= 10; n++) {
-    const made = withOld(was, old(n, 'group', n));
-    was = made.was;
-    early.push(...made.early);
-  }
-  assert.equal(was.length, MAX_WAS);
+  // The link's, the groups' and the public groups' are kept beside them.
+  add(old(200, 'link', 7));
+  add(old(201, 'group', 7));
+  add(old(202, 'public', 7));
+  assert.equal(was.length, MAX_OLD_OWN + MAX_OLD_SPARE + 3);
   assert.equal(early.length, 4);
+  // Over MAX_WAS in all, the oldest goes.
+  add(old(203, 'group', 8));
+  add(old(204, 'group', 9));
+  assert.equal(was.length, MAX_WAS);
+  assert.deepEqual(early.at(-1)!.queue.recipientHex, hex(3));
   // The same queue twice is kept once.
   assert.equal(withOld([old(1, 'own', 1)], old(1, 'own', 2)).was.length, 1);
 });
@@ -202,10 +237,75 @@ test('the queues entry is there for every space and pocket from the first, one s
   assert.equal(store.get('erevos.queues.1')!.length, unused);
   assert.equal(store.get('erevos.queues3.1')!.length, unused);
   assert.equal((await space.load()).was.length, MAX_WAS);
+  // All it keeps at most, on a relay of an address as long as most, with a token: one size still.
+  const kept = (n: number, kind: OldQueue['kind']): OldQueue => ({ ...old(n, kind, 10 * DAY + n, 9 * DAY), url: 'wss://relay.' + 'e'.repeat(40) + '.org:7879', token: 't'.repeat(64) });
+  const full = (from: number) => Array.from({ length: MAX_WAS }, (_, n) => kept(from + n, 'own'));
+  await space.update((d) => ({
+    ...d,
+    link: kept(1, 'link'),
+    group: kept(2, 'group'),
+    public: kept(3, 'public'),
+    was: full(10),
+    early: full(40).slice(0, 4),
+    next: { recipientHex: hex(70), senderHex: hex(71) },
+    nextWhy: 'junk',
+    offset: 700 * HOUR,
+    junk: { own: 1, link: 2, group: 3, public: 4 },
+    junkSaid: { own: 1, link: 2, group: 3, public: 4 },
+    linkAt: 5,
+    linkUntil: 6,
+    rings: [1, 2, 3, 4, 5, 6, 7, 8],
+    ringDue: true,
+    restore: 'r'.repeat(64),
+  }));
+  assert.equal(store.get('erevos.queues.1')!.length, unused);
+  // Nothing is let go of to fit: what would not takes the next whole size.
+  const long = (from: number) => full(from).map((w) => ({ ...w, url: 'wss://' + 'r'.repeat(400) + '.org' }));
+  await space.update((d) => ({ ...d, was: long(100), early: long(200) }));
+  assert.ok(store.get('erevos.queues.1')!.length > unused);
+  const back = await space.load();
+  assert.deepEqual([back.was.length, back.early.length, back.nextWhy, back.ringDue, back.offset], [MAX_WAS, MAX_WAS, 'junk', true, 700 * HOUR]);
   // Sealed with the key: another reads it as unused.
   assert.deepEqual(await spaceQueues(1, randomBytes(32)).load(), EMPTY_QUEUES);
   assert.ok(unused >= SIZE);
   // Preparing again keeps what is there.
   await prepareQueueEntries();
   assert.equal((await space.load()).moved, 5 * HOUR);
+});
+
+test('preparing the entries waits for a write to the same one under way, and never writes over it', async () => {
+  store.clear();
+  const key = randomBytes(32);
+  slow.set = 20;
+  try {
+    // The first look writes while the start prepares them: the keystore takes its time with each.
+    const written = spaceQueues(0, key).update((d) => ({ ...d, moved: 9 * HOUR }));
+    await Promise.all([written, prepareQueueEntries()]);
+  } finally {
+    slow.set = 0;
+  }
+  assert.equal((await spaceQueues(0, key).load()).moved, 9 * HOUR);
+});
+
+test('the groups say the queue the contact link names until theirs is made, never the own one once it moved', () => {
+  const own = { recipientHex: hex(1), senderHex: hex(2) };
+  const kept = (n: number, url = 'ws://relay') => ({ queue: { recipientHex: hex(n), senderHex: hex(n + 1000) }, url, token: '' });
+  // Before the first move the own queue is the link's.
+  assert.deepEqual(groupSenders(EMPTY_QUEUES, own, 'ws://relay'), { groupHex: hex(2), publicHex: hex(2) });
+  // After it, the link's, until the groups' own are made, or again after the relay lost them.
+  assert.deepEqual(groupSenders({ ...EMPTY_QUEUES, link: kept(5) }, own, 'ws://relay'), { groupHex: hex(1005), publicHex: hex(1005) });
+  assert.deepEqual(groupSenders({ ...EMPTY_QUEUES, link: kept(5), group: kept(6) }, own, 'ws://relay'), { groupHex: hex(1006), publicHex: hex(1006) });
+  assert.deepEqual(groupSenders({ ...EMPTY_QUEUES, link: kept(5), group: kept(6), public: kept(7) }, own, 'ws://relay'), { groupHex: hex(1006), publicHex: hex(1007) });
+  // One on another relay is not where the groups reach this phone.
+  assert.deepEqual(groupSenders({ ...EMPTY_QUEUES, link: kept(5), group: kept(6, 'ws://other') }, own, 'ws://relay'), { groupHex: hex(1005), publicHex: hex(1005) });
+});
+
+test('the contact link carries the own queue’s backup queue while it names the own queue, and none once it names a queue of its own', () => {
+  const spare = { senderHex: hex(3), relayUrl: 'ws://spare' };
+  // Before the first move, on a phone or a linked device that has no link queue yet.
+  assert.deepEqual(linkSpare('', hex(2), spare), spare);
+  assert.deepEqual(linkSpare(hex(2), hex(2), spare), spare);
+  // After it: the backup queue moved with the own queue, and would lead to it.
+  assert.equal(linkSpare(hex(1005), hex(2), spare), undefined);
+  assert.equal(linkSpare(hex(1005), hex(2), undefined), undefined);
 });

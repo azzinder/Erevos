@@ -133,7 +133,9 @@ function lookWhenDue(at: number) {
  * While Erevos is in the background, waits at the relay until something comes for the queue, or
  * for one of `others` (the groups' queue, lib/queue-move.ts), or a while: then a look takes it.
  * Says whether it waited; false at once while the app shows, at a relay that cannot wait, or once
- * the wait was ended. Throws when the relay cannot be reached.
+ * the wait was ended. Throws when the relay cannot be reached, or no longer has the queue: only
+ * the queue's own wait throws. One of `others` the relay lost ends the wait, so the look finds it
+ * gone and makes it anew; one that fails otherwise drops out, and the others wait on.
  */
 export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others: Uint8Array[] = []): Promise<boolean> {
   if (shows || !canWaitAt(relay)) return false;
@@ -141,9 +143,14 @@ export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others:
   waits.add(wait);
   try {
     // The first that answers ends the others.
-    const each = [recipient, ...others].map((r) => waitForMessage(relay, r, WAIT_FOR, wait.signal).finally(() => wait.abort()));
-    for (const one of each) one.catch(() => undefined);
-    await Promise.race(each);
+    const mine = waitForMessage(relay, recipient, WAIT_FOR, wait.signal).finally(() => wait.abort());
+    const theirs = others.map((r) =>
+      waitForMessage(relay, r, WAIT_FOR, wait.signal).then(
+        () => wait.abort(),
+        (error) => (isQueueNotFound(error) ? wait.abort() : new Promise<void>(() => undefined)),
+      ),
+    );
+    await Promise.race([mine, ...theirs]);
     return canWaitAt(relay) && !ended.has(wait);
   } finally {
     waits.delete(wait);
@@ -387,7 +394,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
         changed = true;
         return { junk: false };
       }
-      let received = await chats.e2e.receive(bytes, kind === 'own' ? { onOwn: true } : { old: kind !== undefined });
+      let received = await chats.e2e.receive(bytes, kind === 'own' ? { onOwn: here.queue.senderHex } : { old: kind !== undefined });
       // Someone whose SMS invite was answered here: no message request.
       if (received.kind === 'message' && received.added && (await linkInviter(chats.e2e, received.identity).catch(() => null))) {
         received = { ...received, request: false };
@@ -445,7 +452,9 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     }
     if (moved) mover.hold(moved.notes);
   }
-  const link = queues ? linkOf(queues, place.queue).senderHex : place.queue.senderHex;
+  // The queue the contact link names as the look left it: a move in it never names the new own queue.
+  const after = await mover.queues().catch(() => null);
+  const link = after ? linkOf(after, after.now?.queue ?? place.queue).senderHex : place.queue.senderHex;
   await answerInvites(chats.e2e, link, place.here, place.sends).catch(() => undefined);
   // What waited to go, now that the relay answers (lib/waiting.ts).
   if (!failed && (await sendWaiting(chats, sendPlace(place, true)).catch(() => [])).length > 0) changed = true;

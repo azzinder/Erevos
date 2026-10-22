@@ -5,6 +5,12 @@
 // is emptied and deleted once every kept contact was heard on a later one, and is gone for whoever
 // writes to it after. What a contact holds for later on the relay follows her queue as it moves
 // (lib/waiting.ts, holdAgain), and what is held for one deleted goes no more (heldFor, dropHeld).
+// A link made at any step of a move names the queue before, never the new one; junk on the link's
+// or the groups' queue moves it; a relay that lost the link's or the groups' gives new ones, and
+// moves the own queue for neither, nor does a wait in the background; one a group still names stays;
+// old queues let go of early are deleted after a new start, and a move cut short finishes as it
+// started; a hidden place's ring queue moves though the relay was away at first, and its kept
+// contacts are told.
 // Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
@@ -16,13 +22,15 @@ import { test } from 'node:test';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
-import { GRACE } from '../lib/moves';
-import { linkOf, QueueMove, tookOf, type Take } from '../lib/queue-move';
-import { createQueue, fromHex, isQueueFull, isQueueNotFound, receiveMessage, sendMessage, toHex, type Mark } from '../lib/relay';
+import { FIRST_QA, GRACE } from '../lib/moves';
+import { linkOf, QueueMove, tookOf, type MoveAt, type MoveGroups, type Take } from '../lib/queue-move';
+import { setAppShown, waitWhileAway } from '../lib/receiver';
+import { createQueue, deleteQueue, fromHex, isQueueFull, isQueueNotFound, receiveMessage, sendMessage, toHex, type Mark, type Relay } from '../lib/relay';
 import type { SpareStore } from '../lib/spare';
 import { dropHeld, heldFor, sendWaiting, takeBack, type SendPlace } from '../lib/waiting';
 import { History, WAITING } from '../lock/history';
-import { spaceQueues } from '../lock/queues-data';
+import { hiddenHolder } from '../lock/sealed-file';
+import { MAX_OLD_OWN, placeQueues, spaceQueues, type QueuesStore } from '../lock/queues-data';
 import { loadSpaceData, updateSpaceData, type Queue } from '../lock/space-data';
 import { files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
@@ -72,7 +80,7 @@ test('a deletion and junk move the queue, kept contacts follow, and the one dele
     const take: Take = async (bytes, kind) => {
       let received: Received;
       try {
-        received = await alice.receive(bytes, kind === 'own' ? { onOwn: true } : { old: true });
+        received = await alice.receive(bytes, kind === 'own' ? { onOwn: ownNow.senderHex } : { old: true });
       } catch {
         return { junk: true };
       }
@@ -131,13 +139,15 @@ test('a deletion and junk move the queue, kept contacts follow, and the one dele
   let q = await queues.load();
   assert.equal(q.now?.queue.recipientHex, first.recipientHex);
   assert.equal(q.since, q.moved);
+  // Its `qa` says nothing of when this version first looked.
+  assert.equal(q.moved, FIRST_QA);
   // The groups' and the public groups' queues are made with it, each its own, and the groups told.
   assert.ok(q.group && q.public && q.group.queue.senderHex !== q.public.queue.senderHex && q.group.queue.senderHex !== first.senderHex);
   assert.deepEqual(groupsAsked, ['group', 'public']);
 
   // Alice deletes Carol: her own queue moves at once, in the same turn as the deletion is kept.
   await alice.deleteContact(carolId);
-  const second = (await mover.moveNow(relay))!;
+  const second = (await mover.moveNow(relay))!.queue;
   assert.notEqual(second.senderHex, first.senderHex);
   assert.equal((await own()).senderHex, second.senderHex);
   assert.equal(alice.moveDue(), 0);
@@ -210,8 +220,11 @@ test('a new contact link moves the queue the link names, and the one before work
   await updateSpaceData(0, key, { url, ownQueue: first });
   const store: SpareStore = { of: {}, load: () => loadSpaceData(0, key), update: (patch) => updateSpaceData(0, key, patch) };
   const queues = spaceQueues(0, key);
-  const mover = new QueueMove({ e2e, queues, data: store });
-  const look = () => mover.look({ own: relay, found: { taken: 0, junk: 0 }, take: async () => ({ junk: false }), tell: async () => undefined, shows: false });
+  // The space's groups from before this version say the own queue, until each renews there.
+  let named = new Set([first.senderHex]);
+  const groups: MoveGroups = { renewAgain: async () => undefined, named: async () => named };
+  const mover = new QueueMove({ e2e, queues, data: store, groups });
+  const look = (m = mover) => m.look({ own: relay, found: { taken: 0, junk: 0 }, take: async () => ({ junk: false }), tell: async () => undefined, shows: false });
   await look();
   // While the own queue is the link's, the own queue moves, and the one before stays a while.
   const before = Date.now();
@@ -222,9 +235,19 @@ test('a new contact link moves the queue the link names, and the one before work
   assert.equal(q.link, null);
   assert.ok(q.was.some((w) => w.kind === 'link' && w.queue.senderHex === first.senderHex));
   assert.ok(q.linkUntil >= before + GRACE);
+  // Its grace over, it is still read while a group says it.
+  await queues.update((d) => ({ ...d, was: d.was.map((w) => ({ ...w, until: 0 })) }));
+  await look();
+  assert.ok((await queues.load()).was.some((w) => w.queue.senderHex === first.senderHex));
+  await sendMessage(relay, fromHex(first.senderHex), randomBytes(40));
+  // Once none does, it goes.
+  named = new Set();
+  await look(new QueueMove({ e2e, queues, data: store, groups }));
+  assert.ok(!(await queues.load()).was.some((w) => w.queue.senderHex === first.senderHex));
+  await assert.rejects(sendMessage(relay, fromHex(first.senderHex), randomBytes(40)), (error) => isQueueNotFound(error));
   // A move for a deletion makes the queue before the link's; a new link then moves only that one.
   await e2e.moveSoon();
-  const own = (await mover.moveNow(relay))!;
+  const own = (await mover.moveNow(relay))!.queue;
   assert.equal(linkOf(await queues.load(), own).senderHex, made.queue.senderHex);
   const again = await mover.newLink(relay);
   assert.equal(again.queue, null);
@@ -258,7 +281,7 @@ test('what a contact holds for later reaches her though she moved twice and the 
     const take: Take = async (bytes, kind) => {
       let received: Received;
       try {
-        received = await alice.receive(bytes, kind === 'own' ? { onOwn: true } : { old: true });
+        received = await alice.receive(bytes, kind === 'own' ? { onOwn: ownNow.senderHex } : { old: true });
       } catch {
         return { junk: true };
       }
@@ -303,7 +326,7 @@ test('what a contact holds for later reaches her though she moved twice and the 
 
   // Alice moves once: Bob is told, and holds a message for her for later, for where she reads now.
   await alice.moveSoon();
-  const second = (await mover.moveNow(relay))!;
+  const second = (await mover.moveNow(relay))!.queue;
   await look();
   await read();
   assert.equal(bob.e2e.queueOf(aliceId)!.sender, second.senderHex);
@@ -315,7 +338,7 @@ test('what a contact holds for later reaches her though she moved twice and the 
 
   // She moves again. Bob, told, holds it anew for her new queue, and the one held before is taken back.
   await alice.moveSoon();
-  const third = (await mover.moveNow(relay))!;
+  const third = (await mover.moveNow(relay))!.queue;
   await look();
   await read();
   assert.equal(bob.e2e.queueOf(aliceId)!.sender, third.senderHex);
@@ -370,4 +393,197 @@ test('what a contact holds for later reaches her though she moved twice and the 
   assert.deepEqual(reopened.undropped(), []);
   await new Promise((r) => setTimeout(r, soon - Date.now() + 2000));
   assert.deepEqual(await look(), []);
+});
+
+// A space on a real relay with its queues and the moves made with them, `wrap` seeing each store.
+async function spaceOn(relay: Relay, url: string, { groups, ring, wrap }: { groups?: MoveGroups; ring?: MoveAt['ring']; wrap?: (store: QueuesStore, data: SpareStore) => { queues: QueuesStore; data: SpareStore } } = {}) {
+  const key = randomBytes(32);
+  const e2e = await E2E.open('space', 0, key);
+  const ids = await createQueue(relay);
+  const first: Queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  await updateSpaceData(0, key, { url, ownQueue: first });
+  const plain = { queues: spaceQueues(0, key), data: { of: {}, load: () => loadSpaceData(0, key), update: (patch) => updateSpaceData(0, key, patch) } as SpareStore };
+  const { queues, data } = wrap ? wrap(plain.queues, plain.data) : plain;
+  const mover = () => new QueueMove({ e2e, queues, data, groups, ring });
+  const made = mover();
+  const told: string[] = [];
+  const look = (m = made) => m.look({ own: relay, found: { taken: 0, junk: 0 }, take: async () => ({ junk: true }), tell: async (identity) => void told.push(identity), shows: false });
+  return { key, e2e, first, queues: plain.queues, mover: made, again: mover, look, told, own: async () => (await loadSpaceData(0, key)).ownQueue! };
+}
+
+test('a link made at any step of a move never names the new own queue; junk on the link’s or the groups’ queue moves it; a relay that lost the link’s gives a new link, never the own queue', { skip: !coreReady || !relayReady, timeout: 120_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  // The queue a link would name, as each write of a move leaves the space, read as a screen does.
+  const links: string[] = [];
+  let at: { queues: QueuesStore; data: SpareStore } | null = null;
+  const snap = async () => {
+    if (at) links.push(linkOf(await at.queues.load(), (await at.data.load()).ownQueue!).senderHex);
+  };
+  const asked: string[] = [];
+  const space = await spaceOn(relay, url, {
+    groups: { renewAgain: async (kind) => void asked.push(kind), named: async () => new Set() },
+    wrap: (queues, data) => {
+      at = { queues, data };
+      return {
+        queues: {
+          load: queues.load,
+          update: async (change) => {
+            const d = await queues.update(change);
+            await snap();
+            return d;
+          },
+        },
+        data: { ...data, update: async (patch) => (await data.update(patch), await snap()) },
+      };
+    },
+  });
+  await space.look();
+  let q = await space.queues.load();
+  assert.ok(q.group && q.public);
+  for (let n = 0; n < 2; n++) {
+    await space.e2e.moveSoon();
+    links.length = 0;
+    const moved = (await space.mover.moveNow(relay))!;
+    assert.notEqual(moved.queue.senderHex, space.first.senderHex);
+    assert.equal(moved.link.senderHex, space.first.senderHex);
+    assert.ok(links.length >= 3);
+    assert.ok(!links.includes(moved.queue.senderHex), 'never the new own queue');
+  }
+
+  // Junk fills the link's queue and the groups': three looks of whole batches move each.
+  const group = q.group!.queue.senderHex;
+  for (const sender of [space.first.senderHex, group]) for (let i = 0; i < 160; i++) await sendMessage(relay, fromHex(sender), randomBytes(120));
+  const notes: string[] = [];
+  for (let i = 0; i < 3; i++) notes.push(...(await space.look()).notes);
+  q = await space.queues.load();
+  assert.ok(q.link && q.link.queue.senderHex !== space.first.senderHex);
+  assert.ok(q.was.some((w) => w.kind === 'link' && w.queue.senderHex === space.first.senderHex));
+  assert.ok(q.group && q.group.queue.senderHex !== group);
+  assert.deepEqual(asked, ['group', 'public', 'group']);
+  assert.ok(notes.some((note) => note.startsWith('Junk filled the queue your contact link names, so you have a new link.')));
+
+  // The relay lost the link's queue: a new one, never the own queue, and the links before no longer work.
+  const lost = q.link.queue;
+  await deleteQueue(relay, fromHex(lost.recipientHex));
+  const said = (await space.look()).notes;
+  q = await space.queues.load();
+  assert.ok(q.link && q.link.queue.senderHex !== lost.senderHex && q.link.queue.senderHex !== (await space.own()).senderHex);
+  assert.ok(said.some((note) => note.startsWith('The relay had lost the queue your contact link names')));
+  await sendMessage(relay, fromHex(q.link.queue.senderHex), randomBytes(40));
+});
+
+test('a relay that forgot only the groups’ queue has it made anew; the own queue stays, and a wait in the background ends at once without moving it', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const asked: string[] = [];
+  const space = await spaceOn(relay, url, { groups: { renewAgain: async (kind) => void asked.push(kind), named: async () => new Set() } });
+  await space.look();
+  const group = (await space.queues.load()).group!.queue;
+  await deleteQueue(relay, fromHex(group.recipientHex));
+  setAppShown(false);
+  try {
+    const started = Date.now();
+    await waitWhileAway(relay, fromHex(space.first.recipientHex), [fromHex(group.recipientHex)]);
+    assert.ok(Date.now() - started < 10_000);
+  } finally {
+    setAppShown(true);
+  }
+  await space.look();
+  const q = await space.queues.load();
+  assert.ok(q.group && q.group.queue.senderHex !== group.senderHex);
+  assert.deepEqual(asked, ['group', 'public', 'group']);
+  assert.equal((await space.own()).senderHex, space.first.senderHex);
+  assert.equal(q.now?.queue.senderHex, space.first.senderHex);
+});
+
+test('old queues let go of early are deleted though the app stopped first; a move cut short finishes as the one it was', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const space = await spaceOn(relay, url);
+  await space.look();
+  // The first move makes the queue before the link's; each after leaves an old own one, the oldest let go of early.
+  for (let i = 0; i < MAX_OLD_OWN + 2; i++) {
+    await space.e2e.moveSoon();
+    await space.mover.moveNow(relay);
+  }
+  let q = await space.queues.load();
+  assert.equal(q.was.filter((w) => w.kind === 'own').length, MAX_OLD_OWN);
+  assert.equal(q.early.length, 1);
+  const early = q.early[0].queue;
+  await sendMessage(relay, fromHex(early.senderHex), randomBytes(40));
+  // Started again: it is still emptied and deleted.
+  await space.look(space.again());
+  q = await space.queues.load();
+  assert.deepEqual(q.early, []);
+  await assert.rejects(sendMessage(relay, fromHex(early.senderHex), randomBytes(40)), (error) => isQueueNotFound(error));
+
+  // A move for an own queue the relay lost, cut short once its `next` was kept: it finishes as
+  // such, and the queue before is read nowhere, though a kept contact was heard on none since.
+  const bob = await E2E.open('space', 1, randomBytes(32));
+  await space.e2e.addContact({ senderHex: toHex(randomBytes(24)), key: toBase64Url(bob.bundle), relayUrl: url }, (await space.own()).senderHex, { relay: url, relayKey: '' });
+  const before = await space.own();
+  const ids = await createQueue(relay);
+  const next: Queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  await space.queues.update((d) => ({ ...d, next, nextWhy: 'lost' }));
+  await space.look(space.again());
+  q = await space.queues.load();
+  assert.equal((await space.own()).senderHex, next.senderHex);
+  assert.equal(q.next, null);
+  assert.ok(!q.was.some((w) => w.queue.senderHex === before.senderHex));
+  // One for a deletion, the same way, keeps the queue before read for its grace.
+  await space.e2e.moveSoon();
+  const ids2 = await createQueue(relay);
+  await space.queues.update((d) => ({ ...d, next: { recipientHex: toHex(ids2.recipientId), senderHex: toHex(ids2.senderId) }, nextWhy: 'due' }));
+  await space.look(space.again());
+  assert.ok((await space.queues.load()).was.some((w) => w.kind === 'own' && w.queue.senderHex === next.senderHex));
+});
+
+test('a hidden place’s ring queue moves for rings that brought no call, with a later look when the relay is away at first, and each kept contact is told the new one', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const key = randomBytes(32);
+  const e2e = await E2E.open(hiddenHolder(1), 0, key);
+  const ids = await createQueue(relay);
+  const first: Queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  await updateSpaceData(0, key, { url, ownQueue: first });
+  const store: SpareStore = { of: {}, load: () => loadSpaceData(0, key), update: (patch) => updateSpaceData(0, key, patch) };
+  const queues = placeQueues(0, 1, key);
+  let away = true;
+  let rings = 0;
+  const ring = async () => {
+    rings++;
+    if (away) throw new Error('The relay cannot be reached.');
+    return true;
+  };
+  const mover = new QueueMove({ e2e, queues, data: store, ring });
+  const told: string[] = [];
+  const look = (m = mover) => m.look({ own: relay, found: { taken: 0, junk: 0 }, take: async () => ({ junk: false }), tell: async (identity) => void told.push(identity), shows: false });
+  // Bob is a kept contact of the place.
+  const bob = await E2E.open('space', 1, randomBytes(32));
+  const { identity: bobId } = await e2e.addContact({ senderHex: toHex(randomBytes(24)), key: toBase64Url(bob.bundle), relayUrl: url }, first.senderHex, { relay: url, relayKey: '' });
+  await look();
+  assert.deepEqual(told, []);
+  // Away: due, and tried again with each look, from what is kept, after a new start too.
+  assert.equal(await mover.ringMove(), false);
+  assert.equal((await queues.load()).ringDue, true);
+  await look(new QueueMove({ e2e, queues, data: store, ring }));
+  assert.deepEqual([rings, told], [2, []]);
+  away = false;
+  await look();
+  assert.equal(rings, 3);
+  assert.equal((await queues.load()).ringDue, false);
+  assert.deepEqual(told, [bobId]);
+  assert.equal(e2e.record(bobId)!.ringTell, undefined);
+  assert.equal(e2e.record(bobId)!.told, undefined, 'the own queue was told no one');
+  await look();
+  assert.deepEqual(told, [bobId]);
+  // Reached at once: moved, and told with the next look.
+  assert.equal(await mover.ringMove(), true);
+  await look();
+  assert.deepEqual(told, [bobId, bobId]);
 });

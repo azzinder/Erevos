@@ -397,8 +397,10 @@ days. The one you deleted is not told, and nothing they send there shows. Your c
 can still ask to talk again with it, as a message request, like anyone who has it.
 
 - **Block contact**, under it, does the same, and also drops what they send later, a request too. **Block**, beside
-  **Refuse**, blocks a message request, and moves nothing: a request knows only your contact link. Whoever you blocked
-  is under **Blocked contacts** in **Relay and new contacts**, with **Unblock**.
+  **Refuse**, blocks a message request: a request knows only your contact link, so it moves your queue only while the
+  link still names that one, as it does until your first move. Whoever you blocked is under **Blocked contacts** in
+  **Relay and new contacts**, with **Unblock**. Adding them again from their link asks you to unblock them first;
+  until then nothing adds them, neither their answer to an invite by SMS nor their contact link in a group.
 - **Groups:** someone in one of your groups can still write to you there. Erevos says in how many you are together:
   leave them, or ask their admin to take them out.
 - **When the relay cannot be reached**, the queue changes as soon as it answers, and until then nothing they send
@@ -408,7 +410,8 @@ can still ask to talk again with it, as a message request, like anyone who has i
 - **Junk:** when your queue fills with what is for no one here, Erevos gives you a new one the same way and says so, at
   most once a day. When junk fills the queue your contact link names, you get a new link instead.
 - **New contact link**, beside **Share my contact link**, gives you a new link: the links and QR codes you gave before
-  work for 14 more days, then no more. Your contacts are not affected.
+  work for 14 more days, then no more. Your contacts are not affected. Should the relay lose the queue your link
+  names, you get a new link the same way, but the ones you gave before stop working at once.
 - **On a linked computer** it goes to the phone, which deletes or blocks them too and moves its queues, the computer's
   as well; the phone keeps who is blocked.
 - **In hidden chats** only that place's queues move, its ring queue at once, so the one you deleted can no longer make

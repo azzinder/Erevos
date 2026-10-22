@@ -3150,7 +3150,7 @@ test('a contact blocked on the computer is blocked on the phone, whose queues al
   // emptied, a new list is signed, and the computer is asked to move its own.
   try {
     setCurrentSpace(pixel.space, pixel.key);
-    const moved = (await spaceMover(pixel.chats).moveNow(relay))!;
+    const moved = (await spaceMover(pixel.chats).moveNow(relay))!.queue;
     assert.notEqual(moved.senderHex, pixel.queue.senderHex);
     await pixel.links.settled();
     const after = pixel.chats.e2e.signedList()!;
@@ -3164,7 +3164,7 @@ test('a contact blocked on the computer is blocked on the phone, whose queues al
 
     // The computer moves its own with its next look, and the phone routes contacts there.
     setCurrentSpace(dell.space, dell.key);
-    const computer = (await spaceMover(dell.chats).moveNow(relay))!;
+    const computer = (await spaceMover(dell.chats).moveNow(relay))!.queue;
     assert.equal((await loadSpaceData(dell.space, dell.key)).ownQueue?.senderHex, computer.senderHex);
     await dell.links.settled();
     dell.queue = computer;

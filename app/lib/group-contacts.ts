@@ -22,6 +22,8 @@ export type GroupContacts = {
   has(me: string, identity: string): Promise<boolean>;
   /** Whether `identity` is a contact the space has accepted: not a message request. */
   accepted(me: string, identity: string): Promise<boolean>;
+  /** Whether `identity` is blocked in the space: what they ask is dropped, and nothing adds them. */
+  blocked(me: string, identity: string): Promise<boolean>;
   /** Adds the member who gave `key`, reached where its group About says. Accepts their message
    *  request if they are one; a contact already here is left as it is. */
   add(me: string, about: About, key: string): Promise<void>;
@@ -40,6 +42,7 @@ export function groupContacts(chats: () => Promise<E2E>, place: () => Promise<{ 
     bundle: async (me) => toBase64Url((await of(me)).bundle),
     has: async (me, identity) => !!(await find(me, identity)),
     accepted: async (me, identity) => (await find(me, identity))?.request === false,
+    blocked: async (me, identity) => (await of(me)).isBlocked(identity),
     async add(me, about, key) {
       const e2e = await of(me);
       // The key has to be the member's own, or the contact added, or changed, would be another.

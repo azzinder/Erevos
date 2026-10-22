@@ -35,4 +35,12 @@ export const moves: Record<string, string> = {
     'Messaggi spazzatura hanno riempito la coda indicata dal tuo link di contatto, quindi hai un nuovo link. I link e i codici QR che hai dato prima funzionano fino al {date}.',
   'The relay had lost your queue, so you have a new one. Your contacts are told quietly.':
     'Il relay aveva perso la tua coda, quindi ne hai una nuova. I tuoi contatti vengono avvisati in silenzio.',
+  // Adding someone who is blocked here.
+  '{name} is blocked here. Unblock them to add them again?':
+    'Hai bloccato {name} qui. Sbloccare il contatto per aggiungerlo di nuovo?',
+  'This contact is blocked here. Unblock them to add them again?':
+    'Hai bloccato questo contatto qui. Sbloccarlo per aggiungerlo di nuovo?',
+  // The queue the contact link names, lost by the relay.
+  'The relay had lost the queue your contact link names, so you have a new link. The links and QR codes you gave before no longer work.':
+    'Il relay aveva perso la coda indicata dal tuo link di contatto, quindi hai un nuovo link. I link e i codici QR che hai dato prima non funzionano più.',
 };

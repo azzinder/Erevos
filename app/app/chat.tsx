@@ -67,7 +67,7 @@ import { ownToken } from '../lib/relay-signin';
 import { canGroup, canRelaySeal, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
-import { E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
+import { BlockedContactError, E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { mediaText, shownTime, SOURCE_LABELS } from '../lib/imports';
 import { Archive } from '../lock/archive';
@@ -82,8 +82,8 @@ import { LockedOutError, lockedOutMessage } from '../lock/tries';
 import { cleanName, MAX_NAME, type Avatar, type Blocked, type Spare } from '../lock/e2e-data';
 import { placeQueues, type QueueKind } from '../lock/queues-data';
 import { QueueMove, linkOf, spaceMover, tookOf, type MoveWhy, type Took } from '../lib/queue-move';
-import { FAKE_RINGS_WITHIN, fakeRings } from '../lib/moves';
-import { HIDDEN_ANSWER_MS, hiddenAnswerAt, lapseHiddenAnswer } from '../lib/hidden-ring';
+import { FAKE_RINGS_WITHIN, fakeRings, linkSpare } from '../lib/moves';
+import { HIDDEN_OFFER_MS, hiddenAnswerAt, lapseHiddenAnswer } from '../lib/hidden-ring';
 import { savePhoto } from '../lock/avatar-photos';
 import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
@@ -860,6 +860,25 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           : t('Already a contact. Where to reach them is updated.')) + linked,
       );
     } catch (error) {
+      // Someone blocked here: added only once unblocked, as the owner says.
+      if (error instanceof BlockedContactError) {
+        const blocked = error;
+        ask(t('Blocked contacts'), blocked.message, [
+          { text: t('Cancel'), style: 'cancel' },
+          {
+            text: t('Unblock'),
+            onPress: () =>
+              void e2e
+                .unblock(blocked.identity)
+                .then(() => {
+                  setBlocked(e2e.blocked());
+                  return acceptContact(code, offered, asked);
+                })
+                .catch((again) => setNote(errorText(again))),
+          },
+        ]);
+        return;
+      }
       setNote(t('Not added. {error}', { error: errorText(error) }));
     }
   }
@@ -1058,7 +1077,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           const queues = placeQueues(space, pocket, hiddenKey);
           const kept = await queues.load();
           if (kept.moved > 0) chats.setQueueAge(kept.moved, kept.now?.queue.senderHex);
-          mover.current = new QueueMove({ e2e: chats, queues, data: spareStore, moved: (queue, old, why) => hiddenMoved.current(queue, old, why) });
+          if (kept.now) chats.setLinkOwn(!kept.link);
+          mover.current = new QueueMove({ e2e: chats, queues, data: spareStore, moved: (queue, old, why) => hiddenMoved.current(queue, old, why), ring: () => moveRing.current() });
         } else mover.current = spaceMover({ e2e: chats });
         const queues = await mover.current.queues().catch(() => null);
         if (!active) return;
@@ -1354,7 +1374,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           return { junk: false };
         }
         // Taken from the relay, so kept even if the chat closed meanwhile.
-        let received = await e2e.receive(bytes, kind === 'own' ? { onOwn: true } : { old: kind !== undefined });
+        let received = await e2e.receive(bytes, kind === 'own' ? { onOwn: ownSender } : { old: kind !== undefined });
         // Someone whose SMS invite was answered here: a contact at once, not a message request.
         const number = !hiddenKey && received.kind === 'message' && received.added ? await linkInviter(e2e, received.identity).catch(() => null) : null;
         if (number && received.kind === 'message') received = { ...received, request: false };
@@ -1409,7 +1429,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             return;
           }
         }
-        if (!hiddenKey) await answerInvites(e2e, queues ? linkOf(queues, ownQueue!).senderHex : ownSender, here(), sends).catch(() => undefined);
+        // With the queue the link names as the look left it, never the own queue a move just made.
+        const after = await mover.current?.queues().catch(() => null);
+        if (!hiddenKey) await answerInvites(e2e, after ? linkOf(after, after.now?.queue ?? ownQueue!).senderHex : ownSender, here(), sends).catch(() => undefined);
         // What waited to go, now that the relay answers.
         void sendWaitingNow.current(true);
         await sendReceipts(sends);
@@ -2468,9 +2490,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setBlocked(e2e.blocked());
     setDetails(false);
     setSelected(null);
-    // A message request knows only the queue the contact link names: nothing moves for it. On a
-    // linked computer the phone moves.
-    const moves = !request && (e2e.moveDue() > 0 || !!accountLink());
+    // A message request knows only the queue the contact link names: nothing moves for it, but for
+    // one blocked while that is the own queue, before the first move (lib/e2e.ts deleteContact). On
+    // a linked computer the phone moves.
+    const moves = e2e.moveDue() > 0 || (!request && !!accountLink());
     let said = !moves
       ? block
         ? t('Blocked.')
@@ -2481,8 +2504,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const url = relayUrl.trim();
     if (moves && url && ownQueue && mover.current) {
       try {
-        const queue = await mover.current.moveNow({ url, token: relayToken.trim() || undefined });
-        if (queue) setOwnQueue(queue);
+        // The link and its QR code name the queue the link names from now on, never the new own one.
+        const moved = await mover.current.moveNow({ url, token: relayToken.trim() || undefined });
+        if (moved) {
+          setLinkQueue(moved.link);
+          setOwnQueue(moved.queue);
+        }
       } catch {
         said = t('The relay could not be reached, so your queue changes as soon as it can. Until then {name} can still write to it, but nothing they send shows.', { name });
       }
@@ -3135,6 +3162,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       }
       await updateHiddenData(space, pocket, key, { ...settings, ownQueue: queue });
       const hiddenChats = await E2E.open(hiddenHolder(pocket), space, key);
+      // When their queue was made, as the hidden chats say it, before the tell below says it.
+      const placeKept = await placeQueues(space, pocket, key).load();
+      if (placeKept.moved > 0) hiddenChats.setQueueAge(placeKept.moved, placeKept.now?.queue.senderHex);
       const hiddenHistory = await History.open(hiddenHolder(pocket), space, key);
       // A contact who knows about devices is told first, by the space's chat, as the hidden chats
       // will say it to one who knows them by the space's identity: nothing of devices. Their devices
@@ -3270,8 +3300,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // A new ring queue for these hidden chats, if they ring, made at once with the one before deleted,
-  // so whoever rang it can no longer ring this phone. Kept contacts learn it with the tells, and the
-  // rings that brought no call are forgotten. Says whether it moved.
+  // so whoever rang it can no longer ring this phone (MoveAt.ring: the move's own steps tell kept
+  // contacts the new one, and forget the rings that brought no call). Says whether it moved; throws
+  // when the relay cannot be reached, so it is tried again with each look.
   const moveRing = useRef(async () => false);
   moveRing.current = async () => {
     if (!hiddenKey || !ringing) return false;
@@ -3280,42 +3311,34 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const token = relayToken.trim();
     const before = (await loadHiddenData(space, pocket, hiddenKey)).ringQueue;
     if (!url || !before) return false;
-    try {
-      const made = await moveRingPocket(space, key, pocket, { url, token: token || undefined }, before.recipientHex);
-      const ring = { recipientHex: made.recipientHex, senderHex: made.senderHex };
-      await updateHiddenData(space, pocket, hiddenKey, { ringQueue: ring });
-      setRingQueue(ring);
-      await placeQueues(space, pocket, hiddenKey).update((d) => ({ ...d, rings: [] }));
-      return true;
-    } catch {
-      // The ring queue stays as it was until the next move.
-      return false;
-    }
+    const made = await moveRingPocket(space, key, pocket, { url, token: token || undefined }, before.recipientHex);
+    const ring = { recipientHex: made.recipientHex, senderHex: made.senderHex };
+    await updateHiddenData(space, pocket, hiddenKey, { ringQueue: ring });
+    setRingQueue(ring);
+    return true;
   };
 
   // What moves with these hidden chats' own queue (lib/queue-move.ts): the watch slot says the new
-  // one, and the ring queue moves too, so whoever was deleted or blocked can no longer ring.
+  // one. The ring queue moves too, with the move's own steps (MoveAt.ring).
   const hiddenMoved = useRef(async (_queue: Queue, _old: Queue | null, _why: MoveWhy) => undefined as void);
-  hiddenMoved.current = async (queue, _old, why) => {
+  hiddenMoved.current = async (queue) => {
     if (!hiddenKey) return;
     const { space, key } = currentSpace();
     const url = relayUrl.trim();
     if (!url) return;
     if (watched) await watchPocket(space, key, pocket, { url, token: relayToken.trim(), recipientHex: queue.recipientHex }).catch(() => setWatched(false));
-    // A new contact link changes nothing of who may ring.
-    if (why !== 'link') await moveRing.current();
   };
 
-  // A ring answered with the PIN that brought no call (lib/hidden-ring.ts) counts against the ring
-  // queue: three within a day and it moves (lib/moves.ts fakeRings), so whoever rings it for nothing
-  // can no longer. It counts when the answer lapses, or when these chats close before; it moves
-  // only while they are open.
+  // A ring answered with the PIN that brought no call within HIDDEN_OFFER_MS (lib/hidden-ring.ts)
+  // counts against the ring queue: three within a day and it moves (lib/moves.ts fakeRings), so
+  // whoever rings it for nothing can no longer. It counts once that time is over, while these chats
+  // are open or when they open next; it moves only while they are open.
   useEffect(() => {
     if (!hiddenKey || !loaded) return;
     const queues = placeQueues(currentSpace().space, pocket, hiddenKey);
     let open = true;
     const moveIfFake = async (rings: number[]) => {
-      if (open && fakeRings(rings)) await moveRing.current();
+      if (open && fakeRings(rings)) await mover.current?.ringMove();
     };
     void queues
       .load()
@@ -3332,7 +3355,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         .then((d) => moveIfFake(d.rings))
         .catch(() => undefined);
     };
-    const timer = at === null ? null : setTimeout(count, Math.max(0, at + HIDDEN_ANSWER_MS - Date.now()));
+    const timer = at === null ? null : setTimeout(count, Math.max(0, at + HIDDEN_OFFER_MS - Date.now()));
     return () => {
       open = false;
       if (timer) clearTimeout(timer);
@@ -3537,12 +3560,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       ? accountLink()
       : ownQueue
       ? contactLink({
-          // The queue the link names, which a deletion or a block leaves as it is (lib/queue-move.ts).
+          // The queue the link names, which a deletion or a block leaves as it is (lib/queue-move.ts),
+          // and while that is the own queue, its backup queue: the one that moves with the own one
+          // goes in no link, as the own one does not.
           senderHex: (linkQueue ?? ownQueue).senderHex,
           relayUrl: relayUrl.trim(),
           key: toBase64Url(e2e.bundle),
           relayKey: ownRelayKey || undefined,
-          spare: spareCode(e2e.spare()),
+          spare: linkSpare(linkQueue?.senderHex ?? '', ownQueue.senderHex, spareCode(e2e.spare())),
           lend: ownTicket || undefined,
         })
       : hiddenKey

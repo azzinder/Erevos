@@ -1,11 +1,17 @@
 import type { Told } from '../lock/e2e-data';
 import type { MovingKind, OldQueue, QueuesData } from '../lock/queues-data';
-import { MAX_OLD_OWN, MAX_WAS } from '../lock/queues-data';
+import { MAX_OLD_OWN, MAX_OLD_SPARE, MAX_WAS } from '../lock/queues-data';
 
 // When a relay queue moves (lib/queue-move.ts), and what follows from it, as pure functions the
 // checks reach (checks/moves.check.ts): the junk meter that says a queue is flooded, the time each
 // own queue says it was made (`qa`), when each kept contact is told the new one, and how long an
 // old queue is still read.
+//
+// A `qa` says only which of two own queues is the later: the one the first look of this version
+// found says FIRST_QA, whenever that was; each one a move makes, the hour, put off by the space's or
+// place's own random offset and a few random hours more (QUEUE_JITTER), and later than the one
+// before whatever the clock says. So it tells no contact when Erevos was updated, nor when the
+// queue moved to the hour, and two spaces or places that move in the same hour say different ones.
 //
 // Junk is what comes to a queue that is for no one here: it opens in no conversation and is no
 // group's, nor a word between this account's devices, nor an answer to an SMS invite; and a first
@@ -34,6 +40,21 @@ export const HEAL_EVERY = 60 * 60_000;
 export const FAKE_RINGS = 3;
 export const FAKE_RINGS_WITHIN = 24 * 60 * 60_000;
 const HOUR = 60 * 60_000;
+/** The `qa` of the own queue the first look of this version found. */
+export const FIRST_QA = 1;
+/** A space's or place's own offset of its `qa` is less than this, in whole hours (newOffset); each move's few random hours more, less than QUEUE_JITTER. */
+export const QUEUE_OFFSET = 30 * 24 * HOUR;
+export const QUEUE_JITTER = 12 * HOUR;
+
+/** A random number of whole hours less than `most` (ms). */
+export function randomHours(most: number, random: () => number = Math.random): number {
+  return Math.floor(random() * Math.floor(most / HOUR)) * HOUR;
+}
+
+/** A space's or place's own offset of its `qa`: a random number of whole hours, one at least. */
+export function newOffset(random: () => number = Math.random): number {
+  return HOUR + randomHours(QUEUE_OFFSET - HOUR, random);
+}
 
 /** What one look at a queue found. */
 export type Look = { taken: number; junk: number };
@@ -80,9 +101,23 @@ export function junkStep(queues: Pick<QueuesData, 'junk' | 'junkSaid'>, kind: Mo
   return 'move';
 }
 
-/** The `qa` of an own queue made now: the hour, later than the one before whatever the clock says. */
-export function queueAge(before: number, now = Date.now()): number {
-  return Math.max(now - (now % HOUR), before + 1);
+/**
+ * The `qa` of an own queue made now: the hour, put off by the space's or place's `offset` and by
+ * `jitter` (randomHours of QUEUE_JITTER for a move, QUEUE_JITTER itself after a backup was put back,
+ * so it is later than any made since), and later than the one before whatever the clock says.
+ */
+export function queueAge(before: number, now = Date.now(), offset = 0, jitter = 0): number {
+  return Math.max(now - (now % HOUR) + offset + jitter, before + 1);
+}
+
+/**
+ * The backup queue a contact link carries (`spare`): the own queue's while the link names it
+ * (`linkSender` none or the own queue's sender), none once the link names a queue of its own, as
+ * it does after a move. That backup queue moves with the own queue, so a link that kept it would
+ * name the new own queue to whoever has it.
+ */
+export function linkSpare<S>(linkSender: string, ownSender: string, spare: S): S | undefined {
+  return !linkSender || linkSender === ownSender ? spare : undefined;
 }
 
 /** Whether a contact's message takes where they read (`from` and the rest) over what is kept: from an Erevos that says no `qa`, or one as late as the one kept. */
@@ -109,27 +144,31 @@ export function toldOnce(told: Told | undefined, qa: number, now = Date.now()): 
 }
 
 /**
- * Whether an old queue's grace is over, so it is emptied and deleted: its 14 days ended, or, of an
- * own one, every kept contact was heard on the queue that took its place or a later one
- * (`heardSince`, the least `onNew` of them, Infinity with none), or a group or public one no group
- * names now (`named` false).
+ * Whether an old queue's grace is over, so it is emptied and deleted: never while a group of this
+ * space names it (`named`), as one does the own queue from before this version until it renews
+ * there, whatever kind it is now; else a group or public one at once, and any other once its 14
+ * days ended, or, of an own one, once every kept contact was heard on the queue that took its place
+ * or a later one (`heardSince`, the least `onNew` of them, Infinity with none).
  */
 export function graceOver(old: OldQueue, heardSince: number, named: boolean, now = Date.now()): boolean {
-  if (old.kind === 'group' || old.kind === 'public') return !named && now >= old.until - GRACE;
+  if (named) return false;
+  if (old.kind === 'group' || old.kind === 'public') return true;
   if (now >= old.until) return true;
   return old.kind === 'own' && old.by !== undefined && heardSince >= old.by;
 }
 
 /**
- * The old queues once `old` is added: at most MAX_OLD_OWN own ones and MAX_WAS in all, those over
- * going early (`early`, emptied first then deleted).
+ * The old queues once `old` is added: at most MAX_OLD_OWN own ones, MAX_OLD_SPARE backup ones and
+ * MAX_WAS in all, those over going early (`early`, emptied first then deleted), oldest first.
  */
 export function withOld(was: OldQueue[], old: OldQueue): { was: OldQueue[]; early: OldQueue[] } {
   const all = [...was.filter((w) => w.queue.recipientHex !== old.queue.recipientHex), old];
   const early: OldQueue[] = [];
-  while (all.filter((w) => w.kind === 'own').length > MAX_OLD_OWN) {
-    const at = all.findIndex((w) => w.kind === 'own');
-    early.push(...all.splice(at, 1));
+  for (const [kind, most] of [['own', MAX_OLD_OWN], ['spare', MAX_OLD_SPARE]] as const) {
+    while (all.filter((w) => w.kind === kind).length > most) {
+      const at = all.findIndex((w) => w.kind === kind);
+      early.push(...all.splice(at, 1));
+    }
   }
   while (all.length > MAX_WAS) early.push(...all.splice(0, 1));
   return { was: all, early };

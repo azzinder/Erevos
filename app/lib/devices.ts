@@ -90,7 +90,7 @@ import {
 import { LinkedCalls, type CallStep } from './linked-calls';
 import { nearby } from './nearby';
 import { announceReceived } from './receiver';
-import { GRACE } from './moves';
+import { GRACE, linkSpare } from './moves';
 import { onSpaceMoved, type MoveWhy } from './queue-move';
 import { createQueue, deleteQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, type Mark as RelayMark, type Relay } from './relay';
 import { isSealedPacket, openPacket, packetKeys, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
@@ -555,11 +555,12 @@ export class Links implements Link, TakenFiles {
     return { sends: here.sends, own: here.own, senderHex: here.place.sender, here: here.where, ownKey: here.where.relayKey, relayUp: true };
   }
 
-  // The account's contact link, as the primary's chat shows it: the queue the link names, not the one contacts write to.
+  // The account's contact link, as the primary's chat shows it: the queue the link names, not the
+  // one contacts write to; and while that is the own queue, its backup queue, which moves with it.
   private ownLink(): string {
     if (!this.at) return '';
     const { sender, relay, relayKey: rk } = this.at;
-    return contactLink({ senderHex: this.linkSender || sender, relayUrl: relay, key: toBase64Url(this.chats.e2e.bundle), relayKey: rk || undefined, spare: spareCode(this.chats.e2e.spare()) });
+    return contactLink({ senderHex: this.linkSender || sender, relayUrl: relay, key: toBase64Url(this.chats.e2e.bundle), relayKey: rk || undefined, spare: linkSpare(this.linkSender, sender, spareCode(this.chats.e2e.spare())) });
   }
 
   // Seals an envelope for a peer and puts it in its outbox, in the turn. One the outbox has no room
