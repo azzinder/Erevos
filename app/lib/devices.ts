@@ -121,7 +121,7 @@ import { contactTarget, joinSpaceChats, markOf, relayFor, sendSealed, spaceChats
 import { spaceGroups, spaceGroupTransport } from './space-groups';
 import { spareCode } from './spare';
 import { isVoicePart, VoiceAssembler, type VoicePart } from './voice';
-import { sendWaiting, type SendPlace } from './waiting';
+import { dropHeld, heldFor, sendWaiting, type SendPlace } from './waiting';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
 // primary) relays for a computer or a browser linked to it, and contacts see nothing new. Each link
@@ -2340,9 +2340,12 @@ export class Links implements Link, TakenFiles {
     if (remove) {
       if (at !== undefined && !goesFor(kept, at)) return;
       // One a device deleted or blocked: this phone's queues move for it, as for one deleted here.
-      if (del) await e2e.deleteContact(c, { block: del === 2 });
-      else await e2e.removeContact(c);
+      // What a relay holds for later to them from this phone goes no more, now or with a later look.
+      const held = heldFor(history, c);
+      if (del) await e2e.deleteContact(c, { block: del === 2, held });
+      else await e2e.removeContact(c, { held });
       await history.clear(peerOf(c));
+      if (held.length > 0) void this.here().then((here) => here && dropHeld(e2e, here.sends)).catch(() => undefined);
       announce({ gone: [{ peer: peerOf(c) }] });
       return;
     }

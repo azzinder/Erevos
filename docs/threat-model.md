@@ -57,7 +57,9 @@ Notes:
   the two together by your IP address and the time, as it ties a phone's spaces, and, from which
   sender's messages stop coming to the new one, guess who was deleted. A contact you deleted is not
   told; one who still writes to an old queue that is no longer your link's sees it go after 14 days,
-  so they can tell they were deleted, as they could from your silence. A move in hidden chats moves
+  so they can tell they were deleted, as they could from your silence. A contact who scheduled a
+  message for you holds it again for your new queue and takes back the one before, at once, so the
+  relay sees the two together there too, as it sees them write to both. A move in hidden chats moves
   only that place's queues, its ring queue at once, and nothing of the space or the other places:
   someone with the space's password and two copies of its storage can tell which place's entries
   changed, as when its notice or its ring is turned on or off. A place that rings also moves its

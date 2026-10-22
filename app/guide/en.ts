@@ -321,8 +321,9 @@ at the relay, or at once when they are nearby. A message counts as read once its
   waits on this phone and goes to the relay once one can be reached. With nothing typed, the time you choose is for
   the next photo, file or voice message: a photo or file goes to your relay at once and stays there until they take
   it, 14 days after its time at most. Hidden chats have it too, but there the relay has to be reachable when you
-  schedule. Until its time, delete it to take it back from the relay, and it never goes. With a token of this phone's
-  own, it goes only if the phone still has its line on that relay then. A message without sound
+  schedule. Until its time, delete it to take it back from the relay, and it never goes. Should their relay queue
+  change before then, Erevos holds it again for the new one the next time it reaches the relay.
+  With a token of this phone's own, it goes only if the phone still has its line on that relay then. A message without sound
   stays without sound. A relay from before this keeps nothing for later: then the message waits on this phone and
   goes at its time while Erevos runs, in the background too while **In the background** is on **Receive and ring**
   (below), or when Erevos next opens.
@@ -402,6 +403,8 @@ can still ask to talk again with it, as a message request, like anyone who has i
   leave them, or ask their admin to take them out.
 - **When the relay cannot be reached**, the queue changes as soon as it answers, and until then nothing they send
   shows.
+- **Scheduled messages** you had for them are taken back from the relay, at once or as soon as it answers, so they
+  never go.
 - **Junk:** when your queue fills with what is for no one here, Erevos gives you a new one the same way and says so, at
   most once a day. When junk fills the queue your contact link names, you get a new link instead.
 - **New contact link**, beside **Share my contact link**, gives you a new link: the links and QR codes you gave before

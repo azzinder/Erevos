@@ -8,7 +8,7 @@ import { keepPrivate } from '../lib/screen-privacy';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
 import { nearbySettings, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
-import { canWait, handOverHidden, holdLater, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
+import { canWait, dropHeld, handOverHidden, heldFor, holdAgain, holdLater, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { callPermissions } from '../lib/call-permissions';
@@ -190,6 +190,7 @@ type Message = {
   voice?: VoiceRef;
   file?: FileRef;
   held?: HeldAt;
+  heldFor?: string;
   quiet?: boolean;
 } & Parts;
 
@@ -1589,7 +1590,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     file?: FileRef,
     mark: Mark = 0,
     at = Date.now(),
-    more: { held?: HeldAt; quiet?: boolean } & Parts = {},
+    more: { held?: HeldAt; heldFor?: string; quiet?: boolean } & Parts = {},
   ): string {
     const contact = peer.startsWith(CONTACT_PREFIX);
     const kept = contact ? tag || newTag() : '';
@@ -1680,9 +1681,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   function deleteMessage(message: Message) {
-    // One a relay holds for later is taken back from it, if it did not go yet.
+    // One a relay holds for later is taken back from it, if it did not go yet: where it is held as
+    // kept, should it have been held anew since the chat showed it.
     if (message.held && message.at > Date.now()) {
-      const held = message.held;
+      const held = history.current?.messages().find((m) => m.peer === message.peer && m.tag === message.tag)?.held ?? message.held;
       ask(t('Delete message'), t('Delete this message before it goes? The relay that keeps it drops it.'), [
         { text: t('Cancel'), style: 'cancel' },
         {
@@ -2285,8 +2287,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (hiddenKey) {
       try {
         const message: Kept = { peer, text, mine: true, at, tag, lasts, mark: WAITING, voice, file, ...parts };
-        const { held, lasts: kept } = await holdLater(e2e, waitingPlace(true), peer.slice(CONTACT_PREFIX.length), message);
-        addMessage(peer, text, true, tag, kept, voice, file, 0, at, { held, ...parts });
+        const { held, heldFor: heldAt, lasts: kept } = await holdLater(e2e, waitingPlace(true), peer.slice(CONTACT_PREFIX.length), message);
+        addMessage(peer, text, true, tag, kept, voice, file, 0, at, { held, heldFor: heldAt, ...parts });
         setReplying(null);
         setNote(heldNote);
         return true;
@@ -2354,28 +2356,32 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Sends what waits that can go now (lib/waiting.ts), and shows it as gone, or as held by the
   // relay till its time. Says what went. Hidden chats keep nothing waiting: what they owe a
-  // contact's phone is tried again instead (Owed), and shows as sent already.
+  // contact's phone is tried again instead (Owed), and shows as sent already. In both, what a relay
+  // holds for later for a contact whose queue moved is held anew, and what it holds for one deleted
+  // or blocked is dropped.
   const sendWaitingNow = useRef((_relayUp: boolean) => Promise.resolve([] as Went[]));
   sendWaitingNow.current = async (relayUp) => {
     const kept = history.current;
-    if (hiddenKey) {
-      if (e2e && relayUp) await owed.current.retry(e2e, relayTarget()).catch(() => undefined);
-      return [];
-    }
     if (!e2e || !kept) return [];
-    const went = await sendWaiting({ e2e, history: kept }, waitingPlace(relayUp)).catch(() => [] as Went[]);
+    let went: Went[] = [];
+    if (hiddenKey) {
+      if (!relayUp) return [];
+      await owed.current.retry(e2e, relayTarget()).catch(() => undefined);
+      went = await holdAgain({ e2e, history: kept }, waitingPlace(true)).catch(() => [] as Went[]);
+      await dropHeld(e2e, relayTarget());
+    } else went = await sendWaiting({ e2e, history: kept }, waitingPlace(relayUp)).catch(() => [] as Went[]);
     if (went.length > 0) {
       setMessages((list) =>
         list.map((m) => {
           const sent = went.find((w) => w.peer === m.peer && w.tag === m.tag);
           if (!sent) return m;
-          const gone: Message = { ...m, mark: 0, lasts: sent.lasts, held: sent.held, quiet: false };
+          const gone: Message = { ...m, mark: 0, lasts: sent.lasts, held: sent.held, heldFor: sent.heldFor, quiet: false };
           if (sent.bare) delete gone.preview;
           return gone;
         }),
       );
     }
-    return went;
+    return hiddenKey ? [] : went;
   };
 
   async function shareLink(link: string) {
@@ -2447,15 +2453,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const identity = peer.slice(CONTACT_PREFIX.length);
     const shared = hiddenKey ? 0 : await sharedGroups(identity).catch(() => 0);
     const request = e2e.contacts().some((c) => c.identity === identity && c.request);
+    // What a relay holds for later to them goes no more: kept with their removal, and dropped now
+    // or with a later look.
+    const held = history.current ? heldFor(history.current, identity) : [];
     try {
-      await e2e.deleteContact(identity, { block });
+      await e2e.deleteContact(identity, { block, held });
     } catch (error) {
       setNote(errorText(error));
       return;
     }
-    // What a relay holds for later to them goes no more.
-    const now = Date.now();
-    for (const m of messages) if (m.peer === peer && m.held && m.at > now) void takeBack(relayTarget(), m.held).catch(() => false);
+    if (held.length > 0) void dropHeld(e2e, relayTarget());
     forgetChat(peer);
     setContacts(e2e.contacts());
     setBlocked(e2e.blocked());

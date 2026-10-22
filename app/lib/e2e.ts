@@ -1,4 +1,4 @@
-import { againAfter, checkedAvatar, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_SEEN_EACH, MAX_TOOK, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type OldFiller, type Own, type OwnList, type Route, type Spare, type Took, type Way } from '../lock/e2e-data';
+import { againAfter, checkedAvatar, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type OldFiller, type Own, type OwnList, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
 
 import { isReactionEmoji, isTag, newTag } from '../lock/history';
@@ -826,6 +826,26 @@ export class E2E {
     });
   }
 
+  /** What a relay still holds for later for those deleted or blocked here, that it was not yet asked to drop (lib/waiting.ts, dropHeld). */
+  undropped(): Undropped[] {
+    return this.data.undropped ?? [];
+  }
+
+  /** Forgets those of `undropped` with the ids `ids`, dropped or gone, and those whose time is past. */
+  dropped(ids: string[], now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      const left = this.undropped().filter((u) => !ids.includes(u.id) && u.at > now);
+      if (left.length === this.undropped().length) return;
+      const { undropped: _undropped, ...rest } = this.data;
+      await this.save(left.length > 0 ? { ...rest, undropped: left } : rest);
+    });
+  }
+
+  // What a relay holds for later for one removed, kept to drop in the same save as their removal.
+  private withUndropped(held: Undropped[]): Pick<E2EData, 'undropped'> {
+    return held.length > 0 ? { undropped: [...this.undropped().filter((u) => !held.some((h) => h.id === u.id)), ...held].slice(-MAX_UNDROPPED) } : {};
+  }
+
   /** Whether `identity` is blocked here: what they ask through a group or an SMS invite is dropped too. */
   isBlocked(identity: string): boolean {
     return this.blocked().some((b) => b.identity === identity);
@@ -998,11 +1018,14 @@ export class E2E {
     });
   }
 
-  /** Forgets a contact and every conversation with them. A message they send later is refused. */
-  removeContact(identity: string): Promise<void> {
+  /**
+   * Forgets a contact and every conversation with them. A message they send later is refused.
+   * `held`: what a relay holds for later for them (lib/waiting.ts, heldFor), kept to drop.
+   */
+  removeContact(identity: string, { held = [] }: { held?: Undropped[] } = {}): Promise<void> {
     return this.run(async () => {
       const gone = this.find(identity)?.avatar;
-      await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity) });
+      await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity), ...this.withUndropped(held) });
       if (gone?.kind === 'photo') await deletePhoto(gone.id);
     });
   }
@@ -1013,9 +1036,11 @@ export class E2E {
    * without the other. Not for a message request, never answered, which knows only the queue the
    * contact link names. `block`: also keeps them blocked, so a first packet from them later is
    * dropped, a request too. On a linked device the phone does both (Link.deleted): it holds the
-   * queues contacts write to.
+   * queues contacts write to. `held`: what a relay holds for later for them (lib/waiting.ts,
+   * heldFor), kept to drop in the same save, so it goes to them no more though the relay cannot be
+   * asked now.
    */
-  deleteContact(identity: string, { block = false }: { block?: boolean } = {}): Promise<void> {
+  deleteContact(identity: string, { block = false, held = [] }: { block?: boolean; held?: Undropped[] } = {}): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact && !block) return;
@@ -1029,6 +1054,7 @@ export class E2E {
         contacts: this.data.contacts.filter((c) => c.identity !== identity),
         ...(through || !contact || contact.request ? {} : { moveDue: now }),
         ...(blocked ? { blocked } : {}),
+        ...this.withUndropped(held),
       });
       if (contact?.avatar?.kind === 'photo') await deletePhoto(contact.avatar.id);
     });

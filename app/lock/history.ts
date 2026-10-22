@@ -63,15 +63,16 @@ export type Kept = [
 
 /**
  * Of ours: `h`, the id a relay holds it by, sent for later, and `r` that relay (lib/relay.ts,
- * sendMessageLater), so it can still be taken back before it goes; `q` 1 when it goes without
- * sound, kept while it waits. Of either, its Parts: `p`, the tag of the message it answers; `y`,
- * our reaction to it, and `o`, theirs; `n`, when it was pinned to the top of the chat; `f` 1 when it
- * is starred, on this phone only; `s`, the name of the sticker it is (its text is the sticker's emoji);
- * `l`, the place it is (its text says where); `k`, the poll it is (its text asks it), with `a`, the
- * options we chose, and `b`, theirs; `w`, the preview of the link in its words, as its sender made
- * it; `d` 1 when it was forwarded from another chat.
+ * sendMessageLater), so it can still be taken back before it goes, and `g` the contact's queue it
+ * was held for (their sender id), so it is held again should they read elsewhere first; `q` 1 when
+ * it goes without sound, kept while it waits. Of either, its Parts: `p`, the tag of the message it
+ * answers; `y`, our reaction to it, and `o`, theirs; `n`, when it was pinned to the top of the
+ * chat; `f` 1 when it is starred, on this phone only; `s`, the name of the sticker it is (its text
+ * is the sticker's emoji); `l`, the place it is (its text says where); `k`, the poll it is (its
+ * text asks it), with `a`, the options we chose, and `b`, theirs; `w`, the preview of the link in
+ * its words, as its sender made it; `d` 1 when it was forwarded from another chat.
  */
-type More = { h?: string; r?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1 };
+type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1 };
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -93,6 +94,8 @@ export type Message = {
   file?: FileRef;
   /** Ours sent for later, held by a relay till `at`: its id there, and that relay. */
   held?: HeldAt;
+  /** The contact's queue (their sender id) it was held for: missing for one held before this was kept. */
+  heldFor?: string;
   /** Ours that waits, to go without sound. */
   quiet?: boolean;
 } & Parts;
@@ -159,9 +162,9 @@ function partsOf(more: More | undefined): Parts {
   };
 }
 
-function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file, held, quiet, ...parts }: Fields): Kept {
+function pack({ at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, file, held, heldFor, quiet, ...parts }: Fields): Kept {
   const more: More = {
-    ...(held ? { h: held.id, r: held.relay } : {}),
+    ...(held ? { h: held.id, r: held.relay, ...(heldFor ? { g: heldFor } : {}) } : {}),
     ...(quiet ? { q: 1 as const } : {}),
     ...moreOf(parts),
   };
@@ -181,17 +184,18 @@ function unpack([at, mine, text, tag, until = 0, lasts = 0, mark = 0, voice, fil
     mark,
     ...(voice ? { voice } : {}),
     ...(file ? { file } : {}),
-    ...(more?.h && more.r ? { held: { id: more.h, relay: more.r } } : {}),
+    ...(more?.h && more.r ? { held: { id: more.h, relay: more.r }, ...(more.g ? { heldFor: more.g } : {}) } : {}),
     ...(more?.q ? { quiet: true } : {}),
     ...partsOf(more),
   };
 }
 
 const HELD_ID = /^[0-9a-f]{32}(?:,[0-9a-f]{32}){0,63}$/;
+const QUEUE_ID = /^[0-9a-f]{48}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
   const poll = checkedPoll(v.k);
@@ -200,7 +204,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
   const [ours, theirs] = [votes(v.a), votes(v.b)];
   const held = mine && typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
   const more: More = {
-    ...(held ? { h: v.h as string, r: v.r as string } : {}),
+    ...(held ? { h: v.h as string, r: v.r as string, ...(typeof v.g === 'string' && QUEUE_ID.test(v.g) ? { g: v.g } : {}) } : {}),
     ...(mine && v.q === 1 ? { q: 1 as const } : {}),
     ...(isTag(v.p) ? { p: v.p } : {}),
     ...(isReactionEmoji(v.y) ? { y: v.y } : {}),
@@ -271,6 +275,7 @@ function checkedKept(m: unknown): Kept | null {
     voice,
     file,
     held,
+    heldFor: held ? more?.g : undefined,
     quiet: !!more?.q,
     ...partsOf(more),
   });
@@ -459,6 +464,11 @@ export class History {
     return this.save({ chats: { ...this.data.chats, [peer]: list } });
   }
 
+  /** Ours a relay holds for later that has not gone by `now`, by its time. */
+  heldLater(now: number): Message[] {
+    return Object.entries(this.data.chats).flatMap(([peer, list]) => list.filter((m) => m[1] === 1 && m[0] > now && !!m[9]?.h).map((m) => ({ peer, ...unpack(m) })));
+  }
+
   /** Our messages that wait to go, oldest first. */
   waiting(): Message[] {
     return this.messages().filter((m) => m.mine && m.mark === WAITING);
@@ -466,15 +476,21 @@ export class History {
 
   /**
    * A message that waited went: as the relay took it, lasting `lasts` seconds once read, or, sent
-   * for later, as a relay holds it till its time (`held`). With `bare`, it went without its link's
-   * preview (over LoRa, lib/waiting.ts), which it no longer keeps. False if it is gone.
+   * for later, as a relay holds it till its time (`held`), for the contact's queue `heldFor`. With
+   * `bare`, it went without its link's preview (over LoRa, lib/waiting.ts), which it no longer
+   * keeps. False if it is gone.
    */
-  async sent(peer: string, tag: string, lasts: number, held?: HeldAt, bare = false): Promise<boolean> {
+  async sent(peer: string, tag: string, lasts: number, { held, heldFor, bare = false }: { held?: HeldAt; heldFor?: string; bare?: boolean } = {}): Promise<boolean> {
     const list = this.data.chats[peer];
     if (!list?.some((m) => m[3] === tag && m[6] === WAITING)) return false;
-    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, quiet: false, ...(bare ? { preview: undefined } : {}) }) : m));
+    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, heldFor, quiet: false, ...(bare ? { preview: undefined } : {}) }) : m));
     await this.save({ chats: { ...this.data.chats, [peer]: changed } });
     return true;
+  }
+
+  /** Ours held for later is held anew (lib/waiting.ts, holdAgain): by `held` now, for the contact's queue `heldFor`. False if it is gone. */
+  heldAgain(peer: string, tag: string, held: HeldAt, heldFor: string): Promise<boolean> {
+    return this.change(peer, tag, { held, heldFor });
   }
 
   /**

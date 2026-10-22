@@ -1,3 +1,4 @@
+import { isRelayAddress } from '../lib/relay';
 import { MAX_PARTS } from '../lib/voice';
 import { checkedLook, type Look } from '../theme/look';
 import { isPhotoRef, type PhotoRef } from './avatar-photos';
@@ -129,6 +130,16 @@ export type Blocked = { identity: string; name: string; at: number };
 
 /** The most blocked kept: the oldest goes first. */
 export const MAX_BLOCKED = 200;
+
+/**
+ * Ours a relay holds for later for a contact deleted or blocked here, that it was not yet asked to
+ * drop (lib/waiting.ts, dropHeld): its ids there (hex, comma-separated), that relay, and when it
+ * would go (ms), after which there is nothing to drop.
+ */
+export type Undropped = { id: string; relay: string; at: number };
+
+/** The most kept to drop: the oldest goes first. */
+export const MAX_UNDROPPED = 32;
 
 /** A contact's device list as checked: its body and the account's signature (base64url), and its `n`. */
 export type TheirList = { b: string; s: string; n: number };
@@ -296,6 +307,8 @@ export type E2EData = {
   moveDue?: number;
   /** Who is blocked: a first packet from them is dropped, and so is what they ask through a group or an SMS invite. */
   blocked?: Blocked[];
+  /** What a relay still holds for later for those deleted or blocked here. Saved with their removal. Missing when none. */
+  undropped?: Undropped[];
 };
 
 export type Prekeys = { secret: string; bundle: string; at: number };
@@ -389,6 +402,13 @@ function checkedTold(value: unknown): Told | null {
 function checkedBlocked(value: unknown): Blocked | null {
   const v = (value ?? {}) as Partial<Record<keyof Blocked, unknown>>;
   return isHex(v.identity) && v.identity.length === 64 && isTime(v.at) ? { identity: v.identity, name: isText(v.name) ? cleanName(v.name) : '', at: v.at } : null;
+}
+
+const HELD_ID = /^[0-9a-f]{32}(?:,[0-9a-f]{32}){0,63}$/;
+
+function checkedUndropped(value: unknown): Undropped | null {
+  const v = (value ?? {}) as Partial<Record<keyof Undropped, unknown>>;
+  return typeof v.id === 'string' && HELD_ID.test(v.id) && typeof v.relay === 'string' && isRelayAddress(v.relay) && isTime(v.at) ? { id: v.id, relay: v.relay, at: v.at } : null;
 }
 
 const isCount = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= 0;
@@ -521,6 +541,7 @@ function checked(value: unknown): E2EData {
     ...(Array.isArray(v.early) ? { early: v.early.map(checkedEarly).filter((e): e is Early => e !== null).slice(-MAX_EARLY) } : {}),
     ...(isTime(v.moveDue) && v.moveDue > 0 ? { moveDue: v.moveDue } : {}),
     ...(Array.isArray(v.blocked) ? { blocked: v.blocked.map(checkedBlocked).filter((b): b is Blocked => b !== null).slice(-MAX_BLOCKED) } : {}),
+    ...(Array.isArray(v.undropped) ? { undropped: v.undropped.map(checkedUndropped).filter((u): u is Undropped => u !== null).slice(-MAX_UNDROPPED) } : {}),
   };
 }
 

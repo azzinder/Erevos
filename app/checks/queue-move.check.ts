@@ -3,7 +3,9 @@
 // contact link names stays, and what Bob sent there before still shows; junk that fills her queue
 // moves it once, Bob gets through again, and junk left on the old one moves nothing; an old queue
 // is emptied and deleted once every kept contact was heard on a later one, and is gone for whoever
-// writes to it after. Skipped, with a note, when the core or the relay is not built.
+// writes to it after. What a contact holds for later on the relay follows her queue as it moves
+// (lib/waiting.ts, holdAgain), and what is held for one deleted goes no more (heldFor, dropHeld).
+// Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -18,6 +20,8 @@ import { GRACE } from '../lib/moves';
 import { linkOf, QueueMove, tookOf, type Take } from '../lib/queue-move';
 import { createQueue, fromHex, isQueueFull, isQueueNotFound, receiveMessage, sendMessage, toHex, type Mark } from '../lib/relay';
 import type { SpareStore } from '../lib/spare';
+import { dropHeld, heldFor, sendWaiting, takeBack, type SendPlace } from '../lib/waiting';
+import { History, WAITING } from '../lock/history';
 import { spaceQueues } from '../lock/queues-data';
 import { loadSpaceData, updateSpaceData, type Queue } from '../lock/space-data';
 import { files } from './files-memory';
@@ -227,4 +231,143 @@ test('a new contact link moves the queue the link names, and the one before work
   q = await queues.load();
   assert.ok(q.link && q.link.queue.senderHex !== own.senderHex);
   assert.equal((await loadSpaceData(0, key)).ownQueue!.senderHex, own.senderHex);
+});
+
+test('what a contact holds for later reaches her though she moved twice and the queue it was held for is gone, and none of it once she is deleted', { skip: !coreReady || !relayReady, timeout: 120_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const where = { relay: url, relayKey: '' };
+  const queue = async (): Promise<Queue> => {
+    const ids = await createQueue(relay);
+    return { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  };
+
+  // Alice and the moves of her space.
+  const aliceKey = randomBytes(32);
+  const alice = await E2E.open('space', 0, aliceKey);
+  const first = await queue();
+  await updateSpaceData(0, aliceKey, { url, ownQueue: first });
+  const store: SpareStore = { of: {}, load: () => loadSpaceData(0, aliceKey), update: (patch) => updateSpaceData(0, aliceKey, patch) };
+  const queues = spaceQueues(0, aliceKey);
+  const mover = new QueueMove({ e2e: alice, queues, data: store });
+  const own = async () => (await store.load()).ownQueue!;
+  // One look, as the receiver makes it, saying what showed.
+  const look = async () => {
+    const shown: string[] = [];
+    const take: Take = async (bytes, kind) => {
+      let received: Received;
+      try {
+        received = await alice.receive(bytes, kind === 'own' ? { onOwn: true } : { old: true });
+      } catch {
+        return { junk: true };
+      }
+      if (received.kind === 'message' && received.text) shown.push(received.text);
+      return tookOf(received);
+    };
+    const ownNow = await own();
+    let taken = 0;
+    for (; taken < 50; taken++) {
+      const bytes = await receiveMessage(relay, fromHex(ownNow.recipientHex));
+      if (!bytes) break;
+      await take(bytes, 'own');
+    }
+    await mover.look({
+      own: relay,
+      found: { taken, junk: 0 },
+      take,
+      tell: async (identity) => {
+        const sealed = await alice.seal(identity, '', (await own()).senderHex, { at: where });
+        await sendMessage(relay, fromHex(sealed.sender), sealed.packet, 'quiet');
+      },
+      shows: false,
+    });
+    return shown;
+  };
+
+  // Bob, with his chats and what they keep, has Alice's contact link and asks to talk.
+  const bobKey = randomBytes(32);
+  const bob = { e2e: await E2E.open('space', 1, bobKey), history: await History.open('space', 1, bobKey) };
+  const mine = await queue();
+  const { identity: aliceId } = await bob.e2e.addContact({ senderHex: first.senderHex, key: toBase64Url(alice.bundle), relayUrl: url }, mine.senderHex, where);
+  const [hello] = bob.e2e.pending();
+  await sendMessage(relay, fromHex(hello.sender), hello.first);
+  await bob.e2e.firstSent(aliceId);
+  const read = async () => {
+    for (let bytes = await receiveMessage(relay, fromHex(mine.recipientHex)); bytes; bytes = await receiveMessage(relay, fromHex(mine.recipientHex))) await bob.e2e.receive(bytes);
+  };
+  const place: SendPlace = { sends: relay, own: relay, senderHex: mine.senderHex, here: where, ownKey: '', relayUp: true };
+  const peer = `contact:${aliceId}`;
+  await look();
+  await alice.acceptRequest(alice.contacts()[0].identity);
+
+  // Alice moves once: Bob is told, and holds a message for her for later, for where she reads now.
+  await alice.moveSoon();
+  const second = (await mover.moveNow(relay))!;
+  await look();
+  await read();
+  assert.equal(bob.e2e.queueOf(aliceId)!.sender, second.senderHex);
+  const at = Date.now() + 12_000;
+  await bob.history.add({ peer, text: 'later', mine: true, at, tag: 'aaaaaaaaaaaa', mark: WAITING });
+  const [held] = await sendWaiting(bob, place);
+  assert.equal(held.heldFor, second.senderHex);
+  assert.equal(bob.history.messages()[0].heldFor, second.senderHex);
+
+  // She moves again. Bob, told, holds it anew for her new queue, and the one held before is taken back.
+  await alice.moveSoon();
+  const third = (await mover.moveNow(relay))!;
+  await look();
+  await read();
+  assert.equal(bob.e2e.queueOf(aliceId)!.sender, third.senderHex);
+  const [again] = await sendWaiting(bob, place);
+  assert.equal(again.tag, 'aaaaaaaaaaaa');
+  assert.equal(again.heldFor, third.senderHex);
+  assert.notEqual(again.held!.id, held.held!.id);
+  assert.equal(await takeBack(relay, held.held!), false);
+  assert.deepEqual(bob.history.waiting(), []);
+  assert.deepEqual(
+    bob.history.messages().map((m) => [m.held?.id, m.heldFor]),
+    [[again.held!.id, third.senderHex]],
+  );
+  // Held where she reads now, it is let be with each look after.
+  assert.deepEqual(await sendWaiting(bob, place), []);
+
+  // Bob is heard on her new queue, so the one the message was held for first is emptied and deleted.
+  const sealed = await bob.e2e.seal(aliceId, 'through', mine.senderHex, { at: where });
+  await sendMessage(relay, fromHex(sealed.sender), sealed.packet);
+  assert.deepEqual(await look(), ['through']);
+  assert.ok(!(await queues.load()).was.some((w) => w.queue.senderHex === second.senderHex));
+  await assert.rejects(sendMessage(relay, fromHex(second.senderHex), randomBytes(40)), (error) => isQueueNotFound(error));
+  assert.ok(Date.now() < at);
+
+  // Its time comes, Bob's phone gone: it reaches her, once.
+  await new Promise((r) => setTimeout(r, at - Date.now() + 2000));
+  assert.deepEqual(await look(), ['later']);
+  assert.deepEqual(await look(), []);
+
+  // Bob holds another, then deletes her: what is held for her is kept with the removal, as the
+  // chats keep it, whatever a screen shows, and dropped; it never comes.
+  const soon = Date.now() + 4000;
+  await bob.history.add({ peer, text: 'secret', mine: true, at: soon, tag: 'bbbbbbbbbbbb', mark: WAITING });
+  assert.equal((await sendWaiting(bob, place)).length, 1);
+  const toDrop = heldFor(bob.history, aliceId);
+  assert.equal(toDrop.length, 1);
+  await bob.e2e.deleteContact(aliceId, { held: toDrop });
+  const reopened = await E2E.open('space', 1, bobKey);
+  assert.deepEqual(reopened.undropped(), toDrop);
+  await dropHeld(reopened, relay);
+  assert.deepEqual(reopened.undropped(), []);
+  assert.equal(await takeBack(relay, toDrop[0]), false);
+  // One whose relay cannot be reached is asked again later; one no relay set here holds, or whose time is past, is forgotten.
+  const away = { id: 'c'.repeat(32), relay: 'ws://127.0.0.1:9', at: Date.now() + 60_000 };
+  await reopened.removeContact('d'.repeat(64), { held: [away] });
+  await dropHeld(reopened, { url: away.relay });
+  assert.deepEqual(reopened.undropped(), [away]);
+  await dropHeld(reopened, relay);
+  assert.deepEqual(reopened.undropped(), []);
+  await reopened.removeContact('d'.repeat(64), { held: [away] });
+  await dropHeld(reopened, { url: away.relay }, away.at);
+  assert.deepEqual(reopened.undropped(), []);
+  await new Promise((r) => setTimeout(r, soon - Date.now() + 2000));
+  assert.deepEqual(await look(), []);
 });

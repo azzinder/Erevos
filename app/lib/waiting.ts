@@ -1,5 +1,5 @@
-import type { Spare } from '../lock/e2e-data';
-import type { Message } from '../lock/history';
+import type { Spare, Undropped } from '../lock/e2e-data';
+import type { History, Message } from '../lock/history';
 import { loadClip } from '../lock/voice-clips';
 import { uploadFile } from './attachments';
 import { contentOf, withoutPreview } from './chat-parts';
@@ -30,6 +30,13 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // there, not here, and goes then though this phone is off. It says when it should show, so their
 // phone does not show it sooner. Only while no relay can hold it (none answers, or one from before
 // relays held messages) does it wait here, to go with the first look once its time came.
+//
+// A held message goes to the queue the contact read on when it was held. Should their queue move
+// before its time (lib/queue-move.ts), the next look holds it anew for where they read now and
+// takes back the one held before (holdAgain), in hidden chats too. Deleting or blocking a contact
+// takes back what is held for them (heldFor, dropHeld): what the relay cannot be asked to drop now
+// is kept with their removal and asked again with each look. Both go by the messages kept, not by
+// what a screen shows.
 //
 // Hidden chats keep nothing waiting, and go through the relay only (handOverHidden). But what the
 // relay could not take for a contact's account as their queue is full goes to the endpoints of
@@ -68,7 +75,7 @@ export type SendPlace = { sends: Relay | null; own: Relay | null; senderHex: str
  * sent for later, the relay that holds it till its time. `bare`: it went over LoRa without its
  * link's preview.
  */
-export type Went = { peer: string; tag: string; lasts: number; held?: HeldAt; bare?: true };
+export type Went = { peer: string; tag: string; lasts: number; held?: HeldAt; heldFor?: string; bare?: true };
 
 // Failed tries so far, by tag, and when the next may be.
 const tries = new Map<string, { count: number; next: number }>();
@@ -89,6 +96,10 @@ export function sendWaiting(chats: Chats, place: SendPlace, now = Date.now()): P
 
 async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): Promise<Went[]> {
   const went: Went[] = [];
+  if (place.relayUp && place.sends) {
+    went.push(...(await holdAgain({ e2e, history }, place, now)));
+    await dropHeld(e2e, place.sends, now);
+  }
   const stuck = new Set<string>();
   for (const message of history.waiting()) {
     const { peer, tag } = message;
@@ -98,9 +109,9 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
     if (message.at > now) {
       if ((tried && tried.next > now) || !place.relayUp || !place.sends) continue;
       try {
-        const { lasts, held } = await holdLater(e2e, place, identity, message);
+        const { lasts, held, heldFor } = await holdLater(e2e, place, identity, message);
         tries.delete(tag);
-        if (await history.sent(peer, tag, lasts, held)) went.push({ peer, tag, lasts, held });
+        if (await history.sent(peer, tag, lasts, { held, heldFor })) went.push({ peer, tag, lasts, held, heldFor });
       } catch {
         const count = (tried?.count ?? 0) + 1;
         tries.set(tag, { count, next: now + Math.min(LONGEST_WAIT, FIRST_WAIT * 2 ** (count - 1)) });
@@ -114,7 +125,7 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
     try {
       const { lasts, bare } = await sendOne(e2e, place, identity, message);
       tries.delete(tag);
-      if (await history.sent(peer, tag, lasts, undefined, bare)) went.push({ peer, tag, lasts, ...(bare ? { bare: true as const } : {}) });
+      if (await history.sent(peer, tag, lasts, { bare })) went.push({ peer, tag, lasts, ...(bare ? { bare: true as const } : {}) });
     } catch {
       const count = (tried?.count ?? 0) + 1;
       tries.set(tag, { count, next: now + Math.min(LONGEST_WAIT, FIRST_WAIT * 2 ** (count - 1)) });
@@ -133,13 +144,15 @@ export function nextDue(history: Pick<Chats['history'], 'waiting'>, now = Date.n
  * Seals a message sent for later, with when it should show, and hands it to the relay that would
  * take it now, to hold till its time (lib/relay.ts, sendMessageLater). A photo or file goes to our
  * relay first, kept there till a while after that time. The conversation's first packet, if the
- * relay has not taken it yet, goes now. Says how long it lasts once read, and where it is held.
- * Throws when no relay answers or can hold it (CannotHoldError): it can wait here instead.
+ * relay has not taken it yet, goes now. Says how long it lasts once read, where it is held, and for
+ * which of the contact's queues (their sender id), to hold it anew should they read elsewhere
+ * before it goes. Throws when no relay answers or can hold it (CannotHoldError): it can wait here
+ * instead.
  *
  * It does not say where we are (our queue, our relay): when it comes, that may have changed since,
  * and their phone goes on writing where we last said.
  */
-export async function holdLater(e2e: E2E, place: SendPlace, identity: string, message: Message): Promise<{ lasts: number; held: HeldAt }> {
+export async function holdLater(e2e: E2E, place: SendPlace, identity: string, message: Message): Promise<{ lasts: number; held: HeldAt; heldFor: string }> {
   const queue = e2e.queueOf(identity);
   const sends = place.sends;
   if (!sends || !queue?.sender) throw new NoWayError();
@@ -177,7 +190,7 @@ export async function holdLater(e2e: E2E, place: SendPlace, identity: string, me
     })(),
     true,
   );
-  return { lasts: sealed.timer, held };
+  return { lasts: sealed.timer, held, heldFor: queue.sender };
 }
 
 /**
@@ -186,9 +199,75 @@ export async function holdLater(e2e: E2E, place: SendPlace, identity: string, me
  * when that relay cannot be reached, or is no longer set.
  */
 export async function takeBack(sends: Relay | null, held: HeldAt): Promise<boolean> {
-  const holder = [sends, sends?.via, sends?.backup, sends?.backup?.via].find((relay) => relay && sameRelay(relay.url, held.relay));
+  const holder = holderOf(sends, held);
   if (!holder) throw new RelayError(t('The relay at {url} that keeps it is no longer set here.', { url: held.relay }));
   return dropLater({ url: holder.url, token: holder.token }, held.id);
+}
+
+// Which of `sends` holds a message held for later.
+function holderOf(sends: Relay | null, held: HeldAt): Relay | undefined {
+  return [sends, sends?.via, sends?.backup, sends?.backup?.via].find((relay): relay is Relay => !!relay && sameRelay(relay.url, held.relay));
+}
+
+/** What a relay holds for later for a contact (`identity`) that has not gone yet, by the messages kept: to drop when they are deleted or blocked (E2E.deleteContact). */
+export function heldFor(history: Pick<History, 'heldLater'>, identity: string, now = Date.now()): Undropped[] {
+  const peer = `${CONTACT_PREFIX}${identity}`;
+  return history.heldLater(now).flatMap((m) => (m.peer === peer && m.held ? [{ id: m.held.id, relay: m.held.relay, at: m.at }] : []));
+}
+
+/**
+ * Asks the relay that holds each of ours for later for those deleted or blocked here
+ * (E2E.undropped), one of `sends`, to drop it. Each is forgotten once dropped or gone already, when
+ * no relay set here holds it, or once its time is past; while the relay cannot be reached it is
+ * asked again with the next look.
+ */
+export async function dropHeld(e2e: E2E, sends: Relay | null, now = Date.now()): Promise<void> {
+  const done: string[] = [];
+  for (const held of e2e.undropped()) {
+    if (held.at <= now || !holderOf(sends, held)) {
+      done.push(held.id);
+      continue;
+    }
+    try {
+      await takeBack(sends, held);
+      done.push(held.id);
+    } catch {
+      // Asked again with the next look.
+    }
+  }
+  if (done.length > 0) await e2e.dropped(done, now).catch(() => undefined);
+}
+
+/**
+ * Ours a relay holds for later for a contact who reads elsewhere now, as their queue moved
+ * (lib/queue-move.ts): each is held anew for where they read now, and the one held before is
+ * taken back, so it does not go to a queue that may be gone by its time. Should that one go all
+ * the same, their phone keeps the message once, by its tag. One held before the queue it was held
+ * for was kept is let be. Returns those held anew; one that cannot be now is tried again with the
+ * next look.
+ */
+export async function holdAgain({ e2e, history }: Chats, place: SendPlace, now = Date.now()): Promise<Went[]> {
+  const again: Went[] = [];
+  for (const message of history.heldLater(now)) {
+    const { peer, tag, held, heldFor } = message;
+    if (!held || !heldFor || !peer.startsWith(CONTACT_PREFIX)) continue;
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    const sender = e2e.queueOf(identity)?.sender;
+    if (!sender || sender === heldFor) continue;
+    try {
+      const made = await holdLater(e2e, place, identity, message);
+      // Deleted meanwhile: the one just held goes no more either.
+      if (!(await history.heldAgain(peer, tag, made.held, made.heldFor))) {
+        await takeBack(place.sends, made.held).catch(() => false);
+        continue;
+      }
+      await takeBack(place.sends, held).catch(() => false);
+      again.push({ peer, tag, lasts: made.lasts, held: made.held, heldFor: made.heldFor });
+    } catch {
+      // Held where it was: tried again with the next look.
+    }
+  }
+  return again;
 }
 
 // Whether there is a way for it now, before sealing it: the relay answers and can reach their

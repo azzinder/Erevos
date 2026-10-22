@@ -18,16 +18,17 @@ On main, not released yet. The next release is **2.0.0**.
   they can still ask to talk again, unless blocked: then what they send is dropped, a request too,
   until **Unblock** under **Blocked contacts**. **Block** sits beside **Refuse** on a request, and
   moves nothing, as a request knows only your link. The note says in how many of your groups they
-  still are. When junk fills your queue it moves the same way, at most once a day, and junk on the
-  queue your link names gives you a new link, as **New contact link** under **Relay and new
-  contacts** does: the old links and QR codes work 14 days more. Your groups and public groups each
-  say a queue of their own from now on, so a member no longer learns the one in your link, and a
-  group admin says it with new keys. On a linked computer, deleting or blocking goes to the phone,
-  which moves the places of its list and asks the computer to move its own; in hidden chats only
-  that place moves, its ring queue at once, as it does after three rings within a day that brought
-  no call when you answered. A linked computer never rings a contact's ring queue itself, so a call
-  from it rings their closed hidden chats only once they are open, as the phone does not pass it on
-  to that queue.
+  still are. What you scheduled for them is taken back from the relay, at once or as soon as it
+  answers, and what you scheduled for a contact whose queue moved is held again for their new one.
+  When junk fills your queue it moves the same way, at most once a day, and junk on the queue your
+  link names gives you a new link, as **New contact link** under **Relay and new contacts** does:
+  the old links and QR codes work 14 days more. Your groups and public groups each say a queue of
+  their own from now on, so a member no longer learns the one in your link, and a group admin says
+  it with new keys. On a linked computer, deleting or blocking goes to the phone, which moves the
+  places of its list and asks the computer to move its own; in hidden chats only that place moves,
+  its ring queue at once, as it does after three rings within a day that brought no call when you
+  answered. A linked computer never rings a contact's ring queue itself, so a call from it rings
+  their closed hidden chats only once they are open, as the phone does not pass it on to that queue.
 
 - **A new Erevos contact can take the name of one of your contacts**: adding someone by their
   Erevos ID, from a scanned link (**Add and connect to one of my contacts**) or under **Relay and
