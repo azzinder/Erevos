@@ -61,11 +61,12 @@ function HiddenRingScreen({ space, pocket }: { space: number; pocket: number }) 
     try {
       // Tried on every pocket, the same time whatever is typed; a wrong one is counted apart and
       // says nothing, as the home search does.
-      const place = await searchHidden(currentSpace().space, typed).catch(() => null);
+      const { space } = currentSpace();
+      const place = await searchHidden(space, typed).catch(() => null);
       if (place && place.pocket === pocket) {
         closing.current = true;
         handOverHidden(place);
-        answerHiddenCall();
+        answerHiddenCall(space, pocket);
         setHiddenRinging(null);
         router.push('/chat?hidden=open');
         return;

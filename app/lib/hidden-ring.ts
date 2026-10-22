@@ -40,31 +40,32 @@ export function useHiddenRinging(): HiddenRinging | null {
 // The owner typed the right PIN on the ring screen: the next incoming call the hidden place opens
 // is answered at once, as they already chose to by opening it, if it comes within HIDDEN_ANSWER_MS
 // (the call rings only so long). One that brought no call at all within HIDDEN_OFFER_MS, as a slow
-// relay or Tor can be late with it, is a ring for nothing (lib/moves.ts fakeRings).
+// relay or Tor can be late with it, or before its place closed again, is a ring for nothing
+// (lib/moves.ts fakeRings), of that place only: which space and pocket it opened is kept with it.
 export const HIDDEN_ANSWER_MS = 60_000;
 export const HIDDEN_OFFER_MS = 120_000;
-let answer: number | null = null;
+let answer: { at: number; space: number; pocket: number } | null = null;
 
-/** The right PIN was typed to answer the ringing hidden call: the chat screen takes it to answer. */
-export function answerHiddenCall(now = Date.now()): void {
-  answer = now;
+/** The right PIN was typed to answer the ringing hidden call of the place it opened: the chat screen takes it to answer. */
+export function answerHiddenCall(space: number, pocket: number, now = Date.now()): void {
+  answer = { at: now, space, pocket };
 }
 
 /** Whether the opening hidden place should answer its incoming call at once: taking it clears it. */
 export function takeHiddenAnswer(now = Date.now()): boolean {
-  const at = answer;
+  const at = answer?.at ?? null;
   answer = null;
   return at !== null && now - at <= HIDDEN_ANSWER_MS;
 }
 
-/** When the right PIN was typed to answer a ringing hidden call that no call took yet, or null. */
-export function hiddenAnswerAt(): number | null {
-  return answer;
+/** When the right PIN was typed to answer a ringing call of this hidden place that no call took yet, or null. */
+export function hiddenAnswerAt(space: number, pocket: number): number | null {
+  return answer && answer.space === space && answer.pocket === pocket ? answer.at : null;
 }
 
-/** Once HIDDEN_OFFER_MS went by since the answer typed at `at` and no call took it, clears it and says so: a ring that brought no call. Before, it stays. */
-export function lapseHiddenAnswer(at: number, now = Date.now()): boolean {
-  if (answer !== at || now - at < HIDDEN_OFFER_MS) return false;
+/** Once HIDDEN_OFFER_MS went by since the answer typed at `at` and no call took it, or as its place closes (`closing`), clears it and says so: a ring that brought no call. Before, it stays. */
+export function lapseHiddenAnswer(at: number, now = Date.now(), closing = false): boolean {
+  if (answer?.at !== at || (!closing && now - at < HIDDEN_OFFER_MS)) return false;
   answer = null;
   return true;
 }

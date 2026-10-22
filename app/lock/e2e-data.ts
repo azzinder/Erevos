@@ -108,9 +108,12 @@ export type Contact = {
   told?: Told;
   onNew?: number;
   /** Moved here from the space or one of its hidden places (lock/move-chat.ts): the `qa` the other
-   *  said to them last. What this chat says them is later than it, so a late copy of what the other
-   *  sent never takes them back there, nor are this chat's moves lost on them. */
+   *  said to them last (`qaFloor`), and this chat's own then (`qaBase`). What this chat says them is
+   *  later than the first by as much as its own moved on since, so a late copy of what the other
+   *  sent, or of what this chat sent before a move, never takes them back, nor are its moves lost
+   *  on them. */
   qaFloor?: number;
+  qaBase?: number;
   /** The place's ring queue moved since they were told it: the next tell says it (`rf`). */
   ringTell?: true;
   /** On a linked device, and from a contact whose account lists devices (`list`): their messages
@@ -138,14 +141,15 @@ export type Blocked = { identity: string; name: string; at: number };
 export const MAX_BLOCKED = 200;
 
 /**
- * Ours a relay holds for later for a contact deleted or blocked here, that it was not yet asked to
- * drop (lib/waiting.ts, dropHeld): its ids there (hex, comma-separated), that relay, and when it
- * would go (ms), after which there is nothing to drop.
+ * Ours a relay holds for later that is to go no more, that it was not yet asked to drop
+ * (lib/waiting.ts, dropHeld): for a contact deleted or blocked here, or held anew elsewhere
+ * (holdAgain); its ids there (hex, comma-separated), that relay, and when it would go (ms), after
+ * which there is nothing to drop.
  */
 export type Undropped = { id: string; relay: string; at: number };
 
-/** The most kept to drop: the oldest goes first. */
-export const MAX_UNDROPPED = 32;
+/** The most kept to drop, far more than wait to go at once; past it the oldest goes first. */
+export const MAX_UNDROPPED = 256;
 
 /** A contact's device list as checked: its body and the account's signature (base64url), and its `n`. */
 export type TheirList = { b: string; s: string; n: number };
@@ -398,6 +402,7 @@ function checkedContact(value: unknown): Contact | null {
     ...(checkedTold(v.told) ? { told: checkedTold(v.told)! } : {}),
     ...(isTime(v.onNew) ? { onNew: v.onNew } : {}),
     ...(isTime(v.qaFloor) && v.qaFloor > 0 ? { qaFloor: v.qaFloor } : {}),
+    ...(isTime(v.qaBase) && v.qaBase > 0 ? { qaBase: v.qaBase } : {}),
     ...(v.ringTell === true ? { ringTell: true as const } : {}),
   };
 }
@@ -407,7 +412,8 @@ function checkedTold(value: unknown): Told | null {
   return isTime(v.qa) && isTime(v.at) && isCount(v.n) ? { qa: v.qa, at: v.at, n: v.n } : null;
 }
 
-function checkedBlocked(value: unknown): Blocked | null {
+/** One blocked, as stored or as the phone tells its devices (lib/link-wire.ts), or null if of the wrong shape. */
+export function checkedBlocked(value: unknown): Blocked | null {
   const v = (value ?? {}) as Partial<Record<keyof Blocked, unknown>>;
   return isHex(v.identity) && v.identity.length === 64 && isTime(v.at) ? { identity: v.identity, name: isText(v.name) ? cleanName(v.name) : '', at: v.at } : null;
 }

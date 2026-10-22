@@ -4,11 +4,15 @@
 // moves it once, Bob gets through again, and junk left on the old one moves nothing; an old queue
 // is emptied and deleted once every kept contact was heard on a later one, and is gone for whoever
 // writes to it after. What a contact holds for later on the relay follows her queue as it moves
-// (lib/waiting.ts, holdAgain), and what is held for one deleted goes no more (heldFor, dropHeld).
+// (lib/waiting.ts, holdAgain), held anew once however many look at once, tried again later when the
+// relay refuses it, and what is held for one deleted goes no more (heldFor, dropHeld), though a look
+// held it anew meanwhile or the relay could not take it back. A backup from before moves put back
+// says a later queue than any contact holds, and each is told it.
 // A link made at any step of a move names the queue before, never the new one; junk on the link's
-// or the groups' queue moves it; a relay that lost the link's or the groups' gives new ones, and
+// or the groups' queue moves it, as do first packets past those read at once, but real requests
+// among them still come; a relay that lost the link's or the groups' gives new ones, and
 // moves the own queue for neither, nor does a wait in the background; one a group still names stays;
-// old queues let go of early are deleted after a new start, and a move cut short finishes as it
+// old queues let go of early are deleted after a new start, unless a group names them still, and a move cut short finishes as it
 // started; a hidden place's ring queue moves though the relay was away at first, and its kept
 // contacts are told.
 // Skipped, with a note, when the core or the relay is not built.
@@ -24,16 +28,19 @@ import { randomBytes } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { FIRST_QA, GRACE } from '../lib/moves';
 import { linkOf, QueueMove, tookOf, type MoveAt, type MoveGroups, type Take } from '../lib/queue-move';
-import { setAppShown, waitWhileAway } from '../lib/receiver';
+import { keepReceived, setAppShown, waitWhileAway } from '../lib/receiver';
 import { createQueue, deleteQueue, fromHex, isQueueFull, isQueueNotFound, receiveMessage, sendMessage, toHex, type Mark, type Relay } from '../lib/relay';
 import type { SpareStore } from '../lib/spare';
-import { dropHeld, heldFor, sendWaiting, takeBack, type SendPlace } from '../lib/waiting';
+import { dropHeld, heldAfter, heldFor, holdAgain, holdLater, sendWaiting, takeBack, type SendPlace } from '../lib/waiting';
+import { VoiceAssembler } from '../lib/voice';
 import { History, WAITING } from '../lock/history';
 import { hiddenHolder } from '../lock/sealed-file';
-import { MAX_OLD_OWN, placeQueues, spaceQueues, type QueuesStore } from '../lock/queues-data';
+import { EMPTY_QUEUES, MAX_OLD_OWN, placeQueues, spaceQueues, type QueuesStore } from '../lock/queues-data';
+import { markRestore } from '../lock/restored';
 import { loadSpaceData, updateSpaceData, type Queue } from '../lock/space-data';
 import { files } from './files-memory';
-import { ready as relayReady, relayNote, startRelay } from './real-relay';
+import { store as secureStore } from './secure-memory';
+import { ready as relayReady, relayNote, startRelay, stopRelay } from './real-relay';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const coreReady = existsSync(built);
@@ -586,4 +593,259 @@ test('a hidden place’s ring queue moves for rings that brought no call, with a
   assert.equal(await mover.ringMove(), true);
   await look();
   assert.deepEqual(told, [bobId, bobId]);
+});
+
+test('a backup from before this version put back after moves says a later `qa` than any move made since, and every kept contact is told it, so they write where it reads', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const where = { relay: url, relayKey: '' };
+  const space = await spaceOn(relay, url);
+  await space.look();
+  // Bob talks with the space, on this version.
+  const bob = await E2E.open('space', 1, randomBytes(32));
+  const { identity: bobId } = await space.e2e.addContact({ senderHex: toHex(randomBytes(24)), key: toBase64Url(bob.bundle), relayUrl: url }, space.first.senderHex, where);
+  const hello = space.e2e.pending()[0];
+  const spaceId = (await bob.receive(hello.first)) as Received & { identity: string };
+  await space.e2e.firstSent(bobId);
+  await bob.acceptRequest(spaceId.identity);
+  const toBob = async (e2e: E2E, from: string) => bob.receive((await e2e.seal(bobId, '', from, { at: where })).packet);
+  const bobWrites = () => bob.record(spaceId.identity)!.sender;
+  // The space moves twice, and Bob follows.
+  for (let i = 0; i < 2; i++) {
+    await space.e2e.moveSoon();
+    await space.mover.moveNow(relay);
+    await toBob(space.e2e, (await space.own()).senderHex);
+  }
+  const moved = await space.own();
+  assert.equal(bobWrites(), moved.senderHex);
+  const held = bob.record(spaceId.identity)!.qa!;
+  assert.ok(held > FIRST_QA);
+
+  // A backup made before this version is put back: the space reads on its first queue again, with no queues entry.
+  const restoredMark = 'erevos.restored';
+  try {
+    await updateSpaceData(0, space.key, { ownQueue: space.first });
+    await space.queues.update(() => ({ ...EMPTY_QUEUES }));
+    await markRestore();
+    const e2e = await E2E.open('space', 0, space.key);
+    const data: SpareStore = { of: {}, load: () => loadSpaceData(0, space.key), update: (patch) => updateSpaceData(0, space.key, patch) };
+    space.told.length = 0;
+    await space.look(new QueueMove({ e2e, queues: space.queues, data }));
+    const q = await space.queues.load();
+    assert.equal(q.now?.queue.senderHex, space.first.senderHex);
+    assert.ok(q.moved > held, 'later than any move made after the backup');
+    // Bob is told where it reads, and follows it.
+    assert.deepEqual(space.told, [bobId]);
+    await toBob(e2e, space.first.senderHex);
+    assert.equal(bobWrites(), space.first.senderHex);
+  } finally {
+    secureStore.delete(restoredMark);
+  }
+});
+
+// Alice's space on a real relay, and Bob, with his chats and what they keep, who talks with her and
+// holds a message for her for later (`at`), for where she reads now. `follow`: Alice moves, and
+// tells him so in a message he takes.
+async function holding(relay: Relay, url: string, at: number) {
+  const where = { relay: url, relayKey: '' };
+  const alice = await spaceOn(relay, url);
+  await alice.look();
+  const bobKey = randomBytes(32);
+  const bob = { e2e: await E2E.open('space', 1, bobKey), history: await History.open('space', 1, bobKey) };
+  const ids = await createQueue(relay);
+  const mine: Queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  const { identity: aliceId } = await bob.e2e.addContact({ senderHex: alice.first.senderHex, key: toBase64Url(alice.e2e.bundle), relayUrl: url }, mine.senderHex, where);
+  const asked = (await alice.e2e.receive(bob.e2e.pending()[0].first)) as Received & { identity: string };
+  await bob.e2e.firstSent(aliceId);
+  await alice.e2e.acceptRequest(asked.identity);
+  const follow = async () => {
+    await alice.e2e.moveSoon();
+    const now = (await alice.mover.moveNow(relay))!.queue;
+    await bob.e2e.receive((await alice.e2e.seal(asked.identity, '', now.senderHex, { at: where })).packet);
+    assert.equal(bob.e2e.queueOf(aliceId)!.sender, now.senderHex);
+    return now;
+  };
+  const place = (sends: Relay = relay): SendPlace => ({ sends, own: relay, senderHex: mine.senderHex, here: where, ownKey: '', relayUp: true });
+  const peer = `contact:${aliceId}`;
+  const tag = toHex(randomBytes(6));
+  await follow();
+  await bob.history.add({ peer, text: 'later', mine: true, at, tag, mark: WAITING });
+  const [held] = await sendWaiting(bob, place());
+  assert.ok(held.held);
+  return { alice, bob, aliceId, follow, place, peer, tag, held: () => bob.history.messages().find((m) => m.tag === tag)!.held! };
+}
+
+test('what is held anew for a contact who moved is held once though two looks run at once, what cannot be taken back is dropped later, a deletion under way leaves nothing held, and a message held twice shows once', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const at = Date.now() + 15_000;
+  const { alice, bob, aliceId, follow, place, peer, tag, held } = await holding(relay, url, at);
+
+  // She moves: two looks hold it anew at once, and both are the one hold; the one before is taken back.
+  let before = held();
+  const third = await follow();
+  const [a, b] = await Promise.all([holdAgain(bob, place()), holdAgain(bob, place())]);
+  assert.equal(a.length, 1);
+  assert.deepEqual(b, a);
+  assert.equal(a[0].heldFor, third.senderHex);
+  assert.equal(await takeBack(relay, before), false);
+
+  // Held on a backup relay that cannot be reached now: the one before is kept to drop later.
+  assert.equal(await takeBack(relay, a[0].held!), true);
+  const away = 'ws://127.0.0.1:9';
+  const unreached = { id: toHex(randomBytes(16)), relay: away };
+  await bob.history.heldAgain(peer, tag, unreached, 'f'.repeat(48));
+  const [anew] = await holdAgain(bob, place({ url, backup: { url: away } }));
+  assert.equal(anew.heldFor, third.senderHex);
+  assert.deepEqual(bob.e2e.undropped().map((u) => u.id), [unreached.id]);
+  await bob.e2e.dropped([unreached.id]);
+
+  // Two holds of the same message reach her, as when one held before went all the same: she keeps
+  // it once, by its tag.
+  before = held();
+  const soon = { ...bob.history.messages().find((m) => m.tag === tag)!, at: Date.now() + 3000 };
+  const twice = [await holdLater(bob.e2e, place(), aliceId, soon), await holdLater(bob.e2e, place(), aliceId, soon)];
+  const chats = { e2e: alice.e2e, history: await History.open('space', 0, alice.key), voiceParts: new VoiceAssembler() };
+  await new Promise((r) => setTimeout(r, 5000));
+  let came = 0;
+  for (let bytes = await receiveMessage(relay, fromHex(third.recipientHex)); bytes; bytes = await receiveMessage(relay, fromHex(third.recipientHex))) {
+    const received = await alice.e2e.receive(bytes);
+    if (received.kind === 'message' && received.text === 'later') came++;
+    await keepReceived(chats, received);
+  }
+  assert.equal(came, 2);
+  assert.equal(chats.history.messages().filter((m) => m.tag === tag).length, 1);
+  for (const h of twice) assert.equal(await takeBack(relay, h.held), false);
+
+  // She moves again, and Bob deletes her while a look holds it anew: nothing stays held for her.
+  const fourth = await follow();
+  let sealed!: () => void;
+  const wasSealed = new Promise<void>((r) => (sealed = r));
+  const seal = bob.e2e.seal.bind(bob.e2e);
+  bob.e2e.seal = async (...args: Parameters<E2E['seal']>) => {
+    const out = await seal(...args);
+    sealed();
+    return out;
+  };
+  const running = holdAgain(bob, place());
+  await wasSealed;
+  const kept = heldFor(bob.history, aliceId);
+  await bob.e2e.deleteContact(aliceId, { held: kept });
+  // The look's new hold lands before her chat is cleared.
+  assert.deepEqual(await running, []);
+  const more = await heldAfter(bob, aliceId, kept);
+  assert.equal(more.length, 1);
+  await bob.history.clear(peer);
+  await dropHeld(bob.e2e, relay);
+  assert.deepEqual(bob.e2e.undropped(), []);
+  for (const h of [before, ...kept, ...more]) assert.equal(await takeBack(relay, h), false);
+  await new Promise((r) => setTimeout(r, at - Date.now() + 2000));
+  for (const q of [third, fourth]) assert.equal(await receiveMessage(relay, fromHex(q.recipientHex)), null);
+});
+
+test('one held for later that the relay refuses after it was sealed is tried again ever less often, so a thousand looks seal it far fewer times than a conversation can skip', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const start = Date.now();
+  const { bob, follow, place } = await holding(relay, url, start + 2 * 24 * 60 * 60_000);
+  await follow();
+  // The relay goes away after it answered the look: each try seals it, then fails.
+  let seals = 0;
+  const seal = bob.e2e.seal.bind(bob.e2e);
+  bob.e2e.seal = async (...args: Parameters<E2E['seal']>) => {
+    seals++;
+    return seal(...args);
+  };
+  await stopRelay(url);
+  for (let i = 0; i < 1100; i++) assert.deepEqual(await sendWaiting(bob, place(), start + i * 60_000), []);
+  // Each half hour at most, once the waits grew: far below the core's MAX_SKIP (1000).
+  assert.ok(seals > 2 && seals < 60, `sealed ${seals} times`);
+});
+
+test('an old queue a group still names is never deleted for being one too many: kept, read, and deleted once no group names it', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  let named = new Set<string>();
+  const space = await spaceOn(relay, url, { groups: { renewAgain: async () => undefined, named: async () => named } });
+  await space.look();
+  // The first move makes the queue before the link's; the own queue the second made, a group names.
+  const owns: Queue[] = [];
+  for (let i = 0; i < MAX_OLD_OWN + 2; i++) {
+    owns.push(await space.own());
+    await space.e2e.moveSoon();
+    await space.mover.moveNow(relay);
+  }
+  const groupsQueue = owns[1];
+  named = new Set([groupsQueue.senderHex]);
+  let q = await space.queues.load();
+  assert.ok(q.early.some((w) => w.queue.senderHex === groupsQueue.senderHex));
+  // Looks after, started again too: it stays, and the relay keeps it.
+  await space.look(space.again());
+  await space.look(space.again());
+  q = await space.queues.load();
+  assert.deepEqual(q.early.map((w) => w.queue.senderHex), [groupsQueue.senderHex]);
+  await sendMessage(relay, fromHex(groupsQueue.senderHex), randomBytes(40));
+  // No group names it any more: it goes.
+  named = new Set();
+  await space.look(space.again());
+  q = await space.queues.load();
+  assert.deepEqual(q.early, []);
+  await assert.rejects(sendMessage(relay, fromHex(groupsQueue.senderHex), randomBytes(40)), (error) => isQueueNotFound(error));
+});
+
+test('a batch of requests on the queue the link names is taken whole, though only a few first packets are opened at once; a flood of made-up ones counts as junk unopened', { skip: !coreReady || !relayReady, timeout: 120_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const where = { relay: url, relayKey: '' };
+  const space = await spaceOn(relay, url);
+  const opened: Uint8Array[] = [];
+  const look = () =>
+    space.mover.look({
+      own: relay,
+      found: { taken: 0, junk: 0 },
+      take: async (bytes) => {
+        opened.push(bytes);
+        try {
+          return tookOf(await space.e2e.receive(bytes, { old: true }));
+        } catch {
+          return { junk: true };
+        }
+      },
+      tell: async () => undefined,
+      shows: false,
+    });
+  await look();
+  // The first move: the link names a queue of its own from then on.
+  await space.e2e.moveSoon();
+  await space.mover.moveNow(relay);
+  const link = (await space.queues.load()).link!.queue;
+  assert.equal(link.senderHex, space.first.senderHex);
+  // Twelve people ask through the link before the next look: each is a request after it.
+  const asking = async (n: number) => {
+    const e2e = await E2E.open('space', 10 + n, randomBytes(32));
+    await e2e.addContact({ senderHex: link.senderHex, key: toBase64Url(space.e2e.bundle), relayUrl: url }, toHex(randomBytes(24)), where);
+    return e2e.pending()[0].first;
+  };
+  for (let n = 0; n < 12; n++) await sendMessage(relay, fromHex(link.senderHex), await asking(n));
+  await look();
+  assert.equal(space.e2e.contacts().filter((c) => c.request).length, 12);
+  // Made-up first packets, a whole batch each look: a few opened, the rest counted as junk, and
+  // three such looks give the link a queue of its own anew.
+  const made = await asking(12);
+  const fake = () => Uint8Array.from([...made.subarray(0, made.length - 16), ...randomBytes(16)]);
+  const notes: string[] = [];
+  for (let i = 0; i < 3; i++) {
+    for (let n = 0; n < 50; n++) await sendMessage(relay, fromHex(link.senderHex), fake());
+    opened.length = 0;
+    notes.push(...(await look()).notes);
+    assert.ok(opened.length < 10, `opened ${opened.length}`);
+  }
+  assert.equal(notes.length, 1);
+  assert.notEqual((await space.queues.load()).link!.queue.senderHex, link.senderHex);
+  assert.equal(space.e2e.contacts().filter((c) => c.request).length, 12);
 });

@@ -29,11 +29,16 @@ On main, not released yet. The next release is **2.0.0**.
   say a queue of their own from now on, so a member no longer learns the one in your link, and a
   group admin says it with new keys, which members take only if it is still the same admin. On a
   linked computer, deleting or blocking goes to the phone, which moves the places of its list and
-  asks the computer to move its own; in hidden chats only that place moves, its ring queue at once,
-  as it does after three rings within a day that brought no call within two minutes of your answer,
-  and its contacts learn the new one as they learn a moved queue. A linked computer never rings a
-  contact's ring queue itself, so a call from it rings their closed hidden chats only once they are
-  open, as the phone does not pass it on to that queue.
+  asks the computer to move its own, and tells the computer who is blocked: adding them there from
+  their link asks to unblock them as the phone does, and **Unblock** unblocks them on the phone too.
+  A backup put back, one from before this version too, says a newer queue than any your contacts
+  hold, and each is told it, so none keeps writing to a queue you no longer read. A flood of
+  made-up requests counts as junk, while a batch of real ones still comes. In hidden chats only
+  that place moves, its ring queue at once, as it does after three rings within a day that brought
+  no call within two minutes of your answer, and its contacts learn the new one as they learn a
+  moved queue. A linked computer never rings a contact's ring queue itself, so a call from it rings
+  their closed hidden chats only once they are open, as the phone does not pass it on to that
+  queue.
 
 - **A new Erevos contact can take the name of one of your contacts**: adding someone by their
   Erevos ID, from a scanned link (**Add and connect to one of my contacts**) or under **Relay and

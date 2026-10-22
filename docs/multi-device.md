@@ -158,6 +158,12 @@ Older versions ignore an unknown `k`.
 - `came` (device → primary and siblings): tags of the messages this device wrote to a contact
   itself that the contact's endpoint said came; each marks them delivered. The primary passes it on
   to devices from before as `in` with `got`.
+- `blocked` (primary → devices): who is blocked on the phone, the whole list (`E2EData.blocked`),
+  each time it changes, as a device is linked and when one falls behind; a device keeps it as its
+  own, so the link of someone blocked asks to unblock them there as on the phone, before anything is
+  made for it, and an unlinked device forgets it. `unblock` (device → primary): someone was
+  unblocked on the device, said ahead of the `add` that follows, so the phone unblocks them first
+  and adds them as asked, then tells the devices the list again.
 - The primary passes on to the devices the list does not name (a device from before) what the
   devices write to contacts themselves (`out`) and what came of it (`came`): they see it as before.
 - Between devices, in their endpoints' conversation: `out` (what one sealed for a contact), `set`
@@ -658,7 +664,8 @@ made is known by its own identity again, and each side gives the other its list 
   contact deleted or blocked keeps no way in: the phone's queue moves (lib/queue-move.ts), so do the
   queues of the places that fill the list (the old ones emptied for 14 days, then deleted), each
   linked device moves its own when the phone says `move`, and the list is signed again, `n` + 1, at
-  most once an hour, so contacts who held the one before take the new routes. A contact's devices
+  most once an hour, so contacts who held the one before take the new routes. Each linked device
+  knows who is blocked (`blocked`), so their link asks to unblock them there too. A contact's devices
   learn the account's new queue as its phone does: each tell is a message with nothing in it, copied
   whole to every endpoint of theirs, and it says the new `from` with its `qa`, as the first message
   of a way to an endpoint does, so a late copy from before the move takes none of them back. The

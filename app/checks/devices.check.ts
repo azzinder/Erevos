@@ -22,7 +22,8 @@
 // linked a device signing no list for what a stranger or a contact says; a device unlinked left out
 // of the list at once, though a place has no queue yet; and the places that fill the list keeping
 // their queues and keys while the relay's key is not known, offline, or a queue cannot be made
-// again. Copies alone, without a relay: checks/copies.check.ts. Skipped, with a note, when the core
+// again; and who is blocked known on a device too, which asks to unblock them as the phone does and
+// has the phone unblock them. Copies alone, without a relay: checks/copies.check.ts. Skipped, with a note, when the core
 // or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
@@ -38,7 +39,7 @@ import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { bytesSource, FileGoneError, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
 import { bodyOf, nextList, signList, verifyList, type Body } from '../lib/device-list';
 import { Links, type HistoryChoice } from '../lib/devices';
-import { E2E, fromBase64Url, toBase64Url, type Received, type Where } from '../lib/e2e';
+import { BlockedContactError, E2E, fromBase64Url, toBase64Url, type Received, type Where } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { sendGroupFile, takeGroupFile } from '../lib/group-media';
 import type { GroupSignal } from '../lib/group-signal';
@@ -3180,4 +3181,74 @@ test('a contact blocked on the computer is blocked on the phone, whose queues al
     forgetSpaceMover();
   }
   for (const p of [pixel, dell, carol]) p.links.close();
+});
+
+test('who is blocked is known on a linked computer too: their link asks to unblock there as on the phone, and once unblocked there the phone adds them', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { url, where, phone, take, write, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const carol = await phone(2);
+  const account = pixel.chats.e2e.identityHex();
+  const carolId = carol.chats.e2e.identityHex();
+  await linkUp(pixel, dell);
+  await carol.chats.e2e.addContact({ senderHex: pixel.queue.senderHex, key: toBase64Url(pixel.chats.e2e.bundle), relayUrl: url }, carol.queue.senderHex, where);
+  await write(carol, account, 'hello');
+  await take(pixel);
+  await pixel.chats.e2e.acceptRequest(carolId);
+  await take(dell);
+  assert.ok(dell.chats.e2e.record(carolId));
+  const link = { senderHex: carol.queue.senderHex, key: toBase64Url(carol.chats.e2e.bundle), relayUrl: url };
+
+  // Blocked on the computer: the phone blocks her, and tells the computer so.
+  await dell.chats.e2e.deleteContact(carolId, { block: true });
+  await take(dell);
+  await take(pixel);
+  assert.equal(pixel.chats.e2e.isBlocked(carolId), true);
+  await take(dell);
+  assert.deepEqual(dell.chats.e2e.blocked().map((b) => b.identity), [carolId]);
+  // Her link, added there, asks to unblock her first, before anything is made for it.
+  await assert.rejects(dell.chats.e2e.refuseBlocked(link), BlockedContactError);
+  await assert.rejects(dell.chats.e2e.addContact(link, dell.queue.senderHex, where), BlockedContactError);
+  await take(pixel);
+  assert.equal(pixel.chats.e2e.record(carolId), null);
+
+  // Unblocked there, and added at once: the phone unblocks her first, so adds her as asked.
+  await dell.chats.e2e.unblock(carolId);
+  assert.equal(dell.chats.e2e.isBlocked(carolId), false);
+  await dell.chats.e2e.addContact(link, dell.queue.senderHex, where);
+  await take(pixel);
+  assert.equal(pixel.chats.e2e.isBlocked(carolId), false);
+  assert.ok(pixel.chats.e2e.record(carolId));
+  await take(dell);
+  assert.deepEqual(dell.chats.e2e.blocked(), []);
+  assert.ok(dell.chats.e2e.record(carolId));
+
+  // Blocked on the phone: the computer knows it too.
+  await pixel.chats.e2e.deleteContact(carolId, { block: true });
+  await take(pixel);
+  await take(dell);
+  assert.equal(dell.chats.e2e.record(carolId), null);
+  assert.equal(dell.chats.e2e.isBlocked(carolId), true);
+
+  // Unlinked: who the phone blocked leaves the computer with its chats.
+  assert.equal(await pixel.links.unlink(pixel.links.devices()[0].id), true);
+  await take(dell);
+  await until(() => dell.links.role() === null);
+  await dell.links.settled();
+  assert.deepEqual(dell.chats.e2e.blocked(), []);
+  assert.equal(pixel.chats.e2e.isBlocked(carolId), true);
+  for (const p of [pixel, dell, carol]) p.links.close();
+});
+
+test('a computer linked anew is told who is blocked on the phone', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  const { phone, take, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const someone = toHex(randomBytes(32));
+  await pixel.chats.e2e.deleteContact(someone, { block: true });
+  assert.equal(pixel.chats.e2e.isBlocked(someone), true);
+  await linkUp(pixel, dell);
+  await take(dell);
+  assert.equal(dell.chats.e2e.isBlocked(someone), true);
+  for (const p of [pixel, dell]) p.links.close();
 });

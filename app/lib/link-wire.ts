@@ -1,4 +1,4 @@
-import { checkedAvatar, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, type Avatar, type Contact, type Spare } from '../lock/e2e-data';
+import { checkedAvatar, checkedBlocked, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, MAX_BLOCKED, type Avatar, type Blocked, type Contact, type Spare } from '../lock/e2e-data';
 import { MAX_GROUP_MESSAGES, type Group, type GroupMarks, type GroupMessage, type GroupParts } from '../lock/group-data';
 import { isReactionEmoji, isTag, type Mark, type Parts as ChatParts } from '../lock/history';
 import { checkedLook, type Look } from '../theme/look';
@@ -74,6 +74,8 @@ export type Envelope =
   | { k: 'out'; c: string; m: Json; mark?: Mark }
   | { k: 'send'; c: string; m: Json }
   | { k: 'add'; code: ContactCode; when?: number }
+  | { k: 'blocked'; list: Blocked[] }
+  | { k: 'unblock'; c: string }
   | { k: 'set'; c: string; change: Partial<Omit<Synced, 'identity' | 'at'>>; remove?: boolean; when?: number; added?: true; del?: Deleted }
   | { k: 'history'; offer: FileOffer; last: boolean }
   | { k: 'took'; ids: string[] }
@@ -280,6 +282,10 @@ function checkedEnvelope(v: Json): Envelope | null {
       const spare = code && isObject(v.code) && isObject(v.code.spare) ? checkSpare(v.code.spare.senderHex, v.code.spare.relayUrl, v.code.spare.relayKey ?? '') : null;
       return code?.key ? { k: 'add', code: spare ? { ...code, spare } : code, ...(isTime(v.when) ? { when: v.when } : {}) } : null;
     }
+    case 'blocked':
+      return Array.isArray(v.list) ? { k: 'blocked', list: v.list.map(checkedBlocked).filter((b): b is Blocked => b !== null).slice(-MAX_BLOCKED) } : null;
+    case 'unblock':
+      return isHex(v.c, 64) ? { k: 'unblock', c: v.c } : null;
     case 'set': {
       if (!isHex(v.c, 64)) return null;
       const when = isTime(v.when) ? { when: v.when } : {};

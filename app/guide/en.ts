@@ -408,17 +408,20 @@ can still ask to talk again with it, as a message request, like anyone who has i
 - **Scheduled messages** you had for them are taken back from the relay, at once or as soon as it answers, so they
   never go.
 - **Junk:** when your queue fills with what is for no one here, Erevos gives you a new one the same way and says so, at
-  most once a day. When junk fills the queue your contact link names, you get a new link instead.
+  most once a day. When junk fills the queue your contact link names, you get a new link instead. A flood of made-up
+  message requests counts as junk too, while a batch of real ones still comes.
 - **New contact link**, beside **Share my contact link**, gives you a new link: the links and QR codes you gave before
   work for 14 more days, then no more. Your contacts are not affected. Should the relay lose the queue your link
   names, you get a new link the same way, but the ones you gave before stop working at once.
 - **On a linked computer** it goes to the phone, which deletes or blocks them too and moves its queues, the computer's
-  as well; the phone keeps who is blocked.
+  as well. The phone keeps who is blocked and tells the computer: adding them there from their link asks you to
+  unblock them too, and **Unblock** unblocks them on the phone as well.
 - **In hidden chats** only that place's queues move, its ring queue at once, so the one you deleted can no longer make
   the phone ring. Nothing of the space or the other places moves.
 
 The contact card's **Delete** (see [Contacts](#contacts)) takes only the card away, not the chat. A backup made before
-a deletion or a block brings that contact back: delete or block them again after restoring it.
+a deletion or a block brings that contact back: delete or block them again after restoring it. Once restored, your
+queue says it is newer than any your contacts know, and each is told it again, so they all write where you read.
 
 ### A message's menu
 

@@ -1,6 +1,6 @@
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
-import { againAfter, type Contact, type OldFiller, type OwnList, type Route } from '../lock/e2e-data';
+import { againAfter, type Blocked, type Contact, type OldFiller, type OwnList, type Route } from '../lock/e2e-data';
 import type { Group, GroupMessage } from '../lock/group-data';
 import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
 import { currentSpace } from '../lock/keys';
@@ -121,7 +121,7 @@ import { contactTarget, joinSpaceChats, markOf, relayFor, sendSealed, spaceChats
 import { spaceGroups, spaceGroupTransport } from './space-groups';
 import { spareCode } from './spare';
 import { isVoicePart, VoiceAssembler, type VoicePart } from './voice';
-import { dropHeld, heldFor, sendWaiting, type SendPlace } from './waiting';
+import { dropHeld, heldAfter, heldFor, sendWaiting, type SendPlace } from './waiting';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
 // primary) relays for a computer or a browser linked to it, and contacts see nothing new. Each link
@@ -804,6 +804,10 @@ export class Links implements Link, TakenFiles {
         this.act(() => this.cameHere(said.c, said.got));
         this.passOn(peer, { k: 'in', c: said.c, m: { text: '', got: said.got } });
         break;
+      case 'unblock':
+        // Unblocked on the device, as it asked when their link was added there: so here too, before what it says next.
+        this.act(() => this.chats.e2e.unblock(said.c));
+        break;
       case 'bye':
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
         this.act(() => this.letGo(peer.id, null));
@@ -895,6 +899,9 @@ export class Links implements Link, TakenFiles {
         // The phone's queue moved for a contact deleted or blocked: this device's moves with its next look (lib/queue-move.ts).
         this.act(() => this.chats.e2e.moveSoon());
         break;
+      case 'blocked':
+        // Who is blocked on the phone, kept here in the chat's turn: their link asks to unblock here too.
+        return { kind: 'taken', blocked: said.list, ...(place ? { contacts: place } : {}) };
       case 'bye':
         this.act(() => this.forget());
         break;
@@ -1016,6 +1023,16 @@ export class Links implements Link, TakenFiles {
 
   deleted(identity: string, block: boolean): void {
     if (this.data.primary) this.deletions.set(identity, block ? 2 : 1);
+  }
+
+  blockedChanged(blocked: readonly Blocked[]): void {
+    if (this.data.primary || !this.data.devices.some((d) => d.linked)) return;
+    void this.say({ k: 'blocked', list: [...blocked] }).catch(() => undefined);
+  }
+
+  unblocked(identity: string): void {
+    // Said ahead of what the chat says next, the link it adds again (add).
+    if (this.data.primary) void this.say({ k: 'unblock', c: identity }).catch(() => undefined);
   }
 
   changed(contacts: readonly Contact[]): void {
@@ -1212,8 +1229,11 @@ export class Links implements Link, TakenFiles {
     const link = this.ownLink();
     const linked = await this.groupsTo(
       await this.seal(
-        { ...peer, linked: true, heard: now, name: cleanDeviceName(name) || peer.name, history: peer.history && { ...peer.history, upTo: now } },
-        { k: 'contacts', all: true, list: this.contactsNow(), gone: [], link },
+        await this.seal(
+          { ...peer, linked: true, heard: now, name: cleanDeviceName(name) || peer.name, history: peer.history && { ...peer.history, upTo: now } },
+          { k: 'contacts', all: true, list: this.contactsNow(), gone: [], link },
+        ),
+        { k: 'blocked', list: [...this.chats.e2e.blocked()] },
       ),
     );
     await this.save({ ...this.data, devices: this.data.devices.map((d) => (d.id === peer.id ? linked : d)), link });
@@ -1401,6 +1421,7 @@ export class Links implements Link, TakenFiles {
       await this.save({ ...withoutSiblings(this.data), primary: null, account: '', link: '', synced: {}, packs: [], offer: null, answer: null, members: {}, removed: undefined, erased: undefined });
     });
     await e2e.dropEndpoint().catch(() => undefined);
+    await e2e.forgetBlocked().catch(() => undefined);
     const gone = e2e.contacts().map((c) => c.identity);
     for (const identity of gone) await e2e.removeContact(identity).catch(() => undefined);
     await this.groups?.groups.mirror(() => ({ groups: [], came: [] })).catch(() => undefined);
@@ -2108,7 +2129,8 @@ export class Links implements Link, TakenFiles {
       await this.run(async () => {
         const now = this.data.devices.find((p) => p.id === d.id);
         if (!now) return;
-        const said = await this.groupsTo(await this.seal({ ...now, behind: 0 }, { k: 'contacts', all: true, list: this.contactsNow(), gone: [], link: this.ownLink() }), true);
+        const contacts = await this.seal({ ...now, behind: 0 }, { k: 'contacts', all: true, list: this.contactsNow(), gone: [], link: this.ownLink() });
+        const said = await this.groupsTo(await this.seal(contacts, { k: 'blocked', list: [...this.chats.e2e.blocked()] }), true);
         const history = { since: now.behind, files: now.files, upTo: Date.now(), done: 0 };
         await this.keepPeer({ ...said, history });
       });
@@ -2345,8 +2367,10 @@ export class Links implements Link, TakenFiles {
       const held = heldFor(history, c);
       if (del) await e2e.deleteContact(c, { block: del === 2, held });
       else await e2e.removeContact(c, { held });
+      // And what a look under way held anew for them meanwhile, before their chat is cleared.
+      const more = await heldAfter(this.chats, c, held).catch(() => []);
       await history.clear(peerOf(c));
-      if (held.length > 0) void this.here().then((here) => here && dropHeld(e2e, here.sends)).catch(() => undefined);
+      if (held.length + more.length > 0) void this.here().then((here) => here && dropHeld(e2e, here.sends)).catch(() => undefined);
       announce({ gone: [{ peer: peerOf(c) }] });
       return;
     }

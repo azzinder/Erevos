@@ -8,7 +8,7 @@
 // played by lib/background.ts; the PIN that answers on the ring screen and a stale offer that
 // cannot connect are checked by lock.check.ts (searchHidden/SEARCH_TRIES) and call.check.ts
 // (OFFER_FRESH_MS); a ring the PIN answered that no call took counts towards moving the ring queue
-// (lib/moves.ts fakeRings, checked in moves.check.ts). The relay part runs with a real relay, and is
+// of the place it answered, and no other, as it lapses or its chats close (lib/moves.ts fakeRings, checked in moves.check.ts). The relay part runs with a real relay, and is
 // skipped, with a note, without one.
 // Run with: npm run check
 /// <reference types="node" />
@@ -96,27 +96,33 @@ test('a place that moves for a deletion gets a new ring queue, the old one gone 
   await sendMessage({ url }, fromHex(made.senderHex), randomBytes(64));
 });
 
-test('a ring answered with the PIN that a call takes is no ring for nothing; one no call takes within two minutes is, once', () => {
-  answerHiddenCall(1000);
-  assert.equal(hiddenAnswerAt(), 1000);
+test('a ring answered with the PIN that a call takes is no ring for nothing; one no call takes within two minutes, or before its place closes, is, once, and only for that place', () => {
+  answerHiddenCall(0, 1, 1000);
+  assert.equal(hiddenAnswerAt(0, 1), 1000);
   assert.equal(takeHiddenAnswer(1000 + HIDDEN_ANSWER_MS), true);
   assert.equal(lapseHiddenAnswer(1000), false);
-  answerHiddenCall(5000);
+  answerHiddenCall(0, 1, 5000);
   assert.equal(lapseHiddenAnswer(4000), false);
   assert.equal(lapseHiddenAnswer(5000), true);
   assert.equal(lapseHiddenAnswer(5000), false);
-  assert.equal(hiddenAnswerAt(), null);
+  assert.equal(hiddenAnswerAt(0, 1), null);
   assert.equal(takeHiddenAnswer(5000), false);
-  // Not before HIDDEN_OFFER_MS: a call that comes late, over a slow relay or Tor, is no ring for
-  // nothing, though too late to answer at once; and chats closed meanwhile count nothing yet.
-  answerHiddenCall(10_000);
+  // Not before HIDDEN_OFFER_MS while its place is open: a call that comes late, over a slow relay
+  // or Tor, is no ring for nothing, though too late to answer at once.
+  answerHiddenCall(0, 1, 10_000);
   assert.equal(lapseHiddenAnswer(10_000, 10_000 + HIDDEN_ANSWER_MS + 1), false);
   assert.equal(lapseHiddenAnswer(10_000, 10_000 + HIDDEN_OFFER_MS - 1), false);
   assert.equal(takeHiddenAnswer(10_000 + HIDDEN_ANSWER_MS + 30_000), false);
   assert.equal(lapseHiddenAnswer(10_000, 10_000 + HIDDEN_OFFER_MS), false);
-  answerHiddenCall(20_000);
+  answerHiddenCall(0, 1, 20_000);
   assert.equal(lapseHiddenAnswer(20_000, 20_000 + HIDDEN_OFFER_MS - 1), false);
   assert.equal(lapseHiddenAnswer(20_000, 20_000 + HIDDEN_OFFER_MS), true);
+  // Its place closed before that: it counts then, so another place opened next counts nothing of it.
+  answerHiddenCall(0, 1, 30_000);
+  assert.equal(hiddenAnswerAt(0, 2), null);
+  assert.equal(hiddenAnswerAt(1, 1), null);
+  assert.equal(lapseHiddenAnswer(30_000, 30_000 + 1000, true), true);
+  assert.equal(hiddenAnswerAt(0, 1), null);
 });
 
 test('in the background a pocket rings when a call comes, drained so the next rings too, let be while a hidden call rings or its place is open, and ringing on any of the four queues and though the app shows', { skip: !relayReady }, async () => {

@@ -5,7 +5,7 @@ import { packetKind } from './core';
 import type { E2E, Received } from './e2e';
 import { isGroupPacket } from './groups';
 import { locale, t } from './i18n';
-import { FIRST_QA, GRACE, HEAL_EVERY, JUNK_BATCH, JunkMeter, QUEUE_JITTER, graceOver, junkStep, newOffset, queueAge, randomHours, withOld, type Look } from './moves';
+import { FIRST_QA, GRACE, HEAL_EVERY, JUNK_BATCH, JunkMeter, QUEUE_JITTER, QUEUE_OFFSET, graceOver, junkStep, newOffset, queueAge, randomHours, withOld, type Look } from './moves';
 import { createQueue, deleteQueue, fromHex, isQueueNotFound, receiveMessage, sameRelay, toHex, type Relay } from './relay';
 import { isSealedPacket } from './sealed-packet';
 import { joinSpaceChats, type SpaceChats } from './space-chats';
@@ -406,13 +406,22 @@ export class QueueMove {
     const ownQueue = space.ownQueue!;
     const restore = e2e.restoreId();
     let q = await this.at.queues.load();
-    if (q.now && !q.offset) q = await this.at.queues.update((d) => (d.offset ? d : { ...d, offset: newOffset() }));
+    // A backup put back since this last looked: contacts may hold a later `qa` than any kept here,
+    // from moves made after the backup was.
+    const restored = !!restore && q.restore !== restore;
+    // The offset this space or place puts its `qa` off by, drawn once. One whose offset is not known
+    // after a backup was put back (one from before this version, or made before its first look)
+    // draws one past any it could have had, so what it says next is later than what any move made
+    // since said.
+    if (!q.offset) q = await this.at.queues.update((d) => (d.offset ? d : { ...d, offset: restored ? QUEUE_OFFSET + newOffset() : newOffset() }));
     if (!q.now) {
-      // Every contact knows the queue found now: nothing to tell of it, and its `qa` says nothing of when.
+      // Every contact knows the queue found now: nothing to tell of it, and its `qa` says nothing of
+      // when. After a backup was put back, they may have been told a later one since: this one says
+      // a later `qa` than any of those, and each kept contact is told it.
       q = await this.at.queues.update((d) => {
         if (d.now) return d;
-        const moved = Math.max(d.moved, FIRST_QA);
-        return { ...d, now: { queue: ownQueue, ...here }, moved, since: moved, offset: d.offset || newOffset(), restore };
+        const moved = restored ? queueAge(d.moved, Date.now(), d.offset, QUEUE_JITTER) : Math.max(d.moved, FIRST_QA);
+        return { ...d, now: { queue: ownQueue, ...here }, moved, since: restored ? d.since : moved, restore };
       });
       this.say(q);
       return { q, queue: null };
@@ -547,7 +556,9 @@ export class QueueMove {
   }
 
   // Reads one queue of `kind` (in `was` when `old`): up to `most` packets, of which only the first
-  // few first packets, and on an old one group packets, are opened. What one look found there,
+  // few first packets, and on an old one group packets, are opened at once. The first packets past
+  // those are opened too once one of those few was no junk, so a batch of requests is not lost;
+  // else, as in a flood of made-up ones, they count as junk unopened. What one look found there,
   // 'gone' once the relay no longer has it, or null when it could not be reached.
   private async read(relay: Relay, queue: Queue, kind: QueueKind, old: boolean, look: MoveLook, most = READ_MOST): Promise<Look | 'gone' | null> {
     const firstsMost = !old && (kind === 'link' || kind === 'group') ? LINK_FIRSTS : OLD_FIRSTS;
@@ -557,43 +568,64 @@ export class QueueMove {
     let groups = 0;
     let taken = 0;
     let junk = 0;
+    let asked = false;
+    const later: Uint8Array[] = [];
+    // Opens one; says whether it was no junk.
+    const open = async (bytes: Uint8Array): Promise<boolean> => {
+      try {
+        const took = await look.take(bytes, 'old');
+        if (took.junk) junk++;
+        else if (took.from && (old || kind === 'link')) await this.heal(took.from, look);
+        return !took.junk;
+      } catch {
+        // This one is lost, as from the own queue; the next ones still come.
+        return false;
+      }
+    };
+    let gone = false;
+    let away = false;
     for (let i = 0; i < most && !look.stop?.(); i++) {
       let bytes: Uint8Array | null;
       try {
         bytes = await receiveMessage(relay, recipient);
       } catch (error) {
-        return isQueueNotFound(error) ? 'gone' : taken > 0 ? { taken, junk } : null;
+        gone = isQueueNotFound(error);
+        away = !gone;
+        break;
       }
       if (!bytes) break;
       taken++;
-      if (isGroupPacket(bytes) ? groups++ >= groupsMost : (await isFirst(bytes)) && firsts++ >= firstsMost) {
-        junk++;
+      if (isGroupPacket(bytes)) {
+        if (groups++ >= groupsMost) junk++;
+        else await open(bytes);
         continue;
       }
-      try {
-        const took = await look.take(bytes, 'old');
-        if (took.junk) junk++;
-        else if (took.from && (old || kind === 'link')) await this.heal(took.from, look);
-      } catch {
-        // This one is lost, as from the own queue; the next ones still come.
-      }
+      const first = await isFirst(bytes);
+      if (first && firsts++ >= firstsMost) later.push(bytes);
+      else if ((await open(bytes)) && first) asked = true;
     }
+    if (asked) for (const bytes of later) await open(bytes);
+    else junk += later.length;
+    if (gone) return 'gone';
+    if (away && taken === 0) return null;
     return { taken, junk };
   }
 
   // The queues moved away from: read cheaply, and once their grace is over, emptied and deleted.
-  // Any a group of this space still names stays, whatever kind it is now (lib/moves.ts graceOver).
+  // Any a group of this space still names stays, whatever kind it is now (lib/moves.ts graceOver),
+  // one let go of early too: that one is deleted once no group names it.
   private async readOld(look: MoveLook, now: number) {
     const q = await this.at.queues.load();
     const heard = this.at.e2e.heardSince();
-    const named = q.was.length > 0 ? await this.namedNow() : new Set<string>();
+    const named = q.was.length + q.early.length > 0 ? await this.namedNow() : new Set<string>();
     // Those over the most kept go first, emptied too: kept until then, though the app stops.
     const early = q.early;
     const all = [...early, ...q.was];
     for (const [i, w] of all.entries()) {
       if (look.stop?.()) return;
       const relay = relayOf(w);
-      const over = i < early.length || graceOver(w, heard, !named || named.has(w.queue.senderHex), now);
+      const kept = !named || named.has(w.queue.senderHex);
+      const over = i < early.length ? !kept : graceOver(w, heard, kept, now);
       const found = await this.read(relay, w.queue, w.kind, true, look, over ? DRAIN_MOST : READ_MOST);
       if (found === null) continue;
       if (found !== 'gone' && over) {

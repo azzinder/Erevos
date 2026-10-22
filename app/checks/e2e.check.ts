@@ -1103,6 +1103,48 @@ t('a chat moved between the space and its hidden chats says a later `qa` than th
   assert.equal(where(), next);
 });
 
+t('a chat moved into a place whose queue is older says ever later a `qa` with each move there, so a late copy from before one of them never takes the contact back', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('space', 1);
+  const added = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(added.identity);
+  const history = await History.open('space', 0, key);
+  const where = () => bob.e2e.record(hello.identity)!.sender;
+  const sealed = async (e2e: E2E, from: string) => (await e2e.seal(added.identity, '', from)).packet;
+  const told = async (e2e: E2E, from: string) => message(await bob.e2e.receive(await sealed(e2e, from)));
+  const spaceQueue = sender();
+  alice.e2e.setQueueAge(100 * HOUR, spaceQueue);
+  await told(alice.e2e, spaceQueue);
+  // Into hidden chats whose queue was made at 50h: they say later than the space's 100h.
+  const holder = hiddenHolder(1);
+  const hiddenKey = randomBytes(32);
+  const hidden = { e2e: await E2E.open(holder, 0, hiddenKey), history: await History.open(holder, 0, hiddenKey) };
+  const first = sender();
+  hidden.e2e.setQueueAge(50 * HOUR, first);
+  await moveChat(added.identity, { e2e: alice.e2e, history, archive: null }, hidden);
+  await told(hidden.e2e, first);
+  assert.equal(where(), first);
+  // Sealed there before each move, and held: each comes after the move.
+  const late = [await sealed(hidden.e2e, first)];
+  const second = sender();
+  hidden.e2e.setQueueAge(51 * HOUR, second);
+  await told(hidden.e2e, second);
+  assert.equal(where(), second);
+  late.push(await sealed(hidden.e2e, second));
+  const third = sender();
+  hidden.e2e.setQueueAge(52 * HOUR, third);
+  await told(hidden.e2e, third);
+  assert.equal(where(), third);
+  // Each says an earlier `qa` than the move after it: they open, and leave where he writes as it is.
+  for (const packet of late) {
+    message(await bob.e2e.receive(packet));
+    assert.equal(where(), third);
+  }
+  assert.equal(bob.e2e.record(hello.identity)!.qa, 100 * HOUR + 1 + 2 * HOUR);
+});
+
 t('junk that looks like a first packet is refused, never thrown, so the look counts it', async () => {
   const alice = await chat('space', 0);
   for (const bytes of [Uint8Array.of(1, 1), Uint8Array.of(1, 1, 0xff, 0xff, 0xff, 0xff), Uint8Array.from([1, 1, ...randomBytes(200)]), Uint8Array.of(1, 2, 3), Uint8Array.of(9)]) {
@@ -1112,7 +1154,7 @@ t('junk that looks like a first packet is refused, never thrown, so the look cou
   }
 });
 
-t('the link of someone blocked adds no one until they are unblocked', async () => {
+t('the link of someone blocked adds no one until they are unblocked, and says so before anything is made for it', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);
   const { identity } = await alice.e2e.addContact(bob.code, alice.from);
@@ -1120,7 +1162,11 @@ t('the link of someone blocked adds no one until they are unblocked', async () =
   await alice.e2e.deleteContact(identity, { block: true });
   await assert.rejects(alice.e2e.addContact(bob.code, alice.from), (error) => error instanceof BlockedContactError && error.identity === identity && error.message.includes('Bob'));
   assert.deepEqual(alice.e2e.contacts(), []);
+  // Said before anything is made to add them, as a queue or a place lent on their relay; anyone else's goes on.
+  await assert.rejects(alice.e2e.refuseBlocked(bob.code), (error) => error instanceof BlockedContactError && error.identity === identity);
+  await alice.e2e.refuseBlocked((await chat('space', 2)).code);
   await alice.e2e.unblock(identity);
+  await alice.e2e.refuseBlocked(bob.code);
   assert.equal((await alice.e2e.addContact(bob.code, alice.from)).added, true);
 });
 

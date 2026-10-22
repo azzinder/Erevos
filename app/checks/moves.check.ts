@@ -1,8 +1,8 @@
 // When a relay queue moves, and what follows from it (lib/moves.ts): the junk meter that says a
 // queue is flooded, the time each own queue says it was made (`qa`), when each kept contact is
 // told the new one, how long an old queue is still read, and the queues entry (lock/queues-data.ts),
-// one size whether a space or place moved or not, the queues the groups say, and the backup queue
-// the contact link carries. The moves themselves, through a real relay, are in queue-move.check.ts.
+// one size in bytes whether a space or place moved or not, its words in any script, the queues the
+// groups say, and the backup queue the contact link carries. The moves themselves, through a real relay, are in queue-move.check.ts.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -259,12 +259,28 @@ test('the queues entry is there for every space and pocket from the first, one s
     restore: 'r'.repeat(64),
   }));
   assert.equal(store.get('erevos.queues.1')!.length, unused);
+  // Addresses and tokens of letters beyond ASCII, each two bytes or more: one size still.
+  const wide = (n: number, kind: OldQueue['kind']): OldQueue => ({ ...kept(n, kind), url: 'wss://ρελέ.' + 'έ'.repeat(40) + '.org:7879', token: 'τ'.repeat(64) });
+  await space.update((d) => ({
+    ...d,
+    now: wide(0, 'own'),
+    link: wide(1, 'link'),
+    group: wide(2, 'group'),
+    public: wide(3, 'public'),
+    was: Array.from({ length: MAX_WAS }, (_, n) => wide(10 + n, 'own')),
+    early: Array.from({ length: 4 }, (_, n) => wide(40 + n, 'own')),
+  }));
+  assert.equal(store.get('erevos.queues.1')!.length, unused);
   // Nothing is let go of to fit: what would not takes the next whole size.
   const long = (from: number) => full(from).map((w) => ({ ...w, url: 'wss://' + 'r'.repeat(400) + '.org' }));
   await space.update((d) => ({ ...d, was: long(100), early: long(200) }));
   assert.ok(store.get('erevos.queues.1')!.length > unused);
-  const back = await space.load();
+  let back = await space.load();
   assert.deepEqual([back.was.length, back.early.length, back.nextWhy, back.ringDue, back.offset], [MAX_WAS, MAX_WAS, 'junk', true, 700 * HOUR]);
+  // However many were let go of early and not deleted yet, none is forgotten.
+  await space.update((d) => ({ ...d, early: [...full(200), ...full(300)] }));
+  back = await space.load();
+  assert.equal(back.early.length, 2 * MAX_WAS);
   // Sealed with the key: another reads it as unused.
   assert.deepEqual(await spaceQueues(1, randomBytes(32)).load(), EMPTY_QUEUES);
   assert.ok(unused >= SIZE);

@@ -27,6 +27,7 @@ function freePort(): Promise<number> {
 }
 
 const relays: ChildProcess[] = [];
+const byUrl = new Map<string, ChildProcess>();
 let keys: string | null = null;
 
 after(() => {
@@ -57,6 +58,7 @@ export async function startRelay(withKey = false, token = '', push = false, more
   const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
   relays.push(child);
   const url = `ws://127.0.0.1:${ws}`;
+  byUrl.set(url, child);
   const probe = !token && more.EREVOS_RELAY_TOKENS ? relayPath(url, '/join') : { url, token: token || undefined };
   for (let i = 0; i < 50; i++) {
     try {
@@ -67,4 +69,14 @@ export async function startRelay(withKey = false, token = '', push = false, more
     }
   }
   throw new Error(`the relay at ${url} did not start`);
+}
+
+/** Stops a relay startRelay started, as one that went away: nothing answers at its address after. */
+export async function stopRelay(url: string): Promise<void> {
+  const child = byUrl.get(url);
+  if (!child || child.exitCode !== null) return;
+  await new Promise<void>((done) => {
+    child.once('exit', () => done());
+    child.kill();
+  });
 }

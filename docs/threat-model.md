@@ -70,9 +70,19 @@ Notes:
   contact back to the old queue: the first queue says 1, and each later one the hour put off by an
   offset the space or place drew once (up to 30 days) and by a few random hours more at each move,
   so the number tells a contact no more than the move itself does, and two of your places that move
-  together hardly ever say the same. A group admin says its new queue with new keys, which members
-  take only while they say the same admin, and in a public group the same key, so they cannot make
-  it someone else.
+  together hardly ever say the same. Put back from a backup, one from before 2.0.0 too (whose queue
+  says 1), the queue says it was made as the backup was put back, with an offset past any it could
+  have had when the backup held none, so later than any a contact holds, and every kept contact is
+  told it anew: the relay sees them all told at once, as after a move. Messages
+  sealed for a contact in hidden chats after a move into or out of them say the place's `qa` raised
+  past the one the contact last heard, and higher with each later move there. A flood of first
+  packets past the few read at a time (lib/queue-move.ts) counts as junk, unless one of those read
+  was a real request: then the rest are read too. A flood of made-up ones moves the queue unopened
+  and a batch of real ones all come, but a real one behind the few made-up ones read first in the
+  same look is lost with the flood, as junk. A linked device keeps who is blocked, as the phone
+  tells it, so someone with that device's password sees the list, as on the phone. A group admin
+  says its new queue with new keys, which members take only while they say the same admin, and in a
+  public group the same key, so they cannot make it someone else.
 - **One queue per space.** Every contact of a space writes to the same queue, so one relay sees all
   of them arrive there. The contact link names another once a contact was deleted or blocked, and
   the space's groups and public groups each read on one more, on the same relay and connection, so

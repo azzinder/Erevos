@@ -8,7 +8,7 @@ import { keepPrivate } from '../lib/screen-privacy';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
 import { nearbySettings, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
-import { canWait, dropHeld, handOverHidden, heldFor, holdAgain, holdLater, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
+import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, holdAgain, holdLater, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { callPermissions } from '../lib/call-permissions';
@@ -784,6 +784,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setNote(t("Not added. That is this chat's own code."));
       return;
     }
+    // Someone blocked here, before a queue or a place on their relay is made for them.
+    try {
+      await e2e.refuseBlocked(code);
+    } catch (error) {
+      if (error instanceof BlockedContactError) askToUnblock(error, code, offered, asked);
+      else setNote(t('Not added. {error}', { error: errorText(error) }));
+      return;
+    }
     const ours = relayUrl.trim();
     if (code.relayUrl && ours && !sameRelay(code.relayUrl, ours) && !code.relayKey) {
       setNote(
@@ -860,27 +868,30 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           : t('Already a contact. Where to reach them is updated.')) + linked,
       );
     } catch (error) {
-      // Someone blocked here: added only once unblocked, as the owner says.
       if (error instanceof BlockedContactError) {
-        const blocked = error;
-        ask(t('Blocked contacts'), blocked.message, [
-          { text: t('Cancel'), style: 'cancel' },
-          {
-            text: t('Unblock'),
-            onPress: () =>
-              void e2e
-                .unblock(blocked.identity)
-                .then(() => {
-                  setBlocked(e2e.blocked());
-                  return acceptContact(code, offered, asked);
-                })
-                .catch((again) => setNote(errorText(again))),
-          },
-        ]);
+        askToUnblock(error, code, offered, asked);
         return;
       }
       setNote(t('Not added. {error}', { error: errorText(error) }));
     }
+  }
+
+  // Someone blocked here is added only once unblocked, as the owner says: then added as asked.
+  function askToUnblock(blocked: BlockedContactError, code: ContactCode, offered?: Offer, asked = false) {
+    ask(t('Blocked contacts'), blocked.message, [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: t('Unblock'),
+        onPress: () =>
+          void e2e
+            ?.unblock(blocked.identity)
+            .then(() => {
+              setBlocked(e2e.blocked());
+              return acceptContact(code, offered, asked);
+            })
+            .catch((again) => setNote(errorText(again))),
+      },
+    ]);
   }
 
   // Takes an invite to a relay (lib/relay-invite.ts) for a token of this phone's own there. A relay
@@ -2477,14 +2488,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const request = e2e.contacts().some((c) => c.identity === identity && c.request);
     // What a relay holds for later to them goes no more: kept with their removal, and dropped now
     // or with a later look.
-    const held = history.current ? heldFor(history.current, identity) : [];
+    const kept = history.current;
+    const held = kept ? heldFor(kept, identity) : [];
     try {
       await e2e.deleteContact(identity, { block, held });
     } catch (error) {
       setNote(errorText(error));
       return;
     }
-    if (held.length > 0) void dropHeld(e2e, relayTarget());
+    // And what a look under way held anew for them meanwhile, before their chat is cleared.
+    const more = kept ? await heldAfter({ e2e, history: kept }, identity, held).catch(() => []) : [];
+    if (held.length + more.length > 0) void dropHeld(e2e, relayTarget());
     forgetChat(peer);
     setContacts(e2e.contacts());
     setBlocked(e2e.blocked());
@@ -3329,13 +3343,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (watched) await watchPocket(space, key, pocket, { url, token: relayToken.trim(), recipientHex: queue.recipientHex }).catch(() => setWatched(false));
   };
 
-  // A ring answered with the PIN that brought no call within HIDDEN_OFFER_MS (lib/hidden-ring.ts)
-  // counts against the ring queue: three within a day and it moves (lib/moves.ts fakeRings), so
-  // whoever rings it for nothing can no longer. It counts once that time is over, while these chats
-  // are open or when they open next; it moves only while they are open.
+  // A ring of this place answered with the PIN that brought no call within HIDDEN_OFFER_MS
+  // (lib/hidden-ring.ts), or before these chats closed again, counts against the ring queue: three
+  // within a day and it moves (lib/moves.ts fakeRings), so whoever rings it for nothing can no
+  // longer. It moves only while they are open.
   useEffect(() => {
     if (!hiddenKey || !loaded) return;
-    const queues = placeQueues(currentSpace().space, pocket, hiddenKey);
+    const { space } = currentSpace();
+    const queues = placeQueues(space, pocket, hiddenKey);
     let open = true;
     const moveIfFake = async (rings: number[]) => {
       if (open && fakeRings(rings)) await mover.current?.ringMove();
@@ -3344,9 +3359,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       .load()
       .then((d) => moveIfFake(d.rings))
       .catch(() => undefined);
-    const at = hiddenAnswerAt();
-    const count = () => {
-      if (at === null || !lapseHiddenAnswer(at)) return;
+    const at = hiddenAnswerAt(space, pocket);
+    const count = (closing = false) => {
+      if (at === null || !lapseHiddenAnswer(at, Date.now(), closing)) return;
       void queues
         .update((d) => {
           const now = Date.now();
@@ -3355,11 +3370,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         .then((d) => moveIfFake(d.rings))
         .catch(() => undefined);
     };
-    const timer = at === null ? null : setTimeout(count, Math.max(0, at + HIDDEN_OFFER_MS - Date.now()));
+    const timer = at === null ? null : setTimeout(() => count(), Math.max(0, at + HIDDEN_OFFER_MS - Date.now()));
     return () => {
       open = false;
       if (timer) clearTimeout(timer);
-      count();
+      count(true);
     };
   }, [hiddenKey, loaded]);
 

@@ -1,4 +1,4 @@
-import { decryptText, encryptText, randomBytes } from '../lib/crypto';
+import { decryptText, encryptText, randomBytes, utf8Encode } from '../lib/crypto';
 import { secureGet, secureSet } from '../lib/secure';
 
 import { POCKETS } from './sealed-file';
@@ -10,7 +10,7 @@ import type { Queue } from './space-data';
 // and the one its public groups say, the old ones still read until their grace ends, and when its
 // own queue was made. One keystore entry for each space, `erevos.queues.<n>`, and for each of its
 // POCKETS places, `erevos.queues<p>.<n>`, sealed with that space's or place's key, every one padded
-// to SIZE characters. Each is there for every slot and every pocket from the lock's first setup,
+// to SIZE bytes. Each is there for every slot and every pocket from the lock's first setup,
 // sealed with a random key until used (prepareQueueEntries), so neither which entries there are
 // nor their size says which spaces or places are used, or moved. What is kept of each contact
 // (when they were told, and heard on the new queue) is with the contact (lock/e2e-data.ts).
@@ -78,8 +78,9 @@ export type QueuesData = {
 
 export const EMPTY_QUEUES: QueuesData = { now: null, link: null, group: null, public: null, was: [], early: [], next: null, moved: 0, offset: 0, since: 0, junk: {}, junkSaid: {}, linkAt: 0, linkUntil: 0, rings: [], ringDue: false, restore: '' };
 
-/** The length every entry is padded to: what one holds at the most kept, on relays of long addresses, fits. */
-export const SIZE = 8192;
+/** The bytes every entry is padded to: what one holds at the most kept, on relays of long addresses
+ *  in letters beyond ASCII, with tokens in them too, fits. */
+export const SIZE = 12_288;
 /** The most old queues kept, and of them old own queues and old backup queues, which move with
  *  each own one (one more goes early, emptied first): MAX_OLD_OWN of each, and the link's, the
  *  groups' and the public groups' besides. */
@@ -128,7 +129,8 @@ export function checkedQueues(value: unknown): QueuesData {
     group: checkedKept(v.group),
     public: checkedKept(v.public),
     was: Array.isArray(v.was) ? v.was.map(checkedOld).filter((w): w is OldQueue => w !== null).slice(-MAX_WAS) : [],
-    early: Array.isArray(v.early) ? v.early.map(checkedOld).filter((w): w is OldQueue => w !== null).slice(-MAX_WAS) : [],
+    // Every one let go of early is kept until it is deleted: none forgotten while the relay keeps it.
+    early: Array.isArray(v.early) ? v.early.map(checkedOld).filter((w): w is OldQueue => w !== null) : [],
     next: checkedQueue(v.next),
     ...(REASONS.includes(v.nextWhy as MoveReason) ? { nextWhy: v.nextWhy as MoveReason } : {}),
     moved: isTime(v.moved) ? v.moved : 0,
@@ -144,11 +146,13 @@ export function checkedQueues(value: unknown): QueuesData {
   };
 }
 
-// Sealed, padded to SIZE. Nothing is let go of to fit: what would not, with relays of very long
-// addresses, takes the next whole SIZE, as no old queue may be forgotten before it is deleted.
+// Sealed, padded to SIZE bytes as sealed, so an address or token of letters beyond ASCII changes
+// nothing. Nothing is let go of to fit: what would not, with relays of very long addresses, takes
+// the next whole SIZE, as no old queue may be forgotten before it is deleted.
 function seal(key: Uint8Array, data: QueuesData): string {
   const json = JSON.stringify(data);
-  return encryptText(key, json.padEnd(Math.max(1, Math.ceil(json.length / SIZE)) * SIZE, ' '));
+  const bytes = utf8Encode(json).length;
+  return encryptText(key, json + ' '.repeat(Math.max(1, Math.ceil(bytes / SIZE)) * SIZE - bytes));
 }
 
 async function load(name: string, key: Uint8Array): Promise<QueuesData> {
