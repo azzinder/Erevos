@@ -1,6 +1,7 @@
 import type { InboxRow, InboxSms } from './inbox';
 import { sameConversation, smsNumbers } from './sms-group';
 import { sameNumber } from './sms-invite';
+import { t } from './i18n';
 import { splitLinks } from './links';
 import { TRASH_DAYS, type SmsData, type SmsDraft, type SmsMark, type Trashed } from '../lock/sms-data';
 import type { SmsLink } from './sms-link';
@@ -59,15 +60,113 @@ export function plainText(text: string): string {
 const hasLink = (text: string) => splitLinks(text).some((part) => part.url);
 
 /**
- * Whether an SMS looks like spam by the filter's rules: one of the owner's words in it; or, from a
- * phone number (`number`, not a sender's name nor a short code, which banks and shops use), a link
- * with words that try to fool, or any link when `links` is on.
+ * Why an SMS went to Spam, to show the owner: the number is blocked in Android's list, the owner
+ * marked it, a rule of theirs names the sender, it is a number from abroad, it has one of their
+ * words, a link from an unknown number (with `links` on), or a link with words that try to fool.
  */
-export function looksLikeSpam(text: string, words: string[], links: boolean, number: boolean): boolean {
+export type SpamReason =
+  | { kind: 'blocked' }
+  | { kind: 'marked' }
+  | { kind: 'sender'; rule: string }
+  | { kind: 'abroad' }
+  | { kind: 'word'; word: string }
+  | { kind: 'link' }
+  | { kind: 'phrase'; phrase: string };
+
+/**
+ * Why an SMS looks like spam by the filter's rules on its words: one of the owner's words in it; or,
+ * from a phone number (`number`, not a sender's name nor a short code, which banks and shops use), a
+ * link with words that try to fool, or any link when `links` is on. Null when it does not.
+ */
+export function spamWords(text: string, words: string[], links: boolean, number: boolean): SpamReason | null {
   const plain = plainText(text);
-  if (words.some((word) => plainText(word) && plain.includes(plainText(word)))) return true;
-  if (!number || !hasLink(text)) return false;
-  return links || SPAM_PHRASES.some((phrase) => plain.includes(phrase));
+  const word = words.find((w) => plainText(w) && plain.includes(plainText(w)));
+  if (word) return { kind: 'word', word };
+  if (!number || !hasLink(text)) return null;
+  if (links) return { kind: 'link' };
+  const phrase = SPAM_PHRASES.find((p) => plain.includes(p));
+  return phrase ? { kind: 'phrase', phrase } : null;
+}
+
+/** Whether an SMS looks like spam by the filter's rules on its words (spamWords). */
+export function looksLikeSpam(text: string, words: string[], links: boolean, number: boolean): boolean {
+  return spamWords(text, words, links, number) !== null;
+}
+
+// Rules on who sends: a sender's name, as banks and shops send (any letters, without accents or
+// case), or a number, where * stands for anything after or before (+4470* is every number that
+// starts so, 1234* every short code that does). A number is compared as written in full, with + for
+// 00 and without spaces or dashes, and, when the phone's own country code is known, without it too,
+// so 69* is every number +3069... with home 30.
+
+const NUMBER_RULE = /^\+?[0-9*]+$/;
+
+/** A number as rules compare it: + for 00, without spaces, dashes, dots or brackets. */
+function numberForm(text: string): string {
+  const bare = text.replace(/[\s().-]/g, '');
+  return bare.startsWith('00') ? `+${bare.slice(2)}` : bare;
+}
+
+/** A rule as typed, as it is kept: null when it is none (empty, too long, or * alone). */
+export function senderRule(typed: string): string | null {
+  const text = typed.trim().replace(/\s+/g, ' ');
+  if (!text || text.length > 40 || !text.replace(/\*/g, '').trim()) return null;
+  const number = numberForm(text);
+  return NUMBER_RULE.test(number) ? number : text;
+}
+
+const wildcard = (rule: string) => new RegExp(`^${rule.split('*').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}$`);
+
+/** Whether a rule names the sender at `address` (one number, a short code or a name). */
+export function senderMatches(address: string, rule: string, home = ''): boolean {
+  const kept = senderRule(rule);
+  if (!kept) return false;
+  const number = numberForm(address);
+  if (NUMBER_RULE.test(kept)) {
+    if (!/^\+?[0-9]+$/.test(number)) return false;
+    const pattern = wildcard(kept);
+    const national = home && number.startsWith(`+${home}`) ? number.slice(home.length + 1) : null;
+    return pattern.test(number) || (national !== null && pattern.test(national));
+  }
+  return wildcard(plainText(kept)).test(plainText(address));
+}
+
+/** Whether `address` is a phone number written with a country code other than `home`. A number
+ *  written without one is the phone's own country's; a name or a short code is from nowhere. */
+export function isAbroad(address: string, home: string): boolean {
+  const number = numberForm(address);
+  if (!home || !/^\+[0-9]{7,}$/.test(number)) return false;
+  return !number.startsWith(`+${home}`);
+}
+
+// The country calling codes (ITU E.164): none begins another, so a number's is the one it starts with.
+const CODES = new Set(
+  (
+    '1 7 20 27 30 31 32 33 34 36 39 40 41 43 44 45 46 47 48 49 51 52 53 54 55 56 57 58 60 61 62 63 64 65 66 81 82 84 86 90 91 92 93 94 95 98 ' +
+    '211 212 213 216 218 220 221 222 223 224 225 226 227 228 229 230 231 232 233 234 235 236 237 238 239 240 241 242 243 244 245 246 247 248 ' +
+    '249 250 251 252 253 254 255 256 257 258 260 261 262 263 264 265 266 267 268 269 290 291 297 298 299 350 351 352 353 354 355 356 357 358 ' +
+    '359 370 371 372 373 374 375 376 377 378 379 380 381 382 383 385 386 387 389 420 421 423 500 501 502 503 504 505 506 507 508 509 590 591 ' +
+    '592 593 594 595 596 597 598 599 670 672 673 674 675 676 677 678 679 680 681 682 683 685 686 687 688 689 690 691 692 800 808 850 852 853 ' +
+    '855 856 870 878 880 881 882 883 886 888 960 961 962 963 964 965 966 967 968 970 971 972 973 974 975 976 977 979 992 993 994 995 996 998'
+  ).split(' '),
+);
+
+/** The country calling code of a number written with one ("+30 69..." is "30"), or ''. */
+export function countryCode(address: string): string {
+  const digits = numberForm(address).match(/^\+([0-9]{7,})$/)?.[1] ?? '';
+  for (const length of [1, 2, 3]) if (CODES.has(digits.slice(0, length))) return digits.slice(0, length);
+  return '';
+}
+
+/** The phone's own country code, as most of the numbers it talks with (`numbers`) are written: ''
+ *  when none is written with one. */
+export function guessHome(numbers: string[]): string {
+  const counts = new Map<string, number>();
+  for (const number of numbers) {
+    const code = countryCode(number);
+    if (code) counts.set(code, (counts.get(code) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
 }
 
 /** Whether an address is one number in Android's list of blocked numbers. */
@@ -81,17 +180,47 @@ export function spamMark(address: string, data: SmsData): boolean | null {
   return data.marks.find((m) => sameConversation(m.number, address))?.spam ?? null;
 }
 
-/** Whether a conversation is spam: blocked, marked so, or caught by the filter while it is on. A
- *  group's conversation never is, nor one with a contact (`known`), nor one answered. */
-export function isSpam(sms: InboxSms, data: SmsData, blocked: string[], known: boolean): boolean {
+/** Why a conversation is spam: blocked, marked so, or caught by the filter while it is on; null
+ *  when it is not. A group's conversation never is, nor one with a contact (`known`), nor one
+ *  answered, nor, by the filter, a sender the owner always lets through. */
+export function spamReason(sms: InboxSms, data: SmsData, blocked: string[], known: boolean): SpamReason | null {
   const numbers = smsNumbers(sms.address);
-  if (numbers.length > 1) return false;
-  if (isBlocked(sms.address, blocked)) return true;
+  if (numbers.length > 1) return null;
+  if (isBlocked(sms.address, blocked)) return { kind: 'blocked' };
   const mark = spamMark(sms.address, data);
-  if (mark !== null) return mark;
-  if (!data.spam || known || sms.replied || sms.mine) return false;
+  if (mark !== null) return mark ? { kind: 'marked' } : null;
+  if (!data.spam || known || sms.replied || sms.mine) return null;
+  if (data.allowFrom.some((rule) => senderMatches(sms.address, rule, data.home))) return null;
+  const rule = data.spamFrom.find((r) => senderMatches(sms.address, r, data.home));
+  if (rule) return { kind: 'sender', rule };
+  if (data.spamAbroad && isAbroad(sms.address, data.home)) return { kind: 'abroad' };
   const number = numbers.length === 1 && numbers[0].replace(/\D/g, '').length >= 7;
-  return looksLikeSpam(sms.text, data.spamWords, data.spamLinks, number);
+  return spamWords(sms.text, data.spamWords, data.spamLinks, number);
+}
+
+/** Whether a conversation is spam (spamReason). */
+export function isSpam(sms: InboxSms, data: SmsData, blocked: string[], known: boolean): boolean {
+  return spamReason(sms, data, blocked, known) !== null;
+}
+
+/** Why a conversation is in Spam, in a sentence. */
+export function spamWhy(reason: SpamReason): string {
+  switch (reason.kind) {
+    case 'blocked':
+      return t('Why: the number is blocked on this phone.');
+    case 'marked':
+      return t('Why: you marked it as spam.');
+    case 'sender':
+      return t('Why: your rule {rule} names the sender.', { rule: reason.rule });
+    case 'abroad':
+      return t('Why: a number from abroad.');
+    case 'word':
+      return t('Why: it has your word "{word}".', { word: reason.word });
+    case 'link':
+      return t('Why: a link, from a number that is no contact.');
+    case 'phrase':
+      return t('Why: a link, with words that try to fool ("{phrase}").', { phrase: reason.phrase });
+  }
 }
 
 /** The Trash's entry for a conversation, if some of it is there. */

@@ -965,7 +965,16 @@ chats in one list.
   is no contact and that you never answered goes to **Spam** when it has a link with words that try to fool, like a
   parcel held or a prize, or one of the words you add under **SMS** in the menu → **Spam filter**. **Mark as spam**
   and **Not spam** decide for a number for good. A notice still says "New message" when spam comes, as it shows
-  before Erevos is opened.
+  before Erevos is opened. Each conversation in **Spam**, in the folder and at the top of the conversation, says why
+  it is there: the number is blocked, you marked it, your rule names the sender, a number from abroad, your word, or a
+  link and which words.
+- **Rules on who sends:** under **Spam filter**, **Senders** takes a sender's name, as shops and banks send (letters,
+  without accents or case), or a number, where \`*\` stands for anything: \`+4470*\` is every number that starts so,
+  \`1234*\` every short code that does, and with your country code known, \`69*\` is every number \`+3069...\` too.
+  **To Spam** sends theirs there; **Let through** keeps the filter's rules off them, as your bank's or your family's,
+  though a number you marked as spam, or blocked, still goes there. **Send numbers from abroad to Spam** sends every
+  number written with another country code than **Your country code**, which Erevos takes from the numbers you answer
+  and you can change. A number written without one is from here. Tap a rule to remove it.
 - **Block:** **Block** in the menu of a conversation, or **Blocked numbers** under **SMS** in the menu, puts a number
   in Android's own list of blocked numbers: Android rejects its SMS, MMS and calls, and every space and the phone app
   see the same list. Only the SMS app or the phone app may see and change it.

@@ -10,6 +10,7 @@ import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber
 import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type LaterSms, type SmsData } from '../lock/sms-data';
 import type { Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
+import { senderRule } from './sms-folders';
 
 /** Where this chat can be reached, for an invite. */
 export type Own = { senderHex: string; relay: string; relayKey: string };
@@ -195,6 +196,37 @@ export class SmsLink {
 
   removeSpamWord(word: string): Promise<void> {
     return this.update((d) => ({ ...d, spamWords: d.spamWords.filter((w) => w !== word) }));
+  }
+
+  /** Adds a rule on who sends (lib/sms-folders.ts, senderRule): to Spam, or always let through
+   *  (`allow`), out of the other list. False when it is no rule, or MAX_WORDS are kept there. */
+  async addSenderRule(typed: string, allow: boolean): Promise<boolean> {
+    const rule = senderRule(typed);
+    if (!rule) return false;
+    let done = true;
+    await this.update((d) => {
+      const same = (r: string) => r.toLowerCase() === rule.toLowerCase();
+      const into = allow ? d.allowFrom : d.spamFrom;
+      if (into.some(same)) return d;
+      done = into.length < MAX_WORDS;
+      if (!done) return d;
+      const spamFrom = allow ? d.spamFrom.filter((r) => !same(r)) : [...d.spamFrom, rule];
+      const allowFrom = allow ? [...d.allowFrom, rule] : d.allowFrom.filter((r) => !same(r));
+      return { ...d, spamFrom, allowFrom };
+    });
+    return done;
+  }
+
+  /** Takes a rule on who sends out of both lists. */
+  removeSenderRule(rule: string): Promise<void> {
+    return this.update((d) => ({ ...d, spamFrom: d.spamFrom.filter((r) => r !== rule), allowFrom: d.allowFrom.filter((r) => r !== rule) }));
+  }
+
+  /** Sends numbers from abroad to Spam, or not; `home`, the phone's own country code in digits, is
+   *  kept as given when it is one. */
+  setSpamAbroad(on: boolean, home: string): Promise<void> {
+    const code = home.replace(/\D/g, '');
+    return this.update((d) => ({ ...d, spamAbroad: on, home: /^[1-9][0-9]{0,2}$/.test(code) ? code : d.home }));
   }
 
   /** Seconds an SMS waits before it goes, to be taken back. */

@@ -9,7 +9,7 @@ import { UndoBar } from '../components/undo-bar';
 import { confirm } from '../lib/alert';
 import { lang, plural, t } from '../lib/i18n';
 import { rowTime, type InboxSms } from '../lib/inbox';
-import { emptyTrash, onSmsOrderChanged, smsOrderChanged, sortSms, trashGoesAt } from '../lib/sms-folders';
+import { emptyTrash, onSmsOrderChanged, smsOrderChanged, sortSms, spamReason, spamWhy, trashGoesAt } from '../lib/sms-folders';
 import { groupName, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
@@ -37,6 +37,8 @@ export default function SmsFolderScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [rows, setRows] = useState<InboxSms[] | null>(null);
+  // Why each conversation in Spam is there, by its address.
+  const [why, setWhy] = useState<Record<string, string>>({});
   const [trash, setTrash] = useState<Trashed[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [target, setTarget] = useState<SmsTarget | null>(null);
@@ -56,8 +58,15 @@ export default function SmsFolderScreen() {
       const found: Record<string, string> = link.names ? await contactNames(threads.flatMap((th) => smsNumbers(th.address))).catch(() => ({})) : {};
       const phones = (data?.contacts ?? []).flatMap((c) => (c.phone ? [c.phone] : []));
       const named = threads.map((th) => ({ ...th, name: smsNumbers(th.address).length === 1 ? found[smsNumbers(th.address)[0]] : undefined }));
-      const sorted = sortSms(named, link.state, blocked, (th) => !!th.name || phones.some((p) => sameNumber(p, th.address)));
+      const known = (th: InboxSms) => !!th.name || phones.some((p) => sameNumber(p, th.address));
+      const sorted = sortSms(named, link.state, blocked, known);
+      const reasons: Record<string, string> = {};
+      for (const th of folder === 'spam' ? sorted.spam : []) {
+        const reason = spamReason(th, link.state, blocked, known(th));
+        if (reason) reasons[th.address] = spamWhy(reason);
+      }
       setNames(found);
+      setWhy(reasons);
       setRows(folder === 'spam' ? sorted.spam : sorted.archived);
       setTrash([...link.state.trash].sort((a, b) => b.at - a.at));
       setNow(Date.now());
@@ -170,6 +179,11 @@ export default function SmsFolderScreen() {
                 <Text variant="caption" tone={row.unread ? undefined : 'muted'} numberOfLines={1}>
                   {row.text}
                 </Text>
+                {why[row.address] ? (
+                  <Text variant="caption" tone="faint" numberOfLines={2}>
+                    {why[row.address]}
+                  </Text>
+                ) : null}
               </Pressable>
             ))}
             {rows && rows.length === 0 ? <Text tone="muted">{folder === 'spam' ? t('No spam.') : t('Nothing archived.')}</Text> : null}

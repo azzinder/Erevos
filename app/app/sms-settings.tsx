@@ -6,11 +6,11 @@ import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
 import { BlockedNumbers } from '../components/blocked-numbers';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { mark, plural, t } from '../lib/i18n';
-import { smsOrderChanged } from '../lib/sms-folders';
+import { guessHome, smsOrderChanged } from '../lib/sms-folders';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
-import { MAX_WORDS, UNDO_SECONDS, WORD } from '../lock/sms-data';
+import { MAX_WORDS, UNDO_SECONDS, WORD, type SmsData } from '../lock/sms-data';
 import { requestDefaultSms, smsReady, smsStatus, smsThreads, smsToolsReady, type SmsStatus } from '../modules/erevos-sms';
 
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
@@ -37,6 +37,16 @@ const RESTRICTED = mark(
   "Android did not allow it. In Erevos's App info, under Permissions → SMS, it may say Restricted setting: then go back, tap ⋮ at the top right → Allow restricted settings, and allow SMS under Permissions.",
 );
 
+// The spam filter's rules as this screen shows them.
+const spamOf = (data: Readonly<SmsData> | null) => ({
+  on: data?.spam ?? true,
+  links: data?.spamLinks ?? false,
+  words: [...(data?.spamWords ?? [])],
+  from: [...(data?.spamFrom ?? [])],
+  allow: [...(data?.allowFrom ?? [])],
+  abroad: data?.spamAbroad ?? false,
+});
+
 export default function SmsSettings() {
   const [status, setStatus] = useState<SmsStatus | null>(smsStatus());
   // Whether Android lets Erevos read the phone's SMS; null until known.
@@ -54,8 +64,11 @@ export default function SmsSettings() {
   const [number, setNumber] = useState('');
   const [note, setNote] = useState('');
   // The spam filter (lib/sms-folders.ts) and the seconds to take an SMS back, as the space keeps them.
-  const [spam, setSpam] = useState({ on: true, links: false, words: [] as string[] });
+  const [spam, setSpam] = useState(() => spamOf(null));
   const [word, setWord] = useState('');
+  // A rule on who sends, as typed, and the phone's own country code as typed.
+  const [sender, setSender] = useState('');
+  const [home, setHome] = useState('');
   const [undo, setUndo] = useState(5);
 
   useEffect(() => {
@@ -65,7 +78,8 @@ export default function SmsSettings() {
         setLink(opened);
         setInvites(opened.invites);
         setNames(opened.names);
-        setSpam({ on: opened.state.spam, links: opened.state.spamLinks, words: [...opened.state.spamWords] });
+        setSpam(spamOf(opened.state));
+        setHome(opened.state.home);
         setUndo(opened.undo);
       })
       .catch(() => setNote(t('The SMS settings of this space could not open.')));
@@ -158,8 +172,33 @@ export default function SmsSettings() {
   async function changeSpam(change: (opened: SmsLink) => Promise<unknown>) {
     if (!link) return;
     await change(link);
-    setSpam({ on: link.state.spam, links: link.state.spamLinks, words: [...link.state.spamWords] });
+    setSpam(spamOf(link.state));
     smsOrderChanged();
+  }
+
+  async function addSender(allow: boolean) {
+    const typed = sender.trim();
+    if (!typed || !link) return;
+    if (!(await link.addSenderRule(typed, allow))) {
+      setNote(t('At most {n} senders each way, each up to {length} letters, and not * alone.', { n: MAX_WORDS, length: WORD }));
+      return;
+    }
+    setSender('');
+    await changeSpam(async () => undefined);
+  }
+
+  // Turned on, the country code is the one most of the numbers answered here are written with,
+  // unless one is kept already: the owner sees it and can change it.
+  async function changeAbroad() {
+    if (!link) return;
+    let code = home;
+    if (!spam.abroad && !code) {
+      const threads = await smsThreads().catch(() => []);
+      const answered = threads.filter((th) => th.replied || th.mine);
+      code = guessHome((answered.length > 0 ? answered : threads).flatMap((th) => smsNumbers(th.address)));
+      setHome(code);
+    }
+    await changeSpam((l) => l.setSpamAbroad(!spam.abroad, code));
   }
 
   async function addWord() {
@@ -301,6 +340,56 @@ export default function SmsSettings() {
                   <Chip key={w} label={`${w} ×`} onPress={() => void changeSpam((l) => l.removeSpamWord(w))} />
                 ))}
               </Row>
+            ) : null}
+            <Field
+              label={t('Senders')}
+              hint={t('A sender’s name, as shops and banks send, or a number, where * stands for anything: +4470* is every number that starts so, 1234* every short code that does. Let through: the filter never sends theirs to Spam, as your bank’s or your family’s; a number you marked as spam, or blocked, still goes there.')}
+            >
+              <Input value={sender} onChangeText={setSender} placeholder={t('PROMO, +4470*, 1234*')} maxLength={WORD} autoCapitalize="none" autoCorrect={false} />
+            </Field>
+            <Row wrap>
+              <Button title={t('To Spam')} compact kind="secondary" disabled={!sender.trim()} onPress={() => void addSender(false)} />
+              <Button title={t('Let through')} compact kind="secondary" disabled={!sender.trim()} onPress={() => void addSender(true)} />
+            </Row>
+            {[
+              { rules: spam.from, title: t('To Spam:') },
+              { rules: spam.allow, title: t('Let through:') },
+            ].map(({ rules, title }) =>
+              rules.length > 0 ? (
+                <Row wrap key={title}>
+                  <Text variant="caption" tone="muted">
+                    {title}
+                  </Text>
+                  {rules.map((r) => (
+                    <Chip key={r} label={`${r} ×`} onPress={() => void changeSpam((l) => l.removeSenderRule(r))} />
+                  ))}
+                </Row>
+              ) : null,
+            )}
+            <Button
+              title={spam.abroad ? t('Let numbers from abroad through') : t('Send numbers from abroad to Spam')}
+              kind="ghost"
+              compact
+              onPress={() => void changeAbroad()}
+            />
+            {spam.abroad ? (
+              <Field
+                label={t('Your country code')}
+                hint={home ? t('A number written with another one is from abroad; one written without any is from here.') : t('Type it: until then no number counts as from abroad.')}
+              >
+                <Row>
+                  <Text>+</Text>
+                  <Input
+                    value={home}
+                    onChangeText={(text) => setHome(text.replace(/\D/g, '').slice(0, 3))}
+                    onBlur={() => void changeSpam((l) => l.setSpamAbroad(true, home))}
+                    onSubmitEditing={() => void changeSpam((l) => l.setSpamAbroad(true, home))}
+                    placeholder="30"
+                    keyboardType="number-pad"
+                    style={{ flex: 1 }}
+                  />
+                </Row>
+              </Field>
             ) : null}
           </>
         ) : null}

@@ -2,7 +2,8 @@
 // Trash, Spam and its rules, drafts and the seconds to take an SMS back, all sealed in the space;
 // and what waits a few seconds to be taken back (lib/held.ts), a message passed on to another
 // conversation (lib/forward.ts), the phone's SMS a backup holds (lib/backup-sms.ts), and the
-// one-time code an SMS holds, for Copy code (lib/one-time-code.ts).
+// one-time code an SMS holds, for Copy code (lib/one-time-code.ts). Spam's rules on who sends, and
+// why each SMS in Spam is there.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -12,9 +13,28 @@ import { smsCounts } from '../lib/backup-sms';
 import { randomBytes } from '../lib/crypto';
 import { forwardedTo, forwardTo } from '../lib/forward';
 import { Held } from '../lib/held';
+import { setLang } from '../lib/i18n';
 import { oneTimeCode } from '../lib/one-time-code';
 import type { InboxRow, InboxSms } from '../lib/inbox';
-import { arrangeRows, dueTrash, emptyTrash, isSpam, looksLikeSpam, plainText, shownMessages, smsFolder, sortSms, trashGoesAt } from '../lib/sms-folders';
+import {
+  arrangeRows,
+  countryCode,
+  dueTrash,
+  emptyTrash,
+  guessHome,
+  isAbroad,
+  isSpam,
+  looksLikeSpam,
+  plainText,
+  senderMatches,
+  senderRule,
+  shownMessages,
+  smsFolder,
+  sortSms,
+  spamReason,
+  spamWhy,
+  trashGoesAt,
+} from '../lib/sms-folders';
 import { SmsLink } from '../lib/sms-link';
 import { kept } from '../lock/inbox-cache';
 import { sealedFile } from '../lock/sealed-file';
@@ -68,6 +88,88 @@ test('spam is a blocked number, a marked one, or one the filter caught; never a 
   assert.equal(isSpam(sms('+306900000001', 'hello', 10), data({ marks: [{ number: '6900000001', spam: true, at: 1 }] }), [], true), true);
   // A blocked number is spam even from a contact, and with the filter off.
   assert.equal(isSpam(sms('+306900000001', 'hello', 10), data({ spam: false }), ['00306900000001'], true), true);
+});
+
+test('a rule on who sends names a sender, a number or many numbers, written either way', () => {
+  // A sender's name, as banks and shops send: any letters, without accents or case; * for anything.
+  assert.equal(senderMatches('PROMO', 'promo'), true);
+  assert.equal(senderMatches('Προσφορές', 'ΠΡΟΣΦΟΡΕΣ'), true);
+  assert.equal(senderMatches('SuperPromo', 'promo'), false);
+  assert.equal(senderMatches('SuperPromo', '*promo'), true);
+  assert.equal(senderMatches('Shop.gr', 'shop.*'), true);
+  assert.equal(senderMatches('Shopgr', 'shop.gr'), false);
+  // A number, in full, or many with *: written with spaces or 00, as numbers come.
+  assert.equal(senderRule(' +44 70 * '), '+4470*');
+  assert.equal(senderRule('0044-70*'), '+4470*');
+  assert.equal(senderMatches('+447012345678', '+4470*'), true);
+  assert.equal(senderMatches('00447012345678', '+44 70*'), true);
+  assert.equal(senderMatches('+447112345678', '+4470*'), false);
+  assert.equal(senderMatches('12345', '1234*'), true);
+  assert.equal(senderMatches('+3012345678', '1234*'), false);
+  assert.equal(senderMatches('54321', '54321'), true);
+  assert.equal(senderMatches('543210', '54321'), false);
+  // With the phone's own country code, a rule may leave it out.
+  assert.equal(senderMatches('+306912345678', '691*', '30'), true);
+  assert.equal(senderMatches('+306912345678', '691*'), false);
+  // A number rule names no sender's name, and nothing names all.
+  assert.equal(senderMatches('INFO123', '123*'), false);
+  assert.equal(senderRule('*'), null);
+  assert.equal(senderRule(' ** '), null);
+  assert.equal(senderRule(''), null);
+  assert.equal(senderRule('x'.repeat(41)), null);
+});
+
+test('a number from abroad is one written with another country code than the phone\'s own', () => {
+  assert.equal(isAbroad('+447012345678', '30'), true);
+  assert.equal(isAbroad('00447012345678', '30'), true);
+  assert.equal(isAbroad('+306912345678', '30'), false);
+  // Written without one, it is from here; a name or a short code is from nowhere; and with no home known, none is.
+  assert.equal(isAbroad('6912345678', '30'), false);
+  assert.equal(isAbroad('PROMO', '30'), false);
+  assert.equal(isAbroad('+44123', '30'), false);
+  assert.equal(isAbroad('+447012345678', ''), false);
+  // The phone's own code is the one most numbers answered are written with.
+  assert.equal(countryCode('+30 691 234 5678'), '30');
+  assert.equal(countryCode('+12125551234'), '1');
+  assert.equal(countryCode('+3556912345678'), '355');
+  assert.equal(countryCode('6912345678'), '');
+  assert.equal(guessHome(['+306912345678', '+447012345678', '+306998765432', 'PROMO', '6912345678']), '30');
+  assert.equal(guessHome(['6912345678']), '');
+});
+
+test('the senders let through beat the filter\'s rules, not the owner\'s word on a number nor Android\'s list', () => {
+  const parcel = 'Your parcel is held, pay the customs fee: https://parcel.example/x';
+  const rules = data({ spamFrom: ['+4470*', 'PROMO'], allowFrom: ['+447000*', 'MyBank'], spamAbroad: true, home: '30' });
+  const why = (address: string, text = 'hello', more: Partial<SmsData> = {}, blocked: string[] = []) => spamReason(sms(address, text, 10), { ...rules, ...more }, blocked, false);
+  assert.deepEqual(why('+447012345678'), { kind: 'sender', rule: '+4470*' });
+  assert.deepEqual(why('promo'), { kind: 'sender', rule: 'PROMO' });
+  assert.deepEqual(why('+491701234567'), { kind: 'abroad' });
+  assert.equal(why('+306912345678'), null);
+  // Let through: the sender rule, the abroad rule and the words let it be.
+  assert.equal(why('+447000123456'), null);
+  assert.equal(why('+447000123456', parcel), null);
+  assert.equal(why('MyBank', 'Your account has been suspended https://mybank.example'), null);
+  // The owner's word on the number, and Android's list of blocked numbers, still count.
+  assert.deepEqual(why('+447000123456', 'hello', { marks: [{ number: '+447000123456', spam: true, at: 1 }] }), { kind: 'marked' });
+  assert.deepEqual(why('+447000123456', 'hello', {}, ['+447000123456']), { kind: 'blocked' });
+  // Off, the filter's rules catch nothing.
+  assert.equal(why('+447012345678', 'hello', { spam: false }), null);
+});
+
+test('each SMS in Spam says why it is there', () => {
+  const parcel = 'Your parcel is held, pay the customs fee: https://parcel.example/x';
+  const from = sms('+306900000001', parcel, 10);
+  assert.deepEqual(spamReason(from, data(), [], false), { kind: 'phrase', phrase: 'your parcel' });
+  assert.deepEqual(spamReason(from, data({ spamLinks: true }), [], false), { kind: 'link' });
+  assert.deepEqual(spamReason(from, data({ spamWords: ['Customs'] }), [], false), { kind: 'word', word: 'Customs' });
+  assert.deepEqual(spamReason(from, data(), ['+306900000001'], false), { kind: 'blocked' });
+  assert.equal(spamReason(from, data(), [], true), null);
+  setLang('en');
+  assert.equal(spamWhy({ kind: 'phrase', phrase: 'your parcel' }), 'Why: a link, with words that try to fool ("your parcel").');
+  assert.equal(spamWhy({ kind: 'sender', rule: '+4470*' }), 'Why: your rule +4470* names the sender.');
+  setLang('el');
+  assert.match(spamWhy({ kind: 'word', word: 'δώρο' }), /δώρο/);
+  setLang('en');
 });
 
 test('each conversation shows in one folder: the Trash first, then Spam, then the Archive, else the list', () => {
@@ -146,6 +248,12 @@ test('pins, the Archive, the Trash, drafts and spam rules are kept sealed in the
   await link.markSpam('+306944444444', true);
   assert.equal(await link.addSpamWord('  free   gift '), true);
   await link.setSpamLinks(true);
+  assert.equal(await link.addSenderRule('PROMO', false), true);
+  assert.equal(await link.addSenderRule('+44 70*', false), true);
+  assert.equal(await link.addSenderRule('*', false), false);
+  // A rule goes to one list only: let through, it leaves Spam's.
+  assert.equal(await link.addSenderRule('promo', true), true);
+  await link.setSpamAbroad(true, '+30');
   await link.setUndo(10);
 
   const again = await SmsLink.open(0, key);
@@ -155,10 +263,14 @@ test('pins, the Archive, the Trash, drafts and spam rules are kept sealed in the
   assert.deepEqual(again.state.marks.map((m) => [m.number, m.spam]), [['+306944444444', true]]);
   assert.deepEqual(again.state.spamWords, ['free gift']);
   assert.equal(again.state.spamLinks, true);
+  assert.deepEqual(again.state.spamFrom, ['+4470*']);
+  assert.deepEqual(again.state.allowFrom, ['promo']);
+  assert.equal(again.state.spamAbroad, true);
+  assert.equal(again.state.home, '30');
   assert.equal(again.undo, 10);
   // Nothing of it shows in the phone's files, and another space's key opens none of it.
   const written = [...files.values()].join('\n');
-  assert.doesNotMatch(written, /6911111111|6922222222|see you|free gift/);
+  assert.doesNotMatch(written, /6911111111|6922222222|see you|free gift|promo|4470\*/);
   const other = await SmsLink.open(0, randomBytes(32)).catch(() => null);
   assert.deepEqual(other?.state.pinned ?? [], []);
 
@@ -175,10 +287,15 @@ test('pins, the Archive, the Trash, drafts and spam rules are kept sealed in the
   // Nothing typed forgets the draft; the owner's word on a number can be left to the filter again.
   await again.setDraft('+306933333333', '   ');
   await again.markSpam('6944444444', null);
+  await again.removeSenderRule('+4470*');
+  await again.setSpamAbroad(false, 'x');
   await again.setUndo(7);
   const last = await SmsLink.open(0, key);
   assert.equal(last.draftFor('+306933333333'), '');
   assert.deepEqual(last.state.marks, []);
+  assert.deepEqual(last.state.spamFrom, []);
+  assert.equal(last.state.spamAbroad, false);
+  assert.equal(last.state.home, '30');
   assert.equal(last.undo, 10);
 });
 

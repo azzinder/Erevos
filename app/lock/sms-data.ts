@@ -50,10 +50,17 @@ export type SmsData = {
   trash: Trashed[];
   drafts: SmsDraft[];
   /** The spam filter: on unless turned off. With `spamLinks`, any number that is no contact and
-   *  sends a link goes to Spam; with `spamWords`, any that writes one of them. */
+   *  sends a link goes to Spam; with `spamWords`, any that writes one of them; with `spamFrom`, any
+   *  sender a rule there names (lib/sms-folders.ts, senderRule); with `spamAbroad`, any number written
+   *  with another country code than `home`. A sender `allowFrom` names never goes by those rules. */
   spam: boolean;
   spamLinks: boolean;
   spamWords: string[];
+  spamFrom: string[];
+  allowFrom: string[];
+  spamAbroad: boolean;
+  /** The phone's own country calling code, in digits ("30"), or '' when not known. */
+  home: string;
   marks: SpamMark[];
   /** Seconds an SMS waits before it goes, to be taken back: 0, 5 or 10. */
   undo: number;
@@ -74,6 +81,10 @@ export const EMPTY_SMS: SmsData = {
   spam: true,
   spamLinks: false,
   spamWords: [],
+  spamFrom: [],
+  allowFrom: [],
+  spamAbroad: false,
+  home: '',
   marks: [],
   undo: 5,
 };
@@ -90,7 +101,7 @@ const MAX_SIMS = 300;
 export const MAX_LATER = MAX;
 export const LATER_TEXT = 4000;
 /** The conversations that can be pinned at once, and those kept archived, in the Trash, with a
- *  draft, and numbers marked; the owner's spam words, each this long at most. */
+ *  draft, and numbers marked; the owner's spam words and sender rules, each this long at most. */
 export const MAX_PINS = 10;
 const MAX_ARCHIVED = 500;
 export const MAX_TRASH = 300;
@@ -108,6 +119,7 @@ const isNumber = (v: unknown): v is string => isText(v) && v.length > 0 && v.len
 const isAddress = (v: unknown): v is string => isText(v) && v.length > 0 && v.length <= 400;
 const list = <T>(v: unknown, ok: (item: Record<string, unknown>) => T | null, max = MAX): T[] =>
   Array.isArray(v) ? v.map((item) => ok((item ?? {}) as Record<string, unknown>)).filter((x): x is T => x !== null).slice(-max) : [];
+const words = (v: unknown): string[] => (Array.isArray(v) ? v : []).filter((w): w is string => isText(w) && w.trim().length > 0 && w.length <= WORD).slice(-MAX_WORDS);
 const marked = (m: Record<string, unknown>): SmsMark | null => (isAddress(m.address) && isTime(m.at) ? { address: m.address, at: m.at } : null);
 
 function checked(value: unknown): SmsData {
@@ -134,7 +146,11 @@ function checked(value: unknown): SmsData {
     drafts: list(v.drafts, (d) => (isAddress(d.address) && isText(d.text) && d.text.length > 0 && d.text.length <= LATER_TEXT && isTime(d.at) ? { address: d.address, text: d.text, at: d.at } : null), MAX_DRAFTS),
     spam: v.spam !== false,
     spamLinks: v.spamLinks === true,
-    spamWords: (Array.isArray(v.spamWords) ? v.spamWords : []).filter((w): w is string => isText(w) && w.trim().length > 0 && w.length <= WORD).slice(-MAX_WORDS),
+    spamWords: words(v.spamWords),
+    spamFrom: words(v.spamFrom),
+    allowFrom: words(v.allowFrom),
+    spamAbroad: v.spamAbroad === true,
+    home: isText(v.home) && /^[1-9][0-9]{0,2}$/.test(v.home) ? v.home : '',
     marks: list(v.marks, (m) => (isNumber(m.number) && typeof m.spam === 'boolean' && isTime(m.at) ? { number: m.number, spam: m.spam, at: m.at } : null), MAX_MARKS),
     undo: UNDO_SECONDS.includes(v.undo as number) ? (v.undo as number) : EMPTY_SMS.undo,
   };
@@ -149,7 +165,7 @@ export function fresh(data: SmsData, now: number): SmsData {
 // What ORDER_FILE holds of a space's SMS data; FILE holds the rest. `kept` is written with each
 // save: from then on the order is ORDER_FILE's, and what FILE kept of it before (as an Erevos before
 // ORDER_FILE did) is read no more.
-const ORDER = ['pinned', 'archived', 'trash', 'drafts', 'spam', 'spamLinks', 'spamWords', 'marks', 'undo'] as const;
+const ORDER = ['pinned', 'archived', 'trash', 'drafts', 'spam', 'spamLinks', 'spamWords', 'spamFrom', 'allowFrom', 'spamAbroad', 'home', 'marks', 'undo'] as const;
 type SmsOrder = Pick<SmsData, (typeof ORDER)[number]>;
 type KeptOrder = SmsOrder & { kept: boolean };
 

@@ -25,7 +25,7 @@ import { oneTimeCode } from '../lib/one-time-code';
 import { spaceLinkSender } from '../lib/queue-move';
 import { relayKey } from '../lib/relay';
 import { deletingSms, linkedContact, smsFailed, smsLineId, smsMark } from '../lib/sms-chat';
-import { onSmsOrderChanged, shownMessages, smsFolder, trashOf } from '../lib/sms-folders';
+import { onSmsOrderChanged, shownMessages, smsFolder, spamReason, spamWhy, trashOf } from '../lib/sms-folders';
 import { groupName, sameConversation, smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { pickMmsPhoto } from '../lib/pick-mms-photo';
@@ -338,7 +338,10 @@ export default function Sms() {
   // Trash with nothing after.
   const last = messages[messages.length - 1] ?? null;
   const known = !!names[to] || contacts.some((c) => c.phone && sameNumber(c.phone, to));
-  const folder = order && last ? smsFolder({ address: to, text: last.text, at: last.at, mine: last.mine, unread: 0, replied: messages.some((m) => m.mine) }, order, blocked, known) : 'list';
+  const latest = last ? { address: to, text: last.text, at: last.at, mine: last.mine, unread: 0, replied: messages.some((m) => m.mine) } : null;
+  const folder = order && latest ? smsFolder(latest, order, blocked, known) : 'list';
+  // In Spam, why: which rule sent it there.
+  const spamFor = folder === 'spam' && order && latest ? spamReason(latest, order, blocked, known) : null;
 
   // The SIMs show once Erevos may read the phone's state; it asks only when the owner taps.
   async function askSims() {
@@ -481,6 +484,11 @@ export default function Sms() {
             {folder !== 'list' ? (
               <Text variant="caption" color={colors.warning}>
                 {folder === 'spam' ? t('In Spam') : folder === 'archived' ? t('Archived') : t('In the Trash')}
+              </Text>
+            ) : null}
+            {spamFor ? (
+              <Text variant="caption" tone="muted">
+                {spamWhy(spamFor)}
               </Text>
             ) : null}
           </View>

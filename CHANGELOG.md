@@ -18,6 +18,13 @@ On main, not released yet.
   LPHL** and **Set it up yourself** under it), so a new user never sees the words relay and token.
   The access is an invite to the relay, so it takes a relay that invites; without one the invite
   still makes you contacts.
+- **Spam rules on who sends, and why** (Android, SMS): under **Spam filter**, **Senders** takes a
+  sender's name (as shops and banks send) or a number with * for anything (`+4470*`, `1234*`),
+  **To Spam** or **Let through**: a sender let through is never caught by the filter's rules, though
+  a number marked as spam or blocked still is. **Send numbers from abroad to Spam** catches every
+  number written with another country code than yours, which Erevos takes from the numbers you
+  answer. Each conversation in Spam now says why it is there: blocked, marked, which rule, abroad,
+  which of your words, or a link and which words that try to fool.
 - **Chats are lighter on older phones**: typing redraws only the message bar, not the whole chat
   with its thread; a message of the thread draws again only when it changes (a voice message
   playing redraws its own line, once a second); a long chat opens at its latest 100 messages, with
