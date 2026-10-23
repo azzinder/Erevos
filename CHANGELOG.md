@@ -10,6 +10,9 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet.
 
+- **Launcher icons fill the launcher's shape** (Android 8 and later), as FASOULI's do, in every colour,
+  instead of a small square inside a pale tile.
+
 ## 2.0.1 (2026-10-23)
 
 - **Launcher icons of their own colour** (Android): Erevos red, Phone green, SMS blue and Contacts
