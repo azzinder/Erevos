@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -11,7 +11,7 @@ import { SwipeTabs } from '../components/swipe-tabs';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
 import { allowPhoneContacts, byName, cardHref, erevosPeople, groupsByTitle, groupTitles, phoneCards, sealedCard, withErevos, type Card as ContactCard } from '../lib/contact-book';
 import { saveVCards, vcfName } from '../lib/contact-files';
-import { askedFields, birthdayComing, daysToBirthday, fillText, fieldsName, matches, mergeFields, parseBirthday } from '../lib/contacts';
+import { askedFields, birthdayComing, daysToBirthday, fillText, fieldsName, findable, found, mergeByName, mergeFields, parseBirthday, searchWords, type ErevosPerson, type Findable } from '../lib/contacts';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { plural, t } from '../lib/i18n';
 import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
@@ -39,6 +39,10 @@ import { useStyles, useTheme } from '../theme/context';
 // they close (lib/hidden-contacts.ts): nothing of the phone's or the space's. It has no menu
 // there: what it holds would leave Erevos (a photo picked, a file), which closes them.
 
+// The phone's contacts as last read, while Erevos runs: the screen shows them at once when it opens
+// again, and reads them anew. Never the hidden chats' or the space's own, which are read each time.
+let lastPhone: ContactCard[] | null = null;
+
 /** What the list shows: everyone, the favourites, the Erevos contacts, those kept only in Erevos, the birthdays, or a group's contacts (its id). */
 type Filter = 'all' | 'starred' | 'erevos' | 'sealed' | 'birthdays' | number;
 
@@ -54,7 +58,7 @@ export default function Contacts() {
     return fields ? { fields, text: fillText(fields) } : null;
   }, [hidden, params.add]);
   const hiddenOpen = useOpenHiddenPlace();
-  const [cards, setCards] = useState<ContactCard[] | null>(null);
+  const [cards, setCards] = useState<ContactCard[] | null>(() => (hidden ? null : lastPhone));
   const [groups, setGroups] = useState<PhoneGroup[]>([]);
   const [allowed, setAllowed] = useState(() => contactsStatus().read);
   const [query, setQuery] = useState('');
@@ -64,6 +68,8 @@ export default function Contacts() {
   const [reminders, setReminders] = useState(() => contactsStatus().birthdays);
   const [note, setNote] = useState('');
   const active = useRef(true);
+  // Which reading is the latest: one that ends after a newer one began shows nothing.
+  const reading = useRef(0);
   const phoneHere = Platform.OS === 'android' && contactsReady() && !hidden;
 
   useEffect(() => (hidden ? enterHiddenScreen() : undefined), [hidden]);
@@ -82,15 +88,37 @@ export default function Contacts() {
     const status = contactsStatus();
     setAllowed(status.read);
     if (status.read && phoneHere) watchContacts();
+    const round = ++reading.current;
     const fail = (error: unknown) => active.current && setNote(t("The phone's contacts could not be read: {error}", { error: error instanceof Error ? error.message : String(error) }));
-    Promise.all([
-      phoneHere && status.read ? phoneCards() : Promise.resolve([]),
-      place ? loadPlace(place).catch(() => null) : Promise.resolve(null),
-      erevosPeople(hidden ? hiddenOpen : null),
-    ])
-      .then(([phone, data, people]) => {
-        if (!active.current) return;
-        setCards(byName(withErevos([...phone, ...(data?.contacts ?? []).map(sealedCard)], data?.links ?? [], people)));
+    // The phone's contacts show as soon as they are read; those kept only in Erevos and the chats'
+    // Erevos contacts join them once those are read too, as the space's chats may take longer to open.
+    let phone: ContactCard[] | null = phoneHere && status.read ? null : [];
+    let rest: { data: Awaited<ReturnType<typeof loadPlace>> | null; people: ErevosPerson[] } | null = null;
+    const show = () => {
+      if (!active.current || round !== reading.current || phone === null) return;
+      if (!rest) {
+        if (phone.length > 0) setCards(phone);
+        return;
+      }
+      const all = withErevos([...phone, ...(rest.data?.contacts ?? []).map(sealedCard)], rest.data?.links ?? [], rest.people);
+      setCards(mergeByName(all.slice(0, phone.length), byName(all.slice(phone.length))));
+    };
+    if (phone === null)
+      phoneCards()
+        .then((read) => {
+          if (!hidden) lastPhone = read;
+          phone = read;
+          show();
+        })
+        .catch((error) => {
+          phone = [];
+          show();
+          fail(error);
+        });
+    Promise.all([place ? loadPlace(place).catch(() => null) : Promise.resolve(null), erevosPeople(hidden ? hiddenOpen : null)])
+      .then(([data, people]) => {
+        rest = { data, people };
+        show();
       })
       .catch(fail);
     if (!phoneHere || !status.read) return;
@@ -128,20 +156,29 @@ export default function Contacts() {
     load();
   }
 
+  // What the search looks in, made once for each card the first time it is searched, until the list is read again.
+  const findables = useMemo(() => new Map<string, Findable>(), [cards, groups]);
   const shown = useMemo(() => {
+    const words = searchWords(query);
+    const hit = (c: ContactCard) => {
+      if (words.length === 0) return true;
+      let f = findables.get(c.key);
+      if (!f) findables.set(c.key, (f = findable(c, groupTitles(c, groups))));
+      return found(f, words);
+    };
     if (filter === 'birthdays') {
       const now = new Date();
       const born = (cards ?? [])
         .map((c) => ({ c, b: parseBirthday(c.birthday) }))
-        .filter((x): x is { c: ContactCard; b: NonNullable<typeof x.b> } => x.b !== null && (!query.trim() || matches(x.c, query, groupTitles(x.c, groups))))
+        .filter((x): x is { c: ContactCard; b: NonNullable<typeof x.b> } => x.b !== null && hit(x.c))
         .sort((x, y) => daysToBirthday(x.b, now) - daysToBirthday(y.b, now));
       return born.map((x) => x.c);
     }
     const list = (cards ?? []).filter((c) =>
       filter === 'all' ? true : filter === 'starred' ? c.starred : filter === 'erevos' ? c.erevos !== '' : filter === 'sealed' ? c.sealed !== null : c.groups.includes(filter),
     );
-    return query.trim() ? list.filter((c) => matches(c, query, groupTitles(c, groups))) : list;
-  }, [cards, groups, query, filter]);
+    return words.length > 0 ? list.filter(hit) : list;
+  }, [cards, groups, query, filter, findables]);
 
   // What a .vcf file takes of them: the contacts, not the chats' Erevos contacts, which stay sealed.
   const saveable = useMemo(() => shown.filter((c) => c.phone || c.sealed), [shown]);
@@ -406,7 +443,8 @@ function MenuRow({ title, detail, onPress }: { title: string; detail: string; on
   );
 }
 
-function ContactRow({ card, birthday, hidden, onPress }: { card: ContactCard; birthday?: boolean; hidden: boolean; onPress?: () => void }) {
+// Drawn again only when what it shows changes, not at every letter of a search.
+const ContactRow = memo(function ContactRow({ card, birthday, hidden, onPress }: { card: ContactCard; birthday?: boolean; hidden: boolean; onPress?: () => void }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const photo = useCardPhoto(card);
@@ -442,7 +480,7 @@ function ContactRow({ card, birthday, hidden, onPress }: { card: ContactCard; bi
       ) : null}
     </Pressable>
   );
-}
+});
 
 const makeStyles = (colors: Colors) =>
   StyleSheet.create({

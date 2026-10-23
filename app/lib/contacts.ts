@@ -201,22 +201,76 @@ export function plain(text: string): string {
 
 const digits = (text: string) => text.replace(/\D/g, '');
 
+// One collator for each language, made once: a localeCompare that names a language makes a new one
+// at every comparison on the phone (Hermes), which made sorting a few hundred contacts take seconds.
+const collators = new Map<string, Intl.Collator | null>();
+
+function collator(): Intl.Collator | null {
+  const tag = lang() === 'el' ? 'el' : 'en';
+  let made = collators.get(tag);
+  if (made === undefined) {
+    try {
+      made = new Intl.Collator(tag, { sensitivity: 'base' });
+    } catch {
+      made = null;
+    }
+    collators.set(tag, made);
+  }
+  return made;
+}
+
+/** Names compared in the app's language's order: Greek's in Greek, the others' in English. */
+export function compareNames(a: string, b: string): number {
+  const by = collator();
+  if (by) return by.compare(a, b);
+  return plain(a) < plain(b) ? -1 : plain(a) > plain(b) ? 1 : 0;
+}
+
+/** Two lists by name as one, by name, the first's before the second's of the same name: the
+ *  phone's many contacts, already in order, are not sorted again for the few others. */
+export function mergeByName<T extends { name: string }>(a: T[], b: T[]): T[] {
+  const merged: T[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length && j < b.length) merged.push(compareNames(b[j].name, a[i].name) < 0 ? b[j++] : a[i++]);
+  return merged.concat(a.slice(i), b.slice(j));
+}
+
+/** What a search looks in, of a contact (`findable`): made once for a list, so a search typed
+ *  letter by letter only compares. */
+export type Findable = { text: string; numbers: string[] };
+
+/** A contact's fields as a search looks in them, with `extra` (its groups' names). */
+export function findable(f: Fields & { name?: string }, extra: string[] = []): Findable {
+  return {
+    text: plain(
+      [f.name ?? '', f.given, f.family, f.company, f.title, f.note, f.birthday, ...f.phones.map((p) => p.value), ...f.emails.map((e) => e.value), ...f.addresses.map((a) => a.value), ...extra].join('\n'),
+    ),
+    numbers: f.phones.map((p) => digits(p.value)).filter(Boolean),
+  };
+}
+
+/** The words of a search, as `found` takes them. */
+export function searchWords(query: string): string[] {
+  return plain(query).split(/\s+/).filter(Boolean);
+}
+
+/** Whether every word is in what `findable` made of a contact, as `matches` says. */
+export function found(f: Findable, words: string[]): boolean {
+  return words.every((word) => {
+    if (f.text.includes(word)) return true;
+    const d = digits(word);
+    if (d.length < 3 || d.length < word.replace(/[+\-()./]/g, '').length) return false;
+    return f.numbers.some((n) => n.includes(d) || (d.length >= 7 && sameNumber(n, d)));
+  });
+}
+
 /** Whether every word of `query` is in some field of the contact: its names, numbers, emails,
  *  addresses, note, company, its groups' names, or its birthday. A number matches whatever is
  *  written between its digits, and with or without its country code. */
 export function matches(f: Fields & { name?: string }, query: string, extra: string[] = []): boolean {
-  const words = plain(query).split(/\s+/).filter(Boolean);
-  if (words.length === 0) return true;
-  const text = plain(
-    [f.name ?? '', f.given, f.family, f.company, f.title, f.note, f.birthday, ...f.phones.map((p) => p.value), ...f.emails.map((e) => e.value), ...f.addresses.map((a) => a.value), ...extra].join('\n'),
-  );
-  const numbers = f.phones.map((p) => digits(p.value)).filter(Boolean);
-  return words.every((word) => {
-    if (text.includes(word)) return true;
-    const d = digits(word);
-    if (d.length < 3 || d.length < word.replace(/[+\-()./]/g, '').length) return false;
-    return numbers.some((n) => n.includes(d) || (d.length >= 7 && sameNumber(n, d)));
-  });
+  const words = searchWords(query);
+  return words.length === 0 || found(findable(f, extra), words);
 }
 
 /** A name as compared: its words in any order, without case or accents. */

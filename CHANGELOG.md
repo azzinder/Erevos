@@ -10,6 +10,10 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet.
 
+- **Contacts open faster** (Android): the phone's contacts show as soon as Android gives them, and
+  at once when you come back, while they are read again; those kept only in Erevos and the chats'
+  Erevos contacts join them a moment later. Putting them in order by name no longer takes seconds
+  with many contacts, and the search no longer reads every contact again at each letter.
 - **Hidden chats' notice counts only messages** (Android, **Say when a message comes**): while a
   place is closed, the notice says "New message", or how many came, each message once, as for the
   other chats. Before, anything that came for the place made it, also that a message of yours came

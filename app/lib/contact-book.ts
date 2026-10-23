@@ -1,8 +1,8 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 
-import { EMPTY_FIELDS, erevosFor, fieldsName, keeperFirst, mergeFields, phoneFields, phoneSave, plain, type ErevosPerson, type Fields } from './contacts';
+import { compareNames, EMPTY_FIELDS, erevosFor, fieldsName, keeperFirst, mergeFields, phoneFields, phoneSave, type ErevosPerson, type Fields } from './contacts';
 import type { OpenHiddenPlace } from './hidden-contacts';
-import { lang, t } from './i18n';
+import { t } from './i18n';
 import { spaceChats } from './space-chats';
 import { phoneContacts, savePhoneContact, takeOverContacts, type PhoneContact, type PhoneGroup } from '../modules/erevos-contacts';
 import { contactCards } from '../modules/erevos-sms';
@@ -143,23 +143,14 @@ export async function sealedCards(place: Place): Promise<Card[]> {
   return (await loadPlace(place)).contacts.map(sealedCard);
 }
 
-/** Names compared in the app's language's order. */
-function compare(a: string, b: string): number {
-  try {
-    return a.localeCompare(b, lang() === 'el' ? 'el' : 'en', { sensitivity: 'base' });
-  } catch {
-    return plain(a) < plain(b) ? -1 : plain(a) > plain(b) ? 1 : 0;
-  }
-}
-
 /** Cards by name, in the app's language's order. */
 export function byName(cards: Card[]): Card[] {
-  return [...cards].sort((a, b) => compare(a.name, b.name));
+  return [...cards].sort((a, b) => compareNames(a.name, b.name));
 }
 
 /** Groups by their names. */
 export function groupsByTitle(groups: PhoneGroup[]): PhoneGroup[] {
-  return [...groups].sort((a, b) => compare(a.title, b.title));
+  return [...groups].sort((a, b) => compareNames(a.title, b.title));
 }
 
 /** The names of a card's groups, for the search. */

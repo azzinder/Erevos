@@ -12,23 +12,28 @@ import {
   callsWith,
   callText,
   cleanFields,
+  compareNames,
   daysToBirthday,
   EMPTY_FIELDS,
   erevosFor,
   fieldsName,
   fillText,
+  findable,
   findDuplicates,
+  found,
   historyLines,
   simFields,
   initials,
   keeperFirst,
   kindOf,
   matches,
+  mergeByName,
   mergeFields,
   notKept,
   parseBirthday,
   phoneFields,
   phoneSave,
+  searchWords,
   splitName,
   turns,
   typeOf,
@@ -53,6 +58,37 @@ const maria: Fields = {
   note: 'Συνάντηση την Τρίτη',
   birthday: '1990-05-04',
 };
+
+test('names sort in the language\'s order, and a few join the many already in order without sorting them again', async () => {
+  await setLang('el');
+  try {
+    const names = ['Ζωή', 'anna', 'Άλκης', 'Βασίλης', 'Bob', 'αλέξης'];
+    const sorted = [...names].sort(compareNames);
+    // Greek's own order puts Greek names first, without case or accents.
+    assert.deepEqual(sorted, ['αλέξης', 'Άλκης', 'Βασίλης', 'Ζωή', 'anna', 'Bob']);
+    assert.ok(compareNames('Άλκης', 'αλκης') === 0);
+    assert.ok(compareNames('Βασίλης', 'Ζωή') < 0);
+    const many = ['Άλκης', 'Βασίλης', 'Ζωή', 'anna'].map((name, i) => ({ name, from: `phone${i}` }));
+    const few = [{ name: 'Αλκης', from: 'sealed' }, { name: 'Γιάννης', from: 'erevos' }, { name: 'Ωραία', from: 'erevos' }];
+    const merged = mergeByName(many, few);
+    assert.deepEqual(
+      merged.map((c) => c.from),
+      ['phone0', 'sealed', 'phone1', 'erevos', 'phone2', 'erevos', 'phone3'],
+    );
+    assert.deepEqual(mergeByName([], few), few);
+    assert.deepEqual(mergeByName(many, []), many);
+  } finally {
+    await setLang('en');
+  }
+});
+
+test('the search made once for a contact finds what it would find made anew', () => {
+  const card = { ...maria, name: 'Μαρία Παπαδοπούλου' };
+  const made = findable(card, ['Οικογένεια']);
+  for (const query of ['μαρια', 'μαρ παπ', 'μαρία γιώργος', 'πειραιας', '691-234', '00306912345678', '6999', 'οικογενεια', '']) {
+    assert.equal(found(made, searchWords(query)), matches(card, query, ['Οικογένεια']), query);
+  }
+});
 
 test('the search finds every field, without case or accents, and numbers however they are written', () => {
   const card = { ...maria, name: 'Μαρία Παπαδοπούλου' };
