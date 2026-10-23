@@ -45,7 +45,8 @@ only from inside them.
 - **The widget**, on Android: add Erevos from your home screen's widgets. Its four buttons open **Phone**, the
   **SMS**, the Erevos **Messages** and **Contacts**, after the password like any link (the Phone without it, if you
   let it). Over the first three it shows how many missed calls, unread SMS and new messages there are, never who or
-  what; with missed calls, **Phone** opens on **Recents**. Its words follow Erevos's language.
+  what; with missed calls, **Phone** opens on **Recents**. Its words follow Erevos's language. **Appearance** →
+  **Widget** sets the order of its buttons.
 - **The lock** at the top locks Erevos at once when a password is set, or opens the lock settings when not.
 - **The three dots** open the rest:
 
@@ -952,7 +953,7 @@ chats in one list.
 On Android, Erevos can be the phone's phone app: under **Phone** in the menu, tap **Settings** → **Make Erevos the
 phone app**. Every call then shows on Erevos's own call screen, and tel: links and the phone's call button open
 Erevos's keypad. **Phone** opens from the handset at the top of the home screen too, and has an icon of its own in
-the phone's apps, **Phone** with a handset on Erevos's icon, which opens the keypad. Each of these, like a tel: link,
+the phone's apps, **Phone**, green with a handset on Erevos's mark, which opens the keypad. Each of these, like a tel: link,
 opens it once Erevos is unlocked: with a password, after you type it, unless the Phone opens without it (see Erevos's
 password, below). Until then a card at the top says **Erevos is not the phone app**; on a small phone it shows only
 that title, and tapping it opens the Phone's **Settings**.
@@ -1036,7 +1037,7 @@ that title, and tapping it opens the Phone's **Settings**.
 On Android, **Contacts** in the menu shows the phone's contacts: the ones in Android's own contacts, which your
 other apps use too, so there is nothing to import. Android asks once whether Erevos may read and change them
 (**Allow contacts**). They open from the person at the top of the home screen too, and have an icon of their own in
-the phone's apps, **Contacts** with a person on Erevos's icon, which opens them behind Erevos's lock: with a
+the phone's apps, **Contacts**, violet with a person on Erevos's mark, which opens them behind Erevos's lock: with a
 password, once you type it.
 
 - **Finding someone:** **Search contacts** looks in every field: names, numbers (however they are written, with or
@@ -1363,6 +1364,12 @@ always reads well, on glass too.
   **Theme** says, with round buttons and softly rounded cards, in the phone's own font. A new wallpaper changes them
   in Erevos too, once it shows again. They are read on the phone and go nowhere. On older Android and on a computer
   it is not offered.
+- **Launcher icons** (Android): the colour of each of Erevos's icons among the phone's apps, **Erevos** (red),
+  **Phone** (green), **SMS** (blue, it opens the SMS list) and **Contacts** (violet): red, orange, green, blue,
+  violet or dark. It is the phone's, not each space's, as the icons show before Erevos is unlocked. After a change
+  some launchers take the icon off the home screen: add it again from the list of apps.
+- **Widget** (Android): the order of the widget's four buttons, from left to right, with the widget drawn as it will
+  look. Tap ↑ or ↓ to move a button; **First order** puts them back.
 
 ## On a computer {#desktop}
 

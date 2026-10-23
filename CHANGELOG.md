@@ -8,7 +8,26 @@ No release so far has a macOS build. **Not audited.**
 
 ## Unreleased
 
-On main, not released yet. The next release is **2.0.0**.
+On main, not released yet.
+
+## 2.0.1 (2026-10-23)
+
+- **Launcher icons of their own colour** (Android): Erevos red, Phone green, SMS blue and Contacts
+  violet, so they can be told apart at a glance. **SMS** is a new icon of its own, which opens the SMS
+  list as the widget's button does.
+- **Choose each icon's colour** (Android, **Appearance** → **Launcher icons**): red, orange, green,
+  blue, violet or dark, for each of the four. It is the phone's choice, not a space's, as the icons
+  show before Erevos is unlocked. After a change some launchers take the icon off the home screen:
+  add it again from the list of apps. After this update Erevos's own icon may need adding again once.
+- **Rearrange the widget's buttons** (Android, **Appearance** → **Widget**): move each of its four
+  buttons with ↑ and ↓, with the widget drawn as it will look; **First order** puts back Phone, SMS,
+  Messages and Contacts.
+- **Swipe to go back** on every screen: swipe right anywhere, as with the back arrow. **Swipe to the
+  side** between tabs: **All messages**, **SMS** and **Erevos** on the home screen, **Keypad**,
+  **Recents** and **Favourites** in the Phone, the filters in Contacts and the sticker sets. An SMS
+  conversation in the list keeps its own swipes.
+
+## 2.0.0 (2026-10-22)
 
 - **An update of the phone's WebView no longer closes Erevos** while it receives in the
   background, which took its notice away and with it calls and messages until you opened it. Erevos
