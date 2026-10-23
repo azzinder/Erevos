@@ -111,6 +111,8 @@ echo "== Service"
 install -m 0644 "$here/erevos-relay.service" /etc/systemd/system/erevos-relay.service
 systemctl daemon-reload
 systemctl enable erevos-relay
+# A relay that failed to start before (see StartLimitBurst) starts again.
+systemctl reset-failed erevos-relay 2>/dev/null || true
 systemctl restart erevos-relay
 
 echo "== TLS with Caddy"

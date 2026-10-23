@@ -32,7 +32,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::io::{self, Read, Write};
-use std::net::{TcpStream, ToSocketAddrs};
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
@@ -49,6 +49,8 @@ use p256::{PublicKey, SecretKey};
 use rand::RngCore;
 use sha2::{Digest, Sha256};
 
+use crate::connect;
+use crate::journal;
 use crate::lock::lock;
 use crate::queue::QueueId;
 
@@ -328,8 +330,8 @@ impl Push {
         }
         // The keys first: keys for an address the other file no longer has
         // are not used (see `load`).
-        write_whole(&keys_path(path), &keys)?;
-        write_whole(path, &addresses)
+        journal::write_whole(&keys_path(path), &keys)?;
+        journal::write_whole(path, &addresses)
     }
 
     fn run(&self, rx: Receiver<QueueId>) {
@@ -504,11 +506,8 @@ impl Push {
         )
         .into_bytes();
         request.extend_from_slice(body.unwrap_or_default());
-        let address = (host, port)
-            .to_socket_addrs()?
-            .next()
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "no address"))?;
-        let tcp = TcpStream::connect_timeout(&address, TIMEOUT)?;
+        let addresses: Vec<SocketAddr> = (host, port).to_socket_addrs()?.collect();
+        let tcp = connect::to_any(&addresses, TIMEOUT)?;
         tcp.set_read_timeout(Some(TIMEOUT))?;
         tcp.set_write_timeout(Some(TIMEOUT))?;
         let mut reply = Vec::new();
@@ -653,22 +652,6 @@ fn keys_path(path: &Path) -> PathBuf {
     let mut name = path.as_os_str().to_owned();
     name.push(".keys");
     PathBuf::from(name)
-}
-
-/// Writes `bytes` as the whole of `path`, through a file beside it, so a
-/// crash leaves the old file or the new one.
-fn write_whole(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    let mut name = path.as_os_str().to_owned();
-    name.push(".new");
-    let new = PathBuf::from(name);
-    let mut options = fs::OpenOptions::new();
-    options.write(true).create(true).truncate(true);
-    #[cfg(unix)]
-    std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
-    let mut file = options.open(&new)?;
-    file.write_all(bytes)?;
-    file.sync_all()?;
-    fs::rename(&new, path)
 }
 
 fn read_or_empty(path: &Path) -> io::Result<Vec<u8>> {

@@ -483,7 +483,13 @@ and it answers `429` too.
 If a part of the relay fails while it holds the queues or the files, the relay
 stops with a line saying so rather than run on half broken, and systemd
 starts it again two seconds later. It reads its queues and files back as after
-any restart.
+any restart. systemd starts it at most 5 times in 5 minutes, counting the
+starts you make yourself; past that it stays stopped until you start it:
+`sudo systemctl reset-failed erevos-relay`, then
+`sudo systemctl start erevos-relay` (once the 5 minutes have passed, the start
+alone does). A relay that refuses its settings or its files at start is not
+started again: mend what its last line names, then
+`sudo systemctl restart erevos-relay`.
 
 ## Settings
 

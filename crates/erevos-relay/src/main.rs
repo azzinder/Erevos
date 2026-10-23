@@ -123,6 +123,7 @@
 //! relay) to hand phones credentials for calls through it (see `turn.rs`).
 //! Without them, phones can only call directly, on the same network.
 
+mod connect;
 mod files;
 mod invites;
 mod journal;

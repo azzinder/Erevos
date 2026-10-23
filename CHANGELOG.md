@@ -18,6 +18,10 @@ On main, not released yet.
   that did not ring counts as a message. The relay counts what comes into a queue by the byte each
   send carries, as it does for the web app's notice, and tells the phone how many (`NEWS`); it
   needs the relay updated, and an older one only says that something waits, as before.
+- **The relay tries every address of a push service** (web app notices): one after the other, all
+  within the same 15 seconds, so an address that does not answer, such as an IPv6 one on a server
+  whose IPv6 does not work, no longer loses the notice. Its service (`deploy/relay`) starts it at most 5 times
+  in 5 minutes, and not again when it refuses its settings, instead of every 2 seconds for ever.
 
 ## 2.0.2 (2026-10-23)
 

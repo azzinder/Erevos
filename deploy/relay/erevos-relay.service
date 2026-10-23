@@ -6,6 +6,11 @@
 Description=Erevos relay
 After=network-online.target
 Wants=network-online.target
+# At most 5 starts in 5 minutes: past that it stays stopped, rather than
+# start again every 2 seconds for ever, until it is started by hand
+# (`systemctl reset-failed erevos-relay` first lets that be at once).
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 ExecStart=/usr/local/bin/erevos-relay 127.0.0.1:7878 127.0.0.1:7879
@@ -20,6 +25,10 @@ Environment=EREVOS_RELAY_FILES=/var/lib/erevos-relay/files
 Environment=EREVOS_RELAY_PUSH_KEY=/var/lib/erevos-relay/push.key
 Restart=on-failure
 RestartSec=2
+# Exit status 1: the relay refused its settings or files at start, which
+# another try does not mend. A crash while it runs (101, 70 or a signal)
+# still starts it again.
+RestartPreventExitStatus=1
 
 DynamicUser=yes
 StateDirectory=erevos-relay
