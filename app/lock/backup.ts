@@ -13,7 +13,7 @@ import { FILE as PUBLIC_GROUPS } from './public-group-data';
 import { prepareQueueEntries } from './queues-data';
 import { markRestore } from './restored';
 import { POCKETS } from './sealed-file';
-import { ORDER_FILE as SMS_ORDER } from './sms-data';
+import { ORDER_FILE as SMS_ORDER, smsDataChanged } from './sms-data';
 import { FILE as STICKERS } from './sticker-data';
 import { PREFIX as AVATAR } from './avatar-photos';
 import { PREFIX as VOICE } from './voice-clips';
@@ -250,6 +250,7 @@ export async function restoreBackup({ entries }: Backup): Promise<void> {
   // One made before the queues entries were, or that held fewer spaces, has none for some: each is
   // there again, sealed with a random key, before anything opens, so which are used shows nowhere.
   await prepareQueueEntries();
+  smsDataChanged();
   // The chats' conversations are as they were when the backup was made: each moves past the
   // message keys it may have used since, when its chat next opens.
   await markRestore();

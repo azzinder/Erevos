@@ -163,6 +163,18 @@ const orders = sealedFile<KeptOrder>({
   block: BLOCK,
 });
 
+// Counts the saves here, so what read the data can tell whether it changed since without reading
+// it again (lib/sms-link.ts): every save goes through saveSmsData.
+let saves = 0;
+
+/** How many saves there were so far: the same number again means none since. */
+export const smsSaves = (): number => saves;
+
+/** The data was written another way (a backup put back): read again by all that read it. */
+export function smsDataChanged(): void {
+  saves++;
+}
+
 export async function loadSmsData(holder: Holder, space: number, key: Uint8Array): Promise<SmsData> {
   const [data, order] = await Promise.all([store.load(holder, space, key), orders.load(holder, space, key)]);
   return order.kept ? { ...data, ...orderOf(order) } : data;
@@ -170,6 +182,10 @@ export async function loadSmsData(holder: Holder, space: number, key: Uint8Array
 
 /** Saves the order first: once it is kept there, FILE's copy of it from before is read no more. */
 export async function saveSmsData(holder: Holder, space: number, key: Uint8Array, data: SmsData): Promise<void> {
-  await orders.save(holder, space, key, { ...orderOf(data), kept: true });
-  await store.save(holder, space, key, { ...data, ...orderOf(EMPTY_SMS) });
+  try {
+    await orders.save(holder, space, key, { ...orderOf(data), kept: true });
+    await store.save(holder, space, key, { ...data, ...orderOf(EMPTY_SMS) });
+  } finally {
+    saves++;
+  }
 }

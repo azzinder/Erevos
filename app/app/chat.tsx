@@ -1075,6 +1075,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           setNote(t(NO_CORE));
           return;
         }
+        const toShown = (m: Kept): Message => ({ ...m, until: m.until ?? 0, lasts: m.lasts ?? 0, mark: m.mark ?? 0, id: nextId.current++ });
+        // The space's messages and contacts show at once, only to read, while a look at the relay
+        // under way ends (held); what it brought is in them after.
+        let early: { kept: Kept[]; ids: Set<number> } | null = null;
+        if (held) {
+          const open = await spaceChats().catch(() => null);
+          if (!active) return;
+          if (open) {
+            const kept = open.history.messages();
+            const firsts = kept.filter((m) => !m.until || m.until > Date.now()).map(toShown);
+            early = { kept, ids: new Set(firsts.map((m) => m.id)) };
+            setMessages((list) => [...firsts, ...list]);
+            setContacts(open.e2e.contacts());
+          }
+        }
         await held;
         if (!active) return;
         const shared = hiddenKey ? null : await spaceChats();
@@ -1085,11 +1100,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         // What disappeared while the chat was closed goes first.
         await kept.expire(Date.now());
         if (!active) return;
-        // Ahead of anything the radio brought while it loaded.
-        setMessages((list) => [
-          ...kept.messages().map((m) => ({ ...m, until: m.until ?? 0, lasts: m.lasts ?? 0, mark: m.mark ?? 0, id: nextId.current++ })),
-          ...list,
-        ]);
+        // Ahead of anything the radio brought while it loaded; in place of what showed at once, if
+        // the history changed meanwhile.
+        if (early?.kept !== kept.messages()) {
+          const was = early?.ids;
+          setMessages((list) => [...kept.messages().map(toShown), ...(was ? list.filter((m) => !was.has(m.id)) : list)]);
+        }
         const chats = shared?.e2e ?? (await E2E.open(hiddenHolder(pocket), space, hiddenKey!));
         if (!active) return;
         // Where its contact link and its old queues are (lib/queue-move.ts), and when its own queue was made, before anything is sealed.
@@ -3556,9 +3572,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   rowDo.current = {
     play: (message) => void play(message),
     open: openFile,
-    menu: setMenuFor,
+    // Only to read while the chat opens (shown at once, before its history is in hand).
+    menu: (message) => history.current && setMenuFor(message),
     goTo,
-    vote: (message, option) => void vote(message, option),
+    vote: (message, option) => history.current && void vote(message, option),
     placed: (message, y) => {
       placed.current.set(message.id, y);
       // Opened at this message (a starred one, or one found): gone to once the thread has settled.

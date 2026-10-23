@@ -7,7 +7,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, UNDO_SECONDS, WORD, type LaterSms, type SmsData } from '../lock/sms-data';
+import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type LaterSms, type SmsData } from '../lock/sms-data';
 import type { Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 
@@ -18,27 +18,39 @@ export class SmsLink {
   private readonly space: number;
   private readonly key: Uint8Array;
   private data: SmsData;
+  // The saves there were when it was read (smsSaves): with none since, it is as on the phone.
+  private seen: number;
 
-  private constructor(space: number, key: Uint8Array, data: SmsData) {
+  private constructor(space: number, key: Uint8Array, data: SmsData, seen: number) {
     this.space = space;
     this.key = key;
     this.data = data;
+    this.seen = seen;
   }
 
   static async open(space: number, key: Uint8Array): Promise<SmsLink> {
-    return new SmsLink(space, key, fresh(await loadSmsData('space', space, key), Date.now()));
+    const seen = smsSaves();
+    return new SmsLink(space, key, fresh(await loadSmsData('space', space, key), Date.now()), seen);
   }
 
-  /** Reads what another screen may have changed since. */
+  /** Reads what another screen may have changed since, if it did: the chat asks at each look. */
   async refresh(): Promise<void> {
+    if (smsSaves() === this.seen) return;
+    const seen = smsSaves();
     this.data = fresh(await loadSmsData('space', this.space, this.key), Date.now());
+    this.seen = seen;
   }
 
   // Changes the data as it is on the phone now: the chat and the SMS screen each keep one.
   private async update(change: (data: SmsData) => SmsData): Promise<void> {
     await this.refresh();
     const data = change(this.data);
-    await saveSmsData('space', this.space, this.key, data);
+    try {
+      await saveSmsData('space', this.space, this.key, data);
+    } finally {
+      // Read again next time, in case another saved meanwhile.
+      this.seen = -1;
+    }
     this.data = data;
   }
 
