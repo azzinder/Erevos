@@ -219,8 +219,8 @@ export const chat: Record<string, string> = {
   'Hide relay': 'Ocultar relay',
   'Relay and new contacts': 'Relay e novos contatos',
   'Say when a message comes': 'Avisar quando chega uma mensagem',
-  'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", as for the other chats, until you open them. Whoever sees it and finds nothing new in your chats may guess there are more.':
-    'Enquanto estas conversas ocultas estão fechadas e o Erevos está em segundo plano, um aviso diz apenas «New message», como para as outras conversas, até você abri-las. Quem o vir e não encontrar nada de novo nas suas conversas pode suspeitar que há mais.',
+  'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.':
+    'Enquanto estas conversas ocultas estão fechadas e o Erevos está em segundo plano, um aviso diz apenas «New message», ou quantas chegaram, como para as outras conversas; que uma mensagem chegou ou foi lida não dá nenhum. Quem o vir e não encontrar nada de novo nas suas conversas pode suspeitar que há mais.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Fechadas, estas conversas ocultas não dizem nada: as suas mensagens esperam no relay até você abri-las.',
   'Create the relay queue of these hidden chats first, under Relay and new contacts.':

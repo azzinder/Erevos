@@ -220,8 +220,8 @@ export const chat: Record<string, string> = {
   'Hide relay': 'Sakrij relay',
   'Relay and new contacts': 'Relay i novi kontakti',
   'Say when a message comes': 'Javi kad stigne poruka',
-  'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", as for the other chats, until you open them. Whoever sees it and finds nothing new in your chats may guess there are more.':
-    'Dok su ovi skriveni razgovori zatvoreni, a Erevos u pozadini, obavijest kaže samo „New message“, kao i za ostale razgovore, dok ih ne otvorite. Osoba koja je vidi, a ne nađe ništa novo u vašim razgovorima, mogla bi pretpostaviti da ih ima još.',
+  'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.':
+    'Dok su ovi skriveni razgovori zatvoreni, a Erevos u pozadini, obavijest kaže samo „New message“ ili koliko ih je stiglo, kao i za ostale razgovore; to što je poruka stigla ili je pročitana ne daje nijednu. Osoba koja je vidi, a ne nađe ništa novo u vašim razgovorima, mogla bi pretpostaviti da ih ima još.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Dok su zatvoreni, ovi skriveni razgovori ništa ne javljaju: njihove poruke čekaju na relayu dok ih ne otvorite.',
   'Create the relay queue of these hidden chats first, under Relay and new contacts.':

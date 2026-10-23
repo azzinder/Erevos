@@ -16,11 +16,14 @@ import { setCore, type Core } from '../lib/core';
 import {
   BadRelayAddressError,
   callRelay,
+  canTellNewsAt,
   canTryLater,
   canWaitAt,
   createQueue,
   isQueueNotFound,
   isRelayAddress,
+  newsSince,
+  NO_NEWS,
   receiveMessage,
   relayKey,
   RelayError,
@@ -30,6 +33,7 @@ import {
   sendMessageLater,
   setPush,
   waitForMessage,
+  waitForNews,
   type Relay,
 } from '../lib/relay';
 
@@ -220,6 +224,42 @@ test('a relay waits until a message comes, without taking it, and a wait can be 
   assert.ok(canWaitAt(own));
 });
 
+test('a relay says what came into a queue by what each send said, without taking it', { skip: !ready }, async () => {
+  const own: Relay = { url: near };
+  const ids = await createQueue(own);
+  let started = Date.now();
+  assert.deepEqual(await waitForNews(own, ids.recipientId, 1, NO_NEWS), NO_NEWS);
+  assert.ok(Date.now() - started >= 900);
+  // Word between phones starts a round with nothing in it.
+  await sendMessage(own, ids.senderId, Uint8Array.of(1), 'quiet');
+  const first = (await waitForNews(own, ids.recipientId, 30, NO_NEWS))!;
+  assert.ok(first.round > 0);
+  assert.deepEqual(newsSince(null, first), { messages: 0, unmarked: 0, rings: 0 });
+  // One waiting ends as a message comes.
+  started = Date.now();
+  const waiting = waitForNews(own, ids.recipientId, 30, first);
+  await new Promise((r) => setTimeout(r, 200));
+  await sendMessage(own, ids.senderId, Uint8Array.of(2), 'message');
+  const now = (await waiting)!;
+  assert.ok(Date.now() - started < 10_000);
+  assert.deepEqual(now, { ...first, messages: 1 });
+  await sendMessage(own, ids.senderId, Uint8Array.of(3), 'ring');
+  await sendMessage(own, ids.senderId, Uint8Array.of(4));
+  const all = (await waitForNews(own, ids.recipientId, 30, now))!;
+  assert.deepEqual(newsSince(now, all), { messages: 0, unmarked: all.unmarked, rings: 1 });
+  assert.ok(all.unmarked >= 1);
+  // Ended from this side: what was heard, again.
+  const ending = new AbortController();
+  const ended = waitForNews(own, ids.recipientId, 30, all, ending.signal);
+  setTimeout(() => ending.abort(), 100);
+  assert.deepEqual(await ended, all);
+  // Nothing was taken; found empty, the round ends.
+  assert.deepEqual(await receiveMessage(own, ids.recipientId), Uint8Array.of(1));
+  while (await receiveMessage(own, ids.recipientId));
+  assert.deepEqual(await waitForNews(own, ids.recipientId, 0, all), NO_NEWS);
+  assert.ok(canTellNewsAt(own));
+});
+
 test('a relay from before waiting is asked plainly from then on, and one not there throws', { skip: !ready }, async () => {
   // As an older relay does: KEY is answered (it has none), anything it does not know closes the connection.
   const { Server } = createRequire(import.meta.url)('ws') as {
@@ -233,6 +273,9 @@ test('a relay from before waiting is asked plainly from then on, and one not the
   old.on('connection', (socket) => socket.on('message', (data) => (data[0] === 5 ? socket.send(Uint8Array.of(1)) : socket.terminate())));
   try {
     const relay: Relay = { url: `ws://127.0.0.1:${port}` };
+    assert.ok(canTellNewsAt(relay));
+    assert.equal(await waitForNews(relay, new Uint8Array(24), 30, NO_NEWS), null);
+    assert.equal(canTellNewsAt(relay), false);
     assert.ok(canWaitAt(relay));
     assert.equal(await waitForMessage(relay, new Uint8Array(24), 30), false);
     assert.equal(canWaitAt(relay), false);

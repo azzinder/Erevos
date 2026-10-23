@@ -19,6 +19,13 @@
 //! relay notes only the day a queue was last used, and writes it down at most
 //! once a day a queue. A queue from a journal written before relays noted
 //! that counts as used the day it was read back.
+//!
+//! Each queue also keeps, in memory only, what came into it since its
+//! recipient last found it empty, by what each send said it carries (`News`):
+//! so a phone can be told how many messages wait in a queue it cannot read
+//! now, as hidden chats' while they are closed, and not of word between
+//! phones. After a restart a queue with something waiting counts it as one
+//! send that did not say.
 
 use std::collections::{HashMap, VecDeque};
 use std::io;
@@ -66,6 +73,54 @@ struct Queue {
     messages: VecDeque<(u64, Vec<u8>)>,
     /// The day its recipient last used it, Unix seconds at its start.
     used: u64,
+    /// What came since its recipient last found it empty.
+    news: News,
+}
+
+/// What a send said it carries.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Said {
+    /// A message someone reads.
+    Message,
+    /// Word between phones, such as that a message came or new keys.
+    Quiet,
+    /// A call that rings.
+    Ring,
+    /// It did not say: perhaps a message.
+    Unknown,
+}
+
+/// What came into a queue since its recipient last found it empty.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct News {
+    /// Random, new each time something comes into a queue found empty; 0
+    /// while nothing came since.
+    pub round: u32,
+    /// Messages.
+    pub messages: u32,
+    /// Sends that did not say what they carry.
+    pub unmarked: u32,
+    /// Calls that rang.
+    pub rings: u32,
+}
+
+impl News {
+    fn came(&mut self, said: Said) {
+        if self.round == 0 {
+            self.round = new_round();
+        }
+        let counted = match said {
+            Said::Quiet => return,
+            Said::Message => &mut self.messages,
+            Said::Ring => &mut self.rings,
+            Said::Unknown => &mut self.unmarked,
+        };
+        *counted = counted.saturating_add(1);
+    }
+}
+
+fn new_round() -> u32 {
+    rand::rngs::OsRng.next_u32().max(1)
 }
 
 pub struct Store {
@@ -306,6 +361,7 @@ impl Store {
                         sender_id,
                         messages: VecDeque::new(),
                         used,
+                        news: News::default(),
                     },
                 );
                 self.by_sender.insert(sender_id, recipient_id);
@@ -361,6 +417,7 @@ impl Store {
                 sender_id,
                 messages: VecDeque::new(),
                 used,
+                news: News::default(),
             },
         );
         self.by_sender.insert(sender_id, recipient_id);
@@ -376,7 +433,19 @@ impl Store {
         self.by_sender.get(sender_id).copied()
     }
 
+    /// Queues `msg` as a send that did not say what it carries.
+    #[cfg(test)]
     pub fn send(&mut self, sender_id: &QueueId, msg: Vec<u8>) -> Result<(), QueueError> {
+        self.send_said(sender_id, msg, Said::Unknown)
+    }
+
+    /// Queues `msg`, counted in the queue's news as `said` says.
+    pub fn send_said(
+        &mut self,
+        sender_id: &QueueId,
+        msg: Vec<u8>,
+        said: Said,
+    ) -> Result<(), QueueError> {
         let rid = *self.by_sender.get(sender_id).ok_or(QueueError::NotFound)?;
         self.expire_queue(&rid)?;
         let at = self.hour();
@@ -393,6 +462,7 @@ impl Store {
             },
         )?;
         q.messages.push_back((at, msg));
+        q.news.came(said);
         self.tidy();
         Ok(())
     }
@@ -406,6 +476,8 @@ impl Store {
             .get_mut(recipient_id)
             .ok_or(QueueError::NotFound)?;
         if q.messages.is_empty() {
+            // What comes from now on counts from nothing.
+            q.news = News::default();
             return Ok(None);
         }
         log(
@@ -426,6 +498,23 @@ impl Store {
         self.touch(recipient_id);
         let q = self.queues.get(recipient_id).ok_or(QueueError::NotFound)?;
         Ok(!q.messages.is_empty())
+    }
+
+    /// What came into the queue since its recipient last found it empty.
+    /// Nothing is taken. Asked by the queue's recipient, so it counts as a
+    /// use. What waits from before a restart counts as one send that did not
+    /// say.
+    pub fn news(&mut self, recipient_id: &QueueId) -> Result<News, QueueError> {
+        self.expire_queue(recipient_id)?;
+        self.touch(recipient_id);
+        let q = self
+            .queues
+            .get_mut(recipient_id)
+            .ok_or(QueueError::NotFound)?;
+        if q.news.round == 0 && !q.messages.is_empty() {
+            q.news.came(Said::Unknown);
+        }
+        Ok(q.news)
     }
 
     pub fn delete(&mut self, recipient_id: &QueueId) -> Result<(), QueueError> {
@@ -496,6 +585,71 @@ mod tests {
         assert_eq!(s.send(&q.sender_id, vec![0]), Err(QueueError::Full));
         s.delete(&q.recipient_id).unwrap();
         assert_eq!(s.send(&q.sender_id, vec![0]), Err(QueueError::NotFound));
+    }
+
+    #[test]
+    fn news_counts_what_each_send_said_until_the_queue_is_found_empty() {
+        let mut s = Store::default();
+        let q = s.create().unwrap();
+        assert_eq!(s.news(&q.recipient_id).unwrap(), News::default());
+        // Word between phones starts a round and counts nothing.
+        s.send_said(&q.sender_id, b"seen".to_vec(), Said::Quiet)
+            .unwrap();
+        let first = s.news(&q.recipient_id).unwrap();
+        assert_ne!(first.round, 0);
+        assert_eq!((first.messages, first.unmarked, first.rings), (0, 0, 0));
+        s.send_said(&q.sender_id, b"hello".to_vec(), Said::Message)
+            .unwrap();
+        s.send_said(&q.sender_id, b"call".to_vec(), Said::Ring)
+            .unwrap();
+        s.send(&q.sender_id, b"old".to_vec()).unwrap();
+        s.send_said(&q.sender_id, b"again".to_vec(), Said::Message)
+            .unwrap();
+        let now = s.news(&q.recipient_id).unwrap();
+        assert_eq!(
+            now,
+            News {
+                round: first.round,
+                messages: 2,
+                unmarked: 1,
+                rings: 1
+            }
+        );
+        // Taking messages leaves the count; finding the queue empty ends the round.
+        for _ in 0..5 {
+            assert!(s.receive(&q.recipient_id).unwrap().is_some());
+        }
+        assert_eq!(s.news(&q.recipient_id).unwrap(), now);
+        assert_eq!(s.receive(&q.recipient_id).unwrap(), None);
+        assert_eq!(s.news(&q.recipient_id).unwrap(), News::default());
+        s.send_said(&q.sender_id, b"next".to_vec(), Said::Message)
+            .unwrap();
+        let next = s.news(&q.recipient_id).unwrap();
+        assert_ne!(next.round, 0);
+        assert_eq!((next.messages, next.unmarked, next.rings), (1, 0, 0));
+        assert_eq!(s.news(&q.sender_id), Err(QueueError::NotFound));
+    }
+
+    #[test]
+    fn what_waits_from_before_a_restart_counts_as_one_send_that_did_not_say() {
+        let path = TempPath::new();
+        let (full, empty) = {
+            let mut s = Store::open(&path.0).unwrap();
+            let full = s.create().unwrap();
+            let empty = s.create().unwrap();
+            s.send_said(&full.sender_id, b"one".to_vec(), Said::Message)
+                .unwrap();
+            s.send_said(&full.sender_id, b"two".to_vec(), Said::Message)
+                .unwrap();
+            (full, empty)
+        };
+        let mut s = Store::open(&path.0).unwrap();
+        let news = s.news(&full.recipient_id).unwrap();
+        assert_ne!(news.round, 0);
+        assert_eq!((news.messages, news.unmarked, news.rings), (0, 1, 0));
+        // Asked again, the same round.
+        assert_eq!(s.news(&full.recipient_id).unwrap(), news);
+        assert_eq!(s.news(&empty.recipient_id).unwrap(), News::default());
     }
 
     /// A fresh path in the system temp directory, removed when dropped.

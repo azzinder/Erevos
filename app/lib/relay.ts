@@ -85,6 +85,7 @@ const UNINVITE = 23;
 const REDEEM = 24;
 const SIGN_IN = 25;
 const CLAIM = 26;
+const NEWS = 27;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
 const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
@@ -616,6 +617,70 @@ export async function waitForMessage(relay: Relay, recipientId: Uint8Array, seco
   }
   check(reply, 'wait');
   return reply[1] === 1;
+}
+
+/**
+ * What came into a queue since its recipient last found it empty, as the relay counts it by what
+ * each send said it carries (Mark): messages, sends that did not say, and rings; word between
+ * phones counts nothing. `round` is new each time something comes into a queue found empty, and
+ * 0 while nothing came since.
+ */
+export type News = { round: number; messages: number; unmarked: number; rings: number };
+
+export const NO_NEWS: News = { round: 0, messages: 0, unmarked: 0, rings: 0 };
+
+// Relays that cannot say what came (from before NEWS), by address, for this run.
+const cannotTell = new Set<string>();
+
+/** Whether the relay may be asked what came into a queue (`waitForNews`), as far as this run knows. */
+export function canTellNewsAt(relay: Relay): boolean {
+  return !cannotTell.has(relay.url.trim().toLowerCase());
+}
+
+/**
+ * Waits until what came into the queue differs from `heard`, `seconds` at most (60), without
+ * taking anything, and returns what came: `heard` again when nothing changed in that time or the
+ * wait was ended (`signal`). Null when the relay cannot say: a relay from before it closes the
+ * connection, as for any request it does not know, and then one that answers a plain request is
+ * not asked again this run (waitForMessage may still wait there). Throws when the relay cannot be
+ * reached.
+ */
+export async function waitForNews(relay: Relay, recipientId: Uint8Array, seconds: number, heard: News, signal?: AbortSignal): Promise<News | null> {
+  const bytes = new Uint8Array(1 + 24 + 1 + 16);
+  bytes[0] = NEWS;
+  bytes.set(recipientId, 1);
+  bytes[25] = Math.max(0, Math.min(60, Math.round(seconds)));
+  const view = new DataView(bytes.buffer);
+  [heard.round, heard.messages, heard.unmarked, heard.rings].forEach((n, i) => view.setUint32(26 + 4 * i, n >>> 0));
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, bytes, signal);
+  } catch (error) {
+    if (error instanceof Ended) return heard;
+    if (!(error instanceof RelayUnreachableError) || signal?.aborted) throw error;
+    try {
+      await request(relay, Uint8Array.of(KEY), signal);
+    } catch (again) {
+      if (again instanceof Ended) return heard;
+      throw error;
+    }
+    cannotTell.add(relay.url.trim().toLowerCase());
+    return null;
+  }
+  check(reply, 'news');
+  if (reply.length < 17) throw new RelayError(`news: unexpected reply of ${reply.length} bytes`, reply[0]);
+  const read = new DataView(reply.buffer, reply.byteOffset, reply.byteLength);
+  return { round: read.getUint32(1), messages: read.getUint32(5), unmarked: read.getUint32(9), rings: read.getUint32(13) };
+}
+
+/** What `now` counts that `heard` did not: all of it when it is another round, or nothing was heard. */
+export function newsSince(heard: News | null, now: News): Omit<News, 'round'> {
+  const before = heard && heard.round === now.round ? heard : NO_NEWS;
+  return {
+    messages: Math.max(0, now.messages - before.messages),
+    unmarked: Math.max(0, now.unmarked - before.unmarked),
+    rings: Math.max(0, now.rings - before.rings),
+  };
 }
 
 /**

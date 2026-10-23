@@ -17,7 +17,7 @@ import { onSpaceGroupMessage } from './space-groups';
 // phone's ringtone and a notice that says only "Incoming call", over the lock screen, and messages
 // that came show a notice that says only how many, and on a locked phone only "Erevos". Only the
 // open space's chats and groups are read, never hidden chats, whose key is in memory only while
-// they are open; those that asked for it only say that a message came (lib/hidden-notices.ts).
+// they are open; those that asked for it only say how many messages came (lib/hidden-notices.ts).
 // On by default; switches on the Lock screen turn it off on this phone, or only the messages
 // notice. Swiped away from the recent apps, it goes on without its screens (lib/space-running.ts);
 // stopped by Android, Erevos looks at nothing and cannot ring, and a quiet notice says so
@@ -127,7 +127,10 @@ export function startBackground(): () => void {
   // The hidden chats' notices, while the messages notice is on (lib/hidden-notices.ts).
   let hidden: (() => void) | null = null;
   const tellHidden = (on: boolean) => {
-    if (on && !hidden) hidden = startHiddenNotices(() => messageCame());
+    if (on && !hidden)
+      hidden = startHiddenNotices((count) => {
+        for (let i = 0; i < count; i++) messageCame();
+      });
     if (!on && hidden) {
       hidden();
       hidden = null;

@@ -219,8 +219,8 @@ export const chat: Record<string, string> = {
   'Hide relay': 'Απόκρυψη relay',
   'Relay and new contacts': 'Relay και νέες επαφές',
   'Say when a message comes': 'Ειδοποίηση όταν έρχεται μήνυμα',
-  'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", as for the other chats, until you open them. Whoever sees it and finds nothing new in your chats may guess there are more.':
-    'Όσο αυτές οι κρυφές συνομιλίες είναι κλειστές και το Erevos είναι στο παρασκήνιο, μια ειδοποίηση λέει μόνο «Νέο μήνυμα», όπως για τις άλλες συνομιλίες, μέχρι να τις ανοίξεις. Όποιος τη δει και δεν βρει τίποτα νέο στις συνομιλίες σου μπορεί να υποψιαστεί ότι υπάρχουν κι άλλες.',
+  'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.':
+    'Όσο αυτές οι κρυφές συνομιλίες είναι κλειστές και το Erevos είναι στο παρασκήνιο, μια ειδοποίηση λέει μόνο «Νέο μήνυμα», ή πόσα ήρθαν, όπως για τις άλλες συνομιλίες· το ότι ένα μήνυμα έφτασε ή διαβάστηκε δεν βγάζει καμία. Όποιος τη δει και δεν βρει τίποτα νέο στις συνομιλίες σου μπορεί να υποψιαστεί ότι υπάρχουν κι άλλες.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Κλειστές, αυτές οι κρυφές συνομιλίες δεν λένε τίποτα: τα μηνύματά τους περιμένουν στο relay μέχρι να τις ανοίξεις.',
   'Create the relay queue of these hidden chats first, under Relay and new contacts.':

@@ -18,6 +18,18 @@
 //!   when none came in that time. Nothing is taken: a `RECEIVE` takes it. A
 //!   phone in the background waits so instead of asking every few seconds,
 //!   and nothing is lost if its connection drops while it waits.
+//! - `NEWS`: recipient id, 1 byte: seconds to wait, at most `MAX_WAIT`, then
+//!   what the phone last heard of the queue: a 4-byte round, then 4-byte
+//!   counts of messages, sends that did not say, and rings (see the marks
+//!   below, and `queue::News`). Reply: `OK` and the same 16 bytes as they are
+//!   now, as soon as they differ from what the phone heard, or when the time
+//!   is up. Nothing is taken. A round starts, at random, when something comes
+//!   into a queue its recipient found empty, and ends when it finds it empty
+//!   again (round 0: nothing came since); a `QUIET` send counts nothing. So a
+//!   phone in the background can say how many messages came to a queue it
+//!   cannot read then, as hidden chats' while they are closed, and nothing of
+//!   word between phones. Kept in memory only: after a restart what waits
+//!   counts as one send that did not say. Older relays close the connection.
 //! - `DELETE`: recipient id.
 //! - `KEY`: no fields. Reply: the relay's public key (32 bytes) for sealed
 //!   sends, or `NOT_FOUND` if it has none.
@@ -221,7 +233,7 @@ use crate::lend::{Lend, Nonce, Pass};
 use crate::lock::{lock, wait_timeout};
 use crate::peers;
 use crate::push::{Came, Keys, Push, SetError, AUTH_LEN, MAX_ENDPOINT, P256DH_LEN};
-use crate::queue::{system_now, QueueError, QueueId, Store};
+use crate::queue::{system_now, News, QueueError, QueueId, Said, Store};
 use crate::signin::{self, ClaimError, SignIn};
 use crate::tokens::{to_hex, Phone, Tokens};
 use crate::turn::Turn;
@@ -428,6 +440,7 @@ pub const UNINVITE: u8 = 23;
 pub const REDEEM: u8 = 24;
 pub const SIGN_IN: u8 = 25;
 pub const CLAIM: u8 = 26;
+pub const NEWS: u8 = 27;
 
 /// The marks a send may end with (see the module's doc).
 pub const MESSAGE: u8 = 1;
@@ -783,6 +796,7 @@ fn respond(
                 | SEND
                 | RECEIVE
                 | WAIT
+                | NEWS
                 | DELETE
                 | KEY
                 | SEALED_SEND
@@ -867,6 +881,23 @@ fn respond(
                 let left = until.saturating_duration_since(Instant::now());
                 if left.is_zero() {
                     break vec![OK, 0];
+                }
+                store = wait_timeout(&shared.arrived, store, left, STORE_LOCK);
+            }
+        }
+        NEWS => {
+            let recipient = read_id(r)?;
+            let mut seconds = [0u8; 1];
+            r.read_exact(&mut seconds)?;
+            let heard = read_news(r)?;
+            let until = Instant::now() + Duration::from_secs(u64::from(seconds[0].min(MAX_WAIT)));
+            let mut store = shared.store();
+            loop {
+                let left = until.saturating_duration_since(Instant::now());
+                match store.news(&recipient) {
+                    Ok(now) if now != heard || left.is_zero() => break news_reply(now),
+                    Ok(_) => {}
+                    Err(e) => break vec![code(e)],
                 }
                 store = wait_timeout(&shared.arrived, store, left, STORE_LOCK);
             }
@@ -1260,7 +1291,13 @@ fn queue_message(
 ) -> Result<(), QueueError> {
     let sent = {
         let mut store = shared.store();
-        let sent = store.send(sender, msg);
+        let said = match mark {
+            Mark::Quiet => Said::Quiet,
+            Mark::Message => Said::Message,
+            Mark::Ring => Said::Ring,
+            Mark::Unknown => Said::Unknown,
+        };
+        let sent = store.send_said(sender, msg, said);
         let came = match mark {
             Mark::Quiet => None,
             Mark::Message => Some(Came::Message),
@@ -1368,6 +1405,27 @@ fn read_id(r: &mut impl Read) -> io::Result<QueueId> {
     let mut id = [0u8; 24];
     r.read_exact(&mut id)?;
     Ok(id)
+}
+
+/// What a phone last heard of a queue, in a `NEWS` request.
+fn read_news(r: &mut impl Read) -> io::Result<News> {
+    let mut bytes = [0u8; 16];
+    r.read_exact(&mut bytes)?;
+    let at = |i: usize| u32::from_be_bytes([bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]]);
+    Ok(News {
+        round: at(0),
+        messages: at(4),
+        unmarked: at(8),
+        rings: at(12),
+    })
+}
+
+fn news_reply(news: News) -> Vec<u8> {
+    let mut out = vec![OK];
+    for n in [news.round, news.messages, news.unmarked, news.rings] {
+        out.extend_from_slice(&n.to_be_bytes());
+    }
+    out
 }
 
 fn read_held_id(r: &mut impl Read) -> io::Result<HeldId> {
@@ -1902,6 +1960,88 @@ mod tests {
         assert_eq!(receive(&mut s, &recipient), None);
         // A queue that is not here.
         assert_eq!(wait(&mut s, &[9u8; 24], 30), vec![NOT_FOUND]);
+    }
+
+    fn news_request(recipient: &QueueId, seconds: u8, heard: News) -> Vec<u8> {
+        let mut req = vec![NEWS];
+        req.extend_from_slice(recipient);
+        req.push(seconds);
+        req.extend_from_slice(&news_reply(heard)[1..]);
+        req
+    }
+
+    fn ws_news(ws: &mut Ws, recipient: &QueueId, seconds: u8, heard: News) -> News {
+        let r = ws_call(ws, news_request(recipient, seconds, heard));
+        assert_eq!((r[0], r.len()), (OK, 17));
+        read_news(&mut &r[1..]).unwrap()
+    }
+
+    #[test]
+    fn news_says_how_many_messages_came_and_nothing_of_word_between_phones() {
+        let addr = start_ws(None);
+        let mut ws = connect_with_token(addr, "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        let nothing = News::default();
+        // Nothing comes: the time is up, and nothing came.
+        let started = Instant::now();
+        assert_eq!(ws_news(&mut ws, &recipient, 1, nothing), nothing);
+        assert!(started.elapsed() >= Duration::from_millis(900));
+
+        // Word between phones starts a round, with no message in it.
+        let quiet = marked(send_request(&sender, b"seen"), QUIET);
+        assert_eq!(ws_call(&mut ws, quiet), vec![OK]);
+        let first = ws_news(&mut ws, &recipient, 30, nothing);
+        assert_ne!(first.round, 0);
+        assert_eq!((first.messages, first.unmarked, first.rings), (0, 0, 0));
+
+        // One waiting for more ends as a message comes.
+        let waiter = thread::spawn(move || {
+            let mut w = connect_with_token(addr, "", "");
+            let started = Instant::now();
+            (ws_news(&mut w, &recipient, 30, first), started.elapsed())
+        });
+        thread::sleep(Duration::from_millis(300));
+        let message = marked(send_request(&sender, b"hello"), MESSAGE);
+        assert_eq!(ws_call(&mut ws, message), vec![OK]);
+        let (now, took) = waiter.join().unwrap();
+        assert!(took < Duration::from_secs(10));
+        assert_eq!(
+            (now.round, now.messages, now.unmarked, now.rings),
+            (first.round, 1, 0, 0)
+        );
+
+        // A call and a send that did not say are counted apart; more word, not at all.
+        assert_eq!(
+            ws_call(&mut ws, marked(send_request(&sender, b"call"), RING)),
+            vec![OK]
+        );
+        assert_eq!(ws_call(&mut ws, send_request(&sender, b"old")), vec![OK]);
+        assert_eq!(
+            ws_call(&mut ws, marked(send_request(&sender, b"read"), QUIET)),
+            vec![OK]
+        );
+        let all = ws_news(&mut ws, &recipient, 30, now);
+        assert_eq!(
+            (all.round, all.messages, all.unmarked, all.rings),
+            (first.round, 1, 1, 1)
+        );
+        assert_eq!(ws_news(&mut ws, &recipient, 0, all), all);
+
+        // Nothing was taken; once the queue is found empty, the round ends.
+        for _ in 0..5 {
+            assert!(ws_receive(&mut ws, &recipient).is_some());
+        }
+        assert_eq!(ws_receive(&mut ws, &recipient), None);
+        assert_eq!(ws_news(&mut ws, &recipient, 0, all), nothing);
+        let message = marked(send_request(&sender, b"next"), MESSAGE);
+        assert_eq!(ws_call(&mut ws, message), vec![OK]);
+        let next = ws_news(&mut ws, &recipient, 30, nothing);
+        assert!(next.round != 0 && next.round != first.round);
+        assert_eq!((next.messages, next.unmarked, next.rings), (1, 0, 0));
+
+        // A queue that is not here.
+        let r = ws_call(&mut ws, news_request(&[9u8; 24], 30, nothing));
+        assert_eq!(r, vec![NOT_FOUND]);
     }
 
     #[test]
@@ -2650,6 +2790,11 @@ mod tests {
         wait.extend_from_slice(&recipient);
         wait.push(0);
         assert_eq!(ws_call(&mut lent, wait), vec![OK, 0]);
+        // "back" was taken, and said nothing of what it carries.
+        assert_eq!(
+            ws_news(&mut lent, &recipient, 0, News::default()).unmarked,
+            1
+        );
         assert_eq!(ws_call(&mut lent, vec![KEY])[0], OK);
         let mut put = vec![FILE_PUT];
         put.extend_from_slice(&3u32.to_be_bytes());

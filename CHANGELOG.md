@@ -8,7 +8,16 @@ No release so far has a macOS build. **Not audited.**
 
 ## Unreleased
 
-On main, not released yet: nothing so far.
+On main, not released yet.
+
+- **Hidden chats' notice counts only messages** (Android, **Say when a message comes**): while a
+  place is closed, the notice says "New message", or how many came, each message once, as for the
+  other chats. Before, anything that came for the place made it, also that a message of yours came
+  to them or was read, and after that one it said nothing more until you opened the place, so a
+  real answer could pass in silence. A call that rang (**Ring calls when closed**) makes none; one
+  that did not ring counts as a message. The relay counts what comes into a queue by the byte each
+  send carries, as it does for the web app's notice, and tells the phone how many (`NEWS`); it
+  needs the relay updated, and an older one only says that something waits, as before.
 
 ## 2.0.2 (2026-10-23)
 

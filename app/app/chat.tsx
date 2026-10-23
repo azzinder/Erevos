@@ -4293,7 +4293,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />
                   <Text variant="caption" tone="muted">
                     {watched
-                      ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", as for the other chats, until you open them. Whoever sees it and finds nothing new in your chats may guess there are more.')
+                      ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.')
                       : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
                   </Text>
                   {watchNote ? <Text variant="caption" tone="muted">{watchNote}</Text> : null}

@@ -1,8 +1,9 @@
-// Hidden chats that say a message came (lock/hidden-watch.ts, lib/hidden-notices.ts): every space
-// keeps one queue per pocket, those not asked for made for nothing on the same relay, sealed and
-// padded so a space with hidden chats looks like one without; in the background the relay is only
-// asked whether something waits, and a pocket tells once until its chats open. The relay part runs
-// with a real relay, and is skipped, with a note, without one.
+// Hidden chats that say how many messages came (lock/hidden-watch.ts, lib/hidden-notices.ts): every
+// space keeps one queue per pocket, those not asked for made for nothing on the same relay, sealed
+// and padded so a space with hidden chats looks like one without; in the background the relay is
+// only asked what came by what each send said, never for it, and each message is told of once,
+// word between phones never. The relay part runs with a real relay, and is skipped, with a note,
+// without one.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -65,7 +66,7 @@ test('every space has the entry, of one size whether its pockets are waited on o
   assert.deepEqual(after.slice(0, 2), list.slice(0, 2));
 });
 
-test('in the background, a pocket tells once that a message came, and again only after it opened', { skip: !relayReady }, async () => {
+test('in the background, a pocket tells of each message once, and of word between phones never', { skip: !relayReady }, async () => {
   store.clear();
   const url = await startRelay();
   const key = newSpaceKey();
@@ -75,21 +76,47 @@ test('in the background, a pocket tells once that a message came, and again only
   await watchPocket(0, key, 1, { url, token: '', recipientHex: toHex(ids.recipientId) });
   setAppShown(false);
   let told = 0;
-  const stop = startHiddenNotices(() => told++);
+  let stop = startHiddenNotices((count) => (told += count));
+  const settle = () => new Promise((r) => setTimeout(r, 400));
   try {
-    await sendMessage({ url }, ids.senderId, Uint8Array.of(1, 2, 3));
+    // That a message came, or was read: nothing.
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(9), 'quiet');
+    await settle();
+    assert.equal(told, 0);
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(1, 2, 3), 'message');
     await until(() => told === 1);
-    // What came stays on the relay for the hidden chats.
-    await sendMessage({ url }, ids.senderId, Uint8Array.of(4));
-    await new Promise((r) => setTimeout(r, 300));
-    assert.equal(told, 1);
-    // Opened and closed again, with the messages still waiting: it tells again.
-    setOpenHiddenPlace(place(0, 1));
-    await new Promise((r) => setTimeout(r, 300));
-    assert.equal(told, 1);
-    setOpenHiddenPlace(null);
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(4), 'message');
     await until(() => told === 2);
-    assert.deepEqual(await receiveMessage({ url }, ids.recipientId), Uint8Array.of(1, 2, 3));
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(9), 'quiet');
+    // One that did not say, as from an older phone: perhaps a message.
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(5));
+    await until(() => told === 3);
+    await settle();
+    assert.equal(told, 3);
+    // Shown and back, opened and closed with the messages still waiting, or started anew: nothing again.
+    setAppShown(true);
+    await settle();
+    setAppShown(false);
+    setOpenHiddenPlace(place(0, 1));
+    await settle();
+    setOpenHiddenPlace(null);
+    stop();
+    stop = startHiddenNotices((count) => (told += count));
+    await settle();
+    assert.equal(told, 3);
+    // Taken by the hidden chats, what comes after counts anew.
+    assert.deepEqual(await receiveMessage({ url }, ids.recipientId), Uint8Array.of(9));
+    while (await receiveMessage({ url }, ids.recipientId));
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(6), 'message');
+    await until(() => told === 4);
+    // A message that comes while Erevos shows is told of once it goes to the background.
+    setAppShown(true);
+    await settle();
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(7), 'message');
+    await settle();
+    assert.equal(told, 4);
+    setAppShown(false);
+    await until(() => told === 5);
   } finally {
     stop();
     setAppShown(true);

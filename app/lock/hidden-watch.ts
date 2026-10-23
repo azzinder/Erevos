@@ -11,8 +11,9 @@ import { SLOTS } from './slots';
 // the space's key and padded to whole blocks as its entry is (space-data.ts). A pocket whose chats
 // asked for it has their own queue there; every other pocket has a queue made for nothing on the
 // same relay, which no one writes to. So a space with a relay keeps POCKETS queues there whatever
-// hidden chats it has, and whoever opens the space learns nothing of them from it. Only whether
-// something waits is asked of the relay, never what: it stays there for the hidden chats to take.
+// hidden chats it has, and whoever opens the space learns nothing of them from it. Only how many
+// messages came is asked of the relay, as it counts them by what each send said, never for them:
+// they stay there for the hidden chats to take.
 
 /** A queue waited on: its relay, and its recipient id. */
 export type Watched = { url: string; token: string; recipientHex: string };

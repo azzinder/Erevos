@@ -12,10 +12,19 @@ export type HiddenRinging = { space: number; pocket: number; at: number };
 
 let ringing: HiddenRinging | null = null;
 const listeners = new Set<() => void>();
+// When a hidden call last began to ring in each place, by space and pocket, for this run: the
+// message notice leaves out the call that rang (lib/hidden-notices.ts).
+const rang = new Map<string, number>();
 
 export function setHiddenRinging(state: HiddenRinging | null): void {
   ringing = state;
+  if (state) rang.set(`${state.space}.${state.pocket}`, state.at);
   for (const listener of listeners) listener();
+}
+
+/** When a hidden call last began to ring in that place, this run, or 0. */
+export function hiddenRangAt(space: number, pocket: number): number {
+  return rang.get(`${space}.${pocket}`) ?? 0;
 }
 
 export function hiddenRinging(): HiddenRinging | null {
