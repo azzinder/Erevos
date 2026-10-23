@@ -50,9 +50,14 @@
 // the screen also says so when it takes its messages (receiveMessage): finding the queue empty
 // then, the relay drops a push still waiting, which would tell of messages already read.
 //
-// Through Tor (setThroughTor, off by default): every request goes through the core's Tor
-// (crates/erevos-tor) instead of the phone's own connection. There is no falling back to a direct
-// connection: when Tor cannot reach the relay, the request fails.
+// Through Tor (setThroughTor, lib/tor.ts): the space's way says which requests go through the
+// core's Tor (crates/erevos-tor) instead of the phone's own connection.
+// - 'messages', the first way: all but those of files (RelaySession.open with `files`), while Tor
+//   is ready (setTorReady). While it is not, starting or blocked, and for TOR_REST_MS after one
+//   through it failed, they go straight, so messages never wait for Tor.
+// - 'all': every request, files too, with no falling back to a direct connection: when Tor cannot
+//   reach the relay, the request fails.
+// - 'off': none.
 
 import { relaySeal, tor } from './core';
 import { randomBytes, sha256Bytes } from './crypto';
@@ -256,23 +261,45 @@ function connect(relay: Relay): WebSocket {
   return socket;
 }
 
-let throughTorOn = false;
+/** Which of a space's relay requests go through Tor: those of messages, all, or none. */
+export type TorWay = 'messages' | 'all' | 'off';
 
-/** Sends every relay request through Tor from now on, or no longer. */
-export function setThroughTor(on: boolean): void {
-  throughTorOn = on;
+/** How long requests of messages go straight after one through Tor failed, the way 'messages'. */
+export const TOR_REST_MS = 60_000;
+
+let torWay: TorWay = 'off';
+let torReady = false;
+let torRestUntil = 0;
+
+/** Sends the relay requests the way says through Tor from now on. */
+export function setThroughTor(way: TorWay): void {
+  torWay = way;
+  torRestUntil = 0;
 }
 
-/** Whether relay requests go through Tor. */
+/** Whether Tor is ready, as lib/tor.ts last found: until it is, the way 'messages' goes straight. */
+export function setTorReady(ready: boolean): void {
+  torReady = ready;
+}
+
+/** Whether every relay request goes through Tor, files too (the way 'all'). */
 export function throughTor(): boolean {
-  return throughTorOn;
+  return torWay === 'all';
+}
+
+/** Whether a request goes through Tor now; `files` for one of files. */
+export function torFor(files: boolean, now = Date.now()): boolean {
+  if (torWay === 'all') return true;
+  return torWay === 'messages' && !files && torReady && now >= torRestUntil;
 }
 
 // The core's Tor says what failed in its own words: a RelayError, as a direct connection's failure is.
+// The way 'messages' then goes straight for a while rather than wait for Tor.
 async function viaTor<T>(call: () => Promise<T>): Promise<T> {
   try {
     return await call();
   } catch (error) {
+    if (torWay === 'messages') torRestUntil = Date.now() + TOR_REST_MS;
     throw new RelayUnreachableError(t('Through Tor: {reason}', { reason: error instanceof Error ? error.message : String(error) }));
   }
 }
@@ -284,7 +311,7 @@ class Ended extends Error {}
 function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise<Uint8Array> {
   if (signal?.aborted) return Promise.reject(new Ended());
   if (!isRelayAddress(relay.url)) return Promise.reject(new BadRelayAddressError(relay.url));
-  if (throughTorOn) {
+  if (torFor(false)) {
     const reply = viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
     if (!signal) return reply;
     // Tor's request runs on until it ends; its reply is not waited for.
@@ -964,8 +991,9 @@ export class RelaySession {
     };
   }
 
-  static async open(relay: Relay): Promise<RelaySession> {
-    if (throughTorOn) {
+  /** Opens it; `files` for the requests of files, which go through Tor only the way 'all'. */
+  static async open(relay: Relay, files = false): Promise<RelaySession> {
+    if (torFor(files)) {
       const id = await viaTor(() => tor().torOpen(relay.url, relay.token ?? ''));
       return new RelaySession(null, id);
     }

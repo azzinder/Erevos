@@ -175,7 +175,7 @@ export async function sendFile(
   const key = randomBytes(32);
   const id = newFileId();
   const ids: string[] = [];
-  const session = await RelaySession.open({ url: own.url, token: own.token });
+  const session = await RelaySession.open({ url: own.url, token: own.token }, true);
   try {
     for (let n = 0; n < count; n++) {
       const at = n * room(chunk);
@@ -228,7 +228,7 @@ export async function keepFile(source: Source, meta: Omit<FileMeta, 'size'>, pro
 export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress, from = 0): Promise<FileOffer> {
   if (ref.from) throw new FileMissingError();
   const ids: string[] = [];
-  const session = await RelaySession.open({ url: own.url, token: own.token });
+  const session = await RelaySession.open({ url: own.url, token: own.token }, true);
   try {
     for (let n = 0; n < ref.count; n++) {
       const sealed = await readChunk(ref.id, n);
@@ -271,7 +271,7 @@ export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, le
   const { at, via } = fileWay(own, from.relay);
   const key = fromHex(ref.key);
   const ids = Array.from({ length: ref.count }, (_, n) => fromHex(from.ids.slice(n * ID_HEX, (n + 1) * ID_HEX)));
-  const session = await RelaySession.open(at);
+  const session = await RelaySession.open(at, true);
   try {
     let size = 0;
     for (let n = 0; n < ref.count; n++) {
@@ -297,7 +297,7 @@ export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, le
 /** Deletes from the relay, through ours (`own`), a file left there once taken. One it cannot delete expires there. */
 export async function dropFile(own: Relay, from: FileFrom): Promise<void> {
   const { at, via } = fileWay(own, from.relay);
-  const session = await RelaySession.open(at);
+  const session = await RelaySession.open(at, true);
   try {
     for (let at = 0; at < from.ids.length; at += ID_HEX) await deleteChunk(session, fromHex(from.ids.slice(at, at + ID_HEX)), via).catch(() => false);
   } finally {
@@ -362,7 +362,7 @@ export function refSource(ref: FileRef): Source {
  * group's file deleted for everyone. One it cannot take off expires there.
  */
 export async function takeOffRelay(own: Relay, ids: string): Promise<void> {
-  const session = await RelaySession.open({ url: own.url, token: own.token });
+  const session = await RelaySession.open({ url: own.url, token: own.token }, true);
   try {
     for (let at = 0; at + ID_HEX <= ids.length; at += ID_HEX) await deleteChunk(session, fromHex(ids.slice(at, at + ID_HEX))).catch(() => false);
   } finally {

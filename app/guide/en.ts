@@ -594,8 +594,8 @@ about it and a small picture, and they go inside the message, end-to-end encrypt
 nothing: it shows what came. It is off unless you turn it on, and then it is on for all the chats of the space.
 
 - **The site sees this phone's internet address**, and when, as it would from a browser, but not who the message is
-  for. Through Tor, Erevos sends only its relay requests, not pages, so while the space goes through Tor no previews
-  are made at all.
+  for. Through Tor, Erevos sends only its relay requests, not pages, so while everything in the space goes through Tor
+  (**Everything** under Tor) no previews are made at all.
 - Hidden chats make none, nor Erevos on a computer, which shows those that come all the same.
 - **Over LoRa**, which takes only a little, a message goes without its preview rather than wait, and keeps none here.
 - A preview is what the page says of itself, true or not. An Erevos from before this shows the link without it.
@@ -849,23 +849,32 @@ Raspberry Pi or an old computer, or any other relay you trust. It is optional.
 
 ## Through Tor {#tor}
 
-Under **Tor** in the menu, **Turn Tor on** sends every request of this space to its relays through the Tor network.
-It is off unless you turn it on, and each space has its own switch.
+Under **Tor** in the menu, **What goes through Tor** chooses which of this space's requests to its relays go through
+the Tor network. Each space has its own choice:
+
+| Choice | What goes through Tor |
+| --- | --- |
+| **Messages** | Unless you change it. What you write, and what tells your contacts something, such as that a message was read. Pictures, files and voice messages go straight, which is faster: for them the relay sees your phone's IP address. |
+| **Everything** | Files too. Nothing goes to a relay without Tor. |
+| **Nothing** | The relay sees your phone's IP address for everything. |
 
 - **What it hides:** the relay no longer sees your phone's IP address, only a Tor exit (or nothing, for a relay
   with a \`.onion\` address). Your phone company or the Wi-Fi sees only that you use Tor, not which relay.
-- **What it costs:** messages come and go slower, and the first start of Tor takes a while. The screen shows how far
-  Tor is.
+- **What it costs:** what goes through Tor comes and goes slower, and the first start of Tor takes a while. The screen
+  shows how far Tor is.
 - **What it does not cover:** calls, whose sound and picture go straight between the phones or through the call
   relay; nearby phones and SMS, which do not use the internet.
+- **On Android only:** Erevos on a computer and the web app have no Tor yet, so there everything goes straight.
 
-> While Tor is on, nothing goes to a relay without it. When Tor cannot reach the relay, the message waits and is
-> tried again; Erevos never falls back to your own connection by itself.
+> With **Messages**, a message never waits for Tor: while Tor starts, or for a minute after it could not reach the
+> relay, messages go straight, and then Tor is tried again. With **Everything**, nothing goes to a relay without Tor:
+> when Tor cannot reach the relay, the message waits and is tried again; Erevos never falls back to your own
+> connection by itself.
 
 ### Bridges
 
 Where Tor itself is blocked, **Bridges** on the same screen lets Tor reach its network through bridges instead. It
-is **No bridges** unless you choose, each space has its own, and it counts only while Tor is on.
+is **No bridges** unless you choose, each space has its own, and it counts only while something goes through Tor.
 
 | Choice | What it is |
 | --- | --- |
@@ -873,8 +882,9 @@ is **No bridges** unless you choose, each space has its own, and it counts only 
 | **Snowflake** | Through volunteers' browsers, over WebRTC, the way a video call goes. To find one, Erevos asks Snowflake's broker through a CDN, behind another site's name, and STUN servers tell the phone its own address: they see that address, never your messages. Slower, and hard to block. |
 | **My own** | Bridge lines from bridges.torproject.org, from bridges@torproject.org by email, or from @GetBridgesBot on Telegram, pasted one per line; then tap **Use these bridges**. obfs4, Snowflake, WebTunnel, meek and plain bridges work. |
 
-- **Only through them:** with bridges, Tor never goes straight to its relays. When no bridge answers, messages wait,
-  as they do when Tor cannot reach the relay. Lines that are not bridges are not taken, and Tor stays off.
+- **Only through them:** with bridges, Tor never goes straight to its relays. When no bridge answers, with
+  **Everything** messages wait, as they do when Tor cannot reach the relay; with **Messages** they go to the relay
+  without Tor until one does. Lines that are not bridges are not taken, and Tor stays off.
 - **Changing them** while Tor runs closes its connections and makes them again the new way.
 - **On Android only:** the app carries lyrebird, Tor's own program for obfs4, Snowflake, WebTunnel and meek. A
   computer and the web app have no Tor yet, so no bridges either.
@@ -1625,8 +1635,8 @@ or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI
 1. Open **Updates** in the home screen's menu (or **Check for updates** at the bottom of this guide's first screen).
    It shows the version you have, such as **Erevos 2.0.0**.
 2. Tap **Check for updates**. GitHub then sees this device's internet address, nothing else; on Android so does the web
-   app's server, which holds the release computer's signature of the update. While Tor is on in the
-   space, Erevos does not check, since that would go around Tor.
+   app's server, which holds the release computer's signature of the update. While everything in the
+   space goes through Tor (**Everything** under Tor), Erevos does not check, since that would go around Tor.
 3. When there is a new version: on Android tap **Install**. It downloads, is checked against the release (its size and
    SHA-256), and Android's installer opens: tap **Install** there. Erevos offers it only once the release computer,
    which keeps its key offline, has signed that build and SHA-256: whoever took over the GitHub account alone could
@@ -1694,7 +1704,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it, and over Wi-Fi Direct anyone who joins the phones' own Wi-Fi. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
-| **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. From a place lent on a contact's relay, every relay you send to sees it. [Through Tor](#tor), off unless turned on, no relay sees it, and with bridges, for where Tor is blocked, the network sees only a bridge. Snowflake's broker and STUN servers see your address. | Tor on a computer. |
+| **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. From a place lent on a contact's relay, every relay you send to sees it. [Through Tor](#tor), which carries messages unless you change it, no relay sees it for what you write, and with **Everything** for pictures and files too; with bridges, for where Tor is blocked, the network sees only a bridge. Snowflake's broker and STUN servers see your address. | Tor on a computer. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
 | **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. A contact's calls and SMS are read from the phone's own call log and SMS only to show its history, and kept nowhere. | |
 | **Contacts kept only in Erevos** | Sealed with the space's key, or with the hidden chats' for theirs, in one file for every space whose size shows roughly how many there are in all, not whose they are; their photos each in a file of its own. Never in Android's contacts. Calls and SMS to them go through the phone, and show in its call log and SMS. | |

@@ -6,6 +6,8 @@ export const more: Record<string, string> = {
   'My own': 'Δικές μου',
   'None of these is a bridge Erevos can use, so Tor stays off and messages wait.':
     'Καμία από αυτές δεν είναι γέφυρα που μπορεί να χρησιμοποιήσει το Erevos, οπότε το Tor μένει κλειστό και τα μηνύματα περιμένουν.',
+  'None of these is a bridge Erevos can use, so Tor stays off and messages go straight.':
+    'Καμία από αυτές δεν είναι γέφυρα που μπορεί να χρησιμοποιήσει το Erevos, οπότε το Tor μένει κλειστό και τα μηνύματα πάνε κατευθείαν.',
   'Tor goes straight to its relays. Where Tor is blocked, choose bridges: Tor then reaches its network only through them.':
     'Το Tor πηγαίνει κατευθείαν στους αναμεταδότες του. Όπου το Tor είναι μπλοκαρισμένο, διάλεξε γέφυρες: τότε το Tor φτάνει στο δίκτυό του μόνο μέσα από αυτές.',
   'The obfs4 bridges Tor Browser comes with: to whoever watches the network, Tor looks like random bytes. Where a censor blocks these too, choose Snowflake or bridges of your own.':
@@ -22,6 +24,8 @@ export const more: Record<string, string> = {
   'Not in use until you tap Use these bridges.': 'Δεν χρησιμοποιούνται μέχρι να πατήσεις «Χρήση αυτών των γεφυρών».',
   'With bridges, Tor never goes straight to its relays: when no bridge answers, messages wait. Bridges count only while Tor is on.':
     'Με γέφυρες, το Tor δεν πηγαίνει ποτέ κατευθείαν στους αναμεταδότες του: όταν καμία γέφυρα δεν απαντά, τα μηνύματα περιμένουν. Οι γέφυρες μετράνε μόνο όσο το Tor είναι ενεργό.',
+  'With bridges, Tor never goes straight to its relays: when no bridge answers, messages go to the relay without Tor until one does.':
+    'Με γέφυρες, το Tor δεν πηγαίνει ποτέ κατευθείαν στους αναμεταδότες του: όταν καμία γέφυρα δεν απαντά, τα μηνύματα πάνε στο relay χωρίς Tor μέχρι να απαντήσει κάποια.',
 
   // Updates on Windows, and on every computer: the file to take.
   'The download page opens: take {file}, see User guide → Updates.': 'Ανοίγει η σελίδα λήψης: πάρε το {file}, δες «Οδηγός χρήσης → Ενημερώσεις».',

@@ -6,6 +6,8 @@ export const more: Record<string, string> = {
   'My own': 'Vlastiti',
   'None of these is a bridge Erevos can use, so Tor stays off and messages wait.':
     'Nijedan od ovih nije most koji Erevos može koristiti, pa Tor ostaje isključen, a poruke čekaju.',
+  'None of these is a bridge Erevos can use, so Tor stays off and messages go straight.':
+    'Nijedan od ovih nije most koji Erevos može koristiti, pa Tor ostaje isključen, a poruke idu direktno.',
   'Tor goes straight to its relays. Where Tor is blocked, choose bridges: Tor then reaches its network only through them.':
     'Tor se spaja direktno na svoje relaye. Gdje je Tor blokiran, izaberite mostove: Tor tada do svoje mreže dolazi samo preko njih.',
   'The obfs4 bridges Tor Browser comes with: to whoever watches the network, Tor looks like random bytes. Where a censor blocks these too, choose Snowflake or bridges of your own.':
@@ -22,6 +24,8 @@ export const more: Record<string, string> = {
   'Not in use until you tap Use these bridges.': 'Ne koriste se dok ne dodirnete „Koristi ove mostove“.',
   'With bridges, Tor never goes straight to its relays: when no bridge answers, messages wait. Bridges count only while Tor is on.':
     'S mostovima Tor nikad ne ide direktno na svoje relaye: kad nijedan most ne odgovara, poruke čekaju. Mostovi vrijede samo dok je Tor uključen.',
+  'With bridges, Tor never goes straight to its relays: when no bridge answers, messages go to the relay without Tor until one does.':
+    'S mostovima Tor nikad ne ide direktno na svoje relaye: kad nijedan most ne odgovara, poruke idu relayu bez Tora dok neki ne odgovori.',
 
   // Updates on Windows, and on every computer: the file to take.
   'The download page opens: take {file}, see User guide → Updates.': 'Otvara se stranica za preuzimanje: preuzmite {file}, pogledajte „Korisnički vodič → Updates“.',

@@ -1,5 +1,6 @@
 import { checkedBridges, NO_BRIDGES, type Bridges } from '../lib/bridges';
 import { decryptText, encryptText, randomBytes } from '../lib/crypto';
+import type { TorWay } from '../lib/relay';
 import { NO_OWN_TOKEN, type OwnToken } from '../lib/relay-signin';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';
 
@@ -45,8 +46,10 @@ export type SpaceData = {
   // Null until the look is changed in this space: it then takes the look last used. Hidden chats
   // keep none, as they show in the look of their space.
   look: Look | null;
-  // Whether the space's relay requests go through Tor (lib/relay.ts setThroughTor). Off unless set.
-  tor: boolean;
+  // Which of the space's relay requests go through Tor (lib/tor.ts): 'messages' unless changed. A
+  // space from before the ways, when only all or none could, keeps all as 'all', and goes from none
+  // to 'messages'.
+  tor: TorWay;
   // The bridges Tor goes through, for where it is blocked (lib/bridges.ts). None unless chosen.
   bridges: Bridges;
   // A backup relay (one at home, say) with a queue of its own, which contacts write to while the
@@ -76,7 +79,7 @@ export const EMPTY_SPACE: SpaceData = {
   ringQueue: null,
   routes: {},
   look: null,
-  tor: false,
+  tor: 'messages',
   bridges: NO_BRIDGES,
   spare: NO_SPARE,
   push: false,
@@ -108,6 +111,11 @@ function checkedSpareRelay(value: unknown): SpareRelay {
   };
 }
 
+/** The Tor way stored: from before the ways, true (all) stays all, and false (none) becomes 'messages'. */
+export function torWayOf(value: unknown): TorWay {
+  return value === true || value === 'all' ? 'all' : value === 'off' ? 'off' : 'messages';
+}
+
 /** What was stored, with anything of the wrong shape left out. */
 function checked(value: unknown): SpaceData {
   const v = (value ?? {}) as Partial<Record<keyof SpaceData, unknown>>;
@@ -129,7 +137,7 @@ function checked(value: unknown): SpaceData {
     })(),
     routes,
     look: v.look ? checkedLook(v.look) : null,
-    tor: v.tor === true,
+    tor: torWayOf(v.tor),
     bridges: checkedBridges(v.bridges),
     spare: checkedSpareRelay(v.spare),
     push: v.push === true,

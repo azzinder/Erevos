@@ -65,9 +65,9 @@ export default function UpdatesScreen() {
     // A check outside Tor would show GitHub this device's internet address while the owner asked
     // for it to be hidden.
     const data = await loadCurrentSpaceData().catch(() => null);
-    if (data?.tor) {
+    if (data?.tor === 'all') {
       setNote(
-        t('Tor is on in this space, and this check would go to GitHub without it, showing your internet address. Turn Tor off for a moment to check, or open the releases page in Tor Browser.'),
+        t('Everything in this space goes through Tor, and this check would go to GitHub without it, showing your internet address. Choose Messages under Tor for a moment to check, or open the releases page in Tor Browser.'),
       );
       return;
     }

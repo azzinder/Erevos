@@ -6,6 +6,8 @@ export const more: Record<string, string> = {
   'My own': 'Minhas',
   'None of these is a bridge Erevos can use, so Tor stays off and messages wait.':
     'Nenhuma destas é uma ponte que o Erevos possa usar, então o Tor fica desligado e as mensagens aguardam.',
+  'None of these is a bridge Erevos can use, so Tor stays off and messages go straight.':
+    'Nenhuma destas é uma ponte que o Erevos possa usar, então o Tor fica desligado e as mensagens vão direto.',
   'Tor goes straight to its relays. Where Tor is blocked, choose bridges: Tor then reaches its network only through them.':
     'O Tor vai direto aos retransmissores dele. Onde o Tor é bloqueado, escolha pontes: então o Tor só chega à rede dele por meio delas.',
   'The obfs4 bridges Tor Browser comes with: to whoever watches the network, Tor looks like random bytes. Where a censor blocks these too, choose Snowflake or bridges of your own.':
@@ -22,6 +24,8 @@ export const more: Record<string, string> = {
   'Not in use until you tap Use these bridges.': 'Fora de uso até você tocar em “Usar estas pontes”.',
   'With bridges, Tor never goes straight to its relays: when no bridge answers, messages wait. Bridges count only while Tor is on.':
     'Com pontes, o Tor nunca vai direto aos retransmissores dele: quando nenhuma ponte responde, as mensagens aguardam. As pontes só valem enquanto o Tor está ativado.',
+  'With bridges, Tor never goes straight to its relays: when no bridge answers, messages go to the relay without Tor until one does.':
+    'Com pontes, o Tor nunca vai direto aos retransmissores dele: quando nenhuma ponte responde, as mensagens vão ao relay sem o Tor até uma responder.',
 
   // Updates on Windows, and on every computer: the file to take.
   'The download page opens: take {file}, see User guide → Updates.': 'A página de download abre: pegue o {file}, veja “Guia de uso → Atualizações”.',

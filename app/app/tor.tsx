@@ -4,13 +4,22 @@ import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text } from '../com
 import { BRIDGE_CHOICES, NO_BRIDGES, readBridgeLines, type BridgeChoice, type Bridges } from '../lib/bridges';
 import { canTor } from '../lib/core';
 import { mark, plural, t } from '../lib/i18n';
+import type { TorWay } from '../lib/relay';
 import { applyTor, NoBridgesError, torStatus, type TorStatus } from '../lib/tor';
 import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 
-// The space's "Through Tor" switch (lib/tor.ts), off unless turned on, how far Tor is, and the
-// bridges it goes through where it is blocked (lib/bridges.ts), none unless chosen.
+// What of the space goes through Tor (lib/tor.ts): its messages unless changed, everything, or
+// nothing; how far Tor is, and the bridges it goes through where it is blocked (lib/bridges.ts),
+// none unless chosen.
 
 const LOOK_EVERY = 2000;
+
+const WAYS: TorWay[] = ['messages', 'all', 'off'];
+const WAY_LABELS: Record<TorWay, string> = {
+  messages: mark('Messages'),
+  all: mark('Everything'),
+  off: mark('Nothing'),
+};
 
 const BRIDGE_LABELS: Record<BridgeChoice, string> = {
   none: mark('No bridges'),
@@ -20,7 +29,7 @@ const BRIDGE_LABELS: Record<BridgeChoice, string> = {
 };
 
 export default function TorScreen() {
-  const [on, setOn] = useState<boolean | null>(null);
+  const [way, setWay] = useState<TorWay | null>(null);
   const [status, setStatus] = useState<TorStatus | null>(null);
   const [note, setNote] = useState('');
   const [bridges, setBridges] = useState<Bridges>(NO_BRIDGES);
@@ -31,7 +40,7 @@ export default function TorScreen() {
   useEffect(() => {
     loadCurrentSpaceData()
       .then((data) => {
-        setOn(data.tor);
+        setWay(data.tor);
         setBridges(data.bridges);
         setPicked(data.bridges.use);
         setDraft(data.bridges.own);
@@ -39,6 +48,7 @@ export default function TorScreen() {
       .catch(() => setNote(t('The settings of this space could not open.')));
   }, []);
 
+  const on = way !== null && way !== 'off';
   useEffect(() => {
     if (!on) {
       setStatus(null);
@@ -67,16 +77,19 @@ export default function TorScreen() {
   }
 
   function shown(error: unknown): string {
-    if (error instanceof NoBridgesError) return t('None of these is a bridge Erevos can use, so Tor stays off and messages wait.');
+    if (error instanceof NoBridgesError) {
+      return way === 'messages'
+        ? t('None of these is a bridge Erevos can use, so Tor stays off and messages go straight.')
+        : t('None of these is a bridge Erevos can use, so Tor stays off and messages wait.');
+    }
     return error instanceof Error ? error.message : String(error);
   }
 
-  async function toggle() {
+  async function choose(next: TorWay) {
     setNote('');
-    const next = !on;
     try {
       await updateCurrentSpaceData({ tor: next });
-      setOn(next);
+      setWay(next);
       await applyTor(next, bridges);
     } catch (error) {
       setNote(shown(error));
@@ -88,7 +101,7 @@ export default function TorScreen() {
     try {
       await updateCurrentSpaceData({ bridges: next });
       setBridges(next);
-      if (on) await applyTor(true, next);
+      if (way && way !== 'off') await applyTor(way, next);
       setNote(t('Saved.'));
     } catch (error) {
       setNote(shown(error));
@@ -106,18 +119,33 @@ export default function TorScreen() {
     <Page>
       <Text variant="title">Tor</Text>
       <Card>
-        <Text variant="bodyStrong">{on ? t('Through Tor: on') : t('Through Tor: off')}</Text>
+        <Text variant="bodyStrong">{t('What goes through Tor')}</Text>
         <Text tone="muted">
           {t(
             "Through Tor, this space reaches its relays through the Tor network. The relay then does not see this phone's internet address, and the phone company or the Wi-Fi sees only that Tor is used, not which relay. Messages come and go slower, and the first start of Tor takes a while.",
           )}
         </Text>
+        <Row wrap>
+          {WAYS.map((choice) => (
+            <Chip key={choice} label={t(WAY_LABELS[choice])} selected={way === choice} onPress={() => void choose(choice)} />
+          ))}
+        </Row>
+        {way ? (
+          <Text tone="muted">
+            {way === 'messages'
+              ? t(
+                  "What you write goes through Tor, and what tells your contacts something, as that a message was read. Pictures, files and voice messages go straight, which is faster: for them the relay sees this phone's internet address. While Tor starts, or cannot connect, messages go straight too, so they never wait for it.",
+                )
+              : way === 'all'
+                ? t('Everything goes through Tor, files too, and nothing goes to a relay without it: when Tor cannot reach the relay, the message waits.')
+                : t("Nothing goes through Tor: the relay sees this phone's internet address.")}
+          </Text>
+        ) : null}
         <Text tone="muted">
           {t(
-            'While Tor is on, nothing goes to a relay without it: when Tor cannot reach the relay, the message waits. Calls do not go through Tor: their sound and picture go straight between the phones, or through the call relay. Nearby phones and SMS do not use the internet, so Tor has nothing to do with them.',
+            'Calls do not go through Tor: their sound and picture go straight between the phones, or through the call relay. Nearby phones and SMS do not use the internet, so Tor has nothing to do with them.',
           )}
         </Text>
-        <Button title={on ? t('Turn Tor off') : t('Turn Tor on')} kind={on ? 'secondary' : 'primary'} onPress={() => void toggle()} />
       </Card>
       {on && status ? (
         <Card>
@@ -182,7 +210,9 @@ export default function TorScreen() {
           </>
         ) : null}
         <Text variant="caption" tone="muted">
-          {t('With bridges, Tor never goes straight to its relays: when no bridge answers, messages wait. Bridges count only while Tor is on.')}
+          {way === 'messages'
+            ? t('With bridges, Tor never goes straight to its relays: when no bridge answers, messages go to the relay without Tor until one does.')
+            : t('With bridges, Tor never goes straight to its relays: when no bridge answers, messages wait. Bridges count only while Tor is on.')}
         </Text>
       </Card>
       {note ? <Text tone="muted">{note}</Text> : null}

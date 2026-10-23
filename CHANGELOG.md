@@ -15,6 +15,13 @@ On main, not released yet.
   Phone after Phone's. **SMS** opens the SMS list again also when Erevos showed it before and you went to another
   tab, **Phone** opens the keypad (with missed calls the widget's button opens **Recents**), and the widget's
   buttons do the same each time they are tapped. A tel: link with the same number a second time types it again.
+- **Messages go through Tor by default** (Android): under **Tor**, **What goes through Tor** is now **Messages**,
+  **Everything** or **Nothing** instead of a switch, and **Messages** unless you change it. With **Messages**, what
+  you write and what tells your contacts something (such as that a message was read) goes to the relay through Tor,
+  so the relay does not see your phone's IP address for it; pictures, files and voice messages go straight, which is
+  faster. A message never waits for Tor: while Tor starts, or for a minute after it could not reach the relay, it
+  goes straight. **Everything** is the old switch turned on: files too, and nothing without Tor. A space that had Tor
+  on keeps **Everything**; one that had it off gets **Messages**.
 
 ## 2.0.3 (2026-10-23)
 

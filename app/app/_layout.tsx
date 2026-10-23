@@ -28,7 +28,6 @@ import { noticeLanguage, noticeSeen } from '../lib/push-notice';
 import { refreshKnownNames, watchKnownNames } from '../lib/known-names';
 import { forgetSpaceMover } from '../lib/queue-move';
 import { setAppShown, startReceiver } from '../lib/receiver';
-import { setThroughTor } from '../lib/relay';
 import { startSmsLater } from '../lib/sms-later';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
@@ -39,7 +38,7 @@ import { clearKnownNames, forgetKnownNamesAfter } from '../modules/erevos-phone'
 import { refreshWidget } from '../modules/erevos-widget';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { startPublicDoors } from '../lib/space-public-groups';
-import { applyTor } from '../lib/tor';
+import { applyTor, leaveTor } from '../lib/tor';
 import { forgetWelcome } from '../lib/welcome';
 import { hardenLock, loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
@@ -131,7 +130,7 @@ export default function RootLayout() {
       setCurrentSpace(space, key);
       const data = await loadSpaceData(space, key);
       // Tor starts in the background, through the space's bridges if it has any; until it is
-      // ready, the space's requests wait for it.
+      // ready, the way 'messages' sends straight, and the way 'all' waits for it.
       applyTor(data.tor, data.bridges).catch(() => undefined);
       const kept = data.look ?? (await loadLockScreenLook());
       await show(kept);
@@ -575,7 +574,7 @@ function closeSpace(): void {
   forgetHistory();
   forgetOpenedQueues();
   forgetWelcome();
-  setThroughTor(false);
+  leaveTor();
 }
 
 function openKey(): Uint8Array | null {

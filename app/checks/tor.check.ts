@@ -1,7 +1,9 @@
-// The "Through Tor" switch (lib/relay.ts setThroughTor, lib/tor.ts): while it is on, every relay
-// request goes to the core's Tor and never to a WebSocket of the phone's own, and a build without
-// Tor fails the request rather than going around it. With bridges (lib/bridges.ts), Tor is given
-// them, or stopped when none is usable. Tor itself (crates/erevos-tor) is not run here.
+// The Tor ways (lib/relay.ts setThroughTor, lib/tor.ts). 'all': every relay request goes to the
+// core's Tor and never to a WebSocket of the phone's own, and a build without Tor fails the request
+// rather than going around it. 'messages', the first way: those of messages go to Tor while it is
+// ready, and straight while it is not or just failed; those of files always straight. With bridges
+// (lib/bridges.ts), Tor is given them, or stopped when none is usable. Tor itself
+// (crates/erevos-tor) is not run here.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -9,8 +11,9 @@ import { afterEach, test } from 'node:test';
 
 import { BUILT_IN, bridgeLines, bridgeProblem, checkedBridges, NO_BRIDGES, readBridgeLines } from '../lib/bridges';
 import { setCore, type Core } from '../lib/core';
-import { createQueue, RelayError, RelaySession, setThroughTor } from '../lib/relay';
-import { applyTor, NoBridgesError, torStatus } from '../lib/tor';
+import { createQueue, RelayError, RelaySession, setThroughTor, setTorReady, throughTor, TOR_REST_MS, torFor } from '../lib/relay';
+import { applyTor, leaveTor, NoBridgesError, torStatus } from '../lib/tor';
+import { EMPTY_SPACE, torWayOf } from '../lock/space-data';
 
 type Seen = { what: string; url?: string; token?: string; bytes?: Uint8Array };
 
@@ -44,22 +47,29 @@ function fakeCore(seen: Seen[], tor: boolean): Core {
   return core as Core;
 }
 
-// Any WebSocket of the phone's own while Tor is on is a leak.
+// Any WebSocket of the phone's own where Tor should be is a leak; where straight is right, the
+// tests count it, and it fails with 'straight'.
+let straight = 0;
+let mayGoStraight = false;
 (globalThis as { WebSocket?: unknown }).WebSocket = class {
   constructor() {
-    throw new Error('a WebSocket was opened while Tor is on');
+    if (!mayGoStraight) throw new Error('a WebSocket was opened while Tor is on');
+    straight++;
+    throw new Error('straight');
   }
 };
 
 afterEach(() => {
-  setThroughTor(false);
+  leaveTor();
   setCore(null);
+  straight = 0;
+  mayGoStraight = false;
 });
 
 test('through Tor, a request goes to the core with the relay and its token', async () => {
   const seen: Seen[] = [];
   setCore(fakeCore(seen, true));
-  setThroughTor(true);
+  setThroughTor('all');
   await createQueue({ url: 'wss://relay.example.org', token: 't' });
   assert.equal(seen.length, 1);
   assert.equal(seen[0].what, 'request');
@@ -72,7 +82,7 @@ test('through Tor, a request goes to the core with the relay and its token', asy
 test('through Tor, a session takes its requests in order on one connection, and fails once lost', async () => {
   const seen: Seen[] = [];
   setCore(fakeCore(seen, true));
-  setThroughTor(true);
+  setThroughTor('all');
   const session = await RelaySession.open({ url: 'ws://relay:7879' });
   const replies = await Promise.all([session.call(Uint8Array.of(1)), session.call(Uint8Array.of(2))]);
   assert.deepEqual(replies, [Uint8Array.of(0, 1), Uint8Array.of(0, 2)]);
@@ -89,7 +99,7 @@ test('through Tor, a session takes its requests in order on one connection, and 
 
 test('with Tor on, a build without Tor fails the request and does not go around it', async () => {
   setCore(fakeCore([], false));
-  setThroughTor(true);
+  setThroughTor('all');
   await assert.rejects(createQueue({ url: 'ws://relay:7879' }), (error: unknown) => {
     assert.ok(error instanceof RelayError);
     assert.match(error.message, /no Tor/);
@@ -130,9 +140,9 @@ test("Tor Browser's bridges, and one's own, are taken only as lines the app can 
 test('Tor is started through the chosen bridges, and stopped rather than started without them', async () => {
   const seen: Seen[] = [];
   setCore(fakeCore(seen, true));
-  await applyTor(true, NO_BRIDGES);
-  await applyTor(true, { use: 'obfs4', own: '' });
-  await applyTor(true, { use: 'own', own: `Bridge ${PLAIN}` });
+  await applyTor('all', NO_BRIDGES);
+  await applyTor('all', { use: 'obfs4', own: '' });
+  await applyTor('all', { use: 'own', own: `Bridge ${PLAIN}` });
   assert.deepEqual(
     seen.map((s) => [s.what, s.url]),
     [
@@ -142,13 +152,80 @@ test('Tor is started through the chosen bridges, and stopped rather than started
     ],
   );
   seen.length = 0;
-  await assert.rejects(applyTor(true, { use: 'own', own: 'not a bridge' }), NoBridgesError);
+  await assert.rejects(applyTor('all', { use: 'own', own: 'not a bridge' }), NoBridgesError);
   assert.deepEqual(seen.map((s) => s.what), ['stop']);
   // The space's requests still go to Tor, which is stopped, never around it.
   await createQueue({ url: 'wss://relay.example.org' });
   assert.deepEqual(seen.map((s) => s.what), ['stop', 'request']);
   // Off, Tor is left alone.
   seen.length = 0;
-  await applyTor(false, { use: 'own', own: 'not a bridge' });
+  await applyTor('off', { use: 'own', own: 'not a bridge' });
   assert.deepEqual(seen, []);
+});
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+test("the way 'messages' sends those of messages through Tor once it is ready, and those of files straight", async () => {
+  const seen: Seen[] = [];
+  setCore(fakeCore(seen, true));
+  mayGoStraight = true;
+  await applyTor('messages', NO_BRIDGES);
+  await settle();
+  assert.equal(torFor(false), true, 'ready, as the core says');
+  assert.equal(throughTor(), false, 'not everything goes through Tor');
+  await createQueue({ url: 'wss://relay.example.org', token: 't' });
+  assert.deepEqual(seen.map((s) => s.what), ['start', 'request']);
+  // Files go straight: to the phone's own WebSocket.
+  await assert.rejects(RelaySession.open({ url: 'wss://relay.example.org' }, true), /straight/);
+  assert.equal(straight, 1);
+  // A session of messages goes through Tor.
+  const session = await RelaySession.open({ url: 'wss://relay.example.org' });
+  session.close();
+  assert.equal(seen.filter((s) => s.what === 'open').length, 1);
+});
+
+test("the way 'messages' goes straight while Tor is not ready, and for a while after it failed", async () => {
+  const seen: Seen[] = [];
+  setCore(fakeCore(seen, true));
+  setThroughTor('messages');
+  mayGoStraight = true;
+  setTorReady(false);
+  await assert.rejects(createQueue({ url: 'wss://relay.example.org' }), /straight/);
+  assert.equal(straight, 1);
+  assert.deepEqual(seen, []);
+  setTorReady(true);
+  const session = await RelaySession.open({ url: 'ws://relay:7879' });
+  await assert.rejects(session.call(Uint8Array.of(99)), /Through Tor/);
+  session.close();
+  const now = Date.now();
+  assert.equal(torFor(false, now), false, 'rests from Tor');
+  assert.equal(torFor(false, now + TOR_REST_MS + 1), true, 'and tries it again');
+  // A build without Tor sends those of messages straight, and never asks for it.
+  setCore(fakeCore([], false));
+  await applyTor('messages', NO_BRIDGES);
+  await settle();
+  assert.equal(torFor(false), false);
+});
+
+test("bridges none usable: the way 'messages' stops Tor and sends straight", async () => {
+  const seen: Seen[] = [];
+  setCore(fakeCore(seen, true));
+  mayGoStraight = true;
+  await assert.rejects(applyTor('messages', { use: 'own', own: 'not a bridge' }), NoBridgesError);
+  assert.deepEqual(seen.map((s) => s.what), ['stop']);
+  // The fake core says ready, but a real stopped Tor would not: as it says, so goes the request.
+  setTorReady(false);
+  await assert.rejects(createQueue({ url: 'wss://relay.example.org' }), /straight/);
+  assert.equal(straight, 1);
+});
+
+test("a space's Tor way: 'messages' unless changed; from before the ways, all stays all", () => {
+  assert.equal(EMPTY_SPACE.tor, 'messages');
+  assert.equal(torWayOf(true), 'all');
+  assert.equal(torWayOf(false), 'messages');
+  assert.equal(torWayOf(undefined), 'messages');
+  assert.equal(torWayOf('all'), 'all');
+  assert.equal(torWayOf('off'), 'off');
+  assert.equal(torWayOf('messages'), 'messages');
+  assert.equal(torWayOf('anything'), 'messages');
 });
