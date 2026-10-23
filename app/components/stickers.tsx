@@ -118,8 +118,24 @@ function drawn(shapes: Shape[], k: number, words: string, layer: Layer, prefix =
         );
       }
       case 'ring': {
-        const { x, y, d, w, c } = shape;
-        return <View key={key} style={{ position: 'absolute', left: (x - d / 2) * k, top: (y - d / 2) * k, width: d * k, height: d * k, borderRadius: (d * k) / 2, borderWidth: w * k, borderColor: c }} />;
+        // Pressed to its height and turned as an oval is, its edge with it.
+        const { x, y, d, w, c, h = d, turn = 0 } = shape;
+        return (
+          <View
+            key={key}
+            style={{
+              position: 'absolute',
+              left: (x - d / 2) * k,
+              top: (y - d / 2) * k,
+              width: d * k,
+              height: d * k,
+              borderRadius: (d * k) / 2,
+              borderWidth: w * k,
+              borderColor: c,
+              ...(h !== d || turn ? { transform: [{ rotate: `${turn}deg` }, { scaleY: h / d }] } : {}),
+            }}
+          />
+        );
       }
       case 'arc': {
         const { x, y, d, w, side, c } = shape;
@@ -135,7 +151,7 @@ function drawn(shapes: Shape[], k: number, words: string, layer: Layer, prefix =
               borderRadius: (d * k) / 2,
               borderWidth: w * k,
               borderColor: 'transparent',
-              ...(side === 'top' ? { borderTopColor: c } : { borderBottomColor: c }),
+              ...{ top: { borderTopColor: c }, bottom: { borderBottomColor: c }, left: { borderLeftColor: c }, right: { borderRightColor: c } }[side],
             }}
           />
         );
