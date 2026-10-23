@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -29,7 +29,7 @@ import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { saveFile, saveText } from '../lib/save-file';
 import { chatText, exportName } from '../lib/chat-export';
 import { Attachment, comingText, FileViewer, shownOf, useShownPhotos } from '../components/attachment';
-import { Composer, ComposerPanel, IconButton, type ComposerTile, type ComposerWay, type SendWay } from '../components/composer';
+import { ComposerPanel, DraftComposer, IconButton, useDraft, type ComposerTile, type ComposerWay, type SendWay } from '../components/composer';
 import { ConnectPicker, useCanConnect } from '../components/connect-picker';
 import { KeyboardAwareScrollView, KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
@@ -132,7 +132,7 @@ import { sendSms, type SmsMessage } from '../modules/erevos-sms';
 import type { Look } from '../theme/look';
 import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
-import { t, plural, mark, locale } from '../lib/i18n';
+import { t, plural, mark, locale, useLang } from '../lib/i18n';
 
 // Chat with contacts, end-to-end encrypted (lib/e2e.ts), through the relay and, while their phone
 // is near, over the radio link too (lib/nearby.ts), where phones nearby may also carry a message
@@ -287,6 +287,9 @@ function timerLabel(seconds: number): string {
 
 // Imported messages shown at first, and added each time earlier ones are asked for.
 const IMPORTED_PAGE = 50;
+// The latest lines of a chat's thread drawn at first, and how many more each time earlier ones are
+// asked for or gone to: a long thread opens without drawing all of it.
+const THREAD_PAGE = 100;
 // How long typing in a relay field pauses before the chat takes what was typed and asks that relay.
 const TYPING_PAUSE = 1200;
 
@@ -492,7 +495,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [selected, setSelected] = useState<string | null>(initial);
   const [messages, setMessages] = useState<Message[]>([]);
   // A message passed on from an SMS conversation (lib/forward.ts) starts in the field.
-  const [draft, setDraft] = useState(() => (initial ? (forwardedTo(initial)?.text ?? '') : ''));
+  const { draft, empty: nothingTyped } = useDraft(() => (initial ? (forwardedTo(initial)?.text ?? '') : ''));
   const [note, setNote] = useState('');
   const [showRelay, setShowRelay] = useState(setup);
   // The chat's details, over the chat: its picture, name, timer, look, safety number, moving it.
@@ -567,6 +570,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Chats imported into this space. Hidden chats have none.
   const [archive, setArchive] = useState<Archive | null>(null);
   const [importedShown, setImportedShown] = useState(IMPORTED_PAGE);
+  const [threadShown, setThreadShown] = useState(THREAD_PAGE);
+  // How many lines the thread had when earlier SMS were asked for, to draw those that come.
+  const smsAsked = useRef<number | null>(null);
   // Set when earlier imported messages are shown, so the thread does not jump to its end.
   const holdScroll = useRef(false);
   // The next message disappears, this long (seconds) after it is read: the stopwatch in the bar.
@@ -588,6 +594,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Where each message is in the thread, by id, to go to it, and the one to go to once it shows.
   const placed = useRef(new Map<number, number>());
   const smsPlaced = useRef(new Map<string, number>());
+  const rowDo = useRef<RowActs | null>(null);
+  const rowActs = useMemo(() => steadyActs(rowDo), []);
   // How far above the chat's bottom its thread ends, where Undo shows (components/undo-bar.tsx).
   const edges = useRef({ height: 0, end: 0 });
   const [undoAt, setUndoAt] = useState(0);
@@ -1176,6 +1184,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   useEffect(() => {
     setConnecting((c) => (c && selected === `${CONTACT_PREFIX}${c}` ? c : null));
     setImportedShown(IMPORTED_PAGE);
+    setThreadShown(THREAD_PAGE);
+    smsAsked.current = null;
     setReplying(null);
     setPinShown(0);
     setSearching(null);
@@ -1806,6 +1816,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // and lights it a moment.
   function goTo(peer: string, tag: string) {
     const target = isSmsLine(tag) ? tag : visible.find((m) => m.peer === peer && m.tag === tag)?.id;
+    // Earlier than the lines drawn: drawn with them first, then gone to.
+    const index = target === undefined ? -1 : lines.findIndex((line) => (line.kind === 'sms' ? smsLineId(line.sms) === target : line.message.id === target));
+    if (index >= 0 && index < firstLine) {
+      holdScroll.current = true;
+      setThreadShown(lines.length - index + THREAD_PAGE / 2);
+      if (typeof target === 'number') goal.current = tag;
+      else setTimeout(() => rowDo.current?.goTo(peer, tag), 600);
+      return;
+    }
     const y = target === undefined ? undefined : typeof target === 'string' ? smsPlaced.current.get(target) : placed.current.get(target);
     if (target === undefined || y === undefined) {
       setNote(t('That message is not on this phone.'));
@@ -1861,7 +1880,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // stopwatch on, or a message being answered, it says so first, and once it went both are off, as
   // after any message sent.
   async function sendAsSms() {
-    const text = draft.trim();
+    const text = draft.text().trim();
     const to = chatSms.number;
     if (!text || !to) return;
     const said = [
@@ -1875,7 +1894,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       await maySendSms();
       await sendSms(to, text, chatSms.sim);
-      setDraft((typed) => (typed.trim() === text ? '' : typed));
+      draft.set((typed) => (typed.trim() === text ? '' : typed));
       setVanishing(false);
       setReplying(null);
       chatSms.reload();
@@ -1887,14 +1906,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Shows what went, and empties the field when it was what is typed (`typed`).
   function keep(peer: string, text: string, tag = '', timer = 0, parts: Parts = {}, typed = true) {
     addMessage(peer, text, true, tag, timer, undefined, undefined, 0, Date.now(), parts);
-    if (typed) setDraft('');
+    if (typed) draft.set('');
     setReplying(null);
   }
 
   // Keeps what is typed, and tells a contact who shows online that this phone is typing to them,
   // every few seconds at most. Never from a chat that appears offline, nor to a message request.
   function typed(text: string) {
-    setDraft(text);
     if (!text.trim() || !selected?.startsWith(CONTACT_PREFIX) || !selectedOnline || !selectedAccepted || !appActive) return;
     const said = typingSaid.current.get(selected) ?? 0;
     if (Date.now() - said < TYPING_EVERY) return;
@@ -2235,7 +2253,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // When only LoRa can take it, and it is too much for LoRa with its link's preview, the words go
   // without the preview rather than wait.
   async function send(lasts = vanishing ? vanishFor : 0, quiet = false, content?: Content & { text: string }, to = selected) {
-    const text = content ? content.text : draft.trim();
+    const text = content ? content.text : draft.text().trim();
     if (!text || !to?.startsWith(CONTACT_PREFIX) || previewing.current) return;
     setVanishing(false);
     if (!e2e) {
@@ -2279,7 +2297,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       }
       // Nothing could take it now: it waits, and goes by itself (lib/waiting.ts).
       addMessage(to, text, true, sealedAs, lasts || timerOf(to), undefined, undefined, WAITING, Date.now(), { quiet, ...parts });
-      if (!content) setDraft('');
+      if (!content) draft.set('');
       setReplying(null);
       setNote(t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason: waitingReason(error, to, t('It is too long for LoRa.')) }));
     }
@@ -2288,7 +2306,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Keeps the message typed to go at `at`, or, with nothing typed, the next photo, file or voice
   // message (laterFor).
   async function sendLater(at: number) {
-    const text = draft.trim();
+    const text = draft.text().trim();
     setChoosingLater(false);
     setAttaching(false);
     if (!selected?.startsWith(CONTACT_PREFIX) || !canPick(at)) return;
@@ -2298,7 +2316,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return;
     }
     const lasts = takeVanish();
-    if (await schedule(selected, at, { text, lasts })) setDraft('');
+    if (await schedule(selected, at, { text, lasts })) draft.set('');
   }
 
   // Keeps a message to go at `at`: sealed and handed to the relay at once, to hold till then
@@ -2770,7 +2788,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           stopPlaying.current = null;
           setPlayingId((current) => (current === message.id ? null : current));
         },
-        setPlayed,
+        // In whole seconds, as it shows: the chat draws again once a second, not four times.
+        (ms) => setPlayed(Math.floor(ms / 1000) * 1000),
       );
     } catch (error) {
       setNote(t('Cannot play it. {error}', { error: errorText(error) }));
@@ -3521,8 +3540,43 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // Theirs that came before the time it was sent for shows then (lib/later.ts, showsAt).
-  const shownBy = Date.now();
-  const visible = messages.filter((message) => message.peer === selected && (message.mine || message.at <= shownBy));
+  // Worked out again only when the messages, the chat or the time (every few seconds) change.
+  const visible = useMemo(() => {
+    const shownBy = Date.now();
+    return messages.filter((message) => message.peer === selected && (message.mine || message.at <= shownBy));
+  }, [messages, selected, now]);
+  // The message each tag names, for the one a message answers.
+  const byTag = useMemo(() => {
+    const named = new Map<string, Message>();
+    for (const m of visible) if (m.tag && !named.has(m.tag)) named.set(m.tag, m);
+    return named;
+  }, [visible]);
+  // What the thread's lines do (MessageLine, SmsLine), with this render's state: the lines keep
+  // one object, so one line draws again only when what it shows changes.
+  rowDo.current = {
+    play: (message) => void play(message),
+    open: openFile,
+    menu: setMenuFor,
+    goTo,
+    vote: (message, option) => void vote(message, option),
+    placed: (message, y) => {
+      placed.current.set(message.id, y);
+      // Opened at this message (a starred one, or one found): gone to once the thread has settled.
+      if (goal.current === message.tag) {
+        goal.current = null;
+        holdScroll.current = true;
+        setTimeout(() => goTo(message.peer, message.tag), 400);
+      }
+    },
+    smsAgain: sendSmsLineAgain,
+    smsMenu: setSmsMenuFor,
+    smsEarlier: () => {
+      holdScroll.current = true;
+      smsAsked.current = lines.length;
+      chatSms.earlier();
+    },
+    smsPlaced: (id, y) => smsPlaced.current.set(id, y),
+  };
   // The SMS with their number, among the messages by time (lib/sms-chat.ts): never in hidden chats.
   const smsWith = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
   const chatSms = useChatSms({
@@ -3531,7 +3585,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     hidden: !!hiddenKey,
     seen: shown && appActive,
   });
-  const lines = chatLines(visible, chatSms.messages, chatSms.more);
+  const lines = useMemo(() => chatLines(visible, chatSms.messages, chatSms.more), [visible, chatSms.messages, chatSms.more]);
+  // The first line drawn: the latest THREAD_PAGE at first, more once asked for or gone to.
+  const firstLine = Math.max(0, lines.length - threadShown);
+  useEffect(() => {
+    // Earlier SMS that came, as asked, are drawn too.
+    const asked = smsAsked.current;
+    if (asked !== null && lines.length > asked) {
+      smsAsked.current = null;
+      setThreadShown((count) => count + lines.length - asked);
+    }
+    // The chat opened at a message (a starred one, or one found) earlier than the lines drawn.
+    const wanted = goal.current;
+    const index = wanted ? lines.findIndex((line) => line.kind === 'chat' && line.message.tag === wanted) : -1;
+    if (index >= 0 && index < firstLine) setThreadShown(lines.length - index + THREAD_PAGE / 2);
+  }, [lines, firstLine]);
   // The messages pinned to the top, the latest first, and the one that shows.
   const pins = visible.filter((m) => m.pinned).sort((a, b) => b.pinned! - a.pinned!);
   const pinnedNow = pins.length > 0 ? pins[pinShown % pins.length] : null;
@@ -3667,7 +3735,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       description: t('Not encrypted · {number}', { number: chatSms.number }),
       icon: 'sms',
       plain: true,
-      onPress: () => (draft.trim() ? afterSheet(() => void sendAsSms()) : setNote(t('Type the message first, then send it as an SMS.'))),
+      onPress: () => (draft.text().trim() ? afterSheet(() => void sendAsSms()) : setNote(t('Type the message first, then send it as an SMS.'))),
     });
   }
   // Held down, the send arrow: what is typed goes without a sound, later, or disappearing.
@@ -4588,42 +4656,55 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           }}
           scrollEventThrottle={100}
         >
-          {firstImported > 0 ? (
+          {firstLine > 0 ? (
             <TextButton
-              title={t('Show earlier imported messages ({n} more)', { n: firstImported })}
+              title={t('Show earlier messages ({n} more)', { n: firstLine })}
               onPress={() => {
                 holdScroll.current = true;
-                setImportedShown((count) => count + IMPORTED_PAGE * 4);
+                setThreadShown((count) => count + THREAD_PAGE * 3);
               }}
             />
-          ) : null}
-          {imported.length > 0 ? (
-            <Text variant="caption" tone="muted" style={styles.divider}>
-              {t('Imported from {from}: only on this phone, only to read.', { from: importedFrom })}
-            </Text>
-          ) : null}
-          {imported.slice(firstImported).map((message, i) => {
-            const files = mediaText(message.media);
-            const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
-            return (
-              <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? b.mine : b.theirs, styles.imported]}>
-                {importedGroup && !message.mine && message.sender ? <Text style={[ink, styles.sender]}>{message.sender}</Text> : null}
-                {message.files.map((file, n) => (
-                  <Pressable key={`${file.id}-${n}`} onPress={() => setViewingImported(file)} accessibilityRole="button">
-                    <Attachment file={file} uri={photos[file.id]} ink={ink} />
-                  </Pressable>
-                ))}
-                {message.text ? <Text style={ink}>{message.text}</Text> : null}
-                {files ? <Text style={[ink, styles.files]}>{t('{files}, not imported', { files })}</Text> : null}
-                {message.at ? <Text style={[ink, styles.time]}>{shownTime(message.at)}</Text> : null}
-              </View>
-            );
-          })}
-          {imported.length > 0 ? (
-            <Text variant="caption" tone="muted" style={styles.divider}>
-              {t('Continued in Erevos')}
-            </Text>
-          ) : null}
+          ) : (
+            // What was imported, before the thread, once all of the thread shows.
+            <>
+              {firstImported > 0 ? (
+                <TextButton
+                  title={t('Show earlier imported messages ({n} more)', { n: firstImported })}
+                  onPress={() => {
+                    holdScroll.current = true;
+                    setImportedShown((count) => count + IMPORTED_PAGE * 4);
+                  }}
+                />
+              ) : null}
+              {imported.length > 0 ? (
+                <Text variant="caption" tone="muted" style={styles.divider}>
+                  {t('Imported from {from}: only on this phone, only to read.', { from: importedFrom })}
+                </Text>
+              ) : null}
+              {imported.slice(firstImported).map((message, i) => {
+                const files = mediaText(message.media);
+                const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
+                return (
+                  <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? b.mine : b.theirs, styles.imported]}>
+                    {importedGroup && !message.mine && message.sender ? <Text style={[ink, styles.sender]}>{message.sender}</Text> : null}
+                    {message.files.map((file, n) => (
+                      <Pressable key={`${file.id}-${n}`} onPress={() => setViewingImported(file)} accessibilityRole="button">
+                        <Attachment file={file} uri={photos[file.id]} ink={ink} />
+                      </Pressable>
+                    ))}
+                    {message.text ? <Text style={ink}>{message.text}</Text> : null}
+                    {files ? <Text style={[ink, styles.files]}>{t('{files}, not imported', { files })}</Text> : null}
+                    {message.at ? <Text style={[ink, styles.time]}>{shownTime(message.at)}</Text> : null}
+                  </View>
+                );
+              })}
+              {imported.length > 0 ? (
+                <Text variant="caption" tone="muted" style={styles.divider}>
+                  {t('Continued in Erevos')}
+                </Text>
+              ) : null}
+            </>
+          )}
           {selected && visible.length === 0 && imported.length === 0 && chatSms.messages.length === 0 ? (
             <View style={styles.hello}>
               <ShieldIcon color={colors.textFaint} size={28} />
@@ -4632,147 +4713,41 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               </Text>
             </View>
           ) : null}
-          {lines.map((line, i) => {
-            const before = lines[i - 1];
+          {lines.slice(firstLine).map((line, k) => {
+            const i = firstLine + k;
+            const before = k === 0 ? undefined : lines[i - 1];
             const after = lines[i + 1];
             const newDay = !before || dayOf(before.at) !== dayOf(line.at);
             // The last of a run from one side gets the bubble's tail, and room after it; an SMS and a
             // message of the chat are never one run.
             const tail = !after || after.mine !== line.mine || after.kind !== line.kind || dayOf(after.at) !== dayOf(line.at);
             if (line.kind === 'sms') {
-              const m = line.sms;
-              const id = smsLineId(m);
-              const ink = m.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
+              const id = smsLineId(line.sms);
               return (
-                <View key={`sms-${id}`} onLayout={(event) => smsPlaced.current.set(id, event.nativeEvent.layout.y)}>
-                  {line.earlier ? (
-                    <TextButton
-                      title={t('Show earlier SMS')}
-                      onPress={() => {
-                        holdScroll.current = true;
-                        chatSms.earlier();
-                      }}
-                    />
-                  ) : null}
-                  {newDay ? (
-                    <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
-                      {dayLabel(m.at)}
-                    </Text>
-                  ) : null}
-                  <Pressable
-                    onPress={smsFailed(m) ? () => sendSmsLineAgain(m) : undefined}
-                    onLongPress={() => setSmsMenuFor(m)}
-                    accessibilityHint={smsFailed(m) ? t('Tap to send it again.') : t('Hold for more')}
-                    style={[
-                      styles.bubble,
-                      m.mine ? b.mine : b.theirs,
-                      tail && (m.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
-                      styles.sms,
-                      lit === id && styles.lit,
-                    ]}
-                  >
-                    {(m.pictures ?? []).map((p) => (
-                      <Image key={p.uri} source={{ uri: p.uri }} style={styles.smsPicture} resizeMode="cover" accessibilityLabel={t('Picture')} />
-                    ))}
-                    {m.text ? (
-                      <Text style={ink}>
-                        <LinkedText text={m.text} />
-                      </Text>
-                    ) : null}
-                    {/* Marked plain: what the SMS screen says of every SMS, and its marks. */}
-                    <Text style={[ink, styles.time]}>
-                      {[m.kind === 'mms' ? t('MMS (not encrypted)') : t('SMS (not encrypted)'), clock(m.at), m.mine ? smsMark(m.state) : ''].filter(Boolean).join('  ·  ')}
-                    </Text>
-                    {smsFailed(m) ? <Text style={[styles.time, { color: colors.danger }]}>{t('Tap to send it again.')}</Text> : null}
-                  </Pressable>
-                </View>
+                <SmsLine key={`sms-${id}`} sms={line.sms} earlier={!!line.earlier} newDay={newDay} tail={tail} lit={lit === id} styles={styles} b={b} colors={colors} acts={rowActs} />
               );
             }
             const message = line.message;
-            const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
-            const quoted = message.re ? visible.find((m) => m.tag === message.re) : undefined;
-            // A sticker, built in or made from a photo, shows on its own, with no bubble.
-            const stuck = !!message.sticker || !!message.file?.sticker;
             return (
-              <View
+              <MessageLine
                 key={message.id}
-                onLayout={(event) => {
-                  placed.current.set(message.id, event.nativeEvent.layout.y);
-                  // Opened at this message (a starred one, or one found): gone to once the thread has settled.
-                  if (goal.current === message.tag) {
-                    goal.current = null;
-                    holdScroll.current = true;
-                    setTimeout(() => goTo(message.peer, message.tag), 400);
-                  }
-                }}
-              >
-                {newDay && message.at ? (
-                  <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
-                    {dayLabel(message.at)}
-                  </Text>
-                ) : null}
-                <Pressable
-                  onPress={message.voice ? () => void play(message) : message.file ? () => openFile(message) : undefined}
-                  onLongPress={() => setMenuFor(message)}
-                  accessibilityHint={message.voice ? t('Tap to play, hold for more') : message.file ? t('Tap to open, hold for more') : t('Hold for more')}
-                  style={[
-                    styles.bubble,
-                    message.mine ? b.mine : b.theirs,
-                    message.file?.kind === 'photo' && !stuck && styles.photoBubble,
-                    tail && !stuck && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
-                    stuck && styles.stickerBubble,
-                    (message.myReaction || message.theirReaction) && styles.reacted,
-                    lit === message.id && styles.lit,
-                  ]}
-                >
-                  {message.re ? (
-                    <Quote
-                      name={quoted ? (quoted.mine ? t('You') : selectedName) : ''}
-                      line={quoted ? messageLine(quoted) : ''}
-                      ink={ink}
-                      onPress={() => goTo(message.peer, message.re!)}
-                    />
-                  ) : null}
-                  {message.sticker ? (
-                    <StickerView name={message.sticker} fallback={message.text} play={lines.length - i <= PLAYS_LAST} tap onLongPress={() => setMenuFor(message)} />
-                  ) : message.file?.sticker ? (
-                    <PhotoSticker uri={photos[message.file.id]} status={comingText(message.file, taking[`${message.peer}|${message.tag}`])} />
-                  ) : message.place ? (
-                    <PlaceCard place={message.place} ink={ink} />
-                  ) : message.poll ? (
-                    <PollCard
-                      poll={message.poll}
-                      voters={[
-                        { name: t('You'), chose: message.myVote ?? [] },
-                        { name: selectedName, chose: message.theirVote ?? [] },
-                      ]}
-                      mine={message.myVote ?? []}
-                      onChoose={theyHave(message) ? (option) => void vote(message, option) : undefined}
-                      ink={ink}
-                    />
-                  ) : message.file ? (
-                    <Attachment file={message.file} uri={photos[message.file.id]} state={taking[`${message.peer}|${message.tag}`]} ink={ink} />
-                  ) : (
-                    <Text style={ink}>
-                      {message.voice
-                        ? playingId === message.id
-                          ? `■  ${t('Playing, {time}', { time: voiceDuration(Math.max(0, message.voice.ms - played)) })}`
-                          : `▶  ${t('Voice message, {time}', { time: voiceDuration(message.voice.ms) })}`
-                        : <LinkedText text={shownLine(message.text)} />}
-                    </Text>
-                  )}
-                  {message.preview && !message.voice && !message.file ? <PreviewCard preview={message.preview} ink={ink} /> : null}
-                  <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>
-                    {[message.forwarded ? t('Forwarded') : '', message.at && !scheduled(message) ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}
-                  </Text>
-                </Pressable>
-                <Reactions
-                  signs={[message.theirReaction, message.myReaction].filter((sign): sign is string => !!sign)}
-                  mine={message.myReaction}
-                  mineSide={message.mine}
-                  onPress={() => setMenuFor(message)}
-                />
-              </View>
+                message={message}
+                quoted={message.re ? byTag.get(message.re) : undefined}
+                name={selectedName}
+                newDay={newDay}
+                tail={tail}
+                lit={lit === message.id}
+                played={playingId === message.id ? played : null}
+                photo={message.file ? photos[message.file.id] : undefined}
+                taking={taking[`${message.peer}|${message.tag}`]}
+                plays={lines.length - i <= PLAYS_LAST}
+                canAnswer={theyHave(message)}
+                waits={scheduled(message)}
+                styles={styles}
+                b={b}
+                colors={colors}
+                acts={rowActs}
+              />
             );
           })}
         </ScrollView>
@@ -4791,8 +4766,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         ) : null}
         {selectedContact ? (
           <View style={styles.dock}>
-            <Composer
-              value={draft}
+            <DraftComposer
+              draft={draft}
               onChangeText={typed}
               placeholder={t('Message {name}', { name: selectedName })}
               maxLength={4000}
@@ -4840,7 +4815,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             <>
                               <LaterPicker onPick={(at) => void sendLater(at)} />
                               <Text variant="caption" tone="muted">
-                                {draft.trim() ? '' : `${t('With nothing typed, the next photo, file or voice message goes then.')} `}
+                                {nothingTyped ? `${t('With nothing typed, the next photo, file or voice message goes then.')} ` : ''}
                                 {hiddenKey
                                   ? t('The relay keeps it and sends it at that time, even if this phone is off then. In hidden chats the relay has to be reachable now.')
                                   : t('The relay keeps it and sends it at that time, even if this phone is off then.')}
@@ -4881,7 +4856,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           onNote={setNote}
           onChat={(identity, text) => {
             setSelected(`${CONTACT_PREFIX}${identity}`);
-            setDraft((typed) => (typed.trim() ? `${typed}\n${text}` : text));
+            draft.set((typed) => (typed.trim() ? `${typed}\n${text}` : text));
           }}
         />
         <PollSheet visible={polling && shown} onClose={() => setPolling(false)} onSend={sendPoll} />
@@ -5053,6 +5028,187 @@ function dayLabel(at: number): string {
   if (d.toDateString() === new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toDateString()) return t('Yesterday');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+// What a line of the thread does when pressed, held or laid out (ChatScreen's rowDo).
+type RowActs = {
+  play: (message: Message) => void;
+  open: (message: Message) => void;
+  menu: (message: Message) => void;
+  goTo: (peer: string, tag: string) => void;
+  vote: (message: Message, option: number) => void;
+  placed: (message: Message, y: number) => void;
+  smsAgain: (sms: SmsMessage) => void;
+  smsMenu: (sms: SmsMessage) => void;
+  smsEarlier: () => void;
+  smsPlaced: (id: string, y: number) => void;
+};
+
+/** One RowActs that stays the same, doing what the latest render's does. */
+function steadyActs(latest: RefObject<RowActs | null>): RowActs {
+  const now = () => latest.current!;
+  return {
+    play: (message) => now().play(message),
+    open: (message) => now().open(message),
+    menu: (message) => now().menu(message),
+    goTo: (peer, tag) => now().goTo(peer, tag),
+    vote: (message, option) => now().vote(message, option),
+    placed: (message, y) => now().placed(message, y),
+    smsAgain: (sms) => now().smsAgain(sms),
+    smsMenu: (sms) => now().smsMenu(sms),
+    smsEarlier: () => now().smsEarlier(),
+    smsPlaced: (id, y) => now().smsPlaced(id, y),
+  };
+}
+
+type LineLook = { styles: ReturnType<typeof makeStyles>; b: ReturnType<typeof bubbleStyles>; colors: Colors; acts: RowActs };
+
+// A message of the thread. It draws again only when what it shows changes, not each time the
+// chat does (a voice message playing, a note), which keeps a long thread light to scroll.
+const MessageLine = memo(function MessageLine({ message, quoted, name, newDay, tail, lit, played, photo, taking, plays, canAnswer, waits, styles, b, colors, acts }: LineLook & {
+  message: Message;
+  /** The message it answers, when here. */
+  quoted?: Message;
+  /** The contact's name. */
+  name: string;
+  newDay: boolean;
+  tail: boolean;
+  lit: boolean;
+  /** How far it has played, ms, while it is the voice message playing. */
+  played: number | null;
+  photo?: string;
+  taking?: string;
+  /** A sticker among the last of the thread, which moves. */
+  plays: boolean;
+  /** They have it, so it can be voted on. */
+  canAnswer: boolean;
+  /** Ours sent for later, its time not come yet (scheduled): it says when it goes, until then. */
+  waits: boolean;
+}) {
+  useLang();
+  const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
+  // A sticker, built in or made from a photo, shows on its own, with no bubble.
+  const stuck = !!message.sticker || !!message.file?.sticker;
+  return (
+    <View onLayout={(event) => acts.placed(message, event.nativeEvent.layout.y)}>
+      {newDay && message.at ? (
+        <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
+          {dayLabel(message.at)}
+        </Text>
+      ) : null}
+      <Pressable
+        onPress={message.voice ? () => acts.play(message) : message.file ? () => acts.open(message) : undefined}
+        onLongPress={() => acts.menu(message)}
+        accessibilityHint={message.voice ? t('Tap to play, hold for more') : message.file ? t('Tap to open, hold for more') : t('Hold for more')}
+        style={[
+          styles.bubble,
+          message.mine ? b.mine : b.theirs,
+          message.file?.kind === 'photo' && !stuck && styles.photoBubble,
+          tail && !stuck && (message.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+          stuck && styles.stickerBubble,
+          (message.myReaction || message.theirReaction) && styles.reacted,
+          lit && styles.lit,
+        ]}
+      >
+        {message.re ? (
+          <Quote
+            name={quoted ? (quoted.mine ? t('You') : name) : ''}
+            line={quoted ? messageLine(quoted) : ''}
+            ink={ink}
+            onPress={() => acts.goTo(message.peer, message.re!)}
+          />
+        ) : null}
+        {message.sticker ? (
+          <StickerView name={message.sticker} fallback={message.text} play={plays} tap onLongPress={() => acts.menu(message)} />
+        ) : message.file?.sticker ? (
+          <PhotoSticker uri={photo} status={comingText(message.file, taking)} />
+        ) : message.place ? (
+          <PlaceCard place={message.place} ink={ink} />
+        ) : message.poll ? (
+          <PollCard
+            poll={message.poll}
+            voters={[
+              { name: t('You'), chose: message.myVote ?? [] },
+              { name, chose: message.theirVote ?? [] },
+            ]}
+            mine={message.myVote ?? []}
+            onChoose={canAnswer ? (option) => acts.vote(message, option) : undefined}
+            ink={ink}
+          />
+        ) : message.file ? (
+          <Attachment file={message.file} uri={photo} state={taking} ink={ink} />
+        ) : (
+          <Text style={ink}>
+            {message.voice
+              ? played !== null
+                ? `■  ${t('Playing, {time}', { time: voiceDuration(Math.max(0, message.voice.ms - played)) })}`
+                : `▶  ${t('Voice message, {time}', { time: voiceDuration(message.voice.ms) })}`
+              : <LinkedText text={shownLine(message.text)} />}
+          </Text>
+        )}
+        {message.preview && !message.voice && !message.file ? <PreviewCard preview={message.preview} ink={ink} /> : null}
+        <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>
+          {[message.forwarded ? t('Forwarded') : '', message.at && !waits ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}
+        </Text>
+      </Pressable>
+      <Reactions
+        signs={[message.theirReaction, message.myReaction].filter((sign): sign is string => !!sign)}
+        mine={message.myReaction}
+        mineSide={message.mine}
+        onPress={() => acts.menu(message)}
+      />
+    </View>
+  );
+});
+
+// An SMS or MMS with their number among the thread's messages, drawn again only when it changes.
+const SmsLine = memo(function SmsLine({ sms: m, earlier, newDay, tail, lit, styles, b, colors, acts }: LineLook & {
+  sms: SmsMessage;
+  /** The first SMS read, with a way to ask for earlier ones above it. */
+  earlier: boolean;
+  newDay: boolean;
+  tail: boolean;
+  lit: boolean;
+}) {
+  useLang();
+  const id = smsLineId(m);
+  const ink = m.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
+  return (
+    <View onLayout={(event) => acts.smsPlaced(id, event.nativeEvent.layout.y)}>
+      {earlier ? <TextButton title={t('Show earlier SMS')} onPress={acts.smsEarlier} /> : null}
+      {newDay ? (
+        <Text variant="caption" tone="muted" style={[styles.divider, styles.day]}>
+          {dayLabel(m.at)}
+        </Text>
+      ) : null}
+      <Pressable
+        onPress={smsFailed(m) ? () => acts.smsAgain(m) : undefined}
+        onLongPress={() => acts.smsMenu(m)}
+        accessibilityHint={smsFailed(m) ? t('Tap to send it again.') : t('Hold for more')}
+        style={[
+          styles.bubble,
+          m.mine ? b.mine : b.theirs,
+          tail && (m.mine ? [b.mineTail, styles.mineTail] : [b.theirsTail, styles.theirsTail]),
+          styles.sms,
+          lit && styles.lit,
+        ]}
+      >
+        {(m.pictures ?? []).map((p) => (
+          <Image key={p.uri} source={{ uri: p.uri }} style={styles.smsPicture} resizeMode="cover" accessibilityLabel={t('Picture')} />
+        ))}
+        {m.text ? (
+          <Text style={ink}>
+            <LinkedText text={m.text} />
+          </Text>
+        ) : null}
+        {/* Marked plain: what the SMS screen says of every SMS, and its marks. */}
+        <Text style={[ink, styles.time]}>
+          {[m.kind === 'mms' ? t('MMS (not encrypted)') : t('SMS (not encrypted)'), clock(m.at), m.mine ? smsMark(m.state) : ''].filter(Boolean).join('  ·  ')}
+        </Text>
+        {smsFailed(m) ? <Text style={[styles.time, { color: colors.danger }]}>{t('Tap to send it again.')}</Text> : null}
+      </Pressable>
+    </View>
+  );
+});
+
 const layout = StyleSheet.create({
   screen: {
     flex: 1,

@@ -263,6 +263,7 @@ export const chat: Record<string, string> = {
   'Message request': 'Αίτημα μηνύματος',
   'Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages came or were read. Writing to them accepts too.': 'Κάποιος με τον σύνδεσμο επαφής σου σού έγραψε. Μέχρι να το αποδεχτείς, το τηλέφωνό του δεν μαθαίνει ότι τα μηνύματά του ήρθαν ή διαβάστηκαν. Αν του γράψεις, το αποδέχεσαι κι έτσι.',
   'Accept': 'Αποδοχή',
+  'Show earlier messages ({n} more)': 'Προβολή παλαιότερων μηνυμάτων ({n} ακόμα)',
   'Show earlier imported messages ({n} more)': 'Προβολή παλαιότερων εισαγμένων μηνυμάτων ({n} ακόμα)',
   'Show earlier SMS': 'Προβολή παλαιότερων SMS',
   'Send as SMS': 'Αποστολή ως SMS',

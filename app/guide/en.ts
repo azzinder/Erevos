@@ -32,7 +32,8 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 the messages that have what you type in them, in all the space's chats: tap one to open its chat at it. In a chat, its
 details have **Search in this chat**: ▲ and ▼ go to what it found earlier and later. Either looks only on this phone:
 in what it keeps sealed, and **Search in this chat** in the SMS a contact's chat shows too; hidden chats are searched
-only from inside them.
+only from inside them. A long chat opens at its latest 100 messages: **Show earlier messages**, above them, brings
+more, and going to an earlier one (from the search, a starred message or the one a message answers) brings it too.
 
 - **The picture** is drawn from the contact's key: the same key always gives the same colours and moon (in greens under Matrix), so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.

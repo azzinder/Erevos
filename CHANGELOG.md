@@ -10,6 +10,13 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet.
 
+- **Chats are lighter on older phones**: typing redraws only the message bar, not the whole chat
+  with its thread; a message of the thread draws again only when it changes (a voice message
+  playing redraws its own line, once a second); a long chat opens at its latest 100 messages, with
+  **Show earlier messages** above them, and going to an earlier one (from the search, a starred
+  message or the one a message answers) brings it. Messages, files and pictures go through native
+  base64 and UTF-8 where the phone has them, and the open space's history and queues are kept
+  open instead of read again every few seconds. Groups' message bar too.
 - **QR codes show at once**, on older phones too: each is one picture now, made in a fraction of
   the time, instead of a view for each stretch of modules (about 11,000 for a contact's code) and a
   slow search for its mask. It looks and scans the same, and letters beyond English go into it as

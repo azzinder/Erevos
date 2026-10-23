@@ -264,6 +264,7 @@ export const chat: Record<string, string> = {
   'Message request': 'Zahtjev za razgovor',
   'Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages came or were read. Writing to them accepts too.': 'Piše vam osoba koja ima vaš link za kontakt. Dok ne prihvatite, njen telefon ne saznaje da su njene poruke stigle ili pročitane. Ako joj odgovorite, zahtjev je prihvaćen.',
   'Accept': 'Prihvati',
+  'Show earlier messages ({n} more)': 'Prikaži ranije poruke (još {n})',
   'Show earlier imported messages ({n} more)': 'Prikaži ranije uvezene poruke (još {n})',
   'Show earlier SMS': 'Prikaži ranije SMS poruke',
   'Send as SMS': 'Pošalji kao SMS',

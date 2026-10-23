@@ -263,6 +263,7 @@ export const chat: Record<string, string> = {
   'Message request': 'Solicitação de mensagem',
   'Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages came or were read. Writing to them accepts too.': 'Alguém com o seu link de contato escreveu para você. Até você aceitar, o celular dessa pessoa não fica sabendo se as mensagens chegaram ou foram lidas. Responder também conta como aceitar.',
   'Accept': 'Aceitar',
+  'Show earlier messages ({n} more)': 'Mostrar mensagens anteriores (mais {n})',
   'Show earlier imported messages ({n} more)': 'Mostrar mensagens importadas anteriores (mais {n})',
   'Show earlier SMS': 'Mostrar SMS anteriores',
   'Send as SMS': 'Enviar como SMS',

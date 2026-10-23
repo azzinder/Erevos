@@ -233,24 +233,7 @@ const clockOf = (ms: number) => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 };
 
-export function Composer({
-  value,
-  onChangeText,
-  placeholder,
-  maxLength,
-  enterSends = false,
-  onSend,
-  sendWays = [],
-  voice,
-  talkie,
-  vanish,
-  answering,
-  later,
-  onSticker,
-  panel,
-  panelOpen,
-  onPanel,
-}: {
+export interface ComposerProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder: string;
@@ -272,7 +255,26 @@ export function Composer({
   panel?: ReactNode;
   panelOpen: boolean;
   onPanel: (open: boolean) => void;
-}) {
+}
+
+export function Composer({
+  value,
+  onChangeText,
+  placeholder,
+  maxLength,
+  enterSends = false,
+  onSend,
+  sendWays = [],
+  voice,
+  talkie,
+  vanish,
+  answering,
+  later,
+  onSticker,
+  panel,
+  panelOpen,
+  onPanel,
+}: ComposerProps) {
   const { colors, look, scheme } = useTheme();
   const blur = useGlassBlur();
   const window = useWindowDimensions();
@@ -773,6 +775,68 @@ export function Composer({
         ) : null}
       </Modal>
     </View>
+  );
+}
+
+/**
+ * What is typed in a message bar, kept by the bar itself (DraftComposer): typing then draws the
+ * bar again, not the whole chat around it, which with a long thread is slow on an older phone.
+ * The chat reads it and changes it through this; `useDraft` says when it empties or fills.
+ */
+export class DraftBox {
+  private typed: string;
+  /** The bar showing it, told of each change. */
+  shown: ((text: string) => void) | null = null;
+  /** Told when it empties or fills. */
+  emptied: (empty: boolean) => void = () => undefined;
+
+  constructor(typed: string) {
+    this.typed = typed;
+  }
+
+  /** What is typed now. */
+  text(): string {
+    return this.typed;
+  }
+
+  /** Puts `next` in the bar, or what it makes of what is typed. */
+  set(next: string | ((typed: string) => string)): void {
+    const text = typeof next === 'function' ? next(this.typed) : next;
+    if (text === this.typed) return;
+    const was = !this.typed.trim();
+    this.typed = text;
+    this.shown?.(text);
+    if (was !== !text.trim()) this.emptied(!text.trim());
+  }
+}
+
+/** A message bar's DraftBox, starting with `initial`, and whether nothing is typed in it. */
+export function useDraft(initial: () => string): { draft: DraftBox; empty: boolean } {
+  const [draft] = useState(() => new DraftBox(initial()));
+  const [empty, setEmpty] = useState(() => !draft.text().trim());
+  draft.emptied = setEmpty;
+  return { draft, empty };
+}
+
+/** The message bar (Composer), with what is typed kept in `draft`. */
+export function DraftComposer({ draft, onChangeText, ...rest }: Omit<ComposerProps, 'value' | 'onChangeText'> & { draft: DraftBox; onChangeText?: (text: string) => void }) {
+  const [value, setValue] = useState(() => draft.text());
+  useEffect(() => {
+    draft.shown = setValue;
+    setValue(draft.text());
+    return () => {
+      if (draft.shown === setValue) draft.shown = null;
+    };
+  }, [draft]);
+  return (
+    <Composer
+      {...rest}
+      value={value}
+      onChangeText={(text) => {
+        draft.set(text);
+        onChangeText?.(text);
+      }}
+    />
   );
 }
 

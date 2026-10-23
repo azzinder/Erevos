@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Composer, IconButton } from '../components/composer';
+import { DraftComposer, IconButton, useDraft } from '../components/composer';
 import { useGlassBlur } from '../components/glass';
 import { useGroupMedia } from '../components/group-media';
 import { useGroupMessages } from '../components/group-messages';
@@ -86,7 +86,7 @@ export default function GroupScreen() {
   const [info, setInfo] = useState<GroupInfo | null>(null);
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [draft, setDraft] = useState('');
+  const { draft } = useDraft(() => '');
   const [note, setNote] = useState('');
   const [sheet, setSheet] = useState(false);
   // A public group's ⋯: its video call, and its own screen.
@@ -158,14 +158,14 @@ export default function GroupScreen() {
   }, [id, load, readContacts]);
 
   async function send() {
-    const text = draft.trim();
+    const text = draft.text().trim();
     if (!text) return;
-    setDraft('');
+    draft.set('');
     setNote('');
     try {
       await parts.send(text);
     } catch (error) {
-      setDraft(text);
+      draft.set(text);
       setNote(error instanceof Error ? error.message : String(error));
     }
   }
@@ -384,9 +384,8 @@ export default function GroupScreen() {
         </Text>
       ) : null}
       {out ? null : (
-        <Composer
-          value={draft}
-          onChangeText={setDraft}
+        <DraftComposer
+          draft={draft}
           placeholder={t('Message {name}', { name: info.name })}
           maxLength={MAX_GROUP_TEXT}
           onSend={() => void send()}
