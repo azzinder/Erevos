@@ -8,7 +8,9 @@ No release so far has a macOS build. **Not audited.**
 
 ## Unreleased
 
-On main, not released yet.
+On main, not released yet: nothing so far.
+
+## 2.0.3 (2026-10-23)
 
 - **One invite for everything**: **Invite someone**, in the chats, makes one QR code or link for
   someone new, for one person and 7 days. Their phone scans or opens it in Erevos and taps
