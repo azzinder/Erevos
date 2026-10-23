@@ -3,8 +3,8 @@ import { Animated, PanResponder, StyleSheet, View, type ViewStyle } from 'react-
 
 // Tabs that a swipe to the side changes, as their chips do: to the left for the next one, to the
 // right for the one before. The content leans after the finger, and the new tab slides in from the
-// side it came from. A swipe to the right on the first tab is left to the screen (going back,
-// components/swipe-back.tsx), and rows that swipe themselves (components/swipe-row.tsx) keep theirs.
+// side it came from. Past the first or the last tab it only gives a little and comes back: a swipe
+// on tabs never goes back a screen (components/swipe-back.tsx), only the back arrow does there.
 
 const START = 18;
 const DONE = 72;
@@ -37,8 +37,9 @@ export function SwipeTabs<T>({ tabs, current, onChange, grow = true, style, chil
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (_, g) =>
-          Math.abs(g.dx) > START && Math.abs(g.dx) > Math.abs(g.dy) * 2.5 && neighbour(g.dx) !== undefined,
-        onPanResponderMove: (_, g) => x.setValue(neighbour(g.dx) !== undefined ? g.dx * 0.35 : 0),
+          now.current.tabs.length > 1 && Math.abs(g.dx) > START && Math.abs(g.dx) > Math.abs(g.dy) * 2.5,
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderMove: (_, g) => x.setValue(g.dx * (neighbour(g.dx) !== undefined ? 0.35 : 0.1)),
         onPanResponderRelease: (_, g) => {
           const next = neighbour(g.dx);
           const done = Math.abs(g.dx) > DONE || (Math.abs(g.vx) > FLICK && Math.abs(g.dx) > START * 2);

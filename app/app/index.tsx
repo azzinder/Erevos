@@ -7,8 +7,7 @@ import { FoundRow } from '../components/found-row';
 import { LockIcon, MoreIcon, PersonIcon, PhoneIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { KeyboardPaddedView } from '../components/keyboard';
-import { archiveConversation, SmsActions, trashConversation, type SmsTarget } from '../components/sms-actions';
-import { SwipeRow } from '../components/swipe-row';
+import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { SwipeTabs } from '../components/swipe-tabs';
 import { Chip, font, fontStyle, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
@@ -432,19 +431,11 @@ export default function Home() {
     </View>
   );
 
-  // A swipe to the right archives an SMS conversation, to the left puts it in the Trash. It leaves
-  // the list at once; Undo brings it back.
-  function swiped(row: InboxRow, archive: boolean) {
-    setRows((list) => list?.filter((r) => r.identity !== row.identity) ?? null);
-    if (archive) archiveConversation(row.sms, true);
-    else trashConversation(row.sms, row.at);
-  }
-
   // The list ends above the keyboard while the search is typed in, and New chat floats above it.
   return (
     <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
-      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos); an SMS row swiped
-          keeps its own Archive and Delete. */}
+      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos), on the rows too:
+          an SMS conversation is archived or deleted by holding it down. */}
       <SwipeTabs tabs={mixed ? SHOWS : []} current={show} onChange={setShow}>
         <FlatList
           data={shown}
@@ -456,13 +447,7 @@ export default function Home() {
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
           renderItem={({ item }) =>
             item.sms ? (
-              <SwipeRow
-                ground={colors.ground}
-                right={{ label: t('Archive'), color: colors.primary, ink: colors.onPrimary, run: () => swiped(item, true) }}
-                left={{ label: t('Delete'), color: colors.danger, ink: colors.ground, run: () => swiped(item, false) }}
-              >
-                <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />
-              </SwipeRow>
+              <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />
             ) : (
               <ChatRow row={item} now={now} online={online.has(item.identity)} />
             )

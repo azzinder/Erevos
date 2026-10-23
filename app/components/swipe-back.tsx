@@ -8,8 +8,8 @@ import { BackIcon } from './icons';
 // A swipe to the right goes back, as the back arrow does, from anywhere on the screen, not only
 // from its edge (where Android's own back gesture is, on phones that have it). The screen leans
 // after the finger and a round back arrow comes out at the left; let go past a third of the way, or
-// with a quick flick, and it goes back, else it all comes back. Rows and tabs that swipe to the
-// side themselves (components/swipe-row.tsx, swipe-tabs.tsx) take the swipe first, being under
+// with a quick flick, and it goes back, else it all comes back. Tabs that swipe to the
+// side themselves (components/swipe-tabs.tsx) take the swipe first, being under
 // the finger, and up and down still scroll.
 
 // How far, in points, before the swipe counts, and how far the screen leans at most.

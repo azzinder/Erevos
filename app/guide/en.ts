@@ -91,7 +91,9 @@ A good first hour:
 - **Tabs:** swipe to the left or right to go to the tab beside, as tapping its chip does: **All messages**, **SMS**
   and **Erevos** on the home screen, **Keypad**, **Recents** and **Favourites** in **Phone**, the filters in
   **Contacts**, and the sets of stickers.
-- An SMS conversation in the list keeps its own swipes: to the right archives it, to the left deletes it.
+- On a screen with tabs, a swipe only changes the tab, on the rows of its list too, and past the first or the last
+  tab it does nothing: go back there with the back arrow. An SMS conversation is archived or deleted by holding it
+  down.
 
 ### Language
 
@@ -913,8 +915,7 @@ chats in one list.
 
 ### Keeping the SMS in order
 
-- **Swipe:** in the list, swipe an SMS conversation to the right to archive it, or to the left to delete it.
-  **Undo** shows for a few seconds after. Hold a conversation down for the rest: **Pin to the top**, **Archive**,
+- **Hold down:** in the list, hold an SMS conversation down for what it can do: **Pin to the top**, **Archive**,
   **Mark as spam**, **Block** and **Delete**, and **Add to contacts** for a number that is none of your contacts. In
   a conversation, **⋮** at the top shows the same, and such a number has **Add to contacts** under its name too: a
   new contact with the number in it.
