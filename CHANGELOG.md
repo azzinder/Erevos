@@ -8,8 +8,13 @@ No release so far has a macOS build. **Not audited.**
 
 ## Unreleased
 
-On main, not released yet.
+On main, not released yet: nothing so far.
 
+## 2.0.2 (2026-10-23)
+
+- **Swipes on tabs only change the tab**: on a screen with tabs a sideways swipe always moves between
+  them; past the first or last tab it gives a little and comes back, instead of going back a screen.
+  SMS conversations in the home list no longer swipe to archive or delete: hold one down for both.
 - **Launcher icons fill the launcher's shape** (Android 8 and later), as FASOULI's do, in every colour,
   instead of a small square inside a pale tile.
 
