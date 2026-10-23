@@ -8,7 +8,13 @@ No release so far has a macOS build. **Not audited.**
 
 ## Unreleased
 
-On main, not released yet: nothing so far.
+On main, not released yet.
+
+- **Each launcher icon opens what it names** (Android): **Erevos**'s own icon opens its chats (the **Erevos** tab),
+  or leaves the chat you had open, instead of whatever Erevos showed last, such as the SMS after SMS's icon or the
+  Phone after Phone's. **SMS** opens the SMS list again also when Erevos showed it before and you went to another
+  tab, **Phone** opens the keypad (with missed calls the widget's button opens **Recents**), and the widget's
+  buttons do the same each time they are tapped. A tel: link with the same number a second time types it again.
 
 ## 2.0.3 (2026-10-23)
 

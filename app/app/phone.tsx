@@ -128,7 +128,7 @@ async function deleteNow(item: Deleting) {
 }
 
 export default function Phone() {
-  const params = useLocalSearchParams<{ number?: string; tab?: string }>();
+  const params = useLocalSearchParams<{ number?: string; tab?: string; opened?: string }>();
   return <PhoneView params={params} />;
 }
 
@@ -136,8 +136,10 @@ export default function Phone() {
  *  `onCalled` is told just before a call is made, which takes Erevos to the background. */
 export type LockedPhone = { onOpen: () => void; onCalled: () => void };
 
-/** The Phone, with a link's details (`params`); `locked` with Erevos locked. */
-export function PhoneView({ params, locked }: { params: { number?: string; tab?: string }; locked?: LockedPhone }) {
+/** The Phone, with a link's details (`params`); `locked` with Erevos locked. A link opened again
+ *  (`opened` changes, app/_layout.tsx), as its icon or the widget's button tapped again, shows its
+ *  tab again: the keypad, unless it names another. */
+export function PhoneView({ params, locked }: { params: { number?: string; tab?: string; opened?: string }; locked?: LockedPhone }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -173,11 +175,12 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
     if (typeof params.number !== 'string') return;
     setNumber(dialNumber(params.number));
     setTab('keypad');
-  }, [params.number]);
+  }, [params.number, params.opened]);
 
   useEffect(() => {
-    if (typeof params.tab === 'string') setTab(tabOf(params.tab));
-  }, [params.tab]);
+    if (typeof params.number === 'string') return;
+    if (typeof params.tab === 'string' || typeof params.opened === 'string') setTab(tabOf(params.tab));
+  }, [params.number, params.tab, params.opened]);
 
   useEffect(() => {
     // Android answers in its own screens, and calls come and go: look again then.

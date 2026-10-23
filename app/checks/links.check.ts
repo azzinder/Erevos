@@ -5,7 +5,7 @@ import { test } from 'node:test';
 
 import { handOverCall, takeCall } from '../lib/call-handoff';
 import { splitLinks } from '../lib/links';
-import { holdLink, KEEP_MS, linkHref, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, takeLink } from '../lib/open-link';
+import { holdLink, ICON_LINK, KEEP_MS, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenParams, takeLink } from '../lib/open-link';
 
 const urls = (text: string) => splitLinks(text).flatMap((part) => (part.url ? [part.url] : []));
 
@@ -77,6 +77,38 @@ test('the home screen with details is a link too, as the widget gives it', () =>
   assert.equal(linkHref('erevos:///?show=erevos'), '/?show=erevos');
   assert.equal(linkHref('erevos://?'), '');
   assert.deepEqual(linkParts('/?show=sms'), { path: '/', params: { show: 'sms' } });
+});
+
+test("the launcher's icons and the widget show what they name each time, also a second time", () => {
+  const on = (path: string, hidden = false) => ({ path, hidden });
+  const sms = linkHref('erevos://?show=sms');
+  const chats = linkHref(ICON_LINK);
+  assert.equal(chats, '/?show=erevos&from=launcher');
+  // The home screen is gone back to, from wherever, with the link's tab, also when it shows already.
+  assert.equal(linkMove(sms, on('/')), 'back');
+  assert.equal(linkMove(sms, on('/chat')), 'back');
+  assert.equal(linkMove(chats, on('/')), 'back');
+  assert.equal(linkMove(chats, on('/sms')), 'back');
+  assert.equal(linkMove(chats, on('/phone')), 'back');
+  assert.equal(linkMove(linkHref('erevos://?show=erevos'), on('/chat')), 'back', "the widget's Messages button");
+  // Erevos's own icon leaves one of its chats as it was.
+  assert.equal(linkMove(chats, on('/chat')), 'stay');
+  assert.equal(linkMove(chats, on('/group')), 'stay');
+  assert.equal(linkMove(chats, on('/public-group')), 'stay');
+  // The Phone and Contacts showing take the link afresh; a hidden place's Contacts is left, and
+  // the space's open over it, as a screen that is not there opens over the one on top.
+  assert.equal(linkMove('/phone', on('/phone')), 'back');
+  assert.equal(linkMove('/phone?tab=recents', on('/phone')), 'back');
+  assert.equal(linkMove('/contacts', on('/contacts')), 'back');
+  assert.equal(linkMove('/contacts', on('/contacts', true)), 'push');
+  assert.equal(linkMove('/phone', on('/contacts')), 'push');
+  assert.equal(linkMove('/contacts', on('/')), 'push');
+  // Another screen showing only takes the link's details, as before.
+  assert.equal(linkMove('/sms?to=123', on('/sms')), 'params');
+  // Opened again, a link's details change each time, so the screen shows its tab again.
+  assert.deepEqual(screenParams(sms, 1000), { show: 'sms', opened: '1000' });
+  assert.notDeepEqual(screenParams(sms, 2000), screenParams(sms, 1000));
+  assert.deepEqual(screenParams('/phone', 5), { opened: '5' });
 });
 
 test('a held link can be looked at, as the locked Phone does, and stays held', () => {

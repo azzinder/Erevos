@@ -123,7 +123,8 @@ async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
 const trashLooked = new Set<number>();
 
 // Which of the list shows: all of it, the SMS, or the Erevos chats (lib/inbox.ts, showsIn).
-// Erevos's widget opens on one of them (erevos://?show=sms).
+// Erevos's widget and its icons in the launcher open on one of them (erevos://?show=sms), again
+// each time they are tapped (`opened`, app/_layout.tsx).
 const SHOWS: InboxShow[] = ['all', 'sms', 'erevos'];
 const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' ? show : 'all');
 const isSms = (row: InboxRow) => showsIn(row, 'sms');
@@ -136,11 +137,11 @@ export default function Home() {
   const [rows, setRows] = useState<InboxRow[] | null>(null);
   const [relay, setRelay] = useState<Relay>('none');
   const [query, setQuery] = useState('');
-  const params = useLocalSearchParams<{ show?: string }>();
+  const params = useLocalSearchParams<{ show?: string; opened?: string }>();
   const [show, setShow] = useState<InboxShow>(showOf(params.show));
   useEffect(() => {
     if (typeof params.show === 'string') setShow(showOf(params.show));
-  }, [params.show]);
+  }, [params.show, params.opened]);
   // After a new version, the permissions check shows by itself once, when calls and messages in
   // the background need something (lib/permissions.ts); in the web app after a new signed release,
   // when messages, calls or the data need something (lib/permissions.web.ts). A moment later, and

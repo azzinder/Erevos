@@ -1,4 +1,4 @@
-import { router, Stack, useRootNavigationState, usePathname, type Href } from 'expo-router';
+import { router, Stack, useGlobalSearchParams, useRootNavigationState, usePathname, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
@@ -21,7 +21,7 @@ import { endGroupCall } from '../lib/group-calls';
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
-import { linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, takeLink } from '../lib/open-link';
+import { linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenParams, takeLink } from '../lib/open-link';
 import { phoneOpensLocked } from '../lib/phone-open';
 import { forgetHistory } from '../lib/phone-log';
 import { noticeLanguage, noticeSeen } from '../lib/push-notice';
@@ -457,14 +457,13 @@ function Locked({ lang, config, onUnlock }: { lang: Lang; config: LockConfig; on
     const look = () => {
       const href = peekLink();
       if (!href) return;
-      const { path, params } = linkParts(href);
-      if (path !== '/phone' || !opens.current) {
+      if (linkParts(href).path !== '/phone' || !opens.current) {
         setPhone(null);
         return;
       }
       takeLink();
       linkAt.current = Date.now();
-      setPhone(params);
+      setPhone(screenParams(href, linkAt.current));
     };
     void phoneOpensLocked().then((on) => {
       if (!active) return;
@@ -494,23 +493,27 @@ function Locked({ lang, config, onUnlock }: { lang: Lang; config: LockConfig; on
 }
 
 // Opens the screen a link names, held while the password screen showed (lib/open-link.ts), once
-// the screens are there, and each link that comes while the space is open. The screen that shows
-// already only takes the link's details.
+// the screens are there, and each link that comes while the space is open. The home screen is
+// under every other: back to it, not a second one. It, the Phone and Contacts, as the launcher's
+// icons and the widget open them, show the link's tab again each time, also the same link after
+// the owner chose another tab; another screen that shows already only takes the link's details.
+// Erevos's own icon leaves one of its chats open.
 function OpenLink() {
   const ready = useRootNavigationState()?.key;
   const pathname = usePathname();
-  const here = useRef(pathname);
-  here.current = pathname;
+  const { hidden } = useGlobalSearchParams<{ hidden?: string }>();
+  const here = useRef({ path: pathname, hidden: false });
+  here.current = { path: pathname, hidden: hidden === '1' };
   useEffect(() => {
     if (!ready) return;
     const open = () => {
       const href = takeLink();
       if (!href) return;
       const { path, params } = linkParts(href);
-      if (path === here.current) router.setParams(params);
-      // The home screen is under every other: back to it, not a second one.
-      else if (path === '/') router.dismissTo(href as Href);
-      else router.push(href as Href);
+      const move = linkMove(href, here.current);
+      if (move === 'back') router.dismissTo({ pathname: path, params: screenParams(href) } as Href);
+      else if (move === 'params') router.setParams(params);
+      else if (move === 'push') router.push(href as Href);
     };
     open();
     return onLinkHeld(open);

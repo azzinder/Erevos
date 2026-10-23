@@ -3,7 +3,8 @@
 // activity-alias of MainActivity, with the icon drawn in that colour (modules/erevos-icons/res),
 // and only the red one is on until the owner chooses another; MainActivity itself is no longer in
 // the launcher, else Erevos would show twice. Phone's, SMS's and Contacts's aliases are in their
-// modules' manifests.
+// modules' manifests. A tap on an alias brings no link, so it is given the one to Erevos's chats
+// (modules/erevos-icons, ErevosIconsPackage.kt).
 const { withAndroidManifest } = require('expo/config-plugins');
 
 const COLORS = ['red', 'orange', 'green', 'blue', 'violet', 'dark'];

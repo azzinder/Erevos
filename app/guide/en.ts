@@ -47,8 +47,9 @@ more, and going to an earlier one (from the search, a starred message or the one
 - **The widget**, on Android: add Erevos from your home screen's widgets. Its four buttons open **Phone**, the
   **SMS**, the Erevos **Messages** and **Contacts**, after the password like any link (the Phone without it, if you
   let it). Over the first three it shows how many missed calls, unread SMS and new messages there are, never who or
-  what; with missed calls, **Phone** opens on **Recents**. Its words follow Erevos's language. **Appearance** →
-  **Widget** sets the order of its buttons.
+  what; with missed calls, **Phone** opens on **Recents**. A button tapped again shows its screen again, also after
+  you chose another tab there. Its words follow Erevos's language. **Appearance** → **Widget** sets the order of its
+  buttons.
 - **The lock** at the top locks Erevos at once when a password is set, or opens the lock settings when not.
 - **The three dots** open the rest:
 
@@ -1417,10 +1418,12 @@ always reads well, on glass too.
   **Theme** says, with round buttons and softly rounded cards, in the phone's own font. A new wallpaper changes them
   in Erevos too, once it shows again. They are read on the phone and go nowhere. On older Android and on a computer
   it is not offered.
-- **Launcher icons** (Android): the colour of each of Erevos's icons among the phone's apps, **Erevos** (red),
-  **Phone** (green), **SMS** (blue, it opens the SMS list) and **Contacts** (violet): red, orange, green, blue,
-  violet or dark. It is the phone's, not each space's, as the icons show before Erevos is unlocked. After a change
-  some launchers take the icon off the home screen: add it again from the list of apps.
+- **Launcher icons** (Android): the colour of each of Erevos's icons among the phone's apps, **Erevos** (red, it
+  opens the Erevos chats, or the chat you left open), **Phone** (green, it opens the keypad), **SMS** (blue, it opens
+  the SMS list) and **Contacts** (violet): red, orange, green, blue, violet or dark. Each tap opens what its icon
+  names, also when Erevos showed another of them. The colour is the phone's, not each space's, as the icons show
+  before Erevos is unlocked. After a change some launchers take the icon off the home screen: add it again from the
+  list of apps.
 - **Widget** (Android): the order of the widget's four buttons, from left to right, with the widget drawn as it will
   look. Tap ↑ or ↓ to move a button; **First order** puts them back.
 

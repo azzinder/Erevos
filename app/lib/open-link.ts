@@ -1,4 +1,4 @@
-// Links that open Erevos (erevos://...): its Phone and Contacts icons in the launcher, a tel: link
+// Links that open Erevos (erevos://...): its icons in the launcher and its widget, a tel: link
 // through the Phone (modules/erevos-phone), another app's request about a contact
 // (modules/erevos-contacts), an SMS notice, a contact code scanned with the camera. The password
 // screen comes first, and the screens start afresh once a space opens (app/_layout.tsx), so a link
@@ -47,6 +47,38 @@ export function linkParts(href: string): { path: string; params: Record<string, 
     }
   }
   return { path: at < 0 ? href : href.slice(0, at), params };
+}
+
+/** The link Erevos's own icon in the launcher becomes (modules/erevos-icons, ErevosIconsPackage.kt):
+ *  its chats, as SMS's icon opens the SMS and the widget's Messages button the chats. */
+export const ICON_LINK = 'erevos://?show=erevos&from=launcher';
+
+/** The screens of Erevos's own chats: its icon leaves one open, as Erevos was left. */
+const CHATS = new Set(['/chat', '/group', '/public-group']);
+/** The screens the icons and the widget open besides the home screen: shown again with a link's details only. */
+const AGAIN = new Set(['/phone', '/contacts']);
+
+/**
+ * How a link opens, by the screen on top (`top`, and whether it shows a hidden place's, as the
+ * hidden chats' contacts do):
+ * - 'stay': Erevos's own icon, over one of its chats;
+ * - 'back': back to the home screen, or to the Phone or Contacts on top, with only the link's
+ *   details and `opened` changed, so the same link a second time shows its tab again, also after
+ *   the owner chose another (screenParams);
+ * - 'params': the screen on top takes the link's details;
+ * - 'push': the screen opens over the one on top.
+ */
+export function linkMove(href: string, top: { path: string; hidden: boolean }): 'stay' | 'back' | 'params' | 'push' {
+  const { path, params } = linkParts(href);
+  if (path === '/') return params.from === 'launcher' && CHATS.has(top.path) ? 'stay' : 'back';
+  if (path !== top.path) return 'push';
+  if (AGAIN.has(path)) return top.hidden ? 'push' : 'back';
+  return 'params';
+}
+
+/** A link's details as its screen is opened again ('back'): with `opened`, which changes each time. */
+export function screenParams(href: string, now = Date.now()): Record<string, string> {
+  return { ...linkParts(href).params, opened: String(now) };
 }
 
 /** Holds a link Erevos was opened with, until a space is open. */
