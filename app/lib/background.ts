@@ -7,7 +7,7 @@ import { startHiddenNotices } from './hidden-notices';
 import { hiddenRinging, onHiddenRingingChange, setHiddenRinging } from './hidden-ring';
 import { startHiddenRinging } from './hidden-ring-notices';
 import { showsAt } from './later';
-import { appShown, isNews, onMessage } from './receiver';
+import { appShown, isNews, onAppShown, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
 import { onSpaceGroupMessage } from './space-groups';
 
@@ -21,7 +21,8 @@ import { onSpaceGroupMessage } from './space-groups';
 // On by default; switches on the Lock screen turn it off on this phone, or only the messages
 // notice. Swiped away from the recent apps, it goes on without its screens (lib/space-running.ts);
 // stopped by Android, Erevos looks at nothing and cannot ring, and a quiet notice says so
-// (modules/erevos-call, ReceiveService).
+// (modules/erevos-call, ReceiveService). So does one when the space that received locked and
+// Erevos leaves the screen with the password asked: it receives nothing until it is open again.
 
 const KEY = 'erevos.ring-background';
 const NOTICES_KEY = 'erevos.message-notices';
@@ -36,6 +37,20 @@ const KEEP_TASK = 'ErevosReceive';
 const keeping = new Set<() => void>();
 if (canRingInBackground) {
   AppRegistry.registerHeadlessTask(KEEP_TASK, () => () => new Promise<void>((done) => keeping.add(done)));
+}
+
+// Whether the space that closed last was receiving: Erevos then leaves the screen with no space
+// open, and the "Locked" notice says it receives nothing, until a space opens (startBackground).
+let closedReceiving = false;
+if (canRingInBackground) {
+  AppState.addEventListener('change', (state) => {
+    if (!closedReceiving) return;
+    try {
+      callAudio?.setLocked?.(state === 'background');
+    } catch {
+      // A build from before the notice.
+    }
+  });
 }
 
 export async function loadRingInBackground(): Promise<boolean> {
@@ -208,6 +223,7 @@ export function startBackground(): () => void {
     try {
       callAudio!.startReceiving!();
       running = true;
+      closedReceiving = false;
       tellHidden(notices);
       ringHidden(true);
     } catch {
@@ -222,19 +238,24 @@ export function startBackground(): () => void {
     }),
     onSpaceGroupMessage(() => messageCame()),
   ];
-  // Erevos shows again: what came shows there, so the notice goes.
-  const shown = AppState.addEventListener('change', (state) => {
-    if (state === 'active') clearMessages();
+  // The space shows again (not the password screen in front of it): what came shows there, so the notice goes.
+  const shown = onAppShown((on) => {
+    if (on) clearMessages();
   });
   return () => {
     stopped = true;
     changes.delete(follow);
     told.forEach((stopTelling) => stopTelling());
-    shown.remove();
+    shown();
     ringChange();
     ringHidden(false);
     clearMessages();
-    if (running) stop();
+    if (running) {
+      stop();
+      // The space closes (locked): unless it opens again first, Erevos leaving the screen says so.
+      closedReceiving = true;
+      if (AppState.currentState === 'background') callAudio?.setLocked?.(true);
+    }
   };
 }
 

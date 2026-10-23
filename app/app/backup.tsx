@@ -63,7 +63,7 @@ const PLACES =
         : mark('Choose a password for the backup, then where to save the file: on an iPhone in Files, iCloud Drive or another app, on a computer in its downloads.');
 
 export default function Backups() {
-  const { lockNow } = useLock();
+  const { closeNow } = useLock();
   const { colors } = useTheme();
   const [auto, setAuto] = useState<AutoBackup | null>(null);
   const [asking, setAsking] = useState<Asking>(null);
@@ -238,7 +238,7 @@ export default function Backups() {
               (error) => t("The SMS could not go back into the phone's SMS: {error}", { error: errorText(error) }),
             );
           }
-          lockNow();
+          closeNow();
         } finally {
           release();
         }

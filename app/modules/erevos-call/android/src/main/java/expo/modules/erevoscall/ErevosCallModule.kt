@@ -116,6 +116,13 @@ class ErevosCallModule : Module() {
       null
     }
 
+    // The space that received closed and Erevos left the screen locked: a quiet notice says it
+    // receives nothing until it is open again; gone when it shows again or receives.
+    Function("setLocked") { on: Boolean ->
+      context?.let { if (on) Notices.stopped(it, locked = true) else Notices.clearStopped(it) }
+      null
+    }
+
     // A call rings here: the phone's ringtone, as the phone's ring volume and silent mode allow,
     // and with `notice` the call notice too, shown over the lock screen.
     Function("ring") { video: Boolean, notice: Boolean ->

@@ -51,6 +51,8 @@ type CallAudio = {
    *  If Android closes Erevos meanwhile, a quiet notice says so, until it receives again. */
   startReceiving?(): void;
   stopReceiving?(): void;
+  /** While `on`, a quiet notice says Erevos is locked and receives nothing until it is open again. */
+  setLocked?(on: boolean): void;
   /** Plays the phone's ringtone; with `notice`, also shows the call notice, over the lock screen. */
   ring?(video: boolean, notice: boolean): void;
   stopRinging?(): void;

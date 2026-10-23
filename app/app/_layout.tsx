@@ -25,14 +25,14 @@ import { linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, takeLink 
 import { phoneOpensLocked } from '../lib/phone-open';
 import { forgetHistory } from '../lib/phone-log';
 import { noticeLanguage, noticeSeen } from '../lib/push-notice';
-import { watchKnownNames } from '../lib/known-names';
+import { refreshKnownNames, watchKnownNames } from '../lib/known-names';
 import { forgetSpaceMover } from '../lib/queue-move';
 import { setAppShown, startReceiver } from '../lib/receiver';
 import { setThroughTor } from '../lib/relay';
 import { startSmsLater } from '../lib/sms-later';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
-import { keepSpaceRunning, stopSpaceRunning } from '../lib/space-running';
+import { keepSpaceRunning, onSpaceGatedChange, setSpaceGated, spaceGated, stopSpaceRunning } from '../lib/space-running';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
 import { clearKnownNames, forgetKnownNamesAfter } from '../modules/erevos-phone';
@@ -44,6 +44,7 @@ import { hardenLock, loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
 import { PasswordGate } from '../lock/gate';
 import { prepareHidden } from '../lock/hidden';
+import { forgetOpenedQueues } from '../lock/queues-data';
 import { currentSpace, loadOpenKey, setCurrentSpace } from '../lock/keys';
 import { firstSpaceKey, loadSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 import { space as gap } from '../theme/colors';
@@ -68,18 +69,23 @@ let hiddenPrepared = false;
 
 type Phase =
   | { kind: 'loading' }
-  | { kind: 'locked'; config: LockConfig }
+  // `behind`: the space that goes on behind the password screen, until its password opens it again.
+  | { kind: 'locked'; config: LockConfig; behind?: number }
   | { kind: 'open'; space: number; passwordLock: boolean };
 
 // The space that was open when Android took the screens away (Erevos swiped away from the recent
 // apps), its look, and since when Erevos was away. The space goes on without them
 // (lib/space-running.ts), and the screens that start again find it as after the background.
-let left: { space: number; passwordLock: boolean; look: Look; at: number } | null = null;
+// `gated`: the password screen showed in front of it, and shows again.
+let left: { space: number; passwordLock: boolean; look: Look; at: number; gated: boolean } | null = null;
 
 // Shows the password screen when the lock is on, and the app once a space is open. The space
 // decides what the chat finds on the phone (lock/space-data.ts) and how the app looks
 // (theme/look.ts), and the screens start afresh in each space, so nothing of one shows in another.
-// The password screen shows the look last used.
+// The password screen shows the look last used. With the password lock, locking puts the password
+// screen in front of the open space, which goes on behind it, taking messages and ringing calls
+// (lib/space-running.ts): its screens go, and with them the hidden chats. Its password shows it
+// again; another space's closes it first.
 export default function RootLayout() {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [look, setLook] = useState<Look>(DEFAULT_LOOK);
@@ -138,20 +144,9 @@ export default function RootLayout() {
   const start = useCallback(async () => {
     // Nothing of the space that was open stays in memory, nor its screens: they start afresh
     // once a space opens (after a backup is restored too).
-    stopSpaceRunning();
-    setCurrentSpace(null);
+    closeSpace();
     // A link Erevos came back with opens after the password (lib/open-link.ts).
     lockingKeepsLink();
-    forgetSpaceChats();
-    forgetSpaceMover();
-    forgetOffered();
-    forgetLinks();
-    forgetSpaceGroups();
-    forgetSmsLink();
-    forgetSpare();
-    clearKnownNames();
-    forgetHistory();
-    setThroughTor(false);
     setPhase({ kind: 'loading' });
     // The keystore holds the same entries whatever is in use: made once per start, beside the
     // rest, since the password screen need not wait for them.
@@ -177,8 +172,48 @@ export default function RootLayout() {
     }
   }, [openSpace, show]);
 
+  // The password screen in front of the open space, which goes on behind it. Its contacts' names
+  // leave the call screen, and a link Erevos came back with opens after the password.
+  const gate = useCallback(
+    async (space: number) => {
+      setSpaceGated(true);
+      clearKnownNames();
+      lockingKeepsLink();
+      const config = await loadLockConfig();
+      if (config.direct !== null || config.slots.length === 0) return start();
+      setPhase({ kind: 'locked', config, behind: space });
+    },
+    [start],
+  );
+
+  // Locks the space that shows: behind the password screen with the password lock, otherwise as Erevos starts.
+  const relock = useCallback(() => {
+    const current = phaseRef.current;
+    return current.kind === 'open' && current.passwordLock ? gate(current.space) : start();
+  }, [gate, start]);
+
+  // A password typed or a fingerprint given: the space behind the password screen shows again, or,
+  // for another, it closes and that one opens.
+  const unlocked = useCallback(
+    async ({ space, key }: { space: number; key: Uint8Array }) => {
+      const current = phaseRef.current;
+      const behind = current.kind === 'locked' ? current.behind : undefined;
+      if (behind !== undefined && behind === space && spaceGated() && sameKey(openKey(), key)) {
+        setSpaceGated(false);
+        forgetKnownNamesAfter(-1);
+        void refreshKnownNames();
+        setPhase({ kind: 'open', space, passwordLock: true });
+        return;
+      }
+      if (behind !== undefined) closeSpace();
+      await openSpace(space, true, key);
+    },
+    [openSpace],
+  );
+
   // Back to the space that went on without its screens, as from the background: while the lock
-  // would not have closed it yet, or a call rings or goes on, which locks once it ends.
+  // would not have closed it yet, or a call rings or goes on, which locks once it ends. Otherwise
+  // the password screen comes in front of it.
   const goOn = useCallback(
     async (was: NonNullable<typeof left>) => {
       await show(was.look);
@@ -198,17 +233,23 @@ export default function RootLayout() {
     } catch {
       // No space is open.
     }
-    const goesOn =
-      was !== null && was.space === open && (!was.passwordLock || Date.now() - was.at <= RELOCK_AFTER_MS || currentCall() !== null);
-    (goesOn ? goOn(was) : start()).catch(fail);
-  }, [start, goOn, fail]);
+    if (was === null || was.space !== open) start().catch(fail);
+    else if (!was.gated && (!was.passwordLock || Date.now() - was.at <= RELOCK_AFTER_MS || currentCall() !== null)) goOn(was).catch(fail);
+    else
+      show(was.look)
+        .then(() => gate(was.space))
+        .catch(fail);
+  }, [start, goOn, gate, show, fail]);
 
   // Android took the screens away, Erevos swiped away from the recent apps: the open space goes
   // on, ready for messages and calls, and a call ends, as it would have no screen.
   useEffect(
     () => () => {
       const current = phaseRef.current;
-      left = current.kind === 'open' ? { space: current.space, passwordLock: current.passwordLock, look: lookRef.current, at: backgroundAt.current ?? Date.now() } : null;
+      const at = backgroundAt.current ?? Date.now();
+      if (current.kind === 'open') left = { space: current.space, passwordLock: current.passwordLock, look: lookRef.current, at, gated: false };
+      else if (current.kind === 'locked' && current.behind !== undefined && spaceGated()) left = { space: current.behind, passwordLock: true, look: lookRef.current, at, gated: true };
+      else left = null;
       endCall();
       endGroupCall();
     },
@@ -253,21 +294,21 @@ export default function RootLayout() {
         forgetKnownNamesAfter(-1);
         return;
       }
-      // A call that rang in the background, or goes on, would end with the space: it locks once
-      // the call ends.
+      // A call that rang in the background, or goes on, would lose its screen behind the password:
+      // it locks once the call ends.
       if (currentCall()) relockAfterCall.current = true;
-      else start().catch(fail);
+      else gate(current.space).catch(fail);
     });
     const stopCalls = onCallChange(() => {
       if (!relockAfterCall.current || currentCall()) return;
       relockAfterCall.current = false;
-      if (phaseRef.current.kind === 'open') start().catch(fail);
+      if (phaseRef.current.kind === 'open') relock().catch(fail);
     });
     return () => {
       subscription.remove();
       stopCalls();
     };
-  }, [start, fail]);
+  }, [gate, relock, fail]);
 
   // A look changed on the Appearance screen: kept in the open space, and copied for the password screen.
   const keepLook = useCallback(async (next: Look) => {
@@ -282,20 +323,23 @@ export default function RootLayout() {
       passwordLock: phase.kind === 'open' && phase.passwordLock,
       setPasswordLock: (on) => setPhase((p) => (p.kind === 'open' ? { ...p, passwordLock: on } : p)),
       lockNow: () => {
+        relock().catch(fail);
+      },
+      closeNow: () => {
         start().catch(fail);
       },
       openSpace: ({ space, key }) => {
         openSpace(space, true, key).catch(fail);
       },
     }),
-    [phase, start, openSpace, fail],
+    [phase, start, relock, openSpace, fail],
   );
 
   // Keyboard tracking for every screen and sheet, the password screen too (components/keyboard.tsx).
   return (
     <KeyboardProvider>
       <ThemeProvider look={look} onChange={keepLook}>
-        <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={({ space, key }) => openSpace(space, true, key)} />
+        <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={unlocked} />
       </ThemeProvider>
     </KeyboardProvider>
   );
@@ -339,6 +383,8 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
     return (
       <ScreenBackdrop>
         <Locked lang={lang} config={phase.config} onUnlock={onUnlock} />
+        {/* A call to the space behind the password screen shows over it. */}
+        {phase.behind !== undefined ? <CallHost key={`call-${phase.behind}`} /> : null}
         <AlertHost />
         {bar}
       </ScreenBackdrop>
@@ -497,8 +543,44 @@ function Receiver({ space }: { space: number }) {
   return null;
 }
 
+// The space shows while Erevos does and the password screen is not in front of it.
 function followAppShown(): () => void {
-  setAppShown(AppState.currentState === 'active');
-  const subscription = AppState.addEventListener('change', (state) => setAppShown(state === 'active'));
-  return () => subscription.remove();
+  const follow = () => setAppShown(AppState.currentState === 'active' && !spaceGated());
+  follow();
+  const subscription = AppState.addEventListener('change', follow);
+  const gated = onSpaceGatedChange(follow);
+  return () => {
+    subscription.remove();
+    gated();
+  };
+}
+
+// Nothing of the space that was open stays in memory: what goes on for it stops, and its key and
+// what was read of it go.
+function closeSpace(): void {
+  stopSpaceRunning();
+  setCurrentSpace(null);
+  forgetSpaceChats();
+  forgetSpaceMover();
+  forgetOffered();
+  forgetLinks();
+  forgetSpaceGroups();
+  forgetSmsLink();
+  forgetSpare();
+  clearKnownNames();
+  forgetHistory();
+  forgetOpenedQueues();
+  setThroughTor(false);
+}
+
+function openKey(): Uint8Array | null {
+  try {
+    return currentSpace().key;
+  } catch {
+    return null;
+  }
+}
+
+function sameKey(a: Uint8Array | null, b: Uint8Array): boolean {
+  return a !== null && a.length === b.length && a.every((byte, i) => byte === b[i]);
 }

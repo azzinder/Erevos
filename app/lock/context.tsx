@@ -9,8 +9,10 @@ export interface LockState {
   passwordLock: boolean;
   /** Call after turning the password lock on or off. */
   setPasswordLock: (on: boolean) => void;
-  /** Locks now and shows the password screen. */
+  /** Locks now: the password screen comes in front of the space, which goes on behind it. */
   lockNow: () => void;
+  /** Closes the space, nothing of it kept, and starts as Erevos does (after a backup is restored). */
+  closeNow: () => void;
   /** Switches to another space (its password was just given), with the password lock on. */
   openSpace: (space: Unlocked) => void;
 }
@@ -20,6 +22,7 @@ export const LockContext = createContext<LockState>({
   passwordLock: false,
   setPasswordLock: () => undefined,
   lockNow: () => undefined,
+  closeNow: () => undefined,
   openSpace: () => undefined,
 });
 
