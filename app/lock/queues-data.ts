@@ -149,17 +149,32 @@ export function checkedQueues(value: unknown): QueuesData {
 // Sealed, padded to SIZE bytes as sealed, so an address or token of letters beyond ASCII changes
 // nothing. Nothing is let go of to fit: what would not, with relays of very long addresses, takes
 // the next whole SIZE, as no old queue may be forgotten before it is deleted.
-function seal(key: Uint8Array, data: QueuesData): string {
+function seal(key: Uint8Array, data: QueuesData): { raw: string; json: string } {
   const json = JSON.stringify(data);
   const bytes = utf8Encode(json).length;
-  return encryptText(key, json + ' '.repeat(Math.max(1, Math.ceil(bytes / SIZE)) * SIZE - bytes));
+  const padded = json + ' '.repeat(Math.max(1, Math.ceil(bytes / SIZE)) * SIZE - bytes);
+  return { raw: encryptText(key, padded), json: padded };
 }
 
-async function load(name: string, key: Uint8Array): Promise<QueuesData> {
+// The open space's entry as last read or written, opened, while it stays as it was: a look of the
+// receiver reads it a few times every few seconds, and opening it each time (base64, decryption,
+// UTF-8, all in JavaScript) was most of that. Never a hidden place's, whose key stays in memory
+// only while it is open. Forgotten when the space closes (forgetOpenedQueues).
+const opened = new Map<string, { key: Uint8Array; raw: string; json: string }>();
+
+/** Lets go of the open space's entry, as the space closes. */
+export function forgetOpenedQueues(): void {
+  opened.clear();
+}
+
+async function load(name: string, key: Uint8Array, keep = false): Promise<QueuesData> {
   const raw = await secureGet(name);
   if (!raw) return { ...EMPTY_QUEUES };
   try {
-    return checkedQueues(JSON.parse(decryptText(key, raw)));
+    const was = keep ? opened.get(name) : undefined;
+    const json = was && was.key === key && was.raw === raw ? was.json : decryptText(key, raw);
+    if (keep) opened.set(name, { key, raw, json });
+    return checkedQueues(JSON.parse(json));
   } catch {
     // Sealed with a random key: a space or place not in use, or not yet set.
     return { ...EMPTY_QUEUES };
@@ -175,10 +190,13 @@ function inTurn<T>(name: string, call: () => Promise<T>): Promise<T> {
   return run;
 }
 
-function change(name: string, key: Uint8Array, update: (data: QueuesData) => QueuesData): Promise<QueuesData> {
+function change(name: string, key: Uint8Array, update: (data: QueuesData) => QueuesData, keep = false): Promise<QueuesData> {
   return inTurn(name, async () => {
-    const data = update(await load(name, key));
-    await secureSet(name, seal(key, data));
+    const data = update(await load(name, key, keep));
+    const sealed = seal(key, data);
+    if (keep) opened.delete(name);
+    await secureSet(name, sealed.raw);
+    if (keep) opened.set(name, { key, raw: sealed.raw, json: sealed.json });
     return data;
   });
 }
@@ -188,7 +206,7 @@ export type QueuesStore = { load: () => Promise<QueuesData>; update: (change: (d
 
 /** A space's, sealed with its key. */
 export function spaceQueues(space: number, key: Uint8Array): QueuesStore {
-  return { load: () => load(entry(space), key), update: (next) => change(entry(space), key, next) };
+  return { load: () => load(entry(space), key, true), update: (next) => change(entry(space), key, next, true) };
 }
 
 /** A hidden place's, sealed with its key. */
@@ -206,7 +224,7 @@ export async function prepareQueueEntries(count = SLOTS): Promise<void> {
   for (let space = 0; space < Math.max(SLOTS, count); space++) {
     for (const name of [entry(space), ...Array.from({ length: POCKETS }, (_, pocket) => placeEntry(space, pocket))]) {
       await inTurn(name, async () => {
-        if (!(await secureGet(name))) await secureSet(name, seal(randomBytes(32), EMPTY_QUEUES));
+        if (!(await secureGet(name))) await secureSet(name, seal(randomBytes(32), EMPTY_QUEUES).raw);
       });
     }
   }

@@ -27,6 +27,8 @@ import {
   takeFile,
   type FileOffer,
 } from '../lib/attachments';
+import { gcm } from '@noble/ciphers/aes.js';
+
 import { decryptBytes, DecryptError, decryptText, encryptBytes, encryptText, nodeStyleGcm, randomBytes, setGcm, type Gcm } from '../lib/crypto';
 import { cleanJpeg, cleanPng, photoSize } from '../lib/photo';
 import { cleanFileName, freeName, isFileRef, PREFIX } from '../lock/attachment-files';
@@ -260,6 +262,11 @@ test('a native AES-GCM is used only when it seals as the JavaScript one does', (
   assert.equal(setGcm(otherNonce), false);
   assert.equal(setGcm(unchecked), false);
   assert.equal(setGcm({ seal: () => { throw new Error('no cipher here'); }, open: native.open }), false);
+  // Wrong past 64 KB only, though it opens what it sealed: the known answer catches it.
+  const flip = (data: Uint8Array) => (data.length > 65536 ? data.map((b, i) => (i === 66000 ? b ^ 1 : b)) : data);
+  assert.equal(setGcm({ seal: (k, nonce, data) => native.seal(k, nonce, flip(data)), open: (k, nonce, sealed) => flip(native.open(k, nonce, sealed)) }), false);
+  // The JavaScript one gives that answer too.
+  assert.equal(setGcm({ seal: (k, nonce, data) => gcm(k, nonce).encrypt(data), open: (k, nonce, sealed) => gcm(k, nonce).decrypt(sealed) }), true);
   assert.equal(setGcm(native), true);
 
   // What was sealed before still opens, and what is sealed now is the same.

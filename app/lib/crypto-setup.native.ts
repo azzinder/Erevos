@@ -1,13 +1,14 @@
 import { nativeCore } from '../modules/erevos-core';
 
 import { setCore } from './core';
-import { nodeStyleGcm, setGcm, setPbkdf2, setRandomSource } from './crypto';
+import { nodeStyleGcm, setBase64, setGcm, setPbkdf2, setRandomSource } from './crypto';
 
 // Native randomness (expo-crypto), and PBKDF2 and AES-GCM (OpenSSL, through
 // react-native-quick-crypto) on Android and iOS, as in LPHL FASOULI. They are loaded here rather
 // than imported, so a build made before they were added still starts: it then checks passwords
 // and seals files in JavaScript, which is slow, and cannot make keys until it is rebuilt. The
-// Erevos core (lib/core.ts) is plugged in here too.
+// Erevos core (lib/core.ts) is plugged in here too, and native base64 (react-native-quick-base64),
+// for messages, files and pictures, kept only if it writes and reads as the JavaScript one does.
 export function setupCrypto(): void {
   setCore(nativeCore);
   try {
@@ -15,6 +16,12 @@ export function setupCrypto(): void {
     setRandomSource(getRandomBytes);
   } catch {
     // crypto.ts refuses to make keys without a secure random source.
+  }
+  try {
+    const { fromByteArray, toByteArray } = require('react-native-quick-base64') as typeof import('react-native-quick-base64');
+    setBase64({ encode: (bytes) => fromByteArray(bytes), decode: (text) => toByteArray(text) });
+  } catch {
+    // Base64 in JavaScript, slower.
   }
   let quick: typeof import('react-native-quick-crypto');
   try {

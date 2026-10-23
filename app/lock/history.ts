@@ -324,6 +324,9 @@ const entryKey = (peer: string, kept: Kept) => `${peer}|${kept[3]}|${kept[0]}`;
 /** One chat's history, kept as messages come and go. */
 export class History {
   private data: HistoryData = { chats: {} };
+  // Every message unpacked and in order, made again only after a change: the receiver and an open
+  // chat look at them every few seconds. Shared by those who ask, who never change it.
+  private all: Message[] | null = null;
   // The pages, in the order they were made, with what each holds.
   private pages: { id: string; entries: Entry[] }[];
   // Writes run one after another, each with the pages as they were when it was asked for.
@@ -373,6 +376,7 @@ export class History {
    */
   private persist(data: HistoryData, indexChanged = false): Promise<void> {
     this.data = data;
+    this.all = null;
     const wanted = new Map<string, Kept[]>();
     const order: Entry[] = [];
     for (const [peer, list] of Object.entries(data.chats)) {
@@ -439,11 +443,12 @@ export class History {
     return !!tag && (this.data.chats[peer]?.some((m) => m[3] === tag) ?? false);
   }
 
-  /** Every message, oldest first. */
+  /** Every message, oldest first. The list is shared: not to be changed. */
   messages(): Message[] {
-    return Object.entries(this.data.chats)
+    this.all ??= Object.entries(this.data.chats)
       .flatMap(([peer, list]) => list.map((m) => ({ peer, ...unpack(m) })))
       .sort((a, b) => a.at - b.at);
+    return this.all;
   }
 
   // Each change is made on what is in memory and saved in turn (sealed-file.ts writes one after
@@ -471,7 +476,10 @@ export class History {
 
   /** Our messages that wait to go, oldest first. */
   waiting(): Message[] {
-    return this.messages().filter((m) => m.mine && m.mark === WAITING);
+    // Looked for as kept, so only those that wait are unpacked.
+    const out: Message[] = [];
+    for (const [peer, list] of Object.entries(this.data.chats)) for (const m of list) if (m[1] === 1 && m[6] === WAITING) out.push({ peer, ...unpack(m) });
+    return out.sort((a, b) => a.at - b.at);
   }
 
   /**

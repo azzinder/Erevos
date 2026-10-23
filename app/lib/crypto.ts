@@ -35,7 +35,20 @@ export function randomBytes(length: number): Uint8Array {
   return out;
 }
 
+// The phone's own UTF-8, where it has one (browsers; Hermes for encoding), much faster than these
+// loops on large values; never for a text with half an emoji, which it would write otherwise.
+const encoder = typeof TextEncoder === 'function' ? new TextEncoder() : null;
+const decoder = (() => {
+  try {
+    return typeof TextDecoder === 'function' ? new TextDecoder('utf-8', { fatal: true }) : null;
+  } catch {
+    return null;
+  }
+})();
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
 export function utf8Encode(text: string): Uint8Array {
+  if (encoder && text.length > 32 && !LONE_SURROGATE.test(text)) return encoder.encode(text);
   const bytes: number[] = [];
   for (const ch of text) {
     const c = ch.codePointAt(0)!;
@@ -48,6 +61,14 @@ export function utf8Encode(text: string): Uint8Array {
 }
 
 export function utf8Decode(bytes: Uint8Array): string {
+  if (decoder && bytes.length > 32) {
+    try {
+      // As the loop below reads it: no byte order mark is taken away.
+      return bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf ? '\ufeff' + decoder.decode(bytes.subarray(3)) : decoder.decode(bytes);
+    } catch {
+      // Not UTF-8 throughout: read as the loop reads it.
+    }
+  }
   let out = '';
   const chunk: number[] = [];
   const flush = () => {
@@ -80,7 +101,31 @@ export function utf8Decode(bytes: Uint8Array): string {
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 const B64_INDEX = new Map([...B64].map((c, i) => [c, i]));
 
+// Base64 in JavaScript is fine in browsers and checks, but sealed values, pages and photos made it
+// much of a phone's time, so the app plugs in a native one at startup (setBase64).
+type Base64 = { encode: (bytes: Uint8Array) => string; decode: (text: string) => Uint8Array };
+let nativeBase64: Base64 | null = null;
+
+/** Takes a native base64, kept only if it writes and reads exactly as the JavaScript one does. Says whether it was kept. */
+export function setBase64(next: Base64): boolean {
+  try {
+    for (const length of [0, 1, 2, 3, 64, 65, 66, 1000]) {
+      const bytes = randomBytes(length);
+      const text = jsToBase64(bytes);
+      if (next.encode(bytes) !== text || !sameBytes(next.decode(text), bytes)) return false;
+    }
+  } catch {
+    return false;
+  }
+  nativeBase64 = next;
+  return true;
+}
+
 export function toBase64(bytes: Uint8Array): string {
+  return nativeBase64 && bytes.length >= 48 ? nativeBase64.encode(bytes) : jsToBase64(bytes);
+}
+
+function jsToBase64(bytes: Uint8Array): string {
   let out = '';
   for (let i = 0; i < bytes.length; i += 3) {
     const a = bytes[i];
@@ -96,6 +141,8 @@ export function toBase64(bytes: Uint8Array): string {
 
 export function fromBase64(text: string): Uint8Array {
   const clean = text.replace(/[^A-Za-z0-9+/]/g, '');
+  // Whole groups of four, padded as the native one wants; a lone last letter is no byte, as below.
+  if (nativeBase64 && clean.length >= 64 && clean.length % 4 !== 1) return nativeBase64.decode(clean + '='.repeat((4 - (clean.length % 4)) % 4));
   const out = new Uint8Array(Math.floor((clean.length * 3) / 4));
   let o = 0;
   for (let i = 0; i < clean.length; i += 4) {
@@ -201,15 +248,18 @@ let aesGcm: Gcm = nobleGcm;
 
 // AES-GCM in JavaScript takes seconds for each megabyte of a file on a phone, so the app plugs in
 // a native one at startup. It is kept only if it seals exactly as the JavaScript one does, opens
-// what that sealed, and refuses what was changed. Says whether it was kept.
+// what that sealed, and refuses what was changed. Says whether it was kept. Past 64 KB, where a
+// native cipher works in parts, it is held to a known answer (BIG) instead: the JavaScript one
+// took an older phone a good part of a second at each start to seal that much.
 export function setGcm(next: Gcm): boolean {
   try {
-    for (const length of [0, 1, 15, 16, 17, 1000, 70000]) {
-      const key = randomBytes(32);
-      const nonce = randomBytes(12);
-      const data = randomBytes(length);
-      const sealed = nobleGcm.seal(key, nonce, data);
-      if (!sameBytes(next.seal(key, nonce, data), sealed)) return false;
+    for (const length of [0, 1, 15, 16, 17, 1000, BIG.length]) {
+      const big = length === BIG.length;
+      const key = big ? BIG.key : randomBytes(32);
+      const nonce = big ? BIG.nonce : randomBytes(12);
+      const data = big ? BIG.data() : randomBytes(length);
+      const sealed = big ? next.seal(key, nonce, data) : nobleGcm.seal(key, nonce, data);
+      if (big ? toHex(sealed.subarray(length - 16)) !== BIG.end : !sameBytes(next.seal(key, nonce, data), sealed)) return false;
       if (!sameBytes(next.open(key, nonce, sealed), data)) return false;
       const changed = sealed.slice();
       changed[length >> 1] ^= 1;
@@ -227,6 +277,15 @@ export function setGcm(next: Gcm): boolean {
   aesGcm = next;
   return true;
 }
+
+// 70000 bytes sealed with a set key and nonce: the last block, and the tag, as AES-256-GCM makes them.
+const BIG = {
+  length: 70000,
+  key: Uint8Array.from({ length: 32 }, (_, i) => i),
+  nonce: Uint8Array.from({ length: 12 }, (_, i) => (i * 7) & 255),
+  data: () => Uint8Array.from({ length: 70000 }, (_, i) => (i * 31 + 7) & 255),
+  end: 'ad3280153bec2294be9834aed0c8202ba2054b7f993ab0966c9bc815bdc8fc61',
+};
 
 type CipherLike = { update(data: Uint8Array): Uint8Array; final(): Uint8Array };
 
