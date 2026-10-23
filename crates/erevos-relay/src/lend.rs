@@ -322,7 +322,7 @@ impl Seen {
 fn revoked_nonce(line: &str) -> Option<Nonce> {
     let line = line.to_ascii_lowercase();
     let hex = match line.strip_prefix(TICKET) {
-        Some(ticket) if ticket.len() == 2 * (8 + 16 + CODE_LEN) => &ticket[16..48],
+        Some(ticket) if ticket.len() == 2 * (8 + 16 + CODE_LEN) => ticket.get(16..48)?,
         Some(_) => return None,
         None => line.as_str(),
     };
@@ -730,6 +730,20 @@ mod tests {
         let again = Lend::open(&key, &state.0, Revoked::new(list.0.clone())).unwrap();
         assert_eq!(again.check(&token, NOW), None);
         assert!(again.check(&kept_token, NOW).is_some());
+    }
+
+    #[test]
+    fn a_line_of_the_revoked_file_with_other_letters_is_passed_over() {
+        // As long as a ticket, with a letter of two bytes across where its nonce starts.
+        let line = format!(
+            "{TICKET}{}é{}",
+            "0".repeat(15),
+            "0".repeat(2 * (8 + 16 + CODE_LEN) - 17)
+        );
+        assert_eq!(line.len(), TICKET.len() + 2 * (8 + 16 + CODE_LEN));
+        assert_eq!(revoked_nonce(&line), None);
+        let ticket = format!("{TICKET}{}", "ab".repeat(8 + 16 + CODE_LEN));
+        assert_eq!(revoked_nonce(&ticket), Some([0xab; 16]));
     }
 
     #[test]

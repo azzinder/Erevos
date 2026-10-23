@@ -31,6 +31,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, ErrorKind, Read, Write};
 use std::path::{Path, PathBuf};
 
+use crate::journal;
 use crate::queue::{system_now, DEFAULT_TTL};
 
 pub type HeldId = [u8; 16];
@@ -334,7 +335,9 @@ fn write_request(path: &Path, at: u64, order: u64, request: &[u8]) -> io::Result
         file.write_all(&order.to_be_bytes())?;
         file.write_all(request)?;
         file.sync_all()?;
-        fs::rename(&part, path)
+        drop(file);
+        fs::rename(&part, path)?;
+        journal::sync_dir(path)
     })();
     if written.is_err() {
         let _ = fs::remove_file(&part);

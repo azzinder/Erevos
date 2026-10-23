@@ -17,12 +17,13 @@
 
 use std::collections::HashMap;
 use std::io::{self, ErrorKind, Read, Write};
-use std::net::{TcpStream, ToSocketAddrs};
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use serde_json::Value;
 
+use crate::connect;
 use crate::lock::lock;
 
 /// The scopes asked for: who signs in, their user name, and a refresh token
@@ -36,8 +37,9 @@ const MAX_HEAD: usize = 16 * 1024;
 const MAX_BODY: usize = 256 * 1024;
 const PROVIDER_LOCK: &str = "lock of the sign-in provider's endpoints";
 
-/// The provider's settings, from the relay's environment.
-#[derive(Clone, Debug)]
+/// The provider's settings, from the relay's environment. Its `Debug` leaves
+/// the client secret out.
+#[derive(Clone)]
 pub struct Config {
     /// `EREVOS_RELAY_OIDC_ISSUER`, as discovery must say it.
     pub issuer: String,
@@ -52,6 +54,19 @@ pub struct Config {
     /// `EREVOS_RELAY_OIDC_GROUP`: when set, the group userinfo's `groups` must
     /// have, at sign-in and at every check.
     pub group: Option<String>,
+}
+
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("issuer", &self.issuer)
+            .field("client_id", &self.client_id)
+            .field("client_secret", &"…")
+            .field("public_url", &self.public_url)
+            .field("name", &self.name)
+            .field("group", &self.group)
+            .finish()
+    }
 }
 
 impl Config {
@@ -139,12 +154,21 @@ impl std::fmt::Display for Failure {
     }
 }
 
-/// What the token endpoint gave.
-#[derive(Debug)]
+/// What the token endpoint gave. Its `Debug` says only which tokens came.
 pub struct Tokens {
     pub access: String,
     pub refresh: Option<String>,
     pub id_token: Option<String>,
+}
+
+impl std::fmt::Debug for Tokens {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Tokens")
+            .field("access", &"…")
+            .field("refresh", &self.refresh.as_ref().map(|_| "…"))
+            .field("id_token", &self.id_token.as_ref().map(|_| "…"))
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -473,11 +497,8 @@ fn call(method: &str, url: &str, headers: &[(&str, &str)], body: &[u8]) -> io::R
     head.push_str("\r\n");
     let mut request = head.into_bytes();
     request.extend_from_slice(body);
-    let address = (url.host, url.port)
-        .to_socket_addrs()?
-        .next()
-        .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "no address"))?;
-    let tcp = TcpStream::connect_timeout(&address, TIMEOUT)?;
+    let addresses: Vec<SocketAddr> = (url.host, url.port).to_socket_addrs()?.collect();
+    let tcp = connect::to_any(&addresses, TIMEOUT)?;
     tcp.set_read_timeout(Some(TIMEOUT))?;
     tcp.set_write_timeout(Some(TIMEOUT))?;
     if url.tls {
@@ -708,6 +729,28 @@ mod tests {
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect();
         move |name| map.get(name).cloned()
+    }
+
+    #[test]
+    fn no_secret_or_token_is_in_a_debug_print() {
+        let config = Config {
+            issuer: "https://auth.example".to_string(),
+            client_id: "erevos".to_string(),
+            client_secret: "the-client-secret".to_string(),
+            public_url: "https://relay.example".to_string(),
+            name: "LPHL".to_string(),
+            group: None,
+        };
+        let said = format!("{config:?}");
+        assert!(said.contains("erevos") && !said.contains("the-client-secret"));
+        let tokens = Tokens {
+            access: "the-access".to_string(),
+            refresh: Some("the-refresh".to_string()),
+            id_token: None,
+        };
+        let said = format!("{tokens:?}");
+        assert!(!said.contains("the-access") && !said.contains("the-refresh"));
+        assert!(said.contains("id_token: None"));
     }
 
     #[test]

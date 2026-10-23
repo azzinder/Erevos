@@ -142,7 +142,7 @@ mod turn;
 
 use std::env;
 use std::fs;
-use std::io::{self, Write};
+use std::io;
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -183,14 +183,9 @@ fn load_key(path: &Path) -> io::Result<RelayKey> {
             Ok(RelayKey::from_secret_bytes(bytes))
         }
         Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            // Written beside it and renamed: a stop halfway leaves no short key.
             let key = RelayKey::generate();
-            let mut options = fs::OpenOptions::new();
-            options.write(true).create_new(true);
-            #[cfg(unix)]
-            std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
-            let mut file = options.open(path)?;
-            file.write_all(&key.to_secret_bytes())?;
-            file.sync_all()?;
+            journal::write_whole(path, &key.to_secret_bytes())?;
             Ok(key)
         }
         Err(e) => Err(e),

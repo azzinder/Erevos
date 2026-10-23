@@ -28,6 +28,7 @@ use std::path::{Path, PathBuf};
 
 use rand::RngCore;
 
+use crate::journal;
 use crate::queue::{system_now, DEFAULT_TTL, HOUR};
 
 pub type ChunkId = [u8; 24];
@@ -265,7 +266,9 @@ fn write_chunk(path: &Path, at: u64, chunk: &[u8]) -> io::Result<()> {
         file.write_all(&at.to_be_bytes())?;
         file.write_all(chunk)?;
         file.sync_all()?;
-        fs::rename(&part, path)
+        drop(file);
+        fs::rename(&part, path)?;
+        journal::sync_dir(path)
     })();
     if written.is_err() {
         let _ = fs::remove_file(&part);

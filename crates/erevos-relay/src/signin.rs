@@ -159,8 +159,9 @@ struct Claimed {
     made: u64,
 }
 
-/// A line that came from a sign-in, with what the hourly check needs.
-#[derive(Clone, Debug, PartialEq)]
+/// A line that came from a sign-in, with what the hourly check needs. Its
+/// `Debug` leaves out who signed in and the refresh token, sealed as it is.
+#[derive(Clone, PartialEq)]
 struct Record {
     line: [u8; 32],
     sub: String,
@@ -176,6 +177,18 @@ struct Record {
     cut: bool,
     /// The refresh token, sealed: nonce, then ciphertext and tag.
     sealed: Vec<u8>,
+}
+
+impl std::fmt::Debug for Record {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Record")
+            .field("made", &self.made)
+            .field("checked", &self.checked)
+            .field("verified", &self.verified)
+            .field("failed", &self.failed)
+            .field("cut", &self.cut)
+            .finish_non_exhaustive()
+    }
 }
 
 #[derive(Default)]
@@ -430,8 +443,9 @@ impl SignIn {
                 return self.say(200, lang, words.cancelled);
             }
             eprintln!(
-                "erevos-relay: {} did not let a sign-in through: {error:?}",
-                self.name()
+                "erevos-relay: {} did not let a sign-in through: {}",
+                self.name(),
+                error_word(error)
             );
             return self.say(502, lang, words.failed);
         }
@@ -1222,6 +1236,18 @@ fn decode(bytes: &[u8]) -> Option<Vec<Record>> {
     r.is_empty().then_some(records)
 }
 
+/// The error a provider sent back with a browser, as the journal takes it:
+/// any browser can send any text there, so only a short code word of `a-z`
+/// and `_`, as OAuth's error codes are, and else that it was not one.
+fn error_word(error: &str) -> &str {
+    let word = error.bytes().all(|b| b.is_ascii_lowercase() || b == b'_');
+    if word && !error.is_empty() && error.len() <= 40 {
+        error
+    } else {
+        "an error that is not a code word"
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -1655,6 +1681,28 @@ pub mod tests {
 
     fn line_of(token: &str) -> [u8; 32] {
         Sha256::digest(token.as_bytes()).into()
+    }
+
+    #[test]
+    fn the_journal_takes_only_a_code_word_of_an_error_and_no_secret_or_name() {
+        assert_eq!(error_word("server_error"), "server_error");
+        for sent in ["", "Bad", "x\nerevos-relay: fake", "ä", &"a".repeat(41)] {
+            assert_eq!(error_word(sent), "an error that is not a code word");
+        }
+        let record = Record {
+            line: NONE,
+            sub: "sub-of-maria".to_string(),
+            user: "maria".to_string(),
+            made: 1,
+            checked: 2,
+            verified: 3,
+            failed: 0,
+            cut: false,
+            sealed: b"sealed-refresh".to_vec(),
+        };
+        let said = format!("{record:?}");
+        assert!(said.contains("checked: 2"));
+        assert!(!said.contains("maria") && !said.contains("sealed"));
     }
 
     #[test]

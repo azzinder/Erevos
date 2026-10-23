@@ -22,6 +22,14 @@ On main, not released yet.
   within the same 15 seconds, so an address that does not answer, such as an IPv6 one on a server
   whose IPv6 does not work, no longer loses the notice. Its service (`deploy/relay`) starts it at most 5 times
   in 5 minutes, and not again when it refuses its settings, instead of every 2 seconds for ever.
+- **The relay tries every address of another relay and of the sign-in provider** as well, for
+  forwards, files kept on another relay and **Sign in with** checks. It also keeps less in its log
+  and is safer on a power cut: of a sign-in the provider refused it logs only the error's code word,
+  never other text a browser sent; its debug output leaves out secrets, tokens and who signed in;
+  its key is written whole or not at all, so a stop while it makes one no longer leaves a short key
+  that refuses every later start; a file part or a message sent for later, once stored, stays after
+  a power cut; and a line with letters other than English ones in the file of revoked lending
+  tickets no longer stops it.
 
 ## 2.0.2 (2026-10-23)
 

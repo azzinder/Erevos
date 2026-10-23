@@ -212,7 +212,7 @@
 
 use std::collections::HashMap;
 use std::io::{self, Cursor, ErrorKind, Read, Write};
-use std::net::{Shutdown, TcpListener, TcpStream, ToSocketAddrs};
+use std::net::{Shutdown, SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
@@ -226,6 +226,7 @@ use tungstenite::protocol::frame::coding::CloseCode;
 use tungstenite::protocol::CloseFrame;
 use tungstenite::Message;
 
+use crate::connect;
 use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
 use crate::invites::{InviteError, Invites, RedeemError, MAX_TYPED};
 use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
@@ -1647,14 +1648,18 @@ fn call_relay(
         } else {
             80
         });
-    // Resolved once: the address checked is the one connected to, and the
-    // name is not looked up again, by this or by the WebSocket client.
+    // Resolved once: the addresses checked are the ones connected to, and the
+    // name is not looked up again, by this or by the WebSocket client. Each is
+    // tried in turn, so one that does not answer does not fail the forward.
     let private_peers = shared.limits.private_peers;
-    let addr = (host, port)
+    let addresses: Vec<SocketAddr> = (host, port)
         .to_socket_addrs()?
-        .find(|addr| private_peers || peers::global(addr.ip()))
-        .ok_or_else(|| to_io("no address the relay may connect to"))?;
-    let stream = TcpStream::connect_timeout(&addr, FORWARD_TIMEOUT)?;
+        .filter(|addr| private_peers || peers::global(addr.ip()))
+        .collect();
+    if addresses.is_empty() {
+        return Err(to_io("no address the relay may connect to"));
+    }
+    let stream = connect::to_any(&addresses, FORWARD_TIMEOUT)?;
     stream.set_read_timeout(Some(timeout))?;
     stream.set_write_timeout(Some(timeout))?;
     let (mut socket, _) = tungstenite::client_tls(url, stream).map_err(to_io)?;

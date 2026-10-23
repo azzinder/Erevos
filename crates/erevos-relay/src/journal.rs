@@ -371,6 +371,7 @@ pub fn write_whole_then(
         let _ = std::fs::remove_file(&tmp);
         return Err(e);
     }
+    drop(file);
     std::fs::rename(&tmp, path)?;
     sync_dir(path)
 }
@@ -393,8 +394,8 @@ fn private_file(path: &Path) -> io::Result<File> {
     options.open(path)
 }
 
-/// Makes the rename itself durable.
-fn sync_dir(path: &Path) -> io::Result<()> {
+/// Makes the rename to `path` itself durable.
+pub fn sync_dir(path: &Path) -> io::Result<()> {
     #[cfg(unix)]
     {
         let dir = match path.parent() {
