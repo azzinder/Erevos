@@ -10,6 +10,14 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet.
 
+- **One invite for everything**: **Invite someone**, in the chats, makes one QR code or link for
+  someone new, for one person and 7 days. Their phone scans or opens it in Erevos and taps
+  **Join**: it gets access of its own to your relay and a queue there, typing nothing, and you are
+  each other's contacts at once, with no message request, named as each of you typed. A phone with
+  no relay yet shows **Start with an invite** instead of the relay settings (with **Sign in with
+  LPHL** and **Set it up yourself** under it), so a new user never sees the words relay and token.
+  The access is an invite to the relay, so it takes a relay that invites; without one the invite
+  still makes you contacts.
 - **Chats are lighter on older phones**: typing redraws only the message bar, not the whole chat
   with its thread; a message of the thread draws again only when it changes (a voice message
   playing redraws its own line, once a second); a long chat opens at its latest 100 messages, with

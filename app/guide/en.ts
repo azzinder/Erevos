@@ -24,7 +24,8 @@ is in English and Greek, and shows in English in the app's other languages, see 
 
 Erevos is downloaded from its releases page, one file for each system: see [Updates](#updates) for where, and how to
 update it. It runs on Android, on a computer (Linux, macOS and Windows), on Sailfish OS and, from the browser, on an
-iPhone.
+iPhone. If you are new to it, start with an invite from someone who uses it: one QR code or link, and you are in,
+with them as a contact (see Inviting someone new, under [Chat through a relay](#relay)).
 
 The home screen is the list of your chats, the one that moved last at the top. Each shows the contact's picture,
 the last message with its marks, when it came, and how many of their messages you have not read. A clock beside it
@@ -236,6 +237,32 @@ which address puts each message in, and when. And each one tells the relay, in a
 message someone reads, word between phones (that a message came or was read, typing, being online, reactions, new
 keys), or a call that rings. So the relay sees which are messages, and when a call starts, whether notifications are
 on or not: it is how a closed web app's notice can count them, and the notice of closed hidden chats.
+
+### Inviting someone new
+
+One QR code or link brings someone new in: their phone joins Erevos on your relay, with access of its own, typing
+nothing, and you are each other's contacts at once, with no message request.
+
+- **To invite:** in the chats, with no contact picked, tap **Invite someone**. Type who it is for (their name in your
+  chats) and, if you like, **Your name, for them**, then tap **Make the invite**. A QR code opens: once Erevos is on
+  their phone, they scan it with the camera and open the link in Erevos, or tap **Share the invite** and send them the
+  link. It is for one person, for 7 days, or less when the relay's invite ends sooner. Whoever takes it first has it,
+  so give it to them only.
+- **To join:** a phone with no relay yet shows **Start with an invite**. Scan the invite with the camera and open the
+  link in Erevos, or tap **Take a photo of the invite** or **Choose a photo of the invite**, or paste the link and tap
+  **Join**. The link opens **… invites you to Erevos**: tap **Join** only if it came from them. Erevos takes access of
+  its own to their relay and a queue there, adds them and says **Welcome to Erevos**. Its first message tells their
+  phone, which adds this one as a contact at once, named as they typed.
+- **With an account instead:** under **Start with an invite**, **Sign in with LPHL** signs this phone in to LPHL's
+  relay with an LPHL account, in the browser (see Signing in to the relay below); then add your contacts by their
+  invites or links. **Set it up yourself** opens the relay settings, as in 1 to 6 above.
+- **What your relay must allow:** the access of its own is an invite to your relay (see Invites to the relay below),
+  so it comes only from a phone with a token of its own on a relay that takes invites. It counts among your invites,
+  under the name you typed for them, and goes with yours. Without it, the invite still makes you contacts, and their
+  phone uses your relay only as your contact link lets it, as in No relay of your own below.
+- **A phone with a relay already** keeps its own: the invite only adds you, and you are contacts at once all the same.
+- **What is kept:** your phone keeps each invite's secret and the name for them, sealed in the space, until it is used
+  or its 7 days end, 20 at most at once. Nothing of it is on the relay but the invite to the relay.
 
 ### No relay of your own
 

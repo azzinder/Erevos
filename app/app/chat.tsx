@@ -36,6 +36,7 @@ import { PasswordSheet } from '../components/PasswordSheet';
 import { QrCode } from '../components/QrCode';
 import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
+import { WelcomeInvite } from '../components/welcome-invite';
 import { BackIcon, MoreIcon, PhoneIcon, ShieldIcon, TimerIcon, VideoIcon } from '../components/icons';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton, Toggle } from '../components/ui';
@@ -64,6 +65,7 @@ import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
 import { contactLink, offerFor, onContactOffered, parseContact, type ContactCode, type Offer } from '../lib/contact-code';
 import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
+import { onWelcomeOffered, parseWelcome, START_RELAY, type Welcome } from '../lib/welcome';
 import { ownToken } from '../lib/relay-signin';
 import { canGroup, canRelaySeal, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
@@ -549,6 +551,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const among: Among = hiddenKey ? hiddenLent : 'space';
   const canConnect = useCanConnect(among);
   const [showQr, setShowQr] = useState(false);
+  // The sheet that makes an invite for someone new (components/welcome-invite.tsx).
+  const [welcoming, setWelcoming] = useState(false);
+  // An invite's link pasted on a phone with no relay yet.
+  const [inviteDraft, setInviteDraft] = useState('');
   // With when their account's linked devices last changed (`devices`, ms), or 0 while it has none this chat knows of.
   const [safety, setSafety] = useState<{ peer: string; number: string; devices: number } | null>(null);
   // The contact being named, and the name typed so far.
@@ -784,14 +790,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Adds a contact from a code: typed or pasted here, or read from a photo of it (`asked`: offering
   // then to connect it to one of my contacts), or handed over (lib/contact-code.ts) with a contact
   // to link it to and the name it takes, which only these chats' own may give (offerFor).
-  async function acceptContact(code: ContactCode, offered?: Offer, asked = false) {
+  // Adds the contact of a link. `mine`: the relay, token and queue this phone has just taken for
+  // itself, not in this render's state yet (takeWelcome). `hi`: the secret of their invite, said
+  // back so they take this phone as a contact at once (lib/welcome.ts). Returns who was added, or null.
+  async function acceptContact(code: ContactCode, offered?: Offer, asked = false, mine?: { url: string; token: string; queue: Queue }, hi = ''): Promise<string | null> {
     if (!e2e) {
       setNote(t(NO_CORE));
-      return;
+      return null;
     }
     if (code.senderHex === ownQueue?.senderHex || (!!linkQueue && code.senderHex === linkQueue.senderHex)) {
       setNote(t("Not added. That is this chat's own code."));
-      return;
+      return null;
     }
     // Someone blocked here, before a queue or a place on their relay is made for them.
     try {
@@ -799,18 +808,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     } catch (error) {
       if (error instanceof BlockedContactError) askToUnblock(error, code, offered, asked);
       else setNote(t('Not added. {error}', { error: errorText(error) }));
-      return;
+      return null;
     }
-    const ours = relayUrl.trim();
+    const ours = (mine?.url ?? relayUrl).trim();
     if (code.relayUrl && ours && !sameRelay(code.relayUrl, ours) && !code.relayKey) {
       setNote(
         t('Not added. That contact uses the relay at {url}, and its link has no key for that relay. Ask them for a new link from an updated Erevos.', { url: code.relayUrl }),
       );
-      return;
+      return null;
     }
     let url = ours;
-    let token = relayToken;
-    let queue = ownQueue;
+    let token = mine?.token ?? relayToken;
+    let queue = mine?.queue ?? ownQueue;
     let lent = false;
     let noPlace: unknown = null;
     if (!ours && code.relayUrl) {
@@ -840,7 +849,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const target = relayFor(url, token, viaUrl, viaToken, spareBackup(spareStore));
     if (!target && !code.key) {
       setNote(t('Not added. Type the relay address in Relay first.'));
-      return;
+      return null;
     }
     try {
       // The contact answers through our own queue, so there has to be one when there is a relay.
@@ -850,7 +859,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
         setOwnQueue(queue);
       }
-      const { identity, added } = await e2e.addContact(code, queue?.senderHex ?? '', target ? here(url) : here(''));
+      const { identity, added } = await e2e.addContact(code, queue?.senderHex ?? '', target ? here(url) : here(''), hi);
       const offer = offerFor(offered, contactsPlace);
       // The name of the contact it is linked to, while it has none of its own (lib/linked-name.ts).
       if (offer?.name) await giveLinkedName(e2e, identity, { name: offer.name }).catch(() => '');
@@ -876,12 +885,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
           : t('Already a contact. Where to reach them is updated.')) + linked,
       );
+      return identity;
     } catch (error) {
       if (error instanceof BlockedContactError) {
         askToUnblock(error, code, offered, asked);
-        return;
+        return null;
       }
       setNote(t('Not added. {error}', { error: errorText(error) }));
+      return null;
     }
   }
 
@@ -933,11 +944,59 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     await tookToken(invite.relayUrl, token, name);
   }
 
+  // Takes an invite for someone new, opened from a scanned link (app/welcome.tsx, lib/welcome.ts).
+  // With no relay of its own yet, or only a place lent on one, this phone takes access of its own to
+  // the inviting phone's relay, and a queue there, typing nothing; a phone with a relay of its own
+  // keeps it. Then the inviting phone is a contact, which takes this one as a contact at once.
+  async function takeWelcome(welcome: Welcome) {
+    if (!e2e) {
+      setNote(t(NO_CORE));
+      return;
+    }
+    const ours = relayUrl.trim();
+    const lent = isLentToken(relayToken);
+    let mine: { url: string; token: string; queue: Queue } | undefined;
+    if (welcome.invite && (!ours || lent || (sameRelay(ours, welcome.invite.relayUrl) && !relayToken.trim()))) {
+      const url = welcome.invite.relayUrl;
+      try {
+        const { token } = await redeemInvite(url, welcome.invite.code);
+        // A queue on another relay, or a lent one, is no use with this access: contacts learn the new one from the next message.
+        const keep = !!ours && !lent && sameRelay(ours, url) && ownQueue;
+        const ids = keep ? null : await createQueue({ url, token });
+        const queue = ids ? { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) } : ownQueue!;
+        setRelayUrl(url);
+        setRelayToken(token);
+        setOwnQueue(queue);
+        updateCurrentSpaceData({ ownToken: ownToken(url, token) }).catch(() => {
+          // Not kept: signing in there later gives this phone one more line instead of its own again.
+        });
+        mine = { url, token, queue };
+      } catch (error) {
+        // With no relay at all, nothing reaches them: they make a new invite.
+        if (!ours) {
+          setNote(t('The invite was not taken. {error}', { error: errorText(error) }));
+          return;
+        }
+      }
+    }
+    const identity = await acceptContact(welcome.contact, { place: contactsPlace, ...(welcome.name ? { name: welcome.name } : {}) }, false, mine, welcome.hi);
+    if (identity && mine) {
+      const name = e2e.contacts().find((c) => c.identity === identity)?.name;
+      setNote(
+        name
+          ? t('Welcome to Erevos. {name} is your contact now: what you write to each other is end-to-end encrypted.', { name })
+          : t('Welcome to Erevos. Whoever invited you is your contact now: what you write to each other is end-to-end encrypted.'),
+      );
+    }
+  }
+
   // A token of this phone's own on the relay at `url`, from an invite or a sign-in, named `name`
   // there: it goes where the relay's token goes and is kept sealed with the space's relay settings,
   // with a queue there when this phone has none on that relay. Which token it is, and from which
   // relay, is kept too, so signing in there again names only this one as the phone's before.
-  async function tookToken(url: string, token: string, name: string) {
+  // `first`: signed in from the start, with no relay yet: the note says so in plain words, and the
+  // relay's settings stay closed.
+  async function tookToken(url: string, token: string, name: string, first = false) {
     const same = !!relayUrl.trim() && sameRelay(relayUrl.trim(), url);
     setRelayUrl(url);
     setRelayToken(token);
@@ -945,8 +1004,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     (hiddenKey ? updateHiddenData(currentSpace().space, pocket, hiddenKey, own) : updateCurrentSpaceData(own)).catch(() => {
       // Not kept: signing in again there gives this phone one more line instead of its own again.
     });
-    setShowRelay(true);
-    const joined = t('This phone now uses the relay at {url}, with a token of its own, named {name} there.', { url, name });
+    if (!first) setShowRelay(true);
+    const joined = first
+      ? t('You are in, as {name}. Now add your contacts: by their invite, or by the contact link or QR code they give you.', { name })
+      : t('This phone now uses the relay at {url}, with a token of its own, named {name} there.', { url, name });
     if (same && ownQueue) {
       setNote(joined);
       return;
@@ -1270,6 +1331,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!loaded || !shown || hiddenKey) return;
     return onInviteOffered(currentSpace().space, (invite) => void joinRelay(invite));
   }, [loaded, shown, relayUrl, relayToken, ownQueue]);
+
+  // Takes an invite for someone new opened from a scanned link (app/welcome.tsx), as the above.
+  useEffect(() => {
+    if (!loaded || !shown || hiddenKey || !e2e) return;
+    return onWelcomeOffered(currentSpace().space, (welcome) => void takeWelcome(welcome));
+  }, [loaded, shown, relayUrl, relayToken, ownQueue, e2e]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => setAppActive(state === 'active'));
@@ -3504,21 +3571,30 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  function addContact(text = contactDraft) {
+  // Whether the text was a link Erevos takes.
+  function addContact(text = contactDraft): boolean {
+    const welcome = parseWelcome(text);
+    if (welcome) {
+      setContactDraft('');
+      if (hiddenKey) void acceptContact(welcome.contact, undefined, true);
+      else void takeWelcome(welcome);
+      return true;
+    }
     const invite = parseInvite(text);
     if (invite) {
       setContactDraft('');
       if (hiddenKey) setNote(t('An invite to a relay is taken in the chats of the space, not in hidden chats.'));
       else void joinRelay(invite);
-      return;
+      return true;
     }
     const code = parseContact(text);
     if (!code) {
       setNote(t('That is not an Erevos contact link.'));
-      return;
+      return false;
     }
     setContactDraft('');
     void acceptContact(code, undefined, true);
+    return true;
   }
 
   // The contact just added here, connected to one of my contacts: linked to it, and named after it
@@ -3548,7 +3624,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       const text = await readQrPhoto(from);
       if (text === null) return;
-      if (text && (parseContact(text) || parseInvite(text))) addContact(text);
+      if (text && (parseContact(text) || parseInvite(text) || parseWelcome(text))) addContact(text);
       else setNote(text ? t('That QR code holds no Erevos ID.') : t('No QR code was found in the photo. Take it again closer, with all of the code in it.'));
     } catch (error) {
       setNote(errorText(error));
@@ -3674,6 +3750,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       : hiddenKey
         ? null
         : contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(e2e.bundle) });
+  // A phone with no relay yet, in the space's chats: it starts with an invite, or by signing in,
+  // and sees nothing of relays unless it sets one up itself.
+  const newcomer = loaded && !hiddenKey && !accountLink() && !relayUrl.trim();
+  // With a relay queue, this phone invites someone new (lib/welcome.ts).
+  const canWelcome = !hiddenKey && !accountLink() && !!relayUrl.trim() && !!ownQueue && !!ownLink;
 
   const selectedName = selected ? label(selected, shownContacts) : '';
   const selectedOnline = !!selectedIdentity && !selectedHidden && !!e2e && e2e.onlineUntil(selectedIdentity, now) > 0;
@@ -4250,6 +4331,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             </SwipeBack>
           </ScreenBackdrop>
         </Modal>
+        <WelcomeInvite
+          visible={welcoming && shown && canWelcome}
+          onClose={() => setWelcoming(false)}
+          e2e={e2e}
+          relay={relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? { url: relayUrl.trim(), token: relayToken.trim() } : null}
+          contactLink={ownLink}
+          onNote={setNote}
+        />
         <Sheet visible={showQr && shown && !!ownLink} onClose={() => setShowQr(false)} title={t('My QR code')}>
           {ownLink ? <QrCode text={ownLink} size={240} /> : null}
           <Text variant="caption" tone="muted">
@@ -4363,7 +4452,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   );
                 })}
               </ScrollView>
-            ) : (
+            ) : newcomer ? null : (
               <Text tone="muted">
                 {hiddenKey
                   ? t('No hidden chats yet. Add a contact through the relay below, or move a chat here from its details.')
@@ -4372,6 +4461,30 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     : t('No chats yet. Add a contact under Relay. Your contacts reach you nearby too, over Wi-Fi or Bluetooth, without the internet.')}
               </Text>
             )}
+            {newcomer ? (
+              <View style={styles.panel}>
+                <Text variant="label">{t('Start with an invite')}</Text>
+                <Text tone="muted">
+                  {t('Ask someone who uses Erevos for an invite. Scan its QR code with the camera, or open the link they send: this phone joins, typing nothing, and they are your contact at once.')}
+                </Text>
+                <Row wrap>
+                  {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the invite')} compact onPress={() => void addFromQr('camera')} /> : null}
+                  <Button title={t('Choose a photo of the invite')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
+                </Row>
+                <Row>
+                  <Input
+                    value={inviteDraft}
+                    onChangeText={setInviteDraft}
+                    placeholder={t('Or paste the invite link')}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    style={styles.grow}
+                  />
+                  <Button title={t('Join')} compact onPress={() => addContact(inviteDraft) && setInviteDraft('')} />
+                </Row>
+                <RelaySignIn url={START_RELAY} token="" onToken={(token, name) => void tookToken(START_RELAY, token, name, true)} onNote={setNote} brief />
+              </View>
+            ) : null}
             <View style={styles.panel}>
               {hiddenKey && canRingInBackground ? (
                 <>
@@ -4392,7 +4505,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 </>
               ) : null}
               <Row wrap>
-                <TextButton title={showRelay ? t('Hide relay') : t('Relay and new contacts')} onPress={() => setShowRelay((on) => !on)} />
+                {canWelcome ? <Button title={t('Invite someone')} compact onPress={() => setWelcoming(true)} /> : null}
+                <TextButton
+                  title={showRelay ? t('Hide relay') : newcomer ? t('Set it up yourself') : t('Relay and new contacts')}
+                  onPress={() => setShowRelay((on) => !on)}
+                />
               </Row>
               {showRelay ? (
                 <View style={styles.section}>

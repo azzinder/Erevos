@@ -1,6 +1,7 @@
 // The Spanish of invites to the relay and of signing in to it: making an invite for another
 // phone, taking it back, taking one on a new phone, and signing in with a provider such as LPHL
-// (components/relay-invites.tsx, components/relay-signin.tsx, app/relay-invite.tsx, app/chat.tsx)
+// and invites for someone new (components/relay-invites.tsx, components/relay-signin.tsx,
+// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx)
 // (i18n/es/index.ts).
 export const relayInvites: Record<string, string> = {
   'No invite now: you may have 5 waiting at once and make 10 a day, and this relay lets in only so many phones by invite.': 'Ahora no hay invitación: puedes tener como mucho 5 pendientes a la vez y hacer 10 al día, y este relay solo deja entrar a un número limitado de teléfonos por invitación.',
@@ -53,4 +54,29 @@ export const relayInvites: Record<string, string> = {
   'That is not the code the page shows: {n} try left.': 'Ese no es el código que muestra la página: queda {n} intento.',
   'That is not the code the page shows: {n} tries left.': 'Ese no es el código que muestra la página: quedan {n} intentos.',
   'Too many wrong codes, so that sign-in is over. Sign in again.': 'Demasiados códigos incorrectos, así que ese inicio de sesión terminó. Inicia sesión de nuevo.',
+  'This link does not hold an invite that Erevos can take. Ask for a new one.': 'Este enlace no contiene una invitación que Erevos pueda aceptar. Pide una nueva.',
+  '{name} invites you to Erevos': '{name} te invita a Erevos',
+  'An invite to Erevos': 'Una invitación a Erevos',
+  'Join, and whoever invited you is your contact at once. What you write to each other is end-to-end encrypted. Erevos sets itself up to reach them, typing nothing. Take it only if it came from them.': 'Únete, y quien te invitó será tu contacto al instante. Lo que os escribáis está cifrado de extremo a extremo. Erevos se configura solo para llegar a esa persona, sin que escribas nada. Acéptala solo si de verdad vino de ella.',
+  'Their name': 'Su nombre',
+  'Only on this phone. You can change it later.': 'Solo en este teléfono. Puedes cambiarlo más tarde.',
+  'Welcome to Erevos. {name} is your contact now: what you write to each other is end-to-end encrypted.': 'Te damos la bienvenida a Erevos. {name} ya es tu contacto: lo que os escribáis está cifrado de extremo a extremo.',
+  'Welcome to Erevos. Whoever invited you is your contact now: what you write to each other is end-to-end encrypted.': 'Te damos la bienvenida a Erevos. Quien te invitó ya es tu contacto: lo que os escribáis está cifrado de extremo a extremo.',
+  'You are in, as {name}. Now add your contacts: by their invite, or by the contact link or QR code they give you.': 'Ya estás dentro, como {name}. Ahora añade tus contactos: con su invitación, o con el enlace de contacto o el código QR que te den.',
+  'Start with an invite': 'Empieza con una invitación',
+  'Ask someone who uses Erevos for an invite. Scan its QR code with the camera, or open the link they send: this phone joins, typing nothing, and they are your contact at once.': 'Pide una invitación a alguien que use Erevos. Escanea su código QR con la cámara, o abre el enlace que te envíe: este teléfono se une sin que escribas nada, y seréis contactos al instante.',
+  'Take a photo of the invite': 'Hacer una foto de la invitación',
+  'Choose a photo of the invite': 'Elegir una foto de la invitación',
+  'Or paste the invite link': 'O pega el enlace de la invitación',
+  'Invite someone': 'Invitar a alguien',
+  'Set it up yourself': 'Configurarlo tú',
+  'For one person, until {when}. With Erevos on their phone, they scan it with the camera, or open the link you send them: their phone joins, and you are each other’s contacts at once. Whoever takes it first has it, so give it to them only.': 'Para una persona, hasta {when}. Con Erevos en su teléfono, la escanea con la cámara, o abre el enlace que le envíes: su teléfono se une, y seréis contactos al instante. Quien la acepte primero se la queda, así que dásela solo a esa persona.',
+  'Your relay lets this phone invite no one, so their phone uses it only as your contact link lets it: if it needs a token, they need one of their own.': 'Tu relay no deja invitar a nadie desde este teléfono, así que su teléfono lo usa solo como lo permite tu enlace de contacto: si necesita un token, necesitará uno propio.',
+  'One QR code or link, for one person: their phone joins Erevos with it, typing nothing, and you are each other’s contacts at once.': 'Un código QR o enlace, para una persona: su teléfono se une a Erevos con él, sin escribir nada, y seréis contactos al instante.',
+  'Their name in your chats.': 'Su nombre en tus chats.',
+  'Your name, for them': 'Tu nombre, para esa persona',
+  'Goes in the invite, so their phone names you. Optional.': 'Va en la invitación, para que su teléfono sepa quién eres. Opcional.',
+  'Your name': 'Tu nombre',
+  'No invite now. {error}': 'Ninguna invitación ahora. {error}',
+  'Have a {name} account? Sign in with it instead, in the browser: you type the password there only, and whoever runs the server sees your user name.': '¿Tienes una cuenta de {name}? Inicia sesión con ella en su lugar, en el navegador: la contraseña solo la escribes allí, y quien gestiona el servidor ve tu nombre de usuario.',
 };

@@ -148,6 +148,13 @@ export const MAX_BLOCKED = 200;
  */
 export type Undropped = { id: string; relay: string; at: number };
 
+/** An invite given from here (lib/welcome.ts): its secret said back (`hi`, 32 hex) makes whoever
+ *  says it a contact at once, named `name`, until it is used or `until` (ms). */
+export type Invited = { hi: string; name: string; until: number };
+
+/** The most invites waiting at once: the oldest goes first. */
+export const MAX_INVITED = 20;
+
 /** The most kept to drop, far more than wait to go at once; past it the oldest goes first. */
 export const MAX_UNDROPPED = 256;
 
@@ -319,6 +326,10 @@ export type E2EData = {
   blocked?: Blocked[];
   /** What a relay still holds for later for those deleted or blocked here. Saved with their removal. Missing when none. */
   undropped?: Undropped[];
+  /** Invites given from here and not used yet (lib/welcome.ts). Missing when none. */
+  invited?: Invited[];
+  /** The name this phone gave itself in its last invite, offered again for the next. */
+  invitedAs?: string;
 };
 
 export type Prekeys = { secret: string; bundle: string; at: number };
@@ -524,6 +535,11 @@ function checkedList(value: unknown): OwnList | null {
   };
 }
 
+function checkedInvited(value: unknown): Invited | null {
+  const v = (value ?? {}) as Partial<Record<keyof Invited, unknown>>;
+  return isText(v.hi) && /^[0-9a-f]{32}$/.test(v.hi) && isText(v.name) && isTime(v.until) ? { hi: v.hi, name: cleanName(v.name), until: v.until } : null;
+}
+
 function checkedOldFiller(value: unknown): OldFiller | null {
   const v = (value ?? {}) as Partial<Record<keyof OldFiller, unknown>>;
   return isHex(v.q) && v.q.length === 48 && isText(v.relay) && v.relay.length <= 2048 && isTime(v.until) ? { q: v.q, relay: v.relay, until: v.until } : null;
@@ -556,6 +572,8 @@ function checked(value: unknown): E2EData {
     ...(isTime(v.moveDue) && v.moveDue > 0 ? { moveDue: v.moveDue } : {}),
     ...(Array.isArray(v.blocked) ? { blocked: v.blocked.map(checkedBlocked).filter((b): b is Blocked => b !== null).slice(-MAX_BLOCKED) } : {}),
     ...(Array.isArray(v.undropped) ? { undropped: v.undropped.map(checkedUndropped).filter((u): u is Undropped => u !== null).slice(-MAX_UNDROPPED) } : {}),
+    ...(Array.isArray(v.invited) ? { invited: v.invited.map(checkedInvited).filter((i): i is Invited => i !== null).slice(-MAX_INVITED) } : {}),
+    ...(isText(v.invitedAs) && cleanName(v.invitedAs) ? { invitedAs: cleanName(v.invitedAs) } : {}),
   };
 }
 

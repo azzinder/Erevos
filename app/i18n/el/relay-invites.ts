@@ -1,6 +1,7 @@
 // The Greek of invites to the relay and of signing in to it: making an invite for another
 // phone, taking it back, taking one on a new phone, and signing in with a provider such as LPHL
-// (components/relay-invites.tsx, components/relay-signin.tsx, app/relay-invite.tsx, app/chat.tsx)
+// and invites for someone new (components/relay-invites.tsx, components/relay-signin.tsx,
+// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx)
 // (i18n/el/index.ts).
 export const relayInvites: Record<string, string> = {
   'No invite now: you may have 5 waiting at once and make 10 a day, and this relay lets in only so many phones by invite.': 'Καμία πρόσκληση τώρα: μπορείς να έχεις έως 5 σε αναμονή μαζί και να φτιάχνεις 10 τη μέρα, και αυτό το relay δέχεται με πρόσκληση μόνο μέχρι ένα όριο τηλεφώνων.',
@@ -53,4 +54,29 @@ export const relayInvites: Record<string, string> = {
   'That is not the code the page shows: {n} try left.': 'Δεν είναι ο αριθμός που δείχνει η σελίδα: μένει {n} προσπάθεια.',
   'That is not the code the page shows: {n} tries left.': 'Δεν είναι ο αριθμός που δείχνει η σελίδα: μένουν {n} προσπάθειες.',
   'Too many wrong codes, so that sign-in is over. Sign in again.': 'Πάρα πολλοί λάθος αριθμοί, οπότε αυτή η σύνδεση τελείωσε. Συνδέσου ξανά.',
+  'This link does not hold an invite that Erevos can take. Ask for a new one.': 'Αυτός ο σύνδεσμος δεν έχει πρόσκληση που μπορεί να πάρει το Erevos. Ζήτα καινούργια.',
+  '{name} invites you to Erevos': 'Πρόσκληση στο Erevos από {name}',
+  'An invite to Erevos': 'Πρόσκληση στο Erevos',
+  'Join, and whoever invited you is your contact at once. What you write to each other is end-to-end encrypted. Erevos sets itself up to reach them, typing nothing. Take it only if it came from them.': 'Μπες, και όποιος σε προσκάλεσε γίνεται αμέσως επαφή σου. Ό,τι γράφετε μεταξύ σας είναι κρυπτογραφημένο από άκρη σε άκρη. Το Erevos ρυθμίζεται μόνο του για να επικοινωνείτε, χωρίς να πληκτρολογήσεις τίποτα. Δέξου την μόνο αν ήρθε πράγματι από αυτό το άτομο.',
+  'Their name': 'Όνομα επαφής',
+  'Only on this phone. You can change it later.': 'Μόνο σε αυτό το τηλέφωνο. Μπορείς να το αλλάξεις αργότερα.',
+  'Welcome to Erevos. {name} is your contact now: what you write to each other is end-to-end encrypted.': 'Καλώς ήρθες στο Erevos. Τώρα έχεις στις επαφές σου: {name}. Ό,τι γράφετε μεταξύ σας είναι κρυπτογραφημένο από άκρη σε άκρη.',
+  'Welcome to Erevos. Whoever invited you is your contact now: what you write to each other is end-to-end encrypted.': 'Καλώς ήρθες στο Erevos. Όποιος σε προσκάλεσε είναι πλέον επαφή σου: ό,τι γράφετε μεταξύ σας είναι κρυπτογραφημένο από άκρη σε άκρη.',
+  'You are in, as {name}. Now add your contacts: by their invite, or by the contact link or QR code they give you.': 'Μπήκες, ως {name}. Τώρα πρόσθεσε τις επαφές σου: με την πρόσκλησή τους, ή με τον σύνδεσμο επαφής ή τον κωδικό QR που σου δίνουν.',
+  'Start with an invite': 'Ξεκίνα με μια πρόσκληση',
+  'Ask someone who uses Erevos for an invite. Scan its QR code with the camera, or open the link they send: this phone joins, typing nothing, and they are your contact at once.': 'Ζήτα πρόσκληση από κάποιον που χρησιμοποιεί το Erevos. Σκάναρε τον κωδικό QR της με την κάμερα, ή άνοιξε τον σύνδεσμο που σου στέλνει: το τηλέφωνο μπαίνει χωρίς να πληκτρολογήσεις τίποτα, και γίνεστε αμέσως επαφές.',
+  'Take a photo of the invite': 'Τράβηξε φωτογραφία της πρόσκλησης',
+  'Choose a photo of the invite': 'Διάλεξε φωτογραφία της πρόσκλησης',
+  'Or paste the invite link': 'Ή επικόλλησε τον σύνδεσμο της πρόσκλησης',
+  'Invite someone': 'Πρόσκληση σε κάποιον',
+  'Set it up yourself': 'Χειροκίνητη ρύθμιση',
+  'For one person, until {when}. With Erevos on their phone, they scan it with the camera, or open the link you send them: their phone joins, and you are each other’s contacts at once. Whoever takes it first has it, so give it to them only.': 'Για ένα άτομο, έως {when}. Με το Erevos στο τηλέφωνό του, τη σκανάρει με την κάμερα, ή ανοίγει τον σύνδεσμο που του στέλνεις: το τηλέφωνό του μπαίνει, και γίνεστε αμέσως επαφές. Όποιος την πάρει πρώτος την κρατά, οπότε δώσε την μόνο σε αυτό το άτομο.',
+  'Your relay lets this phone invite no one, so their phone uses it only as your contact link lets it: if it needs a token, they need one of their own.': 'Το relay σου δεν αφήνει αυτό το τηλέφωνο να προσκαλεί, οπότε το τηλέφωνό του το χρησιμοποιεί μόνο όσο το επιτρέπει ο σύνδεσμος επαφής σου: αν χρειάζεται token, χρειάζεται δικό του.',
+  'One QR code or link, for one person: their phone joins Erevos with it, typing nothing, and you are each other’s contacts at once.': 'Ένας κωδικός QR ή σύνδεσμος, για ένα άτομο: το τηλέφωνό του μπαίνει στο Erevos με αυτόν, χωρίς να πληκτρολογήσει τίποτα, και γίνεστε αμέσως επαφές.',
+  'Their name in your chats.': 'Πώς θα φαίνεται στις συνομιλίες σου.',
+  'Your name, for them': 'Το όνομά σου, όπως θα το βλέπει',
+  'Goes in the invite, so their phone names you. Optional.': 'Μπαίνει στην πρόσκληση, ώστε το τηλέφωνό του να ξέρει ποιος είσαι. Προαιρετικό.',
+  'Your name': 'Το όνομά σου',
+  'No invite now. {error}': 'Καμία πρόσκληση τώρα. {error}',
+  'Have a {name} account? Sign in with it instead, in the browser: you type the password there only, and whoever runs the server sees your user name.': 'Έχεις λογαριασμό {name}; Συνδέσου με αυτόν, στον περιηγητή: τον κωδικό τον πληκτρολογείς μόνο εκεί, και όποιος διαχειρίζεται τον διακομιστή βλέπει το όνομα χρήστη σου.',
 };

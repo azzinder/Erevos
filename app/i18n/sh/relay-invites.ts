@@ -1,6 +1,7 @@
 // The Serbo-Croatian of invites to the relay and of signing in to it: making an invite for another
 // phone, taking it back, taking one on a new phone, and signing in with a provider such as LPHL
-// (components/relay-invites.tsx, components/relay-signin.tsx, app/relay-invite.tsx, app/chat.tsx)
+// and invites for someone new (components/relay-invites.tsx, components/relay-signin.tsx,
+// components/welcome-invite.tsx, app/relay-invite.tsx, app/welcome.tsx, app/chat.tsx)
 // (i18n/sh/index.ts).
 export const relayInvites: Record<string, string> = {
   'No invite now: you may have 5 waiting at once and make 10 a day, and this relay lets in only so many phones by invite.': 'Sada nema pozivnice: smijete imati najviše 5 na čekanju odjednom i napraviti 10 dnevno, a ovaj relay pozivnicom prima samo ograničen broj telefona.',
@@ -53,4 +54,29 @@ export const relayInvites: Record<string, string> = {
   'That is not the code the page shows: {n} try left.': 'To nije kôd koji stranica prikazuje: ostao je još {n} pokušaj.',
   'That is not the code the page shows: {n} tries left.': 'To nije kôd koji stranica prikazuje: ostao je još {n} pokušaj. | To nije kôd koji stranica prikazuje: ostala su još {n} pokušaja. | To nije kôd koji stranica prikazuje: ostalo je još {n} pokušaja.',
   'Too many wrong codes, so that sign-in is over. Sign in again.': 'Previše pogrešnih kôdova, pa je ta prijava gotova. Prijavite se ponovo.',
+  'This link does not hold an invite that Erevos can take. Ask for a new one.': 'Ovaj link nema pozivnicu koju Erevos može uzeti. Zatražite novu.',
+  '{name} invites you to Erevos': '{name} vas poziva u Erevos',
+  'An invite to Erevos': 'Pozivnica u Erevos',
+  'Join, and whoever invited you is your contact at once. What you write to each other is end-to-end encrypted. Erevos sets itself up to reach them, typing nothing. Take it only if it came from them.': 'Pridružite se, i onaj ko vas je pozvao odmah je vaš kontakt. Ono što jedno drugom pišete šifrirano je s kraja na kraj. Erevos se sam podešava da dođe do te osobe, bez kucanja. Prihvatite je samo ako je zaista od te osobe.',
+  'Their name': 'Ime osobe',
+  'Only on this phone. You can change it later.': 'Samo na ovom telefonu. Možete ga kasnije promijeniti.',
+  'Welcome to Erevos. {name} is your contact now: what you write to each other is end-to-end encrypted.': 'Dobro došli u Erevos. {name} je sada vaš kontakt: ono što jedno drugom pišete šifrirano je s kraja na kraj.',
+  'Welcome to Erevos. Whoever invited you is your contact now: what you write to each other is end-to-end encrypted.': 'Dobro došli u Erevos. Onaj ko vas je pozvao sada je vaš kontakt: ono što jedno drugom pišete šifrirano je s kraja na kraj.',
+  'You are in, as {name}. Now add your contacts: by their invite, or by the contact link or QR code they give you.': 'Unutra ste, kao {name}. Sada dodajte svoje kontakte: njihovom pozivnicom, ili kontakt-linkom ili QR kodom koji vam daju.',
+  'Start with an invite': 'Počnite s pozivnicom',
+  'Ask someone who uses Erevos for an invite. Scan its QR code with the camera, or open the link they send: this phone joins, typing nothing, and they are your contact at once.': 'Zatražite pozivnicu od nekoga ko koristi Erevos. Skenirajte njen QR kod kamerom, ili otvorite link koji vam pošalje: ovaj telefon se pridružuje bez kucanja, i odmah ste kontakti.',
+  'Take a photo of the invite': 'Fotografišite pozivnicu',
+  'Choose a photo of the invite': 'Izaberite fotografiju pozivnice',
+  'Or paste the invite link': 'Ili zalijepite link pozivnice',
+  'Invite someone': 'Pozovite nekoga',
+  'Set it up yourself': 'Podesite sami',
+  'For one person, until {when}. With Erevos on their phone, they scan it with the camera, or open the link you send them: their phone joins, and you are each other’s contacts at once. Whoever takes it first has it, so give it to them only.': 'Za jednu osobu, do {when}. S Erevosom na telefonu, skenira je kamerom, ili otvori link koji joj pošaljete: njen telefon se pridružuje, i odmah ste kontakti. Ko je prvi uzme, ima je, zato je dajte samo toj osobi.',
+  'Your relay lets this phone invite no one, so their phone uses it only as your contact link lets it: if it needs a token, they need one of their own.': 'Vaš relay ne dopušta ovom telefonu da ikoga poziva, pa ga njen telefon koristi samo onako kako vaš kontakt-link dopušta: ako treba token, treba joj vlastiti.',
+  'One QR code or link, for one person: their phone joins Erevos with it, typing nothing, and you are each other’s contacts at once.': 'Jedan QR kod ili link, za jednu osobu: njen telefon se njime pridružuje Erevosu, bez kucanja, i odmah ste kontakti.',
+  'Their name in your chats.': 'Njeno ime u vašim razgovorima.',
+  'Your name, for them': 'Vaše ime, za tu osobu',
+  'Goes in the invite, so their phone names you. Optional.': 'Ide u pozivnicu, da njen telefon zna ko ste. Neobavezno.',
+  'Your name': 'Vaše ime',
+  'No invite now. {error}': 'Trenutno nema pozivnice. {error}',
+  'Have a {name} account? Sign in with it instead, in the browser: you type the password there only, and whoever runs the server sees your user name.': 'Imate {name} nalog? Prijavite se radije njime, u pregledniku: lozinku kucate samo tamo, a onaj ko vodi server vidi vaše korisničko ime.',
 };

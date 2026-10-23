@@ -23,11 +23,14 @@ export function RelaySignIn({
   token,
   onToken,
   onNote,
+  brief = false,
 }: {
   url: string;
   token: string;
   onToken: (token: string, name: string) => void;
   onNote: (note: string) => void;
+  /** For a phone with no relay yet: a short caption, in plain words. */
+  brief?: boolean;
 }) {
   const space = currentSpace().space;
   const [offer, setOffer] = useState<{ name: string; start: string } | null>(null);
@@ -152,10 +155,12 @@ export function RelaySignIn({
         </Row>
       )}
       <Text variant="caption" tone="muted">
-        {t(
-          "Signs this phone in to the relay with your {name} account, in the browser: you type the password there only, and this phone gets a token of its own, kept in this space. The relay's operator sees your {name} user name, and every hour the relay asks {name} whether the account may still use it, signing this phone out when it may not, or when {name} cannot be asked for 3 days. Signing in from another space with the same account shows the relay that both are yours.",
-          { name: offer.name },
-        )}
+        {brief
+          ? t('Have a {name} account? Sign in with it instead, in the browser: you type the password there only, and whoever runs the server sees your user name.', { name: offer.name })
+          : t(
+              "Signs this phone in to the relay with your {name} account, in the browser: you type the password there only, and this phone gets a token of its own, kept in this space. The relay's operator sees your {name} user name, and every hour the relay asks {name} whether the account may still use it, signing this phone out when it may not, or when {name} cannot be asked for 3 days. Signing in from another space with the same account shows the relay that both are yours.",
+              { name: offer.name },
+            )}
       </Text>
     </View>
   );

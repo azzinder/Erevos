@@ -107,6 +107,42 @@ t('two chats add each other through a link and talk both ways', async () => {
   assert.match(await alice.e2e.safetyNumber(added.identity), /^(\d{5} ){11}\d{5}$/);
 });
 
+t('someone who says back an invite given here is a contact at once, named as invited, and the invite is used then', async () => {
+  const inviter = await chat('space', 0);
+  const maria = await chat('space', 1);
+  const stranger = await chat('space', 2);
+  const hi = await inviter.e2e.welcome('Maria', '  Nikos ');
+  assert.match(hi, /^[0-9a-f]{32}$/);
+  assert.equal(inviter.e2e.invitedAs(), 'Nikos');
+  // An invite of someone else's, or none, says nothing: a message request, as from any link.
+  await stranger.e2e.addContact(inviter.code, stranger.from, undefined, 'f'.repeat(32));
+  const fromStranger = message(await inviter.e2e.receive(stranger.e2e.pending()[0].first));
+  assert.equal(fromStranger.request, true);
+  // Maria's first message says it back.
+  const { identity: inviterId } = await maria.e2e.addContact(inviter.code, maria.from, undefined, hi);
+  const hello = message(await inviter.e2e.receive(maria.e2e.pending()[0].first));
+  assert.equal(hello.added, true);
+  assert.equal(hello.request, false);
+  const kept = inviter.e2e.contacts().find((c) => c.identity === hello.identity)!;
+  assert.deepEqual([kept.name, kept.request, kept.sender], ['Maria', false, maria.from]);
+  // They talk at once, both ways.
+  const toMaria = await inviter.e2e.seal(hello.identity, 'καλώς ήρθες', inviter.from);
+  assert.equal(message(await maria.e2e.receive(toMaria.packet)).text, 'καλώς ήρθες');
+  assert.equal(message(await inviter.e2e.receive((await maria.e2e.seal(inviterId, 'ευχαριστώ', maria.from)).packet)).text, 'ευχαριστώ');
+  // Used: someone else saying it back is a request again.
+  const carol = await chat('space', 3);
+  await carol.e2e.addContact(inviter.code, carol.from, undefined, hi);
+  assert.equal(message(await inviter.e2e.receive(carol.e2e.pending()[0].first)).request, true);
+  // Kept sealed: opened again, the invites left are as they were, and so is the name given.
+  const again = await E2E.open('space', 0, inviter.key);
+  assert.equal(again.invitedAs(), 'Nikos');
+  const later = await again.welcome('Eleni');
+  const dora = await chat('space', 4);
+  await dora.e2e.addContact(inviter.code, dora.from, undefined, later);
+  const fromDora = message(await again.receive(dora.e2e.pending()[0].first));
+  assert.deepEqual([fromDora.request, again.contacts().find((c) => c.identity === fromDora.identity)!.name], [false, 'Eleni']);
+});
+
 t('someone new who writes first is a message request until accepted, refused or answered', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

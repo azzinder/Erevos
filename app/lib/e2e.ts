@@ -1,4 +1,4 @@
-import { againAfter, checkedAvatar, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type OldFiller, type Own, type OwnList, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
+import { againAfter, checkedAvatar, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type OldFiller, type Own, type OwnList, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
 
 import { isReactionEmoji, isTag, newTag } from '../lock/history';
@@ -12,7 +12,7 @@ import { isVoicePart, splitVoice, voiceIdOf, type VoicePart } from './voice';
 import { entryKey, isSealedPacket, openPacket, ownPacketKey, packetKeys, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
 import { bodyOf, checkedList, verifyList, type DeviceList } from './device-list';
 import { blankWay, copiedAs, waysFor, withEarlyFirst, withRoutes, withUnverified } from './endpoints';
-import { fromBase64, fromHex, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
+import { fromBase64, fromHex, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { canTryLater, isQueueFull } from './relay';
 import { TooLargeForLoraError } from './nearby';
 import type { Look } from '../theme/look';
@@ -130,6 +130,9 @@ export const ONLINE_AFTER_WRITE = 120;
 export const ONLINE = 75;
 // The longest a phone may say it stays open, seconds.
 const MAX_ON = 600;
+/** How long an invite given from here waits to be used (lib/welcome.ts), as an invite to a relay. */
+export const WELCOME_DAYS = 7;
+const isHi = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{32}$/.test(v);
 
 // `timer` is null in a message from an Erevos before disappearing messages. `lasts`: seconds this
 // one message lasts, whatever the chat's timer, or 0. `got` and `read`: the tags of the other
@@ -185,6 +188,10 @@ type Message = {
   to?: string;
   /** When the queue `from` names was made (ms, the hour, later each time: lib/moves.ts queueAge), said with `from`: a message that says an older one than the last (a late copy) leaves where they read as it was. An Erevos before says none, and takes `from` from every message. */
   qa?: number;
+  /** In the first message of a conversation started from an invite (lib/welcome.ts): its secret,
+   *  said back, so the phone that gave it takes the sender as a contact at once. An Erevos before
+   *  ignores it, and takes them as a message request. */
+  hi?: string;
 };
 
 /** What else a message can carry. */
@@ -247,7 +254,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, dl, acct, to, qa }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, dl, acct, to, qa, hi }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -279,6 +286,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(acct ? { acct } : {}),
       ...(to ? { to } : {}),
       ...(from && qa ? { qa } : {}),
+      ...(hi ? { hi } : {}),
       ...more,
     }),
   );
@@ -371,6 +379,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       ...(value.acct !== undefined ? { acct: typeof value.acct === 'string' && /^[0-9a-f]{64}$/.test(value.acct) ? value.acct : '' } : {}),
       ...(value.to !== undefined ? { to: typeof value.to === 'string' && /^[0-9a-f]{64}$/.test(value.to) ? value.to : '' } : {}),
       ...(isTime(value.qa) && value.qa > 0 ? { qa: value.qa } : {}),
+      ...(isHi(value.hi) ? { hi: value.hi } : {}),
     };
   } catch {
     return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null };
@@ -850,6 +859,34 @@ export class E2E {
   /** Who is blocked here, the latest last. */
   blocked(): Blocked[] {
     return this.data.blocked ?? [];
+  }
+
+  /**
+   * An invite for someone new, named `name` here (lib/welcome.ts): the secret its link carries,
+   * which their first message says back, so they are a contact here at once, with that name, not a
+   * message request. Good for one, for WELCOME_DAYS. `as`: the name this phone gives itself in the
+   * invite, offered again for the next one (invitedAs).
+   */
+  welcome(name: string, as = ''): Promise<string> {
+    return this.run(async () => {
+      const hi = toHex(randomBytes(16));
+      const now = Date.now();
+      const invited: Invited[] = [...this.waitingInvites(now), { hi, name: cleanName(name), until: now + WELCOME_DAYS * 24 * 3600 * 1000 }].slice(-MAX_INVITED);
+      const named = cleanName(as);
+      const { invitedAs: _as, ...rest } = this.data;
+      await this.save({ ...rest, invited, ...(named ? { invitedAs: named } : {}) });
+      return hi;
+    });
+  }
+
+  /** The name this phone gave itself in its last invite, or ''. */
+  invitedAs(): string {
+    return this.data.invitedAs ?? '';
+  }
+
+  // The invites given from here that wait still.
+  private waitingInvites(now: number): Invited[] {
+    return (this.data.invited ?? []).filter((i) => i.until > now);
   }
 
   /** Lets someone blocked write again: a first packet from them comes as a message request. */
@@ -1354,12 +1391,15 @@ export class E2E {
   /**
    * Adds the contact of a link and starts a conversation with them. `from` is this chat's relay
    * sender id. Afterwards the first packet waits for the relay (see `pending`). Throws if the
-   * link has no key, or a key whose signatures do not hold, or is this chat's own.
+   * link has no key, or a key whose signatures do not hold, or is this chat's own. `hi`: the
+   * secret of their invite (lib/welcome.ts), said back in the first message, so they take this
+   * chat as a contact at once.
    */
   addContact(
     code: { senderHex: string; key: string; relayUrl?: string; relayKey?: string; spare?: { senderHex: string; relayUrl: string; relayKey?: string } },
     from: string,
     at: Where = { relay: '', relayKey: '' },
+    hi = '',
   ): Promise<{ identity: string; added: boolean }> {
     return this.run(async () => {
       if (!code.key) throw new NoKeyError();
@@ -1387,7 +1427,7 @@ export class E2E {
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined), ...this.fromNow(from) }),
+        encodeMessage({ ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined), ...this.fromNow(from), ...(isHi(hi) ? { hi } : {}) }),
       );
       await this.save(
         this.withContact({
@@ -2230,6 +2270,9 @@ export class E2E {
     const known = this.find(identity);
     // The space's list moves on with every new contact: theirs keeps what they sent.
     if (known?.seen.includes(id)) return { kind: 'refused', reason: 'replay' };
+    // Someone new who says back an invite given from here (lib/welcome.ts): a contact at once,
+    // named as the invite was, which is used then.
+    const welcomed = !known && isHi(message.hi) ? this.waitingInvites(Date.now()).find((i) => i.hi === message.hi) : undefined;
     const timing = timerOf(message, known);
     // Where they read, unless they said it before from a queue made later (a late copy).
     const takes = takesPlace(message.qa, known?.qa);
@@ -2240,11 +2283,11 @@ export class E2E {
       ...(message.from && takes ? placeOf(message) : { relay: known?.relay ?? '', relayKey: known?.relayKey ?? '', spare: known?.spare ?? null }),
       conversations: [toBase64(opened.conversation), ...(known?.conversations ?? [])].slice(0, MAX_CONVERSATIONS),
       first: known?.first ?? '',
-      name: known?.name ?? '',
+      name: known?.name ?? welcomed?.name ?? '',
       timer: timing.timer,
       timerAt: timing.timerAt,
-      // Someone new who has this chat's link writes first: a request until accepted.
-      request: known ? known.request : true,
+      // Someone new who has this chat's link writes first: a request until accepted, unless invited.
+      request: known ? known.request : !welcomed,
       look: known?.look ?? null,
       avatar: known?.avatar ?? null,
       ownIdentity: known?.ownIdentity ?? '',
@@ -2273,7 +2316,12 @@ export class E2E {
     };
     const learned = this.partOf(contact) ? await this.heardOf(contact, message) : {};
     const { contact: next, twice } = tookIn({ ...contact, ...learned }, message, this.link?.through === true);
-    await this.save({ ...this.withContact(next), seen: [...this.data.seen, id].slice(-MAX_SEEN) });
+    const kept = { ...this.withContact(next), seen: [...this.data.seen, id].slice(-MAX_SEEN) };
+    if (welcomed) {
+      const invited = (kept.invited ?? []).filter((i) => i.hi !== welcomed.hi);
+      const { invited: _invited, ...rest } = kept;
+      await this.save(invited.length > 0 ? { ...rest, invited } : rest);
+    } else await this.save(kept);
     if (next.list && next.list.n !== known?.list?.n) await this.retryUnverified(identity);
     this.link?.opened(identity, opened.plaintext);
     if (message.tag) this.noteCame(identity, message.tag, '');
