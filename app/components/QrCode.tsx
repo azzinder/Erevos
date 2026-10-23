@@ -1,37 +1,32 @@
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { qrRows } from '../lib/qr';
+import { Image, PixelRatio, StyleSheet } from 'react-native';
+import { toBase64 } from '../lib/crypto';
+import { qrPng } from '../lib/qr';
 import { t } from '../lib/i18n';
 
 // Dark modules on white with a quiet zone of four modules, as scanners expect, even in the
-// app's dark theme.
-const QUIET = 4;
-
+// app's dark theme. One picture at the screen's own pixels (lib/qr.ts), so it shows sharp and is
+// light to draw even on an older phone, made once while the screen shows it.
 export function QrCode({ text, size = 260 }: { text: string; size?: number }) {
-  const rows = useMemo(() => qrRows(text), [text]);
-  const cell = Math.max(2, Math.floor(size / (rows.length + QUIET * 2)));
+  const ratio = PixelRatio.get();
+  const shown = useMemo(() => {
+    const { png, size: pixels } = qrPng(text, Math.floor(size * ratio));
+    return { uri: `data:image/png;base64,${toBase64(png)}`, side: pixels / ratio };
+  }, [text, size, ratio]);
   return (
-    <View style={[styles.frame, { padding: cell * QUIET }]} accessibilityLabel={t('QR code')}>
-      {rows.map((runs, row) => (
-        <View key={row} style={styles.row}>
-          {runs.map((run, index) => (
-            <View
-              key={index}
-              style={{ width: run.length * cell, height: cell, backgroundColor: run.dark ? '#000000' : '#FFFFFF' }}
-            />
-          ))}
-        </View>
-      ))}
-    </View>
+    <Image
+      source={{ uri: shown.uri }}
+      style={[styles.code, { width: shown.side, height: shown.side }]}
+      fadeDuration={0}
+      accessible
+      accessibilityLabel={t('QR code')}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  frame: {
+  code: {
     alignSelf: 'center',
     backgroundColor: '#FFFFFF',
-  },
-  row: {
-    flexDirection: 'row',
   },
 });
