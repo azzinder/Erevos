@@ -720,14 +720,9 @@ pub fn load_key(path: &Path) -> io::Result<SigningKey> {
         Ok(bytes) => SigningKey::from_slice(&bytes)
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "a push key is 32 bytes")),
         Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            // Written beside it and renamed: a stop halfway leaves no short key.
             let key = SigningKey::random(&mut rand::rngs::OsRng);
-            let mut options = fs::OpenOptions::new();
-            options.write(true).create_new(true);
-            #[cfg(unix)]
-            std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
-            let mut file = options.open(path)?;
-            file.write_all(&key.to_bytes())?;
-            file.sync_all()?;
+            journal::write_whole(path, &key.to_bytes())?;
             Ok(key)
         }
         Err(e) => Err(e),
@@ -1004,6 +999,32 @@ pub(crate) mod tests {
         p.forget(&[1; 24]);
         assert!(load(&file).unwrap().is_empty());
         assert!(fs::read(keys_path(&file)).unwrap().is_empty());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn the_key_is_made_once_whole_and_read_back() {
+        let dir = std::env::temp_dir().join(format!("erevos-push-key-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("push.key");
+        let _ = fs::remove_file(&path);
+        // A file a stop left halfway beside it changes nothing.
+        fs::write(dir.join("push.key.tmp"), [7; 5]).unwrap();
+        let key = load_key(&path).unwrap();
+        assert_eq!(fs::read(&path).unwrap(), key.to_bytes().as_slice());
+        assert!(!dir.join("push.key.tmp").exists());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(&path).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o600);
+        }
+        assert_eq!(load_key(&path).unwrap(), key);
+        fs::write(&path, [1; 5]).unwrap();
+        assert_eq!(
+            load_key(&path).unwrap_err().kind(),
+            io::ErrorKind::InvalidData
+        );
         fs::remove_dir_all(&dir).unwrap();
     }
 

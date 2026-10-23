@@ -26,8 +26,8 @@ On main, not released yet.
   forwards, files kept on another relay and **Sign in with** checks. It also keeps less in its log
   and is safer on a power cut: of a sign-in the provider refused it logs only the error's code word,
   never other text a browser sent; its debug output leaves out secrets, tokens and who signed in;
-  its key is written whole or not at all, so a stop while it makes one no longer leaves a short key
-  that refuses every later start; a file part or a message sent for later, once stored, stays after
+  its keys (its own and the one for web app notices) are written whole or not at all, so a stop
+  while it makes one no longer leaves a short key that refuses every later start; a file part or a message sent for later, once stored, stays after
   a power cut; and a line with letters other than English ones in the file of revoked lending
   tickets no longer stops it.
 
