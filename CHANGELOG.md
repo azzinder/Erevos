@@ -25,6 +25,10 @@ On main, not released yet.
   number written with another country code than yours, which Erevos takes from the numbers you
   answer. Each conversation in Spam now says why it is there: blocked, marked, which rule, abroad,
   which of your words, or a link and which words that try to fool.
+- **480 stickers in 20 sets of 24**: the nine sets grew to 24 each, and eleven new ones came:
+  Cats, Dinosaurs, Monsters, Robots, Love, Greece, Sports, Music, On the move, Flowers and plants,
+  and Fruit and veg. All but Words and Treats move. As before each phone draws them and only a
+  sticker's name travels, so an Erevos from before shows a new one's emoji.
 - **Chats are lighter on older phones**: typing redraws only the message bar, not the whole chat
   with its thread; a message of the thread draws again only when it changes (a voice message
   playing redraws its own line, once a second); a long chat opens at its latest 100 messages, with

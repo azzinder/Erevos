@@ -67,8 +67,11 @@ t('every built-in sticker has a name of its own, never reused, its words, an emo
   assert.deepEqual(stickersIn('moons').slice(0, 12).map((s) => s.name), [
     'moon-smile', 'moon-laugh', 'moon-love', 'moon-wink', 'moon-wow', 'moon-sad', 'moon-angry', 'moon-sleep', 'heart', 'sun', 'coffee', 'check',
   ]);
-  assert.deepEqual(SETS.map(({ set }) => set), ['moons', 'ghosts', 'animals', 'sea', 'weather', 'space', 'celebrations', 'words', 'treats']);
-  for (const { set } of SETS) assert.ok(stickersIn(set).length >= 12 && stickersIn(set).length <= 24, set);
+  assert.deepEqual(SETS.map(({ set }) => set), [
+    'moons', 'ghosts', 'cats', 'animals', 'dinosaurs', 'monsters', 'robots', 'love', 'sea', 'weather',
+    'space', 'greece', 'celebrations', 'sports', 'music', 'transport', 'plants', 'words', 'treats', 'fruit',
+  ]);
+  for (const { set } of SETS) assert.equal(stickersIn(set).length, 24, set);
   // Each is drawn, and nothing is drawn that is not one.
   assert.deepEqual(Object.keys(ART).sort(), [...names].sort());
 });
@@ -95,7 +98,7 @@ t('the words of a Words sticker fit its card in two lines, in every language', (
   assert.equal(wordsLines('a'.repeat(40), 10), Infinity);
 });
 
-t('the moons, ghosts, animals, sea, weather, space and celebrations move a few seconds and end as drawn; words and treats stay still', () => {
+t('every set but the words and the treats moves a few seconds and ends as drawn; those two stay still', () => {
   for (const { set, moves } of SETS) {
     for (const { name } of stickersIn(set)) assert.equal(name in MOTIONS, moves, name);
   }
