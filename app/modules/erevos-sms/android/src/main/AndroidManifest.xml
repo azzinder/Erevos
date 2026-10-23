@@ -179,6 +179,8 @@
     </receiver>
 
     <receiver android:name="expo.modules.erevossms.SentReceiver" android:exported="false" />
+    <!-- Copy code on the notice of an SMS that came (OneTimeCode.kt). -->
+    <receiver android:name="expo.modules.erevossms.CopyCodeReceiver" android:exported="false" />
     <receiver android:name="expo.modules.erevossms.DeliveredReceiver" android:exported="false" />
     <receiver android:name="expo.modules.erevossms.MmsSentReceiver" android:exported="false" />
     <receiver android:name="expo.modules.erevossms.MmsDownloadedReceiver" android:exported="false" />

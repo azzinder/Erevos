@@ -128,4 +128,7 @@ export const smsTools: Record<string, string> = {
   'A newer Erevos made this backup: what this one does not know yet stays out. Update Erevos first to restore all of it.':
     'Ein neueres Erevos hat dieses Backup erstellt: Was dieses hier noch nicht kennt, bleibt draußen. Aktualisiere zuerst Erevos, um alles wiederherzustellen.',
   "The SMS could not go back into the phone's SMS: {error}": 'Die SMS konnten nicht zurück in die SMS des Telefons: {error}',
+  'Copy code': 'Code kopieren',
+  'The code is copied: any app that reads the clipboard can read it.': 'Der Code ist kopiert: Jede App, die die Zwischenablage liest, kann ihn lesen.',
+  'The code could not be copied.': 'Der Code konnte nicht kopiert werden.',
 };

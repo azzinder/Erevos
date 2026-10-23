@@ -37,6 +37,8 @@ internal object SmsStore {
   const val SENT_ACTION = "expo.modules.erevossms.SENT"
   const val DELIVERED_ACTION = "expo.modules.erevossms.DELIVERED"
   private const val CHANNEL = "sms"
+  // The notice of what came: one, replaced by the next.
+  private const val NEW_ID = 1
   private const val PREFS = "erevos-sms"
   private const val INVITES = "invites"
   private const val MAX_INVITES = 50
@@ -372,14 +374,15 @@ internal object SmsStore {
       if (sim >= 0) put(Telephony.Sms.SUBSCRIPTION_ID, sim)
     }
     context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
-    came(context, mapOf("address" to address))
+    came(context, mapOf("address" to address), OneTimeCode.find(text))
   }
 
   /** Tells the open app that something came, and shows a notice unless Erevos is on the screen:
-   *  in the background its JS side still runs, but nobody looks at it. */
-  fun came(context: Context, body: Map<String, Any?>) {
+   *  in the background its JS side still runs, but nobody looks at it. A one-time code in what
+   *  came gives the notice Copy code (OneTimeCode.kt). */
+  fun came(context: Context, body: Map<String, Any?>, code: String? = null) {
     listener?.invoke("onSms", body)
-    if (!onScreen()) notifyNew(context)
+    if (!onScreen()) notifyNew(context, code)
     Widget.refresh(context)
   }
 
@@ -389,8 +392,10 @@ internal object SmsStore {
     return state.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
   }
 
-  /** A notice that something came, without who sent it or what it says. */
-  fun notifyNew(context: Context) {
+  /** A notice that something came, without who sent it or what it says. With a one-time code
+   *  (`code`), it has Copy code, which works only on an unlocked phone (Android 12 and later ask to
+   *  unlock first); the code itself never shows on it. */
+  fun notifyNew(context: Context, code: String? = null) {
     val notifications = context.getSystemService(NotificationManager::class.java) ?: return
     // In the app's language, as the call module keeps it (erevos-call Notices.kt).
     val greek = context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null) == "el"
@@ -400,17 +405,29 @@ internal object SmsStore {
     val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
     val open = PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(context)
-    val notice = builder
+    builder
       .setSmallIcon(android.R.drawable.stat_notify_chat)
       .setContentTitle(if (greek) "Νέο μήνυμα" else "New message")
       .setContentIntent(open)
       .setAutoCancel(true)
-      .build()
+    if (code != null) {
+      val copy = Intent(context, CopyCodeReceiver::class.java).putExtra(CopyCodeReceiver.EXTRA_CODE, code)
+      val copying = PendingIntent.getBroadcast(context, NEW_ID, copy, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+      val action = Notification.Action.Builder(null, if (greek) "Αντιγραφή κωδικού" else "Copy code", copying)
+      if (Build.VERSION.SDK_INT >= 31) action.setAuthenticationRequired(true)
+      builder.addAction(action.build())
+    }
+    val notice = builder.build()
     try {
-      notifications.notify(1, notice)
+      notifications.notify(NEW_ID, notice)
     } catch (_: SecurityException) {
       // Notifications are not allowed: the message waits in the list.
     }
+  }
+
+  /** Takes the notice of what came away (its code was copied). */
+  fun clearNew(context: Context) {
+    context.getSystemService(NotificationManager::class.java)?.cancel(NEW_ID)
   }
 
   // --- Deleting, sending again ---------------------------------------------------------------

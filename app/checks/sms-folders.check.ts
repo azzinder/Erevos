@@ -1,7 +1,8 @@
 // The space's own order of its SMS (lib/sms-folders.ts, lib/sms-link.ts): pins, the Archive, the
 // Trash, Spam and its rules, drafts and the seconds to take an SMS back, all sealed in the space;
 // and what waits a few seconds to be taken back (lib/held.ts), a message passed on to another
-// conversation (lib/forward.ts), and the phone's SMS a backup holds (lib/backup-sms.ts).
+// conversation (lib/forward.ts), the phone's SMS a backup holds (lib/backup-sms.ts), and the
+// one-time code an SMS holds, for Copy code (lib/one-time-code.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -11,6 +12,7 @@ import { smsCounts } from '../lib/backup-sms';
 import { randomBytes } from '../lib/crypto';
 import { forwardedTo, forwardTo } from '../lib/forward';
 import { Held } from '../lib/held';
+import { oneTimeCode } from '../lib/one-time-code';
 import type { InboxRow, InboxSms } from '../lib/inbox';
 import { arrangeRows, dueTrash, emptyTrash, isSpam, looksLikeSpam, plainText, shownMessages, smsFolder, sortSms, trashGoesAt } from '../lib/sms-folders';
 import { SmsLink } from '../lib/sms-link';
@@ -263,4 +265,28 @@ test('the phone\'s SMS in a backup say how many they are, and other bytes say no
   assert.deepEqual(smsCounts(bytes), { sms: 1234, mms: 56, left: 7 });
   assert.equal(smsCounts(bytes.subarray(0, 10)), null);
   assert.equal(smsCounts(new TextEncoder().encode('EREVOS BACKUP 1\n0123456789ab')), null);
+});
+
+test('an SMS that says it holds a code gives its digits, and no number of another kind', () => {
+  const cases: [string, string | null][] = [
+    ['Ο κωδικός σας είναι 482910. Μην τον δώσετε σε κανέναν.', '482910'],
+    ['G-123456 is your Google verification code.', '123456'],
+    ['Your code: 123 456', '123456'],
+    ['Your OTP is 7788-1122 for the amount of €1500.00', '77881122'],
+    ['Κωδικός μιας χρήσης 123456 για αγορά 45,20 EUR στις 12:30 23/10/2026', '123456'],
+    ['Your PIN 1234', '1234'],
+    ['Dein Bestätigungscode lautet 552211', '552211'],
+    ['Tu código es 9087', '9087'],
+    ['Kod za prijavu: 445566', '445566'],
+    // The nearest to the words that say it, not a reference joined to letters.
+    ['Ref A12345, code 998877', '998877'],
+    // A phone number, an amount, a time or a date is no code; nor digits without the words.
+    ['Call me at +30 691 234 5678 about the code', null],
+    ['The code costs 1.500,00 and starts 12:30 on 23/10/2026', null],
+    ['Meeting at 1500 tomorrow', null],
+    ['shopping list 1234', null],
+    ['Your code is 123', null],
+    ['Your code is 123456789', null],
+  ];
+  for (const [text, code] of cases) assert.equal(oneTimeCode(text), code, text);
 });

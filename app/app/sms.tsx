@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,6 +13,7 @@ import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
 import { isContactNumber, sealedNamer } from '../lib/contact-book';
 import { newContactHref } from '../lib/contacts';
+import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canRelaySeal } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { toBase64Url } from '../lib/e2e';
@@ -20,6 +21,7 @@ import { forwardedTo, forwardTo, type Forwarded } from '../lib/forward';
 import { Held } from '../lib/held';
 import { locale, plural, t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
+import { oneTimeCode } from '../lib/one-time-code';
 import { spaceLinkSender } from '../lib/queue-move';
 import { relayKey } from '../lib/relay';
 import { deletingSms, linkedContact, smsFailed, smsLineId, smsMark } from '../lib/sms-chat';
@@ -329,6 +331,8 @@ export default function Sms() {
   const trashed = order ? trashOf(to, order) : null;
   const hidden = new Set(going.filter((g) => sameConversation(g.item.to, to)).map((g) => g.item.id));
   const shown = shownMessages(messages, trashed).filter((m) => !hidden.has(smsLineId(m)));
+  // The one-time code of each SMS that came with one, found once for the conversation as read.
+  const codes = useMemo(() => new Map(messages.filter((m) => !m.mine && m.text).map((m) => [smsLineId(m), oneTimeCode(m.text)] as const)), [messages]);
   const title = group ? groupName(numbers, names) : names[to] || to;
   // Where the conversation is, by its latest message: in the list, archived, in Spam, or in the
   // Trash with nothing after.
@@ -550,6 +554,16 @@ export default function Sms() {
               <Text variant="caption" color={colors.danger}>
                 {t('Tap to send it again.')}
               </Text>
+            ) : null}
+            {CAN_COPY && codes.get(smsLineId(m)) ? (
+              <Row>
+                <Chip
+                  label={t('Copy code')}
+                  onPress={() => {
+                    void copyText(codes.get(smsLineId(m))!).then((done) => setNote(done ? t('The code is copied: any app that reads the clipboard can read it.') : t('The code could not be copied.')));
+                  }}
+                />
+              </Row>
             ) : null}
           </Pressable>
         ))}

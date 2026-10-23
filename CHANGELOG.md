@@ -10,6 +10,23 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet.
 
+- **QR codes show at once**, on older phones too: each is one picture now, made in a fraction of
+  the time, instead of a view for each stretch of modules (about 11,000 for a contact's code) and a
+  slow search for its mask. It looks and scans the same, and letters beyond English go into it as
+  UTF-8.
+- **Copy code** for one-time codes (Android, SMS): an SMS that says it holds a code, in any of
+  the app's languages, gets **Copy code** under it in the chat and on its notice, which does not
+  show the code (and on Android 12 and later asks to unlock first). Only the code's digits are
+  copied, marked sensitive so Android shows no preview; a phone number, an amount, a date or a
+  time is never taken for one.
+- **Locked, Erevos still receives** (password lock): when it locks, after 30 seconds away or with
+  **Lock now**, the password screen comes in front of the open space, which goes on behind it, so
+  messages and calls still come, with their notices, and a call shows over the password screen.
+  Before, the space closed as the password screen showed, and Erevos left there received nothing,
+  with no notice saying so. Its screens still close, hidden chats too, and the call screen still
+  loses its contacts' names; another space's password closes it first, nothing of it kept. When
+  the space does close (after a backup is restored) and Erevos leaves the screen with the password
+  asked, a quiet notice says "Locked" (Android).
 - **Contacts open faster** (Android): the phone's contacts show as soon as Android gives them, and
   at once when you come back, while they are read again; those kept only in Erevos and the chats'
   Erevos contacts join them a moment later. Putting them in order by name no longer takes seconds

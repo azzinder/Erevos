@@ -128,4 +128,7 @@ export const smsTools: Record<string, string> = {
   'A newer Erevos made this backup: what this one does not know yet stays out. Update Erevos first to restore all of it.':
     'Αυτό το αντίγραφο το έφτιαξε ένα νεότερο Erevos: ό,τι δεν γνωρίζει ακόμα αυτό εδώ μένει έξω. Ενημέρωσε πρώτα το Erevos για να τα επαναφέρεις όλα.',
   "The SMS could not go back into the phone's SMS: {error}": 'Τα SMS δεν μπόρεσαν να επιστρέψουν στα SMS του τηλεφώνου: {error}',
+  'Copy code': 'Αντιγραφή κωδικού',
+  'The code is copied: any app that reads the clipboard can read it.': 'Ο κωδικός αντιγράφηκε: όποια εφαρμογή διαβάζει το πρόχειρο μπορεί να τον διαβάσει.',
+  'The code could not be copied.': 'Ο κωδικός δεν μπόρεσε να αντιγραφεί.',
 };

@@ -127,8 +127,8 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
 3. Pick the contact, type in the message bar at the bottom and tap the send arrow. Once their phone answers, the top of the chat says
    **Nearby**.
 
-- **While a space is open:** the links start when a space opens, whatever screen shows, and stop when it locks or
-  another space opens. A message from nearby shows on the home screen as one through the relay does, and a call rings
+- **While a space is open:** the links start when a space opens, whatever screen shows, and stop when another space
+  opens: locked, the space goes on behind the password screen. A message from nearby shows on the home screen as one through the relay does, and a call rings
   there too. On Android they stay up with Erevos in the background, while **In the background** is on **Receive and
   ring**.
 - **Range:** a few tens of metres in the open, less through walls.
@@ -592,7 +592,8 @@ a missed call.
   swiping it away from the recent apps, with a quiet notice that says only "Erevos". It waits at the relay and on the links to phones nearby, so messages come: a notice
   says only "New message", or how many came, and on a locked phone only "Erevos". A call rings with the phone's
   ringtone and a notice that says only "Incoming call", over the lock screen too. Tap it to answer. With the password
-  lock on, a call that rings shows before the password, and Erevos locks as soon as it ends. Only that space's chats
+  lock on, a call that rings shows before the password, and Erevos locks as soon as it ends. Locked, the space goes on
+  behind the password screen, so messages and calls still come, and a call shows over the password screen. Only that space's chats
   and groups come so; hidden chats only say that a message came, if you let them (see Hidden chats). Set it under **Lock and second password** → **In the background**:
   **Receive and ring** (the default) or **Only while Erevos shows**, and **Say a message came** (the default) or **No
   notice**. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
@@ -600,7 +601,8 @@ a missed call.
 - **Where it cannot ring:** stopped by Android (or by the phone's battery saving, or the phone maker's own setting),
   after the phone restarts until you open Erevos and the space once, in another space, or on a computer or in the web
   app while closed. A call there shows as a missed call once Erevos opens. When Android closes Erevos while it
-  receives, a quiet notice says so: open Erevos and the space to receive again. A message request cannot call you until
+  receives, a quiet notice says so: open Erevos and the space to receive again. So does one, "Locked", when the space
+  that received closes (after a backup is restored, say) and Erevos leaves the screen with the password asked. A message request cannot call you until
   you accept it.
 - **Permissions (Android):** menu → **Permissions** shows what Android lets Erevos do for calls and messages in the
   background (notices, the call notice and that it pops up, the message notice, calls over the lock screen, running on
@@ -864,6 +866,11 @@ chats in one list.
   choose Erevos again.
 - **When an SMS comes:** a notice says "New message", without who sent it or what it says. If none comes, the
   **SMS** screen shows **Allow notifications** while Android holds them back.
+- **One-time codes:** an SMS that says it holds a code (a bank's, a sign-in's), in any of the app's languages, gets
+  **Copy code** under it in the chat, and on its notice too, without the code showing there; on Android 12 and later
+  the notice's button asks to unlock the phone first. Only its 4 to 8 digits are copied, never a phone number, an
+  amount, a date or a time, and Android shows no preview of them. Any app that reads the clipboard can read them, so
+  paste the code soon.
 - **If no SMS show:** Android 15 and later hold the SMS permission back from an app installed from a browser.
   Under **SMS** in the menu, tap **Allow SMS**. If Android calls it a restricted setting, open **Erevos's App
   info**, tap **⋮** at the top right → **Allow restricted settings**, and allow SMS under **Permissions**. Chats
@@ -1125,6 +1132,11 @@ Under **Lock and second password**, **Lock when Erevos opens** has two choices: 
 1. Tap **Password**, type it twice (at least 4 characters) and tap **Save**.
 2. From then on Erevos asks for it every time it opens, and again after 30 seconds in the background.
 3. **Change password** changes it, and **Lock now** locks Erevos straight away.
+
+- **Locked, still receiving:** when Erevos locks, the password screen comes in front of the open space, which goes on
+  behind it: messages and calls still come, with their notices, and a call shows over the password screen. Its
+  screens close, hidden chats too, and the call screen no longer shows its contacts' names. Its password opens it
+  again; another space's password closes it first, with nothing of it kept in memory.
 
 - **Wrong passwords:** after 5 wrong tries, each further one makes you wait, 30 seconds at first and twice as long
   each time, up to an hour. The count survives a restart.
