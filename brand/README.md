@@ -10,9 +10,11 @@ The Erevos mark (a white L with a red speech bubble holding a keyhole), as artwo
 Where they are used:
 
 - The phone app (`app/app.json`): `app/assets/icon/` holds `icon.png` (iOS), `android-square.png`
-  (Android: a square icon of its own on red, so launchers show it square, as Nekten chose; Phone,
-  SMS and Contacts have launcher icons of the same kind in green, blue and violet, in their modules'
-  `res/mipmap-*`), the web favicon, and `maskable.png` (the two adaptive layers together, for the web app's
+  (Android before 8: a square icon of its own on red) and `android-adaptive-foreground.png` +
+  `android-adaptive-background.png` (Android 8 and later: the mark over red, filling the launcher's own
+  shape, as FASOULI's does); the launcher's icons, Erevos's and Phone's, SMS's and Contacts's, in each
+  colour the owner can choose, are adaptive icons in the modules' `res/mipmap-anydpi-v26` (with
+  `res/mipmap-*dpi` PNGs for older Android)), the web favicon, and `maskable.png` (the two adaptive layers together, for the web app's
   maskable icon).
 - The web app (`pwa/build.mjs`) takes its icons from `png/web/`, `png/ios/icon-180.png` and
   `app/assets/icon/maskable.png`.

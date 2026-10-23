@@ -17,6 +17,10 @@
     "android": {
       "package": "app.erevos",
       "icon": "./assets/icon/android-square.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon/android-adaptive-foreground.png",
+        "backgroundImage": "./assets/icon/android-adaptive-background.png"
+      },
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",

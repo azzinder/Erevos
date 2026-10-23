@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 8 and later: a full icon in the launcher's own shape, the mark over the blue background. The
+     PNG of the same name in mipmap-*dpi is for older Android. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+  <background android:drawable="@drawable/erevos_phone_launcher_bg_blue" />
+  <foreground android:drawable="@mipmap/erevos_phone_launcher_blue_fg" />
+</adaptive-icon>
