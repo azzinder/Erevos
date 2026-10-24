@@ -629,7 +629,8 @@ a missed call.
 - **In the background (Android):** while a space is open, Erevos keeps running when you leave it, with Home or by
   swiping it away from the recent apps, with a quiet notice that says only "Erevos". It waits at the relay and on the links to phones nearby, so messages come: a notice
   says only "New message", or how many came, and on a locked phone only "Erevos". A call rings with the phone's
-  ringtone and a notice that says only "Incoming call", over the lock screen too. Tap it to answer. With the password
+  ringtone and a notice that says only "Incoming call", over the lock screen and the screen saver too, and the screen
+  wakes. Tap it to answer. With the password
   lock on, a call that rings shows before the password, and Erevos locks as soon as it ends. Locked, the space goes on
   behind the password screen, so messages and calls still come, and a call shows over the password screen. Only that space's chats
   and groups come so; hidden chats only say that a message came, if you let them (see Hidden chats). Set it under **Lock and second password** → **In the background**:

@@ -5,9 +5,11 @@ import android.app.ActivityManager
 import android.app.Application
 import android.app.AlarmManager
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -39,6 +41,18 @@ class ErevosCallModule : Module() {
   private var proximity: PowerManager.WakeLock? = null
   private var ringtone: Ringtone? = null
   private var keepTask: Int? = null
+  // The screen kept on a while for a call that rings (wakeForRing).
+  private var ringWake: PowerManager.WakeLock? = null
+
+  // Whether the phone shows its screen saver (Android's "dream", as while charging): Erevos's
+  // screen, under it, cannot be seen, and Android shows no notice over it, so a call that rings
+  // then shows its notice, and wakes the screen, which ends the screen saver.
+  private var dreaming = false
+  private val dreams = object : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+      dreaming = intent.action == Intent.ACTION_DREAMING_STARTED
+    }
+  }
 
   // Whether a call shows over the lock screen. Erevos swiped away from the recent apps has no
   // screen when a call rings: the one the call notice brings up then shows over it too.
@@ -66,10 +80,20 @@ class ErevosCallModule : Module() {
 
     OnCreate {
       (context?.applicationContext as? Application)?.registerActivityLifecycleCallbacks(created)
+      runCatching {
+        val filter = IntentFilter().apply {
+          addAction(Intent.ACTION_DREAMING_STARTED)
+          addAction(Intent.ACTION_DREAMING_STOPPED)
+        }
+        val app = context?.applicationContext
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) app?.registerReceiver(dreams, filter, Context.RECEIVER_NOT_EXPORTED)
+        else app?.registerReceiver(dreams, filter)
+      }
     }
 
     OnDestroy {
       (context?.applicationContext as? Application)?.unregisterActivityLifecycleCallbacks(created)
+      runCatching { context?.applicationContext?.unregisterReceiver(dreams) }
     }
 
     Function("start") { speaker: Boolean ->
@@ -124,7 +148,8 @@ class ErevosCallModule : Module() {
     }
 
     // A call rings here: the phone's ringtone, as the phone's ring volume and silent mode allow,
-    // and with `notice` the call notice too, shown over the lock screen.
+    // and with `notice` the call notice too, shown over the lock screen; also while the screen
+    // saver shows, over Erevos too. A screen that is off, or shows the screen saver, wakes.
     Function("ring") { video: Boolean, notice: Boolean ->
       val context = context ?: return@Function
       if (ringtone?.isPlaying != true) {
@@ -139,13 +164,16 @@ class ErevosCallModule : Module() {
           it.play()
         }
       }
-      if (notice) Notices.ring(context, video)
+      if (notice || dreaming) Notices.ring(context, video)
       showOverLock(true)
+      wakeForRing(context)
     }
 
     Function("stopRinging") {
       ringtone?.stop()
       ringtone = null
+      ringWake?.let { if (it.isHeld) it.release() }
+      ringWake = null
       context?.let { Notices.stopRinging(it) }
       null
     }
@@ -350,6 +378,22 @@ class ErevosCallModule : Module() {
     }
   }
 
+  // Turns the screen on, if it is off or shows the screen saver, for as long as a call rings at
+  // most: Android ends the screen saver as the screen wakes, and shows the call notice, or
+  // Erevos's own call screen when it was in front.
+  @Suppress("DEPRECATION")
+  private fun wakeForRing(context: Context) {
+    val power = context.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return
+    if (power.isInteractive && !dreaming) return
+    runCatching {
+      ringWake?.let { if (it.isHeld) it.release() }
+      ringWake = power.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "erevos:ring").also {
+        it.setReferenceCounted(false)
+        it.acquire(RING_WAKE_MS)
+      }
+    }
+  }
+
   private fun showOverLock(on: Boolean) {
     overLock = on
     val activity = appContext.currentActivity ?: return
@@ -412,5 +456,7 @@ class ErevosCallModule : Module() {
 
   companion object {
     const val KEEP_TASK = "ErevosReceive"
+    // As long as a call rings (lib/call.ts RING_MS).
+    const val RING_WAKE_MS = 45_000L
   }
 }

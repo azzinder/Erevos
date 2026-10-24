@@ -25,6 +25,9 @@ On main, not released yet:
 - **New chat shows how to add a contact first**: the relay's own settings (its address, token, second relay, invites
   and queue) are closed under **Relay settings** until you tap it; your contact link, its QR code and adding a contact
   show at once, as before. **Hide relay** is now **Hide relay and new contacts**.
+- **A call shows over the screen saver** (Android): while the phone showed its screen saver (as while charging), a
+  call rang but its screen did not show. Now the call notice shows then too, also with Erevos open under it, and the
+  screen wakes, which ends the screen saver; so does a screen that is off.
 - **Share to Erevos from other apps** (Android): Erevos is now in other apps' **Share**, such as the browser's for a
   link. **Send to** lists your chats, groups and SMS conversations, recent ones first, with a search, never hidden
   chats. Words and links open in the message field of the one you pick, to read and send there; a photo or file goes
