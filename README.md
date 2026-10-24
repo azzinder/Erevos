@@ -7,6 +7,8 @@ cryptography. Do not rely on it to protect anyone yet.
 
 - [docs/threat-model.md](docs/threat-model.md): who Erevos protects you from, and what each one
   still learns.
+- [SECURITY.md](SECURITY.md): how to report a problem, and
+  [docs/security-review.md](docs/security-review.md): a map of the code for a security review.
 - [CHANGELOG.md](CHANGELOG.md): what each release changed.
 - [docs/linked-devices.md](docs/linked-devices.md) and [docs/public-groups.md](docs/public-groups.md):
   design notes.
