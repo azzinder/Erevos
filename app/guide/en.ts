@@ -889,6 +889,31 @@ is **No bridges** unless you choose, each space has its own, and it counts only 
 - **On Android only:** the app carries lyrebird, Tor's own program for obfs4, Snowflake, WebTunnel and meek. A
   computer and the web app have no Tor yet, so no bridges either.
 
+## Through Nostr {#nostr}
+
+Under **Nostr** in the menu, **Texts through Nostr** is **On** unless you change it. Then what you write to a contact
+whose Erevos reads on Nostr too goes through public Nostr relays, through Tor, instead of through your relay. Each
+space has its own choice, and its own Nostr relays.
+
+- **How it is sealed:** end-to-end encrypted as always, then sealed once more for a key your contact gave this chat
+  alone, and signed by a key made for that one text (a NIP-59 gift wrap). The Nostr relays see that someone wrote to
+  a key that names no one, when, and how big; not who wrote it, nor to whom. Your relay does not see it at all.
+- **What the Nostr relays can tell:** your phone asks each of them for all its keys at once, through Tor: a relay can
+  tell that those keys are read together, never from where.
+- **Only through Tor:** with Tor set to **Nothing**, or while Tor starts, texts go through your relay.
+- **The relays:** relay.damus.io, nos.lol and relay.primal.net unless you change them; you can add your own, five at
+  most. Your contacts are told the relays you read on, and write to you there; one that takes a text is enough.
+- **What stays on your relay:** pictures, files, voice messages, calls, reactions, and the marks that a message came
+  or was read; and what you write to contacts on an iPhone or a computer, which do not read on Nostr.
+- **On Android only,** as Tor is.
+
+> Should your contact's phone not say within five minutes that a text came, it goes through your relay as well, and
+> they see it once. When no Nostr relay takes it, it goes through your relay at once.
+
+- **Hidden chats:** they read on Nostr too, while they are open. Closed, they still show "New message": with each text
+  through Nostr, your contact also sends your relay a bell, a message that says nothing, which your relay counts as
+  one, as before.
+
 ## SMS {#sms}
 
 On Android, Erevos can be the phone's SMS app, under **SMS** in the menu. The home screen then shows SMS and Erevos
@@ -1705,6 +1730,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. From a place lent on a contact's relay, every relay you send to sees it. [Through Tor](#tor), which carries messages unless you change it, no relay sees it for what you write, and with **Everything** for pictures and files too; with bridges, for where Tor is blocked, the network sees only a bridge. Snowflake's broker and STUN servers see your address. | Tor on a computer. |
+| **Texts through Nostr** | End-to-end encrypted as through a relay, then wrapped once more for a key your contact gave that chat alone, signed by a key made for that text alone. The Nostr relays see when and how big, and that a key that names no one gets a text; your phone reads all its keys on one connection, through Tor, so a relay can tell they are read together, never from where. Your relay sees them only as the backup, and a bell for hidden chats. [Through Nostr](#nostr). | Pictures and voice messages through Nostr. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
 | **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. A contact's calls and SMS are read from the phone's own call log and SMS only to show its history, and kept nowhere. | |
 | **Contacts kept only in Erevos** | Sealed with the space's key, or with the hidden chats' for theirs, in one file for every space whose size shows roughly how many there are in all, not whose they are; their photos each in a file of its own. Never in Android's contacts. Calls and SMS to them go through the phone, and show in its call log and SMS. | |

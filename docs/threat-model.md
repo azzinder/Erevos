@@ -28,9 +28,17 @@ Notes:
   47905, and Wi-Fi Direct announces `_erevos._tcp`. The nonce in them is new at each start. A LoRa
   radio can be heard kilometres away, and its signal traced.
 - **The Android app uses no push service.** It waits at the relay itself.
-- **Tor** is on Android only, per space, and carries only relay connections. Calls, through the
-  call relay or direct, never go through Tor. Link previews are not made while Tor is on, and the
-  update check refuses to run.
+- **Tor** is on Android only, per space, and carries only relay and Nostr relay connections. Calls,
+  through the call relay or direct, never go through Tor. Link previews are not made while Tor is
+  on, and the update check refuses to run.
+- **Nostr relays** (Android, only through Tor) carry texts to contacts whose Erevos reads there, each
+  gift-wrapped (NIP-59) by a key made for that message alone, for a key the contact made for that
+  chat alone and told only in the chat. A Nostr relay sees a Tor exit, the size (padded), a time
+  backdated by up to an hour, and that key, so it can tell which wraps go to the same chat, not who
+  is in it. It sees the reading phone ask for its chats' keys together, from one Tor circuit, so it
+  can tell that those chats are read by one phone. A text not said to have come in five minutes
+  goes through the relay too, and hidden chats' contacts also get a bell in their relay queue, so
+  the relay operator still sees that something came, as before.
 - **Post-quantum, and a phone taken.** A chat starts with PQXDH, whose ML-KEM-768 half holds against
   a future quantum computer only while the ML-KEM secret it used stays secret. The contact link's
   is kept for as long as the account, so whoever takes the phone (or a backup) and has such a

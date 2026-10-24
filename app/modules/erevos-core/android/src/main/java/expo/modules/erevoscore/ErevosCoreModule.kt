@@ -1,8 +1,11 @@
 package expo.modules.erevoscore
 
+import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // The Erevos core (Rust, crates/erevos-ffi in the repository) for JavaScript. Every call runs
 // off the JavaScript thread, as the post-quantum key exchange takes a moment on a phone. A
@@ -103,12 +106,24 @@ class ErevosCoreModule : Module() {
     }
     AsyncFunction("torStatus") { tor { ErevosCoreNative.torStatus() } }
     AsyncFunction("torStop") { tor { ErevosCoreNative.torStop() } }
-    AsyncFunction("torRequest") { url: String, token: String, message: ByteArray ->
-      tor { ErevosCoreNative.torRequest(url.toByteArray(), token.toByteArray(), message) }
+    // What waits on the network goes off the queue every module's calls share (torIo).
+    AsyncFunction("torRequest") Coroutine { url: String, token: String, message: ByteArray ->
+      torIo { ErevosCoreNative.torRequest(url.toByteArray(), token.toByteArray(), message) }
     }
-    AsyncFunction("torOpen") { url: String, token: String -> tor { ErevosCoreNative.torOpen(url.toByteArray(), token.toByteArray()) } }
-    AsyncFunction("torCall") { id: ByteArray, message: ByteArray -> tor { ErevosCoreNative.torCall(id, message) } }
-    AsyncFunction("torClose") { id: ByteArray -> tor { ErevosCoreNative.torClose(id) } }
+    AsyncFunction("torOpen") Coroutine { url: String, token: String -> torIo { ErevosCoreNative.torOpen(url.toByteArray(), token.toByteArray()) } }
+    AsyncFunction("torCall") Coroutine { id: ByteArray, message: ByteArray -> torIo { ErevosCoreNative.torCall(id, message) } }
+    AsyncFunction("torClose") Coroutine { id: ByteArray -> torIo { ErevosCoreNative.torClose(id) } }
+    // Nostr relays through Tor: text frames both ways, and what the relay says waits until asked for.
+    AsyncFunction("torTextOpen") Coroutine { url: String -> torIo { ErevosCoreNative.torTextOpen(url.toByteArray()) } }
+    AsyncFunction("torTextSend") Coroutine { id: ByteArray, frame: String -> torIo { ErevosCoreNative.torTextSend(id, frame.toByteArray()) } }
+    AsyncFunction("torTextNext") Coroutine { id: ByteArray, wait: ByteArray -> torIo { String(ErevosCoreNative.torTextNext(id, wait)) } }
+    AsyncFunction("torTextClose") Coroutine { id: ByteArray -> torIo { ErevosCoreNative.torTextClose(id) } }
+
+    // Nostr for message text (crates/erevos-nostr).
+    AsyncFunction("nostrSecret") { ErevosCoreNative.nostrSecret() }
+    AsyncFunction("nostrPublic") { secret: ByteArray -> ErevosCoreNative.nostrPublic(secret) }
+    AsyncFunction("nostrWrap") { to: ByteArray, bytes: ByteArray, now: ByteArray -> String(ErevosCoreNative.nostrWrap(to, bytes, now)) }
+    AsyncFunction("nostrUnwrap") { secret: ByteArray, event: String -> ErevosCoreNative.nostrUnwrap(secret, event.toByteArray()) }
   }
 }
 
@@ -119,6 +134,11 @@ private inline fun <T> tor(call: () -> T): T =
   } catch (_: UnsatisfiedLinkError) {
     throw IllegalStateException("This build of Erevos has no Tor.")
   }
+
+// Expo runs every module's async calls on one thread, one after another, and a relay's answer
+// through Tor can take a minute (a wait, lib/relay.ts waitForMessage): those go on threads of
+// their own, so the others do not wait behind them.
+private suspend fun <T> torIo(call: () -> T): T = withContext(Dispatchers.IO) { tor(call) }
 
 // The JNI functions in crates/erevos-ffi/src/android.rs. The library is built into the app by
 // this module's build.gradle.
@@ -183,4 +203,12 @@ internal object ErevosCoreNative {
   @JvmStatic external fun torOpen(url: ByteArray, token: ByteArray): ByteArray
   @JvmStatic external fun torCall(id: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun torClose(id: ByteArray): ByteArray
+  @JvmStatic external fun torTextOpen(url: ByteArray): ByteArray
+  @JvmStatic external fun torTextSend(id: ByteArray, frame: ByteArray): ByteArray
+  @JvmStatic external fun torTextNext(id: ByteArray, wait: ByteArray): ByteArray
+  @JvmStatic external fun torTextClose(id: ByteArray): ByteArray
+  @JvmStatic external fun nostrSecret(): ByteArray
+  @JvmStatic external fun nostrPublic(secret: ByteArray): ByteArray
+  @JvmStatic external fun nostrWrap(to: ByteArray, bytes: ByteArray, now: ByteArray): ByteArray
+  @JvmStatic external fun nostrUnwrap(secret: ByteArray, event: ByteArray): ByteArray
 }

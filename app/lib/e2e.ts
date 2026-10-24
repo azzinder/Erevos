@@ -1,4 +1,4 @@
-import { againAfter, checkedAvatar, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type OldFiller, type Own, type OwnList, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
+import { againAfter, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_NOSTR_BACKUP, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type NostrKey, type NostrTo, type OldFiller, type Own, type OwnList, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
 
 import { isReactionEmoji, isTag, newTag } from '../lock/history';
@@ -9,7 +9,7 @@ import { acts, carriedOf, toCarry, type Carried } from './chat-parts';
 import { decodeCall, type CallSignal } from './call-signal';
 import { decodeGroup, encodeGroup, type GroupSignal } from './group-signal';
 import { isVoicePart, splitVoice, voiceIdOf, type VoicePart } from './voice';
-import { entryKey, isSealedPacket, openPacket, ownPacketKey, packetKeys, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
+import { entryKey, isSealedPacket, openPacket, ownPacketKey, packetKeys, SEALED_OVERHEAD, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
 import { bodyOf, checkedList, verifyList, type DeviceList } from './device-list';
 import { blankWay, copiedAs, waysFor, withEarlyFirst, withRoutes, withUnverified } from './endpoints';
 import { fromBase64, fromHex, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
@@ -19,6 +19,7 @@ import type { Look } from '../theme/look';
 import { deletePhoto } from '../lock/avatar-photos';
 import { lastRestore } from '../lock/restored';
 import { takesPlace, tellDue, toldOnce } from './moves';
+import { NOSTR_BACKUP_MS, NOSTR_MOST, nostrKeysChanged, nostrRelays } from './nostr';
 import { t } from './i18n';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
@@ -192,6 +193,10 @@ type Message = {
    *  said back, so the phone that gave it takes the sender as a contact at once. An Erevos before
    *  ignores it, and takes them as a message request. */
   hi?: string;
+  /** Where the sender reads on Nostr (lib/nostr.ts): the key it gave this chat, its relays, and
+   *  whether it asks for a bell on the relay too (`b`); '' to say it no longer reads there. Absent
+   *  says nothing of it. An Erevos before ignores it, and sends through the relay. */
+  ns?: NostrTo | '';
 };
 
 /** What else a message can carry. */
@@ -254,7 +259,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, dl, acct, to, qa, hi }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, dl, acct, to, qa, hi, ns }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -287,6 +292,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(to ? { to } : {}),
       ...(from && qa ? { qa } : {}),
       ...(hi ? { hi } : {}),
+      ...(ns !== undefined ? { ns } : {}),
       ...more,
     }),
   );
@@ -310,6 +316,18 @@ function placeOf(message: Message): Pick<Contact, 'relay' | 'relayKey' | 'spare'
  *  ''), or what was kept when it says nothing of one (`rf` absent). */
 function ringSenderOf(message: Message, known: Contact | undefined): string | undefined {
   return message.rf === undefined ? known?.ringSender : message.rf || undefined;
+}
+
+// A contact once their message came: the texts that went through Nostr it says came, or were
+// read, kept no more to go through the relay as well (Contact.nostrBackup).
+function cameThrough(contact: Contact, message: Message): Contact {
+  const backup = contact.nostrBackup;
+  if (!backup || message.got.length + message.read.length === 0) return contact;
+  const came = new Set([...message.got, ...message.read]);
+  const left = backup.filter((b) => !came.has(b.t));
+  if (left.length === backup.length) return contact;
+  const { nostrBackup: _backup, ...rest } = contact;
+  return left.length > 0 ? { ...rest, nostrBackup: left } : rest;
 }
 
 // A refusal of a packet that came sealed with a kept contact's mark: theirs, though it opened in
@@ -380,6 +398,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       ...(value.to !== undefined ? { to: typeof value.to === 'string' && /^[0-9a-f]{64}$/.test(value.to) ? value.to : '' } : {}),
       ...(isTime(value.qa) && value.qa > 0 ? { qa: value.qa } : {}),
       ...(isHi(value.hi) ? { hi: value.hi } : {}),
+      ...(value.ns === '' ? { ns: '' as const } : checkedNostrTo(value.ns) ? { ns: checkedNostrTo(value.ns)! } : {}),
     };
   } catch {
     return { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null };
@@ -535,12 +554,21 @@ function laterThan(before = 0): number {
 // phone opens what comes next as after lost messages. What their phone sent in a conversation that
 // moved on since the backup no longer opens here, nor what this one sends in it there: then adding
 // each other's link again starts a new one.
+// A Nostr key for a contact (lib/nostr.ts), hex.
+async function newNostrKey(): Promise<NostrKey> {
+  const nostr = core.nostrCore();
+  const secret = await nostr.nostrSecret();
+  return { s: toHex(secret), p: toHex(await nostr.nostrPublic(secret)) };
+}
+
 async function restoredContact(contact: Contact): Promise<Contact> {
   const restored = (list: string[]) => Promise.all(list.map(async (c) => toBase64(await core.restored(fromBase64(c)))));
   const conversations = await restored(contact.conversations);
   const endpoints = contact.endpoints && (await Promise.all(contact.endpoints.map(async (w) => ({ ...w, conversations: await restored(w.conversations) }))));
   const direct = contact.direct && { ...contact.direct, conversations: await restored(contact.direct.conversations) };
-  return { ...contact, conversations, ...(endpoints ? { endpoints } : {}), ...(direct ? { direct } : {}) };
+  // Texts kept to go through the relay as well were sealed in conversations moved past now.
+  const { nostrBackup: _backup, ...rest } = contact;
+  return { ...rest, conversations, ...(endpoints ? { endpoints } : {}), ...(direct ? { direct } : {}) };
 }
 
 // A contact's ways to the endpoints of their account (lib/endpoints.ts) as none of them was spoken
@@ -717,6 +745,11 @@ export class E2E {
   // The contacts given this account's list in what `seal` sealed with `keys`, with when, and which
   // list it was, its `n` and `rAt`, until `keysGiven`.
   private readonly listSealed = new Map<string, { at: number; n: number; rAt: number }>();
+  // What `seal` sealed with `keys` said of Nostr (nostrSaid), by contact, until `keysGiven`.
+  private readonly nostrSealed = new Map<string, string>();
+  // Whether contacts are asked for a bell on the relay with each text through Nostr: hidden chats,
+  // which hear of what came only so while closed (lib/nostr.ts).
+  private bells = false;
   // The copies of each seal that wait for what it sealed for the account to go (`copiesAfter`), by
   // the seal's number, not sealed yet. Only in memory: lost, those endpoints miss them.
   private readonly heldCopies = new Map<number, Held>();
@@ -767,6 +800,7 @@ export class E2E {
     const keepFanout = (fanout: FanoutData) => (takesPart ? saveFanoutData(holder, space, key, fanout) : Promise.resolve());
     const e2e = new E2E(data, account, await core.accountIdentity(account), await core.accountBundle(account), store, takesPart, keepFanout);
     if (data.endpoint) e2e.ownEndpoint = await endpointOf(fromBase64(data.endpoint)).catch(() => null);
+    e2e.bells = holder !== 'space';
     if (takesPart) e2e.fanout = await loadFanoutData(holder, space, key);
     if (takesPart && holder === 'space') await keepFanoutFile(space, key, e2e.fanout).catch(() => undefined);
     return e2e;
@@ -1477,17 +1511,24 @@ export class E2E {
     text: string,
     from: string,
     { erase = null, lasts = 0, got = [], read = [], at = { relay: '', relayKey: '' }, on = 0, ask = false, call = null, group = null, tag: given, quiet = false, due = 0, re = '', react = null, more = {}, keys = false, rf, leaving = false }: Extra = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number; copies: number; through: boolean }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number; copies: number; through: boolean; nostr: NostrTo | null }> {
     return this.run(async () => {
-      const contact = this.find(identity);
+      let contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
       const tag = text ? (isTag(given) ? given : newTag()) : '';
       if (!isTimer(lasts)) throw new Error(t('Not a time Erevos keeps messages for.'));
       const { timer, timerAt } = contact;
       const once = text ? lasts : 0;
       const signal = text ? null : call;
-      const keyed = !text && keys ? this.keysFor(contact) : null;
-      const list = keyed?.dl && this.data.list ? { n: this.data.list.n, rAt: this.data.list.rAt ?? 0 } : null;
+      const { ns: tellsNostr = false, ...keyed } = (!text && keys ? this.keysFor(contact) : null) ?? {};
+      // The key this chat reads their texts on Nostr with, made the first time it is told them.
+      if (tellsNostr && nostrRelays() && !contact.nostr) {
+        contact = { ...contact, nostr: await newNostrKey() };
+        await this.save(this.withContact(contact));
+        nostrKeysChanged();
+      }
+      const ns = tellsNostr ? this.nostrTold(contact) : undefined;
+      const list = keyed.dl && this.data.list ? { n: this.data.list.n, rAt: this.data.list.rAt ?? 0 } : null;
       const message = {
         from,
         ...at,
@@ -1511,14 +1552,20 @@ export class E2E {
         re: text && isTag(re) ? re : '',
         react: text ? null : react,
         more: toCarry(more, !!text),
-        ...(keyed ?? {}),
+        ...keyed,
+        ...(ns !== undefined ? { ns } : {}),
         rf,
       };
       // Writing, reacting, pinning or calling accepts a request; telling them only what came or was read never does.
       const sealed = await this.sealFor(contact, [message], !!text || !!message.react || acts(message.more) || signal?.kind === 'offer', leaving);
       if (list) this.listSealed.set(identity, { ...list, at: Date.now() });
+      if (tellsNostr) this.nostrSealed.set(identity, this.nostrSaid(contact));
       const { packets: [packet], sender, relay, relayKey, spare, first, copies, through } = sealed;
-      return { sender, relay, relayKey, spare, first, packet, tag, timer: once || timer, copies, through };
+      // Words go through Nostr when they said they read there, and this chat does too (lib/nostr.ts):
+      // not after a first packet the relay has still to take, nor what is sent for later, which the
+      // relay holds, nor from a linked device, nor what it seals for the account's phone to pass on.
+      const nostr = text && !due && !first && !through && !this.data.own && packet.length <= NOSTR_MOST && nostrRelays() ? (contact.nostrTo ?? null) : null;
+      return { sender, relay, relayKey, spare, first, packet, tag, timer: once || timer, copies, through, nostr };
     });
   }
 
@@ -2080,10 +2127,17 @@ export class E2E {
   }
 
   // What of this account a contact is still to be given, in a message of its own: its newest
-  // prekeys, and its device list with its bundle, whose key signed it (`ak`, `dl`). Not from a
-  // linked device, nor to one who knows this chat by the space's identity (who starts nothing with
-  // this account), nor to a request not accepted.
-  private keysFor(contact: Contact): { ak: string; dl?: DeviceList } | null {
+  // prekeys, and its device list with its bundle, whose key signed it (`ak`, `dl`); and where this
+  // chat reads on Nostr, should that have changed since it last told them (`ns`, made in `seal`).
+  private keysFor(contact: Contact): { ak?: string; dl?: DeviceList; ns?: true } | null {
+    const keys = this.prekeysFor(contact);
+    const ns = this.nostrDue(contact);
+    return keys || ns ? { ...keys, ...(ns ? { ns: true as const } : {}) } : null;
+  }
+
+  // Its newest prekeys and its device list. Not from a linked device, nor to one who knows this
+  // chat by the space's identity (who starts nothing with this account), nor to a request not accepted.
+  private prekeysFor(contact: Contact): { ak: string; dl?: DeviceList } | null {
     if (this.link?.through || contact.ownIdentity || contact.request || !contact.conversations[0]) return null;
     const newest = this.data.prekeys?.[0];
     const prekeys = newest !== undefined && (contact.bundleSent ?? 0) < newest.at;
@@ -2091,6 +2145,21 @@ export class E2E {
     if (!prekeys && !list) return null;
     const ak = toBase64Url(newest ? fromBase64(newest.bundle) : this.bundle);
     return { ak, ...(list ? { dl: { b: list.b, s: list.s, ...(list.r ? { r: routesFor(list.r, contact.identity) } : {}) } } : {}) };
+  }
+
+  // What this chat says of Nostr to a contact: its key for them, whether it asks for a bell, and
+  // the space's relays; '' while the space does not read there. A key not made yet says 'new'.
+  private nostrSaid(contact: Contact): string {
+    const relays = nostrRelays();
+    return relays ? [contact.nostr?.p ?? 'new', this.bells ? 'b' : '-', ...relays].join(' ') : '';
+  }
+
+  // Whether a contact is to be told where this chat reads on Nostr, or that it no longer does: once
+  // that changed since it last told them, and never from a linked device, which reads nothing
+  // there, nor to a request not accepted, which hears nothing back.
+  private nostrDue(contact: Contact): boolean {
+    if (this.data.own || contact.request || !contact.conversations[0]) return false;
+    return (contact.nostrSaid ?? '') !== this.nostrSaid(contact);
   }
 
   // The device list a contact is still to be given: to one who says which of this account's lists
@@ -2133,9 +2202,83 @@ export class E2E {
       const newest = this.data.prekeys?.[0];
       const sealed = this.listSealed.get(identity);
       this.listSealed.delete(identity);
+      const said = this.nostrSealed.get(identity);
+      this.nostrSealed.delete(identity);
       const list = sealed ? { listSent: sealed.at, listGiven: { n: sealed.n, rAt: sealed.rAt } } : {};
-      if (contact && (newest || sealed)) await this.save(this.withContact({ ...contact, ...(newest ? { bundleSent: newest.at } : {}), ...list }));
+      const nostr = said !== undefined ? { nostrSaid: said } : {};
+      if (contact && (newest || sealed || said !== undefined)) await this.save(this.withContact({ ...contact, ...(newest ? { bundleSent: newest.at } : {}), ...list, ...nostr }));
     });
+  }
+
+  // Where this chat says it reads on Nostr, with its key for the contact, or '' for nowhere.
+  private nostrTold(contact: Contact): NostrTo | '' {
+    const relays = nostrRelays();
+    return relays && contact.nostr ? { k: contact.nostr.p, r: relays, ...(this.bells ? { b: true as const } : {}) } : '';
+  }
+
+  /** The keys this chat reads its contacts' texts on Nostr with (lib/nostr.ts readNostr). */
+  nostrKeys(): NostrKey[] {
+    return this.data.contacts.flatMap((contact) => (contact.nostr ? [contact.nostr] : []));
+  }
+
+  /** Until when what came for this chat on the Nostr relays was read (seconds), 0 for never. */
+  nostrSince(): number {
+    return this.data.nostrAt ?? 0;
+  }
+
+  /** What came on the Nostr relays before `at` (seconds) was read: kept, at most every ten minutes. */
+  nostrRead(at: number): Promise<void> {
+    return this.run(async () => {
+      if (at - (this.data.nostrAt ?? 0) < 600) return;
+      await this.save({ ...this.data, nostrAt: at });
+    });
+  }
+
+  /**
+   * Keeps a text that went to a contact through Nostr (its `tag` and `packet`), to go through the
+   * relay as well should their phone not say it came within NOSTR_BACKUP_MS (`nostrBackupsDue`):
+   * quiet there when a bell went with it already (`quiet`).
+   */
+  nostrKeep(identity: string, tag: string, packet: Uint8Array, quiet: boolean, now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact || !isTag(tag)) return;
+      const kept = (contact.nostrBackup ?? []).filter((b) => b.t !== tag && now - b.at < NOSTR_BACKUP_LASTS);
+      const backup = [...kept, { t: tag, at: now, p: toBase64(packet), ...(quiet ? { q: true as const } : {}) }].slice(-MAX_NOSTR_BACKUP);
+      await this.save(this.withContact({ ...contact, nostrBackup: backup }));
+    });
+  }
+
+  /** The texts that went through Nostr whose contact's phone did not say they came in time: to send through the relay as well, then `nostrBackupSent`. */
+  nostrBackupsDue(now = Date.now()): { identity: string; tag: string; packet: Uint8Array; quiet: boolean }[] {
+    return this.data.contacts.flatMap((contact) =>
+      (contact.nostrBackup ?? [])
+        .filter((b) => now - b.at >= NOSTR_BACKUP_MS && now - b.at < NOSTR_BACKUP_LASTS)
+        .map((b) => ({ identity: contact.identity, tag: b.t, packet: fromBase64(b.p), quiet: b.q === true })),
+    );
+  }
+
+  /** A text kept by `nostrKeep` went through the relay as well (or is not to): kept no more. */
+  nostrBackupSent(identity: string, tag: string): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact?.nostrBackup?.some((b) => b.t === tag)) return;
+      const left = contact.nostrBackup.filter((b) => b.t !== tag);
+      const { nostrBackup: _backup, ...rest } = contact;
+      await this.save(this.withContact(left.length > 0 ? { ...rest, nostrBackup: left } : rest));
+    });
+  }
+
+  /**
+   * A bell for a contact's relay queue, about `length` bytes, which says nothing and opens in none
+   * of their conversations: sent marked as a message after a text that went through Nostr, it has
+   * their hidden chats say something came while closed (lib/nostr.ts). Sealed with the key they
+   * gave this chat for packets, as what is sent them is, so their phone knows it for theirs, not junk.
+   */
+  bell(identity: string, length: number): Uint8Array {
+    const sealTo = this.find(identity)?.sealTo;
+    const size = Math.max(64, length - (sealTo ? SEALED_OVERHEAD : 0));
+    return sealTo ? sealPacket(this.keysOf(sealTo), randomBytes(size)) : randomBytes(size);
   }
 
   /** On the primary: keeps where each endpoint of the device list as last signed (`n`) reads, and the queues made for those only filling it (`q`). */
@@ -2277,6 +2420,7 @@ export class E2E {
     // Where they read, unless they said it before from a queue made later (a late copy).
     const takes = takesPlace(message.qa, known?.qa);
     const qa = takes && message.qa ? message.qa : known?.qa;
+    const nostrTo = takes && message.ns !== undefined ? message.ns || undefined : known?.nostrTo;
     const contact: Contact = {
       identity,
       sender: (takes && message.from) || known?.sender || message.from || '',
@@ -2313,6 +2457,11 @@ export class E2E {
       ...(known?.listSent ? { listSent: known.listSent } : {}),
       ...(known?.listGiven ? { listGiven: known.listGiven } : {}),
       ...(known?.took ? { took: known.took } : {}),
+      // Where each reads on Nostr stays as it was, unless they say otherwise now.
+      ...(known?.nostr ? { nostr: known.nostr } : {}),
+      ...(nostrTo ? { nostrTo } : {}),
+      ...(known?.nostrSaid !== undefined ? { nostrSaid: known.nostrSaid } : {}),
+      ...(known?.nostrBackup ? { nostrBackup: known.nostrBackup } : {}),
     };
     const learned = this.partOf(contact) ? await this.heardOf(contact, message) : {};
     const { contact: next, twice } = tookIn({ ...contact, ...learned }, message, this.link?.through === true);
@@ -2575,12 +2724,15 @@ export class E2E {
         sealsIn: sealed ?? contact.sealsIn,
         // A ring queue they said: set it, or '' clears it (they no longer ring); absent keeps it.
         ringSender: message.rf === undefined || !takes ? contact.ringSender : message.rf || undefined,
+        // Where they read on Nostr, or '' that they no longer do; absent keeps it.
+        nostrTo: message.ns === undefined || !takes ? contact.nostrTo : message.ns || undefined,
       };
     }
     const account = !given && (!way || direct);
     const renewed = account && !way ? await this.startedAgain(updated, message) : null;
     const learned = account && this.partOf(updated) ? await this.heardOf(updated, message) : null;
-    const { contact: next, twice } = tookIn({ ...updated, ...renewed, ...learned }, message, this.link?.through === true);
+    const { contact: took, twice } = tookIn({ ...updated, ...renewed, ...learned }, message, this.link?.through === true);
+    const next = cameThrough(took, message);
     await this.save(this.withContact(next));
     if (next.list && next.list.n !== contact.list?.n) await this.retryUnverified(contact.identity);
     if (!given) this.link?.opened(contact.identity, opened.plaintext);

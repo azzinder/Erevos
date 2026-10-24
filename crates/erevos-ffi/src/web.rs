@@ -123,6 +123,26 @@ pub fn seal_open(secret: &[u8], sealed: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::seal_open(secret, sealed))
 }
 
+#[wasm_bindgen(js_name = nostrSecret)]
+pub fn nostr_secret() -> Result<Vec<u8>, JsError> {
+    js(crate::nostr::secret())
+}
+
+#[wasm_bindgen(js_name = nostrPublic)]
+pub fn nostr_public(secret: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::nostr::public(secret))
+}
+
+#[wasm_bindgen(js_name = nostrWrap)]
+pub fn nostr_wrap(to: &[u8], bytes: &[u8], now: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::nostr::wrap(to, bytes, now))
+}
+
+#[wasm_bindgen(js_name = nostrUnwrap)]
+pub fn nostr_unwrap(secret: &[u8], event: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::nostr::unwrap(secret, event))
+}
+
 #[wasm_bindgen(js_name = groupNew)]
 pub fn group_new(about: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::group_new(about))

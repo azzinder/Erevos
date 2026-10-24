@@ -105,6 +105,18 @@ bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torCall => crate::tor:
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torClose => crate::tor::close, id);
 #[cfg(feature = "tor")]
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torRequest => crate::tor::request, url, token, message);
+#[cfg(feature = "tor")]
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torTextOpen => crate::tor::text_open, url);
+#[cfg(feature = "tor")]
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torTextSend => crate::tor::text_send, id, frame);
+#[cfg(feature = "tor")]
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torTextNext => crate::tor::text_next, id, wait);
+#[cfg(feature = "tor")]
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_torTextClose => crate::tor::text_close, id);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_nostrSecret => crate::nostr::secret,);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_nostrPublic => crate::nostr::public, secret);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_nostrWrap => crate::nostr::wrap, to, bytes, now);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_nostrUnwrap => crate::nostr::unwrap, secret, event);
 
 #[cfg(feature = "tor")]
 #[no_mangle]

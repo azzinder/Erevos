@@ -178,6 +178,7 @@ export const parts: Record<string, string> = {
   'This build has no Erevos core, so it cannot encrypt. Rebuild the app.': 'Diese Version hat keinen Erevos-Kern und kann deshalb nicht verschlüsseln. Baue die App neu.',
   'The Erevos core gave back something unexpected.': 'Der Erevos-Kern hat etwas Unerwartetes zurückgegeben.',
   'This build of Erevos has no Tor.': 'Diese Version von Erevos hat kein Tor.',
+  'This build of Erevos has no Nostr.': 'Diese Version von Erevos hat kein Nostr.',
   'This build has no secure random source. Rebuild the app so it includes expo-crypto.':
     'Diese Version hat keine sichere Zufallsquelle. Baue die App so neu, dass sie expo-crypto enthält.',
   'This release has no Android package.': 'Diese Version hat kein Android-Paket.',

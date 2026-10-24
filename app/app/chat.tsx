@@ -122,9 +122,11 @@ import {
   type Mark as RelayMark,
   type Relay,
 } from '../lib/relay';
-import { answersAsk, appShown, awayPace, holdReceiver, isNews, openNearby, takeNearby, waitWhileAway } from '../lib/receiver';
+import { answersAsk, appShown, awayPace, holdReceiver, isNews, openNearby, takeNearby, takeNostr, waitWhileAway } from '../lib/receiver';
+import { readNostr } from '../lib/nostr';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
+import { nostrReaderOf, orNostr, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
 import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
@@ -1082,6 +1084,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     await sendReceipts(relayTarget());
   };
 
+  // What comes on Nostr (lib/nostr.ts): the space's from the receiver, which reads for them while
+  // the space is open; a hidden place's read here, while its chats are open.
+  useEffect(() => {
+    if (!e2e) return;
+    const take = (packet: Uint8Array) => nearbyCame.current(null, packet);
+    if (!hiddenKey) return takeNostr(take);
+    return readNostr(nostrReaderOf(() => e2e, take));
+  }, [e2e]);
+
   // What came nearby for this space while another was open, once its chats are.
   useEffect(() => {
     if (!e2e || hiddenKey) return;
@@ -1541,6 +1552,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         void sendWaitingNow.current(true);
         await sendReceipts(sends);
         await sendKeys(sends);
+        // Texts that went through Nostr, not said to have come in time, through the relay as well.
+        await sendNostrBackups(e2e, sends);
         await sendCopies(e2e, sends).catch(() => 0);
         failures = 0;
       } catch (error) {
@@ -2189,14 +2202,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     chats: E2E,
     target: Relay | null,
     identity: string,
-    sealed: { sender: string; relay: string; relayKey: string; spare?: Spare | null; first: Uint8Array | null; copies: number; through: boolean },
+    sealed: { sender: string; relay: string; relayKey: string; spare?: Spare | null; first: Uint8Array | null; copies: number; through: boolean } & ForNostr,
     packets: Uint8Array[],
     mark: RelayMark,
     carried = false,
     waits = false,
   ): Promise<Delivery> {
     if (hiddenKey) return handOverHidden(chats, target, identity, { sealed: { ...sealed, spare: sealed.spare ?? null }, packets }, mark, waits);
-    const relay = target && sealed.sender ? () => sendSealed(target, sealed, packets, sentMark(sealed, mark), () => chats.firstSent(identity)) : null;
+    // Words go through Nostr when they read there (lib/nostr-chats.ts), the relay their backup.
+    const relay = target && sealed.sender ? orNostr(chats, target, identity, sealed, packets, () => sendSealed(target, sealed, packets, sentMark(sealed, mark), () => chats.firstSent(identity))) : null;
     const all = sealed.first ? [sealed.first, ...packets] : packets;
     const carry = carried ? () => carriedFor(sealed, all, { url: relayUrl, key: ownRelayKey }, sentMark(sealed, mark)) : null;
     // What is worth carrying is worth LoRa's air time too, when it is small (lib/lora.ts).

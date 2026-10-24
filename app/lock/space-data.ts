@@ -1,4 +1,5 @@
 import { checkedBridges, NO_BRIDGES, type Bridges } from '../lib/bridges';
+import { isNostrRelay, MAX_NOSTR_RELAYS } from './e2e-data';
 import { decryptText, encryptText, randomBytes } from '../lib/crypto';
 import type { TorWay } from '../lib/relay';
 import { NO_OWN_TOKEN, type OwnToken } from '../lib/relay-signin';
@@ -52,6 +53,9 @@ export type SpaceData = {
   tor: TorWay;
   // The bridges Tor goes through, for where it is blocked (lib/bridges.ts). None unless chosen.
   bridges: Bridges;
+  // Whether the space's texts go through Nostr, and the Nostr relays it reads on (lib/nostr.ts):
+  // on, on NOSTR_RELAYS, unless changed. Only through Tor: with Tor off, none go there.
+  nostr: NostrSetting;
   // A backup relay (one at home, say) with a queue of its own, which contacts write to while the
   // relay cannot be reached (lib/spare.ts). Its address is empty when there is none.
   spare: SpareRelay;
@@ -65,6 +69,10 @@ export type SpaceData = {
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null };
+export type NostrSetting = { on: boolean; relays: string[] };
+/** The Nostr relays a space reads on unless it names others. */
+export const NOSTR_RELAYS = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.primal.net'];
+export const NOSTR_DEFAULT: NostrSetting = { on: true, relays: NOSTR_RELAYS };
 const NO_SPARE: SpareRelay = { url: '', token: '', queue: null };
 export type Lending = { relay: string; ticket: string };
 export const NO_LENDING: Lending = { relay: '', ticket: '' };
@@ -81,6 +89,7 @@ export const EMPTY_SPACE: SpaceData = {
   look: null,
   tor: 'messages',
   bridges: NO_BRIDGES,
+  nostr: NOSTR_DEFAULT,
   spare: NO_SPARE,
   push: false,
   previews: false,
@@ -111,6 +120,13 @@ function checkedSpareRelay(value: unknown): SpareRelay {
   };
 }
 
+/** The Nostr setting stored: the relays this version takes, each once, the most it says; as at first when none. */
+export function checkedNostr(value: unknown): NostrSetting {
+  const v = (value ?? {}) as Partial<Record<keyof NostrSetting, unknown>>;
+  if (typeof v.on !== 'boolean' || !Array.isArray(v.relays)) return NOSTR_DEFAULT;
+  return { on: v.on, relays: [...new Set(v.relays.filter(isNostrRelay))].slice(0, MAX_NOSTR_RELAYS) };
+}
+
 /** The Tor way stored: from before the ways, true (all) stays all, and false (none) becomes 'messages'. */
 export function torWayOf(value: unknown): TorWay {
   return value === true || value === 'all' ? 'all' : value === 'off' ? 'off' : 'messages';
@@ -139,6 +155,7 @@ function checked(value: unknown): SpaceData {
     look: v.look ? checkedLook(v.look) : null,
     tor: torWayOf(v.tor),
     bridges: checkedBridges(v.bridges),
+    nostr: checkedNostr(v.nostr),
     spare: checkedSpareRelay(v.spare),
     push: v.push === true,
     previews: v.previews === true,

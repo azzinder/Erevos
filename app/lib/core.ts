@@ -79,6 +79,21 @@ export interface Core {
   torOpen?(url: string, token: string): Promise<Uint8Array>;
   torCall?(id: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   torClose?(id: Uint8Array): Promise<Uint8Array>;
+  /** A Nostr relay's connection through Tor, text frames both ways: a frame waits until asked for
+   *  (`torTextNext`, the wait in milliseconds, 8 bytes big-endian), '' when none came meanwhile.
+   *  Missing in a build made before Nostr (lib/nostr.ts). */
+  torTextOpen?(url: string): Promise<Uint8Array>;
+  torTextSend?(id: Uint8Array, frame: string): Promise<Uint8Array>;
+  torTextNext?(id: Uint8Array, wait: Uint8Array): Promise<string>;
+  torTextClose?(id: Uint8Array): Promise<Uint8Array>;
+  /** Nostr for message text (crates/erevos-nostr): a new secret key, its public key, an event
+   *  carrying bytes to a public key (`now` seconds, 8 bytes big-endian) as JSON, and what one for
+   *  a secret's key carried (its id, 32 bytes, its time, 8, then the bytes). Missing in a build
+   *  made before Nostr. */
+  nostrSecret?(): Promise<Uint8Array>;
+  nostrPublic?(secret: Uint8Array): Promise<Uint8Array>;
+  nostrWrap?(to: Uint8Array, bytes: Uint8Array, now: Uint8Array): Promise<string>;
+  nostrUnwrap?(secret: Uint8Array, event: string): Promise<Uint8Array>;
 }
 
 let core: Core | null = null;
@@ -177,6 +192,32 @@ export function tor(): Required<Pick<Core, 'torStart' | 'torStatus' | 'torStop' 
     torOpen: it.torOpen.bind(it),
     torCall: it.torCall.bind(it),
     torClose: it.torClose.bind(it),
+  };
+}
+
+/** Whether this build can reach Nostr relays through Tor, and make and open their events. */
+export function canNostr(): boolean {
+  return canTor() && typeof core?.torTextOpen === 'function' && typeof core?.nostrWrap === 'function';
+}
+
+/** The core's calls for Nostr, or an error saying this build has none. */
+export function nostrCore(): Required<
+  Pick<Core, 'torTextOpen' | 'torTextSend' | 'torTextNext' | 'torTextClose' | 'nostrSecret' | 'nostrPublic' | 'nostrWrap' | 'nostrUnwrap'>
+> {
+  const it = need();
+  const { torTextOpen, torTextSend, torTextNext, torTextClose, nostrSecret, nostrPublic, nostrWrap, nostrUnwrap } = it;
+  if (!torTextOpen || !torTextSend || !torTextNext || !torTextClose || !nostrSecret || !nostrPublic || !nostrWrap || !nostrUnwrap) {
+    throw new Error(t('This build of Erevos has no Nostr.'));
+  }
+  return {
+    torTextOpen: torTextOpen.bind(it),
+    torTextSend: torTextSend.bind(it),
+    torTextNext: torTextNext.bind(it),
+    torTextClose: torTextClose.bind(it),
+    nostrSecret: nostrSecret.bind(it),
+    nostrPublic: nostrPublic.bind(it),
+    nostrWrap: nostrWrap.bind(it),
+    nostrUnwrap: nostrUnwrap.bind(it),
   };
 }
 

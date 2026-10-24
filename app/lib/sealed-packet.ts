@@ -34,6 +34,8 @@ const MARK = 16;
 const NONCE = 12;
 // GCM's tag.
 const TAG = 16;
+/** How much longer a packet is sealed than as it was. */
+export const SEALED_OVERHEAD = 2 + MARK + NONCE + TAG;
 
 export type PacketKeys = { mark: Uint8Array; seal: Uint8Array };
 

@@ -18,6 +18,7 @@ tor = ["dep:erevos-tor"]
 erevos-core = { path = "../erevos-core" }
 erevos-group = { path = "../erevos-group" }
 erevos-import = { path = "../erevos-import" }
+erevos-nostr = { path = "../erevos-nostr" }
 erevos-tor = { path = "../erevos-tor", optional = true }
 serde_json = "1"
 # Keys from passwords and PINs.

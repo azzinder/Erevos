@@ -22,6 +22,18 @@ On main, not released yet.
   faster. A message never waits for Tor: while Tor starts, or for a minute after it could not reach the relay, it
   goes straight. **Everything** is the old switch turned on: files too, and nothing without Tor. A space that had Tor
   on keeps **Everything**; one that had it off gets **Messages**.
+- **Texts through Nostr** (Android): under **Nostr**, on unless changed, what you write to a contact whose Erevos
+  reads on Nostr too goes through three public Nostr relays, through Tor, instead of through your relay. It is
+  end-to-end encrypted as always and wrapped once more (NIP-59) for a Nostr key your contact made for that chat
+  alone, by a key made for that message alone, so the Nostr relays see neither who wrote it nor to whom, and your
+  relay does not see it. Should your contact's phone not say within five minutes that it came, it goes through your
+  relay as well, and they see it once; while Tor starts, or when no Nostr relay takes it, it goes through your
+  relay at once. Hidden chats read on Nostr while they are open, and still show **New message** when closed: with
+  each text through Nostr your contact also sends your relay a bell that says nothing. Pictures, files, voice
+  messages, calls, reactions, the marks that a message came or was read, texts sent for later, and whatever goes to
+  contacts on an iPhone or a computer stay on your relay. Each space has its own list of Nostr relays: the first
+  three unless changed, up to five, your own too. With Tor off for a space, Nostr is not used. Nothing changes on
+  the relay. Tor's connections also no longer hold up the app's other work while they wait.
 
 ## 2.0.3 (2026-10-23)
 

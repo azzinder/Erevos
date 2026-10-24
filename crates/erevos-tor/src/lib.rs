@@ -12,6 +12,10 @@
 //! runtime of their own. Tor starts on the first request, or with [`start`],
 //! and keeps its state (guards, the directory) in the folders given.
 //!
+//! Nostr relays speak another way ([`text_open`]): text frames both ways,
+//! and the relay sends events whenever they come, so what it says waits in
+//! a queue of its own until [`text_next`] takes it.
+//!
 //! Where Tor is blocked it can go through bridges instead ([`Bridges`]): plain
 //! ones, or ones a pluggable transport hides (obfs4, Snowflake, WebTunnel,
 //! meek), which the lyrebird program the app carries speaks. With bridges, Tor
@@ -55,6 +59,7 @@ type Socket = WebSocketStream<Box<dyn Io>>;
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
 static CLIENT: Mutex<Option<Running>> = Mutex::new(None);
 static SESSIONS: OnceLock<Mutex<HashMap<u64, Arc<tokio::sync::Mutex<Socket>>>>> = OnceLock::new();
+static TEXTS: OnceLock<Mutex<HashMap<u64, Arc<Text>>>> = OnceLock::new();
 static NEXT: AtomicU64 = AtomicU64::new(1);
 
 fn runtime() -> Result<&'static Runtime> {
@@ -72,6 +77,18 @@ fn runtime() -> Result<&'static Runtime> {
 
 fn sessions() -> &'static Mutex<HashMap<u64, Arc<tokio::sync::Mutex<Socket>>>> {
     SESSIONS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn texts() -> &'static Mutex<HashMap<u64, Arc<Text>>> {
+    TEXTS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// A connection of Nostr's kind: what is sent goes on `sink`, and what the relay says waits in
+/// `frames`, put there by `reader` as it comes, until the relay closes the connection.
+struct Text {
+    sink: tokio::sync::Mutex<futures_util::stream::SplitSink<Socket, Message>>,
+    frames: tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<String>>,
+    reader: tokio::task::JoinHandle<()>,
 }
 
 /// The running Tor, and the bridges it was started with.
@@ -337,6 +354,94 @@ pub fn close(id: u64) {
     }
 }
 
+/// Opens a connection to the Nostr relay at `url` through Tor. Returns its
+/// handle for [`text_send`], [`text_next`] and [`text_close`].
+pub fn text_open(url: &str) -> Result<u64> {
+    let tor = client()?;
+    let url = url.to_string();
+    let runtime = runtime()?;
+    let socket = runtime.block_on(async move {
+        tokio::time::timeout(WAIT, connect(tor, url, String::new()))
+            .await
+            .map_err(|_| "Tor took too long to reach the relay".to_string())?
+    })?;
+    let (sink, mut stream) = socket.split();
+    let (sender, frames) = tokio::sync::mpsc::unbounded_channel();
+    let reader = runtime.spawn(async move {
+        while let Some(Ok(message)) = stream.next().await {
+            match message {
+                Message::Text(text) => {
+                    if sender.send(text.to_string()).is_err() {
+                        break;
+                    }
+                }
+                Message::Close(_) => break,
+                _ => continue,
+            }
+        }
+    });
+    let text = Text { sink: tokio::sync::Mutex::new(sink), frames: tokio::sync::Mutex::new(frames), reader };
+    let id = NEXT.fetch_add(1, Ordering::Relaxed);
+    texts().lock().map_err(|_| "tor state lost".to_string())?.insert(id, Arc::new(text));
+    Ok(id)
+}
+
+fn text_of(id: u64) -> Result<Arc<Text>> {
+    texts()
+        .lock()
+        .map_err(|_| "tor state lost".to_string())?
+        .get(&id)
+        .cloned()
+        .ok_or_else(|| "the connection through Tor is closed".to_string())
+}
+
+/// Sends one text frame on a Nostr relay's connection.
+pub fn text_send(id: u64, text: &str) -> Result<()> {
+    let connection = text_of(id)?;
+    let text = text.to_string();
+    let sent = runtime()?.block_on(async move {
+        let mut sink = connection.sink.lock().await;
+        tokio::time::timeout(WAIT, sink.send(Message::text(text)))
+            .await
+            .map_err(|_| "the relay did not take it through Tor in time".to_string())?
+            .map_err(|e| e.to_string())
+    });
+    if sent.is_err() {
+        text_close(id);
+    }
+    sent
+}
+
+/// The next text frame the relay sent, waiting up to `wait` for one: None
+/// when none came in that time. Once the relay has closed the connection and
+/// all it said is taken, an error.
+pub fn text_next(id: u64, wait: Duration) -> Result<Option<String>> {
+    let connection = text_of(id)?;
+    let next = runtime()?.block_on(async move {
+        let mut frames = connection.frames.lock().await;
+        match tokio::time::timeout(wait, frames.recv()).await {
+            Err(_) => Ok(None),
+            Ok(Some(text)) => Ok(Some(text)),
+            Ok(None) => Err("the relay closed the connection".to_string()),
+        }
+    });
+    if next.is_err() {
+        text_close(id);
+    }
+    next
+}
+
+/// Closes a Nostr relay's connection. Closing one already closed does nothing.
+pub fn text_close(id: u64) {
+    let connection = texts().lock().ok().and_then(|mut map| map.remove(&id));
+    if let (Some(connection), Ok(runtime)) = (connection, runtime()) {
+        connection.reader.abort();
+        runtime.spawn(async move {
+            let _ = connection.sink.lock().await.close().await;
+        });
+    }
+}
+
 /// One request on a connection of its own, as the app sends most of them.
 pub fn request(url: &str, token: &str, bytes: &[u8]) -> Result<Vec<u8>> {
     let id = open(url, token)?;
@@ -416,5 +521,9 @@ mod tests {
         assert!(request("ws://relay:7879", "", b"x").unwrap_err().contains("not started"));
         assert!(call(12345, b"x").is_err());
         close(12345);
+        assert!(text_open("wss://relay.example.org").unwrap_err().contains("not started"));
+        assert!(text_send(12345, "[]").is_err());
+        assert!(text_next(12345, Duration::from_millis(1)).is_err());
+        text_close(12345);
     }
 }

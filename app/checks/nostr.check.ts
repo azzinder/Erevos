@@ -1,0 +1,521 @@
+// Texts through Nostr (lib/nostr.ts, lib/nostr-chats.ts, lib/e2e.ts `ns`), with the real core
+// built to WebAssembly for the keys and the wraps, and Nostr relays played here behind the core's
+// Tor calls (torText*), as crates/erevos-tor would reach them: each chat tells each contact the key
+// it reads their texts with in a message of keys, once, and again when its relays change or it
+// reads nowhere; a text to a contact who told theirs goes to their Nostr relays, comes out on their
+// phone as from the relay, once though two relays carry it, and is kept to go through the relay
+// as well should they not say it came in five minutes, quiet there when a bell went with it, as to
+// hidden chats; while Tor is not ready, or no Nostr relay takes it, it goes through the relay at
+// once. A reader asks from somewhat over an hour before it last read, keeps until when, and asks
+// again at once when the keys change. Requests to the relay that would go through Tor go straight
+// to a real relay here; those parts are skipped, with a note, without one.
+// Run with: npm run check
+/// <reference types="node" />
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { afterEach, test } from 'node:test';
+
+import { contactLink, parseContact } from '../lib/contact-code';
+import { canNostr, setCore, type Core } from '../lib/core';
+import { randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
+import { E2E, toBase64Url, type Received } from '../lib/e2e';
+import { NOSTR_BACKUP_MS, nostrOf, nostrReady, nostrRelays, readNostr, setNostr } from '../lib/nostr';
+import { nostrReaderOf, orNostr, sendNostrBackups } from '../lib/nostr-chats';
+import { createQueue, NO_NEWS, receiveMessage, setThroughTor, setTorReady, waitForNews, type Relay } from '../lib/relay';
+import { sendSealed } from '../lib/space-chats';
+import { checkedNostr, NOSTR_DEFAULT, NOSTR_RELAYS } from '../lock/space-data';
+import { files } from './files-memory';
+import { ready as relayReady, relayNote, startRelay } from './real-relay';
+import './secure-memory';
+
+const built = new URL('./.core/erevos_ffi.js', import.meta.url);
+const coreReady = existsSync(built);
+if (!coreReady) console.log('Skipping the Nostr checks: build the core first with node checks/build-core.mjs');
+relayNote('the Nostr checks through a relay');
+
+const ONE = 'wss://nostr-one.example.org';
+const TWO = 'wss://nostr-two.example.org';
+
+type Wrap = { id: string; kind: number; created_at: number; tags: string[][] };
+type Filter = { kinds?: number[]; '#p'?: string[]; since?: number };
+type Line = { url: string; frames: string[]; waiter: (() => void) | null; closed: boolean; subs: Map<string, Filter[]> };
+
+const number = (bytes: Uint8Array) => {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  return view.getUint32(0) * 2 ** 32 + view.getUint32(4);
+};
+
+// Nostr relays as the core's Tor reaches them: what each keeps, what each was asked, which cannot
+// be reached and which refuse what they are given.
+class NostrRelays {
+  readonly kept = new Map<string, Map<string, Wrap>>();
+  readonly asked: { url: string; sub: string; filters: Filter[] }[] = [];
+  readonly down = new Set<string>();
+  readonly refusing = new Set<string>();
+  readonly lines = new Map<number, Line>();
+  private made = 0;
+
+  keptAt(url: string): Wrap[] {
+    return [...(this.kept.get(url)?.values() ?? [])];
+  }
+
+  private say(line: Line, frame: unknown[]): void {
+    line.frames.push(JSON.stringify(frame));
+    line.waiter?.();
+  }
+
+  private line(id: Uint8Array): Line {
+    const line = this.lines.get(number(id));
+    if (!line) throw new Error('the connection through Tor is closed');
+    return line;
+  }
+
+  private static matches(filter: Filter, wrap: Wrap): boolean {
+    const p = wrap.tags.find((tag) => tag[0] === 'p')?.[1] ?? '';
+    return (!filter.kinds || filter.kinds.includes(wrap.kind)) && (!filter['#p'] || filter['#p'].includes(p)) && wrap.created_at >= (filter.since ?? 0);
+  }
+
+  core(): Partial<Core> {
+    return {
+      torTextOpen: async (url) => {
+        if (this.down.has(url)) throw new Error('Tor took too long to reach the relay');
+        const id = ++this.made;
+        this.lines.set(id, { url, frames: [], waiter: null, closed: false, subs: new Map() });
+        const out = new Uint8Array(8);
+        new DataView(out.buffer).setUint32(4, id);
+        return out;
+      },
+      torTextSend: async (id, frame) => {
+        const line = this.line(id);
+        const said = JSON.parse(frame) as unknown[];
+        if (said[0] === 'EVENT') {
+          const wrap = said[1] as Wrap;
+          if (this.refusing.has(line.url)) {
+            this.say(line, ['OK', wrap.id, false, 'blocked: not here']);
+            return new Uint8Array(0);
+          }
+          const kept = this.kept.get(line.url) ?? new Map<string, Wrap>();
+          this.kept.set(line.url, kept);
+          const twice = kept.has(wrap.id);
+          kept.set(wrap.id, wrap);
+          this.say(line, ['OK', wrap.id, !twice, twice ? 'duplicate: have it' : '']);
+          if (!twice) {
+            for (const other of this.lines.values()) {
+              if (other.url !== line.url) continue;
+              for (const [sub, filters] of other.subs) if (filters.some((f) => NostrRelays.matches(f, wrap))) this.say(other, ['EVENT', sub, wrap]);
+            }
+          }
+        } else if (said[0] === 'REQ') {
+          const [, sub, ...filters] = said as [string, string, ...Filter[]];
+          line.subs.set(sub, filters);
+          this.asked.push({ url: line.url, sub, filters });
+          for (const wrap of this.keptAt(line.url)) if (filters.some((f) => NostrRelays.matches(f, wrap))) this.say(line, ['EVENT', sub, wrap]);
+          this.say(line, ['EOSE', sub]);
+        } else if (said[0] === 'CLOSE') {
+          line.subs.delete(said[1] as string);
+        }
+        return new Uint8Array(0);
+      },
+      torTextNext: async (id, wait) => {
+        const line = this.line(id);
+        if (line.frames.length === 0 && !line.closed) {
+          await new Promise<void>((resolve) => {
+            const timer = setTimeout(done, number(wait));
+            function done() {
+              clearTimeout(timer);
+              line.waiter = null;
+              resolve();
+            }
+            line.waiter = done;
+          });
+        }
+        const frame = line.frames.shift();
+        if (frame !== undefined) return frame;
+        if (line.closed) throw new Error('the relay closed the connection');
+        return '';
+      },
+      torTextClose: async (id) => {
+        const key = number(id);
+        const line = this.lines.get(key);
+        this.lines.delete(key);
+        if (line) {
+          line.closed = true;
+          line.waiter?.();
+        }
+        return new Uint8Array(0);
+      },
+    };
+  }
+}
+
+// The core's Tor for the relay, here straight to it: a request each on a connection of its own, or
+// a connection that takes requests one after another.
+function relayTor(): Partial<Core> {
+  const sockets = new Map<number, { socket: WebSocket; replies: Uint8Array[]; waiting: ((reply: Uint8Array | null) => void)[] }>();
+  let made = 0;
+  const open = (url: string) =>
+    new Promise<number>((resolve, reject) => {
+      const socket = new WebSocket(url);
+      socket.binaryType = 'arraybuffer';
+      const id = ++made;
+      const held = { socket, replies: [] as Uint8Array[], waiting: [] as ((reply: Uint8Array | null) => void)[] };
+      socket.onopen = () => {
+        sockets.set(id, held);
+        resolve(id);
+      };
+      socket.onerror = () => reject(new Error('cannot reach the relay'));
+      socket.onmessage = (event) => {
+        const reply = new Uint8Array(event.data as ArrayBuffer);
+        const waiter = held.waiting.shift();
+        if (waiter) waiter(reply);
+        else held.replies.push(reply);
+      };
+      socket.onclose = () => {
+        for (const waiter of held.waiting.splice(0)) waiter(null);
+      };
+    });
+  const call = async (id: number, bytes: Uint8Array) => {
+    const held = sockets.get(id);
+    if (!held) throw new Error('the connection through Tor is closed');
+    const reply = new Promise<Uint8Array | null>((resolve) => (held.replies.length > 0 ? resolve(held.replies.shift()!) : held.waiting.push(resolve)));
+    held.socket.send(bytes);
+    const got = await reply;
+    if (!got) throw new Error('the relay closed the connection');
+    return got;
+  };
+  const close = (id: number) => {
+    sockets.get(id)?.socket.close();
+    sockets.delete(id);
+  };
+  const asId = (id: number) => Uint8Array.of(0, 0, 0, 0, id >>> 24, (id >>> 16) & 255, (id >>> 8) & 255, id & 255);
+  return {
+    torStart: async () => undefined,
+    torStatus: async () => JSON.stringify({ text: 'done', ready: true }),
+    torStop: async () => undefined,
+    torRequest: async (url, _token, bytes) => {
+      const id = await open(url);
+      try {
+        return await call(id, bytes);
+      } finally {
+        close(id);
+      }
+    },
+    torOpen: async (url) => asId(await open(url)),
+    torCall: async (id, bytes) => call(number(id), bytes),
+    torClose: async (id) => {
+      close(number(id));
+      return new Uint8Array(0);
+    },
+  };
+}
+
+let relays = new NostrRelays();
+
+function useCore(): void {
+  const wasm = createRequire(import.meta.url)(built.pathname) as Record<string, (...args: never[]) => unknown>;
+  const core = Object.fromEntries(Object.entries(wasm).map(([name, call]) => [name, async (...args: never[]) => call(...args)])) as unknown as Core;
+  // The Android module gives an event as text, as Nostr has it; the WebAssembly one as its bytes.
+  const wrap = wasm.nostrWrap as unknown as (to: Uint8Array, bytes: Uint8Array, now: Uint8Array) => Uint8Array;
+  const unwrap = wasm.nostrUnwrap as unknown as (secret: Uint8Array, event: Uint8Array) => Uint8Array;
+  setCore({
+    ...core,
+    ...relayTor(),
+    ...relays.core(),
+    nostrWrap: async (to, bytes, now) => utf8Decode(wrap(to, bytes, now)),
+    nostrUnwrap: async (secret, event) => unwrap(secret, utf8Encode(event)),
+  } as Core);
+}
+
+afterEach(() => {
+  setNostr(null);
+  setThroughTor('off');
+  setTorReady(false);
+});
+
+// With `needsRelay`, a relay of its own, started before Tor is ready: until it answers, the
+// requests that ask whether it does would fail through Tor, and so rest Tor for a minute.
+const t = (name: string, fn: (url: string) => Promise<void>, needsRelay = false) =>
+  test(name, { skip: !coreReady || (needsRelay && !relayReady) }, async () => {
+    files.clear();
+    const url = needsRelay ? await startRelay() : '';
+    relays = new NostrRelays();
+    useCore();
+    setThroughTor('messages');
+    setTorReady(true);
+    await fn(url);
+  });
+
+const until = async (done: () => boolean, ms = 5000) => {
+  const end = Date.now() + ms;
+  while (!done()) {
+    if (Date.now() > end) throw new Error('timed out');
+    await new Promise((r) => setTimeout(r, 10));
+  }
+};
+
+const message = (r: Received) => {
+  assert.equal(r.kind, 'message');
+  return r as Extract<Received, { kind: 'message' }>;
+};
+
+/** A chat with a queue for its contacts to write to: on the relay at `url`, or a made-up one. */
+async function chat(holder: 'space' | 'hidden', space: number, url = '') {
+  const e2e = await E2E.open(holder, space, randomBytes(32));
+  const ids = url ? await createQueue({ url }) : { recipientId: randomBytes(24), senderId: randomBytes(24) };
+  return { e2e, from: toHex(ids.senderId), recipient: ids.recipientId };
+}
+
+type Chat = Awaited<ReturnType<typeof chat>>;
+
+/** Alice adds Bob by his link, Bob answers: each is the other's contact, the request accepted. */
+async function meet(alice: Chat, bob: Chat, url = 'ws://relay:7879') {
+  const code = parseContact(contactLink({ senderHex: bob.from, relayUrl: url, key: toBase64Url(bob.e2e.bundle) }))!;
+  const added = await alice.e2e.addContact(code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(added.identity);
+  const back = await bob.e2e.seal(hello.identity, 'hi', bob.from);
+  message(await alice.e2e.receive(back.packet));
+  return { toBob: added.identity, toAlice: hello.identity };
+}
+
+/** What `from` has still to tell `to` in a message of keys, sealed, given, and taken there. */
+async function tell(from: Chat, identity: string, to: Chat) {
+  assert.ok(from.e2e.keysDue().includes(identity), 'a message of keys is due');
+  const keys = await from.e2e.seal(identity, '', from.from, { keys: true });
+  await from.e2e.keysGiven(identity);
+  assert.ok(!from.e2e.keysDue().includes(identity), 'and given');
+  assert.equal(keys.nostr, null, 'a message of keys goes through the relay');
+  return to.e2e.receive(keys.packet);
+}
+
+t("the Nostr setting is on unless changed, with the first three relays, and reads nowhere with Tor off or in a build without Nostr", async () => {
+  assert.deepEqual(NOSTR_DEFAULT, { on: true, relays: NOSTR_RELAYS });
+  assert.equal(NOSTR_RELAYS.length, 3);
+  assert.deepEqual(checkedNostr(undefined), NOSTR_DEFAULT);
+  assert.deepEqual(checkedNostr({ on: false, relays: [ONE, 'https://not.a.relay', ONE, 'ws://plain.example.org', 'ws://x.onion'] }), { on: false, relays: [ONE] });
+  const onion = `ws://${'a'.repeat(56)}.onion`;
+  assert.deepEqual(checkedNostr({ on: true, relays: [onion] }).relays, [onion], 'without TLS only to an onion address');
+  assert.deepEqual(nostrOf('messages', NOSTR_DEFAULT), NOSTR_RELAYS);
+  assert.deepEqual(nostrOf('all', NOSTR_DEFAULT), NOSTR_RELAYS);
+  assert.equal(nostrOf('off', NOSTR_DEFAULT), null);
+  assert.equal(nostrOf('messages', { on: false, relays: NOSTR_RELAYS }), null);
+  assert.equal(nostrOf('messages', { on: true, relays: [] }), null);
+  assert.equal(canNostr(), true);
+  setNostr([ONE, 'http://not.a.relay', ONE, TWO]);
+  assert.deepEqual(nostrRelays(), [ONE, TWO]);
+  assert.equal(nostrReady(), true);
+  setTorReady(false);
+  assert.equal(nostrReady(), false, 'texts never wait for Tor');
+  setNostr(null);
+  assert.equal(nostrRelays(), null);
+  // A build without Nostr reads nowhere, whatever the space says.
+  setCore(null);
+  setNostr([ONE]);
+  assert.equal(nostrRelays(), null);
+});
+
+t('a chat tells each contact the key it reads them with, once, again when its relays change, and that it reads nowhere; texts then say where they go', async () => {
+  setNostr([ONE, TWO]);
+  const alice = await chat('space', 0);
+  const bob = await chat('hidden', 1);
+  const { toBob, toAlice } = await meet(alice, bob);
+  assert.equal((await alice.e2e.seal(toBob, 'not yet', alice.from)).nostr, null, 'Bob said nothing of Nostr yet');
+
+  // Alice tells Bob her key for him; Bob's texts to her then go to her relays, for that key.
+  assert.deepEqual(alice.e2e.nostrKeys(), []);
+  message(await tell(alice, toBob, bob));
+  const [aliceKey] = alice.e2e.nostrKeys();
+  assert.match(aliceKey.p, /^[0-9a-f]{64}$/);
+  assert.deepEqual((await bob.e2e.seal(toAlice, 'to Alice', bob.from)).nostr, { k: aliceKey.p, r: [ONE, TWO] });
+
+  // Bob's chat is a hidden one: it asks for a bell with each text.
+  message(await tell(bob, toAlice, alice));
+  const [bobKey] = bob.e2e.nostrKeys();
+  assert.notEqual(bobKey.p, aliceKey.p);
+  const sealed = await alice.e2e.seal(toBob, 'to Bob', alice.from);
+  assert.deepEqual(sealed.nostr, { k: bobKey.p, r: [ONE, TWO], b: true });
+  // Only texts: not what is sent for later, which the relay holds, nor reactions or marks.
+  assert.equal((await alice.e2e.seal(toBob, 'later', alice.from, { due: Date.now() + 60_000 })).nostr, null);
+  assert.equal((await alice.e2e.seal(toBob, '', alice.from, { react: { tag: sealed.tag, emoji: '👍' } })).nostr, null);
+  assert.equal((await alice.e2e.seal(toBob, '', alice.from, { got: [sealed.tag] })).nostr, null);
+  assert.deepEqual(alice.e2e.keysDue(), []);
+
+  // Other relays: told again, with the same key.
+  setNostr([TWO]);
+  message(await tell(alice, toBob, bob));
+  assert.deepEqual(alice.e2e.nostrKeys(), [aliceKey]);
+  assert.deepEqual((await bob.e2e.seal(toAlice, 'to Alice', bob.from)).nostr, { k: aliceKey.p, r: [TWO] });
+
+  // Nostr off: told that she reads nowhere, and nothing goes there, either way.
+  setNostr(null);
+  message(await tell(alice, toBob, bob));
+  assert.equal((await alice.e2e.seal(toBob, 'to Bob', alice.from)).nostr, null);
+  setNostr([TWO]);
+  message(await tell(alice, toBob, bob));
+  assert.equal((await bob.e2e.seal(toAlice, 'to Alice', bob.from)).nostr?.k, aliceKey.p);
+  setNostr(null);
+  message(await tell(alice, toBob, bob));
+  setNostr([TWO]);
+  assert.equal((await bob.e2e.seal(toAlice, 'to Alice', bob.from)).nostr, null, 'Alice said she reads nowhere');
+});
+
+t('a text goes to the Nostr relays, comes out once on their phone, a bell goes to their relay, and it goes through the relay as well only should they not say it came', async (url) => {
+  const own: Relay = { url };
+  setNostr([ONE, TWO]);
+  const alice = await chat('space', 0, url);
+  const bob = await chat('hidden', 1, url);
+  const { toBob, toAlice } = await meet(alice, bob, url);
+  message(await tell(alice, toBob, bob));
+  message(await tell(bob, toAlice, alice));
+
+  const came: Extract<Received, { kind: 'message' }>[] = [];
+  const stop = readNostr(nostrReaderOf(() => bob.e2e, async (packet) => void came.push(message(await bob.e2e.receive(packet)))));
+  try {
+    let viaRelay = 0;
+    const send = async (text: string) => {
+      const sealed = await alice.e2e.seal(toBob, text, alice.from);
+      await orNostr(alice.e2e, own, toBob, sealed, [sealed.packet], async () => {
+        viaRelay++;
+        await sendSealed(own, sealed, [sealed.packet], 'message', async () => undefined);
+      })();
+      return sealed;
+    };
+
+    const first = await send('through Nostr');
+    assert.equal(viaRelay, 0);
+    await until(() => relays.keptAt(ONE).length === 1 && relays.keptAt(TWO).length === 1);
+    const [wrap] = relays.keptAt(ONE);
+    assert.equal(wrap.kind, 1059);
+    const at = Date.now() / 1000;
+    assert.ok(wrap.created_at <= at && wrap.created_at > at - 3700, 'set back by an hour at most');
+    // Kept two days, told from the time it says, which does not say when it was made.
+    assert.deepEqual(wrap.tags, [
+      ['p', bob.e2e.nostrKeys()[0].p],
+      ['expiration', String(wrap.created_at + 3600 + 2 * 24 * 3600)],
+    ]);
+    assert.ok(!JSON.stringify(wrap).includes(alice.e2e.nostrKeys()[0].p), "the wrap names not Alice's key");
+    await until(() => came.length === 1);
+    assert.deepEqual([came[0].text, came[0].tag, came[0].identity], ['through Nostr', first.tag, toAlice]);
+
+    // Kept for five minutes, then through the relay, quiet as the bell counted it already.
+    const now = Date.now();
+    assert.deepEqual(alice.e2e.nostrBackupsDue(now), []);
+    const [due] = alice.e2e.nostrBackupsDue(now + NOSTR_BACKUP_MS);
+    assert.deepEqual([due.identity, due.tag, due.quiet], [toBob, first.tag, true]);
+    assert.deepEqual(due.packet, first.packet);
+    await sendNostrBackups(alice.e2e, own, now + NOSTR_BACKUP_MS);
+    assert.deepEqual(alice.e2e.nostrBackupsDue(now + NOSTR_BACKUP_MS), []);
+    const news = await waitForNews(own, bob.recipient, 0, NO_NEWS);
+    assert.deepEqual([news?.messages, news?.unmarked], [1, 0], 'one message: the bell');
+
+    // The bell opens in nothing, and the backup is seen once.
+    const bell = await receiveMessage(own, bob.recipient, false);
+    assert.ok(bell);
+    assert.deepEqual(await bob.e2e.receive(bell), { kind: 'refused', reason: 'unknown', theirs: true });
+    const backup = await receiveMessage(own, bob.recipient, false);
+    assert.deepEqual(backup, first.packet);
+    assert.notEqual((await bob.e2e.receive(backup!)).kind, 'message');
+    await new Promise((r) => setTimeout(r, 50));
+    assert.equal(came.length, 1, 'once though two relays carried it');
+
+    // One Bob says came is kept no more.
+    const second = await send('and again');
+    await until(() => came.length === 2);
+    assert.equal(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS).length, 1);
+    const got = await bob.e2e.seal(toAlice, '', bob.from, { got: [second.tag] });
+    await alice.e2e.receive(got.packet);
+    assert.deepEqual(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS), []);
+    assert.equal(viaRelay, 0);
+  } finally {
+    stop();
+  }
+}, true);
+
+t('while Tor is not ready, or no Nostr relay takes it, a text goes through the relay at once and is not kept', async (url) => {
+  const own: Relay = { url };
+  setNostr([ONE, TWO]);
+  const alice = await chat('space', 0, url);
+  const bob = await chat('space', 1, url);
+  const { toBob, toAlice } = await meet(alice, bob, url);
+  message(await tell(bob, toAlice, alice));
+  let viaRelay = 0;
+  const send = async (text: string) => {
+    const sealed = await alice.e2e.seal(toBob, text, alice.from);
+    assert.deepEqual(sealed.nostr?.r, [ONE, TWO]);
+    await orNostr(alice.e2e, own, toBob, sealed, [sealed.packet], async () => {
+      viaRelay++;
+      await sendSealed(own, sealed, [sealed.packet], 'message', async () => undefined);
+    })();
+  };
+  const taken = async () => {
+    const packet = await receiveMessage(own, bob.recipient, false);
+    return packet ? message(await bob.e2e.receive(packet)).text : null;
+  };
+
+  setTorReady(false);
+  await send('Tor starts');
+  assert.equal(viaRelay, 1);
+  assert.equal(await taken(), 'Tor starts');
+  setTorReady(true);
+
+  relays.down.add(ONE);
+  relays.refusing.add(TWO);
+  await send('no Nostr relay');
+  assert.equal(viaRelay, 2);
+  assert.equal(await taken(), 'no Nostr relay');
+  assert.deepEqual(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS), []);
+
+  // One that takes it is enough; a space chat asks for no bell, so its backup is no quiet one.
+  relays.down.delete(ONE);
+  await send('one relay');
+  assert.equal(viaRelay, 2);
+  assert.equal(relays.keptAt(ONE).length, 1);
+  assert.equal(await taken(), null, 'no bell');
+  assert.equal(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS)[0]?.quiet, false);
+}, true);
+
+t('a reader asks from over an hour before it last read, keeps until when, and asks again at once when the keys change', async () => {
+  setNostr([ONE]);
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const carol = await chat('hidden', 2);
+  const toBob = (await meet(alice, bob)).toBob;
+  const toCarol = (await meet(alice, carol)).toBob;
+  message(await tell(alice, toBob, bob));
+  const [bobsKey] = alice.e2e.nostrKeys();
+
+  const stopSpace = readNostr(nostrReaderOf(() => alice.e2e, async () => undefined));
+  await until(() => relays.asked.length === 1);
+  const now = Math.floor(Date.now() / 1000);
+  const [first] = relays.asked;
+  assert.deepEqual(first.filters.map((f) => [f.kinds, f['#p']]), [[[1059], [bobsKey.p]]]);
+  assert.ok(Math.abs(first.filters[0].since! - (now - 2 * 24 * 3600 - 3600)) <= 2, 'never read: what a relay keeps a wrap for, and the hour it may be set back');
+  await until(() => alice.e2e.nostrSince() > 0);
+  assert.ok(Math.abs(alice.e2e.nostrSince() - now) <= 2);
+
+  // A key made for another contact: asked again at once, the subscription before closed.
+  message(await tell(alice, toCarol, carol));
+  await until(() => relays.asked.length === 2);
+  const second = relays.asked[1];
+  assert.notEqual(second.sub, first.sub);
+  assert.deepEqual(new Set(second.filters[0]['#p']), new Set(alice.e2e.nostrKeys().map((k) => k.p)));
+  assert.equal(alice.e2e.nostrKeys().length, 2);
+  assert.ok(Math.abs(second.filters[0].since! - (alice.e2e.nostrSince() - 3600 - 600)) <= 2, 'from over an hour before it read');
+  const [line] = relays.lines.values();
+  assert.deepEqual([...line.subs.keys()], [second.sub]);
+
+  // A hidden place opened reads on the same connection, with a filter of its own.
+  message(await tell(carol, carol.e2e.contacts()[0].identity, alice));
+  const stopHidden = readNostr(nostrReaderOf(() => carol.e2e, async () => undefined));
+  await until(() => relays.asked.length === 3);
+  assert.equal(relays.asked[2].filters.length, 2);
+  assert.equal(relays.lines.size, 1);
+  stopHidden();
+  await until(() => relays.asked.length === 4);
+  assert.equal(relays.asked[3].filters.length, 1);
+
+  // Nothing reads: the connection closes.
+  stopSpace();
+  await until(() => relays.lines.size === 0);
+});

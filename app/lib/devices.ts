@@ -89,6 +89,7 @@ import {
 } from './link-wire';
 import { LinkedCalls, type CallStep } from './linked-calls';
 import { nearby } from './nearby';
+import { orNostr, type ForNostr } from './nostr-chats';
 import { announceReceived } from './receiver';
 import { GRACE, linkSpare } from './moves';
 import { onSpaceMoved, type MoveWhy } from './queue-move';
@@ -2181,8 +2182,9 @@ export class Links implements Link, TakenFiles {
   // to the relay, saying what it carries (`mark`); then its copies for the endpoints of their
   // account go too, and, with `waits`, also once the relay could take it only later, as it is tried
   // again as it is (lib/e2e.ts copiesAfter).
-  private async deliver(identity: string, sealed: { sender: string; relay: string; relayKey: string; spare: Contact['spare']; first: Uint8Array | null; packet: Uint8Array; copies: number }, here: Here, mark: RelayMark, waits = false) {
-    const relay = sealed.sender ? () => sendSealed(here.sends, sealed, [sealed.packet], mark, () => this.chats.e2e.firstSent(identity)) : null;
+  private async deliver(identity: string, sealed: { sender: string; relay: string; relayKey: string; spare: Contact['spare']; first: Uint8Array | null; packet: Uint8Array; copies: number } & ForNostr, here: Here, mark: RelayMark, waits = false) {
+    const send = () => sendSealed(here.sends, sealed, [sealed.packet], mark, () => this.chats.e2e.firstSent(identity));
+    const relay = sealed.sender ? orNostr(this.chats.e2e, here.sends, identity, sealed, [sealed.packet], send) : null;
     await this.chats.e2e.copiesAfter(sealed.copies, nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay), waits);
   }
 

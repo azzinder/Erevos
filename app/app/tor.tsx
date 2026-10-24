@@ -5,6 +5,7 @@ import { BRIDGE_CHOICES, NO_BRIDGES, readBridgeLines, type BridgeChoice, type Br
 import { canTor } from '../lib/core';
 import { mark, plural, t } from '../lib/i18n';
 import type { TorWay } from '../lib/relay';
+import { nostrOf, setNostr } from '../lib/nostr';
 import { applyTor, NoBridgesError, torStatus, type TorStatus } from '../lib/tor';
 import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 
@@ -90,6 +91,8 @@ export default function TorScreen() {
     try {
       await updateCurrentSpaceData({ tor: next });
       setWay(next);
+      // Texts go through Nostr only through Tor (lib/nostr.ts).
+      setNostr(nostrOf(next, (await loadCurrentSpaceData()).nostr));
       await applyTor(next, bridges);
     } catch (error) {
       setNote(shown(error));

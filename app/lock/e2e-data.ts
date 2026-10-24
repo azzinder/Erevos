@@ -122,7 +122,60 @@ export type Contact = {
    *  so one that comes again, through the phone and directly, or from their account and from one
    *  of their endpoints, is taken once, whether or not it is still kept. */
   took?: Took[];
+  /** This chat's Nostr key for them (lib/nostr.ts): its secret and its public key, hex, made the
+   *  first time this chat tells them it reads on Nostr. Only this phone knows the secret. */
+  nostr?: NostrKey;
+  /** The Nostr key and relays they said they read on (`ns`), and whether they asked for a bell on
+   *  the relay too (`b`, a hidden place, which hears of it so while closed): texts to them go there,
+   *  through Tor. Missing while they said none, or once they said they no longer read there. */
+  nostrTo?: NostrTo;
+  /** What this chat last told them of Nostr (lib/e2e.ts nostrSaid): its key, the bell and the relays,
+   *  or '' for none. Missing until it told them anything. */
+  nostrSaid?: string;
+  /** Texts that went to them through Nostr not said to have come yet: each to go through the relay
+   *  as well should that not be said in time (lib/nostr.ts NOSTR_BACKUP_MS). */
+  nostrBackup?: NostrBackup[];
 };
+
+/** A Nostr key: its secret (`s`) and its public key (`p`, x only), hex. */
+export type NostrKey = { s: string; p: string };
+
+/** Where a contact said it reads on Nostr: its public key (hex), its relays, and whether a bell goes to its relay queue too. */
+export type NostrTo = { k: string; r: string[]; b?: true };
+
+/** A text that went through Nostr (Contact.nostrBackup): its tag, when it went (ms), its packet as it went (base64), and whether its contact also had a bell (`q`), so the relay copy goes quiet. */
+export type NostrBackup = { t: string; at: number; p: string; q?: true };
+
+/** The most texts kept to go through the relay as well, for each contact, and for how long: no longer than the relay keeps one. */
+export const MAX_NOSTR_BACKUP = 64;
+export const NOSTR_BACKUP_LASTS = 14 * 24 * 60 * 60_000;
+
+/** The most Nostr relays one says it reads on, and the longest address of one. */
+export const MAX_NOSTR_RELAYS = 5;
+const MAX_NOSTR_URL = 256;
+
+/** A Nostr relay's address: wss://, or ws:// to an onion service, which Tor encrypts itself. */
+export const isNostrRelay = (v: unknown): v is string =>
+  typeof v === 'string' && v.length <= MAX_NOSTR_URL && (/^wss:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(v) || /^ws:\/\/[a-z2-7]{56}\.onion(:\d+)?(\/[^\s]*)?$/i.test(v));
+
+const isKeyHex = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
+
+/** Where a contact said it reads on Nostr, checked: null when it is not that. */
+export function checkedNostrTo(value: unknown): NostrTo | null {
+  const v = (value ?? {}) as Partial<Record<keyof NostrTo, unknown>>;
+  const r = Array.isArray(v.r) ? [...new Set(v.r.filter(isNostrRelay))].slice(0, MAX_NOSTR_RELAYS) : [];
+  return isKeyHex(v.k) && r.length > 0 ? { k: v.k, r, ...(v.b === true ? { b: true as const } : {}) } : null;
+}
+
+function checkedNostrKey(value: unknown): NostrKey | null {
+  const v = (value ?? {}) as Partial<Record<keyof NostrKey, unknown>>;
+  return isKeyHex(v.s) && isKeyHex(v.p) ? { s: v.s, p: v.p } : null;
+}
+
+function checkedNostrBackup(value: unknown): NostrBackup | null {
+  const v = (value ?? {}) as Partial<Record<keyof NostrBackup, unknown>>;
+  return isTag(v.t) && isTime(v.at) && isBase64(v.p) && v.p ? { t: v.t, at: v.at, p: v.p, ...(v.q === true ? { q: true as const } : {}) } : null;
+}
 
 /**
  * A message of a contact's taken here (Contact.took): its tag (`t`), the day it first came (`at`,
@@ -330,6 +383,10 @@ export type E2EData = {
   invited?: Invited[];
   /** The name this phone gave itself in its last invite, offered again for the next. */
   invitedAs?: string;
+  /** Until when what came for this chat on the Nostr relays was read (seconds, kept now and then):
+   *  what is asked of them next starts somewhat over an hour before it (lib/nostr.ts). Missing
+   *  until they were read. */
+  nostrAt?: number;
 };
 
 export type Prekeys = { secret: string; bundle: string; at: number };
@@ -415,6 +472,10 @@ function checkedContact(value: unknown): Contact | null {
     ...(isTime(v.qaFloor) && v.qaFloor > 0 ? { qaFloor: v.qaFloor } : {}),
     ...(isTime(v.qaBase) && v.qaBase > 0 ? { qaBase: v.qaBase } : {}),
     ...(v.ringTell === true ? { ringTell: true as const } : {}),
+    ...(checkedNostrKey(v.nostr) ? { nostr: checkedNostrKey(v.nostr)! } : {}),
+    ...(checkedNostrTo(v.nostrTo) ? { nostrTo: checkedNostrTo(v.nostrTo)! } : {}),
+    ...(isText(v.nostrSaid) && v.nostrSaid.length <= 2048 ? { nostrSaid: v.nostrSaid } : {}),
+    ...(Array.isArray(v.nostrBackup) ? { nostrBackup: v.nostrBackup.map(checkedNostrBackup).filter((b): b is NostrBackup => b !== null).slice(-MAX_NOSTR_BACKUP) } : {}),
   };
 }
 
@@ -574,6 +635,7 @@ function checked(value: unknown): E2EData {
     ...(Array.isArray(v.undropped) ? { undropped: v.undropped.map(checkedUndropped).filter((u): u is Undropped => u !== null).slice(-MAX_UNDROPPED) } : {}),
     ...(Array.isArray(v.invited) ? { invited: v.invited.map(checkedInvited).filter((i): i is Invited => i !== null).slice(-MAX_INVITED) } : {}),
     ...(isText(v.invitedAs) && cleanName(v.invitedAs) ? { invitedAs: cleanName(v.invitedAs) } : {}),
+    ...(isTime(v.nostrAt) && v.nostrAt > 0 ? { nostrAt: v.nostrAt } : {}),
   };
 }
 

@@ -20,7 +20,7 @@ import {
 } from '../lock/config';
 import { MIN_PIN, openHidden, prepareHidden, removeHiddenPassword, searchHidden, setHiddenPassword } from '../lock/hidden';
 import { loadOpenKey, saveOpenKey } from '../lock/keys';
-import { EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
+import { EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, NOSTR_DEFAULT, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
 import { POCKETS } from '../lock/sealed-file';
 import { assertNotLockedOut, FREE_TRIES, LockedOutError, SEARCH_TRIES } from '../lock/tries';
 import { store } from './secure-memory';
@@ -257,7 +257,7 @@ t('a first start moves the chat settings kept before spaces into the first space
   store.set('erevos.relay', JSON.stringify(older));
   const key = await firstSpaceKey();
   assert.equal(store.has('erevos.relay'), false);
-  assert.deepEqual(await loadSpaceData(0, key), { ...older, via: '', viaToken: '', look: null, tor: 'messages', bridges: { use: 'none', own: '' }, spare: { url: '', token: '', queue: null }, push: false, previews: false, lend: { relay: '', ticket: '' }, ringQueue: null, ownToken: { relay: '', hash: '' } });
+  assert.deepEqual(await loadSpaceData(0, key), { ...older, via: '', viaToken: '', look: null, tor: 'messages', bridges: { use: 'none', own: '' }, spare: { url: '', token: '', queue: null }, push: false, previews: false, lend: { relay: '', ticket: '' }, ringQueue: null, ownToken: { relay: '', hash: '' }, nostr: NOSTR_DEFAULT });
   assert.ok(!store.get('erevos.space.0')!.includes('t0ken'));
   // The next start finds the same key.
   assert.deepEqual(await firstSpaceKey(), key);

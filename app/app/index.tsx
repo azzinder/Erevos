@@ -72,6 +72,7 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
   { title: mark('Phone'), detail: mark('Erevos as the phone app: the keypad, the calls and the favourites'), href: '/phone', phone: true },
   { title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay' },
   { title: mark('Tor'), detail: mark('Reach the relays through Tor: messages, unless changed'), href: '/tor', phone: true },
+  { title: mark('Nostr'), detail: mark('Texts through Nostr relays, through Tor: on, unless changed'), href: '/nostr', phone: true },
   { title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', phone: true },
   { title: mark('Imported chats'), detail: mark('Telegram and WhatsApp exports'), href: '/imported' },
   { title: mark('Appearance'), detail: mark('Style, colours, glass'), href: '/appearance' },

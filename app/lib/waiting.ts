@@ -6,6 +6,7 @@ import { contentOf, withoutPreview } from './chat-parts';
 import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForLoraError } from './nearby';
 import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, isQueueFull, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Mark, type Relay } from './relay';
+import { orNostr, type ForNostr } from './nostr-chats';
 import { carriedFor, contactTarget, sendSealed, sentMark, type SpaceChats } from './space-chats';
 import { t } from './i18n';
 
@@ -349,7 +350,7 @@ function throughRelay(place: SendPlace, queue: { sender: string; relay: string; 
 // without the preview, for LoRa. Returns how long it lasts once read, and whether it went so (`bare`).
 async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Message): Promise<{ lasts: number; bare: boolean }> {
   const options = { at: place.here, tag: message.tag, lasts: message.lasts ?? 0, re: message.re, forwarded: message.forwarded };
-  let sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; tag: string; timer: number; copies: number; through: boolean };
+  let sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; tag: string; timer: number; copies: number; through: boolean } & ForNostr;
   let packets: Uint8Array[];
   let worthCarrying = true;
   if (message.voice) {
@@ -371,7 +372,7 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     packets = [text.packet];
   }
   const sends = place.sends;
-  const relay = sends && sealed.sender ? () => sendSealed(sends, sealed, packets, sentMark(sealed, 'message'), () => e2e.firstSent(identity)) : null;
+  const relay = sends && sealed.sender ? orNostr(e2e, sends, identity, sealed, packets, () => sendSealed(sends, sealed, packets, sentMark(sealed, 'message'), () => e2e.firstSent(identity))) : null;
   const all = sealed.first ? [sealed.first, ...packets] : packets;
   const carry = worthCarrying ? () => carriedFor(sealed, all, { url: place.own?.url ?? '', key: place.ownKey }, sentMark(sealed, 'message')) : null;
   try {
@@ -401,7 +402,7 @@ export class OwedError extends Error {
 }
 
 /** What hidden chats sealed for a contact, and its packets, in order. */
-export type Resealed = { sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; copies: number; through: boolean }; packets: Uint8Array[] };
+export type Resealed = { sealed: { sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; copies: number; through: boolean } & ForNostr; packets: Uint8Array[] };
 
 /**
  * Hands what hidden chats sealed for a contact to the relay, through `target`, after the
@@ -415,7 +416,8 @@ export type Resealed = { sealed: { sender: string; relay: string; relayKey: stri
 export async function handOverHidden(e2e: E2E, target: Relay | null, identity: string, { sealed, packets }: Resealed, mark: Mark, waits: boolean): Promise<'relay'> {
   if (!target || !sealed.sender) throw new Error(t('Type the relay address in Relay first.'));
   try {
-    await e2e.copiesAfter(sealed.copies, sendSealed(target, sealed, packets, sentMark(sealed, mark), () => e2e.firstSent(identity)), waits && 'full');
+    const send = orNostr(e2e, target, identity, sealed, packets, () => sendSealed(target, sealed, packets, sentMark(sealed, mark), () => e2e.firstSent(identity)));
+    await e2e.copiesAfter(sealed.copies, send(), waits && 'full');
   } catch (error) {
     throw waits && sealed.copies > 0 && isQueueFull(error) ? new OwedError(error) : error;
   }

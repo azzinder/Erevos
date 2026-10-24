@@ -8,6 +8,8 @@ import { canRelaySeal, hasCore } from './core';
 import { ONLINE, toBase64Url, type E2E, type Extra, type Received, type Where } from './e2e';
 import { sendCopies } from './fanout';
 import { nearby } from './nearby';
+import { readNostr } from './nostr';
+import { nostrReaderOf, sendNostrBackups } from './nostr-chats';
 import {
   canWaitAt,
   carryTo,
@@ -181,6 +183,8 @@ let lastPlace: Place | null = null;
 type NearbyTaker = (link: string | null, packet: Uint8Array) => Promise<void>;
 let nearbyTaker: NearbyTaker | null = null;
 let nearbyTurn: Promise<unknown> = Promise.resolve();
+// What opens what comes on Nostr for the space's chats while their chat screen shows (takeNostr).
+let nostrTaker: ((packet: Uint8Array) => Promise<void>) | null = null;
 const nearbyState: State = { place: null, seen: -1, receipts: {}, answers: new Set(), waited: false, failures: 0 };
 // How long to wait before the next look, asked each time.
 let pace = () => EVERY;
@@ -245,12 +249,25 @@ export function startReceiver(every?: number): () => void {
   lastPlace = null;
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  // What comes on Nostr for the space's chats (lib/nostr.ts), once they are open.
+  let chats: SpaceChats | null = null;
+  const stopNostr = readNostr(nostrReaderOf(() => chats?.e2e ?? null, openNostr));
+  const openChats = () => {
+    if (chats || !hasCore()) return;
+    void spaceChats()
+      .then((open) => {
+        if (!stopped) chats = open;
+      })
+      .catch(() => undefined);
+  };
+  openChats();
   const next = () => {
     if (!stopped) timer = setTimeout(tick, every ?? (shows ? pace() : awayPace(state.waited, state.failures)));
   };
   const tick = () => {
     timer = null;
     if (stopped) return;
+    openChats();
     if (holds > 0) return next();
     look = lookOnce(state, () => stopped || holds > 0)
       .then((changed) => {
@@ -270,6 +287,7 @@ export function startReceiver(every?: number): () => void {
   hurry = now;
   return () => {
     stopped = true;
+    stopNostr();
     if (timer) clearTimeout(timer);
     if (hurry === now) hurry = null;
     endWaits();
@@ -287,6 +305,24 @@ export function openNearby(link: string | null, packet: Uint8Array): Promise<voi
   const next = nearbyTurn.catch(() => undefined).then(() => (nearbyTaker ? nearbyTaker(link, packet) : openHere(link, packet)));
   nearbyTurn = next;
   return next.catch(() => undefined);
+}
+
+/**
+ * Opens a packet that came on Nostr for the space's chats (lib/nostr.ts): in the space's chat screen
+ * while it takes them (takeNostr), otherwise here, as one kept for this space is (openNearby).
+ */
+export function openNostr(packet: Uint8Array): Promise<void> {
+  const next = nearbyTurn.catch(() => undefined).then(() => (nostrTaker ? nostrTaker(packet) : openHere(null, packet)));
+  nearbyTurn = next;
+  return next.catch(() => undefined);
+}
+
+/** Has the space's chat screen open what comes on Nostr itself (`taker`), until the function it gives is called. */
+export function takeNostr(taker: (packet: Uint8Array) => Promise<void>): () => void {
+  nostrTaker = taker;
+  return () => {
+    if (nostrTaker === taker) nostrTaker = null;
+  };
 }
 
 /** Has the chat screen open what comes nearby itself (`taker`), until the function it gives is called. */
@@ -372,6 +408,8 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   if (place.keyAsked) lastPlace = place;
   await sendPending(chats, place.sends);
   await sendKeys(chats, place);
+  // Texts that went through Nostr, not said to have come in time, through the relay as well.
+  await sendNostrBackups(chats.e2e, place.sends);
   watchCopies(chats.e2e);
   await sendCopies(chats.e2e, place.sends).catch(() => 0);
   // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).

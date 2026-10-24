@@ -318,6 +318,28 @@ pub mod tor {
         erevos_tor::request(text(url)?, text(token)?, message)
     }
 
+    /// A Nostr relay's connection through Tor, for text frames: its handle.
+    pub fn text_open(url: &[u8]) -> Result<Vec<u8>> {
+        Ok(erevos_tor::text_open(text(url)?)?.to_be_bytes().to_vec())
+    }
+
+    pub fn text_send(id: &[u8], frame: &[u8]) -> Result<Vec<u8>> {
+        erevos_tor::text_send(handle(id)?, text(frame)?)?;
+        Ok(Vec::new())
+    }
+
+    /// The next frame the relay sent, waiting up to `wait` milliseconds (8 bytes, big-endian):
+    /// empty when none came, as a Nostr relay sends no empty frame.
+    pub fn text_next(id: &[u8], wait: &[u8]) -> Result<Vec<u8>> {
+        let wait = u64::from_be_bytes(wait.try_into().map_err(|_| "a wait is 8 bytes".to_string())?);
+        Ok(erevos_tor::text_next(handle(id)?, std::time::Duration::from_millis(wait.min(120_000)))?.unwrap_or_default().into_bytes())
+    }
+
+    pub fn text_close(id: &[u8]) -> Result<Vec<u8>> {
+        erevos_tor::text_close(handle(id)?);
+        Ok(Vec::new())
+    }
+
     /// Tor's progress as JSON: {"text": ..., "ready": ...}.
     pub fn status() -> String {
         let (text, ready) = erevos_tor::status();
@@ -326,6 +348,37 @@ pub mod tor {
 
     pub fn stop() {
         erevos_tor::stop();
+    }
+}
+
+/// Nostr for message text (crates/erevos-nostr): the keys each contact gets of its own, and the
+/// events that carry sealed packets to Nostr relays.
+pub mod nostr {
+    use super::Result;
+
+    /// A new secret key, 32 bytes.
+    pub fn secret() -> Result<Vec<u8>> {
+        Ok(erevos_nostr::new_secret().to_vec())
+    }
+
+    /// The public key of `secret`, 32 bytes, as Nostr writes keys (x only).
+    pub fn public(secret: &[u8]) -> Result<Vec<u8>> {
+        Ok(erevos_nostr::public_key(secret)?.to_vec())
+    }
+
+    /// An event for the key `to` carrying `bytes`, made at `now` (seconds, 8 bytes big-endian): its JSON.
+    pub fn wrap(to: &[u8], bytes: &[u8], now: &[u8]) -> Result<Vec<u8>> {
+        let now = u64::from_be_bytes(now.try_into().map_err(|_| "a time is 8 bytes".to_string())?);
+        Ok(erevos_nostr::wrap(to, bytes, now)?.into_bytes())
+    }
+
+    /// What an event for the key of `secret` carried: its id (32 bytes), its time (8 bytes,
+    /// big-endian), then the bytes.
+    pub fn unwrap(secret: &[u8], event: &[u8]) -> Result<Vec<u8>> {
+        let event = std::str::from_utf8(event).map_err(|_| "not UTF-8".to_string())?;
+        let opened = erevos_nostr::unwrap(secret, event)?;
+        let id: Vec<u8> = (0..32).map(|i| u8::from_str_radix(&opened.id[i * 2..i * 2 + 2], 16).unwrap_or(0)).collect();
+        Ok([id.as_slice(), &opened.created_at.to_be_bytes(), &opened.bytes].concat())
     }
 }
 

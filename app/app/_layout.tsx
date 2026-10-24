@@ -39,6 +39,7 @@ import { refreshWidget } from '../modules/erevos-widget';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { startPublicDoors } from '../lib/space-public-groups';
 import { applyTor, leaveTor } from '../lib/tor';
+import { nostrOf, setNostr } from '../lib/nostr';
 import { forgetWelcome } from '../lib/welcome';
 import { hardenLock, loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
@@ -132,6 +133,8 @@ export default function RootLayout() {
       // Tor starts in the background, through the space's bridges if it has any; until it is
       // ready, the way 'messages' sends straight, and the way 'all' waits for it.
       applyTor(data.tor, data.bridges).catch(() => undefined);
+      // Its texts go through Nostr, through Tor, unless it says not (lib/nostr.ts).
+      setNostr(nostrOf(data.tor, data.nostr));
       const kept = data.look ?? (await loadLockScreenLook());
       await show(kept);
       setPhase({ kind: 'open', space, passwordLock });
@@ -575,6 +578,7 @@ function closeSpace(): void {
   forgetOpenedQueues();
   forgetWelcome();
   leaveTor();
+  setNostr(null);
 }
 
 function openKey(): Uint8Array | null {
