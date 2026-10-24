@@ -69,9 +69,15 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
     await sendMessage(relay, fromHex(sealed.sender), sealed.packet);
     return sealed.tag;
   };
+  // What Bob's phone says to Alice next. Bob's newer prekeys may go in a message of their own
+  // with nothing else in it, before or after what he tells: that says nothing, and is passed over.
   const toAlice = async () => {
-    const bytes = await receiveMessage(relay, fromHex(aliceQueue.recipientHex));
-    return bytes && ((await alice.receive(bytes)) as Extract<Received, { kind: 'message' }>);
+    for (;;) {
+      const bytes = await receiveMessage(relay, fromHex(aliceQueue.recipientHex));
+      if (!bytes) return null;
+      const said = (await alice.receive(bytes)) as Extract<Received, { kind: 'message' }>;
+      if (said.kind !== 'message' || said.text || said.got.length > 0 || said.read.length > 0 || said.ask) return said;
+    }
   };
 
   let told = 0;
@@ -94,7 +100,6 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
     await bob.e2e.acceptRequest(bob.e2e.contacts()[0].identity);
     const againTag = await write('still there?');
     await until(() => bob.history.messages().length === 2);
-    // Bob's newer prekeys may come first, in a message of their own with nothing else in it.
     let receipt: Awaited<ReturnType<typeof toAlice>> = null;
     await until(async () => (receipt = await toAlice()) !== null && receipt.got.length > 0);
     assert.deepEqual(receipt!.got, [againTag]);
