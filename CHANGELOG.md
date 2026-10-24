@@ -8,7 +8,9 @@ No release so far has a macOS build. **Not audited.**
 
 ## Unreleased
 
-On main, not released yet.
+On main, not released yet: nothing so far.
+
+## 3.0.0 (2026-10-24)
 
 - **Each launcher icon opens what it names** (Android): **Erevos**'s own icon opens its chats (the **Erevos** tab),
   or leaves the chat you had open, instead of whatever Erevos showed last, such as the SMS after SMS's icon or the
