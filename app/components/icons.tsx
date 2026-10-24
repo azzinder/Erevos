@@ -461,3 +461,85 @@ export function QuietIcon({ color, size = 24 }: Props) {
     </Grid>
   );
 }
+
+/** A bell: notifications. */
+export function BellIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View
+        style={[
+          box(k, { x: 6, y: 3.5, w: 12, h: 13 }),
+          { borderWidth: 2 * k, borderBottomWidth: 0, borderColor: color, borderTopLeftRadius: 6 * k, borderTopRightRadius: 6 * k },
+        ]}
+      />
+      <Bar k={k} color={color} x={3.5} y={15.5} w={17} h={2} />
+      <Dot k={k} color={color} x={10.3} y={18.6} d={3.4} />
+    </Grid>
+  );
+}
+
+/** A cog: the general settings. Eight teeth around a ring. */
+export function GearIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      {[0, 45, 90, 135].map((angle) => (
+        <View key={angle} style={[box(k, { x: 10, y: 1.5, w: 4, h: 21 }), { transform: [{ rotate: `${angle}deg` }] }]}>
+          <View style={{ height: 4 * k, borderRadius: k, backgroundColor: color }} />
+          <View style={{ flex: 1 }} />
+          <View style={{ height: 4 * k, borderRadius: k, backgroundColor: color }} />
+        </View>
+      ))}
+      <View style={[box(k, { x: 4.5, y: 4.5, w: 15, h: 15 }), { borderWidth: 4 * k, borderColor: color, borderRadius: 15 * k }]} />
+    </Grid>
+  );
+}
+
+/** A circle half filled: the look, light and dark. */
+export function ContrastIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 2.5, y: 2.5, w: 19, h: 19 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 19 * k, overflow: 'hidden' }]}>
+        <View style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '50%', backgroundColor: color }} />
+      </View>
+    </Grid>
+  );
+}
+
+/** Four bars rising: the ways messages go, the relay and the networks. */
+export function SignalIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      {[6, 10, 14.5, 19].map((h, i) => (
+        <Bar key={h} k={k} color={color} x={2.5 + i * 5} y={21 - h} w={3.5} h={h} />
+      ))}
+    </Grid>
+  );
+}
+
+/** Three layers stacked: the data kept, backups and devices. */
+export function StackIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      {[2.5, 9, 15.5].map((y) => (
+        <View key={y} style={[box(k, { x: 3, y, w: 18, h: 6 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 3 * k }]} />
+      ))}
+    </Grid>
+  );
+}
+
+/** A globe, its meridian and equator: the language. */
+export function GlobeIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 2.5, y: 2.5, w: 19, h: 19 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 19 * k }]} />
+      <View style={[box(k, { x: 7.5, y: 2.5, w: 9, h: 19 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 9 * k }]} />
+      <Bar k={k} color={color} x={3} y={11} w={18} h={2} r={0} />
+    </Grid>
+  );
+}

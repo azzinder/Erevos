@@ -155,7 +155,7 @@ export async function fix(id: CheckId): Promise<void> {
       if (!kept) {
         ask(
           t('Keeping the data'),
-          t('The browser decides by itself whether it keeps a site\'s data for good, and has not agreed yet. It agrees more readily for an app added to the home screen, or with notifications allowed. Until then, a backup (menu → Backups) is the safety net.'),
+          t('The browser decides by itself whether it keeps a site\'s data for good, and has not agreed yet. It agrees more readily for an app added to the home screen, or with notifications allowed. Until then, a backup (Settings → Data and devices → Backups) is the safety net.'),
           [{ text: t('OK') }],
         );
       }

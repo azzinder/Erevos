@@ -1,5 +1,5 @@
 import { startActivityAsync } from 'expo-intent-launcher';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
 
@@ -37,6 +37,20 @@ const RESTRICTED = mark(
   "Android did not allow it. In Erevos's App info, under Permissions → SMS, it may say Restricted setting: then go back, tap ⋮ at the top right → Allow restricted settings, and allow SMS under Permissions.",
 );
 
+// The parts of this screen that open alone from Settings (lib/settings.ts), by their titles.
+const PARTS = {
+  app: mark('Erevos as the SMS app'),
+  find: mark('Find Erevos on a number'),
+  names: mark('Names from your contacts'),
+  folders: mark('Archived, Spam and Trash'),
+  spam: mark('Spam filter'),
+  blocked: mark('Blocked numbers'),
+  undo: mark('Taking an SMS back'),
+  sims: mark('Two SIMs'),
+  new: mark('New SMS'),
+};
+type Part = keyof typeof PARTS;
+
 // The spam filter's rules as this screen shows them.
 const spamOf = (data: Readonly<SmsData> | null) => ({
   on: data?.spam ?? true,
@@ -48,6 +62,9 @@ const spamOf = (data: Readonly<SmsData> | null) => ({
 });
 
 export default function SmsSettings() {
+  const params = useLocalSearchParams<{ part?: string }>();
+  const part = typeof params.part === 'string' && params.part in PARTS ? (params.part as Part) : null;
+  const shows = (one: Part) => !part || part === one;
   const [status, setStatus] = useState<SmsStatus | null>(smsStatus());
   // Whether Android lets Erevos read the phone's SMS; null until known.
   const [canRead, setCanRead] = useState<boolean | null>(null);
@@ -231,198 +248,226 @@ export default function SmsSettings() {
 
   return (
     <Page>
-      <Text variant="title">SMS</Text>
-      <Card>
-        <Text variant="bodyStrong">{status?.isDefault ? t('Erevos is the SMS app') : t('Erevos is not the SMS app')}</Text>
-        <Text tone="muted">
-          {t('As the SMS app, Erevos shows SMS and Erevos chats in one list. Writing to a number that has Erevos goes through Erevos, end-to-end encrypted. To everyone else it goes as a plain SMS, marked SMS: the phone company can read it, as it reads every SMS.')}
-        </Text>
-        {status?.isDefault ? null : (
-          <>
-            <Button title={t('Make Erevos the SMS app')} onPress={() => void makeDefault()} />
-            {asked ? (
+      <Text variant="title">{part ? t(PARTS[part]) : 'SMS'}</Text>
+      {shows('app') ? (
+        <>
+          <Card>
+            <Text variant="bodyStrong">{status?.isDefault ? t('Erevos is the SMS app') : t('Erevos is not the SMS app')}</Text>
+            <Text tone="muted">
+              {t('As the SMS app, Erevos shows SMS and Erevos chats in one list. Writing to a number that has Erevos goes through Erevos, end-to-end encrypted. To everyone else it goes as a plain SMS, marked SMS: the phone company can read it, as it reads every SMS.')}
+            </Text>
+            {status?.isDefault ? null : (
               <>
-                <Text variant="bodyStrong">{t('Android did not make Erevos the SMS app')}</Text>
-                <Text tone="muted">{t(NOT_CHOSEN)}</Text>
-                <Button title={t('Open Default apps')} kind="secondary" onPress={() => void openDefaultApps()} />
+                <Button title={t('Make Erevos the SMS app')} onPress={() => void makeDefault()} />
+                {asked ? (
+                  <>
+                    <Text variant="bodyStrong">{t('Android did not make Erevos the SMS app')}</Text>
+                    <Text tone="muted">{t(NOT_CHOSEN)}</Text>
+                    <Button title={t('Open Default apps')} kind="secondary" onPress={() => void openDefaultApps()} />
+                    <Button title={t("Open Erevos's App info")} kind="secondary" onPress={() => void Linking.openSettings()} />
+                  </>
+                ) : null}
+              </>
+            )}
+            {status?.isDefault && canRead === false ? (
+              <>
+                <Text variant="bodyStrong">{t('Android does not let Erevos read the SMS')}</Text>
+                <Text tone="muted">
+                  {t('So no SMS show yet. Android holds this back from an app installed from a browser, until you allow it.')}
+                </Text>
+                <Button title={t('Allow SMS')} onPress={() => void allowSms()} />
                 <Button title={t("Open Erevos's App info")} kind="secondary" onPress={() => void Linking.openSettings()} />
+                {readNote ? <Text tone="muted">{readNote}</Text> : null}
               </>
             ) : null}
-          </>
-        )}
-        {status?.isDefault && canRead === false ? (
-          <>
-            <Text variant="bodyStrong">{t('Android does not let Erevos read the SMS')}</Text>
-            <Text tone="muted">
-              {t('So no SMS show yet. Android holds this back from an app installed from a browser, until you allow it.')}
-            </Text>
-            <Button title={t('Allow SMS')} onPress={() => void allowSms()} />
-            <Button title={t("Open Erevos's App info")} kind="secondary" onPress={() => void Linking.openSettings()} />
-            {readNote ? <Text tone="muted">{readNote}</Text> : null}
-          </>
-        ) : null}
-        {status?.isDefault && canRead !== false && reading ? (
-          <Text tone="muted">
-            {'error' in reading
-              ? t("Erevos could not read the phone's SMS: {error}", { error: reading.error })
-              : reading.count === 0
-                ? t('Erevos found no SMS on this phone.')
-                : plural(reading.count, 'Erevos reads {n} SMS conversation on this phone.', 'Erevos reads {n} SMS conversations on this phone.')}
-          </Text>
-        ) : null}
-        {status?.isDefault && canNotify === false ? (
-          <>
-            <Text variant="bodyStrong">{t('Notifications are off')}</Text>
-            <Text tone="muted">{t('So nothing tells you when an SMS comes.')}</Text>
-            <Button title={t('Allow notifications')} onPress={() => void allowNotices()} />
-          </>
-        ) : null}
-        {status && !status.phone ? <Text tone="muted">{t('This device has no phone part, so it cannot send SMS.')}</Text> : null}
-      </Card>
-
-      <SectionTitle title={t('Find Erevos on a number')} />
-      <Card>
-        <Text tone="muted">
-          {t('With the first SMS to a number that is not a contact, Erevos also sends a hidden invite. A phone without Erevos shows nothing. A phone with Erevos answers through the relay, and the two become contacts. The phone company sees one more short SMS. Each number is asked once a month at most.')}
-        </Text>
-        <Button title={invites ? t('Turn invites off') : t('Turn invites on')} kind="secondary" onPress={() => void toggleInvites()} />
-        <Text variant="caption" tone="faint">
-          {t('A number can also be linked by hand: open its SMS conversation and choose the contact.')}
-        </Text>
-      </Card>
-
-      <SectionTitle title={t('Names from your contacts')} />
-      <Card>
-        <Text tone="muted">
-          {t("SMS numbers that are no Erevos contact show only their numbers, until you turn names on here or with Names above the list: then the names your phone's contacts give them, and those of your contacts kept only in Erevos. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.")}
-        </Text>
-        <Button title={names ? t('Show numbers only') : t('Show names from my contacts')} kind="secondary" onPress={() => void toggleNames()} />
-        <Text variant="caption" tone="faint">
-          {t('With the names come the pictures your contacts have, in the list and in the conversation. They too are read only to show them.')}
-        </Text>
-      </Card>
-
-      <SectionTitle title={t('Archived, Spam and Trash')} />
-      <Card>
-        <Text tone="muted">
-          {t("In the list, hold an SMS conversation down to pin it to the top, archive it, mark it as spam, block it or delete it; a swipe to the side goes to the tab beside. This space keeps its own pins, archived conversations, Trash and spam marks, sealed with its password; the SMS stay in the phone's SMS, where another space sees them as they are.")}
-        </Text>
-        <Row wrap>
-          <Button title={t('Archived conversations')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=archived')} />
-          <Button title={t('Spam')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=spam')} />
-          <Button title={t('Trash')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=trash')} />
-        </Row>
-      </Card>
-
-      <SectionTitle title={t('Spam filter')} />
-      <Card>
-        <Text tone="muted">
-          {t('It works on this phone alone, by rules, and sends nothing anywhere. An SMS from a number that is no contact and was never answered goes to Spam when it has a link with words that try to fool, like a parcel held or a prize, or one of your words below. A number you marked as spam always goes there, one you marked not spam never does.')}
-        </Text>
-        <Button title={spam.on ? t('Turn the spam filter off') : t('Turn the spam filter on')} kind="secondary" onPress={() => void changeSpam((l) => l.setSpam(!spam.on))} />
-        {spam.on ? (
-          <>
-            <Button
-              title={spam.links ? t('Let links from unknown numbers through') : t('Send every link from unknown numbers to Spam')}
-              kind="ghost"
-              compact
-              onPress={() => void changeSpam((l) => l.setSpamLinks(!spam.links))}
-            />
-            <Field label={t('Your words')} hint={t('An SMS with one of them goes to Spam, from any number or sender that is no contact. Tap a word to remove it.')}>
-              <Row>
-                <Input value={word} onChangeText={setWord} placeholder={t('A word or a few')} style={{ flex: 1 }} onSubmitEditing={() => void addWord()} maxLength={WORD} />
-                <Button title={t('Add')} compact kind="secondary" onPress={() => void addWord()} />
-              </Row>
-            </Field>
-            {spam.words.length > 0 ? (
-              <Row wrap>
-                {spam.words.map((w) => (
-                  <Chip key={w} label={`${w} ×`} onPress={() => void changeSpam((l) => l.removeSpamWord(w))} />
-                ))}
-              </Row>
+            {status?.isDefault && canRead !== false && reading ? (
+              <Text tone="muted">
+                {'error' in reading
+                  ? t("Erevos could not read the phone's SMS: {error}", { error: reading.error })
+                  : reading.count === 0
+                    ? t('Erevos found no SMS on this phone.')
+                    : plural(reading.count, 'Erevos reads {n} SMS conversation on this phone.', 'Erevos reads {n} SMS conversations on this phone.')}
+              </Text>
             ) : null}
-            <Field
-              label={t('Senders')}
-              hint={t('A sender’s name, as shops and banks send, or a number, where * stands for anything: +4470* is every number that starts so, 1234* every short code that does. Let through: the filter never sends theirs to Spam, as your bank’s or your family’s; a number you marked as spam, or blocked, still goes there.')}
-            >
-              <Input value={sender} onChangeText={setSender} placeholder={t('PROMO, +4470*, 1234*')} maxLength={WORD} autoCapitalize="none" autoCorrect={false} />
-            </Field>
-            <Row wrap>
-              <Button title={t('To Spam')} compact kind="secondary" disabled={!sender.trim()} onPress={() => void addSender(false)} />
-              <Button title={t('Let through')} compact kind="secondary" disabled={!sender.trim()} onPress={() => void addSender(true)} />
-            </Row>
-            {[
-              { rules: spam.from, title: t('To Spam:') },
-              { rules: spam.allow, title: t('Let through:') },
-            ].map(({ rules, title }) =>
-              rules.length > 0 ? (
-                <Row wrap key={title}>
-                  <Text variant="caption" tone="muted">
-                    {title}
-                  </Text>
-                  {rules.map((r) => (
-                    <Chip key={r} label={`${r} ×`} onPress={() => void changeSpam((l) => l.removeSenderRule(r))} />
-                  ))}
-                </Row>
-              ) : null,
-            )}
-            <Button
-              title={spam.abroad ? t('Let numbers from abroad through') : t('Send numbers from abroad to Spam')}
-              kind="ghost"
-              compact
-              onPress={() => void changeAbroad()}
-            />
-            {spam.abroad ? (
-              <Field
-                label={t('Your country code')}
-                hint={home ? t('A number written with another one is from abroad; one written without any is from here.') : t('Type it: until then no number counts as from abroad.')}
-              >
-                <Row>
-                  <Text>+</Text>
-                  <Input
-                    value={home}
-                    onChangeText={(text) => setHome(text.replace(/\D/g, '').slice(0, 3))}
-                    onBlur={() => void changeSpam((l) => l.setSpamAbroad(true, home))}
-                    onSubmitEditing={() => void changeSpam((l) => l.setSpamAbroad(true, home))}
-                    placeholder="30"
-                    keyboardType="number-pad"
-                    style={{ flex: 1 }}
-                  />
-                </Row>
-              </Field>
+            {status?.isDefault && canNotify === false ? (
+              <>
+                <Text variant="bodyStrong">{t('Notifications are off')}</Text>
+                <Text tone="muted">{t('So nothing tells you when an SMS comes.')}</Text>
+                <Button title={t('Allow notifications')} onPress={() => void allowNotices()} />
+              </>
             ) : null}
-          </>
-        ) : null}
-        <Text variant="caption" tone="faint">
-          {t('A notice still says "New message" when spam comes, as it shows before Erevos is opened. Block a number to hear nothing more from it.')}
-        </Text>
-      </Card>
+            {status && !status.phone ? <Text tone="muted">{t('This device has no phone part, so it cannot send SMS.')}</Text> : null}
+          </Card>
+        </>
+      ) : null}
 
-      <SectionTitle title={t('Blocked numbers')} />
-      <Card>
-        <Text tone="muted">
-          {t("These are Android's own blocked numbers: Android rejects their SMS, MMS and calls. Every space, and the phone app, sees the same list. Block one from its conversation, with ⋮, or here.")}
-        </Text>
-        <BlockedNumbers
-          cannot={smsToolsReady() ? t('Only the SMS app or the phone app can see and change them: make Erevos the SMS app above.') : t('This build of Erevos cannot block numbers yet.')}
-        />
-      </Card>
-
-      <SectionTitle title={t('Taking an SMS back')} />
-      <Card>
-        <Text tone="muted">
-          {t('An SMS you send waits this long at the end of the conversation before it goes: tap it then to take it back. When you leave Erevos, it goes at once.')}
-        </Text>
-        <Row wrap>
-          {UNDO_SECONDS.map((seconds) => (
-            <Chip key={seconds} label={seconds ? plural(seconds, '{n} second', '{n} seconds') : t('Off')} selected={undo === seconds} onPress={() => void chooseUndo(seconds)} />
-          ))}
-        </Row>
-      </Card>
-
-      {(status?.slots ?? 0) >= 2 ? (
+      {shows('find') ? (
         <>
-          <SectionTitle title={t('Two SIMs')} />
+          {part ? null : <SectionTitle title={t('Find Erevos on a number')} />}
+          <Card>
+            <Text tone="muted">
+              {t('With the first SMS to a number that is not a contact, Erevos also sends a hidden invite. A phone without Erevos shows nothing. A phone with Erevos answers through the relay, and the two become contacts. The phone company sees one more short SMS. Each number is asked once a month at most.')}
+            </Text>
+            <Button title={invites ? t('Turn invites off') : t('Turn invites on')} kind="secondary" onPress={() => void toggleInvites()} />
+            <Text variant="caption" tone="faint">
+              {t('A number can also be linked by hand: open its SMS conversation and choose the contact.')}
+            </Text>
+          </Card>
+        </>
+      ) : null}
+
+      {shows('names') ? (
+        <>
+          {part ? null : <SectionTitle title={t('Names from your contacts')} />}
+          <Card>
+            <Text tone="muted">
+              {t("SMS numbers that are no Erevos contact show only their numbers, until you turn names on here or with Names above the list: then the names your phone's contacts give them, and those of your contacts kept only in Erevos. Erevos reads them only to show them, keeps no copy, and sends them nowhere. Android asks first.")}
+            </Text>
+            <Button title={names ? t('Show numbers only') : t('Show names from my contacts')} kind="secondary" onPress={() => void toggleNames()} />
+            <Text variant="caption" tone="faint">
+              {t('With the names come the pictures your contacts have, in the list and in the conversation. They too are read only to show them.')}
+            </Text>
+          </Card>
+        </>
+      ) : null}
+
+      {shows('folders') ? (
+        <>
+          {part ? null : <SectionTitle title={t('Archived, Spam and Trash')} />}
+          <Card>
+            <Text tone="muted">
+              {t("In the list, hold an SMS conversation down to pin it to the top, archive it, mark it as spam, block it or delete it; a swipe to the side goes to the tab beside. This space keeps its own pins, archived conversations, Trash and spam marks, sealed with its password; the SMS stay in the phone's SMS, where another space sees them as they are.")}
+            </Text>
+            <Row wrap>
+              <Button title={t('Archived conversations')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=archived')} />
+              <Button title={t('Spam')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=spam')} />
+              <Button title={t('Trash')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=trash')} />
+            </Row>
+          </Card>
+        </>
+      ) : null}
+
+      {shows('spam') ? (
+        <>
+          {part ? null : <SectionTitle title={t('Spam filter')} />}
+          <Card>
+            <Text tone="muted">
+              {t('It works on this phone alone, by rules, and sends nothing anywhere. An SMS from a number that is no contact and was never answered goes to Spam when it has a link with words that try to fool, like a parcel held or a prize, or one of your words below. A number you marked as spam always goes there, one you marked not spam never does.')}
+            </Text>
+            <Button title={spam.on ? t('Turn the spam filter off') : t('Turn the spam filter on')} kind="secondary" onPress={() => void changeSpam((l) => l.setSpam(!spam.on))} />
+            {spam.on ? (
+              <>
+                <Button
+                  title={spam.links ? t('Let links from unknown numbers through') : t('Send every link from unknown numbers to Spam')}
+                  kind="ghost"
+                  compact
+                  onPress={() => void changeSpam((l) => l.setSpamLinks(!spam.links))}
+                />
+                <Field label={t('Your words')} hint={t('An SMS with one of them goes to Spam, from any number or sender that is no contact. Tap a word to remove it.')}>
+                  <Row>
+                    <Input value={word} onChangeText={setWord} placeholder={t('A word or a few')} style={{ flex: 1 }} onSubmitEditing={() => void addWord()} maxLength={WORD} />
+                    <Button title={t('Add')} compact kind="secondary" onPress={() => void addWord()} />
+                  </Row>
+                </Field>
+                {spam.words.length > 0 ? (
+                  <Row wrap>
+                    {spam.words.map((w) => (
+                      <Chip key={w} label={`${w} ×`} onPress={() => void changeSpam((l) => l.removeSpamWord(w))} />
+                    ))}
+                  </Row>
+                ) : null}
+                <Field
+                  label={t('Senders')}
+                  hint={t('A sender’s name, as shops and banks send, or a number, where * stands for anything: +4470* is every number that starts so, 1234* every short code that does. Let through: the filter never sends theirs to Spam, as your bank’s or your family’s; a number you marked as spam, or blocked, still goes there.')}
+                >
+                  <Input value={sender} onChangeText={setSender} placeholder={t('PROMO, +4470*, 1234*')} maxLength={WORD} autoCapitalize="none" autoCorrect={false} />
+                </Field>
+                <Row wrap>
+                  <Button title={t('To Spam')} compact kind="secondary" disabled={!sender.trim()} onPress={() => void addSender(false)} />
+                  <Button title={t('Let through')} compact kind="secondary" disabled={!sender.trim()} onPress={() => void addSender(true)} />
+                </Row>
+                {[
+                  { rules: spam.from, title: t('To Spam:') },
+                  { rules: spam.allow, title: t('Let through:') },
+                ].map(({ rules, title }) =>
+                  rules.length > 0 ? (
+                    <Row wrap key={title}>
+                      <Text variant="caption" tone="muted">
+                        {title}
+                      </Text>
+                      {rules.map((r) => (
+                        <Chip key={r} label={`${r} ×`} onPress={() => void changeSpam((l) => l.removeSenderRule(r))} />
+                      ))}
+                    </Row>
+                  ) : null,
+                )}
+                <Button
+                  title={spam.abroad ? t('Let numbers from abroad through') : t('Send numbers from abroad to Spam')}
+                  kind="ghost"
+                  compact
+                  onPress={() => void changeAbroad()}
+                />
+                {spam.abroad ? (
+                  <Field
+                    label={t('Your country code')}
+                    hint={home ? t('A number written with another one is from abroad; one written without any is from here.') : t('Type it: until then no number counts as from abroad.')}
+                  >
+                    <Row>
+                      <Text>+</Text>
+                      <Input
+                        value={home}
+                        onChangeText={(text) => setHome(text.replace(/\D/g, '').slice(0, 3))}
+                        onBlur={() => void changeSpam((l) => l.setSpamAbroad(true, home))}
+                        onSubmitEditing={() => void changeSpam((l) => l.setSpamAbroad(true, home))}
+                        placeholder="30"
+                        keyboardType="number-pad"
+                        style={{ flex: 1 }}
+                      />
+                    </Row>
+                  </Field>
+                ) : null}
+              </>
+            ) : null}
+            <Text variant="caption" tone="faint">
+              {t('A notice still says "New message" when spam comes, as it shows before Erevos is opened. Block a number to hear nothing more from it.')}
+            </Text>
+          </Card>
+        </>
+      ) : null}
+
+      {shows('blocked') ? (
+        <>
+          {part ? null : <SectionTitle title={t('Blocked numbers')} />}
+          <Card>
+            <Text tone="muted">
+              {t("These are Android's own blocked numbers: Android rejects their SMS, MMS and calls. Every space, and the phone app, sees the same list. Block one from its conversation, with ⋮, or here.")}
+            </Text>
+            <BlockedNumbers
+              cannot={smsToolsReady() ? t('Only the SMS app or the phone app can see and change them: make Erevos the SMS app first.') : t('This build of Erevos cannot block numbers yet.')}
+            />
+          </Card>
+        </>
+      ) : null}
+
+      {shows('undo') ? (
+        <>
+          {part ? null : <SectionTitle title={t('Taking an SMS back')} />}
+          <Card>
+            <Text tone="muted">
+              {t('An SMS you send waits this long at the end of the conversation before it goes: tap it then to take it back. When you leave Erevos, it goes at once.')}
+            </Text>
+            <Row wrap>
+              {UNDO_SECONDS.map((seconds) => (
+                <Chip key={seconds} label={seconds ? plural(seconds, '{n} second', '{n} seconds') : t('Off')} selected={undo === seconds} onPress={() => void chooseUndo(seconds)} />
+              ))}
+            </Row>
+          </Card>
+        </>
+      ) : null}
+
+      {(status?.slots ?? 0) >= 2 && shows('sims') ? (
+        <>
+          {part ? null : <SectionTitle title={t('Two SIMs')} />}
           <Card>
             <Text tone="muted">
               {t('In an SMS conversation, choose the SIM above the message field. Erevos keeps that choice for the number; until then, it answers on the SIM the last message came on. Each message shows its SIM.')}
@@ -431,12 +476,16 @@ export default function SmsSettings() {
         </>
       ) : null}
 
-      <SectionTitle title={t('New SMS')} />
-      <Field label={t('Phone number')} hint={t('For a group MMS, several numbers separated by commas.')}>
-        <Input value={number} onChangeText={setNumber} keyboardType="phone-pad" placeholder="+30 69…, +30 69…" onSubmitEditing={open} />
-      </Field>
-      <Button title={t('Write')} kind="secondary" onPress={open} />
-      {note ? <Text tone="muted">{note}</Text> : null}
+      {shows('new') ? (
+        <>
+          {part ? null : <SectionTitle title={t('New SMS')} />}
+          <Field label={t('Phone number')} hint={t('For a group MMS, several numbers separated by commas.')}>
+            <Input value={number} onChangeText={setNumber} keyboardType="phone-pad" placeholder="+30 69…, +30 69…" onSubmitEditing={open} />
+          </Field>
+          <Button title={t('Write')} kind="secondary" onPress={open} />
+          {note ? <Text tone="muted">{note}</Text> : null}
+        </>
+      ) : null}
     </Page>
   );
 }

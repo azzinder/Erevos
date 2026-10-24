@@ -84,8 +84,8 @@ export const parts: Record<string, string> = {
     'O servidor enviou a este dispositivo um novo service worker, a parte do Erevos que verifica o código dele, e nenhuma versão assinada o inclui. O Erevos continua com o código verificado enquanto estiver aberto, mas, depois de fechado, o navegador pode iniciar o novo, que poderia mostrar um Erevos falso. Não abra mais o Erevos por este servidor, nem digite suas senhas nele, até quem cuida do servidor saber o motivo. Suas conversas continuam seladas com a sua senha.',
   'I understand': 'Entendi',
   'Update refused': 'Atualização recusada',
-  '{reason} Erevos keeps the release it has. Lock → This web app shows what was refused.':
-    '{reason} O Erevos mantém a versão que tem. Em “Bloqueio → Este app web” aparece o que foi recusado.',
+  '{reason} Erevos keeps the release it has. Settings → Privacy and security → This web app shows what was refused.':
+    '{reason} O Erevos mantém a versão que tem. Em “Configurações → Privacidade e segurança → Este app web” aparece o que foi recusado.',
 
   // Files and photos (lib/attachments.ts, lib/photo*.ts, lib/pick-*.ts, lib/save-file*.ts, lib/backup-place.web.ts).
   'Files can be 100 MB at most.': 'Os arquivos podem ter no máximo 100 MB.',

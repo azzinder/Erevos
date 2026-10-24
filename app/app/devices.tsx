@@ -12,7 +12,7 @@ import { createQueue, toHex } from '../lib/relay';
 import { SHELL } from '../lib/shell';
 import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 
-// Menu → Linked devices (lib/devices.ts, docs/linked-devices.md). On a computer or in a browser:
+// Settings → Data and devices → Linked devices (lib/devices.ts, docs/linked-devices.md). On a computer or in a browser:
 // Link to my phone shows a code for the phone to read, then the code both show, to compare. On the
 // phone: the code read (the camera opens erevos://link?... here, see app/link.tsx) or pasted, the
 // code to compare, what of the history goes, and Link; then the devices linked, each with Unlink.
@@ -139,7 +139,7 @@ export default function Devices() {
     try {
       if (Platform.OS === 'web') {
         await navigator.clipboard.writeText(text);
-        setNote(t('Code copied. Paste it on the phone in Menu → Linked devices.'));
+        setNote(t('Code copied. Paste it on the phone in Settings → Data and devices → Linked devices.'));
         return;
       }
       await Share.share({ message: text });
@@ -306,7 +306,7 @@ export default function Devices() {
         <Card>
           <Text variant="heading">{t('Link a computer to this phone')}</Text>
           <Text tone="muted">
-            {t('On the computer, open Menu → Linked devices → Link to my phone. Then scan its code with this phone\'s camera, or copy it there and paste it here.')}
+            {t('On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone\'s camera, or copy it there and paste it here.')}
           </Text>
           <Field label={t('Code from the computer')}>
             <Input value={pasted} onChangeText={setPasted} placeholder="erevos://link?…" autoCapitalize="none" autoCorrect={false} />
@@ -330,7 +330,7 @@ export default function Devices() {
           ) : offer ? (
             <>
               <Text tone="muted">
-                {t('On the phone that holds the account, scan this code with the camera, or paste it in Menu → Linked devices. This space must have no chats of its own.')}
+                {t('On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.')}
               </Text>
               <QrCode text={offer} size={240} />
               <Button title={Platform.OS === 'web' ? t('Copy the code') : t('Share the code')} kind="secondary" onPress={() => void copy(offer)} />

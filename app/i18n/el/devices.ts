@@ -33,7 +33,7 @@ export const devices: Record<string, string> = {
   'The last week': 'Την τελευταία εβδομάδα',
   None: 'Κανένα',
   'Web browser': 'Browser',
-  'Code copied. Paste it on the phone in Menu → Linked devices.': 'Ο κωδικός αντιγράφηκε. Επικόλλησέ τον στο τηλέφωνο, στο Μενού → «Συνδεδεμένες συσκευές».',
+  'Code copied. Paste it on the phone in Settings → Data and devices → Linked devices.': 'Ο κωδικός αντιγράφηκε. Επικόλλησέ τον στο τηλέφωνο, στο Ρυθμίσεις → Δεδομένα και συσκευές → «Συνδεδεμένες συσκευές».',
   'Linked. The chats come from the phone, and with them the messages it chose to bring over.':
     'Συνδέθηκε. Οι συνομιλίες έρχονται από το τηλέφωνο, και μαζί τους τα μηνύματα που διάλεξε να φέρει.',
   'Not linked. Someone else may have read the code. Make a new one, and link again.':
@@ -70,16 +70,16 @@ export const devices: Record<string, string> = {
   'Bring over': 'Φέρε τα',
   'Bring over messages again': 'Φέρε ξανά τα μηνύματα',
   'Link a computer to this phone': 'Σύνδεση υπολογιστή με αυτό το τηλέφωνο',
-  "On the computer, open Menu → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
-    'Στον υπολογιστή, άνοιξε Μενού → «Συνδεδεμένες συσκευές» → «Σύνδεση με το τηλέφωνό μου». Μετά σκάναρε τον κωδικό του με την κάμερα αυτού του τηλεφώνου, ή αντίγραψέ τον από εκεί και επικόλλησέ τον εδώ.',
+  "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
+    'Στον υπολογιστή, άνοιξε Ρυθμίσεις → Δεδομένα και συσκευές → «Συνδεδεμένες συσκευές» → «Σύνδεση με το τηλέφωνό μου». Μετά σκάναρε τον κωδικό του με την κάμερα αυτού του τηλεφώνου, ή αντίγραψέ τον από εκεί και επικόλλησέ τον εδώ.',
   'Code from the computer': 'Κωδικός από τον υπολογιστή',
   Next: 'Επόμενο',
   'Link to my phone': 'Σύνδεση με το τηλέφωνό μου',
   'The phone read the code. Does it show this one too?': 'Το τηλέφωνο διάβασε τον κωδικό. Δείχνει κι αυτό τον ίδιο;',
   'They match': 'Ταιριάζουν',
   'They differ': 'Διαφέρουν',
-  'On the phone that holds the account, scan this code with the camera, or paste it in Menu → Linked devices. This space must have no chats of its own.':
-    'Στο τηλέφωνο που έχει τον λογαριασμό, σκάναρε αυτόν τον κωδικό με την κάμερα, ή επικόλλησέ τον στο Μενού → «Συνδεδεμένες συσκευές». Αυτός ο χώρος δεν πρέπει να έχει δικές του συνομιλίες.',
+  'On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.':
+    'Στο τηλέφωνο που έχει τον λογαριασμό, σκάναρε αυτόν τον κωδικό με την κάμερα, ή επικόλλησέ τον στο Ρυθμίσεις → Δεδομένα και συσκευές → «Συνδεδεμένες συσκευές». Αυτός ο χώρος δεν πρέπει να έχει δικές του συνομιλίες.',
   'Copy the code': 'Αντιγραφή του κωδικού',
   'Share the code': 'Κοινοποίηση του κωδικού',
   'Waiting for the phone. The code works for half an hour.': 'Περιμένει το τηλέφωνο. Ο κωδικός ισχύει για μισή ώρα.',

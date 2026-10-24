@@ -15,7 +15,8 @@ import { Button, Card, Row, SectionTitle, Text } from './ui';
 
 const when = (ms: number) => new Date(ms).toLocaleString(locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-export function IntegrityCard() {
+/** The web app's signed release and its Web Push; with `part`, only the one, as a screen of its own. */
+export function IntegrityCard({ part }: { part?: 'web' | 'push' }) {
   const { colors } = useTheme();
   const [status, setStatus] = useState<IntegrityStatus | null>(null);
   const [busy, setBusy] = useState(false);
@@ -62,52 +63,56 @@ export function IntegrityCard() {
   const current = status?.current;
   return (
     <>
-      <SectionTitle title={t('This web app')} />
-      <Card>
-        {current ? (
-          <Text variant="bodyStrong">{t('Release {version}, checked', { version: current.label ?? current.version })}</Text>
-        ) : (
-          <Text variant="bodyStrong" color={colors.danger}>
-            {t('Not checked: no service worker runs Erevos here')}
-          </Text>
-        )}
-        <Text variant="caption" tone="muted" style={hint}>
-          {t("Erevos runs only code signed with its release key, kept on this device. The key's fingerprint is")}{' '}
-          <Text variant="caption" style={mono}>
-            {status?.key ?? '…'}
-          </Text>
-          {t('. It must match the one you were given with the address of this server.')}
-        </Text>
-        {status?.pending ? (
-          <Text variant="caption" color={colors.success} style={hint}>
-            {t('Release {version} is checked and starts the next time Erevos opens.', { version: status.pending.label ?? status.pending.version })}
-          </Text>
-        ) : null}
-        {status?.checked ? (
-          <Text variant="caption" tone="muted" style={hint}>
-            {t('Last looked for updates {when}.', { when: when(status.checked) })}
-            {status.error ? ` ${status.error}` : ''}
-          </Text>
-        ) : null}
-        {status?.refused.length ? (
-          <>
-            <Text variant="caption" color={colors.danger} style={hint}>
-              {t('Refused:')}
-            </Text>
-            {status.refused.map((refusal) => (
-              <Text key={refusal.at} variant="caption" color={colors.danger} style={hint}>
-                {when(refusal.at)}: {refusal.reason}
-              </Text>
-            ))}
-          </>
-        ) : null}
-        <Row wrap>
-          <Button title={busy ? t('Looking…') : t('Look for an update')} kind="secondary" compact onPress={check} disabled={busy || !current} />
-        </Row>
-      </Card>
-      {PUSH_AVAILABLE ? (
+      {part === 'push' ? null : (
         <>
-          <SectionTitle title={t('Notifications while closed')} />
+          {part ? null : <SectionTitle title={t('This web app')} />}
+          <Card>
+            {current ? (
+              <Text variant="bodyStrong">{t('Release {version}, checked', { version: current.label ?? current.version })}</Text>
+            ) : (
+              <Text variant="bodyStrong" color={colors.danger}>
+                {t('Not checked: no service worker runs Erevos here')}
+              </Text>
+            )}
+            <Text variant="caption" tone="muted" style={hint}>
+              {t("Erevos runs only code signed with its release key, kept on this device. The key's fingerprint is")}{' '}
+              <Text variant="caption" style={mono}>
+                {status?.key ?? '…'}
+              </Text>
+              {t('. It must match the one you were given with the address of this server.')}
+            </Text>
+            {status?.pending ? (
+              <Text variant="caption" color={colors.success} style={hint}>
+                {t('Release {version} is checked and starts the next time Erevos opens.', { version: status.pending.label ?? status.pending.version })}
+              </Text>
+            ) : null}
+            {status?.checked ? (
+              <Text variant="caption" tone="muted" style={hint}>
+                {t('Last looked for updates {when}.', { when: when(status.checked) })}
+                {status.error ? ` ${status.error}` : ''}
+              </Text>
+            ) : null}
+            {status?.refused.length ? (
+              <>
+                <Text variant="caption" color={colors.danger} style={hint}>
+                  {t('Refused:')}
+                </Text>
+                {status.refused.map((refusal) => (
+                  <Text key={refusal.at} variant="caption" color={colors.danger} style={hint}>
+                    {when(refusal.at)}: {refusal.reason}
+                  </Text>
+                ))}
+              </>
+            ) : null}
+            <Row wrap>
+              <Button title={busy ? t('Looking…') : t('Look for an update')} kind="secondary" compact onPress={check} disabled={busy || !current} />
+            </Row>
+          </Card>
+        </>
+      )}
+      {PUSH_AVAILABLE && part !== 'web' ? (
+        <>
+          {part ? null : <SectionTitle title={t('Notifications while closed')} />}
           <Card>
             <Text variant="bodyStrong">{push ? t('On in this space') : t('Off in this space')}</Text>
             <Text variant="caption" tone="muted" style={hint}>

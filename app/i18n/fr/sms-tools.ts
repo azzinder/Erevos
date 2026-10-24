@@ -39,7 +39,7 @@ export const smsTools: Record<string, string> = {
   'Delete the SMS with {name} from the phone now? They cannot be brought back.': 'Supprimer maintenant du téléphone les SMS avec {name} ? Ils ne pourront pas être récupérés.',
   'Delete for good': 'Supprimer définitivement',
   'Some could not be deleted. Try again.': 'Certaines n’ont pas pu être supprimées. Réessaie.',
-  'Only the SMS app can delete SMS: make Erevos the SMS app under SMS in the menu.': 'Seule l’app SMS peut supprimer des SMS : fais d’Erevos l’app SMS dans « SMS » du menu.',
+  'Only the SMS app can delete SMS: make Erevos the SMS app under Settings → Phone and SMS → SMS.': 'Seule l’app SMS peut supprimer des SMS : fais d’Erevos l’app SMS dans « Réglages → Téléphone et SMS → SMS ».',
   'This build of Erevos cannot delete SMS yet.': 'Cette version d’Erevos ne peut pas encore supprimer de SMS.',
   'Deleted on {when}. Goes from the phone on {then}.': 'Supprimée le {when}. Effacée du téléphone le {then}.',
   'Bring back': 'Récupérer',
@@ -97,8 +97,8 @@ export const smsTools: Record<string, string> = {
   'Blocked numbers': 'Numéros bloqués',
   "These are Android's own blocked numbers: Android rejects their SMS, MMS and calls. Every space, and the phone app, sees the same list. Block one from its conversation, with ⋮, or here.":
     'Ce sont les numéros bloqués d’Android lui-même : Android rejette leurs SMS, MMS et appels. Chaque espace, et l’app Téléphone, voit la même liste. Bloque un numéro depuis sa conversation, avec ⋮, ou ici.',
-  'Only the SMS app or the phone app can see and change them: make Erevos the SMS app above.':
-    'Seule l’app SMS ou l’app Téléphone peut les voir et les modifier : fais d’Erevos l’app SMS ci-dessus.',
+  'Only the SMS app or the phone app can see and change them: make Erevos the SMS app first.':
+    'Seule l’app SMS ou l’app Téléphone peut les voir et les modifier : fais d’abord d’Erevos l’app SMS.',
   'This build of Erevos cannot block numbers yet.': 'Cette version d’Erevos ne peut pas encore bloquer de numéros.',
   'No number is blocked.': 'Aucun numéro n’est bloqué.',
   'Type one phone number.': 'Saisis un seul numéro de téléphone.',
@@ -113,15 +113,15 @@ export const smsTools: Record<string, string> = {
   "The phone's SMS": 'Les SMS du téléphone',
   "Backups can hold the phone's SMS and MMS too, with up to {mb} MB of their pictures, sealed with the backup's password. Restoring the backup puts back into the phone's SMS each one it does not have, and deletes none.":
     'Les sauvegardes peuvent aussi contenir les SMS et MMS du téléphone, avec jusqu’à {mb} Mo de leurs images, scellés par le mot de passe de la sauvegarde. Restaurer la sauvegarde remet dans les SMS du téléphone chacun de ceux qu’il n’a pas, et n’en supprime aucun.',
-  'Erevos reads them only while it is the SMS app: make it the SMS app under SMS in the menu.': 'Erevos ne les lit que s’il est l’app SMS : fais-en l’app SMS dans « SMS » du menu.',
+  'Erevos reads them only while it is the SMS app: make it the SMS app under Settings → Phone and SMS → SMS.': 'Erevos ne les lit que s’il est l’app SMS : fais-en l’app SMS dans « Réglages → Téléphone et SMS → SMS ».',
   'Put the SMS in backups': 'Inclure les SMS dans les sauvegardes',
   'Leave the SMS out': 'Ne pas inclure les SMS',
   "It holds {sms} SMS and {mms} MMS of the phone's.": 'Elle contient {sms} SMS et {mms} MMS du téléphone.',
   '{n} picture did not fit and stayed out.': '{n} image n’a pas tenu et est restée de côté.',
   '{n} pictures did not fit and stayed out.': '{n} images n’ont pas tenu et sont restées de côté.',
   'SMS in this backup': 'SMS dans cette sauvegarde',
-  "This backup also holds the phone's SMS. They go back into the phone's SMS only while Erevos is the SMS app: make it the SMS app under SMS in the menu, then restore again. Or restore the rest now, without them.":
-    'Cette sauvegarde contient aussi les SMS du téléphone. Ils ne retournent dans les SMS du téléphone que si Erevos est l’app SMS : fais-en l’app SMS dans « SMS » du menu, puis restaure de nouveau. Ou restaure le reste maintenant, sans eux.',
+  "This backup also holds the phone's SMS. They go back into the phone's SMS only while Erevos is the SMS app: make it the SMS app under Settings → Phone and SMS → SMS, then restore again. Or restore the rest now, without them.":
+    'Cette sauvegarde contient aussi les SMS du téléphone. Ils ne retournent dans les SMS du téléphone que si Erevos est l’app SMS : fais-en l’app SMS dans « Réglages → Téléphone et SMS → SMS », puis restaure de nouveau. Ou restaure le reste maintenant, sans eux.',
   'Without the SMS': 'Sans les SMS',
   'Putting the SMS back into the phone…': 'Remise des SMS dans le téléphone…',
   "{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.": '{sms} SMS et {mms} MMS sont retournés dans les SMS du téléphone. Ceux qu’il avait déjà sont restés tels quels.',

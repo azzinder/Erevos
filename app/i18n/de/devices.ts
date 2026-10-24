@@ -34,7 +34,7 @@ export const devices: Record<string, string> = {
   'The last week': 'Die letzte Woche',
   None: 'Keine',
   'Web browser': 'Webbrowser',
-  'Code copied. Paste it on the phone in Menu → Linked devices.': 'Code kopiert. Füge ihn auf dem Telefon unter „Menü → Verknüpfte Geräte“ ein.',
+  'Code copied. Paste it on the phone in Settings → Data and devices → Linked devices.': 'Code kopiert. Füge ihn auf dem Telefon unter „Einstellungen → Daten und Geräte → Verknüpfte Geräte“ ein.',
   'Linked. The chats come from the phone, and with them the messages it chose to bring over.':
     'Verknüpft. Die Chats kommen vom Telefon, und mit ihnen die Nachrichten, die dort zum Übertragen gewählt wurden.',
   'Not linked. Someone else may have read the code. Make a new one, and link again.':
@@ -71,16 +71,16 @@ export const devices: Record<string, string> = {
   'Bring over': 'Übertragen',
   'Bring over messages again': 'Nachrichten erneut übertragen',
   'Link a computer to this phone': 'Einen Computer mit diesem Telefon verknüpfen',
-  "On the computer, open Menu → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
-    'Öffne auf dem Computer „Menü → Verknüpfte Geräte → Mit meinem Telefon verknüpfen“. Scanne dann seinen Code mit der Kamera dieses Telefons, oder kopiere ihn dort und füge ihn hier ein.',
+  "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
+    'Öffne auf dem Computer „Einstellungen → Daten und Geräte → Verknüpfte Geräte → Mit meinem Telefon verknüpfen“. Scanne dann seinen Code mit der Kamera dieses Telefons, oder kopiere ihn dort und füge ihn hier ein.',
   'Code from the computer': 'Code vom Computer',
   Next: 'Weiter',
   'Link to my phone': 'Mit meinem Telefon verknüpfen',
   'The phone read the code. Does it show this one too?': 'Das Telefon hat den Code gelesen. Zeigt es auch diesen?',
   'They match': 'Stimmen überein',
   'They differ': 'Stimmen nicht überein',
-  'On the phone that holds the account, scan this code with the camera, or paste it in Menu → Linked devices. This space must have no chats of its own.':
-    'Scanne diesen Code auf dem Telefon, das das Konto hat, mit der Kamera, oder füge ihn dort unter „Menü → Verknüpfte Geräte“ ein. Dieser Bereich darf keine eigenen Chats haben.',
+  'On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.':
+    'Scanne diesen Code auf dem Telefon, das das Konto hat, mit der Kamera, oder füge ihn dort unter „Einstellungen → Daten und Geräte → Verknüpfte Geräte“ ein. Dieser Bereich darf keine eigenen Chats haben.',
   'Copy the code': 'Code kopieren',
   'Share the code': 'Code teilen',
   'Waiting for the phone. The code works for half an hour.': 'Wartet auf das Telefon. Der Code gilt eine halbe Stunde.',

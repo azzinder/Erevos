@@ -10,7 +10,17 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
-- Nothing yet.
+- **Settings, in groups**: the home screen's **⋯** keeps only the places (**New group**, **Public groups**,
+  **Starred messages**, **Nearby phones**, **Contacts**, **Phone**, **User guide**) and, last, **Settings**, named in
+  English too in the other languages. Settings has a search at the top that finds a setting by its words and says
+  where it is, the **Language · Γλώσσα** row, and eight groups: **General** (Language, Updates, Permissions),
+  **Appearance** (Style and colours, Wallpaper, Messages, Launcher icons, Widget), **Notifications** (In the
+  background, or the web app's Notifications while closed), **Privacy and security** (Lock and second password, Hidden
+  chats, This web app), **Relay and networks** (Relay, Home relay, Tor, Nostr, LoRa radio), **Phone and SMS** (Phone,
+  and SMS with its nine parts), **Data and devices** (Backups, Linked devices, Imported chats) and **For testing**.
+  Each part of Appearance, of the lock screen and of SMS opens alone, with its own title; what a device cannot do does
+  not show on it. **Relay** opens the New chat screen with the relay's settings already open. Notes in the app that
+  sent you to the menu now give the way through Settings.
 
 ## 3.1.1 (2026-10-24)
 

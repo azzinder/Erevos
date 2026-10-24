@@ -34,7 +34,7 @@ export const devices: Record<string, string> = {
   'The last week': 'La última semana',
   None: 'Ninguno',
   'Web browser': 'Navegador web',
-  'Code copied. Paste it on the phone in Menu → Linked devices.': 'Código copiado. Pégalo en el teléfono, en «Menú → Dispositivos vinculados».',
+  'Code copied. Paste it on the phone in Settings → Data and devices → Linked devices.': 'Código copiado. Pégalo en el teléfono, en «Ajustes → Datos y dispositivos → Dispositivos vinculados».',
   'Linked. The chats come from the phone, and with them the messages it chose to bring over.':
     'Vinculado. Los chats llegan desde el teléfono, y con ellos los mensajes que se eligió traer.',
   'Not linked. Someone else may have read the code. Make a new one, and link again.':
@@ -71,16 +71,16 @@ export const devices: Record<string, string> = {
   'Bring over': 'Traer',
   'Bring over messages again': 'Volver a traer los mensajes',
   'Link a computer to this phone': 'Vincular un ordenador a este teléfono',
-  "On the computer, open Menu → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
-    'En el ordenador, abre «Menú → Dispositivos vinculados → Vincular a mi teléfono». Luego escanea su código con la cámara de este teléfono, o cópialo ahí y pégalo aquí.',
+  "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
+    'En el ordenador, abre «Ajustes → Datos y dispositivos → Dispositivos vinculados → Vincular a mi teléfono». Luego escanea su código con la cámara de este teléfono, o cópialo ahí y pégalo aquí.',
   'Code from the computer': 'Código del ordenador',
   Next: 'Siguiente',
   'Link to my phone': 'Vincular a mi teléfono',
   'The phone read the code. Does it show this one too?': 'El teléfono ha leído el código. ¿Muestra también este?',
   'They match': 'Coinciden',
   'They differ': 'No coinciden',
-  'On the phone that holds the account, scan this code with the camera, or paste it in Menu → Linked devices. This space must have no chats of its own.':
-    'En el teléfono que tiene la cuenta, escanea este código con la cámara, o pégalo en «Menú → Dispositivos vinculados». Este espacio no debe tener chats propios.',
+  'On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.':
+    'En el teléfono que tiene la cuenta, escanea este código con la cámara, o pégalo en «Ajustes → Datos y dispositivos → Dispositivos vinculados». Este espacio no debe tener chats propios.',
   'Copy the code': 'Copiar el código',
   'Share the code': 'Compartir el código',
   'Waiting for the phone. The code works for half an hour.': 'Esperando al teléfono. El código vale durante media hora.',

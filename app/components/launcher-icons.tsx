@@ -64,8 +64,8 @@ const PICTURES: Record<LauncherIcon, Record<LauncherColor, ImageSourcePropType>>
   },
 };
 
-/** The Launcher icons section, or nothing where the phone offers no choice. */
-export function LauncherIcons() {
+/** The Launcher icons section, or nothing where the phone offers no choice; `titled` false on a screen of its own. */
+export function LauncherIcons({ titled = true }: { titled?: boolean }) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const [chosen, setChosen] = useState(launcherColors);
@@ -78,7 +78,7 @@ export function LauncherIcons() {
 
   return (
     <>
-      <SectionTitle title={t('Launcher icons')} />
+      {titled ? <SectionTitle title={t('Launcher icons')} /> : null}
       <Text variant="caption" tone="muted" style={styles.hint}>
         {t("The color of each icon among the phone's apps. It is the phone's, not each space's, as the icons show before Erevos is unlocked.")}
       </Text>

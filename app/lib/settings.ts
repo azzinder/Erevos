@@ -1,0 +1,226 @@
+import { mark } from './i18n';
+
+// The Settings screens (app/settings/): every setting of Erevos in groups, as the phone's own
+// settings are. A group lists its settings; a setting opens its screen, or the list of its parts,
+// each of which opens on the screen alone (`?part=`). The words are English, shown with t().
+// What shows depends on where Erevos runs (`SettingsPlace`), as the menu's rows did before.
+
+/** Where Erevos runs, as the Settings screens need to know it. */
+export type SettingsPlace = {
+  /** Not a phone: the web app, the desktop app or Sailfish's. */
+  web: boolean;
+  /** The web app in a browser (lib/integrity.ts): its signed release, and Web Push. */
+  webApp: boolean;
+  /** Web Push works here (lib/web-push.ts). */
+  push: boolean;
+  /** Receiving and ringing in the background (lib/background.ts). */
+  background: boolean;
+  /** Permissions to check (lib/permissions.ts): a phone, and the web app. */
+  checks: boolean;
+  /** The phone offers a choice of launcher icons (modules/erevos-icons). */
+  launcher: boolean;
+  /** The phone has Erevos's widget (modules/erevos-widget). */
+  widget: boolean;
+  /** The phone has two SIMs. */
+  sims: boolean;
+};
+
+export type SettingsIcon = 'gear' | 'globe' | 'contrast' | 'bell' | 'lock' | 'signal' | 'phone' | 'stack' | 'stopwatch';
+
+/** A setting that opens a screen, or the language list (`language`). */
+export type SettingsLeaf = {
+  id: string;
+  title: string;
+  detail: string;
+  href?: string;
+  language?: true;
+  when?: (place: SettingsPlace) => boolean;
+};
+
+/** A setting with parts of its own, each opening alone. */
+export type SettingsBranch = Omit<SettingsLeaf, 'href' | 'language'> & { parts: SettingsLeaf[] };
+
+export type SettingsItem = SettingsLeaf | SettingsBranch;
+
+export type SettingsGroup = { id: string; title: string; icon: SettingsIcon; items: SettingsItem[]; when?: (place: SettingsPlace) => boolean };
+
+const phone = (place: SettingsPlace) => !place.web;
+
+export const SETTINGS: SettingsGroup[] = [
+  {
+    id: 'general',
+    title: mark('General'),
+    icon: 'gear',
+    items: [
+      // Its detail is the language chosen, by its own name.
+      { id: 'language', title: mark('Language'), detail: '', language: true },
+      { id: 'updates', title: mark('Updates'), detail: mark('This version, and Check for updates'), href: '/updates' },
+      {
+        id: 'permissions',
+        title: mark('Permissions'),
+        detail: mark('What Android lets Erevos do, for calls to ring while it is closed'),
+        href: '/permissions',
+        when: (place) => place.checks && !place.web,
+      },
+      {
+        id: 'browser-permissions',
+        title: mark('Permissions'),
+        detail: mark('What the browser lets Erevos do: notifications, the microphone, keeping its data'),
+        href: '/permissions',
+        when: (place) => place.checks && place.web,
+      },
+    ],
+  },
+  {
+    id: 'look',
+    title: mark('Appearance'),
+    icon: 'contrast',
+    items: [
+      { id: 'style', title: mark('Style and colours'), detail: mark('Look, glass, style, theme and colours'), href: '/appearance?part=style' },
+      { id: 'wallpaper', title: mark('Wallpaper'), detail: mark('What lies behind the chats and the screens'), href: '/appearance?part=wallpaper' },
+      { id: 'bubbles', title: mark('Messages'), detail: mark('The shape of the message bubbles'), href: '/appearance?part=messages' },
+      { id: 'icons', title: mark('Launcher icons'), detail: mark("The colours of Erevos's icons on the home screen"), href: '/appearance?part=icons', when: (place) => place.launcher },
+      { id: 'widget', title: mark('Widget'), detail: mark("The widget's buttons and their order"), href: '/appearance?part=widget', when: (place) => place.widget },
+    ],
+  },
+  {
+    id: 'notices',
+    title: mark('Notifications'),
+    icon: 'bell',
+    items: [
+      {
+        id: 'background',
+        title: mark('In the background'),
+        detail: mark('Receiving and ringing while Erevos is closed, and the notice for messages'),
+        href: '/security?part=background',
+        when: (place) => place.background,
+      },
+      {
+        id: 'push',
+        title: mark('Notifications while closed'),
+        detail: mark('In this space, with no message and no sender in them'),
+        href: '/security?part=push',
+        when: (place) => place.push,
+      },
+    ],
+  },
+  {
+    id: 'privacy',
+    title: mark('Privacy and security'),
+    icon: 'lock',
+    items: [
+      { id: 'lock', title: mark('Lock and second password'), detail: mark('Password, fingerprint or face, second password'), href: '/security?part=lock' },
+      { id: 'hidden', title: mark('Hidden chats'), detail: mark('Chats that open only with their own PIN'), href: '/security?part=hidden' },
+      { id: 'web-app', title: mark('This web app'), detail: mark('The signed release it runs, and its updates'), href: '/security?part=web', when: (place) => place.webApp },
+    ],
+  },
+  {
+    id: 'ways',
+    title: mark('Relay and networks'),
+    icon: 'signal',
+    items: [
+      { id: 'relay', title: mark('Relay'), detail: mark('Your relay: its address, its token and invites'), href: '/chat?setup=relay' },
+      { id: 'home-relay', title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay' },
+      { id: 'tor', title: mark('Tor'), detail: mark('Reach the relays through Tor: messages, unless changed'), href: '/tor', when: phone },
+      { id: 'nostr', title: mark('Nostr'), detail: mark('Texts through Nostr relays, through Tor: on, unless changed'), href: '/nostr', when: phone },
+      { id: 'lora', title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', when: phone },
+    ],
+  },
+  {
+    id: 'phone',
+    title: mark('Phone and SMS'),
+    icon: 'phone',
+    when: phone,
+    items: [
+      { id: 'phone', title: mark('Phone'), detail: mark('The phone app, blocking calls and quick replies'), href: '/phone-settings' },
+      {
+        id: 'sms',
+        title: mark('SMS'),
+        detail: mark('Erevos as the SMS app, one list for all messages'),
+        parts: [
+          { id: 'app', title: mark('Erevos as the SMS app'), detail: mark('Making it the SMS app, and what Android allows it'), href: '/sms-settings?part=app' },
+          { id: 'find', title: mark('Find Erevos on a number'), detail: mark('A hidden invite with the first SMS to a number'), href: '/sms-settings?part=find' },
+          { id: 'names', title: mark('Names from your contacts'), detail: mark('Names and pictures in place of numbers'), href: '/sms-settings?part=names' },
+          { id: 'folders', title: mark('Archived, Spam and Trash'), detail: mark("This space's own folders of SMS conversations"), href: '/sms-settings?part=folders' },
+          { id: 'spam', title: mark('Spam filter'), detail: mark('Its rules, your words, senders, numbers from abroad'), href: '/sms-settings?part=spam' },
+          { id: 'blocked', title: mark('Blocked numbers'), detail: mark("Android's own list, for SMS and calls"), href: '/sms-settings?part=blocked' },
+          { id: 'undo', title: mark('Taking an SMS back'), detail: mark('How long an SMS waits before it goes'), href: '/sms-settings?part=undo' },
+          { id: 'sims', title: mark('Two SIMs'), detail: mark('Which SIM answers a number'), href: '/sms-settings?part=sims', when: (place) => place.sims },
+          { id: 'new', title: mark('New SMS'), detail: mark('To a number, or to several for a group MMS'), href: '/sms-settings?part=new' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'data',
+    title: mark('Data and devices'),
+    icon: 'stack',
+    items: [
+      { id: 'backups', title: mark('Backups'), detail: mark('Make one, automatic backups, restore'), href: '/backup' },
+      { id: 'devices', title: mark('Linked devices'), detail: mark('This account on a computer or in a browser too'), href: '/devices' },
+      { id: 'imported', title: mark('Imported chats'), detail: mark('Telegram and WhatsApp exports'), href: '/imported' },
+    ],
+  },
+  {
+    id: 'tests',
+    title: mark('For testing'),
+    icon: 'stopwatch',
+    items: [
+      { id: 'relay-test', title: mark('Relay test'), detail: mark('For testing a relay'), href: '/relay' },
+      { id: 'radio-test', title: mark('Radio test'), detail: mark('For testing the nearby link'), href: '/radio', when: phone },
+    ],
+  },
+];
+
+export const hasParts = (item: SettingsItem): item is SettingsBranch => 'parts' in item;
+
+const shows = (place: SettingsPlace) => (entry: { when?: (place: SettingsPlace) => boolean }) => !entry.when || entry.when(place);
+
+/** A branch's parts that show here. */
+export const partsHere = (item: SettingsBranch, place: SettingsPlace): SettingsLeaf[] => item.parts.filter(shows(place));
+
+/** A group's settings that show here: a branch shows while one of its parts does. */
+export const itemsHere = (group: SettingsGroup, place: SettingsPlace): SettingsItem[] =>
+  group.items.filter(shows(place)).filter((item) => !hasParts(item) || partsHere(item, place).length > 0);
+
+/** The groups that show here: those with a setting that does. */
+export const groupsHere = (place: SettingsPlace): SettingsGroup[] =>
+  SETTINGS.filter(shows(place)).filter((group) => itemsHere(group, place).length > 0);
+
+export const findGroup = (id: string | undefined): SettingsGroup | undefined => SETTINGS.find((group) => group.id === id);
+
+export const findItem = (group: SettingsGroup | undefined, id: string | undefined): SettingsItem | undefined => group?.items.find((item) => item.id === id);
+
+/** A setting found by a search: the setting, and the titles of where it is, shown before it. */
+export type SettingsHit = { leaf: SettingsLeaf; path: string[] };
+
+/** The words, without accents, in small letters, with Greek's final sigma as any other. */
+const plain = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/ς/g, 'σ');
+
+/** The words of a text, plain: split at anything that is no letter or digit. */
+const wordsOf = (text: string) => plain(text).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
+/**
+ * The settings that show here where each word of `query` starts a word of their title, detail or
+ * place, as `say` (t, in the app) shows them: a branch is found by its parts, each with the branch
+ * in its path.
+ */
+export function searchSettings(query: string, place: SettingsPlace, say: (english: string) => string): SettingsHit[] {
+  const words = wordsOf(query);
+  if (words.length === 0) return [];
+  const hits: SettingsHit[] = [];
+  const offer = (leaf: SettingsLeaf, path: string[]) => {
+    const text = wordsOf([...path, say(leaf.title), leaf.detail ? say(leaf.detail) : ''].join(' '));
+    if (words.every((word) => text.some((found) => found.startsWith(word)))) hits.push({ leaf, path });
+  };
+  for (const group of groupsHere(place)) {
+    for (const item of itemsHere(group, place)) {
+      if (hasParts(item)) {
+        for (const part of partsHere(item, place)) offer(part, [say(group.title), say(item.title)]);
+      } else {
+        offer(item, [say(group.title)]);
+      }
+    }
+  }
+  return hits;
+}

@@ -215,7 +215,7 @@ export default function Backups() {
       if (sms && !putSms) {
         const without = await chooseOne(
           t('SMS in this backup'),
-          t("This backup also holds the phone's SMS. They go back into the phone's SMS only while Erevos is the SMS app: make it the SMS app under SMS in the menu, then restore again. Or restore the rest now, without them."),
+          t("This backup also holds the phone's SMS. They go back into the phone's SMS only while Erevos is the SMS app: make it the SMS app under Settings → Phone and SMS → SMS, then restore again. Or restore the rest now, without them."),
           t('Cancel'),
           t('Without the SMS'),
         );
@@ -278,7 +278,7 @@ export default function Backups() {
             </Text>
             {smsToo && !smsStatus()?.isDefault ? (
               <Text variant="caption" color={colors.danger} style={hint}>
-                {t('Erevos reads them only while it is the SMS app: make it the SMS app under SMS in the menu.')}
+                {t('Erevos reads them only while it is the SMS app: make it the SMS app under Settings → Phone and SMS → SMS.')}
               </Text>
             ) : null}
             <Row wrap>

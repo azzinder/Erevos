@@ -84,8 +84,8 @@ export const parts: Record<string, string> = {
     'Server je ovom uređaju poslao novi service worker, dio Erevosa koji provjerava njegov kod, a nijedno potpisano izdanje ga ne navodi. Erevos nastavlja s provjerenim kodom dok je otvoren, ali kad se zatvori, preglednik može pokrenuti novi, koji bi mogao prikazati lažni Erevos. Ne otvarajte ponovo Erevos s ovog servera i ne upisujte u njega lozinke dok onaj koji vodi server ne sazna zašto se to dogodilo. Vaši razgovori ostaju zapečaćeni vašom lozinkom.',
   'I understand': 'Razumijem',
   'Update refused': 'Ažuriranje odbijeno',
-  '{reason} Erevos keeps the release it has. Lock → This web app shows what was refused.':
-    '{reason} Erevos zadržava izdanje koje ima. „Zaključavanje → Ova web-aplikacija“ prikazuje pojedinosti o odbijenom.',
+  '{reason} Erevos keeps the release it has. Settings → Privacy and security → This web app shows what was refused.':
+    '{reason} Erevos zadržava izdanje koje ima. „Postavke → Privatnost i sigurnost → Ova web-aplikacija“ prikazuje pojedinosti o odbijenom.',
 
   // Files and photos (lib/attachments.ts, lib/photo*.ts, lib/pick-*.ts, lib/save-file*.ts, lib/backup-place.web.ts).
   'Files can be 100 MB at most.': 'Datoteke mogu imati najviše 100 MB.',

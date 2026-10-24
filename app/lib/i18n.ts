@@ -16,7 +16,7 @@ import { secureGet, secureSet } from './secure';
  * makes sure none is missing); a word another language does not have yet shows in English, and
  * `npm run i18n-missing` lists them. The guide is in English and Greek only, so the other
  * languages show it in English. The first start follows the phone's language, if it is one of
- * these; the choice (Home → Menu → Language) is kept on the phone, outside every space, so the
+ * these; the choice (Home → Menu → Settings → Language) is kept on the phone, outside every space, so the
  * password screen shows it too.
  */
 export type Lang = 'en' | 'el' | 'de' | 'es' | 'fr' | 'it' | 'pt' | 'sh';

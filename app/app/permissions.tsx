@@ -11,7 +11,7 @@ import type { Browser } from '../lib/web-permission-checks';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
-// Permissions (home menu → Permissions, and by itself after a new version when something calls
+// Permissions (Settings → General → Permissions, and by itself after a new version when something calls
 // need is missing, lib/permissions.ts): what Android and the phone maker let Erevos do, each with
 // why it matters and the button that asks for it. In the web app, what the browser lets it do
 // (lib/permissions.web.ts), with the browser's own question, or where its setting is.
@@ -114,7 +114,7 @@ function why(id: CheckId, browser: Browser | null): string {
     case 'push':
       return t('When messages come, or a call rings, while Erevos is closed, your relay sends a push and Erevos shows how many messages came since you last opened it, such as "3 new messages", or "Call" when only a call rang. With a relay or a sender\'s Erevos older than 2.0.0, or a message that other phones carried to the relay, it shows no number until you open it. Turned on for each space under Lock → Notifications while closed, never for hidden chats.');
     case 'storage':
-      return t("Without it, the browser may clear Erevos's data when the device runs low on space, Safari above all, and your chats would be gone with it. A backup (menu → Backups) is the safety net.");
+      return t("Without it, the browser may clear Erevos's data when the device runs low on space, Safari above all, and your chats would be gone with it. A backup (Settings → Data and devices → Backups) is the safety net.");
   }
 }
 
@@ -140,13 +140,13 @@ function makerSteps(maker: Maker): string {
 function installSteps(browser: Browser): string {
   switch (browser) {
     case 'iphone':
-      return t('In Safari, tap Share, then Add to Home Screen, and open Erevos from there. It keeps its data apart from this tab: make a backup here first (menu → Backups), and restore it there.');
+      return t('In Safari, tap Share, then Add to Home Screen, and open Erevos from there. It keeps its data apart from this tab: make a backup here first (Settings → Data and devices → Backups), and restore it there.');
     case 'chromium':
       return t("In the browser's menu (⋮): Add to Home screen, or Install. On a computer, also the install icon at the right of the address bar.");
     case 'firefox':
       return t("In Firefox's menu (⋮): Add to Home screen, or Install.");
     case 'safari':
-      return t('In Safari: File → Add to Dock. It keeps its data apart from this window: make a backup here first (menu → Backups), and restore it there.');
+      return t('In Safari: File → Add to Dock. It keeps its data apart from this window: make a backup here first (Settings → Data and devices → Backups), and restore it there.');
     case 'other':
       return t("In this browser's menu: Install, or Add to Home screen.");
   }
@@ -312,7 +312,7 @@ export default function PermissionsScreen() {
                 : t('What this browser lets Erevos do.')}
             </Text>
             <Text variant="caption" tone="muted" style={hint}>
-              {t('A browser lets a web app do only what you allow, and asks for most of it the first time it is used. In a browser Erevos runs only while it is open; while it is closed, a notification can say only that a message came. Each button asks the browser\'s own question. The check itself only reads what the browser says, and sends nothing anywhere. Erevos looks again after each new release, and here any time (menu → Permissions).')}
+              {t('A browser lets a web app do only what you allow, and asks for most of it the first time it is used. In a browser Erevos runs only while it is open; while it is closed, a notification can say only that a message came. Each button asks the browser\'s own question. The check itself only reads what the browser says, and sends nothing anywhere. Erevos looks again after each new release, and here any time (Settings → General → Permissions).')}
             </Text>
             <Text variant="caption" tone="muted" style={hint}>
               {t("A browser does not let Erevos see battery saving (an iPhone's Low Power Mode neither), so it is not among these.")}
@@ -326,7 +326,7 @@ export default function PermissionsScreen() {
                 : t('What Android, and the phone maker, let Erevos do on this phone.')}
             </Text>
             <Text variant="caption" tone="muted" style={hint}>
-              {t('Android lets each app do only what you allow. Erevos has no push service: while it is closed, it keeps running quietly to wait for calls and messages, and some phones stop that unless allowed. Each button opens Android\'s own question or setting; nothing is sent anywhere. Erevos looks again after each new version, and here any time (menu → Permissions).')}
+              {t('Android lets each app do only what you allow. Erevos has no push service: while it is closed, it keeps running quietly to wait for calls and messages, and some phones stop that unless allowed. Each button opens Android\'s own question or setting; nothing is sent anywhere. Erevos looks again after each new version, and here any time (Settings → General → Permissions).')}
             </Text>
             <Text variant="caption" tone="muted" style={hint}>
               {t('After the phone restarts, open Erevos and your space once: until then it cannot read anything, so it cannot ring.')}

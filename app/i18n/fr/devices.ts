@@ -34,7 +34,7 @@ export const devices: Record<string, string> = {
   'The last week': 'La dernière semaine',
   None: 'Aucun',
   'Web browser': 'Navigateur web',
-  'Code copied. Paste it on the phone in Menu → Linked devices.': 'Code copié. Colle-le sur le téléphone dans « Menu → Appareils associés ».',
+  'Code copied. Paste it on the phone in Settings → Data and devices → Linked devices.': 'Code copié. Colle-le sur le téléphone dans « Réglages → Données et appareils → Appareils associés ».',
   'Linked. The chats come from the phone, and with them the messages it chose to bring over.':
     'Associé. Les discussions arrivent depuis le téléphone, avec les messages qu’il a choisi de transférer.',
   'Not linked. Someone else may have read the code. Make a new one, and link again.':
@@ -71,16 +71,16 @@ export const devices: Record<string, string> = {
   'Bring over': 'Transférer',
   'Bring over messages again': 'Transférer de nouveau les messages',
   'Link a computer to this phone': 'Associer un ordinateur à ce téléphone',
-  "On the computer, open Menu → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
-    'Sur l’ordinateur, ouvre « Menu → Appareils associés → Associer à mon téléphone ». Scanne ensuite son code avec l’appareil photo de ce téléphone, ou copie-le là-bas et colle-le ici.',
+  "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
+    'Sur l’ordinateur, ouvre « Réglages → Données et appareils → Appareils associés → Associer à mon téléphone ». Scanne ensuite son code avec l’appareil photo de ce téléphone, ou copie-le là-bas et colle-le ici.',
   'Code from the computer': 'Code de l’ordinateur',
   Next: 'Suivant',
   'Link to my phone': 'Associer à mon téléphone',
   'The phone read the code. Does it show this one too?': 'Le téléphone a lu le code. Affiche-t-il aussi celui-ci ?',
   'They match': 'Ils correspondent',
   'They differ': 'Ils sont différents',
-  'On the phone that holds the account, scan this code with the camera, or paste it in Menu → Linked devices. This space must have no chats of its own.':
-    'Sur le téléphone qui détient le compte, scanne ce code avec l’appareil photo, ou colle-le dans « Menu → Appareils associés ». Cet espace ne doit avoir aucune discussion à lui.',
+  'On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.':
+    'Sur le téléphone qui détient le compte, scanne ce code avec l’appareil photo, ou colle-le dans « Réglages → Données et appareils → Appareils associés ». Cet espace ne doit avoir aucune discussion à lui.',
   'Copy the code': 'Copier le code',
   'Share the code': 'Partager le code',
   'Waiting for the phone. The code works for half an hour.': 'En attente du téléphone. Le code est valable une demi-heure.',

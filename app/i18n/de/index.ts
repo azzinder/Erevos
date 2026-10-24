@@ -17,5 +17,6 @@ import { linkContact } from './link-contact';
 import { hiddenRing } from './hidden-ring';
 import { relayInvites } from './relay-invites';
 import { moves } from './moves';
+import { settingsMenu } from './settings-menu';
 
-export const DE: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...relayInvites, ...moves };
+export const DE: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...relayInvites, ...moves, ...settingsMenu };

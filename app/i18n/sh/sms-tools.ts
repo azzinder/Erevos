@@ -41,8 +41,8 @@ export const smsTools: Record<string, string> = {
     'Obrisati sada s telefona SMS poruke iz razgovora {name}? Neće se moći vratiti.',
   'Delete for good': 'Obriši trajno',
   'Some could not be deleted. Try again.': 'Neki se nisu mogli obrisati. Pokušajte ponovo.',
-  'Only the SMS app can delete SMS: make Erevos the SMS app under SMS in the menu.':
-    'Samo SMS aplikacija može brisati SMS poruke: postavite Erevos kao SMS aplikaciju pod „SMS“ u meniju.',
+  'Only the SMS app can delete SMS: make Erevos the SMS app under Settings → Phone and SMS → SMS.':
+    'Samo SMS aplikacija može brisati SMS poruke: postavite Erevos kao SMS aplikaciju pod „Postavke → Telefon i SMS → SMS“.',
   'This build of Erevos cannot delete SMS yet.': 'Ova verzija Erevosa još ne može brisati SMS poruke.',
   'Deleted on {when}. Goes from the phone on {then}.': 'Obrisano {when}. S telefona se briše {then}.',
   'Bring back': 'Vrati',
@@ -101,8 +101,8 @@ export const smsTools: Record<string, string> = {
   'Blocked numbers': 'Blokirani brojevi',
   "These are Android's own blocked numbers: Android rejects their SMS, MMS and calls. Every space, and the phone app, sees the same list. Block one from its conversation, with ⋮, or here.":
     'Ovo su Androidovi blokirani brojevi: Android odbija njihove SMS-ove, MMS-ove i pozive. Svaki prostor i aplikacija za telefon vide isti popis. Broj blokirajte iz njegovog razgovora, preko ⋮, ili ovdje.',
-  'Only the SMS app or the phone app can see and change them: make Erevos the SMS app above.':
-    'Samo SMS aplikacija ili aplikacija za telefon mogu ih vidjeti i mijenjati: postavite Erevos kao SMS aplikaciju iznad.',
+  'Only the SMS app or the phone app can see and change them: make Erevos the SMS app first.':
+    'Samo SMS aplikacija ili aplikacija za telefon mogu ih vidjeti i mijenjati: prvo postavite Erevos kao SMS aplikaciju.',
   'This build of Erevos cannot block numbers yet.': 'Ova verzija Erevosa još ne može blokirati brojeve.',
   'No number is blocked.': 'Nijedan broj nije blokiran.',
   'Type one phone number.': 'Upišite jedan broj telefona.',
@@ -117,16 +117,16 @@ export const smsTools: Record<string, string> = {
   "The phone's SMS": 'SMS poruke telefona',
   "Backups can hold the phone's SMS and MMS too, with up to {mb} MB of their pictures, sealed with the backup's password. Restoring the backup puts back into the phone's SMS each one it does not have, and deletes none.":
     'Rezervne kopije mogu obuhvatiti i SMS i MMS poruke telefona, s najviše {mb} MB njihovih slika, zapečaćene lozinkom rezervne kopije. Pri vraćanju rezervne kopije u SMS poruke telefona vraća se svaka poruka koju telefon nema, a nijedna se ne briše.',
-  'Erevos reads them only while it is the SMS app: make it the SMS app under SMS in the menu.':
-    'Erevos ih čita samo dok je SMS aplikacija: postavite ga kao SMS aplikaciju pod „SMS“ u meniju.',
+  'Erevos reads them only while it is the SMS app: make it the SMS app under Settings → Phone and SMS → SMS.':
+    'Erevos ih čita samo dok je SMS aplikacija: postavite ga kao SMS aplikaciju pod „Postavke → Telefon i SMS → SMS“.',
   'Put the SMS in backups': 'Stavljaj SMS poruke u rezervne kopije',
   'Leave the SMS out': 'Izostavi SMS poruke',
   "It holds {sms} SMS and {mms} MMS of the phone's.": 'Sadrži SMS poruke telefona: {sms} SMS i {mms} MMS.',
   '{n} picture did not fit and stayed out.': '{n} slika nije stala i izostavljena je.',
   '{n} pictures did not fit and stayed out.': '{n} slika nije stala i izostavljena je. | {n} slike nisu stale i izostavljene su. | {n} slika nije stalo i izostavljeno je.',
   'SMS in this backup': 'SMS poruke u ovoj rezervnoj kopiji',
-  "This backup also holds the phone's SMS. They go back into the phone's SMS only while Erevos is the SMS app: make it the SMS app under SMS in the menu, then restore again. Or restore the rest now, without them.":
-    'Ova rezervna kopija sadrži i SMS poruke telefona. One se vraćaju u SMS poruke telefona samo dok je Erevos SMS aplikacija: postavite ga kao SMS aplikaciju pod „SMS“ u meniju, pa ponovo vratite kopiju. Ili sada vratite ostalo, bez njih.',
+  "This backup also holds the phone's SMS. They go back into the phone's SMS only while Erevos is the SMS app: make it the SMS app under Settings → Phone and SMS → SMS, then restore again. Or restore the rest now, without them.":
+    'Ova rezervna kopija sadrži i SMS poruke telefona. One se vraćaju u SMS poruke telefona samo dok je Erevos SMS aplikacija: postavite ga kao SMS aplikaciju pod „Postavke → Telefon i SMS → SMS“, pa ponovo vratite kopiju. Ili sada vratite ostalo, bez njih.',
   'Without the SMS': 'Bez SMS poruka',
   'Putting the SMS back into the phone…': 'Vraćanje SMS poruka u telefon…',
   "{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.":

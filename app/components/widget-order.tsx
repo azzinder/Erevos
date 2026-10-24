@@ -21,8 +21,8 @@ const PICTURES: Record<WidgetButton, ImageSourcePropType> = {
   contacts: require('../assets/icon/widget/contacts.png'),
 };
 
-/** The Widget section, or nothing where the phone has no widget. */
-export function WidgetOrder() {
+/** The Widget section, or nothing where the phone has no widget; `titled` false on a screen of its own. */
+export function WidgetOrder({ titled = true }: { titled?: boolean }) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const [order, setOrder] = useState(widgetOrder);
@@ -44,7 +44,7 @@ export function WidgetOrder() {
 
   return (
     <>
-      <SectionTitle title={t('Widget')} />
+      {titled ? <SectionTitle title={t('Widget')} /> : null}
       <Text variant="caption" tone="muted" style={styles.hint}>
         {t("The order of the buttons on the home screen's widget, from left to right. Tap ↑ or ↓ to move a button.")}
       </Text>

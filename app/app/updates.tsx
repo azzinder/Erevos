@@ -15,7 +15,7 @@ import { loadCurrentSpaceData } from '../lock/space-data';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
-// Updates (home menu → Updates), as in LPHL FASOULI: the installed version and Check for updates.
+// Updates (Settings → General → Updates), as in LPHL FASOULI: the installed version and Check for updates.
 // Erevos never looks by itself; only this button asks GitHub (lib/updates.ts). On Android the new
 // version downloads, is checked and installs over this one; on a computer and Sailfish OS the
 // download page opens, and the note says which file there updates this one. The web app updates
@@ -130,7 +130,7 @@ export default function UpdatesScreen() {
       t('Erevos {version} is out', { version: found.version }),
       [
         found.date ? t('Released {date}.', { date: found.date }) : '',
-        t('Updating keeps your contacts, chats and settings. A backup first (Backups → Make a backup) covers any surprise.'),
+        t('Updating keeps your contacts, chats and settings. A backup first (Settings → Data and devices → Backups → Make a backup) covers any surprise.'),
         installable
           ? t('It downloads ({size}), is checked against the release and installs over this one.', { size: formatSize(found.apk!.size) })
           : file

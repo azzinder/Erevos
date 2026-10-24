@@ -428,7 +428,7 @@ have it sign a list of places only, or one dated a day later, once (docs/multi-d
   what it opened and sealed (`Link`).
 - `lib/attachments.ts`: a photo or file taken stays on the relay while another device is still to take
   it (`watchTakenFiles`).
-- `app/app/devices.tsx`: Menu → Linked devices; `app/app/link.tsx` opens it from a scanned code.
+- `app/app/devices.tsx`: Settings → Data and devices → Linked devices; `app/app/link.tsx` opens it from a scanned code.
 - `app/checks/devices.check.ts`: a phone, a computer and a contact on an older version, through a
   real relay and the real core; devices reaching each other with the phone off; contacts writing to
   every endpoint, each with keys of its own the computer finds them by, hidden chats among them, and

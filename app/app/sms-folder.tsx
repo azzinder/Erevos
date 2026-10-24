@@ -90,7 +90,7 @@ export default function SmsFolderScreen() {
   // Deleting from the phone needs Erevos as its SMS app.
   function mayDelete(): boolean {
     if (smsStatus()?.isDefault && smsToolsReady()) return true;
-    setNote(smsToolsReady() ? t('Only the SMS app can delete SMS: make Erevos the SMS app under SMS in the menu.') : t('This build of Erevos cannot delete SMS yet.'));
+    setNote(smsToolsReady() ? t('Only the SMS app can delete SMS: make Erevos the SMS app under Settings → Phone and SMS → SMS.') : t('This build of Erevos cannot delete SMS yet.'));
     return false;
   }
 

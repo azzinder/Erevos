@@ -198,7 +198,7 @@ export default function Sms() {
         setMessages(loaded);
         return loaded;
       })
-      .catch(() => setNote(t('The SMS on this phone could not be read. Make Erevos the SMS app under SMS in the menu.')));
+      .catch(() => setNote(t('The SMS on this phone could not be read. Make Erevos the SMS app under Settings → Phone and SMS → SMS.')));
     markSmsRead(to).catch(() => undefined);
     // What waits to go later, and the space's order, as the phone has them now.
     const sms = link.current;

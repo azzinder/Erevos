@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 
@@ -126,12 +127,21 @@ function PaletteTile({ choice, style, scheme, selected, onPress }: {
   );
 }
 
+// The parts of the Appearance screen that open alone from Settings (lib/settings.ts), by their titles.
+const PARTS = { style: mark('Style and colours'), wallpaper: mark('Wallpaper'), messages: mark('Messages'), icons: mark('Launcher icons'), widget: mark('Widget') };
+type Part = keyof typeof PARTS;
+const partOf = (part: unknown): Part | null => (typeof part === 'string' && part in PARTS ? (part as Part) : null);
+
 export default function Appearance() {
-  return <AppearanceEditor />;
+  const { part } = useLocalSearchParams<{ part?: string }>();
+  return <AppearanceEditor part={partOf(part)} />;
 }
 
-/** The Appearance screen's choices: the space's look, or a chat's own (`title` and `top` then say whose). */
-export function AppearanceEditor({ title, top }: { title?: string; top?: ReactNode }) {
+/**
+ * The Appearance screen's choices: the space's look, or a chat's own (`title` and `top` then say
+ * whose). With `part`, only that part of them.
+ */
+export function AppearanceEditor({ title, top, part = null }: { title?: string; top?: ReactNode; part?: Part | null }) {
   const { look, setLook, scheme, colors } = useTheme();
   const system = useColorScheme();
   const styles = useStyles(makeStyles);
@@ -168,38 +178,41 @@ export function AppearanceEditor({ title, top }: { title?: string; top?: ReactNo
   const paletteScheme = nocturne ? resolveScheme(look.prevStyle, look.theme, system) : scheme;
   // The coloured areas as the palette fills them, to preview each text colour on.
   const fill = buildColors(look.style, scheme, look.palette, { ...look, frameText: 'palette' }).hero;
+  const shows = (one: Part) => !part || part === one;
 
   return (
     <Page>
-      <Text variant="title">{title ?? t('Appearance')}</Text>
+      <Text variant="title">{title ?? (part ? t(PARTS[part]) : t('Appearance'))}</Text>
       {top}
 
-      <SectionTitle title={t('Look')} />
-      <Row wrap>
-        {LOOK_NAMES.map((lk) => (
-          <Chip key={lk} label={t(LOOK_LABELS[lk])} selected={!scene && look.look === lk} disabled={scene} onPress={() => setLook({ look: lk })} />
-        ))}
-      </Row>
-      {scene ? (
-        <Text variant="caption" tone="faint">
-          {isScene(look.style)
-            ? t('{style} draws its own scene behind the screens, so it takes no glass.', { style: styleName })
-            : material
-              ? t("Material You takes no glass: its colors are the phone's own.")
-              : t('Custom takes no glass: its background is the one you chose.')}
-        </Text>
-      ) : null}
-      {look.look === 'glass' && !scene ? (
+      {shows('style') ? (
         <>
-          <SectionTitle title={t('Kind of glass')} />
+          <SectionTitle title={t('Look')} />
           <Row wrap>
-            {GLASS_KINDS.map((k) => (
-              <Chip key={k} label={t(GLASS_KIND_LABELS[k])} selected={look.glassKind === k} onPress={() => setLook({ glassKind: k })} />
+            {LOOK_NAMES.map((lk) => (
+              <Chip key={lk} label={t(LOOK_LABELS[lk])} selected={!scene && look.look === lk} disabled={scene} onPress={() => setLook({ look: lk })} />
             ))}
           </Row>
-          <Text variant="caption" tone="faint">
-            {t('Panes: each card is a pane of glass over the wallpaper, as on the LPHL admin panel. One pane: each screen lies on one frosted pane, as on lphl.nekten.eu.')}
-          </Text>
+          {scene ? (
+            <Text variant="caption" tone="faint">
+              {isScene(look.style)
+                ? t('{style} draws its own scene behind the screens, so it takes no glass.', { style: styleName })
+                : material
+                  ? t("Material You takes no glass: its colors are the phone's own.")
+                  : t('Custom takes no glass: its background is the one you chose.')}
+            </Text>
+          ) : null}
+          {look.look === 'glass' && !scene ? (
+            <>
+              <SectionTitle title={t('Kind of glass')} />
+              <Row wrap>
+                {GLASS_KINDS.map((k) => (
+                  <Chip key={k} label={t(GLASS_KIND_LABELS[k])} selected={look.glassKind === k} onPress={() => setLook({ glassKind: k })} />
+                ))}
+              </Row>
+              <Text variant="caption" tone="faint">
+                {t('Panes: each card is a pane of glass over the wallpaper, as on the LPHL admin panel. One pane: each screen lies on one frosted pane, as on lphl.nekten.eu.')}
+              </Text>
         </>
       ) : null}
 
@@ -313,64 +326,79 @@ export function AppearanceEditor({ title, top }: { title?: string; top?: ReactNo
           {t('{style} keeps its own colors here.', { style: styleName })}
         </Text>
       ) : null}
-
-      <SectionTitle title={t('Wallpaper')} />
-      <Row wrap>
-        {WALLPAPERS.map((w) => (
-          <Chip
-            key={w}
-            label={t(WALLPAPER_LABELS[w])}
-            selected={look.wallpaper === w}
-            onPress={() => (w === 'photo' && !look.wallpaperPhoto ? void choosePhoto() : setLook({ wallpaper: w }))}
-          />
-        ))}
-      </Row>
-      {look.wallpaper === 'photo' ? (
-        <Row wrap>
-          <TextButton title={t('Change photo')} onPress={() => void choosePhoto()} />
-        </Row>
-      ) : null}
-      <Text variant="caption" tone="faint">
-        {look.wallpaper === 'photo'
-          ? t('Your photo, made smaller and drawn anew so nothing it said besides its picture is kept, then sealed. A veil over it keeps the text readable.')
-          : t("Drawn faintly in the accent, behind every screen. Style default keeps {style}'s own.", { style: styleName })}
-      </Text>
-      {photoError ? (
-        <Text variant="caption" color={colors.danger}>
-          {photoError}
-        </Text>
+        </>
       ) : null}
 
-      <SectionTitle title={t('Messages')} />
-      <Row wrap>
-        {BUBBLE_SHAPES.map((b) => (
-          <Chip key={b} label={t(BUBBLE_LABELS[b])} selected={look.bubbles === b} onPress={() => setLook({ bubbles: b })} />
-        ))}
-      </Row>
+      {shows('wallpaper') ? (
+        <>
+          {part ? null : <SectionTitle title={t('Wallpaper')} />}
+          <Row wrap>
+            {WALLPAPERS.map((w) => (
+              <Chip
+                key={w}
+                label={t(WALLPAPER_LABELS[w])}
+                selected={look.wallpaper === w}
+                onPress={() => (w === 'photo' && !look.wallpaperPhoto ? void choosePhoto() : setLook({ wallpaper: w }))}
+              />
+            ))}
+          </Row>
+          {look.wallpaper === 'photo' ? (
+            <Row wrap>
+              <TextButton title={t('Change photo')} onPress={() => void choosePhoto()} />
+            </Row>
+          ) : null}
+          <Text variant="caption" tone="faint">
+            {look.wallpaper === 'photo'
+              ? t('Your photo, made smaller and drawn anew so nothing it said besides its picture is kept, then sealed. A veil over it keeps the text readable.')
+              : t("Drawn faintly in the accent, behind every screen. Style default keeps {style}'s own.", { style: styleName })}
+          </Text>
+          {photoError ? (
+            <Text variant="caption" color={colors.danger}>
+              {photoError}
+            </Text>
+          ) : null}
+        </>
+      ) : null}
 
-      <SectionTitle title={t('Preview')} />
-      <Card>
-        <View style={[styles.bubble, bubbles.theirs, bubbles.theirsTail]}>
-          <Text style={[{ fontSize: 15 }, bubbles.theirsText]}>{t('Καλημέρα! Are we still on for tonight?')}</Text>
-        </View>
-        <View style={[styles.bubble, bubbles.mine, bubbles.mineTail]}>
-          <Text style={[{ fontSize: 15 }, bubbles.mineText]}>{t('Yes, see you at eight.')}</Text>
-        </View>
-        <Row wrap>
-          <Button title={t('Send')} compact onPress={() => undefined} />
-          <Button title={t('Hidden chats')} kind="secondary" compact onPress={() => undefined} />
-        </Row>
-      </Card>
+      {shows('messages') ? (
+        <>
+          {part ? null : <SectionTitle title={t('Messages')} />}
+          <Row wrap>
+            {BUBBLE_SHAPES.map((b) => (
+              <Chip key={b} label={t(BUBBLE_LABELS[b])} selected={look.bubbles === b} onPress={() => setLook({ bubbles: b })} />
+            ))}
+          </Row>
+        </>
+      ) : null}
 
-      {top ? null : (
+      {/* The preview, under every part that changes how the chats look. */}
+      {part !== 'icons' && part !== 'widget' ? (
+        <>
+          <SectionTitle title={t('Preview')} />
+          <Card>
+            <View style={[styles.bubble, bubbles.theirs, bubbles.theirsTail]}>
+              <Text style={[{ fontSize: 15 }, bubbles.theirsText]}>{t('Καλημέρα! Are we still on for tonight?')}</Text>
+            </View>
+            <View style={[styles.bubble, bubbles.mine, bubbles.mineTail]}>
+              <Text style={[{ fontSize: 15 }, bubbles.mineText]}>{t('Yes, see you at eight.')}</Text>
+            </View>
+            <Row wrap>
+              <Button title={t('Send')} compact onPress={() => undefined} />
+              <Button title={t('Hidden chats')} kind="secondary" compact onPress={() => undefined} />
+            </Row>
+          </Card>
+        </>
+      ) : null}
+
+      {top || (part && part !== 'style') ? null : (
         <Text variant="caption" tone="muted" style={styles.hint}>
           {t('Each space keeps its own look. The password screen shows the look last used.')}
         </Text>
       )}
 
       {/* The phone's launcher icons and widget: not a chat's look (Android only). */}
-      {top ? null : <LauncherIcons />}
-      {top ? null : <WidgetOrder />}
+      {top || !shows('icons') ? null : <LauncherIcons titled={!part} />}
+      {top || !shows('widget') ? null : <WidgetOrder titled={!part} />}
 
       <Sheet visible={pickColor} onClose={() => setPickColor(false)} title={t('My color')}>
         <View style={styles.dots}>

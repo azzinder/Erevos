@@ -334,9 +334,10 @@ export default function ChatScreen() {
   const router = useRouter();
   // A contact to open with (from the home screen, or an imported chat that goes on with them),
   // hidden chats opened from the home screen's search (their key handed over in memory), or the
-  // relay settings to show at once. `at`: the tag of a message to go to, starred or found. A call
-  // to start with the contact comes only from a tap in Erevos (lib/call-handoff.ts), never from the
-  // address, which any app or web page can open.
+  // relay settings to show at once (`setup=1`), with the relay's own open (`setup=relay`). `at`:
+  // the tag of a message to go to, starred or found. A call to start with the contact comes only
+  // from a tap in Erevos (lib/call-handoff.ts), never from the address, which any app or web page
+  // can open.
   const { contact, hidden, setup, phone, at } = useLocalSearchParams<{
     contact?: string;
     hidden?: string;
@@ -403,7 +404,8 @@ export default function ChatScreen() {
               at={initial && typeof at === 'string' && isTag(at) ? at : null}
               initialCall={initialCall}
               linkNumber={linkNumber}
-              setup={setup === '1'}
+              setup={setup === '1' || setup === 'relay'}
+              relaySettings={setup === 'relay'}
               shown={!hiddenKey}
               onLook={setChatLook}
             />
@@ -459,7 +461,7 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', setup = false, shown, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', setup = false, relaySettings = false, shown, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
@@ -471,6 +473,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   linkNumber?: string;
   /** Opens with the relay settings and adding a contact in view. */
   setup?: boolean;
+  /** Opens with the relay's own settings open too (Settings → Relay). */
+  relaySettings?: boolean;
   shown: boolean;
   /** Closes the hidden chats. */
   onHidden?: () => void;
@@ -505,7 +509,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [note, setNote] = useState('');
   const [showRelay, setShowRelay] = useState(setup);
   // The relay's own settings, under Relay and new contacts: closed until asked for.
-  const [relayShown, setRelayShown] = useState(false);
+  const [relayShown, setRelayShown] = useState(relaySettings);
   // The chat's details, over the chat: its picture, name, timer, look, safety number, moving it.
   const [details, setDetails] = useState(false);
   // The chat's own look being chosen, over the chat.

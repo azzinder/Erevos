@@ -84,8 +84,8 @@ export const parts: Record<string, string> = {
     'Ο server έστειλε σε αυτή τη συσκευή νέο service worker, το κομμάτι του Erevos που ελέγχει τον κώδικά του, και καμία υπογεγραμμένη έκδοση δεν τον αναφέρει. Το Erevos συνεχίζει με τον ελεγμένο κώδικα όσο είναι ανοιχτό, αλλά μόλις κλείσει ο browser μπορεί να ξεκινήσει τον νέο, που θα μπορούσε να δείξει ένα ψεύτικο Erevos. Μην ανοίξεις ξανά το Erevos από αυτόν τον server, και μη γράψεις εκεί τους κωδικούς σου, μέχρι να μάθει γιατί όποιος τρέχει τον server. Οι συνομιλίες σου μένουν κρυπτογραφημένες με τον κωδικό σου.',
   'I understand': 'Κατάλαβα',
   'Update refused': 'Η ενημέρωση απορρίφθηκε',
-  '{reason} Erevos keeps the release it has. Lock → This web app shows what was refused.':
-    '{reason} Το Erevos κρατά την έκδοση που έχει. Στο Κλείδωμα → Αυτή η web εφαρμογή φαίνεται τι απορρίφθηκε.',
+  '{reason} Erevos keeps the release it has. Settings → Privacy and security → This web app shows what was refused.':
+    '{reason} Το Erevos κρατά την έκδοση που έχει. Στις Ρυθμίσεις → Απόρρητο και ασφάλεια → Αυτή η web εφαρμογή φαίνεται τι απορρίφθηκε.',
 
   // Files and photos (lib/attachments.ts, lib/photo*.ts, lib/pick-*.ts, lib/save-file*.ts, lib/backup-place.web.ts).
   'Files can be 100 MB at most.': 'Τα αρχεία μπορούν να είναι έως 100 MB.',

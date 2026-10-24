@@ -48,27 +48,21 @@ more, and going to an earlier one (from the search, a starred message or the one
   **SMS**, the Erevos **Messages** and **Contacts**, after the password like any link (the Phone without it, if you
   let it). Over the first three it shows how many missed calls, unread SMS and new messages there are, never who or
   what; with missed calls, **Phone** opens on **Recents**. A button tapped again shows its screen again, also after
-  you chose another tab there. Its words follow Erevos's language. **Appearance** → **Widget** sets the order of its
-  buttons.
+  you chose another tab there. Its words follow Erevos's language. **Settings** → **Appearance** → **Widget** sets the
+  order of its buttons.
 - **The lock** at the top locks Erevos at once when a password is set, or opens the lock settings when not.
 - **The three dots** open the rest:
 
 | In the menu | What it opens |
 | --- | --- |
-| **Language · Γλώσσα** | The app's language: English, Greek, German, French, Spanish, Italian, Portuguese or Serbo-Croatian. See Language below. |
 | **New group** | A group chat with your contacts. See [Group chats](#groups). |
 | **Public groups** | A group anyone with its link can ask to join, with an owner and admins. See [Public groups](#public-groups). |
+| **Starred messages** | The messages you starred, in all your chats. See A message's menu, under Chat through a relay. |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
-| **LoRa radio** | Texts over a Meshtastic radio, kilometres away, without internet; off unless set. See [Over a LoRa radio](#lora). |
-| **Contacts** | The phone's contacts, with their groups and birthdays, and contacts kept only in Erevos. See [Contacts](#contacts). |
-| **Linked devices** | The same account on a computer or in a browser too. See [Linked devices](#devices). |
-| **Imported chats** | Chats brought in from Telegram or WhatsApp. See [Imported chats](#import). |
-| **Appearance** | Looks, colours and glass. See [Appearance](#appearance). |
-| **Lock and second password** | The password lock, the second password and hidden chats. See [Password lock](#lock). |
-| **Backups** | Backups of everything on the phone, made by hand or by themselves, and restoring one. See [Backups](#backup). |
-| **Updates** | The version you have, and **Check for updates**. See [Updates](#updates). |
+| **Contacts** (Android) | The phone's contacts, with their groups and birthdays, and contacts kept only in Erevos. See [Contacts](#contacts). |
+| **Phone** (Android) | Erevos as the phone app: the keypad, the calls and the favourites. See [Phone](#phone). |
 | **User guide** | This guide. |
-| **Relay test**, **Radio test** | Tests of the connections. See [The test screens](#tests). |
+| **Settings** | The last row, with a cog: everything you can set, in groups, with a search. See Settings below. |
 
 Inside a chat, its name and picture are at the top with how it travels: **Encrypted** (end to end), **Online**,
 **Nearby** while their phone is linked to yours over the radio, or **typing…**, with a stopwatch when the chat's
@@ -79,7 +73,8 @@ closes them.
 
 A good first hour:
 
-1. Open **Lock and second password** and set a password, so nobody who picks up the phone can open Erevos.
+1. Open **Settings** → **Privacy and security** → **Lock and second password** and set a password, so nobody who
+   picks up the phone can open Erevos.
 2. Open **Nearby phones** from the menu on two phones that are close to each other, and allow what Android asks for.
 3. Add each other with **Show my QR code**, as in [Chat with a nearby phone](#nearby), and send a message: it goes
    nearby, end-to-end encrypted, with no relay and no internet.
@@ -98,13 +93,39 @@ A good first hour:
   tab it does nothing: go back there with the back arrow. An SMS conversation is archived or deleted by holding it
   down.
 
+### Settings
+
+**Settings**, the last row of the menu (the three dots), holds everything you can set in Erevos, in groups, as a
+phone's own settings do. In the other languages it is named in that language and in English, such as
+**Einstellungen · Settings**, so it is found in a language you cannot read.
+
+- **Search the settings,** at the top, finds a setting by the start of its words, with or without accents, and shows
+  where it is, such as **Phone and SMS › SMS**. Tap it to open it.
+- **Language · Γλώσσα,** the row under the search, opens the list of languages, see Language below.
+- **A group** opens the list of its settings, and a setting opens its screen. A setting with parts, such as **SMS**,
+  lists them, and each part opens alone.
+- **Only what works here shows:** on a computer, on Sailfish OS and in the web app there is no **Phone and SMS**,
+  Tor, Nostr or LoRa, and a group with nothing to set here does not show.
+
+| Group | What is in it |
+| --- | --- |
+| **General** | **Language**, **Updates** and **Permissions** (Android and the web app). See Language below, and [Updates](#updates). |
+| **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android) and **Widget** (Android). See [Appearance](#appearance). |
+| **Notifications** | **In the background** (Android): receiving and ringing while Erevos is closed, and the notice for messages. **Notifications while closed** (the web app): Web Push. See [On an iPhone](#iphone). |
+| **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second) and [Hidden chats](#hidden). |
+| **Relay and networks** | **Relay** (it opens **New chat** with **Relay and new contacts** and **Relay settings** open), **Home relay**, **Tor** (Android), **Nostr** (Android) and **LoRa radio** (Android). See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr) and [Over a LoRa radio](#lora). |
+| **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
+| **Data and devices** | **Backups**, **Linked devices** and **Imported chats**. See [Backups](#backup), [Linked devices](#devices) and [Imported chats](#import). |
+| **For testing** | **Relay test** and **Radio test** (Android). See [The test screens](#tests). |
+
 ### Language
 
 Erevos is in English, Greek, German, French, Spanish, Italian, Portuguese and Serbo-Croatian. The first time it
 starts, it follows the phone's language if it is one of these (a phone in Serbian, Croatian, Bosnian or Montenegrin
-starts in Serbo-Croatian), and is in English otherwise. To change it, open the menu (the three dots) and tap its
-first row, **Language · Γλώσσα**: in the other languages it is named in that language and in English, such as
-**Sprache · Language**. Then tap the language, each named in its own words: **Ελληνικά**, **English**,
+starts in Serbo-Croatian), and is in English otherwise. To change it, open the menu (the three dots), tap
+**Settings**, its last row, and then the first row there, **Language · Γλώσσα**. In the other languages both are
+named in that language and in English, such as **Einstellungen · Settings** and **Sprache · Language**. Then tap the
+language, each named in its own words: **Ελληνικά**, **English**,
 **Deutsch**, **Español**, **Français**, **Italiano**, **Português** or **Srpskohrvatski**. The whole app changes
 at once.
 
@@ -173,8 +194,8 @@ radio, and on Android only.
 
 1. Set up the radio in the Meshtastic app first, its **region** above all: without one it sends nothing. Then close
    the Meshtastic app, or disconnect it there: a radio links to one app at a time.
-2. Open **LoRa radio** from the menu, tap **Find my radio**, read what it says, and tap your radio when it shows. A
-   radio not paired yet asks for its PIN: it shows on the radio's screen, or is 123456.
+2. Open **Settings** → **Relay and networks** → **LoRa radio**, tap **Find my radio**, read what it says, and tap
+   your radio when it shows. A radio not paired yet asks for its PIN: it shows on the radio's screen, or is 123456.
 3. Your contact does the same with theirs, on the same mesh: the same region and the same first channel.
 4. Write as always. When the relay cannot be reached and no phone is near, a text goes over LoRa,
    and the line under the chat says so.
@@ -210,7 +231,8 @@ to a contact on another relay is sealed for theirs and handed to yours, which pa
 your phone's address. A phone with no relay gets a place on its contact's, see **No relay of your own** below.
 
 1. On the home screen, tap **New chat**. It shows your contact link and how to add a contact; tap **Relay settings**
-   below them (in a chat with no contact picked, they are under **Relay and new contacts**).
+   below them (in a chat with no contact picked, they are under **Relay and new contacts**). **Settings** → **Relay
+   and networks** → **Relay** opens the same, with **Relay and new contacts** and **Relay settings** already open.
 2. Type the **Relay address**: \`ws://<computer address>:7879\` for a relay on your own network, or
    \`wss://relay.example.org\` for one on the internet. Add the **Token** if the relay needs one.
 3. Tap **Create my relay queue**. Erevos says **Your relay queue is ready**.
@@ -665,7 +687,7 @@ a missed call.
   wakes. Tap it to answer. With the password
   lock on, a call that rings shows before the password, and Erevos locks as soon as it ends. Locked, the space goes on
   behind the password screen, so messages and calls still come, and a call shows over the password screen. Only that space's chats
-  and groups come so; hidden chats only say that a message came, if you let them (see Hidden chats). Set it under **Lock and second password** → **In the background**:
+  and groups come so; hidden chats only say that a message came, if you let them (see Hidden chats). Set it under **Settings** → **Notifications** → **In the background**:
   **Receive and ring** (the default) or **Only while Erevos shows**, and **Say a message came** (the default) or **No
   notice**, which goes for while Erevos shows too. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
   screen**.
@@ -675,16 +697,16 @@ a missed call.
   receives, a quiet notice says so: open Erevos and the space to receive again. So does one, "Locked", when the space
   that received closes (after a backup is restored, say) and Erevos leaves the screen with the password asked. A message request cannot call you until
   you accept it.
-- **Permissions (Android):** menu → **Permissions** shows what Android lets Erevos do for calls and messages in the
-  background (notices, the call notice and that it pops up, the message notice, calls over the lock screen, running on
-  battery, running in the background with battery use not set to Restricted, not paused when unused, mobile data in the
-  background, the microphone) and for other things (the sound for new messages, notices on the lock screen, calls
-  through Do Not Disturb, camera, phones nearby, contacts, exact times), each with why and a button that opens Android's
-  own question or setting. It also says when the phone is on silent or vibrate, when battery saver is on, and when Do
-  Not Disturb is on while Erevos calls are not let through it. On Huawei, Honor, Xiaomi, OPPO, realme, OnePlus, vivo, Samsung and ASUS phones it also says where the maker's own
-  setting is, which Erevos cannot read: tap **I did it** once it is set. After each new version, and the first time, it
-  opens by itself when calls or messages need something. In the web app it shows what the browser allows, see
-  [On an iPhone](#iphone).
+- **Permissions (Android):** **Settings** → **General** → **Permissions** shows what Android lets Erevos do for calls
+  and messages in the background (notices, the call notice and that it pops up, the message notice, calls over the
+  lock screen, running on battery, running in the background with battery use not set to Restricted, not paused when
+  unused, mobile data in the background, the microphone) and for other things (the sound for new messages, notices on
+  the lock screen, calls through Do Not Disturb, camera, phones nearby, contacts, exact times), each with why and a
+  button that opens Android's own question or setting. It also says when the phone is on silent or vibrate, when
+  battery saver is on, and when Do Not Disturb is on while Erevos calls are not let through it. On Huawei, Honor,
+  Xiaomi, OPPO, realme, OnePlus, vivo, Samsung and ASUS phones it also says where the maker's own setting is, which
+  Erevos cannot read: tap **I did it** once it is set. After each new version, and the first time, it opens by itself
+  when calls or messages need something. In the web app it shows what the browser allows, see [On an iPhone](#iphone).
 - **One call at a time.** A call goes on while you move between screens of the space. It ends when the space closes,
   and a call in hidden chats when they close, as they do when Erevos goes to the background. Swiping Erevos away from
   the recent apps ends a call too.
@@ -877,8 +899,8 @@ It needs a client at the provider, a few settings, and \`/signin/\` passed to th
 
 ## Home relay {#home-relay}
 
-Under **Home relay** in the menu, a space can have a second relay with a queue of its own: one at home, on a
-Raspberry Pi or an old computer, or any other relay you trust. It is optional.
+Under **Settings** → **Relay and networks** → **Home relay**, a space can have a second relay with a queue of its own:
+one at home, on a Raspberry Pi or an old computer, or any other relay you trust. It is optional.
 
 - **What it does:** your contact link and every message say that queue beside your relay. While your relay cannot be
   reached, contacts write there, and Erevos takes what comes there with each look. What you send goes through it
@@ -894,8 +916,8 @@ Raspberry Pi or an old computer, or any other relay you trust. It is optional.
 
 ## Through Tor {#tor}
 
-Under **Tor** in the menu, **What goes through Tor** chooses which of this space's requests to its relays go through
-the Tor network. Each space has its own choice:
+Under **Settings** → **Relay and networks** → **Tor**, **What goes through Tor** chooses which of this space's
+requests to its relays go through the Tor network. Each space has its own choice:
 
 | Choice | What goes through Tor |
 | --- | --- |
@@ -937,9 +959,9 @@ is **No bridges** unless you choose, each space has its own, and it counts only 
 
 ## Through Nostr {#nostr}
 
-Under **Nostr** in the menu, **Texts through Nostr** is **On** unless you change it. Then what you write to a contact
-whose Erevos reads on Nostr too goes through public Nostr relays, through Tor, instead of through your relay. Each
-space has its own choice, and its own Nostr relays.
+Under **Settings** → **Relay and networks** → **Nostr**, **Texts through Nostr** is **On** unless you change it. Then
+what you write to a contact whose Erevos reads on Nostr too goes through public Nostr relays, through Tor, instead of
+through your relay. Each space has its own choice, and its own Nostr relays.
 
 - **How it is sealed:** end-to-end encrypted as always, then sealed once more for a key your contact gave this chat
   alone, and signed by a key made for that one text (a NIP-59 gift wrap). The Nostr relays see that someone wrote to
@@ -962,8 +984,8 @@ space has its own choice, and its own Nostr relays.
 
 ## SMS {#sms}
 
-On Android, Erevos can be the phone's SMS app, under **SMS** in the menu. The home screen then shows SMS and Erevos
-chats in one list.
+On Android, Erevos can be the phone's SMS app: under **Settings** → **Phone and SMS** → **SMS** → **Erevos as the SMS
+app**, tap **Make Erevos the SMS app**. The home screen then shows SMS and Erevos chats in one list.
 
 > **SMS and MMS are not encrypted by Erevos.** They travel as every SMS does, and stay in Android's own SMS store, where
 > any app allowed to read SMS sees them and Android's backups hold them. Only Erevos chats are end-to-end encrypted.
@@ -971,21 +993,21 @@ chats in one list.
 - **SMS from before:** nothing to import. Erevos shows the SMS and MMS already on the phone, from Android's own
   store, where they stay for any other SMS app. Android keeps them, not sealed by Erevos, as with every SMS app.
 - **If Erevos does not become the SMS app:** Android 15 and later can hold this back from an app installed from a
-  browser. Under **SMS** in the menu, tap **Open Default apps** → **SMS app** → Erevos. If Android calls it a
-  restricted setting, open **Erevos's App info**, tap **⋮** at the top right → **Allow restricted settings**, and
-  choose Erevos again.
-- **When an SMS comes:** a notice says "New message", without who sent it or what it says. If none comes, the
-  **SMS** screen shows **Allow notifications** while Android holds them back.
+  browser. Under **Settings** → **Phone and SMS** → **SMS** → **Erevos as the SMS app**, tap **Open Default
+  apps** → **SMS app** → Erevos. If Android calls it a restricted setting, open **Erevos's App info**, tap **⋮** at
+  the top right → **Allow restricted settings**, and choose Erevos again.
+- **When an SMS comes:** a notice says "New message", without who sent it or what it says. If none comes,
+  **Erevos as the SMS app** shows **Allow notifications** while Android holds them back.
 - **One-time codes:** an SMS that says it holds a code (a bank's, a sign-in's), in any of the app's languages, gets
   **Copy code** under it in the chat, and on its notice too, without the code showing there; on Android 12 and later
   the notice's button asks to unlock the phone first. Only its 4 to 8 digits are copied, never a phone number, an
   amount, a date or a time, and Android shows no preview of them. Any app that reads the clipboard can read them, so
   paste the code soon.
-- **If no SMS show:** Android 15 and later hold the SMS permission back from an app installed from a browser.
-  Under **SMS** in the menu, tap **Allow SMS**. If Android calls it a restricted setting, open **Erevos's App
-  info**, tap **⋮** at the top right → **Allow restricted settings**, and allow SMS under **Permissions**. Chats
-  sent as RCS ("chat" in Google Messages) stay in that app and do not show. The **SMS** screen says how many SMS
-  conversations Erevos reads, or why it could not read them.
+- **If no SMS show:** Android 15 and later hold the SMS permission back from an app installed from a browser. Under
+  **Settings** → **Phone and SMS** → **SMS** → **Erevos as the SMS app**, tap **Allow SMS**. If Android calls it a
+  restricted setting, open **Erevos's App info**, tap **⋮** at the top right → **Allow restricted settings**, and
+  allow SMS under **Permissions**. Chats sent as RCS ("chat" in Google Messages) stay in that app and do not show.
+  **Erevos as the SMS app** says how many SMS conversations Erevos reads, or why it could not read them.
 - **Writing to someone with Erevos:** it goes through Erevos, end-to-end encrypted, once their number is linked to
   their contact. Link it by hand in the SMS conversation, or let a hidden invite find it. From then on their SMS
   conversation opens their chat.
@@ -1000,9 +1022,11 @@ chats in one list.
   conversation to write it there, and **+** → **Send as SMS**, or **As SMS** when you hold the send arrow, sends
   what you typed as one, after asking. It shows in the chat as an SMS. The phone company can read it. An SMS cannot
   disappear nor answer a message: with the stopwatch on, or a message being answered, Erevos says so when it asks.
-- **Hidden invites:** with the first SMS to a number that is not a contact, Erevos also sends a short hidden
-  invite. None goes to an Erevos contact's number, linked or on their contact card. A phone without Erevos shows
-  nothing; a phone with Erevos answers through the relay and the two become contacts. Each number is asked once a month at most, and **Turn invites off** stops them.
+- **Hidden invites:** with the first SMS to a number that is not a contact, Erevos also sends a short hidden invite.
+  None goes to an Erevos contact's number, linked or on their contact card. A phone without Erevos shows nothing; a
+  phone with Erevos answers through the relay and the two become contacts. Each number is asked once a month at most,
+  and **Turn invites off**, under **Settings** → **Phone and SMS** → **SMS** → **Find Erevos on a number**, stops
+  them.
 - **Everyone else:** a plain SMS, marked SMS. The phone company can read it, as it reads every SMS.
 - **✓ and ✓✓✓:** an SMS of yours shows ✓ once it went, and ✓✓✓ once the network's delivery report says it reached
   their phone, or "not delivered". Some phone companies send no delivery reports; then it stays ✓. SMS cannot say
@@ -1010,9 +1034,10 @@ chats in one list.
 - **Photos (MMS):** **Photo** beside the message field adds a photo, made smaller to fit one MMS (about 280 KB),
   with nothing in it besides the picture. Photos that come by MMS show in the conversation. An MMS is as plain as an
   SMS: the phone company can see it.
-- **Group MMS:** under **SMS** in the menu, type several numbers separated by commas and tap **Write**. Every
-  message goes to all of them as one MMS, text alone too, and their answers come into the same conversation, each
-  with who wrote it. Everyone in it sees everyone's number, and the phone company sees all of it.
+- **Group MMS:** under **Settings** → **Phone and SMS** → **SMS** → **New SMS**, type several numbers separated by
+  commas and tap **Write**. Every message goes to all of them as one MMS, text alone too, and their answers come into
+  the same conversation, each with who wrote it. Everyone in it sees everyone's number, and the phone company sees all
+  of it.
 - **Two SIMs:** the SIM to send on shows above the message field; tap **Choose the SIM** once to let Erevos see
   them. Your choice is kept for that number; until then, Erevos answers on the SIM the last message came on. Each
   message shows its SIM.
@@ -1023,10 +1048,11 @@ chats in one list.
   Keystore), not with your space's password, as Android has to send it while Erevos is locked: the protection every
   SMS has once sent, as sent SMS stay in the phone's SMS. Text only, to one number.
 - **Links:** a web address in an SMS is underlined, and opens as in a chat, once you have seen it whole.
-- **Names from your contacts:** off at first, so SMS numbers show as numbers. **Names**, above the list, unlocks
-  them (as does **Show names from my contacts** under **SMS** in the menu): the names your phone's contacts give SMS
-  numbers, and the pictures they have for them, or else those of your contacts kept only in Erevos, in the list and
-  in the conversation. Tap **Names** again for numbers only. Erevos only reads them to show them, and keeps no copy.
+- **Names from your contacts:** off at first, so SMS numbers show as numbers. **Names**, above the list, unlocks them
+  (as does **Show names from my contacts** under **Settings** → **Phone and SMS** → **SMS** → **Names from your
+  contacts**): the names your phone's contacts give SMS numbers, and the pictures they have for them, or else those of
+  your contacts kept only in Erevos, in the list and in the conversation. Tap **Names** again for numbers only. Erevos
+  only reads them to show them, and keeps no copy.
 - **Senders with a name:** an SMS from a name instead of a number, like a bank's, opens to read, but cannot be
   answered.
 
@@ -1043,13 +1069,13 @@ chats in one list.
 - **Trash:** a deleted conversation waits in the **Trash** 30 days, then Erevos deletes it from the phone's SMS. Until
   then **Bring back** puts it back in the list; **Delete now** and **Empty the Trash** delete at once, for good. An
   SMS that comes after it went to the Trash shows in the list again. Only the SMS app may delete SMS.
-- **Spam:** a filter that works on the phone alone, by rules, and sends nothing anywhere. An SMS from a number that
-  is no contact and that you never answered goes to **Spam** when it has a link with words that try to fool, like a
-  parcel held or a prize, or one of the words you add under **SMS** in the menu → **Spam filter**. **Mark as spam**
-  and **Not spam** decide for a number for good. A notice still says "New message" when spam comes, as it shows
-  before Erevos is opened. Each conversation in **Spam**, in the folder and at the top of the conversation, says why
-  it is there: the number is blocked, you marked it, your rule names the sender, a number from abroad, your word, or a
-  link and which words.
+- **Spam:** a filter that works on the phone alone, by rules, and sends nothing anywhere. An SMS from a number that is
+  no contact and that you never answered goes to **Spam** when it has a link with words that try to fool, like a
+  parcel held or a prize, or one of the words you add under **Settings** → **Phone and SMS** → **SMS** → **Spam
+  filter**. **Mark as spam** and **Not spam** decide for a number for good. A notice still says "New message" when
+  spam comes, as it shows before Erevos is opened. Each conversation in **Spam**, in the folder and at the top of the
+  conversation, says why it is there: the number is blocked, you marked it, your rule names the sender, a number from
+  abroad, your word, or a link and which words.
 - **Rules on who sends:** under **Spam filter**, **Senders** takes a sender's name, as shops and banks send (letters,
   without accents or case), or a number, where \`*\` stands for anything: \`+4470*\` is every number that starts so,
   \`1234*\` every short code that does, and with your country code known, \`69*\` is every number \`+3069...\` too.
@@ -1057,14 +1083,14 @@ chats in one list.
   though a number you marked as spam, or blocked, still goes there. **Send numbers from abroad to Spam** sends every
   number written with another country code than **Your country code**, which Erevos takes from the numbers you answer
   and you can change. A number written without one is from here. Tap a rule to remove it.
-- **Block:** **Block** in the menu of a conversation, or **Blocked numbers** under **SMS** in the menu, puts a number
-  in Android's own list of blocked numbers: Android rejects its SMS, MMS and calls, and every space and the phone app
-  see the same list. Only the SMS app or the phone app may see and change it.
+- **Block:** **Block** in the menu of a conversation, or **Settings** → **Phone and SMS** → **SMS** → **Blocked
+  numbers**, puts a number in Android's own list of blocked numbers: Android rejects its SMS, MMS and calls, and every
+  space and the phone app see the same list. Only the SMS app or the phone app may see and change it.
 - **Drafts:** what you type and do not send stays with that conversation, and the list shows it as **Draft**. An SMS
   that could not go stays there as the draft too.
-- **Taking an SMS back:** an SMS you send waits 5 seconds at the end of the conversation first: tap it then to take
-  it back into the message field. Under **SMS** in the menu, **Taking an SMS back** sets **Off**, 5 or 10 seconds.
-  When you leave Erevos, it goes at once.
+- **Taking an SMS back:** an SMS you send waits 5 seconds at the end of the conversation first: tap it then to take it
+  back into the message field. **Settings** → **Phone and SMS** → **SMS** → **Taking an SMS back** sets **Off**, 5 or
+  10 seconds. When you leave Erevos, it goes at once.
 - **Send again:** one of yours that did not go, or was not delivered, says so: tap it to send it again. Hold any
   message down for **Forward**, **Send again** and **Delete**, with its words to select and copy; a deleted message
   has **Undo** too.
@@ -1136,9 +1162,9 @@ that title, and tapping it opens the Phone's **Settings**.
   (**Let Erevos screen calls**): without that, a blocked call rings a moment before Erevos ends it. What is blocked
   is the same in every space, so it tells nothing of another, and is kept on the phone with no names.
 - **Blocked numbers:** under **Phone** → **Settings**, **Blocked numbers** is Android's own list, the same one as
-  under **SMS**: type a number and tap **Block**, or tap one to unblock it. In **Recents**, a row's calls show
-  **Block this number** or **Unblock this number**, with **Undo**. Android rejects their calls before they ring, and
-  their SMS and MMS. Every space sees the same list.
+  **Settings** → **Phone and SMS** → **SMS** → **Blocked numbers**: type a number and tap **Block**, or tap one to
+  unblock it. In **Recents**, a row's calls show **Block this number** or **Unblock this number**, with **Undo**.
+  Android rejects their calls before they ring, and their SMS and MMS. Every space sees the same list.
 - **A contact group for a while:** under **Phone** → **Settings**, **Block a contact group** lists the groups (the
   labels) of your phone's contacts. **Block** beside one blocks its contacts' calls **For an hour**,
   **Until tomorrow morning** (7:00) or **Until I lift it**; the line under the group says until when, and **Lift**
@@ -1250,7 +1276,8 @@ password, once you type it.
 
 ## Password lock {#lock}
 
-Under **Lock and second password**, **Lock when Erevos opens** has two choices: **No lock** and **Password**.
+Under **Settings** → **Privacy and security** → **Lock and second password**, **Lock when Erevos opens** has two
+choices: **No lock** and **Password**.
 
 1. Tap **Password**, type it twice (at least 4 characters) and tap **Save**.
 2. From then on Erevos asks for it every time it opens, and again after 30 seconds in the background.
@@ -1322,10 +1349,10 @@ exist.
 Every space has 4 places for hidden chats, each opened only with its own PIN, and they never show among your other
 chats. There is no button for them anywhere. Each place can hold one chat or several, so 2 spaces have 8 places.
 
-1. Start a place in either of two ways: in **Lock and second password**, under **Hidden chats**, pick **Place 1** to
-   **Place 4**, tap **Set hidden chats PIN**, type it twice and tap **Save**; or open a chat's **Details**, tap **Move
-   to hidden chats**, type a PIN of 4 characters or more, tap **New hidden chats**, pick a place, then **Start and
-   move**. Remember which places you use: for privacy, Erevos cannot tell which are free.
+1. Start a place in either of two ways: under **Settings** → **Privacy and security** → **Hidden chats**, pick **Place
+   1** to **Place 4**, tap **Set hidden chats PIN**, type it twice and tap **Save**; or open a chat's **Details**, tap
+   **Move to hidden chats**, type a PIN of 4 characters or more, tap **New hidden chats**, pick a place, then **Start
+   and move**. Remember which places you use: for privacy, Erevos cannot tell which are free.
 2. To open them, type the PIN in **Search chats** on the home screen and press Enter (the keyboard's search key). Or
    hold **New chat** down for a second and a half: a field for the PIN opens, the same in every space; type it and
    tap **Open**. It opens only the place with that PIN. A wrong PIN is just a search, or only closes the field:
@@ -1362,9 +1389,9 @@ chats. There is no button for them anywhere. Each place can hold one chat or sev
   call itself waits on the chat's own queue until the PIN opens it. A contact you have deleted can still make it ring,
   but the call can never connect. A call placed from a linked computer rings only while the hidden chats are open.
   Backups do not keep it: turn it on again after restoring.
-- **A new PIN for a place** (from Lock, or **New hidden chats**) starts it empty and replaces what was in it. To keep
-  them and change only the PIN, open them and use **Change PIN** there. Each PIN must differ from the others and from
-  the password that opens Erevos.
+- **A new PIN for a place** (from **Hidden chats** in **Settings**, or **New hidden chats**) starts it empty and
+  replaces what was in it. To keep them and change only the PIN, open them and use **Change PIN** there. Each PIN must
+  differ from the others and from the password that opens Erevos.
 - **Wrong PINs in the search** are counted apart from the lock screen's: after five, searches stop trying for a while,
   silently, and the lock screen never waits because of them.
 - **A PIN keeps out whoever picks up the phone,** not whoever copies what it keeps: with a forensic tool on an
@@ -1378,8 +1405,8 @@ chats. There is no button for them anywhere. Each place can hold one chat or sev
 
 A backup is one file holding everything Erevos keeps on this phone: every space, with its contacts, the keys of its
 conversations, its messages, voice messages, imported chats and hidden chats, and the lock. Inside it each space stays
-sealed with its own password, and the file is sealed again with a password of its own. It is under **Backups** in the
-home screen's menu.
+sealed with its own password, and the file is sealed again with a password of its own. It is under **Settings** →
+**Data and devices** → **Backups**.
 
 1. **Make a backup:** tap **Make a backup**, choose a folder (on the phone, a memory card, or a cloud app that shows
    its folders there; on a computer, any folder), type a password for the backup twice (at least 12 characters, or
@@ -1446,7 +1473,8 @@ First export the chat from the other app:
 
 Then:
 
-1. In Erevos, open **Imported chats** and tap **Import a file**, then pick the file.
+1. In Erevos, open **Settings** → **Data and devices** → **Imported chats** and tap **Import a file**, then pick the
+   file.
 2. Erevos says what it found, with how many photos and files and how large they are together. Tap your own name, so
    your messages show on the right, and tap **Keep**. The files come in one after another, and it says how far it is.
 3. Delete the export file from the phone yourself: Erevos keeps its own sealed copy, but the file you saved is not
@@ -1478,7 +1506,9 @@ To go on with the conversation in Erevos, the other person needs Erevos too:
 
 ## Appearance {#appearance}
 
-**Appearance** follows LPHL FASOULI and the LPHL site.
+**Appearance** follows LPHL FASOULI and the LPHL site. It is under **Settings** → **Appearance**, in parts that each
+open alone: **Style and colours** (the look, glass, style, theme, colours and text on coloured areas below, with the
+**Preview**), **Wallpaper**, **Messages**, and on Android **Launcher icons** and **Widget**.
 
 | Setting | Choices |
 | --- | --- |
@@ -1560,8 +1590,8 @@ same account and the same safety number, whatever version of Erevos they have.
 To link a computer:
 
 1. On the computer, in a space with no chats of its own (a new install, a space a new password opens, or a linked
-   computer's chats restored from its backup), open **Linked devices** in the menu. Fill in the relay if it asks, name the device, and tap **Link to my phone**. It
-   shows a QR code.
+   computer's chats restored from its backup), open **Settings** → **Data and devices** → **Linked devices**. Fill in
+   the relay if it asks, name the device, and tap **Link to my phone**. It shows a QR code.
 2. On the phone, scan the code with the camera: Erevos opens on **Linked devices** with it. Or copy the code on the
    computer, paste it on the phone under **Code from the computer**, and tap **Next**.
 3. The phone shows the computer's name and a code of four groups of five digits. Choose what of the history goes
@@ -1631,10 +1661,11 @@ sealed the same way, in Safari's storage for the app.
 
 1. Open the address of the Erevos server you were given in **Safari**. Erevos shows how to add it: tap **Share**,
    then **Add to Home Screen**, then open Erevos from the home screen. Needs iOS 17 or later.
-2. In Erevos, open **Lock and second password**. Under **This web app** compare the release key's fingerprint with
-   the one you were given with the address, character by character. If it differs, delete the app and tell whoever
-   gave you the address.
-3. Set a password lock (**Lock and second password**). On the web it matters most: see below.
+2. In Erevos, open **Settings** → **Privacy and security** → **This web app** and compare the release key's
+   fingerprint with the one you were given with the address, character by character. If it differs, delete the app and
+   tell whoever gave you the address.
+3. Set a password lock (in Erevos, **Settings** → **Privacy and security** → **Lock and second password**). On the
+   web it matters most: see below.
 4. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay).
 
 **How it checks itself.** A web app is code the server sends, so a server that is broken into, or ordered to, could
@@ -1659,22 +1690,23 @@ send changed code. Erevos does not take that code on trust:
 - **No Bluetooth or nearby link** and no SMS: Safari does not allow them.
 - **Only while it is open:** iOS stops web apps in the background, so messages arrive when you open Erevos; they wait
   on the relay until then.
-- **Notifications** while Erevos is closed are off unless you turn them on: **Lock and second password → Notifications
-  while closed → Turn on** (iOS 16.4 or later, from the home screen). When messages come, or a call rings, your relay
-  sends a push through Apple, and Erevos shows how many messages came since you last opened it (**3 new messages**), or
-  **Call** when only a call rang, in the app's language, nothing more. The count is encrypted for your iPhone: Apple
-  sees when something comes for your iPhone, and that it uses Erevos, never what or from whom. With a relay or a
-  sender's Erevos older than 2.0.0, or a message that other phones carried to the relay, there is no number: Erevos
-  shows **New message**, or **New messages** once more came, until you open it. They are per space, never for hidden
-  chats, and your relay must be set up to send them.
-- **Permissions:** menu → **Permissions** shows what the browser lets Erevos do: whether it runs from the home screen,
-  notifications while closed (needed once this space turned them on), the microphone for calls, the camera for video
-  calls, and whether the browser keeps Erevos's data for good. Without that, Safari may clear the data when the iPhone
-  runs low on space, so a backup is the safety net. Each has why, and a button with the browser's own question; where
-  the browser no longer asks, it says where the setting is (**Settings → Notifications → Erevos**, or **Settings → Apps →
-  Safari → Microphone**). It only reads what the browser says. A browser does not let Erevos read battery saving or Low
-  Power Mode, so those are not there. After each new signed release it opens by itself when something messages, calls
-  or the data need is missing. In another browser (Chrome, Firefox) it is the same, with that browser's settings.
+- **Notifications** while Erevos is closed are off unless you turn them on: in Erevos, **Settings** →
+  **Notifications** → **Notifications while closed** → **Turn on** (iOS 16.4 or later, from the home screen). When
+  messages come, or a call rings, your relay sends a push through Apple, and Erevos shows how many messages came since
+  you last opened it (**3 new messages**), or **Call** when only a call rang, in the app's language, nothing more. The
+  count is encrypted for your iPhone: Apple sees when something comes for your iPhone, and that it uses Erevos, never
+  what or from whom. With a relay or a sender's Erevos older than 2.0.0, or a message that other phones carried to the
+  relay, there is no number: Erevos shows **New message**, or **New messages** once more came, until you open it. They
+  are per space, never for hidden chats, and your relay must be set up to send them.
+- **Permissions:** in Erevos, **Settings** → **General** → **Permissions** shows what the browser lets Erevos do:
+  whether it runs from the home screen, notifications while closed (needed once this space turned them on), the
+  microphone for calls, the camera for video calls, and whether the browser keeps Erevos's data for good. Without
+  that, Safari may clear the data when the iPhone runs low on space, so a backup is the safety net. Each has why, and
+  a button with the browser's own question; where the browser no longer asks, it says where the setting is (**Settings
+  → Notifications → Erevos**, or **Settings → Apps → Safari → Microphone**). It only reads what the browser says. A
+  browser does not let Erevos read battery saving or Low Power Mode, so those are not there. After each new signed
+  release it opens by itself when something messages, calls or the data need is missing. In another browser (Chrome,
+  Firefox) it is the same, with that browser's settings.
 - **Backups** are made by hand: **Make a backup** saves the file through the share sheet (Files, iCloud Drive or
   another app). A browser gives out a file only after a tap, so there are no automatic backups.
 - **Voice messages** recorded on an iPhone are AAC; they play everywhere.
@@ -1690,7 +1722,8 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
 2. Copy \`erevos-sailfish-aarch64.rpm\` to the phone (Downloads) and tap it in **Files**, then **Install**. From a
    terminal (Developer mode) it is \`pkcon install-local erevos-sailfish-aarch64.rpm\`. Needs Sailfish OS 5 in its
    64-bit (aarch64) version.
-3. Set a password lock (**Lock and second password**). See below why it matters here.
+3. Set a password lock (in Erevos, **Settings** → **Privacy and security** → **Lock and second password**). See
+   below why it matters here.
 4. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay).
 
 - **What only Android does:** the nearby link (Bluetooth and Wi-Fi Aware), LoRa and SMS. The rest is the same: spaces and
@@ -1709,7 +1742,8 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
 Erevos never looks for updates on its own: a regular check would tell the place it asks, every day, that this phone
 or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI:
 
-1. Open **Updates** in the home screen's menu (or **Check for updates** at the bottom of this guide's first screen).
+1. Open **Settings** → **General** → **Updates** (or **Check for updates** at the bottom of this guide's first
+   screen).
    It shows the version you have, such as **Erevos 2.0.0**.
 2. Tap **Check for updates**. GitHub then sees this device's internet address, nothing else; on Android so does the web
    app's server, which holds the release computer's signature of the update. While everything in the
@@ -1731,12 +1765,12 @@ system. The five newest stay there.
 **Check the file** if you can, on a computer: each release has \`SHA256SUMS\`, and in the folder with the downloaded
 files \`sha256sum -c --ignore-missing SHA256SUMS\` must say **OK** for each.
 
-**Make a backup first** (**Backups → Make a backup**), see [Backups](#backup). An update keeps everything, but a backup
-costs a minute and covers any surprise.
+**Make a backup first** (**Settings** → **Data and devices** → **Backups** → **Make a backup**), see
+[Backups](#backup). An update keeps everything, but a backup costs a minute and covers any surprise.
 
 | On | How to update |
 | --- | --- |
-| **Android** | **Updates → Check for updates → Install**, or by hand: open the releases page on the phone, tap \`erevos-android.apk\`, then **Install**. It installs over the one you have and keeps everything. Allow installing from the browser once, when Android asks. |
+| **Android** | **Settings** → **General** → **Updates** → **Check for updates** → **Install**, or by hand: open the releases page on the phone, tap \`erevos-android.apk\`, then **Install**. It installs over the one you have and keeps everything. Allow installing from the browser once, when Android asks. |
 | **Linux, Arch-based** | \`sudo pacman -U erevos-linux-x86_64.pacman\` |
 | **Linux, AppImage** | Replace the old \`erevos-linux-x86_64.AppImage\` with the new one and make it executable. |
 | **macOS** | Open \`erevos-macos.dmg\` and drag Erevos to Applications, **Replace**. Then allow it again under **System Settings → Privacy & Security → Open Anyway**. |
@@ -1759,7 +1793,7 @@ costs a minute and covers any surprise.
 
 ## The test screens {#tests}
 
-Two screens in the home screen's menu are there to test the connections, step by step.
+Two screens under **Settings** → **For testing** are there to test the connections, step by step.
 
 - **Radio test (Android):** **Permissions** asks Android for what the radio needs, **Start** and **Stop** turn
   Bluetooth and Wi-Fi Aware on and off, **Send hello** sends a plain test message to the nearby phone's Radio test (a
@@ -1851,7 +1885,8 @@ There is no way to recover it. Erevos keeps nothing that could open your data wi
 
 - Both radios need the same region and the same first channel (its name and key) in the Meshtastic app, and to be in
   reach of each other, or of radios between.
-- **LoRa radio** must say **Linked**. If it does not, close the Meshtastic app: a radio links to one app at a time.
+- **LoRa radio**, under **Settings** → **Relay and networks**, must say **Linked**. If it does not, close the
+  Meshtastic app: a radio links to one app at a time.
 - Only texts go, and only when the relay cannot be reached and no phone is near.
 - In the EU a radio may send only so much each hour: after many messages, it waits.
 

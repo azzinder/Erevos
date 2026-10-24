@@ -35,7 +35,7 @@ export const devices: Record<string, string> = {
   'The last week': 'Posljednja sedmica',
   None: 'Ništa',
   'Web browser': 'Web-preglednik',
-  'Code copied. Paste it on the phone in Menu → Linked devices.': 'Kod je kopiran. Zalijepite ga na telefonu u „Meni → Povezani uređaji“.',
+  'Code copied. Paste it on the phone in Settings → Data and devices → Linked devices.': 'Kod je kopiran. Zalijepite ga na telefonu u „Postavke → Podaci i uređaji → Povezani uređaji“.',
   'Linked. The chats come from the phone, and with them the messages it chose to bring over.':
     'Povezano. Razgovori dolaze s telefona, a s njima i poruke koje je izabrao da prenese.',
   'Not linked. Someone else may have read the code. Make a new one, and link again.':
@@ -77,16 +77,16 @@ export const devices: Record<string, string> = {
   'Bring over': 'Prenesi',
   'Bring over messages again': 'Ponovo prenesi poruke',
   'Link a computer to this phone': 'Poveži računar s ovim telefonom',
-  "On the computer, open Menu → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
-    'Na računaru otvorite „Meni → Povezani uređaji → Poveži s mojim telefonom“. Zatim skenirajte njegov kod kamerom ovog telefona ili ga tamo kopirajte i zalijepite ovdje.',
+  "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
+    'Na računaru otvorite „Postavke → Podaci i uređaji → Povezani uređaji → Poveži s mojim telefonom“. Zatim skenirajte njegov kod kamerom ovog telefona ili ga tamo kopirajte i zalijepite ovdje.',
   'Code from the computer': 'Kod s računara',
   Next: 'Dalje',
   'Link to my phone': 'Poveži s mojim telefonom',
   'The phone read the code. Does it show this one too?': 'Telefon je pročitao kod. Prikazuje li i on ovaj isti?',
   'They match': 'Podudaraju se',
   'They differ': 'Razlikuju se',
-  'On the phone that holds the account, scan this code with the camera, or paste it in Menu → Linked devices. This space must have no chats of its own.':
-    'Na telefonu na kojem je račun skenirajte ovaj kod kamerom ili ga zalijepite u „Meni → Povezani uređaji“. Ovaj prostor ne smije imati vlastite razgovore.',
+  'On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.':
+    'Na telefonu na kojem je račun skenirajte ovaj kod kamerom ili ga zalijepite u „Postavke → Podaci i uređaji → Povezani uređaji“. Ovaj prostor ne smije imati vlastite razgovore.',
   'Copy the code': 'Kopiraj kod',
   'Share the code': 'Podijeli kod',
   'Waiting for the phone. The code works for half an hour.': 'Čeka se telefon. Kod vrijedi pola sata.',

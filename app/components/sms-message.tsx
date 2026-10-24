@@ -93,7 +93,7 @@ export function sendSmsAgain(m: SmsMessage, to: string, sim: number, done: { sen
  *  otherwise it says why, and nothing goes. */
 export function deleteSms(m: SmsMessage, to: string, then: (id: string) => void): string {
   if (!smsStatus()?.isDefault || !smsToolsReady()) {
-    return smsToolsReady() ? t('Only the SMS app can delete SMS: make Erevos the SMS app under SMS in the menu.') : t('This build of Erevos cannot delete SMS yet.');
+    return smsToolsReady() ? t('Only the SMS app can delete SMS: make Erevos the SMS app under Settings → Phone and SMS → SMS.') : t('This build of Erevos cannot delete SMS yet.');
   }
   const id = smsLineId(m);
   deletingSms.hold({ id, to }, UNDO_SHOWS * 1000, () => deleteSmsMessages([id]).then(() => then(id)));

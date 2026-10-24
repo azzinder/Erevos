@@ -4,7 +4,7 @@ import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, T
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FoundRow } from '../components/found-row';
-import { LockIcon, MoreIcon, PersonIcon, PhoneIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
+import { GearIcon, LockIcon, MoreIcon, PersonIcon, PhoneIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
@@ -17,10 +17,10 @@ import { canGroup, canPublicGroup, hasCore } from '../lib/core';
 import { copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
-import { LANG_LABELS, LANGS, lang, mark, setLang, t } from '../lib/i18n';
+import { lang, mark, t } from '../lib/i18n';
 import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, showsIn, shownName, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
-import { checksOffered, HAS_CHECKS, offerChecks } from '../lib/permissions';
+import { checksOffered, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
@@ -55,9 +55,9 @@ const MARKS = ['✓', '✓✓', '✓✓✓'];
 
 type Relay = 'ready' | 'no-queue' | 'none';
 
-// `phone`: only on a phone, as it needs its radio. `links`: where there are links to phones nearby.
-// `checks`: where there are permissions to check (lib/permissions.ts): a phone, and the web app.
-const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean; checks?: boolean }[] = [
+// The places of Erevos; its settings are in Settings (lib/settings.ts). `phone`: only on a phone.
+// `links`: where there are links to phones nearby.
+const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean }[] = [
   { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group' },
   { title: mark('Public groups'), detail: mark('Make a group anyone with its link can join, or join one by a link'), href: '/public-groups' },
   { title: mark('Starred messages'), detail: mark('The messages you starred, in all your chats'), href: '/starred' },
@@ -67,28 +67,9 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
     href: '/chat',
     links: true,
   },
-  { title: mark('SMS'), detail: mark('Erevos as the SMS app, one list for all messages'), href: '/sms-settings', phone: true },
   { title: mark('Contacts'), detail: mark("The phone's contacts, their groups and birthdays"), href: '/contacts', phone: true },
-  { title: mark('Linked devices'), detail: mark('This account on a computer or in a browser too'), href: '/devices' },
   { title: mark('Phone'), detail: mark('Erevos as the phone app: the keypad, the calls and the favourites'), href: '/phone', phone: true },
-  { title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay' },
-  { title: mark('Tor'), detail: mark('Reach the relays through Tor: messages, unless changed'), href: '/tor', phone: true },
-  { title: mark('Nostr'), detail: mark('Texts through Nostr relays, through Tor: on, unless changed'), href: '/nostr', phone: true },
-  { title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', phone: true },
-  { title: mark('Imported chats'), detail: mark('Telegram and WhatsApp exports'), href: '/imported' },
-  { title: mark('Appearance'), detail: mark('Style, colours, glass'), href: '/appearance' },
-  { title: mark('Lock and second password'), detail: mark('Password, second space'), href: '/security' },
-  { title: mark('Backups'), detail: mark('Make one, automatic backups, restore'), href: '/backup' },
-  {
-    title: mark('Permissions'),
-    detail: Platform.OS === 'web' ? mark('What the browser lets Erevos do: notifications, the microphone, keeping its data') : mark('What Android lets Erevos do, for calls to ring while it is closed'),
-    href: '/permissions',
-    checks: true,
-  },
-  { title: mark('Updates'), detail: mark('This version, and Check for updates'), href: '/updates' },
   { title: mark('User guide'), detail: mark('How Erevos works, and what is not protected yet'), href: '/guide' },
-  { title: mark('Relay test'), detail: mark('For testing a relay'), href: '/relay' },
-  { title: mark('Radio test'), detail: mark('For testing the nearby link'), href: '/radio', phone: true },
 ];
 
 // The phone's SMS conversations, by their numbers only until the owner turns names on (`names`,
@@ -195,12 +176,7 @@ export default function Home() {
     router.push('/chat?hidden=open');
   }
   const [menu, setMenu] = useState(false);
-  // The menu's first row turns it into the list of languages.
-  const [languages, setLanguages] = useState(false);
-  const closeMenu = () => {
-    setMenu(false);
-    setLanguages(false);
-  };
+  const closeMenu = () => setMenu(false);
   const [now, setNow] = useState(Date.now());
   // The contacts whose phones said they are open, and not long ago (lib/e2e.ts).
   const [online, setOnline] = useState<Set<string>>(new Set());
@@ -356,7 +332,7 @@ export default function Home() {
   // Names, once there are SMS conversations: they unlock the names of their numbers.
   const hasSmsRows = (rows ?? []).some((row) => row.sms !== '');
 
-  // Turns the names of SMS numbers on, as under SMS in the menu (Android asks first), or off.
+  // Turns the names of SMS numbers on, as under Settings → Phone and SMS → SMS (Android asks first), or off.
   async function toggleNames() {
     const on = !smsShown.current.names;
     if (on && Platform.OS === 'android') {
@@ -553,34 +529,9 @@ export default function Home() {
         />
         <Button title={t('Open')} onPress={() => void openDoor()} />
       </Sheet>
-      <Sheet visible={menu} onClose={closeMenu} title={languages ? t('Language') : undefined}>
-        {languages ? (
-          // Each language by its own name, for the whole app (lib/i18n.ts). The screens start again in it, here.
-          LANGS.map((l) => (
-            <Pressable
-              key={l}
-              accessibilityRole="button"
-              accessibilityState={{ selected: l === lang() }}
-              onPress={() => {
-                closeMenu();
-                void setLang(l);
-              }}
-              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-            >
-              <Text variant="bodyStrong">{l === lang() ? `${LANG_LABELS[l]}  ✓` : LANG_LABELS[l]}</Text>
-            </Pressable>
-          ))
-        ) : (
-          // Named in English too, so it is found in a language one cannot read.
-          <Pressable accessibilityRole="button" onPress={() => setLanguages(true)} style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
-            <Text variant="bodyStrong">{lang() === 'en' ? 'Language · Γλώσσα' : `${t('Language')} · Language`}</Text>
-            <Text variant="caption" tone="muted">
-              {LANG_LABELS[lang()]}
-            </Text>
-          </Pressable>
-        )}
+      <Sheet visible={menu} onClose={closeMenu}>
         {/* A linked device has the phone's groups, but makes and joins none (lib/devices.ts). */}
-        {(languages ? [] : MENU).filter((item) => (item.links ? HAS_LINKS : item.checks ? HAS_CHECKS || Platform.OS !== 'web' : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
+        {MENU.filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"
@@ -596,6 +547,23 @@ export default function Home() {
             </Text>
           </Pressable>
         ))}
+        {/* Named in English too, so the language is found in one that cannot be read. */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setMenu(false);
+            router.push('/settings');
+          }}
+          style={({ pressed }) => [styles.menuRow, styles.settingsRow, pressed && styles.pressed]}
+        >
+          <GearIcon color={colors.accentText} size={22} />
+          <View style={styles.settingsText}>
+            <Text variant="bodyStrong">{lang() === 'en' ? 'Settings' : `${t('Settings')} · Settings`}</Text>
+            <Text variant="caption" tone="muted">
+              {t('Language, appearance, privacy, the relay and more')}
+            </Text>
+          </View>
+        </Pressable>
       </Sheet>
     </KeyboardPaddedView>
   );
@@ -890,5 +858,19 @@ const makeStyles = (colors: Colors) =>
       paddingVertical: space.sm + 2,
       paddingHorizontal: space.sm,
       borderRadius: radius.md,
+    },
+    settingsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      borderTopLeftRadius: 0,
+      borderTopRightRadius: 0,
+      paddingTop: space.md,
+    },
+    settingsText: {
+      flex: 1,
+      gap: 2,
     },
   });
