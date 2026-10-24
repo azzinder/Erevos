@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { gunzipSync } from 'node:zlib';
 
 import { buildNumber, buildOf, isNewer, isReleaseFile, PACKAGE_FILES, packageFile, parseRelease, RELEASES_REPO } from '../lib/updates';
 
@@ -108,6 +109,41 @@ test("no build's manifest names Google Play services: expo-image-picker's servic
   const removed = (manifest.application[0].service as { $: Record<string, string> }[]).filter((service) => service.$['tools:node'] === 'remove').map((service) => service.$['android:name']);
   // Whatever service of Google's the picker names now, the merged manifest leaves it out.
   for (const name of named) assert.ok(removed.includes(name), name);
+});
+
+/** A file of the project Expo makes the Android app from (expo/template.tgz, a tar file). */
+function templateFile(name: string): string {
+  const tar = gunzipSync(readFileSync(join(import.meta.dirname, '../node_modules/expo/template.tgz')));
+  const field = (from: number, length: number) => tar.toString('utf8', from, from + length).replace(/\0.*$/s, '').trim();
+  for (let at = 0; at + 512 <= tar.length; ) {
+    const size = parseInt(field(at + 124, 12) || '0', 8);
+    if (field(at, 100).endsWith(name)) return tar.toString('utf8', at + 512, at + 512 + size);
+    at += 512 + Math.ceil(size / 512) * 512;
+  }
+  throw new Error(`no ${name} in expo/template.tgz`);
+}
+
+test("React Native's plain views come from modules/erevos-views, put first in MainApplication", async () => {
+  const require = createRequire(import.meta.url);
+  const config = require('../app.config.js') as (c: { config: Record<string, unknown> }) => Record<string, any>;
+  assert.ok(config({ config: appJson() }).plugins.includes('./plugins/with-movable-views'));
+  const plugin = require('../plugins/with-movable-views.js') as (c: Record<string, unknown>) => { mods: { android: { mainApplication: (c: unknown) => Promise<any> } } };
+  const made = async (contents: string) =>
+    (await plugin({ name: 'Erevos', slug: 'erevos' }).mods.android.mainApplication({
+      modResults: { language: 'kt', contents },
+      modRequest: { platform: 'android', modName: 'mainApplication' },
+      modRawConfig: {},
+    })).modResults.contents as string;
+  const template = templateFile('/MainApplication.kt');
+  const once = await made(template);
+  // First of the packages, before React Native's own (PackageList's MainReactPackage).
+  assert.match(once, /PackageList\(this\)\.packages\.apply \{\n\s+add\(0, expo\.modules\.erevosviews\.MovableViewsPackage\(\)\)\n/);
+  assert.equal(await made(once), once);
+  await assert.rejects(made(template.replace('PackageList(this).packages.apply {', 'PackageList(this).packages')), /no "PackageList/);
+  // The view it gives is React Native's View, by its name.
+  const kotlin = readFileSync(join(import.meta.dirname, '../modules/erevos-views/android/src/main/java/expo/modules/erevosviews/MovableViews.kt'), 'utf8');
+  assert.match(kotlin, /class MovableViewManager : ReactViewManager\(\)/);
+  assert.match(kotlin, /listOf\(ReactViewManager\.REACT_CLASS\)/);
 });
 
 test('a package from anywhere else, or without its SHA-256, is not offered', () => {

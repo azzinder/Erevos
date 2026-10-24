@@ -8,7 +8,11 @@ No release so far has a macOS build. **Not audited.**
 
 ## Unreleased
 
-On main, not released yet: nothing so far.
+On main, not released yet:
+
+- **Erevos no longer closes by itself** (Android) when part of a screen is redrawn elsewhere while a screen is still
+  sliding away, as could happen back from choosing a photo for a sticker, and again when Erevos opened after
+  cropping it. Android said "The specified child already has a parent".
 
 ## 3.0.0 (2026-10-24)
 
