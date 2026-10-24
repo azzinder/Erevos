@@ -40,6 +40,8 @@ export const relayInvites: Record<string, string> = {
   'Use it': 'Χρήση',
   'The invite was not taken. {error}': 'Η πρόσκληση δεν χρησιμοποιήθηκε. {error}',
   'This phone now uses the relay at {url}, with a token of its own, named {name} there.': 'Αυτό το τηλέφωνο χρησιμοποιεί τώρα το relay στο {url}, με δικό του token, με το όνομα {name} εκεί.',
+  'This phone now has a token of its own on the relay, named {name} there, in place of the relay’s token: it can invite others now.': 'Αυτό το τηλέφωνο έχει τώρα δικό του token στο relay, με το όνομα {name} εκεί, στη θέση του κοινού token του relay: μπορεί πια να προσκαλεί άλλους.',
+  'The relay gives only so many phones a token of their own a day. Try again tomorrow.': 'Το relay δίνει δικό τους token σε λίγα μόνο τηλέφωνα τη μέρα. Δοκίμασε ξανά αύριο.',
   'Its queue could not be made yet: {error}. Tap Create my relay queue.': 'Η ουρά του δεν φτιάχτηκε ακόμα: {error}. Πάτα «Δημιουργία της ουράς μου στο relay».',
   'An invite to a relay is taken in the chats of the space, not in hidden chats.': 'Μια πρόσκληση σε relay γίνεται δεκτή στις συνομιλίες του χώρου, όχι στις κρυφές συνομιλίες.',
   'This account is signed in on all the phones it may be on this relay. Ask whoever runs it to take one off.': 'Αυτός ο λογαριασμός είναι ήδη συνδεδεμένος σε όσα τηλέφωνα επιτρέπονται σε αυτό το relay. Ζήτα από όποιον το τρέχει να βγάλει ένα.',

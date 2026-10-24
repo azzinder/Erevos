@@ -178,7 +178,24 @@ Cyrillic letters in Latin ones, `-` for spaces, at most 32 characters, and
 comment; the relay leaves every line and comment as it is, so add your own
 notes there too. The phone that invited sees its invites in the app, and can
 take back one still waiting or the phone that took one, which takes that line
-out. Phones the relay's own token connects, and lent places, invite nobody.
+out. Lent places invite nobody.
+
+A phone that comes with the relay's own token (`EREVOS_RELAY_TOKEN`), typed
+in, cannot invite with it: Erevos asks the relay once, by itself, for a line
+of its own, and from then on uses only that. The relay adds the line, as one
+of yours, with the name the phone gave itself in invites (`phone` when none):
+
+    9a01...c4 anna # came with the relay's token on 2026-10-24
+
+So you can hand out the relay's token as before, and every phone that comes
+with it still has a line you can delete alone. To take such a phone out,
+delete its line, and change `EREVOS_RELAY_TOKEN` in `/etc/erevos-relay.env`
+(then restart), so that it cannot come back with the old token: the phones
+with lines of their own go on as they are, and only a phone that has not been
+opened since it came, or has an Erevos from before, needs the new token. The
+relay adds such lines only while invites are on, and 50 a day at most, so a
+token that went where it should not cannot fill the file; they do not count
+among the phones let in by invite. Hidden chats keep the relay's token.
 
 A phone let in by an invite may use the relay only as long as the phone that
 invited it. When that phone's line goes, for whatever reason (its inviter took

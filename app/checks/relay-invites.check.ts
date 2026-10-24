@@ -25,6 +25,7 @@ import {
   RelaySession,
   sendMessage,
   takeBackInvite,
+  takeOwnLine,
   type Relay,
 } from '../lib/relay';
 import { checkInvite, inviteLink, offerInvite, onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
@@ -209,6 +210,42 @@ test('a phone may have 5 invites waiting at once, and only its own token invites
   assert.equal(await listInvites(shared), null);
   assert.equal(await makeInvite(shared, 'Eve'), null);
   assert.equal(await takeBackInvite(shared, '00'.repeat(16)), false);
+});
+
+test("a phone with the relay's token trades it once for one of its own, which invites, and taking its line out cuts off that phone alone", { skip: !ready }, async () => {
+  const shared: Relay = { url, token: 'shared token' };
+  const own = await takeOwnLine(shared, 'Ζωή');
+  assert.ok(own && /^[0-9a-f]{64}$/.test(own.token));
+  assert.equal(own.name, 'zoi');
+  const today = new Date().toISOString().slice(0, 10);
+  assert.ok(readFileSync(file, 'utf8').includes(`${sha(own.token)} zoi # came with the relay's token on ${today}\n`), "its line, saying it came with the relay's token");
+  assert.ok(!readFileSync(file, 'utf8').includes(own.token), 'the relay holds no token');
+  // Its own token works, and invites; a token of a phone's own trades for nothing more.
+  const zoi: Relay = { url, token: own.token };
+  assert.ok(await lets(zoi));
+  const leo = await redeemInvite(url, (await makeInvite(zoi, 'Leo'))!.code);
+  assert.equal(await takeOwnLine(zoi, 'more'), null);
+  assert.equal(await takeOwnLine(alice, 'more'), null);
+  // Another phone with the relay's token, which names itself nothing, gets a line of its own too.
+  const other = await takeOwnLine(shared, '');
+  assert.equal(other?.name, 'phone');
+
+  // Whoever runs the relay takes Zoi's line out: her phone goes, with the one it invited; the
+  // others, and the relay's token, stay (changed on the relay, it lets in no phone that left).
+  writeFileSync(file, readFileSync(file, 'utf8').split('\n').filter((line) => !line.startsWith(sha(own.token))).join('\n'));
+  assert.equal(await lets(zoi), false);
+  assert.equal(await lets({ url, token: leo.token }), false);
+  assert.equal(await lets({ url, token: other!.token }), true);
+  assert.equal(await lets(alice), true);
+  assert.equal(await lets(shared), true);
+});
+
+test("a relay that does not invite gives no line for its token", { skip: !ready }, async () => {
+  const quiet = join(folder, 'quiet-own.tokens');
+  writeFileSync(quiet, `${sha(alicesToken)} alice\n`);
+  const plain = await startRelay(false, 'its token', false, { EREVOS_RELAY_TOKENS: quiet });
+  assert.equal(await takeOwnLine({ url: plain, token: 'its token' }, 'Zoi'), null);
+  assert.equal(readFileSync(quiet, 'utf8'), `${sha(alicesToken)} alice\n`);
 });
 
 test('a phone let in by an invite goes with the phone that invited it, and so do those it invited', { skip: !ready }, async () => {

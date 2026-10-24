@@ -46,6 +46,17 @@
 //! invites off, when they were on before, so turning them off frees no one
 //! from their inviter.
 //!
+//! A phone that came with the relay's one token, which every phone may have,
+//! cannot invite with it, but asks once for a line of its own (`OWN`, see
+//! `own`), and from then on uses the relay, and invites, with that. The
+//! relay adds the line as one of the operator's own, with the name the phone
+//! gave and a comment saying it came with the relay's token and when, so the
+//! operator takes that phone out alone by deleting its line, and then changes
+//! the relay's token, which the phones with lines of their own no longer use,
+//! so it lets no one in again. Only while invites are on, and at most
+//! `MAX_OWN_A_DAY` lines a day, so a token that went where it should not
+//! cannot fill the file.
+//!
 //! Not audited.
 
 use std::collections::HashMap;
@@ -75,6 +86,9 @@ pub const MAX_INVITES: usize = 10_000;
 pub const MAX_INVITED: usize = 100;
 /// Longest name a phone may type for an invite, bytes.
 pub const MAX_TYPED: usize = 64;
+/// Lines the relay adds a day for phones that came with its one token
+/// (`own`), all of them together.
+pub const MAX_OWN_A_DAY: u32 = 50;
 /// Longest name made safe for the file.
 const MAX_NAME: usize = 32;
 const DAY: u64 = 24 * 60 * 60;
@@ -82,6 +96,7 @@ const DAY: u64 = 24 * 60 * 60;
 /// overwrites a file that is something else.
 const HEADER: &[u8; 8] = b"EREVOSI1";
 const INVITES_LOCK: &str = "lock of the invites";
+const OWNED_LOCK: &str = "lock of the day's lines for the relay's token";
 
 /// Whether invites are on, from the value of `EREVOS_RELAY_INVITES`: `on`
 /// turns them on; unset, empty or `off` leaves them off. Anything else is an
@@ -141,6 +156,16 @@ pub enum InviteError {
     /// `MAX_INVITES`, or it let in all the phones by invite it may.
     Full,
     /// Not written to the file, so nothing changed.
+    Storage,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum OwnError {
+    /// The relay does not invite.
+    Off,
+    /// The relay added `MAX_OWN_A_DAY` such lines today.
+    Full,
+    /// The line could not be written, so nothing changed.
     Storage,
 }
 
@@ -273,6 +298,9 @@ pub struct Invites {
     on: bool,
     /// Phones let in by invite at most, counting the invites still open.
     most: usize,
+    /// The day (Unix days) and the lines added that day by `own`. In memory
+    /// only: a restart starts the day's count again.
+    owned: Mutex<(u64, u32)>,
 }
 
 impl Invites {
@@ -284,6 +312,7 @@ impl Invites {
             path: None,
             on: true,
             most: MAX_INVITED,
+            owned: Mutex::default(),
         }
     }
 
@@ -307,6 +336,7 @@ impl Invites {
             path: Some(path.to_path_buf()),
             on,
             most,
+            owned: Mutex::default(),
         })
     }
 
@@ -521,6 +551,48 @@ impl Invites {
         }
         *state = next;
         Ok(name)
+    }
+
+    /// Adds a line to `tokens` for the token whose SHA-256 is `line`, of a
+    /// phone that came with the relay's one token, named after `typed` made
+    /// safe (`phone` when nothing is left of it): the operator's own, as a
+    /// line typed in is, so it is no one's invite and counts in no one's.
+    /// Returns the name written; the same again for a token already on a line.
+    pub fn own(
+        &self,
+        typed: &str,
+        line: &[u8; 32],
+        tokens: &Tokens,
+        now: u64,
+    ) -> Result<String, OwnError> {
+        if !self.on {
+            return Err(OwnError::Off);
+        }
+        // The answer was lost on the way: the phone asks again with the same token.
+        if tokens.holds(line) {
+            return tokens.name_of(line).ok_or(OwnError::Storage);
+        }
+        let mut owned = lock(&self.owned, OWNED_LOCK);
+        if owned.0 != now / DAY {
+            *owned = (now / DAY, 0);
+        }
+        if owned.1 >= MAX_OWN_A_DAY {
+            return Err(OwnError::Full);
+        }
+        let safe = safe_name(typed);
+        let name = if safe.is_empty() {
+            "phone"
+        } else {
+            safe.as_str()
+        };
+        let note = format!("came with the relay's token on {}", date(now));
+        match tokens.add(line, name, true, &note, None, None) {
+            Ok(written) => {
+                owned.1 += 1;
+                Ok(written)
+            }
+            Err(_) => Err(OwnError::Storage),
+        }
     }
 
     /// Writes down, before the line `new` goes in the file of tokens in place
@@ -1487,5 +1559,77 @@ mod tests {
         let mut out = Vec::new();
         put_short(&mut out, "aΜ");
         assert_eq!(out, [3, b'a', 0xce, 0x9c]);
+    }
+
+    #[test]
+    fn a_phone_with_the_relay_s_token_gets_a_line_of_its_own_once() {
+        let path = TempPath::new("tokens");
+        let (tokens, _) = phones(&path);
+        let invites = Invites::in_memory();
+        let (anna, _) = crate::tokens::new_token("");
+        let line: [u8; 32] = Sha256::digest(anna.as_bytes()).into();
+        assert_eq!(
+            invites.own("Άννα", &line, &tokens, NOW),
+            Ok("anna".to_string())
+        );
+        assert!(tokens.has(&anna));
+        let text = fs::read_to_string(&path.0).unwrap();
+        assert!(text.starts_with("# phones\n"), "the operator's lines stay");
+        assert!(text.ends_with(&format!(
+            "{} anna # came with the relay's token on {}\n",
+            to_hex(&line),
+            date(NOW)
+        )));
+        // Asked again, as when the answer was lost: the same, and no second line.
+        assert_eq!(
+            invites.own("Άννα", &line, &tokens, NOW + 1),
+            Ok("anna".to_string())
+        );
+        assert_eq!(tokens.count(), 2);
+        // Its line is the operator's own: it may invite, and its invites count as its.
+        let phone = tokens.find(&anna).unwrap();
+        assert!(invites.make(&phone, "maria", &tokens, NOW).is_ok());
+        // A name with nothing left of it, and another phone with the same name.
+        assert_eq!(
+            invites.own("😀", &hash(1), &tokens, NOW),
+            Ok("phone".to_string())
+        );
+        assert_eq!(
+            invites.own("anna", &hash(2), &tokens, NOW),
+            Ok("anna-2".to_string())
+        );
+    }
+
+    #[test]
+    fn lines_for_the_relay_s_token_are_few_a_day_and_none_while_invites_are_off() {
+        let path = TempPath::new("tokens");
+        let (tokens, _) = phones(&path);
+        let invites = Invites::in_memory();
+        for n in 0..MAX_OWN_A_DAY {
+            let mut line = [0u8; 32];
+            line[..4].copy_from_slice(&n.to_be_bytes());
+            line[31] = 1;
+            assert!(invites.own("phone", &line, &tokens, NOW).is_ok());
+        }
+        assert_eq!(
+            invites.own("one more", &hash(7), &tokens, NOW),
+            Err(OwnError::Full)
+        );
+        // One already on a line is answered still.
+        let mut first = [0u8; 32];
+        first[31] = 1;
+        assert_eq!(
+            invites.own("phone", &first, &tokens, NOW),
+            Ok("phone".to_string())
+        );
+        // The next day, more.
+        assert!(invites
+            .own("one more", &hash(7), &tokens, NOW + DAY)
+            .is_ok());
+
+        let kept = TempPath::new("invites");
+        let off = Invites::open(&kept.0, false, MAX_INVITED).unwrap();
+        assert_eq!(off.own("phone", &hash(8), &tokens, NOW), Err(OwnError::Off));
+        assert!(!tokens.holds(&hash(8)));
     }
 }

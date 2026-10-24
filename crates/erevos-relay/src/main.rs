@@ -35,6 +35,9 @@
 //! not `/etc`), and must be the file itself: the relay does not start when the
 //! path is a symbolic link. The invites are kept in `<file>.invites`, and read
 //! even with invites off, so turning them off frees no one from their inviter.
+//! While invites are on, a phone that came with `EREVOS_RELAY_TOKEN` asks once
+//! for a line of its own, which the relay adds as one of the operator's, 50 a
+//! day at most, so changing that token later cuts off no phone that has one.
 //! Off unless set.
 //!
 //! Set `EREVOS_RELAY_OIDC_ISSUER` beside it to let phones sign in with an

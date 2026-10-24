@@ -32,7 +32,9 @@
 // invite, on the /join path, which needs no token (redeemInvite): the relay adds a line for it to
 // its file of tokens, and the token goes where the relay's token goes from then on. The inviter
 // sees its invites (listInvites) and takes back one (takeBackInvite), which for one already used
-// cuts that phone off.
+// cuts that phone off. A phone that came with the relay's one token trades it, once, for a line of
+// its own the same way (takeOwnLine), so it can invite too, and the relay's operator can take it
+// out alone and change the relay's token without cutting it off.
 //
 // Signing in (crates/erevos-relay/src/signin.rs): a relay may let phones sign in with a provider,
 // such as LPHL, for a token of their own (signInOffer). The browser signs in on the relay's pages,
@@ -91,6 +93,7 @@ const REDEEM = 24;
 const SIGN_IN = 25;
 const CLAIM = 26;
 const NEWS = 27;
+const OWN = 28;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
 const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
@@ -858,6 +861,36 @@ export async function redeemInvite(url: string, code: string): Promise<{ token: 
   if (reply[0] === FULL) throw new RelayError(t('Another phone took this invite already. Ask for a new one.'), FULL);
   check(reply, 'invite');
   madeFor.delete(code);
+  return { token, name: utf8Decode(reply.slice(1)) };
+}
+
+/**
+ * Trades the relay's one token in `relay`, which every phone may have, for a line of this phone's
+ * own there (crates/erevos-relay, OWN): makes a token of this phone's own and has the relay add a
+ * line for it, named after `name` (cut to what the relay takes; `phone` when nothing is left of
+ * it). Returns the token, for where the relay's token goes, and the name on its line. Null when the
+ * relay does not do so: it does not invite, `relay.token` is a phone's own already, or the relay is
+ * from before (it closes the connection, as for any request it does not know). Throws when the
+ * relay added all the lines it adds so a day (FULL), or cannot be reached.
+ */
+export async function takeOwnLine(relay: Relay, name: string): Promise<{ token: string; name: string } | null> {
+  let letters = Array.from(name.trim());
+  while (utf8Encode(letters.join('')).length > MAX_INVITE_NAME) letters = letters.slice(0, -1);
+  const bytes = utf8Encode(letters.join(''));
+  const asked = `own ${relay.url} ${relay.token ?? ''}`;
+  const token = madeFor.get(asked) ?? newPhoneToken();
+  madeFor.set(asked, token);
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(OWN, bytes.length, ...bytes, ...sha256Bytes(utf8Encode(token))));
+  } catch (error) {
+    if (await fromBefore(relay, error)) return null;
+    throw error;
+  }
+  if (reply[0] === NOT_FOUND) return null;
+  if (reply[0] === FULL) throw new RelayError(t('The relay gives only so many phones a token of their own a day. Try again tomorrow.'), FULL);
+  check(reply, 'own');
+  madeFor.delete(asked);
   return { token, name: utf8Decode(reply.slice(1)) };
 }
 

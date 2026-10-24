@@ -16,6 +16,12 @@ On main, not released yet:
 - **Invite someone gives access to your relay, or says why not**: a phone that uses a token typed in, such as the
   relay's one for all, makes no invite now, and says to sign in to the relay first (below the **Token**, in **Relay
   settings**). Such an invite used to make you contacts only, and the relay then refused the new phone.
+- **The relay's token for all becomes a token of the phone's own** (needs the relay updated): a phone with the
+  relay's one token typed in trades it at once, by itself, for a token of its own there, says so, and can then invite
+  others. Whoever runs the relay sees it as a line of its own in the file of tokens ("came with the relay's token"),
+  so they can take that one phone out, and change the relay's token, without cutting off the others; 50 such phones a
+  day at most. **Invite someone** does the same first. Hidden chats keep the token typed in for them. The guide has a
+  new part, Ways in to the relay, with the three ways and every limit.
 - **A relay refused through Tor says why** (Android): the note gives the reason, such as a wrong token or the relay
   out of reach, where it said only that a call to ErevosCore.torRequest had been rejected.
 

@@ -40,6 +40,8 @@ export const relayInvites: Record<string, string> = {
   'Use it': 'Koristi',
   'The invite was not taken. {error}': 'Pozivnica nije prihvaćena. {error}',
   'This phone now uses the relay at {url}, with a token of its own, named {name} there.': 'Ovaj telefon sada koristi relay na {url}, s vlastitim tokenom, pod imenom {name}.',
+  'This phone now has a token of its own on the relay, named {name} there, in place of the relay’s token: it can invite others now.': 'Ovaj telefon sada ima vlastiti token na relayu, pod imenom {name}, umjesto tokena relaya: sada može pozivati druge.',
+  'The relay gives only so many phones a token of their own a day. Try again tomorrow.': 'Relay daje vlastiti token samo ograničenom broju telefona dnevno. Pokušajte ponovo sutra.',
   'Its queue could not be made yet: {error}. Tap Create my relay queue.': 'Njegov red još nije napravljen: {error}. Dodirnite „Napravi moj red na relayu“.',
   'An invite to a relay is taken in the chats of the space, not in hidden chats.': 'Pozivnica za relay prihvata se u razgovorima prostora, ne u skrivenim razgovorima.',
   'This account is signed in on all the phones it may be on this relay. Ask whoever runs it to take one off.': 'Ovaj račun je već prijavljen na svim telefonima na kojima smije biti na ovom relayu. Zamolite onoga ko ga vodi da ukloni jedan.',

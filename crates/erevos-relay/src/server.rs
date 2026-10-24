@@ -132,6 +132,15 @@
 //!   was signed in with that secret, yet or any more; `FULL` when the account
 //!   has all the phones it may; `FAILED` when the line could not be written,
 //!   or the file has a line for that token already.
+//! - `OWN`: on a connection with the relay's own token, a name (1-byte
+//!   length, then at most `invites::MAX_TYPED` bytes of UTF-8) and the
+//!   SHA-256 of the token the phone made for itself (32 bytes). The relay adds
+//!   a line for that token to the file of tokens, of the operator's own as a
+//!   line typed in is, so the phone goes on with a token of its own (see
+//!   `invites.rs`). Reply: the name on the line, to the end; the same again
+//!   for the same token; `FULL` when the relay added all the lines it adds so
+//!   a day; `FAILED` when the line could not be written; `NOT_FOUND` when the
+//!   relay does not invite.
 //!
 //! Marks: over WebSocket, and in a request held for later, a `SEND`,
 //! `SEALED_SEND`, `FORWARD` or `LATER` request may end with one more byte
@@ -164,8 +173,9 @@
 //!
 //! Invites (see `invites.rs`): a connection whose token is on a line of the
 //! file of tokens may ask for invites; one with the relay's own token may
-//! not. The `/join` path needs no token, so a phone with none can take an
-//! invite there, and takes only `REDEEM`, `SIGN_IN` and `CLAIM`. A connection
+//! not, but may ask for a line of its own (`OWN`) and then invite with it.
+//! The `/join` path needs no token, so a phone with none can take an invite
+//! there, and takes only `REDEEM`, `SIGN_IN` and `CLAIM`. A connection
 //! whose token is a phone's own is closed at its next request once that line
 //! is gone from the file, so taking a line out cuts the phone off at once.
 //!
@@ -228,7 +238,7 @@ use tungstenite::Message;
 
 use crate::connect;
 use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
-use crate::invites::{InviteError, Invites, RedeemError, MAX_TYPED};
+use crate::invites::{InviteError, Invites, OwnError, RedeemError, MAX_TYPED};
 use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
 use crate::lend::{Lend, Nonce, Pass};
 use crate::lock::{lock, wait_timeout};
@@ -442,6 +452,7 @@ pub const REDEEM: u8 = 24;
 pub const SIGN_IN: u8 = 25;
 pub const CLAIM: u8 = 26;
 pub const NEWS: u8 = 27;
+pub const OWN: u8 = 28;
 
 /// The marks a send may end with (see the module's doc).
 pub const MESSAGE: u8 = 1;
@@ -512,6 +523,8 @@ enum Access {
     /// A phone's own token (`tokens.rs`), by its SHA-256: what `All` may, and
     /// invites too.
     Phone([u8; 32]),
+    /// The relay's own token, when it has one: what `All` may, and `OWN` too.
+    Shared,
     /// The `/sealed` path: `KEY` and `SEALED_SEND` only.
     Sealed,
     /// The `/files` path: `FILE_GET` and `FILE_DELETE` only.
@@ -716,9 +729,11 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
             access = Access::Phone(phone.hash);
             return Ok(response);
         }
-        if (token.is_none() && phones.is_none())
-            || token.is_some_and(|expected| is_authorized(request, expected))
-        {
+        if token.is_some_and(|expected| is_authorized(request, expected)) {
+            access = Access::Shared;
+            return Ok(response);
+        }
+        if token.is_none() && phones.is_none() {
             return Ok(response);
         }
         Err(unauthorized())
@@ -786,7 +801,8 @@ fn respond(
         Err(e) => return Err(e),
     }
     let allowed = match access {
-        Access::All | Access::Phone(_) => !matches!(op[0], BORROW | REDEEM | SIGN_IN | CLAIM),
+        Access::All | Access::Phone(_) => !matches!(op[0], BORROW | REDEEM | SIGN_IN | CLAIM | OWN),
+        Access::Shared => !matches!(op[0], BORROW | REDEEM | SIGN_IN | CLAIM),
         Access::Sealed => matches!(op[0], KEY | SEALED_SEND),
         Access::Files => matches!(op[0], FILE_GET | FILE_DELETE),
         Access::Join => matches!(op[0], REDEEM | SIGN_IN | CLAIM),
@@ -1185,6 +1201,26 @@ fn respond(
                         Err(RedeemError::NotFound) => vec![NOT_FOUND],
                         Err(RedeemError::Used) => vec![FULL],
                         Err(RedeemError::Taken | RedeemError::Storage) => vec![FAILED],
+                    }
+                }
+                _ => vec![NOT_FOUND],
+            }
+        }
+        OWN => {
+            let typed = read_name(r)?;
+            let mut line = [0u8; 32];
+            r.read_exact(&mut line)?;
+            match (shared.invites.get(), shared.tokens.get()) {
+                (Some(invites), Some(tokens)) => {
+                    match invites.own(&typed, &line, tokens, system_now()) {
+                        Ok(name) => {
+                            let mut out = vec![OK];
+                            out.extend_from_slice(name.as_bytes());
+                            out
+                        }
+                        Err(OwnError::Off) => vec![NOT_FOUND],
+                        Err(OwnError::Full) => vec![FULL],
+                        Err(OwnError::Storage) => vec![FAILED],
                     }
                 }
                 _ => vec![NOT_FOUND],
@@ -2257,6 +2293,53 @@ mod tests {
         assert!(tungstenite::connect(request).is_err());
         assert!(invites_listed(&mut ws).is_empty());
         let _ = std::fs::remove_file(&list);
+    }
+
+    fn own_request(name: &str, token: &str) -> Vec<u8> {
+        use sha2::Digest;
+        let mut req = vec![OWN, name.len() as u8];
+        req.extend_from_slice(name.as_bytes());
+        req.extend_from_slice(&sha2::Sha256::digest(token.as_bytes()));
+        req
+    }
+
+    #[test]
+    fn a_phone_with_the_relay_s_token_takes_a_line_of_its_own_and_invites_with_it() {
+        let list = std::env::temp_dir().join(format!("erevos-owned-{}", std::process::id()));
+        let (pixel, pixel_line) = crate::tokens::new_token("pixel");
+        std::fs::write(&list, format!("{pixel_line}\n")).unwrap();
+        let addr = start_ws_inviting("s3cret", list.clone());
+        let (anna, _) = crate::tokens::new_token("");
+        // With the relay's one token: a line for the token the phone made.
+        let mut shared = connect_with_token(addr, "", "s3cret");
+        let reply = ws_call(&mut shared, own_request("Άννα", &anna));
+        assert_eq!((reply[0], &reply[1..]), (OK, &b"anna"[..]));
+        // Asked again, as when the answer was lost on the way: the same.
+        assert_eq!(ws_call(&mut shared, own_request("Άννα", &anna)), reply);
+        assert!(std::fs::read_to_string(&list)
+            .unwrap()
+            .contains(" anna # came with the relay's token on "));
+        // The phone goes on with its own token, and may invite with it.
+        let mut theirs = connect_with_token(addr, "", &anna);
+        ws_create(&mut theirs);
+        assert_eq!(ws_call(&mut theirs, invite_request("maria"))[0], OK);
+        // Only the relay's one token asks so: not a phone's own, nor the join path.
+        assert!(refused(&mut theirs, own_request("more", "another")));
+        let mut ws = connect_with_token(addr, "", &pixel);
+        assert!(refused(&mut ws, own_request("more", "another")));
+        let (mut join, _) = tungstenite::connect(format!("ws://{addr}{JOIN_PATH}")).unwrap();
+        assert!(refused(&mut join, own_request("more", "another")));
+        let _ = std::fs::remove_file(&list);
+    }
+
+    #[test]
+    fn a_relay_that_does_not_invite_adds_no_line_for_its_token() {
+        let addr = start_ws(Some("s3cret"));
+        let mut shared = connect_with_token(addr, "", "s3cret");
+        assert_eq!(
+            ws_call(&mut shared, own_request("anna", "mine")),
+            vec![NOT_FOUND]
+        );
     }
 
     #[test]

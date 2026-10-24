@@ -67,7 +67,7 @@ import { ask, choose } from '../lib/alert';
 import { contactLink, offerFor, onContactOffered, parseContact, type ContactCode, type Offer } from '../lib/contact-code';
 import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
 import { onWelcomeOffered, parseWelcome, START_RELAY, type Welcome } from '../lib/welcome';
-import { ownToken } from '../lib/relay-signin';
+import { oldToken, ownToken } from '../lib/relay-signin';
 import { canGroup, canRelaySeal, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
@@ -115,6 +115,7 @@ import {
   relayKey,
   sameRelay,
   sendMessage,
+  takeOwnLine,
   throughTor,
   ticketExpires,
   toHex,
@@ -1027,6 +1028,40 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setNote(`${joined} ${t('Its queue could not be made yet: {error}. Tap Create my relay queue.', { error: errorText(error) })}`);
     }
   }
+
+  // The relay's one token, typed in, traded for a token of this phone's own there (lib/relay.ts,
+  // takeOwnLine), named there as this phone names itself in invites: then the relay's operator can
+  // take this phone out alone, and change the relay's token without cutting it off, and this phone
+  // can invite. Null, with nothing changed, when the token is this phone's own already, the relay
+  // does not do so, or its settings changed meanwhile. Throws when the relay cannot be reached, or
+  // gives no more today. Hidden chats keep theirs: a second line made at the same moment from the
+  // same phone would tell the relay whose they are.
+  const relayNow = useRef({ url: '', token: '' });
+  relayNow.current = { url: relayUrl.trim(), token: relayToken.trim() };
+  async function ownLine(url: string, token: string): Promise<Relay | null> {
+    if (hiddenKey || !e2e || !token || isLentToken(token)) return null;
+    if (oldToken(url, token, (await loadCurrentSpaceData()).ownToken)) return null;
+    const own = await takeOwnLine({ url, token }, e2e.invitedAs());
+    if (!own || relayNow.current.url !== url || relayNow.current.token !== token) return null;
+    setRelayToken(own.token);
+    await updateCurrentSpaceData({ ownToken: ownToken(url, own.token) }).catch(() => {
+      // Not kept: signing in there later gives this phone one more line instead of its own again.
+    });
+    setNote(t('This phone now has a token of its own on the relay, named {name} there, in place of the relay’s token: it can invite others now.', { name: own.name }));
+    return { url, token: own.token };
+  }
+
+  // Asked once a run for each token, and again when Erevos comes back to the front if the relay
+  // could not be reached.
+  const ownAsked = useRef(new Set<string>());
+  useEffect(() => {
+    const url = relayUrl.trim();
+    const token = relayToken.trim();
+    const asked = `${url} ${token}`;
+    if (!loaded || !appActive || hiddenKey || !e2e || !url || !token || ownAsked.current.has(asked)) return;
+    ownAsked.current.add(asked);
+    ownLine(url, token).catch(() => ownAsked.current.delete(asked));
+  }, [loaded, appActive, relayUrl, relayToken, e2e]);
 
   // The links nearby are up while the space is open, whatever screen shows (lib/nearby-links.ts).
   // What comes on them, this screen opens itself while it is open, as it shows it at once; the
@@ -4363,6 +4398,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           onClose={() => setWelcoming(false)}
           e2e={e2e}
           relay={relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? { url: relayUrl.trim(), token: relayToken.trim() } : null}
+          onOwnLine={(relay) => ownLine(relay.url, relay.token ?? '')}
           contactLink={ownLink}
           onNote={setNote}
         />

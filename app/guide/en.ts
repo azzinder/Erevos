@@ -241,6 +241,32 @@ message someone reads, word between phones (that a message came or was read, typ
 keys), or a call that rings. So the relay sees which are messages, and when a call starts, whether notifications are
 on or not: it is how a closed web app's notice can count them, and the notice of closed hidden chats.
 
+### Ways in to the relay
+
+A relay that needs a token lets a phone in three ways. Each way ends with a token of the phone's own there, so whoever
+runs the relay can take any one phone out alone.
+
+- **An invite:** a QR code or link from a phone already on the relay (see Inviting someone new below). Nothing to type,
+  and you are contacts at once.
+- **An account:** **Sign in with LPHL**, when the relay offers it (see Signing in to the relay below). Any LPHL account
+  can, on up to 10 phones.
+- **The relay's token:** the one token for all, from whoever runs the relay, typed in under **Token**. Erevos trades
+  it at once, by itself, for a token of the phone's own, named there as you name yourself in invites (\`phone\` when
+  you gave no name), says so, and uses only that from then on. So this phone can invite too. It needs a relay that
+  takes invites, from after Erevos 3.1.0; with an older one, or one that takes no invites, the phone keeps the relay's
+  token and cannot invite.
+- **The limits:** a phone may have 5 invites waiting at once and make 10 a day (the day by UTC); each is for one phone
+  and lasts 7 days. The relay lets in 100 phones by invite in all, the invites still waiting counting too, unless its
+  operator chose otherwise. Phones that came with an account or with the relay's token do not count in those 100: the
+  relay gives a token of their own to 50 phones a day that came with its token, and an account has 10 phones. The
+  relay serves 512 connections at once, whoever they are, unless its operator chose otherwise.
+- **Taking a phone out:** whoever runs the relay deletes its line in the relay's file of tokens: it can no longer use
+  the relay, nor can the phones it invited. When it ever had the relay's token, they also change that token, so it
+  cannot come back with it. Phones with tokens of their own go on as they are: only a phone with the old token still
+  typed in (not opened since, or with an older Erevos) needs the new one.
+- **Hidden chats** keep the relay token typed in for them: trading it at the same moment as the space's would show the
+  relay that they are this phone's. When the relay's token changes, type the new one in their **Relay settings**.
+
 ### Inviting someone new
 
 One QR code or link brings someone new in: their phone joins Erevos on your relay, with access of its own, typing
@@ -261,9 +287,9 @@ nothing, and you are each other's contacts at once, with no message request.
   invites or links. **Set it up yourself** opens the relay settings, as in 1 to 6 above.
 - **What your relay must allow:** the access of its own is an invite to your relay (see Invites to the relay below),
   so it comes only from a phone with a token of its own on a relay that takes invites. It counts among your invites,
-  under the name you typed for them, and goes with yours. A phone with a token typed in, such as the relay's one for
-  all, makes no invite: sign in to the relay first (below the **Token**, in **Relay settings**), or take an invite to
-  it. When your relay takes no invites, the invite still makes you contacts, and their phone uses your relay only as
+  under the name you typed for them, and goes with yours. A phone with the relay's one token for all trades it for one
+  of its own first (see Ways in to the relay above); where the relay does not, it makes no invite: sign in to the relay
+  first (below the **Token**, in **Relay settings**), or take an invite to it. When your relay takes no invites, the invite still makes you contacts, and their phone uses your relay only as
   your contact link lets it, as in No relay of your own below.
 - **A phone with a relay already** keeps its own: the invite only adds you, and you are contacts at once all the same.
 - **What is kept:** your phone keeps each invite's secret and the name for them, sealed in the space, until it is used
@@ -318,7 +344,8 @@ that phone's own, so no token is typed or passed on.
   phone may have 5 invites waiting at once, and make 10 a day, and the relay lets in only so many phones by invite
   (100, unless its operator chose otherwise).
 - **Who can invite:** a phone with a token of its own, on a relay whose operator turned invites on (see [Running your
-  own relay](#own-relay)). With the relay's one token for all, or a lent place, there is no **Invite to the relay**.
+  own relay](#own-relay)). A phone with the relay's one token for all trades it for one of its own first (see Ways in
+  to the relay above). With a lent place there is no **Invite to the relay**.
 
 ### Signing in to the relay
 
@@ -833,7 +860,10 @@ invite more, each invite for one phone (see [Invites to the relay](#relay)). Tur
 file itself, with who invited them and when, and taking a line out cuts that phone off, and the phones it invited. It
 lets in 100 phones by invite at most (\`EREVOS_RELAY_MAX_INVITED\`). Who invited whom goes by the token, not the name: a
 line put in place of another with a new token cuts the phones the old one invited, unless
-\`erevos-relay free-line NAME\`, run with the relay stopped, frees them first. \`deploy/relay/README.md\` says how.
+\`erevos-relay free-line NAME\`, run with the relay stopped, frees them first. A phone that comes with the relay's
+token (\`EREVOS_RELAY_TOKEN\`) asks once for a line of its own, which the relay adds as one of yours, saying it came
+with the relay's token and when, 50 a day at most: so you can hand out that token, delete any one phone's line, and
+then change the token without cutting off the others. \`deploy/relay/README.md\` says how.
 
 **Signing in:** with a file of tokens, the relay can also let phones sign in with an OpenID Connect provider, such as
 Authentik, for a token of their own, and checks each account every hour, taking its phones off after 3 days without an

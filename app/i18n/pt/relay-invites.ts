@@ -40,6 +40,8 @@ export const relayInvites: Record<string, string> = {
   'Use it': 'Usar',
   'The invite was not taken. {error}': 'O convite não foi usado. {error}',
   'This phone now uses the relay at {url}, with a token of its own, named {name} there.': 'Este celular agora usa o relay em {url}, com um token próprio, com o nome {name} lá.',
+  'This phone now has a token of its own on the relay, named {name} there, in place of the relay’s token: it can invite others now.': 'Este celular agora tem um token próprio no relay, com o nome {name} lá, no lugar do token do relay: já pode convidar outras pessoas.',
+  'The relay gives only so many phones a token of their own a day. Try again tomorrow.': 'O relay dá um token próprio só a alguns celulares por dia. Tente de novo amanhã.',
   'Its queue could not be made yet: {error}. Tap Create my relay queue.': 'A fila dele ainda não pôde ser criada: {error}. Toque em “Criar minha fila no relay”.',
   'An invite to a relay is taken in the chats of the space, not in hidden chats.': 'Um convite para um relay é aceito nas conversas do espaço, não nas conversas ocultas.',
   'This account is signed in on all the phones it may be on this relay. Ask whoever runs it to take one off.': 'Esta conta já está conectada em todos os celulares que pode neste relay. Peça a quem o administra para tirar um.',

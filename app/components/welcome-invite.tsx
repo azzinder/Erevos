@@ -19,12 +19,15 @@ import { loadCurrentSpaceData } from '../lock/space-data';
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 
-export function WelcomeInvite({ visible, onClose, e2e, relay, contactLink, onNote }: {
+export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contactLink, onNote }: {
   visible: boolean;
   onClose: () => void;
   e2e: E2E | null;
   /** This phone's relay, with its token of its own; null when it has none to invite with. */
   relay: Relay | null;
+  /** Trades the relay's one token in `relay`, typed in, for one of this phone's own: the relay
+   *  with it, or null when the relay does not do so (app/chat.tsx, ownLine). */
+  onOwnLine: (relay: Relay) => Promise<Relay | null>;
   /** This phone's contact link (lib/contact-code.ts). */
   contactLink: string | null;
   onNote: (note: string) => void;
@@ -51,14 +54,19 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, contactLink, onNot
     setFailed('');
     try {
       // Access of their own to the relay, when it lets this phone invite; good for as long as both last.
-      const access = relay?.token ? await makeInvite(relay, who) : null;
+      let access = relay?.token ? await makeInvite(relay, who) : null;
       // A token typed in, as the relay's one for all, lets no one in: their phone would be a contact
-      // the relay refuses. A token of this phone's own that cannot invite is the relay's choice.
+      // the relay refuses. So it is traded for one of this phone's own first, where the relay does
+      // so. A token of this phone's own that cannot invite is the relay's choice.
       if (relay?.token && !access && !oldToken(relay.url, relay.token, (await loadCurrentSpaceData()).ownToken)) {
-        setFailed(
-          t('Your phone cannot let anyone in to your relay yet: it uses a token typed in, not one of its own. Under Relay and new contacts, Relay settings, sign in to the relay below the Token, or take an invite to it, then make this invite again.'),
-        );
-        return;
+        const own = await onOwnLine(relay);
+        if (!own) {
+          setFailed(
+            t('Your phone cannot let anyone in to your relay yet: it uses a token typed in, not one of its own. Under Relay and new contacts, Relay settings, sign in to the relay below the Token, or take an invite to it, then make this invite again.'),
+          );
+          return;
+        }
+        access = await makeInvite(own, who);
       }
       const hi = await e2e.welcome(who, as);
       const until = Math.min(Date.now() + WELCOME_DAYS * 24 * 3600 * 1000, access?.expires ?? Infinity);

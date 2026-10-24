@@ -40,6 +40,8 @@ export const relayInvites: Record<string, string> = {
   'Use it': 'Nutzen',
   'The invite was not taken. {error}': 'Die Einladung wurde nicht angenommen. {error}',
   'This phone now uses the relay at {url}, with a token of its own, named {name} there.': 'Dieses Telefon nutzt jetzt das Relay unter {url}, mit einem eigenen Token, dort {name} genannt.',
+  'This phone now has a token of its own on the relay, named {name} there, in place of the relay’s token: it can invite others now.': 'Dieses Telefon hat jetzt ein eigenes Token auf dem Relay, dort {name} genannt, statt des Tokens des Relays: Es kann jetzt andere einladen.',
+  'The relay gives only so many phones a token of their own a day. Try again tomorrow.': 'Das Relay gibt nur so vielen Telefonen am Tag ein eigenes Token. Versuch es morgen wieder.',
   'Its queue could not be made yet: {error}. Tap Create my relay queue.': 'Seine Warteschlange konnte noch nicht angelegt werden: {error}. Tippe auf „Meine Relay-Warteschlange anlegen“.',
   'An invite to a relay is taken in the chats of the space, not in hidden chats.': 'Eine Einladung zu einem Relay wird in den Chats des Bereichs angenommen, nicht in den versteckten Chats.',
   'This account is signed in on all the phones it may be on this relay. Ask whoever runs it to take one off.': 'Dieses Konto ist schon auf allen Telefonen angemeldet, auf denen es bei diesem Relay sein darf. Bitte die Person, die es betreibt, eines zu entfernen.',

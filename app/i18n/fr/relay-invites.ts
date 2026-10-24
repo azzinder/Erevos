@@ -40,6 +40,8 @@ export const relayInvites: Record<string, string> = {
   'Use it': 'L’utiliser',
   'The invite was not taken. {error}': 'L’invitation n’a pas été prise. {error}',
   'This phone now uses the relay at {url}, with a token of its own, named {name} there.': 'Ce téléphone utilise maintenant le relais à {url}, avec un jeton à lui, sous le nom {name}.',
+  'This phone now has a token of its own on the relay, named {name} there, in place of the relay’s token: it can invite others now.': 'Ce téléphone a maintenant un jeton à lui sur le relais, sous le nom {name}, à la place du jeton du relais : il peut maintenant inviter d’autres personnes.',
+  'The relay gives only so many phones a token of their own a day. Try again tomorrow.': 'Le relais ne donne un jeton à lui qu’à un nombre limité de téléphones par jour. Réessaie demain.',
   'Its queue could not be made yet: {error}. Tap Create my relay queue.': 'Sa file d’attente n’a pas encore pu être créée : {error}. Touche « Créer ma file d’attente sur le relais ».',
   'An invite to a relay is taken in the chats of the space, not in hidden chats.': 'Une invitation à un relais se prend dans les discussions de l’espace, pas dans les discussions cachées.',
   'This account is signed in on all the phones it may be on this relay. Ask whoever runs it to take one off.': 'Ce compte est déjà connecté sur tous les téléphones permis sur ce relais. Demande à la personne qui le gère d’en retirer un.',
