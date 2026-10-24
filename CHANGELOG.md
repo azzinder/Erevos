@@ -10,6 +10,10 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- Nothing yet.
+
+## 3.1.1 (2026-10-24)
+
 - **Check for updates says what stopped an update** (Android): that the web app's server, which holds the release
   computer's signature, could not be reached (with the reason), that the release computer has not signed the new
   version yet, or that the signature there does not match it. Before, all three gave the same note.
