@@ -17,6 +17,8 @@ On main, not released yet:
   when Android closes Erevos in the background and starts it anew, nor do the ones you read while the hidden chats
   were open once they close. A text to hidden chats whose bell their relay did not take (Nostr) is now counted when
   it goes through the relay five minutes later, where before it made no notice at all.
+- **SMS settings say how the list works now**: an SMS conversation is pinned, archived, marked as spam, blocked or
+  deleted by holding it down, as a swipe to the side goes to the tab beside; they still said to swipe it.
 
 ## 3.0.0 (2026-10-24)
 

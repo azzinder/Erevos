@@ -305,7 +305,7 @@ export default function SmsSettings() {
       <SectionTitle title={t('Archived, Spam and Trash')} />
       <Card>
         <Text tone="muted">
-          {t("In the list, swipe an SMS conversation to the right to archive it, to the left to delete it, or hold it down to pin it at the top and more. This space keeps its own pins, archived conversations, Trash and spam marks, sealed with its password; the SMS stay in the phone's SMS, where another space sees them as they are.")}
+          {t("In the list, hold an SMS conversation down to pin it to the top, archive it, mark it as spam, block it or delete it; a swipe to the side goes to the tab beside. This space keeps its own pins, archived conversations, Trash and spam marks, sealed with its password; the SMS stay in the phone's SMS, where another space sees them as they are.")}
         </Text>
         <Row wrap>
           <Button title={t('Archived conversations')} kind="secondary" compact onPress={() => router.push('/sms-folder?folder=archived')} />
