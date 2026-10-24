@@ -9,7 +9,7 @@ import { KeyFace } from '../components/key-face';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { SwipeTabs } from '../components/swipe-tabs';
-import { Chip, font, fontStyle, Row, Sheet, Text } from '../components/ui';
+import { Button, Chip, font, fontStyle, Input, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
 import { sealedNamer } from '../lib/contact-book';
@@ -48,7 +48,8 @@ import { useStyles, useTheme } from '../theme/context';
 // the app behind the menu. It is read
 // again each time it comes back into view, so a chat just written in moves to the top, and each
 // time a message comes while it shows (lib/receiver.ts). Hidden
-// chats never show here: their PIN, typed in the search, opens them, in every space alike.
+// chats never show here: their PIN, typed in the search or after holding New chat down, opens
+// them, in every space alike.
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
 
@@ -130,6 +131,9 @@ const SHOWS: InboxShow[] = ['all', 'sms', 'erevos'];
 const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' ? show : 'all');
 const isSms = (row: InboxRow) => showsIn(row, 'sms');
 
+// How long New chat is held down before it asks for a PIN of hidden chats, in milliseconds.
+const DOOR_HOLD = 1500;
+
 export default function Home() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
@@ -171,6 +175,22 @@ export default function Home() {
     const place = await searchHidden(currentSpace().space, query).catch(() => null);
     if (!place) return;
     setQuery('');
+    handOverHidden(place);
+    router.push('/chat?hidden=open');
+  }
+  // New chat held down asks for a PIN of hidden chats, alike in every space: a right one opens
+  // them, a wrong one only closes it, as a search that finds nothing.
+  const [door, setDoor] = useState(false);
+  const [doorPin, setDoorPin] = useState('');
+  const closeDoor = () => {
+    setDoor(false);
+    setDoorPin('');
+  };
+  async function openDoor() {
+    const pin = doorPin;
+    closeDoor();
+    const place = await searchHidden(currentSpace().space, pin).catch(() => null);
+    if (!place) return;
     handOverHidden(place);
     router.push('/chat?hidden=open');
   }
@@ -500,6 +520,8 @@ export default function Home() {
       </SwipeTabs>
       <Pressable
         onPress={() => router.push('/chat?setup=1')}
+        onLongPress={() => setDoor(true)}
+        delayLongPress={DOOR_HOLD}
         accessibilityRole="button"
         accessibilityLabel={t('New chat')}
         style={({ pressed }) => [
@@ -517,6 +539,20 @@ export default function Home() {
       </Pressable>
       <UndoBar bottom={insets.bottom + space.xl + 56 + space.md} />
       <SmsActions target={target} onClose={() => setTarget(null)} />
+      <Sheet visible={door} onClose={closeDoor}>
+        <Input
+          value={doorPin}
+          onChangeText={setDoorPin}
+          placeholder={t('PIN')}
+          secureTextEntry
+          autoFocus
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="go"
+          onSubmitEditing={() => void openDoor()}
+        />
+        <Button title={t('Open')} onPress={() => void openDoor()} />
+      </Sheet>
       <Sheet visible={menu} onClose={closeMenu} title={languages ? t('Language') : undefined}>
         {languages ? (
           // Each language by its own name, for the whole app (lib/i18n.ts). The screens start again in it, here.

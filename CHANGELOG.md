@@ -17,6 +17,8 @@ On main, not released yet:
   when Android closes Erevos in the background and starts it anew, nor do the ones you read while the hidden chats
   were open once they close. A text to hidden chats whose bell their relay did not take (Nostr) is now counted when
   it goes through the relay five minutes later, where before it made no notice at all.
+- **Hidden chats open from New chat too**: hold **New chat** down for a second and a half, type the PIN and tap
+  **Open**. It shows the same in every space, and a wrong PIN only closes it, as a search that finds nothing.
 - **Search contacts in the Phone** (Android): a search at the top finds a contact by name or number, in the phone's
   contacts and, with Erevos unlocked, in those kept only in Erevos and your Erevos contacts, never in hidden chats.
   Tap a number to call it, or hold it down to put it on the keypad.

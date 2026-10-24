@@ -1280,8 +1280,10 @@ chats. There is no button for them anywhere. Each place can hold one chat or sev
    **Place 4**, tap **Set hidden chats PIN**, type it twice and tap **Save**; or open a chat's **Details**, tap **Move
    to hidden chats**, type a PIN of 4 characters or more, tap **New hidden chats**, pick a place, then **Start and
    move**. Remember which places you use: for privacy, Erevos cannot tell which are free.
-2. To open them, type the PIN in **Search chats** on the home screen and press Enter (the keyboard's search key). It
-   opens only the place with that PIN. A wrong PIN is just a search: nothing happens.
+2. To open them, type the PIN in **Search chats** on the home screen and press Enter (the keyboard's search key). Or
+   hold **New chat** down for a second and a half: a field for the PIN opens, the same in every space; type it and
+   tap **Open**. It opens only the place with that PIN. A wrong PIN is just a search, or only closes the field:
+   nothing happens.
 3. They open as their own chat, titled **Hidden chats**, with **Change PIN** at the top. The back arrow closes them.
 4. To move another chat into a place, open its **Details**, tap **Move to hidden chats**, type that place's PIN and
    tap **Move**. The
