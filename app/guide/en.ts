@@ -377,7 +377,10 @@ at the relay, or at once when they are nearby. A message counts as read once its
   only if it is where you want to go. Nothing is fetched before that.
 - **They see when you read:** your phone tells theirs, as theirs tells yours, unless that chat appears offline (below).
 - **When messages come:** Erevos looks at the relay every few seconds while it is open and unlocked, on any screen,
-  and the home screen moves the chat to the top by itself. On Android it goes on in the background too, while **In
+  and the home screen moves the chat to the top by itself. On Android each new message sounds, with a notice that
+  says only how many came, while Erevos shows too; in the chat or group open on the screen only the sound plays, and
+  opening a chat takes what came there off the count. Typing, and that a message came or was read, make none. On
+  Android it goes on in the background too, while **In
   the background** is on **Receive and ring** (below): there it waits at the relay until something comes, instead of
   asking every few seconds, so the battery lasts, and a notice says only how many messages came. Closed, locked, or
   long in the background otherwise, it does not: messages wait on the relay, up to 14 days, and come once Erevos
@@ -625,7 +628,7 @@ a missed call.
   behind the password screen, so messages and calls still come, and a call shows over the password screen. Only that space's chats
   and groups come so; hidden chats only say that a message came, if you let them (see Hidden chats). Set it under **Lock and second password** → **In the background**:
   **Receive and ring** (the default) or **Only while Erevos shows**, and **Say a message came** (the default) or **No
-  notice**. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
+  notice**, which goes for while Erevos shows too. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
   screen**.
 - **Where it cannot ring:** stopped by Android (or by the phone's battery saving, or the phone maker's own setting),
   after the phone restarts until you open Erevos and the space once, in another space, or on a computer or in the web
@@ -1295,10 +1298,9 @@ chats. There is no button for them anywhere. Each place can hold one chat or sev
 - **Relay only:** hidden chats have their own relay queue and their own keys, and never use the nearby link. While
   they are closed, their messages wait on the relay.
 - **They close by themselves** when Erevos goes to the background.
-- **Say when a message comes** (Android): turned on at the top of a place, while it is closed and Erevos is in the
-  background a notice says only "New message", or how many came, as for the other chats, each message once, also
-  when Erevos was closed and started again; what came while the place was open makes none once it closes, and what
-  came while Erevos showed is told when it goes to the background. That a message of yours came to them or was read, typing and new keys make none, nor does a call that rang (see **Ring
+- **Say when a message comes** (Android): turned on at the top of a place, while it is closed a notice says only
+  "New message", or how many came, as for the other chats, with Erevos in the background or showing, each message
+  once, also when Erevos was closed and started again; what came while the place was open makes none once it closes. That a message of yours came to them or was read, typing and new keys make none, nor does a call that rang (see **Ring
   calls when closed**); one that did not ring counts as a message. It needs **Receive and ring** and **Say a message
   came** under **In the background**, and a relay that waits (from 18 October 2026 on); one from before 23 October
   2026 can only say that something waits, so then "New message" shows for that too, once until you open that place.

@@ -4,13 +4,12 @@ import { POCKETS } from '../lock/sealed-file';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { onHiddenPlaceChange, openHiddenPlace } from './hidden-contacts';
 import { hiddenRangAt } from './hidden-ring';
-import { appShown, onAppShown } from './receiver';
 import { canTellNewsAt, canWaitAt, fromHex, isQueueNotFound, newsSince, NO_NEWS, waitForMessage, waitForNews, type News, type Relay } from './relay';
 
-// While Erevos is in the background (lib/background.ts), hidden chats that asked for it say how many
-// messages came, with the same notice as the space's chats ("New message", "3 new messages"): for
-// every pocket of the open space, the relay is asked to wait until what came into the queue kept
-// for it (lock/hidden-watch.ts) changes, without taking it. The relay counts what came by what each
+// While Erevos receives (lib/background.ts), in the background or showing, hidden chats that asked
+// for it say how many messages came, with the same notice as the space's chats ("New message", "3
+// new messages"): for every pocket of the open space, the relay is asked to wait until what came
+// into the queue kept for it (lock/hidden-watch.ts) changes, without taking it. The relay counts what came by what each
 // send said it carries (lib/relay.ts, waitForNews): messages, and sends that did not say, are told
 // of; word between phones, as that a message came or was read, is not. A call is told of only when
 // it did not ring (lib/hidden-ring-notices.ts). What came is told of once, though Erevos comes and
@@ -29,8 +28,8 @@ const RING_SETTLES = 10_000;
 
 const sameNews = (a: News, b: News) => a.round === b.round && a.messages === b.messages && a.unmarked === b.unmarked && a.rings === b.rings;
 
-/** Starts waiting for the open space's hidden chats; `tell(count)` says that many messages came. Returns how to stop. */
-export function startHiddenNotices(tell: (count: number) => void): () => void {
+/** Starts waiting for the open space's hidden chats; `tell(count, pocket)` says that many messages came there. Returns how to stop. */
+export function startHiddenNotices(tell: (count: number, pocket: number) => void): () => void {
   let open: { space: number; key: Uint8Array };
   try {
     open = currentSpace();
@@ -57,7 +56,7 @@ export function startHiddenNotices(tell: (count: number) => void): () => void {
     wakers.clear();
     now.forEach((up) => up());
   };
-  // Until `ms` pass, or something changes (shown, hidden chats opened, stopped).
+  // Until `ms` pass, or something changes (hidden chats opened, stopped).
   const pause = (ms: number) =>
     new Promise<void>((done) => {
       const timer = setTimeout(() => {
@@ -70,7 +69,7 @@ export function startHiddenNotices(tell: (count: number) => void): () => void {
       };
       wakers.add(up);
     });
-  const quiet = (pocket: number) => stopped || appShown() || openHiddenPlace()?.pocket === pocket;
+  const quiet = (pocket: number) => stopped || openHiddenPlace()?.pocket === pocket;
   const relayOf = (kept: Watched): Relay => ({ url: kept.url, token: kept.token || undefined });
   const lastHeard = (kept: Watched) => heard.get(kept.recipientHex) ?? heardOf(kept);
 
@@ -99,7 +98,7 @@ export function startHiddenNotices(tell: (count: number) => void): () => void {
       await new Promise((done) => setTimeout(done, RING_SETTLES));
       if (hiddenRangAt(space, pocket) < at - RING_SETTLES) count += came.rings;
     }
-    if (count > 0 && !quiet(pocket)) tell(count);
+    if (count > 0 && !quiet(pocket)) tell(count, pocket);
   }
 
   async function watch(pocket: number) {
@@ -143,7 +142,7 @@ export function startHiddenNotices(tell: (count: number) => void): () => void {
         failures = 0;
         if (came && !quiet(pocket)) {
           told.add(pocket);
-          tell(1);
+          tell(1, pocket);
         }
       } catch (error) {
         // A queue the relay no longer has: one made for nothing takes its place.
@@ -180,14 +179,9 @@ export function startHiddenNotices(tell: (count: number) => void): () => void {
     openPocket = now;
     wake();
   });
-  const shown = onAppShown((now) => {
-    if (now) waits.forEach((wait) => wait.abort());
-    wake();
-  });
   return () => {
     stopped = true;
     opened();
-    shown();
     waits.forEach((wait) => wait.abort());
     wake();
   };

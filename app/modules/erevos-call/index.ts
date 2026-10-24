@@ -56,10 +56,14 @@ type CallAudio = {
   /** Plays the phone's ringtone; with `notice`, also shows the call notice, over the lock screen. */
   ring?(video: boolean, notice: boolean): void;
   stopRinging?(): void;
-  /** A notice that `count` messages came, no more; hidden on a locked phone. `quiet`: the last one
-   *  came without sound, so the notice makes none (a build before it sounds as before). */
+  /** A notice that `count` messages came, no more; hidden on a locked phone. Each one sounds;
+   *  `quiet`: the last one came without sound, so it makes none (a build before it sounds as before). */
   tellMessages?(count: number, quiet?: boolean): void;
+  /** Some were read in Erevos: the notice, if it shows, says `count` without sound. */
+  recountMessages?(count: number): void;
   clearMessages?(): void;
+  /** A message came where Erevos shows it on the screen: only the messages notice's sound plays. */
+  chime?(): void;
   /** The app's language ('en' or 'el'), for the notices shown while the app is closed. */
   setLanguage?(lang: string): void;
   /** Lets Erevos show over the lock screen and wake the screen, while a call shows. */

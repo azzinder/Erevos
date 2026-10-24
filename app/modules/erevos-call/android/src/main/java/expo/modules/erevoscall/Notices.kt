@@ -7,10 +7,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.Ringtone
+import android.media.RingtoneManager
 import android.os.Build
 
 // The notices Erevos shows: that it keeps receiving while in the background, or that it stopped,
-// as Android closed it or its space locked, a call that rings, and that messages came while it was in the background. None says who: no name, no message,
+// as Android closed it or its space locked, a call that rings, and that messages came. None says who: no name, no message,
 // only what kind of call, or how many messages. Tapping one opens Erevos, which shows the rest
 // only once it is open. On a locked phone the messages notice says only "Erevos".
 object Notices {
@@ -214,19 +217,36 @@ object Notices {
   // Whether the messages notice that shows now has sounded.
   private var sounded = false
 
-  // `count` messages came while Erevos was in the background. Sounds once, as the channel says,
-  // and stays quiet as the count goes up. While only messages sent without sound (`quiet`) came,
-  // it shows on the silent channel; the first one that is not quiet then sounds once.
+  // `count` messages came: each one sounds, as the channel says. While only messages sent without
+  // sound (`quiet`) came, it shows on the silent channel; one sent without sound only counts.
   fun messages(context: Context, count: Int, quiet: Boolean) {
     channels(context)
     val manager = manager(context)
-    // Swiped away, it shows anew, and sounds anew unless quiet.
-    val showing = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) manager.activeNotifications.any { it.id == MESSAGES_ID } else count > 1
+    // Swiped away, it shows anew.
+    val showing = showing(manager, count)
     if (!showing) sounded = false
     val loud = !quiet || sounded
     // A notice that showed silently is taken away first, or the one that should sound would not.
     if (loud && !sounded && showing) manager.cancel(MESSAGES_ID)
-    val channel = if (loud) MESSAGES_CHANNEL else QUIET_CHANNEL
+    show(context, count, if (loud) MESSAGES_CHANNEL else QUIET_CHANNEL, quiet)
+    if (loud) sounded = true
+    Widget.messages(context, count)
+  }
+
+  // Some of the messages it counted were read in Erevos: the notice says how many are left, without
+  // sound. One that was swiped away stays away.
+  fun recountMessages(context: Context, count: Int) {
+    if (count <= 0) return clearMessages(context)
+    channels(context)
+    if (showing(manager(context), count)) show(context, count, if (sounded) MESSAGES_CHANNEL else QUIET_CHANNEL, true)
+    Widget.messages(context, count)
+  }
+
+  private fun showing(manager: NotificationManager, count: Int) =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) manager.activeNotifications.any { it.id == MESSAGES_ID } else count > 1
+
+  // `silent`: it shows or counts on without sound.
+  private fun show(context: Context, count: Int, channel: String, silent: Boolean) {
     val text = if (count == 1) say(context, "New message", "Νέο μήνυμα") else say(context, "$count new messages", "$count νέα μηνύματα")
     @Suppress("DEPRECATION")
     val locked = builder(context, channel)
@@ -244,13 +264,48 @@ object Notices {
       .setPriority(Notification.PRIORITY_DEFAULT)
       .setVisibility(Notification.VISIBILITY_PRIVATE)
       .setPublicVersion(locked)
-      .setOnlyAlertOnce(true)
+      .setOnlyAlertOnce(silent)
       .setAutoCancel(true)
       .setContentIntent(opening(context, 3))
       .build()
-    manager.notify(MESSAGES_ID, notification)
-    if (loud) sounded = true
-    Widget.messages(context, count)
+    manager(context).notify(MESSAGES_ID, notification)
+  }
+
+  // What plays for a message that came where Erevos shows it.
+  private var chiming: Ringtone? = null
+
+  // A message came in the chat or group that shows on the screen: no notice, only the messages
+  // channel's own sound, as the owner left it; none while the phone is on silent or vibrate, in
+  // Do not disturb, or with Erevos's notices or that channel turned off.
+  fun chime(context: Context) {
+    channels(context)
+    val manager = manager(context)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && !manager.areNotificationsEnabled()) return
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      val filter = manager.currentInterruptionFilter
+      if (filter != NotificationManager.INTERRUPTION_FILTER_ALL && filter != NotificationManager.INTERRUPTION_FILTER_UNKNOWN) return
+    }
+    val audio = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
+    if (audio.ringerMode != AudioManager.RINGER_MODE_NORMAL) return
+    val sound = (
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val channel = manager.getNotificationChannel(MESSAGES_CHANNEL) ?: return
+        if (channel.importance < NotificationManager.IMPORTANCE_DEFAULT) return
+        channel.sound
+      } else {
+        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+      }
+    ) ?: return
+    runCatching {
+      chiming?.stop()
+      chiming = RingtoneManager.getRingtone(context, sound)?.apply {
+        audioAttributes = AudioAttributes.Builder()
+          .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+          .build()
+        play()
+      }
+    }
   }
 
   fun clearMessages(context: Context) {

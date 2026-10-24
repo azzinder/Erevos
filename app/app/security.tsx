@@ -318,12 +318,10 @@ function BackgroundCalls() {
         <Chip label={t('Receive and ring')} selected={on} onPress={() => choose(true)} />
         <Chip label={t('Only while Erevos shows')} selected={!on} onPress={() => choose(false)} />
       </Row>
-      {on ? (
-        <Row wrap>
-          <Chip label={t('Say a message came')} selected={notices} onPress={() => chooseNotices(true)} />
-          <Chip label={t('No notice')} selected={!notices} onPress={() => chooseNotices(false)} />
-        </Row>
-      ) : null}
+      <Row wrap>
+        <Chip label={t('Say a message came')} selected={notices} onPress={() => chooseNotices(true)} />
+        <Chip label={t('No notice')} selected={!notices} onPress={() => chooseNotices(false)} />
+      </Row>
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
           {on

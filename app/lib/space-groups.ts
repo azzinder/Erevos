@@ -33,10 +33,10 @@ let opened: { of: object; groups: Promise<PublicGroups> } | null = null;
 let shown: PublicGroups | null = null;
 
 const callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
-const messageListeners = new Set<() => void>();
+const messageListeners = new Set<(group: string) => void>();
 
-/** Calls `listener` each time a member's message comes in one of the open space's groups. Returns how to stop. */
-export function onSpaceGroupMessage(listener: () => void): () => void {
+/** Calls `listener` with the group each time a member's message comes in one of the open space's groups. Returns how to stop. */
+export function onSpaceGroupMessage(listener: (group: string) => void): () => void {
   messageListeners.add(listener);
   return () => {
     messageListeners.delete(listener);
@@ -87,7 +87,7 @@ export function spaceGroups(): Promise<PublicGroups> {
       const save = (next: PublicData) => savePublicGroupData(current.space, current.key, next);
       const made = new PublicGroups(data, (next) => saveGroupData(current.space, current.key, next), meAt('groupHex'), pub, save, relayDoors(settings), meAt('publicHex'));
       made.onCall((group, from, signal) => callListeners.forEach((listener) => listener(group, from, signal)));
-      made.onMessage(() => messageListeners.forEach((listener) => listener()));
+      made.onMessage((group) => messageListeners.forEach((listener) => listener(group)));
       if (opened?.of === current) shown = made;
       return made;
     })();

@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { LinkedText } from '../components/linked-text';
 import { usePublicGroup } from '../components/public-group';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
 import { choose, confirm } from '../lib/alert';
+import { screenOfGroup, showOnScreen } from '../lib/background';
 import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
@@ -104,6 +105,10 @@ export default function GroupScreen() {
   const parts = useGroupMessages({ id, info, messages, name, onNote: setNote, scroll, at });
   // Photos, files and voice messages: the panel under the bar, the microphone, sheets, and their place in the bubbles.
   const media = useGroupMedia(id, messages, setNote, parts.attachMore);
+
+  // On the screen, what comes in the group only sounds (lib/background.ts).
+  const focused = useIsFocused();
+  useEffect(() => (id && focused ? showOnScreen(screenOfGroup(id)) : undefined), [id, focused]);
 
   // A call going on in the group shows, until its members' phones go quiet.
   useEffect(() => {

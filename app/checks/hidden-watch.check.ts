@@ -67,7 +67,7 @@ test('every space has the entry, of one size whether its pockets are waited on o
   assert.deepEqual(after.slice(0, 2), list.slice(0, 2));
 });
 
-test('in the background, a pocket tells of each message once, and of word between phones never', { skip: !relayReady }, async () => {
+test('a pocket tells of each message once, and of word between phones never', { skip: !relayReady }, async () => {
   store.clear();
   const url = await startRelay();
   const key = newSpaceKey();
@@ -110,14 +110,14 @@ test('in the background, a pocket tells of each message once, and of word betwee
     while (await receiveMessage({ url }, ids.recipientId));
     await sendMessage({ url }, ids.senderId, Uint8Array.of(6), 'message');
     await until(() => told === 4);
-    // A message that comes while Erevos shows is told of once it goes to the background.
+    // A message that comes while Erevos shows is told of at once, and not again once it goes to the background.
     setAppShown(true);
     await settle();
     await sendMessage({ url }, ids.senderId, Uint8Array.of(7), 'message');
-    await settle();
-    assert.equal(told, 4);
-    setAppShown(false);
     await until(() => told === 5);
+    setAppShown(false);
+    await settle();
+    assert.equal(told, 5);
     // One that comes while its hidden chats are open is read there: not told of once they close.
     setOpenHiddenPlace(place(0, 1));
     await sendMessage({ url }, ids.senderId, Uint8Array.of(8), 'message');

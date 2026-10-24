@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { takeCall } from '../lib/call-handoff';
@@ -20,7 +20,7 @@ import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, MIN_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, sendFile, takeFile, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
-import { canRingInBackground, messageCameAt } from '../lib/background';
+import { canRingInBackground, messageCameAt, screenOfChat, screenOfHidden, showOnScreen } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileMeta, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { readQrPhoto } from '../lib/read-qr';
@@ -1625,7 +1625,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // One that came already, from their account and again from one of their endpoints, or through
     // the phone and again directly, is shown once (docs/multi-device.md).
     const twice = received.twice || (!!received.tag && !!history.current?.has(peer, received.tag));
-    if (!hiddenKey && !twice && isNews(received)) messageCameAt(shows, received.quiet);
+    if (!hiddenKey && !twice && isNews(received)) messageCameAt(shows, received.quiet, screenOfChat(received.identity));
     setContacts(e2e.contacts());
     setSelected((current) => current ?? peer);
     if (received.call) {
@@ -3730,6 +3730,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const photos = useShownPhotos(shownPhotos, (error) => setNote(t('Cannot show the photo. {error}', { error: errorText(error) })));
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
   const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity]);
+  // The chat on the screen, or the hidden place open: what comes there only sounds (lib/background.ts).
+  const focused = useIsFocused();
+  const onScreen = !shown || !focused ? null : hiddenKey ? screenOfHidden(pocket) : selectedIdentity ? screenOfChat(selectedIdentity) : null;
+  useEffect(() => (onScreen ? showOnScreen(onScreen) : undefined), [onScreen]);
   const importedFrom = [...new Set(imported.map((m) => SOURCE_LABELS[m.source]))].join(` ${t('and')} `);
   // In an imported group, each message says who wrote it.
   const importedGroup = useMemo(() => new Set(imported.filter((m) => !m.mine && m.sender).map((m) => m.sender)).size > 1, [imported]);

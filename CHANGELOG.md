@@ -25,6 +25,12 @@ On main, not released yet:
 - **New chat shows how to add a contact first**: the relay's own settings (its address, token, second relay, invites
   and queue) are closed under **Relay settings** until you tap it; your contact link, its QR code and adding a contact
   show at once, as before. **Hide relay** is now **Hide relay and new contacts**.
+- **Every new message sounds, also while Erevos shows** (Android): the notice that says how many messages came now
+  sounds for each message, not only the first, and shows while you use Erevos too. In the chat or group you have open
+  only the sound plays, and opening a chat takes what came there off the count. Typing, and that a message came or
+  was read, still make none, nor does a message sent without sound. Hidden chats that say when a message comes say so
+  at once too, unless that place is open. **Say a message came** or **No notice** now shows with **Only while Erevos
+  shows** as well.
 - **SMS settings say how the list works now**: an SMS conversation is pinned, archived, marked as spam, blocked or
   deleted by holding it down, as a swipe to the side goes to the tab beside; they still said to swipe it.
 
