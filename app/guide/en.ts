@@ -261,8 +261,10 @@ nothing, and you are each other's contacts at once, with no message request.
   invites or links. **Set it up yourself** opens the relay settings, as in 1 to 6 above.
 - **What your relay must allow:** the access of its own is an invite to your relay (see Invites to the relay below),
   so it comes only from a phone with a token of its own on a relay that takes invites. It counts among your invites,
-  under the name you typed for them, and goes with yours. Without it, the invite still makes you contacts, and their
-  phone uses your relay only as your contact link lets it, as in No relay of your own below.
+  under the name you typed for them, and goes with yours. A phone with a token typed in, such as the relay's one for
+  all, makes no invite: sign in to the relay first (below the **Token**, in **Relay settings**), or take an invite to
+  it. When your relay takes no invites, the invite still makes you contacts, and their phone uses your relay only as
+  your contact link lets it, as in No relay of your own below.
 - **A phone with a relay already** keeps its own: the invite only adds you, and you are contacts at once all the same.
 - **What is kept:** your phone keeps each invite's secret and the name for them, sealed in the space, until it is used
   or its 7 days end, 20 at most at once. Nothing of it is on the relay but the invite to the relay.

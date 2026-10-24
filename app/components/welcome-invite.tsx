@@ -7,8 +7,10 @@ import { WELCOME_DAYS, type E2E } from '../lib/e2e';
 import { t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { makeInvite, type Relay } from '../lib/relay';
+import { oldToken } from '../lib/relay-signin';
 import { welcomeLink } from '../lib/welcome';
 import { MAX_NAME } from '../lock/e2e-data';
+import { loadCurrentSpaceData } from '../lock/space-data';
 
 // Invite someone (lib/welcome.ts): one QR code or link, for one person, for 7 days. Their phone
 // opens it in Erevos and joins: it takes access of its own to this phone's relay (an invite to it,
@@ -50,6 +52,14 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, contactLink, onNot
     try {
       // Access of their own to the relay, when it lets this phone invite; good for as long as both last.
       const access = relay?.token ? await makeInvite(relay, who) : null;
+      // A token typed in, as the relay's one for all, lets no one in: their phone would be a contact
+      // the relay refuses. A token of this phone's own that cannot invite is the relay's choice.
+      if (relay?.token && !access && !oldToken(relay.url, relay.token, (await loadCurrentSpaceData()).ownToken)) {
+        setFailed(
+          t('Your phone cannot let anyone in to your relay yet: it uses a token typed in, not one of its own. Under Relay and new contacts, Relay settings, sign in to the relay below the Token, or take an invite to it, then make this invite again.'),
+        );
+        return;
+      }
       const hi = await e2e.welcome(who, as);
       const until = Math.min(Date.now() + WELCOME_DAYS * 24 * 3600 * 1000, access?.expires ?? Infinity);
       setMade({ link: welcomeLink(contactLink, { code: access?.code, hi, name: as }), name: who, until, access: !!access });

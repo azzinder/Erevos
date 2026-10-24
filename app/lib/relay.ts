@@ -59,7 +59,7 @@
 //   reach the relay, the request fails.
 // - 'off': none.
 
-import { relaySeal, tor } from './core';
+import { coreReason, relaySeal, tor } from './core';
 import { randomBytes, sha256Bytes } from './crypto';
 import { t } from './i18n';
 import { isSignInPage } from './relay-signin';
@@ -300,7 +300,7 @@ async function viaTor<T>(call: () => Promise<T>): Promise<T> {
     return await call();
   } catch (error) {
     if (torWay === 'messages') torRestUntil = Date.now() + TOR_REST_MS;
-    throw new RelayUnreachableError(t('Through Tor: {reason}', { reason: error instanceof Error ? error.message : String(error) }));
+    throw new RelayUnreachableError(t('Through Tor: {reason}', { reason: coreReason(error) }));
   }
 }
 

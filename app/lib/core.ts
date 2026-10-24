@@ -241,6 +241,17 @@ export async function sealOpen(secret: Uint8Array, sealed: Uint8Array): Promise<
   return { senderId: plain.slice(0, 24), message: plain.slice(24) };
 }
 
+/**
+ * What the core said when a call of it failed. On Android, Expo puts its own line first ("Call to
+ * function 'ErevosCore.torRequest' has been rejected.") and the core's words after "→ Caused by: ",
+ * with the name of the exception that carried them: only the core's words are kept.
+ */
+export function coreReason(error: unknown): string {
+  const text = error instanceof Error ? error.message : String(error);
+  const said = text.split('→ Caused by: ').pop()!.trim();
+  return said.replace(/^(?:[A-Za-z_$][\w$]*\.)+[A-Za-z_$][\w$]*(?:Exception|Error): /, '') || text;
+}
+
 /** Whether the core can check Ed25519 signatures (a core from before them cannot). */
 export function canVerify(): boolean {
   return typeof core?.signatureVerify === 'function';

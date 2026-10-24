@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 
 import { BUILT_IN, bridgeLines, bridgeProblem, checkedBridges, NO_BRIDGES, readBridgeLines } from '../lib/bridges';
-import { setCore, type Core } from '../lib/core';
+import { coreReason, setCore, type Core } from '../lib/core';
 import { createQueue, RelayError, RelaySession, setThroughTor, setTorReady, throughTor, TOR_REST_MS, torFor } from '../lib/relay';
 import { applyTor, leaveTor, NoBridgesError, torStatus } from '../lib/tor';
 import { EMPTY_SPACE, torWayOf } from '../lock/space-data';
@@ -95,6 +95,21 @@ test('through Tor, a session takes its requests in order on one connection, and 
     ['open', 'call', 'call', 'call', 'close'],
   );
   assert.equal(seen[0].token, '');
+});
+
+test("through Tor, a failure says the core's own words, not what Expo puts around them", async () => {
+  const said = 'cannot reach the relay at wss://relay.example.org, or the token is wrong: HTTP error: 401 Unauthorized';
+  const expo = new Error(`Call to function 'ErevosCore.torRequest' has been rejected.\n→ Caused by: java.lang.IllegalArgumentException: ${said}`);
+  assert.equal(coreReason(expo), said);
+  assert.equal(coreReason(new Error('the relay closed the connection')), 'the relay closed the connection');
+  assert.equal(coreReason('plain'), 'plain');
+  setCore({ ...fakeCore([], true), torRequest: async () => Promise.reject(expo) } as Core);
+  setThroughTor('all');
+  await assert.rejects(createQueue({ url: 'wss://relay.example.org' }), (error: unknown) => {
+    assert.ok(error instanceof RelayError);
+    assert.equal(error.message, `Through Tor: ${said}`);
+    return true;
+  });
 });
 
 test('with Tor on, a build without Tor fails the request and does not go around it', async () => {

@@ -13,6 +13,11 @@ On main, not released yet:
 - **Check for updates says what stopped an update** (Android): that the web app's server, which holds the release
   computer's signature, could not be reached (with the reason), that the release computer has not signed the new
   version yet, or that the signature there does not match it. Before, all three gave the same note.
+- **Invite someone gives access to your relay, or says why not**: a phone that uses a token typed in, such as the
+  relay's one for all, makes no invite now, and says to sign in to the relay first (below the **Token**, in **Relay
+  settings**). Such an invite used to make you contacts only, and the relay then refused the new phone.
+- **A relay refused through Tor says why** (Android): the note gives the reason, such as a wrong token or the relay
+  out of reach, where it said only that a call to ErevosCore.torRequest had been rejected.
 
 ## 3.1.0 (2026-10-24)
 
