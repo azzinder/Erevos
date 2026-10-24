@@ -1685,7 +1685,9 @@ or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI
 3. When there is a new version: on Android tap **Install**. It downloads, is checked against the release (its size and
    SHA-256), and Android's installer opens: tap **Install** there. Erevos offers it only once the release computer,
    which keeps its key offline, has signed that build and SHA-256: whoever took over the GitHub account alone could
-   not get an APK of their own installed. Until then it says the version is out but not signed yet. The first time, Android asks to allow installing
+   not get an APK of their own installed. Until then it says the version is out but not signed yet. When the
+   web app's server cannot be reached it says so, with the reason, and when the signature there does not match it says
+   that: either way nothing installs. The first time, Android asks to allow installing
    apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take the file
    Erevos names, the one of the package you have, and update as in the table below.
 

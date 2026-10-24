@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
-import { RELEASE_KEY, signsRelease, statementOf } from '../lib/update-signature';
+import { RELEASE_KEY, signingOf, signsRelease, statementOf } from '../lib/update-signature';
 import type { Release } from '../lib/updates';
 
 const PWA = join(import.meta.dirname, '../../pwa');
@@ -51,6 +51,16 @@ test('an APK signed by the release computer installs; any other, or another buil
     assert.equal(await signsRelease(JSON.stringify({ ...changed, signature: changed.signature.replace(/^./, (c) => (c === 'A' ? 'B' : 'A')) }), release, pub), false);
     assert.equal(await signsRelease('not json', release, pub), false);
     assert.equal(await signsRelease(text, { ...release, apk: null }, pub), false);
+    // And Check for updates says which: none yet, or still the last build's, is not signed yet; one
+    // for this build that does not check is refused.
+    assert.equal(await signingOf(text, release, pub), 'signed');
+    assert.equal(await signingOf(null, release, pub), 'not yet');
+    assert.equal(await signingOf(text, { ...release, build: 18 }, pub), 'not yet');
+    assert.equal(await signingOf(text, { ...release, build: 16 }, pub), 'refused');
+    assert.equal(await signingOf(text, release), 'refused');
+    assert.equal(await signingOf(text, { ...release, apk: { ...release.apk!, sha256: 'cd'.repeat(32) } }, pub), 'refused');
+    assert.equal(await signingOf('not json', release, pub), 'refused');
+    assert.equal(await signingOf('null', release, pub), 'refused');
     // The tool refuses a statement that is not one.
     assert.throws(() => run('sign', dir, join(dir, 'key'), '--android', '17', 'XYZ'));
     // And checks one it finds.

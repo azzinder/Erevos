@@ -10,6 +10,12 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **Check for updates says what stopped an update** (Android): that the web app's server, which holds the release
+  computer's signature, could not be reached (with the reason), that the release computer has not signed the new
+  version yet, or that the signature there does not match it. Before, all three gave the same note.
+
+## 3.1.0 (2026-10-24)
+
 - **Less battery in the background** (Android): Erevos waits at the relay a minute at a time, also for what comes to
   your contact link and your public groups, and asks nothing more when nothing came, where before it asked about
   ten times a minute. Tor sends the reduced padding Tor made for phones (every 9 to 14 seconds, none to the phone).

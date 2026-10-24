@@ -9,7 +9,7 @@ import { t } from '../lib/i18n';
 import { FDROID } from '../lib/distribution';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
 import { SHELL, shellFetch, shellSystem } from '../lib/shell';
-import { fetchStatement, signsRelease } from '../lib/update-signature';
+import { fetchStatement, signingOf } from '../lib/update-signature';
 import { buildNumber, fetchLatestRelease, formatSize, isNewer, packageFile, RELEASES_PAGE, type Release } from '../lib/updates';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { space } from '../theme/colors';
@@ -96,15 +96,31 @@ export default function UpdatesScreen() {
     const found = release;
     const installable = canInstall && found.apk !== null;
     // An APK installs only once the release computer signed it (lib/update-signature.ts).
+    // The note says which of the three stopped it, so that a server out of reach is not taken for a
+    // bad signature.
     if (installable) {
       setChecking(true);
-      const signed = await fetchStatement()
-        .then((text) => (text ? signsRelease(text, found) : false))
-        .catch(() => false)
-        .finally(() => setChecking(false));
-      if (!signed) {
+      let signing: Awaited<ReturnType<typeof signingOf>>;
+      try {
+        signing = await signingOf(await fetchStatement(), found);
+      } catch (error) {
         setNote(
-          t('Erevos {version} is out, but the release computer has not signed it yet, or its signature could not be checked, so it does not install. Try again later.', { version: found.version }),
+          t("Erevos {version} is out, but the web app's server, which holds the release computer's signature of it, could not be reached ({error}), so it does not install. Check the internet connection and try again.", {
+            version: found.version,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        );
+        return;
+      } finally {
+        setChecking(false);
+      }
+      if (signing === 'not yet') {
+        setNote(t('Erevos {version} is out, but the release computer has not signed it yet, so it does not install. Try again later.', { version: found.version }));
+        return;
+      }
+      if (signing === 'refused') {
+        setNote(
+          t("Erevos {version} is out, but the signature on the web app's server does not match it, or this Erevos could not check it, so it does not install. Try again later.", { version: found.version }),
         );
         return;
       }

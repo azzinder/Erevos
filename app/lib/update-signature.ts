@@ -40,6 +40,24 @@ export async function signsRelease(text: string, release: Release, key = RELEASE
   return verifySignature(fromBase64(key), utf8Encode(d.statement), signature);
 }
 
+/**
+ * Whether android-update.json (`text`, null when the server has none) lets `release` install:
+ * signed; not signed yet, when there is none or it is still the statement of an older build; or
+ * refused, when it names this release (or none) and does not check.
+ */
+export async function signingOf(text: string | null, release: Release, key = RELEASE_KEY): Promise<'signed' | 'not yet' | 'refused'> {
+  if (text === null) return 'not yet';
+  if (await signsRelease(text, release, key)) return 'signed';
+  let statement: unknown;
+  try {
+    statement = (JSON.parse(text) as { statement?: unknown } | null)?.statement;
+  } catch {
+    return 'refused';
+  }
+  const build = typeof statement === 'string' ? /^erevos android update v1\nbuild (\d+)\n/.exec(statement)?.[1] : undefined;
+  return build && Number(build) < release.build ? 'not yet' : 'refused';
+}
+
 /** The statement the release computer serves now, or null when there is none. Throws when its server cannot be reached. */
 export async function fetchStatement(fetchImpl: typeof fetch = fetch): Promise<string | null> {
   const res = await fetchImpl(STATEMENT_URL, { headers: { 'Cache-Control': 'no-cache' } });
