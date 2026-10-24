@@ -1,5 +1,5 @@
 import { decryptText, encryptText, randomBytes } from '../lib/crypto';
-import { createQueue, toHex, type Relay } from '../lib/relay';
+import { createQueue, toHex, type News, type Relay } from '../lib/relay';
 import { secureGet, secureSet } from '../lib/secure';
 
 import { POCKETS } from './sealed-file';
@@ -13,10 +13,14 @@ import { SLOTS } from './slots';
 // same relay, which no one writes to. So a space with a relay keeps POCKETS queues there whatever
 // hidden chats it has, and whoever opens the space learns nothing of them from it. Only how many
 // messages came is asked of the relay, as it counts them by what each send said, never for them:
-// they stay there for the hidden chats to take.
+// they stay there for the hidden chats to take. What the relay last said came is kept with the
+// queue (`heard`), so what was told of is not told of again once Erevos starts anew.
 
-/** A queue waited on: its relay, and its recipient id. */
-export type Watched = { url: string; token: string; recipientHex: string };
+/**
+ * A queue waited on: its relay, its recipient id, and what the relay last said came into it (round,
+ * messages, sends that did not say, rings, each as 8 hex digits, so every entry is of one length).
+ */
+export type Watched = { url: string; token: string; recipientHex: string; heard?: string };
 
 /** A pocket's queue, or null while none is kept for it yet. */
 export type WatchList = (Watched | null)[];
@@ -26,13 +30,26 @@ const entry = (space: number) => `erevos.watch.${space}`;
 
 const isHex = (v: unknown): v is string => typeof v === 'string' && v.length === 48 && /^[0-9a-f]+$/.test(v);
 
+const NOTHING_HEARD = '0'.repeat(32);
+
+const isHeard = (v: unknown) => v === undefined || (typeof v === 'string' && /^[0-9a-f]{32}$/.test(v));
+
 function isWatched(value: unknown): value is Watched {
   const v = (value ?? {}) as Partial<Record<keyof Watched, unknown>>;
-  return typeof v.url === 'string' && v.url !== '' && typeof v.token === 'string' && isHex(v.recipientHex);
+  return typeof v.url === 'string' && v.url !== '' && typeof v.token === 'string' && isHex(v.recipientHex) && isHeard(v.heard);
 }
 
+/** What the relay last said came into a queue waited on, or null when it has said nothing yet. */
+export function heardOf(kept: Watched): News | null {
+  if (!kept.heard || kept.heard === NOTHING_HEARD) return null;
+  const [round, messages, unmarked, rings] = [0, 8, 16, 24].map((at) => parseInt(kept.heard!.slice(at, at + 8), 16));
+  return { round, messages, unmarked, rings };
+}
+
+const heardText = (news: News) => [news.round, news.messages, news.unmarked, news.rings].map((n) => (n >>> 0).toString(16).padStart(8, '0')).join('');
+
 function seal(key: Uint8Array, list: WatchList): string {
-  const json = JSON.stringify(list);
+  const json = JSON.stringify(list.map((kept) => kept && { ...kept, heard: kept.heard ?? NOTHING_HEARD }));
   return encryptText(key, json.padEnd(Math.max(1, Math.ceil(json.length / BLOCK)) * BLOCK, ' '));
 }
 
@@ -49,7 +66,9 @@ export async function loadWatched(space: number, key: Uint8Array): Promise<Watch
   }
   return Array.from({ length: POCKETS }, (_, pocket) => {
     const value = Array.isArray(kept) ? kept[pocket] : null;
-    return isWatched(value) ? value : null;
+    if (!isWatched(value)) return null;
+    const { heard, ...rest } = value;
+    return heard && heard !== NOTHING_HEARD ? value : rest;
   });
 }
 
@@ -98,7 +117,8 @@ export function watchPocket(space: number, key: Uint8Array, pocket: number, own:
   const relay: Relay = { url: own.url, token: own.token || undefined };
   return change(space, key, async (list) => {
     const out = [...list];
-    out[pocket] = own;
+    // The same queue again keeps what was heard of it.
+    out[pocket] = list[pocket]?.recipientHex === own.recipientHex ? { ...own, heard: list[pocket]!.heard } : own;
     for (let other = 0; other < POCKETS; other++) if (!out[other]) out[other] = await madeForNothing(relay);
     return out;
   });
@@ -112,6 +132,17 @@ export function unwatchPocket(space: number, key: Uint8Array, pocket: number, re
   return change(space, key, async (list) => {
     const out = [...list];
     out[pocket] = relay ? await madeForNothing(relay).catch(() => null) : null;
+    return out;
+  });
+}
+
+/** Keeps what the relay said came into a pocket's queue (`recipientHex`), while that is still the one waited on. */
+export function hearPocket(space: number, key: Uint8Array, pocket: number, recipientHex: string, news: News): Promise<WatchList> {
+  return change(space, key, async (list) => {
+    const kept = list[pocket];
+    if (kept?.recipientHex !== recipientHex) return list;
+    const out = [...list];
+    out[pocket] = { ...kept, heard: heardText(news) };
     return out;
   });
 }

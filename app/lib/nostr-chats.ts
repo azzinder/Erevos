@@ -8,7 +8,8 @@
 // it, it goes through our relay at once, as it would have. To a contact that asked for a bell
 // (their hidden chats, closed, hear of what came only from their relay queue), a bell goes to
 // their relay queue too, marked as a message (lib/e2e.ts bell): their relay counts it, and their
-// phone says something came; the backup then goes quiet, as it was counted once already.
+// phone says something came; the backup then goes quiet, as it was counted once already. A bell
+// their relay did not take counted nothing: then the backup is the message that counts.
 
 import type { E2E } from './e2e';
 import type { NostrTo } from '../lock/e2e-data';
@@ -36,15 +37,19 @@ export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: F
     } catch {
       return relay();
     }
-    await e2e.nostrKeep(identity, tag, packet, to.b === true).catch(() => undefined);
-    if (to.b) await ringBell(e2e, own, identity, packet.length).catch(() => undefined);
+    const rang = to.b === true && (await ringBell(e2e, own, identity, packet.length).then(
+      () => true,
+      () => false,
+    ));
+    await e2e.nostrKeep(identity, tag, packet, rang).catch(() => undefined);
   };
 }
 
-// A bell for a contact's hidden chats, to their relay queue, marked as a message.
+// A bell for a contact's hidden chats, to their relay queue, marked as a message. Rejects when
+// none went.
 async function ringBell(e2e: E2E, own: Relay, identity: string, length: number): Promise<void> {
   const queue = e2e.queueOf(identity);
-  if (!queue?.sender) return;
+  if (!queue?.sender) throw new Error('no queue for the bell');
   await sendMessage(contactTarget(own, queue), fromHex(queue.sender), e2e.bell(identity, length), 'message');
 }
 

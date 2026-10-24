@@ -13,6 +13,10 @@ On main, not released yet:
 - **Erevos no longer closes by itself** (Android) when part of a screen is redrawn elsewhere while a screen is still
   sliding away, as could happen back from choosing a photo for a sticker, and again when Erevos opened after
   cropping it. Android said "The specified child already has a parent".
+- **Hidden chats' notices are right again** (Android): messages already told of no longer show "New message" again
+  when Android closes Erevos in the background and starts it anew, nor do the ones you read while the hidden chats
+  were open once they close. A text to hidden chats whose bell their relay did not take (Nostr) is now counted when
+  it goes through the relay five minutes later, where before it made no notice at all.
 
 ## 3.0.0 (2026-10-24)
 

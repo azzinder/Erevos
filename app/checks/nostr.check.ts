@@ -373,9 +373,9 @@ t('a text goes to the Nostr relays, comes out once on their phone, a bell goes t
   const stop = readNostr(nostrReaderOf(() => bob.e2e, async (packet) => void came.push(message(await bob.e2e.receive(packet)))));
   try {
     let viaRelay = 0;
-    const send = async (text: string) => {
+    const send = async (text: string, bellTo = own) => {
       const sealed = await alice.e2e.seal(toBob, text, alice.from);
-      await orNostr(alice.e2e, own, toBob, sealed, [sealed.packet], async () => {
+      await orNostr(alice.e2e, bellTo, toBob, sealed, [sealed.packet], async () => {
         viaRelay++;
         await sendSealed(own, sealed, [sealed.packet], 'message', async () => undefined);
       })();
@@ -426,6 +426,11 @@ t('a text goes to the Nostr relays, comes out once on their phone, a bell goes t
     const got = await bob.e2e.seal(toAlice, '', bob.from, { got: [second.tag] });
     await alice.e2e.receive(got.packet);
     assert.deepEqual(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS), []);
+
+    // A bell their relay did not take counted nothing: then the backup is the message that counts.
+    const third = await send('no bell went', { url: 'ws://127.0.0.1:9' });
+    const due3 = alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS);
+    assert.deepEqual(due3.map((due) => [due.tag, due.quiet]), [[third.tag, false]]);
     assert.equal(viaRelay, 0);
   } finally {
     stop();

@@ -1290,8 +1290,9 @@ chats. There is no button for them anywhere. Each place can hold one chat or sev
   they are closed, their messages wait on the relay.
 - **They close by themselves** when Erevos goes to the background.
 - **Say when a message comes** (Android): turned on at the top of a place, while it is closed and Erevos is in the
-  background a notice says only "New message", or how many came, as for the other chats, each message once. That a
-  message of yours came to them or was read, typing and new keys make none, nor does a call that rang (see **Ring
+  background a notice says only "New message", or how many came, as for the other chats, each message once, also
+  when Erevos was closed and started again; what came while the place was open makes none once it closes, and what
+  came while Erevos showed is told when it goes to the background. That a message of yours came to them or was read, typing and new keys make none, nor does a call that rang (see **Ring
   calls when closed**); one that did not ring counts as a message. It needs **Receive and ring** and **Say a message
   came** under **In the background**, and a relay that waits (from 18 October 2026 on); one from before 23 October
   2026 can only say that something waits, so then "New message" shows for that too, once until you open that place.

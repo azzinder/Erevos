@@ -2,7 +2,8 @@
 // space keeps one queue per pocket, those not asked for made for nothing on the same relay, sealed
 // and padded so a space with hidden chats looks like one without; in the background the relay is
 // only asked what came by what each send said, never for it, and each message is told of once,
-// word between phones never. The relay part runs with a real relay, and is skipped, with a note,
+// though Erevos starts anew, word between phones never, and what came while the chats were open not
+// once they close. The relay part runs with a real relay, and is skipped, with a note,
 // without one.
 // Run with: npm run check
 /// <reference types="node" />
@@ -117,6 +118,20 @@ test('in the background, a pocket tells of each message once, and of word betwee
     assert.equal(told, 4);
     setAppShown(false);
     await until(() => told === 5);
+    // One that comes while its hidden chats are open is read there: not told of once they close.
+    setOpenHiddenPlace(place(0, 1));
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(8), 'message');
+    await settle();
+    setOpenHiddenPlace(null);
+    await settle();
+    assert.equal(told, 5);
+    // Started anew, as Android does with Erevos in the background: what was told of is kept, not told again.
+    stop();
+    stop = startHiddenNotices((count) => (told += count));
+    await settle();
+    assert.equal(told, 5);
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(10), 'message');
+    await until(() => told === 6);
   } finally {
     stop();
     setAppShown(true);
