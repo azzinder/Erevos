@@ -123,7 +123,7 @@ import {
   type Mark as RelayMark,
   type Relay,
 } from '../lib/relay';
-import { answersAsk, appShown, awayPace, holdReceiver, isNews, openNearby, takeNearby, takeNostr, waitWhileAway } from '../lib/receiver';
+import { answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openNearby, takeNearby, takeNostr, waitWhileAway, type Waited } from '../lib/receiver';
 import { readNostr } from '../lib/nostr';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
@@ -1470,7 +1470,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     let failed: string | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     // In the background: whether the last look waited at the relay, and how many failed in a row (lib/receiver.ts).
-    let waited = false;
+    let waited: Waited = false;
     let failures = 0;
     async function look() {
       if (busy || !e2e) return;
@@ -1520,17 +1520,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         if (!hiddenKey) void nearby.uploadCarried((url, sealed, mark) => carryTo(sends, url, sealed, mark)).catch(() => undefined);
         // An SMS invite sent from the SMS screen since: its answer may be on its way.
         if (!hiddenKey) await refreshSmsLink().catch(() => undefined);
-        // In the background, out of a call: waits at the relay until something comes, to the groups' queue too.
-        const queues = await mover.current?.queues().catch(() => null);
-        const others = queues?.group && sameRelay(queues.group.url, url) ? [fromHex(queues.group.queue.recipientHex)] : [];
-        if (!hiddenKey && !currentCall() && !currentGroupCall()) waited = await waitWhileAway(own, recipient, others);
-        for (let i = 0; i < RECEIVE_BATCH && active; i++) {
+        // In the background, out of a call: waits at the relay until something comes, to the other queues there too.
+        const others = awayQueues((await mover.current?.queues().catch(() => null)) ?? null, url);
+        const answers = () => {
+          if (failed === null || !active) return;
+          const shown = failed;
+          setNote((current) => (current === shown ? t('The relay answers again.') : current));
+          failed = null;
+        };
+        if (!hiddenKey && !currentCall() && !currentGroupCall()) waited = await waitWhileAway(own, recipient, others.map(fromHex));
+        // Nothing came to the queue while the wait lasted: it is not asked again.
+        if (waited === 'empty') answers();
+        for (let i = 0; i < RECEIVE_BATCH && waited !== 'empty' && active; i++) {
           const bytes = await receiveMessage(own, recipient);
-          if (failed !== null && active) {
-            const shown = failed;
-            setNote((current) => (current === shown ? t('The relay answers again.') : current));
-            failed = null;
-          }
+          answers();
           if (!bytes) break;
           found.taken++;
           if ((await take(bytes, 'own')).junk) found.junk++;
@@ -1538,7 +1541,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         await spare();
         // A move due, kept contacts told, the other queues read (lib/queue-move.ts). Moved, the look
         // starts again on the new queue.
-        const moved = active && mover.current ? await mover.current.look({ own, found, take, tell: tellNow, shows: appShown(), stop: () => !active }).catch(() => null) : null;
+        const moved = active && mover.current ? await mover.current.look({ own, found, take, tell: tellNow, shows: appShown(), stop: () => !active, empty: waited === 'empty' ? others : [] }).catch(() => null) : null;
         if (moved && active) {
           if (moved.notes.length > 0) setNote(moved.notes.join(' '));
           const after = await mover.current!.queues().catch(() => null);

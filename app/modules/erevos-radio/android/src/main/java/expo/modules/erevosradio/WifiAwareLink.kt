@@ -42,7 +42,14 @@ import java.util.concurrent.atomic.AtomicInteger
  * 3. The subscriber requests a Wi-Fi Aware network to the publisher and
  *    connects to its IPv6 address on that port.
  *
- * Each connected socket then carries frames (see Framing).
+ * Each connected socket then carries frames (see Framing). The Wi-Fi Aware network asked for
+ * stays only while its socket does, or until it came in time or not (NETWORK_WITHIN_MS): an
+ * unused one keeps the Wi-Fi awake.
+ *
+ * `quiet`, while Erevos is in the background: with no link up, it looks for QUIET_LOOK_MS, then
+ * rests QUIET_REST_MS, out of Wi-Fi Aware altogether, as being in it wakes the Wi-Fi every half
+ * second. A phone that shows finds it the next time it looks, and two in the background find
+ * each other in a while.
  */
 @SuppressLint("NewApi", "MissingPermission")
 class WifiAwareLink(
@@ -57,6 +64,7 @@ class WifiAwareLink(
   private val io = Executors.newCachedThreadPool()
   private val connectivity = context.getSystemService(ConnectivityManager::class.java)
   private val links = ConcurrentHashMap<String, Link>()
+  // The Wi-Fi Aware networks asked for, one for each link or handshake under way.
   private val networkCallbacks = CopyOnWriteArrayList<ConnectivityManager.NetworkCallback>()
   private val linkCounter = AtomicInteger(0)
   private val messageIds = AtomicInteger(1)
@@ -64,19 +72,68 @@ class WifiAwareLink(
   // Discovery callbacks run on the main looper, so these maps need no lock.
   private val lastKnockSent = HashMap<PeerHandle, Long>()
   private val lastKnockSeen = HashMap<PeerHandle, Long>()
-  private var session: WifiAwareSession? = null
+  @Volatile private var session: WifiAwareSession? = null
   @Volatile private var publish: PublishDiscoverySession? = null
   @Volatile private var subscribe: SubscribeDiscoverySession? = null
+  // Whether it runs; and, on the main looper only, whether it is attaching, quiet, and since when it
+  // is in Wi-Fi Aware or had a link or a handshake.
+  @Volatile private var running = false
+  private var attaching = false
+  private var quiet = false
+  private var busyAt = 0L
 
   fun start() {
     if (!isAvailable(context)) {
       onLog("Wi-Fi Aware is off or not supported on this phone")
       return
     }
-    val manager = context.getSystemService(Context.WIFI_AWARE_SERVICE) as WifiAwareManager
+    running = true
+    main.post { attach() }
+  }
+
+  /** Looks now and then, with no link up, as while Erevos is in the background; or all the time, as before. Links stay up. */
+  fun setQuiet(on: Boolean) {
+    main.post {
+      if (quiet == on) return@post
+      quiet = on
+      main.removeCallbacks(cycle)
+      if (on) main.postDelayed(cycle, CHECK_MS) else attach()
+    }
+  }
+
+  private val cycle = object : Runnable {
+    override fun run() {
+      if (!running || !quiet) return
+      val now = System.currentTimeMillis()
+      if (links.isNotEmpty() || networkCallbacks.isNotEmpty()) busyAt = now
+      when {
+        session == null && !attaching -> attach()
+        session != null && now - busyAt >= QUIET_LOOK_MS -> {
+          rest()
+          main.postDelayed(this, QUIET_REST_MS)
+          return
+        }
+      }
+      main.postDelayed(this, CHECK_MS)
+    }
+  }
+
+  private fun attach() {
+    if (!running || session != null || attaching) return
+    val manager = context.getSystemService(Context.WIFI_AWARE_SERVICE) as? WifiAwareManager ?: return
+    attaching = true
     manager.attach(object : AttachCallback() {
       override fun onAttached(attached: WifiAwareSession) {
+        attaching = false
+        if (!running || session != null) {
+          attached.close()
+          return
+        }
         session = attached
+        busyAt = System.currentTimeMillis()
+        // Who knocked or was knocked on is known by handles of the sessions before.
+        lastKnockSent.clear()
+        lastKnockSeen.clear()
         onLog("Wi-Fi Aware attached")
         attached.publish(
           PublishConfig.Builder().setServiceName(SERVICE_NAME).build(),
@@ -91,9 +148,21 @@ class WifiAwareLink(
       }
 
       override fun onAttachFailed() {
+        attaching = false
         onLog("Wi-Fi Aware attach failed")
       }
     }, main)
+  }
+
+  // Out of Wi-Fi Aware until the next look, with no link up.
+  private fun rest() {
+    publish?.close()
+    subscribe?.close()
+    session?.close()
+    publish = null
+    subscribe = null
+    session = null
+    onLog("Wi-Fi Aware rests a while")
   }
 
   /** Sends one payload to a connected link. Returns false if the link is unknown. */
@@ -111,6 +180,8 @@ class WifiAwareLink(
   }
 
   fun stop() {
+    running = false
+    main.removeCallbacks(cycle)
     networkCallbacks.forEach { runCatching { connectivity.unregisterNetworkCallback(it) } }
     networkCallbacks.clear()
     publish?.close()
@@ -171,11 +242,13 @@ class WifiAwareLink(
     val port = server.localPort
     // The port goes to the subscriber in READY. Android takes a port in the network specifier only
     // on a link with a passphrase, and throws on an open one.
+    val callback = object : ConnectivityManager.NetworkCallback() {
+      override fun onUnavailable() = letGo(this)
+    }
     try {
       val spec = WifiAwareNetworkSpecifier.Builder(publisher, peer).build()
-      val callback = object : ConnectivityManager.NetworkCallback() {}
       networkCallbacks.add(callback)
-      connectivity.requestNetwork(awareRequest(spec), callback)
+      connectivity.requestNetwork(awareRequest(spec), callback, NETWORK_WITHIN_MS)
       publisher.sendMessage(
         peer,
         nextMessageId(),
@@ -183,19 +256,21 @@ class WifiAwareLink(
       )
     } catch (e: RuntimeException) {
       onLog("Cannot answer a knock: ${e.message}")
+      letGo(callback)
       runCatching { server.close() }
       return
     }
     onLog("Knock received, listening on port $port")
-    io.execute { acceptOne(server) }
+    io.execute { acceptOne(server, callback) }
   }
 
-  private fun acceptOne(server: ServerSocket) {
+  private fun acceptOne(server: ServerSocket, callback: ConnectivityManager.NetworkCallback) {
     server.use { s ->
       try {
         s.soTimeout = ACCEPT_TIMEOUT_MS
-        startLink(s.accept())
+        startLink(s.accept(), callback)
       } catch (e: IOException) {
+        letGo(callback)
         onLog("No connection on port ${s.localPort}: ${e.message}")
       }
     }
@@ -210,25 +285,35 @@ class WifiAwareLink(
         val info = capabilities.transportInfo as? WifiAwareNetworkInfo ?: return
         val address = info.peerIpv6Addr ?: return
         if (!connected.compareAndSet(false, true)) return
+        val asked = this
         io.execute {
           try {
-            startLink(network.socketFactory.createSocket(address, port))
+            startLink(network.socketFactory.createSocket(address, port), asked)
           } catch (e: IOException) {
+            letGo(asked)
             onLog("Connect to $address port $port failed: ${e.message}")
           }
         }
       }
+
+      override fun onUnavailable() = letGo(this)
     }
     try {
       val spec = WifiAwareNetworkSpecifier.Builder(subscriber, peer).build()
       networkCallbacks.add(callback)
-      connectivity.requestNetwork(awareRequest(spec), callback)
+      connectivity.requestNetwork(awareRequest(spec), callback, NETWORK_WITHIN_MS)
     } catch (e: RuntimeException) {
+      letGo(callback)
       onLog("Cannot reach a phone that answered: ${e.message}")
     }
   }
 
-  private fun startLink(socket: Socket) {
+  // The Wi-Fi Aware network asked for with `callback`, no longer needed.
+  private fun letGo(callback: ConnectivityManager.NetworkCallback) {
+    if (networkCallbacks.remove(callback)) runCatching { connectivity.unregisterNetworkCallback(callback) }
+  }
+
+  private fun startLink(socket: Socket, callback: ConnectivityManager.NetworkCallback) {
     socket.tcpNoDelay = true
     val id = "aware-${linkCounter.incrementAndGet()}"
     links[id] = Link(id, socket, DataOutputStream(socket.getOutputStream().buffered()))
@@ -245,6 +330,7 @@ class WifiAwareLink(
       } finally {
         links.remove(id)
         runCatching { socket.close() }
+        letGo(callback)
       }
     }
   }
@@ -273,6 +359,10 @@ class WifiAwareLink(
     const val READY: Byte = 2
     private const val KNOCK_INTERVAL_MS = 5_000L
     private const val ACCEPT_TIMEOUT_MS = 60_000
+    private const val NETWORK_WITHIN_MS = 60_000
+    private const val CHECK_MS = 10_000L
+    private const val QUIET_LOOK_MS = 60_000L
+    private const val QUIET_REST_MS = 4 * 60_000L
 
     fun isAvailable(context: Context): Boolean {
       if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false

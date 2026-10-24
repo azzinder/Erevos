@@ -69,7 +69,10 @@ class ErevosRadioModule : Module() {
           main.post { sendEvent("onText", mapOf("peer" to id, "text" to text)) }
         },
         onLog = log,
-      ).also { it.start() }
+      ).also {
+        it.start()
+        it.setQuiet(quiet)
+      }
     }
 
     Function("stop") {
@@ -121,11 +124,13 @@ class ErevosRadioModule : Module() {
       direct = null
     }
 
-    // While Erevos is in the background: Bluetooth at low power, found with the screen off too,
-    // and the same Wi-Fi said less often. The links that are up stay up.
+    // While Erevos is in the background: Bluetooth at low power, found with the screen off too, the
+    // same Wi-Fi said and heard less often, and Wi-Fi Direct and Wi-Fi Aware looking now and then.
+    // The links that are up stay up.
     Function("setQuiet") { on: Boolean ->
       quiet = on
       ble?.setQuiet(on)
+      link?.setQuiet(on)
       lan?.setQuiet(on)
       direct?.setQuiet(on)
     }

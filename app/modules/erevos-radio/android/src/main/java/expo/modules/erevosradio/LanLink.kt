@@ -68,8 +68,10 @@ class LanLink(
   private val lock = Any()
   @Volatile private var running = false
   @Volatile private var nonce = ""
-  // While Erevos is in the background, this phone says it is here less often (QUIET_EVERY_MS).
+  // While Erevos is in the background, this phone says it is here less often (QUIET_EVERY_MS), and
+  // hears the others only QUIET_HEAR_MS of every QUIET_HEAR_EVERY_MS.
   @Volatile private var quiet = false
+  @Volatile private var quietSince = 0L
   @Volatile private var announcedAt = 0L
   private var io: ExecutorService? = null
   private var timer: ScheduledExecutorService? = null
@@ -81,7 +83,8 @@ class LanLink(
     if (running) return
     running = true
     nonce = ByteArray(8).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
-    // Many phones drop broadcasts on Wi-Fi to save power, unless an app holds this.
+    // Many phones drop broadcasts on Wi-Fi to save power, unless an app holds this: held while
+    // this hears the others (hearing).
     multicast = (context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager)
       ?.createMulticastLock("erevos-lan")
       ?.apply {
@@ -107,7 +110,7 @@ class LanLink(
       }
     }
     timer = Executors.newSingleThreadScheduledExecutor().also {
-      it.scheduleWithFixedDelay({ runCatching { announceNow(); sweep() } }, 500, ANNOUNCE_EVERY_MS, TimeUnit.MILLISECONDS)
+      it.scheduleWithFixedDelay({ runCatching { announceNow(); hearing(); sweep() } }, 500, ANNOUNCE_EVERY_MS, TimeUnit.MILLISECONDS)
     }
   }
 
@@ -117,9 +120,21 @@ class LanLink(
   /** Whether a link to the phone whose nonce this is is up. */
   fun linkedTo(theirs: String): Boolean = linkTo(theirs) != null
 
-  /** Says it is here less often, as when Erevos is in the background, or as before. Links stay up. */
+  /** Says it is here less often, and hears the others now and then, as when Erevos is in the background, or as before. Links stay up. */
   fun setQuiet(on: Boolean) {
+    if (on && !quiet) quietSince = System.currentTimeMillis()
     quiet = on
+  }
+
+  // The multicast lock keeps the Wi-Fi waking the phone for every broadcast on the network, not
+  // only for this one's. Quiet, it is held a while at a time, long enough to hear one that says
+  // it is here every QUIET_EVERY_MS: two phones in the background still find each other.
+  private fun hearing() {
+    val hear = !quiet || (System.currentTimeMillis() - quietSince) % QUIET_HEAR_EVERY_MS < QUIET_HEAR_MS
+    synchronized(lock) {
+      val held = multicast?.takeIf { running } ?: return
+      runCatching { if (hear && !held.isHeld) held.acquire() else if (!hear && held.isHeld) held.release() }
+    }
   }
 
   private fun announceNow() {
@@ -144,8 +159,10 @@ class LanLink(
     dialing.clear()
     io?.shutdownNow()
     io = null
-    runCatching { multicast?.release() }
-    multicast = null
+    synchronized(lock) {
+      runCatching { multicast?.release() }
+      multicast = null
+    }
   }
 
   /** Sends one payload on a link. False if there is no such link. */
@@ -346,6 +363,8 @@ class LanLink(
     const val PORT = 47905
     private const val ANNOUNCE_EVERY_MS = 3_000L
     private const val QUIET_EVERY_MS = 15_000L
+    private const val QUIET_HEAR_MS = 20_000L
+    private const val QUIET_HEAR_EVERY_MS = 2 * 60_000L
     private const val GONE_AFTER_MS = 15_000L
     private const val DIAL_ANYWAY_AFTER_MS = 6_000L
     private const val HELLO_WITHIN_MS = 5_000

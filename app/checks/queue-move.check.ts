@@ -11,7 +11,8 @@
 // A link made at any step of a move names the queue before, never the new one; junk on the link's
 // or the groups' queue moves it, as do first packets past those read at once, but real requests
 // among them still come; a relay that lost the link's or the groups' gives new ones, and
-// moves the own queue for neither, nor does a wait in the background; one a group still names stays;
+// moves the own queue for neither, nor does a wait in the background; a wait in the background ends
+// with what comes to the other queues, and a look reads none a wait found nothing come to; one a group still names stays;
 // old queues let go of early are deleted after a new start, unless a group names them still, and a move cut short finishes as it
 // started; a hidden place's ring queue moves though the relay was away at first, and its kept
 // contacts are told.
@@ -28,7 +29,7 @@ import { randomBytes } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { FIRST_QA, GRACE } from '../lib/moves';
 import { linkOf, QueueMove, tookOf, type MoveAt, type MoveGroups, type Take } from '../lib/queue-move';
-import { keepReceived, setAppShown, waitWhileAway } from '../lib/receiver';
+import { awayQueues, keepReceived, setAppShown, waitWhileAway } from '../lib/receiver';
 import { createQueue, deleteQueue, fromHex, isQueueFull, isQueueNotFound, receiveMessage, sendMessage, toHex, type Mark, type Relay } from '../lib/relay';
 import type { SpareStore } from '../lib/spare';
 import { dropHeld, heldAfter, heldFor, holdAgain, holdLater, sendWaiting, takeBack, type SendPlace } from '../lib/waiting';
@@ -504,6 +505,34 @@ test('a relay that forgot only the groups’ queue has it made anew; the own que
   assert.deepEqual(asked, ['group', 'public', 'group']);
   assert.equal((await space.own()).senderHex, space.first.senderHex);
   assert.equal(q.now?.queue.senderHex, space.first.senderHex);
+});
+
+test('in the background a wait ends with what comes to the public groups’ queue, and a look reads no queue a wait found nothing come to', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const space = await spaceOn(relay, url, { groups: { renewAgain: async () => undefined, named: async () => new Set() } });
+  await space.look();
+  const q = await space.queues.load();
+  const others = awayQueues(q, url);
+  assert.ok(others.includes(q.group!.queue.recipientHex) && others.includes(q.public!.queue.recipientHex));
+  assert.deepEqual(awayQueues(q, 'ws://127.0.0.1:1'), []);
+  await sendMessage(relay, fromHex(q.public!.queue.senderHex), randomBytes(60));
+  setAppShown(false);
+  try {
+    const started = Date.now();
+    assert.equal(await waitWhileAway(relay, fromHex(space.first.recipientHex), others.map(fromHex)), 'came');
+    assert.ok(Date.now() - started < 10_000);
+  } finally {
+    setAppShown(true);
+  }
+  let took = 0;
+  const look = (empty: string[]) =>
+    space.mover.look({ own: relay, found: { taken: 0, junk: 0 }, take: async () => (took++, { junk: false }), tell: async () => undefined, shows: false, empty });
+  await look(others);
+  assert.equal(took, 0, 'not read after a wait that found nothing');
+  await look([]);
+  assert.equal(took, 1);
 });
 
 test('old queues let go of early are deleted though the app stopped first; a move cut short finishes as the one it was', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {

@@ -1,5 +1,5 @@
 import { newTag, type Message } from '../lock/history';
-import type { QueueKind } from '../lock/queues-data';
+import type { QueueKind, QueuesData } from '../lock/queues-data';
 import { loadCurrentSpaceData, type Queue } from '../lock/space-data';
 import { saveClip } from '../lock/voice-clips';
 import { offerRef } from './attachments';
@@ -49,14 +49,16 @@ import { t } from './i18n';
 // with no internet, and through the relay too.
 //
 // While Erevos is in the background (lib/background.ts) it does not ask every few seconds: it
-// waits at the relay until something comes for the queue (waitForMessage), so the phone's radio
-// rests in between, and what comes is still taken at once. At a relay that cannot wait, it asks
-// every AWAY_EVERY; after a look that failed, it waits longer each time, AWAY_RETRY_MOST at most.
+// waits at the relay until something comes for the queue (waitForMessage), or for the groups',
+// the contact link's or the public groups' queue there (awayQueues), so the phone's radio rests
+// in between, and what comes is still taken at once. A wait that ran out with nothing come asks
+// none of them again: only the others are read. At a relay that cannot wait, it asks every
+// AWAY_EVERY; after a look that failed, it waits longer each time, AWAY_RETRY_MOST at most.
 
 const EVERY = 3000;
 // In the background: how long one wait at the relay lasts, seconds; how often a relay that cannot
 // wait is asked; and the first and longest wait after a look that failed, milliseconds.
-const WAIT_FOR = 45;
+const WAIT_FOR = 60;
 const AWAY_EVERY = 20_000;
 const AWAY_RETRY = 5000;
 const AWAY_RETRY_MOST = 120_000;
@@ -65,7 +67,7 @@ const BATCH = 50;
 const CONTACT_PREFIX = 'contact:';
 
 type Receipts = Record<string, string[]>;
-type State = { place: Place | null; seen: number; receipts: Receipts; answers: Set<string>; waited: boolean; failures: number };
+type State = { place: Place | null; seen: number; receipts: Receipts; answers: Set<string>; waited: Waited; failures: number };
 
 // Where this space's messages come and go: our relay, the relay that sends (through the second
 // one when set), our queue, and where contacts reach us, said in every message.
@@ -131,37 +133,62 @@ function lookWhenDue(at: number) {
   );
 }
 
+/** How a wait at the relay ended: it did not wait (false), something came, or it ran out with nothing come. */
+export type Waited = false | 'came' | 'empty';
+
 /**
  * While Erevos is in the background, waits at the relay until something comes for the queue, or
- * for one of `others` (the groups' queue, lib/queue-move.ts), or a while: then a look takes it.
- * Says whether it waited; false at once while the app shows, at a relay that cannot wait, or once
- * the wait was ended. Throws when the relay cannot be reached, or no longer has the queue: only
- * the queue's own wait throws. One of `others` the relay lost ends the wait, so the look finds it
- * gone and makes it anew; one that fails otherwise drops out, and the others wait on.
+ * for one of `others` (awayQueues), or a while: then a look takes it. Says how it ended; false at
+ * once while the app shows, at a relay that cannot wait, or once the wait was ended. Throws when
+ * the relay cannot be reached, or no longer has the queue: only the queue's own wait throws. One
+ * of `others` the relay lost ends the wait, so the look finds it gone and makes it anew; one that
+ * fails otherwise drops out, and the others wait on.
  */
-export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others: Uint8Array[] = []): Promise<boolean> {
+export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others: Uint8Array[] = []): Promise<Waited> {
   if (shows || !canWaitAt(relay)) return false;
   const wait = new AbortController();
   waits.add(wait);
+  let came = false;
   try {
     // The first that answers ends the others.
-    const mine = waitForMessage(relay, recipient, WAIT_FOR, wait.signal).finally(() => wait.abort());
+    const mine = waitForMessage(relay, recipient, WAIT_FOR, wait.signal)
+      .then((got) => void (came ||= got))
+      .finally(() => wait.abort());
     const theirs = others.map((r) =>
       waitForMessage(relay, r, WAIT_FOR, wait.signal).then(
-        () => wait.abort(),
-        (error) => (isQueueNotFound(error) ? wait.abort() : new Promise<void>(() => undefined)),
+        (got) => {
+          came ||= got;
+          wait.abort();
+        },
+        (error) => {
+          if (!isQueueNotFound(error)) return new Promise<void>(() => undefined);
+          came = true;
+          wait.abort();
+        },
       ),
     );
     await Promise.race([mine, ...theirs]);
-    return canWaitAt(relay) && !ended.has(wait);
+    if (!canWaitAt(relay) || ended.has(wait)) return false;
+    return came ? 'came' : 'empty';
   } finally {
     waits.delete(wait);
     ended.delete(wait);
   }
 }
 
+/**
+ * The queues besides the own one to wait on in the background (waitWhileAway), as recipient ids
+ * in hex: the groups', the contact link's and the public groups' (lib/queue-move.ts), those on the
+ * relay at `url`. What came to them is read by the look that follows (QueueMove.look), and none
+ * of them is read after a wait that ran out with nothing come.
+ */
+export function awayQueues(queues: QueuesData | null, url: string): string[] {
+  if (!queues) return [];
+  return [queues.group, queues.link, queues.public].flatMap((kept) => (kept && sameRelay(kept.url, url) ? [kept.queue.recipientHex] : []));
+}
+
 /** How long to wait before the next look while Erevos is in the background: after a wait at the relay, a look that did not wait, or `failures` that failed in a row. */
-export function awayPace(waited: boolean, failures: number): number {
+export function awayPace(waited: Waited | boolean, failures: number): number {
   if (failures > 0) return Math.min(AWAY_RETRY_MOST, AWAY_RETRY * 2 ** (failures - 1));
   return waited ? 500 : AWAY_EVERY;
 }
@@ -448,15 +475,15 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     }
   };
   const recipient = fromHex(place.queue.recipientHex);
-  const queues = await mover.queues().catch(() => null);
-  // In the background, what comes to the groups' queue wakes the look too.
-  const others = queues?.group && sameRelay(queues.group.url, place.own.url) ? [fromHex(queues.group.queue.recipientHex)] : [];
+  // In the background, what comes to the other queues at our relay wakes the look too.
+  const others = awayQueues(await mover.queues().catch(() => null), place.own.url);
   let failed: unknown = null;
   const found = { taken: 0, junk: 0 };
   state.waited = false;
   try {
-    if (!stop()) state.waited = await waitWhileAway(place.own, recipient, others);
-    for (let i = 0; i < BATCH && !stop(); i++) {
+    if (!stop()) state.waited = await waitWhileAway(place.own, recipient, others.map(fromHex));
+    // Nothing came to the queue while the wait lasted: it is not asked again.
+    for (let i = 0; i < BATCH && state.waited !== 'empty' && !stop(); i++) {
       const bytes = await receiveMessage(place.own, recipient);
       if (!bytes) break;
       found.taken++;
@@ -481,7 +508,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   }
   if (!failed && !stop()) {
     const moved = await mover
-      .look({ own: place.own, found, take, tell: (identity) => tell(chats, here, identity, {}), shows, stop })
+      .look({ own: place.own, found, take, tell: (identity) => tell(chats, here, identity, {}), shows, stop, empty: state.waited === 'empty' ? others : [] })
       .catch(() => null);
     if (moved?.queue) {
       place = { ...place, queue: moved.queue };

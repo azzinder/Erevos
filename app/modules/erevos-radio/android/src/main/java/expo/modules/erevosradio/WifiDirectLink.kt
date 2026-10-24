@@ -27,7 +27,7 @@ import java.security.SecureRandom
  *
  * Only groups this made or joined are ever removed, so another app's Wi-Fi Direct is left as it
  * is: while one is up, this makes and joins none. `quiet`, while Erevos is in the background: it
- * looks less often.
+ * looks every QUIET_LOOK_MS, not every LOOK_MS, as a look keeps the Wi-Fi searching for two minutes.
  */
 @SuppressLint("MissingPermission")
 class WifiDirectLink(
@@ -295,7 +295,7 @@ class WifiDirectLink(
     private const val SERVICE_TYPE = "_erevos._tcp"
     private const val TICK_MS = 10_000L
     private const val LOOK_MS = 30_000L
-    private const val QUIET_LOOK_MS = 120_000L
+    private const val QUIET_LOOK_MS = 10 * 60_000L
     private const val REOPEN_MS = 5_000L
     // How long a group may take to come up, stay with no one in it, or stay joined with no link.
     private const val SETTLE_MS = 20_000L

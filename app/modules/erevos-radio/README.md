@@ -40,8 +40,11 @@ Meshtastic link have not run on a phone yet.
   Compiled with the Android classes; not run on a phone yet.
 - **Quiet** (`setQuiet`), while Erevos is in the background: BLE advertises and scans at low power,
   and scans with a filter on the service UUID, as Android stops unfiltered scans with the screen
-  off; the same Wi-Fi is announced every 15 seconds; Wi-Fi Direct looks every 2 minutes, not 30
-  seconds. Links that are up stay up.
+  off; the same Wi-Fi is announced every 15 seconds, and its multicast lock is held only 20 seconds
+  in every 2 minutes, long enough to hear another quiet phone; Wi-Fi Direct looks every 10 minutes,
+  not 30 seconds; Wi-Fi Aware, with no link or handshake under way, stays attached a minute, then
+  rests 4 minutes out of it. Links that are up stay up. A Wi-Fi Aware network asked for is let go
+  once its socket closes, or when it did not come within a minute.
 - **A Meshtastic LoRa radio** (`MeshtasticLink`, `meshScan`, `meshConnect`, `meshDisconnect`,
   `meshSend`), over BLE as Meshtastic's own apps link to it: service
   `6ba1b218-15a8-461f-9fa8-5dcae273eafd`, ToRadio written, FromRadio read until it comes empty after

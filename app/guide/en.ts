@@ -133,7 +133,9 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
 - **While a space is open:** the links start when a space opens, whatever screen shows, and stop when another space
   opens: locked, the space goes on behind the password screen. A message from nearby shows on the home screen as one through the relay does, and a call rings
   there too. On Android they stay up with Erevos in the background, while **In the background** is on **Receive and
-  ring**.
+  ring**. To spare the battery there, it looks for phones less often: Wi-Fi Direct every ten minutes, Wi-Fi Aware a
+  minute in every five, and on the same Wi-Fi it hears the others twenty seconds in every two minutes. A phone nearby
+  may so be found a few minutes later; links that are up stay up, and once Erevos shows it looks as often as before.
 - **Range:** a few tens of metres in the open, less through walls.
 - **Wi-Fi Aware:** faster, but not every phone has it. Bluetooth works on all of them.
 - **The same Wi-Fi or a hotspot:** phones on one Wi-Fi, or on one phone's hotspot, find each other and talk directly,
@@ -387,8 +389,9 @@ at the relay, or at once when they are nearby. A message counts as read once its
   says only how many came, while Erevos shows too; in the chat or group open on the screen only the sound plays, and
   opening a chat takes what came there off the count. Typing, and that a message came or was read, make none. On
   Android it goes on in the background too, while **In
-  the background** is on **Receive and ring** (below): there it waits at the relay until something comes, instead of
-  asking every few seconds, so the battery lasts, and a notice says only how many messages came. Closed, locked, or
+  the background** is on **Receive and ring** (below): there it waits at the relay until something comes, a minute at
+  a time, instead of asking every few seconds, and asks nothing more when nothing came, so the battery lasts, and a
+  notice says only how many messages came. Closed, locked, or
   long in the background otherwise, it does not: messages wait on the relay, up to 14 days, and come once Erevos
   opens again.
 
@@ -871,7 +874,8 @@ the Tor network. Each space has its own choice:
 - **What it hides:** the relay no longer sees your phone's IP address, only a Tor exit (or nothing, for a relay
   with a \`.onion\` address). Your phone company or the Wi-Fi sees only that you use Tor, not which relay.
 - **What it costs:** what goes through Tor comes and goes slower, and the first start of Tor takes a while. The screen
-  shows how far Tor is.
+  shows how far Tor is. To spare the battery, Erevos sends the reduced padding Tor made for phones: the filler Tor
+  sends to hide when you talk goes every 9 to 14 seconds, not every few, and none comes to the phone.
 - **What it does not cover:** calls, whose sound and picture go straight between the phones or through the call
   relay; nearby phones and SMS, which do not use the internet.
 - **On Android only:** Erevos on a computer and the web app have no Tor yet, so there everything goes straight.

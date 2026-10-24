@@ -44,6 +44,7 @@ use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::http::HeaderValue;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::WebSocketStream;
+use tor_config::PaddingLevel;
 use tor_rtcompat::PreferredRuntime;
 
 pub type Result<T> = std::result::Result<T, String>;
@@ -122,6 +123,9 @@ fn configure(state_dir: &Path, cache_dir: &Path, bridges: &Bridges) -> Result<To
     let mut config = TorClientConfigBuilder::from_directories(state_dir, cache_dir);
     // An app's own folders belong to it alone, but not in the way Arti checks for on a desktop.
     config.storage().permissions().dangerously_trust_everyone();
+    // The padding Tor sends between real cells, to hide when it talks, wakes a phone's radio every
+    // few seconds: the reduced padding Tor made for phones, with none from the guard to this one.
+    config.channel().padding(PaddingLevel::Reduced);
     if bridges.lines.is_empty() {
         config.bridges().enabled(BoolOrAuto::Explicit(false));
         return config.build().map_err(|e| e.to_string());

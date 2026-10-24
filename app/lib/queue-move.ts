@@ -31,7 +31,8 @@ import { forgetSpare, readySpare, spareSaid, spaceSpare, type SpareStore } from 
 //
 // Each look of the chat screen, or of the receiver beside the other screens (lib/receiver.ts),
 // hands this what it found on the own queue, then this reads the others: the groups' with every
-// look, the rest every READ_EVERY while the app shows, and with every look in the background. The
+// look, the rest every READ_EVERY while the app shows, and with every look in the background, but
+// for those a wait at the relay found nothing come to (lib/receiver.ts awayQueues). The
 // link's, the groups' and the public groups' are read a whole batch at a time (JUNK_BATCH), as the
 // own queue is, so junk on them is counted the same way.
 
@@ -101,6 +102,8 @@ export type MoveLook = {
   /** Whether the app shows: the other queues are read less often then. */
   shows: boolean;
   stop?: () => boolean;
+  /** The other queues a wait at the relay found nothing come to, by recipient id in hex (lib/receiver.ts awayQueues): not read. */
+  empty?: string[];
 };
 
 /** What a look did: the own queue it moved to, if it moved, and what to say. */
@@ -366,7 +369,7 @@ export class QueueMove {
     let lost = false;
     for (const kind of all ? (['group', 'link', 'public'] as const) : (['group'] as const)) {
       const kept = q[kind];
-      if (!kept || look.stop?.()) continue;
+      if (!kept || look.stop?.() || look.empty?.includes(kept.queue.recipientHex)) continue;
       const found = await this.read(look.own, kept.queue, kind, false, look, JUNK_BATCH);
       if (found === 'gone') {
         // The relay lost it. The groups' are made anew below. The link gets a queue of its own

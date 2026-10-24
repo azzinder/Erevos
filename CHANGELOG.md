@@ -10,6 +10,13 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **Less battery in the background** (Android): Erevos waits at the relay a minute at a time, also for what comes to
+  your contact link and your public groups, and asks nothing more when nothing came, where before it asked about
+  ten times a minute. Tor sends the reduced padding Tor made for phones (every 9 to 14 seconds, none to the phone).
+  Looking for phones nearby in the background: Wi-Fi Direct every ten minutes instead of two, Wi-Fi Aware a minute
+  in every five, and on the same Wi-Fi Erevos hears the others twenty seconds in every two minutes, so a phone
+  nearby may be found a few minutes later. A Wi-Fi Aware link that ended no longer keeps the Wi-Fi awake. Nothing
+  changes while Erevos shows.
 - **Erevos no longer closes by itself** (Android) when part of a screen is redrawn elsewhere while a screen is still
   sliding away, as could happen back from choosing a photo for a sticker, and again when Erevos opened after
   cropping it. Android said "The specified child already has a parent".
