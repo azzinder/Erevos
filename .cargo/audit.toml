@@ -10,4 +10,9 @@ ignore = [
     # --all-features --target all` prints nothing). OpenMLS's crypto crate pins it.
     "RUSTSEC-2026-0330",
     "RUSTSEC-2026-0331",
+    # crypto-bigint 0.5.5 (timing that varies in what should be constant-time, fixed in 0.7.6): it
+    # comes through elliptic-curve 0.13 (k256 for Nostr, p256 for the relay) and OpenMLS's crypto
+    # crates, which pin that line, so no version here takes the fix yet. Taken out once OpenMLS and
+    # elliptic-curve move to crypto-bigint 0.7 (`cargo tree -i crypto-bigint@0.5.5` prints nothing).
+    "RUSTSEC-2026-0387",
 ]
