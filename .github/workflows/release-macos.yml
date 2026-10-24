@@ -1,0 +1,228 @@
+name: release-macos
+
+# Adds the macOS disk image to a release that went out without it, while the repository variable
+# EREVOS_MACOS was "off": on this repository and on the public download repository, with the
+# release's SHA256SUMS and notes made to list it. Built from the release's own commit, version and
+# build number, the way the release workflow's macos job builds it (release.yml), so it is the same
+# Erevos as the release's other packages. Only by hand: Actions, release-macos, Run workflow.
+#
+# The jobs hand their files over through a draft release, build-macos-<run number>, as the release
+# workflow does: artifacts would fill the account's Actions storage. The release workflow deletes
+# a draft like it that was left behind.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The release that has no macOS yet, e.g. 3.0.0.
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: release-macos
+  cancel-in-progress: false
+
+env:
+  EXPO_NO_TELEMETRY: "1"
+  DRAFT: build-macos-${{ github.run_number }}
+
+jobs:
+  # The release's commit and build number, and the draft the jobs hand their files to.
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      build: ${{ steps.check.outputs.build }}
+      commit: ${{ steps.check.outputs.commit }}
+    steps:
+      - name: Check the release is there and has no macOS
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          WANTED: ${{ inputs.version }}
+        run: |
+          version=${WANTED#v}
+          if [[ ! "$version" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Not a version: $version. It looks like 3.0.0."; exit 1
+          fi
+          assets=$(gh release view "v$version" --json assets --jq '.assets[].name') || {
+            echo "::error::There is no release v$version"; exit 1; }
+          if grep -qx erevos-macos.dmg <<< "$assets"; then
+            echo "::error::v$version already has erevos-macos.dmg"; exit 1
+          fi
+          build=$(gh release download "v$version" -p version.json -O - | jq -er .build)
+          commit=$(gh api "repos/$GH_REPO/commits/v$version" --jq .sha)
+          echo "v$version: build $build, commit ${commit::7}."
+          { echo "version=$version"; echo "build=$build"; echo "commit=$commit"; } >> "$GITHUB_OUTPUT"
+          gh release create "$DRAFT" --draft --target "$commit" --title "macOS for $version (in progress)" --notes ""
+
+  # The desktop web build with its core, on Linux: a Mac minute counts as ten.
+  web:
+    needs: release
+    env:
+      EREVOS_VERSION: ${{ needs.release.outputs.version }}
+      EREVOS_BUILD: ${{ needs.release.outputs.build }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ needs.release.outputs.commit }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable, 2026-10-21
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Build the web app with its core
+        working-directory: app
+        env:
+          EXPO_PUBLIC_SHELL: electron
+        run: |
+          npm ci
+          node scripts/build-web-core.mjs
+          npx expo export --clear --platform web --output-dir ../desktop/web
+          test -f ../desktop/web/core/erevos_ffi_bg.wasm
+      - name: Hand the desktop web build to the macOS job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tar -czf desktop-web.tar.gz -C desktop web
+          gh release upload "$DRAFT" desktop-web.tar.gz --clobber
+
+  # The same steps as the release workflow's macos job.
+  macos:
+    needs: [release, web]
+    env:
+      EREVOS_VERSION: ${{ needs.release.outputs.version }}
+    runs-on: macos-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ needs.release.outputs.commit }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Take the desktop web build from the web job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release download "$DRAFT" -p desktop-web.tar.gz
+          tar -xzf desktop-web.tar.gz -C desktop
+          test -f desktop/web/core/erevos_ffi_bg.wasm
+      - run: npm ci
+        working-directory: desktop
+      - name: Build the macOS disk image
+        working-directory: desktop
+        run: npx electron-builder --mac dmg --universal --publish never -c.extraMetadata.version=$EREVOS_VERSION
+      - name: Open the disk image and start the app
+        run: |
+          set -euo pipefail
+          dmg=$(ls desktop/dist/*.dmg)
+          mnt=$(mktemp -d)
+          hdiutil attach "$dmg" -nobrowse -readonly -noautoopen -mountpoint "$mnt"
+          app="$mnt/Erevos.app"
+          archs=$(lipo -archs "$app/Contents/MacOS/Erevos")
+          echo "Architectures: $archs"
+          case " $archs " in *" arm64 "*) ;; *) echo "::error::No Apple silicon code"; exit 1 ;; esac
+          case " $archs " in *" x86_64 "*) ;; *) echo "::error::No Intel code"; exit 1 ;; esac
+          codesign --verify --deep --strict --verbose=2 "$app"
+          keychain="$RUNNER_TEMP/erevos-check.keychain-db"
+          security create-keychain -p erevos-check "$keychain"
+          security set-keychain-settings "$keychain"
+          security unlock-keychain -p erevos-check "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security default-keychain -d user -s "$keychain"
+          "$app/Contents/MacOS/Erevos" --smoke | tee smoke.log
+          grep -q "SMOKE OK core=true secrets=encrypted" smoke.log
+          hdiutil detach "$mnt"
+      - name: Hand the disk image to the add job
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir up
+          cp desktop/dist/*.dmg up/erevos-macos.dmg
+          gh release upload "$DRAFT" up/erevos-macos.dmg --clobber
+
+  add:
+    needs: [release, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      EREVOS_VERSION: ${{ needs.release.outputs.version }}
+      # The public repository that Updates → Check for updates reads; without the token that step
+      # is skipped.
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      RELEASES_REPO: azzinder/erevos-releases
+    steps:
+      - name: Add the disk image to the release, its SHA256SUMS and its notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir files
+          gh release download "$DRAFT" -D files -p erevos-macos.dmg
+          gh release download "v$EREVOS_VERSION" -D files -p SHA256SUMS
+          (cd files && sha256sum erevos-macos.dmg >> SHA256SUMS && sort -k2,2 -o SHA256SUMS SHA256SUMS && cat SHA256SUMS)
+          gh release view "v$EREVOS_VERSION" --json body --jq .body > notes-before.md
+          # The macOS line where the release workflow puts it, after Linux; and macOS out of
+          # "Not in this release", or that line out when nothing else is missing.
+          python3 - notes-before.md notes.md <<'PY'
+          import re, sys
+          line = ("- **macOS** 13 or newer (Apple silicon and Intel): open erevos-macos.dmg and drag Erevos to Applications. "
+                  "It has no paid Apple signature: the first time, and after each update, allow it under "
+                  "System Settings → Privacy & Security → Open Anyway.")
+          rows = open(sys.argv[1]).read().split('\n')
+          after = [i for i, r in enumerate(rows) if re.match(r'- \*\*(Android|Arch Linux|Other Linux)\*\*', r)]
+          before = [i for i, r in enumerate(rows) if r.startswith('- **')]
+          at = after[-1] + 1 if after else (before[0] if before else 2)
+          rows.insert(at, line)
+          out = []
+          for r in rows:
+              m = re.match(r'Not in this release: (.*?) \((.*)$', r)
+              if m:
+                  rest = [p.strip() for p in m.group(1).split(',') if p.strip() != 'macOS']
+                  if not rest:
+                      continue
+                  r = f"Not in this release: {', '.join(rest)} ({m.group(2)}"
+              out.append(r)
+          open(sys.argv[2], 'w').write('\n'.join(out))
+          PY
+          diff notes-before.md notes.md || true
+          gh release upload "v$EREVOS_VERSION" files/erevos-macos.dmg files/SHA256SUMS --clobber
+          gh release edit "v$EREVOS_VERSION" --notes-file notes.md
+
+      - name: Add it to the public download repository
+        if: ${{ env.RELEASES_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          gh release upload "v$EREVOS_VERSION" files/erevos-macos.dmg files/SHA256SUMS --repo "$RELEASES_REPO" --clobber
+          gh release edit "v$EREVOS_VERSION" --repo "$RELEASES_REPO" --notes-file notes.md
+
+      - name: Delete the draft
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release delete "$DRAFT" --yes || true

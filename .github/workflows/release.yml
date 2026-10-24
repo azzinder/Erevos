@@ -290,7 +290,7 @@ jobs:
 
   # One app for Apple silicon and Intel (macOS 13 or newer), signed ad hoc, not by Apple (that
   # needs a paid Apple Developer ID). A Mac minute counts as ten, so none while the repository
-  # variable EREVOS_MACOS is "off".
+  # variable EREVOS_MACOS is "off"; release-macos.yml adds it to such a release later.
   macos:
     needs: [version, linux]
     if: ${{ !cancelled() && needs.version.outputs.build == 'true' && vars.EREVOS_MACOS != 'off' }}

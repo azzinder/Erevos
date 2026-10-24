@@ -282,7 +282,10 @@ the release page.
 
 The repository variable `EREVOS_MACOS` set to `off` leaves the Mac out (a Mac minute counts as ten),
 and `EREVOS_WINDOWS` set to `off` leaves Windows out (a Windows minute counts as two). The macOS app
-is signed ad hoc, not by Apple; no release so far has had one. The Windows files are not signed: that needs a code signing
+is signed ad hoc, not by Apple; no release so far has had one. A release that went out without it
+gets it later from **Actions → release-macos → Run workflow** with its version: built from the
+release's commit, with its build number, and added to its files, SHA256SUMS and notes on both
+repositories. The Windows files are not signed: that needs a code signing
 certificate, so Windows' SmartScreen warns before the first start.
 
 ## Licence
