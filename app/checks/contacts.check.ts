@@ -35,6 +35,7 @@ import {
   phoneSave,
   searchWords,
   splitName,
+  toDial,
   turns,
   typeOf,
   whenText,
@@ -112,6 +113,25 @@ test('the search finds every field, without case or accents, and numbers however
   assert.ok(matches(card, '   '));
   // A final sigma is a sigma.
   assert.ok(matches({ ...EMPTY_FIELDS, given: 'Νίκος' }, 'νικοσ'));
+});
+
+test("the Phone's search gives each number of the contacts it finds once, and nothing for an empty search", () => {
+  const cards = [
+    { ...maria, key: 'p1', name: 'Μαρία Παπαδοπούλου', phones: [...maria.phones, { value: '00306912345678', kind: 'home' as const, label: '' }, { value: '210 123 4567', kind: 'work' as const, label: '' }] },
+    { ...EMPTY_FIELDS, key: 's1', name: 'Μαρίνα', given: 'Μαρίνα' },
+    { ...EMPTY_FIELDS, key: 'p2', name: 'Νίκος', given: 'Νίκος', phones: [{ value: '+30 697 000 0000', kind: 'mobile' as const, label: '' }] },
+  ];
+  assert.deepEqual(toDial(cards, '  '), []);
+  // Marina has no number to call.
+  assert.deepEqual(
+    toDial(cards, 'μαρ').map((row) => [row.key, row.name, row.number]),
+    [
+      ['p1:1', 'Μαρία Παπαδοπούλου', '+30 691 234 5678'],
+      ['p1:2', 'Μαρία Παπαδοπούλου', '210 123 4567'],
+    ],
+  );
+  assert.deepEqual(toDial(cards, '697 000').map((row) => row.key), ['p2:1']);
+  assert.equal(toDial(cards, 'μαρ', new Map(), 1).length, 1);
 });
 
 test('fields are kept clean: one line each, no direction marks, empty entries left out', () => {

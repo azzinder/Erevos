@@ -1039,6 +1039,10 @@ opens it once Erevos is unlocked: with a password, after you type it, unless the
 password, below). Until then a card at the top says **Erevos is not the phone app**; on a small phone it shows only
 that title, and tapping it opens the Phone's **Settings**.
 
+- **Search contacts:** at the top of the Phone, type a name, a number or part of either: the contacts with a number
+  show instead of the tabs, each number on a line of its own. Tap one to call it, or hold it down to put it on the
+  keypad. It looks in the phone's contacts and, with Erevos unlocked, in those kept only in Erevos and your Erevos
+  contacts with a number; never in hidden chats.
 - **The call screen:** who calls, or who you call, with the name and photo your phone's contacts give them; while
   Erevos is unlocked, a number linked to one of your Erevos contacts shows the name you gave them, and so does the
   number of a contact kept only in Erevos; that of a contact of open hidden chats, only while they are open. It shows over the

@@ -17,6 +17,9 @@ On main, not released yet:
   when Android closes Erevos in the background and starts it anew, nor do the ones you read while the hidden chats
   were open once they close. A text to hidden chats whose bell their relay did not take (Nostr) is now counted when
   it goes through the relay five minutes later, where before it made no notice at all.
+- **Search contacts in the Phone** (Android): a search at the top finds a contact by name or number, in the phone's
+  contacts and, with Erevos unlocked, in those kept only in Erevos and your Erevos contacts, never in hidden chats.
+  Tap a number to call it, or hold it down to put it on the keypad.
 - **New chat shows how to add a contact first**: the relay's own settings (its address, token, second relay, invites
   and queue) are closed under **Relay settings** until you tap it; your contact link, its QR code and adding a contact
   show at once, as before. **Hide relay** is now **Hide relay and new contacts**.

@@ -3,12 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SearchIcon } from '../components/icons';
 import { SwipeTabs } from '../components/swipe-tabs';
 import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
-import { isContactNumber } from '../lib/contact-book';
-import { newContactHref } from '../lib/contacts';
+import { dialCards, isContactNumber, type Card as ContactCard } from '../lib/contact-book';
+import { newContactHref, toDial, type Findable } from '../lib/contacts';
 import { Held } from '../lib/held';
 import { mark, plural, t } from '../lib/i18n';
 import { refreshKnownNames } from '../lib/known-names';
@@ -59,13 +60,15 @@ import {
   type PhoneAccount,
   type PhoneStatus,
 } from '../modules/erevos-phone';
+import { contactsStatus } from '../modules/erevos-contacts';
 import { blockedNumbers, blockNumber, canBlockNumbers, unblockNumber } from '../modules/erevos-sms';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
 // The phone, with Erevos as Android's phone app (modules/erevos-phone): the keypad to call a
 // number, the calls (Android's call history, with filters) and the favourites (the phone's starred
-// contacts); above them, while a contact group's calls are blocked, a reminder with Lift. A call
+// contacts); above them a search for a contact to call (lib/contact-book.ts dialCards), and, while
+// a contact group's calls are blocked, a reminder with Lift. A call
 // itself shows on the native call screen, which works with Erevos locked and over the phone's lock
 // screen; this screen is behind Erevos's password like the rest of the app, unless its owner lets
 // it open without it (lib/phone-open.ts): then, with Erevos locked, it shows on its own
@@ -170,6 +173,24 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
   // A narrow one, or one with large text, has no room for the tabs side by side as they are: they
   // share the row.
   const narrow = screenSize.width / Math.max(1, screenSize.fontScale) < NARROW_BELOW;
+  // The search for a contact to call: in the phone's contacts, and the open space's own.
+  const [query, setQuery] = useState('');
+  const [dialable, setDialable] = useState<ContactCard[] | null>(null);
+  const [mayRead, setMayRead] = useState(true);
+  const [searchNote, setSearchNote] = useState('');
+  const searching = query.trim() !== '';
+  const findables = useMemo(() => new Map<string, Findable>(), [dialable]);
+  const hits = useMemo(() => (dialable ? toDial(dialable, query, findables) : []), [dialable, query, findables]);
+
+  // Read anew each time a search starts, so a contact added meanwhile is found.
+  const readDialable = useCallback(() => {
+    setMayRead(contactsStatus().read);
+    dialCards(!locked).then(setDialable, () => setDialable([]));
+  }, [locked]);
+  useEffect(() => {
+    if (searching) readDialable();
+    else setSearchNote('');
+  }, [searching, readDialable]);
 
   useEffect(() => {
     if (typeof params.number !== 'string') return;
@@ -268,6 +289,12 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
     setAccounts(await phoneAccounts().catch(() => []));
   }
 
+  async function allowContacts() {
+    const answer = await PermissionsAndroid.request('android.permission.READ_CONTACTS').catch(() => null);
+    if (answer === PermissionsAndroid.RESULTS.GRANTED) readDialable();
+    else setSearchNote(t('Android did not allow it. Under Settings, Allow calls and contacts says how to.'));
+  }
+
   // On a small screen, or with large text, the keys shrink to fit the room left under the top
   // (down to 70%); below that the keys scroll under the number, kept at their end so Call shows,
   // and never run over the card and tabs.
@@ -299,6 +326,23 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
             </>
           )}
         </Row>
+        <View style={styles.search}>
+          <SearchIcon color={colors.textFaint} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('Search contacts')}
+            placeholderTextColor={colors.textFaint}
+            style={[styles.searchInput, fontStyle('400')]}
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+          {query ? (
+            <Pressable onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel={t('Clear the search')} hitSlop={10}>
+              <Text tone="muted">✕</Text>
+            </Pressable>
+          ) : null}
+        </View>
         {status && status.calls > 0 ? <Button title={t('Back to the call')} onPress={showCall} /> : null}
         {status && !status.isDefault ? (
           brief && locked ? (
@@ -331,128 +375,185 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
           )
         ) : null}
         {locked ? null : <GroupBlocks />}
-        <Row style={narrow ? styles.tabsNarrow : styles.tabs}>
-          {TABS.map((each) => (
-            <Chip key={each.tab} label={t(each.label)} selected={tab === each.tab} onPress={() => setTab(each.tab)} fit={narrow} />
-          ))}
-        </Row>
-        {note && tab !== 'keypad' ? <Text tone="muted">{note}</Text> : null}
+        {searching ? null : (
+          <Row style={narrow ? styles.tabsNarrow : styles.tabs}>
+            {TABS.map((each) => (
+              <Chip key={each.tab} label={t(each.label)} selected={tab === each.tab} onPress={() => setTab(each.tab)} fit={narrow} />
+            ))}
+          </Row>
+        )}
+        {note && (searching || tab !== 'keypad') ? <Text tone="muted">{note}</Text> : null}
       </View>
 
-      {/* A swipe to the side goes to the tab beside, as its chip does. */}
-      <SwipeTabs tabs={TAB_ORDER} current={tab} onChange={setTab}>
-        {tab === 'recents' ? (
-          <Recents
-            accounts={accounts}
-            locked={!!locked}
-            onCall={(to, account) => void call(to, account)}
-            onEdit={(to) => {
-              setNumber(dialNumber(to));
-              setTab('keypad');
-            }}
-          />
-        ) : tab === 'favourites' ? (
-          <Favourites onCall={(to) => void call(to)} />
-        ) : (
-          <View style={styles.keypad} onLayout={measured(setRoom)}>
-            <View style={styles.numberLine}>
-              <TextInput
-                value={number}
-                onChangeText={(text) => setNumber(dialNumber(text))}
-                // The keys below type; held down, the field still pastes a number.
-                showSoftInputOnFocus={false}
-                style={[styles.number, sized.number, { color: colors.text }, fontStyle('400')]}
-                placeholder={t('Number')}
-                placeholderTextColor={colors.textFaint}
-                textAlign="center"
-              />
-              <Pressable
-                onPress={() => setNumber((n) => n.slice(0, -1))}
-                onLongPress={() => setNumber('')}
-                disabled={!number}
-                accessibilityRole="button"
-                accessibilityLabel={t('Delete')}
-                hitSlop={10}
-                style={({ pressed }) => [styles.erase, { opacity: !number ? 0.3 : pressed ? 0.6 : 1 }]}
-              >
-                <Text variant="heading" tone="muted">
-                  ⌫
-                </Text>
-              </Pressable>
-            </View>
-            <ScrollView
-              ref={keypad}
-              style={styles.keysScroll}
-              contentContainerStyle={styles.keysColumn}
-              // Taller than its room even at the smallest keys: Call, and what it said, stay in sight,
-              // under the number.
-              onLayout={(event) => {
-                keysFrame.current = event.nativeEvent.layout.height;
-                keepEnd();
+      {searching ? (
+        // A number found is called at a tap; held down, it goes on the keypad.
+        <FlatList
+          data={hits}
+          keyExtractor={(row) => row.key}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.list}
+          ListHeaderComponent={
+            mayRead ? null : (
+              <Card>
+                <Text tone="muted">{t("Android does not let Erevos read the phone's contacts yet.")}</Text>
+                <Button title={t('Allow the contacts')} onPress={() => void allowContacts()} />
+                {searchNote ? <Text tone="muted">{searchNote}</Text> : null}
+              </Card>
+            )
+          }
+          ListEmptyComponent={
+            dialable === null ? null : (
+              <Text tone="muted" style={styles.empty}>
+                {t('No contact with a number matches.')}
+              </Text>
+            )
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => {
+                setQuery('');
+                void call(item.number);
               }}
-              onContentSizeChange={(_, height) => {
-                keysContent.current = height;
-                keepEnd();
+              onLongPress={() => {
+                setQuery('');
+                setNumber(dialNumber(item.number));
+                setTab('keypad');
               }}
-              keyboardShouldPersistTaps="handled"
+              accessibilityRole="button"
+              accessibilityLabel={t('Call {name}', { name: `${item.name}, ${item.kind}, ${item.number}` })}
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
             >
-              {KEYS.map((keys) => (
-                <View key={keys.join('')} style={styles.keys}>
-                  {keys.map((key) => (
-                    <Pressable
-                      key={key}
-                      onPress={() => setNumber((n) => typeKey(n, key))}
-                      onLongPress={key === '0' ? () => setNumber((n) => typeKey(n, '+')) : undefined}
-                      accessibilityRole="button"
-                      accessibilityLabel={key}
-                      style={({ pressed }) => [styles.key, sized.key, pressed && styles.keyPressed]}
-                    >
-                      <Text style={sized.keyText}>{key}</Text>
-                      {key === '0' ? (
-                        <Text variant="caption" tone="faint" style={[styles.keyPlus, sized.plus]}>
-                          +
-                        </Text>
-                      ) : null}
-                    </Pressable>
-                  ))}
-                </View>
-              ))}
-              {accounts.length >= 2 ? (
-                <View onLayout={measured(setSimHeight)}>
-                  <Row wrap style={styles.sims}>
-                    {accounts.map((a) => (
-                      <Chip key={a.id} label={accountLabel(a)} selected={chosen === a.id} onPress={() => setChosen(a.id)} />
-                    ))}
-                  </Row>
-                </View>
-              ) : (status?.slots ?? 0) >= 2 ? (
-                <View onLayout={measured(setSimHeight)}>
-                  <Row wrap style={styles.sims}>
-                    <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
-                  </Row>
-                </View>
-              ) : null}
-              <View style={styles.keys}>
+              <Face name={item.name} photo="" size={44} />
+              <View style={styles.rowBody}>
+                <Text variant="bodyStrong" numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text variant="caption" tone="muted" numberOfLines={1}>
+                  {`${item.kind} · ${item.number}`}
+                </Text>
+              </View>
+              <Text variant="heading" color={colors.success}>
+                ☏
+              </Text>
+            </Pressable>
+          )}
+        />
+      ) : (
+        // A swipe to the side goes to the tab beside, as its chip does.
+        <SwipeTabs tabs={TAB_ORDER} current={tab} onChange={setTab}>
+          {tab === 'recents' ? (
+            <Recents
+              accounts={accounts}
+              locked={!!locked}
+              onCall={(to, account) => void call(to, account)}
+              onEdit={(to) => {
+                setNumber(dialNumber(to));
+                setTab('keypad');
+              }}
+            />
+          ) : tab === 'favourites' ? (
+            <Favourites onCall={(to) => void call(to)} />
+          ) : (
+            <View style={styles.keypad} onLayout={measured(setRoom)}>
+              <View style={styles.numberLine}>
+                <TextInput
+                  value={number}
+                  onChangeText={(text) => setNumber(dialNumber(text))}
+                  // The keys below type; held down, the field still pastes a number.
+                  showSoftInputOnFocus={false}
+                  style={[styles.number, sized.number, { color: colors.text }, fontStyle('400')]}
+                  placeholder={t('Number')}
+                  placeholderTextColor={colors.textFaint}
+                  textAlign="center"
+                />
                 <Pressable
-                  onPress={() => void call(number, accounts.some((a) => a.id === chosen) ? chosen : undefined)}
+                  onPress={() => setNumber((n) => n.slice(0, -1))}
+                  onLongPress={() => setNumber('')}
+                  disabled={!number}
                   accessibilityRole="button"
-                  accessibilityLabel={t('Call')}
-                  style={({ pressed }) => [styles.callButton, sized.callButton, { opacity: pressed ? 0.75 : 1 }]}
+                  accessibilityLabel={t('Delete')}
+                  hitSlop={10}
+                  style={({ pressed }) => [styles.erase, { opacity: !number ? 0.3 : pressed ? 0.6 : 1 }]}
                 >
-                  <Text variant="label" color="#FFFFFF" style={styles.callText} numberOfLines={1} adjustsFontSizeToFit>
-                    {t('Call')}
+                  <Text variant="heading" tone="muted">
+                    ⌫
                   </Text>
                 </Pressable>
               </View>
-              {note ? (
-                <Text tone="muted" style={styles.note} onLayout={measured(setNoteHeight)}>
-                  {note}
-                </Text>
-              ) : null}
-            </ScrollView>
-          </View>
-        )}
-      </SwipeTabs>
+              <ScrollView
+                ref={keypad}
+                style={styles.keysScroll}
+                contentContainerStyle={styles.keysColumn}
+                // Taller than its room even at the smallest keys: Call, and what it said, stay in sight,
+                // under the number.
+                onLayout={(event) => {
+                  keysFrame.current = event.nativeEvent.layout.height;
+                  keepEnd();
+                }}
+                onContentSizeChange={(_, height) => {
+                  keysContent.current = height;
+                  keepEnd();
+                }}
+                keyboardShouldPersistTaps="handled"
+              >
+                {KEYS.map((keys) => (
+                  <View key={keys.join('')} style={styles.keys}>
+                    {keys.map((key) => (
+                      <Pressable
+                        key={key}
+                        onPress={() => setNumber((n) => typeKey(n, key))}
+                        onLongPress={key === '0' ? () => setNumber((n) => typeKey(n, '+')) : undefined}
+                        accessibilityRole="button"
+                        accessibilityLabel={key}
+                        style={({ pressed }) => [styles.key, sized.key, pressed && styles.keyPressed]}
+                      >
+                        <Text style={sized.keyText}>{key}</Text>
+                        {key === '0' ? (
+                          <Text variant="caption" tone="faint" style={[styles.keyPlus, sized.plus]}>
+                            +
+                          </Text>
+                        ) : null}
+                      </Pressable>
+                    ))}
+                  </View>
+                ))}
+                {accounts.length >= 2 ? (
+                  <View onLayout={measured(setSimHeight)}>
+                    <Row wrap style={styles.sims}>
+                      {accounts.map((a) => (
+                        <Chip key={a.id} label={accountLabel(a)} selected={chosen === a.id} onPress={() => setChosen(a.id)} />
+                      ))}
+                    </Row>
+                  </View>
+                ) : (status?.slots ?? 0) >= 2 ? (
+                  <View onLayout={measured(setSimHeight)}>
+                    <Row wrap style={styles.sims}>
+                      <Chip label={t('Choose the SIM')} onPress={() => void askSims()} />
+                    </Row>
+                  </View>
+                ) : null}
+                <View style={styles.keys}>
+                  <Pressable
+                    onPress={() => void call(number, accounts.some((a) => a.id === chosen) ? chosen : undefined)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('Call')}
+                    style={({ pressed }) => [styles.callButton, sized.callButton, { opacity: pressed ? 0.75 : 1 }]}
+                  >
+                    <Text variant="label" color="#FFFFFF" style={styles.callText} numberOfLines={1} adjustsFontSizeToFit>
+                      {t('Call')}
+                    </Text>
+                  </Pressable>
+                </View>
+                {note ? (
+                  <Text tone="muted" style={styles.note} onLayout={measured(setNoteHeight)}>
+                    {note}
+                  </Text>
+                ) : null}
+              </ScrollView>
+            </View>
+          )}
+        </SwipeTabs>
+      )}
 
       <Sheet visible={choosing !== null} onClose={() => setChoosing(null)} title={t('Call on')}>
         {accounts.map((a) => (
@@ -1068,6 +1169,23 @@ const makeStyles = (colors: Colors) =>
     },
     tabsNarrow: {
       gap: 6,
+    },
+    search: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      height: 46,
+      paddingHorizontal: space.md,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.border, 0.6),
+    },
+    searchInput: {
+      flex: 1,
+      height: '100%',
+      color: colors.text,
+      fontSize: 16,
     },
     tabBody: {
       paddingHorizontal: space.xl - 4,

@@ -138,4 +138,7 @@ export const phone: Record<string, string> = {
   'Blocked until tomorrow, {time}': 'Αποκλεισμένη μέχρι αύριο, {time}',
   'Calls from the group {group} are blocked': 'Οι κλήσεις από την ομάδα {group} αποκλείονται',
   'Calls from a contact group are blocked': 'Οι κλήσεις από μια ομάδα επαφών αποκλείονται',
+  // The Phone's search for a contact to call.
+  'Clear the search': 'Καθαρισμός αναζήτησης',
+  'No contact with a number matches.': 'Καμία επαφή με αριθμό δεν ταιριάζει.',
 };

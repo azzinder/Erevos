@@ -1,6 +1,6 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 
-import { compareNames, EMPTY_FIELDS, erevosFor, fieldsName, keeperFirst, mergeFields, phoneFields, phoneSave, type ErevosPerson, type Fields } from './contacts';
+import { compareNames, EMPTY_FIELDS, erevosFor, fieldsName, keeperFirst, mergeByName, mergeFields, phoneFields, phoneSave, type ErevosPerson, type Fields } from './contacts';
 import type { OpenHiddenPlace } from './hidden-contacts';
 import { t } from './i18n';
 import { spaceChats } from './space-chats';
@@ -161,6 +161,25 @@ export function groupTitles(card: Card, groups: PhoneGroup[]): string[] {
 /** The phone's contacts as cards, by name. None until Erevos may read them. */
 export async function phoneCards(): Promise<Card[]> {
   return byName((await phoneContacts()).map(phoneCard));
+}
+
+/**
+ * The contacts the Phone's search looks in (app/phone.tsx), by name: the phone's, once Erevos may
+ * read them, and with a space open (`withSpace`) those kept only in it and its chats' Erevos
+ * contacts, as the contacts screen shows them. Never the hidden chats'.
+ */
+export async function dialCards(withSpace: boolean): Promise<Card[]> {
+  const phone = await phoneCards().catch((): Card[] => []);
+  if (!withSpace) return phone;
+  let place: Place | null = null;
+  try {
+    place = spacePlace();
+  } catch {
+    return phone;
+  }
+  const [data, people] = await Promise.all([loadPlace(place).catch(() => null), erevosPeople(null).catch((): ErevosPerson[] => [])]);
+  const all = withErevos([...phone, ...(data?.contacts ?? []).map(sealedCard)], data?.links ?? [], people);
+  return mergeByName(all.slice(0, phone.length), byName(all.slice(phone.length)));
 }
 
 /**

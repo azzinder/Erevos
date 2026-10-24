@@ -138,4 +138,7 @@ export const phone: Record<string, string> = {
   'Blocked until tomorrow, {time}': 'Bloqué jusqu’à demain, {time}',
   'Calls from the group {group} are blocked': 'Les appels du groupe {group} sont bloqués',
   'Calls from a contact group are blocked': 'Les appels d’un groupe de contacts sont bloqués',
+  // The Phone's search for a contact to call.
+  'Clear the search': 'Effacer la recherche',
+  'No contact with a number matches.': 'Aucun contact avec un numéro ne correspond.',
 };

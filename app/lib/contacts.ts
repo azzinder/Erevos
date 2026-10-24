@@ -273,6 +273,34 @@ export function matches(f: Fields & { name?: string }, query: string, extra: str
   return words.length === 0 || found(findable(f, extra), words);
 }
 
+/** A number to call, found by the Phone's search: whose it is, and what kind of number. */
+export type DialRow = { key: string; name: string; kind: string; number: string };
+
+/**
+ * The numbers of the contacts (`cards`, in their order) that every word of `query` finds, as
+ * `matches` does, each number once, `most` at most; none for an empty search. `findables` keeps
+ * what the search looks in, made once for each card.
+ */
+export function toDial(cards: (Fields & { key: string; name: string })[], query: string, findables = new Map<string, Findable>(), most = 50): DialRow[] {
+  const words = searchWords(query);
+  const rows: DialRow[] = [];
+  if (words.length === 0) return rows;
+  for (const card of cards) {
+    if (card.phones.length === 0) continue;
+    let f = findables.get(card.key);
+    if (!f) findables.set(card.key, (f = findable(card)));
+    if (!found(f, words)) continue;
+    const seen: string[] = [];
+    for (const phone of card.phones) {
+      if (!digits(phone.value) || seen.some((n) => sameNumber(n, phone.value))) continue;
+      seen.push(phone.value);
+      rows.push({ key: `${card.key}:${seen.length}`, name: card.name, kind: kindLabel(phone), number: phone.value });
+      if (rows.length >= most) return rows;
+    }
+  }
+  return rows;
+}
+
 /** A name as compared: its words in any order, without case or accents. */
 function nameKey(name: string): string {
   return plain(name).split(/\s+/).filter((w) => /\p{L}/u.test(w)).sort().join(' ');
