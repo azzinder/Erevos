@@ -216,7 +216,9 @@ export const chat: Record<string, string> = {
   'No hidden chats yet. Add a contact through the relay below, or move a chat here from its details.': 'Ancora nessuna chat nascosta. Aggiungi un contatto tramite il relay qui sotto, o sposta qui una chat dai suoi dettagli.',
   'No chats yet. Add a contact through the relay, under Relay.': 'Ancora nessuna chat. Aggiungi un contatto tramite il relay, in «Relay».',
   'No chats yet. Add a contact under Relay. Your contacts reach you nearby too, over Wi-Fi or Bluetooth, without the internet.': 'Ancora nessuna chat. Aggiungi un contatto in «Relay». I tuoi contatti ti raggiungono anche da vicino, via Wi-Fi o Bluetooth, senza internet.',
-  'Hide relay': 'Nascondi relay',
+  'Hide relay and new contacts': 'Nascondi relay e nuovi contatti',
+  'Relay settings': 'Impostazioni del relay',
+  'Hide relay settings': 'Nascondi impostazioni del relay',
   'Relay and new contacts': 'Relay e nuovi contatti',
   'Say when a message comes': 'Avvisa quando arriva un messaggio',
   'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.':

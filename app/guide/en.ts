@@ -207,8 +207,8 @@ they are end-to-end encrypted, and only the two phones have the keys. Each phone
 to a contact on another relay is sealed for theirs and handed to yours, which passes it on, so their relay never sees
 your phone's address. A phone with no relay gets a place on its contact's, see **No relay of your own** below.
 
-1. On the home screen, tap **New chat**. The relay settings open (they are under **Relay and new contacts** in
-   a chat with no contact picked).
+1. On the home screen, tap **New chat**. It shows your contact link and how to add a contact; tap **Relay settings**
+   below them (in a chat with no contact picked, they are under **Relay and new contacts**).
 2. Type the **Relay address**: \`ws://<computer address>:7879\` for a relay on your own network, or
    \`wss://relay.example.org\` for one on the internet. Add the **Token** if the relay needs one.
 3. Tap **Create my relay queue**. Erevos says **Your relay queue is ready**.
@@ -292,7 +292,7 @@ takes a place there, with no token.
 A phone with a token of its own on a relay that takes invites can let one more phone use that relay, with a token of
 that phone's own, so no token is typed or passed on.
 
-- **To invite:** under **Relay and new contacts**, below the **Token**, tap **Invite to the relay**, type who it is
+- **To invite:** in **Relay settings**, under **Relay and new contacts**, below the **Token**, tap **Invite to the relay**, type who it is
   for and tap **Make the invite**. A QR code opens: let their phone scan it with its camera and open the link in
   Erevos, or tap **Share the invite** and send it to them. It is good for one phone for 7 days, and whoever takes it
   first has it, so show it to them only.
@@ -842,8 +842,8 @@ Raspberry Pi or an old computer, or any other relay you trust. It is optional.
   has one) and choose **Save**. Contacts learn it from your next message to them, or from your new contact link.
 - **What it sees:** what your relay sees, this phone's address when it takes messages, and when and how much comes.
   Hidden chats do not use it.
-- **For hidden chats:** each hidden place can have a home relay of its own, under **Relay and new contacts** while it
-  is open. It is kept with that place only, sealed with its PIN, so the space knows nothing of it, and it is looked
+- **For hidden chats:** each hidden place can have a home relay of its own, in **Relay settings** under **Relay and
+  new contacts** while it is open. It is kept with that place only, sealed with its PIN, so the space knows nothing of it, and it is looked
   at while the place is open. Use another relay than the space's: one relay seeing both queues would tie them
   together.
 
