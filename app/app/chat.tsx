@@ -60,6 +60,7 @@ import { CAN_COPY, copyText } from '../lib/clipboard';
 import { searchMessages } from '../lib/message-search';
 import { chatLines, isSmsLine, plainSmsHref, smsFailed, smsFindables, smsLineId, smsMark } from '../lib/sms-chat';
 import { canForward, forwardedTo, forwardToGroup, takeForward, voiceCopy, type Forwardable } from '../lib/forward';
+import { isSharedPhoto, readShared, takeShared } from '../lib/share-in';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
@@ -2056,11 +2057,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     await send(0, false, { ...contentOf(message), forwarded: true, text: message.text }, peer);
   }
 
-  // A group's message handed over to forward here (lib/forward.ts), once the chat can send.
+  // A group's message handed over to forward here (lib/forward.ts), or a photo or file shared from
+  // another app (lib/share-in.ts), once the chat can send.
   useEffect(() => {
     if (!e2e || !initial) return;
     const message = takeForward(initial);
     if (message) void forwardTo(message, initial);
+    const shared = takeShared(initial);
+    if (shared) void sendAttachment(isSharedPhoto(shared) ? 'photo' : 'file', () => readShared(shared), initial);
   }, [e2e]);
 
   // Forwards a message to a group, then shows the group once it went.

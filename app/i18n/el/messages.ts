@@ -620,4 +620,13 @@ export const messages: Record<string, string> = {
     'Όλοι στην ομάδα {name} παίρνουν αυτό το σημείο μία φορά, κρυπτογραφημένο από άκρη σε άκρη. Το Erevos δεν σε ακολουθεί μετά.',
   'You in {name}': 'Εσύ στην ομάδα {name}',
   'It went without the link’s preview, which is too much for LoRa.': 'Έφυγε χωρίς την προεπισκόπηση του συνδέσμου, που είναι πολύ μεγάλη για το LoRa.',
+  // Send to, for what another app shares (app/share.tsx).
+  'Send to': 'Στείλε σε',
+  'A photo: {name}': 'Μια φωτογραφία: {name}',
+  'A file: {name}': 'Ένα αρχείο: {name}',
+  'Nothing came to send.': 'Δεν ήρθε τίποτα για αποστολή.',
+  'The photo or file goes as soon as the chat or group you pick opens. Never to hidden chats, nor as an SMS.': 'Η φωτογραφία ή το αρχείο φεύγει μόλις ανοίξει η συνομιλία ή η ομάδα που θα διαλέξεις. Ποτέ σε κρυφές συνομιλίες, ούτε ως SMS.',
+  'It opens in the chat, group or SMS conversation you pick, in the message field, to read and send there. Never in hidden chats.': 'Ανοίγει στη συνομιλία, την ομάδα ή τη συνομιλία SMS που θα διαλέξεις, στο πεδίο μηνύματος, για να το διαβάσεις και να το στείλεις εκεί. Ποτέ σε κρυφές συνομιλίες.',
+  'No chat matches.': 'Καμία συνομιλία δεν ταιριάζει.',
+  'Erevos chat': 'Συνομιλία Erevos',
 };

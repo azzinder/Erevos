@@ -6,6 +6,7 @@ import { bytesSource, FileGoneError, MAX_FILE, readFile, type Source } from '../
 import { filesToTake, sendGroupFile, takeGroupFile, voiceMime } from '../lib/group-media';
 import { t } from '../lib/i18n';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
+import { isSharedPhoto, readShared, type SharedFile } from '../lib/share-in';
 import { pickSource, TooLargeError } from '../lib/pick-file';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import type { Relay } from '../lib/relay';
@@ -196,6 +197,11 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     );
   }
 
+  // A photo or file shared from another app (lib/share-in.ts), sent as the group opens.
+  function sendShared(shared: SharedFile) {
+    void sendPicked(isSharedPhoto(shared) ? 'photo' : 'file', () => readShared(shared));
+  }
+
   // Starts recording while the microphone is held. Letting go sends it; a minute sends it anyway.
   function startTalking() {
     holding.current = true;
@@ -348,5 +354,5 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     );
   }
 
-  return { panel, attaching, setAttaching, voice, said, sheets, content };
+  return { panel, attaching, setAttaching, voice, said, sheets, content, sendShared };
 }

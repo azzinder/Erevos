@@ -4,4 +4,23 @@
        which is kept for Bluetooth on Android 12 and older. -->
   <uses-permission-sdk-23 android:name="android.permission.ACCESS_COARSE_LOCATION" />
   <uses-permission-sdk-23 android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+  <application>
+    <!-- Erevos in other apps' Share (ShareActivity.kt): words, a link, a photo or a file, handed to
+         Erevos by a link, in a task of its own (taskAffinity ""), so it shows Send to, not Erevos
+         as it was left. -->
+    <activity
+      android:name="expo.modules.erevosdevice.ShareActivity"
+      android:taskAffinity=""
+      android:exported="true"
+      android:excludeFromRecents="true"
+      android:noHistory="true"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter>
+        <action android:name="android.intent.action.SEND" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="*/*" />
+      </intent-filter>
+    </activity>
+  </application>
 </manifest>

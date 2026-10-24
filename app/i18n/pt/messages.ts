@@ -620,4 +620,13 @@ export const messages: Record<string, string> = {
     'Todos em {name} recebem este local uma vez, criptografado de ponta a ponta. O Erevos não acompanha para onde você vai depois.',
   'You in {name}': 'Você em {name}',
   'It went without the link’s preview, which is too much for LoRa.': 'Foi sem a prévia do link, que é grande demais para LoRa.',
+  // Send to, for what another app shares (app/share.tsx).
+  'Send to': 'Enviar para',
+  'A photo: {name}': 'Uma foto: {name}',
+  'A file: {name}': 'Um ficheiro: {name}',
+  'Nothing came to send.': 'Não chegou nada para enviar.',
+  'The photo or file goes as soon as the chat or group you pick opens. Never to hidden chats, nor as an SMS.': 'A foto ou o ficheiro vai assim que abrir o chat ou o grupo que escolheres. Nunca para chats ocultos, nem como SMS.',
+  'It opens in the chat, group or SMS conversation you pick, in the message field, to read and send there. Never in hidden chats.': 'Abre no chat, no grupo ou na conversa SMS que escolheres, no campo da mensagem, para leres e enviares lá. Nunca em chats ocultos.',
+  'No chat matches.': 'Nenhum chat corresponde.',
+  'Erevos chat': 'Chat Erevos',
 };

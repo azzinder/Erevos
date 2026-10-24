@@ -620,4 +620,13 @@ export const messages: Record<string, string> = {
     'Tout le monde dans {name} reçoit cette position une seule fois, chiffrée de bout en bout. Erevos ne suit pas où tu vas ensuite.',
   'You in {name}': 'De toi dans {name}',
   'It went without the link’s preview, which is too much for LoRa.': 'Il est parti sans l’aperçu du lien, trop lourd pour LoRa.',
+  // Send to, for what another app shares (app/share.tsx).
+  'Send to': 'Envoyer à',
+  'A photo: {name}': 'Une photo : {name}',
+  'A file: {name}': 'Un fichier : {name}',
+  'Nothing came to send.': 'Rien à envoyer n’est arrivé.',
+  'The photo or file goes as soon as the chat or group you pick opens. Never to hidden chats, nor as an SMS.': 'La photo ou le fichier part dès que s’ouvre le chat ou le groupe choisi. Jamais vers les chats cachés, ni en SMS.',
+  'It opens in the chat, group or SMS conversation you pick, in the message field, to read and send there. Never in hidden chats.': 'Il s’ouvre dans le chat, le groupe ou la conversation SMS choisi, dans le champ du message, pour le lire et l’envoyer là. Jamais dans les chats cachés.',
+  'No chat matches.': 'Aucun chat ne correspond.',
+  'Erevos chat': 'Chat Erevos',
 };

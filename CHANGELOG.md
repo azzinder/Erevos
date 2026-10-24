@@ -25,6 +25,10 @@ On main, not released yet:
 - **New chat shows how to add a contact first**: the relay's own settings (its address, token, second relay, invites
   and queue) are closed under **Relay settings** until you tap it; your contact link, its QR code and adding a contact
   show at once, as before. **Hide relay** is now **Hide relay and new contacts**.
+- **Share to Erevos from other apps** (Android): Erevos is now in other apps' **Share**, such as the browser's for a
+  link. **Send to** lists your chats, groups and SMS conversations, recent ones first, with a search, never hidden
+  chats. Words and links open in the message field of the one you pick, to read and send there; a photo or file goes
+  as soon as that chat or group opens. Before, Erevos took only SMS links from other apps.
 - **Every new message sounds, also while Erevos shows** (Android): the notice that says how many messages came now
   sounds for each message, not only the first, and shows while you use Erevos too. In the chat or group you have open
   only the sound plays, and opening a chat takes what came there off the count. Typing, and that a message came or

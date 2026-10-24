@@ -36,7 +36,8 @@ async function reencode(uri: string, quality: number): Promise<PickedPhoto> {
   }
 }
 
-async function prepare(asset: ImagePicker.ImagePickerAsset, quality: PhotoQuality): Promise<PickedPhoto> {
+/** The photo at `uri` (as the picker gives one, or as another app shared it, lib/share-in.ts), made ready to send at `quality`. */
+export async function preparePhoto(asset: Pick<ImagePicker.ImagePickerAsset, 'uri' | 'mimeType' | 'width' | 'height'>, quality: PhotoQuality): Promise<PickedPhoto> {
   if (quality !== 'original') return reencode(asset.uri, quality);
   const bytes = await new File(asset.uri).bytes();
   try {
@@ -64,7 +65,7 @@ export async function pickPhoto(from: 'photos' | 'camera', quality: PhotoQuality
   const asset = picked.canceled ? null : picked.assets[0];
   if (!asset) return null;
   try {
-    return await prepare(asset, quality);
+    return await preparePhoto(asset, quality);
   } finally {
     // The copy the picker left in the cache.
     const copy = new File(asset.uri);

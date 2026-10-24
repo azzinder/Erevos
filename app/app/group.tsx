@@ -15,6 +15,7 @@ import { usePublicGroup } from '../components/public-group';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
 import { choose, confirm } from '../lib/alert';
 import { screenOfGroup, showOnScreen } from '../lib/background';
+import { forwardedTo } from '../lib/forward';
 import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
@@ -23,6 +24,7 @@ import { linkedRole } from '../lib/devices';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
 import { ASK_AGAIN, MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
+import { takeShared } from '../lib/share-in';
 import { spaceChats } from '../lib/space-chats';
 import { spaceGroupCalls, spaceGroups, spaceGroupTransport } from '../lib/space-groups';
 import { plural, t } from '../lib/i18n';
@@ -87,7 +89,8 @@ export default function GroupScreen() {
   const [info, setInfo] = useState<GroupInfo | null>(null);
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const { draft } = useDraft(() => '');
+  // Words passed on from another app's Share (app/share.tsx, lib/forward.ts) start in the field.
+  const { draft } = useDraft(() => forwardedTo(`group:${id}`)?.text ?? '');
   const [note, setNote] = useState('');
   const [sheet, setSheet] = useState(false);
   // A public group's ⋯: its video call, and its own screen.
@@ -105,6 +108,12 @@ export default function GroupScreen() {
   const parts = useGroupMessages({ id, info, messages, name, onNote: setNote, scroll, at });
   // Photos, files and voice messages: the panel under the bar, the microphone, sheets, and their place in the bubbles.
   const media = useGroupMedia(id, messages, setNote, parts.attachMore);
+
+  // A photo or file shared from another app goes as the group opens (lib/share-in.ts).
+  useEffect(() => {
+    const shared = takeShared(`group:${id}`);
+    if (shared) media.sendShared(shared);
+  }, [id]);
 
   // On the screen, what comes in the group only sounds (lib/background.ts).
   const focused = useIsFocused();

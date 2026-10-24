@@ -620,4 +620,13 @@ export const messages: Record<string, string> = {
     'Svi u grupi {name} primaju ovu lokaciju jednom, šifriranu s kraja na kraj. Erevos poslije ne prati vaše kretanje.',
   'You in {name}': 'Vi u grupi {name}',
   'It went without the link’s preview, which is too much for LoRa.': 'Poslano je bez pregleda linka, koji je prevelik za LoRa vezu.',
+  // Send to, for what another app shares (app/share.tsx).
+  'Send to': 'Pošalji u',
+  'A photo: {name}': 'Fotografija: {name}',
+  'A file: {name}': 'Datoteka: {name}',
+  'Nothing came to send.': 'Ništa nije stiglo za slanje.',
+  'The photo or file goes as soon as the chat or group you pick opens. Never to hidden chats, nor as an SMS.': 'Fotografija ili datoteka ide čim se otvori razgovor ili grupa koju izabereš. Nikad u skrivene razgovore, ni kao SMS.',
+  'It opens in the chat, group or SMS conversation you pick, in the message field, to read and send there. Never in hidden chats.': 'Otvara se u razgovoru, grupi ili SMS razgovoru koji izabereš, u polju za poruku, da ga tamo pročitaš i pošalješ. Nikad u skrivenim razgovorima.',
+  'No chat matches.': 'Nijedan razgovor ne odgovara.',
+  'Erevos chat': 'Erevos razgovor',
 };
