@@ -108,7 +108,7 @@ export default function GroupScreen() {
   // "member 1a2b…" would give each the same letter.
   const faceName = (identity: string) => (pub.isPublic ? pub.name(identity) : (contacts.find((c) => c.identity === identity)?.name ?? ''));
   // Replies, reactions, pins, stickers, places, polls and the rest: the menu, sheets, and bubble parts.
-  const parts = useGroupMessages({ id, info, messages, name, onNote: setNote, scroll, at });
+  const parts = useGroupMessages({ id, info, messages, name, onNote: setNote, scroll, at, draft });
   // Photos, files and voice messages: the panel under the bar, the microphone, sheets, and their place in the bubbles.
   const media = useGroupMedia(id, messages, setNote, parts.attachMore);
 
@@ -424,6 +424,7 @@ export default function GroupScreen() {
           onSend={() => void send()}
           voice={media.voice}
           answering={parts.answering}
+          editing={parts.editing}
           onSticker={parts.openStickers}
           panel={media.panel}
           panelOpen={media.attaching}

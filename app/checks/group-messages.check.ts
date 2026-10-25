@@ -73,6 +73,25 @@ test('reactions and votes are each member’s own, a pin is everyone’s, and on
   assert.equal(withMarked([{ at: 1, from: A, text: 'x', tag }], A, { t: 'vote', tag, chose: [0] }, 1), null, 'a vote only on a poll');
 });
 
+test('only the sender edits their words, for every member, marked when', () => {
+  const tag = '0123456789ab';
+  const preview = { url: 'https://example.org/a', title: 'A page', text: '' };
+  const words: GroupMessage = { at: 2, from: A, text: 'see https://example.org/a', tag, preview };
+  assert.deepEqual(markedOf({ t: 'edit', tag, text: 'new words' }), { t: 'edit', tag, text: 'new words' });
+  assert.equal(markedOf({ t: 'edit', tag, text: '   ' }), null, 'no words is no edit');
+  assert.equal(markedOf({ t: 'edit', tag, text: 7 }), null);
+  assert.equal(withMarked([words], B, { t: 'edit', tag, text: 'mine now' }, 5), null, 'not his to edit');
+  assert.equal(withMarked([words], A, { t: 'edit', tag, text: words.text }, 5), null, 'the same words change nothing');
+  const [kept] = withMarked([words], A, { t: 'edit', tag, text: 'still https://example.org/a, said better' }, 5)!;
+  assert.deepEqual([kept.text, kept.edited, kept.preview], ['still https://example.org/a, said better', 5, preview], 'the preview stays with its link');
+  const [moved] = withMarked([kept], A, { t: 'edit', tag, text: 'no link now' }, 6)!;
+  assert.deepEqual([moved.text, moved.edited, 'preview' in moved], ['no link now', 6, false]);
+  // A sticker, a place or a poll is what it is, and forwarded words are someone else's.
+  for (const what of [{ sticker: 'moon-smile' }, { place: { lat: 1, lon: 2 } }, { poll: { q: 'Tea?', o: ['Yes', 'No'] } }, { forwarded: true as const }]) {
+    assert.equal(withMarked([{ at: 2, from: A, text: '🌝', tag, ...what }], A, { t: 'edit', tag, text: 'other' }, 5), null);
+  }
+});
+
 test('a group keeps its messages’ parts and marks, and drops what is not of their shape', async () => {
   const key = randomBytes(32);
   const tag = '0123456789ab';
@@ -88,6 +107,7 @@ test('a group keeps its messages’ parts and marks, and drops what is not of th
     pinned: 5,
     starred: true,
     forwarded: true,
+    edited: 6,
   };
   const odd = { at: 2, from: B, text: 'x', tag: 'ba9876543210', votes: { [B]: [0] }, reactions: { nobody: '👍', [A]: 'nice' }, put: 'ab'.repeat(24), sticker: 'Big' };
   const ours = { at: 3, from: '', text: '', tag: 'aaaaaaaaaaaa', put: 'ab'.repeat(24) };
@@ -155,7 +175,7 @@ function network() {
 
 const said = (p: Phone, id: string) => p.groups.messages(id).filter((m) => !m.note);
 
-test('replies, stickers, polls, reactions, votes, pins and deleting go to every member', { skip: !existsSync(built) }, async () => {
+test('replies, stickers, polls, reactions, votes, pins, edits and deleting go to every member', { skip: !existsSync(built) }, async () => {
   const net = network();
   const alice = net.phone();
   const bob = net.phone();
@@ -188,6 +208,18 @@ test('replies, stickers, polls, reactions, votes, pins and deleting go to every 
   await net.settle();
   assert.deepEqual(said(alice, id).map((m) => m.tag), [asked.tag]);
   assert.deepEqual(said(bob, id).map((m) => m.tag), [asked.tag]);
+
+  // Alice edits her words for everyone; Bob cannot edit hers.
+  const typed = await alice.groups.send(id, 'Tea at five', alice.transport).then(() => said(alice, id).at(-1)!);
+  await net.settle();
+  assert.equal(await bob.groups.mark(id, { t: 'edit', tag: typed.tag, text: 'Coffee' }, bob.transport), null);
+  await alice.groups.mark(id, { t: 'edit', tag: typed.tag, text: 'Tea at six' }, alice.transport);
+  await net.settle();
+  const edited = said(bob, id).find((m) => m.tag === typed.tag)!;
+  assert.equal(edited.text, 'Tea at six');
+  assert.ok(edited.edited);
+  await alice.groups.deleteHere(id, typed.tag);
+  await bob.groups.deleteHere(id, typed.tag);
 
   // A star, and deleting here only, stay on this phone.
   await alice.groups.star(id, asked.tag, true);

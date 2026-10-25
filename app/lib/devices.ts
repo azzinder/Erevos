@@ -2919,14 +2919,15 @@ export class Links implements Link, TakenFiles {
   }
 
   // What a message sealed for a contact says of one of the chat's messages, kept as this side's own,
-  // as the chat keeps what it sends: a reaction, a pin, a vote.
+  // as the chat keeps what it sends: a reaction, a pin, a vote, new words for one of ours.
   private async marksAsOwn(peer: string, m: Json, now: number): Promise<void> {
     const { history } = this.chats;
     const react = isObject(m.react) && isTag(m.react.tag) && (m.react.emoji === '' || isReactionEmoji(m.react.emoji)) ? { tag: m.react.tag, emoji: m.react.emoji as string } : null;
     if (react) await history.react(peer, react.tag, true, react.emoji);
-    const { pin, vote } = carriedOf(m);
+    const { pin, vote, edit } = carriedOf(m);
     if (pin) await history.pin(peer, pin.tag, pin.on ? now : 0);
     if (vote) await history.vote(peer, vote.tag, true, vote.chose);
+    if (edit) await history.edit(peer, edit.tag, true, edit.text, now);
   }
 
   // Packs of the history the phone put on the relay: each taken, opened and kept, then deleted.

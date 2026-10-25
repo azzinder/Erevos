@@ -444,6 +444,20 @@ export function PollIcon({ color, size = 24 }: Props) {
   );
 }
 
+/** A pencil: a message's words edited. */
+export function PencilIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 0, y: 0, w: 24, h: 24 }), { transform: [{ rotate: '-45deg' }] }]}>
+        <View style={[box(k, { x: 7, y: 9, w: 15, h: 6 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 1.5 * k }]} />
+        <Bar k={k} color={color} x={17} y={9} w={2} h={6} r={0} />
+        <View style={[box(k, { x: 2.5, y: 10.5, w: 5, h: 3 }), { borderTopLeftRadius: 3 * k, borderBottomLeftRadius: 3 * k, backgroundColor: color }]} />
+      </View>
+    </Grid>
+  );
+}
+
 /** A calendar page: to send later. */
 export function LaterIcon({ color, size = 24 }: Props) {
   const k = size / 24;

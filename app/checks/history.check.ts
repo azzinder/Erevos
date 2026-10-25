@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { randomBytes } from '../lib/crypto';
-import { FILE, History, newTag, PAGE, PAGE_PREFIX, SIZE } from '../lock/history';
+import { FILE, History, newTag, PAGE, PAGE_PREFIX, SIZE, WAITING } from '../lock/history';
 import { sealedFile } from '../lock/sealed-file';
 import { splitVoice, VoiceAssembler, PART_SIZE, MAX_PARTS } from '../lib/voice';
 import { loadClip, saveClip } from '../lock/voice-clips';
@@ -150,6 +150,41 @@ t('keeps which message one answers, and the reactions to it, ours and theirs', a
   const [odd] = (await History.open('space', 1, key)).messages();
   assert.deepEqual([odd.myReaction, odd.theirReaction, odd.re], [undefined, undefined, undefined]);
   assert.equal((await History.open('space', 0, key)).messages()[0].myReaction, undefined);
+});
+
+t('only its sender edits a message, words only, and it is kept as edited, when', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const [ours, theirs, sticker, waits] = [newTag(), newTag(), newTag(), newTag()];
+  const preview = { url: 'https://example.org/a', title: 'A page', text: '' };
+  await history.add({ peer: 'contact:aa', text: 'see https://example.org/a', mine: true, at: 1, tag: ours, preview });
+  await history.add({ peer: 'contact:aa', text: 'helo', mine: false, at: 2, tag: theirs });
+  await history.add({ peer: 'contact:aa', text: '🌝', mine: false, at: 3, tag: sticker, sticker: 'moon-smile' });
+  await history.add({ peer: 'contact:aa', text: 'soon', mine: true, at: 4, tag: waits, mark: WAITING });
+  assert.equal(await history.edit('contact:aa', theirs, true, 'mine now', 10), false, 'not ours to edit');
+  assert.equal(await history.edit('contact:aa', theirs, false, 'hello', 10), true);
+  assert.equal(await history.edit('contact:aa', theirs, false, 'hello', 11), false, 'the same words change nothing');
+  assert.equal(await history.edit('contact:aa', ours, true, '   ', 12), false, 'no words is no edit');
+  assert.equal(await history.edit('contact:aa', sticker, false, 'other', 12), false, 'a sticker is what it is');
+  assert.equal(await history.edit('contact:aa', ours, true, 'no link now', 13), true);
+  assert.equal(await history.edit('contact:aa', waits, true, 'later', 14), true);
+  assert.equal(await history.edit('contact:aa', newTag(), false, 'gone', 15), false);
+  const kept = (await History.open('space', 0, key)).messages();
+  assert.deepEqual(
+    kept.map((m) => [m.text, m.edited, m.preview]),
+    [
+      ['no link now', 13, undefined],
+      ['hello', 10, undefined],
+      ['🌝', undefined, undefined],
+      // One that waits goes with the new words as it is.
+      ['later', undefined, undefined],
+    ],
+  );
+  // The preview stays while its link is in the words.
+  const linked = newTag();
+  await history.add({ peer: 'contact:bb', text: 'https://example.org/a', mine: true, at: 5, tag: linked, preview });
+  await history.edit('contact:bb', linked, true, 'look: https://example.org/a', 16);
+  assert.deepEqual(history.messages().find((m) => m.tag === linked)?.preview, preview);
 });
 
 t('keeps when a message was pinned, until it is taken down', async () => {

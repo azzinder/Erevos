@@ -3,7 +3,7 @@ import { MAX_GROUP_MESSAGES, type Group, type GroupMarks, type GroupMessage, typ
 import { isReactionEmoji, isTag, type Mark, type Parts as ChatParts } from '../lock/history';
 import { checkedLook, type Look } from '../theme/look';
 import { offerRef, readOffer, type FileFrom, type FileOffer } from './attachments';
-import { carriedOf, checkedChoices } from './chat-parts';
+import { carriedOf, checkedChoices, editableWords, MAX_EDIT, previewAfterEdit } from './chat-parts';
 import { checkContact, checkSpare, type ContactCode } from './contact-code';
 import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { bodyOf, checkedList, MAX_LISTED, type DeviceList } from './device-list';
@@ -108,13 +108,14 @@ export type GroupMirror = Pick<Group, 'id' | 'name' | 'admin' | 'status' | 'aske
  */
 export type GroupEntry = { group: string; at: number; from: string; text: string; tag: string; note?: boolean; ms?: number; file?: FileOffer; parts?: GroupParts; marks?: GroupMarked };
 
-/** What was done to a group's message since it went, as the devices are told of it: each member's reaction and vote, its pin, and the primary's star. */
-export type GroupMarked = Pick<GroupMarks, 'reactions' | 'votes' | 'pinned' | 'starred'>;
+/** What was done to a group's message since it went, as the devices are told of it: each member's reaction and vote, its pin, the primary's star, and, edited, its words now and when. */
+export type GroupMarked = Pick<GroupMarks, 'reactions' | 'votes' | 'pinned' | 'starred' | 'edited'> & { text?: string };
 
 /**
  * What changed of a group's message the devices were told of, by its tag: each member's reactions
- * and votes, and its pin, as they are now (null: none any more); the primary's star; that it is gone
- * there; or, to the device that wrote it, that the primary could not send it (`unsent`).
+ * and votes, and its pin, as they are now (null: none any more); the primary's star; its words as
+ * its sender edited them, and when (`text`, `edited`); that it is gone there; or, to the device that
+ * wrote it, that the primary could not send it (`unsent`).
  */
 export type GroupChange = {
   group: string;
@@ -124,6 +125,8 @@ export type GroupChange = {
   votes?: Record<string, number[]> | null;
   pinned?: number | null;
   starred?: boolean;
+  text?: string;
+  edited?: number;
   unsent?: true;
 };
 
@@ -451,14 +454,22 @@ const voteOf = (v: unknown) => {
   return chose && chose.length > 0 ? chose : null;
 };
 
+// Words as edited, with when, as they come: both or neither.
+function editedOf(v: Json): { text: string; edited: number } | null {
+  if (!isTime(v.edited) || v.edited <= 0 || !isText(v.text) || !v.text.trim()) return null;
+  return { text: [...v.text].slice(0, MAX_EDIT).join(''), edited: v.edited };
+}
+
 function checkedMarks(v: Json): GroupMarked {
   const reactions = byMember(v.reactions, reactionOf);
   const votes = byMember(v.votes, voteOf);
+  const edited = editedOf(v);
   return {
     ...(reactions ? { reactions } : {}),
     ...(votes ? { votes } : {}),
     ...(isTime(v.pinned) && v.pinned > 0 ? { pinned: v.pinned } : {}),
     ...(v.starred === true ? { starred: true as const } : {}),
+    ...(edited ?? {}),
   };
 }
 
@@ -472,6 +483,8 @@ function checkedGroupChange(value: unknown): GroupChange | null {
   if (v.votes === null || isObject(v.votes)) change.votes = byMember(v.votes, voteOf) ?? null;
   if (v.pinned === null || (isTime(v.pinned) && v.pinned > 0)) change.pinned = v.pinned as number | null;
   if (typeof v.starred === 'boolean') change.starred = v.starred;
+  const edited = editedOf(v);
+  if (edited) Object.assign(change, edited);
   return Object.keys(change).length > 2 ? change : null;
 }
 
@@ -742,6 +755,7 @@ export function chatPartsOf(v: Json): ChatParts {
     ...(theirVote ? { theirVote } : {}),
     ...(preview ? { preview } : {}),
     ...(forwarded ? { forwarded: true } : {}),
+    ...(isTime(v.edited) && v.edited > 0 ? { edited: v.edited } : {}),
   };
 }
 
@@ -846,15 +860,22 @@ export function tellsTheirs(envelope: Envelope): boolean {
   return envelope.k === 'groups' && envelope.entries.some(isTheirs);
 }
 
-/** What was done to a group's message since it went, as its devices are told of it. */
-export function marksOf({ reactions, votes, pinned, starred }: GroupMarked): GroupMarked {
-  return { ...(reactions ? { reactions } : {}), ...(votes ? { votes } : {}), ...(pinned ? { pinned } : {}), ...(starred ? { starred: true as const } : {}) };
+/** What was done to a group's message since it went, as its devices are told of it: its words with them once edited. */
+export function marksOf({ reactions, votes, pinned, starred, edited, text }: GroupMarked): GroupMarked {
+  return {
+    ...(reactions ? { reactions } : {}),
+    ...(votes ? { votes } : {}),
+    ...(pinned ? { pinned } : {}),
+    ...(starred ? { starred: true as const } : {}),
+    ...(edited && text ? { edited, text } : {}),
+  };
 }
 
-// A message's marks as text, the same for the same marks: each member's in the order of their identities.
-function marksText({ reactions, votes, pinned, starred }: GroupMarked): string {
+// A message's marks as text, the same for the same marks: each member's in the order of their
+// identities; its words only once edited, so the marks of the others read as before edits.
+function marksText({ reactions, votes, pinned, starred, edited, text }: GroupMarked): string {
   const sorted = (by: Record<string, unknown> | undefined) => (by ? Object.entries(by).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)) : null);
-  return JSON.stringify([sorted(reactions), sorted(votes), pinned ?? 0, starred === true]);
+  return JSON.stringify([sorted(reactions), sorted(votes), pinned ?? 0, starred === true, ...(edited ? [edited, text ?? ''] : [])]);
 }
 
 /** What was done to each of a group's messages, by tag, but its notes and those with no tag. */
@@ -887,6 +908,7 @@ export function marksChanged(group: string, before: Map<string, GroupMarked>, no
     if (marksText({ votes: was.votes }) !== marksText({ votes: is.votes })) change.votes = is.votes ?? null;
     if ((was.pinned ?? 0) !== (is.pinned ?? 0)) change.pinned = is.pinned ?? null;
     if (!!was.starred !== !!is.starred) change.starred = !!is.starred;
+    if (is.edited && is.text && (is.edited !== was.edited || is.text !== was.text)) Object.assign(change, { text: is.text, edited: is.edited });
     if (Object.keys(change).length > 2) out.push(change);
   }
   return out;
@@ -900,7 +922,7 @@ export function wholeMarks(group: string, now: Map<string, GroupMarked>): { chan
   const changes: GroupChange[] = [];
   for (const [tag, m] of now) {
     if (Object.keys(m).length === 0) continue;
-    changes.push({ group, tag, reactions: m.reactions ?? null, votes: m.votes ?? null, pinned: m.pinned ?? null, ...(m.starred ? { starred: true } : {}) });
+    changes.push({ group, tag, reactions: m.reactions ?? null, votes: m.votes ?? null, pinned: m.pinned ?? null, ...(m.starred ? { starred: true } : {}), ...(m.edited && m.text ? { text: m.text, edited: m.edited } : {}) });
   }
   return { changes, whole: { group, tags: [...now.keys()] } };
 }
@@ -942,12 +964,30 @@ function withChange(m: GroupMessage, change: GroupChange): GroupMessage {
     if (change.starred) next.starred = true;
     else delete next.starred;
   }
+  // Words as its sender edited them, the primary said: words, not a sticker's, a place's or a poll's.
+  if (change.edited && change.text && editableWords(m)) {
+    next.edited = change.edited;
+    if (change.text !== m.text) {
+      next.text = change.text;
+      const preview = previewAfterEdit(m.preview, change.text);
+      if (preview) next.preview = preview;
+      else delete next.preview;
+    }
+  }
   return next;
 }
 
-// A message with what was done to it as a GroupEntry says: what members did, as said; the star, if on.
+// A message with what was done to it as a GroupEntry says: what members did, as said; the star, if on; its words, if edited.
 function withEntryMarks(m: GroupMessage, marks: GroupMarked): GroupMessage {
-  return withChange(withoutMarks(m), { group: '', tag: m.tag, reactions: marks.reactions ?? null, votes: marks.votes ?? null, pinned: marks.pinned ?? null, ...(marks.starred ? { starred: true } : {}) });
+  return withChange(withoutMarks(m), {
+    group: '',
+    tag: m.tag,
+    reactions: marks.reactions ?? null,
+    votes: marks.votes ?? null,
+    pinned: marks.pinned ?? null,
+    ...(marks.starred ? { starred: true } : {}),
+    ...(marks.edited && marks.text ? { text: marks.text, edited: marks.edited } : {}),
+  });
 }
 
 /**

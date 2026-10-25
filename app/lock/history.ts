@@ -1,4 +1,4 @@
-import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, isStickerName, type Place, type Poll, type Preview } from '../lib/chat-parts';
+import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, editableWords, isStickerName, previewAfterEdit, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import { decryptBytes, encryptBytes, randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
 import { deleteFile, readBytes, writeBytes } from '../lib/files';
 import { isRelayAddress, type HeldAt } from '../lib/relay';
@@ -71,9 +71,10 @@ export type Kept = [
  * is the sticker's emoji); `l`, the place it is (its text says where); `k`, the poll it is (its
  * text asks it), with `a`, the options we chose, and `b`, theirs; `w`, the preview of the link in
  * its words, as its sender made it; `d` 1 when it was forwarded from another chat; `t` 1 when it
- * came or went through Nostr (lib/nostr-chats.ts), on this phone only.
+ * came or went through Nostr (lib/nostr-chats.ts), on this phone only; `e`, when its words were
+ * last edited (this phone's clock).
  */
-type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1 };
+type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number };
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -126,12 +127,14 @@ export type Parts = {
   forwarded?: boolean;
   /** Came or went through Nostr (lib/nostr-chats.ts), whether through the relay too or not: on this phone only. */
   nostr?: boolean;
+  /** When its sender last edited its words (milliseconds, this phone's clock). */
+  edited?: number;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr, edited }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
@@ -146,6 +149,7 @@ function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place
     ...(preview ? { w: preview } : {}),
     ...(forwarded ? { d: 1 as const } : {}),
     ...(nostr ? { t: 1 as const } : {}),
+    ...(edited ? { e: edited } : {}),
   };
 }
 
@@ -164,6 +168,7 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.w ? { preview: more.w } : {}),
     ...(more?.d ? { forwarded: true } : {}),
     ...(more?.t ? { nostr: true } : {}),
+    ...(more?.e ? { edited: more.e } : {}),
   };
 }
 
@@ -200,7 +205,7 @@ const QUEUE_ID = /^[0-9a-f]{48}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
   const poll = checkedPoll(v.k);
@@ -224,6 +229,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(preview ? { w: preview } : {}),
     ...(v.d === 1 ? { d: 1 as const } : {}),
     ...(v.t === 1 ? { t: 1 as const } : {}),
+    ...(count(v.e) ? { e: count(v.e) } : {}),
   };
   return Object.keys(more).length > 0 ? more : undefined;
 }
@@ -530,6 +536,20 @@ export class History {
     const checked = poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null;
     if (!checked) return Promise.resolve(false);
     return this.change(peer, tag, ours ? { myVote: checked } : { theirVote: checked });
+  }
+
+  /**
+   * Gives a chat's message, by its tag, new words, edited `at` (milliseconds): ours (`ours`) or
+   * theirs, as only its sender edits it, and only words (lib/chat-parts.ts editableWords). Ours that
+   * waits to go (lib/waiting.ts) goes with them as it is, not as edited. Its link's preview stays
+   * while the link is still in them. False if the message is gone, is not one, or already says them.
+   */
+  edit(peer: string, tag: string, ours: boolean, text: string, at: number): Promise<boolean> {
+    const kept = this.data.chats[peer]?.find((m) => m[3] === tag);
+    const m = kept ? unpack(kept) : null;
+    if (!m || m.mine !== ours || !text.trim() || m.text === text || !editableWords(m)) return Promise.resolve(false);
+    const edited = ours && m.mark === WAITING ? m.edited : at;
+    return this.change(peer, tag, { text, edited, preview: previewAfterEdit(m.preview, text) });
   }
 
   /** Marks a chat's message, by its tag, as one that went through Nostr. False if the message is gone. */

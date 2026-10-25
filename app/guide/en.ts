@@ -662,9 +662,17 @@ Press and hold a message for its menu: the reactions at the top, then what you c
   the latest shows; tap it to go to it, and the next one shows.
 - **Copy:** puts its words on the clipboard, to paste in another app. On Android the copy is marked private, so the
   phone's notice of it does not show the words, but any app that reads the clipboard can read them.
+- **Edit:** for a message of yours, up to a day after you sent it. Its words go in the field under **Edit message**:
+  change them and send, or **✕** to leave it as it was. Both phones show the new words, with **Edited** beside the
+  time. Only words are edited, not a sticker, a place, a poll, a voice message, a photo or a file, nor words you
+  forwarded. One that still waits to go goes with the new words, not marked; one sent for later is not edited. The
+  edit goes at once, or not at all, as a reaction does, and your linked devices show it too. An Erevos from before
+  this keeps the old words.
+  **Why:** a day is time enough to put a mistake right, and no one can change what they said days ago. The mark
+  shows the words are not the first ones.
 - **Delete:** on this phone, or on both, as above.
 
-Reactions, replies and pins travel inside the encryption, like the messages.
+Reactions, replies, pins and edits travel inside the encryption, like the messages.
 
 ### Disappearing messages
 
@@ -916,14 +924,15 @@ out members.
     before this version sees nothing of it.
   - **On the phone** each is kept in its pieces, sealed, as in a contact's chat. Deleting the group here deletes them.
 - **A message's menu,** held down, as in a contact's chat: the reactions, **Reply**, **Forward**, **Star**, **Pin**,
-  **Copy** and **Delete**. Each member has one reaction on a message, and a poll shows who chose what. A pin is for
-  everyone, and any member can **Unpin** it. **Delete** asks **This phone** or, for your own message, **Everyone**:
+  **Copy**, **Edit** and **Delete**. Each member has one reaction on a message, and a poll shows who chose what. A pin is for
+  everyone, and any member can **Unpin** it. **Edit** gives your own words new ones for every member, up to a day after
+  they went, marked **Edited**. **Delete** asks **This phone** or, for your own message, **Everyone**:
   the members' Erevos delete it too, and a photo, file or voice message of yours leaves your relay at once instead of
   in 14 days. **+** has **Sticker**, **Location** and **Poll** here too. Links are underlined and asked before
   they open, and **Link previews**, when on, go with yours. In the members sheet, or a public group's own screen, **Search in this chat** goes through the group's messages and **Export chat**
   writes them out; **Starred messages** and the home screen's search take in the groups too. A member whose Erevos is
   from before this version sees the words, a sticker's emoji, a place's coordinates and a poll's question, and
-  nothing of reactions, pins and deleting.
+  nothing of reactions, pins, edits and deleting.
 - **Not yet:** marks, typing and disappearing messages in groups, groups in hidden chats, and groups over a nearby phone.
 
 ## Public groups {#public-groups}

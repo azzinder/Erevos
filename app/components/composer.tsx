@@ -34,6 +34,7 @@ import {
   FileIcon,
   LaterIcon,
   MicIcon,
+  PencilIcon,
   PhotoIcon,
   PlaceIcon,
   PlusIcon,
@@ -142,6 +143,12 @@ export interface Vanish {
   onChoose: (seconds: number) => void;
 }
 
+/** The message of ours the bar gives new words, by its line, and how to stop editing it. */
+export interface Editing {
+  line: string;
+  onClose: () => void;
+}
+
 /** The message the next one answers, and who wrote it. */
 export interface Answering {
   name: string;
@@ -248,6 +255,8 @@ export interface ComposerProps {
   talkie?: { on: boolean; onOff: () => void } | null;
   vanish?: Vanish | null;
   answering?: Answering | null;
+  /** The bar edits one of ours: what it sends gives that message new words. */
+  editing?: Editing | null;
   /** The next photo, file or voice message goes later: `line` says when. */
   later?: { line: string; onCancel: () => void } | null;
   onSticker?: () => void;
@@ -269,6 +278,7 @@ export function Composer({
   talkie,
   vanish,
   answering,
+  editing,
   later,
   onSticker,
   panel,
@@ -457,6 +467,20 @@ export function Composer({
   const lift = look.look === 'glass' ? glassLift(glassSide(scheme)) : `0px 2px 12px ${withAlpha('#000000', scheme === 'dark' ? 0.4 : 0.12)}`;
   const barRadius = radius.pill > 100 ? BAR_ROUND : radius.pill;
   const strips: ReactNode[] = [];
+  if (editing) {
+    strips.push(
+      <Strip key="edit" first={strips.length === 0} icon={<PencilIcon color={colors.accentText} size={18} />} onClose={editing.onClose} closeLabel={t('Cancel')}>
+        <View style={{ paddingVertical: 4 }}>
+          <Text variant="label" color={colors.accentText} numberOfLines={1} style={{ fontSize: 13 }}>
+            {t('Edit message')}
+          </Text>
+          <Text variant="caption" tone="muted" numberOfLines={1}>
+            {editing.line}
+          </Text>
+        </View>
+      </Strip>,
+    );
+  }
   if (answering) {
     strips.push(
       <Strip key="answer" first={strips.length === 0} onClose={answering.onClose} closeLabel={t('Cancel')}>

@@ -934,6 +934,38 @@ test('groups between devices: told as they change, each message once, and what a
   assert.equal(mirrorGroups([kept], { list: [{ ...mirror, readAt: 7 }], gone: [], entries: [] }).groups[0].readAt, 7);
 });
 
+test('a group message edited on the phone reaches the computer: its words, and when', () => {
+  const g = 'ab'.repeat(16);
+  const alice = 'a1'.repeat(32);
+  const messages: GroupMessage[] = [
+    { at: 2, from: alice, text: 'helo', tag: 'aabbccddeeff' },
+    { at: 3, from: '', text: '🌝', tag: '112233445566', sticker: 'moon-smile' },
+  ];
+  const before = groupMarks(messages);
+  // Words are said only once edited, so the marks of messages never edited read as before.
+  assert.deepEqual(before.get('aabbccddeeff'), {});
+  const edited = [{ ...messages[0], text: 'hello', edited: 9 }, messages[1]];
+  assert.notEqual(marksDigest(groupMarks(edited)), marksDigest(before));
+  const changes = marksChanged(g, before, groupMarks(edited));
+  assert.deepEqual(changes, [{ group: g, tag: 'aabbccddeeff', text: 'hello', edited: 9 }]);
+  const parts = new Parts();
+  const [one] = changeEnvelopes([], changes, []);
+  let out: unknown = null;
+  for (const bytes of encodeEnvelope(one, null)) out = parts.take('p', bytes);
+  assert.deepEqual(out, one);
+  const group: Group = { id: g, name: 'G', admin: false, status: 'in', asked: [], later: [], outbox: [], readAt: 0, messages };
+  const [changed] = changedGroups([group], { groups: changes, whole: [] }, 100);
+  assert.deepEqual([changed.messages[0].text, changed.messages[0].edited], ['hello', 9]);
+  // A sticker is what it is, whatever is said of it.
+  const [kept] = changedGroups([group], { groups: [{ group: g, tag: '112233445566', text: 'words', edited: 9 }], whole: [] }, 100);
+  assert.deepEqual(kept.messages[1], messages[1]);
+  // Said whole, and with a message told anew, the words go too.
+  const all = wholeMarks(g, groupMarks(edited));
+  assert.deepEqual(changedGroups([group], { groups: all.changes, whole: [all.whole] }, 100)[0].messages[0].text, 'hello');
+  const told = mirrorGroups([], { list: [groupMirror(group, [])], gone: [], entries: [{ group: g, at: 2, from: alice, text: 'hello', tag: 'aabbccddeeff', marks: { text: 'hello', edited: 9 } }] });
+  assert.deepEqual([told.groups[0].messages[0].text, told.groups[0].messages[0].edited], ['hello', 9]);
+});
+
 test('what changes later in messages told already: only what changed, or all of it, and so on the computer', () => {
   const g = 'ab'.repeat(16);
   const other = 'cd'.repeat(16);

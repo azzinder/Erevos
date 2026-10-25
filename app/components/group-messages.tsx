@@ -5,7 +5,7 @@ import { Platform, Pressable, ScrollView, View, type LayoutChangeEvent, type Sty
 import { ask } from '../lib/alert';
 import { bytesSource, takeOffRelay } from '../lib/attachments';
 import { chatText, exportName } from '../lib/chat-export';
-import { choose as chooseOption, placeText, placeWords, pollWords, type Place, type Poll } from '../lib/chat-parts';
+import { choose as chooseOption, editableWords, placeText, placeWords, pollWords, stillEditable, type Place, type Poll } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canForward, forwardToGroup, handForward, type Forwardable } from '../lib/forward';
 import { sendGroupFile } from '../lib/group-media';
@@ -31,7 +31,7 @@ import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/stic
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
-import type { Answering, ComposerTile } from './composer';
+import type { Answering, ComposerTile, DraftBox, Editing } from './composer';
 import { MessageMenu, type MenuAction } from './message-menu';
 import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from './message-parts';
 import { PollCard, PollSheet } from './poll';
@@ -65,9 +65,10 @@ type Target = { key: string; name: string; go: () => Promise<void> };
 /**
  * The parts of group `id`'s messages (`messages`, as `info` says the group is), with `name` naming
  * a member by identity and `onNote` showing what went wrong. `scroll` is the thread, to go to a
- * message; `at`, the tag of one to go to once it shows.
+ * message; `at`, the tag of one to go to once it shows; `draft`, what the message bar holds, which
+ * takes the words of one of ours to edit.
  */
-export function useGroupMessages({ id, info, messages, name, onNote, scroll, at }: {
+export function useGroupMessages({ id, info, messages, name, onNote, scroll, at, draft }: {
   id: string;
   info: GroupInfo | null;
   messages: GroupMessage[];
@@ -75,10 +76,13 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
   onNote: (text: string) => void;
   scroll: RefObject<ScrollView | null>;
   at?: string;
+  draft?: DraftBox;
 }) {
   const colors = useColors();
   const [menuFor, setMenuFor] = useState<GroupMessage | null>(null);
   const [replying, setReplying] = useState<GroupMessage | null>(null);
+  // The message of ours the bar gives new words, while it does.
+  const [editing, setEditing] = useState<GroupMessage | null>(null);
   const [forwarding, setForwarding] = useState<GroupMessage | null>(null);
   const [targets, setTargets] = useState<Target[]>([]);
   const [stickering, setStickering] = useState(false);
@@ -233,6 +237,21 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
     setTargets([...contacts, ...others]);
   }
 
+  // Whether a message of ours can take new words, for every member: words of our own (lib/chat-parts.ts)
+  // the phone sent, within the last day (EDIT_FOR).
+  const canEdit = (m: GroupMessage) => !out && !m.from && !m.note && !!m.tag && !m.unsent && editableWords(m) && stillEditable(m.at, Date.now());
+
+  function startEditing(m: GroupMessage) {
+    setReplying(null);
+    setEditing(m);
+    draft?.set(m.text);
+  }
+
+  function stopEditing() {
+    setEditing(null);
+    draft?.set('');
+  }
+
   function menuActions(m: GroupMessage): MenuAction[] {
     const actions: MenuAction[] = [];
     if (!out) actions.push({ title: t('Reply'), onPress: () => setReplying(m) });
@@ -240,6 +259,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
     actions.push({ title: m.starred ? t('Unstar') : t('Star'), onPress: () => star(m) });
     if (!out) actions.push({ title: m.pinned ? t('Unpin') : t('Pin'), onPress: () => void mark({ t: 'pin', tag: m.tag, on: !m.pinned }) });
     if (CAN_COPY && m.text && !m.sticker && !m.place && !m.poll) actions.push({ title: t('Copy'), onPress: () => void copy(m) });
+    if (canEdit(m)) actions.push({ title: t('Edit'), onPress: () => startEditing(m) });
     if (m.file?.sticker && !m.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(m.file!) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => remove(m) });
     return actions;
@@ -256,8 +276,23 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
     return preview ? { preview } : {};
   }
 
-  /** Sends words, typed (with what they answer and a link's preview) or, given `parts`, a sticker's, a place's or a poll's. */
+  /**
+   * Sends words, typed (with what they answer and a link's preview) or, given `parts`, a sticker's, a
+   * place's or a poll's; or, while one of ours is edited, gives it the words typed, for every member.
+   */
   async function send(text: string, parts?: GroupParts): Promise<void> {
+    if (!parts && editing) {
+      if (text !== editing.text) {
+        try {
+          await (await spaceGroups()).mark(id, { t: 'edit', tag: editing.tag, text }, spaceGroupTransport);
+        } catch (error) {
+          throw new Error(t('Not edited. {reason}', { reason: errorText(error) }));
+        }
+        onNote(t('Edited for everyone.'));
+      }
+      setEditing(null);
+      return;
+    }
     const carried = parts ?? { ...(replying ? { re: replying.tag } : {}), ...(await previewOf(text)) };
     await (await spaceGroups()).send(id, text, spaceGroupTransport, carried);
     stays.current = false;
@@ -384,8 +419,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
     },
     /** A link's preview, under the words. */
     preview: (m: GroupMessage, ink: StyleProp<TextStyle>): ReactNode => (m.preview && !m.file ? <PreviewCard preview={m.preview} ink={ink} /> : null),
-    /** What goes beside a message's time: that it was forwarded, its star, and, on a linked device, that the phone could not send it. */
-    caption: (m: GroupMessage): string => [m.forwarded ? t('Forwarded') : '', m.starred ? '★' : '', m.unsent ? t('Not sent by the phone') : ''].filter(Boolean).join('  ·  '),
+    /** What goes beside a message's time: that it was forwarded or edited, its star, and, on a linked device, that the phone could not send it. */
+    caption: (m: GroupMessage): string => [m.forwarded ? t('Forwarded') : '', m.edited ? t('Edited') : '', m.starred ? '★' : '', m.unsent ? t('Not sent by the phone') : ''].filter(Boolean).join('  ·  '),
     /** The reactions under a bubble. */
     reactions: (m: GroupMessage): ReactNode => (
       <Reactions signs={Object.values(m.reactions ?? {})} mine={m.reactions?.['']} mineSide={!m.from} onPress={() => setMenuFor(m)} />
@@ -433,7 +468,9 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
     },
     exportGroup: () => void exportGroup(),
     /** What the next message answers, over the field, with ✕ to drop it. */
-    answering: replying ? ({ name: who(replying), line: lineOf(replying), onPress: () => goTo(replying.tag), onClose: () => setReplying(null) } satisfies Answering) : null,
+    answering: replying && !editing ? ({ name: who(replying), line: lineOf(replying), onPress: () => goTo(replying.tag), onClose: () => setReplying(null) } satisfies Answering) : null,
+    /** The message of ours the bar edits, over the field, with ✕ to stop. */
+    editing: editing ? ({ line: lineOf(editing), onClose: stopEditing } satisfies Editing) : null,
     send,
     /** Opens the stickers, from the message bar's button. */
     openStickers: () => setStickering(true),

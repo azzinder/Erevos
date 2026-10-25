@@ -1,20 +1,21 @@
 import type { GroupMessage, GroupParts } from '../lock/group-data';
 import { isReactionEmoji, isTag } from '../lock/history';
-import { carriedOf, checkedChoices } from './chat-parts';
+import { carriedOf, checkedChoices, checkedEdit, editableWords, previewAfterEdit } from './chat-parts';
 
 // What a group's messages do beyond words and files (lib/groups.ts carries them), as in a chat with
 // a contact (lib/chat-parts.ts): a message can answer another, be a sticker, a place or a poll,
 // carry a link's preview, or be forwarded; and any member can react to a message, vote on a poll,
-// pin a message to the top for everyone, or delete their own for everyone. It all rides inside the
-// group's encrypted messages, in fields and kinds an Erevos from before leaves alone: it shows the
-// words, a sticker's emoji, a place's coordinates and a poll's question as words, and nothing of
-// the rest.
+// pin a message to the top for everyone, or edit or delete their own for everyone. It all rides
+// inside the group's encrypted messages, in fields and kinds an Erevos from before leaves alone: it
+// shows the words, a sticker's emoji, a place's coordinates and a poll's question as words, and
+// nothing of the rest.
 
-/** What a member says of a message already in the group, by its tag. An empty `emoji` takes a reaction back; no `chose`, a vote. */
+/** What a member says of a message already in the group, by its tag. An empty `emoji` takes a reaction back; no `chose`, a vote. `text`: new words for their own. */
 export type Marked =
   | { t: 'react'; tag: string; emoji: string }
   | { t: 'pin'; tag: string; on: boolean }
   | { t: 'vote'; tag: string; chose: number[] }
+  | { t: 'edit'; tag: string; text: string }
   | { t: 'erase'; tag: string };
 
 /**
@@ -44,6 +45,10 @@ export function markedOf(value: Record<string, unknown>): Marked | null {
     const chose = checkedChoices(value.chose);
     if (chose) return { t: 'vote', tag, chose };
   }
+  if (value.t === 'edit') {
+    const edit = checkedEdit(value);
+    if (edit) return { t: 'edit', tag, text: edit.text };
+  }
   if (value.t === 'erase') return { t: 'erase', tag };
   return null;
 }
@@ -58,8 +63,8 @@ function byMember<T>(before: Record<string, T> | undefined, from: string, value:
 
 /**
  * A group's messages once `from` (a member's identity, '' for this phone) said `marked`, at `at`:
- * a vote counts only on a poll, and only as the poll allows; only who sent a message deletes it
- * for everyone. Null when it changes nothing.
+ * a vote counts only on a poll, and only as the poll allows; only who sent a message edits its
+ * words (lib/chat-parts.ts editableWords) or deletes it for everyone. Null when it changes nothing.
  */
 export function withMarked(messages: GroupMessage[], from: string, marked: Marked, at: number): GroupMessage[] | null {
   const i = messages.findIndex((m) => !m.note && m.tag === marked.tag);
@@ -67,6 +72,14 @@ export function withMarked(messages: GroupMessage[], from: string, marked: Marke
   const m = messages[i];
   if (marked.t === 'erase') return m.from === from ? messages.filter((_, j) => j !== i) : null;
   const next: GroupMessage = { ...m };
+  if (marked.t === 'edit') {
+    if (m.from !== from || m.text === marked.text || !editableWords(m)) return null;
+    next.text = marked.text;
+    next.edited = at;
+    next.preview = previewAfterEdit(m.preview, marked.text);
+    if (!next.preview) delete next.preview;
+    return messages.map((old, j) => (j === i ? next : old));
+  }
   if (marked.t === 'react') {
     if ((m.reactions?.[from] ?? '') === marked.emoji) return null;
     next.reactions = byMember(m.reactions, from, marked.emoji || null);

@@ -10,7 +10,7 @@ import { test } from 'node:test';
 import { chatText, exportName } from '../lib/chat-export';
 import { handForward, takeForward } from '../lib/forward';
 import { firstLink, fitPreview, pageInfo } from '../lib/link-preview';
-import { acts, carriedOf, checkedChoices, checkedPlace, checkedPoll, choose, contentOf, geoLink, placeWords, pollOf, pollWords, tally, toCarry } from '../lib/chat-parts';
+import { acts, carriedOf, checkedChoices, checkedPlace, checkedPoll, choose, contentOf, EDIT_FOR, editableWords, geoLink, MAX_EDIT, placeWords, pollOf, pollWords, stillEditable, tally, toCarry } from '../lib/chat-parts';
 import { messageLine } from '../lib/message-line';
 import { searchMessages, starredOf } from '../lib/message-search';
 import { STICKERS, stickerOf } from '../lib/stickers';
@@ -28,6 +28,24 @@ test('a pin is carried with no words only, and one of the wrong shape is none', 
   assert.deepEqual(carriedOf({ pin: { tag: pin.tag, on: 'yes' } }), {});
   assert.deepEqual(toCarry({ pin }, false), { pin });
   assert.deepEqual(toCarry({ pin }, true), {});
+});
+
+test('an edit is carried with no words only, its own words whole, and says the phone is open', () => {
+  const edit = { tag: '0123456789ab', text: 'first line\nsecond line' };
+  assert.deepEqual(carriedOf({ edit }), { edit });
+  assert.deepEqual(toCarry({ edit }, false), { edit });
+  assert.deepEqual(toCarry({ edit }, true), {});
+  assert.equal(acts({ edit }), true);
+  assert.deepEqual(carriedOf({ edit: { tag: 'x', text: 'hi' } }), {});
+  assert.deepEqual(carriedOf({ edit: { tag: edit.tag, text: ' \n ' } }), {});
+  assert.equal(carriedOf({ edit: { tag: edit.tag, text: 'é'.repeat(MAX_EDIT + 10) } }).edit?.text.length, MAX_EDIT);
+  // Only words of the sender's own are edited, for a day.
+  assert.equal(editableWords({ text: 'hi' }), true);
+  assert.equal(editableWords({ text: '🌝', sticker: 'moon-smile' }), false);
+  assert.equal(editableWords({ text: 'hi', forwarded: true }), false);
+  assert.equal(editableWords({ text: '' }), false);
+  assert.equal(stillEditable(0, EDIT_FOR), true);
+  assert.equal(stillEditable(0, EDIT_FOR + 1), false);
 });
 
 test('a message in one line: its first line of words, or what it is', () => {

@@ -51,7 +51,7 @@ import { SwipeBack } from '../components/swipe-back';
 import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from '../components/message-parts';
 import { PhotoSticker, PLAYS_LAST, StickerPicker, StickerView } from '../components/stickers';
 import { PollCard, PollSheet } from '../components/poll';
-import { acts, checkedChoices, choose as chooseOption, contentOf, placeText, placeWords, pollWords, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
+import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, placeText, placeWords, pollWords, previewAfterEdit, stillEditable, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { CAN_PLACE, findPlace } from '../lib/place';
@@ -624,6 +624,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // gone to, lit a moment.
   const [menuFor, setMenuFor] = useState<Message | null>(null);
   const [replying, setReplying] = useState<Message | null>(null);
+  // The message of ours the bar gives new words, while it does (sendEdit).
+  const [editing, setEditing] = useState<Message | null>(null);
   // One of the SMS among the messages held down, and the one being passed on (lib/sms-chat.ts).
   const [smsMenuFor, setSmsMenuFor] = useState<SmsMessage | null>(null);
   const [smsForwarding, setSmsForwarding] = useState<SmsMessage | null>(null);
@@ -1371,6 +1373,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setNearPhotos([]);
     smsAsked.current = null;
     setReplying(null);
+    if (editing) stopEditing();
     setPinShown(0);
     setSearching(null);
     setAttaching(false);
@@ -1790,6 +1793,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       );
       history.current?.vote(peer, vote.tag, false, vote.chose).catch(() => undefined);
     }
+    // New words for one of theirs, as only they change their own: shown as edited.
+    const { edit } = received.more;
+    if (edit) {
+      const at = Date.now();
+      history.current
+        ?.edit(peer, edit.tag, false, edit.text, at)
+        .then((changed) => {
+          if (!changed) return;
+          setMessages((list) => list.map((m) => (m.peer === peer && m.tag === edit.tag ? { ...m, text: edit.text, edited: at, preview: previewAfterEdit(m.preview, edit.text) } : m)));
+          setNote(t('{name} edited a message.', { name: label(peer, e2e.contacts()) }));
+        })
+        .catch(() => undefined);
+    }
     const name = label(peer, e2e.contacts());
     if (received.timerChanged) {
       setNote(
@@ -1960,6 +1976,58 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // that went. A call's line is this phone's own.
   const theyHave = (m: Message) => m.peer.startsWith(CONTACT_PREFIX) && !!m.tag && !isCallLine(m.text) && (!m.mine || (m.mark !== WAITING && !scheduled(m)));
 
+  // Whether a message of ours can take new words: words of our own (lib/chat-parts.ts), that went
+  // within the last day (EDIT_FOR), or still wait to go. Not one sent for later, which went sealed
+  // as it was, to wait at a relay or here.
+  const canEdit = (m: Message) =>
+    m.mine && m.peer.startsWith(CONTACT_PREFIX) && !!m.tag && !isCallLine(m.text) && editableWords(m) && !m.held && !scheduled(m) && (m.mark === WAITING || stillEditable(m.at, Date.now()));
+
+  // Puts a message of ours in the bar, to give it new words (sendEdit).
+  function startEditing(message: Message) {
+    setReplying(null);
+    setVanishing(false);
+    setEditing(message);
+    draft.set(message.text);
+  }
+
+  function stopEditing() {
+    setEditing(null);
+    draft.set('');
+  }
+
+  // Gives a message of ours the words typed, on both phones: once it went, as an edit their Erevos
+  // shows as edited, which goes as a reaction does, once their phone or the relay was handed it, or
+  // not at all; while it still waits to go (lib/waiting.ts), as it is, as it goes with them.
+  async function sendEdit(message: Message) {
+    const text = draft.text().trim();
+    if (!text) {
+      setNote(t('Type the new words, or delete the message instead.'));
+      return;
+    }
+    if (text === message.text) {
+      stopEditing();
+      return;
+    }
+    const waits = history.current?.messages().find((m) => m.peer === message.peer && m.tag === message.tag)?.mark === WAITING;
+    if (!waits) {
+      try {
+        await sendToContact(relayTarget(), message.peer.slice(CONTACT_PREFIX.length), '', { more: { edit: { tag: message.tag, text } } });
+      } catch (error) {
+        setNote(t('Not edited. {reason}', { reason: notSentReason(error) }));
+        return;
+      }
+    }
+    const at = Date.now();
+    setMessages((list) =>
+      list.map((m) => (m.peer === message.peer && m.tag === message.tag ? { ...m, text, preview: previewAfterEdit(m.preview, text), ...(waits ? {} : { edited: at }) } : m)),
+    );
+    history.current?.edit(message.peer, message.tag, true, text, at).catch(() => {
+      // Shown, but as it was when the chat next opens.
+    });
+    stopEditing();
+    setNote(waits ? t('Edited. It goes with the new words.') : t('Edited on both phones.'));
+  }
+
   // Reacts to a message with an emoji, or takes the reaction back (the same one again), on both
   // phones. It shows once their phone, or the relay, was handed it; if neither can be, nothing changes.
   async function react(message: Message, emoji: string) {
@@ -2066,6 +2134,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (message.peer.startsWith(CONTACT_PREFIX) && message.tag) actions.push({ title: message.starred ? t('Unstar') : t('Star'), onPress: () => star(message) });
     if (theyHave(message)) actions.push({ title: message.pinned ? t('Unpin') : t('Pin'), onPress: () => void pin(message) });
     if (CAN_COPY && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(shownLine(message.text)) });
+    if (canEdit(message)) actions.push({ title: t('Edit'), onPress: () => startEditing(message) });
     if (message.file?.sticker && !message.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(message.file!) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
@@ -2486,6 +2555,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // When only LoRa can take it, and it is too much for LoRa with its link's preview, the words go
   // without the preview rather than wait.
   async function send(lasts = vanishing ? vanishFor : 0, quiet = false, content?: Content & { text: string }, to = selected) {
+    if (!content && editing && editing.peer === to) {
+      await sendEdit(editing);
+      return;
+    }
     const text = content ? content.text : draft.text().trim();
     if (!text || !to?.startsWith(CONTACT_PREFIX) || previewing.current) return;
     setVanishing(false);
@@ -3112,8 +3185,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         const marked = left.map((m) => {
           const there = m.tag ? byTag.get(`${m.peer}|${m.tag}`) : undefined;
           if (!there) return m;
-          // What was done to it on another device, or through one: reactions, a pin, votes, a star.
-          const done = { myReaction: there.myReaction, theirReaction: there.theirReaction, pinned: there.pinned, starred: there.starred, myVote: there.myVote, theirVote: there.theirVote };
+          // What was done to it on another device, or through one: reactions, a pin, votes, a star, new words.
+          const done = {
+            myReaction: there.myReaction,
+            theirReaction: there.theirReaction,
+            pinned: there.pinned,
+            starred: there.starred,
+            myVote: there.myVote,
+            theirVote: there.theirVote,
+            text: there.text,
+            edited: there.edited,
+            preview: there.preview,
+          };
           const changed = (Object.keys(done) as (keyof typeof done)[]).some((key) => JSON.stringify(m[key]) !== JSON.stringify(done[key]));
           const next = changed ? { ...m, ...done } : m;
           if ((there.mark ?? 0) <= next.mark) return next;
@@ -5357,19 +5440,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               maxLength={4000}
               enterSends
               onSend={() => void send()}
-              sendWays={sendWays}
+              sendWays={editing ? [] : sendWays}
               voice={{ recording: talking, start: startTalking, stop: (cancel) => void stopTalking(cancel) }}
-              talkie={{ on: talkie, onOff: () => toggleTalkie(selectedContact) }}
-              vanish={{
-                on: vanishing,
-                seconds: vanishFor,
-                choices: TIMERS.slice(1),
-                label: timerLabel,
-                onToggle: () => setVanishing((on) => !on),
-                onChoose: setVanishFor,
-              }}
+              talkie={editing ? null : { on: talkie, onOff: () => toggleTalkie(selectedContact) }}
+              vanish={
+                editing
+                  ? null
+                  : {
+                      on: vanishing,
+                      seconds: vanishFor,
+                      choices: TIMERS.slice(1),
+                      label: timerLabel,
+                      onToggle: () => setVanishing((on) => !on),
+                      onChoose: setVanishFor,
+                    }
+              }
+              editing={editing && editing.peer === selected ? { line: messageLine(editing), onClose: stopEditing } : null}
               answering={
-                replying && replying.peer === selected
+                !editing && replying && replying.peer === selected
                   ? {
                       name: replying.mine ? t('You') : selectedName,
                       line: messageLine(replying),
@@ -5765,7 +5853,7 @@ const MessageLine = memo(function MessageLine({ message, quoted, name, newDay, t
         )}
         {message.preview && !message.voice && !message.file ? <PreviewCard preview={message.preview} ink={ink} /> : null}
         <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>
-          {[message.forwarded ? t('Forwarded') : '', message.at && !waits ? clock(message.at) : '', caption(message)].filter(Boolean).join('  ·  ')}
+          {[message.forwarded ? t('Forwarded') : '', message.at && !waits ? clock(message.at) : '', message.edited ? t('Edited') : '', caption(message)].filter(Boolean).join('  ·  ')}
         </Text>
       </Pressable>
       <Reactions

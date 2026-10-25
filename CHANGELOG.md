@@ -10,7 +10,11 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
-- Nothing yet.
+- **Edit a message you sent**: hold one of your messages, then **Edit**, up to a day after you sent it. Its words go
+  in the field under **Edit message**; change them and send. Both phones show the new words with **Edited** beside the
+  time, and so do your linked devices. In a group, every member sees them. Only words are edited, not stickers,
+  places, polls, voice messages, photos, files or forwarded words. A message that still waits to go simply goes with
+  the new words. An Erevos from before this keeps the old words.
 
 ## 3.2.0 (2026-10-25)
 

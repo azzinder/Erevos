@@ -17,6 +17,7 @@ export type Written = LineOf & {
   tag?: string;
   re?: string;
   forwarded?: boolean;
+  edited?: number;
   myReaction?: string;
   theirReaction?: string;
   place?: Place;
@@ -76,7 +77,7 @@ export function chatText(messages: Written[], them: string, now: number): string
       lines.push('', day);
     }
     const quoted = message.re ? kept.find((m) => m.tag === message.re) : undefined;
-    const about = [message.forwarded ? t('forwarded') : '', quoted ? t('answering “{line}”', { line: messageLine(quoted) }) : ''].filter(Boolean).join(', ');
+    const about = [message.forwarded ? t('forwarded') : '', message.edited ? t('edited') : '', quoted ? t('answering “{line}”', { line: messageLine(quoted) }) : ''].filter(Boolean).join(', ');
     lines.push(`${timeOf(d)}  ${message.mine ? t('You') : (message.by ?? them)}${about ? ` (${about})` : ''}: ${first}`, ...more.map((line) => UNDER + line));
     const reacted = message.reactedBy ?? [
       { emoji: message.theirReaction ?? '', name: them },

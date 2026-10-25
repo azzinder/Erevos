@@ -20,16 +20,19 @@ export type Pin = { tag: string; on: boolean };
 /** A vote on the poll with this tag: the options chosen, by number; none takes the vote back. */
 export type Vote = { tag: string; chose: number[] };
 
+/** New words for the sender's own message with this tag, which then shows as edited. */
+export type Edit = { tag: string; text: string };
+
 /**
  * What a contact's message carries beyond what lib/e2e.ts says itself, each in a field of its own
  * that an Erevos from before leaves alone. With words, which say it to an Erevos from before and
  * show nowhere in this one: a sticker, whose words are its emoji (lib/stickers.ts), a place, whose
  * words are where it is, or a poll, whose words are its question and options; and the preview of
  * a link in the words, which show as they are. With words, a voice message or a photo or file: that
- * it was forwarded from another chat (`forwarded`). With no words: a pin, a vote, or that they are
- * typing to us now (`typing`).
+ * it was forwarded from another chat (`forwarded`). With no words: a pin, a vote, new words for one
+ * of the sender's own messages (`edit`), or that they are typing to us now (`typing`).
  */
-export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; typing?: true };
+export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true };
 
 /** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
 export type Content = Pick<Carried, 'sticker' | 'place' | 'poll' | 'preview'> & { forwarded?: boolean };
@@ -43,6 +46,10 @@ export const MAX_PREVIEW_TEXT = 400;
 // The largest preview picture, as base64: a small JPEG fits under it, and the message in one.
 export const MAX_PREVIEW_IMAGE = 8 * 1024;
 const MAX_URL = 2000;
+/** The most an edit's words are, as a message's: the field takes no more (app/chat.tsx). */
+export const MAX_EDIT = 4000;
+/** How long after it went a message of ours can still be edited. */
+export const EDIT_FOR = 24 * 60 * 60_000;
 
 /** The reactions offered at a tap; any other emoji can be one too (isReactionEmoji, lock/history.ts). */
 export const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -57,6 +64,7 @@ const isTag = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{1
 export function carriedOf(value: Record<string, unknown>): Carried {
   const pin = value.pin as { tag?: unknown; on?: unknown } | null | undefined;
   const vote = value.vote as { tag?: unknown; chose?: unknown } | null | undefined;
+  const edit = checkedEdit(value.edit);
   const place = checkedPlace(value.place);
   const poll = checkedPoll(value.poll);
   const preview = checkedPreview(value.preview);
@@ -68,6 +76,7 @@ export function carriedOf(value: Record<string, unknown>): Carried {
     ...(preview ? { preview } : {}),
     ...(isTag(pin?.tag) && typeof pin.on === 'boolean' ? { pin: { tag: pin.tag, on: pin.on } } : {}),
     ...(isTag(vote?.tag) && chose ? { vote: { tag: vote.tag, chose } } : {}),
+    ...(edit ? { edit } : {}),
     ...(value.forwarded === true ? { forwarded: true as const } : {}),
     ...(value.typing === true ? { typing: true as const } : {}),
   };
@@ -80,13 +89,13 @@ export function contentOf({ sticker, place, poll, preview, forwarded }: Content)
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, place, poll, preview, forwarded, pin, vote, typing } = carriedOf(carried);
+  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing } = carriedOf(carried);
   if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}) };
-  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(typing ? { typing } : {}) };
+  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(edit ? { edit } : {}), ...(typing ? { typing } : {}) };
 }
 
 /** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */
-export const acts = (carried: Carried) => !!carried.pin || !!carried.vote;
+export const acts = (carried: Carried) => !!carried.pin || !!carried.vote || !!carried.edit;
 
 /** What a message carries, but a link's preview: what goes over LoRa, which takes only a little (lib/lora.ts). */
 export function withoutPreview({ preview: _, ...rest }: Carried): Carried {
@@ -99,6 +108,30 @@ const plainText = (v: unknown, most: number): string | null => {
   const text = v.replace(/[\u0000-\u001f\u007f‎‏‪-‮⁦-⁩]/g, ' ').replace(/\s+/g, ' ').trim();
   return text ? [...text].slice(0, most).join('') : null;
 };
+
+/** An edit as it may come, or null: words of their own, as a message's, but none. */
+export function checkedEdit(value: unknown): Edit | null {
+  const v = value as { tag?: unknown; text?: unknown } | null;
+  if (!v || typeof v !== 'object' || !isTag(v.tag) || typeof v.text !== 'string' || !v.text.trim()) return null;
+  return { tag: v.tag, text: [...v.text].slice(0, MAX_EDIT).join('') };
+}
+
+/**
+ * What can be edited of a message, by what it is: words of its sender's own, not a sticker's, a
+ * place's or a poll's, which are what they are, nor words forwarded from another chat, which are
+ * someone else's.
+ */
+export function editableWords(m: { text: string; sticker?: string; place?: Place; poll?: Poll; forwarded?: boolean; voice?: unknown; file?: unknown }): boolean {
+  return !!m.text && !m.sticker && !m.place && !m.poll && !m.forwarded && !m.voice && !m.file;
+}
+
+/** Whether ours sent at `at` can still be edited `now` (EDIT_FOR). */
+export const stillEditable = (at: number, now: number) => now - at <= EDIT_FOR;
+
+/** The preview a message keeps once edited to `text`: its own while its link is still in the words, none otherwise. */
+export function previewAfterEdit(preview: Preview | undefined, text: string): Preview | undefined {
+  return preview && text.includes(preview.url) ? preview : undefined;
+}
 
 /** A poll as it may come, or null. */
 export function checkedPoll(value: unknown): Poll | null {

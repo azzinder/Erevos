@@ -248,8 +248,8 @@ export function announceReceived(): void {
 
 /**
  * Whether what came is news to tell of: words, a voice message (once), a photo or file; not marks,
- * deletes, calls or a group's setting up, nor a message that came already (`twice`), as one does
- * on a linked device directly and again through the phone (docs/multi-device.md).
+ * edits, deletes, calls or a group's setting up, nor a message that came already (`twice`), as one
+ * does on a linked device directly and again through the phone (docs/multi-device.md).
  */
 export function isNews(received: Extract<Received, { kind: 'message' }>): boolean {
   if (received.twice || received.erase || received.call || received.group) return false;
@@ -607,9 +607,11 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   if (received.got.length > 0 && (await history.mark(peer, true, 1, at, received.got)).length > 0) changed = true;
   if (received.read.length > 0 && (await history.mark(peer, true, 2, at, received.read)).length > 0) changed = true;
   if (received.react && (await history.react(peer, received.react.tag, false, received.react.emoji))) changed = true;
-  const { pin, vote } = received.more;
+  const { pin, vote, edit } = received.more;
   if (pin && (await history.pin(peer, pin.tag, pin.on ? at : 0))) changed = true;
   if (vote && (await history.vote(peer, vote.tag, false, vote.chose))) changed = true;
+  // New words for one of theirs: only their own changes, and it shows as edited.
+  if (edit && (await history.edit(peer, edit.tag, false, edit.text, at))) changed = true;
   if (received.erase && 'all' in received.erase) {
     await history.clear(peer);
     changed = true;

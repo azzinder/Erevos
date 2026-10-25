@@ -523,8 +523,8 @@ export class Groups {
   }
 
   /**
-   * Says something of a message, for every member: our reaction, a pin, our vote, or deleting our
-   * own. Returns the message as it was, or null when it changes nothing.
+   * Says something of a message, for every member: our reaction, a pin, our vote, or editing or
+   * deleting our own. Returns the message as it was, or null when it changes nothing.
    */
   mark(id: string, marked: Marked, transport: GroupTransport): Promise<GroupMessage | null> {
     return this.run(async () => {
@@ -1257,7 +1257,7 @@ export class Groups {
         this.changed();
         return;
       }
-      if (said.t === 'react' || said.t === 'pin' || said.t === 'vote' || said.t === 'erase') {
+      if (said.t === 'react' || said.t === 'pin' || said.t === 'vote' || said.t === 'edit' || said.t === 'erase') {
         const messages = withMarked(now.messages, from, said, Date.now());
         if (!messages) return;
         await this.save(this.withGroup({ ...now, messages }));

@@ -598,6 +598,24 @@ t('a pin travels with no words, and says the phone is open as writing does', asy
   assert.deepEqual(message(await alice.e2e.receive(odd.packet)).more, {});
 });
 
+t('an edit travels with no words, and with words is none', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  await bob.e2e.receive(alice.e2e.pending()[0].first);
+  await alice.e2e.firstSent(identity);
+
+  const words = await alice.e2e.seal(identity, 'meet at five', alice.from);
+  await bob.e2e.receive(words.packet);
+  const edit = { tag: words.tag, text: 'meet at six\nby the door' };
+  const edited = await alice.e2e.seal(identity, '', alice.from, { more: { edit } });
+  assert.equal(edited.tag, '', 'no message of its own to keep');
+  const came = message(await bob.e2e.receive(edited.packet));
+  assert.deepEqual([came.text, came.more], ['', { edit }]);
+  const both = await alice.e2e.seal(identity, 'text', alice.from, { more: { edit } });
+  assert.deepEqual(message(await bob.e2e.receive(both.packet)).more, {});
+});
+
 t('a sticker travels by its name, with its emoji as its words', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);
