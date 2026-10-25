@@ -123,6 +123,11 @@ pub fn seal_open(secret: &[u8], sealed: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::seal_open(secret, sealed))
 }
 
+#[wasm_bindgen(js_name = relayChannelKeys)]
+pub fn relay_channel_keys(relay_key: &[u8], secret: &[u8], answer: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::relay_channel_keys(relay_key, secret, answer))
+}
+
 #[wasm_bindgen(js_name = nostrSecret)]
 pub fn nostr_secret() -> Result<Vec<u8>, JsError> {
     js(crate::nostr::secret())

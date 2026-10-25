@@ -295,7 +295,12 @@ pub fn parse(url: &str) -> Result<Address> {
     Ok(Address { tls, host: host.to_string(), port })
 }
 
-async fn connect(tor: Arc<TorClient<PreferredRuntime>>, url: String, token: String, way: Option<IsolationToken>) -> Result<Socket> {
+/// The subprotocols a connection with a channel to the relay's own key offers
+/// (crates/erevos-relay, `CHANNEL_PROTOCOL`): its token goes inside, so none
+/// is given here.
+const CHANNEL_PROTOCOLS: &str = "erevos, erevos-channel";
+
+async fn connect(tor: Arc<TorClient<PreferredRuntime>>, url: String, token: String, way: Option<IsolationToken>, channel: bool) -> Result<Socket> {
     let address = parse(&url)?;
     let mut prefs = StreamPrefs::new();
     if let Some(way) = way {
@@ -323,6 +328,9 @@ async fn connect(tor: Arc<TorClient<PreferredRuntime>>, url: String, token: Stri
         let value = HeaderValue::from_str(&format!("Bearer {token}")).map_err(|e| e.to_string())?;
         request.headers_mut().insert("Authorization", value);
     }
+    if channel {
+        request.headers_mut().insert("Sec-WebSocket-Protocol", HeaderValue::from_static(CHANNEL_PROTOCOLS));
+    }
     let (socket, _) = tokio_tungstenite::client_async(request, io).await.map_err(|e| {
         if token.is_empty() {
             format!("the relay at {url} refused the connection through Tor: {e}")
@@ -348,10 +356,21 @@ async fn call_on(socket: &mut Socket, bytes: Vec<u8>) -> Result<Vec<u8>> {
 /// Opens a connection to the relay at `url` through Tor, with `token` as a
 /// bearer token if not empty. Returns its handle for [`call`] and [`close`].
 pub fn open(url: &str, token: &str) -> Result<u64> {
+    open_with(url, token, false)
+}
+
+/// Opens a connection to the relay at `url` through Tor for a channel to the
+/// relay's own key (erevos_core::relay_channel), which the app then makes on
+/// it with [`call`]: its hello first, its token in the first message after.
+pub fn open_channel(url: &str) -> Result<u64> {
+    open_with(url, "", true)
+}
+
+fn open_with(url: &str, token: &str, channel: bool) -> Result<u64> {
     let tor = client()?;
     let (url, token) = (url.to_string(), token.to_string());
     let socket = runtime()?.block_on(async move {
-        tokio::time::timeout(WAIT, connect(tor, url, token, None))
+        tokio::time::timeout(WAIT, connect(tor, url, token, None, channel))
             .await
             .map_err(|_| "Tor took too long to reach the relay".to_string())?
     })?;
@@ -401,7 +420,7 @@ pub fn text_open(url: &str) -> Result<u64> {
     let runtime = runtime()?;
     let socket = runtime
         .block_on(async move {
-            tokio::time::timeout(WAIT, connect(tor, url, String::new(), Some(way)))
+            tokio::time::timeout(WAIT, connect(tor, url, String::new(), Some(way), false))
                 .await
                 .map_err(|_| "Tor took too long to reach the relay".to_string())?
         })

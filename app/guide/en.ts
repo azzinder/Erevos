@@ -503,6 +503,23 @@ page only on the relay's own address, over https, so nothing answering in the re
 somewhere else. And a provider that cannot be asked for a while cuts no phone off at once: only 3 days without a good
 answer do.
 
+### The relay's own key
+
+Once Erevos knows your relay's key (it asks the relay the first time, or a contact link gives it), every connection to
+that relay starts with a check: the relay must prove it holds that key, and the token and everything after it go
+encrypted to that key, inside the connection's own encryption (TLS). Under **How you connect now**, Erevos then says
+that your relay proved its own key. From then on, this space never reaches that relay without the check.
+
+- A relay older than this app proves nothing: it works as before, and **How you connect now** says it is older. Erevos
+  tries again every hour.
+- A relay that cannot prove the key Erevos keeps for it gets nothing, and your messages wait; **How you connect now**
+  says so in red. Only if its operator told you it has a new key, tap **It has a new key**: Erevos then takes the key
+  the relay gives next.
+
+**Why:** the connection's certificate says only that whoever answers holds a certificate for the relay's name, which a
+company that issues certificates can also give someone else, by mistake or when made to. The relay's own key is only on
+its server, so no one in between can pass for it, and a renewed certificate changes nothing.
+
 ### The safety number
 
 Open the chat, tap its name and then **Safety number**. Both phones show the same 60 digits for the two of you. Compare them
@@ -1056,6 +1073,11 @@ Messages sent for later are kept there until their time too, 10,000 or 256 MB at
 each is to go, not what it says.
 
 **Why:** what the relay keeps has limits, so the phones that use it cannot fill its disk or its memory.
+
+**Its own key:** the relay's key file (\`EREVOS_RELAY_KEY\`, which the one command sets up) is what it proves on every
+connection, so phones know it by that key rather than by its certificate (see [The relay's own key](#relay)). Keep that
+file, in its backups too: with a new one, every phone that knew the old key refuses the relay until someone taps **It
+has a new key** on it.
 
 **Invites:** the relay can let each phone have a token of its own, in a file of tokens, and then let those phones
 invite more, each invite for one phone (see [Invites to the relay](#relay)). Turn it on with
@@ -2153,6 +2175,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. From a place lent on a contact's relay, every relay you send to sees it. [Through Tor](#tor), which carries messages unless you change it, no relay sees it for what you write, and with **Everything** for pictures and files too; with bridges, for where Tor is blocked, the network sees only a bridge. Snowflake's broker and STUN servers see your address. | Tor on a computer. |
+| **The connection to the relay** | TLS, and inside it, once the relay's key is known, a channel to that key: the relay proves it holds it on every connection, and the token and every request go encrypted to it, so someone in between with a certificate for the relay's name cannot pass for it. A relay that proved its key once is never reached without it again. A relay older than this app goes as before, and **How you connect now** says so. The first key comes from the relay the first time it is asked, or from a contact link: whoever is in between that very first time could give one of their own. [The relay's own key](#relay). Not audited. | Our relay's key built into the app, and in invites. |
 | **Texts through Nostr** | End-to-end encrypted as through a relay, then wrapped once more for a key your contact gave that chat alone, signed by a key made for that text alone. The Nostr relays see when and how big, and that a key that names no one gets a text; your phone reads all its keys on one connection, through Tor, so a relay can tell they are read together, never from where. Your relay sees them only as the backup, and a bell for hidden chats. [Through Nostr](#nostr). | Pictures and voice messages through Nostr. |
 | **SMS** | A plain SMS is read by the phone company, as every SMS. To a number linked to an Erevos contact it goes through Erevos instead. A hidden invite is one more short SMS the phone company sees. | |
 | **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. A contact's calls and SMS are read from the phone's own call log and SMS only to show its history, and kept nowhere. | |

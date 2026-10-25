@@ -243,6 +243,19 @@ pub fn seal_open(secret: &[u8], sealed: &[u8]) -> Result<Vec<u8>> {
     Ok([sender.as_slice(), &message].concat())
 }
 
+/// The keys of a channel to a relay (erevos_core::relay_channel), once the
+/// relay's `answer` to the hello made with `secret` (`HELLO`, then the public
+/// key `seal_public` gives for it) proves the relay holds the secret key of
+/// `relay_key`: 32 bytes for phone to relay, then 32 for relay to phone. Fails
+/// when it does not.
+pub fn relay_channel_keys(relay_key: &[u8], secret: &[u8], answer: &[u8]) -> Result<Vec<u8>> {
+    let relay_key = <[u8; 32]>::try_from(relay_key).map_err(|_| "a relay key is 32 bytes".to_string())?;
+    let secret = <[u8; 32]>::try_from(secret).map_err(|_| "a secret key is 32 bytes".to_string())?;
+    let (opening, _) = erevos_core::relay_channel::Opening::with_secret(&relay_key, secret);
+    let (to_relay, to_phone) = opening.keys(answer).map_err(fail)?;
+    Ok([to_relay, to_phone].concat())
+}
+
 /// Whether `signature` is the Ed25519 signature of `message` by the public
 /// key `key`: one byte, 1 or 0. Keys and signatures of the wrong size fail.
 pub fn signature_verify(key: &[u8], message: &[u8], signature: &[u8]) -> Result<Vec<u8>> {
@@ -303,6 +316,11 @@ pub mod tor {
 
     pub fn open(url: &[u8], token: &[u8]) -> Result<Vec<u8>> {
         Ok(erevos_tor::open(text(url)?, text(token)?)?.to_be_bytes().to_vec())
+    }
+
+    /// A connection for a channel to the relay's own key: its handle.
+    pub fn open_channel(url: &[u8]) -> Result<Vec<u8>> {
+        Ok(erevos_tor::open_channel(text(url)?)?.to_be_bytes().to_vec())
     }
 
     pub fn call(id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
@@ -729,6 +747,22 @@ mod tests {
         assert_eq!(seal_open(&secret, &sealed).unwrap(), [[3u8; 24].as_slice(), b"hi"].concat());
         assert!(seal_open(&[8; 32], &sealed).is_err());
         assert!(seal_public(&[1; 31]).is_err());
+    }
+
+    #[test]
+    fn a_relay_channel_opens_only_with_the_relays_proof() {
+        let relay = erevos_core::relay_seal::RelayKey::generate();
+        let secret = [5u8; 32];
+        let hello = [&[erevos_core::relay_channel::HELLO][..], &seal_public(&secret).unwrap()].concat();
+        let (answer, _) = erevos_core::relay_channel::accept(&relay, &hello).unwrap();
+        let keys = relay_channel_keys(&relay.public(), &secret, &answer).unwrap();
+        let (opening, same) = erevos_core::relay_channel::Opening::with_secret(&relay.public(), secret);
+        assert_eq!(same.to_vec(), hello);
+        let (to_relay, to_phone) = opening.keys(&answer).unwrap();
+        assert_eq!(keys, [to_relay, to_phone].concat());
+        let other = erevos_core::relay_seal::RelayKey::generate();
+        assert!(relay_channel_keys(&other.public(), &secret, &answer).is_err());
+        assert!(relay_channel_keys(&relay.public(), &secret, &answer[1..]).is_err());
     }
 
     #[test]

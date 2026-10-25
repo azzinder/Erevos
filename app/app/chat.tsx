@@ -39,6 +39,7 @@ import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
 import { WelcomeInvite } from '../components/welcome-invite';
 import { ConnectStatus, QrSign, WayCard } from '../components/connect-cards';
+import { RelayKeyNote } from '../components/relay-key-note';
 import { BackIcon, GlobeIcon, MoreIcon, PlusIcon, ShieldIcon, TimerIcon } from '../components/icons';
 import { canDial, DialTile } from '../components/dial-tile';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
@@ -5338,6 +5339,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             ) : null}
             {loaded ? (
               <ConnectStatus reach={reached.reach} title={reached.title} line={reached.line} detail={reached.detail}>
+                {relayUrl.trim() ? <RelayKeyNote url={relayUrl.trim()} /> : null}
                 {relayUrl.trim() && !ownQueue && !accountLink() ? <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} /> : null}
               </ConnectStatus>
             ) : null}

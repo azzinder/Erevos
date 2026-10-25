@@ -51,6 +51,9 @@ class ErevosCoreModule : Module() {
     }
     AsyncFunction("sealPublic") { secret: ByteArray -> ErevosCoreNative.sealPublic(secret) }
     AsyncFunction("sealOpen") { secret: ByteArray, sealed: ByteArray -> ErevosCoreNative.sealOpen(secret, sealed) }
+    AsyncFunction("relayChannelKeys") { relayKey: ByteArray, secret: ByteArray, answer: ByteArray ->
+      ErevosCoreNative.relayChannelKeys(relayKey, secret, answer)
+    }
     AsyncFunction("hardKey") { input: ByteArray, salt: ByteArray, cost: ByteArray -> ErevosCoreNative.hardKey(input, salt, cost) }
     AsyncFunction("signatureVerify") { key: ByteArray, message: ByteArray, signature: ByteArray -> ErevosCoreNative.signatureVerify(key, message, signature) }
     // Group chats (crates/erevos-group).
@@ -111,6 +114,7 @@ class ErevosCoreModule : Module() {
       torIo { ErevosCoreNative.torRequest(url.toByteArray(), token.toByteArray(), message) }
     }
     AsyncFunction("torOpen") Coroutine { url: String, token: String -> torIo { ErevosCoreNative.torOpen(url.toByteArray(), token.toByteArray()) } }
+    AsyncFunction("torOpenChannel") Coroutine { url: String -> torIo { ErevosCoreNative.torOpenChannel(url.toByteArray()) } }
     AsyncFunction("torCall") Coroutine { id: ByteArray, message: ByteArray -> torIo { ErevosCoreNative.torCall(id, message) } }
     AsyncFunction("torClose") Coroutine { id: ByteArray -> torIo { ErevosCoreNative.torClose(id) } }
     // Nostr relays through Tor: text frames both ways, and what the relay says waits until asked for.
@@ -168,6 +172,7 @@ internal object ErevosCoreNative {
   @JvmStatic external fun relaySeal(relayKey: ByteArray, senderId: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun sealPublic(secret: ByteArray): ByteArray
   @JvmStatic external fun sealOpen(secret: ByteArray, sealed: ByteArray): ByteArray
+  @JvmStatic external fun relayChannelKeys(relayKey: ByteArray, secret: ByteArray, answer: ByteArray): ByteArray
   @JvmStatic external fun hardKey(input: ByteArray, salt: ByteArray, cost: ByteArray): ByteArray
   @JvmStatic external fun signatureVerify(key: ByteArray, message: ByteArray, signature: ByteArray): ByteArray
   @JvmStatic external fun groupNew(about: ByteArray): ByteArray
@@ -201,6 +206,7 @@ internal object ErevosCoreNative {
   @JvmStatic external fun torStop()
   @JvmStatic external fun torRequest(url: ByteArray, token: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun torOpen(url: ByteArray, token: ByteArray): ByteArray
+  @JvmStatic external fun torOpenChannel(url: ByteArray): ByteArray
   @JvmStatic external fun torCall(id: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun torClose(id: ByteArray): ByteArray
   @JvmStatic external fun torTextOpen(url: ByteArray): ByteArray

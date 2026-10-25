@@ -1,4 +1,4 @@
-// Two-hop sending, many messages on one connection, call relay credentials and waiting for a message (lib/relay.ts) against two real relays (crates/erevos-relay) and the real core
+// Two-hop sending, many messages on one connection, call relay credentials, waiting for a message and channels to a relay's key (lib/relay.ts) against real relays (crates/erevos-relay) and the real core
 // built to WebAssembly by checks/build-core.mjs. Skipped, with a note, when either build is
 // missing: build the relay with `cargo build -p erevos-relay`.
 // Run with: npm run check
@@ -12,7 +12,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 
-import { setCore, type Core } from '../lib/core';
+import { sealPublic, setCore, type Core } from '../lib/core';
+import { randomBytes, toHex } from '../lib/crypto';
 import {
   BadRelayAddressError,
   callRelay,
@@ -20,13 +21,23 @@ import {
   canTryLater,
   canWaitAt,
   createQueue,
+  forgetRelayKey,
+  forgetRelayKeys,
+  getChunk,
   isQueueNotFound,
   isRelayAddress,
   newsSince,
   NO_NEWS,
+  onRelayKey,
+  pinRelay,
+  putChunk,
   receiveMessage,
+  relayCheck,
   relayKey,
   RelayError,
+  RelayKeyError,
+  relayPath,
+  RelaySession,
   RelaySends,
   RelayUnreachableError,
   sendMessage,
@@ -36,6 +47,8 @@ import {
   waitForNews,
   type Relay,
 } from '../lib/relay';
+import { setCurrentSpace } from '../lock/keys';
+import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const binary = new URL('../../target/debug/erevos-relay', import.meta.url).pathname;
@@ -55,9 +68,10 @@ const relays: ChildProcess[] = [];
 const dir = mkdtempSync(join(tmpdir(), 'erevos-relay-check-'));
 
 /** Starts a relay and returns its WebSocket address once it answers. With `key`, it has a key
- *  for sealed sends, a call relay beside it, and a key for Web Push. Both forward to each other on
- *  127.0.0.1, which a relay does only when allowed private peers. */
-async function startRelay(key: boolean): Promise<string> {
+ *  for sealed sends, a call relay beside it, and a key for Web Push; with `token`, only phones that
+ *  give it are let in. They forward to each other on 127.0.0.1, which a relay does only when
+ *  allowed private peers. */
+async function startRelay(key: boolean, token = ''): Promise<string> {
   const [tcp, ws] = [await freePort(), await freePort()];
   const env = {
     ...process.env,
@@ -66,13 +80,14 @@ async function startRelay(key: boolean): Promise<string> {
     EREVOS_TURN_SECRET: key ? 'secret' : '',
     EREVOS_RELAY_PUSH_KEY: key ? join(dir, `push-${ws}`) : '',
     EREVOS_RELAY_PRIVATE_PEERS: 'allow',
+    EREVOS_RELAY_TOKEN: token,
   };
   const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
   relays.push(child);
   const url = `ws://127.0.0.1:${ws}`;
   for (let i = 0; i < 50; i++) {
     try {
-      await relayKey({ url: `${url}/none-${i}` });
+      await relayKey({ url: `${url}/none-${i}`, token });
       return url;
     } catch {
       await new Promise((r) => setTimeout(r, 100));
@@ -283,6 +298,119 @@ test('a relay from before waiting is asked plainly from then on, and one not the
     old.close();
   }
   await assert.rejects(waitForMessage({ url: `ws://127.0.0.1:${await freePort()}` }, new Uint8Array(24), 5), RelayUnreachableError);
+});
+
+// Until `done` says so, at most 5 seconds: what the app keeps after a relay proves its key is written after.
+async function until(done: () => Promise<boolean>): Promise<void> {
+  for (let i = 0; i < 50 && !(await done()); i++) await new Promise((r) => setTimeout(r, 100));
+}
+
+test("a relay's key, once known, is proven in a channel on every connection after it, with the token inside it", { skip: !ready }, async () => {
+  forgetRelayKeys();
+  const heard: string[] = [];
+  const stop = onRelayKey((home, key) => heard.push(`${home} ${key ? 'proven' : 'forgotten'}`));
+  try {
+    const url = await startRelay(true, 'check-token');
+    const own: Relay = { url, token: 'check-token' };
+    assert.equal(relayCheck(url), 'unknown');
+    assert.ok(await relayKey(own));
+    const ids = await createQueue(own);
+    assert.equal(relayCheck(url), 'proven');
+    assert.equal(relayCheck(`${url}/sealed`), 'proven');
+    assert.deepEqual(heard, [`${url} proven`]);
+    // Many requests on one connection, each in the channel.
+    const sends = new RelaySends();
+    try {
+      await sends.send(own, ids.senderId, Uint8Array.of(1), 'message');
+      await sends.send(own, ids.senderId, Uint8Array.of(2));
+    } finally {
+      sends.close();
+    }
+    for (const n of [1, 2]) assert.deepEqual(await receiveMessage(own, ids.recipientId), Uint8Array.of(n));
+    // A file's chunk put with the token, and taken on the path anyone may use for files: the same relay's key.
+    const put = await RelaySession.open(own, true);
+    const files = await RelaySession.open(relayPath(url, '/files'), true);
+    try {
+      const id = await putChunk(put, Uint8Array.of(9, 8, 7));
+      assert.deepEqual(await getChunk(files, id), Uint8Array.of(9, 8, 7));
+    } finally {
+      put.close();
+      files.close();
+    }
+    // A wrong token is refused in the channel as it is without one; no token too.
+    await assert.rejects(createQueue({ url, token: 'wrong' }), (error) => error instanceof RelayUnreachableError && !(error instanceof RelayKeyError));
+    await assert.rejects(createQueue({ url }), RelayUnreachableError);
+    assert.equal(relayCheck(url), 'proven');
+  } finally {
+    stop();
+  }
+});
+
+test('a relay from before channels is reached as before, and one that proved its key is never reached without it', { skip: !ready }, async () => {
+  forgetRelayKeys();
+  // The near relay has no key, so it takes a hello as a relay from before channels does: it closes the connection.
+  const key = await sealPublic(randomBytes(32));
+  pinRelay(near, key);
+  const ids = await createQueue({ url: near });
+  assert.equal(relayCheck(near), 'none');
+  await sendMessage({ url: near }, ids.senderId, Uint8Array.of(1));
+  assert.deepEqual(await receiveMessage({ url: near }, ids.recipientId), Uint8Array.of(1));
+  // Proven before: whoever answers without the channel now is not taken for it, and what was to go waits.
+  forgetRelayKeys();
+  pinRelay(near, key, true);
+  await assert.rejects(createQueue({ url: near }), (error) => canTryLater(error) && !(error instanceof RelayKeyError));
+  await assert.rejects(new RelaySends().send({ url: near }, ids.senderId, Uint8Array.of(2)), (error) => canTryLater(error));
+  forgetRelayKeys();
+  assert.equal(await receiveMessage({ url: near }, ids.recipientId), null);
+});
+
+test('a relay that cannot prove the key kept for it is refused, and reached again once that key is forgotten', { skip: !ready }, async () => {
+  forgetRelayKeys();
+  pinRelay(far, await sealPublic(randomBytes(32)));
+  await assert.rejects(createQueue({ url: far }), (error) => error instanceof RelayKeyError && canTryLater(error));
+  assert.equal(relayCheck(far), 'refused');
+  // Also on a connection for many requests, and never without the channel.
+  await assert.rejects(new RelaySends().send({ url: far }, new Uint8Array(24), Uint8Array.of(1)), RelayKeyError);
+  forgetRelayKey(far);
+  assert.equal(relayCheck(far), 'unknown');
+  await createQueue({ url: far });
+  assert.ok(await relayKey({ url: far }));
+  await createQueue({ url: far });
+  assert.equal(relayCheck(far), 'proven');
+});
+
+test('a space keeps the keys its relays proved, only for the relays it uses, and lets one go when forgotten', { skip: !ready }, async () => {
+  forgetRelayKeys();
+  setCurrentSpace(0, randomBytes(32));
+  try {
+    await updateCurrentSpaceData({ url: far });
+    const key = (await relayKey({ url: far }))!;
+    await createQueue({ url: far });
+    await until(async () => Object.keys((await loadCurrentSpaceData()).relayKeys).length > 0);
+    assert.deepEqual((await loadCurrentSpaceData()).relayKeys, { [far]: toHex(key) });
+    // As after a restart: the space's data says it was proven, and the relay is not asked for its key.
+    forgetRelayKeys();
+    await loadCurrentSpaceData();
+    assert.equal(relayCheck(far), 'proven');
+    assert.deepEqual(await relayKey({ url: far }), key);
+    // A relay this space does not use is not named in it, proven or not.
+    const other = await startRelay(true);
+    await relayKey({ url: other });
+    await createQueue({ url: other });
+    assert.equal(relayCheck(other), 'proven');
+    await new Promise((r) => setTimeout(r, 200));
+    assert.deepEqual(Object.keys((await loadCurrentSpaceData()).relayKeys), [far]);
+    forgetRelayKey(far);
+    await until(async () => Object.keys((await loadCurrentSpaceData()).relayKeys).length === 0);
+    assert.deepEqual((await loadCurrentSpaceData()).relayKeys, {});
+    // Nor kept for a relay the space stopped using.
+    await updateCurrentSpaceData({ relayKeys: { [far]: toHex(key) } });
+    await updateCurrentSpaceData({ url: other });
+    assert.deepEqual((await loadCurrentSpaceData()).relayKeys, {});
+  } finally {
+    setCurrentSpace(null);
+    forgetRelayKeys();
+  }
 });
 
 test('only whole relay addresses are opened: the letters of one being typed are refused, never sent to the WebSocket', async () => {

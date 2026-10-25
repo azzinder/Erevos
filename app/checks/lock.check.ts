@@ -257,7 +257,7 @@ t('a first start moves the chat settings kept before spaces into the first space
   store.set('erevos.relay', JSON.stringify(older));
   const key = await firstSpaceKey();
   assert.equal(store.has('erevos.relay'), false);
-  assert.deepEqual(await loadSpaceData(0, key), { ...older, via: '', viaToken: '', look: null, tor: 'messages', bridges: { use: 'none', own: '' }, spare: { url: '', token: '', queue: null }, push: false, previews: false, lend: { relay: '', ticket: '' }, offered: { relay: '', code: '', until: 0, from: '' }, ringQueue: null, ownToken: { relay: '', hash: '' }, nostr: NOSTR_DEFAULT });
+  assert.deepEqual(await loadSpaceData(0, key), { ...older, via: '', viaToken: '', look: null, tor: 'messages', bridges: { use: 'none', own: '' }, spare: { url: '', token: '', queue: null }, push: false, previews: false, lend: { relay: '', ticket: '' }, offered: { relay: '', code: '', until: 0, from: '' }, ringQueue: null, ownToken: { relay: '', hash: '' }, nostr: NOSTR_DEFAULT, relayKeys: {} });
   assert.ok(!store.get('erevos.space.0')!.includes('t0ken'));
   // The next start finds the same key.
   assert.deepEqual(await firstSpaceKey(), key);
@@ -270,6 +270,12 @@ t('a space keeps which token it got as its own from which relay, and nothing of 
   assert.deepEqual((await loadSpaceData(0, key)).ownToken, own);
   await saveSpaceData(0, key, { ...EMPTY_SPACE, ownToken: { relay: own.relay, hash: 'mine' } });
   assert.deepEqual((await loadSpaceData(0, key)).ownToken, { relay: '', hash: '' });
+  // The keys its relays proved (lib/relay.ts, pinRelay): whole ones only, and only for the relays it uses.
+  const proven = 'ab'.repeat(32);
+  await saveSpaceData(0, key, { ...EMPTY_SPACE, url: 'wss://Relay.example.org/', relayKeys: { 'wss://relay.example.org': proven, 'wss://other.example.org': proven } });
+  assert.deepEqual((await loadSpaceData(0, key)).relayKeys, { 'wss://relay.example.org': proven });
+  await saveSpaceData(0, key, { ...EMPTY_SPACE, url: 'wss://relay.example.org', relayKeys: { 'wss://relay.example.org': 'ab' } });
+  assert.deepEqual((await loadSpaceData(0, key)).relayKeys, {});
   await saveSpaceData(0, key, EMPTY_SPACE);
 });
 

@@ -29,5 +29,6 @@ import { releaseNotice } from './release-notice';
 import { chatPin } from './chat-pin';
 import { connect } from './connect';
 import { textInvite } from './text-invite';
+import { relayKey } from './relay-key';
 
-export const IT: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...connect, ...textInvite };
+export const IT: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...connect, ...textInvite, ...relayKey };

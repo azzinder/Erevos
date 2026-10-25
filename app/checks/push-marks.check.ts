@@ -49,7 +49,10 @@ const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const coreReady = existsSync(built);
 if (coreReady) {
   const wasm = createRequire(import.meta.url)(built.pathname) as Record<string, (...args: never[]) => unknown>;
-  setCore(Object.fromEntries(Object.entries(wasm).map(([name, call]) => [name, async (...args: never[]) => call(...args)])) as unknown as Core);
+  // With no channels to a relay's key (checked in checks/relay.check.ts), as a core from before
+  // them: the WebSocket in front of the relay reads what each send says, which a channel hides.
+  const calls = Object.entries(wasm).filter(([name]) => name !== 'relayChannelKeys');
+  setCore(Object.fromEntries(calls.map(([name, call]) => [name, async (...args: never[]) => call(...args)])) as unknown as Core);
 } else {
   console.log('Skipping the checks of what sends say they carry: build the core first with node checks/build-core.mjs');
 }

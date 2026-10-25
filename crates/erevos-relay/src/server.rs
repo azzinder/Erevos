@@ -209,6 +209,18 @@
 //! `serve_ws`). Neither front end speaks TLS: put the WebSocket
 //! behind a TLS proxy before it leaves the local network.
 //!
+//! A channel to the relay's own key (`erevos_core::relay_channel`): on a relay
+//! with a key, a connection that offers the subprotocol `erevos-channel` needs
+//! no token in its handshake. Its first message is a hello, which the relay
+//! answers with the proof that it holds its key; every message after that, each
+//! way, is encrypted in the channel. The first of them starts with the token:
+//! a 2-byte length, then the token, and the request after it, if any (when
+//! none, the reply is `OK`). A wrong token closes the connection, as it is
+//! refused in the handshake. Until its token is in, such a connection counts
+//! with those on the paths that need no token. So a phone knows its relay by
+//! the relay's key, whatever certificate a TLS proxy in between shows, and the
+//! token never goes where only TLS keeps it.
+//!
 //! Each connection has a thread of its own, so the relay takes only so many
 //! at once (`Limits`): past `connections`, both front ends together, a new
 //! one is closed as soon as it comes, and past `tokenless` on the paths that
@@ -220,6 +232,7 @@
 //!
 //! Not audited.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{self, Cursor, ErrorKind, Read, Write};
 use std::net::{Shutdown, SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
@@ -228,6 +241,7 @@ use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant};
 
+use erevos_core::relay_channel::{self, Channel};
 use erevos_core::relay_seal::{RelayKey, OVERHEAD};
 
 use tungstenite::handshake::server::{ErrorResponse, Request, Response};
@@ -676,8 +690,11 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
         deadline: Some(deadline),
     };
     let mut access = Access::All;
-    // Held until the connection ends, on the paths that need no token.
+    // Held until the connection ends, on the paths that need no token, or
+    // until a channel's token is in.
     let mut tokenless: Option<Slot> = None;
+    let mut on_path = false;
+    let mut asked_channel = false;
     let check = |request: &Request, mut response: Response| {
         if offered_protocols(request).any(|p| p == PROTOCOL) {
             response.headers_mut().insert(
@@ -695,6 +712,8 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
         } else {
             None
         };
+        // A channel to the relay's own key: the token comes inside it.
+        let channel = store.key.is_some() && offered_protocols(request).any(|p| p == CHANNEL_PROTOCOL);
         if let Some(open) = open {
             // Anyone may come here, so only so many at once.
             tokenless = Slot::take(&store.tokenless, limits.tokenless);
@@ -702,6 +721,17 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
                 return Err(busy());
             }
             access = open;
+            on_path = true;
+            asked_channel = channel;
+            return Ok(response);
+        }
+        if channel {
+            // Anyone may open one, so only so many at once until its token is in.
+            tokenless = Slot::take(&store.tokenless, limits.tokenless);
+            if tokenless.is_none() {
+                return Err(busy());
+            }
+            asked_channel = true;
             return Ok(response);
         }
         let lent = store
@@ -742,6 +772,9 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
     let timed = socket.get_mut();
     timed.deadline = None;
     timed.stream.set_read_timeout(Some(limits.idle))?;
+    // The channel once the hello is answered, and whether its token is in.
+    let mut channel: Option<Channel> = None;
+    let mut token_in = !asked_channel;
     loop {
         let message = match socket.read() {
             Ok(message) => message,
@@ -759,30 +792,111 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
             }
             Err(e) => return Err(to_io(e)),
         };
-        match message {
-            Message::Binary(bytes) => {
-                // A phone whose line went since it connected is cut off now, not at its next connection.
-                if let (Access::Phone(hash), Some(phones)) = (access, store.tokens.get()) {
-                    if !phones.holds(&hash) {
-                        let _ = socket.close(Some(CloseFrame {
-                            code: CloseCode::Policy,
-                            reason: "token taken back".into(),
-                        }));
-                        let _ = socket.flush();
-                        return Ok(());
-                    }
-                }
-                let request: &[u8] = bytes.as_ref();
-                let Some(reply) = respond(&mut Cursor::new(request), store, access, true)? else {
-                    return Ok(());
-                };
-                socket.send(Message::Binary(reply.into())).map_err(to_io)?;
-            }
+        let bytes = match message {
+            Message::Binary(bytes) => bytes,
             Message::Close(_) => return Ok(()),
             // Ping and pong are handled by tungstenite. Text is not part of the protocol.
-            _ => {}
+            _ => continue,
+        };
+        if asked_channel && channel.is_none() {
+            // The hello: answered with the proof, or the connection ends.
+            let Some(Ok((answer, opened))) = store
+                .key
+                .as_ref()
+                .map(|key| relay_channel::accept(key, &bytes))
+            else {
+                return Ok(());
+            };
+            socket.send(Message::Binary(answer.to_vec().into())).map_err(to_io)?;
+            channel = Some(opened);
+            continue;
+        }
+        let request: Cow<[u8]> = match channel.as_mut() {
+            None => Cow::Borrowed(bytes.as_ref()),
+            Some(channel) => match channel.open(&bytes) {
+                Ok(plain) => Cow::Owned(plain),
+                // Changed on the way, out of turn, or not from the phone that opened it.
+                Err(_) => return Ok(()),
+            },
+        };
+        let mut start = 0;
+        let mut only_token = false;
+        if !token_in {
+            let Some((presented, at)) = channel_token(&request) else {
+                return Ok(());
+            };
+            if !on_path {
+                let Some(given) = token_access(store, token, presented.as_deref()) else {
+                    let _ = socket.close(Some(CloseFrame {
+                        code: CloseCode::Policy,
+                        reason: "unauthorized".into(),
+                    }));
+                    let _ = socket.flush();
+                    return Ok(());
+                };
+                access = given;
+                // In with a token: no longer one of the connections anyone may open.
+                drop(tokenless.take());
+            }
+            token_in = true;
+            start = at;
+            only_token = at == request.len();
+        }
+        // A phone whose line went since it connected is cut off now, not at its next connection.
+        if let (Access::Phone(hash), Some(phones)) = (access, store.tokens.get()) {
+            if !phones.holds(&hash) {
+                let _ = socket.close(Some(CloseFrame {
+                    code: CloseCode::Policy,
+                    reason: "token taken back".into(),
+                }));
+                let _ = socket.flush();
+                return Ok(());
+            }
+        }
+        // A channel's first message may be its token alone, for a connection
+        // that asks nothing yet: told it is in.
+        let reply = if only_token {
+            vec![OK]
+        } else {
+            let Some(reply) = respond(&mut Cursor::new(&request[start..]), store, access, true)? else {
+                return Ok(());
+            };
+            reply
+        };
+        let reply = match channel.as_mut() {
+            Some(channel) => channel.seal(&reply).map_err(to_io)?,
+            None => reply,
+        };
+        socket.send(Message::Binary(reply.into())).map_err(to_io)?;
+    }
+}
+
+/// The token at the start of a channel's first message: a 2-byte length, then
+/// the token (none when it is 0), and where the request after it starts.
+fn channel_token(plain: &[u8]) -> Option<(Option<String>, usize)> {
+    let len = usize::from(u16::from_be_bytes(plain.get(..2)?.try_into().ok()?));
+    let token = std::str::from_utf8(plain.get(2..2 + len)?).ok()?;
+    Some(((len > 0).then(|| token.to_string()), 2 + len))
+}
+
+/// What the token a channel gave lets it do, as the handshake's checks do for
+/// one given there: a lent one, a phone's own, the relay's, or none where none
+/// is needed. None when it is refused.
+fn token_access(store: &Shared, token: Option<&str>, presented: Option<&str>) -> Option<Access> {
+    if let Some(presented) = presented {
+        match store.lend.get().and_then(|lend| lend.check(presented, system_now())) {
+            Some(Pass::Ticket { nonce, expires }) => return Some(Access::Ticket(nonce, expires)),
+            Some(Pass::Lent(nonce)) => return Some(Access::Lent(nonce)),
+            None => {}
+        }
+        if let Some(phone) = store.tokens.get().and_then(|phones| phones.find(presented)) {
+            return Some(Access::Phone(phone.hash));
+        }
+        if token.is_some_and(|expected| constant_time_eq(presented.as_bytes(), expected.as_bytes())) {
+            return Some(Access::Shared);
         }
     }
+    (token.is_none() && store.tokens.get().is_none()).then_some(Access::All)
 }
 
 /// Reads one request from `r` and returns its reply. `None` means the peer
@@ -1734,6 +1848,9 @@ fn to_io(e: impl std::fmt::Display) -> io::Error {
 /// the token in hex.
 const PROTOCOL: &str = "erevos";
 const TOKEN_PROTOCOL: &str = "erevos-token.";
+/// The subprotocol a phone offers, beside `erevos`, for a channel to the
+/// relay's own key (erevos_core::relay_channel).
+pub const CHANNEL_PROTOCOL: &str = "erevos-channel";
 
 fn offered_protocols(request: &Request) -> impl Iterator<Item = &str> {
     request
@@ -2696,6 +2813,95 @@ mod tests {
         let (recipient, sender) = ws_create(&mut ws);
         assert_eq!(ws_send(&mut ws, &sender, b"hi"), OK);
         assert_eq!(ws_receive(&mut ws, &recipient).as_deref(), Some(&b"hi"[..]));
+    }
+
+    /// Opens a channel to the relay's key `relay` (erevos_core::relay_channel)
+    /// and gives `token` in its first message, with `first` after it: the
+    /// connection, the channel and the reply to that message. Err when the
+    /// relay could not prove the key, or closed.
+    fn ws_channel(addr: SocketAddr, path: &str, relay: &[u8; 32], token: &str, first: &[u8]) -> Result<(Ws, relay_channel::Channel, Vec<u8>), String> {
+        let mut request = format!("ws://{addr}{path}").into_client_request().unwrap();
+        request
+            .headers_mut()
+            .insert("sec-websocket-protocol", "erevos, erevos-channel".parse().unwrap());
+        let (mut ws, response) = tungstenite::connect(request).map_err(|e| e.to_string())?;
+        assert_eq!(response.headers()["sec-websocket-protocol"], "erevos");
+        let (opening, hello) = relay_channel::Opening::new(relay);
+        let answer = ws_try_call(&mut ws, hello.to_vec())?;
+        let mut channel = opening.finish(&answer).map_err(|e| e.to_string())?;
+        let mut message = (token.len() as u16).to_be_bytes().to_vec();
+        message.extend_from_slice(token.as_bytes());
+        message.extend_from_slice(first);
+        let sealed = ws_try_call(&mut ws, channel.seal(&message).unwrap())?;
+        let reply = channel.open(&sealed).map_err(|e| e.to_string())?;
+        Ok((ws, channel, reply))
+    }
+
+    fn ws_try_call(ws: &mut Ws, request: Vec<u8>) -> Result<Vec<u8>, String> {
+        ws.send(Message::Binary(request.into())).map_err(|e| e.to_string())?;
+        match ws.read().map_err(|e| e.to_string())? {
+            Message::Binary(bytes) => Ok(bytes.to_vec()),
+            other => Err(format!("{other:?}")),
+        }
+    }
+
+    fn channel_call(ws: &mut Ws, channel: &mut relay_channel::Channel, request: &[u8]) -> Vec<u8> {
+        let sealed = ws_call(ws, channel.seal(request).unwrap());
+        channel.open(&sealed).unwrap()
+    }
+
+    #[test]
+    fn a_phone_gives_its_token_inside_a_channel_to_the_relays_key() {
+        let key = RelayKey::generate();
+        let public = key.public();
+        let addr = start_ws_with(Some("s3cret"), Some(key));
+        // The token and the first request in one message, then more requests.
+        let (mut ws, mut channel, created) = ws_channel(addr, "", &public, "s3cret", &[CREATE]).unwrap();
+        assert_eq!(created[0], OK);
+        let (recipient, sender) = (&created[1..25], &created[25..49]);
+        let mut send = vec![SEND];
+        send.extend_from_slice(sender);
+        send.extend_from_slice(&2u32.to_be_bytes());
+        send.extend_from_slice(b"hi");
+        assert_eq!(channel_call(&mut ws, &mut channel, &send), [OK]);
+        let mut receive = vec![RECEIVE];
+        receive.extend_from_slice(recipient);
+        assert_eq!(&channel_call(&mut ws, &mut channel, &receive)[6..], b"hi");
+        // The token alone, for a connection that asks nothing yet.
+        let (_, _, reply) = ws_channel(addr, "", &public, "s3cret", &[]).unwrap();
+        assert_eq!(reply, [OK]);
+        // A wrong token, or none, is refused inside as it is outside.
+        assert!(ws_channel(addr, "", &public, "nope", &[CREATE]).is_err());
+        assert!(ws_channel(addr, "", &public, "", &[CREATE]).is_err());
+        // The paths that need no token take a channel too.
+        let (_, _, reply) = ws_channel(addr, SEALED_PATH, &public, "", &[KEY]).unwrap();
+        assert_eq!(reply, [&[OK][..], &public].concat());
+    }
+
+    #[test]
+    fn a_relay_without_the_key_cannot_open_the_channel() {
+        let addr = start_ws_with(Some("s3cret"), Some(RelayKey::generate()));
+        let Err(error) = ws_channel(addr, "", &RelayKey::generate().public(), "s3cret", &[CREATE]) else {
+            panic!("opened");
+        };
+        assert!(error.contains("did not prove"), "{error}");
+        // A relay with no key at all: the hello is no request, and the token is not in the handshake.
+        let keyless = start_ws_with(None, None);
+        assert!(ws_channel(keyless, "", &RelayKey::generate().public(), "", &[CREATE]).is_err());
+    }
+
+    #[test]
+    fn a_changed_message_in_a_channel_ends_the_connection() {
+        let key = RelayKey::generate();
+        let public = key.public();
+        let addr = start_ws_with(None, Some(key));
+        let (mut ws, mut channel, _) = ws_channel(addr, "", &public, "", &[KEY]).unwrap();
+        let mut sealed = channel.seal(&[CREATE]).unwrap();
+        sealed[0] ^= 1;
+        assert!(ws_try_call(&mut ws, sealed).is_err());
+        // A plain request after the hello is no message of the channel either.
+        let (mut ws, _, _) = ws_channel(addr, "", &public, "", &[KEY]).unwrap();
+        assert!(ws_try_call(&mut ws, vec![CREATE]).is_err());
     }
 
     /// A plain HTTP request to the WebSocket port, as a browser in Greek

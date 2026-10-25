@@ -11,7 +11,7 @@ import { afterEach, test } from 'node:test';
 
 import { BUILT_IN, bridgeLines, bridgeProblem, checkedBridges, NO_BRIDGES, readBridgeLines } from '../lib/bridges';
 import { coreReason, setCore, type Core } from '../lib/core';
-import { createQueue, RelayError, RelaySession, setThroughTor, setTorReady, throughTor, TOR_REST_MS, torFor } from '../lib/relay';
+import { createQueue, forgetRelayKeys, pinRelay, RelayError, relayCheck, RelaySession, setThroughTor, setTorReady, throughTor, TOR_REST_MS, torFor } from '../lib/relay';
 import { applyTor, leaveTor, NoBridgesError, torStatus } from '../lib/tor';
 import { EMPTY_SPACE, torWayOf } from '../lock/space-data';
 
@@ -220,6 +220,39 @@ test("the way 'messages' goes straight while Tor is not ready, and for a while a
   await applyTor('messages', NO_BRIDGES);
   await settle();
   assert.equal(torFor(false), false);
+});
+
+test("through Tor, a relay whose key is known but that has no channel, as one from before them, is asked again through Tor, never straight", async () => {
+  const seen: Seen[] = [];
+  setCore({
+    ...fakeCore(seen, true),
+    sealPublic: async () => new Uint8Array(32).fill(9),
+    relayChannelKeys: async () => new Uint8Array(64),
+    torOpenChannel: async (url: string) => {
+      seen.push({ what: 'channel', url });
+      return Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 8);
+    },
+    // A relay from before channels ends the connection at the hello.
+    torCall: async (_id: Uint8Array, bytes: Uint8Array) => {
+      seen.push({ what: 'call', bytes });
+      throw new Error('the relay closed the connection');
+    },
+  } as Core);
+  setThroughTor('messages');
+  setTorReady(true);
+  const url = 'wss://relay.example.org';
+  pinRelay(url, new Uint8Array(32).fill(3));
+  try {
+    await createQueue({ url, token: 't' });
+    assert.deepEqual(seen.map((s) => s.what), ['channel', 'call', 'close', 'request']);
+    assert.equal(seen[1].bytes?.[0], 0xec);
+    assert.equal(seen[3].token, 't');
+    assert.equal(straight, 0);
+    assert.equal(torFor(false), true, 'Tor does not rest for a relay with no channel');
+    assert.equal(relayCheck(url), 'none');
+  } finally {
+    forgetRelayKeys();
+  }
 });
 
 test("bridges none usable: the way 'messages' stops Tor and sends straight", async () => {

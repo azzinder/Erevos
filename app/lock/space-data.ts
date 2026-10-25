@@ -1,11 +1,13 @@
 import { checkedBridges, NO_BRIDGES, type Bridges } from '../lib/bridges';
 import { isNostrRelay, MAX_NOSTR_RELAYS } from './e2e-data';
-import { decryptText, encryptText, randomBytes } from '../lib/crypto';
-import type { TorWay } from '../lib/relay';
+import { decryptText, encryptText, fromHex, randomBytes, toHex } from '../lib/crypto';
+import { onRelayKey, pinRelay, relayHome, type TorWay } from '../lib/relay';
 import { NO_OWN_TOKEN, type OwnToken } from '../lib/relay-signin';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';
 
 import { checkedLook, type Look } from '../theme/look';
+
+import { openHiddenPlace } from '../lib/hidden-contacts';
 
 import { currentSpace, loadOpenKey, newSpaceKey, saveOpenKey } from './keys';
 import { POCKETS } from './sealed-file';
@@ -70,6 +72,10 @@ export type SpaceData = {
   // own (lib/relay-offer.ts), kept until the chat takes it by itself, and until when it is good.
   // Empty when there is none.
   offered: Offered;
+  // The keys the space's relays proved in a channel (lib/relay.ts, pinRelay), hex, by their home
+  // address (relayHome): such a relay is never reached again without proving it. Only for the
+  // relays the space uses (url, via, spare), so a hidden place's relay is never named here.
+  relayKeys: Record<string, string>;
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null };
@@ -102,6 +108,7 @@ export const EMPTY_SPACE: SpaceData = {
   previews: false,
   lend: NO_LENDING,
   offered: NO_OFFER,
+  relayKeys: {},
 };
 
 const BLOCK = 1024;
@@ -169,6 +176,7 @@ function checked(value: unknown): SpaceData {
     previews: v.previews === true,
     lend: checkedLending(v.lend),
     offered: checkedOffered(v.offered),
+    relayKeys: checkedRelayKeys(v.relayKeys),
   };
 }
 
@@ -191,15 +199,67 @@ function checkedLending(value: unknown): Lending {
     : NO_LENDING;
 }
 
+const MAX_RELAY_KEYS = 8;
+
+function checkedRelayKeys(value: unknown): Record<string, string> {
+  const keys: Record<string, string> = {};
+  if (!value || typeof value !== 'object') return keys;
+  for (const [home, key] of Object.entries(value).slice(0, MAX_RELAY_KEYS)) {
+    if (home.length > 0 && home.length <= 512 && isHex(key, 64)) keys[home] = key;
+  }
+  return keys;
+}
+
+// The relays a space uses, by home address.
+function homesOf(data: SpaceData): Set<string> {
+  return new Set([data.url, data.via, data.spare.url].filter(Boolean).map(relayHome));
+}
+
+// The keys an entry keeps, pinned for every connection from now on.
+function pinned(data: SpaceData): SpaceData {
+  for (const [home, hex] of Object.entries(data.relayKeys)) pinRelay(home, fromHex(hex), true);
+  return data;
+}
+
+// The entries open now, with their keys: the open space's, and its hidden chats' while they are
+// open. A key proven is kept only there, so no other space's entry changes while it is closed.
+function openEntries(): { name: string; key: Uint8Array }[] {
+  const open: { name: string; key: Uint8Array }[] = [];
+  try {
+    const { space, key } = currentSpace();
+    open.push({ name: entry(space), key });
+  } catch {
+    // No space is open.
+  }
+  const place = openHiddenPlace();
+  if (place) open.push({ name: hiddenEntry(place.space, place.pocket), key: place.key });
+  return open;
+}
+
+onRelayKey((home, key) => {
+  for (const { name, key: entryKey } of openEntries()) {
+    void write(name, entryKey, (data) => {
+      const hex = key ? toHex(key) : undefined;
+      if (data.relayKeys[home] === hex || (key && !homesOf(data).has(home))) return null;
+      const relayKeys = { ...data.relayKeys };
+      if (hex) relayKeys[home] = hex;
+      else delete relayKeys[home];
+      return { ...data, relayKeys };
+    }).catch(() => undefined);
+  }
+});
+
 /** An entry's data, or an empty one when the entry is missing or sealed with another key. */
 async function load(name: string, key: Uint8Array): Promise<SpaceData> {
   const raw = await secureGet(name);
   if (!raw) return { ...EMPTY_SPACE };
+  let data: SpaceData;
   try {
-    return checked(JSON.parse(decryptText(key, raw)));
+    data = checked(JSON.parse(decryptText(key, raw)));
   } catch {
     return { ...EMPTY_SPACE };
   }
+  return pinned(data);
 }
 
 /** Gives an entry a value sealed with a random key, unless it has one. */
@@ -211,11 +271,17 @@ async function ensure(name: string): Promise<void> {
 // left, so the chat's saves and the Appearance screen's never undo each other.
 const writes = new Map<string, Promise<void>>();
 
-function write(name: string, key: Uint8Array, change: (data: SpaceData) => SpaceData): Promise<void> {
+// A change that returns null leaves the entry as it is.
+function write(name: string, key: Uint8Array, change: (data: SpaceData) => SpaceData | null): Promise<void> {
   const run = (writes.get(name) ?? Promise.resolve())
     .catch(() => undefined)
     .then(async () => {
-      await secureSet(name, seal(key, change(await load(name, key))));
+      const data = change(await load(name, key));
+      if (!data) return;
+      // A relay the space no longer uses keeps no key in it.
+      const homes = homesOf(data);
+      const relayKeys = Object.fromEntries(Object.entries(data.relayKeys).filter(([home]) => homes.has(home)));
+      await secureSet(name, seal(key, pinned({ ...data, relayKeys })));
     });
   writes.set(name, run);
   return run;

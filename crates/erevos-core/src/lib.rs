@@ -9,6 +9,7 @@ pub mod mesh;
 pub mod padding;
 pub mod pqxdh;
 pub mod ratchet;
+pub mod relay_channel;
 pub mod relay_seal;
 pub mod wire;
 
@@ -32,6 +33,8 @@ pub enum Error {
     Full,
     #[error("one-time prekey is unknown or already used")]
     UnknownPrekey,
+    #[error("the relay did not prove its key")]
+    NotTheRelay,
 }
 
 /// Checks an Ed25519 signature (strictly, so no other bytes pass for the same

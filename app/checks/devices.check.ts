@@ -107,7 +107,10 @@ let wasmCore: Core | null = null;
 let unsignedCore: Core | null = null;
 if (coreReady) {
   const wasm = createRequire(import.meta.url)(built.pathname) as Record<string, (...args: never[]) => unknown>;
-  wasmCore = Object.fromEntries(Object.entries(wasm).map(([name, call]) => [name, async (...args: never[]) => call(...args)])) as unknown as Core;
+  // With no channels to a relay's key (checked in checks/relay.check.ts), as a core from before
+  // them: the WebSocket below tells requests apart by their kind, which a channel hides.
+  const calls = Object.entries(wasm).filter(([name]) => name !== 'relayChannelKeys');
+  wasmCore = Object.fromEntries(calls.map(([name, call]) => [name, async (...args: never[]) => call(...args)])) as unknown as Core;
   unsignedCore = { ...wasmCore, accountSign: undefined, bundleVerify: undefined };
   setCore(wasmCore);
 } else {

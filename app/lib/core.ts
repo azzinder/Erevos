@@ -27,6 +27,10 @@ export interface Core {
   relaySeal?(relayKey: Uint8Array, senderId: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   sealPublic?(secret: Uint8Array): Promise<Uint8Array>;
   sealOpen?(secret: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
+  /** The keys of a channel to a relay (crates/erevos-core relay_channel), phone to relay then relay
+   *  to phone, 32 bytes each, once the relay's answer proves it holds `relayKey`'s secret; throws
+   *  when it does not. Missing in a build made before the channel. */
+  relayChannelKeys?(relayKey: Uint8Array, secret: Uint8Array, answer: Uint8Array): Promise<Uint8Array>;
   /** Argon2id for keys from passwords (lib/crypto.ts hardKey); `cost` is the memory in KiB and the
    *  passes, 4 bytes each, big-endian. Missing in a build made before it. */
   hardKey?(input: Uint8Array, salt: Uint8Array, cost: Uint8Array): Promise<Uint8Array>;
@@ -79,6 +83,9 @@ export interface Core {
   torOpen?(url: string, token: string): Promise<Uint8Array>;
   torCall?(id: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   torClose?(id: Uint8Array): Promise<Uint8Array>;
+  /** A relay connection through Tor that asks for a channel (lib/relay.ts), with no token: missing
+   *  in a build made before the channel. */
+  torOpenChannel?(url: string): Promise<Uint8Array>;
   /** A Nostr relay's connection through Tor, text frames both ways: a frame waits until asked for
    *  (`torTextNext`, the wait in milliseconds, 8 bytes big-endian), '' when none came meanwhile.
    *  Missing in a build made before Nostr (lib/nostr.ts). */
@@ -231,6 +238,26 @@ export function sealPublic(secret: Uint8Array): Promise<Uint8Array> {
   const it = need();
   if (!it.sealPublic) throw new NoCoreError();
   return it.sealPublic(secret);
+}
+
+/** Whether this build can open a channel to a relay's own key (a core from before it cannot). */
+export function canRelayChannel(): boolean {
+  return typeof core?.relayChannelKeys === 'function' && typeof core?.sealPublic === 'function';
+}
+
+/** The keys of a channel to the relay whose public key is `relayKey`, phone to relay then relay to
+ *  phone, once its answer proves it holds that key's secret; throws when it does not. */
+export function relayChannelKeys(relayKey: Uint8Array, secret: Uint8Array, answer: Uint8Array): Promise<Uint8Array> {
+  const it = need();
+  if (!it.relayChannelKeys) throw new NoCoreError();
+  return it.relayChannelKeys(relayKey, secret, answer);
+}
+
+/** A relay connection through Tor that asks for a channel, or an error saying this build has none. */
+export function torOpenChannel(url: string): Promise<Uint8Array> {
+  const it = need();
+  if (!it.torOpenChannel) throw new Error(t('This build of Erevos has no Tor.'));
+  return it.torOpenChannel(url);
 }
 
 /** Opens what `relaySeal` sealed to the public key of `secret`: the sender id, then the message. */

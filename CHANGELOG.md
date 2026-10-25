@@ -10,6 +10,13 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **The relay proves its own key**: once Erevos knows your relay's key, every connection to it starts with a check that
+  only the relay holding that key can pass, and the token and everything after it go encrypted to that key, inside
+  TLS. So someone in between with a certificate for the relay's name cannot pass for it, and a renewed certificate
+  changes nothing. **How you connect now** says whether your relay proved its key; once it has, the space never reaches
+  it without the check, and **It has a new key** is there for when its operator gave it one. A relay older than this
+  works as before. The same in the web app, on a computer, on Sailfish OS and through Tor. The relay needs updating
+  for it.
 - **Transparency, in the guide**: a new part, **Transparency**, says what the server behind Erevos keeps and for how long
   (messages that wait, files, queues, access lines, push addresses), what it does not keep (no list of connections),
   who else sees something, and that no authority has asked for anything. It goes out inside every release, so each

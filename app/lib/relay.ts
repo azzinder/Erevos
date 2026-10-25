@@ -60,8 +60,21 @@
 // - 'all': every request, files too, with no falling back to a direct connection: when Tor cannot
 //   reach the relay, the request fails.
 // - 'off': none.
+//
+// Channels to a relay's own key (crates/erevos-core/src/relay_channel.rs): a connection to a relay
+// whose key this phone knows opens with a hello, which the relay must answer with the proof that it
+// holds that key, and every message after it, each way, goes encrypted to it, the token in the
+// first. So a relay is known by its own key, not by the TLS certificate shown for its name, which
+// anyone who gets one for that name could show; and its certificate renewed changes nothing. The key
+// comes from a contact's link (`Relay.key`), from what the relay said (relayKey), or from where a
+// space keeps the keys its relays proved (lock/space-data.ts, pinRelay). A relay that has proved its
+// key is never reached without a channel again: when it cannot prove it, the connection fails
+// (RelayKeyError), and what was to go waits. One that has not proved it, a relay from before
+// channels, is reached as before, and tried again after an hour.
 
-import { coreReason, relaySeal, tor } from './core';
+import { chacha20poly1305 } from '@noble/ciphers/chacha.js';
+
+import { canRelayChannel, coreReason, relayChannelKeys, relaySeal, sealPublic, tor, torOpenChannel } from './core';
 import { randomBytes, sha256Bytes } from './crypto';
 import { t } from './i18n';
 import { isSignInPage } from './relay-signin';
@@ -298,12 +311,13 @@ export function torFor(files: boolean, now = Date.now()): boolean {
 }
 
 // The core's Tor says what failed in its own words: a RelayError, as a direct connection's failure is.
-// The way 'messages' then goes straight for a while rather than wait for Tor.
-async function viaTor<T>(call: () => Promise<T>): Promise<T> {
+// The way 'messages' then goes straight for a while rather than wait for Tor, unless `rest` is false:
+// for a channel being opened, which a relay from before them ends, and which is tried again without one.
+async function viaTor<T>(call: () => Promise<T>, rest = true): Promise<T> {
   try {
     return await call();
   } catch (error) {
-    if (torWay === 'messages') torRestUntil = Date.now() + TOR_REST_MS;
+    if (rest && torWay === 'messages') torRestUntil = Date.now() + TOR_REST_MS;
     throw new RelayUnreachableError(t('Through Tor: {reason}', { reason: coreReason(error) }));
   }
 }
@@ -335,12 +349,389 @@ export function answerWithin(bytes: Uint8Array): number {
 /** Thrown when the relay did not answer in time: the connection died on the way, or the relay is stuck. */
 const lateError = () => new RelayUnreachableError(t('the relay did not answer in time'));
 
-/** Opens a connection, sends one request, and returns the reply. Closes the connection, also when `signal` ends it. */
-function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise<Uint8Array> {
-  if (signal?.aborted) return Promise.reject(new Ended());
-  if (!isRelayAddress(relay.url)) return Promise.reject(new BadRelayAddressError(relay.url));
+/** The relay at `url` could not prove the key this phone keeps for it: someone may be in between, or the relay has a new key. */
+export class RelayKeyError extends RelayUnreachableError {
+  constructor(url: string) {
+    super(t('the relay at {url} did not prove its key: someone may be in between, or the relay has a new key', { url }));
+  }
+}
+
+// The first byte of a channel's hello, and the subprotocols its connection offers
+// (crates/erevos-relay/src/server.rs, CHANNEL_PROTOCOL).
+const HELLO = 0xec;
+const CHANNEL_PROTOCOLS = ['erevos', 'erevos-channel'];
+// How long a relay that showed no channel is reached without trying one again.
+const NO_CHANNEL_MS = 60 * 60_000;
+
+/** A relay's key as this phone keeps it: `proven` once the relay proved it in a channel. */
+type Pin = { key: Uint8Array; proven: boolean };
+
+// The keys of relays by their home address (relayHome); until when a relay that showed no channel
+// is reached without trying one; and the relays that did not prove the key kept for them.
+const pins = new Map<string, Pin>();
+const noChannel = new Map<string, number>();
+const unproven = new Set<string>();
+
+type KeyListener = (home: string, key: Uint8Array | null) => void;
+const keyListeners = new Set<KeyListener>();
+const checkListeners = new Set<() => void>();
+
+// What relayCheck says of a relay changed.
+function checkChanged(): void {
+  for (const listener of checkListeners) listener();
+}
+
+const sameBytes = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((byte, i) => byte === b[i]);
+
+/** The address a relay's key is kept by: its own, without one of its paths (relayPath), in any case. */
+export function relayHome(url: string): string {
+  return url.trim().replace(/\/+$/, '').replace(/\/(?:sealed|files|join)$/i, '').toLowerCase();
+}
+
+/**
+ * Takes `key` as the relay at `url`'s own, for channels to it; `proven` when it proved it before
+ * (lock/space-data.ts keeps those), so it is never reached without one. A key proven stays: another
+ * one, unproven, does not take its place, and only forgetRelayKey takes it away.
+ */
+export function pinRelay(url: string, key: Uint8Array, proven = false): void {
+  if (key.length !== 32) return;
+  const home = relayHome(url);
+  const pin = pins.get(home);
+  if (pin && sameBytes(pin.key, key)) {
+    pin.proven ||= proven;
+    return;
+  }
+  if (pin?.proven && !proven) return;
+  pins.set(home, { key: key.slice(), proven });
+}
+
+/** Forgets the key kept for the relay at `url`, also where a space keeps it: for when its operator gave it a new one. */
+export function forgetRelayKey(url: string): void {
+  const home = relayHome(url);
+  pins.delete(home);
+  for (const at of keys.keys()) if (relayHome(at) === home) keys.delete(at);
+  unproven.delete(home);
+  noChannel.delete(home);
+  for (const listener of keyListeners) listener(home, null);
+  checkChanged();
+}
+
+/** Hears each relay's key as it is proven for the first time (by its home address), and null when one is forgotten. */
+export function onRelayKey(listener: KeyListener): () => void {
+  keyListeners.add(listener);
+  return () => keyListeners.delete(listener);
+}
+
+/** What this phone knows of a relay's key: 'proven' in a channel, 'refused' when the relay could not prove it, 'none' for a relay with no channel, 'unknown' before one was tried. */
+export type RelayCheck = 'proven' | 'refused' | 'none' | 'unknown';
+
+/** Hears each change of what relayCheck says of a relay. */
+export function onRelayCheck(listener: () => void): () => void {
+  checkListeners.add(listener);
+  return () => checkListeners.delete(listener);
+}
+
+export function relayCheck(url: string): RelayCheck {
+  const home = relayHome(url);
+  if (unproven.has(home)) return 'refused';
+  if (pins.get(home)?.proven) return 'proven';
+  return (noChannel.get(home) ?? 0) > Date.now() ? 'none' : 'unknown';
+}
+
+/** For checks: forgets every relay's key and what each showed. */
+export function forgetRelayKeys(): void {
+  pins.clear();
+  noChannel.clear();
+  unproven.clear();
+  keys.clear();
+}
+
+// The key a connection to `relay` goes in a channel to now, or null: when the core cannot make one,
+// no key is known, or the relay showed no channel within the hour.
+function channelPin(relay: Relay): Pin | null {
+  if (!canRelayChannel()) return null;
+  if (relay.key) pinRelay(relay.url, relay.key);
+  const home = relayHome(relay.url);
+  const pin = pins.get(home);
+  if (!pin) return null;
+  if (!pin.proven && (noChannel.get(home) ?? 0) > Date.now()) return null;
+  return pin;
+}
+
+// After a channel could not open: whether to go without one. Never once the relay proved its key, or
+// when it did not prove it now; otherwise it may be a relay from before channels.
+function mayGoWithout(error: unknown, pin: Pin): boolean {
+  return error instanceof RelayUnreachableError && !(error instanceof RelayKeyError) && !pin.proven;
+}
+
+function noChannelAt(url: string): void {
+  noChannel.set(relayHome(url), Date.now() + NO_CHANNEL_MS);
+  checkChanged();
+}
+
+function refusedAt(url: string): void {
+  unproven.add(relayHome(url));
+  checkChanged();
+}
+
+function provenAt(url: string, pin: Pin): void {
+  const home = relayHome(url);
+  const was = unproven.delete(home) || noChannel.delete(home);
+  if (pin.proven) {
+    if (was) checkChanged();
+    return;
+  }
+  pin.proven = true;
+  for (const listener of keyListeners) listener(home, pin.key);
+  checkChanged();
+}
+
+// A message's nonce in a channel: the count of the messages before it that way, little-endian.
+function countNonce(count: number): Uint8Array {
+  const nonce = new Uint8Array(12);
+  for (let i = 0, left = count; i < 8 && left > 0; i++, left = Math.floor(left / 256)) nonce[i] = left % 256;
+  return nonce;
+}
+
+/** Both ways of a channel to a relay's key, each counting its messages. */
+class Channel {
+  private readonly toRelay: Uint8Array;
+  private readonly toPhone: Uint8Array;
+  private sent = 0;
+  private received = 0;
+
+  constructor(toRelay: Uint8Array, toPhone: Uint8Array) {
+    this.toRelay = toRelay;
+    this.toPhone = toPhone;
+  }
+
+  seal(plain: Uint8Array): Uint8Array {
+    return chacha20poly1305(this.toRelay, countNonce(this.sent++)).encrypt(plain);
+  }
+
+  open(sealed: Uint8Array): Uint8Array {
+    try {
+      return chacha20poly1305(this.toPhone, countNonce(this.received++)).decrypt(sealed);
+    } catch {
+      throw new RelayUnreachableError(t('the relay sent what its channel does not hold'));
+    }
+  }
+}
+
+/** A connection's messages, each answered before the next goes: straight, or through Tor. `rest`
+ *  false while a channel opens: a failure through Tor then sends no request straight (viaTor). */
+interface Line {
+  call(bytes: Uint8Array, within: number, rest?: boolean): Promise<Uint8Array>;
+  close(): void;
+}
+
+/** A WebSocket's messages. */
+class SocketLine implements Line {
+  private readonly socket: WebSocket;
+  private waiting: ((reply: Uint8Array | RelayError) => void) | null = null;
+  private ended: RelayError | null = null;
+
+  private constructor(socket: WebSocket) {
+    this.socket = socket;
+    const answer = (reply: Uint8Array | RelayError) => {
+      const waiting = this.waiting;
+      this.waiting = null;
+      waiting?.(reply);
+    };
+    socket.onmessage = (event) => answer(new Uint8Array(event.data as ArrayBuffer));
+    socket.onerror = () => {
+      this.ended ??= new RelayUnreachableError(t('lost the connection to the relay'));
+      answer(this.ended);
+    };
+    socket.onclose = () => {
+      this.ended ??= new RelayUnreachableError(t('the relay closed the connection'));
+      answer(this.ended);
+    };
+  }
+
+  /** Opens it, for a channel (`channel`, no token in the handshake) or not; fails after `within` milliseconds. */
+  static open(relay: Relay, channel: boolean, within: number): Promise<SocketLine> {
+    return new Promise((resolve, reject) => {
+      const socket = channel ? new WebSocket(relay.url, CHANNEL_PROTOCOLS) : connect(relay);
+      socket.binaryType = 'arraybuffer';
+      const late = setTimeout(() => {
+        socket.close();
+        reject(lateError());
+      }, within);
+      socket.onopen = () => {
+        clearTimeout(late);
+        resolve(new SocketLine(socket));
+      };
+      socket.onerror = () => {
+        clearTimeout(late);
+        reject(new RelayUnreachableError(t('cannot reach the relay at {url}, or the token is wrong', { url: relay.url })));
+      };
+      socket.onclose = () => {
+        clearTimeout(late);
+        reject(new RelayUnreachableError(t('the relay closed the connection')));
+      };
+    });
+  }
+
+  call(bytes: Uint8Array, within: number): Promise<Uint8Array> {
+    if (this.ended) return Promise.reject(this.ended);
+    return new Promise((resolve, reject) => {
+      // No reply in time: the connection is given up, as one that closed.
+      const timer = setTimeout(() => {
+        this.waiting = null;
+        this.ended ??= lateError();
+        this.socket.close();
+        reject(this.ended);
+      }, within);
+      this.waiting = (answer) => {
+        clearTimeout(timer);
+        if (answer instanceof RelayError) reject(answer);
+        else resolve(answer);
+      };
+      this.socket.send(bytes);
+    });
+  }
+
+  close(): void {
+    this.ended ??= new RelayError('closed');
+    this.socket.close();
+  }
+}
+
+/** A connection's messages through the core's Tor, which is slower: each may take twice as long. */
+class TorLine implements Line {
+  private readonly id: Uint8Array;
+  private ended: RelayError | null = null;
+
+  private constructor(id: Uint8Array) {
+    this.id = id;
+  }
+
+  static async open(relay: Relay, channel: boolean): Promise<TorLine> {
+    return new TorLine(await viaTor(() => (channel ? torOpenChannel(relay.url) : tor().torOpen(relay.url, relay.token ?? '')), !channel));
+  }
+
+  call(bytes: Uint8Array, within: number, rest = true): Promise<Uint8Array> {
+    if (this.ended) return Promise.reject(this.ended);
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        if (rest && torWay === 'messages') torRestUntil = Date.now() + TOR_REST_MS;
+        this.ended ??= lateError();
+        this.close();
+        reject(this.ended);
+      }, 2 * within);
+      viaTor(() => tor().torCall(this.id, bytes), rest)
+        .catch((error: RelayError) => {
+          this.ended ??= error;
+          throw error;
+        })
+        .then(resolve, reject)
+        .finally(() => clearTimeout(timer));
+    });
+  }
+
+  close(): void {
+    this.ended ??= new RelayError('closed');
+    tor()
+      .torClose(this.id)
+      .catch(() => undefined);
+  }
+}
+
+/** A plain line to `relay`: through Tor when `throughTor`, else straight. */
+function plainLine(relay: Relay, throughTor: boolean): Promise<Line> {
+  return throughTor ? TorLine.open(relay, false) : SocketLine.open(relay, false, ANSWER_MS * answerScale);
+}
+
+// The token at the start of a channel's first message: a 2-byte length, then the token; the request after it.
+function tokenFrame(token: string, request: Uint8Array): Uint8Array {
+  const bytes = utf8Encode(token);
+  const out = new Uint8Array(2 + bytes.length + request.length);
+  out[0] = bytes.length >> 8;
+  out[1] = bytes.length & 0xff;
+  out.set(bytes, 2);
+  out.set(request, 2 + bytes.length);
+  return out;
+}
+
+/**
+ * Opens a channel to `relay` with the key `pin`: through Tor when `throughTor`, the hello, then the
+ * token with `first`, if any, in the first message. Returns the line, the channel and the reply to
+ * that message (OK without `first`). `signal` ends it.
+ */
+async function openChannel(relay: Relay, pin: Pin, throughTor: boolean, first: Uint8Array | null, signal?: AbortSignal): Promise<{ line: Line; channel: Channel; reply: Uint8Array }> {
+  const within = ANSWER_MS * answerScale;
+  const line = throughTor ? await TorLine.open(relay, true) : await SocketLine.open(relay, true, within);
+  const end = () => line.close();
+  signal?.addEventListener('abort', end);
+  try {
+    if (signal?.aborted) throw new Ended();
+    const secret = randomBytes(32);
+    const hello = new Uint8Array(33);
+    hello[0] = HELLO;
+    hello.set(await sealPublic(secret), 1);
+    const answer = await line.call(hello, within, false);
+    // Something else than an answer to a hello: no channel there, as from a relay from before them.
+    if (answer.length !== 64) throw new RelayUnreachableError(t('the relay has no channel'));
+    let keys: Uint8Array;
+    try {
+      keys = await relayChannelKeys(pin.key, secret, answer);
+    } catch {
+      refusedAt(relay.url);
+      throw new RelayKeyError(relay.url);
+    } finally {
+      secret.fill(0);
+    }
+    provenAt(relay.url, pin);
+    const channel = new Channel(keys.slice(0, 32), keys.slice(32, 64));
+    keys.fill(0);
+    let sealed: Uint8Array;
+    try {
+      sealed = await line.call(channel.seal(tokenFrame(relay.token ?? '', first ?? new Uint8Array())), first ? answerWithin(first) : within, false);
+    } catch (error) {
+      // The relay ends the connection on a wrong token, as it refuses it in the handshake without a channel.
+      if (error instanceof RelayError && !(error instanceof RelayUnreachableError && /did not answer/.test(error.message))) {
+        throw new RelayUnreachableError(t('cannot reach the relay at {url}, or the token is wrong', { url: relay.url }));
+      }
+      throw error;
+    }
+    return { line, channel, reply: channel.open(sealed) };
+  } catch (error) {
+    line.close();
+    if (signal?.aborted) throw new Ended();
+    throw error;
+  } finally {
+    signal?.removeEventListener('abort', end);
+  }
+}
+
+/**
+ * Opens a connection, sends one request, and returns the reply. Closes the connection, also when
+ * `signal` ends it. In a channel when the relay's key is known (see Channels above).
+ */
+async function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise<Uint8Array> {
+  if (signal?.aborted) throw new Ended();
+  if (!isRelayAddress(relay.url)) throw new BadRelayAddressError(relay.url);
   // A space that goes through Tor, waited on while another is open: never straight.
-  if (relay.torOnly && !torFor(false)) return Promise.reject(new RelayUnreachableError(t('Tor is not ready.')));
+  if (relay.torOnly && !torFor(false)) throw new RelayUnreachableError(t('Tor is not ready.'));
+  const pin = channelPin(relay);
+  if (!pin) return plainRequest(relay, bytes, signal);
+  try {
+    const { line, reply } = await openChannel(relay, pin, torFor(false), bytes, signal);
+    line.close();
+    return reply;
+  } catch (error) {
+    if (!mayGoWithout(error, pin)) throw error;
+    // No channel there: a relay from before them, or none could be reached.
+    const reply = await plainRequest(relay, bytes, signal);
+    noChannelAt(relay.url);
+    return reply;
+  }
+}
+
+/** One request on a connection of its own, with no channel. */
+function plainRequest(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise<Uint8Array> {
+  if (signal?.aborted) return Promise.reject(new Ended());
   const within = answerWithin(bytes);
   if (torFor(false)) {
     const reply = viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
@@ -420,12 +811,17 @@ export async function relayKey(relay: Relay): Promise<Uint8Array | null> {
   if (relay.key) return relay.key;
   const known = keys.get(relay.url);
   if (known) return known;
+  // The key it proved, when it did: the relay is not asked, so no one in between can give another.
+  const pinned = pins.get(relayHome(relay.url));
+  if (pinned?.proven) return pinned.key;
   const reply = await request(relay, Uint8Array.of(KEY));
   if (reply[0] === NOT_FOUND) return null;
   check(reply, 'key');
   if (reply.length !== 33) throw new RelayError('key: unexpected reply');
   const key = reply.slice(1);
   keys.set(relay.url, key);
+  // From now on in a channel to it, when the relay has them.
+  pinRelay(relay.url, key);
   return key;
 }
 
@@ -1042,102 +1438,57 @@ export function sameRelay(a: string, b: string): boolean {
 
 /** One connection to a relay for many requests, each answered before the next goes. */
 export class RelaySession {
-  private readonly socket: WebSocket | null;
-  // The connection's handle in the core's Tor, when it goes through Tor.
-  private readonly torId: Uint8Array | null;
-  private waiting: ((reply: Uint8Array | RelayError) => void) | null = null;
+  private readonly line: Line;
+  // The channel its messages go in, when the relay's key is known (see Channels above).
+  private readonly channel: Channel | null;
   private last: Promise<unknown> = Promise.resolve();
-  private ended: RelayError | null = null;
 
-  private constructor(socket: WebSocket | null, torId: Uint8Array | null = null) {
-    this.socket = socket;
-    this.torId = torId;
-    if (!socket) return;
-    const answer = (reply: Uint8Array | RelayError) => {
-      const waiting = this.waiting;
-      this.waiting = null;
-      waiting?.(reply);
-    };
-    socket.onmessage = (event) => answer(new Uint8Array(event.data as ArrayBuffer));
-    socket.onerror = () => {
-      this.ended ??= new RelayUnreachableError(t('lost the connection to the relay'));
-      answer(this.ended);
-    };
-    socket.onclose = () => {
-      this.ended ??= new RelayUnreachableError(t('the relay closed the connection'));
-      answer(this.ended);
-    };
+  private constructor(line: Line, channel: Channel | null) {
+    this.line = line;
+    this.channel = channel;
   }
 
   /** Opens it; `files` for the requests of files, which go through Tor only the way 'all'. */
   static async open(relay: Relay, files = false): Promise<RelaySession> {
-    if (torFor(files)) {
-      const id = await viaTor(() => tor().torOpen(relay.url, relay.token ?? ''));
-      return new RelaySession(null, id);
+    const throughTor = torFor(files);
+    const pin = channelPin(relay);
+    if (pin) {
+      try {
+        const { line, channel, reply } = await openChannel(relay, pin, throughTor, null);
+        if (reply[0] === OK) return new RelaySession(line, channel);
+        line.close();
+        throw new RelayUnreachableError(t('cannot reach the relay at {url}, or the token is wrong', { url: relay.url }));
+      } catch (error) {
+        if (!mayGoWithout(error, pin)) throw error;
+      }
     }
-    return new Promise((resolve, reject) => {
-      const socket = connect(relay);
-      socket.onopen = () => resolve(new RelaySession(socket));
-      socket.onerror = () => reject(new RelayUnreachableError(t('cannot reach the relay at {url}, or the token is wrong', { url: relay.url })));
-      socket.onclose = () => reject(new RelayUnreachableError(t('the relay closed the connection')));
-    });
+    const line = await plainLine(relay, throughTor);
+    // No channel there: a relay from before them, or none could be reached.
+    if (pin) noChannelAt(relay.url);
+    return new RelaySession(line, null);
   }
 
   /** Sends one request after the ones before it are answered, and returns its reply. */
   call(bytes: Uint8Array): Promise<Uint8Array> {
-    const torId = this.torId;
     const within = answerWithin(bytes);
-    // A reply that does not come in time ends the connection, and so every request after it.
-    const late = () => {
-      this.ended ??= lateError();
-      this.close();
-      return this.ended;
-    };
-    const reply = this.last.then(
-      () =>
-        torId
-          ? this.ended
-            ? Promise.reject(this.ended)
-            : new Promise<Uint8Array>((resolve, reject) => {
-                const timer = setTimeout(() => reject(late()), 2 * within);
-                viaTor(() => tor().torCall(torId, bytes))
-                  .catch((error: RelayError) => {
-                    this.ended ??= error;
-                    throw error;
-                  })
-                  .then(resolve, reject)
-                  .finally(() => clearTimeout(timer));
-              })
-          :
-        new Promise<Uint8Array>((resolve, reject) => {
-          if (this.ended) {
-            reject(this.ended);
-            return;
-          }
-          const timer = setTimeout(() => {
-            this.waiting = null;
-            reject(late());
-          }, within);
-          this.waiting = (answer) => {
-            clearTimeout(timer);
-            if (answer instanceof RelayError) reject(answer);
-            else resolve(answer);
-          };
-          this.socket?.send(bytes);
-        }),
-    );
+    // A reply that does not come in time ends the connection, and so every request after it; in a
+    // channel, so does one it does not hold, as the counts of its messages no longer match.
+    const reply = this.last.then(async () => {
+      const channel = this.channel;
+      if (!channel) return this.line.call(bytes, within);
+      try {
+        return channel.open(await this.line.call(channel.seal(bytes), within));
+      } catch (error) {
+        this.line.close();
+        throw error;
+      }
+    });
     this.last = reply.catch(() => undefined);
     return reply;
   }
 
   close(): void {
-    this.ended ??= new RelayError('closed');
-    if (this.torId) {
-      const id = this.torId;
-      tor()
-        .torClose(id)
-        .catch(() => undefined);
-    } else this.socket?.close();
+    this.line.close();
   }
 }
 
