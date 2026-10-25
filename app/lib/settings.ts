@@ -57,6 +57,8 @@ export const SETTINGS: SettingsGroup[] = [
       { id: 'updates', title: mark('Updates'), detail: mark('This version, and Check for updates'), href: '/updates' },
       // The guide's first section, its end: who makes Erevos, where, for whom, why and who pays.
       { id: 'about', title: mark('About Erevos'), detail: mark('Who makes it, for whom and why'), href: '/guide/about' },
+      // The ways to give to Erevos for its running costs (lib/donate.ts).
+      { id: 'donate', title: mark('Support Erevos'), detail: mark('Liberapay, PayPal, Monero or Bitcoin'), href: '/donate' },
       {
         id: 'permissions',
         title: mark('Permissions'),

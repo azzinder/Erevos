@@ -50,6 +50,10 @@ On main, not released yet:
   its queues outside its password, and asks its relay only how many came, through Tor when that space goes through Tor.
 - **Which way a message went**: holding a message shows **Went through Nostr** or **Came through Nostr** when a Nostr
   relay carried it, so that Nostr can be tested.
+- **Support Erevos**: **Settings** → **General** → **Support Erevos** lists the ways to help with the running costs:
+  Liberapay, PayPal, and a Monero and a Bitcoin address, each with its QR code, **Copy address** and **Open in a
+  wallet**. Each opens
+  outside Erevos only when tapped; Erevos sends nothing and does not know who gave. The guide's **Who pays** says so.
 - **Who makes it, and why**: the guide's first part ends with who makes Erevos, for whom, why, and who pays, also
   opened from **Settings** → **General** → **About Erevos**.
 - **The guide says why**: almost every part of the **User guide** now ends with a **Why** that says what the way it

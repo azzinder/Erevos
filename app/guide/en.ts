@@ -32,8 +32,12 @@ is in English and Greek, and shows in English in the app's other languages, see 
   down. Because the "terms of use" of some of them do not cover us, and we have doubts about how they protect our
   privacy. Because others lack features we need. Erevos asks for nothing, and finds a way through whatever is there:
   the internet, Wi-Fi, Bluetooth, a phone nearby.
-- **Who pays:** no one: no ads, no investors, no data collection. Taking some donations from ordinary users, for the
-  running costs, is being thought about.
+- **Who pays:** no one: no ads, no investors, no data collection. Whoever wants can help with the running costs, such
+  as the server: **Settings** → **General** → **Support Erevos** has the ways, Liberapay, PayPal, Monero and Bitcoin.
+  Giving or not changes nothing in the app.
+  **Why:** each way opens outside Erevos, in the browser or a wallet, only when tapped, so Erevos itself sends nothing
+  and never knows who gave. PayPal knows who gives; Monero shows neither who gave nor how much; Bitcoin shows no names,
+  but what the address received is public.
 
 This part opens from **Settings** → **General** → **About Erevos** too.
 
