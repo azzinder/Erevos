@@ -15,8 +15,13 @@ import { sealedFile, type Holder } from './sealed-file';
 
 export type { Holder };
 
-export type SentInvite = { number: string; secret: string; at: number };
-export type GotInvite = { number: string; sender: string; at: number };
+/** An invite sent to `number`, with the secret that opens its answer. One by plain SMS (lib/text-invite.ts)
+ *  also has its invite to the relay (`code`), until it is over or a phone used it, and the name of the
+ *  phone's contact it went to, for the contact its answer adds. */
+export type SentInvite = { number: string; secret: string; at: number; code?: string; name?: string };
+/** An invite answered here, from `number` ('' for one by plain SMS, whose number the link does not
+ *  say), whose chat writes from `sender`; `name`, the name that invite gave its phone. */
+export type GotInvite = { number: string; sender: string; at: number; name?: string };
 export type WaitingPiece = { from: string; data: string; at: number };
 /** The SIM (its subscription id) chosen for SMS to a number, or a group's numbers comma-separated. */
 export type NumberSim = { number: string; sim: number };
@@ -117,6 +122,7 @@ const isText = (v: unknown): v is string => typeof v === 'string';
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 const isNumber = (v: unknown): v is string => isText(v) && v.length > 0 && v.length <= 32;
 const isAddress = (v: unknown): v is string => isText(v) && v.length > 0 && v.length <= 400;
+const isName = (v: unknown): v is string => isText(v) && v.trim().length > 0 && v.length <= 120;
 const list = <T>(v: unknown, ok: (item: Record<string, unknown>) => T | null, max = MAX): T[] =>
   Array.isArray(v) ? v.map((item) => ok((item ?? {}) as Record<string, unknown>)).filter((x): x is T => x !== null).slice(-max) : [];
 const words = (v: unknown): string[] => (Array.isArray(v) ? v : []).filter((w): w is string => isText(w) && w.trim().length > 0 && w.length <= WORD).slice(-MAX_WORDS);
@@ -126,8 +132,16 @@ function checked(value: unknown): SmsData {
   const v = (value ?? {}) as Partial<Record<keyof SmsData, unknown>>;
   return {
     invites: v.invites !== false,
-    sent: list(v.sent, (s) => (isNumber(s.number) && isText(s.secret) && /^[A-Za-z0-9_-]{43}$/.test(s.secret) && isTime(s.at) ? { number: s.number, secret: s.secret, at: s.at } : null)),
-    got: list(v.got, (g) => (isNumber(g.number) && isText(g.sender) && /^[0-9a-f]{48}$/.test(g.sender) && isTime(g.at) ? { number: g.number, sender: g.sender, at: g.at } : null)),
+    sent: list(v.sent, (s) =>
+      isNumber(s.number) && isText(s.secret) && /^[A-Za-z0-9_-]{43}$/.test(s.secret) && isTime(s.at)
+        ? { number: s.number, secret: s.secret, at: s.at, ...(isText(s.code) && /^[0-9a-f]{64}$/.test(s.code) ? { code: s.code } : {}), ...(isName(s.name) ? { name: s.name } : {}) }
+        : null,
+    ),
+    got: list(v.got, (g) =>
+      (g.number === '' || isNumber(g.number)) && isText(g.sender) && /^[0-9a-f]{48}$/.test(g.sender) && isTime(g.at)
+        ? { number: g.number as string, sender: g.sender, at: g.at, ...(isName(g.name) ? { name: g.name } : {}) }
+        : null,
+    ),
     waiting: list(v.waiting, (w) => (isNumber(w.from) && isText(w.data) && w.data.length <= 400 && isTime(w.at) ? { from: w.from, data: w.data, at: w.at } : null)),
     names: v.names === true,
     sims: (Array.isArray(v.sims) ? v.sims : [])

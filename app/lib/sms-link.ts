@@ -7,7 +7,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type LaterSms, type SmsData } from '../lock/sms-data';
+import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type LaterSms, type SentInvite, type SmsData } from '../lock/sms-data';
 import type { Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
@@ -271,14 +271,39 @@ export class SmsLink {
   }
 
   /** Remembers that the invite from `number` was answered, so the first message from `sender` is
-   *  accepted and linked to the number. */
-  answered(number: string, sender: string): Promise<void> {
-    return this.update((d) => ({ ...d, got: [...d.got, { number: plainNumber(number), sender, at: Date.now() }] }));
+   *  accepted and linked to the number; '' for an invite by plain SMS, whose link says no number,
+   *  and `name` the name it gave its phone. */
+  answered(number: string, sender: string, name = ''): Promise<void> {
+    const got = { number: number ? plainNumber(number) : '', sender, at: Date.now(), ...(name.trim() ? { name: name.trim() } : {}) };
+    return this.update((d) => ({ ...d, got: [...d.got.filter((g) => g.sender !== sender), got] }));
   }
 
-  /** The number whose invite this chat answered, for a contact who writes from `sender`. */
-  invitedBy(sender: string): string | null {
-    return this.data.got.find((g) => g.sender === sender)?.number ?? null;
+  /** The invite this chat answered, for a contact who writes from `sender`: its number ('' when it
+   *  came by plain SMS) and the name it gave its phone (''); null when it answered none of theirs. */
+  answeredFor(sender: string): { number: string; name: string } | null {
+    const got = this.data.got.find((g) => g.sender === sender);
+    return got ? { number: got.number, name: got.name ?? '' } : null;
+  }
+
+  /** Keeps an invite by plain SMS sent to `number`, a contact of the phone's named `name`: the secret
+   *  that opens its answer, and its invite to the relay, to take back once it is over unused. */
+  textInvited(number: string, secret: Uint8Array, code: string, name: string): Promise<void> {
+    const sent: SentInvite = { number: plainNumber(number), secret: toBase64Url(secret), at: Date.now(), code, ...(name.trim() ? { name: name.trim() } : {}) };
+    return this.update((d) => ({ ...d, sent: [...d.sent, sent] }));
+  }
+
+  /** The invites by plain SMS sent here at `before` or earlier whose invite to the relay is still kept. */
+  textInvitesDue(before: number): SentInvite[] {
+    return this.data.sent.filter((s) => s.code && s.at <= before);
+  }
+
+  /** An invite by plain SMS is over: `forget` drops it, as nothing can answer it; otherwise only its
+   *  invite to the relay goes, as a phone used it and may still answer. */
+  settleTextInvite(secret: string, forget: boolean): Promise<void> {
+    return this.update((d) => ({
+      ...d,
+      sent: forget ? d.sent.filter((s) => s.secret !== secret) : d.sent.map((s) => (s.secret === secret ? { number: s.number, secret: s.secret, at: s.at, ...(s.name ? { name: s.name } : {}) } : s)),
+    }));
   }
 
   /** Whether any invite sent from here still waits for its answer. */
@@ -286,9 +311,10 @@ export class SmsLink {
     return this.data.sent.length > 0;
   }
 
-  /** Opens an answer to an invite sent from here: the number invited and its contact link. Null
-   *  when `bytes` answers none of them. The invite is then done. */
-  async openAnswer(bytes: Uint8Array): Promise<{ number: string; link: string } | null> {
+  /** Opens an answer to an invite sent from here: the number invited, its contact link, and the
+   *  name of the phone's contact it went to ('' but for an invite by plain SMS). Null when `bytes`
+   *  answers none of them. The invite is then done. */
+  async openAnswer(bytes: Uint8Array): Promise<{ number: string; link: string; name: string } | null> {
     if (!canSealOpen() || bytes[0] !== 1) return null;
     for (const sent of this.data.sent) {
       let link: string | null;
@@ -299,7 +325,7 @@ export class SmsLink {
       }
       if (!link) continue;
       await this.update((d) => ({ ...d, sent: d.sent.filter((s) => s.secret !== sent.secret) }));
-      return { number: sent.number, link };
+      return { number: sent.number, link, name: sent.name ?? '' };
     }
     return null;
   }

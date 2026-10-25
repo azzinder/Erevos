@@ -41,6 +41,7 @@ import { forgetSpaceGroups } from '../lib/space-groups';
 import { startPublicDoors } from '../lib/space-public-groups';
 import { applyTor, leaveTor } from '../lib/tor';
 import { nostrOf, setNostr } from '../lib/nostr';
+import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWelcome } from '../lib/welcome';
 import { hardenLock, loadLockConfig, type LockConfig } from '../lock/config';
 import { LockContext, type LockState } from '../lock/context';
@@ -582,6 +583,7 @@ function closeSpace(): void {
   forgetHistory();
   forgetOpenedQueues();
   forgetWelcome();
+  forgetTextInvite();
   leaveTor();
   setNostr(null);
   stopReleases();

@@ -75,7 +75,7 @@ import { forgetOffer, keepOffer, keptOffer, offerOf, takesOffer } from '../lib/r
 import { onWelcomeOffered, parseWelcome, START_RELAY, type Welcome } from '../lib/welcome';
 import { connectReach } from '../lib/connect-reach';
 import { oldToken, ownToken } from '../lib/relay-signin';
-import { canGroup, canRelaySeal, hasCore } from '../lib/core';
+import { canGroup, canRelaySeal, canSealOpen, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
 import { BlockedContactError, E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
@@ -139,7 +139,8 @@ import {
 } from '../lib/relay';
 import { answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openNearby, takeNearby, takeNostr, waitWhileAway, type Waited } from '../lib/receiver';
 import { nostrReady, readNostr } from '../lib/nostr';
-import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
+import { answerInvites, answerTextInvite, expireTextInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
+import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, orNostr, sendNostrAgain, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
 import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
@@ -1034,41 +1035,46 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     await tookToken(invite.relayUrl, token, name);
   }
 
-  // Takes an invite for someone new, opened from a scanned link (app/welcome.tsx, lib/welcome.ts).
   // With no relay of its own yet, or only a place lent on one, this phone takes access of its own to
-  // the inviting phone's relay, and a queue there, typing nothing; a phone with a relay of its own
-  // keeps it. Then the inviting phone is a contact, which takes this one as a contact at once.
+  // the relay an invite for someone new names, and a queue there, typing nothing; a phone with a
+  // relay of its own keeps it. Returns the relay, token and queue taken, undefined when it keeps its
+  // own, or null when nothing was taken and it has no relay at all (the note says why).
+  async function joinInviting(invite: Invite | null): Promise<{ url: string; token: string; queue: Queue } | undefined | null> {
+    const ours = relayUrl.trim();
+    const lent = isLentToken(relayToken);
+    if (!invite || !(!ours || lent || (sameRelay(ours, invite.relayUrl) && !relayToken.trim()))) return undefined;
+    const url = invite.relayUrl;
+    try {
+      const { token } = await redeemInvite(url, invite.code);
+      // A queue on another relay, or a lent one, is no use with this access: contacts learn the new one from the next message.
+      const keep = !!ours && !lent && sameRelay(ours, url) && ownQueue;
+      const ids = keep ? null : await createQueue({ url, token });
+      const queue = ids ? { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) } : ownQueue!;
+      setRelayUrl(url);
+      setRelayToken(token);
+      setOwnQueue(queue);
+      updateCurrentSpaceData({ ownToken: ownToken(url, token) }).catch(() => {
+        // Not kept: signing in there later gives this phone one more line instead of its own again.
+      });
+      return { url, token, queue };
+    } catch (error) {
+      // With no relay at all, nothing reaches them: they make a new invite.
+      if (ours) return undefined;
+      setNote(t('The invite was not taken. {error}', { error: errorText(error) }));
+      return null;
+    }
+  }
+
+  // Takes an invite for someone new, opened from a scanned link (app/welcome.tsx, lib/welcome.ts):
+  // joins the inviting phone's relay as above, then the inviting phone is a contact, which takes
+  // this one as a contact at once.
   async function takeWelcome(welcome: Welcome) {
     if (!e2e) {
       setNote(t(NO_CORE));
       return;
     }
-    const ours = relayUrl.trim();
-    const lent = isLentToken(relayToken);
-    let mine: { url: string; token: string; queue: Queue } | undefined;
-    if (welcome.invite && (!ours || lent || (sameRelay(ours, welcome.invite.relayUrl) && !relayToken.trim()))) {
-      const url = welcome.invite.relayUrl;
-      try {
-        const { token } = await redeemInvite(url, welcome.invite.code);
-        // A queue on another relay, or a lent one, is no use with this access: contacts learn the new one from the next message.
-        const keep = !!ours && !lent && sameRelay(ours, url) && ownQueue;
-        const ids = keep ? null : await createQueue({ url, token });
-        const queue = ids ? { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) } : ownQueue!;
-        setRelayUrl(url);
-        setRelayToken(token);
-        setOwnQueue(queue);
-        updateCurrentSpaceData({ ownToken: ownToken(url, token) }).catch(() => {
-          // Not kept: signing in there later gives this phone one more line instead of its own again.
-        });
-        mine = { url, token, queue };
-      } catch (error) {
-        // With no relay at all, nothing reaches them: they make a new invite.
-        if (!ours) {
-          setNote(t('The invite was not taken. {error}', { error: errorText(error) }));
-          return;
-        }
-      }
-    }
+    const mine = await joinInviting(welcome.invite);
+    if (mine === null) return;
     const identity = await acceptContact(welcome.contact, { place: contactsPlace, ...(welcome.name ? { name: welcome.name } : {}) }, false, mine, welcome.hi);
     if (identity && mine) {
       const name = e2e.contacts().find((c) => c.identity === identity)?.name;
@@ -1078,6 +1084,33 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           : t('Welcome to Erevos. Whoever invited you is your contact now: what you write to each other is end-to-end encrypted.'),
       );
     }
+  }
+
+  // Takes an invite by plain SMS (app/text-invite.tsx, lib/text-invite.ts), `name` what this phone
+  // calls whoever sent it: joins their relay as above, then answers with this chat's contact link,
+  // with the next look, sealed for them. Their phone adds this one, and its first message is taken
+  // as a contact's, no request, named `name` (lib/sms-relay.ts).
+  async function takeTextInvite(invite: TextInvite, name: string) {
+    if (!e2e) {
+      setNote(t(NO_CORE));
+      return;
+    }
+    if (invite.expires < Date.now()) {
+      setNote(t('An invite by SMS lasts two days. Ask whoever sent it for a new one.'));
+      return;
+    }
+    if (!canSealOpen()) {
+      setNote(t('This Erevos cannot answer an invite by SMS yet: update it, then open the link again.'));
+      return;
+    }
+    const mine = await joinInviting({ relayUrl: invite.relay, code: invite.code });
+    if (mine === null) return;
+    answerTextInvite(invite, name);
+    setNote(
+      name
+        ? t('Joined. {name} is your contact as soon as their phone hears from yours, in a moment if it is on.', { name })
+        : t('Joined. Whoever invited you is your contact as soon as their phone hears from yours, in a moment if it is on.'),
+    );
   }
 
   // An invite to a contact's relay that came in their message (lib/relay-offer.ts), taken by itself
@@ -1532,6 +1565,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return onWelcomeOffered(currentSpace().space, (welcome) => void takeWelcome(welcome));
   }, [loaded, shown, relayUrl, relayToken, ownQueue, e2e]);
 
+  // Takes an invite by plain SMS opened from its link (app/text-invite.tsx), as the above.
+  useEffect(() => {
+    if (!loaded || !shown || hiddenKey || !e2e) return;
+    return onTextInviteOffered(currentSpace().space, (invite) => void takeTextInvite(invite, invite.name));
+  }, [loaded, shown, relayUrl, relayToken, ownQueue, e2e]);
+
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => setAppActive(state === 'active'));
     return () => subscription.remove();
@@ -1675,10 +1714,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         // Taken from the relay, so kept even if the chat closed meanwhile.
         let received = await e2e.receive(bytes, kind === 'own' ? { onOwn: ownSender } : { old: kind !== undefined });
         // Someone whose SMS invite was answered here: a contact at once, not a message request.
-        const number = !hiddenKey && received.kind === 'message' && received.added ? await linkInviter(e2e, received.identity).catch(() => null) : null;
-        if (number && received.kind === 'message') received = { ...received, request: false };
+        const inviter = !hiddenKey && received.kind === 'message' && received.added ? await linkInviter(e2e, received.identity).catch(() => null) : null;
+        if (inviter && received.kind === 'message') received = { ...received, request: false };
         handle(received);
-        if (number && active) setNote(t('{number} has Erevos and is now a contact. Messages to that number go through Erevos.', { number }));
+        if (inviter && active) {
+          setNote(
+            inviter.number
+              ? t('{number} has Erevos and is now a contact. Messages to that number go through Erevos.', { number: inviter.number })
+              : inviter.name
+                ? t('Welcome to Erevos. {name} is your contact now: what you write to each other is end-to-end encrypted.', { name: inviter.name })
+                : t('Welcome to Erevos. Whoever invited you is your contact now: what you write to each other is end-to-end encrypted.'),
+          );
+        }
         return tookOf(received);
       };
       // Tells a kept contact where this chat reads now, in a quiet message with nothing in it: from
@@ -1734,6 +1781,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         // With the queue the link names as the look left it, never the own queue a move just made.
         const after = await mover.current?.queues().catch(() => null);
         if (!hiddenKey) await answerInvites(e2e, after ? linkOf(after, after.now?.queue ?? ownQueue!).senderHex : ownSender, here(), sends).catch(() => undefined);
+        // Invites by plain SMS that are over: their invites to the relay, taken back when unused.
+        if (!hiddenKey) await expireTextInvites(own).catch(() => undefined);
         // What waited to go, now that the relay answers.
         void sendWaitingNow.current(true);
         await sendReceipts(sends);
@@ -4054,6 +4103,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setContactDraft('');
       if (hiddenKey) setNote(t('An invite to a relay is taken in the chats of the space, not in hidden chats.'));
       else void joinRelay(invite);
+      return true;
+    }
+    // The link of an invite by plain SMS, pasted, as on an iPhone, where the web app cannot open it.
+    const byText = parseTextInvite(text);
+    if (byText) {
+      setContactDraft('');
+      if (hiddenKey) setNote(t('An invite by SMS is taken in the chats of the space, not in hidden chats.'));
+      else void takeTextInvite(byText, byText.name);
       return true;
     }
     const code = parseContact(text);

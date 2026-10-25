@@ -10,6 +10,13 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **Invite by SMS, to someone with no Erevos yet**: on Android, the card of a contact who is not in Erevos has **Invite
+  by SMS**: an SMS to their number with a short link, written in the SMS app for you to send. The link's page on LPHL's
+  web server offers them Erevos, the app on Android or the web app on an iPhone, and opens the invite in it. They tap
+  **Join**: their phone joins your relay with access of its own, and you are each other's contacts, linked to that
+  number, with no message request. The invite is after the **#** in the link, which no web server is sent; it is for
+  one person, for two days, and an invite to the relay no phone used is taken back once they end. The QR code and
+  **Share the invite** stay as they are.
 - **Nostr relays that refuse a Tor exit are tried through another**: some Nostr relays refuse some Tor exits (relay.damus.io
   answers them with HTTP 403), and some exits cannot reach a relay (nos.lol timed out), while Tor kept using the same
   exit for minutes, so every try failed again. Now each Nostr relay is reached on Tor circuits of its own, never

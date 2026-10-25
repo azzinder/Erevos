@@ -23,7 +23,7 @@ import {
   waitForMessage,
   type Relay,
 } from './relay';
-import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
+import { answerInvites, expireTextInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from './sms-relay';
 import { isGroupPacket } from './groups';
 import { showsAt } from './later';
 import { linkOf, spaceMover, tookOf, type Took } from './queue-move';
@@ -527,6 +527,8 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   const after = await mover.queues().catch(() => null);
   const link = after ? linkOf(after, after.now?.queue ?? place.queue).senderHex : place.queue.senderHex;
   await answerInvites(chats.e2e, link, place.here, place.sends).catch(() => undefined);
+  // Invites by plain SMS that are over: their invites to the relay, taken back when unused.
+  await expireTextInvites(place.own).catch(() => undefined);
   // What waited to go, now that the relay answers (lib/waiting.ts).
   if (!failed && (await sendWaiting(chats, sendPlace(place, true)).catch(() => [])).length > 0) changed = true;
   lookWhenDue(nextDue(chats.history));

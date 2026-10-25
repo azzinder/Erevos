@@ -326,12 +326,13 @@ test('an invite answered through the relay gives the inviter the link, once', { 
   // Another screen's copy sees what was sent, and opens the answer.
   const other = await SmsLink.open(0, key);
   assert.equal(await other.openAnswer(randomBytes(80)), null);
-  assert.deepEqual(await other.openAnswer(answer), { number: '+306900000001', link: 'erevos://contact?id=x' });
+  assert.deepEqual(await other.openAnswer(answer), { number: '+306900000001', link: 'erevos://contact?id=x', name: '' });
   assert.equal(await other.openAnswer(answer), null);
   await link.refresh();
   assert.ok(!link.waiting);
 
   // The invited side remembers whose first message to accept.
   await other.answered('+30 690 000 0002', own.senderHex);
-  assert.equal((await SmsLink.open(0, key)).invitedBy(own.senderHex), '+306900000002');
+  assert.deepEqual((await SmsLink.open(0, key)).answeredFor(own.senderHex), { number: '+306900000002', name: '' });
+  assert.equal((await SmsLink.open(0, key)).answeredFor('ab'.repeat(24)), null);
 });

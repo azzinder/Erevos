@@ -25,6 +25,7 @@ import { linkCard, linkPhoneContact, linkSealed, loadPlace, onSealedChange, plac
 import { spaceChats } from '../lib/space-chats';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
+import { makeTextInvite } from '../lib/sms-relay';
 import { qrVCard } from '../lib/vcard';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import type { ContactLink } from '../lock/contacts-data';
@@ -44,7 +45,7 @@ import {
   type PhoneGroup,
 } from '../modules/erevos-contacts';
 import { callHistory, phoneReady } from '../modules/erevos-phone';
-import { smsMessages, smsReady, smsThreads } from '../modules/erevos-sms';
+import { smsMessages, smsReady, smsStatus, smsThreads } from '../modules/erevos-sms';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
@@ -102,6 +103,7 @@ export default function ContactCardScreen() {
   // An Erevos ID being pasted, and what is wrong with it.
   const [erevosCode, setErevosCode] = useState('');
   const [idNote, setIdNote] = useState('');
+  const [inviting, setInviting] = useState(false);
   // The Erevos contacts it may be, and which phone contacts were linked to one by hand.
   const [people, setPeople] = useState<ErevosPerson[]>([]);
   const [links, setLinks] = useState<ContactLink[]>([]);
@@ -405,6 +407,25 @@ export default function ContactCardScreen() {
     }
   }
 
+  // An invite by plain SMS to `number` (lib/text-invite.ts), written for them in the SMS app to send
+  // or not: Erevos's own when it is the phone's SMS app, else the phone's.
+  async function inviteBySms(number: string) {
+    if (!card || inviting) return;
+    setInviting(true);
+    setIdNote('');
+    try {
+      const link = await makeTextInvite(number, card.name);
+      const text = t('Join me on Erevos, for messages and calls only we can read: {link}', { link });
+      const to = smsAddress(smsNumbers(number));
+      if (smsReady() && smsStatus()?.isDefault) router.push(`/sms?to=${encodeURIComponent(to)}&text=${encodeURIComponent(text)}&plain=1`);
+      else await Linking.openURL(`sms:${to}?body=${encodeURIComponent(text)}`);
+    } catch (error) {
+      setIdNote(t('No invite now. {error}', { error: errorText(error) }));
+    } finally {
+      setInviting(false);
+    }
+  }
+
   // Its chat in Erevos, or a call there: the hidden chats' own beneath these screens, or the space's.
   function erevos(call?: 'voice' | 'video') {
     if (!card?.erevos) return;
@@ -513,6 +534,14 @@ export default function ContactCardScreen() {
             </>
           ) : null}
           {people.length > 0 ? <Button title={t('Choose from my Erevos chats')} kind="secondary" compact onPress={() => setLinking(true)} /> : null}
+          {!hidden && Platform.OS === 'android' && first ? (
+            <>
+              <Button title={t('Invite by SMS')} kind="secondary" compact loading={inviting} onPress={() => void inviteBySms(first)} />
+              <Text variant="caption" tone="muted">
+                {t('No Erevos yet? An SMS with a link: it offers them Erevos, and once they join you are each other’s contacts, end-to-end encrypted. For one person, for two days.')}
+              </Text>
+            </>
+          ) : null}
           {idNote ? <Text tone="muted">{idNote}</Text> : null}
         </Card>
       )}

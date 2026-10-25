@@ -405,6 +405,16 @@ nothing, and you are each other's contacts at once, with no message request.
 - **A phone with a relay already** keeps its own: the invite only adds you, and you are contacts at once all the same.
 - **What is kept:** your phone keeps each invite's secret and the name for them, sealed in the space, until it is used
   or its 7 days end, 20 at most at once. Nothing of it is on the relay but the invite to the relay.
+- **By SMS, to someone with no Erevos yet:** on Android, the card of a contact who is not in Erevos has **Invite by
+  SMS**. It writes an SMS to their first number with a short link, in the SMS app (Erevos's own when it is the phone's
+  SMS app), for you to send or not. The link's page on LPHL's web server offers them Erevos (the Android app, or the
+  web app on an iPhone) and then opens the invite in it; in the web app on an iPhone, they paste the link under **I
+  have an invite**. They tap **Join**: their phone joins your relay as above and answers yours through it, which adds
+  them, linked to that number and named as on the card. Its first message, which goes by itself, makes you their
+  contact, named as you named yourself in your last invite. The invite follows the **#** in the link, which no web
+  server is sent, but the phone company sees the SMS, as every SMS: so it is for one person, for two days, and when
+  the two days end with no phone having used it, your phone takes its invite to the relay back. It needs a relay
+  that lets your phone invite, as above.
 
 ### No relay of your own
 
