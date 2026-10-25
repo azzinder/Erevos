@@ -14,8 +14,6 @@ On main, not released yet:
   link itself is; and a web app from before the invite page, which opens itself at that address, takes the invite
   there too. On an iPhone with iOS 26, the steps to add the web app say that **Share** is under **•••**.
 
-## 3.3.0 (2026-10-25)
-
 - **Invite by SMS, to someone with no Erevos yet**: on Android, the card of a contact who is not in Erevos has **Invite
   by SMS**: an SMS to their number with a short link, written in the SMS app for you to send. The link's page on LPHL's
   web server offers them Erevos, the app on Android or the web app on an iPhone, and opens the invite in it. They tap
