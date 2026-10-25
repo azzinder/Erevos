@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, Linking, View } from 'react-native';
 
+import { WayCard } from './connect-cards';
+import { PersonSign } from './shortcut-tile';
 import { Button, Field, Input, Row, Text, TextButton } from './ui';
 import { plural, t } from '../lib/i18n';
 import { claimSignIn, signInOffer } from '../lib/relay';
@@ -9,8 +11,8 @@ import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
 
 // Signing in to the relay with a provider such as LPHL (lib/relay-signin.ts,
-// crates/erevos-relay/src/signin.rs), under the token in Relay and new contacts, shown only when
-// the relay typed there offers it. The system browser signs in on the relay's pages, so the
+// crates/erevos-relay/src/signin.rs): on New chat, one of the ways in for a phone with no relay yet,
+// and under the token in For advanced users, shown only when the relay typed there offers it. The system browser signs in on the relay's pages, so the
 // password is typed there only; the relay's page then shows a code, typed here, and this phone
 // claims a token of its own with it, which goes where the relay's token goes (onToken), sealed in
 // the space. Only a sign-in in this phone's own browser shows the code this phone needs, so a
@@ -23,14 +25,14 @@ export function RelaySignIn({
   token,
   onToken,
   onNote,
-  brief = false,
+  card = false,
 }: {
   url: string;
   token: string;
   onToken: (token: string, name: string) => void;
   onNote: (note: string) => void;
-  /** For a phone with no relay yet: a short caption, in plain words. */
-  brief?: boolean;
+  /** For a phone with no relay yet: a way in of its own (components/connect-cards.tsx), in plain words, that signs in at a tap. */
+  card?: boolean;
 }) {
   const space = currentSpace().space;
   const [offer, setOffer] = useState<{ name: string; start: string } | null>(null);
@@ -126,41 +128,59 @@ export function RelaySignIn({
 
   if (!offer) return null;
 
+  const finishing = waiting ? (
+    <>
+      <Text>{t('Sign in on the page the browser opened. It then shows a code: type it here.')}</Text>
+      <Field label={t('Code from the page')}>
+        <Input
+          key={back}
+          autoFocus={back > 0}
+          value={code}
+          onChangeText={(text) => setCode(text.replace(/\D/g, '').slice(0, 6))}
+          onSubmitEditing={() => void finish()}
+          placeholder="123456"
+          keyboardType="number-pad"
+          autoComplete="off"
+          autoCorrect={false}
+        />
+      </Field>
+      <Row wrap>
+        <Button title={t('Finish signing in')} compact loading={busy} disabled={code.length !== 6} onPress={() => void finish()} />
+        <TextButton title={t('Cancel')} onPress={stop} />
+      </Row>
+    </>
+  ) : null;
+
+  if (card) {
+    // Tapped again while waiting for the code, the browser opens again, for a sign-in anew.
+    return (
+      <WayCard
+        tint="violet"
+        sign={<PersonSign />}
+        title={t('Sign in with {name}', { name: offer.name })}
+        line={t('With your {name} account, in the browser: you type the password there only, and whoever runs the server sees your user name.', { name: offer.name })}
+        open={!!waiting}
+        onPress={() => void start()}
+      >
+        {finishing}
+      </WayCard>
+    );
+  }
+
   return (
     <View style={{ gap: 6 }}>
       {waiting ? (
-        <>
-          <Text>{t('Sign in on the page the browser opened. It then shows a code: type it here.')}</Text>
-          <Field label={t('Code from the page')}>
-            <Input
-              key={back}
-              autoFocus={back > 0}
-              value={code}
-              onChangeText={(text) => setCode(text.replace(/\D/g, '').slice(0, 6))}
-              onSubmitEditing={() => void finish()}
-              placeholder="123456"
-              keyboardType="number-pad"
-              autoComplete="off"
-              autoCorrect={false}
-            />
-          </Field>
-          <Row wrap>
-            <Button title={t('Finish signing in')} compact loading={busy} disabled={code.length !== 6} onPress={() => void finish()} />
-            <TextButton title={t('Cancel')} onPress={stop} />
-          </Row>
-        </>
+        finishing
       ) : (
         <Row wrap>
           <Button title={t('Sign in with {name}', { name: offer.name })} kind="secondary" compact onPress={() => void start()} />
         </Row>
       )}
       <Text variant="caption" tone="muted">
-        {brief
-          ? t('Have a {name} account? Sign in with it instead, in the browser: you type the password there only, and whoever runs the server sees your user name.', { name: offer.name })
-          : t(
-              "Signs this phone in to the relay with your {name} account, in the browser: you type the password there only, and this phone gets a token of its own, kept in this space. The relay's operator sees your {name} user name, and every hour the relay asks {name} whether the account may still use it, signing this phone out when it may not, or when {name} cannot be asked for 3 days. Signing in from another space with the same account shows the relay that both are yours.",
-              { name: offer.name },
-            )}
+        {t(
+          "Signs this phone in to the relay with your {name} account, in the browser: you type the password there only, and this phone gets a token of its own, kept in this space. The relay's operator sees your {name} user name, and every hour the relay asks {name} whether the account may still use it, signing this phone out when it may not, or when {name} cannot be asked for 3 days. Signing in from another space with the same account shows the relay that both are yours.",
+          { name: offer.name },
+        )}
       </Text>
     </View>
   );

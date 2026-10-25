@@ -62,7 +62,7 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
         const own = await onOwnLine(relay);
         if (!own) {
           setFailed(
-            t('Your phone cannot let anyone in to your relay yet: it uses a token typed in, not one of its own. Under Relay and new contacts, Relay settings, sign in to the relay below the Token, or take an invite to it, then make this invite again.'),
+            t('Your phone cannot let anyone in to your relay yet: it uses a token typed in, not one of its own. On New chat, under For advanced users, sign in to the relay below the Token, or take an invite to it, then make this invite again.'),
           );
           return;
         }

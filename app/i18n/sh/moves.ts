@@ -23,7 +23,7 @@ export const moves: Record<string, string> = {
     'Napraviti novi link za kontakt? Linkovi i QR kodovi koje ste ranije dali rade do {date}, a onda više ne. Na vaše kontakte to ne utječe.',
   'You have a new contact link. The links and QR codes you gave before work until {date}.':
     'Imate novi link za kontakt. Linkovi i QR kodovi koje ste ranije dali rade do {date}.',
-  'Create your relay queue first, under Relay and new contacts.': 'Prvo napravite svoj red na relayu, pod „Relay i novi kontakti“.',
+  "Create your relay queue first, on New chat.": "Prvo napravite svoj red na relayu, pod „Novi razgovor“.",
   'Blocked contacts': 'Blokirani kontakti',
   'No one is blocked.': 'Nema blokiranih kontakata.',
   // What a move says once it is made.

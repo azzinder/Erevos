@@ -23,7 +23,7 @@ export const moves: Record<string, string> = {
     'Einen neuen Kontaktlink erstellen? Die Links und QR-Codes, die du bisher weitergegeben hast, funktionieren bis zum {date}, danach nicht mehr. Deine Kontakte betrifft das nicht.',
   'You have a new contact link. The links and QR codes you gave before work until {date}.':
     'Du hast einen neuen Kontaktlink. Die Links und QR-Codes von vorher funktionieren bis zum {date}.',
-  'Create your relay queue first, under Relay and new contacts.': 'Erstelle zuerst deine Relay-Warteschlange unter „Relay und neue Kontakte“.',
+  "Create your relay queue first, on New chat.": "Erstelle zuerst deine Relay-Warteschlange, unter „Neuer Chat“.",
   'Blocked contacts': 'Blockierte Kontakte',
   'No one is blocked.': 'Niemand ist blockiert.',
   // What a move says once it is made.

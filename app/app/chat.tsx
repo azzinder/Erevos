@@ -38,7 +38,8 @@ import { QrCode } from '../components/QrCode';
 import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
 import { WelcomeInvite } from '../components/welcome-invite';
-import { BackIcon, MoreIcon, ShieldIcon, TimerIcon } from '../components/icons';
+import { ConnectStatus, QrSign, WayCard } from '../components/connect-cards';
+import { BackIcon, GlobeIcon, MoreIcon, PlusIcon, ShieldIcon, TimerIcon } from '../components/icons';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
@@ -71,6 +72,7 @@ import { contactLink, offerFor, onContactOffered, parseContact, type ContactCode
 import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
 import { forgetOffer, keepOffer, keptOffer, offerOf, takesOffer } from '../lib/relay-offer';
 import { onWelcomeOffered, parseWelcome, START_RELAY, type Welcome } from '../lib/welcome';
+import { connectReach } from '../lib/connect-reach';
 import { oldToken, ownToken } from '../lib/relay-signin';
 import { canGroup, canRelaySeal, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
@@ -349,8 +351,9 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   // A contact to open with (from the home screen, or an imported chat that goes on with them),
-  // hidden chats opened from the home screen's search (their key handed over in memory), or the
-  // relay settings to show at once (`setup=1`), with the relay's own open (`setup=relay`). `at`:
+  // hidden chats opened from the home screen's search (their key handed over in memory), or New
+  // chat (`setup=1`, which shows the same as with no contact), with For advanced users, the relay's
+  // own settings, open (`setup=relay`). `at`:
   // the tag of a message to go to, starred or found. A call to start with the contact comes only
   // from a tap in Erevos (lib/call-handoff.ts), never from the address, which any app or web page
   // can open.
@@ -420,7 +423,6 @@ export default function ChatScreen() {
               at={initial && typeof at === 'string' && isTag(at) ? at : null}
               initialCall={initialCall}
               linkNumber={linkNumber}
-              setup={setup === '1' || setup === 'relay'}
               relaySettings={setup === 'relay'}
               shown={!hiddenKey}
               onLook={setChatLook}
@@ -477,7 +479,7 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', setup = false, relaySettings = false, shown, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, shown, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
@@ -487,9 +489,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   initialCall?: 'voice' | 'video' | null;
   /** A phone number to link to the `initial` contact. */
   linkNumber?: string;
-  /** Opens with the relay settings and adding a contact in view. */
-  setup?: boolean;
-  /** Opens with the relay's own settings open too (Settings → Relay). */
+  /** Opens with For advanced users open, the relay's own settings (Settings → Relay). */
   relaySettings?: boolean;
   shown: boolean;
   /** Closes the hidden chats. */
@@ -543,8 +543,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // A message passed on from an SMS conversation (lib/forward.ts) starts in the field.
   const { draft, empty: nothingTyped } = useDraft(() => (initial ? (forwardedTo(initial)?.text ?? '') : ''));
   const [note, setNote] = useState('');
-  const [showRelay, setShowRelay] = useState(setup);
-  // The relay's own settings, under Relay and new contacts: closed until asked for.
+  // With no chat open, New chat's parts (components/connect-cards.tsx): which way in shows what it
+  // needs, for a phone with no relay yet; and what opens under Nearby, Blocked contacts and For
+  // advanced users (the relay's own settings), each closed until asked for.
+  const [way, setWay] = useState<'invite' | 'own' | null>(null);
+  const [nearbyShown, setNearbyShown] = useState(false);
+  const [blockedShown, setBlockedShown] = useState(false);
   const [relayShown, setRelayShown] = useState(relaySettings);
   // The chat's details, over the chat: its picture, name, timer, look, safety number, moving it.
   const [details, setDetails] = useState(false);
@@ -590,7 +594,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const { space, key } = currentSpace();
     return { holder: hiddenKey ? hiddenHolder(pocket) : 'space', space, key: hiddenKey ?? key };
   }, [hiddenKey, pocket]);
-  // A contact just added here, under Relay and new contacts, that has no name: offered to connect
+  // A contact just added here, under Add a contact, that has no name: offered to connect
   // to one of my contacts (components/connect-picker.tsx), whose name it then takes. Its chat shows
   // the offer until another chat shows, it gets a name, or Not now.
   const [connecting, setConnecting] = useState<string | null>(null);
@@ -604,7 +608,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // The sheet that makes an invite for someone new (components/welcome-invite.tsx).
   const [welcoming, setWelcoming] = useState(false);
   // An invite's link pasted on a phone with no relay yet.
-  const [inviteDraft, setInviteDraft] = useState('');
   // With when their account's linked devices last changed (`devices`, ms), or 0 while it has none this chat knows of.
   const [safety, setSafety] = useState<{ peer: string; number: string; devices: number } | null>(null);
   // The contact being named, and the name typed so far.
@@ -1120,7 +1123,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     (hiddenKey ? updateHiddenData(currentSpace().space, pocket, hiddenKey, own) : updateCurrentSpaceData(own)).catch(() => {
       // Not kept: signing in again there gives this phone one more line instead of its own again.
     });
-    if (!first) setShowRelay(true);
     const joined = first
       ? t('You are in, as {name}. Now add your contacts: by their invite, or by the contact link or QR code they give you.', { name })
       : t('This phone now uses the relay at {url}, with a token of its own, named {name} there.', { url, name });
@@ -3047,7 +3049,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   function newContactLink() {
     const url = relayUrl.trim();
     if (!url || !ownQueue || !mover.current) {
-      setNote(t('Create your relay queue first, under Relay and new contacts.'));
+      setNote(t('Create your relay queue first, on New chat.'));
       return;
     }
     const date = new Date(Date.now() + 14 * 24 * 3600_000).toLocaleDateString(locale());
@@ -3991,7 +3993,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       if (on) {
         if (!url || !ownQueue) {
-          setWatchNote(t('Create the relay queue of these hidden chats first, under Relay and new contacts.'));
+          setWatchNote(t('Create the relay queue of these hidden chats first, below.'));
           return;
         }
         await watchPocket(space, key, pocket, { url, token, recipientHex: ownQueue.recipientHex });
@@ -4015,7 +4017,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       if (on) {
         if (!url || !ownQueue) {
-          setRingNote(t('Create the relay queue of these hidden chats first, under Relay and new contacts.'));
+          setRingNote(t('Create the relay queue of these hidden chats first, below.'));
           return;
         }
         let queue = ringQueue;
@@ -4407,6 +4409,41 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const newcomer = loaded && !hiddenKey && !accountLink() && !relayUrl.trim();
   // With a relay queue, this phone invites someone new (lib/welcome.ts).
   const canWelcome = !hiddenKey && !accountLink() && !!relayUrl.trim() && !!ownQueue && !!ownLink;
+  // How this phone reaches its contacts now, said at the top of New chat.
+  const reached = connectReach({
+    linked: !!accountLink(),
+    relayUrl,
+    queue: !!ownQueue,
+    hidden: !!hiddenKey,
+    nostr: !hiddenKey && !!linkNostr,
+    nearby: HAS_LINKS,
+    lent: isLentToken(relayToken),
+    via: !!viaUrl.trim(),
+  });
+  // Adding someone by what they gave: their contact link or an invite, pasted, or read from a
+  // photo of its QR code.
+  const addTheirs = (
+    <>
+      {/* Not in hidden chats: a photo leaves Erevos, which closes them. */}
+      {!hiddenKey ? (
+        <Row wrap>
+          {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the QR code')} compact onPress={() => void addFromQr('camera')} /> : null}
+          <Button title={t('Choose a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
+        </Row>
+      ) : null}
+      <Row>
+        <Input
+          value={contactDraft}
+          onChangeText={setContactDraft}
+          placeholder={t('Paste their contact link or invite')}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.grow}
+        />
+        <Button title={t('Add')} compact onPress={() => addContact()} />
+      </Row>
+    </>
+  );
 
   const selectedName = selected ? label(selected, shownContacts) : '';
   const selectedOnline = !!selectedIdentity && !selectedHidden && !!e2e && e2e.onlineUntil(selectedIdentity, now) > 0;
@@ -5089,7 +5126,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         <Sheet visible={showQr && shown && !!ownLink} onClose={() => setShowQr(false)} title={t('My QR code')}>
           {ownLink ? <QrCode text={ownLink} size={240} /> : null}
           <Text variant="caption" tone="muted">
-            {t("Scan it with the other phone's camera and open the link in Erevos. If the camera only shows the text, copy it and paste it in Relay and new contacts on that phone.")}
+            {t("Scan it with the other phone's camera and open the link in Erevos. If the camera only shows the text, copy it and paste it under Add a contact, on New chat, on that phone.")}
           </Text>
           <Row wrap>
             <Button title={t('Done')} compact onPress={() => setShowQr(false)} />
@@ -5142,7 +5179,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               </Pressable>
             ) : (
               <Text variant="title" style={styles.grow}>
-                {hiddenKey ? t('Hidden chats') : t('Chat')}
+                {hiddenKey ? t('Hidden chats') : t('New chat')}
               </Text>
             )}
             {selectedContact ? (
@@ -5199,45 +5236,75 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   );
                 })}
               </ScrollView>
-            ) : newcomer ? null : (
-              <Text tone="muted">
-                {hiddenKey
-                  ? t('No hidden chats yet. Add a contact through the relay below, or move a chat here from its details.')
-                  : Platform.OS === 'web'
-                    ? t('No chats yet. Add a contact through the relay, under Relay.')
-                    : t('No chats yet. Add a contact under Relay. Your contacts reach you nearby too, over Wi-Fi or Bluetooth, without the internet.')}
-              </Text>
-            )}
-            {newcomer ? (
+            ) : hiddenKey ? (
+              <Text tone="muted">{t('No hidden chats yet. Add a contact below, or move a chat here from its details.')}</Text>
+            ) : null}
+            {hiddenKey && canRingInBackground ? (
               <View style={styles.panel}>
-                <Text variant="label">{t('Start with an invite')}</Text>
-                <Text tone="muted">
-                  {t('Ask someone who uses Erevos for an invite. Scan its QR code with the camera, or open the link they send: this phone joins, typing nothing, and they are your contact at once.')}
+                <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />
+                <Text variant="caption" tone="muted">
+                  {watched
+                    ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.')
+                    : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
                 </Text>
-                <Row wrap>
-                  {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the invite')} compact onPress={() => void addFromQr('camera')} /> : null}
-                  <Button title={t('Choose a photo of the invite')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
-                </Row>
-                <Row>
-                  <Input
-                    value={inviteDraft}
-                    onChangeText={setInviteDraft}
-                    placeholder={t('Or paste the invite link')}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    style={styles.grow}
-                  />
-                  <Button title={t('Join')} compact onPress={() => addContact(inviteDraft) && setInviteDraft('')} />
-                </Row>
-                <RelaySignIn url={START_RELAY} token="" onToken={(token, name) => void tookToken(START_RELAY, token, name, true)} onNote={setNote} brief />
-                {ownLink && linkNostr ? (
-                  <>
-                    <Text variant="label">{t('No invite?')}</Text>
-                    <Text tone="muted">
-                      {t('Start without one: show your QR code to someone who uses Erevos, or send them your link. Texts, stickers and reactions then go through Nostr, over Tor, with no relay. If they have a relay, an invite to it comes to this phone by itself, and the rest works too.')}
-                    </Text>
+                {watchNote ? <Text variant="caption" tone="muted">{watchNote}</Text> : null}
+                <DetailRow title={t('Ring calls when closed')} checked={ringing} onPress={() => void changeRinging(!ringing)} />
+                <Text variant="caption" tone="muted">
+                  {ringing
+                    ? t('While these hidden chats are closed and Erevos is in the background, a call from one of their contacts makes the phone ring and show "Incoming call" with no name. On the ringing screen, tap the small sign and type the PIN to answer. Whoever holds the phone sees a call that is in none of your chats, and may guess there are more.')
+                    : t('Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.')}
+                </Text>
+                {ringNote ? <Text variant="caption" tone="muted">{ringNote}</Text> : null}
+              </View>
+            ) : null}
+            {loaded ? (
+              <ConnectStatus reach={reached.reach} title={reached.title} line={reached.line} detail={reached.detail}>
+                {relayUrl.trim() && !ownQueue && !accountLink() ? <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} /> : null}
+              </ConnectStatus>
+            ) : null}
+            {newcomer ? (
+              <View style={styles.section}>
+                <Text variant="label">{t('Choose how to start')}</Text>
+                <WayCard
+                  tint="blue"
+                  sign={<QrSign />}
+                  title={t('I have an invite')}
+                  line={t('From someone who uses Erevos: scan its QR code or paste its link. You join typing nothing, and you are contacts at once.')}
+                  open={way === 'invite'}
+                  onPress={() => setWay((was) => (was === 'invite' ? null : 'invite'))}
+                >
+                  <Row wrap>
+                    {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the invite')} compact onPress={() => void addFromQr('camera')} /> : null}
+                    <Button title={t('Choose a photo of the invite')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
+                  </Row>
+                  <Row>
+                    <Input
+                      value={contactDraft}
+                      onChangeText={setContactDraft}
+                      placeholder={t('Or paste the invite link')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      style={styles.grow}
+                    />
+                    <Button title={t('Join')} compact onPress={() => addContact()} />
+                  </Row>
+                </WayCard>
+                <RelaySignIn url={START_RELAY} token="" onToken={(token, name) => void tookToken(START_RELAY, token, name, true)} onNote={setNote} card />
+                {ownLink ? (
+                  <WayCard
+                    tint="green"
+                    sign={<GlobeIcon color="#ffffff" size={20} />}
+                    title={t('Start without a relay')}
+                    line={
+                      linkNostr
+                        ? t('Give someone who uses Erevos your QR code or link. Texts go through Nostr, over Tor.')
+                        : t('Give someone who uses Erevos your QR code or link. You reach each other when near, over Wi-Fi or Bluetooth.')
+                    }
+                    open={way === 'own'}
+                    onPress={() => setWay((was) => (was === 'own' ? null : 'own'))}
+                  >
                     <Row wrap>
-                      <Button title={t('Show my QR code')} kind="secondary" compact onPress={() => setShowQr(true)} />
+                      <Button title={t('Show my QR code')} compact onPress={() => setShowQr(true)} />
                       <Button
                         title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
                         kind="secondary"
@@ -5245,221 +5312,72 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         onPress={() => void shareLink(ownLink)}
                       />
                     </Row>
-                  </>
+                    {linkNostr ? (
+                      <Text variant="caption" tone="muted">
+                        {t('If they have a relay, an invite to it comes to this phone by itself, and photos, voice messages and calls work too.')}
+                      </Text>
+                    ) : null}
+                    <Text tone="muted">{t('Or add them by their link or QR code:')}</Text>
+                    {addTheirs}
+                  </WayCard>
                 ) : null}
               </View>
-            ) : null}
-            <View style={styles.panel}>
-              {hiddenKey && canRingInBackground ? (
-                <>
-                  <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />
-                  <Text variant="caption" tone="muted">
-                    {watched
-                      ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.')
-                      : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
-                  </Text>
-                  {watchNote ? <Text variant="caption" tone="muted">{watchNote}</Text> : null}
-                  <DetailRow title={t('Ring calls when closed')} checked={ringing} onPress={() => void changeRinging(!ringing)} />
-                  <Text variant="caption" tone="muted">
-                    {ringing
-                      ? t('While these hidden chats are closed and Erevos is in the background, a call from one of their contacts makes the phone ring and show "Incoming call" with no name. On the ringing screen, tap the small sign and type the PIN to answer. Whoever holds the phone sees a call that is in none of your chats, and may guess there are more.')
-                      : t('Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.')}
-                  </Text>
-                  {ringNote ? <Text variant="caption" tone="muted">{ringNote}</Text> : null}
-                </>
-              ) : null}
-              <Row wrap>
-                {canWelcome ? <Button title={t('Invite someone')} compact onPress={() => setWelcoming(true)} /> : null}
-                <TextButton
-                  title={showRelay ? t('Hide relay and new contacts') : newcomer ? t('Set it up yourself') : t('Relay and new contacts')}
-                  onPress={() => {
-                    // Setting it up yourself is setting the relay up.
-                    if (!showRelay && newcomer) setRelayShown(true);
-                    setShowRelay((on) => !on);
-                  }}
-                />
-              </Row>
-              {showRelay ? (
-                <View style={styles.section}>
-                  {ownLink ? (
-                    <View style={styles.section}>
-                      <Text tone="muted">
-                        {ownQueue
-                          ? t('Your relay queue is ready. Give your contact link to whoever may write to you.')
-                          : linkNostr
-                            ? t('No relay queue yet. Your contact link has your keys and where you read on Nostr: who adds it writes to you through Nostr, over Tor, or reaches you nearby, until you have a relay.')
-                            : t('No relay queue yet. Your contact link has only your keys: who adds it reaches you nearby, over Wi-Fi or Bluetooth, until you have a relay.')}
-                      </Text>
-                      <Row wrap>
-                        <Button title={t('Show my QR code')} compact onPress={() => setShowQr(true)} />
-                        <Button
-                          title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
-                          kind="secondary"
-                          compact
-                          onPress={() => void shareLink(ownLink)}
-                        />
-                        {ownQueue && !accountLink() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}
-                      </Row>
-                      {ownQueue && canSharePlace ? (
-                        <View>
-                          <DetailRow
-                            title={t('Share a place on my relay with this link')}
-                            checked={sharePlace}
-                            onPress={() => setSharePlace(!sharePlace)}
-                          />
-                          <Text variant="caption" tone="muted">
-                            {sharePlace
-                              ? t('For a month, whoever adds you with this link and has no relay of their own can take a place on your relay. Anyone who sees the link can, so give it only to whom you mean to.')
-                              : t('The link has no place on your relay in it. Turn this on for someone with no relay of their own.')}
-                          </Text>
-                          {placeNote ? <Text variant="caption" tone="muted">{placeNote}</Text> : null}
-                        </View>
-                      ) : null}
-                    </View>
-                  ) : null}
-                  <Text tone="muted">{t('Add a contact by the contact link they gave you:')}</Text>
-                  <Row>
-                    <Input
-                      value={contactDraft}
-                      onChangeText={setContactDraft}
-                      placeholder={t('erevos://contact link')}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      style={styles.grow}
-                    />
-                    <Button title={t('Add')} compact onPress={() => addContact()} />
-                  </Row>
-                  {/* Not in hidden chats: a photo leaves Erevos, which closes them. */}
-                  {!hiddenKey ? (
+            ) : (
+              <>
+                <View style={styles.panel}>
+                  <Text variant="label">{t('Add a contact')}</Text>
+                  {addTheirs}
+                </View>
+                {ownLink ? (
+                  <View style={styles.panel}>
+                    <Text variant="label">{t('Your contact link')}</Text>
+                    <Text variant="caption" tone="muted">
+                      {t('Whoever has it can write to you, so give it to whom you mean to: they add you with it.')}
+                    </Text>
                     <Row wrap>
-                      {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('camera')} /> : null}
-                      <Button title={t('Choose a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
+                      <Button title={t('Show my QR code')} compact onPress={() => setShowQr(true)} />
+                      <Button
+                        title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
+                        kind="secondary"
+                        compact
+                        onPress={() => void shareLink(ownLink)}
+                      />
+                      {ownQueue && !accountLink() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}
                     </Row>
-                  ) : null}
-                  <TextButton title={relayShown ? t('Hide relay settings') : t('Relay settings')} onPress={() => setRelayShown((on) => !on)} />
-                  {relayShown ? (
-                    <View style={styles.section}>
-                      <Field label={t('Relay address')}>
-                        <Input
-                          value={typedRelay.shown}
-                          onChangeText={typedRelay.type}
-                          onBlur={typedRelay.done}
-                          placeholder="ws://computer-address:7879"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          keyboardType="url"
+                    {ownQueue && canSharePlace ? (
+                      <View>
+                        <DetailRow
+                          title={t('Share a place on my relay with this link')}
+                          checked={sharePlace}
+                          onPress={() => setSharePlace(!sharePlace)}
                         />
-                      </Field>
-                      {isLentToken(relayToken) ? (
                         <Text variant="caption" tone="muted">
-                          {t("A place lent on this relay through a contact's link: no token of your own is needed. Type another relay to use that one instead.")}
+                          {sharePlace
+                            ? t('For a month, whoever adds you with this link and has no relay of their own can take a place on your relay. Anyone who sees the link can, so give it only to whom you mean to.')
+                            : t('The link has no place on your relay in it. Turn this on for someone with no relay of their own.')}
                         </Text>
-                      ) : (
-                        <Field label={t('Token (optional)')}>
-                          <Input
-                            value={typedToken.shown}
-                            onChangeText={typedToken.type}
-                            onBlur={typedToken.done}
-                            placeholder={t('Token, if the relay needs one')}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            secureTextEntry
-                          />
-                        </Field>
-                      )}
-                      {!hiddenKey && relayUrl.trim() ? (
-                        <RelaySignIn
-                          url={relayUrl.trim()}
-                          token={relayToken.trim()}
-                          onToken={(token, name) => void tookToken(relayUrl.trim(), token, name)}
-                          onNote={setNote}
-                        />
-                      ) : null}
-                      {!hiddenKey && relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? (
-                        <RelayInvites relay={{ url: relayUrl.trim(), token: relayToken.trim() }} onNote={setNote} />
-                      ) : null}
-                      <Field label={t('Second relay (optional)')}>
-                        <Input
-                          value={typedVia.shown}
-                          onChangeText={typedVia.type}
-                          onBlur={typedVia.done}
-                          placeholder="wss://another-relay"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          keyboardType="url"
-                        />
-                      </Field>
-                      {typedVia.shown.trim() ? (
-                        <Field label={t('Second relay token (optional)')}>
-                          <Input
-                            value={typedViaToken.shown}
-                            onChangeText={typedViaToken.type}
-                            onBlur={typedViaToken.done}
-                            placeholder={t('Token, if the second relay needs one')}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            secureTextEntry
-                          />
-                        </Field>
-                      ) : null}
-                      <Text variant="caption" tone="muted">
-                        {t("With a second relay, what you send goes through it first, sealed for your relay. Your relay then never sees your phone's address, and the second relay never sees who a message is for. Taking messages still goes straight to your relay.")}
-                      </Text>
-                      <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} />
-                      {hiddenKey ? (
-                        <>
-                          <Field label={t('Home relay for these hidden chats (optional)')}>
-                            <Input
-                              value={homeUrl}
-                              onChangeText={setHomeUrl}
-                              placeholder="wss://relay.at-home.example"
-                              autoCapitalize="none"
-                              autoCorrect={false}
-                              keyboardType="url"
-                            />
-                          </Field>
-                          {homeUrl.trim() ? (
-                            <Field label={t('Home relay token (optional)')}>
-                              <Input
-                                value={homeToken}
-                                onChangeText={setHomeToken}
-                                placeholder={t('Token, if the home relay needs one')}
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                secureTextEntry
-                              />
-                            </Field>
-                          ) : null}
-                          <Text variant="caption" tone="muted">
-                            {t("A second relay with a queue of their own, which contacts write to while your relay cannot be reached. It is kept with these hidden chats only, so the space knows nothing of it, and it is looked at while they are open. Use another one than the space's home relay.")}
-                          </Text>
-                          <Button title={t('Save home relay')} kind="secondary" compact onPress={() => void saveHome()} />
-                          {homeNote ? <Text variant="caption" tone="muted">{homeNote}</Text> : null}
-                        </>
-                      ) : null}
-                    </View>
-                  ) : null}
-                  {/* On a linked computer the phone keeps who is blocked. */}
-                  {!accountLink() ? (
-                    <View style={styles.section}>
-                      <Text variant="label">{t('Blocked contacts')}</Text>
-                      {blocked.length === 0 ? (
-                        <Text variant="caption" tone="muted">
-                          {t('No one is blocked.')}
-                        </Text>
-                      ) : (
-                        blocked.map((b) => (
-                          <Row key={b.identity}>
-                            <Text style={[styles.grow, !b.name && styles.monoName]} numberOfLines={1}>
-                              {b.name || b.identity.slice(0, 16)}
-                            </Text>
-                            <TextButton title={t('Unblock')} onPress={() => void unblock(b.identity)} />
-                          </Row>
-                        ))
-                      )}
-                    </View>
-                  ) : null}
-                  {HAS_LINKS && !hiddenKey ? (
+                        {placeNote ? <Text variant="caption" tone="muted">{placeNote}</Text> : null}
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+                {canWelcome ? (
+                  <WayCard
+                    tint="green"
+                    sign={<PlusIcon color="#ffffff" size={18} />}
+                    title={t('Invite someone')}
+                    line={t('Someone new to Erevos joins your relay and your contacts with one QR code, typing nothing.')}
+                    open={false}
+                    onPress={() => setWelcoming(true)}
+                  />
+                ) : null}
+              </>
+            )}
+            <View style={styles.panel}>
+              {HAS_LINKS && !hiddenKey ? (
+                <>
+                  <DetailRow title={t('Nearby, with no internet')} open={nearbyShown} onPress={() => setNearbyShown((on) => !on)} />
+                  {nearbyShown ? (
                     <View>
                       <DetailRow title={t('Find Erevos on the same Wi-Fi')} checked={lanOn} onPress={() => changeLan(!lanOn)} />
                       <Text variant="caption" tone="muted">
@@ -5495,8 +5413,147 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                       ) : null}
                     </View>
                   ) : null}
-                </View>
+                </>
               ) : null}
+              {/* On a linked computer the phone keeps who is blocked. */}
+              {!accountLink() ? (
+                <>
+                  <DetailRow
+                    title={t('Blocked contacts')}
+                    value={blocked.length > 0 ? String(blocked.length) : undefined}
+                    open={blockedShown}
+                    onPress={() => setBlockedShown((on) => !on)}
+                  />
+                  {blockedShown ? (
+                    <View style={styles.section}>
+                      {blocked.length === 0 ? (
+                        <Text variant="caption" tone="muted">
+                          {t('No one is blocked.')}
+                        </Text>
+                      ) : (
+                        blocked.map((b) => (
+                          <Row key={b.identity}>
+                            <Text style={[styles.grow, !b.name && styles.monoName]} numberOfLines={1}>
+                              {b.name || b.identity.slice(0, 16)}
+                            </Text>
+                            <TextButton title={t('Unblock')} onPress={() => void unblock(b.identity)} />
+                          </Row>
+                        ))
+                      )}
+                    </View>
+                  ) : null}
+                </>
+              ) : null}
+              <DetailRow title={t('For advanced users')} open={relayShown} onPress={() => setRelayShown((on) => !on)} />
+              {relayShown ? (
+                <View style={styles.section}>
+                  <Text variant="caption" tone="muted">
+                    {t('A relay of your own, or one whose address and token you were given. Most people need none of this.')}
+                  </Text>
+                  <Field label={t('Relay address')}>
+                    <Input
+                      value={typedRelay.shown}
+                      onChangeText={typedRelay.type}
+                      onBlur={typedRelay.done}
+                      placeholder="ws://computer-address:7879"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                    />
+                  </Field>
+                  {isLentToken(relayToken) ? (
+                    <Text variant="caption" tone="muted">
+                      {t("A place lent on this relay through a contact's link: no token of your own is needed. Type another relay to use that one instead.")}
+                    </Text>
+                  ) : (
+                    <Field label={t('Token (optional)')}>
+                      <Input
+                        value={typedToken.shown}
+                        onChangeText={typedToken.type}
+                        onBlur={typedToken.done}
+                        placeholder={t('Token, if the relay needs one')}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        secureTextEntry
+                      />
+                    </Field>
+                  )}
+                  {!hiddenKey && relayUrl.trim() ? (
+                    <RelaySignIn
+                      url={relayUrl.trim()}
+                      token={relayToken.trim()}
+                      onToken={(token, name) => void tookToken(relayUrl.trim(), token, name)}
+                      onNote={setNote}
+                    />
+                  ) : null}
+                  {!hiddenKey && relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? (
+                    <RelayInvites relay={{ url: relayUrl.trim(), token: relayToken.trim() }} onNote={setNote} />
+                  ) : null}
+                  <Field label={t('Second relay (optional)')}>
+                    <Input
+                      value={typedVia.shown}
+                      onChangeText={typedVia.type}
+                      onBlur={typedVia.done}
+                      placeholder="wss://another-relay"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="url"
+                    />
+                  </Field>
+                  {typedVia.shown.trim() ? (
+                    <Field label={t('Second relay token (optional)')}>
+                      <Input
+                        value={typedViaToken.shown}
+                        onChangeText={typedViaToken.type}
+                        onBlur={typedViaToken.done}
+                        placeholder={t('Token, if the second relay needs one')}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        secureTextEntry
+                      />
+                    </Field>
+                  ) : null}
+                  <Text variant="caption" tone="muted">
+                    {t("With a second relay, what you send goes through it first, sealed for your relay. Your relay then never sees your phone's address, and the second relay never sees who a message is for. Taking messages still goes straight to your relay.")}
+                  </Text>
+                  <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} />
+                  {hiddenKey ? (
+                    <>
+                      <Field label={t('Home relay for these hidden chats (optional)')}>
+                        <Input
+                          value={homeUrl}
+                          onChangeText={setHomeUrl}
+                          placeholder="wss://relay.at-home.example"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          keyboardType="url"
+                        />
+                      </Field>
+                      {homeUrl.trim() ? (
+                        <Field label={t('Home relay token (optional)')}>
+                          <Input
+                            value={homeToken}
+                            onChangeText={setHomeToken}
+                            placeholder={t('Token, if the home relay needs one')}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            secureTextEntry
+                          />
+                        </Field>
+                      ) : null}
+                      <Text variant="caption" tone="muted">
+                        {t("A second relay with a queue of their own, which contacts write to while your relay cannot be reached. It is kept with these hidden chats only, so the space knows nothing of it, and it is looked at while they are open. Use another one than the space's home relay.")}
+                      </Text>
+                      <Button title={t('Save home relay')} kind="secondary" compact onPress={() => void saveHome()} />
+                      {homeNote ? <Text variant="caption" tone="muted">{homeNote}</Text> : null}
+                    </>
+                  ) : null}
+                </View>
+              ) : (
+                <Text variant="caption" tone="muted">
+                  {t('Relay address and token, a second relay, invites to your relay')}
+                </Text>
+              )}
             </View>
           </ScrollView>
         ) : selectedContact && contacts.some((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === selectedContact) ? (

@@ -12,8 +12,8 @@ On main, not released yet:
 
 - **A handset that looks like one**: the white handset on the green tiles (Phone on the home screen, the call at the top
   of a chat and a group) is drawn as the phone widget draws it, no longer as a ring that looked like a tool.
-- **Begin with no relay, through Nostr**: a phone with no relay, invite or LPHL account shows **No invite?** on its
-  first screen: its QR code and contact link now say where it reads on Nostr, so whoever adds it writes to it there,
+- **Begin with no relay, through Nostr**: a phone with no relay, invite or LPHL account taps **Start without a relay**
+  on **New chat**: its QR code and contact link now say where it reads on Nostr, so whoever adds it writes to it there,
   over Tor. With no relay between two phones, texts, stickers, reactions, edits and the marks that a message came or
   was read all go through Nostr, the first message too; a text not said to have come goes again once a day, for two
   weeks. Photos, voice messages, files and calls still need a relay or the other phone nearby.
@@ -33,6 +33,12 @@ On main, not released yet:
   messages** or **Imported chats**. The PIN is kept only as Argon2id of it, and wrong ones make the next try wait.
   Moved into hidden chats, it asks nothing there; moved back, the same PIN asks again. Where the space has a password,
   **Forgot the PIN?** takes it off with that password.
+- **New chat, easy for everyone**: at the top, **How you connect now** says in plain words how your contacts reach you
+  (through your relay, through Nostr with no relay, or only nearby) and what works that way. A phone with no relay
+  chooses among three big cards: **I have an invite**, **Sign in with LPHL** (one tap opens the browser) and **Start
+  without a relay**. With a relay, **Add a contact** and **Your contact link** come first. **Nearby, with no
+  internet**, **Blocked contacts** and **For advanced users** (the relay's address, token, second relay and invites)
+  stay closed until tapped. **Relay and new contacts** and **Relay settings** are gone.
 
 ## 3.2.1 (2026-10-25)
 

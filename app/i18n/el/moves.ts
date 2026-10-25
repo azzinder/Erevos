@@ -23,7 +23,7 @@ export const moves: Record<string, string> = {
     'Να φτιαχτεί νέος σύνδεσμος επαφής; Οι σύνδεσμοι και οι κωδικοί QR που έδωσες ως τώρα θα λειτουργούν ως τις {date} και μετά όχι. Οι επαφές σου δεν επηρεάζονται.',
   'You have a new contact link. The links and QR codes you gave before work until {date}.':
     'Έχεις νέο σύνδεσμο επαφής. Οι σύνδεσμοι και οι κωδικοί QR που έδωσες πριν λειτουργούν ως τις {date}.',
-  'Create your relay queue first, under Relay and new contacts.': 'Φτιάξε πρώτα την ουρά σου στο relay, στο «Relay και νέες επαφές».',
+  "Create your relay queue first, on New chat.": "Φτιάξε πρώτα την ουρά σου στο relay, στη «Νέα συνομιλία».",
   'Blocked contacts': 'Αποκλεισμένες επαφές',
   'No one is blocked.': 'Δεν έχεις αποκλείσει κανέναν.',
   // What a move says once it is made.

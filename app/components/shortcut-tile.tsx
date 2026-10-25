@@ -23,19 +23,27 @@ const SIGN = 20;
 const WHITE = '#ffffff';
 
 export function ShortcutTile({ label, tint, onPress, children }: { label: string; tint: TileTint; onPress: () => void; children: ReactNode }) {
-  const { top, bottom, deep } = TINTS[tint];
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} style={({ pressed }) => [styles.hit, pressed && styles.pressed]}>
-      <View
-        style={[
-          styles.tile,
-          { backgroundColor: bottom, boxShadow: `0px 3px 8px ${withAlpha(deep, 0.45)}, inset 0px 1px 0px ${withAlpha(WHITE, 0.35)}` },
-          gradientStyle(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`),
-        ]}
-      >
-        {children}
-      </View>
+      <Tile tint={tint}>{children}</Tile>
     </Pressable>
+  );
+}
+
+/** The coloured tile alone, `size` wide, with its sign: also the ways in on New chat (components/connect-cards.tsx). */
+export function Tile({ tint, size = TILE, children }: { tint: TileTint; size?: number; children: ReactNode }) {
+  const { top, bottom, deep } = TINTS[tint];
+  return (
+    <View
+      style={[
+        styles.tile,
+        { width: size, height: size, borderRadius: size * 0.32 },
+        { backgroundColor: bottom, boxShadow: `0px 3px 8px ${withAlpha(deep, 0.45)}, inset 0px 1px 0px ${withAlpha(WHITE, 0.35)}` },
+        gradientStyle(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`),
+      ]}
+    >
+      {children}
+    </View>
   );
 }
 

@@ -178,7 +178,7 @@ phone's own settings do. In the other languages it is named in that language and
 | **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android) and **Widget** (Android). See [Appearance](#appearance). |
 | **Notifications** | **In the background** (Android): receiving and ringing while Erevos is closed, and the notice for messages. **Notifications while closed** (the web app): Web Push. See [On an iPhone](#iphone). |
 | **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second) and [Hidden chats](#hidden). |
-| **Relay and networks** | **Relay** (it opens **New chat** with **Relay and new contacts** and **Relay settings** open), **Home relay**, **Tor** (Android), **Nostr** (Android) and **LoRa radio** (Android). See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr) and [Over a LoRa radio](#lora). |
+| **Relay and networks** | **Relay** (it opens **New chat** with **For advanced users** open), **Home relay**, **Tor** (Android), **Nostr** (Android) and **LoRa radio** (Android). See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr) and [Over a LoRa radio](#lora). |
 | **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
 | **Data and devices** | **Backups**, **Linked devices** and **Imported chats**. See [Backups](#backup), [Linked devices](#devices) and [Imported chats](#import). |
 | **For testing** | **Relay test** and **Radio test** (Android). See [The test screens](#tests). |
@@ -210,8 +210,8 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
 
 1. Open **Nearby phones** from the menu on both phones. The first time, Android asks to find nearby devices (on Android 12 and
    older, also for the location); allow it, or the phones cannot find each other.
-2. If you are not contacts yet, add each other: on one phone tap **Relay and new contacts**, then **Show my QR code**,
-   and scan it with the other, as in [Chat through a relay](#relay). Without a relay the code holds only your keys,
+2. If you are not contacts yet, add each other: on one phone tap **New chat**, then **Show my QR code** (under **Start
+   without a relay** while it has no relay), and scan it with the other, as in [Chat through a relay](#relay). Without a relay the code holds only your keys,
    and you reach each other nearby only, until you have one.
 3. Pick the contact, type in the message bar at the bottom and tap the send arrow. Once their phone answers, the top of the chat says
    **Nearby**.
@@ -227,8 +227,8 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
 - **The same Wi-Fi or a hotspot:** phones on one Wi-Fi, or on one phone's hotspot, find each other and talk directly,
   even when that Wi-Fi has no internet; the desktop app too. If Android asks whether to stay on a Wi-Fi with no
   internet, stay. Anyone on that Wi-Fi can tell an Erevos app is there, not whose. A computer's firewall must let
-  port 47905 in (UDP and TCP). To stop it, turn off **Find Erevos on the same Wi-Fi** under **Relay and new
-  contacts**.
+  port 47905 in (UDP and TCP). To stop it, turn off **Find Erevos on the same Wi-Fi** under **Nearby, with no
+  internet**, on **New chat**.
 - **A Wi-Fi of their own (Android 10 and later):** with no Wi-Fi in common, two Erevos phones near each other make a
   small Wi-Fi of their own (Wi-Fi Direct) and talk over it as on the same Wi-Fi: faster than Bluetooth, and a call
   goes over it with no internet. It asks nothing; each phone stays on its own Wi-Fi too where it can. Anyone near can
@@ -244,7 +244,7 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
   more phones at most that it meets, and hands it to that relay through its own relay once it can; so does yours.
   They cannot read it, nor tell who it is from or for: they see only the relay's address. It stays when Erevos
   closes, sealed on the phone. Yours stay in your space, and go only while it is open. Carrying for others is off
-  unless you turn on **Carry messages for others** under **Relay and new contacts**, and then only for relays on the
+  unless you turn on **Carry messages for others** under **Nearby, with no internet**, on **New chat**, and then only for relays on the
   internet over TLS (wss://): a stranger nearby never has your phone, or your relay, reach one on a local network or
   on the phone itself. Your own messages are carried by the phones nearby that have it on.
 
@@ -312,18 +312,20 @@ your phone's address. A phone with no relay gets a place on its contact's, see *
 **Why:** with queues and no accounts, no server holds a list of who knows whom, and no one needs your phone number or
 email to reach you: whoever has your contact link can write to your queue, and only you read it.
 
-1. On the home screen, tap **New chat**. It shows your contact link and how to add a contact; tap **Relay settings**
-   below them (in a chat with no contact picked, they are under **Relay and new contacts**). **Settings** → **Relay
-   and networks** → **Relay** opens the same, with **Relay and new contacts** and **Relay settings** already open.
-2. Type the **Relay address**: \`ws://<computer address>:7879\` for a relay on your own network, or
+1. On the home screen, tap **New chat**. At the top, **How you connect now** says in plain words how your contacts
+   reach you: through your relay, through Nostr with no relay, or only nearby. Below it are the ways in for a phone
+   with no relay yet, or, with a relay, **Add a contact** and **Your contact link**. The relay's own settings are under
+   **For advanced users**, at the bottom; **Settings** → **Relay and networks** → **Relay** opens New chat with them open.
+2. Under **For advanced users**, type the **Relay address**: \`ws://<computer address>:7879\` for a relay on your own network, or
    \`wss://relay.example.org\` for one on the internet. Add the **Token** if the relay needs one.
-3. Tap **Create my relay queue**. Erevos says **Your relay queue is ready**.
-4. Tap **Show my QR code**: it opens over the screen. Let the other phone scan it with its camera, then open the link in Erevos. The
+3. Tap **Create my relay queue**. Erevos says **Relay queue created**, and **How you connect now** says **Through your
+   relay**: everything works, texts, photos, voice messages, calls and groups.
+4. Under **Your contact link**, tap **Show my QR code**: it opens over the screen. Let the other phone scan it with its camera, then open the link in Erevos. The
    **Add a contact** screen shows what it holds: tap **Add to chat** only if you scanned it yourself. **Add and connect
    to one of my contacts** adds them too, linked to the contact you choose, whose name the chat takes.
 5. If their camera only shows the text, or they are far away, tap **Share my contact link** and send it to them.
-   They paste it into **erevos://contact link** and tap **Add**.
-6. Or the other way round: under **Add**, tap **Take a photo of the QR code** on their screen, or **Choose a photo of the
+   They paste it into the field under **Add a contact** and tap **Add**.
+6. Or the other way round: under **Add a contact**, tap **Take a photo of the QR code** on their screen, or **Choose a photo of the
    QR code** for a screenshot or a photo of it they sent you. Erevos reads it and adds them at once. On a computer, on
    Sailfish OS and in the web app there is only **Choose a photo of the QR code**; on an iPhone it offers the camera too.
    Hidden chats have neither, as a photo leaves Erevos, which closes them: paste their link there.
@@ -369,7 +371,7 @@ runs the relay can take any one phone out alone.
   cannot come back with it. Phones with tokens of their own go on as they are: only a phone with the old token still
   typed in (not opened since, or with an older Erevos) needs the new one.
 - **Hidden chats** keep the relay token typed in for them: trading it at the same moment as the space's would show the
-  relay that they are this phone's. When the relay's token changes, type the new one in their **Relay settings**.
+  relay that they are this phone's. When the relay's token changes, type the new one under their **For advanced users**.
 
 **Why:** the relay gives each connection a thread of its own, so it serves only so many at once; and it adds only so
 many lines a day for phones that came with its one token, so a token that went where it should not cannot fill its file
@@ -385,19 +387,20 @@ nothing, and you are each other's contacts at once, with no message request.
   their phone, they scan it with the camera and open the link in Erevos, or tap **Share the invite** and send them the
   link. It is for one person, for 7 days, or less when the relay's invite ends sooner. Whoever takes it first has it,
   so give it to them only.
-- **To join:** a phone with no relay yet shows **Start with an invite**. Scan the invite with the camera and open the
-  link in Erevos, or tap **Take a photo of the invite** or **Choose a photo of the invite**, or paste the link and tap
+- **To join:** on a phone with no relay yet, **New chat** shows **Choose how to start**: tap **I have an invite**. Scan
+  the invite with the camera and open the link in Erevos, or tap **Take a photo of the invite** or **Choose a photo of the invite**, or paste the link and tap
   **Join**. The link opens **… invites you to Erevos**: tap **Join** only if it came from them. Erevos takes access of
   its own to their relay and a queue there, adds them and says **Welcome to Erevos**. Its first message tells their
   phone, which adds this one as a contact at once, named as they typed.
-- **With an account instead:** under **Start with an invite**, **Sign in with LPHL** signs this phone in to LPHL's
-  relay with an LPHL account, in the browser (see Signing in to the relay below); then add your contacts by their
-  invites or links. **Set it up yourself** opens the relay settings, as in 1 to 6 above.
+- **With an account instead:** **Sign in with LPHL**, the second way in, signs this phone in to LPHL's relay with an
+  LPHL account, in the browser (see Signing in to the relay below); then add your contacts by their invites or links.
+  The third, **Start without a relay**, is in With no relay at all, under Through Nostr. **For advanced users** has
+  the relay settings, as in 1 to 6 above.
 - **What your relay must allow:** the access of its own is an invite to your relay (see Invites to the relay below),
   so it comes only from a phone with a token of its own on a relay that takes invites. It counts among your invites,
   under the name you typed for them, and goes with yours. A phone with the relay's one token for all trades it for one
   of its own first (see Ways in to the relay above); where the relay does not, it makes no invite: sign in to the relay
-  first (below the **Token**, in **Relay settings**), or take an invite to it. When your relay takes no invites, the invite still makes you contacts, and their phone uses your relay only as
+  first (below the **Token**, under **For advanced users**), or take an invite to it. When your relay takes no invites, the invite still makes you contacts, and their phone uses your relay only as
   your contact link lets it, as in No relay of your own below.
 - **A phone with a relay already** keeps its own: the invite only adds you, and you are contacts at once all the same.
 - **What is kept:** your phone keeps each invite's secret and the name for them, sealed in the space, until it is used
@@ -412,7 +415,7 @@ takes a place there, with no token.
   relay, lent through their link, and uses it as its own from then on: your own link names it, so others reach you
   there too.
 - **Who lends:** your link carries a ticket for a place on your relay only when you turn on **Share a place on my
-  relay with this link**, under your link in **Relay and new contacts**, and only for the link shown then: the next
+  relay with this link**, under **Your contact link** on **New chat**, and only for the link shown then: the next
   time the chat opens, it is off again. The relay needs a key for two-hop sending, and lends only once whoever runs
   it turns lending on; they can also take back a ticket's places. A ticket lasts 30 days and gives up to four places. Anyone who sees a link with a ticket
   can take a place with it, so give such a link only to whom you mean to.
@@ -434,13 +437,13 @@ photos and voice messages a day, so it never takes the relay's whole store.
 A phone with a token of its own on a relay that takes invites can let one more phone use that relay, with a token of
 that phone's own, so no token is typed or passed on.
 
-- **To invite:** in **Relay settings**, under **Relay and new contacts**, below the **Token**, tap **Invite to the relay**, type who it is
+- **To invite:** under **For advanced users** on **New chat**, below the **Token**, tap **Invite to the relay**, type who it is
   for and tap **Make the invite**. A QR code opens: let their phone scan it with its camera and open the link in
   Erevos, or tap **Share the invite** and send it to them. It is good for one phone for 7 days, and whoever takes it
   first has it, so show it to them only.
 - **To take one:** the link opens **Invite to a relay**, with the relay's address: tap **Use this relay** only if it
   came from someone you know. In Erevos, **Take a photo of the QR code** and **Choose a photo of the QR code** under
-  **Add** read an invite too, and its link can be pasted into **erevos://contact link**. Erevos makes a token for this
+  **Add a contact** read an invite too, and its link can be pasted into the field there. Erevos makes a token for this
   phone, keeps it with the relay's address in this space only, makes your queue there and says the name the relay gave
   the phone. If the phone uses another relay, it asks first, and contacts learn your new queue from your next message.
   Erevos takes an invite to a wss:// relay, or to a ws:// one on a home network only (such as
@@ -616,8 +619,8 @@ which a deletion leaves alone, so every link and QR code you gave keeps working.
 
 - **Block contact**, under it, does the same, and also drops what they send later, a request too. **Block**, beside
   **Refuse**, blocks a message request: a request knows only your contact link, so it moves your queue only while the
-  link still names that one, as it does until your first move. Whoever you blocked is under **Blocked contacts** in
-  **Relay and new contacts**, with **Unblock**. Adding them again from their link asks you to unblock them first;
+  link still names that one, as it does until your first move. Whoever you blocked is under **Blocked contacts** on
+  **New chat**, with **Unblock**. Adding them again from their link asks you to unblock them first;
   until then nothing adds them, neither their answer to an invite by SMS nor their contact link in a group.
 - **Groups:** someone in one of your groups can still write to you there. Erevos says in how many you are together:
   leave them, or ask their admin to take them out.
@@ -1069,8 +1072,8 @@ one at home, on a Raspberry Pi or an old computer, or any other relay you trust.
   has one) and choose **Save**. Contacts learn it from your next message to them, or from your new contact link.
 - **What it sees:** what your relay sees, this phone's address when it takes messages, and when and how much comes.
   Hidden chats do not use it.
-- **For hidden chats:** each hidden place can have a home relay of its own, in **Relay settings** under **Relay and
-  new contacts** while it is open. It is kept with that place only, sealed with its PIN, so the space knows nothing of it, and it is looked
+- **For hidden chats:** each hidden place can have a home relay of its own, under **For advanced users** on its
+  screen with no chat picked, while it is open. It is kept with that place only, sealed with its PIN, so the space knows nothing of it, and it is looked
   at while the place is open. Use another relay than the space's: one relay seeing both queues would tie them
   together.
 
@@ -1163,8 +1166,8 @@ voice messages through Nostr are still to come.
 A phone with no relay, no invite and no LPHL account can still begin: its contact link and QR code say where it reads
 on Nostr, and that is enough to talk.
 
-- **To begin:** on the first screen, under **No invite?**, tap **Show my QR code** or **Share my contact link**, and
-  give it to someone who uses Erevos. Who adds it writes to you through Nostr, over Tor, and shows as a message request,
+- **To begin:** on **New chat**, tap **Start without a relay**, then **Show my QR code** or **Share my contact link**,
+  and give it to someone who uses Erevos. Who adds it writes to you through Nostr, over Tor, and shows as a message request,
   which you accept. You can add their link or QR code too, the same way.
 - **What goes:** texts, stickers, reactions, edits, and the marks that a message came or was read, all through Nostr.
   Photos, voice messages, files, calls, groups and hidden chats need a relay, or the other phone nearby.

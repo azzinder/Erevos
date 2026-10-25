@@ -282,7 +282,7 @@ export class QueueMove {
     return this.run(async () => {
       const space = await this.at.data.load();
       const url = space.url.trim();
-      if (!url || !space.ownQueue) throw new Error(t('Create your relay queue first, under Relay and new contacts.'));
+      if (!url || !space.ownQueue) throw new Error(t('Create your relay queue first, on New chat.'));
       const here = { url, token: space.token.trim() };
       const { q } = await this.reconcile(space, here, own);
       const started = Date.now();

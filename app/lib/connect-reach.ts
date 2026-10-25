@@ -1,0 +1,53 @@
+import { t } from './i18n';
+
+// How this phone reaches its contacts now, as New chat says it at the top (app/chat.tsx,
+// components/connect-cards.tsx): everywhere through its relay, or a linked device through the
+// phone; only part of the way with a relay but no queue on it, or through Nostr with no relay; or
+// only nearby. Self-contained on purpose (but for i18n), so it can run under plain Node for checks.
+
+/** How far this phone reaches its contacts: everywhere through a relay, only part of the way, or only nearby. */
+export type Reach = 'ready' | 'part' | 'none';
+
+export type Connection = {
+  /** A linked device, which has the phone's contacts and link. */
+  linked: boolean;
+  /** The relay's address, as typed. */
+  relayUrl: string;
+  /** Whether this phone has its queue on that relay. */
+  queue: boolean;
+  /** Hidden chats, not the space's own. */
+  hidden: boolean;
+  /** Whether the contact link says where this phone reads on Nostr. */
+  nostr: boolean;
+  /** Whether this device looks for Erevos nearby (lib/radio.ts HAS_LINKS). */
+  nearby: boolean;
+  /** A place on the relay lent through a contact's link. */
+  lent: boolean;
+  /** Whether what is sent goes through a second relay first. */
+  via: boolean;
+};
+
+/** What New chat says of `c`: how far it reaches, a title, a line in plain words, and the relay's address with what goes with it. */
+export function connectReach(c: Connection): { reach: Reach; title: string; line: string; detail?: string } {
+  const host = c.relayUrl.trim().replace(/^wss?:\/\//i, '').replace(/\/+$/, '');
+  const detail = c.linked || !host ? undefined : [host, c.lent ? t('lent by a contact') : '', c.via ? t('through a second relay') : ''].filter(Boolean).join(' · ');
+  if (c.linked) {
+    return { reach: 'ready', title: t('Linked to your phone'), line: t('This device is linked to your phone: it has its contacts, and your contact link is the phone’s.') };
+  }
+  if (c.queue) {
+    const line = c.hidden
+      ? t('These hidden chats have a queue of their own on it, which the space knows nothing of.')
+      : `${t('Everything works: texts, photos, voice messages, calls and groups, end-to-end encrypted.')}${c.nearby ? ` ${t('Contacts near you reach you with no internet too.')}` : ''}`;
+    return { reach: 'ready', title: t('Through your relay'), line, detail };
+  }
+  if (host) return { reach: 'part', title: t('Relay set, no queue yet'), line: t('Create your queue on it, so that your contacts can write to you there.'), detail };
+  if (c.hidden) return { reach: 'none', title: t('No relay yet'), line: t('Hidden chats need a relay: type its address under For advanced users, then create their queue.') };
+  if (c.nostr) {
+    return {
+      reach: 'part',
+      title: t('Through Nostr, with no relay'),
+      line: t('Texts, stickers and reactions go through Nostr, over Tor. Photos, voice messages, calls and groups need a relay: choose a way in below.'),
+    };
+  }
+  return { reach: 'none', title: t('Only nearby, for now'), line: t('Contacts you add reach you over Wi-Fi or Bluetooth when near. To reach them anywhere, choose a way in below.') };
+}
