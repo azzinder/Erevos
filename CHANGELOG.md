@@ -10,6 +10,10 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- Nothing yet.
+
+## 3.1.2 (2026-10-25)
+
 - **Settings, in groups**: the home screen's **⋯** keeps only the places (**New group**, **Public groups**,
   **Starred messages**, **Nearby phones**, **Contacts**, **Phone**, **User guide**) and, last, **Settings**, named in
   English too in the other languages. Settings has a search at the top that finds a setting by its words and says
