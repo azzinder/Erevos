@@ -12,6 +12,12 @@ What a chat asks of the phone itself on Android that React Native does not give:
   the phone after. The location permission is declared here with
   `uses-permission-sdk-23`, so it does not clash with erevos-radio's, which is
   limited to Android 12 and older.
+- `remind(id, at)` and `forgetReminder(id)`: the reminders of Chat with myself
+  (`Reminders.kt`). Android itself tells each at its time, with Erevos closed and
+  every space locked, in a notice that says only that a reminder came: just the
+  id and the time are kept here, what it reminds of stays encrypted in its space.
+  The alarm is set again when the phone starts, the app is updated or the time
+  changes.
 
-Used by `lib/clipboard.ts` and `lib/place.ts`. Plain Kotlin on the Android SDK,
+Used by `lib/clipboard.ts`, `lib/place.ts` and `lib/myself.ts`. Plain Kotlin on the Android SDK,
 no other library.

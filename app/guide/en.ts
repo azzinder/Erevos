@@ -47,7 +47,10 @@ same whether a space has any or not: their messages can be read only while their
 - **The picture** is drawn from the contact's key: the same key always gives the same colours and moon (in greens under Matrix), so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
 - **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
-- **New chat**, at the bottom, opens the relay settings and adding a contact.
+- **Chat with myself**, always first in the chats, with a pin, holds your notes to yourself: see Chat with myself and
+  reminders below.
+- **New chat**, at the bottom, opens the relay settings and adding a contact. **Remind me**, the orange bell beside it,
+  writes a reminder for you.
 - **The green handset and the violet person** at the top, on Android, open **Phone** and **Contacts** at once, in the
   colours of their icons on the phone's home screen. They are not in the menu under the three dots as well.
 - **All messages**, **SMS** and **Erevos**, above the chats once there are SMS conversations too, show all of them,
@@ -86,6 +89,29 @@ A good first hour:
 3. Add each other with **Show my QR code**, as in [Chat with a nearby phone](#nearby), and send a message: it goes
    nearby, end-to-end encrypted, with no relay and no internet.
 4. To talk from further away, set up a relay as in [Chat through a relay](#relay).
+
+### Chat with myself and reminders
+
+**Chat with myself** is always at the top of the chats, with a pin, in every space. It is a chat with no one else in
+it: write notes, links, photos, files and voice messages to yourself, as in any chat. Nothing in it goes anywhere: it
+stays on this phone, encrypted in the space, and is not passed on to your linked devices. A backup takes its notes and
+voice messages, but not its photos and files, as with chats.
+
+- **A reminder:** tap **Remind me** (the orange bell beside **New chat**), write what to remind you of, pick a time
+  (**In 1 hour**, **Tonight 20:00**, **Tomorrow 09:00**, or any day, hour and minute) and tap **Remind me**. It goes in
+  Chat with myself, with a bell and its time. In the chat, **+** → **Remind me**, or holding the send arrow, gives the
+  note you write a time too.
+- **At its time**, on Android, the phone shows a notice that says only **Reminder**, with Erevos closed and locked too;
+  tapped, it opens Chat with myself, after the password. Until you open the chat, the reminder shows on its row at the
+  top of the chats, with a count, and in the chat with a coloured edge. On a computer, in the web app, or with notices
+  turned off, that is where you see it.
+- **Holding a note** offers **Copy**, **Open** (a photo or a file), **Remind me**, or **Change the reminder** and **No
+  reminder**, and **Delete**.
+- Each space has a Chat with myself of its own; hidden chats have none of their own yet.
+
+**Why:** a notice shows on the locked screen to whoever holds the phone, so what a reminder says stays encrypted in its
+space and Android is told only its time: the notice cannot tell anyone what you wanted to remember, nor which space it
+is in. And the notes go to no one, not even your other devices, so no relay ever carries them.
 
 ### Moving around with swipes
 
@@ -1526,7 +1552,7 @@ what the places taken away hold.
 ## Backups {#backup}
 
 A backup is one file holding everything Erevos keeps on this phone: every space, with its contacts, the keys of its
-conversations, its messages, voice messages, imported chats and hidden chats, and the lock. Inside it each space stays
+conversations, its messages, voice messages, imported chats and hidden chats, its Chat with myself, and the lock. Inside it each space stays
 sealed with its own password, and the file is sealed again with a password of its own. It is under **Settings** →
 **Data and devices** → **Backups**.
 

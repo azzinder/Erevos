@@ -22,9 +22,10 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import java.util.concurrent.atomic.AtomicBoolean
 
 // What a chat asks of the phone itself and React Native does not give: the clipboard, for Copy in
-// a message's menu, where the phone is, once, to send as a place, and keeping Erevos's screen out
-// of screenshots and the recent apps preview (lib/screen-privacy.ts). What is copied is marked
-// sensitive, so Android's notice of a copy (Android 13 and later) does not show the words. Where
+// a message's menu, where the phone is, once, to send as a place, keeping Erevos's screen out of
+// screenshots and the recent apps preview (lib/screen-privacy.ts), and the reminders of Chat with
+// myself (Reminders.kt). What is copied is marked sensitive, so Android's notice of a copy
+// (Android 13 and later) does not show the words. Where
 // the phone is comes from its own location, by satellite when Erevos may and it is on, otherwise
 // as the phone's location settings find it; only when asked, and never followed after. Plain
 // Android, no other library.
@@ -68,6 +69,19 @@ class ErevosDeviceModule : Module() {
         else activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
       }
       true
+    }
+
+    // A reminder of Chat with myself for `at` (milliseconds), told by Android with Erevos closed
+    // (Reminders.kt), in place of one with this id. False when too many wait or there is no app.
+    Function("remind") { id: String, at: Double ->
+      val app = context?.applicationContext ?: return@Function false
+      Reminders.remind(app, id, at.toLong())
+    }
+
+    // Forgets a reminder that has not come.
+    Function("forgetReminder") { id: String ->
+      val app = context?.applicationContext ?: return@Function Unit
+      Reminders.forget(app, id)
     }
 
     // Starts looking for where the phone is, once: what it finds comes as onPlace. Says "" when it

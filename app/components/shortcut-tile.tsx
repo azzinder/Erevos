@@ -85,9 +85,8 @@ export function PhoneSign() {
   );
 }
 
-/** A head and shoulders, filled. */
-export function PersonSign() {
-  const size = SIGN;
+/** A head and shoulders, filled: also Chat with myself's picture (components/myself-face.tsx). */
+export function PersonSign({ size = SIGN }: { size?: number }) {
   return (
     <View style={{ width: size, height: size, alignItems: 'center' }}>
       <View style={{ width: size * 0.44, height: size * 0.44, borderRadius: size, backgroundColor: WHITE }} />

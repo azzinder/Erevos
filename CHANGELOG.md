@@ -29,6 +29,12 @@ On main, not released yet:
 - **Coloured shortcuts on the home screen**: at the top, **Phone** is a green tile with a handset, **Contacts** a violet
   one with a person (the colours of their icons on the phone's home screen) and the lock an orange one. Phone and
   Contacts left the menu under the three dots, where they were twice.
+- **Chat with myself and Remind me**: **Chat with myself** is always first in the chats, with a pin, in every space:
+  notes, links, photos, files and voice messages that go to no one, kept on this phone, encrypted in the space.
+  **Remind me**, an orange bell beside **New chat**, writes a reminder for a time you pick; in the chat, **+** →
+  **Remind me**, or holding the send arrow, does too. At its time, on Android, a notice says only **Reminder**, with
+  Erevos closed and locked too, and opens Chat with myself after the password; until the chat is opened, the reminder
+  shows on its row with a count. Backups take its notes and voice messages. Needs the new Android app for the notice.
 - **The guide says why**: almost every part of the **User guide** now ends with a **Why** that says what the way it
   works protects, or why it was chosen: from why hidden chats have four places instead of a key for each chat, to why
   only the sender's phone fetches a link's preview. A few names in it now match the app (**Safety number**, **Appear

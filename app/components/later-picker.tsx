@@ -5,9 +5,9 @@ import { t } from '../lib/i18n';
 import { canPick, firstLater, laterClock, laterDay, laterLabel, quickTimes, stepLater } from '../lib/later';
 import { Button, Chip, Row, Text } from './ui';
 
-// Choosing when a message or an SMS sent for later goes (lib/later.ts): a time at a tap, or the
-// day, the hour and the minutes, each a step at a time. Drawn without the phone's own pickers, so
-// the same on every platform.
+// Choosing when a message or an SMS sent for later goes (lib/later.ts), or when a note of Chat with
+// myself reminds (lib/myself.ts): a time at a tap, or the day, the hour and the minutes, each a step
+// at a time. Drawn without the phone's own pickers, so the same on every platform.
 
 function Stepper({ label, value, onStep }: { label: string; value: string; onStep: (by: number) => void }) {
   return (
@@ -26,8 +26,11 @@ function Stepper({ label, value, onStep }: { label: string; value: string; onSte
   );
 }
 
-/** Picks a time ahead and gives it to `onPick`, with Send later; one gone by, or more than a year ahead, cannot be picked. */
-export function LaterPicker({ onPick }: { onPick: (at: number) => void }) {
+/**
+ * Picks a time ahead and gives it to `onPick`, with Send later, or `remind`: with Remind me, for a
+ * reminder of Chat with myself. One gone by, or more than a year ahead, cannot be picked.
+ */
+export function LaterPicker({ onPick, remind = false }: { onPick: (at: number) => void; remind?: boolean }) {
   const [at, setAt] = useState(() => firstLater());
   const ahead = at > Date.now();
   const fits = canPick(at);
@@ -45,9 +48,15 @@ export function LaterPicker({ onPick }: { onPick: (at: number) => void }) {
         <Stepper label={t('Minutes')} value={clock.minute} onStep={(by) => setAt(stepLater(at, 'minute', by))} />
       </Row>
       <Text variant="caption" tone={fits ? 'muted' : undefined}>
-        {fits ? t('Goes on {when}.', { when: laterLabel(at) }) : ahead ? t('At most a year ahead.') : t('That time has gone by. Choose one ahead.')}
+        {fits
+          ? remind
+            ? t('Reminds you on {when}.', { when: laterLabel(at) })
+            : t('Goes on {when}.', { when: laterLabel(at) })
+          : ahead
+            ? t('At most a year ahead.')
+            : t('That time has gone by. Choose one ahead.')}
       </Text>
-      <Button title={t('Send later')} compact disabled={!fits} onPress={() => canPick(at) && onPick(at)} />
+      <Button title={remind ? t('Remind me') : t('Send later')} compact disabled={!fits} onPress={() => canPick(at) && onPick(at)} />
     </View>
   );
 }

@@ -1,0 +1,25 @@
+// The Portuguese of Chat with myself and its reminders (app/myself.tsx, lib/myself.ts, Remind me
+// on the home screen), as in i18n/el/myself.ts.
+export const myself: Record<string, string> = {
+  'Chat with myself': 'Conversa comigo',
+  'Only you · on this phone': 'Só você · neste celular',
+  'Notes, links and reminders only you see': 'Notas, links e lembretes que só você vê',
+  'Write a note to yourself': 'Escreva uma nota para você',
+  'Write here what you want to keep: notes, links, photos, files, voice messages. Only you see them. Under "+", or holding the send arrow, a note can remind you at a time.': 'Escreva aqui o que quiser guardar: notas, links, fotos, arquivos, mensagens de voz. Só você os vê. Em “+”, ou segurando a seta de enviar, uma nota pode lembrar você de algo num horário.',
+  'Notes stay on this phone, encrypted in this space, and go to no one. Photos and files are not in backups.': 'As notas ficam neste celular, criptografadas neste espaço, e não vão para ninguém. Fotos e arquivos não entram nos backups.',
+  'Cannot read your notes. {error}': 'Não foi possível ler suas notas. {error}',
+  'Not kept. Files can be 100 MB at most.': 'Não guardado. Os arquivos podem ter no máximo 100 MB.',
+  'Delete this note?': 'Apagar esta nota?',
+  'It is deleted from this phone, with what it holds, and cannot be brought back.': 'Ela é apagada deste celular, com o que contém, e não pode ser recuperada.',
+  'You have {n} notes, the most there can be. Delete some to make room.': 'Você tem {n} notas, o máximo possível. Apague algumas para abrir espaço.',
+  'Remind me': 'Lembrar-me',
+  'Reminders': 'Lembretes',
+  'What to remind you of': 'Do que lembrar você',
+  'Write what to remind you of first.': 'Escreva primeiro do que lembrar você.',
+  'It goes in Chat with myself, and only says “Reminder” on the phone at that time.': 'Vai para a Conversa comigo, e nesse horário o celular diz só “Lembrete”.',
+  'Reminds you on {when}.': 'Lembra você em {when}.',
+  'Reminded you on {when}.': 'Lembrou você em {when}.',
+  'Change the reminder': 'Mudar o lembrete',
+  'No reminder': 'Sem lembrete',
+  'No reminder.': 'Sem lembrete.',
+};

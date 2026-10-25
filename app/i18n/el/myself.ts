@@ -1,0 +1,25 @@
+// The Greek of Chat with myself and its reminders (app/myself.tsx, lib/myself.ts, Remind me
+// on the home screen) (i18n/el/index.ts).
+export const myself: Record<string, string> = {
+  'Chat with myself': 'Συνομιλία με τον εαυτό μου',
+  'Only you · on this phone': 'Μόνο εσύ · σε αυτό το τηλέφωνο',
+  'Notes, links and reminders only you see': 'Σημειώσεις, σύνδεσμοι και υπενθυμίσεις που βλέπεις μόνο εσύ',
+  'Write a note to yourself': 'Γράψε μια σημείωση στον εαυτό σου',
+  'Write here what you want to keep: notes, links, photos, files, voice messages. Only you see them. Under "+", or holding the send arrow, a note can remind you at a time.': 'Γράψε εδώ ό,τι θέλεις να κρατήσεις: σημειώσεις, συνδέσμους, φωτογραφίες, αρχεία, φωνητικά μηνύματα. Τα βλέπεις μόνο εσύ. Από το «+», ή κρατώντας πατημένο το βέλος αποστολής, μια σημείωση μπορεί να σου θυμίσει κάτι την ώρα που θα διαλέξεις.',
+  'Notes stay on this phone, encrypted in this space, and go to no one. Photos and files are not in backups.': 'Οι σημειώσεις μένουν σε αυτό το τηλέφωνο, κρυπτογραφημένες σε αυτόν τον χώρο, και δεν πηγαίνουν σε κανέναν. Οι φωτογραφίες και τα αρχεία δεν μπαίνουν στα αντίγραφα ασφαλείας.',
+  'Cannot read your notes. {error}': 'Δεν διαβάζονται οι σημειώσεις σου. {error}',
+  'Not kept. Files can be 100 MB at most.': 'Δεν κρατήθηκε. Τα αρχεία μπορούν να είναι έως 100 MB.',
+  'Delete this note?': 'Να διαγραφεί αυτή η σημείωση;',
+  'It is deleted from this phone, with what it holds, and cannot be brought back.': 'Διαγράφεται από αυτό το τηλέφωνο, μαζί με ό,τι περιέχει, και δεν επανέρχεται.',
+  'You have {n} notes, the most there can be. Delete some to make room.': 'Έχεις {n} σημειώσεις, όσες χωράνε. Διάγραψε μερικές για να κάνεις χώρο.',
+  'Remind me': 'Υπενθύμιση',
+  'Reminders': 'Υπενθυμίσεις',
+  'What to remind you of': 'Τι να σου θυμίσω',
+  'Write what to remind you of first.': 'Γράψε πρώτα τι να σου θυμίσω.',
+  'It goes in Chat with myself, and only says “Reminder” on the phone at that time.': 'Μπαίνει στη Συνομιλία με τον εαυτό μου, και εκείνη την ώρα το τηλέφωνο λέει μόνο «Υπενθύμιση».',
+  'Reminds you on {when}.': 'Υπενθύμιση: {when}.',
+  'Reminded you on {when}.': 'Υπενθυμίστηκε: {when}.',
+  'Change the reminder': 'Αλλαγή υπενθύμισης',
+  'No reminder': 'Χωρίς υπενθύμιση',
+  'No reminder.': 'Χωρίς υπενθύμιση.',
+};

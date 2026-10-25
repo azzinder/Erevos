@@ -1,11 +1,14 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FoundRow } from '../components/found-row';
-import { GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
+import { gradientStyle } from '../components/glass';
+import { BellIcon, GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
+import { LaterPicker } from '../components/later-picker';
+import { MyselfFace } from '../components/myself-face';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LockSign, PersonSign, PhoneSign, ShortcutTile } from '../components/shortcut-tile';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
@@ -19,10 +22,13 @@ import { copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { lang, mark, t } from '../lib/i18n';
+import { laterLabel } from '../lib/later';
+import { armReminders, myNotes, notesSummary, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, showsIn, shownName, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { checksOffered, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
+import { MAX_NOTE_TEXT } from '../lock/myself-data';
 import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
 import { publicMemberName, spaceGroups } from '../lib/space-groups';
@@ -175,6 +181,50 @@ export default function Home() {
     router.push('/chat?hidden=open');
   }
   const [menu, setMenu] = useState(false);
+  // Chat with myself, always at the top of the chats, and Remind me beside New chat (lib/myself.ts).
+  const [notes, setNotes] = useState<Note[] | null>(null);
+  const [reminding, setReminding] = useState(false);
+  const [reminder, setReminder] = useState('');
+  const [reminderSaid, setReminderSaid] = useState('');
+  const wide = useWindowDimensions().width >= 400;
+  // The notes, read again whenever they change; reminders still to come are asked of the phone
+  // again, as after a backup was put back.
+  useEffect(() => {
+    let live = true;
+    const load = () =>
+      myNotes().then(
+        (list) => {
+          if (!live) return;
+          setNotes(list);
+          armReminders(list);
+        },
+        () => undefined,
+      );
+    void load();
+    const off = onNotesChanged(() => void load());
+    return () => {
+      live = false;
+      off();
+    };
+  }, []);
+  const closeReminder = () => {
+    setReminding(false);
+    setReminder('');
+    setReminderSaid('');
+  };
+  async function keepReminder(due: number) {
+    const text = reminder.trim();
+    if (!text) {
+      setReminderSaid(t('Write what to remind you of first.'));
+      return;
+    }
+    try {
+      await writeNote({ text: text.slice(0, MAX_NOTE_TEXT), due });
+      closeReminder();
+    } catch (error) {
+      setReminderSaid(t('Not kept. {reason}', { reason: error instanceof Error ? error.message : String(error) }));
+    }
+  }
   const closeMenu = () => setMenu(false);
   const [now, setNow] = useState(Date.now());
   // The contacts whose phones said they are open, and not long ago (lib/e2e.ts).
@@ -426,6 +476,8 @@ export default function Home() {
           {folders.trash ? <Chip label={t('Trash · {n}', { n: folders.trash })} onPress={() => router.push('/sms-folder?folder=trash')} /> : null}
         </Row>
       ) : null}
+      {/* Chat with myself stays first, whatever comes in, but for the SMS alone and a search. */}
+      {notes !== null && !query.trim() && show !== 'sms' ? <MyselfRow notes={notes} /> : null}
     </View>
   );
 
@@ -494,25 +546,40 @@ export default function Home() {
           }
         />
       </SwipeTabs>
-      <Pressable
-        onPress={() => router.push('/chat?setup=1')}
-        onLongPress={() => setDoor(true)}
-        delayLongPress={DOOR_HOLD}
-        accessibilityRole="button"
-        accessibilityLabel={t('New chat')}
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: insets.bottom + space.xl },
-          // Neon and Matrix: lit, so it glows.
-          shape.glow && { boxShadow: `0px 0px 18px ${withAlpha(colors.primary, 0.6)}` },
-          pressed && styles.fabPressed,
-        ]}
-      >
-        <PlusIcon color={colors.onPrimary} size={20} />
-        <Text variant="label" color={colors.onPrimary}>
-          {t('New chat')}
-        </Text>
-      </Pressable>
+      {/* Remind me, named where there is room for it beside New chat. */}
+      <View style={[styles.fabs, { bottom: insets.bottom + space.xl }]}>
+        <Pressable
+          onPress={() => setReminding(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('Remind me')}
+          style={({ pressed }) => [styles.remindFab, !wide && styles.remindRound, pressed && styles.fabPressedLight]}
+        >
+          <BellIcon color="#ffffff" size={22} />
+          {wide ? (
+            <Text variant="label" color="#ffffff">
+              {t('Remind me')}
+            </Text>
+          ) : null}
+        </Pressable>
+        <Pressable
+          onPress={() => router.push('/chat?setup=1')}
+          onLongPress={() => setDoor(true)}
+          delayLongPress={DOOR_HOLD}
+          accessibilityRole="button"
+          accessibilityLabel={t('New chat')}
+          style={({ pressed }) => [
+            styles.fab,
+            // Neon and Matrix: lit, so it glows.
+            shape.glow && { boxShadow: `0px 0px 18px ${withAlpha(colors.primary, 0.6)}` },
+            pressed && styles.fabPressed,
+          ]}
+        >
+          <PlusIcon color={colors.onPrimary} size={20} />
+          <Text variant="label" color={colors.onPrimary}>
+            {t('New chat')}
+          </Text>
+        </Pressable>
+      </View>
       <UndoBar bottom={insets.bottom + space.xl + 56 + space.md} />
       <SmsActions target={target} onClose={() => setTarget(null)} />
       <Sheet visible={door} onClose={closeDoor}>
@@ -528,6 +595,19 @@ export default function Home() {
           onSubmitEditing={() => void openDoor()}
         />
         <Button title={t('Open')} onPress={() => void openDoor()} />
+      </Sheet>
+      <Sheet visible={reminding} onClose={closeReminder} title={t('Remind me')}>
+        <Input value={reminder} onChangeText={setReminder} placeholder={t('What to remind you of')} multiline maxLength={MAX_NOTE_TEXT} autoFocus />
+        <LaterPicker remind onPick={(at) => void keepReminder(at)} />
+        {reminderSaid ? (
+          <Text variant="caption" color={colors.danger}>
+            {reminderSaid}
+          </Text>
+        ) : (
+          <Text variant="caption" tone="muted">
+            {t('It goes in Chat with myself, and only says “Reminder” on the phone at that time.')}
+          </Text>
+        )}
       </Sheet>
       <Sheet visible={menu} onClose={closeMenu}>
         {/* A linked device has the phone's groups, but makes and joins none (lib/devices.ts). */}
@@ -574,6 +654,68 @@ function IconButton({ label, onPress, children }: { label: string; onPress: () =
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
       {children}
+    </Pressable>
+  );
+}
+
+// Chat with myself's row, at the top of the chats: its last note, or the reminders that came and
+// were not read yet, in amber with their number, as a chat's unread messages are counted. It draws
+// again when the next reminder's time comes.
+function MyselfRow({ notes }: { notes: Note[] }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const [now, setNow] = useState(Date.now());
+  const { last, due, next } = notesSummary(notes, now);
+  useEffect(() => {
+    if (next === null) return;
+    const timer = setTimeout(() => setNow(Date.now()), Math.min(next - Date.now() + 500, 2 ** 31 - 1));
+    return () => clearTimeout(timer);
+  }, [next]);
+  const line = (note: Note) => note.text.split('\n')[0] || (note.voice ? t('Voice message') : (note.file?.name ?? ''));
+  const shown = due.length > 0 ? due[due.length - 1] : last;
+  const preview = shown ? line(shown) : t('Notes, links and reminders only you see');
+  return (
+    <Pressable
+      onPress={() => router.push('/myself')}
+      accessibilityRole="button"
+      accessibilityLabel={`${t('Chat with myself')}${due.length ? `, ${t('Reminders')}: ${due.length}` : ''}`}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      <MyselfFace size={52} />
+      <View style={styles.rowBody}>
+        <View style={styles.rowLine}>
+          <Text variant="bodyStrong" numberOfLines={1} style={styles.rowName}>
+            {t('Chat with myself')}
+          </Text>
+          <PinIcon color={colors.textFaint} size={13} />
+          {last ? (
+            <Text variant="caption" color={due.length ? colors.warning : colors.textFaint}>
+              {rowTime(due.length ? due[due.length - 1].due! : last.at, now)}
+            </Text>
+          ) : null}
+        </View>
+        <View style={styles.rowLine}>
+          <View style={styles.previewLine}>
+            {due.length || (shown?.due !== undefined && shown.due > now) ? <BellIcon color={due.length ? colors.warning : colors.textMuted} size={13} /> : null}
+            <Text
+              numberOfLines={1}
+              variant="caption"
+              tone={due.length ? undefined : 'muted'}
+              color={due.length ? colors.warning : undefined}
+              style={[styles.preview, !shown && styles.italic, due.length ? styles.previewUnread : null]}
+            >
+              {shown?.due !== undefined && shown.due > now ? `${laterLabel(shown.due)} · ${preview}` : preview}
+            </Text>
+          </View>
+          {due.length ? (
+            <View style={[styles.badge, { backgroundColor: colors.warning }]}>
+              <Text variant="caption" color="#ffffff" style={styles.badgeText}>
+                {due.length > 99 ? '99+' : due.length}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
     </Pressable>
   );
 }
@@ -838,9 +980,14 @@ const makeStyles = (colors: Colors) =>
       paddingHorizontal: space.lg,
       paddingTop: space.lg,
     },
-    fab: {
+    fabs: {
       position: 'absolute',
       right: space.xl,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+    },
+    fab: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: space.sm,
@@ -852,6 +999,26 @@ const makeStyles = (colors: Colors) =>
     },
     fabPressed: {
       backgroundColor: colors.primaryPressed,
+    },
+    // Remind me: amber, as a reminder is, on every look.
+    remindFab: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      height: 56,
+      paddingHorizontal: space.lg,
+      borderRadius: 28,
+      backgroundColor: '#f28a12',
+      ...gradientStyle('linear-gradient(160deg, #ffc061 0%, #f28a12 100%)'),
+      boxShadow: `0px 8px 24px ${withAlpha('#000000', 0.35)}`,
+    },
+    remindRound: {
+      width: 56,
+      paddingHorizontal: 0,
+      justifyContent: 'center',
+    },
+    fabPressedLight: {
+      opacity: 0.85,
     },
     menuRow: {
       gap: 2,

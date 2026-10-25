@@ -1,0 +1,25 @@
+// The Italian of Chat with myself and its reminders (app/myself.tsx, lib/myself.ts, Remind me
+// on the home screen), as in i18n/el/myself.ts.
+export const myself: Record<string, string> = {
+  'Chat with myself': 'Chat con me stesso',
+  'Only you · on this phone': 'Solo tu · su questo telefono',
+  'Notes, links and reminders only you see': 'Note, link e promemoria che vedi solo tu',
+  'Write a note to yourself': 'Scriviti una nota',
+  'Write here what you want to keep: notes, links, photos, files, voice messages. Only you see them. Under "+", or holding the send arrow, a note can remind you at a time.': 'Scrivi qui ciò che vuoi tenere: note, link, foto, file, messaggi vocali. Li vedi solo tu. Da «+», o tenendo premuta la freccia di invio, una nota può ricordarti qualcosa a un’ora.',
+  'Notes stay on this phone, encrypted in this space, and go to no one. Photos and files are not in backups.': 'Le note restano su questo telefono, cifrate in questo spazio, e non vanno a nessuno. Foto e file non sono nei backup.',
+  'Cannot read your notes. {error}': 'Impossibile leggere le tue note. {error}',
+  'Not kept. Files can be 100 MB at most.': 'Non tenuto. I file possono essere al massimo di 100 MB.',
+  'Delete this note?': 'Eliminare questa nota?',
+  'It is deleted from this phone, with what it holds, and cannot be brought back.': 'Viene eliminata da questo telefono, con ciò che contiene, e non si può recuperare.',
+  'You have {n} notes, the most there can be. Delete some to make room.': 'Hai {n} note, il massimo possibile. Eliminane alcune per fare spazio.',
+  'Remind me': 'Ricordamelo',
+  'Reminders': 'Promemoria',
+  'What to remind you of': 'Cosa vuoi che ti ricordi',
+  'Write what to remind you of first.': 'Scrivi prima cosa vuoi che ti ricordi.',
+  'It goes in Chat with myself, and only says “Reminder” on the phone at that time.': 'Va nella Chat con me stesso, e a quell’ora il telefono dice solo «Promemoria».',
+  'Reminds you on {when}.': 'Te lo ricorda il {when}.',
+  'Reminded you on {when}.': 'Te l’ha ricordato il {when}.',
+  'Change the reminder': 'Cambia il promemoria',
+  'No reminder': 'Nessun promemoria',
+  'No reminder.': 'Nessun promemoria.',
+};

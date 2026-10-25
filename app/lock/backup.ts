@@ -9,6 +9,7 @@ import { FILE as CONTACTS } from './contacts-data';
 import { FILE as E2E } from './e2e-data';
 import { FILE as GROUPS } from './group-data';
 import { FILE as HISTORY, PAGE_PREFIX as PAGE } from './history';
+import { FILE as MYSELF } from './myself-data';
 import { FILE as PUBLIC_GROUPS } from './public-group-data';
 import { prepareQueueEntries } from './queues-data';
 import { markRestore } from './restored';
@@ -69,7 +70,7 @@ const KEYS = [...FIXED, ...OTHER_POCKETS.map((p) => `erevos.hidden-lock.${p}`), 
 // The sealed files that are text; voice messages' sounds, pictures and stickers' pictures are
 // bytes. A file not on the phone is left out, so the backup of a phone that keeps no contacts, or
 // made no stickers, in Erevos still opens in older versions.
-const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS];
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS, MYSELF];
 
 const KIND_KEY = 0;
 const KIND_TEXT = 1;

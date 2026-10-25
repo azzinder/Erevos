@@ -205,5 +205,10 @@ export function plural(n: number, one: string, many: string, vars?: Record<strin
 }
 
 function fill(text: string, vars: Record<string, string | number>): string {
-  return text.replace(/\{(\w+)\}/g, (all, name: string) => (name in vars ? String(vars[name]) : all));
+  // A value that ends in a period of its own, as a Greek time's «μ.μ.», ends the sentence with it.
+  return text.replace(/\{(\w+)\}(\.?)/g, (all, name: string, stop: string) => {
+    if (!(name in vars)) return all;
+    const value = String(vars[name]);
+    return stop && value.endsWith('.') ? value : value + stop;
+  });
 }
