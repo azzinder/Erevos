@@ -33,7 +33,7 @@ use arti_client::config::pt::TransportConfigBuilder;
 use arti_client::config::{
     BoolOrAuto, BridgeConfigBuilder, CfgPath, PtTransportName, Reconfigure, TorClientConfig, TorClientConfigBuilder,
 };
-use arti_client::{DormantMode, TorClient};
+use arti_client::{DormantMode, IsolationToken, StreamPrefs, TorClient};
 use futures_util::{SinkExt, StreamExt};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::runtime::Runtime;
@@ -61,6 +61,7 @@ static RUNTIME: OnceLock<Runtime> = OnceLock::new();
 static CLIENT: Mutex<Option<Running>> = Mutex::new(None);
 static SESSIONS: OnceLock<Mutex<HashMap<u64, Arc<tokio::sync::Mutex<Socket>>>>> = OnceLock::new();
 static TEXTS: OnceLock<Mutex<HashMap<u64, Arc<Text>>>> = OnceLock::new();
+static NOSTR_WAYS: OnceLock<Mutex<HashMap<String, IsolationToken>>> = OnceLock::new();
 static NEXT: AtomicU64 = AtomicU64::new(1);
 
 fn runtime() -> Result<&'static Runtime> {
@@ -84,12 +85,36 @@ fn texts() -> &'static Mutex<HashMap<u64, Arc<Text>>> {
     TEXTS.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+// Each Nostr relay's connections go on circuits of their own, never shared with another relay's
+// or the app's relay's, so no exit carries two of them and none can tell they are one phone's.
+// After a connection there fails, the next goes on new circuits, through another exit most
+// likely: the last one may be an exit the relay refuses (as some refuse Tor exits, with HTTP 403)
+// or one that cannot reach it, and Tor would keep using it for minutes.
+fn nostr_ways() -> std::sync::MutexGuard<'static, HashMap<String, IsolationToken>> {
+    NOSTR_WAYS.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// The circuits a Nostr relay's connections go on now.
+fn nostr_way(host: &str) -> IsolationToken {
+    *nostr_ways().entry(host.to_string()).or_insert_with(IsolationToken::new)
+}
+
+/// A connection on `way` to `host` failed: the next one goes on new circuits, unless that happened already.
+fn nostr_way_failed(host: &str, way: IsolationToken) {
+    let mut ways = nostr_ways();
+    if ways.get(host) == Some(&way) {
+        ways.remove(host);
+    }
+}
+
 /// A connection of Nostr's kind: what is sent goes on `sink`, and what the relay says waits in
 /// `frames`, put there by `reader` as it comes, until the relay closes the connection.
 struct Text {
     sink: tokio::sync::Mutex<futures_util::stream::SplitSink<Socket, Message>>,
     frames: tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<String>>,
     reader: tokio::task::JoinHandle<()>,
+    /// The relay's host, and the circuits the connection went on.
+    way: (String, IsolationToken),
 }
 
 /// The running Tor, and the bridges it was started with.
@@ -270,10 +295,14 @@ pub fn parse(url: &str) -> Result<Address> {
     Ok(Address { tls, host: host.to_string(), port })
 }
 
-async fn connect(tor: Arc<TorClient<PreferredRuntime>>, url: String, token: String) -> Result<Socket> {
+async fn connect(tor: Arc<TorClient<PreferredRuntime>>, url: String, token: String, way: Option<IsolationToken>) -> Result<Socket> {
     let address = parse(&url)?;
+    let mut prefs = StreamPrefs::new();
+    if let Some(way) = way {
+        prefs.set_isolation(way);
+    }
     let stream = tor
-        .connect((address.host.as_str(), address.port))
+        .connect_with_prefs((address.host.as_str(), address.port), &prefs)
         .await
         .map_err(|e| format!("cannot reach {} through Tor: {e}", address.host))?;
     let io: Box<dyn Io> = if address.tls {
@@ -294,9 +323,13 @@ async fn connect(tor: Arc<TorClient<PreferredRuntime>>, url: String, token: Stri
         let value = HeaderValue::from_str(&format!("Bearer {token}")).map_err(|e| e.to_string())?;
         request.headers_mut().insert("Authorization", value);
     }
-    let (socket, _) = tokio_tungstenite::client_async(request, io)
-        .await
-        .map_err(|e| format!("cannot reach the relay at {url}, or the token is wrong: {e}"))?;
+    let (socket, _) = tokio_tungstenite::client_async(request, io).await.map_err(|e| {
+        if token.is_empty() {
+            format!("the relay at {url} refused the connection through Tor: {e}")
+        } else {
+            format!("cannot reach the relay at {url}, or the token is wrong: {e}")
+        }
+    })?;
     Ok(socket)
 }
 
@@ -318,7 +351,7 @@ pub fn open(url: &str, token: &str) -> Result<u64> {
     let tor = client()?;
     let (url, token) = (url.to_string(), token.to_string());
     let socket = runtime()?.block_on(async move {
-        tokio::time::timeout(WAIT, connect(tor, url, token))
+        tokio::time::timeout(WAIT, connect(tor, url, token, None))
             .await
             .map_err(|_| "Tor took too long to reach the relay".to_string())?
     })?;
@@ -362,13 +395,17 @@ pub fn close(id: u64) {
 /// handle for [`text_send`], [`text_next`] and [`text_close`].
 pub fn text_open(url: &str) -> Result<u64> {
     let tor = client()?;
+    let host = parse(url)?.host;
+    let way = nostr_way(&host);
     let url = url.to_string();
     let runtime = runtime()?;
-    let socket = runtime.block_on(async move {
-        tokio::time::timeout(WAIT, connect(tor, url, String::new()))
-            .await
-            .map_err(|_| "Tor took too long to reach the relay".to_string())?
-    })?;
+    let socket = runtime
+        .block_on(async move {
+            tokio::time::timeout(WAIT, connect(tor, url, String::new(), Some(way)))
+                .await
+                .map_err(|_| "Tor took too long to reach the relay".to_string())?
+        })
+        .inspect_err(|_| nostr_way_failed(&host, way))?;
     let (sink, mut stream) = socket.split();
     let (sender, frames) = tokio::sync::mpsc::unbounded_channel();
     let reader = runtime.spawn(async move {
@@ -384,7 +421,7 @@ pub fn text_open(url: &str) -> Result<u64> {
             }
         }
     });
-    let text = Text { sink: tokio::sync::Mutex::new(sink), frames: tokio::sync::Mutex::new(frames), reader };
+    let text = Text { sink: tokio::sync::Mutex::new(sink), frames: tokio::sync::Mutex::new(frames), reader, way: (host, way) };
     let id = NEXT.fetch_add(1, Ordering::Relaxed);
     texts().lock().map_err(|_| "tor state lost".to_string())?.insert(id, Arc::new(text));
     Ok(id)
@@ -402,6 +439,7 @@ fn text_of(id: u64) -> Result<Arc<Text>> {
 /// Sends one text frame on a Nostr relay's connection.
 pub fn text_send(id: u64, text: &str) -> Result<()> {
     let connection = text_of(id)?;
+    let way = connection.way.clone();
     let text = text.to_string();
     let sent = runtime()?.block_on(async move {
         let mut sink = connection.sink.lock().await;
@@ -411,6 +449,7 @@ pub fn text_send(id: u64, text: &str) -> Result<()> {
             .map_err(|e| e.to_string())
     });
     if sent.is_err() {
+        nostr_way_failed(&way.0, way.1);
         text_close(id);
     }
     sent
@@ -421,6 +460,7 @@ pub fn text_send(id: u64, text: &str) -> Result<()> {
 /// all it said is taken, an error.
 pub fn text_next(id: u64, wait: Duration) -> Result<Option<String>> {
     let connection = text_of(id)?;
+    let way = connection.way.clone();
     let next = runtime()?.block_on(async move {
         let mut frames = connection.frames.lock().await;
         match tokio::time::timeout(wait, frames.recv()).await {
@@ -430,6 +470,7 @@ pub fn text_next(id: u64, wait: Duration) -> Result<Option<String>> {
         }
     });
     if next.is_err() {
+        nostr_way_failed(&way.0, way.1);
         text_close(id);
     }
     next
@@ -481,6 +522,19 @@ mod tests {
             transports: transports.map(PathBuf::from),
         };
         configure(&dir.join("state"), &dir.join("cache"), &bridges)
+    }
+
+    #[test]
+    fn each_nostr_relay_has_circuits_of_its_own_new_after_a_failure() {
+        let damus = nostr_way("relay.damus.io.check");
+        assert_eq!(nostr_way("relay.damus.io.check"), damus);
+        assert_ne!(nostr_way("nos.lol.check"), damus);
+        nostr_way_failed("relay.damus.io.check", damus);
+        let next = nostr_way("relay.damus.io.check");
+        assert_ne!(next, damus);
+        // A failure on the circuits before, told late, leaves the new ones be.
+        nostr_way_failed("relay.damus.io.check", damus);
+        assert_eq!(nostr_way("relay.damus.io.check"), next);
     }
 
     #[test]

@@ -10,6 +10,12 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **Nostr relays that refuse a Tor exit are tried through another**: some Nostr relays refuse some Tor exits (relay.damus.io
+  answers them with HTTP 403), and some exits cannot reach a relay (nos.lol timed out), while Tor kept using the same
+  exit for minutes, so every try failed again. Now each Nostr relay is reached on Tor circuits of its own, never
+  shared with another, and after a failure the next try goes through another exit. No exit carries what goes to two
+  relays any more, so none can tell it is one phone's. The **Nostr** screen says why a relay failed without the
+  Android words around it.
 - **A handset that looks like one**: the white handset on the green tiles (Phone on the home screen, the call at the top
   of a chat and a group) is drawn as the phone widget draws it, no longer as a ring that looked like a tool.
 - **Begin with no relay, through Nostr**: a phone with no relay, invite or LPHL account taps **Start without a relay**

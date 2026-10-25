@@ -1140,7 +1140,9 @@ through your relay. Each space has its own choice, and its own Nostr relays.
   alone, and signed by a key made for that one text (a NIP-59 gift wrap). The Nostr relays see that someone wrote to
   a key that names no one, when, and how big; not who wrote it, nor to whom. Your relay does not see it at all.
 - **What the Nostr relays can tell:** your phone asks each of them for all its keys at once, through Tor: a relay can
-  tell that those keys are read together, never from where.
+  tell that those keys are read together, never from where. Each relay is reached on Tor circuits of its own, so no Tor
+  exit carries what goes to two of them, and none can tell it is one phone's. Some relays refuse some Tor exits, and
+  some exits cannot reach a relay: after a failure like that, the next try goes through another exit.
 - **Only through Tor:** with Tor set to **Nothing**, or while Tor starts, texts go through your relay.
 - **The relays:** relay.damus.io, nos.lol and relay.primal.net unless you change them; you can add your own, five at
   most. Your contacts are told the relays you read on, and write to you there; one that takes a text is enough.

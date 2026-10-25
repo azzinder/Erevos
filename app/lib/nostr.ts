@@ -21,7 +21,7 @@
 
 import { isNostrRelay, MAX_NOSTR_RELAYS, type NostrKey } from '../lock/e2e-data';
 import type { NostrSetting } from '../lock/space-data';
-import { canNostr, nostrCore } from './core';
+import { canNostr, coreReason, nostrCore } from './core';
 import { fromHex, randomBytes, toHex } from './crypto';
 import { t } from './i18n';
 import { torFor } from './relay';
@@ -116,7 +116,8 @@ function said(url: string, change: NostrRelayState): void {
   stateListeners.forEach((listener) => listener());
 }
 
-const whyOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
+// Only the core's words, without what Android puts around them.
+const whyOf = coreReason;
 
 /** What each relay did last, by its address. */
 export function nostrStates(): Map<string, NostrRelayState> {
