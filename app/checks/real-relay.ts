@@ -44,29 +44,38 @@ after(() => {
  *  sets more of its settings; with a file of phones' tokens and no `token`, it is seen to answer on
  *  the /join path, which needs none. */
 export async function startRelay(withKey = false, token = '', push = false, more: Record<string, string> = {}): Promise<string> {
-  const [tcp, ws] = [await freePort(), await freePort()];
   keys ??= withKey || push ? mkdtempSync(join(tmpdir(), 'erevos-relay-keys-')) : null;
-  const env = {
-    ...process.env,
-    EREVOS_RELAY_TOKEN: token,
-    EREVOS_RELAY_KEY: withKey && keys ? join(keys, `key-${ws}`) : '',
-    EREVOS_RELAY_LEND: withKey ? 'on' : '',
-    EREVOS_RELAY_PUSH_KEY: push && keys ? join(keys, `push-${ws}`) : '',
-    EREVOS_RELAY_PRIVATE_PEERS: 'allow',
-    ...more,
-  };
-  const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
-  relays.push(child);
-  const url = `ws://127.0.0.1:${ws}`;
-  byUrl.set(url, child);
-  const probe = !token && more.EREVOS_RELAY_TOKENS ? relayPath(url, '/join') : { url, token: token || undefined };
-  for (let i = 0; i < 50; i++) {
-    try {
-      (await RelaySession.open(probe)).close();
-      return url;
-    } catch {
-      await new Promise((r) => setTimeout(r, 100));
+  // A port found free may be taken by the time the relay binds it, and a busy machine (the CI's)
+  // starts it slowly: one that stopped starts again on other ports, and each is waited for up to
+  // 20 seconds.
+  let url = '';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const [tcp, ws] = [await freePort(), await freePort()];
+    const env = {
+      ...process.env,
+      EREVOS_RELAY_TOKEN: token,
+      EREVOS_RELAY_KEY: withKey && keys ? join(keys, `key-${ws}`) : '',
+      EREVOS_RELAY_LEND: withKey ? 'on' : '',
+      EREVOS_RELAY_PUSH_KEY: push && keys ? join(keys, `push-${ws}`) : '',
+      EREVOS_RELAY_PRIVATE_PEERS: 'allow',
+      ...more,
+    };
+    const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
+    relays.push(child);
+    url = `ws://127.0.0.1:${ws}`;
+    byUrl.set(url, child);
+    const stopped = () => child.exitCode !== null || child.signalCode !== null;
+    const probe = !token && more.EREVOS_RELAY_TOKENS ? relayPath(url, '/join') : { url, token: token || undefined };
+    for (let i = 0; i < 200 && !stopped(); i++) {
+      try {
+        (await RelaySession.open(probe)).close();
+        return url;
+      } catch {
+        await new Promise((r) => setTimeout(r, 100));
+      }
     }
+    if (!stopped()) break;
+    byUrl.delete(url);
   }
   throw new Error(`the relay at ${url} did not start`);
 }
