@@ -141,4 +141,7 @@ export const phone: Record<string, string> = {
   // The Phone's search for a contact to call.
   'Clear the search': 'Obriši pretragu',
   'No contact with a number matches.': 'Nijedan kontakt s brojem ne odgovara.',
+  // A plain call from the top of a chat or an SMS conversation (components/dial-tile.tsx).
+  'Mobile call, not encrypted': 'Mobilni poziv, nije šifrovan',
+  'This phone has no app to call {number}.': 'Ovaj telefon nema aplikaciju za poziv na {number}.',
 };

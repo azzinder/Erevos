@@ -140,4 +140,7 @@ export const phone: Record<string, string> = {
   // The Phone's search for a contact to call.
   'Clear the search': 'Καθαρισμός αναζήτησης',
   'No contact with a number matches.': 'Καμία επαφή με αριθμό δεν ταιριάζει.',
+  // A plain call from the top of a chat or an SMS conversation (components/dial-tile.tsx).
+  'Mobile call, not encrypted': 'Κλήση κινητής, χωρίς κρυπτογράφηση',
+  'This phone has no app to call {number}.': 'Αυτό το κινητό δεν έχει εφαρμογή για να καλέσει το {number}.',
 };

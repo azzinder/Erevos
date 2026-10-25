@@ -140,4 +140,7 @@ export const phone: Record<string, string> = {
   // The Phone's search for a contact to call.
   'Clear the search': 'Suche löschen',
   'No contact with a number matches.': 'Kein Kontakt mit Nummer passt.',
+  // A plain call from the top of a chat or an SMS conversation (components/dial-tile.tsx).
+  'Mobile call, not encrypted': 'Mobilfunkanruf, nicht verschlüsselt',
+  'This phone has no app to call {number}.': 'Dieses Telefon hat keine App, um {number} anzurufen.',
 };

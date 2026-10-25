@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { canDial, DialTile } from '../components/dial-tile';
 import { MoreIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LaterPicker } from '../components/later-picker';
@@ -505,6 +506,7 @@ export default function Sms() {
                 </Text>
               ) : null}
             </View>
+            {!group && numbers.length === 1 && canDial(numbers[0]) ? <DialTile number={numbers[0]} onFailed={setNote} /> : null}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('More')}

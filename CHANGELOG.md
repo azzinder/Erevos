@@ -33,6 +33,9 @@ On main, not released yet:
   messages** or **Imported chats**. The PIN is kept only as Argon2id of it, and wrong ones make the next try wait.
   Moved into hidden chats, it asks nothing there; moved back, the same PIN asks again. Where the space has a password,
   **Forgot the PIN?** takes it off with that password.
+- **A plain call from a chat**: a contact's chat with their number linked, and an SMS conversation, have an orange
+  keypad at the top that opens a keypad with the number typed (Erevos's Phone when it is the phone app, else the phone's
+  own), for a call on the mobile network, not encrypted. Not in hidden chats, nor on a computer.
 - **New chat, easy for everyone**: at the top, **How you connect now** says in plain words how your contacts reach you
   (through your relay, through Nostr with no relay, or only nearby) and what works that way. A phone with no relay
   chooses among three big cards: **I have an invite**, **Sign in with LPHL** (one tap opens the browser) and **Start

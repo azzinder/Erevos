@@ -6,7 +6,8 @@ import { gradientStyle } from './glass';
 
 // The home screen's shortcuts (Phone, Contacts, Lock), and the calls at the top of a chat and a
 // group: a coloured tile each, in the colours of the launcher icons (Phone green, Contacts violet,
-// SMS blue for a video call), with a solid white sign on it.
+// SMS blue for a video call; a plain call on the mobile network orange, components/dial-tile.tsx),
+// with a solid white sign on it.
 
 export type TileTint = 'green' | 'violet' | 'orange' | 'blue';
 
@@ -75,6 +76,21 @@ export function VideoSign() {
           borderRightColor: WHITE,
         }}
       />
+    </View>
+  );
+}
+
+/** A keypad: three rows of three keys and the 0 under them, for a call on the phone's own network. */
+export function DialerSign() {
+  const key = SIGN * 0.18;
+  const gap = SIGN * 0.1;
+  const dot = (row: number, column: number) => (
+    <View key={`${row}${column}`} style={{ position: 'absolute', left: column * (key + gap), top: row * (key + gap), width: key, height: key, borderRadius: key, backgroundColor: WHITE }} />
+  );
+  return (
+    <View style={{ width: 3 * key + 2 * gap, height: 4 * key + 3 * gap }}>
+      {[0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => dot(row, column)))}
+      {dot(3, 1)}
     </View>
   );
 }

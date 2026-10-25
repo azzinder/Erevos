@@ -805,6 +805,11 @@ the space: they tap **Answer** or **Decline**. During the call you can mute, swi
 between the front and back camera, and **End**. Each call leaves a line in the chat, such as how long it lasted, or
 a missed call.
 
+**A plain call on the mobile network:** when a contact has their phone number linked to them, the orange keypad at the
+top of their chat, before the camera, opens a keypad with that number typed, and so does the one at the top of an SMS
+conversation. It is Erevos's **Phone** when Erevos is the phone app, or else the phone's own: tap the call key there. Such a
+call goes over the phone company's network and is not encrypted, as a plain SMS is not. Hidden chats and computers do not have it.
+
 - **End-to-end encrypted:** the call is set up with messages through the relay, encrypted like the rest. Those carry
   the key that encrypts the call itself, so no one in between can listen, not even the call relay below.
 - **Through the call relay:** a relay set up with the kit in \`deploy/relay\` has a call relay beside it. The call

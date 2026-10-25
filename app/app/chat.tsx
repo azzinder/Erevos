@@ -40,6 +40,7 @@ import { RelaySignIn } from '../components/relay-signin';
 import { WelcomeInvite } from '../components/welcome-invite';
 import { ConnectStatus, QrSign, WayCard } from '../components/connect-cards';
 import { BackIcon, GlobeIcon, MoreIcon, PlusIcon, ShieldIcon, TimerIcon } from '../components/icons';
+import { canDial, DialTile } from '../components/dial-tile';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
@@ -4159,6 +4160,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     hidden: !!hiddenKey,
     seen: shown && appActive && !gated,
   });
+  // Their number, for a plain call from the top (components/dial-tile.tsx): never in hidden chats either.
+  const linkedPhone = !hiddenKey && smsWith ? (e2e?.phones().find((p) => p.identity === smsWith)?.phone ?? '') : '';
+  const dialTo = canDial(linkedPhone) ? linkedPhone : '';
   const lines = useMemo(() => chatLines(visible, chatSms.messages, chatSms.more), [visible, chatSms.messages, chatSms.more]);
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
   const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity, archiveTick]);
@@ -5184,6 +5188,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             )}
             {selectedContact ? (
               <>
+                {dialTo ? <DialTile number={dialTo} onFailed={setNote} /> : null}
                 <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void startCall(true)}>
                   <VideoSign />
                 </ShortcutTile>
