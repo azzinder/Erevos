@@ -34,6 +34,8 @@ export type ArchivedChat = {
   skipped: number;
   /** The identity key, hex, of the space's contact the chat goes on with in Erevos. Empty if none. */
   contact: string;
+  /** Kept only in the chat with that contact: not listed among the Imported chats while the contact is there. */
+  inChat?: true;
   messages: ArchivedMessage[];
 };
 
@@ -68,6 +70,7 @@ function checkedChat(value: unknown): ArchivedChat | null {
     added: typeof v.added === 'number' ? v.added : 0,
     skipped: typeof v.skipped === 'number' ? v.skipped : 0,
     contact: isIdentity(v.contact) ? v.contact : '',
+    ...(v.inChat === true && isIdentity(v.contact) ? { inChat: true as const } : {}),
     messages: v.messages.filter(isMessage),
   };
 }
@@ -146,10 +149,20 @@ export class Archive {
     return this.chats().filter((chat) => contact !== '' && chat.contact === contact);
   }
 
-  /** Lets a chat go on with one of the space's contacts (its identity key, hex), or with none (empty). */
-  link(id: string, contact: string): Promise<void> {
+  /**
+   * Lets a chat go on with one of the space's contacts (its identity key, hex), or with none
+   * (empty), and keeps it only in their chat (`inChat`) or among the Imported chats too. One that
+   * goes on with no one is always among them.
+   */
+  link(id: string, contact: string, inChat = false): Promise<void> {
     if (contact !== '' && !isIdentity(contact)) return Promise.reject(new Error(t('Not a contact.')));
-    return this.save({ chats: this.data.chats.map((chat) => (chat.id === id ? { ...chat, contact } : chat)) });
+    return this.save({
+      chats: this.data.chats.map((chat) => {
+        if (chat.id !== id) return chat;
+        const { inChat: _was, ...rest } = chat;
+        return { ...rest, contact, ...(inChat && contact ? { inChat: true as const } : {}) };
+      }),
+    });
   }
 
   /** Keeps chats, each under a new id. Returns the ids. */

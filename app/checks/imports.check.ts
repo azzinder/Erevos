@@ -10,7 +10,7 @@ import { test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Encode } from '../lib/crypto';
-import { fileName, mediaText, readExport, senders, toArchived, toMillis } from '../lib/imports';
+import { fileName, mediaText, oneChatOf, readExport, senders, toArchived, toMillis, type OpenedExport } from '../lib/imports';
 import { Archive, FILE } from '../lock/archive';
 import { files } from './files-memory';
 
@@ -112,6 +112,43 @@ t('an imported chat goes on with a contact, its messages ahead of theirs', async
   assert.deepEqual((await Archive.open('space', 0, key)).linked(maria).map((m) => m.source), ['whatsapp', 'whatsapp', 'whatsapp']);
   await again.remove(whatsapp);
   assert.deepEqual((await Archive.open('space', 0, key)).linked(maria), []);
+});
+
+t("an imported chat kept only in its contact's chat, until it goes on with no one", async () => {
+  const key = randomBytes(32);
+  const archive = await Archive.open('space', 0, key);
+  const maria = 'ab'.repeat(32);
+  const [id] = await archive.add(toArchived(await readExport('WhatsApp Chat with Μαρία.txt', utf8Encode(WHATSAPP)), 'Nekten'));
+  await archive.link(id, maria, true);
+  const inChat = (await Archive.open('space', 0, key)).chats()[0];
+  assert.equal(inChat.contact, maria);
+  assert.equal(inChat.inChat, true);
+  // Kept among the Imported chats too, again.
+  await archive.link(id, maria);
+  assert.equal((await Archive.open('space', 0, key)).chats()[0].inChat, undefined);
+  // With no one to go on with, it is never only in a chat.
+  await archive.link(id, maria, true);
+  await archive.link(id, '', true);
+  const unlinked = (await Archive.open('space', 0, key)).chats()[0];
+  assert.deepEqual([unlinked.contact, unlinked.inChat], ['', undefined]);
+});
+
+t('one chat of an export of many, with only its own files', async () => {
+  const opened = {
+    chats: [
+      { title: 'Α', source: 'telegram', messages: [{ paths: ['a.jpg'] }, { paths: [] }] },
+      { title: 'Β', source: 'telegram', messages: [{ paths: ['b.jpg', 'c.ogg'] }] },
+    ],
+    files: new Map([
+      ['a.jpg', 1],
+      ['b.jpg', 2],
+      ['c.ogg', 3],
+    ]),
+  } as unknown as OpenedExport;
+  const one = oneChatOf(opened, 1);
+  assert.deepEqual(one.chats.map((chat) => chat.title), ['Β']);
+  assert.deepEqual([...one.files.keys()], ['b.jpg', 'c.ogg']);
+  assert.equal(opened.chats.length, 2);
 });
 
 t('every value in the file is the same size until one outgrows a block', async () => {

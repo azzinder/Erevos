@@ -77,6 +77,7 @@ import { sendCopies } from '../lib/fanout';
 import { mediaText, SOURCE_LABELS } from '../lib/imports';
 import { chatMedia, dayKey, daysOf, IMPORTED_TAG, importedTag, isImportedSticker, isSound, isVoice, soundEnding } from '../lib/chat-media';
 import { ChatMedia, DayCalendar } from '../components/chat-media';
+import { FoundExport, useImportFlow } from '../components/import-flow';
 import { Archive, type LinkedMessage } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
 import { isWatchedQueue, loadWatched, unwatchPocket, watchPocket } from '../lock/hidden-watch';
@@ -595,6 +596,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [e2e, setE2E] = useState<E2E | null>(null);
   // Chats imported into this space. Hidden chats have none.
   const [archive, setArchive] = useState<Archive | null>(null);
+  // Counts the changes to what was imported made here (lock/archive.ts changes in place).
+  const [archiveTick, setArchiveTick] = useState(0);
+  // What bringing in a chat from the details has to say.
+  const [importSaid, setImportSaid] = useState('');
   const [importedShown, setImportedShown] = useState(IMPORTED_PAGE);
   const [threadShown, setThreadShown] = useState(THREAD_PAGE);
   // Read away from the chat's end (gone to its start with its arrow, or to an early message): the
@@ -3854,7 +3859,38 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   });
   const lines = useMemo(() => chatLines(visible, chatSms.messages, chatSms.more), [visible, chatSms.messages, chatSms.more]);
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
-  const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity]);
+  const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity, archiveTick]);
+  const importedChats = useMemo(() => (archive && selectedIdentity ? archive.linkedChats(selectedIdentity) : []), [archive, selectedIdentity, archiveTick]);
+  // A chat brought in from the details goes on here at once, kept only in this chat.
+  const importFlow = useImportFlow(
+    archive,
+    setImportSaid,
+    async (ids) => {
+      for (const id of ids) await archive?.link(id, selectedIdentity, true);
+      setArchiveTick((n) => n + 1);
+    },
+    true,
+  );
+  // A file picked, or what was said, in one chat's details is not another's. One coming in goes on.
+  useEffect(() => {
+    setImportSaid('');
+    if (!importFlow.busy) importFlow.cancel();
+  }, [selected]);
+  // Changes what was imported that goes on in this chat: kept only here or not, no longer here, or deleted.
+  async function changeImported(run: () => Promise<void> | undefined, said = '') {
+    try {
+      await run();
+      setArchiveTick((n) => n + 1);
+      setImportSaid(said);
+    } catch (error) {
+      setImportSaid(errorText(error));
+    }
+  }
+  const removeImported = (id: string, title: string) =>
+    ask(t('Delete imported chat'), t('Delete “{title}” from this phone? It cannot be brought back.', { title }), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('Delete'), style: 'destructive', onPress: () => void changeImported(() => archive?.remove(id)) },
+    ]);
   // Sorted out only while the details or the lists show.
   const media = useMemo(() => (details || mediaOpen ? chatMedia(visible, imported) : []), [details, mediaOpen, visible, imported]);
   const chatDays = useMemo(() => (dayPicking ? daysOf([...imported, ...visible]) : new Set<string>()), [dayPicking, imported, visible]);
@@ -4494,6 +4530,57 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                           </>
                         ) : null}
                       </View>
+                      {archive && selectedIdentity ? (
+                        <>
+                          <Text variant="overline" tone="muted" style={styles.groupTitle}>
+                            {t('Imported chats')}
+                          </Text>
+                          <View style={styles.group}>
+                            {importedChats.map((chat) => {
+                              const title = chat.title || SOURCE_LABELS[chat.source];
+                              return (
+                                <View key={chat.id} style={styles.importedChat}>
+                                  <Text variant="bodyStrong">{title}</Text>
+                                  <Text variant="caption" tone="muted">
+                                    {SOURCE_LABELS[chat.source]}, {plural(chat.count, '{n} message', '{n} messages')}.{' '}
+                                    {chat.inChat ? t('Kept only in this chat.') : t('Also in Settings → Data and devices → Imported chats.')}
+                                  </Text>
+                                  <Row wrap>
+                                    {chat.inChat ? (
+                                      <TextButton
+                                        title={t('Show in Imported chats too')}
+                                        onPress={() => void changeImported(() => archive.link(chat.id, selectedIdentity, false))}
+                                      />
+                                    ) : (
+                                      <TextButton title={t('Keep only in the chat')} onPress={() => void changeImported(() => archive.link(chat.id, selectedIdentity, true))} />
+                                    )}
+                                    <TextButton
+                                      title={t('Unlink')}
+                                      onPress={() =>
+                                        void changeImported(
+                                          () => archive.link(chat.id, ''),
+                                          t('It no longer shows in this chat. Settings → Data and devices → Imported chats keeps it.'),
+                                        )
+                                      }
+                                    />
+                                    <TextButton title={t('Delete')} onPress={() => removeImported(chat.id, title)} />
+                                  </Row>
+                                  <View style={styles.rule} />
+                                </View>
+                              );
+                            })}
+                            {importFlow.found ? (
+                              <FoundExport flow={importFlow} />
+                            ) : (
+                              <DetailRow title={t('Import a chat here')} value={importFlow.busy ? '…' : ''} onPress={() => void importFlow.pick()} />
+                            )}
+                            <Text variant="caption" tone="muted" style={styles.rowMore}>
+                              {importSaid ||
+                                t('A chat exported from Telegram or WhatsApp, to read here ahead of the new messages, with its photos, videos and voice messages. It stays on this phone and is never sent.')}
+                            </Text>
+                          </View>
+                        </>
+                      ) : null}
                       <Text variant="overline" tone="muted" style={styles.groupTitle}>
                         {t('Privacy')}
                       </Text>
@@ -6128,6 +6215,10 @@ const makeStyles = (colors: Colors) =>
     rowMore: {
       gap: space.sm,
       paddingBottom: space.sm,
+    },
+    importedChat: {
+      gap: 2,
+      paddingTop: space.sm,
     },
     rule: {
       height: StyleSheet.hairlineWidth,

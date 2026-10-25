@@ -40,6 +40,10 @@ On main, not released yet:
   months, those imported from Telegram or WhatsApp too. A tap opens, plays or saves; held, **Show in chat** goes to
   the message. A calendar goes to a day that has any, and **Go to a day**, in the details too, goes to a day's first
   message in the chat itself.
+- **Import a chat from inside the chat**: a contact's chat has **Imported chats** in its details, with **Import a chat
+  here**, which brings a Telegram or WhatsApp export straight into that chat (asking which one, when the file holds
+  several). An imported chat that goes on there can be **Kept only in the chat**, out of **Settings** → **Data and
+  devices** → **Imported chats**, or shown there too again, **Unlinked** or **Deleted**, all from the chat's details.
 - **Who makes it, and why**: the guide's first part ends with who makes Erevos, for whom, why, and who pays, also
   opened from **Settings** → **General** → **About Erevos**.
 - **The guide says why**: almost every part of the **User guide** now ends with a **Why** that says what the way it

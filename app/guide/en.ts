@@ -1664,6 +1664,20 @@ To go on with the conversation in Erevos, the other person needs Erevos too:
    day, with their times, and **Continued in Erevos** between them and the new. **Open the chat** takes you there, and
    a contact you have not named takes the imported chat's name.
 
+**From inside the chat:** a contact's chat has **Imported chats** in its **Details**, above **Privacy**. **Import a chat
+here** brings a file in straight into that chat, without going through **Settings**: when the file holds several
+chats, as a Telegram export of all of them does, it asks which one goes on here, and offers the longest. Each imported
+chat that goes on there is listed with three buttons:
+
+- **Keep only in the chat** takes it out of **Settings** → **Data and devices** → **Imported chats**: it shows only in
+  that chat, as if it had always been there. A chat brought in from the chat's details is kept so from the start.
+  **Show in Imported chats too** puts it back in the list, and so does the list itself, when that contact is gone.
+- **Unlink** stops it showing in the chat; it stays in **Imported chats**, to read or to go on with someone else.
+- **Delete** deletes it from the phone, with its photos and files, after asking.
+
+**Why:** an old chat belongs with the person it was with, so it is brought in, kept and deleted where you talk to them,
+and the list in **Settings** keeps only what has nowhere else to go. Nothing of it leaves the phone either way.
+
 - **Photos, videos, voice messages and files** come in from a .zip, each sealed in this space as a file in a chat is.
   Photos show in the chat as you scroll to them, and stickers as stickers; tap a photo or file to see it on its own and
   **Save** it. Voice messages and songs play right in the chat with a tap; a video plays in the phone's own app once
@@ -1676,8 +1690,8 @@ To go on with the conversation in Erevos, the other person needs Erevos too:
   cannot show who really wrote them.
 - **Notices and calls** from the other app are left out, and the chat says how many.
 - **Only a space's own chats** can go on from an imported chat, not hidden chats.
-- **Delete messages** in a chat leaves the imported ones: delete those in **Imported chats**. **Unlink** there stops
-  them showing in the chat.
+- **Delete messages** in a chat leaves the imported ones: delete those in the chat's **Details**, under **Imported
+  chats**, or in **Settings** → **Data and devices** → **Imported chats**.
 - **Viber** is not read yet.
 
 > The file of imported chats grows with what you bring in, so its size tells roughly how much was imported, but not

@@ -106,6 +106,13 @@ export async function openExport(name: string, source: FileSource, most: number)
   return { chats, zip: source, files };
 }
 
+/** The export with only its chat at `index`, and the files that chat names. */
+export function oneChatOf(opened: OpenedExport, index: number): OpenedExport {
+  const chat = opened.chats[index];
+  const paths = new Set(chat.messages.flatMap((message) => message.paths));
+  return { ...opened, chats: [chat], files: new Map([...opened.files].filter(([path]) => paths.has(path))) };
+}
+
 /** How many of the chats' files the export holds and how large they are together, and how many of them are too large to bring in. */
 export function exportFiles(opened: OpenedExport): { count: number; bytes: number; tooLarge: number } {
   let count = 0;

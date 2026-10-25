@@ -20,5 +20,6 @@ import { moves } from './moves';
 import { settingsMenu } from './settings-menu';
 import { myself } from './myself';
 import { media } from './media';
+import { importsHere } from './imports-here';
 
-export const ES: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media };
+export const ES: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere };
