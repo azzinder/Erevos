@@ -114,7 +114,10 @@ export function textInviteOf(data: unknown): TextInvite | null {
 export function parseTextInvite(text: string): TextInvite | null {
   const clean = text.trim();
   const lower = clean.toLowerCase();
-  if (lower.startsWith(`${TEXT_INVITE_PAGE}#`)) return textInviteOf(clean.slice(TEXT_INVITE_PAGE.length + 1));
+  // The server answers /i with /i/, so a link copied from the address bar may read /i/#.
+  for (const page of [`${TEXT_INVITE_PAGE}#`, `${TEXT_INVITE_PAGE}/#`]) {
+    if (lower.startsWith(page)) return textInviteOf(clean.slice(page.length));
+  }
   if (lower.startsWith(APP)) return textInviteOf(clean.slice(APP.length).split('&')[0]);
   return null;
 }

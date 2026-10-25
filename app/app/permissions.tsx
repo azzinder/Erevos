@@ -140,7 +140,7 @@ function makerSteps(maker: Maker): string {
 function installSteps(browser: Browser): string {
   switch (browser) {
     case 'iphone':
-      return t('In Safari, tap Share, then Add to Home Screen, and open Erevos from there. It keeps its data apart from this tab: make a backup here first (Settings → Data and devices → Backups), and restore it there.');
+      return t('In Safari, tap Share (on iOS 26, under •••), then Add to Home Screen, and open Erevos from there. It keeps its data apart from this tab: make a backup here first (Settings → Data and devices → Backups), and restore it there.');
     case 'chromium':
       return t("In the browser's menu (⋮): Add to Home screen, or Install. On a computer, also the install icon at the right of the address bar.");
     case 'firefox':

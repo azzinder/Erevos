@@ -60,6 +60,9 @@ test('the page opens it in the app, and a pasted link is read too', () => {
   assert.equal(path, '/text-invite');
   assert.deepEqual(textInviteOf(params.d), invite);
   assert.deepEqual(parseTextInvite(`  ${link}\n`), invite);
+  // The server answers /i with /i/, so the address bar can show /i/#.
+  assert.deepEqual(parseTextInvite(link.replace('/i#', '/i/#')), invite);
+  assert.equal(parseTextInvite(link.replace('/i#', '/ix#')), null);
 });
 
 test('the time it is over comes in whole seconds', () => {

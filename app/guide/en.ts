@@ -1967,8 +1967,8 @@ Erevos has no App Store app. On an iPhone it runs as a web app, added to the hom
 account. It chats through a relay, end-to-end encrypted as on the phone, and keeps its contacts, messages and settings
 sealed the same way, in Safari's storage for the app.
 
-1. Open the address of the Erevos server you were given in **Safari**. Erevos shows how to add it: tap **Share**,
-   then **Add to Home Screen**, then open Erevos from the home screen. Needs iOS 17 or later.
+1. Open the address of the Erevos server you were given in **Safari**. Erevos shows how to add it: tap **Share** (on
+   iOS 26, under **•••**), then **Add to Home Screen**, then open Erevos from the home screen. Needs iOS 17 or later.
 2. In Erevos, open **Settings** → **Privacy and security** → **This web app** and compare the release key's
    fingerprint with the one you were given with the address, character by character. If it differs, delete the app and
    tell whoever gave you the address.
