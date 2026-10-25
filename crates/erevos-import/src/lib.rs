@@ -5,13 +5,15 @@
 //! wrote them.
 
 pub mod telegram;
+pub mod viber;
 pub mod whatsapp;
 mod zip;
 
 use std::path::PathBuf;
 
 /// Reads an export the user picked: Telegram's `result.json`, WhatsApp's
-/// text file, or either in a zip. `name` is the file's name.
+/// text file, either in a zip, or a Viber chat saved as HTML. `name` is the
+/// file's name.
 pub fn read(name: &str, data: &[u8]) -> Result<Vec<ImportedChat>, ImportError> {
     if zip::is_zip(data) {
         let names = zip::names(data)?;
@@ -34,6 +36,9 @@ fn read_text(name: &str, data: &[u8]) -> Result<Vec<ImportedChat>, ImportError> 
     if text.trim_start_matches('\u{feff}').trim_start().starts_with('{') {
         return telegram::parse(text.trim_start_matches('\u{feff}'));
     }
+    if viber::is_viber(&text) {
+        return viber::parse(name, &text).map(|chat| vec![chat]);
+    }
     whatsapp::parse(name, &text).map(|chat| vec![chat]).map_err(|_| unknown())
 }
 
@@ -43,7 +48,9 @@ fn utf8(data: &[u8]) -> Result<String, ImportError> {
 
 fn unknown() -> ImportError {
     ImportError::Format(
-        "Erevos reads Telegram's JSON export (result.json) and WhatsApp's exported chat (.txt or .zip)".into(),
+        "Erevos reads Telegram's JSON export (result.json), WhatsApp's exported chat (.txt or .zip) and a Viber chat \
+         saved as .html by Backup Text for Viber"
+            .into(),
     )
 }
 
@@ -132,6 +139,13 @@ mod tests {
 
         let telegram = zip::tests::zip(&[("Export/result.json", json)]);
         assert_eq!(read("export.zip", &telegram).unwrap()[0].title, "A");
+
+        let viber = "\u{feff}<html><body><table><tr><td><div class=\"bubble date\">2018-07-13</div></td></tr>\
+            <tr><td><div class=\"bubble in\">Μαρία: γεια<br/><span class=\"time\">09:06:00</span></div></td></tr>\
+            </table></body></html>";
+        let chats = read("LP_vbr_chat_20180713.html", viber.as_bytes()).unwrap();
+        assert_eq!((chats[0].source, chats[0].title.as_str()), (Source::Viber, "Μαρία"));
+        assert_eq!(chats[0].messages[0].text, "γεια");
     }
 
     #[test]

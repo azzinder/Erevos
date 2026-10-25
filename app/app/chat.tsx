@@ -5017,7 +5017,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             )}
                             <Text variant="caption" tone="muted" style={styles.rowMore}>
                               {importSaid ||
-                                t('A chat exported from Telegram or WhatsApp, to read here ahead of the new messages, with its photos, videos and voice messages. It stays on this phone and is never sent.')}
+                                t('A chat exported from Telegram, WhatsApp or Viber, to read here ahead of the new messages, with its photos, videos and voice messages. It stays on this phone and is never sent.')}
                             </Text>
                           </View>
                         </>

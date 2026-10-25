@@ -10,6 +10,12 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **Viber chats come in**: a Viber chat saved as an .html file by the Android app **Backup Text for Viber** (Viber
+  itself exports none) comes in with **Import a file**, in **Settings** → **Data and devices** → **Imported chats** or
+  in a chat's **Details**. Only the words come, with Viber's emoticons as emoji. Your own messages, which the file
+  leaves unnamed, come in as **Me**, already picked as you; messages from a phone whose clock said 1970 come in with
+  no time.
+
 ## 3.3.0 (2026-10-25)
 
 - **An invite by SMS taken more ways**: a link pasted as the address bar can show it, with **/i/#**, is taken as the

@@ -6,10 +6,11 @@ export const importsHere: Record<string, string> = {
   'One more is kept only in the chat it goes on in: its details there show it.': 'Ακόμη μία φαίνεται μόνο στη συνομιλία όπου συνεχίζει: τη δείχνουν οι λεπτομέρειές της εκεί.',
   '{n} more are kept only in the chats they go on in: their details there show them.': 'Ακόμη {n} φαίνονται μόνο στις συνομιλίες όπου συνεχίζουν: τις δείχνουν οι λεπτομέρειές τους εκεί.',
   'Import a chat here': 'Εισαγωγή συνομιλίας εδώ',
-  'A chat exported from Telegram or WhatsApp, to read here ahead of the new messages, with its photos, videos and voice messages. It stays on this phone and is never sent.': 'Μια συνομιλία εξαγμένη από το Telegram ή το WhatsApp, για να τη διαβάζεις εδώ πριν από τα νέα μηνύματα, με τις φωτογραφίες, τα βίντεο και τα φωνητικά της. Μένει σε αυτό το τηλέφωνο και δεν στέλνεται ποτέ.',
+  'A chat exported from Telegram, WhatsApp or Viber, to read here ahead of the new messages, with its photos, videos and voice messages. It stays on this phone and is never sent.': 'Μια συνομιλία εξαγμένη από το Telegram, το WhatsApp ή το Viber, για να τη διαβάζεις εδώ πριν από τα νέα μηνύματα, με τις φωτογραφίες, τα βίντεο και τα φωνητικά της. Μένει σε αυτό το τηλέφωνο και δεν στέλνεται ποτέ.',
   'The file has {n} chats. Which one goes on here?': 'Το αρχείο έχει {n} συνομιλίες. Ποια συνεχίζει εδώ;',
   'Kept only in this chat.': 'Μόνο σε αυτή τη συνομιλία.',
   'Also in Settings → Data and devices → Imported chats.': 'Και στο Ρυθμίσεις → Δεδομένα και συσκευές → «Εισαγμένες συνομιλίες».',
   'Show in Imported chats too': 'Και στις Εισαγμένες συνομιλίες',
   'It no longer shows in this chat. Settings → Data and devices → Imported chats keeps it.': 'Δεν φαίνεται πια σε αυτή τη συνομιλία. Τη φυλάει το Ρυθμίσεις → Δεδομένα και συσκευές → «Εισαγμένες συνομιλίες».',
+  'Me': 'Εγώ',
 };

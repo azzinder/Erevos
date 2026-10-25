@@ -1743,7 +1743,8 @@ sealed with its own password, and the file is sealed again with a password of it
 ## Imported chats {#import}
 
 Your old chats from Telegram and WhatsApp can come into Erevos, to read, with their photos, videos, voice messages and
-files. They stay on this phone, sealed in the space you bring them into, and are never sent anywhere.
+files, and those from Viber with their words. They stay on this phone, sealed in the space you bring them into, and are
+never sent anywhere.
 
 First export the chat from the other app:
 
@@ -1752,6 +1753,10 @@ First export the chat from the other app:
 - **Telegram Desktop:** **Export chat history**, format **JSON**, with the photos, videos, voice messages and files you
   want. Then make a .zip of the folder it made (on Windows: right-click it, **Send to**, **Compressed (zipped) folder**)
   and copy the .zip to the phone. **result.json** on its own brings only the words.
+- **Viber:** Viber itself exports no chats. On Android, the app **Backup Text for Viber** saves one as an .html file:
+  copy that to the phone. Only the words come in, with Viber's emoticons as emoji. Your own messages there carry no
+  name, so they come in as **Me**, already picked as you. Messages from a day before Viber existed, such as 1970, are
+  from a phone whose clock was wrong: they come in with no time.
 
 Then:
 
@@ -1798,7 +1803,6 @@ and the list in **Settings** keeps only what has nowhere else to go. Nothing of 
 - **Only a space's own chats** can go on from an imported chat, not hidden chats.
 - **Delete messages** in a chat leaves the imported ones: delete those in the chat's **Details**, under **Imported
   chats**, or in **Settings** → **Data and devices** → **Imported chats**.
-- **Viber** is not read yet.
 
 > The file of imported chats grows with what you bring in, so its size tells roughly how much was imported, but not
 > into which space.
@@ -2153,7 +2157,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **The phone's contacts** | In Android's own contacts, not sealed by Erevos, as with every contacts app: every app allowed to read them sees them, and an account (Google) may sync them. Erevos sends them nowhere. A .vcf file saved from them is outside Erevos, not sealed. A contact's calls and SMS are read from the phone's own call log and SMS only to show its history, and kept nowhere. | |
 | **Contacts kept only in Erevos** | Sealed with the space's key, or with the hidden chats' for theirs, in one file for every space whose size shows roughly how many there are in all, not whose they are; their photos each in a file of its own. Never in Android's contacts. Calls and SMS to them go through the phone, and show in its call log and SMS. | |
 | **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos reads it, and the favourites, to show them, deletes from it only the calls you delete, and keeps no copy. The SIM chosen for each number is sealed in the space; the quick replies, and what is blocked (prefixes, group ids and times only, the same for every space), are kept on the phone, not sealed. | |
-| **Imported chats** | Sealed in the space they were brought into, their photos and files too, each in its pieces as a chat's file is. The file's size, and how many pieces there are, tell roughly how much was imported, not where. | Viber, and files over 1 GB. |
+| **Imported chats** | Sealed in the space they were brought into, their photos and files too, each in its pieces as a chat's file is. The file's size, and how many pieces there are, tell roughly how much was imported, not where. | Viber's photos and files, and files over 1 GB. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
 | **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
@@ -2184,8 +2188,8 @@ End-to-end encryption is here, through the relay and over the nearby link, and m
   relay](#relay), and so is a walkie-talkie that works even over Bluetooth.
 - **Groups:** group chats, with photos, files and voice messages, and group voice and video calls are here, see [Group chats](#groups). Next: video with
   more than four people, through a server the call moves to by itself, still encrypted end to end.
-- **Bringing your chats:** Viber. Telegram and WhatsApp already come in, with their photos and files, see
-  [Imported chats](#import).
+- **Bringing your chats:** Telegram and WhatsApp already come in, with their photos and files, and Viber with its
+  words, see [Imported chats](#import). Next: Viber's photos and files.
 - **More systems:** public groups and group calls on linked devices too; the account, its calls and its groups are on
   a computer already, see [Linked devices](#devices). Linux, macOS and Windows are here, see [On a computer](#desktop), the iPhone from the browser, see [On an iPhone](#iphone), and Sailfish OS, see
   [On Sailfish OS](#sailfish); and so are backups, see [Backups](#backup).

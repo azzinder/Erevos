@@ -54,7 +54,8 @@ cryptography. Do not rely on it to protect anyone yet.
   app in a browser makes them by hand only. They can also hold the phone's SMS and MMS. Photos and
   files sent in chats are not in backups yet.
 - **Imports** from Telegram and WhatsApp exports, with their photos, videos, voice messages and
-  files since 0.1.16. Imported chats stay on the phone, marked as imported. Viber is not read yet.
+  files since 0.1.16, and Viber chats saved as .html by the Android app Backup Text for Viber,
+  with their words. Imported chats stay on the phone, marked as imported.
 - **Updates in the app**: Updates → Check for updates reads `version.json` from the public
   release repository, only when you tap it. On Android it downloads the APK, checks its size and
   SHA-256 against `version.json`, and opens Android's installer.

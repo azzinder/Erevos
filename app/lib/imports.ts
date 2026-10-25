@@ -8,11 +8,11 @@ import { t, mark } from './i18n';
 import { entrySource, isZip, readEntry, zipEntries, type ZipEntry } from './zip-source';
 
 // Chats exported from other messengers, read by the Erevos core (crates/erevos-import): Telegram's
-// JSON export (result.json, or a .zip of the export's folder with its photos, videos and files)
-// and WhatsApp's exported chat (.txt, or .zip with the media). The files a zip holds come in too,
-// each kept sealed as a message's file is (lock/attachment-files.ts); the zip is read a piece at a
-// time, so it may be larger than the phone's memory. Nothing here leaves the phone. Viber is not
-// read yet.
+// JSON export (result.json, or a .zip of the export's folder with its photos, videos and files),
+// WhatsApp's exported chat (.txt, or .zip with the media), and a Viber chat saved as .html by the
+// Android app Backup Text for Viber (only words). The files a zip holds come in too, each kept
+// sealed as a message's file is (lock/attachment-files.ts); the zip is read a piece at a time, so it
+// may be larger than the phone's memory. Nothing here leaves the phone.
 
 /** A message as the export has it: `attachments` names the kind of each of its files, `paths` where each is in the export. */
 export type ImportedMessage = {
@@ -61,10 +61,16 @@ function checkedChat(value: unknown): ImportedChat | null {
   };
 }
 
+/** The name a Viber chat's own messages go by: its backup names only the other person. */
+export const viberOwner = () => t('Me');
+
 /** The chats in an export file. `name` is the file's name, which holds a WhatsApp chat's name. Throws if it is not one Erevos reads. */
 export async function readExport(name: string, data: Uint8Array): Promise<ImportedChat[]> {
   const json = JSON.parse(utf8Decode(await core.importChats(utf8Encode(name), data))) as unknown;
-  return (Array.isArray(json) ? json : []).map(checkedChat).filter((c): c is ImportedChat => c !== null);
+  return (Array.isArray(json) ? json : [])
+    .map(checkedChat)
+    .filter((c): c is ImportedChat => c !== null)
+    .map((chat) => (chat.source === 'viber' ? { ...chat, messages: chat.messages.map((m) => ({ ...m, sender: m.sender ?? viberOwner() })) } : chat));
 }
 
 /** A picked export: its chats, and in a zip the files they name that it holds, by their place in the export. */

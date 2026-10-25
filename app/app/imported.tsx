@@ -17,7 +17,7 @@ import { currentSpace } from '../lock/keys';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles } from '../theme/context';
 
-// Chats brought in from Telegram and WhatsApp exports (lib/imports.ts), kept sealed in this space
+// Chats brought in from Telegram, WhatsApp and Viber exports (lib/imports.ts), kept sealed in this space
 // (lock/archive.ts). They are only to read: Erevos cannot show who really wrote them, and they
 // are never sent anywhere. One can go on in Erevos: linked to one of the space's contacts, it shows
 // in the chat with them, ahead of the new messages.
@@ -117,7 +117,7 @@ export default function ImportedScreen() {
       <Text variant="title">{t('Imported chats')}</Text>
       <Text tone="muted">
         {t(
-          'Chats brought in from Telegram or WhatsApp, to read here, with their photos, videos, voice messages and files. They stay on this phone, sealed in this space, and are never sent anywhere.',
+          'Chats brought in from Telegram, WhatsApp or Viber, to read here, with their photos, videos, voice messages and files. They stay on this phone, sealed in this space, and are never sent anywhere.',
         )}
       </Text>
 
@@ -128,7 +128,7 @@ export default function ImportedScreen() {
       {listed.length === 0 && !flow.found ? (
         <Text variant="caption" tone="muted">
           {t(
-            'Nothing imported yet. In WhatsApp: a chat, then More, Export chat, Include media, and save the .zip to the phone. In Telegram Desktop: Export chat history, format JSON, with photos, videos, voice messages and files, then make a .zip of the folder it made and copy it to the phone.',
+            'Nothing imported yet. In WhatsApp: a chat, then More, Export chat, Include media, and save the .zip to the phone. In Telegram Desktop: Export chat history, format JSON, with photos, videos, voice messages and files, then make a .zip of the folder it made and copy it to the phone. From Viber: save the chat with the Android app Backup Text for Viber and copy its .html file to the phone.',
           )}
         </Text>
       ) : null}

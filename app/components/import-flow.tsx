@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react';
 import { FileTooLargeError, fileSize } from '../lib/attachments';
 import { canImport } from '../lib/core';
 import { plural, t } from '../lib/i18n';
-import { exportFiles, keepExportFiles, oneChatOf, openExport, senders, SOURCE_LABELS, toArchived, type OpenedExport } from '../lib/imports';
+import { exportFiles, keepExportFiles, oneChatOf, openExport, senders, SOURCE_LABELS, toArchived, viberOwner, type OpenedExport } from '../lib/imports';
 import { pickSource, TooLargeError, type PickedSource } from '../lib/pick-file';
 import type { Archive } from '../lock/archive';
 import { Button, Card, Chip, Field, Input, Row, Text } from './ui';
 
-// Bringing in a chat exported from Telegram or WhatsApp (lib/imports.ts): the file picked and
+// Bringing in a chat exported from Telegram, WhatsApp or Viber (lib/imports.ts): the file picked and
 // read, who the phone's owner was in it, and the chat kept sealed in the space (lock/archive.ts).
 // From the Imported chats screen (app/imported.tsx) every chat of an export comes in; from a
 // chat's details (app/chat.tsx), one, to go on with that contact (`one`).
@@ -59,8 +59,9 @@ export function useImportFlow(archive: Archive | null, say: (text: string) => vo
       const people = senders(read);
       setFound({ opened, picked, people });
       picked = null;
-      // In an export of many chats, the one who wrote the most is almost surely its owner.
-      setMe(read.length > 1 ? (people[0] ?? '') : '');
+      // In an export of many chats, the one who wrote the most is almost surely its owner; a
+      // Viber chat's own messages are the only ones with no name of their own.
+      setMe(read.length > 1 ? (people[0] ?? '') : read[0].source === 'viber' ? viberOwner() : '');
       // Of many, the longest is the likeliest to go on here.
       const longest = read.reduce((best, chat, i) => (chat.messages.length > read[best].messages.length ? i : best), 0);
       setChosen(one ? longest : 0);
