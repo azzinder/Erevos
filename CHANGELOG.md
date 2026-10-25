@@ -10,17 +10,6 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
-- **Edit a message you sent**: hold one of your messages, then **Edit**, up to a day after you sent it. Its words go
-  in the field under **Edit message**; change them and send. Both phones show the new words with **Edited** beside the
-  time, and so do your linked devices. In a group, every member sees them. Only words are edited, not stickers,
-  places, polls, voice messages, photos, files or forwarded words. A message that still waits to go simply goes with
-  the new words. An Erevos from before this keeps the old words.
-- **Nostr says what it did**: the note under the messages says **Sent through Nostr** when a Nostr relay took a text;
-  it said "through the relay" before, even then. The **Nostr** screen has **What the relays did last**: for each relay,
-  whether it took the last text and how many seconds after, or why not, and whether this phone reads on it, kept until
-  Erevos closes. The guide says how to try Nostr with two phones side by side (Bluetooth and same Wi-Fi off).
-- **Coloured call buttons**: at the top of a chat, the video call is a blue tile with a white camera and the voice call
-  a green tile with a white handset, as **Phone** is on the home screen; a group's call is the green tile too.
 - **A handset that looks like one**: the white handset on the green tiles (Phone on the home screen, the call at the top
   of a chat and a group) is drawn as the phone widget draws it, no longer as a ring that looked like a tool.
 - **Begin with no relay, through Nostr**: a phone with no relay, invite or LPHL account shows **No invite?** on its
@@ -32,6 +21,20 @@ On main, not released yet:
   once, inside the chat, whether they first met through Nostr or nearby (Bluetooth, Wi-Fi, a QR code). The other phone
   takes it by itself and tells its contacts where it reads now. It counts as one of the inviter's invites, and none
   goes to a message request; one from a request waits until it is accepted.
+
+## 3.2.1 (2026-10-25)
+
+- **Edit a message you sent**: hold one of your messages, then **Edit**, up to a day after you sent it. Its words go
+  in the field under **Edit message**; change them and send. Both phones show the new words with **Edited** beside the
+  time, and so do your linked devices. In a group, every member sees them. Only words are edited, not stickers,
+  places, polls, voice messages, photos, files or forwarded words. A message that still waits to go simply goes with
+  the new words. An Erevos from before this keeps the old words.
+- **Nostr says what it did**: the note under the messages says **Sent through Nostr** when a Nostr relay took a text;
+  it said "through the relay" before, even then. The **Nostr** screen has **What the relays did last**: for each relay,
+  whether it took the last text and how many seconds after, or why not, and whether this phone reads on it, kept until
+  Erevos closes. The guide says how to try Nostr with two phones side by side (Bluetooth and same Wi-Fi off).
+- **Coloured call buttons**: at the top of a chat, the video call is a blue tile with a white camera and the voice call
+  a green tile with a white handset, as **Phone** is on the home screen; a group's call is the green tile too.
 
 ## 3.2.0 (2026-10-25)
 
