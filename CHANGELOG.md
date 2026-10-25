@@ -29,6 +29,10 @@ On main, not released yet:
 - **Coloured shortcuts on the home screen**: at the top, **Phone** is a green tile with a handset, **Contacts** a violet
   one with a person (the colours of their icons on the phone's home screen) and the lock an orange one. Phone and
   Contacts left the menu under the three dots, where they were twice.
+- **The guide says why**: almost every part of the **User guide** now ends with a **Why** that says what the way it
+  works protects, or why it was chosen: from why hidden chats have four places instead of a key for each chat, to why
+  only the sender's phone fetches a link's preview. A few names in it now match the app (**Safety number**, **Appear
+  offline**, **Disappearing messages**), and its questions say that an iPhone can use Erevos from the browser.
 
 ## 3.1.2 (2026-10-25)
 

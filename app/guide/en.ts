@@ -40,6 +40,10 @@ Scrolled up a little, two round arrows show at the lower right, in a chat, a gro
 upper one goes to the chat's start, the lower one back to its end. From the start, **Show later messages**, under what
 shows, brings more; writing a message, or the lower arrow, goes back to the end.
 
+**Why:** a long chat opens at its latest messages so that it opens at once: drawing all of it at a time would be slow,
+on older phones most of all. Hidden chats are left out of the home screen's search so that the home screen looks the
+same whether a space has any or not: their messages can be read only while their PIN has them open.
+
 - **The picture** is drawn from the contact's key: the same key always gives the same colours and moon (in greens under Matrix), so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
 - **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
@@ -186,8 +190,17 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
   internet over TLS (wss://): a stranger nearby never has your phone, or your relay, reach one on a local network or
   on the phone itself. Your own messages are carried by the phones nearby that have it on.
 
+**Why:** a packet does not say who it is for, so no one nearby can tell from it whose it is. Until your contact's
+phone answers on a link, your phone cannot tell which of the phones nearby is theirs either: so the short packets go to
+all of them, each tries them, and from the first that opens, that link is your contact's. A voice message, in larger
+pieces, waits for that.
+
 > A message from nearby opens only in the space that has that contact. One for another space of this phone waits in
 > memory, six hours at most, until that space opens. Hidden chats never use the nearby link.
+
+**Why:** the nearby links belong to the phone, not to a space, and nothing on them names one: what comes is tried in
+the chats of the space that is open, and kept a while in memory for the others, never written to the phone. Hidden
+chats do not use them yet: that is still to come (see [What is protected today](#privacy)).
 
 ## Over a LoRa radio {#lora}
 
@@ -221,6 +234,11 @@ radio, and on Android only.
   off** gives the radio back its role and GPS, if it is linked, then unlinks it and forgets it. Hidden chats never go
   over LoRa.
 
+**Why:** what a Meshtastic radio says of itself goes in the clear, to anyone listening kilometres away: its name and
+where it is could show where you are and tie the radio to you, so Erevos keeps it quiet unless you choose otherwise.
+And as the law allows a radio only so much air time, LoRa is kept for your own texts, when nothing else can take them,
+never for what other phones would have it carry.
+
 > A LoRa radio is heard kilometres away, and its signal can be traced to where it is, quiet or not. What Erevos sends
 > stays end-to-end encrypted, but anyone with a radio can tell that yours sends, when and how much. With
 > **Said to all in reach**, anyone with a radio can also read its name and where it is.
@@ -232,6 +250,9 @@ link** can drop messages into it. The relay holds no accounts, names or phone nu
 they are end-to-end encrypted, and only the two phones have the keys. Each phone may use a relay of its own: a message
 to a contact on another relay is sealed for theirs and handed to yours, which passes it on, so their relay never sees
 your phone's address. A phone with no relay gets a place on its contact's, see **No relay of your own** below.
+
+**Why:** with queues and no accounts, no server holds a list of who knows whom, and no one needs your phone number or
+email to reach you: whoever has your contact link can write to your queue, and only you read it.
 
 1. On the home screen, tap **New chat**. It shows your contact link and how to add a contact; tap **Relay settings**
    below them (in a chat with no contact picked, they are under **Relay and new contacts**). **Settings** → **Relay
@@ -292,6 +313,10 @@ runs the relay can take any one phone out alone.
 - **Hidden chats** keep the relay token typed in for them: trading it at the same moment as the space's would show the
   relay that they are this phone's. When the relay's token changes, type the new one in their **Relay settings**.
 
+**Why:** the relay gives each connection a thread of its own, so it serves only so many at once; and it adds only so
+many lines a day for phones that came with its one token, so a token that went where it should not cannot fill its file
+of tokens.
+
 ### Inviting someone new
 
 One QR code or link brings someone new in: their phone joins Erevos on your relay, with access of its own, typing
@@ -342,6 +367,10 @@ takes a place there, with no token.
 - **A link without a ticket** (from an older relay or Erevos): a relay that needs no token is used as it is;
   otherwise you reach each other nearby only, until you have a relay.
 
+**Why:** a link with a ticket is a key to your relay for whoever sees it, so your link carries one only when you choose,
+for the link shown then, and the relay lends only once whoever runs it allows it. A lent place's files are kept to a few
+photos and voice messages a day, so it never takes the relay's whole store.
+
 ### Invites to the relay
 
 A phone with a token of its own on a relay that takes invites can let one more phone use that relay, with a token of
@@ -372,6 +401,10 @@ that phone's own, so no token is typed or passed on.
   own relay](#own-relay)). A phone with the relay's one token for all trades it for one of its own first (see Ways in
   to the relay above). With a lent place there is no **Invite to the relay**.
 
+**Why:** the relay keeps only a fingerprint of each token, never the token, so its file tells no one how to connect.
+And an invite names a wss:// relay, or a ws:// one at home, so it can never send your phone's requests across the
+internet in the clear.
+
 ### Signing in to the relay
 
 A relay can let phones sign in with an account its operator trusts, such as LPHL, for a token of their own, with
@@ -393,9 +426,15 @@ nothing to type in Erevos.
   the same account shows the relay that both are yours.
 - **Hidden chats** do not sign in.
 
+**Why:** the page shows the code and you type it in Erevos, not the other way round, so a sign-in link someone else
+sends you gets them nothing: only whoever signed in sees the code, and five wrong ones end it. Erevos opens a sign-in
+page only on the relay's own address, over https, so nothing answering in the relay's place can send you to a page
+somewhere else. And a provider that cannot be asked for a while cuts no phone off at once: only 3 days without a good
+answer do.
+
 ### The safety number
 
-Open the chat, tap its name and then **Show safety number**. Both phones show the same 60 digits for the two of you. Compare them
+Open the chat, tap its name and then **Safety number**. Both phones show the same 60 digits for the two of you. Compare them
 in person or on a call: if they match, no one is in between. If they differ, do not trust that chat, and add the
 link again, scanned from their own phone. Once they have linked a device, it also says when the list of their devices
 last changed: your messages go to each place in it too, so if they did not link or unlink one then, ask them.
@@ -460,7 +499,12 @@ While you type to a contact who shows online, their chat shows **typing…** und
 yours under theirs when they type. It is said every few seconds at most, only while they show online, never to a
 message request, and not in groups.
 
-To hide it from one contact, open their chat, tap its name and then **Appear offline: off**. With it on:
+**Why:** being online is said only between you and a contact whose chat is open, inside the encryption, so the relay
+sees no more than a message now and then between two people talking, and nothing of it is kept: so there is no "last
+seen" to show. Someone who only has your link, writing as a message request, hears nothing back until you accept: not
+that you read, nor that you are online or typing.
+
+To hide it from one contact, open their chat, tap its name and then **Appear offline**. With it on:
 
 - **They do not see you online**, nor that you are typing, and your phone sends them nothing while you read.
 - **Their messages stay ✓** on their phone, not ✓✓ or ✓✓✓, while you read them.
@@ -490,6 +534,9 @@ file is not encrypted: anyone who has it, or any app that reads that folder, can
 are only named, messages that disappear are left out, and hidden chats are not exported, so that no file outside Erevos
 shows they are there.
 
+**Why:** a message that disappears is left out, and so is a quote of one, as whoever sent it meant it to disappear,
+not to stay in a file.
+
 To delete one message, press and hold it and tap **Delete**. To delete all the messages of a chat, tap its name and then **Delete messages**.
 Either way Erevos asks where:
 
@@ -504,6 +551,10 @@ new relay queue at once. Your other contacts are told it quietly, in a message w
 21 days later while they have not written to the new one; what they wrote to the old one meanwhile still shows for 14
 days. The one you deleted is not told, and nothing they send there shows. Your contact link stays as it was, so they
 can still ask to talk again with it, as a message request, like anyone who has it.
+
+**Why:** all your contacts write to your one queue, so whoever you delete still knows where it is; once it moves, they
+can no longer write to you there, nor can whoever sent the junk below. Your contact link names a queue of its own,
+which a deletion leaves alone, so every link and QR code you gave keeps working.
 
 - **Block contact**, under it, does the same, and also drops what they send later, a request too. **Block**, beside
   **Refuse**, blocks a message request: a request knows only your contact link, so it moves your queue only while the
@@ -559,7 +610,7 @@ Reactions, replies and pins travel inside the encryption, like the messages.
 
 ### Disappearing messages
 
-Open a chat, tap its name and then **Disappearing: Off** to choose how long its new messages last once read: 5 minutes, 1 hour,
+Open a chat, tap its name and then **Disappearing messages** to choose how long its new messages last once read: 5 minutes, 1 hour,
 1 day or 1 week. To make only the next message disappear, tap the stopwatch beside the message field (or
 **Disappearing message** under **+**, or **Disappear** in the send arrow's menu): **Disappears 1 hour after it is read**
 shows over the field. Tap the time to pick another, or **✕** to turn it off. It goes with the next message you send:
@@ -582,6 +633,9 @@ and sends nothing. After a minute it sends by itself. The first time, Android as
 microphone: it records only while you hold it. With TalkBack, tap it once to start and again to send. Tap a voice
 message to play it, and tap it again to stop. Voice messages have the same marks as the rest, and follow the chat's
 disappearing setting.
+
+**Why:** on a phone a voice message is AAC at 64 kbit/s, about 480 KB a minute: as clear as speech gets. More would
+not be heard in a voice, but would be slower to send, over Bluetooth most of all.
 
 - **Through the relay, or nearby,** end-to-end encrypted like the words, in several pieces. No one in between can
   hear them, but from the pieces the relay, or whoever listens nearby, can tell that something long was sent, and
@@ -652,12 +706,20 @@ stickers too):
   the encryption, as reactions do. An Erevos from before this shows the question and its options as words, to answer in
   words.
 
+**Why:** a sticker pack fetched from the internet would tell a server that this phone has Erevos, so the stickers are
+built in and only their names travel. Your own are listed in one sealed value of the same size for every space and
+hidden place, used or not, so a list in use looks like one that is not: 100 is what it holds. A place is sent only from
+Android: on a computer or in the web app, the browser would ask an outside service where it is.
+
 ### Link previews
 
 A link in a message is underlined, and opens only once you tap it and say so. With **Link previews** on, in a chat's
 details, a link you send goes with its preview: as you send it, this phone fetches the page and takes its title, a line
 about it and a small picture, and they go inside the message, end-to-end encrypted. The phone that gets it fetches
 nothing: it shows what came. It is off unless you turn it on, and then it is on for all the chats of the space.
+
+**Why:** only the sender's phone fetches the page, so the phone that gets a link reaches no site someone else chose,
+and shows that site nothing of itself, not even its address.
 
 - **The site sees this phone's internet address**, and when, as it would from a browser, but not who the message is
   for. Through Tor, Erevos sends only its relay requests, not pages, so while everything in the space goes through Tor
@@ -719,6 +781,11 @@ a missed call.
   there; if not, it waits as a voice message. It is a smaller voice message (about 3 KB a second), so it goes
   everywhere a message goes, Bluetooth included.
 
+**Why:** the keys that open a space's messages are in memory only while it is open, and sealed behind its password
+otherwise. So after the phone restarts, nothing can be read and nothing rings until you open Erevos and the space once;
+and hidden chats, whose key is in memory only while they are open, only say that a message came, or ring with no name,
+if you let them.
+
 > The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
 > kept in this space, sealed. History has no limit: it is kept in sealed pages of the same size, mixed with the pages
 > of the other spaces and hidden chats, so only how much they all take together shows, not whose they are. The rest
@@ -734,6 +801,10 @@ You are its admin. Each contact's phone answers by itself the next time Erevos i
 then shows on their home screen, with a note of who added them. A phone joins only a group whose admin is the contact
 who asked it, and an admin lets a contact in only as themselves, never as someone else. Groups go through the relay,
 so it has to be set.
+
+**Why:** only the admin's phone changes the group (who is in it, its name), so no server has to put the changes in
+order: every phone takes them from that one. So a member leaves by asking the admin, and only the admin adds or takes
+out members.
 
 - **Who can be asked:** contacts you have accepted, in this space. Members who are not each other's contacts still
   talk in the group, and show by the start of their key.
@@ -818,6 +889,10 @@ and go to each member as in any group, and no relay learns who is in it.
 - **Up to 100 members,** as the whole group has to fit in the one message that lets someone in.
 - **Every phone in a public group needs this version of Erevos.** Groups made from contacts work as before.
 
+**Why:** only the owner's phone changes the group and lets people in, so changes never race and no server has to put
+them in order. That is why the group goes on without it, but no one new comes in: hand it over before you change
+phones.
+
 ### What a public group gives away
 
 > Anyone with the link can read the group from when they are let in, never what was said before, and the link can be
@@ -879,6 +954,8 @@ they are taken (1024 MB together at most), so a restart loses nothing, and no re
 Messages sent for later are kept there until their time too, 10,000 or 256 MB at most: the relay sees when
 each is to go, not what it says.
 
+**Why:** what the relay keeps has limits, so the phones that use it cannot fill its disk or its memory.
+
 **Invites:** the relay can let each phone have a token of its own, in a file of tokens, and then let those phones
 invite more, each invite for one phone (see [Invites to the relay](#relay)). Turn it on with
 \`EREVOS_RELAY_INVITES=on\` beside \`EREVOS_RELAY_TOKENS\`; the relay then writes the lines of invited phones in that
@@ -927,6 +1004,9 @@ requests to its relays go through the Tor network. Each space has its own choice
 | **Messages** | Unless you change it. What you write, and what tells your contacts something, such as that a message was read. Pictures, files and voice messages go straight, which is faster: for them the relay sees your phone's IP address. |
 | **Everything** | Files too. Nothing goes to a relay without Tor. |
 | **Nothing** | The relay sees your phone's IP address for everything. |
+
+**Why:** with **Messages**, what you write is hidden by Tor and never waits for it, while pictures, files and voice
+messages, which are large, go straight and so faster.
 
 - **What it hides:** the relay no longer sees your phone's IP address, only a Tor exit (or nothing, for a relay
   with a \`.onion\` address). Your phone company or the Wi-Fi sees only that you use Tor, not which relay.
@@ -977,6 +1057,11 @@ through your relay. Each space has its own choice, and its own Nostr relays.
 - **What stays on your relay:** pictures, files, voice messages, calls, reactions, and the marks that a message came
   or was read; and what you write to contacts on an iPhone or a computer, which do not read on Nostr.
 - **On Android only,** as Tor is.
+
+**Why:** the Nostr relays are public, so Erevos reaches them only through Tor, and they never learn where your phone
+is. Only texts go there: a text has your relay as its backup, should it not come, while the marks that a message came
+or was read would have none, and a message sent for later needs your relay to hold it until its time. Pictures and
+voice messages through Nostr are still to come.
 
 > Should your contact's phone not say within five minutes that a text came, it goes through your relay as well, and
 > they see it once. When no Nostr relay takes it, it goes through your relay at once.
@@ -1030,6 +1115,10 @@ app**, tap **Make Erevos the SMS app**. The home screen then shows SMS and Erevo
   phone with Erevos answers through the relay and the two become contacts. Each number is asked once a month at most,
   and **Turn invites off**, under **Settings** → **Phone and SMS** → **SMS** → **Find Erevos on a number**, stops
   them.
+
+**Why:** so that two Erevos phones find each other from a phone number alone, with no server that knows numbers. The
+invite is a data SMS, which messaging apps do not show, so a phone without Erevos shows nothing.
+
 - **Everyone else:** a plain SMS, marked SMS. The phone company can read it, as it reads every SMS.
 - **✓ and ✓✓✓:** an SMS of yours shows ✓ once it went, and ✓✓✓ once the network's delivery report says it reached
   their phone, or "not delivered". Some phone companies send no delivery reports; then it stays ✓. SMS cannot say
@@ -1174,6 +1263,10 @@ that title, and tapping it opens the Phone's **Settings**.
   ends it sooner. Such a call is blocked like the others: it does not ring, and shows in **Recents**, under
   **Blocked**. Erevos only reads the groups, and keeps the group's id and the time, not its name. While a group is
   blocked, the **Phone** screen says so at the top, until when, with **Lift**.
+
+**Why:** a call is screened with Erevos locked too, so what is blocked cannot be sealed inside a space; and kept the
+same for every space, it shows nothing of any of them.
+
 - **Erevos's password:** the **Phone** screen, with the keypad, the calls and the favourites, is behind it like the
   rest of Erevos. Only the call screen is not, unless you let the Phone open without it: under **Phone** →
   **Settings**, **Open the Phone without the password** (off at first, and shown only while Erevos has a password).
@@ -1299,6 +1392,10 @@ choices: **No lock** and **Password**.
   opens and then updates. It is always the same size, so it tells no one how many chats there are or which spaces
   are used, and it never holds what a disappearing message said.
 
+**Why:** each password tried costs time and a lot of memory on purpose (PBKDF2, then Argon2id), so that whoever copies
+what the phone keeps cannot try passwords fast; and someone holding the phone waits longer after each wrong try. The
+count is one for the whole phone, kept across restarts, as the password screen comes before any space opens.
+
 > There is no way to recover a forgotten password: nothing is stored that could open the data without it. Only a
 > fingerprint or face, while it is on, still opens the first space (see below).
 
@@ -1310,6 +1407,10 @@ last screen of Erevos shows blank, so whoever holds the unlocked phone a moment 
 and **Turn on** brings it back. Hidden
 chats always stay out of them while they are open, whatever the setting. The setting is the phone's, the same in
 every space. On a computer and in the web app it does not exist.
+
+**Why:** without it, the last screen of Erevos stays as a picture among the recent apps until Erevos opens again, so
+hidden chats always keep out, never to show there without their PIN. The setting is the same in every space so that it
+tells nothing of which space opened.
 
 ### Fingerprint or face
 
@@ -1335,6 +1436,10 @@ is off unless you turn it on.
 - **Wrong passwords** are counted as before: a fingerprint does not change the count.
 - **Not on a computer or the web:** it is offered only on Android. Turning the lock off turns it off too.
 
+**Why:** a finger is easier to force than a password, and anyone whose finger or face the phone knows could use it, so
+it never opens a second password's space or hidden chats. Turned on in another space, it keeps a key that opens
+nothing, in the same shape, so what is stored does not show which space it was turned on in.
+
 ## Second password {#second}
 
 If someone forces you to open Erevos, type the second password instead of your own. It opens a separate, empty
@@ -1352,6 +1457,19 @@ exist.
 
 Every space has 4 places for hidden chats, each opened only with its own PIN, and they never show among your other
 chats. There is no button for them anywhere. Each place can hold one chat or several, so 2 spaces have 8 places.
+
+**Why:** each place already has a PIN of its own, so a chat alone in a place has a key of its own, and a place can also
+hold several chats under one PIN. The number of places is fixed for two reasons:
+
+- **So that nothing shows.** All 4 places exist from the first start, filled with random data while unused. Whoever
+  makes you open the phone, or copies what it keeps, cannot tell whether you have hidden chats, or how many. With a key
+  for each chat, the sealed files would grow with each new hidden chat, and give away how many there are.
+- **So that it stays quick.** A PIN typed in the search is tried on every place, and each try is slow on purpose
+  (Argon2id, which takes a lot of memory and time, so that PINs cannot be guessed fast). With 4 places opening stays
+  short and always takes the same time, so the time does not tell how many are used either.
+
+The number can be raised later with nothing lost, at the cost of opening a little slower; lowering it would delete
+what the places taken away hold.
 
 1. Start a place in either of two ways: under **Settings** → **Privacy and security** → **Hidden chats**, pick **Place
    1** to **Place 4**, tap **Set hidden chats PIN**, type it twice and tap **Save**; or open a chat's **Details**, tap
@@ -1575,6 +1693,10 @@ encrypted as on the phone, and keeps its contacts, messages and settings sealed 
   nothing: start the keyring, or give Erevos \`--password-store=gnome-libsecret\`. Started with \`--plain-secrets\`, it
   keeps its keystore there as it is, readable by your user: then set a password lock. The portable Windows app keeps its things in the
   same folder as the installed one, and uninstalling leaves them there.
+
+**Why:** without a keyring, the keystore would lie on the disk as it is, readable by your user, so Erevos keeps nothing
+there unless you choose it with \`--plain-secrets\`: no password slot lies there unsealed by surprise.
+
 - **Windows' firewall** asks, the first time Erevos opens, whether it may use the network. Allow it on private
   networks, or phones and computers on the same Wi-Fi cannot reach it; relays work either way.
 - **Voice messages** recorded on a computer are Opus, on a phone AAC. Both play on both.
@@ -1593,6 +1715,11 @@ own, which the phone signs into a list of the account's devices and gives its co
 write to each device too, end-to-end encrypted, so it gets their messages with the phone off; for those on older
 versions the phone passes on to the computer what comes, and seals for them what the computer writes. Contacts see the
 same account and the same safety number, whatever version of Erevos they have.
+
+**Why:** each device has keys of its own, never a copy of the account's: Erevos has no server that could cut off a lost
+device, so a device is never more than an entry in a list the phone signs, and unlinking it is enough. The list always
+has four places, those no device takes holding keys made for nothing, so contacts cannot tell how many devices you
+have. And with the phone as the account, contacts on any older Erevos reach you as before.
 
 To link a computer:
 
@@ -1916,5 +2043,5 @@ whom.
 ### Does it work on an iPhone or a computer?
 
 On a computer, yes: Linux, macOS and Windows, see [On a computer](#desktop).
-On an iPhone not yet, see [What is coming](#coming).
+On an iPhone, yes, from the browser, as a web app, see [On an iPhone](#iphone).
 `;

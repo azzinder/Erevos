@@ -44,8 +44,8 @@ cryptography. Do not rely on it to protect anyone yet.
   that cannot go yet waits, marked in the chat, until there is a way. When the relay cannot be
   reached, other Erevos phones nearby can carry a sealed message to the contact's relay; carrying
   for others is off unless turned on. Hidden chats never use the nearby links.
-- **Tor** (Android only), per space, off unless turned on, with bridges (obfs4, Snowflake and
-  others) for where Tor is blocked.
+- **Tor** (Android only), per space: what you write goes through Tor by default (**Messages**),
+  or everything, or nothing, with bridges (obfs4, Snowflake and others) for where Tor is blocked.
 - **Phone, SMS and contacts** (Android): Erevos can be the phone's SMS app (SMS and MMS), its
   phone app and its contacts app, with a home-screen widget.
 - **Backups**: one file sealed with its own password, holding every space. Made by hand, or
