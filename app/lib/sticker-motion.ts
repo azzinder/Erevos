@@ -85,6 +85,7 @@ const twinkle = (part: string): Move => ({ part, at: [0, 0.15, 0.3, 0.45, 0.6, 0
 type Spot = { l: number; r: number; y: number; m: number; k?: number };
 // Where the moods are on each face that has them, as lib/sticker-art.ts draws them.
 const CAT = { l: 37, r: 63, y: 53, m: 69 };
+const DOG = { l: 37, r: 63, y: 47, m: 72 };
 const MONSTER = { l: 38, r: 62, y: 46, m: 64 };
 const ROBOT = { l: 39, r: 61, y: 40, m: 54, k: 0.85 };
 const DINO = { l: 38, r: 62, y: 38, m: 54 };
@@ -326,6 +327,31 @@ export const MOTIONS: Record<string, Motion> = {
   'cat-fish': { ms: 2000, moves: [{ part: 'fish', about: [50, 80], at: [0, 0.2, 0.4, 0.6, 0.8, 1], turn: [0, 10, -10, 10, -10, 0] }, bob(3)] },
   'cat-box': { ms: 2600, moves: [{ part: 'cat', at: [0, 0.2, 0.45, 0.7, 1], y: [0, 26, 26, -4, 0] }] },
   'black-cat': { ms: 2200, moves: [blink('pupils', [50, 53]), rock(6)] },
+  // Dogs: their ears flap, about where they hang from.
+  'dog-hello': { ms: 2200, moves: [rock(5), flap('ear1', [22, 32], 10), { part: 'paw', about: [82, 86], at: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1], turn: [0, -20, 8, -20, 8, -8, 0] }] },
+  'dog-love': { ms: 2200, moves: moodMoves('love', DOG, [bob(3)]) },
+  'dog-laugh': { ms: 1800, moves: [...moodMoves('laugh', DOG), flap('ear1', [22, 32], 12), flap('ear2', [78, 32], -12)] },
+  'dog-happy': { ms: 2000, moves: [rock(7), flap('ear1', [22, 32], 14), flap('ear2', [78, 32], -14)] },
+  'dog-sad': { ms: 2600, moves: moodMoves('sad', DOG, [{ part: 'all', at: [0, 0.3, 0.7, 1], y: [0, 2, 2, 0] }]) },
+  'dog-angry': { ms: 1400, moves: moodMoves('angry', DOG) },
+  'dog-sleep': { ms: 3000, moves: moodMoves('sleep', DOG, [{ part: 'all', about: [50, 90], at: EVEN, sy: [1, 0.97, 1, 0.97, 1] }]) },
+  'dog-wow': { ms: 1600, moves: [...moodMoves('wow', DOG), flap('ear1', [22, 32], 16), flap('ear2', [78, 32], -16)] },
+  'dog-wink': { ms: 1800, moves: moodMoves('wink', DOG, [{ part: 'all', at: [0, 0.2, 0.7, 1], turn: [0, 8, 8, 0] }]) },
+  'dog-cool': { ms: 2000, moves: moodMoves('cool', DOG, [{ part: 'all', at: [0, 0.25, 0.75, 1], turn: [0, -7, -7, 0] }]) },
+  'dog-shy': { ms: 2200, moves: moodMoves('shy', DOG, [rock(5)]) },
+  'dog-cry': { ms: 2400, moves: moodMoves('cry', DOG, [{ part: 'all', at: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 1], y: [0, 2, 0, 2, 0, 2, 0] }]) },
+  'dog-kiss': { ms: 2400, moves: moodMoves('kiss', DOG, [rock(5)]) },
+  'dog-tongue': { ms: 1800, moves: moodMoves('tongue', DOG, [rock(6), flap('ear1', [22, 32], 12), flap('ear2', [78, 32], -12)]) },
+  'dog-dizzy': { ms: 2600, moves: moodMoves('dizzy', DOG, [rock(6), twinkle('stars')]) },
+  'dog-think': { ms: 2600, moves: moodMoves('think', DOG, [{ part: 'all', at: [0, 0.3, 0.7, 1], turn: [0, 6, 6, 0] }]) },
+  'dog-heart': { ms: 2200, moves: [beat('heart', [50, 86], 1.2), bob(3)] },
+  'dog-coffee': { ms: 2600, moves: [rise('steam', 6), rock(4)] },
+  'dog-party': { ms: 2200, moves: [{ part: 'all', at: [0, 0.15, 0.3, 0.45, 0.6, 1], y: [0, -8, 0, -6, 0, 0] }, rock(10, 'hat', [50, 26]), twinkle('tears'), flap('ear1', [22, 32], 12), flap('ear2', [78, 32], -12)] },
+  'dog-ok': { ms: 1800, moves: [pop('badge', [82, 82], 0.1), bob(3)] },
+  'dog-ball': { ms: 2200, moves: [{ part: 'ball', about: [80, 82], at: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1], y: [0, -14, 0, -9, 0, -4, 0], turn: [0, 60, 120, 180, 240, 300, 360], every: 360 }, flap('ear1', [22, 32], 12), flap('ear2', [78, 32], -12)] },
+  'dog-bone': { ms: 2000, moves: [{ part: 'bone', about: [50, 76], at: [0, 0.2, 0.4, 0.6, 0.8, 1], turn: [0, 7, -7, 7, -5, 0] }, bob(3)] },
+  'dog-bath': { ms: 2800, moves: [rise('bubbles', 10), { part: 'dog', at: EVEN, y: [0, -3, 0, -3, 0], turn: [0, -4, 0, 4, 0] }] },
+  dalmatian: { ms: 2200, moves: [rock(6), flap('ear1', [22, 32], 12), flap('ear2', [78, 32], -12)] },
   // Monsters.
   'monster-happy': { ms: 2000, moves: [bob(4), flap('arm1', [18, 50], 15), flap('arm2', [82, 50], -15)] },
   'monster-wave': { ms: 2200, moves: [{ part: 'arm2', about: [82, 50], at: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1], turn: [0, -60, -30, -60, -30, -40, 0] }, bob(3)] },

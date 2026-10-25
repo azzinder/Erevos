@@ -28,7 +28,7 @@ import { fitSticker, keepAsSticker, NotStickerError, stickerMeta, stickerPhoto }
 import { photoSize } from '../lib/photo';
 import { ART, partsOf } from '../lib/sticker-art';
 import { MOTIONS, motionFor, REST } from '../lib/sticker-motion';
-import { SETS, STICKERS, stickersIn, wordsLines, wordsSize } from '../lib/stickers';
+import { GONE_SETS, SETS, STICKERS, stickersIn, wordsLines, wordsSize } from '../lib/stickers';
 import { cleanFileName, cleanMime, fitsSticker, isFileMeta, isFileRef, MAX_STICKER, type FileRef } from '../lock/attachment-files';
 import { PREFIX as PHOTO } from '../lock/avatar-photos';
 import { History, newTag } from '../lock/history';
@@ -61,17 +61,19 @@ t('every built-in sticker has a name of its own, never reused, its words, an emo
   for (const s of STICKERS) {
     assert.equal(carriedOf({ sticker: s.name }).sticker, s.name, `${s.name} travels by its name`);
     assert.ok(s.emoji && s.label, s.name);
-    assert.ok(SETS.some(({ set }) => set === s.set), s.name);
+    assert.ok(SETS.some(({ set }) => set === s.set) || GONE_SETS.includes(s.set), s.name);
   }
   // The first ones keep their names, in their order: an Erevos from before knows them by these.
   assert.deepEqual(stickersIn('moons').slice(0, 12).map((s) => s.name), [
     'moon-smile', 'moon-laugh', 'moon-love', 'moon-wink', 'moon-wow', 'moon-sad', 'moon-angry', 'moon-sleep', 'heart', 'sun', 'coffee', 'check',
   ]);
   assert.deepEqual(SETS.map(({ set }) => set), [
-    'moons', 'ghosts', 'cats', 'animals', 'dinosaurs', 'monsters', 'robots', 'love', 'sea', 'weather',
+    'moons', 'ghosts', 'dogs', 'animals', 'dinosaurs', 'monsters', 'robots', 'love', 'sea', 'weather',
     'space', 'greece', 'celebrations', 'sports', 'music', 'transport', 'plants', 'words', 'treats', 'fruit',
   ]);
-  for (const { set } of SETS) assert.equal(stickersIn(set).length, 24, set);
+  for (const set of [...SETS.map(({ set }) => set), ...GONE_SETS]) assert.equal(stickersIn(set).length, 24, set);
+  // A set gone from the picker is in it no more, but what was sent of it still shows.
+  assert.deepEqual(GONE_SETS.filter((set) => SETS.some((s) => s.set === set)), []);
   // Each is drawn, and nothing is drawn that is not one.
   assert.deepEqual(Object.keys(ART).sort(), [...names].sort());
 });
@@ -101,6 +103,10 @@ t('the words of a Words sticker fit its card in two lines, in every language', (
 t('every set but the words and the treats moves a few seconds and ends as drawn; those two stay still', () => {
   for (const { set, moves } of SETS) {
     for (const { name } of stickersIn(set)) assert.equal(name in MOTIONS, moves, name);
+  }
+  // The sets gone from the picker move as they did.
+  for (const set of GONE_SETS) {
+    for (const { name } of stickersIn(set)) assert.ok(name in MOTIONS, name);
   }
   for (const [name, { ms, moves }] of Object.entries(MOTIONS)) {
     assert.ok(ms >= 1000 && ms <= 4000, `${name} plays a few seconds`);

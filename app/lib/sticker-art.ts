@@ -120,7 +120,7 @@ const moonEyes = (d = 9) => [dot(36, 40, d, INK), dot(64, 40, d, INK)];
 const moonCheeks = () => cheeksAt(26, 74, 58, 10);
 const smile = () => arc(50, 50, 36, 5, 'bottom');
 
-// Moods, the same for every face that has them (the cats, the monsters, the robots, the
+// Moods, the same for every face that has them (the cats, the dogs, the monsters, the robots, the
 // dinosaurs): where its eyes are (l and r across, y down), where its mouth is (m), how large (k)
 // and in what ink. The parts they make move as lib/sticker-motion.ts's moods do.
 export type Mood = 'smile' | 'love' | 'laugh' | 'sad' | 'angry' | 'sleep' | 'wow' | 'wink' | 'cool' | 'shy' | 'cry' | 'kiss' | 'tongue' | 'dizzy' | 'think' | 'happy';
@@ -207,6 +207,33 @@ function catFace(face: Shape[], { c = '#F2A65A', dark = '#D9823B', inner = PINK,
   ];
 }
 const catPaw = (x: number, y: number, c = '#F2A65A'): Shape[] => [part('paw', [oval(x, y, 18, 22, c, -12), oval(x + 0.5, y + 3, 9, 8, PINK), dot(x - 5, y - 6, 4, PINK), dot(x + 0.5, y - 8, 4, PINK), dot(x + 6, y - 6, 4, PINK)])];
+
+// A dog's face, for the Dogs set: floppy ears (ear1 its left, ear2 its right), a pale muzzle and,
+// unless `blaze` is false, a stripe of it up its forehead; its moods' eyes and mouth (DOG) in `face`
+// and its nose over them. `spots` are on its fur, and `front` is drawn over it all. With an `edge`,
+// its head has one, so a pale dog reads on a light look.
+const DOG = { l: 37, r: 63, y: 47, m: 72 };
+const DOG_FUR = '#E2A35E';
+function dogFace(face: Shape[], { c = DOG_FUR, ear = '#8A5A3C', muzzle = '#FFF1DC', blaze = true, front = [] as Shape[], spots = [] as Shape[], edge = '' } = {}): Shape[] {
+  return [
+    ...(edge ? [oval(50, 56, 78, 72, edge)] : []),
+    oval(50, 56, 74, 68, c),
+    ...spots,
+    ...(blaze ? [box(45, 24, 10, 32, muzzle, 5)] : []),
+    part('ear1', [oval(19, 50, 20, 44, ear, 14)]),
+    part('ear2', [oval(81, 50, 20, 44, ear, -14)]),
+    oval(50, 70, 40, 30, muzzle),
+    ...cheeksAt(27, 73, 64, 8),
+    ...face,
+    oval(50, 60, 15, 10, INK),
+    dot(47, 58, 3.5, WHITE),
+    ...front,
+  ];
+}
+const dogPaw = (x: number, y: number, c = DOG_FUR): Shape[] => [part('paw', [oval(x, y, 18, 22, c, -12), oval(x + 0.5, y + 3, 9, 8, BROWN), dot(x - 5, y - 6, 4, BROWN), dot(x + 0.5, y - 8, 4, BROWN), dot(x + 6, y - 6, 4, BROWN)])];
+// A bone across a dog's mouth, `out` wider for its edge under it, and the foam of a bath, each bubble edged.
+const bone = (c: string, out = 0): Shape[] => [...[[28, 72], [28, 80], [72, 72], [72, 80]].map(([x, y]) => dot(x, y, 9 + 2 * out, c)), box(27 - out, 73 - out, 46 + 2 * out, 6 + 2 * out, c, 3 + out)];
+const foam = (bubbles: number[][]): Shape[] => bubbles.flatMap(([x, y, d]) => [dot(x, y, d + 2.5, GLASS_EDGE), dot(x, y, d, WHITE)]);
 
 // A monster, for the Monsters set: a soft body of its colour with feet, horns, antennae, spikes or
 // fur on top, and its arms; its moods' eyes and mouth (MONSTER) in `face`.
@@ -2075,6 +2102,47 @@ export const ART: Record<string, Shape[]> = {
   'cat-fish': catFace(mood('happy', CAT), { front: [part('fish', [oval(50, 80, 28, 14, '#7FB5DE'), tri(68, 80, 12, 14, '#5BA4E6', -90), dot(42, 78, 3, INK)])] }),
   'cat-box': [box(0, 0, 100, 62, 'transparent', 0, { inside: [part('cat', catFace(mood('smile', CAT)))] }), box(8, 56, 84, 40, '#D9A066', 4, { edge: { w: 2.5, c: '#B8844E' } }), box(8, 56, 84, 8, '#C9905A', 2), bar(50, 66, 50, 94, 3, '#B8844E'), oval(30, 58, 14, 10, '#F2A65A'), oval(70, 58, 14, 10, '#F2A65A')],
   'black-cat': catFace([oval(37, 53, 10, 12, '#F7D35A'), oval(63, 53, 10, 12, '#F7D35A'), part('pupils', [oval(37, 53, 3, 9, INK), oval(63, 53, 3, 9, INK)]), arc(50, 62, 14, 3, 'bottom', '#8A8F99')], { c: '#3B3F47', dark: '#2B2E35', inner: '#6B6F79' }),
+
+  // Dogs.
+  'dog-hello': dogFace(mood('smile', DOG), { front: dogPaw(84, 74) }),
+  'dog-love': dogFace(mood('love', DOG)),
+  'dog-laugh': dogFace(mood('laugh', DOG)),
+  'dog-happy': dogFace(mood('happy', DOG)),
+  'dog-sad': dogFace(mood('sad', DOG)),
+  'dog-angry': dogFace(mood('angry', DOG), { c: '#E0834F' }),
+  'dog-sleep': dogFace([...mood('sleep', DOG), ...zees(76, 6)]),
+  'dog-wow': dogFace(mood('wow', DOG)),
+  'dog-wink': dogFace(mood('wink', DOG)),
+  'dog-cool': dogFace(mood('cool', DOG)),
+  'dog-shy': dogFace(mood('shy', DOG)),
+  'dog-cry': dogFace(mood('cry', DOG)),
+  'dog-kiss': dogFace(mood('kiss', DOG)),
+  'dog-tongue': dogFace(mood('tongue', DOG)),
+  'dog-dizzy': dogFace([...mood('dizzy', DOG), ...dizzyStars(50, 8)]),
+  'dog-think': dogFace([...mood('think', DOG), ...thought(82, 14)]),
+  'dog-heart': dogFace(mood('happy', DOG), { front: [...heldHeart(50, 84, 22), oval(36, 88, 12, 10, DOG_FUR), oval(64, 88, 12, 10, DOG_FUR)] }),
+  'dog-coffee': dogFace(mood('smile', DOG), { front: [...coffeeCup(50, 89), oval(36, 93, 12, 10, DOG_FUR), oval(64, 93, 12, 10, DOG_FUR)] }),
+  'dog-party': [...dogFace(mood('laugh', DOG)), ...partyHat(50, 22)],
+  'dog-ok': [...dogFace(mood('happy', DOG)), ...tick(82, 82)],
+  'dog-ball': dogFace(mood('smile', DOG), { front: [part('ball', [box(68, 70, 24, 24, '#CDE14B', 12, { inside: [arc(-5, 12, 24, 2.5, 'right', WHITE), arc(29, 12, 24, 2.5, 'left', WHITE)] })])] }),
+  'dog-bone': dogFace(mood('happy', DOG), { front: [part('bone', [tilt(-6, [50, 76], [...bone('#C9B08A', 1.5), ...bone('#FFF8EA')])])] }),
+  'dog-bath': [
+    part('dog', dogFace(mood('happy', DOG), { front: foam([[40, 23, 9.5], [50, 20, 11.5], [60, 23, 9.5]]) })),
+    part('bubbles', [ring(14, 22, 10, 2, TEAR), ring(86, 16, 12, 2, TEAR), ring(90, 36, 7, 2, TEAR)]),
+    oval(24, 97, 8, 6, GOLD),
+    oval(76, 97, 8, 6, GOLD),
+    box(10, 78, 80, 18, WHITE, [2, 2, 16, 16], { edge: { w: 2.5, c: GLASS_EDGE } }),
+    box(5, 74, 90, 8, WHITE, 4, { edge: { w: 2.5, c: GLASS_EDGE } }),
+    ...foam([[14, 73, 10], [24, 71, 12], [34, 74, 9], [66, 74, 9], [76, 71, 12], [86, 73, 10]]),
+  ],
+  dalmatian: dogFace(mood('smile', DOG), {
+    c: WHITE,
+    ear: '#3B3F47',
+    muzzle: '#ECEEF1',
+    blaze: false,
+    edge: '#C9CED6',
+    spots: [dot(36, 30, 7, '#2B2E35'), dot(61, 28, 8, '#2B2E35'), dot(50, 37, 4, '#2B2E35'), dot(70, 37, 4.5, '#2B2E35'), dot(28, 79, 7, '#2B2E35'), dot(73, 81, 6, '#2B2E35'), dot(38, 87, 4.5, '#2B2E35'), dot(63, 88, 4, '#2B2E35')],
+  }),
 
   // Monsters.
   'monster-happy': monster(mood('smile', MONSTER)),

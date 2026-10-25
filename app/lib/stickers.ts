@@ -8,12 +8,14 @@ import { mark } from './i18n';
 // its place. A sticker of the Words set shows its words themselves, in the app's language. Every
 // set but the words and the treats moves a little as it shows (lib/sticker-motion.ts); those two
 // stay still. Twenty sets of 24. A set's new stickers go at its end, so the first ones keep their
-// places.
+// places. A set may leave the picker (GONE_SETS), as the cats did for the dogs: what was sent of it
+// still shows, drawn as it was.
 
 export type StickerSet =
   | 'moons'
   | 'ghosts'
   | 'cats'
+  | 'dogs'
   | 'animals'
   | 'dinosaurs'
   | 'monsters'
@@ -38,7 +40,7 @@ export type Sticker = { name: string; label: string; emoji: string; set: Sticker
 export const SETS: { set: StickerSet; label: string; moves: boolean }[] = [
   { set: 'moons', label: mark('Moons'), moves: true },
   { set: 'ghosts', label: mark('Ghosts'), moves: true },
-  { set: 'cats', label: mark('Cats'), moves: true },
+  { set: 'dogs', label: mark('Dogs'), moves: true },
   { set: 'animals', label: mark('Animals'), moves: true },
   { set: 'dinosaurs', label: mark('Dinosaurs'), moves: true },
   { set: 'monsters', label: mark('Monsters'), moves: true },
@@ -57,6 +59,9 @@ export const SETS: { set: StickerSet; label: string; moves: boolean }[] = [
   { set: 'treats', label: mark('Treats'), moves: false },
   { set: 'fruit', label: mark('Fruit and veg'), moves: true },
 ];
+
+/** The sets the picker no longer offers: their stickers still show in the messages they came in. */
+export const GONE_SETS: StickerSet[] = ['cats'];
 
 const inSet = (set: StickerSet, stickers: Omit<Sticker, 'set'>[]): Sticker[] => stickers.map((sticker) => ({ ...sticker, set }));
 
@@ -320,6 +325,32 @@ export const STICKERS: Sticker[] = [
     { name: 'cat-fish', label: mark('Cat with a fish'), emoji: '🐟' },
     { name: 'cat-box', label: mark('Cat in a box'), emoji: '📦' },
     { name: 'black-cat', label: mark('Black cat'), emoji: '🐈‍⬛' },
+  ]),
+  ...inSet('dogs', [
+    { name: 'dog-hello', label: mark('Dog saying hello'), emoji: '🐶' },
+    { name: 'dog-love', label: mark('Dog in love'), emoji: '🥰' },
+    { name: 'dog-laugh', label: mark('Laughing dog'), emoji: '😂' },
+    { name: 'dog-happy', label: mark('Happy dog'), emoji: '😄' },
+    { name: 'dog-sad', label: mark('Sad dog'), emoji: '😢' },
+    { name: 'dog-angry', label: mark('Angry dog'), emoji: '😠' },
+    { name: 'dog-sleep', label: mark('Sleeping dog'), emoji: '💤' },
+    { name: 'dog-wow', label: mark('Surprised dog'), emoji: '😮' },
+    { name: 'dog-wink', label: mark('Winking dog'), emoji: '😉' },
+    { name: 'dog-cool', label: mark('Cool dog'), emoji: '😎' },
+    { name: 'dog-shy', label: mark('Shy dog'), emoji: '☺️' },
+    { name: 'dog-cry', label: mark('Crying dog'), emoji: '😭' },
+    { name: 'dog-kiss', label: mark('Dog blowing a kiss'), emoji: '😘' },
+    { name: 'dog-tongue', label: mark('Dog sticking its tongue out'), emoji: '😛' },
+    { name: 'dog-dizzy', label: mark('Dizzy dog'), emoji: '😵' },
+    { name: 'dog-think', label: mark('Thinking dog'), emoji: '🤔' },
+    { name: 'dog-heart', label: mark('Dog with a heart'), emoji: '💗' },
+    { name: 'dog-coffee', label: mark('Dog with coffee'), emoji: '☕' },
+    { name: 'dog-party', label: mark('Party dog'), emoji: '🥳' },
+    { name: 'dog-ok', label: mark('Dog saying OK'), emoji: '👌' },
+    { name: 'dog-ball', label: mark('Dog with a ball'), emoji: '🎾' },
+    { name: 'dog-bone', label: mark('Dog with a bone'), emoji: '🦴' },
+    { name: 'dog-bath', label: mark('Dog in the bath'), emoji: '🛁' },
+    { name: 'dalmatian', label: mark('Dalmatian'), emoji: '🐕' },
   ]),
   ...inSet('monsters', [
     { name: 'monster-happy', label: mark('Happy monster'), emoji: '😄' },
