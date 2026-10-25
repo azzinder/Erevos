@@ -11,6 +11,8 @@ const KEY = 'erevos.lock-tries';
 /** Searches on the home screen are tried as the hidden chats' PIN (hidden.ts), counted apart, so
  *  searching never makes the lock screen wait. */
 export const SEARCH_TRIES = 'erevos.search-tries';
+/** PINs of chats locked with one of their own (chat-pin.ts), counted apart too. */
+export const CHAT_TRIES = 'erevos.chat-tries';
 export const FREE_TRIES = 5;
 const FIRST_WAIT_MS = 30_000;
 const MAX_WAIT_MS = 3_600_000;
@@ -44,7 +46,7 @@ async function load(entry = KEY): Promise<Tries> {
 
 /** The count exists from the first start, so its entry does not show that a password was ever tried. */
 export async function prepareTries(): Promise<void> {
-  for (const entry of [KEY, SEARCH_TRIES]) if (!(await secureGet(entry))) await secureSet(entry, JSON.stringify({ fails: 0, until: 0 }));
+  for (const entry of [KEY, SEARCH_TRIES, CHAT_TRIES]) if (!(await secureGet(entry))) await secureSet(entry, JSON.stringify({ fails: 0, until: 0 }));
 }
 
 /** Throws LockedOutError while a wait is on. */

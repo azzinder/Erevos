@@ -43,6 +43,7 @@ function checkedRow(value: unknown): InboxRow | null {
     sms: r.sms,
     lastSms: r.lastSms === true,
     ...(r.pinned === true ? { pinned: true } : {}),
+    ...(r.locked === true ? { locked: true, last: '' } : {}),
   };
 }
 
@@ -51,10 +52,10 @@ function checked(value: unknown): InboxCache {
   return { rows: Array.isArray(rows) ? rows.map(checkedRow).filter((r): r is InboxRow => r !== null).slice(0, ROWS) : [] };
 }
 
-/** The first rows, last lines cut short (none from a disappearing chat), as many as fit in the fixed size.
+/** The first rows, last lines cut short (none from a disappearing chat, nor one locked with a PIN), as many as fit in the fixed size.
  *  A draft and a contact's photo are not kept: the space keeps its drafts itself, and the photos are the phone's. */
 export function kept(rows: InboxRow[]): InboxCache {
-  const line = (r: InboxRow) => (r.fades || r.timer > 0 ? '' : r.last.length > LAST ? `${r.last.slice(0, LAST)}…` : r.last);
+  const line = (r: InboxRow) => (r.fades || r.timer > 0 || r.locked ? '' : r.last.length > LAST ? `${r.last.slice(0, LAST)}…` : r.last);
   const cache = { rows: rows.slice(0, ROWS).map((r) => ({ ...r, last: line(r), fades: undefined, draft: undefined, photo: undefined })) };
   while (cache.rows.length > 0 && sealedSize(cache) > BLOCK) cache.rows.pop();
   return cache;

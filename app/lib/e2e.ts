@@ -1,4 +1,5 @@
 import { againAfter, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_NOSTR_BACKUP, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type NostrKey, type NostrTo, type OldFiller, type Own, type OwnList, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
+import type { ChatPin } from '../lock/chat-pin';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
 
 import { isReactionEmoji, isTag, newTag } from '../lock/history';
@@ -436,6 +437,8 @@ export type ContactInfo = {
   look: Look | null;
   avatar: Avatar | null;
   hide: boolean;
+  /** Locked with a PIN of its own (lock/chat-pin.ts). */
+  locked: boolean;
 };
 
 export type Received =
@@ -1108,7 +1111,7 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, timer, request, look, avatar, hide }) => ({
+    return this.data.contacts.map(({ identity, sender, name, timer, request, look, avatar, hide, pin }) => ({
       identity,
       sender,
       name,
@@ -1117,6 +1120,7 @@ export class E2E {
       look,
       avatar,
       hide,
+      locked: !!pin,
     }));
   }
 
@@ -1247,6 +1251,21 @@ export class E2E {
       if (!contact) throw new Error(t('No such contact.'));
       await this.save(this.withContact({ ...contact, name: cleanName(name) }));
     });
+  }
+
+  /** Locks a chat with a PIN of its own, as kept (lock/chat-pin.ts); null takes it off. */
+  setPin(identity: string, pin: ChatPin | null): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error(t('No such contact.'));
+      const { pin: _was, ...rest } = contact;
+      await this.save(this.withContact(pin ? { ...rest, pin } : rest));
+    });
+  }
+
+  /** The PIN a chat opens with, as kept, or null when it has none. */
+  pinOf(identity: string): ChatPin | null {
+    return this.find(identity)?.pin ?? null;
   }
 
   /** Gives a chat its own look, kept with the contact and sealed; null gives it the space's again. */

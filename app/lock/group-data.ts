@@ -1,6 +1,7 @@
 import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, isStickerName, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import type { Mark } from '../lib/relay';
 import { isFileRef, type FileRef } from './attachment-files';
+import { checkedChatPin, type ChatPin } from './chat-pin';
 import { isRelay, isRelayKey } from './e2e-data';
 import { isReactionEmoji, isTag } from './history';
 import { sealedFile, type Holder } from './sealed-file';
@@ -75,6 +76,9 @@ export type Group = {
    *  base64url: the card to Send or not. An empty key is one turned down, kept so that member asks
    *  no more for a while. Missing when none. */
   asks?: { id: string; at: number; key: string }[];
+  /** The PIN the group opens with here, when locked with one of its own (lock/chat-pin.ts), as kept.
+   *  Missing when it has none. Only this phone knows it. */
+  pin?: ChatPin;
 };
 
 export type GroupData = {
@@ -217,6 +221,7 @@ export function checkedGroup(value: unknown): Group | null {
     ...(isTime(v.renewing) ? { renewing: v.renewing } : {}),
     ...(wants.length > 0 ? { wants } : {}),
     ...(asks.length > 0 ? { asks } : {}),
+    ...(checkedChatPin(v.pin) ? { pin: checkedChatPin(v.pin)! } : {}),
   };
 }
 

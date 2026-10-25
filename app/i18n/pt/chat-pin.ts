@@ -1,0 +1,20 @@
+// The Portuguese of chats locked with a PIN of their own (lock/chat-pin.ts, components/chat-pin-gate.tsx, app/chat.tsx, app/group.tsx) (i18n/pt/index.ts).
+export const chatPin: Record<string, string> = {
+  "This chat is locked with a PIN.": "Esta conversa está bloqueada com um PIN.",
+  "Type the PIN": "Digitar o PIN",
+  "Forgot the PIN?": "Esqueceu o PIN?",
+  "PIN of {name}": "PIN de {name}",
+  "The password that opens this space takes the PIN off": "A senha que abre este espaço tira o PIN",
+  "Take it off": "Tirar",
+  "{name} is locked with a PIN now: it asks for it each time the chat opens.": "{name}: bloqueada com um PIN. Ele é pedido sempre que a conversa abre.",
+  "The PIN of {name} is off.": "{name}: o PIN foi tirado.",
+  "Lock this chat with a PIN": "Bloquear esta conversa com um PIN",
+  "Asked each time the chat opens. Only this phone knows it.": "Pedido sempre que a conversa abre. Só este celular o conhece.",
+  "Type its PIN to take it off": "Digite o PIN dela para tirá-lo",
+  "Lock with a PIN": "Bloquear com um PIN",
+  "It opens only with its PIN, and locks again once you leave it. The list shows its name with a lock, nothing of its messages, and the search finds none of them.": "Ela só abre com o PIN dela e volta a bloquear assim que você sai. A lista mostra o nome com um cadeado, nada das mensagens, e a busca não encontra nenhuma.",
+  "A PIN of its own for this chat, asked each time it opens.": "Um PIN só desta conversa, pedido sempre que ela abre.",
+  "Its PIN asks nothing while it is in hidden chats, and asks again once it goes back to the chats.": "O PIN dela não é pedido enquanto ela está nas conversas ocultas, e volta a ser pedido assim que ela volta às conversas.",
+  "Locked with a PIN": "Bloqueada com um PIN",
+  "Take the PIN off": "Tirar o PIN",
+};

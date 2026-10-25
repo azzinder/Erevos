@@ -1,0 +1,20 @@
+// The Serbo-Croatian of chats locked with a PIN of their own (lock/chat-pin.ts, components/chat-pin-gate.tsx, app/chat.tsx, app/group.tsx) (i18n/sh/index.ts).
+export const chatPin: Record<string, string> = {
+  "This chat is locked with a PIN.": "Ovaj razgovor je zaključan PIN-om.",
+  "Type the PIN": "Upišite PIN",
+  "Forgot the PIN?": "Zaboravili ste PIN?",
+  "PIN of {name}": "PIN za {name}",
+  "The password that opens this space takes the PIN off": "Lozinka koja otvara ovaj prostor uklanja PIN",
+  "Take it off": "Ukloni",
+  "{name} is locked with a PIN now: it asks for it each time the chat opens.": "{name}: zaključano PIN-om. Traži se svaki put kad se razgovor otvori.",
+  "The PIN of {name} is off.": "{name}: PIN je uklonjen.",
+  "Lock this chat with a PIN": "Zaključaj ovaj razgovor PIN-om",
+  "Asked each time the chat opens. Only this phone knows it.": "Traži se svaki put kad se razgovor otvori. Zna ga samo ovaj telefon.",
+  "Type its PIN to take it off": "Upišite njegov PIN da biste ga uklonili",
+  "Lock with a PIN": "Zaključaj PIN-om",
+  "It opens only with its PIN, and locks again once you leave it. The list shows its name with a lock, nothing of its messages, and the search finds none of them.": "Otvara se samo s njegovim PIN-om i ponovo se zaključava čim ga napustite. Lista pokazuje njegovo ime s lokotom, ništa od poruka, a pretraga ne nalazi nijednu.",
+  "A PIN of its own for this chat, asked each time it opens.": "Vlastiti PIN za ovaj razgovor, traži se svaki put kad se otvori.",
+  "Its PIN asks nothing while it is in hidden chats, and asks again once it goes back to the chats.": "Njegov PIN se ne traži dok je u skrivenim razgovorima, a traži se ponovo čim se vrati u razgovore.",
+  "Locked with a PIN": "Zaključano PIN-om",
+  "Take the PIN off": "Ukloni PIN",
+};

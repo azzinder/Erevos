@@ -33,6 +33,7 @@ import { ComposerPanel, DraftComposer, IconButton, useDraft, type ComposerTile, 
 import { ConnectPicker, useCanConnect } from '../components/connect-picker';
 import { KeyboardAwareScrollView, KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
+import { ChatPinGate } from '../components/chat-pin-gate';
 import { QrCode } from '../components/QrCode';
 import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
@@ -86,8 +87,10 @@ import { isWatchedQueue, loadWatched, unwatchPocket, watchPocket } from '../lock
 import { isRingedQueue, loadRinged, moveRingPocket, ringPocket, unringPocket } from '../lock/hidden-ring';
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
 import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
+import { makeChatPin, opensChat, RELOCK_MS } from '../lock/chat-pin';
 import { moveChat } from '../lock/move-chat';
-import { SamePasswordError } from '../lock/config';
+import { ownSpaceKey, SamePasswordError } from '../lock/config';
+import { useLock } from '../lock/context';
 import { LockedOutError, lockedOutMessage } from '../lock/tries';
 import { cleanName, MAX_NAME, type Avatar, type Blocked, type Spare } from '../lock/e2e-data';
 import { placeQueues, type QueueKind } from '../lock/queues-data';
@@ -516,6 +519,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [directOn, setDirectOn] = useState(true);
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
+  // A chat locked with a PIN of its own (lock/chat-pin.ts) shows only once its PIN is typed, until
+  // another chat shows, this one closes, or Erevos was away more than RELOCK_MS. Meanwhile nothing
+  // is read or told from it. None asks in hidden chats.
+  const [unlocked, setUnlocked] = useState('');
+  useEffect(() => setUnlocked((was) => (was === selected ? was : '')), [selected]);
+  useEffect(() => {
+    let away = 0;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'background') away = Date.now();
+      else if (state === 'active' && away) {
+        if (Date.now() - away > RELOCK_MS) setUnlocked('');
+        away = 0;
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+  const gated = !hiddenKey && !!selected && selected !== unlocked && contacts.some((c) => c.locked && `${CONTACT_PREFIX}${c.identity}` === selected);
+  // What asks for a PIN in a chat's details: a new one to lock it with, or its own to take it off.
+  const [pinAsk, setPinAsk] = useState<'on' | 'off' | null>(null);
+  const lock = useLock();
   const [messages, setMessages] = useState<Message[]>([]);
   // A message passed on from an SMS conversation (lib/forward.ts) starts in the field.
   const { draft, empty: nothingTyped } = useDraft(() => (initial ? (forwardedTo(initial)?.text ?? '') : ''));
@@ -1328,6 +1351,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           const was = early?.ids;
           setMessages((list) => [...kept.messages().map(toShown), ...(was ? list.filter((m) => !was.has(m.id)) : list)]);
         }
+        // With them, which chats are locked with a PIN, so none shows a moment before its PIN asks.
+        if (shared) setContacts(shared.e2e.contacts());
         const chats = shared?.e2e ?? (await E2E.open(hiddenHolder(pocket), space, hiddenKey!));
         if (!active) return;
         // Where its contact link and its old queues are (lib/queue-move.ts), and when its own queue was made, before anything is sealed.
@@ -1522,7 +1547,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // A contact's messages are read once their chat shows on the screen: their phone is told with
   // the next look at the relay, and the disappearing ones start their time.
   useEffect(() => {
-    if (!shown || !appActive || !selected?.startsWith(CONTACT_PREFIX)) return;
+    if (!shown || gated || !appActive || !selected?.startsWith(CONTACT_PREFIX)) return;
     if (!messages.some((m) => m.peer === selected && !m.mine && m.mark < 2)) return;
     const peer = selected;
     markMessages(peer, false, 2)
@@ -1530,7 +1555,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       .catch(() => {
         // Read here, but their phone is not told.
       });
-  }, [shown, appActive, selected, messages]);
+  }, [shown, gated, appActive, selected, messages]);
 
   // While a contact's chat shows, it asks now and then whether their phone is open, saying this
   // one is. A chat that appears offline asks nothing, so it does not learn it either. It asks
@@ -1539,7 +1564,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const selectedAccepted = contacts.some((c) => `${CONTACT_PREFIX}${c.identity}` === selected && !c.request);
   const linked = hiddenKey ? 0 : nearby.count();
   useEffect(() => {
-    if (!shown || !appActive || !e2e || !selected?.startsWith(CONTACT_PREFIX) || selectedHidden || !selectedAccepted) return;
+    if (!shown || gated || !appActive || !e2e || !selected?.startsWith(CONTACT_PREFIX) || selectedHidden || !selectedAccepted) return;
     const identity = selected.slice(CONTACT_PREFIX.length);
     const ask = () => {
       const target = relayTarget();
@@ -1552,7 +1577,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     ask();
     const timer = setInterval(ask, ASK_EVERY);
     return () => clearInterval(timer);
-  }, [shown, appActive, e2e, selected, selectedHidden, selectedAccepted, relayUrl, relayToken, viaUrl, viaToken, ownQueue, linked]);
+  }, [shown, gated, appActive, e2e, selected, selectedHidden, selectedAccepted, relayUrl, relayToken, viaUrl, viaToken, ownQueue, linked]);
 
   // Asks our relay for its key once its address is known. A relay without one, or an app whose core
   // cannot seal, leaves the key out of our link: then only contacts on our relay can reach us.
@@ -3590,6 +3615,51 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Sets how long new messages with a contact last, and tells their phone at once. If the relay
   // cannot take that now, their phone learns it with the next message.
   // Makes this chat appear offline to them, or not. Shown again, what was held goes to them now.
+  // Locks the chat on the screen with a new PIN, which stays open meanwhile.
+  async function lockWithPin(pin: string) {
+    if (!e2e || !selected?.startsWith(CONTACT_PREFIX)) return;
+    const peer = selected;
+    await e2e.setPin(peer.slice(CONTACT_PREFIX.length), await makeChatPin(pin));
+    setUnlocked(peer);
+    setContacts(e2e.contacts());
+    setPinAsk(null);
+    setNote(t('{name} is locked with a PIN now: it asks for it each time the chat opens.', { name: label(peer, shownContacts) }));
+  }
+
+  // Takes the PIN off the chat on the screen, once its PIN is typed.
+  async function takePinOff(pin: string): Promise<boolean> {
+    if (!e2e || !selected?.startsWith(CONTACT_PREFIX)) return true;
+    const identity = selected.slice(CONTACT_PREFIX.length);
+    const kept = e2e.pinOf(identity);
+    if (kept && !(await opensChat(pin, kept))) return false;
+    await e2e.setPin(identity, null);
+    setContacts(e2e.contacts());
+    setPinAsk(null);
+    return true;
+  }
+
+  // Takes the PIN off the chat on the screen with the password that opens the space, its PIN forgotten.
+  async function forgotPin(password: string): Promise<boolean> {
+    if (!e2e || !selected?.startsWith(CONTACT_PREFIX)) return false;
+    const peer = selected;
+    if (!(await ownSpaceKey(currentSpace().space, password))) return false;
+    await e2e.setPin(peer.slice(CONTACT_PREFIX.length), null);
+    setUnlocked(peer);
+    setContacts(e2e.contacts());
+    setNote(t('The PIN of {name} is off.', { name: label(peer, shownContacts) }));
+    return true;
+  }
+
+  // Opens the chat on the screen, locked with its PIN, once that is typed.
+  async function openWithPin(pin: string): Promise<boolean> {
+    if (!e2e || !selected?.startsWith(CONTACT_PREFIX)) return false;
+    const peer = selected;
+    const kept = e2e.pinOf(peer.slice(CONTACT_PREFIX.length));
+    if (kept && !(await opensChat(pin, kept))) return false;
+    setUnlocked(peer);
+    return true;
+  }
+
   async function changeHidden(peer: string, hide: boolean) {
     if (!e2e) return;
     const identity = peer.slice(CONTACT_PREFIX.length);
@@ -4085,7 +4155,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     identity: smsWith,
     phone: (smsWith && e2e?.phones().find((p) => p.identity === smsWith)?.phone) || '',
     hidden: !!hiddenKey,
-    seen: shown && appActive,
+    seen: shown && appActive && !gated,
   });
   const lines = useMemo(() => chatLines(visible, chatSms.messages, chatSms.more), [visible, chatSms.messages, chatSms.more]);
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
@@ -4239,7 +4309,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       active = false;
     };
   }, [e2e, focused]);
-  const onScreen = !shown || !focused ? null : hiddenKey ? screenOfHidden(pocket) : selectedIdentity ? screenOfChat(selectedIdentity) : null;
+  const onScreen = !shown || !focused || gated ? null : hiddenKey ? screenOfHidden(pocket) : selectedIdentity ? screenOfChat(selectedIdentity) : null;
   useEffect(() => (onScreen ? showOnScreen(onScreen) : undefined), [onScreen]);
   const importedFrom = [...new Set(imported.map((m) => SOURCE_LABELS[m.source]))].join(` ${t('and')} `);
   // In an imported group, each message says who wrote it.
@@ -4252,7 +4322,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const chips = contacts.map((contact) => `${CONTACT_PREFIX}${contact.identity}`);
   const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
   const talkie = selectedContact ? talkies.has(selectedContact) : false;
-  listening.current = shown && appActive ? selectedContact : null;
+  listening.current = shown && appActive && !gated ? selectedContact : null;
   const selectedTimer = contacts.find((c) => c.identity === selectedIdentity)?.timer ?? 0;
   // Under the note that it was added, while its chat shows and it has no name: given one in its details (Rename), it goes.
   const connectShown = shown && !!connecting && selected === `${CONTACT_PREFIX}${connecting}` && canConnect && !contacts.find((c) => c.identity === connecting)?.name;
@@ -4456,6 +4526,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   const selectedLook = contacts.find((c) => c.identity === selectedIdentity)?.look ?? null;
+  const selectedLocked = contacts.some((c) => c.identity === selectedIdentity && c.locked);
+  // A chat opened with its PIN keeps out of screenshots and the recent apps preview, as hidden chats do.
+  const pinOpen = shown && !hiddenKey && selectedLocked && !gated;
+  useEffect(() => {
+    if (!pinOpen) return;
+    keepPrivate('chat', true);
+    return () => keepPrivate('chat', false);
+  }, [pinOpen]);
   const selectedAvatar = contacts.find((c) => c.identity === selectedIdentity)?.avatar ?? null;
   const signAvatar = selectedAvatar?.kind === 'emoji' ? selectedAvatar : null;
   useEffect(() => {
@@ -4699,6 +4777,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             ? t('They do not see when you are online, nor that their messages came or were read, until you write. You do not see when they are online either.')
                             : t('They see when you are online, and which of their messages you read.')}
                         </Text>
+                        {!hiddenKey ? (
+                          <>
+                            <View style={styles.rule} />
+                            <DetailRow title={t('Lock with a PIN')} checked={selectedLocked} onPress={() => setPinAsk(selectedLocked ? 'off' : 'on')} />
+                            <Text variant="caption" tone="muted" style={styles.rowMore}>
+                              {selectedLocked
+                                ? t('It opens only with its PIN, and locks again once you leave it. The list shows its name with a lock, nothing of its messages, and the search finds none of them.')
+                                : t('A PIN of its own for this chat, asked each time it opens.')}
+                            </Text>
+                          </>
+                        ) : selectedLocked ? (
+                          <>
+                            <View style={styles.rule} />
+                            <Text variant="caption" tone="muted" style={styles.rowMore}>
+                              {t('Its PIN asks nothing while it is in hidden chats, and asks again once it goes back to the chats.')}
+                            </Text>
+                          </>
+                        ) : null}
                         {CAN_PREVIEW && !hiddenKey ? (
                           <>
                             <View style={styles.rule} />
@@ -5785,6 +5881,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           }}
           onClose={() => setDayPicking(false)}
         />
+        <PasswordSheet
+          visible={pinAsk === 'on' && shown}
+          title={t('Lock this chat with a PIN')}
+          repeat
+          hint={t('Asked each time the chat opens. Only this phone knows it.')}
+          submitLabel={t('Lock')}
+          onClose={() => setPinAsk(null)}
+          onSubmit={lockWithPin}
+        />
+        <PasswordSheet
+          visible={pinAsk === 'off' && shown}
+          title={t('Type its PIN to take it off')}
+          repeat={false}
+          submitLabel={t('Take it off')}
+          onClose={() => setPinAsk(null)}
+          onSubmit={takePinOff}
+        />
+        {gated && shown ? (
+          <ChatPinGate name={selectedName} active={focused && appActive} open={openWithPin} forgot={lock.passwordLock ? forgotPin : undefined} onBack={goBack} />
+        ) : null}
       </View>
     </SwipeBack>
   );

@@ -1037,7 +1037,8 @@ export function mirrorGroups(kept: Group[], said: { list: GroupMirror[]; gone: s
     if (gone.has(m.id)) continue;
     const before = groups.get(m.id);
     const { id, name, admin, status, asked, readAt } = m;
-    groups.set(id, { id, name, admin, status, asked, later: [], outbox: [], messages: before?.messages ?? [], readAt: Math.max(before?.readAt ?? 0, readAt) });
+    // A PIN given the group on this device stays: the phone knows nothing of it.
+    groups.set(id, { id, name, admin, status, asked, later: [], outbox: [], messages: before?.messages ?? [], readAt: Math.max(before?.readAt ?? 0, readAt), ...(before?.pin ? { pin: before.pin } : {}) });
   }
   const came = new Set<string>();
   const again: FileFrom[] = [];

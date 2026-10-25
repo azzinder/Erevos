@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 import { contactLink, parseContact } from '../lib/contact-code';
 import { accountBundle, accountIdentity, accountSign, bundleVerify, canSign, newAccount, setCore, type Core } from '../lib/core';
-import { randomBytes, toHex, utf8Encode } from '../lib/crypto';
+import { randomBytes, setHardCost, toHex, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
 import { BlockedContactError, E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, PREKEYS_EVERY, toBase64Url, type Received } from '../lib/e2e';
 import { giveLinkedName } from '../lib/linked-name';
@@ -20,6 +20,7 @@ import { lastRestore, markRestore } from '../lock/restored';
 import { DEFAULT_LOOK } from '../theme/look';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { History, newTag } from '../lock/history';
+import { makeChatPin, opensChat } from '../lock/chat-pin';
 import { moveChat } from '../lock/move-chat';
 import { hiddenHolder } from '../lock/sealed-file';
 import { files } from './files-memory';
@@ -89,7 +90,7 @@ t('two chats add each other through a link and talk both ways', async () => {
   const hello = message(await bob.e2e.receive(pending.first));
   assert.equal(hello.added, true);
   assert.equal(hello.text, '');
-  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true, look: null, avatar: null, hide: false }]);
+  assert.deepEqual(bob.e2e.contacts(), [{ identity: hello.identity, sender: alice.from, name: '', timer: 0, request: true, look: null, avatar: null, hide: false, locked: false }]);
   await alice.e2e.firstSent(added.identity);
   assert.deepEqual(alice.e2e.pending(), []);
 
@@ -962,6 +963,42 @@ t('a chat moves into the hidden chats whole, with the same safety number, and go
   const answer = await bob.e2e.seal(hello.identity, 'εδώ είμαι', bob.from);
   assert.equal(answer.sender, queue);
   assert.equal(message(await reopened.receive(answer.packet)).text, 'εδώ είμαι');
+});
+
+t('a chat locked with a PIN keeps it when saved, in hidden chats, where it asks nothing, and back in the space', async () => {
+  setHardCost({ m: 64, t: 1 });
+  try {
+    const key = randomBytes(32);
+    const alice = await chat('space', 0, key);
+    const bob = await chat('hidden', 1);
+    const added = await alice.e2e.addContact(bob.code, alice.from);
+    assert.equal(alice.e2e.contacts()[0].locked, false);
+    await alice.e2e.setPin(added.identity, await makeChatPin('2468'));
+    const space = await E2E.open('space', 0, key);
+    assert.equal(space.contacts()[0].locked, true);
+    assert.equal(await opensChat('2468', space.pinOf(added.identity)!), true);
+    assert.equal(await opensChat('1357', space.pinOf(added.identity)!), false);
+
+    const history = await History.open('space', 0, key);
+    const hiddenKey = randomBytes(32);
+    const holder = hiddenHolder(1);
+    const hidden = { e2e: await E2E.open(holder, 0, hiddenKey), history: await History.open(holder, 0, hiddenKey) };
+    await moveChat(added.identity, { e2e: space, history, archive: null }, hidden);
+    // There the chat says it has one, which the hidden chats screen does not ask.
+    const there = await E2E.open(holder, 0, hiddenKey);
+    assert.equal(there.contacts()[0].locked, true);
+    // Back in the space, the same PIN asks again.
+    await moveChat(added.identity, { e2e: there, history: await History.open(holder, 0, hiddenKey), archive: null }, { e2e: space, history });
+    const back = await E2E.open('space', 0, key);
+    assert.equal(back.contacts()[0].locked, true);
+    assert.equal(await opensChat('2468', back.pinOf(added.identity)!), true);
+    // Taken off, it is gone.
+    await back.setPin(added.identity, null);
+    assert.equal((await E2E.open('space', 0, key)).contacts()[0].locked, false);
+    assert.equal(back.pinOf(added.identity), null);
+  } finally {
+    setHardCost(null);
+  }
 });
 
 const HOUR = 60 * 60_000;

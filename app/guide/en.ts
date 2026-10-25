@@ -1633,6 +1633,34 @@ what the places taken away hold.
   like used ones, and the search tries every place each time. So nothing shows whether any hidden chats are set, or
   how many.
 
+### A chat locked with a PIN {#chat-pin}
+
+A chat or a group can have a PIN of its own, apart from hidden chats: it stays among your chats, but opens only with
+its PIN.
+
+1. Open the chat, tap **⋮** at the top for its **Details**, then **Lock with a PIN** (in a group: the group's name at
+   the top, then **Lock with a PIN**).
+2. Type a PIN of at least 4 characters twice, then **Lock**.
+
+- **Opening it:** it asks for the PIN. It locks again once you leave it, open another chat, or Erevos is away more
+  than half a minute (as the password lock).
+- **In the list** it shows its name with a lock and **Locked with a PIN**, nothing of its messages, nor in the
+  search, in **Starred messages** or in **Imported chats**. The notice says only **New message**, as for every chat.
+- **Wrong PINs** are counted on the phone, for every chat at once and apart from the lock screen's: after five, the
+  next try waits, longer each time.
+- **Forgot the PIN?** Under the PIN, where the space has a password, **Forgot the PIN?** takes it off with the
+  password that opens the space. Without a password, nothing can open it again: deleting the contact is then the only
+  way.
+- **Into hidden chats:** a chat you move into hidden chats takes its PIN with it, which asks nothing there, as the
+  hidden chats' own PIN guards them. Moved back to the chats, the same PIN asks again.
+- **To take it off:** **Details** → **Lock with a PIN** again, and type its PIN.
+- **Only this phone knows it,** and each linked device has its own. Backups keep it.
+
+**Why:** some chats should stay where they are, but not open for whoever holds the phone a moment. The PIN is kept
+only as Argon2id of it, so it cannot be read from the phone, and guesses are slow. It is a lock on the screen, not a
+key of its own: the chat's messages stay encrypted with the rest of the space, and whoever copies what the phone keeps
+while the space is open could still read them. For a chat that must not even be seen, use hidden chats.
+
 ## Backups {#backup}
 
 A backup is one file holding everything Erevos keeps on this phone: every space, with its contacts, the keys of its

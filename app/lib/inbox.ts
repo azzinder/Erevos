@@ -12,7 +12,8 @@ import { voiceDuration } from './voice';
 import { shownLine } from './call-lines';
 import { t, mark } from './i18n';
 
-export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null; phone?: string };
+/** A contact as the list has it: `locked`, with a PIN of its own (lock/chat-pin.ts). */
+export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null; phone?: string; locked?: boolean };
 
 /** The latest SMS of a conversation with one number. `name`: what the phone's contacts call the
  *  number, when the owner lets Erevos show it, and `photo` the picture they have for it. `replied`:
@@ -65,6 +66,8 @@ export type InboxRow = {
   draft?: string;
   /** The picture the phone's contacts have for an SMS number, as an address the app may show. */
   photo?: string;
+  /** Locked with a PIN of its own (lock/chat-pin.ts): it shows nothing of its messages, `last` is empty. */
+  locked?: boolean;
 };
 
 const PREFIX = 'contact:';
@@ -116,6 +119,8 @@ export function buildInbox(
     };
     if (text && text.at > row.at) Object.assign(row, { last: text.text, mine: text.mine, mark: 0, at: text.at, lastSms: true, fades: false });
     row.unread += texts.reduce((n, t) => n + t.unread, 0);
+    // A chat locked with its PIN says only that it moved, and how many came.
+    if (contact.locked) Object.assign(row, { last: '', mine: false, mark: 0, lastSms: false, fades: false, locked: true });
     return row;
   });
   for (const t of sms) {
@@ -166,6 +171,8 @@ export type InboxGroup = {
   status: 'in' | 'leaving' | 'out';
   last: { at: number; from: string; text: string; note?: boolean; file?: { kind: 'photo' | 'file'; name: string; sticker?: true }; ms?: number } | null;
   unread: number;
+  /** Locked with a PIN of its own here (lock/chat-pin.ts). */
+  locked?: boolean;
 };
 
 // A group's photo, file or voice message (with `ms`) shows as a chat's does.
@@ -176,7 +183,7 @@ const groupPreview = (last: NonNullable<InboxGroup['last']>) => preview(last.fil
 export function groupRows(groups: InboxGroup[], name: (identity: string) => string, note: (text: string) => string): InboxRow[] {
   return groups.map((g) => {
     const last = g.last;
-    const text = !last ? '' : last.note ? note(last.text) : last.from ? `${name(last.from)}: ${groupPreview(last)}` : t('You: {text}', { text: groupPreview(last) });
+    const text = !last || g.locked ? '' : last.note ? note(last.text) : last.from ? `${name(last.from)}: ${groupPreview(last)}` : t('You: {text}', { text: groupPreview(last) });
     return {
       identity: `group:${g.id}`,
       name: g.name || t('Group'),
@@ -190,6 +197,7 @@ export function groupRows(groups: InboxGroup[], name: (identity: string) => stri
       avatar: null,
       sms: '',
       lastSms: false,
+      ...(g.locked ? { locked: true } : {}),
     };
   });
 }

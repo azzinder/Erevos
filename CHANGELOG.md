@@ -27,6 +27,12 @@ On main, not released yet:
   build and its name. A space asks only while it uses LPHL's relay and does not send everything through Tor; GitHub is
   still asked only when you tap **Check for updates**. **Settings** → **General** → **Updates** → **Tell me when a new
   version is out** turns it off. Not in the F-Droid build.
+- **A chat locked with a PIN**: a chat's **Details** (a group's: its name at the top) have **Lock with a PIN**. It
+  then opens only with its PIN and locks again once you leave it, or Erevos is away more than half a minute. The list
+  shows its name with a lock and **Locked with a PIN**, and nothing of its messages shows in the search, **Starred
+  messages** or **Imported chats**. The PIN is kept only as Argon2id of it, and wrong ones make the next try wait.
+  Moved into hidden chats, it asks nothing there; moved back, the same PIN asks again. Where the space has a password,
+  **Forgot the PIN?** takes it off with that password.
 
 ## 3.2.1 (2026-10-25)
 

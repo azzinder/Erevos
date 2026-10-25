@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FoundRow } from '../components/found-row';
 import { gradientStyle } from '../components/glass';
-import { BellIcon, GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
+import { BellIcon, GearIcon, LockIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { LaterPicker } from '../components/later-picker';
 import { MyselfFace } from '../components/myself-face';
@@ -268,13 +268,13 @@ export default function Home() {
       const quiet = <T,>(promise: Promise<T>, fallback: T) => promise.catch(() => fallback);
       // The chats as the chat screen and the receiver have them (lib/space-chats.ts), or, in a
       // build that cannot encrypt, as kept on the phone.
-      const chats = (): Promise<[{ identity: string; name: string; timer: number; phone?: string }[], Message[]]> =>
+      const chats = (): Promise<[{ identity: string; name: string; timer: number; phone?: string; locked?: boolean }[], Message[]]> =>
         hasCore()
           ? spaceChats().then(({ e2e, history }) => {
               const phones = new Map(e2e.phones().map((p) => [p.identity, p.phone]));
               return [e2e.contacts().map((c) => ({ ...c, phone: phones.get(c.identity) })), history.messages()];
             })
-          : Promise.all([loadE2EData('space', current, key).then((d) => d.contacts), History.open('space', current, key).then((h) => h.messages())]);
+          : Promise.all([loadE2EData('space', current, key).then((d) => d.contacts.map((c) => ({ ...c, locked: !!c.pin }))), History.open('space', current, key).then((h) => h.messages())]);
       // The chats show as soon as they are read; the phone's SMS, slower to read (a hundred
       // conversations), join them when they are.
       const load = () => {
@@ -308,8 +308,10 @@ export default function Home() {
           if (!active) return;
           const name = (identity: string) => publicMemberName(identity) ?? memberName(identity, contacts);
           const phones = contacts.flatMap((c) => (c.phone ? [c.phone] : []));
+          // The search finds nothing said in a chat locked with its PIN, only its name.
+          const locked = new Set([...contacts.filter((c) => c.locked).map((c) => `contact:${c.identity}`), ...groups.filter((g) => g.locked).map((g) => `group:${g.id}`)]);
           setSearched({
-            messages: [...messages, ...said],
+            messages: [...messages, ...said].filter((m) => !locked.has(m.peer)),
             names: new Map([...contacts.map((c): [string, string] => [`contact:${c.identity}`, shownName(c)]), ...groups.map((g): [string, string] => [`group:${g.id}`, g.name])]),
           });
           chatsRead = (sms) => {
@@ -787,7 +789,7 @@ function ChatRow({ row, now, online = false, onLong }: { row: InboxRow; now: num
   const { colors } = useTheme();
   const [photoFailed, setPhotoFailed] = useState(false);
   const name = shownName(row);
-  const preview = row.draft || row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
+  const preview = row.locked ? t('Locked with a PIN') : row.draft || row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
   return (
     <Pressable
       onLongPress={onLong}
@@ -831,6 +833,7 @@ function ChatRow({ row, now, online = false, onLong }: { row: InboxRow; now: num
         </View>
         <View style={styles.rowLine}>
           <View style={styles.previewLine}>
+            {row.locked ? <LockIcon color={colors.textMuted} size={13} /> : null}
             {row.timer ? <TimerIcon color={colors.textMuted} size={13} /> : null}
             {row.draft ? (
               <Text variant="caption" color={colors.danger}>

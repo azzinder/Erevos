@@ -38,8 +38,10 @@ export default function StarredScreen() {
               ...listed.map((g): [string, string] => [`group:${g.id}`, g.name]),
             ]),
           );
-          const said = listed.flatMap((g) => groupFindables(g.id, groups!.messages(g.id)));
-          setFound(starredOf([...history.messages(), ...said]));
+          const said = listed.filter((g) => !g.locked).flatMap((g) => groupFindables(g.id, groups!.messages(g.id)));
+          // None from a chat locked with its PIN: it shows them once opened with it.
+          const locked = new Set(e2e.contacts().filter((c) => c.locked).map((c) => `${CONTACT_PREFIX}${c.identity}`));
+          setFound(starredOf([...history.messages().filter((m) => !locked.has(m.peer)), ...said]));
         })
         .catch(() => active && setFound([]));
       return () => {

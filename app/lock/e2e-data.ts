@@ -2,6 +2,7 @@ import { isRelayAddress } from '../lib/relay';
 import { MAX_PARTS } from '../lib/voice';
 import { checkedLook, type Look } from '../theme/look';
 import { isPhotoRef, type PhotoRef } from './avatar-photos';
+import { checkedChatPin, type ChatPin } from './chat-pin';
 import { isTag } from './history';
 import { sealedFile, type Holder } from './sealed-file';
 
@@ -138,6 +139,9 @@ export type Contact = {
   /** When this chat sent them, by itself, an invite to its relay (app/chat.tsx offerRelays), as they
    *  had no queue of their own: sent once. */
   ri?: number;
+  /** The PIN this chat opens with, when locked with one of its own (lock/chat-pin.ts), as kept.
+   *  Missing when it has none. Only this phone knows it; it asks nothing while in hidden chats. */
+  pin?: ChatPin;
 };
 
 /** A Nostr key: its secret (`s`) and its public key (`p`, x only), hex. */
@@ -490,6 +494,7 @@ function checkedContact(value: unknown): Contact | null {
     ...(isText(v.nostrSaid) && v.nostrSaid.length <= 2048 ? { nostrSaid: v.nostrSaid } : {}),
     ...(Array.isArray(v.nostrBackup) ? { nostrBackup: v.nostrBackup.map(checkedNostrBackup).filter((b): b is NostrBackup => b !== null).slice(-MAX_NOSTR_BACKUP) } : {}),
     ...(isTime(v.ri) && v.ri > 0 ? { ri: v.ri } : {}),
+    ...(checkedChatPin(v.pin) ? { pin: checkedChatPin(v.pin)! } : {}),
   };
 }
 

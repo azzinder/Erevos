@@ -18,7 +18,7 @@ const reasons = new Set<string>();
 
 /** Keeps the screen private while any reason asks for it: `why` asks, or no longer. Said again on
  *  every change, so a screen made anew (Erevos swiped away and opened) gets it too. */
-export function keepPrivate(why: 'lock' | 'hidden', on: boolean): void {
+export function keepPrivate(why: 'lock' | 'hidden' | 'chat', on: boolean): void {
   if (on) reasons.add(why);
   else reasons.delete(why);
   device?.setSecure?.(reasons.size > 0);

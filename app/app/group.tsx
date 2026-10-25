@@ -1,14 +1,16 @@
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AppState, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ChatPinGate } from '../components/chat-pin-gate';
 import { DraftComposer, IconButton, useDraft } from '../components/composer';
 import { useGlassBlur } from '../components/glass';
 import { useGroupMedia } from '../components/group-media';
 import { useGroupMessages } from '../components/group-messages';
 import { BackIcon, MoreIcon, ShieldIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
+import { PasswordSheet } from '../components/PasswordSheet';
 import { KeyFace } from '../components/key-face';
 import { LinkedText } from '../components/linked-text';
 import { usePublicGroup } from '../components/public-group';
@@ -30,7 +32,12 @@ import { takeShared } from '../lib/share-in';
 import { spaceChats } from '../lib/space-chats';
 import { spaceGroupCalls, spaceGroups, spaceGroupTransport } from '../lib/space-groups';
 import { plural, t } from '../lib/i18n';
+import { keepPrivate } from '../lib/screen-privacy';
 import { rtc } from '../lib/webrtc';
+import { makeChatPin, opensChat, RELOCK_MS } from '../lock/chat-pin';
+import { ownSpaceKey } from '../lock/config';
+import { useLock } from '../lock/context';
+import { currentSpace } from '../lock/keys';
 import { MAX_NAME } from '../lock/e2e-data';
 import type { GroupMessage } from '../lock/group-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
@@ -119,9 +126,36 @@ export default function GroupScreen() {
     if (shared) media.sendShared(shared);
   }, [id]);
 
+  // A group locked with a PIN of its own (lock/chat-pin.ts) shows only once its PIN is typed, until
+  // it closes or Erevos was away more than RELOCK_MS. Meanwhile it is not read.
+  const [unlocked, setUnlocked] = useState(false);
+  const opened = useRef(false);
+  opened.current = unlocked;
+  useEffect(() => {
+    let away = 0;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'background') away = Date.now();
+      else if (state === 'active' && away) {
+        if (Date.now() - away > RELOCK_MS) setUnlocked(false);
+        away = 0;
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+  const gated = !!info?.locked && !unlocked;
+  const [pinAsk, setPinAsk] = useState<'on' | 'off' | null>(null);
+  const lock = useLock();
+  // Opened with its PIN, it keeps out of screenshots and the recent apps preview, as hidden chats do.
+  const pinOpen = !!info?.locked && unlocked;
+  useEffect(() => {
+    if (!pinOpen) return;
+    keepPrivate('chat', true);
+    return () => keepPrivate('chat', false);
+  }, [pinOpen]);
+
   // On the screen, what comes in the group only sounds (lib/background.ts).
   const focused = useIsFocused();
-  useEffect(() => (id && focused ? showOnScreen(screenOfGroup(id)) : undefined), [id, focused]);
+  useEffect(() => (id && focused && !gated ? showOnScreen(screenOfGroup(id)) : undefined), [id, focused, gated]);
 
   // A call going on in the group shows, until its members' phones go quiet.
   useEffect(() => {
@@ -142,10 +176,52 @@ export default function GroupScreen() {
 
   const load = useCallback(async () => {
     const groups = await spaceGroups();
-    setInfo(groups.list().find((g) => g.id === id) ?? null);
+    const listed = groups.list().find((g) => g.id === id) ?? null;
+    setInfo(listed);
     setMessages(groups.messages(id));
-    await groups.markRead(id);
+    if (!listed?.locked || opened.current) await groups.markRead(id);
   }, [id]);
+
+  // Opens it, locked with its PIN, once that is typed, and reads it then.
+  async function openWithPin(pin: string): Promise<boolean> {
+    const groups = await spaceGroups();
+    const kept = groups.pinOf(id);
+    if (kept && !(await opensChat(pin, kept))) return false;
+    setUnlocked(true);
+    opened.current = true;
+    await groups.markRead(id).catch(() => undefined);
+    return true;
+  }
+
+  // Takes its PIN off with the password that opens the space, its PIN forgotten.
+  async function forgotPin(password: string): Promise<boolean> {
+    if (!(await ownSpaceKey(currentSpace().space, password))) return false;
+    const groups = await spaceGroups();
+    await groups.setPin(id, null);
+    setUnlocked(true);
+    opened.current = true;
+    await groups.markRead(id).catch(() => undefined);
+    setNote(t('The PIN of {name} is off.', { name: info?.name ?? '' }));
+    return true;
+  }
+
+  async function lockWithPin(pin: string) {
+    const groups = await spaceGroups();
+    await groups.setPin(id, await makeChatPin(pin));
+    setUnlocked(true);
+    opened.current = true;
+    setPinAsk(null);
+    setNote(t('{name} is locked with a PIN now: it asks for it each time the chat opens.', { name: info?.name ?? '' }));
+  }
+
+  async function takePinOff(pin: string): Promise<boolean> {
+    const groups = await spaceGroups();
+    const kept = groups.pinOf(id);
+    if (kept && !(await opensChat(pin, kept))) return false;
+    await groups.setPin(id, null);
+    setPinAsk(null);
+    return true;
+  }
 
   useEffect(() => {
     let stop = () => undefined as void;
@@ -447,7 +523,21 @@ export default function GroupScreen() {
         onSearch={parts.startSearch}
         onExport={parts.exportGroup}
         onVideo={() => void call(true)}
+        onPin={() => {
+          setSheet(false);
+          setTimeout(() => setPinAsk(info.locked ? 'off' : 'on'), Platform.OS === 'web' ? 0 : 300);
+        }}
       />
+      <PasswordSheet
+        visible={pinAsk === 'on'}
+        title={t('Lock this chat with a PIN')}
+        repeat
+        hint={t('Asked each time the chat opens. Only this phone knows it.')}
+        submitLabel={t('Lock')}
+        onClose={() => setPinAsk(null)}
+        onSubmit={lockWithPin}
+      />
+      <PasswordSheet visible={pinAsk === 'off'} title={t('Type its PIN to take it off')} repeat={false} submitLabel={t('Take it off')} onClose={() => setPinAsk(null)} onSubmit={takePinOff} />
       <Sheet visible={publicMenu} onClose={() => setPublicMenu(false)} title={info.name}>
         <Row wrap>
           <Button
@@ -470,11 +560,12 @@ export default function GroupScreen() {
           />
         </Row>
       </Sheet>
+      {gated ? <ChatPinGate name={info.name} active={focused} open={openWithPin} forgot={lock.passwordLock ? forgotPin : undefined} onBack={goBack} /> : null}
     </KeyboardPaddedView>
   );
 }
 
-function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts, onContacts, onNote, onSearch, onExport, onVideo }: {
+function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts, onContacts, onNote, onSearch, onExport, onVideo, onPin }: {
   visible: boolean;
   onClose: () => void;
   onOpen: () => void;
@@ -491,6 +582,8 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
   onExport: () => void;
   /** Starts a video call in the group, or joins the call going on. */
   onVideo: () => void;
+  /** Locks the group with a PIN of its own, or takes it off (lock/chat-pin.ts). */
+  onPin: () => void;
 }) {
   const { colors } = useTheme();
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -759,6 +852,7 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
                   setTimeout(onExport, Platform.OS === 'web' ? 0 : 300);
                 }}
               />
+              <Button title={info.locked ? t('Take the PIN off') : t('Lock with a PIN')} kind="secondary" compact onPress={onPin} />
             </Row>
             {out ? (
               <Button

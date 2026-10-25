@@ -1,4 +1,5 @@
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
+import type { ChatPin } from '../lock/chat-pin';
 import {
   checkedAbout,
   EMPTY_GROUPS,
@@ -148,6 +149,8 @@ export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
   wants: { id: string; at: number }[];
   /** Members who ask for this phone's contact link and wait for an answer, oldest first. */
   asks: { id: string; at: number }[];
+  /** Locked with a PIN of its own here (lock/chat-pin.ts). */
+  locked: boolean;
 };
 
 // What members say inside the group's messages. A `file` with `ms` is a voice message's sound. A
@@ -380,7 +383,7 @@ export class Groups {
           .sort((a, b) => a.at - b.at);
         const unread = g.messages.filter((m) => m.from && !m.note && m.at > g.readAt).length + asks.filter((a) => a.at > g.readAt).length;
         const wants = freshWants(g, now).map(({ id, at }) => ({ id, at }));
-        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked, wants, asks };
+        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked, wants, asks, locked: !!g.pin };
       })
       .sort((a, b) => (b.last?.at ?? 0) - (a.last?.at ?? 0));
   }
@@ -448,6 +451,22 @@ export class Groups {
   }
 
   /** Marks a group read up to now. */
+  /** Locks a group with a PIN of its own here, as kept (lock/chat-pin.ts); null takes it off. */
+  setPin(id: string, pin: ChatPin | null): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group) throw new Error(t('This group is not here.'));
+      const { pin: _was, ...rest } = group;
+      await this.save(this.withGroup(pin ? { ...rest, pin } : rest));
+      this.changed();
+    });
+  }
+
+  /** The PIN a group opens with here, as kept, or null when it has none. */
+  pinOf(id: string): ChatPin | null {
+    return this.find(id)?.pin ?? null;
+  }
+
   markRead(id: string): Promise<void> {
     return this.run(async () => {
       const group = this.find(id);

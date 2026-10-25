@@ -22,7 +22,7 @@ import { useStyles } from '../theme/context';
 // are never sent anywhere. One can go on in Erevos: linked to one of the space's contacts, it shows
 // in the chat with them, ahead of the new messages.
 
-type Contact = { identity: string; name: string };
+type Contact = { identity: string; name: string; locked?: boolean };
 
 const contactLabel = (identity: string, contacts: Contact[]) =>
   contacts.find((contact) => contact.identity === identity)?.name || t('contact {id}', { id: identity.slice(0, 8) });
@@ -54,7 +54,7 @@ export default function ImportedScreen() {
       })
       .catch((error) => active && setNote(t('Imported chats could not open. {reason}', { reason: errorText(error) })));
     loadE2EData('space', current, key)
-      .then((data) => active && setContacts(data.contacts.map(({ identity, name }) => ({ identity, name }))))
+      .then((data) => active && setContacts(data.contacts.map(({ identity, name, pin }) => ({ identity, name, locked: !!pin }))))
       .catch(() => {
         // No contacts to go on with.
       });
@@ -92,9 +92,11 @@ export default function ImportedScreen() {
     }
   }
 
-  // Those kept only in the chat they go on in are not listed, while that contact is there.
+  // Those kept only in the chat they go on in are not listed, while that contact is there, nor those
+  // that go on in a chat locked with its PIN, which shows them once opened with it.
   const isContact = (identity: string) => contacts.some((contact) => contact.identity === identity);
-  const listed = chats.filter((chat) => !(chat.inChat && isContact(chat.contact)));
+  const isLocked = (identity: string) => contacts.some((contact) => contact.identity === identity && contact.locked);
+  const listed = chats.filter((chat) => !(chat.inChat && isContact(chat.contact)) && !isLocked(chat.contact));
 
   const opened = open ? chats.find((chat) => chat.id === open) : undefined;
   if (opened && archive) {
