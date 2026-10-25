@@ -20,6 +20,23 @@ internet.
 This guide opens from **User guide** in the home screen's menu (the three dots at the top). The search at its top finds any word in it. The guide
 is in English and Greek, and shows in English in the app's other languages, see [Language](#start).
 
+### Who makes it, and why
+
+- **Who:** Erevos is made by the same person who made FASOULI.
+- **Where:** it does not matter. What matters is that the relay and the app for the browser run on the maker's own
+  server (lphl.nekten.eu).
+- **For whom:** for anyone who wants to talk with their own people without giving a phone number, an email or an
+  account: friends, families, groups, and those who live where the internet is cut off or watched. And for those who,
+  with nothing to hide, want to keep their personal space private, away from prying eyes.
+- **Why:** because the well-known apps ask for a phone number, know who talks to whom, and stop when the internet goes
+  down. Because the "terms of use" of some of them do not cover us, and we have doubts about how they protect our
+  privacy. Because others lack features we need. Erevos asks for nothing, and finds a way through whatever is there:
+  the internet, Wi-Fi, Bluetooth, a phone nearby.
+- **Who pays:** no one: no ads, no investors, no data collection. Taking some donations from ordinary users, for the
+  running costs, is being thought about.
+
+This part opens from **Settings** → **General** → **About Erevos** too.
+
 ## Getting started {#start}
 
 Erevos is downloaded from its releases page, one file for each system: see [Updates](#updates) for where, and how to

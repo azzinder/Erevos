@@ -40,6 +40,8 @@ On main, not released yet:
   months, those imported from Telegram or WhatsApp too. A tap opens, plays or saves; held, **Show in chat** goes to
   the message. A calendar goes to a day that has any, and **Go to a day**, in the details too, goes to a day's first
   message in the chat itself.
+- **Who makes it, and why**: the guide's first part ends with who makes Erevos, for whom, why, and who pays, also
+  opened from **Settings** → **General** → **About Erevos**.
 - **The guide says why**: almost every part of the **User guide** now ends with a **Why** that says what the way it
   works protects, or why it was chosen: from why hidden chats have four places instead of a key for each chat, to why
   only the sender's phone fetches a link's preview. A few names in it now match the app (**Safety number**, **Appear

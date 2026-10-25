@@ -4,7 +4,7 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { test } from 'node:test';
 
 import { setLang, t } from '../lib/i18n';
@@ -31,8 +31,10 @@ test('every setting opens a screen that exists, each part one its screen knows',
     const href = leaf.href ?? '';
     assert.ok(href.startsWith('/'), leaf.id);
     const [path, query] = href.slice(1).split('?');
-    const file = [join(APP, `${path}.tsx`), join(APP, path, 'index.tsx')].find(existsSync);
+    const file = [join(APP, `${path}.tsx`), join(APP, path, 'index.tsx'), join(APP, dirname(path), '[id].tsx')].find(existsSync);
     assert.ok(file, `${leaf.id}: ${href}`);
+    // A section of the guide: one both guides have.
+    if (path.startsWith('guide/')) for (const lang of ['en', 'el']) assert.ok(readFileSync(join(APP, '..', 'guide', `${lang}.ts`), 'utf8').includes(`{#${basename(path)}}`), `${leaf.id}: ${lang}`);
     const part = new URLSearchParams(query ?? '').get('part');
     if (part) assert.ok(partsOf(file).includes(part), `${leaf.id}: ${part} in ${path}`);
   }
