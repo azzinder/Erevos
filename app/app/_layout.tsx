@@ -28,6 +28,7 @@ import { noticeLanguage, noticeSeen } from '../lib/push-notice';
 import { refreshKnownNames, watchKnownNames } from '../lib/known-names';
 import { forgetSpaceMover } from '../lib/queue-move';
 import { setAppShown, startReceiver } from '../lib/receiver';
+import { stopReleases, watchReleases } from '../lib/release-look';
 import { startSmsLater } from '../lib/sms-later';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
@@ -140,6 +141,8 @@ export default function RootLayout() {
       setPhase({ kind: 'open', space, passwordLock });
       saveLockScreenLook(kept).catch(() => undefined);
       setTimeout(() => void runAutoBackup().catch(() => undefined), BACKUP_AFTER_MS);
+      // A new Erevos is told at the top of the chats (lib/release-look.ts).
+      watchReleases();
     },
     [show],
   );
@@ -581,6 +584,7 @@ function closeSpace(): void {
   forgetWelcome();
   leaveTor();
   setNostr(null);
+  stopReleases();
 }
 
 function openKey(): Uint8Array | null {

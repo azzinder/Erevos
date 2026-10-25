@@ -1997,8 +1997,9 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
 
 ## Updates {#updates}
 
-Erevos never looks for updates on its own: a regular check would tell the place it asks, every day, that this phone
-or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI:
+Erevos asks GitHub for updates only when you tap the button, as in LPHL FASOULI: a regular check would tell GitHub,
+every day, that this phone or computer has Erevos. On Android it also tells you when a new version is out, without
+asking GitHub, as **Told when a new version is out** below says. To update:
 
 1. Open **Settings** → **General** → **Updates** (or **Check for updates** at the bottom of this guide's first
    screen).
@@ -2014,6 +2015,27 @@ or computer has Erevos. It asks only when you tap the button, as in LPHL FASOULI
    that: either way nothing installs. The first time, Android asks to allow installing
    apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take the file
    Erevos names, the one of the package you have, and update as in the table below.
+
+### Told when a new version is out {#release-notice}
+
+On Android, once a day, Erevos asks LPHL's server, which runs the relay too, whether a new version is out. When one is,
+**Erevos** shows at the top of the chats, pinned, with its icon: **Erevos 3.3.0 is out. Tap to see what is new and
+update.**, marked until you open it, and a notice says **Erevos 3.3.0 is out** too. Tap either for **Updates**, then
+**Check for updates**. It goes once you have that version.
+
+- **Only when signed:** it counts only once the release computer has signed both the build and its name, the same
+  signature that lets **Updates** install it. So it comes once that version can be installed, and the server alone
+  cannot make one up.
+- **Only on LPHL's relay:** a space asks only while it uses LPHL's relay and does not send everything through Tor
+  (**Everything** under Tor): the server then sees nothing it does not see already. A space on another relay, or with
+  no relay, asks nothing; there **Check for updates** tells you.
+- **To turn it off:** **Settings** → **General** → **Updates** → **Tell me when a new version is out**.
+- It works from the version that has it on: the one before says nothing. Not in the F-Droid build, which F-Droid
+  updates.
+
+**Why:** so no one has to look on GitHub, one by one, for each new version, and GitHub never learns which phones have
+Erevos: the server asked is the one the phone already talks to, and what it says counts only with the release
+computer's signature, kept offline.
 
 The rest of this section is for updating by hand.
 

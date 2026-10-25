@@ -54,7 +54,7 @@ export default function GuideScreen() {
       <Text variant="caption" tone="muted" style={{ textAlign: 'center', paddingTop: space.md }}>
         {ui.version(Constants.expoConfig?.version ?? '')}
       </Text>
-      {/* Erevos never looks for updates by itself (that would tell someone it is here): Updates checks when asked. */}
+      {/* Erevos asks GitHub for updates only when asked (a regular check would tell it who has Erevos): Updates checks then. */}
       <Pressable onPress={() => router.push('/updates')} accessibilityRole="link" hitSlop={8} style={{ alignSelf: 'center' }}>
         <Text variant="caption" color={colors.accentText}>
           {ui.update}

@@ -1,14 +1,15 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Linking, Platform, View } from 'react-native';
+import { Linking, Platform, Pressable, View } from 'react-native';
 
-import { Button, Card, Page, Text } from '../components/ui';
+import { Button, Card, Page, Text, Toggle } from '../components/ui';
 import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
 import { FDROID } from '../lib/distribution';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
 import { SHELL, shellFetch, shellSystem } from '../lib/shell';
+import { loadNotice, noticeSeen, onNotice, setNoticeOn } from '../lib/release-notice';
 import { fetchStatement, signingOf } from '../lib/update-signature';
 import { buildNumber, fetchLatestRelease, formatSize, isNewer, packageFile, RELEASES_PAGE, type Release } from '../lib/updates';
 import { loadCurrentSpaceData } from '../lock/space-data';
@@ -16,7 +17,9 @@ import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // Updates (Settings → General → Updates), as in LPHL FASOULI: the installed version and Check for updates.
-// Erevos never looks by itself; only this button asks GitHub (lib/updates.ts). On Android the new
+// Only this button asks GitHub (lib/updates.ts); by itself, on Android, Erevos asks LPHL's server once
+// a day whether a new version is out, and says so at the top of the chats (lib/release-notice.ts),
+// which can be turned off here. On Android the new
 // version downloads, is checked and installs over this one; on a computer and Sailfish OS the
 // download page opens, and the note says which file there updates this one. The web app updates
 // itself (pwa/), so it has no button, nor has the F-Droid build, which F-Droid updates.
@@ -34,6 +37,17 @@ export default function UpdatesScreen() {
   const [note, setNote] = useState('');
   const [progress, setProgress] = useState<{ received: number; total: number } | null>(null);
   const abort = useRef<AbortController | null>(null);
+  // Whether a new version is told at the top of the chats; null until read, and where none is told.
+  const [telling, setTelling] = useState<boolean | null>(null);
+
+  // A new version told of is seen once this opens.
+  useEffect(() => {
+    if (Platform.OS !== 'android' || FDROID) return;
+    const read = () => void loadNotice().then((kept) => setTelling(kept.on), () => undefined);
+    read();
+    noticeSeen().catch(() => undefined);
+    return onNotice(read);
+  }, []);
 
   // A package downloaded earlier is installed by now, or was not wanted.
   useEffect(() => {
@@ -166,8 +180,28 @@ export default function UpdatesScreen() {
       {supported ? (
         <Card>
           <Text tone="muted">
-            {t("Erevos never looks for updates by itself: a regular check would tell GitHub that this device has Erevos. It asks only when you tap the button. GitHub then sees this device's internet address, nothing else, and on Android so does the web app's server, which holds the release computer's signature of the update.")}
+            {t("Erevos asks GitHub for updates only when you tap the button: a regular check would tell GitHub that this device has Erevos. GitHub then sees this device's internet address, nothing else, and on Android so does the web app's server, which holds the release computer's signature of the update.")}
           </Text>
+          {telling !== null ? (
+            <>
+              <Pressable
+                onPress={() => void setNoticeOn(!telling).catch(() => undefined)}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: telling }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}
+              >
+                <Text variant="bodyStrong" style={{ flex: 1 }}>
+                  {t('Tell me when a new version is out')}
+                </Text>
+                <Toggle on={telling} />
+              </Pressable>
+              <Text variant="caption" tone="muted">
+                {telling
+                  ? t("Once a day Erevos asks LPHL's server, which runs the relay too, whether a new version is out, and says so at the top of the chats and in a notice. It asks only while this space uses LPHL's relay and does not send everything through Tor, so the server learns nothing it did not know. The answer counts only when signed by the release computer.")
+                  : t('Erevos does not ask whether a new version is out: only Check for updates tells you.')}
+              </Text>
+            </>
+          ) : null}
           {progress ? (
             <View style={{ gap: space.sm }}>
               <Text variant="bodyStrong">{t('Downloading…')}</Text>

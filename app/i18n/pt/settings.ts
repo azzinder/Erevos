@@ -156,7 +156,6 @@ export const settings: Record<string, string> = {
   'Open download page': 'Abrir a página de download',
   'Open {url} in a browser.': 'Abra {url} num navegador.',
   'Installed': 'Instalada',
-  "Erevos never looks for updates by itself: a regular check would tell GitHub that this device has Erevos. It asks only when you tap the button. GitHub then sees this device's internet address, nothing else, and on Android so does the web app's server, which holds the release computer's signature of the update.": 'O Erevos nunca procura atualizações sozinho: uma verificação regular contaria ao GitHub que este aparelho tem o Erevos. Ele só pergunta quando você toca no botão. O GitHub então vê o endereço de internet deste aparelho, nada mais, e no Android o servidor do app web também, que guarda a assinatura da atualização feita no computador de versões.',
   'Downloading…': 'Baixando…',
   'Check for updates': 'Procurar atualizações',
   "Erevos {version} is out, but the web app's server, which holds the release computer's signature of it, could not be reached ({error}), so it does not install. Check the internet connection and try again.": 'O Erevos {version} saiu, mas não foi possível acessar o servidor do app web, que guarda a assinatura do computador de versões ({error}), então ele não é instalado. Verifique a conexão com a internet e tente de novo.',

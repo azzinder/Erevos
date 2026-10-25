@@ -21,6 +21,12 @@ On main, not released yet:
   once, inside the chat, whether they first met through Nostr or nearby (Bluetooth, Wi-Fi, a QR code). The other phone
   takes it by itself and tells its contacts where it reads now. It counts as one of the inviter's invites, and none
   goes to a message request; one from a request waits until it is accepted.
+- **Told when a new version is out**: on Android, once a day, Erevos asks LPHL's server (which runs the relay too)
+  whether a new version is out, and when one is, **Erevos** shows at the top of the chats, pinned, saying **Erevos X is
+  out**, with a notice too; tapping either opens **Updates**. It counts only once the release computer has signed the
+  build and its name. A space asks only while it uses LPHL's relay and does not send everything through Tor; GitHub is
+  still asked only when you tap **Check for updates**. **Settings** → **General** → **Updates** → **Tell me when a new
+  version is out** turns it off. Not in the F-Droid build.
 
 ## 3.2.1 (2026-10-25)
 

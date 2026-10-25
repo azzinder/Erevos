@@ -84,6 +84,12 @@ class ErevosDeviceModule : Module() {
       Reminders.forget(app, id)
     }
 
+    // A new Erevos, named `name`, is out (Updates.kt): a notice says so.
+    Function("tellUpdate") { name: String ->
+      val app = context?.applicationContext ?: return@Function Unit
+      Updates.tell(app, name)
+    }
+
     // Starts looking for where the phone is, once: what it finds comes as onPlace. Says "" when it
     // started, "permission" when Erevos may not use the location, "off" when the phone's location
     // is off.

@@ -24,6 +24,8 @@ import { handOverHidden } from '../lib/hidden-handoff';
 import { lang, mark, t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { armReminders, myNotes, notesSummary, onNotesChanged, writeNote, type Note } from '../lib/myself';
+import { CURRENT_BUILD } from '../lib/release-look';
+import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
 import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, showsIn, shownName, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { checksOffered, offerChecks } from '../lib/permissions';
@@ -187,6 +189,23 @@ export default function Home() {
   const [reminder, setReminder] = useState('');
   const [reminderSaid, setReminderSaid] = useState('');
   const wide = useWindowDimensions().width >= 400;
+  // A new Erevos, told by Erevos itself above the chats until it is installed (lib/release-notice.ts),
+  // and whether Updates was opened since it was told.
+  const [release, setRelease] = useState<(Told & { seen: boolean }) | null>(null);
+  useEffect(() => {
+    let live = true;
+    const load = () =>
+      void loadNotice().then((kept) => {
+        const shown = shownRelease(kept, CURRENT_BUILD);
+        if (live) setRelease(shown ? { ...shown, seen: kept.seen } : null);
+      }, () => undefined);
+    load();
+    const off = onNotice(load);
+    return () => {
+      live = false;
+      off();
+    };
+  }, []);
   // The notes, read again whenever they change; reminders still to come are asked of the phone
   // again, as after a backup was put back.
   useEffect(() => {
@@ -476,7 +495,8 @@ export default function Home() {
           {folders.trash ? <Chip label={t('Trash · {n}', { n: folders.trash })} onPress={() => router.push('/sms-folder?folder=trash')} /> : null}
         </Row>
       ) : null}
-      {/* Chat with myself stays first, whatever comes in, but for the SMS alone and a search. */}
+      {/* A new Erevos, then Chat with myself, stay first, whatever comes in, but for the SMS alone and a search. */}
+      {release && !query.trim() && show !== 'sms' ? <ReleaseRow release={release} /> : null}
       {notes !== null && !query.trim() && show !== 'sms' ? <MyselfRow notes={notes} /> : null}
     </View>
   );
@@ -654,6 +674,48 @@ function IconButton({ label, onPress, children }: { label: string; onPress: () =
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
       {children}
+    </Pressable>
+  );
+}
+
+const EREVOS_FACE = require('../assets/icon/favicon.png');
+
+// A new Erevos, as a message from Erevos itself at the top of the chats: in amber with a mark until
+// Updates was opened, then plainly, until it is installed.
+function ReleaseRow({ release }: { release: Told & { seen: boolean } }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const said = t('Erevos {name} is out. Tap to see what is new and update.', { name: release.name });
+  return (
+    <Pressable
+      onPress={() => router.push('/updates')}
+      accessibilityRole="button"
+      accessibilityLabel={`Erevos, ${said}`}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      <Image source={EREVOS_FACE} style={{ width: 52, height: 52, borderRadius: 26 }} accessibilityIgnoresInvertColors />
+      <View style={styles.rowBody}>
+        <View style={styles.rowLine}>
+          <Text variant="bodyStrong" numberOfLines={1} style={styles.rowName}>
+            Erevos
+          </Text>
+          <PinIcon color={colors.textFaint} size={13} />
+        </View>
+        <View style={styles.rowLine}>
+          <View style={styles.previewLine}>
+            <Text numberOfLines={2} variant="caption" tone={release.seen ? 'muted' : undefined} color={release.seen ? undefined : colors.warning} style={[styles.preview, release.seen ? null : styles.previewUnread]}>
+              {said}
+            </Text>
+          </View>
+          {release.seen ? null : (
+            <View style={[styles.badge, { backgroundColor: colors.warning }]}>
+              <Text variant="caption" color="#ffffff" style={styles.badgeText}>
+                1
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
     </Pressable>
   );
 }
