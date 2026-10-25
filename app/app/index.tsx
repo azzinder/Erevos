@@ -4,9 +4,10 @@ import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, T
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FoundRow } from '../components/found-row';
-import { GearIcon, LockIcon, MoreIcon, PersonIcon, PhoneIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
+import { GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
 import { KeyFace } from '../components/key-face';
 import { KeyboardPaddedView } from '../components/keyboard';
+import { LockSign, PersonSign, PhoneSign, ShortcutTile } from '../components/shortcut-tile';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { SwipeTabs } from '../components/swipe-tabs';
 import { Button, Chip, font, fontStyle, Input, Row, Sheet, Text } from '../components/ui';
@@ -55,9 +56,9 @@ const MARKS = ['✓', '✓✓', '✓✓✓'];
 
 type Relay = 'ready' | 'no-queue' | 'none';
 
-// The places of Erevos; its settings are in Settings (lib/settings.ts). `phone`: only on a phone.
-// `links`: where there are links to phones nearby.
-const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?: boolean }[] = [
+// The places of Erevos; its settings are in Settings (lib/settings.ts), the Phone and Contacts in
+// the tiles at the top. `links`: where there are links to phones nearby.
+const MENU: { title: string; detail: string; href: Href; links?: boolean }[] = [
   { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group' },
   { title: mark('Public groups'), detail: mark('Make a group anyone with its link can join, or join one by a link'), href: '/public-groups' },
   { title: mark('Starred messages'), detail: mark('The messages you starred, in all your chats'), href: '/starred' },
@@ -67,8 +68,6 @@ const MENU: { title: string; detail: string; href: Href; phone?: boolean; links?
     href: '/chat',
     links: true,
   },
-  { title: mark('Contacts'), detail: mark("The phone's contacts, their groups and birthdays"), href: '/contacts', phone: true },
-  { title: mark('Phone'), detail: mark('Erevos as the phone app: the keypad, the calls and the favourites'), href: '/phone', phone: true },
   { title: mark('User guide'), detail: mark('How Erevos works, and what is not protected yet'), href: '/guide' },
 ];
 
@@ -365,20 +364,21 @@ export default function Home() {
         <View style={styles.tools}>
           {Platform.OS !== 'web' ? (
             <>
-              <IconButton label={t('Phone')} onPress={() => router.push('/phone')}>
-                <PhoneIcon color={colors.text} />
-              </IconButton>
-              <IconButton label={t('Contacts')} onPress={() => router.push('/contacts')}>
-                <PersonIcon color={colors.text} />
-              </IconButton>
+              <ShortcutTile label={t('Phone')} tint="green" onPress={() => router.push('/phone')}>
+                <PhoneSign />
+              </ShortcutTile>
+              <ShortcutTile label={t('Contacts')} tint="violet" onPress={() => router.push('/contacts')}>
+                <PersonSign />
+              </ShortcutTile>
             </>
           ) : null}
-          <IconButton
+          <ShortcutTile
             label={lock.passwordLock ? t('Lock now') : t('Lock and second password')}
+            tint="orange"
             onPress={() => (lock.passwordLock ? lock.lockNow() : router.push('/security'))}
           >
-            <LockIcon color={colors.text} />
-          </IconButton>
+            <LockSign tint="orange" />
+          </ShortcutTile>
           <IconButton label={t('Menu')} onPress={() => setMenu(true)}>
             <MoreIcon color={colors.text} />
           </IconButton>
@@ -531,7 +531,7 @@ export default function Home() {
       </Sheet>
       <Sheet visible={menu} onClose={closeMenu}>
         {/* A linked device has the phone's groups, but makes and joins none (lib/devices.ts). */}
-        {MENU.filter((item) => (item.links ? HAS_LINKS : !item.phone || Platform.OS !== 'web') && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
+        {MENU.filter((item) => (!item.links || HAS_LINKS) && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"

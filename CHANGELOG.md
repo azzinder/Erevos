@@ -26,6 +26,9 @@ On main, not released yet:
   on or off, so screenshots and screen recordings work when you want them. Hidden chats always stay out of them.
 - **Hidden chats from New chat, sooner**: holding **New chat** down for a second (was a second and a half) opens the
   field for the PIN.
+- **Coloured shortcuts on the home screen**: at the top, **Phone** is a green tile with a handset, **Contacts** a violet
+  one with a person (the colours of their icons on the phone's home screen) and the lock an orange one. Phone and
+  Contacts left the menu under the three dots, where they were twice.
 
 ## 3.1.2 (2026-10-25)
 

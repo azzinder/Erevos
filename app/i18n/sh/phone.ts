@@ -2,7 +2,6 @@
 export const phone: Record<string, string> = {
   // The Phone screen (app/phone.tsx) and its place in the menu.
   Phone: 'Telefon',
-  'Erevos as the phone app: the keypad, the calls and the favourites': 'Erevos kao aplikacija za telefon: tastatura, pozivi i favoriti',
   'This build of Erevos has no phone part yet. It comes with the next build of the app.':
     'Ova verzija Erevosa još nema dio za telefon. Dolazi sa sljedećom verzijom aplikacije.',
   'Only Android lets another app be the phone app.': 'Samo Android dozvoljava da druga aplikacija bude aplikacija za telefon.',

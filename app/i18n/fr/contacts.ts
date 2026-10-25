@@ -1,7 +1,6 @@
 // The French of the Contacts screens: the phone's contacts, their groups, merging, vCards, QR codes,
 // birthdays and contacts kept only in Erevos (app/contacts.tsx and what goes with it) (i18n/fr/index.ts).
 export const contacts: Record<string, string> = {
-  "The phone's contacts, their groups and birthdays": 'Les contacts du téléphone, leurs groupes et anniversaires',
   'This build of Erevos has no contacts part yet. It comes with the next build of the app.': 'Cette version d’Erevos n’a pas encore la partie Contacts. Elle arrive avec la prochaine version de l’app.',
   "Only Erevos on Android reads the phone's contacts.": 'Seul Erevos sur Android lit les contacts du téléphone.',
   'Search contacts': 'Rechercher des contacts',

@@ -44,7 +44,8 @@ shows, brings more; writing a message, or the lower arrow, goes back to the end.
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
 - **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
 - **New chat**, at the bottom, opens the relay settings and adding a contact.
-- **The handset and the person** at the top, on Android, open **Phone** and **Contacts** at once.
+- **The green handset and the violet person** at the top, on Android, open **Phone** and **Contacts** at once, in the
+  colours of their icons on the phone's home screen. They are not in the menu under the three dots as well.
 - **All messages**, **SMS** and **Erevos**, above the chats once there are SMS conversations too, show all of them,
   only the SMS (with the chats whose last message was an SMS), or only the Erevos chats, every contact's whatever
   came last.
@@ -54,7 +55,7 @@ shows, brings more; writing a message, or the lower arrow, goes back to the end.
   what; with missed calls, **Phone** opens on **Recents**. A button tapped again shows its screen again, also after
   you chose another tab there. Its words follow Erevos's language. **Settings** → **Appearance** → **Widget** sets the
   order of its buttons.
-- **The lock** at the top locks Erevos at once when a password is set, or opens the lock settings when not.
+- **The orange lock** at the top locks Erevos at once when a password is set, or opens the lock settings when not.
 - **The three dots** open the rest:
 
 | In the menu | What it opens |
@@ -63,8 +64,6 @@ shows, brings more; writing a message, or the lower arrow, goes back to the end.
 | **Public groups** | A group anyone with its link can ask to join, with an owner and admins. See [Public groups](#public-groups). |
 | **Starred messages** | The messages you starred, in all your chats. See A message's menu, under Chat through a relay. |
 | **Nearby phones** | Your contacts over Bluetooth and Wi-Fi Aware, or on the same Wi-Fi, without internet. See [Chat with a nearby phone](#nearby). |
-| **Contacts** (Android) | The phone's contacts, with their groups and birthdays, and contacts kept only in Erevos. See [Contacts](#contacts). |
-| **Phone** (Android) | Erevos as the phone app: the keypad, the calls and the favourites. See [Phone](#phone). |
 | **User guide** | This guide. |
 | **Settings** | The last row, with a cog: everything you can set, in groups, with a search. See Settings below. |
 
