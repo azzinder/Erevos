@@ -10,6 +10,8 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+## 3.3.2 (2026-10-25)
+
 - **The plain call button for more contacts**: the orange keypad at the top of a contact's chat now shows also when no
   number is linked to them in Erevos but they are connected to one of your contacts that has one (**Connect to one of
   my contacts**), on that contact's mobile number first. Before, only a number linked to them in Erevos counted, so some
