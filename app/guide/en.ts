@@ -547,7 +547,9 @@ at the relay, or at once when they are nearby. A message counts as read once its
   a time, instead of asking every few seconds, and asks nothing more when nothing came, so the battery lasts, and a
   notice says only how many messages came. Closed, locked, or
   long in the background otherwise, it does not: messages wait on the relay, up to 14 days, and come once Erevos
-  opens again.
+  opens again. A question to the relay with no answer in time (a wait there its minute and half a minute more,
+  anything else 45 seconds, a part of a file 2 minutes) counts as failed and is asked again, so a connection that
+  died on the way, as when the phone's network sleeps or changes, holds nothing back.
 
 ### Online, and appearing offline
 

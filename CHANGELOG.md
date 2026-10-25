@@ -33,6 +33,10 @@ On main, not released yet:
   messages** or **Imported chats**. The PIN is kept only as Argon2id of it, and wrong ones make the next try wait.
   Moved into hidden chats, it asks nothing there; moved back, the same PIN asks again. Where the space has a password,
   **Forgot the PIN?** takes it off with that password.
+- **No message held back by a dead connection**: a question to the relay with no answer in time (a wait there its
+  seconds and 30 more, anything else 45 seconds, a part of a file 2 minutes) now counts as failed and is asked again.
+  Before, a connection that died on the way, as when the phone's network slept or changed, could leave Erevos waiting
+  on it for good, receiving nothing in the background until it was opened.
 - **A plain call from a chat**: a contact's chat with their number linked, and an SMS conversation, have an orange
   keypad at the top that opens a keypad with the number typed (Erevos's Phone when it is the phone app, else the phone's
   own), for a call on the mobile network, not encrypted. Not in hidden chats, nor on a computer.

@@ -207,6 +207,7 @@ export const parts: Record<string, string> = {
   'the relay at {url} cannot keep messages for later: update it': 'el relay {url} no puede guardar mensajes para más tarde: actualízalo',
   'The relay at {url} that keeps it is no longer set here.': 'El relay {url} que lo guarda ya no está configurado aquí.',
   'the relay closed the connection': 'el relay ha cerrado la conexión',
+  'the relay did not answer in time': 'el relay no respondió a tiempo',
   'lost the connection to the relay': 'se ha perdido la conexión con el relay',
   '{what}: queue not found': '{what}: cola no encontrada',
   '{what}: queue is full': '{what}: la cola está llena',

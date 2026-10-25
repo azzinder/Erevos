@@ -208,6 +208,7 @@ export const parts: Record<string, string> = {
   'the relay at {url} cannot keep messages for later: update it': 'το relay στο {url} δεν μπορεί να κρατήσει μηνύματα για αργότερα: ενημέρωσέ το',
   'The relay at {url} that keeps it is no longer set here.': 'Το relay στο {url} που το κρατά δεν είναι πια ρυθμισμένο εδώ.',
   'the relay closed the connection': 'το relay έκλεισε τη σύνδεση',
+  'the relay did not answer in time': 'το relay δεν απάντησε εγκαίρως',
   'lost the connection to the relay': 'χάθηκε η σύνδεση με το relay',
   '{what}: queue not found': '{what}: η ουρά δεν βρέθηκε',
   '{what}: queue is full': '{what}: η ουρά είναι γεμάτη',

@@ -206,6 +206,7 @@ export const parts: Record<string, string> = {
   'the relay at {url} cannot keep messages for later: update it': 'relay {url} ne može čuvati poruke za kasnije: ažurirajte ga',
   'The relay at {url} that keeps it is no longer set here.': 'Relay {url} koji je čuva više nije postavljen ovdje.',
   'the relay closed the connection': 'relay je zatvorio vezu',
+  'the relay did not answer in time': 'relej nije odgovorio na vrijeme',
   'lost the connection to the relay': 'veza s relayem je izgubljena',
   '{what}: queue not found': '{what}: red nije pronađen',
   '{what}: queue is full': '{what}: red je pun',

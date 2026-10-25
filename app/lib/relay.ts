@@ -311,30 +311,72 @@ async function viaTor<T>(call: () => Promise<T>): Promise<T> {
 // A request ended from this side (`signal`) before its reply came.
 class Ended extends Error {}
 
+// How long a request may go without its reply, milliseconds: a connection that died on the way, as
+// one does when the phone's network sleeps or changes, says nothing, and the look waiting on it would
+// wait for ever. A wait at the relay (WAIT, NEWS) lasts its seconds, and a file's chunk takes longer.
+const ANSWER_MS = 45_000;
+const FILE_ANSWER_MS = 120_000;
+const WAIT_MORE_MS = 30_000;
+
+let answerScale = 1;
+
+/** For checks: replies are waited for `scale` times as long; null for the usual times. */
+export function setAnswerScale(scale: number | null): void {
+  answerScale = scale ?? 1;
+}
+
+/** How long the request `bytes` may go without its reply before it counts as failed, milliseconds. */
+export function answerWithin(bytes: Uint8Array): number {
+  const op = bytes[0];
+  const ms = (op === WAIT || op === NEWS) && bytes.length > 25 ? bytes[25] * 1000 + WAIT_MORE_MS : op === FILE_PUT || op === FILE_GET || op === FILE_VIA || op === FILE_KEEP ? FILE_ANSWER_MS : ANSWER_MS;
+  return ms * answerScale;
+}
+
+/** Thrown when the relay did not answer in time: the connection died on the way, or the relay is stuck. */
+const lateError = () => new RelayUnreachableError(t('the relay did not answer in time'));
+
 /** Opens a connection, sends one request, and returns the reply. Closes the connection, also when `signal` ends it. */
 function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise<Uint8Array> {
   if (signal?.aborted) return Promise.reject(new Ended());
   if (!isRelayAddress(relay.url)) return Promise.reject(new BadRelayAddressError(relay.url));
   // A space that goes through Tor, waited on while another is open: never straight.
   if (relay.torOnly && !torFor(false)) return Promise.reject(new RelayUnreachableError(t('Tor is not ready.')));
+  const within = answerWithin(bytes);
   if (torFor(false)) {
     const reply = viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
-    if (!signal) return reply;
-    // Tor's request runs on until it ends; its reply is not waited for.
+    // Tor's request runs on until it ends; its reply is not waited for once the request ended
+    // here, or took too long (twice as long as straight, as Tor is slower).
     return new Promise((resolve, reject) => {
       const end = () => reject(new Ended());
-      signal.addEventListener('abort', end);
-      reply.then(resolve, reject).finally(() => signal.removeEventListener('abort', end));
+      const late = setTimeout(() => {
+        if (torWay === 'messages') torRestUntil = Date.now() + TOR_REST_MS;
+        reject(lateError());
+      }, 2 * within);
+      signal?.addEventListener('abort', end);
+      reply.then(resolve, reject).finally(() => {
+        clearTimeout(late);
+        signal?.removeEventListener('abort', end);
+      });
     });
   }
   return new Promise((resolve, reject) => {
     const socket = connect(relay);
     const end = () => {
+      settled();
       socket.close();
       reject(new Ended());
     };
+    // No reply in time: the connection is given up, as one that closed.
+    const late = setTimeout(() => {
+      settled();
+      socket.close();
+      reject(lateError());
+    }, within);
     signal?.addEventListener('abort', end);
-    const settled = () => signal?.removeEventListener('abort', end);
+    const settled = () => {
+      clearTimeout(late);
+      signal?.removeEventListener('abort', end);
+    };
     socket.onopen = () => socket.send(bytes);
     socket.onmessage = (event) => {
       settled();
@@ -1044,14 +1086,27 @@ export class RelaySession {
   /** Sends one request after the ones before it are answered, and returns its reply. */
   call(bytes: Uint8Array): Promise<Uint8Array> {
     const torId = this.torId;
+    const within = answerWithin(bytes);
+    // A reply that does not come in time ends the connection, and so every request after it.
+    const late = () => {
+      this.ended ??= lateError();
+      this.close();
+      return this.ended;
+    };
     const reply = this.last.then(
       () =>
         torId
           ? this.ended
             ? Promise.reject(this.ended)
-            : viaTor(() => tor().torCall(torId, bytes)).catch((error: RelayError) => {
-                this.ended ??= error;
-                throw error;
+            : new Promise<Uint8Array>((resolve, reject) => {
+                const timer = setTimeout(() => reject(late()), 2 * within);
+                viaTor(() => tor().torCall(torId, bytes))
+                  .catch((error: RelayError) => {
+                    this.ended ??= error;
+                    throw error;
+                  })
+                  .then(resolve, reject)
+                  .finally(() => clearTimeout(timer));
               })
           :
         new Promise<Uint8Array>((resolve, reject) => {
@@ -1059,7 +1114,15 @@ export class RelaySession {
             reject(this.ended);
             return;
           }
-          this.waiting = (answer) => (answer instanceof RelayError ? reject(answer) : resolve(answer));
+          const timer = setTimeout(() => {
+            this.waiting = null;
+            reject(late());
+          }, within);
+          this.waiting = (answer) => {
+            clearTimeout(timer);
+            if (answer instanceof RelayError) reject(answer);
+            else resolve(answer);
+          };
           this.socket?.send(bytes);
         }),
     );
