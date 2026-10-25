@@ -54,7 +54,7 @@ test('a phone shows every group; elsewhere, what needs a phone does not show', (
   );
   const ids = (place: SettingsPlace) => groupsHere(place).flatMap((group) => itemsHere(group, place).map((item) => item.id));
   const desktop = ids(DESKTOP);
-  for (const gone of ['tor', 'nostr', 'lora', 'radio-test', 'permissions', 'browser-permissions', 'icons', 'widget', 'phone', 'sms', 'web-app']) assert.ok(!desktop.includes(gone), gone);
+  for (const gone of ['tor', 'nostr', 'lora', 'radio-test', 'permissions', 'browser-permissions', 'icons', 'widget', 'phone', 'sms', 'web-app', 'screenshots']) assert.ok(!desktop.includes(gone), gone);
   // The desktop app has no notices of its own to set: the group goes.
   assert.ok(!groupsHere(DESKTOP).some((group) => group.id === 'notices' || group.id === 'phone'));
   const web = ids(WEB_APP);

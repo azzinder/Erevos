@@ -16,7 +16,7 @@ export const settings: Record<string, string> = {
   'Password lock is on': 'Zaključavanje lozinkom je uključeno',
   'Erevos asks for the password every time it opens and after 30 seconds in the background.': 'Erevos traži lozinku svaki put kad se otvori i nakon 30 sekundi u pozadini.',
   'A backup holds every space and all its chats, and once the file is elsewhere its password is all that guards it: use at least {n} characters, or four words.': 'Rezervna kopija sadrži svaki prostor i sve njegove razgovore, a kad je datoteka negdje drugdje, štiti je samo lozinka: koristite najmanje {n} znakova ili četiri riječi.',
-  'Screen privacy': 'Privatnost ekrana',
+  'It counts in a space with a password lock: this one has none, so screenshots of it work.': 'Važi u prostoru sa zaključavanjem lozinkom: ovaj ga nema, pa snimci ekrana rade.',
   'On: Erevos stays out of screenshots, screen recordings and the recent apps, so no one sees its last screen there.': 'Uključeno: Erevos se ne pojavljuje na snimcima ekrana, pri snimanju ekrana ni među nedavnim aplikacijama, pa se tamo ne vidi njegov posljednji ekran.',
   'Off: screenshots work, and the recent apps show the last screen of Erevos.': 'Isključeno: snimci ekrana su mogući, a nedavne aplikacije prikazuju posljednji ekran Erevosa.',
   'Hidden chats always stay out of them.': 'Skriveni razgovori se tamo nikad ne pojavljuju.',

@@ -72,7 +72,7 @@ function soundType(audio: Uint8Array): string {
 let playing: (() => void) | null = null;
 
 /** As lib/audio.ts: plays a sound, stopping any other first, and returns a call that stops it. */
-export function playVoice(audio: Uint8Array, onEnd: () => void, onTime?: (ms: number) => void): () => void {
+export function playVoice(audio: Uint8Array, onEnd: () => void, onTime?: (ms: number) => void, _ending?: string): () => void {
   playing?.();
   const uri = URL.createObjectURL(new Blob([audio as BlobPart], { type: soundType(audio) }));
   const player = createAudioPlayer({ uri }, { updateInterval: 250 });

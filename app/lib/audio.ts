@@ -106,9 +106,9 @@ let playing: (() => void) | null = null;
  * played, milliseconds, a few times a second; `onEnd` is called once it stops, however. Returns a
  * call that stops it.
  */
-export function playVoice(audio: Uint8Array, onEnd: () => void, onTime?: (ms: number) => void): () => void {
+export function playVoice(audio: Uint8Array, onEnd: () => void, onTime?: (ms: number) => void, ending = 'm4a'): () => void {
   playing?.();
-  const file = new File(Paths.cache, `erevos-play-${toHex(randomBytes(8))}.m4a`);
+  const file = new File(Paths.cache, `erevos-play-${toHex(randomBytes(8))}.${ending}`);
   file.write(audio);
   const player = createAudioPlayer({ uri: file.uri }, { updateInterval: 250 });
   let done = false;

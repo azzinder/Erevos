@@ -37,6 +37,7 @@ type Editing = 'own' | 'second' | 'hidden' | 'biometric' | null;
 const PARTS = {
   lock: mark('Lock and second password'),
   hidden: mark('Hidden chats'),
+  screen: mark('Screenshots'),
   background: mark('In the background'),
   web: mark('This web app'),
   push: mark('Notifications while closed'),
@@ -191,21 +192,6 @@ export default function Security() {
                 </Row>
               </Card>
 
-              {CAN_KEEP_PRIVATE && screenPrivate !== null ? (
-                <Card>
-                  <Text variant="bodyStrong">{t('Screen privacy')}</Text>
-                  <Text variant="caption" tone="muted" style={hint}>
-                    {screenPrivate
-                      ? t('On: Erevos stays out of screenshots, screen recordings and the recent apps, so no one sees its last screen there.')
-                      : t('Off: screenshots work, and the recent apps show the last screen of Erevos.')}{' '}
-                    {t('Hidden chats always stay out of them.')}
-                  </Text>
-                  <Row wrap>
-                    <Button title={screenPrivate ? t('Turn off') : t('Turn on')} kind="secondary" compact onPress={() => void setScreenPrivacy(!screenPrivate)} />
-                  </Row>
-                </Card>
-              ) : null}
-
               {biometric !== null ? (
                 <Card>
                   <Text variant="bodyStrong">{t('Fingerprint or face')}</Text>
@@ -246,6 +232,24 @@ export default function Security() {
               {t('Anyone who opens this phone can open Erevos. With a password you can also set a second password that opens a separate, empty space.')}
             </Text>
           )}
+        </>
+      ) : null}
+
+      {CAN_KEEP_PRIVATE && screenPrivate !== null && shows('screen') ? (
+        <>
+          {part ? null : <SectionTitle title={t('Screenshots')} />}
+          <Card>
+            <Text variant="caption" tone="muted" style={hint}>
+              {screenPrivate
+                ? t('On: Erevos stays out of screenshots, screen recordings and the recent apps, so no one sees its last screen there.')
+                : t('Off: screenshots work, and the recent apps show the last screen of Erevos.')}{' '}
+              {locked ? '' : `${t('It counts in a space with a password lock: this one has none, so screenshots of it work.')} `}
+              {t('Hidden chats always stay out of them.')}
+            </Text>
+            <Row wrap>
+              <Button title={screenPrivate ? t('Turn off') : t('Turn on')} kind="secondary" compact onPress={() => void setScreenPrivacy(!screenPrivate)} />
+            </Row>
+          </Card>
         </>
       ) : null}
 

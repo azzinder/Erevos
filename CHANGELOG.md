@@ -15,6 +15,15 @@ On main, not released yet:
   with **Show later messages** under them), the lower one back to the end. Writing a message goes back to the end too.
 - **Earlier messages come by themselves**: scrolling up a long chat brings its earlier messages, and those imported from
   Telegram or WhatsApp, without tapping **Show earlier messages**; what is read stays in its place.
+- **Imported messages as if always in Erevos**: in a contact's chat, what came from Telegram or WhatsApp is drawn as
+  Erevos's own messages are, in bubbles with tails, under day headings, with their times. Photos load as you scroll to
+  them (no more tapping each), stickers show as stickers, voice messages and songs play right in the chat, holding one
+  offers **Copy** and **Open**, and **Search in this chat** finds them. The **Imported chats** viewer loads the photos
+  on the screen as it scrolls too.
+- **Dogs instead of cats**: the stickers' third set is now **Dogs**, 24 moving dogs (a Dalmatian among them). Cat
+  stickers already sent or received still show.
+- **Screenshots in Settings**: **Settings** → **Privacy and security** → **Screenshots** turns Erevos's screen privacy
+  on or off, so screenshots and screen recordings work when you want them. Hidden chats always stay out of them.
 - **Hidden chats from New chat, sooner**: holding **New chat** down for a second (was a second and a half) opens the
   field for the PIN.
 

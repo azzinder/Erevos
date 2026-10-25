@@ -16,7 +16,7 @@ export const settings: Record<string, string> = {
   'Password lock is on': 'Το κλείδωμα με κωδικό είναι ενεργό',
   'Erevos asks for the password every time it opens and after 30 seconds in the background.': 'Το Erevos ζητά τον κωδικό κάθε φορά που ανοίγει και μετά από 30 δευτερόλεπτα στο παρασκήνιο.',
   'A backup holds every space and all its chats, and once the file is elsewhere its password is all that guards it: use at least {n} characters, or four words.': 'Ένα αντίγραφο κρατά κάθε χώρο και όλες του τις συνομιλίες, και όταν το αρχείο βρεθεί αλλού ο κωδικός του είναι η μόνη του προστασία: χρησιμοποίησε τουλάχιστον {n} χαρακτήρες, ή τέσσερις λέξεις.',
-  'Screen privacy': 'Απόρρητο οθόνης',
+  'It counts in a space with a password lock: this one has none, so screenshots of it work.': 'Ισχύει σε χώρο με κλείδωμα με κωδικό: αυτός εδώ δεν έχει, οπότε τα στιγμιότυπά του δουλεύουν.',
   'On: Erevos stays out of screenshots, screen recordings and the recent apps, so no one sees its last screen there.': 'Ενεργό: το Erevos δεν φαίνεται σε στιγμιότυπα, εγγραφές οθόνης και στις πρόσφατες εφαρμογές, ώστε κανείς να μη βλέπει εκεί την τελευταία του οθόνη.',
   'Off: screenshots work, and the recent apps show the last screen of Erevos.': 'Ανενεργό: τα στιγμιότυπα οθόνης δουλεύουν, και οι πρόσφατες εφαρμογές δείχνουν την τελευταία οθόνη του Erevos.',
   'Hidden chats always stay out of them.': 'Οι κρυφές συνομιλίες δεν φαίνονται ποτέ εκεί.',

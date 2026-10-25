@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, Platform, Pressable, StyleSheet, View, type ViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Attachment, FileViewer, SHOWN_PHOTOS, useShownPhotos } from '../components/attachment';
@@ -284,6 +284,10 @@ function FoundFiles({ opened }: { opened: OpenedExport }) {
   );
 }
 
+// A message counts as on the screen once a tenth of it shows; at most this many of their photos are read.
+const SEEN = { itemVisiblePercentThreshold: 10 };
+const SEEN_PHOTOS = Platform.OS === 'web' ? 60 : 12;
+
 function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
   archive: Archive;
   chat: ChatSummary;
@@ -303,15 +307,20 @@ function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
   const newestFirst = useMemo(() => [...messages].reverse(), [messages]);
   // In a group, each message says who wrote it.
   const group = useMemo(() => new Set(messages.map((m) => m[1]).filter((name) => name && name !== chat.me)).size > 1, [messages, chat.me]);
-  // The photos shown: the latest, and the one looked at on its own.
-  const shownPhotos = useMemo(
-    () =>
-      newestFirst
-        .flatMap(([, , , , files = []]) => files)
-        .filter((file) => file.kind === 'photo')
-        .slice(0, SHOWN_PHOTOS),
-    [newestFirst],
-  );
+  // The photos of the messages on the screen, read as the list is scrolled, so they show as they were.
+  const [seenPhotos, setSeenPhotos] = useState<FileRef[]>([]);
+  const onSeen = useRef(({ viewableItems }: { viewableItems: ViewToken<ArchivedMessage>[] }) => {
+    const files = viewableItems.flatMap(({ item }) => (item[4] ?? []).filter((file) => file.kind === 'photo')).slice(0, SEEN_PHOTOS);
+    setSeenPhotos((now) => (now.map((file) => file.id).join() === files.map((file) => file.id).join() ? now : files));
+  }).current;
+  // The photos shown: the latest, those on the screen, and the one looked at on its own.
+  const shownPhotos = useMemo(() => {
+    const latest = newestFirst
+      .flatMap(([, , , , files = []]) => files)
+      .filter((file) => file.kind === 'photo')
+      .slice(0, SHOWN_PHOTOS);
+    return [...latest, ...seenPhotos.filter((file) => !latest.some((one) => one.id === file.id))];
+  }, [newestFirst, seenPhotos]);
   const photos = useShownPhotos(viewing?.kind === 'photo' ? [...shownPhotos, viewing] : shownPhotos, (error) =>
     setNote(t('Cannot show the photo. {error}', { error: errorText(error) })),
   );
@@ -405,6 +414,8 @@ function ChatView({ archive, chat, contacts, onLink, onBack, onDelete }: {
         removeClippedSubviews={false}
         inverted
         renderItem={render}
+        onViewableItemsChanged={onSeen}
+        viewabilityConfig={SEEN}
         keyExtractor={(_, index) => String(index)}
         contentContainerStyle={styles.thread}
         initialNumToRender={30}

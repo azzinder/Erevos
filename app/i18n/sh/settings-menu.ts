@@ -14,6 +14,8 @@ export const settingsMenu: Record<string, string> = {
   'Privacy and security': 'Privatnost i sigurnost',
   'Password, fingerprint or face, second password': 'Lozinka, otisak prsta ili lice, druga lozinka',
   'Chats that open only with their own PIN': 'Razgovori koji se otvaraju samo vlastitim PIN-om',
+  Screenshots: 'Snimci ekrana',
+  'Let screenshots and screen recordings of Erevos, or keep them out': 'Dozvoli snimke i snimanje ekrana Erevosa ili ih spriječi',
   'The signed release it runs, and its updates': 'Potpisana verzija koju pokreće, i njena ažuriranja',
   'Relay and networks': 'Relay i mreže',
   'Your relay: its address, its token and invites': 'Vaš relay: njegova adresa, njegov token i pozivnice',

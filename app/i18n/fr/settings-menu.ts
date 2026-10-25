@@ -14,6 +14,8 @@ export const settingsMenu: Record<string, string> = {
   'Privacy and security': 'Confidentialité et sécurité',
   'Password, fingerprint or face, second password': 'Mot de passe, empreinte digitale ou visage, second mot de passe',
   'Chats that open only with their own PIN': 'Des discussions qui ne s’ouvrent qu’avec leur propre PIN',
+  Screenshots: 'Captures d’écran',
+  'Let screenshots and screen recordings of Erevos, or keep them out': 'Autoriser les captures et enregistrements d’écran d’Erevos, ou les empêcher',
   'The signed release it runs, and its updates': 'La version signée qu’elle exécute, et ses mises à jour',
   'Relay and networks': 'Relais et réseaux',
   'Your relay: its address, its token and invites': 'Ton relais : son adresse, son jeton et les invitations',

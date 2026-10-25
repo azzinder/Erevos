@@ -16,7 +16,7 @@ export const settings: Record<string, string> = {
   'Password lock is on': 'Le verrou par mot de passe est activé',
   'Erevos asks for the password every time it opens and after 30 seconds in the background.': 'Erevos demande le mot de passe à chaque ouverture et après 30 secondes en arrière-plan.',
   'A backup holds every space and all its chats, and once the file is elsewhere its password is all that guards it: use at least {n} characters, or four words.': 'Une sauvegarde contient chaque espace et toutes ses discussions, et une fois le fichier ailleurs, seul son mot de passe le protège : utilise au moins {n} caractères, ou quatre mots.',
-  'Screen privacy': 'Confidentialité de l’écran',
+  'It counts in a space with a password lock: this one has none, so screenshots of it work.': 'Cela vaut pour un espace verrouillé par mot de passe : celui-ci ne l’est pas, ses captures fonctionnent donc.',
   'On: Erevos stays out of screenshots, screen recordings and the recent apps, so no one sees its last screen there.': 'Activée : Erevos n’apparaît ni dans les captures d’écran, ni dans les enregistrements d’écran, ni dans les applis récentes, pour que personne n’y voie son dernier écran.',
   'Off: screenshots work, and the recent apps show the last screen of Erevos.': 'Désactivée : les captures d’écran marchent, et les applis récentes montrent le dernier écran d’Erevos.',
   'Hidden chats always stay out of them.': 'Les discussions masquées n’y apparaissent jamais.',

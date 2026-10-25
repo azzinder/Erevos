@@ -631,7 +631,7 @@ it. Photos and files have the same marks as the rest, and follow the chat's disa
 Under **+** there is more to send than photos and files (the smiley at the end of the message field opens the
 stickers too):
 
-- **Sticker:** one of the 480 stickers built into Erevos, in 20 sets of 24 (among them **Moons**, **Cats**,
+- **Sticker:** one of the 480 stickers built into Erevos, in 20 sets of 24 (among them **Moons**, **Dogs**,
   **Greece**, **Words** and **Treats**), drawn by each phone itself: only its name travels, so nothing is ever
   downloaded. An Erevos from before this shows its emoji instead. All but the words and the treats move a little for a
   few seconds as they come and when tapped, then rest; with the phone's reduce motion setting on, they stay still. The
@@ -1303,11 +1303,12 @@ choices: **No lock** and **Password**.
 > There is no way to recover a forgotten password: nothing is stored that could open the data without it. Only a
 > fingerprint or face, while it is on, still opens the first space (see below).
 
-### Screen privacy
+### Screenshots
 
 With the password lock on, Android keeps Erevos out of screenshots, screen recordings and the recent apps: there the
 last screen of Erevos shows blank, so whoever holds the unlocked phone a moment does not see your chats in it. Under
-**Screen privacy**, **Turn off** lets screenshots work again (to send one, say), and **Turn on** brings it back. Hidden
+**Settings** → **Privacy and security** → **Screenshots**, **Turn off** lets screenshots work again (to send one, say),
+and **Turn on** brings it back. Hidden
 chats always stay out of them while they are open, whatever the setting. The setting is the phone's, the same in
 every space. On a computer and in the web app it does not exist.
 
@@ -1488,12 +1489,15 @@ To go on with the conversation in Erevos, the other person needs Erevos too:
 
 1. With **New chat**, add them as a contact through the relay, as in [Chat through a relay](#relay).
 2. Open the imported chat, tap **Continue in Erevos** and pick them.
-3. Their chat now shows the old messages ahead of the new ones, a little fainter, with **Continued in Erevos**
-   between them. **Open the chat** takes you there, and a contact you have not named takes the imported chat's name.
+3. Their chat now shows the old messages ahead of the new ones, as if they had always been in Erevos: in bubbles, by
+   day, with their times, and **Continued in Erevos** between them and the new. **Open the chat** takes you there, and
+   a contact you have not named takes the imported chat's name.
 
 - **Photos, videos, voice messages and files** come in from a .zip, each sealed in this space as a file in a chat is.
-  Photos show in the chat; tap any of them to see it on its own and **Save** it, to play a video or voice message in
-  the phone's own app. Files larger than 1 GB, and those the export does not hold, stay behind, and the chat says where
+  Photos show in the chat as you scroll to them, and stickers as stickers; tap a photo or file to see it on its own and
+  **Save** it. Voice messages and songs play right in the chat with a tap; a video plays in the phone's own app once
+  saved. Hold an imported message to **Copy** it or **Open** its file. **Search in this chat** finds the imported
+  messages too. Files larger than 1 GB, and those the export does not hold, stay behind, and the chat says where
   one was.
 - **Room on the phone:** while a .zip comes in, the phone needs about twice its size free, as Erevos reads a copy of it
   and keeps the files sealed. Imported files are not in backups yet, as other files are not.
