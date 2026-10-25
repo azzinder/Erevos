@@ -10,6 +10,10 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- Nothing yet.
+
+## 3.2.0 (2026-10-25)
+
 - **Arrows to a chat's start and end**: scrolled up a little, a chat, a group and an SMS conversation show two round
   arrows at the lower right. The upper one goes to the very start (a long chat is then drawn from its first messages,
   with **Show later messages** under them), the lower one back to the end. Writing a message goes back to the end too.
