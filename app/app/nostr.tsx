@@ -3,19 +3,44 @@ import { useEffect, useState } from 'react';
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { canNostr } from '../lib/core';
 import { t } from '../lib/i18n';
-import { nostrOf, setNostr } from '../lib/nostr';
+import { nostrOf, nostrStates, onNostrStates, setNostr, type NostrRelayState } from '../lib/nostr';
 import type { TorWay } from '../lib/relay';
 import { isNostrRelay, MAX_NOSTR_RELAYS } from '../lock/e2e-data';
 import { loadCurrentSpaceData, NOSTR_RELAYS, updateCurrentSpaceData, type NostrSetting } from '../lock/space-data';
 
 // Whether the space's texts go through Nostr (lib/nostr.ts), on unless changed, and the Nostr
-// relays it reads on: the first three unless changed, and any of one's own.
+// relays it reads on: the first three unless changed, and any of one's own; and what each relay
+// did last since Erevos started, so a test shows where a text went and why.
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const clock = (at: number) => {
+  const d = new Date(at);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
+
+// What a relay did last, in a line or two.
+function stateLines(state: NostrRelayState | undefined, ours: boolean): string[] {
+  const { sent, read } = state ?? {};
+  const lines = [
+    sent
+      ? sent.took
+        ? t('Took the last text {seconds} s after it was sent, at {time}.', { seconds: (sent.ms / 1000).toFixed(1), time: clock(sent.at) })
+        : t('Did not take the last text, at {time}. {why}', { time: clock(sent.at), why: sent.why ?? '' })
+      : t('No text given to it since Erevos started.'),
+  ];
+  if (read) lines.push(read.reading ? t('Read on since {time}.', { time: clock(read.at) }) : t('Could not be read on, at {time}. {why}', { time: clock(read.at), why: read.why ?? '' }));
+  else if (ours) lines.push(t('Not read on yet.'));
+  return lines;
+}
 
 export default function NostrScreen() {
   const [setting, setSetting] = useState<NostrSetting | null>(null);
   const [tor, setTor] = useState<TorWay>('messages');
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
+  const [states, setStates] = useState(nostrStates);
+
+  useEffect(() => onNostrStates(() => setStates(nostrStates())), []);
 
   useEffect(() => {
     loadCurrentSpaceData()
@@ -68,6 +93,7 @@ export default function NostrScreen() {
 
   const relays = setting?.relays ?? [];
   const firsts = relays.join(' ') === NOSTR_RELAYS.join(' ');
+  const shown = [...relays, ...[...states.keys()].filter((url) => !relays.includes(url))];
 
   return (
     <Page>
@@ -133,6 +159,18 @@ export default function NostrScreen() {
             <Button title={t('The first relays again')} kind="secondary" compact onPress={() => setting && void keep({ ...setting, relays: NOSTR_RELAYS })} />
           ) : null}
         </Row>
+      </Card>
+
+      <SectionTitle title={t('What the relays did last')} />
+      <Card>
+        <Text variant="caption" tone="muted">
+          {t("Since Erevos started, kept on this phone only, and only for as long as it runs: whether each relay took the last text it was given, and whether it is read on. Your contacts' relays show here too once a text went to them.")}
+        </Text>
+        {shown.map((url) => (
+          <Text key={url} variant="caption">
+            {[url, ...stateLines(states.get(url), relays.includes(url))].join('\n')}
+          </Text>
+        ))}
       </Card>
       {note ? <Text tone="muted">{note}</Text> : null}
     </Page>

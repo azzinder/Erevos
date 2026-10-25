@@ -1137,7 +1137,13 @@ through your relay. Each space has its own choice, and its own Nostr relays.
 - **What stays on your relay:** pictures, files, voice messages, calls, reactions, and the marks that a message came
   or was read; and what you write to contacts on an iPhone or a computer, which do not read on Nostr.
 - **Which way it went:** hold a message: its menu says **Went through Nostr** or **Came through Nostr** when a Nostr
-  relay took it. One that says nothing went through your relay, or nearby.
+  relay took it. One that says nothing went through your relay, or nearby. The note under the messages says **Sent
+  through Nostr** too. Two phones side by side give each other texts nearby first: to try Nostr, turn off Bluetooth and
+  **Find Erevos on the same Wi-Fi** on both.
+- **What the relays did last:** the **Nostr** screen shows, for each relay, whether it took the last text it was given
+  and how many seconds after, or why not, and whether your phone reads on it. It is kept on this phone only, until
+  Erevos closes. A relay that took a text but did not say so within 20 seconds counts as one that did not: the text
+  then goes through your relay as well, and your contact sees it once.
 - **On Android only,** as Tor is.
 
 **Why:** the Nostr relays are public, so Erevos reaches them only through Tor, and they never learn where your phone

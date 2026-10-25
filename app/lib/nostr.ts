@@ -23,6 +23,7 @@ import { isNostrRelay, MAX_NOSTR_RELAYS, type NostrKey } from '../lock/e2e-data'
 import type { NostrSetting } from '../lock/space-data';
 import { canNostr, nostrCore } from './core';
 import { fromHex, randomBytes, toHex } from './crypto';
+import { t } from './i18n';
 import { torFor } from './relay';
 
 /** How long after a text went through Nostr it goes through the relay as well, should its contact's phone not have said it came. */
@@ -51,6 +52,38 @@ const CAUGHT_EVERY = 600;
 // The most keys in one filter, and the most wraps remembered as taken.
 const KEYS_EACH = 256;
 const SEEN_MOST = 4096;
+
+/**
+ * What each Nostr relay did last, this run, for the Nostr screen (app/nostr.tsx): with the last
+ * text given to it, whether it said it took it, how long after, or why not; and whether it is read
+ * on now, or why it could not be. Kept in memory only, and only of the space's own relays and its
+ * contacts', never which text or for whom.
+ */
+export type NostrRelayState = {
+  sent?: { at: number; took: boolean; ms: number; why?: string };
+  read?: { at: number; reading: boolean; why?: string };
+};
+
+const states = new Map<string, NostrRelayState>();
+const stateListeners = new Set<() => void>();
+
+function said(url: string, change: NostrRelayState): void {
+  states.set(url, { ...states.get(url), ...change });
+  stateListeners.forEach((listener) => listener());
+}
+
+const whyOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+/** What each relay did last, by its address. */
+export function nostrStates(): Map<string, NostrRelayState> {
+  return new Map(states);
+}
+
+/** Has `listener` called each time a relay did something new. Returns how to stop. */
+export function onNostrStates(listener: () => void): () => void {
+  stateListeners.add(listener);
+  return () => stateListeners.delete(listener);
+}
 
 /** The relays a space reads on (SpaceData.nostr), or null when it does not: off, no relays, or Tor off. */
 export function nostrOf(tor: string, setting: NostrSetting): string[] | null {
@@ -166,23 +199,28 @@ function sendOn(url: string, event: string, id: string): Promise<void> {
     if (sender.idle) clearTimeout(sender.idle);
     sender.idle = null;
     let line: Line | null = null;
+    const began = Date.now();
+    let sent = 0;
     try {
       line = await sender.line;
       await line.send(`["EVENT",${event}]`);
-      const until = Date.now() + ANSWER_WAIT;
+      sent = Date.now();
+      const until = sent + ANSWER_WAIT;
       for (;;) {
         const left = until - Date.now();
-        if (left <= 0) throw new Error('no answer');
-        const said = await line.next(left);
-        if (said?.[0] !== 'OK' || said[1] !== id) continue;
-        if (said[2] === true || (typeof said[3] === 'string' && said[3].startsWith('duplicate:'))) break;
-        throw new Error(typeof said[3] === 'string' ? said[3] : 'refused');
+        if (left <= 0) throw new Error(t('It did not say it took it within {seconds} seconds.', { seconds: ANSWER_WAIT / 1000 }));
+        const answer = await line.next(left);
+        if (answer?.[0] !== 'OK' || answer[1] !== id) continue;
+        if (answer[2] === true || (typeof answer[3] === 'string' && answer[3].startsWith('duplicate:'))) break;
+        throw new Error(typeof answer[3] === 'string' && answer[3] ? t('It refused it: "{reason}"', { reason: answer[3].slice(0, 200) }) : t('It refused it.'));
       }
     } catch (error) {
       if (senders.get(url) === sender) senders.delete(url);
       line?.close();
+      said(url, { sent: { at: Date.now(), took: false, ms: Date.now() - began, why: sent ? whyOf(error) : t('Not reached: {reason}', { reason: whyOf(error) }) } });
       throw error;
     }
+    said(url, { sent: { at: Date.now(), took: true, ms: Date.now() - sent } });
     if (senders.get(url) !== sender) return;
     const done = line;
     sender.idle = setTimeout(() => {
@@ -355,9 +393,11 @@ class Reading {
       try {
         this.line = await Line.open(this.url);
         if (this.stopped) break;
+        said(this.url, { read: { at: Date.now(), reading: true } });
         ended = await this.read(this.line);
         wait = RETRY;
-      } catch {
+      } catch (error) {
+        said(this.url, { read: { at: Date.now(), reading: false, why: whyOf(error) } });
         ended = true;
       }
       this.line?.close();

@@ -15,6 +15,10 @@ On main, not released yet:
   time, and so do your linked devices. In a group, every member sees them. Only words are edited, not stickers,
   places, polls, voice messages, photos, files or forwarded words. A message that still waits to go simply goes with
   the new words. An Erevos from before this keeps the old words.
+- **Nostr says what it did**: the note under the messages says **Sent through Nostr** when a Nostr relay took a text;
+  it said "through the relay" before, even then. The **Nostr** screen has **What the relays did last**: for each relay,
+  whether it took the last text and how many seconds after, or why not, and whether this phone reads on it, kept until
+  Erevos closes. The guide says how to try Nostr with two phones side by side (Bluetooth and same Wi-Fi off).
 
 ## 3.2.0 (2026-10-25)
 

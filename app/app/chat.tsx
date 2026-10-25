@@ -2515,6 +2515,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   function sentNote(way: Delivery, what: string, name: string): string {
     if (way === 'nearby') return t('{what} nearby, end-to-end encrypted.', { what });
     if (way === 'relay') return t('{what} through the relay, end-to-end encrypted.', { what });
+    if (way === 'nostr') return t('{what} through Nostr, end-to-end encrypted.', { what });
     if (way === 'lora') {
       return t("{what} over LoRa, end-to-end encrypted, as the relay could not be reached. It comes if {name}'s Erevos has a radio on the same mesh, within reach.", { what, name });
     }

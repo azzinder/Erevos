@@ -32,8 +32,9 @@ export type ForNostr = { tag?: string; nostr?: NostrTo | null };
  * How `packets` sealed for a contact go: through Nostr when the seal said so (`sealed.nostr`) and
  * Tor is ready, kept to go through the relay as well should they not say it came in time; otherwise,
  * and when no Nostr relay took it, as `relay` sends it. `own` reaches their relay queue for a bell.
+ * Says 'nostr' when a Nostr relay took it.
  */
-export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: ForNostr, packets: Uint8Array[], relay: () => Promise<void>): () => Promise<void> {
+export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: ForNostr, packets: Uint8Array[], relay: () => Promise<void>): () => Promise<'nostr' | void> {
   const to = sealed.nostr;
   const tag = sealed.tag ?? '';
   if (!to || !own || !tag || packets.length !== 1) return relay;
@@ -51,6 +52,7 @@ export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: F
       () => false,
     ));
     await e2e.nostrKeep(identity, tag, packet, rang).catch(() => undefined);
+    return 'nostr';
   };
 }
 

@@ -37,7 +37,7 @@ import type { Mark } from './relay';
  * not knowing whether theirs is one; carried, when they also took it to hand to the contact's relay;
  * over LoRa, when only a slow link took it.
  */
-export type Delivery = 'nearby' | 'relay' | 'spread' | 'carried' | 'lora';
+export type Delivery = 'nearby' | 'relay' | 'nostr' | 'spread' | 'carried' | 'lora';
 
 /** A packet sealed for the contact's relay (relaySeal), to hand to the relay at `url` from wherever there is internet.
  *  `mark`: what it carries (lib/relay.ts, Mark), on this phone's own only, said as it hands them
@@ -320,7 +320,8 @@ export class Nearby {
 
   /**
    * Hands a contact's packets, in order, to their phone. `relay` sends them through the relay, or
-   * is null when there is none. Sent to them nearby, the relay's copy goes too, unwaited.
+   * is null when there is none; it says 'nostr' when they went through Nostr instead (lib/nostr-chats.ts
+   * orNostr). Sent to them nearby, the relay's copy goes too, unwaited.
    * Otherwise it waits for the relay, and if the relay fails, a copy that went to the phones
    * nearby will do: then `carry`, when given, seals them for the contact's relay, and the phones
    * nearby take those too, to hand over. With `slow`, the slow links take them too then, when
@@ -331,7 +332,7 @@ export class Nearby {
   async deliver(
     identity: string,
     packets: Uint8Array[],
-    relay: (() => Promise<void>) | null,
+    relay: (() => Promise<'nostr' | void>) | null,
     carry: (() => Promise<Carried[]>) | null = null,
     slow = false,
   ): Promise<Delivery> {
@@ -345,8 +346,7 @@ export class Nearby {
     let failed: unknown = new NoWayError();
     if (relay) {
       try {
-        await relay();
-        return 'relay';
+        return (await relay()) === 'nostr' ? 'nostr' : 'relay';
       } catch (error) {
         failed = error;
       }
