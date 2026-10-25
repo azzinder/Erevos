@@ -42,6 +42,15 @@ ssh -t "$target" "if [ \"\$(id -u)\" -eq 0 ]; then sh erevos-web-install.sh $fil
 echo "== Checking the server"
 sleep 3
 node "$root/pwa/release.mjs" verify "https://$domain"
+# The address an invite sent by text message opens must give the invite page, not the app.
+invite=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$release/release.json')).files['/i/index.html'] ?? '')")
+if [ -n "$invite" ]; then
+	if [ "$(curl -fsSL "https://$domain/i" | sha256sum | cut -d' ' -f1)" = "$invite" ]; then
+		echo "OK: https://$domain/i gives the invite page."
+	else
+		echo "WARNING: https://$domain/i does not give the invite page (i/index.html), so invites sent by text message open the app instead. The web server must serve /i/ as a folder, as Apache and Caddy do with install.sh's settings, not send it to index.html." >&2
+	fi
+fi
 
 version=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$release/release.json')).version)")
 mkdir -p "$root/pwa/releases/$version"

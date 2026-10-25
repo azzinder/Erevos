@@ -80,8 +80,15 @@ write('boot.css', fs.readFileSync(path.join(here, 'boot.css')));
 // The page an invite sent by text message opens, /i/ (i/invite.js), under the same policy.
 if (fs.existsSync(path.join(out, 'i'))) fail(`${from} has an i/ of its own, where the invite page goes.`);
 fs.cpSync(path.join(here, 'i'), path.join(out, 'i'), { recursive: true });
-const invitePage = fs.readFileSync(path.join(out, 'i', 'index.html'), 'utf8');
+let invitePage = fs.readFileSync(path.join(out, 'i', 'index.html'), 'utf8');
 if (!invitePage.includes('<meta charset="utf-8" />')) fail('pwa/i/index.html has lost its charset line.');
+// Its script and style named with their hash: the server sends them with no no-cache, so a browser
+// that kept older ones from an invite before fetches these.
+for (const name of ['invite.js', 'invite.css']) {
+  if (!invitePage.includes(`"/i/${name}"`)) fail(`pwa/i/index.html no longer loads /i/${name}.`);
+  const hash = createHash('sha256').update(fs.readFileSync(path.join(out, 'i', name))).digest('hex').slice(0, 16);
+  invitePage = invitePage.replace(`"/i/${name}"`, `"/i/${name}?${hash}"`);
+}
 write('i/index.html', invitePage.replace('<meta charset="utf-8" />', `<meta charset="utf-8" />\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`));
 const worker = fs.readFileSync(path.join(here, 'sw.js'), 'utf8');
 if (!worker.includes('__EREVOS_PUBLIC_KEY__')) fail('pwa/sw.js has lost its key mark.');

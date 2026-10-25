@@ -3,19 +3,25 @@
 // device and sends it nowhere. It shows who invites and until when, and how to take the invite in
 // Erevos: on Android, the app and then erevos://text-invite?d=<invite>; on an iPhone, the web app on
 // the home screen, which keeps its data apart from Safari, so the link is copied and pasted there;
-// on a computer, the app or the web app. In a browser that already runs this web app, it hands the
-// invite to it at /text-invite?d=<invite>. The app reads the invite itself (lib/text-invite.ts) and
-// asks before it joins; this page only shows it.
+// elsewhere, the app or the web app. Where this browser's own worker serves the web app, it can
+// hand the invite to it at /text-invite?d=<invite>, which the worker answers without the server.
+// The app reads the invite itself (lib/text-invite.ts) and asks before it joins; this page only
+// shows it.
 (() => {
   // What an invite holds, as lib/text-invite.ts writes it: version 1; flags (1: a relay key follows,
   // 2: a relay address follows); the time it runs out, in seconds (4 bytes); the sender's id (24);
   // the answer key (32); the relay invite code (32); the relay key (32), if flagged; the sender's
   // name, one byte of length and up to 120 bytes of UTF-8; the relay address, if flagged, the rest.
+  // In base64url, 100 to 600 characters, as the app takes it.
   const VERSION = 1;
   const FLAGS = 0b11;
   const FIXED = 94;
   const RELAY_KEY = 32;
   const NAME_MAX = 120;
+  const SHORTEST = 100;
+  const LONGEST = 600;
+  // The link the app takes when pasted: TEXT_INVITE_PAGE in lib/text-invite.ts.
+  const PAGE = 'https://erevos-web.lphl.nekten.eu/i';
   const APK = 'https://github.com/azzinder/erevos-releases/releases/latest/download/erevos-android.apk';
   const DOWNLOADS = 'https://github.com/azzinder/erevos-releases/releases/latest';
 
@@ -30,7 +36,7 @@
     }
   }
 
-  /** A name fit to show: no control or invisible format characters, which could turn it around. */
+  /** The name as the app shows it: controls and direction marks, which could turn it around, made spaces. */
   function nameOf(bytes) {
     let text;
     try {
@@ -39,7 +45,7 @@
       return '';
     }
     return text
-      .replace(/[\p{Cc}\p{Cf}\u2028\u2029]/gu, '')
+      .replace(/[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2028\u2029\u2066-\u2069]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -52,10 +58,10 @@
   function readInvite(fragment) {
     const data = String(fragment ?? '')
       .replace(/^#/, '')
-      .trim()
-      .replace(/=+$/, '');
-    const bytes = data ? bytesOf(data) : null;
-    if (!bytes || bytes.length < 2 || bytes[0] === 0) return null;
+      .trim();
+    if (data.length < SHORTEST || data.length > LONGEST) return null;
+    const bytes = bytesOf(data);
+    if (!bytes || bytes[0] === 0) return null;
     if (bytes[0] !== VERSION || (bytes[1] & ~FLAGS) !== 0) return { data, newer: true };
     let at = FIXED + (bytes[1] & 1 ? RELAY_KEY : 0);
     if (bytes.length < at + 1) return null;
@@ -70,33 +76,37 @@
 
   // For app/checks/web-invite.check.ts, which reads invites the app writes.
   globalThis.erevosReadInvite = readInvite;
+  globalThis.erevosInvitePage = PAGE;
   if (typeof document === 'undefined') return;
 
   const WORDS = {
     en: {
-      other: 'Ελληνικά',
+      switchTo: 'Ελληνικά',
       title: 'Erevos invite',
       invites: (name) => [name, ' invites you to Erevos'],
       anInvite: 'An invite to Erevos',
-      what: 'Erevos is an app for messages and calls, encrypted end to end.',
+      what: 'Erevos is an app for messages and calls, end-to-end encrypted.',
       until: (date) => `Valid until ${date}.`,
       newer: 'This invite comes from a newer Erevos: open it with the latest version.',
-      expired: 'This invite has run out',
-      expiredText: (date) => `It was valid until ${date}. An invite lasts 2 days: ask whoever sent it for a new one.`,
+      expired: 'This invite is over',
+      expiredText: (date) => `It was valid until ${date}. An invite lasts two days: ask whoever sent it for a new one.`,
       none: 'There is no invite in this link',
       noneText: 'It may have been cut short: open the whole link from the message, or ask for it again.',
       on: 'Where will you use Erevos?',
       android: 'Android',
       iphone: 'iPhone',
-      computer: 'Computer',
-      here: 'You already use Erevos in this browser.',
+      other: 'Other',
+      here: 'If you use Erevos in this browser:',
       openHere: 'Open the invite here',
       install: 'Install Erevos',
-      installText: 'If you do not have it yet. If Android asks, let your browser install apps.',
+      installText: 'If you do not have it yet. It needs Android 7 or later, 64-bit. If Android asks, let your browser install apps.',
       download: 'Download Erevos',
+      noInstall: 'Does it not download or install?',
+      downloads: 'All downloads',
+      inBrowser: 'Erevos in the browser',
       open: 'Open the invite',
-      openText: 'Erevos asks you first; then you are contacts.',
-      notOpening: 'Does it not open? Copy the link and paste it in Erevos, under New chat.',
+      openText: 'Erevos asks you first. You are contacts as soon as the phone that invited you hears from yours.',
+      notOpening: 'Does it not open? Copy the link, open Erevos, and paste it as the last step under Other says.',
       webApp: 'On an iPhone, Erevos is a web app: no App Store, no Apple account.',
       copyStep: 'Copy the link',
       copyText: 'You paste it in Erevos at the end.',
@@ -104,40 +114,41 @@
       copied: 'Copied',
       notCopied: 'It could not be copied: hold your finger on the link below and copy it.',
       addStep: 'Add Erevos to your Home Screen',
-      addText: 'In Safari, tap Share, then Add to Home Screen. If it is there already, go on. It needs iOS 17 or later.',
+      addText: 'In Safari, tap Share (on iOS 26, inside •••), then Add to Home Screen. If it is there already, go on. It needs iOS 17 or later.',
       pasteHome: 'Open Erevos from your Home Screen',
-      paste: 'Open Erevos',
+      open2: 'Open Erevos',
+      otherText: 'The app for your computer, or Erevos in the browser, on any device.',
       pasteStep: 'Paste the link',
-      pasteText: 'Tap New chat and paste the link: under I have an invite, if you are just starting.',
-      computerText: 'The app for your computer, or Erevos in the browser.',
-      downloads: 'Downloads',
-      inBrowser: 'Erevos in the browser',
+      pasteText: 'Tap New chat. If you are just starting, tap I have an invite, paste the link and tap Join. Otherwise, paste it where it says Paste their contact link or invite, and tap Add.',
       private: 'The invite is the part of the link after #, which the browser does not send to the server: this page reads it only here, on your device. Whoever has the link can use it, so do not pass it on.',
     },
     el: {
-      other: 'English',
+      switchTo: 'English',
       title: 'Πρόσκληση στο Erevos',
       invites: (name) => [name, ' σε προσκαλεί στο Erevos'],
       anInvite: 'Πρόσκληση στο Erevos',
-      what: 'Το Erevos είναι μια εφαρμογή για μηνύματα και κλήσεις, κρυπτογραφημένα από άκρο σε άκρο.',
+      what: 'Το Erevos είναι μια εφαρμογή για μηνύματα και κλήσεις, κρυπτογραφημένα από άκρη σε άκρη.',
       until: (date) => `Ισχύει έως ${date}.`,
       newer: 'Αυτή η πρόσκληση είναι από νεότερο Erevos: άνοιξέ την με την τελευταία έκδοση.',
       expired: 'Αυτή η πρόσκληση έληξε',
-      expiredText: (date) => `Ίσχυε έως ${date}. Κάθε πρόσκληση ισχύει 2 ημέρες: ζήτα μια καινούρια από όποιον σου την έστειλε.`,
+      expiredText: (date) => `Ίσχυε έως ${date}. Μια πρόσκληση ισχύει δύο μέρες: ζήτα καινούργια από όποιον την έστειλε.`,
       none: 'Δεν υπάρχει πρόσκληση σε αυτόν τον σύνδεσμο',
       noneText: 'Μπορεί να κόπηκε: άνοιξε ολόκληρο τον σύνδεσμο από το μήνυμα, ή ζήτα να σου τον στείλουν ξανά.',
       on: 'Πού θα χρησιμοποιήσεις το Erevos;',
       android: 'Android',
       iphone: 'iPhone',
-      computer: 'Υπολογιστής',
-      here: 'Χρησιμοποιείς ήδη το Erevos σε αυτόν τον browser.',
+      other: 'Άλλο',
+      here: 'Αν χρησιμοποιείς το Erevos σε αυτόν τον browser:',
       openHere: 'Άνοιξε την πρόσκληση εδώ',
       install: 'Εγκατάστησε το Erevos',
-      installText: 'Αν δεν το έχεις ήδη. Αν το Android ρωτήσει, επίτρεψε στον browser να εγκαθιστά εφαρμογές.',
+      installText: 'Αν δεν το έχεις ήδη. Θέλει Android 7 ή νεότερο, 64-bit. Αν το Android ρωτήσει, επίτρεψε στον browser να εγκαθιστά εφαρμογές.',
       download: 'Κατέβασε το Erevos',
+      noInstall: 'Δεν κατεβαίνει ή δεν εγκαθίσταται;',
+      downloads: 'Όλες οι λήψεις',
+      inBrowser: 'Το Erevos στον browser',
       open: 'Άνοιξε την πρόσκληση',
-      openText: 'Το Erevos σε ρωτά πρώτα· μετά είστε επαφές.',
-      notOpening: 'Δεν ανοίγει; Αντέγραψε τον σύνδεσμο και επικόλλησέ τον στο Erevos, στη Νέα συνομιλία.',
+      openText: 'Το Erevos σε ρωτά πρώτα. Γίνεστε επαφές μόλις το κινητό που σε προσκάλεσε ακούσει το δικό σου.',
+      notOpening: 'Δεν ανοίγει; Αντέγραψε τον σύνδεσμο, άνοιξε το Erevos και επικόλλησέ τον όπως λέει το τελευταίο βήμα στο «Άλλο».',
       webApp: 'Στο iPhone, το Erevos είναι web app: χωρίς App Store, χωρίς λογαριασμό Apple.',
       copyStep: 'Αντέγραψε τον σύνδεσμο',
       copyText: 'Θα τον επικολλήσεις στο Erevos στο τέλος.',
@@ -145,14 +156,12 @@
       copied: 'Αντιγράφηκε',
       notCopied: 'Δεν αντιγράφηκε: κράτα πατημένο τον σύνδεσμο παρακάτω και αντέγραψέ τον.',
       addStep: 'Πρόσθεσε το Erevos στην οθόνη Αφετηρίας',
-      addText: 'Στο Safari, πάτα Κοινή χρήση, μετά Προσθήκη στην οθόνη Αφετηρίας. Αν είναι ήδη εκεί, προχώρα. Θέλει iOS 17 ή νεότερο.',
+      addText: 'Στο Safari, πάτα «Κοινή χρήση» (στο iOS 26, μέσα στο •••), μετά «Προσθήκη στην οθόνη Αφετηρίας». Αν είναι ήδη εκεί, προχώρα. Θέλει iOS 17 ή νεότερο.',
       pasteHome: 'Άνοιξε το Erevos από την οθόνη Αφετηρίας',
-      paste: 'Άνοιξε το Erevos',
+      open2: 'Άνοιξε το Erevos',
+      otherText: 'Την εφαρμογή για τον υπολογιστή σου, ή το Erevos στον browser, σε οποιαδήποτε συσκευή.',
       pasteStep: 'Επικόλλησε τον σύνδεσμο',
-      pasteText: 'Πάτα Νέα συνομιλία και επικόλλησε τον σύνδεσμο: στο Έχω πρόσκληση, αν μόλις ξεκινάς.',
-      computerText: 'Την εφαρμογή για τον υπολογιστή σου, ή το Erevos στον browser.',
-      downloads: 'Λήψεις',
-      inBrowser: 'Το Erevos στον browser',
+      pasteText: 'Πάτα «Νέα συνομιλία». Αν μόλις ξεκινάς, πάτα «Έχω πρόσκληση», επικόλλησε τον σύνδεσμο και πάτα «Συμμετοχή». Αλλιώς, επικόλλησέ τον εκεί που γράφει «Επικόλλησε σύνδεσμο ή πρόσκληση» και πάτα «Προσθήκη».',
       private: 'Η πρόσκληση είναι το κομμάτι του συνδέσμου μετά το #, που ο browser δεν το στέλνει στον server: αυτή η σελίδα το διαβάζει μόνο εδώ, στη συσκευή σου. Όποιος έχει τον σύνδεσμο μπορεί να τον χρησιμοποιήσει, γι’ αυτό μην τον προωθήσεις.',
     },
   };
@@ -160,8 +169,10 @@
   const agent = navigator.userAgent;
   const iphone = /iPhone|iPad|iPod/.test(agent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-  // This browser runs the web app already, with its data: the invite can go straight to it.
-  const here = standalone || Boolean(navigator.serviceWorker?.controller);
+  // The web app's worker serves this page, so it answers /text-invite too, with no request to the
+  // server. Not in Safari on an iPhone: the web app there is the one on the home screen, whose data
+  // Safari does not see; one Safari ran once before it was added would take the invite instead.
+  const here = Boolean(navigator.serviceWorker?.controller) && (standalone || !iphone);
 
   let lang = 'en';
   for (const wanted of navigator.languages ?? [navigator.language]) {
@@ -171,9 +182,12 @@
       break;
     }
   }
-  let platform = /Android/i.test(agent) ? 'android' : iphone ? 'iphone' : 'computer';
+  let platform = /Android/i.test(agent) ? 'android' : iphone ? 'iphone' : 'other';
   const invite = readInvite(window.location.hash);
-  const link = invite ? `${window.location.origin}/i#${invite.data}` : '';
+  const link = invite ? `${PAGE}#${invite.data}` : '';
+  // The server sends /i on to /i/: the address bar shows /i again, so a link copied from it, or
+  // shared, is one the app takes.
+  if (window.location.pathname !== '/i') window.history.replaceState(null, '', `/i${window.location.hash}`);
 
   function make(tag, className, ...children) {
     const node = document.createElement(tag);
@@ -247,14 +261,25 @@
     return make('li', 'step', make('span', 'number', String(number)), make('div', 'body', make('h3', null, title), text ? make('p', null, text) : null, ...actions));
   }
 
+  function choose(choice) {
+    platform = choice;
+    render();
+  }
+
   function steps(words) {
-    const opener = `erevos://text-invite?d=${invite.data}`;
     if (platform === 'android') {
       return make(
         'ol',
         'steps',
-        step(1, words.install, words.installText, anchor(words.download, APK)),
-        step(2, words.open, words.openText, anchor(words.open, opener), make('p', 'note', words.notOpening), copyBlock(words, 'secondary')),
+        step(
+          1,
+          words.install,
+          words.installText,
+          anchor(words.download, APK),
+          make('p', 'note', words.noInstall),
+          make('div', 'row', anchor(words.downloads, DOWNLOADS, 'secondary'), button(words.inBrowser, () => choose('other'), 'secondary')),
+        ),
+        step(2, words.open, words.openText, anchor(words.open, `erevos://text-invite?d=${invite.data}`), make('p', 'note', words.notOpening), copyBlock(words, 'secondary')),
       );
     }
     if (platform === 'iphone') {
@@ -269,7 +294,7 @@
       'ol',
       'steps',
       step(1, words.copyStep, words.copyText, copyBlock(words)),
-      step(2, words.paste, words.computerText, make('div', 'row', anchor(words.downloads, DOWNLOADS, 'secondary'), anchor(words.inBrowser, '/', 'secondary'))),
+      step(2, words.open2, words.otherText, make('div', 'row', anchor(words.downloads, DOWNLOADS, 'secondary'), anchor(words.inBrowser, '/', 'secondary'))),
       step(3, words.pasteStep, words.pasteText),
     );
   }
@@ -284,7 +309,7 @@
       'top',
       make('div', 'brand', Object.assign(make('img'), { src: '/icon-192.png', alt: '', width: 40, height: 40 }), make('span', null, 'Erevos')),
       button(
-        words.other,
+        words.switchTo,
         () => {
           lang = lang === 'el' ? 'en' : 'el';
           render();
@@ -303,27 +328,20 @@
       parts.push(make('h1', null, name ? make('bdi', null, name) : null, rest), make('p', 'lead', words.what));
       parts.push(make('p', 'until', invite.newer ? words.newer : words.until(dateOf(invite.expires))));
       if (here) parts.push(make('section', 'here', make('p', null, words.here), anchor(words.openHere, `/text-invite?d=${invite.data}`)));
-    }
-    // Opened from the home screen, this is the web app itself: nothing to install.
-    if (invite && !expired && !standalone) {
-      const choices = make('div', 'tabs');
-      choices.setAttribute('role', 'group');
-      choices.setAttribute('aria-label', words.on);
-      for (const choice of ['android', 'iphone', 'computer']) {
-        const tab = button(
-          words[choice],
-          () => {
-            platform = choice;
-            render();
-          },
-          choice === platform ? 'tab chosen' : 'tab',
-        );
-        tab.setAttribute('aria-pressed', String(choice === platform));
-        choices.append(tab);
+      // Opened from the home screen, with its worker, this is the web app itself: nothing to install.
+      if (!(standalone && here)) {
+        const choices = make('div', 'tabs');
+        choices.setAttribute('role', 'group');
+        choices.setAttribute('aria-label', words.on);
+        for (const choice of ['android', 'iphone', 'other']) {
+          const tab = button(words[choice], () => choose(choice), choice === platform ? 'tab chosen' : 'tab');
+          tab.setAttribute('aria-pressed', String(choice === platform));
+          choices.append(tab);
+        }
+        parts.push(make('h2', null, words.on), choices, steps(words));
       }
-      parts.push(make('h2', null, words.on), choices, steps(words));
+      parts.push(make('p', 'private', words.private));
     }
-    if (invite && !expired) parts.push(make('p', 'private', words.private));
     page.textContent = '';
     page.append(...parts);
   }

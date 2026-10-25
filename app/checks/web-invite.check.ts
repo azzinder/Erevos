@@ -19,7 +19,7 @@ const WORKER = readFileSync(join(import.meta.dirname, '../../pwa/sw.js'), 'utf8'
 type Shown = { data: string; expires?: number; name?: string; newer?: boolean } | null;
 
 // The page's reader, run as the browser runs it but with no page to show.
-const context: { erevosReadInvite?: (fragment: string) => Shown } = {};
+const context: { erevosReadInvite?: (fragment: string) => Shown; erevosInvitePage?: string } = {};
 vm.runInNewContext(PAGE, Object.assign(context, { atob, TextDecoder, Uint8Array, DataView }));
 // Made a plain object here: one from the other context has another Object, which deepEqual minds.
 const readInvite = (fragment: string): Shown => {
@@ -76,7 +76,9 @@ test("reads the invites the app writes, and hands on what the app reads", () => 
 
 test('an invite cut short, or not one, is none', () => {
   const data = invite({ flags: 3, name: 'Nikos', address: 'wss://erevos.example' });
-  for (const fragment of ['', '#', 'not*base64', data.slice(0, 80), data.slice(0, 127), invite({ version: 0 })]) assert.equal(readInvite(fragment), null, fragment);
+  for (const fragment of ['', '#', '#top', 'not*base64', data.slice(0, 80), data.slice(0, 127), `${data}${'A'.repeat(600)}`, invite({ version: 0 })]) {
+    assert.equal(readInvite(fragment), null, fragment);
+  }
   // A name longer than the app writes, or bytes no flag accounts for.
   assert.equal(readInvite(invite({ name: 'x'.repeat(121) })), null);
   assert.equal(readInvite(invite({ name: 'x', extra: 3 })), null);
@@ -88,13 +90,23 @@ test('an invite from a later Erevos is still handed on, for the app to read', ()
   for (const data of [invite({ version: 2 }), invite({ flags: 4 })]) assert.deepEqual(readInvite(data), { data, newer: true });
 });
 
-test('a name cannot turn itself around or hide parts, and stays text', () => {
-  const data = invite({ name: '<b>Eve</b>‮gnp.exe​\n' });
-  assert.equal(readInvite(data)?.name, '<b>Eve</b>gnp.exe');
+test('a name shows as the app shows it: never turned around, and as text', () => {
+  for (const name of ['<b>Eve</b>\u202egnp.exe', 'Ana \u{1F469}\u200d\u{1F4BB}', 'حسین\u200cزاده', 'Eve\nAdams\u2066x\u2069']) {
+    const made = { sender: toHex(randomBytes(24)), key: randomBytes(32), code: toHex(randomBytes(32)), relay: START_RELAY, relayKey: '', name, expires: 1_800_000_000_000 };
+    const link = textInviteLink(made);
+    const shown = readInvite(link.slice(link.indexOf('#')))?.name;
+    assert.equal(shown, textInviteOf(link.slice(link.indexOf('#') + 1))?.name, name);
+    assert.doesNotMatch(shown ?? '', /[\u200e\u200f\u202a-\u202e\u2066-\u2069\n]/);
+  }
+  assert.equal(readInvite(invite({ name: '<b>Eve</b>\u202egnp.exe' }))?.name, '<b>Eve</b> gnp.exe');
   // Not UTF-8: no name, the invite all the same.
   const broken = Buffer.from(invite({ name: 'ab' }), 'base64url');
   broken[broken.length - 2] = 0xff;
   assert.equal(readInvite(broken.toString('base64url'))?.name, '');
+});
+
+test('the link the page copies is the one the app takes when pasted', () => {
+  assert.equal(context.erevosInvitePage, TEXT_INVITE_PAGE);
 });
 
 // The worker with one release in use, as it keeps it.

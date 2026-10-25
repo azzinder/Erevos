@@ -84,7 +84,7 @@ $domain {
 		Permissions-Policy "camera=(self), microphone=(self), geolocation=(), payment=(), usb=()"
 		-Server
 	}
-	@fresh path /sw.js /boot.js /release.json /release.sig /android-update.json /index.html /
+	@fresh path /sw.js /boot.js /release.json /release.sig /android-update.json /index.html / /i /i/ /i/index.html
 	header @fresh Cache-Control "no-cache"
 	try_files {path} {path}/index.html /index.html
 	file_server

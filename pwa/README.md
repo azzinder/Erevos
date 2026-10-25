@@ -86,10 +86,13 @@ is the part after `#`, which the browser never sends to the server. `/i/` is a p
 every release (`pwa/i/`), signed with the rest. It reads the invite on the device and shows who
 invites and until when, and how to take it: on Android, Erevos and then
 `erevos://text-invite?d=<invite>`; on an iPhone, the link copied, Erevos added to the home screen
-and the link pasted in New chat; on a computer, the app or the web app. In a browser that already
-runs the web app, it hands the invite to it at `/text-invite?d=<invite>`. The server needs nothing
-new: Apache sends `/i` on to `/i/`, which keeps the part after `#`, and the worker gives the page
-at both.
+and the link pasted in New chat; elsewhere, the app or the web app. Where the web app's own
+worker serves the page, it can also hand the invite to it at `/text-invite?d=<invite>`, which the
+worker answers without the server; not in Safari on an iPhone, whose web app is the one on the
+home screen. The server needs nothing new: Apache sends `/i` on to `/i/`, which keeps the part
+after `#`, and the worker gives the page at both; the page then shows `/i` again, the link the app
+takes. `deploy.sh` checks that `/i` gives the page. A browser whose worker came before the page
+opens the app at `/i` until it takes the new worker, once every Erevos window is closed.
 
 The first time, the page comes straight from the server, unchecked, as the web app's own first
 start does. A server that is broken into could send a page that passes the invite on: an invite is
