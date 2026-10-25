@@ -10,6 +10,8 @@ cryptography. Do not rely on it to protect anyone yet.
 - [SECURITY.md](SECURITY.md): how to report a problem, and
   [docs/security-review.md](docs/security-review.md): a map of the code for a security review.
 - [CHANGELOG.md](CHANGELOG.md): what each release changed.
+- **Transparency**: what the server behind Erevos keeps, for how long, and what has been asked of it, in the user
+  guide's Transparency part (`app/guide/en.ts`, `#transparency`), renewed with every release.
 - [docs/linked-devices.md](docs/linked-devices.md) and [docs/public-groups.md](docs/public-groups.md):
   design notes.
 

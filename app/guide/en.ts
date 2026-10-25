@@ -2175,6 +2175,45 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Public groups** | As group chats, and anyone with the link can ask to join and read from when let in. Requests come to the owner's relay sealed for the owner's phone: the relay sees how many and when, not from whom. Members see each other's chosen names, keys made for that group alone, relay addresses and queue sender ids. Not audited. | |
 | **Link previews** | Off unless turned on. Then, as you send a link, your phone fetches its page straight from the site, which sees your IP address and when, not who the message is for. The preview goes inside the encrypted message; the phone that gets it fetches nothing. None while the space goes through Tor, and none in hidden chats. | Previews through Tor. |
 
+## Transparency {#transparency}
+
+What the server behind Erevos (lphl.nekten.eu) keeps, and what has been asked of it. This page goes out inside every
+release, so it is signed with the release, as the app is.
+
+**Requests from authorities.** As of this release: none. No authority, court or company has asked for data about
+anyone who uses Erevos, and no one has been asked to keep quiet about such a request. If this paragraph is ever gone,
+or no longer says "none", take it as a sign. **Why:** a request that comes with an order to keep quiet cannot be told,
+but a sentence that stops being written can be noticed. That works only as long as it is renewed: each release says it
+again.
+
+What the relay keeps, and for how long:
+
+| What | For how long |
+| --- | --- |
+| **Messages that wait**, encrypted end to end | Until taken, 14 days at most. |
+| **Photos and files**, encrypted, in pieces | As messages: until taken, 14 days at most. |
+| **Messages sent for later**, encrypted | Until their time comes. |
+| **Queues**, random ids with no name | Until their phone has not used them for 180 days. |
+| **Access lines**: for each phone, the SHA-256 of its token and a name: the one the inviter typed, or the LPHL user name for those who signed in with LPHL | Until the line is taken out, or the line that invited it goes. |
+| **Web app push addresses**, for notices while the web app is closed | Until turned off in the web app. |
+
+What it does not keep:
+
+- **No list of connections.** The relay writes no log of who connected or when, and the web server in front of the
+  relay and of the web app keeps no access log since 24 October 2026. Errors are logged, and an error can name an
+  address.
+- **No contacts, names or phone numbers.** It has none to keep.
+
+What it still sees while it runs: the IP addresses that connect, when messages come and go, and how big they are, as
+[What is protected today](#privacy) says. During a call through the call relay, the IP addresses of the phones in it.
+
+**Copies.** The relay's folder is backed up every day, with the waiting messages still encrypted end to end. The copies
+hold what the table above lists, for as long as they are kept.
+
+**Others who see something:** the hosting company (Hetzner), which runs the machine and its network; LPHL's sign-in
+(Authentik), which sees each sign-in with LPHL; and for the web app with notices while closed, the push service of the
+browser (Apple, Google or Mozilla), which sees that a notice came, never what.
+
 ## What is coming {#coming}
 
 End-to-end encryption is here, through the relay and over the nearby link, and most of what follows is built on it.

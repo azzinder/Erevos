@@ -10,6 +10,11 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **Transparency, in the guide**: a new part, **Transparency**, says what the server behind Erevos keeps and for how long
+  (messages that wait, files, queues, access lines, push addresses), what it does not keep (no list of connections),
+  who else sees something, and that no authority has asked for anything. It goes out inside every release, so each
+  release says it again, signed with the release.
+
 ## 3.3.2 (2026-10-25)
 
 - **The plain call button for more contacts**: the orange keypad at the top of a contact's chat now shows also when no
