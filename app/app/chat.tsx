@@ -75,6 +75,8 @@ import type { ChatChange } from '../lib/link-wire';
 import { BlockedContactError, E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { mediaText, SOURCE_LABELS } from '../lib/imports';
+import { chatMedia, dayKey, daysOf, IMPORTED_TAG, importedTag, isImportedSticker, isSound, isVoice, soundEnding } from '../lib/chat-media';
+import { ChatMedia, DayCalendar } from '../components/chat-media';
 import { Archive, type LinkedMessage } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
 import { isWatchedQueue, loadWatched, unwatchPocket, watchPocket } from '../lock/hidden-watch';
@@ -297,9 +299,6 @@ const IMPORTED_PAGE = 50;
 // The latest lines of a chat's thread drawn at first, and how many more each time earlier ones are
 // asked for or gone to: a long thread opens without drawing all of it.
 const THREAD_PAGE = 100;
-// What was imported, as the thread names it: by its place in it (to go to it from the search).
-const IMPORTED_TAG = 'imported:';
-const importedTag = (index: number) => `${IMPORTED_TAG}${index}`;
 // Of the photos laid out near what shows of the thread, at most this many are read to show them,
 // besides its latest (components/attachment.tsx shownOf).
 const NEAR_PHOTOS = Platform.OS === 'web' ? 60 : 10;
@@ -519,6 +518,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [relayShown, setRelayShown] = useState(relaySettings);
   // The chat's details, over the chat: its picture, name, timer, look, safety number, moving it.
   const [details, setDetails] = useState(false);
+  // The chat's media, links and files, each kind apart (components/chat-media.tsx), and the
+  // calendar that goes to a day of the chat.
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [dayPicking, setDayPicking] = useState(false);
   // The chat's own look being chosen, over the chat.
   const [styling, setStyling] = useState(false);
   const insets = useSafeAreaInsets();
@@ -3852,6 +3855,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const lines = useMemo(() => chatLines(visible, chatSms.messages, chatSms.more), [visible, chatSms.messages, chatSms.more]);
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
   const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity]);
+  // Sorted out only while the details or the lists show.
+  const media = useMemo(() => (details || mediaOpen ? chatMedia(visible, imported) : []), [details, mediaOpen, visible, imported]);
+  const chatDays = useMemo(() => (dayPicking ? daysOf([...imported, ...visible]) : new Set<string>()), [dayPicking, imported, visible]);
+  // Goes to a day's first message: of what was imported, which shows first, or of the thread.
+  const goToDay = (day: string) => {
+    const index = imported.findIndex((message) => message.at > 0 && dayKey(message.at) === day);
+    const message = index < 0 ? visible.find((one) => dayKey(one.at) === day) : undefined;
+    holdScroll.current = true;
+    if (index >= 0) goTo(selected ?? '', importedTag(index));
+    else if (message) goTo(message.peer, message.tag);
+  };
   // What is drawn of what was imported and of the thread: to the end, the latest THREAD_PAGE lines
   // at first, more once asked for or gone to, and what was imported once all of the thread is; or
   // the stretch read away from the end. `later` is how many come after what is drawn.
@@ -4353,6 +4367,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             setDetails(false);
                             setSearching('');
                             setSearchAt(0);
+                          }}
+                        />
+                        <View style={styles.rule} />
+                        <DetailRow
+                          title={t('Media, links and files')}
+                          value={media.length > 0 ? String(media.length) : ''}
+                          onPress={() => {
+                            setDetails(false);
+                            setMediaOpen(true);
+                          }}
+                        />
+                        <View style={styles.rule} />
+                        <DetailRow
+                          title={t('Go to a day')}
+                          onPress={() => {
+                            setDetails(false);
+                            setDayPicking(true);
                           }}
                         />
                         <View style={styles.rule} />
@@ -5375,6 +5406,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             setViewingImported(null);
           }}
         />
+        <ChatMedia
+          visible={mediaOpen && shown && !!selected}
+          items={media}
+          name={selectedName}
+          onClose={() => setMediaOpen(false)}
+          onShow={(item) => {
+            holdScroll.current = true;
+            goTo(selected ?? '', item.tag);
+          }}
+        />
+        <DayCalendar
+          visible={dayPicking && shown && !!selected}
+          days={chatDays}
+          start={visible[visible.length - 1]?.at ?? imported[imported.length - 1]?.at ?? Date.now()}
+          onPick={(day) => {
+            setDayPicking(false);
+            setTimeout(() => goToDay(day), Platform.OS === 'web' ? 0 : 300);
+          }}
+          onClose={() => setDayPicking(false)}
+        />
       </View>
     </SwipeBack>
   );
@@ -5677,16 +5728,6 @@ const SmsLine = memo(function SmsLine({ sms: m, earlier, newDay, tail, lit, styl
     </View>
   );
 });
-
-// What an imported file is: a sound to play where it is (a voice message, a song), a sticker of
-// Telegram's or WhatsApp's, shown as one, or else a photo or file.
-const SOUND_ENDINGS = ['opus', 'oga', 'ogg', 'm4a', 'mp3', 'aac', 'wav', 'amr', 'flac'];
-const endingOf = (file: FileRef) => file.name.toLowerCase().split('.').pop() ?? '';
-const isSound = (file: FileRef) => file.kind === 'file' && (file.mime.startsWith('audio/') || SOUND_ENDINGS.includes(endingOf(file)));
-const soundEnding = (file: FileRef) => (SOUND_ENDINGS.includes(endingOf(file)) ? endingOf(file) : 'm4a');
-// A voice message as Telegram and WhatsApp name theirs; any other sound shows its name.
-const isVoice = (file: FileRef) => /^(audio_\d|PTT-)/i.test(file.name) || endingOf(file) === 'opus';
-const isImportedSticker = (file: FileRef) => file.kind === 'photo' && file.mime === 'image/webp' && /^(sticker|STK-)/i.test(file.name);
 
 // A message of what was imported, among the thread's as if it had always been one of them: its day,
 // its bubble and tail, its photos as they come near, its sounds played where they are. It is only

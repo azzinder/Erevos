@@ -81,6 +81,17 @@ after them (**⋮** on Android), for the chat's **Details**: its picture (tap it
 **Appear offline**, **Chat look**, the **Safety number**, **Move to hidden chats** and **Delete messages**. **Done**
 closes them.
 
+**Media, links and files**, in the details under **Search in this chat**, lists what the chat holds, each kind under its
+own tab with how many there are: **Photos** (in a grid), **Videos**, **Voice messages**, **Music**, **Files** and
+**Links**, the newest first under their months, those imported from Telegram or WhatsApp too. A tap opens a photo or a
+file to look at or save, plays a sound right there, or opens a link after asking; held, each offers **Show in chat**,
+which goes to its message. One not yet taken from the relay is gone to in the chat, where a tap takes it. The calendar
+at the top goes to a day: the days that have any of that kind are marked. **Go to a day**, under it in the details,
+does the same for the chat itself: it goes to that day's first message.
+
+**Why:** the lists are made on this phone from what it already keeps, so no server learns what a chat holds; and only
+the photos on the screen are read, as in the chat, so a chat with thousands of them opens as fast as one with none.
+
 A good first hour:
 
 1. Open **Settings** → **Privacy and security** → **Lock and second password** and set a password, so nobody who

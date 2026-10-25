@@ -35,6 +35,11 @@ On main, not released yet:
   **Remind me**, or holding the send arrow, does too. At its time, on Android, a notice says only **Reminder**, with
   Erevos closed and locked too, and opens Chat with myself after the password; until the chat is opened, the reminder
   shows on its row with a count. Backups take its notes and voice messages. Needs the new Android app for the notice.
+- **Media, links and files, with a calendar**: a chat's details have **Media, links and files**, where its photos (in a
+  grid), videos, voice messages, music, files and links are each under their own tab, the newest first under their
+  months, those imported from Telegram or WhatsApp too. A tap opens, plays or saves; held, **Show in chat** goes to
+  the message. A calendar goes to a day that has any, and **Go to a day**, in the details too, goes to a day's first
+  message in the chat itself.
 - **The guide says why**: almost every part of the **User guide** now ends with a **Why** that says what the way it
   works protects, or why it was chosen: from why hidden chats have four places instead of a key for each chat, to why
   only the sender's phone fetches a link's preview. A few names in it now match the app (**Safety number**, **Appear

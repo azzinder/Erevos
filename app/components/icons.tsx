@@ -327,6 +327,20 @@ export function MicIcon({ color, size = 24 }: Props) {
   );
 }
 
+/** Two notes joined by a beam: music. */
+export function MusicIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <Bar k={k} color={color} x={8} y={3} w={12} h={3.5} r={1} />
+      <Bar k={k} color={color} x={8} y={3} w={2} h={14} r={0} />
+      <Bar k={k} color={color} x={18} y={3} w={2} h={12} r={0} />
+      <Dot k={k} color={color} x={3.5} y={14.5} d={6.5} />
+      <Dot k={k} color={color} x={13.5} y={12.5} d={6.5} />
+    </Grid>
+  );
+}
+
 /** A paper dart: send. `cut` is the color behind it, for the notch in its tail. */
 export function SendIcon({ color, cut, size = 24 }: Props & { cut: string }) {
   const k = size / 24;
