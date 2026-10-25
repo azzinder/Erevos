@@ -1,6 +1,6 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 
-import { compareNames, EMPTY_FIELDS, erevosFor, fieldsName, keeperFirst, mergeByName, mergeFields, phoneFields, phoneSave, type ErevosPerson, type Fields } from './contacts';
+import { callNumber, compareNames, EMPTY_FIELDS, erevosFor, fieldsName, keeperFirst, mergeByName, mergeFields, phoneFields, phoneSave, type ErevosPerson, type Fields } from './contacts';
 import type { OpenHiddenPlace } from './hidden-contacts';
 import { t } from './i18n';
 import { spaceChats } from './space-chats';
@@ -9,7 +9,7 @@ import { contactCards } from '../modules/erevos-sms';
 import type { ContactLink, SealedContact } from '../lock/contacts-data';
 import { giveLinkedName } from './linked-name';
 import { sameNumber } from './sms-invite';
-import { loadPlace, placeNames, placeOf, spacePlace, type Place } from './sealed-contacts';
+import { linkedContact, loadPlace, placeNames, placeOf, spacePlace, type Place } from './sealed-contacts';
 
 // The contacts screen's book (app/contacts.tsx): the phone's contacts, from Android's contacts
 // (modules/erevos-contacts), those kept only in Erevos, sealed in the open space or hidden chats
@@ -92,6 +92,18 @@ export async function erevosPeople(hidden: OpenHiddenPlace | null): Promise<Erev
   } catch {
     return [];
   }
+}
+
+/**
+ * The number to call an Erevos contact on from its chat when no number is linked to it: that of
+ * the space's contact linked to it by hand, one kept only in Erevos, or the phone's once Erevos
+ * may read them. A mobile number first; '' when none has one. Never the hidden chats'.
+ */
+export async function linkedCardNumber(identity: string): Promise<string> {
+  const { phones, lookup } = await linkedContact(spacePlace(), identity);
+  if (phones.length > 0 || !lookup) return callNumber(phones);
+  const contact = (await phoneContacts().catch((): PhoneContact[] => [])).find((c) => c.lookup === lookup);
+  return contact ? callNumber(phoneFields(contact).phones) : '';
 }
 
 /** Whose contacts: the space's, the open hidden chats' (lib/hidden-contacts.ts), or none (null) while the hidden chats meant are closed. */

@@ -5,10 +5,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { EMPTY_FIELDS, type Fields } from '../lib/contacts';
+import { callNumber, EMPTY_FIELDS, type Fields } from '../lib/contacts';
 import { randomBytes, setHardCost, setPbkdf2, webCryptoPbkdf2 } from '../lib/crypto';
 import { setOpenHiddenPlace } from '../lib/hidden-contacts';
-import { linkCard, linkPhoneContact, linkSealed, loadPlace, placeOf, removeSealed, saveSealed, sealedNames, setSealedPhoto, spacePlace, starSealed } from '../lib/sealed-contacts';
+import { linkCard, linkedContact, linkPhoneContact, linkSealed, loadPlace, placeOf, removeSealed, saveSealed, sealedNames, setSealedPhoto, spacePlace, starSealed } from '../lib/sealed-contacts';
 import { loadPhoto } from '../lock/avatar-photos';
 import { backupKey, makeBackup, openBackup } from '../lock/backup';
 import { FILE, loadContactsData } from '../lock/contacts-data';
@@ -111,6 +111,29 @@ t('a phone contact or a sealed one is linked to one Erevos contact, or none', as
   const id = await saveSealed(spacePlace(), null, person('Eleni'));
   await linkSealed(spacePlace(), id, IDENTITY);
   assert.equal((await loadPlace(spacePlace())).contacts[0].erevos, IDENTITY);
+});
+
+t('an Erevos contact linked by hand to a contact kept here is called on its mobile number', async () => {
+  setCurrentSpace(0, randomBytes(32));
+  const other = 'cd'.repeat(32);
+  const number = async (identity: string) => callNumber((await linkedContact(spacePlace(), identity)).phones);
+  assert.deepEqual(await linkedContact(spacePlace(), IDENTITY), { phones: [], lookup: '' });
+  const id = await saveSealed(spacePlace(), null, {
+    ...person('Eleni'),
+    phones: [
+      { value: '+30 210 123 4567', kind: 'home', label: '' },
+      { value: '+30 691 234 5678', kind: 'mobile', label: '' },
+    ],
+  });
+  assert.equal(await number(IDENTITY), '');
+  await linkSealed(spacePlace(), id, IDENTITY);
+  assert.equal(await number(IDENTITY), '+30 691 234 5678');
+  assert.equal(await number(other), '');
+  // A phone contact linked by hand: its number is the phone's to tell (lib/contact-book.ts linkedCardNumber).
+  await linkPhoneContact(spacePlace(), 'lookup-1', other);
+  assert.deepEqual(await linkedContact(spacePlace(), other), { phones: [], lookup: 'lookup-1' });
+  assert.equal(callNumber([{ value: '+30 210 123 4567', kind: 'home', label: '' }]), '+30 210 123 4567');
+  assert.equal(callNumber([]), '');
 });
 
 t('a contact is connected where it is kept: a phone contact in the space only, never in hidden chats, and its link moves', async () => {

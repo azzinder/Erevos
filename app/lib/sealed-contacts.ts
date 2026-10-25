@@ -2,7 +2,7 @@ import { deletePhoto, savePhoto, type PhotoRef } from '../lock/avatar-photos';
 import { loadContactsData, MAX_LINKS, MAX_SEALED, saveContactsData, type ContactsData, type SealedContact } from '../lock/contacts-data';
 import { currentSpace } from '../lock/keys';
 import { hiddenHolder, type Holder } from '../lock/sealed-file';
-import { cleanFields, cleanNumber, fieldsName, type Fields } from './contacts';
+import { cleanFields, cleanNumber, fieldsName, type Entry, type Fields } from './contacts';
 import { randomBytes, toBase64 } from './crypto';
 import { openHiddenPlace, type OpenHiddenPlace } from './hidden-contacts';
 import { t } from './i18n';
@@ -108,6 +108,17 @@ export async function linkPhoneContact(place: Place, lookup: string, identity: s
     ...data,
     links: [...data.links.filter((l) => l.lookup !== lookup), ...(identity ? [{ lookup, identity }] : [])].slice(-MAX_LINKS),
   }));
+}
+
+/**
+ * What `place` keeps of the contact linked by hand to the Erevos contact `identity`: the numbers of
+ * one kept only in Erevos, else the lookup key of the phone's linked to it ('' for none).
+ */
+export async function linkedContact(place: Place, identity: string): Promise<{ phones: Entry[]; lookup: string }> {
+  const data = await loadPlace(place);
+  const kept = data.contacts.find((c) => c.erevos === identity && c.phones.length > 0);
+  if (kept) return { phones: kept.phones, lookup: '' };
+  return { phones: [], lookup: data.links.find((l) => l.identity === identity)?.lookup ?? '' };
 }
 
 /** Makes a sealed contact the Erevos contact `identity`, or no Erevos contact with ''. */

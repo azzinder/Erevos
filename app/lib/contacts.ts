@@ -561,6 +561,11 @@ export function newContactHref(number: string): `/contact-edit?fill=${string}` {
 /** An Erevos contact as the contacts screens show it: its identity (hex), its name, and the number linked to it in Erevos ('' for none). */
 export type ErevosPerson = { identity: string; name: string; phone: string };
 
+/** The number to call from a contact's numbers: a mobile one first, '' for none. */
+export function callNumber(phones: Entry[]): string {
+  return (phones.find((p) => p.kind === 'mobile') ?? phones[0])?.value ?? '';
+}
+
 /**
  * The Erevos contact a contact is: the one it was linked to by hand (`linked`), while Erevos still
  * has it, else the one whose number in Erevos is one of its numbers. '' for none.

@@ -10,6 +10,11 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **The plain call button for more contacts**: the orange keypad at the top of a contact's chat now shows also when no
+  number is linked to them in Erevos but they are connected to one of your contacts that has one (**Connect to one of
+  my contacts**), on that contact's mobile number first. Before, only a number linked to them in Erevos counted, so some
+  contacts had the keypad and others did not.
+
 ## 3.3.1 (2026-10-25)
 
 - **Viber chats come in**: a Viber chat saved as an .html file by the Android app **Backup Text for Viber** (Viber

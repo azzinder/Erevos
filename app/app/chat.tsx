@@ -105,8 +105,8 @@ import { pickAvatar } from '../lib/pick-avatar';
 import { takeHidden } from '../lib/hidden-handoff';
 import { setOpenHiddenPlace, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { giveLinkedName } from '../lib/linked-name';
-import { linkCard, type Place as SealedPlace } from '../lib/sealed-contacts';
-import type { Among, Card as ContactCard } from '../lib/contact-book';
+import { linkCard, onSealedChange, type Place as SealedPlace } from '../lib/sealed-contacts';
+import { linkedCardNumber, type Among, type Card as ContactCard } from '../lib/contact-book';
 import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
@@ -4217,9 +4217,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     hidden: !!hiddenKey,
     seen: shown && appActive && !gated,
   });
-  // Their number, for a plain call from the top (components/dial-tile.tsx): never in hidden chats either.
+  // Their number, for a plain call from the top (components/dial-tile.tsx): the one linked to them,
+  // else that of the contact linked to them by hand (lib/contact-book.ts). Never in hidden chats.
   const linkedPhone = !hiddenKey && smsWith ? (e2e?.phones().find((p) => p.identity === smsWith)?.phone ?? '') : '';
-  const dialTo = canDial(linkedPhone) ? linkedPhone : '';
+  const [cardPhone, setCardPhone] = useState({ identity: '', number: '' });
+  useEffect(() => {
+    if (hiddenKey || !smsWith) return;
+    let live = true;
+    const look = () =>
+      void linkedCardNumber(smsWith)
+        .then((number) => live && setCardPhone({ identity: smsWith, number }))
+        .catch(() => undefined);
+    look();
+    const stop = onSealedChange(look);
+    return () => {
+      live = false;
+      stop();
+    };
+  }, [hiddenKey, smsWith]);
+  const cardNumber = !hiddenKey && cardPhone.identity === smsWith ? cardPhone.number : '';
+  const dialTo = canDial(linkedPhone) ? linkedPhone : canDial(cardNumber) ? cardNumber : '';
   const lines = useMemo(() => chatLines(visible, chatSms.messages, chatSms.more), [visible, chatSms.messages, chatSms.more]);
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
   const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity, archiveTick]);
