@@ -16,6 +16,7 @@ import {
 } from '../lib/crypto';
 import { secureGet, secureSet } from '../lib/secure';
 
+import { shutDoorsPast } from './doors';
 import { deleteOpenKey, saveOpenKey } from './keys';
 import { SLOTS } from './slots';
 import { assertNotLockedOut, recordRightPassword, recordWrongPassword } from './tries';
@@ -290,6 +291,8 @@ export async function lockWithPassword(space: number, password: string, spaceKey
 export async function removeSecondPassword(space: number): Promise<void> {
   const config = await current();
   await save({ ...config, slots: config.slots.map((slot, j) => (j > space ? unusedSlot(config.iter) : slot)) });
+  // The spaces it opened say nothing more while closed (lock/doors.ts).
+  await shutDoorsPast(space).catch(() => undefined);
 }
 
 // Turns the password lock off. `spaceKey` is the open space's key, kept in the keystore from now
@@ -297,6 +300,7 @@ export async function removeSecondPassword(space: number): Promise<void> {
 // from now on, its second password stops working, and the spaces before it stay locked.
 export async function removePasswordLock(space: number, spaceKey: Uint8Array): Promise<void> {
   await saveOpenKey(space, spaceKey);
+  await shutDoorsPast(space).catch(() => undefined);
   if (space === 0) {
     await save(EMPTY);
     return;

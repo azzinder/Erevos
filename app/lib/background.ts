@@ -1,12 +1,15 @@
 import { AppRegistry, AppState, PermissionsAndroid, Platform } from 'react-native';
 
+import { currentSpace } from '../lock/keys';
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
 import { currentCall, RING_MS } from './call';
+import { keepDoor, startClosedNotices } from './closed-notices';
 import { currentGroupCall } from './group-call';
 import { startHiddenNotices } from './hidden-notices';
 import { hiddenRinging, onHiddenRingingChange, setHiddenRinging } from './hidden-ring';
 import { startHiddenRinging } from './hidden-ring-notices';
 import { showsAt } from './later';
+import { onSpaceMoved } from './queue-move';
 import { appShown, isNews, onAppShown, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
 import { onSpaceGroupMessage } from './space-groups';
@@ -17,7 +20,8 @@ import { onSpaceGroupMessage } from './space-groups';
 // phone's ringtone and a notice that says only "Incoming call", over the lock screen, and messages
 // that came show a notice that says only how many, and on a locked phone only "Erevos". Only the
 // open space's chats and groups are read, never hidden chats, whose key is in memory only while
-// they are open; those that asked for it only say how many messages came (lib/hidden-notices.ts).
+// they are open; those that asked for it only say how many messages came (lib/hidden-notices.ts),
+// and so do the other spaces that asked for it, while closed (lib/closed-notices.ts).
 // While Erevos shows, a message shows the same notice, with sound, except in the chat or group on
 // the screen, where it only sounds; what came in one goes from the count once it is open.
 // On by default; switches on the Lock screen turn it off on this phone, or only the messages
@@ -92,6 +96,8 @@ export const screenOfChat = (identity: string) => `chat:${identity}`;
 export const screenOfGroup = (id: string) => `group:${id}`;
 /** Where a hidden place's chats show. */
 export const screenOfHidden = (pocket: number) => `hidden:${pocket}`;
+/** Where a closed space's chats show: in it, once it is open. */
+export const screenOfSpace = (space: number) => `space:${space}`;
 
 const unseenCount = () => [...unseen.values()].reduce((sum, count) => sum + count, 0);
 
@@ -186,6 +192,8 @@ export function startBackground(): () => void {
   let running = false;
   // The hidden chats' notices, while the messages notice is on (lib/hidden-notices.ts).
   let hidden: (() => void) | null = null;
+  // The other spaces' notices, while closed, those that asked for it (lib/closed-notices.ts).
+  let closed: (() => void) | null = null;
   const tellHidden = (on: boolean) => {
     if (on && !hidden)
       hidden = startHiddenNotices((count, pocket) => {
@@ -195,7 +203,28 @@ export function startBackground(): () => void {
       hidden();
       hidden = null;
     }
+    if (on && !closed)
+      closed = startClosedNotices((count, space) => {
+        for (let i = 0; i < count; i++) messageCame(false, screenOfSpace(space));
+      });
+    if (!on && closed) {
+      closed();
+      closed = null;
+    }
   };
+  // This space's door names the queues it reads on, should it say a message came once closed: written
+  // as it opens, as its own queue moves, and as it closes, with what came so far heard.
+  let own: { space: number; key: Uint8Array } | null = null;
+  try {
+    own = currentSpace();
+  } catch {
+    // No space is open: none to keep a door for.
+  }
+  const door = own;
+  if (door) void keepDoor(door.space, door.key).catch(() => undefined);
+  const moved = onSpaceMoved(async () => {
+    if (door) await keepDoor(door.space, door.key).catch(() => undefined);
+  });
   // A hidden place that rings its contacts' calls (lib/hidden-ring-notices.ts). On whenever
   // receiving runs, not with the messages notice: ringing is its own per-place setting. One hidden
   // call rings at a time, and none while a call is in progress.
@@ -290,6 +319,8 @@ export function startBackground(): () => void {
   return () => {
     stopped = true;
     telling = false;
+    moved();
+    if (door) void keepDoor(door.space, door.key, true).catch(() => undefined);
     changes.delete(follow);
     told.forEach((stopTelling) => stopTelling());
     shown();

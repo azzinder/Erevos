@@ -810,8 +810,21 @@ a missed call.
   **Receive and ring** (the default) or **Only while Erevos shows**, and **Say a message came** (the default) or **No
   notice**, which goes for while Erevos shows too. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
   screen**.
+- **A space that is closed:** it receives nothing, as its key is only in memory while it is open: its messages wait at
+  its relay and come when you open it. Unless you choose, in that space, **Also while another space is open** under
+  **Settings** → **Notifications** → **In the background** (the default is **This space only while open**): then,
+  while another space is open and receives, it says only "New message", or how many came, with the same notice as
+  that space, never which space, and its hidden chats say nothing. For it the phone keeps the addresses of its queues
+  at its relay outside its password, never its keys, contacts or messages, and asks the relay only how many came,
+  never for them: they stay there until the space opens. A space that goes through Tor is asked about only through
+  Tor, while the open space has Tor ready.
+
+  **Why:** a space behind a second password must not show that it is there, so it is off unless you turn it on, and
+  then it says no more than the space that is open would. The cost is that its relay may tell that the two spaces are
+  on one phone, and someone who examines the phone with tools may find that a second space keeps addresses there.
 - **Where it cannot ring:** stopped by Android (or by the phone's battery saving, or the phone maker's own setting),
-  after the phone restarts until you open Erevos and the space once, in another space, or on a computer or in the web
+  after the phone restarts until you open Erevos and the space once, in another space (it only says a message came, if
+  you let it, as above), or on a computer or in the web
   app while closed. A call there shows as a missed call once Erevos opens. When Android closes Erevos while it
   receives, a quiet notice says so: open Erevos and the space to receive again. So does one, "Locked", when the space
   that received closes (after a backup is restored, say) and Erevos leaves the screen with the password asked. A message request cannot call you until
@@ -1110,6 +1123,8 @@ through your relay. Each space has its own choice, and its own Nostr relays.
   most. Your contacts are told the relays you read on, and write to you there; one that takes a text is enough.
 - **What stays on your relay:** pictures, files, voice messages, calls, reactions, and the marks that a message came
   or was read; and what you write to contacts on an iPhone or a computer, which do not read on Nostr.
+- **Which way it went:** hold a message: its menu says **Went through Nostr** or **Came through Nostr** when a Nostr
+  relay took it. One that says nothing went through your relay, or nearby.
 - **On Android only,** as Tor is.
 
 **Why:** the Nostr relays are public, so Erevos reaches them only through Tor, and they never learn where your phone

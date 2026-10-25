@@ -15,11 +15,13 @@ import { Sheet, Text } from './ui';
 
 export type MenuAction = { title: string; onPress: () => void; danger?: boolean };
 
-export function MessageMenu({ visible, onClose, line, reaction, onReact, actions }: {
+export function MessageMenu({ visible, onClose, line, way, reaction, onReact, actions }: {
   visible: boolean;
   onClose: () => void;
   /** The message in one line (lib/message-line.ts). */
   line: string;
+  /** How it came or went, when that is worth saying: through Nostr. */
+  way?: string;
   /** Our reaction to it now, if any. */
   reaction?: string;
   /** Reacting is offered only when given: a message their phone has. */
@@ -61,6 +63,11 @@ export function MessageMenu({ visible, onClose, line, reaction, onReact, actions
       {line ? (
         <Text tone="muted" numberOfLines={2}>
           {line}
+        </Text>
+      ) : null}
+      {way ? (
+        <Text variant="caption" tone="muted">
+          {way}
         </Text>
       ) : null}
       {onReact ? (

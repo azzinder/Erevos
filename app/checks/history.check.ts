@@ -179,6 +179,26 @@ t('keeps a star on this phone, and a star of the wrong shape is none', async () 
   assert.deepEqual([odd.starred, odd.pinned], [undefined, undefined]);
 });
 
+t('keeps that a message came or went through Nostr, on this phone', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const [sent, got] = [newTag(), newTag()];
+  await history.add({ peer: 'contact:aa', text: 'through Nostr', mine: true, at: 1, tag: sent });
+  await history.add({ peer: 'contact:aa', text: 'back', mine: false, at: 2, tag: got, nostr: true });
+  assert.equal(await history.throughNostr('contact:aa', sent), true);
+  assert.equal(await history.throughNostr('contact:aa', newTag()), false);
+  assert.deepEqual(
+    (await History.open('space', 0, key)).messages().map((m) => [m.text, m.nostr]),
+    [
+      ['through Nostr', true],
+      ['back', true],
+    ],
+  );
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', sent, 0, 0, 0, 0, 0, { t: true }]] } });
+  assert.equal((await History.open('space', 1, key)).messages()[0].nostr, undefined);
+});
+
 t('keeps the sticker or the place a message is, and drops one of the wrong shape', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);

@@ -70,9 +70,10 @@ export type Kept = [
  * chat; `f` 1 when it is starred, on this phone only; `s`, the name of the sticker it is (its text
  * is the sticker's emoji); `l`, the place it is (its text says where); `k`, the poll it is (its
  * text asks it), with `a`, the options we chose, and `b`, theirs; `w`, the preview of the link in
- * its words, as its sender made it; `d` 1 when it was forwarded from another chat.
+ * its words, as its sender made it; `d` 1 when it was forwarded from another chat; `t` 1 when it
+ * came or went through Nostr (lib/nostr-chats.ts), on this phone only.
  */
-type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1 };
+type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1 };
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -123,12 +124,14 @@ export type Parts = {
   preview?: Preview;
   /** Forwarded from another chat: its sender's, or this phone's. */
   forwarded?: boolean;
+  /** Came or went through Nostr (lib/nostr-chats.ts), whether through the relay too or not: on this phone only. */
+  nostr?: boolean;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
@@ -142,6 +145,7 @@ function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place
     ...(poll && theirVote?.length ? { b: theirVote } : {}),
     ...(preview ? { w: preview } : {}),
     ...(forwarded ? { d: 1 as const } : {}),
+    ...(nostr ? { t: 1 as const } : {}),
   };
 }
 
@@ -159,6 +163,7 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.b ? { theirVote: more.b } : {}),
     ...(more?.w ? { preview: more.w } : {}),
     ...(more?.d ? { forwarded: true } : {}),
+    ...(more?.t ? { nostr: true } : {}),
   };
 }
 
@@ -195,7 +200,7 @@ const QUEUE_ID = /^[0-9a-f]{48}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
   const poll = checkedPoll(v.k);
@@ -218,6 +223,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(theirs?.length ? { b: theirs } : {}),
     ...(preview ? { w: preview } : {}),
     ...(v.d === 1 ? { d: 1 as const } : {}),
+    ...(v.t === 1 ? { t: 1 as const } : {}),
   };
   return Object.keys(more).length > 0 ? more : undefined;
 }
@@ -524,6 +530,11 @@ export class History {
     const checked = poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null;
     if (!checked) return Promise.resolve(false);
     return this.change(peer, tag, ours ? { myVote: checked } : { theirVote: checked });
+  }
+
+  /** Marks a chat's message, by its tag, as one that went through Nostr. False if the message is gone. */
+  throughNostr(peer: string, tag: string): Promise<boolean> {
+    return this.change(peer, tag, { nostr: true });
   }
 
   /** Stars a chat's message, by its tag, or takes the star off. False if the message is gone. */

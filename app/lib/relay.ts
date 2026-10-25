@@ -131,7 +131,8 @@ export type QueueIds = { recipientId: Uint8Array; senderId: Uint8Array };
 // `fallback`: where a send goes next when this relay cannot take it (lib/spare.ts), each with the
 // sender id there, or the same one when it has none. `backup`: this phone's backup relay, which
 // sends to contacts go through when its own relay cannot be reached.
-export type Relay = { url: string; token?: string; via?: Relay; key?: Uint8Array; fallback?: Fallback[]; backup?: Relay };
+/** A relay, its token, and how it is reached; `torOnly` only through Tor, never straight (lib/closed-notices.ts). */
+export type Relay = { url: string; token?: string; via?: Relay; key?: Uint8Array; fallback?: Fallback[]; backup?: Relay; torOnly?: boolean };
 export type Fallback = { relay: Relay; senderId?: Uint8Array };
 
 export class RelayError extends Error {
@@ -314,6 +315,8 @@ class Ended extends Error {}
 function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise<Uint8Array> {
   if (signal?.aborted) return Promise.reject(new Ended());
   if (!isRelayAddress(relay.url)) return Promise.reject(new BadRelayAddressError(relay.url));
+  // A space that goes through Tor, waited on while another is open: never straight.
+  if (relay.torOnly && !torFor(false)) return Promise.reject(new RelayUnreachableError(t('Tor is not ready.')));
   if (torFor(false)) {
     const reply = viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
     if (!signal) return reply;

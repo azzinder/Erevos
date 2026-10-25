@@ -1,5 +1,6 @@
 import { hardenSlot, isSlot, ITER, loadLockConfig, SamePasswordError, sealSlot, trySlot, unusedSlot, type Slot } from './config';
 import { prepareRingEntries } from './hidden-ring';
+import { prepareDoors } from './doors';
 import { prepareWatchEntries, unwatchPocket } from './hidden-watch';
 import { prepareQueueEntries } from './queues-data';
 import { currentSpace, newSpaceKey } from './keys';
@@ -56,6 +57,7 @@ export async function prepareHidden(count = SLOTS): Promise<void> {
   await hardenPockets();
   await prepareHiddenEntries(count);
   await prepareWatchEntries(count);
+  await prepareDoors(count);
   await prepareRingEntries(count);
   await prepareQueueEntries(count);
   await prepareTries();

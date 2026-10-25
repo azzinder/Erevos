@@ -44,6 +44,12 @@ On main, not released yet:
   here**, which brings a Telegram or WhatsApp export straight into that chat (asking which one, when the file holds
   several). An imported chat that goes on there can be **Kept only in the chat**, out of **Settings** → **Data and
   devices** → **Imported chats**, or shown there too again, **Unlinked** or **Deleted**, all from the chat's details.
+- **A closed space can say a message came**: in a space, **Settings** → **Notifications** → **In the background** now
+  offers **Also while another space is open** (off unless chosen). Then, while another space is open on Android, it
+  says only "New message", or how many, with the same notice, never which space. The phone keeps only the addresses of
+  its queues outside its password, and asks its relay only how many came, through Tor when that space goes through Tor.
+- **Which way a message went**: holding a message shows **Went through Nostr** or **Came through Nostr** when a Nostr
+  relay carried it, so that Nostr can be tested.
 - **Who makes it, and why**: the guide's first part ends with who makes Erevos, for whom, why, and who pays, also
   opened from **Settings** → **General** → **About Erevos**.
 - **The guide says why**: almost every part of the **User guide** now ends with a **Why** that says what the way it

@@ -9,7 +9,7 @@ import { ONLINE, toBase64Url, type E2E, type Extra, type Received, type Where } 
 import { sendCopies } from './fanout';
 import { nearby } from './nearby';
 import { readNostr } from './nostr';
-import { nostrReaderOf, sendNostrBackups } from './nostr-chats';
+import { nostrReaderOf, onNostrWent, sendNostrBackups } from './nostr-chats';
 import {
   canWaitAt,
   carryTo,
@@ -279,6 +279,8 @@ export function startReceiver(every?: number): () => void {
   // What comes on Nostr for the space's chats (lib/nostr.ts), once they are open.
   let chats: SpaceChats | null = null;
   const stopNostr = readNostr(nostrReaderOf(() => chats?.e2e ?? null, openNostr));
+  // A text that went through Nostr while the chat was not open says so in it.
+  const stopWent = onNostrWent((identity, tag) => void chats?.history.throughNostr(`${CONTACT_PREFIX}${identity}`, tag).catch(() => undefined));
   const openChats = () => {
     if (chats || !hasCore()) return;
     void spaceChats()
@@ -315,6 +317,7 @@ export function startReceiver(every?: number): () => void {
   return () => {
     stopped = true;
     stopNostr();
+    stopWent();
     if (timer) clearTimeout(timer);
     if (hurry === now) hurry = null;
     endWaits();
@@ -339,7 +342,7 @@ export function openNearby(link: string | null, packet: Uint8Array): Promise<voi
  * while it takes them (takeNostr), otherwise here, as one kept for this space is (openNearby).
  */
 export function openNostr(packet: Uint8Array): Promise<void> {
-  const next = nearbyTurn.catch(() => undefined).then(() => (nostrTaker ? nostrTaker(packet) : openHere(null, packet)));
+  const next = nearbyTurn.catch(() => undefined).then(() => (nostrTaker ? nostrTaker(packet) : openHere(null, packet, true)));
   nearbyTurn = next;
   return next.catch(() => undefined);
 }
@@ -360,7 +363,7 @@ export function takeNearby(taker: NearbyTaker): () => void {
   };
 }
 
-async function openHere(link: string | null, packet: Uint8Array): Promise<void> {
+async function openHere(link: string | null, packet: Uint8Array, nostr = false): Promise<void> {
   if (!hasCore()) {
     if (link) nearby.hold(packet);
     return;
@@ -387,7 +390,7 @@ async function openHere(link: string | null, packet: Uint8Array): Promise<void> 
   if (!link) nearby.dropHeld(packet);
   if (received.kind === 'message' && link) nearby.heardOn(received.identity, link);
   const came = cameBefore(chats, received);
-  const changed = await keep(chats, received, nearbyState);
+  const changed = await keep(chats, received, nearbyState, nostr);
   if (came) {
     messageListeners.forEach((listener) => listener(came));
     if (came.group) await takeGroupSignal(came.identity, came.group, came.request).catch(() => undefined);
@@ -569,7 +572,7 @@ function cameBefore({ history }: SpaceChats, received: Received): Extract<Receiv
 // Keeps what one message brought, as the chat's own handling does. Says whether anything changed.
 // One that came already, from their account and again from one of their endpoints, or through the
 // phone and again directly (docs/multi-device.md), is kept once, and said to have come once.
-async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received, { receipts, answers }: State): Promise<boolean> {
+async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received, { receipts, answers }: State, nostr = false): Promise<boolean> {
   if (received.kind === 'refused') return false;
   const peer = `${CONTACT_PREFIX}${received.identity}`;
   const { identity, tag, timer } = received;
@@ -582,7 +585,7 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   const twice = received.twice || history.has(peer, tag);
   const add = async (message: Partial<Message>) => {
     if (twice) return;
-    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...message });
+    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : {}), ...message });
     // A message request hears nothing back, not even that its message came, until accepted.
     if (tag && !received.request) {
       if (hidden) await e2e.hold(identity, 'got', [tag]);

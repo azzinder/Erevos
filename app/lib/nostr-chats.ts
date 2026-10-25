@@ -17,6 +17,14 @@ import { nostrReady, publishNostr, type NostrReader } from './nostr';
 import { fromHex, sendMessage, type Relay } from './relay';
 import { contactTarget, sendSealed } from './space-chats';
 
+const wentListeners = new Set<(identity: string, tag: string) => void>();
+
+/** Has `listener` called with each text a Nostr relay took, by its contact and tag (lock/history.ts throughNostr). Returns how to stop. */
+export function onNostrWent(listener: (identity: string, tag: string) => void): () => void {
+  wentListeners.add(listener);
+  return () => wentListeners.delete(listener);
+}
+
 /** What a seal gives that a text needs to go through Nostr: its tag, and where they read there. */
 export type ForNostr = { tag?: string; nostr?: NostrTo | null };
 
@@ -37,6 +45,7 @@ export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: F
     } catch {
       return relay();
     }
+    wentListeners.forEach((listener) => listener(identity, tag));
     const rang = to.b === true && (await ringBell(e2e, own, identity, packet.length).then(
       () => true,
       () => false,

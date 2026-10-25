@@ -34,19 +34,21 @@ const NOTHING_HEARD = '0'.repeat(32);
 
 const isHeard = (v: unknown) => v === undefined || (typeof v === 'string' && /^[0-9a-f]{32}$/.test(v));
 
-function isWatched(value: unknown): value is Watched {
+/** Whether `value` is a queue waited on, as kept. */
+export function isWatched(value: unknown): value is Watched {
   const v = (value ?? {}) as Partial<Record<keyof Watched, unknown>>;
   return typeof v.url === 'string' && v.url !== '' && typeof v.token === 'string' && isHex(v.recipientHex) && isHeard(v.heard);
 }
 
 /** What the relay last said came into a queue waited on, or null when it has said nothing yet. */
-export function heardOf(kept: Watched): News | null {
+export function heardOf(kept: Pick<Watched, 'heard'>): News | null {
   if (!kept.heard || kept.heard === NOTHING_HEARD) return null;
   const [round, messages, unmarked, rings] = [0, 8, 16, 24].map((at) => parseInt(kept.heard!.slice(at, at + 8), 16));
   return { round, messages, unmarked, rings };
 }
 
-const heardText = (news: News) => [news.round, news.messages, news.unmarked, news.rings].map((n) => (n >>> 0).toString(16).padStart(8, '0')).join('');
+/** What the relay said came, as kept with a queue (Watched heard). */
+export const heardText = (news: News) => [news.round, news.messages, news.unmarked, news.rings].map((n) => (n >>> 0).toString(16).padStart(8, '0')).join('');
 
 function seal(key: Uint8Array, list: WatchList): string {
   const json = JSON.stringify(list.map((kept) => kept && { ...kept, heard: kept.heard ?? NOTHING_HEARD }));

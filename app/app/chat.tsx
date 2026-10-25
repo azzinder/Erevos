@@ -132,7 +132,7 @@ import { answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openN
 import { readNostr } from '../lib/nostr';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
-import { nostrReaderOf, orNostr, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
+import { nostrReaderOf, onNostrWent, orNostr, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
 import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
@@ -1135,8 +1135,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Opens a packet that came from a phone nearby (`link`), or was kept for this space (no link).
   // One for none of this space's chats is kept for the others.
-  const nearbyCame = useRef(async (_link: string | null, _packet: Uint8Array) => undefined as void);
-  nearbyCame.current = async (link, packet) => {
+  const nearbyCame = useRef(async (_link: string | null, _packet: Uint8Array, _nostr?: boolean) => undefined as void);
+  nearbyCame.current = async (link, packet, nostr = false) => {
     if (!e2e) {
       if (link) nearby.hold(packet);
       return;
@@ -1161,7 +1161,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     if (!link) nearby.dropHeld(packet);
     if (received.kind === 'message' && link) nearby.heardOn(received.identity, link);
-    handle(received);
+    handle(received, nostr);
     await sendReceipts(relayTarget());
   };
 
@@ -1169,10 +1169,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // the space is open; a hidden place's read here, while its chats are open.
   useEffect(() => {
     if (!e2e) return;
-    const take = (packet: Uint8Array) => nearbyCame.current(null, packet);
+    const take = (packet: Uint8Array) => nearbyCame.current(null, packet, true);
     if (!hiddenKey) return takeNostr(take);
     return readNostr(nostrReaderOf(() => e2e, take));
   }, [e2e]);
+
+  // A text a Nostr relay took says so in its menu.
+  useEffect(
+    () =>
+      onNostrWent((identity, tag) => {
+        const peer = `${CONTACT_PREFIX}${identity}`;
+        setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, nostr: true } : m)));
+        void history.current?.throughNostr(peer, tag).catch(() => undefined);
+      }),
+    [],
+  );
 
   // What came nearby for this space while another was open, once its chats are.
   useEffect(() => {
@@ -1698,7 +1709,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e]);
 
   // What one message from the relay, or from a phone nearby, brings.
-  function handle(received: Awaited<ReturnType<E2E['receive']>>) {
+  function handle(received: Awaited<ReturnType<E2E['receive']>>, nostr = false) {
     if (!e2e) return;
     if (received.kind === 'refused') {
       if (received.reason === 'plain') setNote(t('A message that was not end-to-end encrypted came, and was not shown.'));
@@ -1724,7 +1735,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
     if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
     // What else it is: an answer to one of the chat's messages, a sticker.
-    const parts: Parts = { ...(received.re ? { re: received.re } : {}), ...contentOf(received.more) };
+    const parts: Parts = { ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : {}) };
     // Put together while the history does not hold it, from what came before too, and kept once
     // whole, as the receiver does (lib/receiver.ts).
     if (received.voice && !(received.tag && history.current?.has(peer, received.tag))) {
@@ -5412,6 +5423,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           visible={menuFor !== null && shown}
           onClose={() => setMenuFor(null)}
           line={menuFor ? messageLine(menuFor) : ''}
+          way={menuFor?.nostr ? (menuFor.mine ? t('Went through Nostr.') : t('Came through Nostr.')) : undefined}
           reaction={menuFor?.myReaction}
           onReact={menuFor && theyHave(menuFor) ? (emoji) => void react(menuFor, emoji) : undefined}
           actions={menuFor ? menuActions(menuFor) : []}

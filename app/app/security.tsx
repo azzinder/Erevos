@@ -6,6 +6,7 @@ import { IntegrityCard } from '../components/integrity-card';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
+import { doorIsOpen, setDoorOpen } from '../lib/closed-notices';
 import { mark, t } from '../lib/i18n';
 import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy, saveScreenPrivacy } from '../lib/screen-privacy';
 import {
@@ -309,15 +310,19 @@ export default function Security() {
 }
 
 // Receiving while Erevos is in the background (lib/background.ts), on this phone: the switch, the
-// messages notice, and what Android still has to allow, each with the way to allow it.
+// messages notice, whether this space says a message came while another is open
+// (lib/closed-notices.ts), and what Android still has to allow, each with the way to allow it.
 function BackgroundCalls({ titled }: { titled: boolean }) {
   const [on, setOn] = useState<boolean | null>(null);
   const [notices, setNotices] = useState(true);
+  const [door, setDoor] = useState<boolean | null>(null);
+  const [doorSaid, setDoorSaid] = useState('');
   const [allowed, setAllowed] = useState(backgroundState);
 
   useEffect(() => {
     loadRingInBackground().then(setOn);
     loadMessageNotices().then(setNotices);
+    doorIsOpen().then(setDoor, () => setDoor(false));
     // Back from Android's settings: what it allows now.
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') setAllowed(backgroundState());
@@ -335,6 +340,14 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
     void saveMessageNotices(next);
   }
 
+  function chooseDoor(next: boolean) {
+    setDoorSaid('');
+    setDoorOpen(next).then(
+      () => setDoor(next),
+      (error: unknown) => setDoorSaid(error instanceof Error ? error.message : String(error)),
+    );
+  }
+
   if (on === null) return null;
   return (
     <>
@@ -347,6 +360,20 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
         <Chip label={t('Say a message came')} selected={notices} onPress={() => chooseNotices(true)} />
         <Chip label={t('No notice')} selected={!notices} onPress={() => chooseNotices(false)} />
       </Row>
+      {on && notices && door !== null ? (
+        <>
+          <Row wrap>
+            <Chip label={t('This space only while open')} selected={!door} onPress={() => chooseDoor(false)} />
+            <Chip label={t('Also while another space is open')} selected={door} onPress={() => chooseDoor(true)} />
+          </Row>
+          <Text variant="caption" tone="muted" style={hint}>
+            {doorSaid ||
+              (door
+                ? t('While another space is open, this one says only "New message", as that one does, never which space; its hidden chats say nothing then. For it the phone keeps the addresses of its queues at its relay outside its password, never its keys, contacts or messages, and its relay may tell that the two spaces are on one phone. Through Tor, if this space goes through Tor, and only while the open one has Tor ready.')
+                : t('Closed, this space receives nothing: its messages wait at its relay and come when it opens.'))}
+          </Text>
+        </>
+      ) : null}
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
           {on

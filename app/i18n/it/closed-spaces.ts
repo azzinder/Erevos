@@ -1,0 +1,12 @@
+// The Italian of a closed space that says a message came while another is open (app/security.tsx,
+// lib/closed-notices.ts), and of a message that came or went through Nostr (app/chat.tsx) (i18n/it/index.ts).
+export const closedSpaces: Record<string, string> = {
+  'Went through Nostr.': 'Inviato tramite Nostr.',
+  'Came through Nostr.': 'Arrivato tramite Nostr.',
+  'This space only while open': 'Questo spazio solo quando è aperto',
+  'Also while another space is open': 'Anche mentre è aperto un altro spazio',
+  'While another space is open, this one says only "New message", as that one does, never which space; its hidden chats say nothing then. For it the phone keeps the addresses of its queues at its relay outside its password, never its keys, contacts or messages, and its relay may tell that the two spaces are on one phone. Through Tor, if this space goes through Tor, and only while the open one has Tor ready.': 'Mentre è aperto un altro spazio, questo dice solo «Nuovo messaggio», come quello, mai quale spazio; le sue chat nascoste allora non dicono nulla. Per questo il telefono tiene gli indirizzi delle sue code sul suo relay fuori dalla sua password, mai le sue chiavi, i contatti o i messaggi, e il suo relay può capire che i due spazi sono sullo stesso telefono. Tramite Tor, se questo spazio passa per Tor, e solo mentre quello aperto ha Tor pronto.',
+  'Closed, this space receives nothing: its messages wait at its relay and come when it opens.': 'Chiuso, questo spazio non riceve nulla: i suoi messaggi aspettano sul suo relay e arrivano quando si apre.',
+  'This space has no queue at a relay yet: it can say nothing while closed.': 'Questo spazio non ha ancora una coda su un relay: chiuso non può dire nulla.',
+  'Tor is not ready.': 'Tor non è pronto.',
+};
