@@ -1158,6 +1158,28 @@ voice messages through Nostr are still to come.
   through Nostr, your contact also sends your relay a bell, a message that says nothing, which your relay counts as
   one, as before.
 
+### With no relay at all {#nostr-only}
+
+A phone with no relay, no invite and no LPHL account can still begin: its contact link and QR code say where it reads
+on Nostr, and that is enough to talk.
+
+- **To begin:** on the first screen, under **No invite?**, tap **Show my QR code** or **Share my contact link**, and
+  give it to someone who uses Erevos. Who adds it writes to you through Nostr, over Tor, and shows as a message request,
+  which you accept. You can add their link or QR code too, the same way.
+- **What goes:** texts, stickers, reactions, edits, and the marks that a message came or was read, all through Nostr.
+  Photos, voice messages, files, calls, groups and hidden chats need a relay, or the other phone nearby.
+- **When it does not come:** the Nostr relays keep a text for two days. Until your contact's phone says it came, Erevos
+  gives it to them again once a day, for two weeks.
+- **A relay by itself:** when your contact has a relay that lets them invite, their Erevos sends yours an invite to it
+  by itself, once, in the chat, whether you first met through Nostr or nearby, over Bluetooth, Wi-Fi or a QR code.
+  Your phone takes it by itself, and from then on photos, voice messages and calls work too, with everyone. It counts
+  as one of their invites. Someone whose message request you have not accepted chooses no relay for you: their invite
+  waits until you accept them, a week at most.
+- **An older Erevos** does not read the Nostr part of a link: it reaches you nearby only, until you have a relay.
+
+**Why:** Nostr is only the way in. No one needs an invite to begin, and once one of you has a relay, it carries what
+is too big for Nostr.
+
 ## SMS {#sms}
 
 On Android, Erevos can be the phone's SMS app: under **Settings** → **Phone and SMS** → **SMS** → **Erevos as the SMS

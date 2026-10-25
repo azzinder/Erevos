@@ -8,7 +8,10 @@
 // hidden chats; while Tor is not ready, or no Nostr relay takes it, it goes through the relay at
 // once. A reader asks from somewhat over an hour before it last read, keeps until when, and asks
 // again at once when the keys change. Requests to the relay that would go through Tor go straight
-// to a real relay here; those parts are skipped, with a note, without one.
+// to a real relay here; those parts are skipped, with a note, without one. With no relay between
+// the two, a link says where it reads on Nostr (`nk`, `nr`), and all that is small goes there, the
+// first packet with each until they answer, several packets in one wrap; texts are put there again
+// each day until said to have come, and an invite to a relay rides in a message with nothing else.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -20,8 +23,10 @@ import { contactLink, parseContact } from '../lib/contact-code';
 import { canNostr, setCore, type Core } from '../lib/core';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
-import { NOSTR_BACKUP_MS, nostrOf, nostrReady, nostrRelays, nostrStates, readNostr, setNostr } from '../lib/nostr';
-import { nostrReaderOf, orNostr, sendNostrBackups } from '../lib/nostr-chats';
+import { NOSTR_AGAIN_MOST, NOSTR_AGAIN_MS, NOSTR_BACKUP_MS, nostrOf, nostrPacked, nostrReady, nostrRelays, nostrStates, packNostr, readNostr, setNostr, unpackNostr } from '../lib/nostr';
+import { nostrOnlyWay, nostrReaderOf, orNostr, sendNostrAgain, sendNostrBackups } from '../lib/nostr-chats';
+import { MOST_NOSTR } from '../lib/contact-code';
+import { offerOf } from '../lib/relay-offer';
 import { createQueue, NO_NEWS, receiveMessage, setThroughTor, setTorReady, waitForNews, type Relay } from '../lib/relay';
 import { sendSealed } from '../lib/space-chats';
 import { checkedNostr, NOSTR_DEFAULT, NOSTR_RELAYS } from '../lock/space-data';
@@ -322,11 +327,15 @@ t('a chat tells each contact the key it reads them with, once, again when its re
   const { toBob, toAlice } = await meet(alice, bob);
   assert.equal((await alice.e2e.seal(toBob, 'not yet', alice.from)).nostr, null, 'Bob said nothing of Nostr yet');
 
-  // Alice tells Bob her key for him; Bob's texts to her then go to her relays, for that key.
-  assert.deepEqual(alice.e2e.nostrKeys(), []);
-  message(await tell(alice, toBob, bob));
+  // Alice added Bob: her first message told him her key for him. Bob's texts to her then go to her
+  // relays, for that key.
   const [aliceKey] = alice.e2e.nostrKeys();
+  assert.equal(alice.e2e.nostrKeys().length, 1);
   assert.match(aliceKey.p, /^[0-9a-f]{64}$/);
+  assert.deepEqual((await bob.e2e.seal(toAlice, 'to Alice', bob.from)).nostr, { k: aliceKey.p, r: [ONE, TWO] });
+  // Her prekeys go in a message of keys of their own, which says the same key.
+  message(await tell(alice, toBob, bob));
+  assert.deepEqual(alice.e2e.nostrKeys(), [aliceKey]);
   assert.deepEqual((await bob.e2e.seal(toAlice, 'to Alice', bob.from)).nostr, { k: aliceKey.p, r: [ONE, TWO] });
 
   // Bob's chat is a hidden one: it asks for a bell with each text.
@@ -497,8 +506,6 @@ t('a reader asks from over an hour before it last read, keeps until when, and as
   const bob = await chat('space', 1);
   const carol = await chat('hidden', 2);
   const toBob = (await meet(alice, bob)).toBob;
-  const toCarol = (await meet(alice, carol)).toBob;
-  message(await tell(alice, toBob, bob));
   const [bobsKey] = alice.e2e.nostrKeys();
 
   const stopSpace = readNostr(nostrReaderOf(() => alice.e2e, async () => undefined));
@@ -510,8 +517,8 @@ t('a reader asks from over an hour before it last read, keeps until when, and as
   await until(() => alice.e2e.nostrSince() > 0);
   assert.ok(Math.abs(alice.e2e.nostrSince() - now) <= 2);
 
-  // A key made for another contact: asked again at once, the subscription before closed.
-  message(await tell(alice, toCarol, carol));
+  // A key made for another contact, as it is added: asked again at once, the subscription before closed.
+  await meet(alice, carol);
   await until(() => relays.asked.length === 2);
   const second = relays.asked[1];
   assert.notEqual(second.sub, first.sub);
@@ -534,4 +541,106 @@ t('a reader asks from over an hour before it last read, keeps until when, and as
   // Nothing reads: the connection closes.
   stopSpace();
   await until(() => relays.lines.size === 0);
+});
+
+t('several packets go in one wrap, and one alone as it is, so an Erevos from before reads it', async () => {
+  const a = Uint8Array.of(1, 4, 9, 9);
+  const b = Uint8Array.of(1, 3, 7);
+  assert.deepEqual(packNostr([a]), a);
+  assert.equal(nostrPacked([a]), a.length);
+  const both = packNostr([a, b]);
+  assert.equal(both.length, nostrPacked([a, b]));
+  assert.deepEqual(unpackNostr(both), [a, b]);
+  assert.deepEqual(unpackNostr(a), [a]);
+  assert.deepEqual(unpackNostr(both.slice(0, both.length - 1)), [], 'cut short: nothing');
+  assert.deepEqual(unpackNostr(Uint8Array.of(9, 1, 0, 0, 0, 9, 1)), [], 'a length past the end: nothing');
+});
+
+t('a link says where it reads on Nostr, and a link read keeps it, checked', async () => {
+  const k = 'ab'.repeat(32);
+  const relays = [ONE, TWO];
+  const link = contactLink({ senderHex: '', relayUrl: '', key: 'AAAA', nostr: { k, r: relays } });
+  assert.match(link, /&nk=[0-9a-f]{64}&nr=/);
+  assert.deepEqual(parseContact(link)?.nostr, { k, r: relays });
+  const many = Array.from({ length: MOST_NOSTR + 3 }, (_, i) => `wss://n${i}.example.org`);
+  assert.equal(parseContact(contactLink({ senderHex: '', relayUrl: '', key: 'AAAA', nostr: { k, r: many } }))?.nostr?.r.length, MOST_NOSTR);
+  assert.equal(parseContact(`${link.replace(/&nk=[0-9a-f]+/, '&nk=xyz')}`)?.nostr, undefined, 'no key of its shape: none');
+  assert.equal(parseContact(link.replace(/&nr=.*/, '&nr=http%3A%2F%2Fplain.example.org'))?.nostr, undefined, 'no relay of its shape: none');
+});
+
+t('with no relay between the two, the first message and texts go through Nostr, the first with each until they answer; texts again each day until they came', async () => {
+  setNostr([ONE]);
+  const bob = await chat('space', 1);
+  const alice = await chat('space', 0);
+  const bobsLink = (await bob.e2e.linkNostr())!;
+  assert.deepEqual(bobsLink.r, [ONE]);
+  assert.deepEqual(bob.e2e.nostrKeys().map((k) => k.p), [bobsLink.k], 'Bob reads on the key of his link');
+
+  // Alice has no relay queue, nor does Bob's link name one: only Nostr is between them.
+  const code = parseContact(contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(bob.e2e.bundle), nostr: bobsLink }))!;
+  const { identity: toBob } = await alice.e2e.addContact(code, '');
+  assert.equal(alice.e2e.readsOnNostr(toBob), true);
+  const came: Extract<Received, { kind: 'message' }>[] = [];
+  // What opens as a message; the first packet again, with a later wrap, is refused as one seen.
+  const stop = readNostr(
+    nostrReaderOf(
+      () => bob.e2e,
+      async (packet) => {
+        const received = await bob.e2e.receive(packet);
+        if (received.kind === 'message') came.push(received);
+      },
+    ),
+  );
+  try {
+    const hello = await alice.e2e.seal(toBob, '', '', {});
+    assert.ok(hello.first, 'the first packet goes with it');
+    assert.equal(hello.nostr?.k, bobsLink.k, "to the key of Bob's link");
+    assert.equal(await nostrOnlyWay(alice.e2e, toBob, hello, [hello.packet])!(), 'nostr');
+    await until(() => came.length === 2);
+    assert.equal(relays.keptAt(ONE).length, 1, 'both in one wrap');
+    const toAlice = came[0].identity;
+    assert.equal(came[0].request, true, 'from his link, as from the relay: a request');
+    assert.equal(came[1].identity, toAlice);
+    await bob.e2e.acceptRequest(toAlice);
+
+    // A text, with the first still, as Bob has not answered yet; kept to go again.
+    const text = await alice.e2e.seal(toBob, 'hello Bob', '', {});
+    assert.ok(text.first);
+    assert.equal(await nostrOnlyWay(alice.e2e, toBob, text, [text.packet])!(), 'nostr');
+    await until(() => came.length === 3);
+    assert.equal(came[2].text, 'hello Bob');
+    const now = Date.now();
+    assert.deepEqual(alice.e2e.nostrAgainDue(now), []);
+    assert.deepEqual(alice.e2e.nostrAgainDue(now + NOSTR_AGAIN_MS).map((due) => due.tag), [text.tag]);
+    assert.deepEqual(alice.e2e.nostrBackupsDue(now + NOSTR_BACKUP_MS), [], 'no relay to back it up');
+
+    // Bob answers, through Nostr too, to the key Alice's first message said; then the first goes no more.
+    const back = await bob.e2e.seal(toAlice, 'hi Alice', bob.from, { got: [text.tag] });
+    assert.ok(back.nostr, 'Alice said where she reads');
+    message(await alice.e2e.receive(back.packet));
+    assert.equal((await alice.e2e.seal(toBob, 'and again', '', {})).first, null, 'their answer means they have the first');
+    assert.deepEqual(alice.e2e.nostrAgainDue(now + NOSTR_AGAIN_MS), [], 'what came goes no more');
+
+    // One not said to have come goes again each day, until it went NOSTR_AGAIN_MOST times.
+    const lost = await alice.e2e.seal(toBob, 'lost', '', {});
+    await nostrOnlyWay(alice.e2e, toBob, lost, [lost.packet])!();
+    let at = Date.now();
+    for (let n = 1; n < NOSTR_AGAIN_MOST; n++) {
+      at += NOSTR_AGAIN_MS;
+      assert.equal(alice.e2e.nostrAgainDue(at).length, 1, `due again, the ${n + 1}th time`);
+      await sendNostrAgain(alice.e2e, at);
+    }
+    assert.deepEqual(alice.e2e.nostrAgainDue(at + NOSTR_AGAIN_MS), []);
+
+    // A relay invite rides in a message with nothing else, and is read only of its shape.
+    const code64 = 'cd'.repeat(32);
+    const invite = await alice.e2e.seal(toBob, '', '', { more: { ri: { r: 'wss://relay.example.org', c: code64 } } });
+    assert.equal(await nostrOnlyWay(alice.e2e, toBob, invite, [invite.packet])!(), 'nostr');
+    await until(() => came.some((m) => m.more.ri));
+    const offered = offerOf(came.find((m) => m.more.ri)!);
+    assert.deepEqual(offered, { relayUrl: 'wss://relay.example.org', code: code64, from: toAlice, request: false });
+    assert.equal(offerOf(message(await bob.e2e.receive((await alice.e2e.seal(toBob, '', '', { more: { ri: { r: 'ws://relay.example.org', c: code64 } } })).packet))), null, 'in the clear across the internet: none');
+  } finally {
+    stop();
+  }
 });

@@ -10,12 +10,20 @@
 // their relay queue too, marked as a message (lib/e2e.ts bell): their relay counts it, and their
 // phone says something came; the backup then goes quiet, as it was counted once already. A bell
 // their relay did not take counted nothing: then the backup is the message that counts.
+//
+// With no relay between the two (this phone has none, or the contact said none: lib/e2e.ts seal),
+// Nostr is the only way, for all that goes, not only words (nostrOnlyWay): the conversation's
+// first packet with what follows it, in one wrap, until they answer, as relays may give wraps in
+// any order. A text that went so is kept and goes there again about daily while their phone does
+// not say it came (sendNostrAgain), as a Nostr relay keeps a wrap two days, not the relay's
+// fourteen. What no Nostr relay took waits, as for a relay out of reach (lib/waiting.ts).
 
 import type { E2E } from './e2e';
 import type { NostrTo } from '../lock/e2e-data';
-import { nostrReady, publishNostr, type NostrReader } from './nostr';
-import { fromHex, sendMessage, type Relay } from './relay';
+import { NOSTR_MOST, nostrReady, packNostr, publishNostr, type NostrReader } from './nostr';
+import { fromHex, RelayUnreachableError, sendMessage, type Relay } from './relay';
 import { contactTarget, sendSealed } from './space-chats';
+import { t } from './i18n';
 
 const wentListeners = new Set<(identity: string, tag: string) => void>();
 
@@ -54,6 +62,47 @@ export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: F
     await e2e.nostrKeep(identity, tag, packet, rang).catch(() => undefined);
     return 'nostr';
   };
+}
+
+/**
+ * How a contact's packets go when no relay is between the two and the seal said they read on Nostr
+ * (`sealed.nostr`): there only, after the conversation's first packet while they have not answered,
+ * all in one wrap. A text that went is kept to go again (sendNostrAgain). Throws a relay's
+ * unreachable error, which lets it wait, while Tor is not ready or no Nostr relay took it. Null
+ * when it cannot go so: no Nostr place, or too large for a wrap.
+ */
+export function nostrOnlyWay(e2e: E2E, identity: string, sealed: ForNostr & { first: Uint8Array | null }, packets: Uint8Array[]): (() => Promise<'nostr'>) | null {
+  const to = sealed.nostr;
+  if (!to) return null;
+  const packed = packNostr(sealed.first ? [sealed.first, ...packets] : packets);
+  if (packed.length > NOSTR_MOST) return null;
+  return async () => {
+    if (!nostrReady()) throw new RelayUnreachableError(t('Tor is not ready.'));
+    try {
+      await publishNostr(to, packed);
+    } catch (error) {
+      throw new RelayUnreachableError(t('No Nostr relay took it: {reason}', { reason: error instanceof Error ? error.message : String(error) }));
+    }
+    const tag = sealed.tag ?? '';
+    if (tag) {
+      wentListeners.forEach((listener) => listener(identity, tag));
+      await e2e.nostrKeepOnly(identity, tag, packed).catch(() => undefined);
+    }
+    return 'nostr';
+  };
+}
+
+/** Sends to Nostr again what went to contacts there only and was not said to have come (lib/e2e.ts nostrAgainDue), each to where they read now. What cannot go now goes with the next look. */
+export async function sendNostrAgain(e2e: E2E, now = Date.now()): Promise<void> {
+  if (!nostrReady()) return;
+  for (const { identity, tag, packed, to } of e2e.nostrAgainDue(now)) {
+    try {
+      await publishNostr(to, packed);
+      await e2e.nostrWentAgain(identity, tag, now);
+    } catch {
+      // Tried again with the next look.
+    }
+  }
 }
 
 // A bell for a contact's hidden chats, to their relay queue, marked as a message. Rejects when

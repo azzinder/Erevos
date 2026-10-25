@@ -66,8 +66,9 @@ import { isSharedPhoto, readShared, takeShared } from '../lib/share-in';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
-import { contactLink, offerFor, onContactOffered, parseContact, type ContactCode, type Offer } from '../lib/contact-code';
+import { contactLink, offerFor, onContactOffered, parseContact, type ContactCode, type NostrCode, type Offer } from '../lib/contact-code';
 import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
+import { forgetOffer, keepOffer, keptOffer, offerOf, takesOffer } from '../lib/relay-offer';
 import { onWelcomeOffered, parseWelcome, START_RELAY, type Welcome } from '../lib/welcome';
 import { oldToken, ownToken } from '../lib/relay-signin';
 import { canGroup, canRelaySeal, hasCore } from '../lib/core';
@@ -115,6 +116,7 @@ import {
   isLentToken,
   isQueueNotFound,
   lendTicket,
+  makeInvite,
   receiveMessage,
   redeemInvite,
   relayKey,
@@ -130,10 +132,10 @@ import {
   type Relay,
 } from '../lib/relay';
 import { answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openNearby, takeNearby, takeNostr, waitWhileAway, type Waited } from '../lib/receiver';
-import { readNostr } from '../lib/nostr';
+import { nostrReady, readNostr } from '../lib/nostr';
 import { answerInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
-import { nostrReaderOf, onNostrWent, orNostr, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
+import { nostrOnlyWay, nostrReaderOf, onNostrWent, orNostr, sendNostrAgain, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
 import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
@@ -217,6 +219,9 @@ const isCallLine = (text: string) => text.startsWith(CALL_LINE);
 // How often the chat looks at the relay, milliseconds: more often during a call, so it sets up quickly.
 const LOOK_EVERY = 3000;
 const LOOK_IN_CALL = 700;
+// With no relay, how often what waits for Nostr is tried, while the app shows and while it does not.
+const NOSTR_LOOK = 5000;
+const NOSTR_LOOK_AWAY = 60_000;
 
 // How long a note under the messages stays, milliseconds.
 const NOTE_SHOWN = 8000;
@@ -921,7 +926,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setSelected(`${CONTACT_PREFIX}${identity}`);
       if (asked && added && canConnect && !e2e.contacts().find((c) => c.identity === identity)?.name) setConnecting(identity);
       if (target) await sendPending(e2e, target);
-      const nearbyOnly = !target || !code.senderHex;
+      // With no relay between the two, the first message goes through Nostr when they read there, in
+      // a quiet message with nothing in it: their phone has this contact then too (lib/nostr-chats.ts).
+      const onNostr = !hiddenKey && (!target || !code.senderHex) && e2e.readsOnNostr(identity);
+      if (onNostr) await sendToContact(target, identity, '', {}, true).catch(() => undefined);
+      const nearbyOnly = !onNostr && (!target || !code.senderHex);
       // Connected as it was added, from the screen a scanned link opens: said after the note.
       const linked = offer?.name && offer.added ? ` ${t('Connected to {name}.', { name: cleanName(offer.name) })}` : '';
       setNote(
@@ -932,9 +941,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   error: errorText(noPlace),
                 })
               : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. Until you both have a relay, you reach each other nearby only.')
-            : lent
-              ? t("Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay of your own, you now have a place on theirs, lent through their link.")
-              : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
+            : onNostr
+              ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay between you, texts, stickers and reactions go through Nostr, over Tor; photos, voice messages and calls need a relay or their phone nearby.')
+              : lent
+                ? t("Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay of your own, you now have a place on theirs, lent through their link.")
+                : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
           : t('Already a contact. Where to reach them is updated.')) + linked,
       );
       return identity;
@@ -1042,6 +1053,36 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  // An invite to a contact's relay that came in their message (lib/relay-offer.ts), taken by itself
+  // while this phone has no relay of its own, or only a place lent on one: access of its own there
+  // and a queue, and then its contacts are told quietly where it reads now (tellJoined). Tried once:
+  // a contact sends one only once.
+  const tellJoined = useRef(false);
+  async function takeOffer(invite: Invite, from: string) {
+    await forgetOffer().catch(() => undefined);
+    if (!e2e || hiddenKey || !takesOffer({ url: relayUrl, token: relayToken }, invite.relayUrl)) return;
+    const url = invite.relayUrl;
+    const name = cleanName(e2e.contacts().find((c) => c.identity === from)?.name ?? '');
+    try {
+      const { token } = await redeemInvite(url, invite.code);
+      const ids = await createQueue({ url, token });
+      setRelayUrl(url);
+      setRelayToken(token);
+      setOwnQueue({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
+      updateCurrentSpaceData({ ownToken: ownToken(url, token) }).catch(() => {
+        // Not kept: signing in there later gives this phone one more line instead of its own again.
+      });
+      tellJoined.current = true;
+      setNote(
+        name
+          ? t('{name} gave you a place on their relay, by itself. Photos, voice messages and calls now go there too, with everyone.', { name })
+          : t('A contact gave you a place on their relay, by itself. Photos, voice messages and calls now go there too, with everyone.'),
+      );
+    } catch (error) {
+      setNote(t('An invite to a contact’s relay came, but it was not taken. {error}', { error: errorText(error) }));
+    }
+  }
+
   // A token of this phone's own on the relay at `url`, from an invite or a sign-in, named `name`
   // there: it goes where the relay's token goes and is kept sealed with the space's relay settings,
   // with a queue there when this phone has none on that relay. Which token it is, and from which
@@ -1096,6 +1137,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setNote(t('This phone now has a token of its own on the relay, named {name} there, in place of the relay’s token: it can invite others now.', { name: own.name }));
     return { url, token: own.token };
   }
+
+  // An invite that came while the chat was closed (lib/receiver.ts), taken once the chat has its
+  // settings, unless it came from a request not accepted yet: then once that is.
+  useEffect(() => {
+    if (!loaded || !e2e || hiddenKey) return;
+    loadCurrentSpaceData()
+      .then(({ offered }) => {
+        const offer = keptOffer(offered);
+        if (!offer) return offered.until ? forgetOffer() : undefined;
+        if (e2e.contacts().find((c) => c.identity === offer.from)?.request) return;
+        return takeOffer(offer, offer.from);
+      })
+      .catch(() => undefined);
+  }, [loaded, e2e]);
 
   // Asked once a run for each token, and again when Erevos comes back to the front if the relay
   // could not be reached.
@@ -1655,8 +1710,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         void sendWaitingNow.current(true);
         await sendReceipts(sends);
         await sendKeys(sends);
+        await relayOffers.current(own, sends);
         // Texts that went through Nostr, not said to have come in time, through the relay as well.
         await sendNostrBackups(e2e, sends);
+        // To contacts Nostr is the only way to, what is due there again (lib/nostr-chats.ts).
+        await sendNostrAgain(e2e);
         await sendCopies(e2e, sends).catch(() => 0);
         failures = 0;
       } catch (error) {
@@ -1711,6 +1769,68 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       if (timer) clearTimeout(timer);
     };
   }, [relayUrl, relayToken, viaUrl, viaToken, ownQueue, e2e]);
+
+  // To each contact with no queue of their own, added here or accepted, once: an invite to this
+  // phone's relay, sent by itself in a message with nothing to show, whatever way the two first met
+  // (lib/relay-offer.ts). Only while something reaches them now, so no invite is made for nothing:
+  // it is one of this phone's invites there (lib/relay.ts makeInvite). Where this phone may invite
+  // no one, none goes; nor from hidden chats. And once this phone took one itself, its contacts are
+  // told quietly where it reads now.
+  const offeredNow = useRef(new Set<string>());
+  const relayOffers = useRef((_own: Relay, _sends: Relay) => Promise.resolve());
+  relayOffers.current = async (own, sends) => {
+    if (!e2e || hiddenKey || !ownQueue) return;
+    if (tellJoined.current) {
+      tellJoined.current = false;
+      for (const contact of e2e.contacts()) if (!contact.request) await sendToContact(sends, contact.identity, '', {}, true).catch(() => undefined);
+    }
+    if (!own.token || isLentToken(own.token)) return;
+    for (const identity of e2e.relayInvitesDue()) {
+      if (offeredNow.current.has(identity) || (!nearby.isNear(identity) && !(nostrReady() && e2e.readsOnNostr(identity)))) continue;
+      offeredNow.current.add(identity);
+      try {
+        const name = e2e.contacts().find((c) => c.identity === identity)?.name || identity.slice(0, 8);
+        const made = await makeInvite(own, name);
+        if (!made) return;
+        await sendToContact(sends, identity, '', { more: { ri: { r: own.url, c: made.code } } }, true);
+        await e2e.relayInviteSent(identity);
+      } catch {
+        // Tried again the next time Erevos opens.
+      }
+    }
+  };
+
+  // With no relay queue, what goes through Nostr to the contacts it is the only way to (lib/nostr-chats.ts
+  // nostrOnlyWay), while Tor is ready: what waited, the marks that messages came and were read, new
+  // prekeys, and what is due there again. What comes there is read as with a relay (takeNostr).
+  const nostrLook = useRef(() => Promise.resolve());
+  nostrLook.current = async () => {
+    if (!e2e || hiddenKey || !nostrReady()) return;
+    await sendKeys(null);
+    await sendNostrAgain(e2e);
+    await sendWaitingNow.current(false);
+    await sendReceipts(null);
+  };
+  useEffect(() => {
+    if (!e2e || hiddenKey || (relayUrl.trim() && ownQueue)) return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    function next() {
+      timer = setTimeout(
+        async () => {
+          timer = null;
+          await nostrLook.current().catch(() => undefined);
+          if (active) next();
+        },
+        appShown() ? NOSTR_LOOK : NOSTR_LOOK_AWAY,
+      );
+    }
+    next();
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [relayUrl, ownQueue, e2e]);
 
   // What one message from the relay, or from a phone nearby, brings.
   function handle(received: Awaited<ReturnType<E2E['receive']>>, nostr = false) {
@@ -1778,6 +1898,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, theirReaction: emoji || undefined } : m)));
       history.current?.react(peer, tag, false, emoji).catch(() => undefined);
     }
+    // An invite to their relay (lib/relay-offer.ts): taken now, or, from a request, once accepted.
+    const offer = hiddenKey || twice ? null : offerOf(received);
+    if (offer && !offer.request) void takeOffer(offer, offer.from);
+    else if (offer) void keepOffer(offer).catch(() => undefined);
     // They type to us now, or wrote: then they no longer do.
     if (received.more.typing) setTyping((now) => ({ ...now, [peer]: Date.now() + TYPING_SHOWS }));
     else if (received.text || received.voice || received.file) setTyping(({ [peer]: _done, ...others }) => others);
@@ -2415,8 +2539,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     waits = false,
   ): Promise<Delivery> {
     if (hiddenKey) return handOverHidden(chats, target, identity, { sealed: { ...sealed, spare: sealed.spare ?? null }, packets }, mark, waits);
-    // Words go through Nostr when they read there (lib/nostr-chats.ts), the relay their backup.
-    const relay = target && sealed.sender ? orNostr(chats, target, identity, sealed, packets, () => sendSealed(target, sealed, packets, sentMark(sealed, mark), () => chats.firstSent(identity))) : null;
+    // Words go through Nostr when they read there (lib/nostr-chats.ts), the relay their backup; with
+    // no relay between the two, all goes there, when they read there.
+    const relay =
+      target && sealed.sender
+        ? orNostr(chats, target, identity, sealed, packets, () => sendSealed(target, sealed, packets, sentMark(sealed, mark), () => chats.firstSent(identity)))
+        : nostrOnlyWay(chats, identity, sealed, packets);
     const all = sealed.first ? [sealed.first, ...packets] : packets;
     const carry = carried ? () => carriedFor(sealed, all, { url: relayUrl, key: ownRelayKey }, sentMark(sealed, mark)) : null;
     // What is worth carrying is worth LoRa's air time too, when it is small (lib/lora.ts).
@@ -2783,8 +2911,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   async function acceptRequest(peer: string) {
     if (!e2e) return;
     try {
-      await e2e.acceptRequest(peer.slice(CONTACT_PREFIX.length));
+      const identity = peer.slice(CONTACT_PREFIX.length);
+      await e2e.acceptRequest(identity);
       setContacts(e2e.contacts());
+      // An invite to their relay that came with the request: taken now (lib/relay-offer.ts).
+      if (!hiddenKey) {
+        const offer = keptOffer((await loadCurrentSpaceData()).offered);
+        if (offer?.from === identity) await takeOffer(offer, identity);
+      }
     } catch (error) {
       setNote(errorText(error));
     }
@@ -4090,6 +4224,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const photos = useShownPhotos(shownPhotos, (error) => setNote(t('Cannot show the photo. {error}', { error: errorText(error) })));
   // The chat on the screen, or the hidden place open: what comes there only sounds (lib/background.ts).
   const focused = useIsFocused();
+  // Where the link says this chat reads on Nostr, so that who adds it with no relay between the two
+  // writes there (lib/e2e.ts linkNostr): asked again each time the chat shows, as the Tor and Nostr
+  // settings may have changed meanwhile.
+  const [linkNostr, setLinkNostr] = useState<NostrCode | null>(null);
+  useEffect(() => {
+    if (!e2e || hiddenKey || !focused) return;
+    let active = true;
+    e2e
+      .linkNostr()
+      .then((code) => active && setLinkNostr((was) => (was?.k === code?.k && was?.r.join(' ') === code?.r.join(' ') ? was : code)))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [e2e, focused]);
   const onScreen = !shown || !focused ? null : hiddenKey ? screenOfHidden(pocket) : selectedIdentity ? screenOfChat(selectedIdentity) : null;
   useEffect(() => (onScreen ? showOnScreen(onScreen) : undefined), [onScreen]);
   const importedFrom = [...new Set(imported.map((m) => SOURCE_LABELS[m.source]))].join(` ${t('and')} `);
@@ -4161,7 +4310,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   useEffect(() => {
     if (newestMine !== null) setStretch(null);
   }, [newestMine]);
-  // Without a relay queue the link has only the keys: who adds it reaches this phone nearby.
+  // Without a relay queue the link has only the keys, and where it reads on Nostr: who adds it
+  // reaches this phone nearby, or there.
   const ownLink = !e2e
     ? null
     : !hiddenKey && accountLink()
@@ -4177,10 +4327,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           relayKey: ownRelayKey || undefined,
           spare: linkSpare(linkQueue?.senderHex ?? '', ownQueue.senderHex, spareCode(e2e.spare())),
           lend: ownTicket || undefined,
+          nostr: (!hiddenKey && linkNostr) || undefined,
         })
       : hiddenKey
         ? null
-        : contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(e2e.bundle) });
+        : contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(e2e.bundle), nostr: linkNostr ?? undefined });
   // A phone with no relay yet, in the space's chats: it starts with an invite, or by signing in,
   // and sees nothing of relays unless it sets one up itself.
   const newcomer = loaded && !hiddenKey && !accountLink() && !relayUrl.trim();
@@ -4983,6 +5134,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   <Button title={t('Join')} compact onPress={() => addContact(inviteDraft) && setInviteDraft('')} />
                 </Row>
                 <RelaySignIn url={START_RELAY} token="" onToken={(token, name) => void tookToken(START_RELAY, token, name, true)} onNote={setNote} brief />
+                {ownLink && linkNostr ? (
+                  <>
+                    <Text variant="label">{t('No invite?')}</Text>
+                    <Text tone="muted">
+                      {t('Start without one: show your QR code to someone who uses Erevos, or send them your link. Texts, stickers and reactions then go through Nostr, over Tor, with no relay. If they have a relay, an invite to it comes to this phone by itself, and the rest works too.')}
+                    </Text>
+                    <Row wrap>
+                      <Button title={t('Show my QR code')} kind="secondary" compact onPress={() => setShowQr(true)} />
+                      <Button
+                        title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
+                        kind="secondary"
+                        compact
+                        onPress={() => void shareLink(ownLink)}
+                      />
+                    </Row>
+                  </>
+                ) : null}
               </View>
             ) : null}
             <View style={styles.panel}>
@@ -5022,7 +5190,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                       <Text tone="muted">
                         {ownQueue
                           ? t('Your relay queue is ready. Give your contact link to whoever may write to you.')
-                          : t('No relay queue yet. Your contact link has only your keys: who adds it reaches you nearby, over Wi-Fi or Bluetooth, until you have a relay.')}
+                          : linkNostr
+                            ? t('No relay queue yet. Your contact link has your keys and where you read on Nostr: who adds it writes to you through Nostr, over Tor, or reaches you nearby, until you have a relay.')
+                            : t('No relay queue yet. Your contact link has only your keys: who adds it reaches you nearby, over Wi-Fi or Bluetooth, until you have a relay.')}
                       </Text>
                       <Row wrap>
                         <Button title={t('Show my QR code')} compact onPress={() => setShowQr(true)} />

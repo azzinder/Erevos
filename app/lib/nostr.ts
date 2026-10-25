@@ -32,6 +32,50 @@ export const NOSTR_BACKUP_MS = 5 * 60_000;
 /** The largest packet a wrap carries (crates/erevos-nostr MAX_BYTES). */
 export const NOSTR_MOST = 49_151;
 
+/** How long after a text went to a contact Nostr is the only way to it goes there again, should their phone not have said it came, and how many times it goes at most: a relay keeps a wrap two days. */
+export const NOSTR_AGAIN_MS = 24 * 3600_000;
+export const NOSTR_AGAIN_MOST = 14;
+
+// What a wrap carries: one packet as it is, or several in order (packNostr), after these two bytes,
+// each with its length (4 bytes) first. No packet starts so: each starts with its version, 1.
+const PACKETS = [9, 1];
+
+/** The bytes `packNostr` makes of these packets. */
+export function nostrPacked(packets: Uint8Array[]): number {
+  return packets.length === 1 ? packets[0].length : PACKETS.length + packets.reduce((sum, packet) => sum + 4 + packet.length, 0);
+}
+
+/** What a wrap carries for these packets, in order: one as it is, as an Erevos before reads it. */
+export function packNostr(packets: Uint8Array[]): Uint8Array {
+  if (packets.length === 1) return packets[0];
+  const out = new Uint8Array(nostrPacked(packets));
+  out.set(PACKETS);
+  const view = new DataView(out.buffer);
+  let at = PACKETS.length;
+  for (const packet of packets) {
+    view.setUint32(at, packet.length);
+    out.set(packet, at + 4);
+    at += 4 + packet.length;
+  }
+  return out;
+}
+
+/** The packets a wrap carried, in order; none when what it carried does not read. */
+export function unpackNostr(bytes: Uint8Array): Uint8Array[] {
+  if (bytes.length < PACKETS.length || bytes[0] !== PACKETS[0] || bytes[1] !== PACKETS[1]) return [bytes];
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const packets: Uint8Array[] = [];
+  let at = PACKETS.length;
+  while (at < bytes.length) {
+    if (at + 4 > bytes.length) return [];
+    const length = view.getUint32(at);
+    if (length === 0 || at + 4 + length > bytes.length) return [];
+    packets.push(bytes.slice(at + 4, at + 4 + length));
+    at += 4 + length;
+  }
+  return packets;
+}
+
 // How far a wrap's time may be set back (crates/erevos-nostr WRAP_BACKDATE), and how long a relay
 // is asked to keep one (WRAP_LIFETIME), seconds.
 const BACKDATE = 3600;
@@ -335,8 +379,8 @@ async function takeWrap(event: unknown): Promise<void> {
     } catch {
       return;
     }
-    // Its id (32 bytes) and time (8) first, then what it carried.
-    await reader.take(opened.slice(40)).catch(() => undefined);
+    // Its id (32 bytes) and time (8) first, then what it carried: one packet, or several in order.
+    for (const packet of unpackNostr(opened.slice(40))) await reader.take(packet).catch(() => undefined);
     return;
   }
 }

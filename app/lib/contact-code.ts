@@ -13,22 +13,45 @@
 // A phone whose relay lends places (crates/erevos-relay/src/lend.rs) adds a ticket for one:
 //   &lend=ticket.<80 hex characters>
 // so whoever adds it with no relay of their own takes a place there (lib/relay.ts, borrowPlace).
+// A phone that reads on Nostr (lib/nostr.ts) adds the key its link has there, and its relays:
+//   &nk=<64 hex>&nr=<Nostr relay address>,<another>
+// so whoever adds it with no relay between the two writes to it there, through Tor
+// (lib/nostr-chats.ts nostrOnlyWay), with or without an id and a relay.
 // Self-contained on purpose, so it can run under plain Node for checks.
 
 export type SpareCode = { senderHex: string; relayUrl: string; relayKey?: string };
-export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string; spare?: SpareCode; lend?: string };
+/** Where a link's phone reads on Nostr: the key its link has there (hex), and its relays. */
+export type NostrCode = { k: string; r: string[] };
+export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string; spare?: SpareCode; lend?: string; nostr?: NostrCode };
 
 const LINK = 'erevos://contact?';
 // A bundle is about 1800 characters. Anything far longer is not one.
 const MAX_KEY = 4096;
 const TICKET = /^ticket\.[0-9a-f]{80}$/;
+// The most Nostr relays a link names, and the longest address of one (lock/e2e-data.ts, as there).
+export const MOST_NOSTR = 5;
+const NOSTR_URL = 256;
 
-export function contactLink({ senderHex, relayUrl, key, relayKey, spare, lend }: ContactCode): string {
+/** A Nostr relay's address: wss://, or ws:// to an onion service (lock/e2e-data.ts isNostrRelay). */
+function isNostrUrl(v: string): boolean {
+  return v.length <= NOSTR_URL && (/^wss:\/\/[^\s/?#,]+(\/[^\s,]*)?$/i.test(v) || /^ws:\/\/[a-z2-7]{56}\.onion(:\d+)?(\/[^\s,]*)?$/i.test(v));
+}
+
+/** Where a link says its phone reads on Nostr, checked: null when it does not say, or not as it should. */
+export function checkNostr(k: unknown, r: unknown): NostrCode | null {
+  if (typeof k !== 'string' || !/^[0-9a-f]{64}$/.test(k) || !Array.isArray(r)) return null;
+  const relays = [...new Set(r.filter((v): v is string => typeof v === 'string' && isNostrUrl(v)))].slice(0, MOST_NOSTR);
+  return relays.length > 0 ? { k, r: relays } : null;
+}
+
+export function contactLink({ senderHex, relayUrl, key, relayKey, spare, lend, nostr }: ContactCode): string {
   const backup = spare
     ? `&sid=${spare.senderHex}&srelay=${encodeURIComponent(spare.relayUrl)}${spare.relayKey ? `&srk=${spare.relayKey}` : ''}`
     : '';
   const ticket = lend && relayUrl && TICKET.test(lend) ? `&lend=${lend}` : '';
-  return `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}${backup}${ticket}`;
+  const there = nostr ? checkNostr(nostr.k, nostr.r) : null;
+  const onNostr = there ? `&nk=${there.k}&nr=${there.r.map(encodeURIComponent).join(',')}` : '';
+  return `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}${backup}${ticket}${onNostr}`;
 }
 
 /** Checks a backup queue of a link: null when it is not one, as when a part is missing. */
@@ -59,20 +82,24 @@ export function parseContact(text: string): ContactCode | null {
   const clean = text.trim();
   if (!clean.toLowerCase().startsWith(LINK)) return checkContact(clean, '');
   const fields: Record<string, string> = {};
+  // The Nostr relays, each encoded on its own, as they are said between commas.
+  let relays: string[] = [];
   for (const pair of clean.slice(LINK.length).split('&')) {
     const at = pair.indexOf('=');
     if (at < 0) continue;
     try {
-      fields[pair.slice(0, at)] = decodeURIComponent(pair.slice(at + 1).replace(/\+/g, ' '));
+      if (pair.slice(0, at) === 'nr') relays = pair.slice(at + 1).split(',').map((url) => decodeURIComponent(url));
+      else fields[pair.slice(0, at)] = decodeURIComponent(pair.slice(at + 1).replace(/\+/g, ' '));
     } catch {
       return null;
     }
   }
   const code = checkContact(fields.id, fields.relay ?? '', fields.key ?? '', fields.rk ?? '');
-  // A backup queue or a ticket that does not read is left out: the link still works without it.
+  // A backup queue, a ticket or a Nostr place that does not read is left out: the link still works without it.
   const spare = code?.relayUrl && fields.sid ? checkSpare(fields.sid, fields.srelay ?? '', fields.srk ?? '') : null;
   const lend = code?.relayUrl && fields.lend && TICKET.test(fields.lend) ? fields.lend : '';
-  return code ? { ...code, ...(spare ? { spare } : {}), ...(lend ? { lend } : {}) } : code;
+  const nostr = code?.key && fields.nk ? checkNostr(fields.nk, relays) : null;
+  return code ? { ...code, ...(spare ? { spare } : {}), ...(lend ? { lend } : {}), ...(nostr ? { nostr } : {}) } : code;
 }
 
 // Hands a contact from the screen a scanned link opens, or from a contact's Erevos ID

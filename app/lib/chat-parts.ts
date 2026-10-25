@@ -5,6 +5,8 @@
 // from the phone: what is not of its shape is none, so an Erevos from before it, or a changed one,
 // cannot make the chat show more than these.
 
+import { checkInvite } from './relay-invite';
+
 /** A poll: its question, its options, and whether more than one can be chosen. */
 export type Poll = { q: string; o: string[]; m?: boolean };
 
@@ -23,6 +25,9 @@ export type Vote = { tag: string; chose: number[] };
 /** New words for the sender's own message with this tag, which then shows as edited. */
 export type Edit = { tag: string; text: string };
 
+/** An invite to the sender's relay (lib/relay-invite.ts): its address (`r`) and the invite's secret (`c`). */
+export type RelayOffer = { r: string; c: string };
+
 /**
  * What a contact's message carries beyond what lib/e2e.ts says itself, each in a field of its own
  * that an Erevos from before leaves alone. With words, which say it to an Erevos from before and
@@ -30,9 +35,10 @@ export type Edit = { tag: string; text: string };
  * words are where it is, or a poll, whose words are its question and options; and the preview of
  * a link in the words, which show as they are. With words, a voice message or a photo or file: that
  * it was forwarded from another chat (`forwarded`). With no words: a pin, a vote, new words for one
- * of the sender's own messages (`edit`), or that they are typing to us now (`typing`).
+ * of the sender's own messages (`edit`), that they are typing to us now (`typing`), or an invite to
+ * their relay, which a phone with a relay sends by itself to a contact with none (`ri`, app/chat.tsx).
  */
-export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true };
+export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true; ri?: RelayOffer };
 
 /** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
 export type Content = Pick<Carried, 'sticker' | 'place' | 'poll' | 'preview'> & { forwarded?: boolean };
@@ -69,6 +75,8 @@ export function carriedOf(value: Record<string, unknown>): Carried {
   const poll = checkedPoll(value.poll);
   const preview = checkedPreview(value.preview);
   const chose = checkedChoices(vote?.chose);
+  const ri = value.ri as { r?: unknown; c?: unknown } | null | undefined;
+  const invite = ri && typeof ri === 'object' ? checkInvite(ri.r, ri.c) : null;
   return {
     ...(isStickerName(value.sticker) ? { sticker: value.sticker } : {}),
     ...(place ? { place } : {}),
@@ -79,6 +87,7 @@ export function carriedOf(value: Record<string, unknown>): Carried {
     ...(edit ? { edit } : {}),
     ...(value.forwarded === true ? { forwarded: true as const } : {}),
     ...(value.typing === true ? { typing: true as const } : {}),
+    ...(invite ? { ri: { r: invite.relayUrl, c: invite.code } } : {}),
   };
 }
 
@@ -89,9 +98,9 @@ export function contentOf({ sticker, place, poll, preview, forwarded }: Content)
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing } = carriedOf(carried);
+  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing, ri } = carriedOf(carried);
   if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}) };
-  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(edit ? { edit } : {}), ...(typing ? { typing } : {}) };
+  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(edit ? { edit } : {}), ...(typing ? { typing } : {}), ...(ri ? { ri } : {}) };
 }
 
 /** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */

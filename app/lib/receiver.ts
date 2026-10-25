@@ -8,8 +8,9 @@ import { canRelaySeal, hasCore } from './core';
 import { ONLINE, toBase64Url, type E2E, type Extra, type Received, type Where } from './e2e';
 import { sendCopies } from './fanout';
 import { nearby } from './nearby';
-import { readNostr } from './nostr';
-import { nostrReaderOf, onNostrWent, sendNostrBackups } from './nostr-chats';
+import { nostrReady, readNostr } from './nostr';
+import { nostrOnlyWay, nostrReaderOf, onNostrWent, sendNostrAgain, sendNostrBackups } from './nostr-chats';
+import { keepOffer, offerOf } from './relay-offer';
 import {
   canWaitAt,
   carryTo,
@@ -418,7 +419,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     if (state.place) void keepPush(state.place.own, state.place.queue);
   }
   let place = state.place;
-  if (!place) return false;
+  if (!place) return nostrLook(state);
   const chats = await spaceChats();
   // Sends go through the space's backup relay when ours cannot be reached, once it is ready.
   const backup = spareBackup();
@@ -438,8 +439,10 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   if (place.keyAsked) lastPlace = place;
   await sendPending(chats, place.sends);
   await sendKeys(chats, place);
-  // Texts that went through Nostr, not said to have come in time, through the relay as well.
+  // Texts that went through Nostr, not said to have come in time, through the relay as well; and
+  // to contacts Nostr is the only way to, there again.
   await sendNostrBackups(chats.e2e, place.sends);
+  await sendNostrAgain(chats.e2e);
   watchCopies(chats.e2e);
   await sendCopies(chats.e2e, place.sends).catch(() => 0);
   // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
@@ -612,6 +615,9 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   if (vote && (await history.vote(peer, vote.tag, false, vote.chose))) changed = true;
   // New words for one of theirs: only their own changes, and it shows as edited.
   if (edit && (await history.edit(peer, edit.tag, false, edit.text, at))) changed = true;
+  // An invite to their relay: kept for the chat, which takes it by itself when it opens (lib/relay-offer.ts).
+  const offer = twice ? null : offerOf(received);
+  if (offer) await keepOffer(offer).catch(() => undefined);
   if (received.erase && 'all' in received.erase) {
     await history.clear(peer);
     changed = true;
@@ -634,7 +640,8 @@ export function keepReceived(chats: SpaceChats, received: Received, receipts: Re
 // With no `place`, it says nothing of where this phone's queue is, and goes nearby only.
 async function tell({ e2e }: SpaceChats, place: Place | null, identity: string, extra: Extra) {
   const sealed = await e2e.seal(identity, '', place?.queue.senderHex ?? '', { ...extra, at: place?.here ?? { relay: '', relayKey: '' } });
-  const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], 'quiet', () => e2e.firstSent(identity)) : null;
+  // With no relay between the two, through Nostr when they read there (lib/nostr-chats.ts).
+  const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], 'quiet', () => e2e.firstSent(identity)) : nostrOnlyWay(e2e, identity, sealed, [sealed.packet]);
   await e2e.copiesAfter(sealed.copies, nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay), true);
 }
 
@@ -657,9 +664,22 @@ async function sendReceipts(chats: SpaceChats, place: Place | null, { receipts, 
   }
 }
 
+// With no relay: what goes through Nostr to contacts it is the only way to (lib/nostr-chats.ts),
+// with each look: what waited, the keys, and what is due there again. Says whether what the home
+// screen shows changed.
+async function nostrLook(state: State): Promise<boolean> {
+  if (!nostrReady()) return false;
+  const chats = await spaceChats();
+  await sendKeys(chats, null);
+  await sendNostrAgain(chats.e2e);
+  const went = await sendWaiting(chats, sendPlace(null, false)).catch(() => []);
+  await sendReceipts(chats, null, state);
+  return went.length > 0;
+}
+
 // This chat's newest prekeys, to the contacts who have not had them (lib/e2e.ts keysDue). What
 // cannot go now goes with the next look.
-async function sendKeys(chats: SpaceChats, place: Place) {
+async function sendKeys(chats: SpaceChats, place: Place | null) {
   for (const identity of chats.e2e.keysDue()) {
     try {
       await tell(chats, place, identity, { keys: true });

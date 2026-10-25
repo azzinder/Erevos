@@ -66,6 +66,10 @@ export type SpaceData = {
   // The ticket our contact link gives for a place on our relay (lib/relay.ts, lendTicket), and
   // that relay, kept while it has days left so the link stays the same. Empty when there is none.
   lend: Lending;
+  // An invite to a contact's relay that came in their message while this space had no relay of its
+  // own (lib/relay-offer.ts), kept until the chat takes it by itself, and until when it is good.
+  // Empty when there is none.
+  offered: Offered;
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null };
@@ -76,6 +80,9 @@ export const NOSTR_DEFAULT: NostrSetting = { on: true, relays: NOSTR_RELAYS };
 const NO_SPARE: SpareRelay = { url: '', token: '', queue: null };
 export type Lending = { relay: string; ticket: string };
 export const NO_LENDING: Lending = { relay: '', ticket: '' };
+/** An invite to a contact's relay, until when it is kept (ms), and from whom: their identity, hex. */
+export type Offered = { relay: string; code: string; until: number; from: string };
+export const NO_OFFER: Offered = { relay: '', code: '', until: 0, from: '' };
 
 export const EMPTY_SPACE: SpaceData = {
   url: '',
@@ -94,6 +101,7 @@ export const EMPTY_SPACE: SpaceData = {
   push: false,
   previews: false,
   lend: NO_LENDING,
+  offered: NO_OFFER,
 };
 
 const BLOCK = 1024;
@@ -160,7 +168,15 @@ function checked(value: unknown): SpaceData {
     push: v.push === true,
     previews: v.previews === true,
     lend: checkedLending(v.lend),
+    offered: checkedOffered(v.offered),
   };
+}
+
+function checkedOffered(value: unknown): Offered {
+  const v = (value ?? {}) as Partial<Record<keyof Offered, unknown>>;
+  return typeof v.relay === 'string' && typeof v.code === 'string' && /^[0-9a-f]{64}$/.test(v.code) && typeof v.until === 'number' && Number.isFinite(v.until) && v.until > 0
+    ? { relay: v.relay, code: v.code, until: v.until, from: typeof v.from === 'string' && /^[0-9a-f]{64}$/.test(v.from) ? v.from : '' }
+    : NO_OFFER;
 }
 
 function checkedOwnToken(value: unknown): OwnToken {

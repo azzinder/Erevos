@@ -135,6 +135,9 @@ export type Contact = {
   /** Texts that went to them through Nostr not said to have come yet: each to go through the relay
    *  as well should that not be said in time (lib/nostr.ts NOSTR_BACKUP_MS). */
   nostrBackup?: NostrBackup[];
+  /** When this chat sent them, by itself, an invite to its relay (app/chat.tsx offerRelays), as they
+   *  had no queue of their own: sent once. */
+  ri?: number;
 };
 
 /** A Nostr key: its secret (`s`) and its public key (`p`, x only), hex. */
@@ -143,8 +146,14 @@ export type NostrKey = { s: string; p: string };
 /** Where a contact said it reads on Nostr: its public key (hex), its relays, and whether a bell goes to its relay queue too. */
 export type NostrTo = { k: string; r: string[]; b?: true };
 
-/** A text that went through Nostr (Contact.nostrBackup): its tag, when it went (ms), its packet as it went (base64), and whether its contact also had a bell (`q`), so the relay copy goes quiet. */
-export type NostrBackup = { t: string; at: number; p: string; q?: true };
+/**
+ * A text that went through Nostr (Contact.nostrBackup): its tag, when it went (ms), its packet as it
+ * went (base64), and whether its contact also had a bell (`q`), so the relay copy goes quiet. With
+ * `n`, it went to a contact Nostr is the only way to (lib/nostr-chats.ts nostrOnlyWay): what it
+ * keeps is the wrap's packets as they went, which go to Nostr again, now and then, while their
+ * phone does not say they came: `n` times so far, the last at `at`.
+ */
+export type NostrBackup = { t: string; at: number; p: string; q?: true; n?: number };
 
 /** The most texts kept to go through the relay as well, for each contact, and for how long: no longer than the relay keeps one. */
 export const MAX_NOSTR_BACKUP = 64;
@@ -174,7 +183,7 @@ function checkedNostrKey(value: unknown): NostrKey | null {
 
 function checkedNostrBackup(value: unknown): NostrBackup | null {
   const v = (value ?? {}) as Partial<Record<keyof NostrBackup, unknown>>;
-  return isTag(v.t) && isTime(v.at) && isBase64(v.p) && v.p ? { t: v.t, at: v.at, p: v.p, ...(v.q === true ? { q: true as const } : {}) } : null;
+  return isTag(v.t) && isTime(v.at) && isBase64(v.p) && v.p ? { t: v.t, at: v.at, p: v.p, ...(v.q === true ? { q: true as const } : {}), ...(typeof v.n === 'number' && Number.isInteger(v.n) && v.n > 0 && v.n < 1000 ? { n: v.n } : {}) } : null;
 }
 
 /**
@@ -387,6 +396,10 @@ export type E2EData = {
    *  what is asked of them next starts somewhat over an hour before it (lib/nostr.ts). Missing
    *  until they were read. */
   nostrAt?: number;
+  /** The Nostr key this chat's contact link names (lib/contact-code.ts `nk`): what someone who adds
+   *  the link writes to first, there, when no relay is between the two (lib/nostr-chats.ts). Made
+   *  the first time the link names one, and kept, so the link stays as it was. */
+  nostrLink?: NostrKey;
 };
 
 export type Prekeys = { secret: string; bundle: string; at: number };
@@ -476,6 +489,7 @@ function checkedContact(value: unknown): Contact | null {
     ...(checkedNostrTo(v.nostrTo) ? { nostrTo: checkedNostrTo(v.nostrTo)! } : {}),
     ...(isText(v.nostrSaid) && v.nostrSaid.length <= 2048 ? { nostrSaid: v.nostrSaid } : {}),
     ...(Array.isArray(v.nostrBackup) ? { nostrBackup: v.nostrBackup.map(checkedNostrBackup).filter((b): b is NostrBackup => b !== null).slice(-MAX_NOSTR_BACKUP) } : {}),
+    ...(isTime(v.ri) && v.ri > 0 ? { ri: v.ri } : {}),
   };
 }
 
@@ -636,6 +650,7 @@ function checked(value: unknown): E2EData {
     ...(Array.isArray(v.invited) ? { invited: v.invited.map(checkedInvited).filter((i): i is Invited => i !== null).slice(-MAX_INVITED) } : {}),
     ...(isText(v.invitedAs) && cleanName(v.invitedAs) ? { invitedAs: cleanName(v.invitedAs) } : {}),
     ...(isTime(v.nostrAt) && v.nostrAt > 0 ? { nostrAt: v.nostrAt } : {}),
+    ...(checkedNostrKey(v.nostrLink) ? { nostrLink: checkedNostrKey(v.nostrLink)! } : {}),
   };
 }
 

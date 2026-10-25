@@ -19,7 +19,7 @@ import type { Look } from '../theme/look';
 import { deletePhoto } from '../lock/avatar-photos';
 import { lastRestore } from '../lock/restored';
 import { takesPlace, tellDue, toldOnce } from './moves';
-import { NOSTR_BACKUP_MS, NOSTR_MOST, nostrKeysChanged, nostrRelays } from './nostr';
+import { NOSTR_AGAIN_MS, NOSTR_AGAIN_MOST, NOSTR_BACKUP_MS, NOSTR_MOST, nostrKeysChanged, nostrPacked, nostrRelays } from './nostr';
 import { t } from './i18n';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
@@ -1074,6 +1074,29 @@ export class E2E {
     return contact ? { sender: contact.sender, relay: contact.relay, relayKey: contact.relayKey, spare: contact.spare ?? null } : null;
   }
 
+  /**
+   * The contacts this chat sends an invite to its relay by itself (app/chat.tsx offerRelays): added
+   * here, or accepted, never a message request; with no queue of their own; not sent one before.
+   * None on a linked device, whose relay is its account's.
+   */
+  relayInvitesDue(): string[] {
+    if (this.link?.through) return [];
+    return this.data.contacts.filter((contact) => !contact.request && !contact.sender && !contact.ri).map((contact) => contact.identity);
+  }
+
+  /** An invite to this chat's relay went to them: none goes again. */
+  relayInviteSent(identity: string, at = Date.now()): Promise<void> {
+    return this.run(async () => {
+      if (!this.find(identity)) return;
+      await this.save({ ...this.data, contacts: this.data.contacts.map((c) => (c.identity === identity ? { ...c, ri: at } : c)) });
+    });
+  }
+
+  /** Whether a contact reads on Nostr, as they or their link said, and this chat does too: what has no relay between the two goes there (lib/nostr-chats.ts nostrOnlyWay). */
+  readsOnNostr(identity: string): boolean {
+    return !!this.find(identity)?.nostrTo && !!nostrRelays() && !this.data.own;
+  }
+
   /** Where a contact's ring queue is, as they last said (lock/hidden-ring.ts), or null when they
    *  said none: on the same relay as their message queue, with its own sender id. */
   ringOf(identity: string): { sender: string; relay: string; relayKey: string } | null {
@@ -1430,7 +1453,7 @@ export class E2E {
    * chat as a contact at once.
    */
   addContact(
-    code: { senderHex: string; key: string; relayUrl?: string; relayKey?: string; spare?: { senderHex: string; relayUrl: string; relayKey?: string } },
+    code: { senderHex: string; key: string; relayUrl?: string; relayKey?: string; spare?: { senderHex: string; relayUrl: string; relayKey?: string }; nostr?: { k: string; r: string[] } },
     from: string,
     at: Where = { relay: '', relayKey: '' },
     hi = '',
@@ -1454,15 +1477,23 @@ export class E2E {
         // when their queue was made (`qa`), as an Erevos before: a link of theirs names where they
         // are asked to talk, not where they read. Adding their link accepts a request.
         const where = code.senderHex && known.qa === undefined ? { ...whereOf(code), sender: code.senderHex, spare: spareOf(code) } : {};
-        await this.save(this.withContact({ ...known, ...where, request: false }));
+        // Where their link reads on Nostr, while they said nothing of it themselves.
+        const there = code.nostr && !known.nostrTo ? { nostrTo: { k: code.nostr.k, r: code.nostr.r } } : {};
+        await this.save(this.withContact({ ...known, ...where, ...there, request: false }));
         return { identity, added: false };
       }
       const packetKey = this.ownPacketKey({ identity, packetKey: this.find(identity)?.packetKey ?? '' });
+      // Where this chat reads on Nostr, said in the first message already, with a key of its own for
+      // them: so they can answer there when no relay is between the two (lib/nostr-chats.ts).
+      const relays = nostrRelays();
+      const nostr = relays && !this.data.own ? await newNostrKey() : null;
+      const ns = nostr && relays ? { k: nostr.p, r: relays, ...(this.bells ? { b: true as const } : {}) } : undefined;
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined), ...this.fromNow(from), ...(isHi(hi) ? { hi } : {}) }),
+        encodeMessage({ ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined), ...this.fromNow(from), ...(isHi(hi) ? { hi } : {}), ...(ns ? { ns } : {}) }),
       );
+      const told = nostr ? { nostr, nostrSaid: this.nostrSaid({ nostr } as Contact) } : {};
       await this.save(
         this.withContact({
           identity,
@@ -1486,8 +1517,12 @@ export class E2E {
           packetKey,
           sealTo: this.find(identity)?.sealTo ?? '',
           sealsIn: false,
+          ...told,
+          // Their link's place on Nostr: where the first message goes when no relay is between the two.
+          ...(code.nostr ? { nostrTo: { k: code.nostr.k, r: code.nostr.r } } : {}),
         }),
       );
+      if (nostr) nostrKeysChanged();
       return { identity, added: true };
     });
   }
@@ -1564,7 +1599,11 @@ export class E2E {
       // Words go through Nostr when they said they read there, and this chat does too (lib/nostr.ts):
       // not after a first packet the relay has still to take, nor what is sent for later, which the
       // relay holds, nor from a linked device, nor what it seals for the account's phone to pass on.
-      const nostr = text && !due && !first && !through && !this.data.own && packet.length <= NOSTR_MOST && nostrRelays() ? (contact.nostrTo ?? null) : null;
+      // With no relay between the two, as this chat has no queue (`from`) or they said none, all of
+      // it goes there, the first packet with it (lib/nostr-chats.ts nostrOnlyWay).
+      const only = !from || !sender;
+      const fits = only ? nostrPacked([...(first ? [first] : []), packet]) <= NOSTR_MOST : !!text && !due && !first && packet.length <= NOSTR_MOST;
+      const nostr = fits && !through && !this.data.own && nostrRelays() ? (contact.nostrTo ?? null) : null;
       return { sender, relay, relayKey, spare, first, packet, tag, timer: once || timer, copies, through, nostr };
     });
   }
@@ -2216,9 +2255,29 @@ export class E2E {
     return relays && contact.nostr ? { k: contact.nostr.p, r: relays, ...(this.bells ? { b: true as const } : {}) } : '';
   }
 
-  /** The keys this chat reads its contacts' texts on Nostr with (lib/nostr.ts readNostr). */
+  /** The keys this chat reads on Nostr with (lib/nostr.ts readNostr): its contacts', and its link's. */
   nostrKeys(): NostrKey[] {
-    return this.data.contacts.flatMap((contact) => (contact.nostr ? [contact.nostr] : []));
+    return [...(this.data.nostrLink ? [this.data.nostrLink] : []), ...this.data.contacts.flatMap((contact) => (contact.nostr ? [contact.nostr] : []))];
+  }
+
+  /**
+   * Where this chat's contact link says it reads on Nostr (lib/contact-code.ts `nk`, `nr`): the key the
+   * link has there, made the first time and kept, and the space's relays. Null while it reads
+   * nowhere, and on a linked device, which reads nothing there. What someone who adds the link writes
+   * there first opens as from the relay: a conversation it starts, as a request.
+   */
+  linkNostr(): Promise<{ k: string; r: string[] } | null> {
+    return this.run(async () => {
+      const relays = nostrRelays();
+      if (!relays || this.data.own || this.link?.through) return null;
+      let key = this.data.nostrLink;
+      if (!key) {
+        key = await newNostrKey();
+        await this.save({ ...this.data, nostrLink: key });
+        nostrKeysChanged();
+      }
+      return { k: key.p, r: relays };
+    });
   }
 
   /** Until when what came for this chat on the Nostr relays was read (seconds), 0 for never. */
@@ -2249,11 +2308,45 @@ export class E2E {
     });
   }
 
+  /**
+   * Keeps a text that went to a contact Nostr is the only way to (lib/nostr-chats.ts nostrOnlyWay):
+   * the wrap's packets as they went (`packed`), to go there again while their phone does not say it
+   * came (`nostrAgainDue`), as a Nostr relay keeps it two days only.
+   */
+  nostrKeepOnly(identity: string, tag: string, packed: Uint8Array, now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact || !isTag(tag)) return;
+      const kept = (contact.nostrBackup ?? []).filter((b) => b.t !== tag && now - b.at < NOSTR_BACKUP_LASTS);
+      const backup = [...kept, { t: tag, at: now, p: toBase64(packed), n: 1 }].slice(-MAX_NOSTR_BACKUP);
+      await this.save(this.withContact({ ...contact, nostrBackup: backup }));
+    });
+  }
+
+  /** What went to contacts through Nostr only, not said to have come, and due to go there again: to each where they read now, then `nostrWentAgain`. */
+  nostrAgainDue(now = Date.now()): { identity: string; tag: string; packed: Uint8Array; to: NostrTo }[] {
+    return this.data.contacts.flatMap(({ identity, nostrTo: to, nostrBackup }) =>
+      to ? (nostrBackup ?? []).filter((b) => b.n !== undefined && now - b.at >= NOSTR_AGAIN_MS).map((b) => ({ identity, tag: b.t, packed: fromBase64(b.p), to })) : [],
+    );
+  }
+
+  /** What `nostrAgainDue` gave went to Nostr again: kept for the next time, until it went NOSTR_AGAIN_MOST times. */
+  nostrWentAgain(identity: string, tag: string, now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      const backup = contact?.nostrBackup;
+      if (!contact || !backup?.some((b) => b.t === tag)) return;
+      const left = backup.flatMap((b) => (b.t !== tag || b.n === undefined ? [b] : b.n + 1 >= NOSTR_AGAIN_MOST ? [] : [{ ...b, at: now, n: b.n + 1 }]));
+      const { nostrBackup: _backup, ...rest } = contact;
+      await this.save(this.withContact(left.length > 0 ? { ...rest, nostrBackup: left } : rest));
+    });
+  }
+
   /** The texts that went through Nostr whose contact's phone did not say they came in time: to send through the relay as well, then `nostrBackupSent`. */
   nostrBackupsDue(now = Date.now()): { identity: string; tag: string; packet: Uint8Array; quiet: boolean }[] {
     return this.data.contacts.flatMap((contact) =>
       (contact.nostrBackup ?? [])
-        .filter((b) => now - b.at >= NOSTR_BACKUP_MS && now - b.at < NOSTR_BACKUP_LASTS)
+        .filter((b) => b.n === undefined && now - b.at >= NOSTR_BACKUP_MS && now - b.at < NOSTR_BACKUP_LASTS)
         .map((b) => ({ identity: contact.identity, tag: b.t, packet: fromBase64(b.p), quiet: b.q === true })),
     );
   }

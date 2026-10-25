@@ -6,7 +6,8 @@ import { contentOf, withoutPreview } from './chat-parts';
 import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForLoraError } from './nearby';
 import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, isQueueFull, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Mark, type Relay } from './relay';
-import { orNostr, type ForNostr } from './nostr-chats';
+import { nostrOnlyWay, orNostr, type ForNostr } from './nostr-chats';
+import { nostrReady } from './nostr';
 import { carriedFor, contactTarget, sendSealed, sentMark, type SpaceChats } from './space-chats';
 import { t } from './i18n';
 
@@ -331,7 +332,12 @@ function canGo(e2e: E2E, place: SendPlace, identity: string, message: Message): 
   const queue = e2e.queueOf(identity);
   if (!queue) return false;
   if (message.file) return !!place.own && place.relayUp && (nearby.isNear(identity) || throughRelay(place, queue));
-  return nearby.isNear(identity) || (place.relayUp && throughRelay(place, queue)) || (!message.voice && nearby.hasSlow());
+  return nearby.isNear(identity) || (place.relayUp && throughRelay(place, queue)) || (!message.voice && (nearby.hasSlow() || throughNostr(e2e, place, identity, queue)));
+}
+
+// Whether Nostr is the way to them now: no relay between the two, they read there, and Tor is ready (lib/nostr-chats.ts nostrOnlyWay).
+function throughNostr(e2e: E2E, place: SendPlace, identity: string, queue: { sender: string }): boolean {
+  return (!place.sends || !queue.sender || !place.senderHex) && nostrReady() && e2e.readsOnNostr(identity);
 }
 
 function throughRelay(place: SendPlace, queue: { sender: string; relay: string; relayKey: string }): boolean {
@@ -372,7 +378,10 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     packets = [text.packet];
   }
   const sends = place.sends;
-  const relay = sends && sealed.sender ? orNostr(e2e, sends, identity, sealed, packets, () => sendSealed(sends, sealed, packets, sentMark(sealed, 'message'), () => e2e.firstSent(identity))) : null;
+  const relay =
+    sends && sealed.sender
+      ? orNostr(e2e, sends, identity, sealed, packets, () => sendSealed(sends, sealed, packets, sentMark(sealed, 'message'), () => e2e.firstSent(identity)))
+      : nostrOnlyWay(e2e, identity, sealed, packets);
   const all = sealed.first ? [sealed.first, ...packets] : packets;
   const carry = worthCarrying ? () => carriedFor(sealed, all, { url: place.own?.url ?? '', key: place.ownKey }, sentMark(sealed, 'message')) : null;
   try {
