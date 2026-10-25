@@ -10,6 +10,8 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+## 3.3.1 (2026-10-25)
+
 - **Viber chats come in**: a Viber chat saved as an .html file by the Android app **Backup Text for Viber** (Viber
   itself exports none) comes in with **Import a file**, in **Settings** → **Data and devices** → **Imported chats** or
   in a chat's **Details**. Only the words come, with Viber's emoticons as emoji. Your own messages, which the file
