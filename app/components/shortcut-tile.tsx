@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { withAlpha } from '../theme/colors';
 import { gradientStyle } from './glass';
@@ -39,52 +39,13 @@ export function ShortcutTile({ label, tint, onPress, children }: { label: string
   );
 }
 
-/** A handset: half a thick ring from its top left to its bottom right, a cup at each end. */
+// The handset drawn as the widget's and the phone's notices draw it (the Glyph.kt CALL path), white,
+// in the three sizes Android and the web pick from.
+const HANDSET = require('../assets/icon/handset.png');
+
+/** A handset, filled. */
 export function PhoneSign() {
-  const size = SIGN;
-  const line = size * 0.22;
-  const ring = size * 0.86;
-  const at = (size - ring) / 2;
-  // The ends of the ring's middle line, up left and down right of its centre.
-  const reach = ((ring - line) / 2) * Math.SQRT1_2;
-  const cup = { length: size * 0.44, width: line * 1.45 };
-  const inward = ((cup.length - cup.width) / 2) * Math.SQRT1_2;
-  return (
-    <View style={{ width: size, height: size }}>
-      <View
-        style={{
-          position: 'absolute',
-          left: at,
-          top: at,
-          width: ring,
-          height: ring,
-          borderRadius: ring,
-          borderWidth: line,
-          borderColor: 'transparent',
-          borderLeftColor: WHITE,
-          borderBottomColor: WHITE,
-        }}
-      />
-      {([-1, 1] as const).map((sign) => {
-        const middle = size / 2 + sign * (reach - inward);
-        return (
-          <View
-            key={sign}
-            style={{
-              position: 'absolute',
-              left: middle - cup.length / 2,
-              top: middle - cup.width / 2,
-              width: cup.length,
-              height: cup.width,
-              borderRadius: cup.width / 2,
-              backgroundColor: WHITE,
-              transform: [{ rotate: '45deg' }],
-            }}
-          />
-        );
-      })}
-    </View>
-  );
+  return <Image source={HANDSET} style={{ width: SIGN, height: SIGN }} accessibilityIgnoresInvertColors />;
 }
 
 /** A camera: a rounded body, and its lens a wedge widening to the right. */
