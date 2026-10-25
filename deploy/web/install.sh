@@ -86,7 +86,7 @@ $domain {
 	}
 	@fresh path /sw.js /boot.js /release.json /release.sig /android-update.json /index.html /
 	header @fresh Cache-Control "no-cache"
-	try_files {path} /index.html
+	try_files {path} {path}/index.html /index.html
 	file_server
 }
 CADDY

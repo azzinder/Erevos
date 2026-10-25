@@ -1,8 +1,8 @@
 // Makes the Erevos web app from the web build (npx expo export --platform web, with the core from
 // app/scripts/build-web-core.mjs): adds the service worker with the release key's public half,
 // the first script (boot.js), the icons and the manifest that let it be added to a home screen,
-// and release.json, which lists every file with its SHA-256. pwa/release.mjs then signs
-// release.json. See README.md.
+// the page an invite sent by text message opens (i/), and release.json, which lists every file
+// with its SHA-256. pwa/release.mjs then signs release.json. See README.md.
 //
 //   node pwa/build.mjs <web build> <out> [--key <public key file>] [--version <n>] [--label <2.0.0>]
 //
@@ -77,6 +77,12 @@ write(
 
 write('boot.js', fs.readFileSync(path.join(here, 'boot.js')));
 write('boot.css', fs.readFileSync(path.join(here, 'boot.css')));
+// The page an invite sent by text message opens, /i/ (i/invite.js), under the same policy.
+if (fs.existsSync(path.join(out, 'i'))) fail(`${from} has an i/ of its own, where the invite page goes.`);
+fs.cpSync(path.join(here, 'i'), path.join(out, 'i'), { recursive: true });
+const invitePage = fs.readFileSync(path.join(out, 'i', 'index.html'), 'utf8');
+if (!invitePage.includes('<meta charset="utf-8" />')) fail('pwa/i/index.html has lost its charset line.');
+write('i/index.html', invitePage.replace('<meta charset="utf-8" />', `<meta charset="utf-8" />\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`));
 const worker = fs.readFileSync(path.join(here, 'sw.js'), 'utf8');
 if (!worker.includes('__EREVOS_PUBLIC_KEY__')) fail('pwa/sw.js has lost its key mark.');
 write('sw.js', worker.replace('__EREVOS_PUBLIC_KEY__', publicKey));

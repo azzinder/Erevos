@@ -7,7 +7,9 @@
 // - on its install, fetches the release, checks the signature and every file's hash, and keeps the
 //   files in a cache of their own. Anything that does not match, and it does not install;
 // - serves the app from that cache only: a file the release does not list is not served, and
-//   nothing of the app comes from the network once installed, so the server cannot change it;
+//   nothing of the app comes from the network once installed, so the server cannot change it. An
+//   address with a page of its own in the release (the invite page, /i/) gets that page, every
+//   other address the app;
 // - looks for a newer release now and then, takes it only if it is signed with the same key and
 //   has a higher version (an older signed release, with old faults, is refused), and switches to
 //   it the next time the app opens;
@@ -279,6 +281,12 @@ async function serve(path) {
   }
 }
 
+/** The page an address opens: one of its own the release lists (the invite page, /i/), else the app. */
+function pageOf(pathname, release) {
+  const pages = [pathname, `${pathname.replace(/\/?$/, '/')}index.html`];
+  return pages.find((page) => page.endsWith('.html') && release?.files[page]) ?? '/index.html';
+}
+
 async function open(event) {
   // A new release waits for the app to open again in its only window.
   const now = await readState();
@@ -286,7 +294,7 @@ async function open(event) {
     const windows = await self.clients.matchAll({ type: 'window' });
     if (windows.length <= 1) await promote();
   }
-  const response = await serve('/index.html');
+  const response = await serve(pageOf(new URL(event.request.url).pathname, (await readState()).current));
   if (Date.now() - (await readState()).checked > CHECK_EVERY_MS) event.waitUntil(check().catch(() => undefined));
   return response;
 }

@@ -79,6 +79,22 @@ app from a store is installed once and changes only when updated.
 - **No Bluetooth, nearby link or SMS**, which Safari does not allow, and no automatic backups: a
   browser gives out a file only after a tap.
 
+## The invite page
+
+An invite sent by text message is a link to `/i#<invite>` (`app/lib/text-invite.ts`): the invite
+is the part after `#`, which the browser never sends to the server. `/i/` is a page of its own in
+every release (`pwa/i/`), signed with the rest. It reads the invite on the device and shows who
+invites and until when, and how to take it: on Android, Erevos and then
+`erevos://text-invite?d=<invite>`; on an iPhone, the link copied, Erevos added to the home screen
+and the link pasted in New chat; on a computer, the app or the web app. In a browser that already
+runs the web app, it hands the invite to it at `/text-invite?d=<invite>`. The server needs nothing
+new: Apache sends `/i` on to `/i/`, which keeps the part after `#`, and the worker gives the page
+at both.
+
+The first time, the page comes straight from the server, unchecked, as the web app's own first
+start does. A server that is broken into could send a page that passes the invite on: an invite is
+as safe as the text message that carries it, for the 2 days it lasts.
+
 ## Making a release
 
 Once, on your own computer, make the key and commit its public half:
@@ -116,6 +132,7 @@ The address needs its own DNS name (an A record to the server), apart from the r
 
 - `sw.js`: the service worker; `build.mjs` writes the public key into it.
 - `boot.js`, `boot.css`: the page's first script, and its screens before the app starts.
+- `i/`: the page an invite sent by text message opens, `/i#<invite>`.
 - `build.mjs`: makes the web app from the web build, with the icons from `brand/`.
 - `release.mjs`: `keygen`, `sign`, `verify`.
 - `release-key.pub`: the release key's public half (made by `keygen`).
