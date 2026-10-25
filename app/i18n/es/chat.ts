@@ -266,6 +266,10 @@ export const chat: Record<string, string> = {
   'Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages came or were read. Writing to them accepts too.': 'Alguien con tu enlace de contacto te ha escrito. Hasta que aceptes, su teléfono no sabe si sus mensajes han llegado o se han leído. Escribirle también es aceptar.',
   'Accept': 'Aceptar',
   'Show earlier messages ({n} more)': 'Mostrar mensajes anteriores ({n} más)',
+  'Show later messages ({n} more)': 'Mostrar mensajes posteriores ({n} más)',
+  // The arrows over a thread, to its start and its end (components/thread-arrows.tsx).
+  'To the start of the chat': 'Al principio del chat',
+  'To the end of the chat': 'Al final del chat',
   'Show earlier imported messages ({n} more)': 'Mostrar mensajes importados anteriores ({n} más)',
   'Show earlier SMS': 'Mostrar SMS anteriores',
   'Send as SMS': 'Enviar como SMS',

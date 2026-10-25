@@ -266,6 +266,10 @@ export const chat: Record<string, string> = {
   'Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages came or were read. Writing to them accepts too.': 'Κάποιος με τον σύνδεσμο επαφής σου σού έγραψε. Μέχρι να το αποδεχτείς, το τηλέφωνό του δεν μαθαίνει ότι τα μηνύματά του ήρθαν ή διαβάστηκαν. Αν του γράψεις, το αποδέχεσαι κι έτσι.',
   'Accept': 'Αποδοχή',
   'Show earlier messages ({n} more)': 'Προβολή παλαιότερων μηνυμάτων ({n} ακόμα)',
+  'Show later messages ({n} more)': 'Προβολή νεότερων μηνυμάτων ({n} ακόμα)',
+  // The arrows over a thread, to its start and its end (components/thread-arrows.tsx).
+  'To the start of the chat': 'Στην αρχή της συνομιλίας',
+  'To the end of the chat': 'Στο τέλος της συνομιλίας',
   'Show earlier imported messages ({n} more)': 'Προβολή παλαιότερων εισαγμένων μηνυμάτων ({n} ακόμα)',
   'Show earlier SMS': 'Προβολή παλαιότερων SMS',
   'Send as SMS': 'Αποστολή ως SMS',

@@ -360,6 +360,10 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at 
     },
     /** Whether the thread follows what comes, to its end: not once a message was gone to, until we write. */
     follows: () => !stays.current,
+    /** As its arrows go: kept where it is read, at its start, or following what comes again, at its end. */
+    stay: (on: boolean) => {
+      stays.current = on;
+    },
     /** A bubble's look while it is the one gone to. */
     litStyle: (m: GroupMessage): StyleProp<ViewStyle> => (lit && m.tag === lit ? { borderWidth: 2, borderColor: colors.primary } : null),
     /** What a message answers, at the top of its bubble. */

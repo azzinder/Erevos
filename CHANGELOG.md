@@ -10,7 +10,13 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
-- Nothing yet.
+- **Arrows to a chat's start and end**: scrolled up a little, a chat, a group and an SMS conversation show two round
+  arrows at the lower right. The upper one goes to the very start (a long chat is then drawn from its first messages,
+  with **Show later messages** under them), the lower one back to the end. Writing a message goes back to the end too.
+- **Earlier messages come by themselves**: scrolling up a long chat brings its earlier messages, and those imported from
+  Telegram or WhatsApp, without tapping **Show earlier messages**; what is read stays in its place.
+- **Hidden chats from New chat, sooner**: holding **New chat** down for a second (was a second and a half) opens the
+  field for the PIN.
 
 ## 3.1.2 (2026-10-25)
 

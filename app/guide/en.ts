@@ -33,8 +33,12 @@ means its messages disappear. **Search chats** finds a chat by its name or its l
 the messages that have what you type in them, in all the space's chats: tap one to open its chat at it. In a chat, its
 details have **Search in this chat**: ▲ and ▼ go to what it found earlier and later. Either looks only on this phone:
 in what it keeps sealed, and **Search in this chat** in the SMS a contact's chat shows too; hidden chats are searched
-only from inside them. A long chat opens at its latest 100 messages: **Show earlier messages**, above them, brings
-more, and going to an earlier one (from the search, a starred message or the one a message answers) brings it too.
+only from inside them. A long chat opens at its latest 100 messages, and earlier ones, those imported from Telegram or
+WhatsApp among them, come by themselves as you scroll up (**Show earlier messages**, above them, brings them too); going
+to an earlier one (from the search, a starred message or the one a message answers) brings it too.
+Scrolled up a little, two round arrows show at the lower right, in a chat, a group and an SMS conversation alike: the
+upper one goes to the chat's start, the lower one back to its end. From the start, **Show later messages**, under what
+shows, brings more; writing a message, or the lower arrow, goes back to the end.
 
 - **The picture** is drawn from the contact's key: the same key always gives the same colours and moon (in greens under Matrix), so you know
   a chat at a glance without any photo. It is not a check of the key; the [safety number](#relay) is.
@@ -1354,7 +1358,7 @@ chats. There is no button for them anywhere. Each place can hold one chat or sev
    **Move to hidden chats**, type a PIN of 4 characters or more, tap **New hidden chats**, pick a place, then **Start
    and move**. Remember which places you use: for privacy, Erevos cannot tell which are free.
 2. To open them, type the PIN in **Search chats** on the home screen and press Enter (the keyboard's search key). Or
-   hold **New chat** down for a second and a half: a field for the PIN opens, the same in every space; type it and
+   hold **New chat** down for a second: a field for the PIN opens, the same in every space; type it and
    tap **Open**. It opens only the place with that PIN. A wrong PIN is just a search, or only closes the field:
    nothing happens.
 3. They open as their own chat, titled **Hidden chats**, with **Change PIN** at the top. The back arrow closes them.

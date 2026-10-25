@@ -113,7 +113,7 @@ const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos
 const isSms = (row: InboxRow) => showsIn(row, 'sms');
 
 // How long New chat is held down before it asks for a PIN of hidden chats, in milliseconds.
-const DOOR_HOLD = 1500;
+const DOOR_HOLD = 1000;
 
 export default function Home() {
   const styles = useStyles(makeStyles);

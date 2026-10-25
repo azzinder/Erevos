@@ -232,6 +232,22 @@ export function ChevronIcon({ color, size = 16, down = false }: Props & { down?:
   );
 }
 
+/** To one end of a thread: a chevron against a bar, up to its start, or down to its end. */
+export function EdgeIcon({ color, size = 24, up = false }: Props & { up?: boolean }) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <Bar k={k} color={color} x={5} y={up ? 6.6 : 15} w={14} h={2.4} r={1.2} />
+      <View
+        style={[
+          box(k, { x: 7.5, y: up ? 12.5 : 2.5, w: 9, h: 9 }),
+          { borderTopWidth: 2.4 * k, borderRightWidth: 2.4 * k, borderColor: color, borderRadius: k, transform: [{ rotate: up ? '-45deg' : '135deg' }] },
+        ]}
+      />
+    </Grid>
+  );
+}
+
 /** A cross: to close or turn off. */
 export function CloseIcon({ color, size = 20 }: Props) {
   const k = size / 24;

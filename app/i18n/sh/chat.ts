@@ -267,6 +267,10 @@ export const chat: Record<string, string> = {
   'Someone with your contact link wrote to you. Until you accept, their phone is not told that their messages came or were read. Writing to them accepts too.': 'Piše vam osoba koja ima vaš link za kontakt. Dok ne prihvatite, njen telefon ne saznaje da su njene poruke stigle ili pročitane. Ako joj odgovorite, zahtjev je prihvaćen.',
   'Accept': 'Prihvati',
   'Show earlier messages ({n} more)': 'Prikaži ranije poruke (još {n})',
+  'Show later messages ({n} more)': 'Prikaži kasnije poruke (još {n})',
+  // The arrows over a thread, to its start and its end (components/thread-arrows.tsx).
+  'To the start of the chat': 'Na početak razgovora',
+  'To the end of the chat': 'Na kraj razgovora',
   'Show earlier imported messages ({n} more)': 'Prikaži ranije uvezene poruke (još {n})',
   'Show earlier SMS': 'Prikaži ranije SMS poruke',
   'Send as SMS': 'Pošalji kao SMS',

@@ -39,6 +39,7 @@ import { RelaySignIn } from '../components/relay-signin';
 import { WelcomeInvite } from '../components/welcome-invite';
 import { BackIcon, MoreIcon, PhoneIcon, ShieldIcon, TimerIcon, VideoIcon } from '../components/icons';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
+import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton, Toggle } from '../components/ui';
 import { useGlassBlur } from '../components/glass';
 import { LaterPicker } from '../components/later-picker';
@@ -587,10 +588,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [archive, setArchive] = useState<Archive | null>(null);
   const [importedShown, setImportedShown] = useState(IMPORTED_PAGE);
   const [threadShown, setThreadShown] = useState(THREAD_PAGE);
+  // Gone to the chat's start (its arrow): the first this many of what was imported and of the thread
+  // are drawn, from there. Null while the thread is drawn to its end.
+  const [fromStart, setFromStart] = useState<number | null>(null);
   // How many lines the thread had when earlier SMS were asked for, to draw those that come.
   const smsAsked = useRef<number | null>(null);
   // Set when earlier imported messages are shown, so the thread does not jump to its end.
   const holdScroll = useRef(false);
+  // Where the thread is read and how tall it is, as last scrolled or laid out; and, while earlier
+  // messages are drawn above what is read, where that was, so it stays there.
+  const readAt = useRef({ offset: 0, height: 0 });
+  const above = useRef<{ offset: number; height: number } | null>(null);
+  // Set while more is drawn as the thread nears an end of what shows, or while an arrow goes to an
+  // end: nothing more is asked for until the thread has grown.
+  const growing = useRef(false);
   // The next message disappears, this long (seconds) after it is read: the stopwatch in the bar.
   const [vanishing, setVanishing] = useState(false);
   const [vanishFor, setVanishFor] = useState(3600);
@@ -687,6 +698,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const thread = useRef<ScrollView>(null);
   // Whether the thread shows its end, so it keeps to it as it grows shorter.
   const atEnd = useRef(true);
+  // Whether it is away from its start and its end, for the arrows to them.
+  const { away, onScroll: awayOnScroll } = useThreadAway();
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
   const barBlur = useGlassBlur();
@@ -1315,6 +1328,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setConnecting((c) => (c && selected === `${CONTACT_PREFIX}${c}` ? c : null));
     setImportedShown(IMPORTED_PAGE);
     setThreadShown(THREAD_PAGE);
+    setFromStart(null);
     smsAsked.current = null;
     setReplying(null);
     setPinShown(0);
@@ -1959,8 +1973,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const target = isSmsLine(tag) ? tag : visible.find((m) => m.peer === peer && m.tag === tag)?.id;
     // Earlier than the lines drawn: drawn with them first, then gone to.
     const index = target === undefined ? -1 : lines.findIndex((line) => (line.kind === 'sms' ? smsLineId(line.sms) === target : line.message.id === target));
-    if (index >= 0 && index < firstLine) {
+    if (index >= 0 && (index < firstLine || index >= lastLine)) {
       holdScroll.current = true;
+      setFromStart(null);
       setThreadShown(lines.length - index + THREAD_PAGE / 2);
       if (typeof target === 'number') goal.current = tag;
       else setTimeout(() => rowDo.current?.goTo(peer, tag), 600);
@@ -3741,14 +3756,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     seen: shown && appActive,
   });
   const lines = useMemo(() => chatLines(visible, chatSms.messages, chatSms.more), [visible, chatSms.messages, chatSms.more]);
-  // The first line drawn: the latest THREAD_PAGE at first, more once asked for or gone to.
-  const firstLine = Math.max(0, lines.length - threadShown);
+  // The first line drawn: the latest THREAD_PAGE at first, more once asked for or gone to; the very
+  // first, read from the start.
+  const firstLine = fromStart === null ? Math.max(0, lines.length - threadShown) : 0;
   useEffect(() => {
     // Earlier SMS that came, as asked, are drawn too.
     const asked = smsAsked.current;
     if (asked !== null && lines.length > asked) {
       smsAsked.current = null;
       setThreadShown((count) => count + lines.length - asked);
+      setFromStart((from) => (from === null ? null : from + lines.length - asked));
     }
     // The chat opened at a message (a starred one, or one found) earlier than the lines drawn.
     const wanted = goal.current;
@@ -3795,7 +3812,64 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const selectedTimer = contacts.find((c) => c.identity === selectedIdentity)?.timer ?? 0;
   // Under the note that it was added, while its chat shows and it has no name: given one in its details (Rename), it goes.
   const connectShown = shown && !!connecting && selected === `${CONTACT_PREFIX}${connecting}` && canConnect && !contacts.find((c) => c.identity === connecting)?.name;
-  const firstImported = Math.max(0, imported.length - importedShown);
+  const firstImported = fromStart === null ? Math.max(0, imported.length - importedShown) : 0;
+  // Read from the start, where what is drawn ends: in what was imported, or in the thread.
+  const importedEnd = fromStart === null ? imported.length : Math.min(imported.length, fromStart);
+  const lastLine = fromStart === null ? lines.length : Math.min(lines.length, Math.max(0, fromStart - imported.length));
+  const later = imported.length - importedEnd + lines.length - lastLine;
+  // As the thread nears the top of what shows: earlier messages drawn above what is read, the
+  // thread's own first and then what was imported, and what is read stays where it is.
+  const showEarlier = () => {
+    if (growing.current || (firstLine === 0 && firstImported === 0)) return;
+    growing.current = true;
+    holdScroll.current = true;
+    above.current = { ...readAt.current };
+    if (firstLine > 0) setThreadShown((count) => count + THREAD_PAGE * 3);
+    else setImportedShown((count) => count + IMPORTED_PAGE * 4);
+  };
+  // To the chat's start: the first of what was imported and of the thread are drawn, from the top.
+  const toStart = () => {
+    growing.current = true;
+    setTimeout(() => (growing.current = false), 800);
+    atEnd.current = false;
+    thread.current?.scrollTo({ y: 0, animated: firstLine === 0 && firstImported === 0 });
+    if (firstLine === 0 && firstImported === 0) return;
+    holdScroll.current = true;
+    setFromStart(THREAD_PAGE);
+  };
+  // To the chat's end: drawn to it again, if it was read from the start, and gone to.
+  const toEnd = () => {
+    growing.current = true;
+    setTimeout(() => (growing.current = false), 800);
+    atEnd.current = true;
+    holdScroll.current = false;
+    if (fromStart !== null) {
+      setFromStart(null);
+      setThreadShown(THREAD_PAGE);
+      setImportedShown(IMPORTED_PAGE);
+    }
+    thread.current?.scrollToEnd({ animated: fromStart === null });
+  };
+  // Read from the start: more of what came after, and all of it drawn once that reaches the end.
+  const showLater = () => {
+    if (growing.current) return;
+    growing.current = true;
+    holdScroll.current = true;
+    const next = (fromStart ?? 0) + THREAD_PAGE * 3;
+    if (next < imported.length + lines.length) {
+      setFromStart(next);
+      return;
+    }
+    setFromStart(null);
+    setThreadShown(lines.length);
+    setImportedShown(imported.length);
+  };
+  // What is written here shows at the thread's end: read from the start, the thread goes back there.
+  const newest = lines[lines.length - 1];
+  const newestMine = newest?.mine ? (newest.kind === 'sms' ? smsLineId(newest.sms) : newest.message.id) : null;
+  useEffect(() => {
+    if (newestMine !== null) setFromStart(null);
+  }, [newestMine]);
   // Without a relay queue the link has only the keys: who adds it reaches this phone nearby.
   const ownLink = !e2e
     ? null
@@ -4846,121 +4920,133 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             }}
           />
         ) : null}
-        <ScrollView
-          ref={thread}
-          style={styles.thread}
-          contentContainerStyle={styles.threadContent}
-          onLayout={(event) => {
-            measured({ end: event.nativeEvent.layout.y + event.nativeEvent.layout.height });
-            if (atEnd.current) thread.current?.scrollToEnd({ animated: false });
-          }}
-          onContentSizeChange={() => {
-            if (holdScroll.current) holdScroll.current = false;
-            else thread.current?.scrollToEnd({ animated: true });
-          }}
-          // Read to the end, the thread stays at its end as the keyboard, the panel under the bar or
-          // what the bar shows over the field take room from it.
-          onScroll={(event) => {
-            const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
-            atEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 48;
-          }}
-          scrollEventThrottle={100}
-        >
-          {firstLine > 0 ? (
-            <TextButton
-              title={t('Show earlier messages ({n} more)', { n: firstLine })}
-              onPress={() => {
-                holdScroll.current = true;
-                setThreadShown((count) => count + THREAD_PAGE * 3);
-              }}
-            />
-          ) : (
-            // What was imported, before the thread, once all of the thread shows.
-            <>
-              {firstImported > 0 ? (
-                <TextButton
-                  title={t('Show earlier imported messages ({n} more)', { n: firstImported })}
-                  onPress={() => {
-                    holdScroll.current = true;
-                    setImportedShown((count) => count + IMPORTED_PAGE * 4);
-                  }}
-                />
-              ) : null}
-              {imported.length > 0 ? (
-                <Text variant="caption" tone="muted" style={styles.divider}>
-                  {t('Imported from {from}: only on this phone, only to read.', { from: importedFrom })}
-                </Text>
-              ) : null}
-              {imported.slice(firstImported).map((message, i) => {
-                const files = mediaText(message.media);
-                const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
-                return (
-                  <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? b.mine : b.theirs, styles.imported]}>
-                    {importedGroup && !message.mine && message.sender ? <Text style={[ink, styles.sender]}>{message.sender}</Text> : null}
-                    {message.files.map((file, n) => (
-                      <Pressable key={`${file.id}-${n}`} onPress={() => setViewingImported(file)} accessibilityRole="button">
-                        <Attachment file={file} uri={photos[file.id]} ink={ink} />
-                      </Pressable>
-                    ))}
-                    {message.text ? <Text style={ink}>{message.text}</Text> : null}
-                    {files ? <Text style={[ink, styles.files]}>{t('{files}, not imported', { files })}</Text> : null}
-                    {message.at ? <Text style={[ink, styles.time]}>{shownTime(message.at)}</Text> : null}
-                  </View>
-                );
-              })}
-              {imported.length > 0 ? (
-                <Text variant="caption" tone="muted" style={styles.divider}>
-                  {t('Continued in Erevos')}
-                </Text>
-              ) : null}
-            </>
-          )}
-          {selected && visible.length === 0 && imported.length === 0 && chatSms.messages.length === 0 ? (
-            <View style={styles.hello}>
-              <ShieldIcon color={colors.textFaint} size={28} />
-              <Text variant="caption" tone="muted" style={styles.divider}>
-                {t('No messages yet. What you write here is end-to-end encrypted, and kept sealed on this phone.')}
-              </Text>
-            </View>
-          ) : null}
-          {lines.slice(firstLine).map((line, k) => {
-            const i = firstLine + k;
-            const before = k === 0 ? undefined : lines[i - 1];
-            const after = lines[i + 1];
-            const newDay = !before || dayOf(before.at) !== dayOf(line.at);
-            // The last of a run from one side gets the bubble's tail, and room after it; an SMS and a
-            // message of the chat are never one run.
-            const tail = !after || after.mine !== line.mine || after.kind !== line.kind || dayOf(after.at) !== dayOf(line.at);
-            if (line.kind === 'sms') {
-              const id = smsLineId(line.sms);
-              return (
-                <SmsLine key={`sms-${id}`} sms={line.sms} earlier={!!line.earlier} newDay={newDay} tail={tail} lit={lit === id} styles={styles} b={b} colors={colors} acts={rowActs} />
-              );
-            }
-            const message = line.message;
-            return (
-              <MessageLine
-                key={message.id}
-                message={message}
-                quoted={message.re ? byTag.get(message.re) : undefined}
-                name={selectedName}
-                newDay={newDay}
-                tail={tail}
-                lit={lit === message.id}
-                played={playingId === message.id ? played : null}
-                photo={message.file ? photos[message.file.id] : undefined}
-                taking={taking[`${message.peer}|${message.tag}`]}
-                plays={lines.length - i <= PLAYS_LAST}
-                canAnswer={theyHave(message)}
-                waits={scheduled(message)}
-                styles={styles}
-                b={b}
-                colors={colors}
-                acts={rowActs}
+        <View style={styles.thread} onLayout={(event) => measured({ end: event.nativeEvent.layout.y + event.nativeEvent.layout.height })}>
+          <ScrollView
+            ref={thread}
+            style={styles.thread}
+            contentContainerStyle={styles.threadContent}
+            onLayout={() => {
+              if (atEnd.current) thread.current?.scrollToEnd({ animated: false });
+            }}
+            onContentSizeChange={(_, height) => {
+              const was = above.current;
+              readAt.current.height = height;
+              growing.current = false;
+              if (was) {
+                // Earlier messages came above: what was read stays in its place.
+                above.current = null;
+                holdScroll.current = false;
+                thread.current?.scrollTo({ y: was.offset + height - was.height, animated: false });
+              } else if (holdScroll.current) holdScroll.current = false;
+              // Read from its start, it stays where it is read.
+              else if (fromStart === null) thread.current?.scrollToEnd({ animated: true });
+            }}
+            // Read to the end, the thread stays at its end as the keyboard, the panel under the bar or
+            // what the bar shows over the field take room from it.
+            onScroll={(event) => {
+              const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+              atEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 48;
+              awayOnScroll(event);
+              readAt.current = { offset: contentOffset.y, height: contentSize.height };
+              // Near the top of what shows, earlier messages come; read from the start, near its
+              // bottom, later ones.
+              if (contentOffset.y < layoutMeasurement.height) showEarlier();
+              else if (later > 0 && contentSize.height - contentOffset.y - layoutMeasurement.height < layoutMeasurement.height) showLater();
+            }}
+            scrollEventThrottle={100}
+          >
+            {firstLine > 0 ? (
+              <TextButton
+                title={t('Show earlier messages ({n} more)', { n: firstLine })}
+                onPress={showEarlier}
               />
-            );
-          })}
-        </ScrollView>
+            ) : (
+              // What was imported, before the thread, once all of the thread shows.
+              <>
+                {firstImported > 0 ? (
+                  <TextButton
+                    title={t('Show earlier imported messages ({n} more)', { n: firstImported })}
+                    onPress={showEarlier}
+                  />
+                ) : null}
+                {imported.length > 0 ? (
+                  <Text variant="caption" tone="muted" style={styles.divider}>
+                    {t('Imported from {from}: only on this phone, only to read.', { from: importedFrom })}
+                  </Text>
+                ) : null}
+                {imported.slice(firstImported, importedEnd).map((message, i) => {
+                  const files = mediaText(message.media);
+                  const ink = message.mine ? [styles.mineText, b.mineText] : [styles.theirsText, b.theirsText];
+                  return (
+                    <View key={`imported-${firstImported + i}`} style={[styles.bubble, message.mine ? b.mine : b.theirs, styles.imported]}>
+                      {importedGroup && !message.mine && message.sender ? <Text style={[ink, styles.sender]}>{message.sender}</Text> : null}
+                      {message.files.map((file, n) => (
+                        <Pressable key={`${file.id}-${n}`} onPress={() => setViewingImported(file)} accessibilityRole="button">
+                          <Attachment file={file} uri={photos[file.id]} ink={ink} />
+                        </Pressable>
+                      ))}
+                      {message.text ? <Text style={ink}>{message.text}</Text> : null}
+                      {files ? <Text style={[ink, styles.files]}>{t('{files}, not imported', { files })}</Text> : null}
+                      {message.at ? <Text style={[ink, styles.time]}>{shownTime(message.at)}</Text> : null}
+                    </View>
+                  );
+                })}
+                {imported.length > 0 && importedEnd === imported.length ? (
+                  <Text variant="caption" tone="muted" style={styles.divider}>
+                    {t('Continued in Erevos')}
+                  </Text>
+                ) : null}
+              </>
+            )}
+            {selected && visible.length === 0 && imported.length === 0 && chatSms.messages.length === 0 ? (
+              <View style={styles.hello}>
+                <ShieldIcon color={colors.textFaint} size={28} />
+                <Text variant="caption" tone="muted" style={styles.divider}>
+                  {t('No messages yet. What you write here is end-to-end encrypted, and kept sealed on this phone.')}
+                </Text>
+              </View>
+            ) : null}
+            {lines.slice(firstLine, lastLine).map((line, k) => {
+              const i = firstLine + k;
+              const before = k === 0 ? undefined : lines[i - 1];
+              const after = lines[i + 1];
+              const newDay = !before || dayOf(before.at) !== dayOf(line.at);
+              // The last of a run from one side gets the bubble's tail, and room after it; an SMS and a
+              // message of the chat are never one run.
+              const tail = !after || after.mine !== line.mine || after.kind !== line.kind || dayOf(after.at) !== dayOf(line.at);
+              if (line.kind === 'sms') {
+                const id = smsLineId(line.sms);
+                return (
+                  <SmsLine key={`sms-${id}`} sms={line.sms} earlier={!!line.earlier} newDay={newDay} tail={tail} lit={lit === id} styles={styles} b={b} colors={colors} acts={rowActs} />
+                );
+              }
+              const message = line.message;
+              return (
+                <MessageLine
+                  key={message.id}
+                  message={message}
+                  quoted={message.re ? byTag.get(message.re) : undefined}
+                  name={selectedName}
+                  newDay={newDay}
+                  tail={tail}
+                  lit={lit === message.id}
+                  played={playingId === message.id ? played : null}
+                  photo={message.file ? photos[message.file.id] : undefined}
+                  taking={taking[`${message.peer}|${message.tag}`]}
+                  plays={lines.length - i <= PLAYS_LAST}
+                  canAnswer={theyHave(message)}
+                  waits={scheduled(message)}
+                  styles={styles}
+                  b={b}
+                  colors={colors}
+                  acts={rowActs}
+                />
+              );
+            })}
+            {later > 0 ? <TextButton title={t('Show later messages ({n} more)', { n: later })} onPress={showLater} /> : null}
+          </ScrollView>
+          <ThreadArrows start={away.start || firstLine > 0 || firstImported > 0} end={away.end || later > 0} onStart={toStart} onEnd={toEnd} />
+        </View>
         {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
         {connectShown ? (
           <Row wrap>

@@ -12,6 +12,7 @@ import { KeyboardPaddedView } from '../components/keyboard';
 import { KeyFace } from '../components/key-face';
 import { LinkedText } from '../components/linked-text';
 import { usePublicGroup } from '../components/public-group';
+import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
 import { choose, confirm } from '../lib/alert';
 import { screenOfGroup, showOnScreen } from '../lib/background';
@@ -98,6 +99,8 @@ export default function GroupScreen() {
   const [answering, setAnswering] = useState(false);
   const [, setCalls] = useState(0);
   const scroll = useRef<ScrollView>(null);
+  // Whether the thread is away from its start and its end, for the arrows to them.
+  const { away, onScroll } = useThreadAway();
   // A public group (app/public-group.tsx): its members by the names they chose, and its own screen for them.
   const pub = usePublicGroup(id);
   const name = (identity: string) => (pub.isPublic ? pub.name(identity) : memberName(identity, contacts));
@@ -338,56 +341,72 @@ export default function GroupScreen() {
       ) : null}
       {parts.pinned}
       {parts.search}
-      <ScrollView
-        ref={scroll}
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.list}
-        onContentSizeChange={() => parts.follows() && scroll.current?.scrollToEnd({ animated: false })}
-        // It keeps to its end too as the keyboard or the panel under the bar take room from it.
-        onLayout={() => parts.follows() && scroll.current?.scrollToEnd({ animated: false })}
-      >
-        {messages.map((m, i) => {
-          if (m.note) {
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          ref={scroll}
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.list}
+          onContentSizeChange={() => parts.follows() && scroll.current?.scrollToEnd({ animated: false })}
+          // It keeps to its end too as the keyboard or the panel under the bar take room from it.
+          onLayout={() => parts.follows() && scroll.current?.scrollToEnd({ animated: false })}
+          onScroll={onScroll}
+          scrollEventThrottle={100}
+        >
+          {messages.map((m, i) => {
+            if (m.note) {
+              return (
+                <Text key={i} variant="caption" tone="muted" style={styles.noteLine}>
+                  {noteText(m.text, name)}
+                </Text>
+              );
+            }
+            const mine = !m.from;
+            const before = messages[i - 1];
+            const first = !before || before.note || before.from !== m.from;
+            const ink = mine ? b.mineText : b.theirsText;
+            const caption = parts.caption(m);
+            // A sticker, built in or made from a photo, shows on its own, with no bubble.
+            const stuck = !!m.sticker || !!m.file?.sticker;
             return (
-              <Text key={i} variant="caption" tone="muted" style={styles.noteLine}>
-                {noteText(m.text, name)}
-              </Text>
-            );
-          }
-          const mine = !m.from;
-          const before = messages[i - 1];
-          const first = !before || before.note || before.from !== m.from;
-          const ink = mine ? b.mineText : b.theirsText;
-          const caption = parts.caption(m);
-          // A sticker, built in or made from a photo, shows on its own, with no bubble.
-          const stuck = !!m.sticker || !!m.file?.sticker;
-          return (
-            <View key={i} onLayout={parts.placedAt(m)}>
-              <Pressable
-                onLongPress={() => parts.hold(m)}
-                accessibilityHint={t('Hold for more')}
-                style={[styles.bubble, mine ? b.mine : b.theirs, m.file?.kind === 'photo' && !stuck && (mine || !first) && styles.photoBubble, stuck && styles.stickerBubble, parts.litStyle(m)]}
-              >
-                {!mine && first ? (
-                  <Text variant="label" color={colors.accentText}>
-                    {name(m.from)}
-                  </Text>
-                ) : null}
-                {parts.quote(m, ink)}
-                {media.content(m, ink, () => parts.hold(m)) ??
-                  parts.body(m, ink) ?? (
-                    <Text style={ink}>
-                      <LinkedText text={shownLine(m.text)} />
+              <View key={i} onLayout={parts.placedAt(m)}>
+                <Pressable
+                  onLongPress={() => parts.hold(m)}
+                  accessibilityHint={t('Hold for more')}
+                  style={[styles.bubble, mine ? b.mine : b.theirs, m.file?.kind === 'photo' && !stuck && (mine || !first) && styles.photoBubble, stuck && styles.stickerBubble, parts.litStyle(m)]}
+                >
+                  {!mine && first ? (
+                    <Text variant="label" color={colors.accentText}>
+                      {name(m.from)}
                     </Text>
-                  )}
-                {parts.preview(m, ink)}
-                <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>{caption ? `${clock(m.at)}  ·  ${caption}` : clock(m.at)}</Text>
-              </Pressable>
-              {parts.reactions(m)}
-            </View>
-          );
-        })}
-      </ScrollView>
+                  ) : null}
+                  {parts.quote(m, ink)}
+                  {media.content(m, ink, () => parts.hold(m)) ??
+                    parts.body(m, ink) ?? (
+                      <Text style={ink}>
+                        <LinkedText text={shownLine(m.text)} />
+                      </Text>
+                    )}
+                  {parts.preview(m, ink)}
+                  <Text style={[ink, styles.time, stuck && { color: colors.textMuted }]}>{caption ? `${clock(m.at)}  ·  ${caption}` : clock(m.at)}</Text>
+                </Pressable>
+                {parts.reactions(m)}
+              </View>
+            );
+          })}
+        </ScrollView>
+        <ThreadArrows
+          start={away.start}
+          end={away.end}
+          onStart={() => {
+            parts.stay(true);
+            scroll.current?.scrollTo({ y: 0, animated: true });
+          }}
+          onEnd={() => {
+            parts.stay(false);
+            scroll.current?.scrollToEnd({ animated: true });
+          }}
+        />
+      </View>
       {note ? (
         <Text variant="caption" color={colors.danger} style={styles.noteText}>
           {note}

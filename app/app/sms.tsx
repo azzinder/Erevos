@@ -7,6 +7,7 @@ import { MoreIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LaterPicker } from '../components/later-picker';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
+import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
 import { deleteSms, erevosNumber, maySendSms, onSmsChangedElsewhere, sendSmsAgain, SmsForward } from '../components/sms-message';
 import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
@@ -191,6 +192,9 @@ export default function Sms() {
   draftNow.current = draft;
   const twoSims = (smsStatus()?.slots ?? 0) >= 2;
   const thread = useRef<ScrollView>(null);
+  // Gone to its start by its arrow, the thread keeps where it is read, until its end or a new SMS is.
+  const keepsPlace = useRef(false);
+  const { away, onScroll } = useThreadAway();
 
   const load = useCallback(() => {
     smsMessages(to)
@@ -381,6 +385,7 @@ export default function Sms() {
   async function send() {
     const text = draft.trim();
     if ((!text && !photo) || sending) return;
+    keepsPlace.current = false;
     setSending(true);
     setNote('');
     try {
@@ -412,6 +417,7 @@ export default function Sms() {
   // sends it then with Erevos closed too (lib/sms-later.ts). Asked now whether Erevos may send, as
   // it cannot ask then.
   async function sendLater(at: number) {
+    keepsPlace.current = false;
     const text = draft.trim();
     const sms = link.current;
     setLaterMenu(false);
@@ -470,131 +476,151 @@ export default function Sms() {
   const mayAnswer = numbers.length > 0;
   return (
     <KeyboardPaddedView bottom={insets.bottom} style={styles.screen}>
-      <ScrollView ref={thread} contentContainerStyle={styles.thread} onContentSizeChange={() => thread.current?.scrollToEnd({ animated: false })}>
-        <View style={styles.head}>
-          {face ? <Image source={{ uri: face }} style={styles.face} onError={() => setFace('')} accessibilityIgnoresInvertColors /> : null}
-          <View style={styles.headText}>
-            <Text variant="title">{title}</Text>
-            {group ? <Text tone="muted">{plural(numbers.length, 'Group MMS · {n} number', 'Group MMS · {n} numbers')}</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
-            {inContacts === false ? (
-              <View style={styles.addContact}>
-                <Button title={t('Add to contacts')} kind="secondary" compact onPress={() => router.push(newContactHref(numbers[0]))} />
-              </View>
-            ) : null}
-            {folder !== 'list' ? (
-              <Text variant="caption" color={colors.warning}>
-                {folder === 'spam' ? t('In Spam') : folder === 'archived' ? t('Archived') : t('In the Trash')}
-              </Text>
-            ) : null}
-            {spamFor ? (
-              <Text variant="caption" tone="muted">
-                {spamWhy(spamFor)}
-              </Text>
-            ) : null}
+      <View style={styles.frame}>
+        <ScrollView
+          ref={thread}
+          contentContainerStyle={styles.thread}
+          onContentSizeChange={() => keepsPlace.current || thread.current?.scrollToEnd({ animated: false })}
+          onScroll={onScroll}
+          scrollEventThrottle={100}
+        >
+          <View style={styles.head}>
+            {face ? <Image source={{ uri: face }} style={styles.face} onError={() => setFace('')} accessibilityIgnoresInvertColors /> : null}
+            <View style={styles.headText}>
+              <Text variant="title">{title}</Text>
+              {group ? <Text tone="muted">{plural(numbers.length, 'Group MMS · {n} number', 'Group MMS · {n} numbers')}</Text> : names[to] ? <Text tone="muted">{to}</Text> : null}
+              {inContacts === false ? (
+                <View style={styles.addContact}>
+                  <Button title={t('Add to contacts')} kind="secondary" compact onPress={() => router.push(newContactHref(numbers[0]))} />
+                </View>
+              ) : null}
+              {folder !== 'list' ? (
+                <Text variant="caption" color={colors.warning}>
+                  {folder === 'spam' ? t('In Spam') : folder === 'archived' ? t('Archived') : t('In the Trash')}
+                </Text>
+              ) : null}
+              {spamFor ? (
+                <Text variant="caption" tone="muted">
+                  {spamWhy(spamFor)}
+                </Text>
+              ) : null}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('More')}
+              hitSlop={8}
+              onPress={() => setMenu({ address: to, name: title, at: last?.at ?? Date.now(), folder })}
+              style={({ pressed }) => [styles.more, pressed && styles.pressed]}
+            >
+              <MoreIcon color={colors.text} />
+            </Pressable>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('More')}
-            hitSlop={8}
-            onPress={() => setMenu({ address: to, name: title, at: last?.at ?? Date.now(), folder })}
-            style={({ pressed }) => [styles.more, pressed && styles.pressed]}
-          >
-            <MoreIcon color={colors.text} />
-          </Pressable>
-        </View>
-        <Card>
-          <Text variant="caption" color={colors.warning}>
-            {t('Plain SMS: not encrypted. The phone company can read these messages.')}
-          </Text>
-          {contacts.length > 0 && !group && mayAnswer ? (
-            choosing ? (
-              <>
-                <Text tone="muted">{t('Which contact is {number}? Messages to this number will go through Erevos.', { number: to })}</Text>
-                <Row wrap>
-                  {contacts.map((c) => (
-                    <Chip
-                      key={c.identity}
-                      label={c.name ? cleanName(c.name) : t('contact {id}', { id: c.identity.slice(0, 8) })}
-                      onPress={() => router.replace(`/chat?contact=${c.identity}&phone=${encodeURIComponent(to)}`)}
-                    />
-                  ))}
-                </Row>
-              </>
-            ) : (
-              <Button title={t('This number has Erevos: link it to a contact')} kind="ghost" compact onPress={() => setChoosing(true)} />
-            )
+          <Card>
+            <Text variant="caption" color={colors.warning}>
+              {t('Plain SMS: not encrypted. The phone company can read these messages.')}
+            </Text>
+            {contacts.length > 0 && !group && mayAnswer ? (
+              choosing ? (
+                <>
+                  <Text tone="muted">{t('Which contact is {number}? Messages to this number will go through Erevos.', { number: to })}</Text>
+                  <Row wrap>
+                    {contacts.map((c) => (
+                      <Chip
+                        key={c.identity}
+                        label={c.name ? cleanName(c.name) : t('contact {id}', { id: c.identity.slice(0, 8) })}
+                        onPress={() => router.replace(`/chat?contact=${c.identity}&phone=${encodeURIComponent(to)}`)}
+                      />
+                    ))}
+                  </Row>
+                </>
+              ) : (
+                <Button title={t('This number has Erevos: link it to a contact')} kind="ghost" compact onPress={() => setChoosing(true)} />
+              )
+            ) : null}
+          </Card>
+          {trashed && messages.length > shown.length && hidden.size === 0 ? (
+            <Text variant="caption" tone="faint">
+              {t('The messages before are in the Trash.')}
+            </Text>
           ) : null}
-        </Card>
-        {trashed && messages.length > shown.length && hidden.size === 0 ? (
-          <Text variant="caption" tone="faint">
-            {t('The messages before are in the Trash.')}
-          </Text>
-        ) : null}
-        {shown.map((m) => (
-          <Pressable
-            key={smsLineId(m)}
-            onPress={smsFailed(m) ? () => sendAgain(m) : undefined}
-            onLongPress={() => setChosen(m)}
-            accessibilityRole={smsFailed(m) ? 'button' : undefined}
-            style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}
-          >
-            {(m.pictures ?? []).map((p) => (
-              <Image key={p.uri} source={{ uri: p.uri }} style={styles.picture} resizeMode="cover" accessibilityLabel={t('Picture')} />
-            ))}
-            {group && !m.mine && m.from ? (
-              <Text variant="caption" tone="muted">
-                {whose(m.from)}
+          {shown.map((m) => (
+            <Pressable
+              key={smsLineId(m)}
+              onPress={smsFailed(m) ? () => sendAgain(m) : undefined}
+              onLongPress={() => setChosen(m)}
+              accessibilityRole={smsFailed(m) ? 'button' : undefined}
+              style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}
+            >
+              {(m.pictures ?? []).map((p) => (
+                <Image key={p.uri} source={{ uri: p.uri }} style={styles.picture} resizeMode="cover" accessibilityLabel={t('Picture')} />
+              ))}
+              {group && !m.mine && m.from ? (
+                <Text variant="caption" tone="muted">
+                  {whose(m.from)}
+                </Text>
+              ) : null}
+              {m.text ? (
+                // Not selectable here, so holding the message down shows what it can do; its words
+                // can be selected and copied there.
+                <Text>
+                  <LinkedText text={m.text} />
+                </Text>
+              ) : null}
+              <Text variant="caption" tone="faint">
+                {new Date(m.at).toLocaleString(locale())}
+                {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}
+                {m.mine && smsMark(m.state) ? ` · ${smsMark(m.state)}` : ''}
               </Text>
-            ) : null}
-            {m.text ? (
-              // Not selectable here, so holding the message down shows what it can do; its words
-              // can be selected and copied there.
-              <Text>
-                <LinkedText text={m.text} />
+              {smsFailed(m) ? (
+                <Text variant="caption" color={colors.danger}>
+                  {t('Tap to send it again.')}
+                </Text>
+              ) : null}
+              {CAN_COPY && codes.get(smsLineId(m)) ? (
+                <Row>
+                  <Chip
+                    label={t('Copy code')}
+                    onPress={() => {
+                      void copyText(codes.get(smsLineId(m))!).then((done) => setNote(done ? t('The code is copied: any app that reads the clipboard can read it.') : t('The code could not be copied.')));
+                    }}
+                  />
+                </Row>
+              ) : null}
+            </Pressable>
+          ))}
+          {later.map((l) => (
+            <Pressable key={l.id} onPress={() => cancelLater(l)} accessibilityRole="button" style={[styles.bubble, styles.mine, styles.later]}>
+              <Text>{l.text}</Text>
+              <Text variant="caption" tone="faint">
+                {t('Scheduled · {when}', { when: laterLabel(l.at) })}
+                {sims.length > 1 && simLabel(sims, l.sim) ? ` · ${simLabel(sims, l.sim)}` : ''}
               </Text>
-            ) : null}
-            <Text variant="caption" tone="faint">
-              {new Date(m.at).toLocaleString(locale())}
-              {sims.length > 1 && simLabel(sims, m.sim) ? ` · ${simLabel(sims, m.sim)}` : ''}
-              {m.mine && smsMark(m.state) ? ` · ${smsMark(m.state)}` : ''}
-            </Text>
-            {smsFailed(m) ? (
-              <Text variant="caption" color={colors.danger}>
-                {t('Tap to send it again.')}
+            </Pressable>
+          ))}
+          {waiting.map(({ item, at }) => (
+            <Pressable key={item.id} onPress={() => takeBack(item.id)} accessibilityRole="button" style={[styles.bubble, styles.mine, styles.later]}>
+              {item.photo ? <Text variant="caption">{t('Picture')}</Text> : null}
+              {item.text ? <Text>{item.text}</Text> : null}
+              <Text variant="caption" color={colors.accentText}>
+                {t('Goes in {n} s · tap to take it back', { n: Math.max(1, Math.ceil((at - now) / 1000)) })}
               </Text>
-            ) : null}
-            {CAN_COPY && codes.get(smsLineId(m)) ? (
-              <Row>
-                <Chip
-                  label={t('Copy code')}
-                  onPress={() => {
-                    void copyText(codes.get(smsLineId(m))!).then((done) => setNote(done ? t('The code is copied: any app that reads the clipboard can read it.') : t('The code could not be copied.')));
-                  }}
-                />
-              </Row>
-            ) : null}
-          </Pressable>
-        ))}
-        {later.map((l) => (
-          <Pressable key={l.id} onPress={() => cancelLater(l)} accessibilityRole="button" style={[styles.bubble, styles.mine, styles.later]}>
-            <Text>{l.text}</Text>
-            <Text variant="caption" tone="faint">
-              {t('Scheduled · {when}', { when: laterLabel(l.at) })}
-              {sims.length > 1 && simLabel(sims, l.sim) ? ` · ${simLabel(sims, l.sim)}` : ''}
-            </Text>
-          </Pressable>
-        ))}
-        {waiting.map(({ item, at }) => (
-          <Pressable key={item.id} onPress={() => takeBack(item.id)} accessibilityRole="button" style={[styles.bubble, styles.mine, styles.later]}>
-            {item.photo ? <Text variant="caption">{t('Picture')}</Text> : null}
-            {item.text ? <Text>{item.text}</Text> : null}
-            <Text variant="caption" color={colors.accentText}>
-              {t('Goes in {n} s · tap to take it back', { n: Math.max(1, Math.ceil((at - now) / 1000)) })}
-            </Text>
-          </Pressable>
-        ))}
-        {note ? <Text tone="muted">{note}</Text> : null}
-      </ScrollView>
+            </Pressable>
+          ))}
+          {note ? <Text tone="muted">{note}</Text> : null}
+        </ScrollView>
+        <ThreadArrows
+          start={away.start}
+          end={away.end}
+          onStart={() => {
+            keepsPlace.current = true;
+            thread.current?.scrollTo({ y: 0, animated: true });
+          }}
+          onEnd={() => {
+            keepsPlace.current = false;
+            thread.current?.scrollToEnd({ animated: true });
+          }}
+        />
+      </View>
       {mayAnswer && (sims.length > 1 || (twoSims && sims.length === 0) || photo) ? (
         <Row wrap style={styles.options}>
           {sims.length > 1 ? (
@@ -677,6 +703,7 @@ export default function Sms() {
 const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.ground },
+    frame: { flex: 1 },
     thread: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.lg, gap: space.sm },
     head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     headText: { flex: 1, gap: 2 },
