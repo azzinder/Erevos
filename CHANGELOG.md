@@ -19,6 +19,8 @@ On main, not released yet:
   it said "through the relay" before, even then. The **Nostr** screen has **What the relays did last**: for each relay,
   whether it took the last text and how many seconds after, or why not, and whether this phone reads on it, kept until
   Erevos closes. The guide says how to try Nostr with two phones side by side (Bluetooth and same Wi-Fi off).
+- **Coloured call buttons**: at the top of a chat, the video call is a blue tile with a white camera and the voice call
+  a green tile with a white handset, as **Phone** is on the home screen; a group's call is the green tile too.
 
 ## 3.2.0 (2026-10-25)
 

@@ -4,16 +4,18 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { withAlpha } from '../theme/colors';
 import { gradientStyle } from './glass';
 
-// The home screen's shortcuts (Phone, Contacts, Lock): a coloured tile each, in the colours of the
-// launcher icons (Phone green, Contacts violet), with a solid white sign on it.
+// The home screen's shortcuts (Phone, Contacts, Lock), and the calls at the top of a chat and a
+// group: a coloured tile each, in the colours of the launcher icons (Phone green, Contacts violet,
+// SMS blue for a video call), with a solid white sign on it.
 
-export type TileTint = 'green' | 'violet' | 'orange';
+export type TileTint = 'green' | 'violet' | 'orange' | 'blue';
 
 /** Each tint's top and bottom, as the launcher icons' backgrounds start, and its deep shade. */
 const TINTS: Record<TileTint, { top: string; bottom: string; deep: string }> = {
   green: { top: '#5ee08a', bottom: '#19a34f', deep: '#0a6330' },
   violet: { top: '#c99bff', bottom: '#8b3fe6', deep: '#4d1691' },
   orange: { top: '#ffc061', bottom: '#f28a12', deep: '#a85200' },
+  blue: { top: '#6aa8ff', bottom: '#2463eb', deep: '#16348f' },
 };
 
 const TILE = 36;
@@ -81,6 +83,29 @@ export function PhoneSign() {
           />
         );
       })}
+    </View>
+  );
+}
+
+/** A camera: a rounded body, and its lens a wedge widening to the right. */
+export function VideoSign() {
+  const size = SIGN;
+  return (
+    <View style={{ width: size, height: size, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: size * 0.6, height: size * 0.52, borderRadius: size * 0.12, backgroundColor: WHITE }} />
+      <View
+        style={{
+          width: 0,
+          height: 0,
+          marginLeft: size * 0.04,
+          borderTopWidth: size * 0.2,
+          borderBottomWidth: size * 0.2,
+          borderRightWidth: size * 0.28,
+          borderTopColor: 'transparent',
+          borderBottomColor: 'transparent',
+          borderRightColor: WHITE,
+        }}
+      />
     </View>
   );
 }

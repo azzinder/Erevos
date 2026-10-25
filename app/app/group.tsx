@@ -7,11 +7,12 @@ import { DraftComposer, IconButton, useDraft } from '../components/composer';
 import { useGlassBlur } from '../components/glass';
 import { useGroupMedia } from '../components/group-media';
 import { useGroupMessages } from '../components/group-messages';
-import { BackIcon, MoreIcon, PhoneIcon, ShieldIcon } from '../components/icons';
+import { BackIcon, MoreIcon, ShieldIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { KeyFace } from '../components/key-face';
 import { LinkedText } from '../components/linked-text';
 import { usePublicGroup } from '../components/public-group';
+import { PhoneSign, ShortcutTile } from '../components/shortcut-tile';
 import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
 import { choose, confirm } from '../lib/alert';
@@ -294,9 +295,9 @@ export default function GroupScreen() {
             </View>
           </Pressable>
           {out ? null : (
-            <IconButton label={going ? (going.video ? t('A group video call is going on · Join') : t('A group call is going on · Join')) : t('Voice call')} onPress={() => void call(false)}>
-              <PhoneIcon color={colors.text} size={21} />
-            </IconButton>
+            <ShortcutTile label={going ? (going.video ? t('A group video call is going on · Join') : t('A group call is going on · Join')) : t('Voice call')} tint="green" onPress={() => void call(false)}>
+              <PhoneSign />
+            </ShortcutTile>
           )}
           {/* Apart from the call, so a slip on it calls no one; upright on Android, as its apps have it. */}
           <View style={styles.moreGap}>

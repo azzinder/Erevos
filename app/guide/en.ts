@@ -97,7 +97,7 @@ same whether a space has any or not: their messages can be read only while their
 
 Inside a chat, its name and picture are at the top with how it travels: **Encrypted** (end to end), **Online**,
 **Nearby** while their phone is linked to yours over the radio, or **typing…**, with a stopwatch when the chat's
-messages disappear. Beside them, the camera starts a video call and the phone a voice call. Tap the name, or **⋯**
+messages disappear. Beside them, the blue tile with a camera starts a video call and the green one with a handset a voice call. Tap the name, or **⋯**
 after them (**⋮** on Android), for the chat's **Details**: its picture (tap it to change it), **Call**, **Video**, **Rename** and **Picture**, then **Disappearing messages**,
 **Appear offline**, **Chat look**, the **Safety number**, **Move to hidden chats** and **Delete messages**. **Done**
 closes them.
@@ -796,7 +796,7 @@ and shows that site nothing of itself, not even its address.
 
 ### Voice and video calls
 
-In a contact's chat, tap the phone at the top for a voice call, or the camera beside it for a video call. The first time, Android asks whether
+In a contact's chat, tap the green handset at the top for a voice call, or the blue camera beside it for a video call. The first time, Android asks whether
 Erevos may use the microphone, and the camera for video. Their phone rings while Erevos is open there, on any screen of
 the space: they tap **Answer** or **Decline**. During the call you can mute, switch the loudspeaker, turn your camera off, flip
 between the front and back camera, and **End**. Each call leaves a line in the chat, such as how long it lasted, or
@@ -907,7 +907,7 @@ out members.
   they delete it.
 - **Leaving:** **Leave the group** asks the admin, whose phone takes you out the next time Erevos is open there. The
   admin's own button is **Close the group**: it takes every member out.
-- **Group calls:** the phone at the top of the group starts a voice call in it, and **Video call** under **⋯** a video call. It rings on the members' phones
+- **Group calls:** the green handset at the top of the group starts a voice call in it, and **Video call** under **⋯** a video call. It rings on the members' phones
   where Erevos is open, and whoever answers is in it. A call going on shows at the top of the group, to join it
   later. Up to eight people: each phone connects to each other one, through the call relay, so no phone sees another's
   IP address; without a call relay, only on the same Wi-Fi. End-to-end encrypted between each two phones, their keys

@@ -37,7 +37,8 @@ import { QrCode } from '../components/QrCode';
 import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
 import { WelcomeInvite } from '../components/welcome-invite';
-import { BackIcon, MoreIcon, PhoneIcon, ShieldIcon, TimerIcon, VideoIcon } from '../components/icons';
+import { BackIcon, MoreIcon, ShieldIcon, TimerIcon } from '../components/icons';
+import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton, Toggle } from '../components/ui';
@@ -4899,12 +4900,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             )}
             {selectedContact ? (
               <>
-                <IconButton label={t('Video call')} onPress={() => void startCall(true)}>
-                  <VideoIcon color={colors.text} size={24} />
-                </IconButton>
-                <IconButton label={t('Voice call')} onPress={() => void startCall(false)}>
-                  <PhoneIcon color={colors.text} size={21} />
-                </IconButton>
+                <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void startCall(true)}>
+                  <VideoSign />
+                </ShortcutTile>
+                <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void startCall(false)}>
+                  <PhoneSign />
+                </ShortcutTile>
               </>
             ) : null}
             {selected ? (
