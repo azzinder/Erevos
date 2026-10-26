@@ -1,0 +1,126 @@
+import { loadGroupData, saveGroupData } from '../lock/group-data';
+import { loadPublicGroupData, savePublicGroupData } from '../lock/public-group-data';
+import { placeQueues } from '../lock/queues-data';
+import { hiddenHolder } from '../lock/sealed-file';
+import { loadHiddenData } from '../lock/space-data';
+import { canGroup } from './core';
+import type { GroupCallSignal } from './group-call-signal';
+import type { GroupSignal } from './group-signal';
+import { onForgetPlaceChats, placeChats } from './place-chats';
+import type { PublicGroups } from './public-groups';
+import type { MoveGroups } from './queue-move';
+import { groupCalls, groupSettings, groupTransport, openGroups, type GroupsAt } from './space-groups';
+
+// A hidden place's groups (lib/groups.ts), as the space's are (lib/space-groups.ts): kept with the
+// place, encrypted with its key, and opened once while its chats are (lib/place-chats.ts), the same
+// for its chat screen and its receiver (lib/place-receiver.ts), let go of with them. Their members
+// are the place's contacts. What goes in them goes through the place's relay only, never to phones
+// nearby, and comes to queues of their own there, which the place's moves make and read
+// (lib/queue-move.ts), as the space's do. None is public.
+
+/** A hidden place's groups, and how what comes for them is taken. */
+export type PlaceGroupsAt = GroupsAt & {
+  /** A group message from one of the place's relay queues. Says whether it was one. */
+  take(packet: Uint8Array): Promise<boolean>;
+  /** A group signal from a contact's chat in the place. */
+  signal(identity: string, signal: GroupSignal, request: boolean): Promise<void>;
+  /** Sends again what the relay did not take, and makes keys new in the groups where they are due. */
+  flush(): Promise<void>;
+  /** What the place's moves need of them. */
+  moves: MoveGroups;
+};
+
+type Opened = { key: Uint8Array; at: PlaceGroupsAt };
+
+const opened = new Map<string, Opened>();
+const at = (space: number, pocket: number) => `${space}.${pocket}`;
+const sameKey = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((byte, i) => byte === b[i]);
+
+const messageListeners = new Set<(space: number, pocket: number, group: string) => void>();
+const callListeners = new Set<(space: number, pocket: number, group: string, from: string, signal: GroupCallSignal) => void>();
+
+/** Calls `listener` with the place and the group each time a member's message comes in a hidden place's group. Returns how to stop. */
+export function onPlaceGroupMessage(listener: (space: number, pocket: number, group: string) => void): () => void {
+  messageListeners.add(listener);
+  return () => {
+    messageListeners.delete(listener);
+  };
+}
+
+/** Calls `listener` with each group call signal in a hidden place's groups. Returns how to stop. */
+export function onPlaceGroupCall(listener: (space: number, pocket: number, group: string, from: string, signal: GroupCallSignal) => void): () => void {
+  callListeners.add(listener);
+  return () => {
+    callListeners.delete(listener);
+  };
+}
+
+/** The groups of the hidden place in `pocket` of `space`, open with `key`, opened the first time they are asked for. */
+export function placeGroupsAt(space: number, pocket: number, key: Uint8Array): PlaceGroupsAt {
+  const was = opened.get(at(space, pocket));
+  if (was && sameKey(was.key, key)) return was.at;
+  const holder = hiddenHolder(pocket);
+  const kept = key.slice();
+  const chats = () => placeChats(space, pocket, kept);
+  const settings = async () => groupSettings(await loadHiddenData(space, pocket, kept), placeQueues(space, pocket, kept));
+  let made: Promise<PublicGroups> | null = null;
+  const groups = (): Promise<PublicGroups> => {
+    if (made) return made;
+    const opening = (async () => {
+      const [data, pub] = await Promise.all([loadGroupData(space, kept, holder), loadPublicGroupData(space, kept, holder)]);
+      const place = openGroups({
+        data,
+        save: (next) => saveGroupData(space, kept, next, holder),
+        pub,
+        savePub: (next) => savePublicGroupData(space, kept, next, holder),
+        settings,
+        chats,
+      });
+      place.onCall((group, from, signal) => callListeners.forEach((listener) => listener(space, pocket, group, from, signal)));
+      place.onMessage((group) => messageListeners.forEach((listener) => listener(space, pocket, group)));
+      return place;
+    })();
+    made = opening;
+    // Tried again the next time they are asked for.
+    opening.catch(() => {
+      if (made === opening) made = null;
+    });
+    return opening;
+  };
+  const transport = groupTransport(settings, chats, true);
+  const placeAt: PlaceGroupsAt = {
+    groups,
+    transport,
+    calls: groupCalls(groups, transport, settings, chats),
+    relay: async () => (await settings()).own,
+    chats,
+    hidden: true,
+    take: async (packet) => (canGroup() ? (await groups()).receive(packet, transport) : false),
+    signal: async (identity, signal, request) => {
+      if (canGroup()) await (await groups()).signal(identity, signal, request, transport);
+    },
+    flush: async () => {
+      if (!canGroup() || !made) return;
+      const place = await groups();
+      await place.flush(transport);
+      await place.renewKeys(transport);
+    },
+    moves: {
+      renewAgain: async (kind) => {
+        if (canGroup()) await (await groups()).renewAgain(kind);
+      },
+      named: async () => (canGroup() ? (await groups()).ownSenders() : new Set<string>()),
+      kinds: ['group'],
+    },
+  };
+  opened.set(at(space, pocket), { key: kept, at: placeAt });
+  return placeAt;
+}
+
+/** Lets go of a place's groups, or of every place's, as their chats are let go of (lib/place-chats.ts). */
+export function forgetPlaceGroups(space?: number, pocket?: number): void {
+  if (space === undefined || pocket === undefined) opened.clear();
+  else opened.delete(at(space, pocket));
+}
+
+onForgetPlaceChats(forgetPlaceGroups);

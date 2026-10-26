@@ -4,7 +4,9 @@
 // While the space is open, through a real relay and the real core, what comes to such a place is
 // kept in its history and its sender told it came, nothing is taken while its chat screen holds
 // it, a call rings with no name and waits for the PIN, and one ended or too old is kept as missed.
-// Switched off, nothing reads it any more. The relay part is skipped, with a note, when the core or
+// Switched off, nothing reads it any more. A place's groups are its own (lib/place-groups.ts): made
+// with its contacts, they go through its relay to a queue of its own, are read while it is closed,
+// and are kept apart from the space's. The relay part is skipped, with a note, when the core or
 // the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
@@ -19,13 +21,19 @@ import { CALL_LINE } from '../lib/calls';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
+import { isGroupPacket } from '../lib/groups';
 import { forgetPlaceChats, placeChats } from '../lib/place-chats';
+import { onPlaceGroupMessage, placeGroupsAt } from '../lib/place-groups';
 import { holdPlace, onPlaceMessage, onPlaceRing, receivesPocket, startPlaceReceiver, takePlaceCalls } from '../lib/place-receiver';
 import { setAppShown } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
+import { spaceGroups } from '../lib/space-groups';
+import { loadGroupData } from '../lock/group-data';
 import { prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
 import { keepPlace, keepsPlace, keptPlaces, onKeptChange, prepareKeepEntries } from '../lock/hidden-keep';
 import { setCurrentSpace } from '../lock/keys';
+import { placeQueues } from '../lock/queues-data';
+import { hiddenHolder } from '../lock/sealed-file';
 import { EMPTY_SPACE, saveHiddenData } from '../lock/space-data';
 import { blobs, files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
@@ -229,6 +237,101 @@ test('a closed place that receives keeps what comes, tells its sender, rings cal
     stopHeard();
     stopRang();
     // A look under way ends first: what it tells could reach the next check.
+    (await holdPlace(0, 1))();
+    forgetPlaceChats();
+    setCurrentSpace(null);
+  }
+});
+
+test('a hidden place’s groups are its own: made with its contacts, through its relay, read while it is closed, apart from the space’s', { skip: !coreReady || !relayReady }, async () => {
+  store.clear();
+  files.clear();
+  blobs.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const queue = async () => {
+    const ids = await createQueue(relay);
+    return { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  };
+
+  // Bob's space is open, its hidden chats in pocket 1 closed and receiving.
+  const spaceKey = randomBytes(32);
+  const placeKey = randomBytes(32);
+  setCurrentSpace(0, spaceKey);
+  await prepareKeepEntries();
+  const bobQueue = await queue();
+  await saveHiddenData(0, 1, placeKey, { ...EMPTY_SPACE, url, ownQueue: bobQueue });
+  const bob = await placeChats(0, 1, placeKey);
+  await keepPlace(0, spaceKey, 1, placeKey);
+
+  // Alice, on another phone, in hidden chats of her own, read here by hand.
+  const aliceKey = randomBytes(32);
+  const aliceQueue = await queue();
+  await saveHiddenData(1, 2, aliceKey, { ...EMPTY_SPACE, url, ownQueue: aliceQueue });
+  const alice = await placeChats(1, 2, aliceKey);
+  const aliceAt = placeGroupsAt(1, 2, aliceKey);
+  const toAlice = async () => {
+    for (let bytes = await receiveMessage(relay, fromHex(aliceQueue.recipientHex)); bytes; bytes = await receiveMessage(relay, fromHex(aliceQueue.recipientHex))) {
+      if (isGroupPacket(bytes)) {
+        await aliceAt.take(bytes);
+        continue;
+      }
+      const said = await alice.e2e.receive(bytes);
+      if (said.kind === 'message' && said.group) await aliceAt.signal(said.identity, said.group, said.request);
+    }
+  };
+
+  const where = { relay: url, relayKey: '' };
+  const { identity: bobId } = await alice.e2e.addContact({ senderHex: bobQueue.senderHex, key: toBase64Url(bob.e2e.bundle), relayUrl: url }, aliceQueue.senderHex, where);
+  const [first] = alice.e2e.pending();
+  await sendMessage(relay, fromHex(first.sender), first.first);
+  await alice.e2e.firstSent(bobId);
+  const hello = await alice.e2e.seal(bobId, 'hello', aliceQueue.senderHex, { at: where });
+  await sendMessage(relay, fromHex(hello.sender), hello.packet);
+
+  const heard: [number, number, string][] = [];
+  const stopHeard = onPlaceGroupMessage((space, pocket, group) => heard.push([space, pocket, group]));
+  setAppShown(true);
+  const stop = startPlaceReceiver(30);
+  try {
+    await until(() => bob.history.messages().some((message) => message.text === 'hello'));
+    await bob.e2e.acceptRequest(bob.e2e.contacts()[0].identity);
+    // The place's moves made it a queue for its groups, and none for public ones.
+    await until(async () => !!(await placeQueues(0, 1, placeKey).load()).group);
+    const kept = await placeQueues(0, 1, placeKey).load();
+    assert.equal(kept.public, null);
+
+    // Alice makes a group with hidden Bob: asked, he joins while his hidden chats are closed.
+    const aliceGroups = await aliceAt.groups();
+    const id = await aliceGroups.create('Κρυφή ομάδα', [bobId], aliceAt.transport);
+    const bobAt = placeGroupsAt(0, 1, placeKey);
+    const bobGroups = await bobAt.groups();
+    await until(async () => {
+      await toAlice();
+      return bobGroups.list().some((group) => group.id === id && group.status === 'in');
+    }, 15000);
+    // Where the group reaches him: the place's own queue for groups.
+    const member = (await aliceGroups.members(id)).find((m) => m.about?.id === bobId);
+    assert.equal(member?.about?.sender, kept.group!.queue.senderHex);
+
+    await aliceGroups.send(id, 'γεια στην κρυφή ομάδα', aliceAt.transport);
+    await until(() => bobGroups.messages(id).some((m) => m.text === 'γεια στην κρυφή ομάδα'), 10000);
+    await until(() => heard.some(([space, pocket, group]) => space === 0 && pocket === 1 && group === id));
+
+    // His answer goes through the place's relay.
+    await bobGroups.send(id, 'από τις κρυφές', bobAt.transport);
+    await until(async () => {
+      await toAlice();
+      return aliceGroups.messages(id).some((m) => m.text === 'από τις κρυφές');
+    });
+
+    // Kept with the place, encrypted with its key; the space's groups have none of it.
+    assert.equal((await loadGroupData(0, placeKey, hiddenHolder(1))).groups.length, 1);
+    assert.equal((await loadGroupData(0, spaceKey)).groups.length, 0);
+    assert.deepEqual((await spaceGroups()).list(), []);
+  } finally {
+    stop();
+    stopHeard();
     (await holdPlace(0, 1))();
     forgetPlaceChats();
     setCurrentSpace(null);

@@ -76,6 +76,8 @@ export type MoveGroups = {
   renewAgain(kind: 'group' | 'public'): Promise<void>;
   /** The queues the groups say this phone reads on, in its own leaf, by sender id. */
   named(): Promise<Set<string>>;
+  /** The kinds whose queues are made: both, unless said (a hidden place has no public groups). */
+  kinds?: readonly ('group' | 'public')[];
 };
 
 /** Where a move happens: the space, or a hidden place. */
@@ -84,7 +86,7 @@ export type MoveAt = {
   queues: QueuesStore;
   /** Its settings (SpaceData), the own queue among them, and its backup relay (lib/spare.ts). */
   data: SpareStore;
-  /** The space's groups; none in a hidden place. */
+  /** Its groups (lib/space-groups.ts, lib/place-groups.ts). */
   groups?: MoveGroups;
   /** The web app's push address for a queue made, and none for one left (lib/web-push.web.ts). `add`: for contacts'
    *  queues made ahead (recipient ids in hex); a deleted one's goes with it at the relay. */
@@ -556,7 +558,7 @@ export class QueueMove {
 
   // The groups' and the public groups' queues, made the first time, or again after the relay lost them.
   private async makeGroupQueues(q: QueuesData, own: Relay, here: Here): Promise<QueuesData> {
-    for (const kind of ['group', 'public'] as const) {
+    for (const kind of this.at.groups?.kinds ?? (['group', 'public'] as const)) {
       if (q[kind]) continue;
       const ids = await createQueue(own).catch(() => null);
       if (!ids) return q;

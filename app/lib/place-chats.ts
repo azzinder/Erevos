@@ -41,8 +41,16 @@ export function placeChats(space: number, pocket: number, key: Uint8Array): Prom
   return chats;
 }
 
+const forgets = new Set<(space?: number, pocket?: number) => void>();
+
+/** Has `forget` called each time a place's chats are let go of, or every place's (no `space`), so what is opened with them goes too (lib/place-groups.ts). */
+export function onForgetPlaceChats(forget: (space?: number, pocket?: number) => void): void {
+  forgets.add(forget);
+}
+
 /** Lets go of a place's chats, or of every place's (the space closes), so nothing of them stays in memory. */
 export function forgetPlaceChats(space?: number, pocket?: number): void {
   if (space === undefined || pocket === undefined) opened.clear();
   else opened.delete(at(space, pocket));
+  forgets.forEach((forget) => forget(space, pocket));
 }

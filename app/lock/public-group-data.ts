@@ -162,5 +162,6 @@ function checked(value: unknown): PublicData {
 
 const store = sealedFile({ name: FILE, empty: EMPTY_PUBLIC, checked, block: BLOCK });
 
-export const loadPublicGroupData = (space: number, key: Uint8Array) => store.load('space' as Holder, space, key);
-export const savePublicGroupData = (space: number, key: Uint8Array, data: PublicData) => store.save('space' as Holder, space, key, data);
+/** The public groups of a space, or of a hidden place (`holder`, lock/sealed-file.ts hiddenHolder). */
+export const loadPublicGroupData = (space: number, key: Uint8Array, holder: Holder = 'space') => store.load(holder, space, key);
+export const savePublicGroupData = (space: number, key: Uint8Array, data: PublicData, holder: Holder = 'space') => store.save(holder, space, key, data);

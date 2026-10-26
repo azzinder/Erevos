@@ -152,6 +152,7 @@ import { answerInvites, answerTextInvite, expireTextInvites, linkInviter, refres
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
 import { placeChats } from '../lib/place-chats';
+import { placeGroupsAt } from '../lib/place-groups';
 import { holdPlace, takePlaceCalls } from '../lib/place-receiver';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, orNostr, sendNostrAgain, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
 import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
@@ -811,6 +812,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
   // Where this chat's home relay is kept (lib/spare.ts): the space's, or this hidden place's own.
   const spareStore = useMemo(() => (hiddenKey ? hiddenSpare(currentSpace().space, pocket, hiddenKey) : spaceSpare()), [hiddenKey, pocket]);
+  // This hidden place's groups (lib/place-groups.ts), the same its receiver has; the space's otherwise (lib/space-groups.ts).
+  const placeGroups = useMemo(() => (hiddenKey ? placeGroupsAt(currentSpace().space, pocket, hiddenKey) : null), [hiddenKey, pocket]);
+  const takeGroup = (packet: Uint8Array) => (placeGroups ? placeGroups.take(packet) : takeGroupPacket(packet));
   const [homeUrl, setHomeUrl] = useState('');
   const [homeToken, setHomeToken] = useState('');
   const [homeNote, setHomeNote] = useState('');
@@ -1300,7 +1304,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       if (link) nearby.hold(packet);
       return;
     }
-    // A group's message (lib/groups.ts), as on the same Wi-Fi with no internet.
+    // A group's message (lib/groups.ts), as on the same Wi-Fi with no internet: the space's, as a
+    // hidden place's groups go through the relay only.
     if (isGroupPacket(packet)) {
       const ours = await takeGroupPacket(packet).catch(() => false);
       if (!ours && link) nearby.hold(packet);
@@ -1444,7 +1449,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           const kept = await queues.load();
           if (kept.moved > 0) chats.setQueueAge(kept.moved, kept.now?.queue.senderHex);
           if (kept.now) chats.setLinkOwn(!kept.link);
-          mover.current = new QueueMove({ e2e: chats, queues, data: spareStore, moved: (queue, old, why) => hiddenMoved.current(queue, old, why), ring: () => moveRing.current() });
+          mover.current = new QueueMove({
+            e2e: chats,
+            queues,
+            data: spareStore,
+            groups: placeGroups?.moves,
+            moved: (queue, old, why) => hiddenMoved.current(queue, old, why),
+            ring: () => moveRing.current(),
+          });
         } else mover.current = spaceMover({ e2e: chats });
         const queues = await mover.current.queues().catch(() => null);
         if (!active) return;
@@ -1748,8 +1760,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       // from the backup queue: what it was to the junk meter.
       const take = async (bytes: Uint8Array, kind?: QueueKind | 'old', mine = ''): Promise<Took> => {
         if (!e2e) return { junk: false };
-        // A group's message (lib/groups.ts), to the space's queues only.
-        if (isGroupPacket(bytes)) return { junk: hiddenKey ? true : !(await takeGroupPacket(bytes).catch(() => true)) };
+        // A group's message (lib/groups.ts): the space's, or this hidden place's.
+        if (isGroupPacket(bytes)) return { junk: !(await takeGroup(bytes).catch(() => true)) };
         // An answer to an SMS invite sent from here: their contact link.
         const invited = hiddenKey ? null : await takeInviteAnswer(e2e, bytes, ownSender, here()).catch(() => null);
         if (invited) {
@@ -1839,6 +1851,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         // To contacts Nostr is the only way to, what is due there again (lib/nostr-chats.ts).
         await sendNostrAgain(e2e);
         await sendCopies(e2e, sends).catch(() => 0);
+        // A hidden place's groups: what the relay did not take, and keys due (the space's: lib/receiver.ts).
+        await placeGroups?.flush().catch(() => undefined);
         failures = 0;
       } catch (error) {
         failures++;
@@ -2010,7 +2024,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         if (said) setNote(said);
       });
     }
-    if (received.group && !hiddenKey) void takeGroupSignal(received.identity, received.group, received.request).catch(() => undefined);
+    if (received.group) void (placeGroups ? placeGroups.signal(received.identity, received.group, received.request) : takeGroupSignal(received.identity, received.group, received.request)).catch(() => undefined);
     if (received.online) setNow(Date.now());
     const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
     if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);

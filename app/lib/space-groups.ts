@@ -1,8 +1,8 @@
-import { loadGroupData, saveGroupData } from '../lock/group-data';
+import { loadGroupData, saveGroupData, type GroupData } from '../lock/group-data';
 import { currentSpace } from '../lock/keys';
 import { loadPublicGroupData, savePublicGroupData, type PublicData } from '../lock/public-group-data';
-import { spaceQueues } from '../lock/queues-data';
-import { loadCurrentSpaceData } from '../lock/space-data';
+import { spaceQueues, type QueuesStore } from '../lock/queues-data';
+import { loadCurrentSpaceData, type SpaceData } from '../lock/space-data';
 import { soon } from './call';
 import { canGroup, canRelaySeal } from './core';
 import { toBase64Url } from './e2e';
@@ -16,7 +16,7 @@ import { relayDoors } from './public-doors';
 import { PublicGroups } from './public-groups';
 import { groupSenders, useForMoves } from './queue-move';
 import { callRelay, fromHex, relayKey, sendMessage, toHex, type Relay } from './relay';
-import { contactTarget, relayFor, sendSealed, spaceChats } from './space-chats';
+import { contactTarget, relayFor, sendSealed, spaceChats, type SpaceChats } from './space-chats';
 import { t } from './i18n';
 
 // The open space's group chats (lib/groups.ts), opened once while the space is, as its chats are
@@ -27,6 +27,29 @@ import { t } from './i18n';
 // for its contact link is added to the space's own chats (lib/group-contacts.ts), never to hidden ones.
 // The groups say a queue of their own as where this phone reads, and the public groups another
 // (lib/queue-move.ts), never the one its contacts write to: the own queue, until those are made.
+// A hidden place's groups are made the same way (lib/place-groups.ts), from its own settings.
+
+/**
+ * Where groups are kept and go from: the space's (spaceGroupsAt), or a hidden place's
+ * (lib/place-groups.ts). The group screens take it from components/groups-at.tsx.
+ */
+export type GroupsAt = {
+  /** The groups, opened the first time they are asked for. */
+  groups(): Promise<PublicGroups>;
+  /** How their messages leave the phone. */
+  transport: GroupTransport;
+  /** Their calls (lib/group-calls.ts). */
+  calls: GroupCallPlace;
+  /** Their relay, straight: their photos, files and voice messages go to it and come through it. */
+  relay(): Promise<Relay>;
+  /** The chats whose contacts they are with. */
+  chats(): Promise<SpaceChats>;
+  /** A hidden place's: they go through its relay only, never to phones nearby, and none is public. */
+  hidden: boolean;
+};
+
+/** What groups go by: the relay, straight and as it sends, the own queue's sender id, the groups' queues, and the relay's key. */
+export type GroupSettings = { own: Relay; sends: Relay; senderHex: string; groupHex: string; publicHex: string; relayKey: string };
 
 let opened: { of: object; groups: Promise<PublicGroups> } | null = null;
 // The same once open, for what cannot wait for them (publicMemberName).
@@ -54,9 +77,8 @@ export function onSpaceGroupCall(listener: (group: string, from: string, signal:
 // Our relay's key, said to groups so members on other relays reach us: asked once.
 let ownKey: { url: string; key: string } | null = null;
 
-async function settings() {
-  const current = currentSpace();
-  const data = await loadCurrentSpaceData();
+/** What groups go by, for chats whose settings are `data` and whose queues `queues` keeps. Throws with no relay queue. */
+export async function groupSettings(data: SpaceData, queues: QueuesStore): Promise<GroupSettings> {
   const url = data.url.trim();
   if (!url || !data.ownQueue) throw new Error(t('Groups go through the relay. Type its address in Relay first.'));
   const own = { url, token: data.token.trim() || undefined };
@@ -64,14 +86,34 @@ async function settings() {
     const key = await soon(relayKey(own).catch(() => null), 4000, null);
     if (key) ownKey = { url, key: toBase64Url(key) };
   }
-  const queues = await spaceQueues(current.space, current.key).load();
   return {
     own,
     sends: relayFor(url, data.token, data.via, data.viaToken) ?? own,
     senderHex: data.ownQueue.senderHex,
-    ...groupSenders(queues, data.ownQueue, url),
+    ...groupSenders(await queues.load(), data.ownQueue, url),
     relayKey: ownKey?.url === url ? ownKey.key : '',
   };
+}
+
+async function settings() {
+  const current = currentSpace();
+  return groupSettings(await loadCurrentSpaceData(), spaceQueues(current.space, current.key));
+}
+
+/** Groups kept as `data` and `pub` (saved by `save` and `savePub`), of the chats `chats` gives, going by `settings`. */
+export function openGroups({ data, save, pub, savePub, settings, chats }: {
+  data: GroupData;
+  save: (next: GroupData) => Promise<void>;
+  pub: PublicData;
+  savePub: (next: PublicData) => Promise<void>;
+  settings: () => Promise<GroupSettings>;
+  chats: () => Promise<SpaceChats>;
+}): PublicGroups {
+  const meAt = (kind: 'groupHex' | 'publicHex') => async () => {
+    const [{ e2e }, place] = await Promise.all([chats(), settings()]);
+    return { id: toHex(e2e.identity), sender: place[kind], relay: place.own.url, relayKey: place.relayKey };
+  };
+  return new PublicGroups(data, save, meAt('groupHex'), pub, savePub, relayDoors(settings), meAt('publicHex'));
 }
 
 /** The open space's groups, opened the first time they are asked for. */
@@ -80,12 +122,14 @@ export function spaceGroups(): Promise<PublicGroups> {
   if (opened?.of !== current) {
     const groups = (async () => {
       const [data, pub] = await Promise.all([loadGroupData(current.space, current.key), loadPublicGroupData(current.space, current.key)]);
-      const meAt = (kind: 'groupHex' | 'publicHex') => async () => {
-        const [{ e2e }, place] = await Promise.all([spaceChats(), settings()]);
-        return { id: toHex(e2e.identity), sender: place[kind], relay: place.own.url, relayKey: place.relayKey };
-      };
-      const save = (next: PublicData) => savePublicGroupData(current.space, current.key, next);
-      const made = new PublicGroups(data, (next) => saveGroupData(current.space, current.key, next), meAt('groupHex'), pub, save, relayDoors(settings), meAt('publicHex'));
+      const made = openGroups({
+        data,
+        save: (next) => saveGroupData(current.space, current.key, next),
+        pub,
+        savePub: (next) => savePublicGroupData(current.space, current.key, next),
+        settings,
+        chats: spaceChats,
+      });
       made.onCall((group, from, signal) => callListeners.forEach((listener) => listener(group, from, signal)));
       made.onMessage((group) => messageListeners.forEach((listener) => listener(group)));
       if (opened?.of === current) shown = made;
@@ -120,32 +164,47 @@ export function publicMemberName(key: string): string | null {
   return shown?.nameOf(key) ?? null;
 }
 
-/** How the open space's group messages leave the phone, each saying to the relay what it carries. */
-export const spaceGroupTransport: GroupTransport = {
-  async post(to, packet, mark) {
-    const place = await settings().catch(() => null);
-    const relay = place ? () => sendMessage(contactTarget(place.sends, to), fromHex(to.sender), packet, mark) : null;
-    await nearby.deliver(to.id, [packet], relay);
-  },
-  async signal(identity, signal) {
-    const { e2e } = await spaceChats();
-    const place = await settings().catch(() => null);
-    const at = place ? { relay: place.own.url, relayKey: place.relayKey } : { relay: '', relayKey: '' };
-    const sealed = await e2e.seal(identity, '', place?.senderHex ?? '', { group: signal, at });
-    // Asking for a key package, giving one, or a welcome: word between phones.
-    const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], 'quiet', () => e2e.firstSent(identity)) : null;
-    await e2e.copiesAfter(sealed.copies, nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay));
-  },
-  // The chats of the space open at each call: lib/group-contacts.ts refuses those of an account
-  // other than the one the groups asking are.
-  contacts: groupContacts(
-    async () => (await spaceChats()).e2e,
-    async () => {
-      const place = await settings();
-      return { senderHex: place.senderHex, relay: place.own.url, relayKey: place.relayKey };
+/**
+ * How group messages leave the phone, from the chats `chats` gives, going by `settings`, each saying
+ * to the relay what it carries: also to the member's phone nearby when it is, unless `relayOnly`, as
+ * a hidden place's go.
+ */
+export function groupTransport(settings: () => Promise<GroupSettings>, chats: () => Promise<SpaceChats>, relayOnly = false): GroupTransport {
+  // Through the relay, or, but in a hidden place, nearby when there is none.
+  const deliver = async (identity: string, packets: Uint8Array[], relay: (() => Promise<void>) | null): Promise<void> => {
+    if (!relayOnly) await nearby.deliver(identity, packets, relay);
+    else if (relay) await relay();
+    else throw new Error(t('Groups go through the relay. Type its address in Relay first.'));
+  };
+  return {
+    async post(to, packet, mark) {
+      const place = await settings().catch(() => null);
+      const relay = place ? () => sendMessage(contactTarget(place.sends, to), fromHex(to.sender), packet, mark) : null;
+      await deliver(to.id, [packet], relay);
     },
-  ),
-};
+    async signal(identity, signal) {
+      const { e2e } = await chats();
+      const place = await settings().catch(() => null);
+      const at = place ? { relay: place.own.url, relayKey: place.relayKey } : { relay: '', relayKey: '' };
+      const sealed = await e2e.seal(identity, '', place?.senderHex ?? '', { group: signal, at });
+      // Asking for a key package, giving one, or a welcome: word between phones.
+      const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], 'quiet', () => e2e.firstSent(identity)) : null;
+      await e2e.copiesAfter(sealed.copies, deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay));
+    },
+    // The chats open at each call: lib/group-contacts.ts refuses those of an account other than the
+    // one the groups asking are.
+    contacts: groupContacts(
+      async () => (await chats()).e2e,
+      async () => {
+        const place = await settings();
+        return { senderHex: place.senderHex, relay: place.own.url, relayKey: place.relayKey };
+      },
+    ),
+  };
+}
+
+/** How the open space's group messages leave the phone, each saying to the relay what it carries. */
+export const spaceGroupTransport: GroupTransport = groupTransport(settings, spaceChats);
 
 /** The space's relay, straight, not through its second relay: groups' files go to it and come through it. */
 export async function groupRelay(): Promise<Relay> {
@@ -172,22 +231,30 @@ export async function flushGroups(): Promise<void> {
   await groups.renewKeys(spaceGroupTransport);
 }
 
+/** Group calls in the groups `groups` gives (lib/group-calls.ts), going by `settings`. */
+export function groupCalls(groups: () => Promise<PublicGroups>, transport: GroupTransport, settings: () => Promise<GroupSettings>, chats: () => Promise<SpaceChats>): GroupCallPlace {
+  return {
+    async send(group, signal) {
+      await (await groups()).call(group, signal, transport);
+    },
+    async callRelay() {
+      const { own } = await settings();
+      return soon(callRelay(own), 4000, null);
+    },
+    async me() {
+      const { e2e } = await chats();
+      return toHex(e2e.identity);
+    },
+    line(group, text) {
+      void groups()
+        .then((made) => made.line(group, text))
+        .catch(() => undefined);
+    },
+  };
+}
+
 /** Group calls in the open space's groups (lib/group-calls.ts). */
-export const spaceGroupCalls: GroupCallPlace = {
-  async send(group, signal) {
-    await (await spaceGroups()).call(group, signal, spaceGroupTransport);
-  },
-  async callRelay() {
-    const { own } = await settings();
-    return soon(callRelay(own), 4000, null);
-  },
-  async me() {
-    const { e2e } = await spaceChats();
-    return toHex(e2e.identity);
-  },
-  line(group, text) {
-    void spaceGroups()
-      .then((groups) => groups.line(group, text))
-      .catch(() => undefined);
-  },
-};
+export const spaceGroupCalls: GroupCallPlace = groupCalls(spaceGroups, spaceGroupTransport, settings, spaceChats);
+
+/** The open space's groups, where they go from, for the group screens (components/groups-at.tsx). */
+export const spaceGroupsAt: GroupsAt = { groups: spaceGroups, transport: spaceGroupTransport, calls: spaceGroupCalls, relay: groupRelay, chats: spaceChats, hidden: false };

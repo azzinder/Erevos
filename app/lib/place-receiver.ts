@@ -15,6 +15,7 @@ import { hiddenRinging, setHiddenRinging } from './hidden-ring';
 import { nostrKeysChanged, nostrReady, readNostr } from './nostr';
 import { nostrReaderOf, sendNostrAgain } from './nostr-chats';
 import { forgetPlaceChats, placeChats } from './place-chats';
+import { placeGroupsAt } from './place-groups';
 import { QueueMove, tookOf, type Took } from './queue-move';
 import {
   appShown,
@@ -239,7 +240,7 @@ function unlisten(run: Run) {
 // sender told it came with the next look.
 async function openNostrPlace(run: Run, bytes: Uint8Array): Promise<void> {
   const chats = run.chats;
-  // A group's message: hidden chats have none.
+  // A group's message comes through the relay only.
   if (!chats || run.stopped || isGroupPacket(bytes)) return;
   let received: Received;
   try {
@@ -250,6 +251,7 @@ async function openNostrPlace(run: Run, bytes: Uint8Array): Promise<void> {
   const came = cameBefore(chats, received);
   await keepWith(chats, received, run.state, true);
   if (came) await heard(run, chats, came);
+  if (came?.group) await placeGroupsAt(run.space, run.pocket, run.key).signal(came.identity, came.group, came.request).catch(() => undefined);
   if (run.state.place || run.relayless) await sendReceipts(chats, run.state.place, run.state);
 }
 
@@ -309,6 +311,7 @@ function placeMover(run: Run, chats: SpaceChats, own: Relay): QueueMove {
     e2e: chats.e2e,
     queues: placeQueues(space, pocket, key),
     data: run.spare,
+    groups: placeGroupsAt(space, pocket, key).moves,
     moved: async (queue, old) => {
       const spaceKey = currentSpace().key;
       if (!old || !isWatchedQueue(await loadWatched(space, spaceKey), pocket, old.recipientHex)) return;
@@ -326,7 +329,7 @@ function placeMover(run: Run, chats: SpaceChats, own: Relay): QueueMove {
 }
 
 // One look at a place's queue, as the receiver's at the space's (lib/receiver.ts lookOnce), with
-// what hidden chats have: no groups, no phones nearby, no SMS. What comes on Nostr is read apart.
+// what hidden chats have: groups of their own, no phones nearby, no SMS. What comes on Nostr is read apart.
 // With no relay queue, what goes through Nostr goes, as the receiver's nostrLook does.
 async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   if (!hasCore()) return;
@@ -364,15 +367,17 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   run.mover ??= placeMover(run, chats, own);
   const mover = run.mover;
   const here = place;
+  const groups = placeGroupsAt(space, pocket, key);
   const take = async (bytes: Uint8Array, kind?: QueueKind | 'old'): Promise<Took> => {
-    // A group's message: hidden chats have none.
-    if (isGroupPacket(bytes)) return { junk: true };
+    // A group's message (lib/place-groups.ts): its screens, and its notice, hear of it themselves.
+    if (isGroupPacket(bytes)) return { junk: !(await groups.take(bytes).catch(() => true)) };
     // Taken from the relay, so kept whatever happens meanwhile.
     try {
       const received = await chats.e2e.receive(bytes, kind === 'own' ? { onOwn: here.queue.senderHex } : { old: kind !== undefined });
       const came = cameBefore(chats, received);
       await keepWith(chats, received, state);
       if (came) await heard(run, chats, came);
+      if (received.kind === 'message' && received.group) await groups.signal(received.identity, received.group, received.request).catch(() => undefined);
       return tookOf(received);
     } catch {
       // This one is lost, as in the chat; the next ones still come.
@@ -414,6 +419,7 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   }
   await sendReceipts(chats, here, state);
   await sendCopies(chats.e2e, here.sends).catch(() => 0);
+  await groups.flush().catch(() => undefined);
 }
 
 // With no relay queue: to the contacts Nostr is the only way to (lib/nostr-chats.ts), while Tor is

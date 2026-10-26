@@ -9,6 +9,7 @@ import { startHiddenNotices } from './hidden-notices';
 import { hiddenRinging, onHiddenRingingChange, setHiddenRinging } from './hidden-ring';
 import { startHiddenRinging } from './hidden-ring-notices';
 import { showsAt } from './later';
+import { onPlaceGroupMessage } from './place-groups';
 import { onPlaceMessage, onPlaceRing } from './place-receiver';
 import { onSpaceMoved } from './queue-move';
 import { appShown, isNews, onAppShown, onMessage } from './receiver';
@@ -262,6 +263,8 @@ export function startBackground(): () => void {
     onPlaceMessage((_space, pocket, received) => {
       if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfHidden(pocket));
     }),
+    // Their groups' too (lib/place-groups.ts).
+    onPlaceGroupMessage((_space, pocket) => messageCame(false, screenOfHidden(pocket))),
     onPlaceRing(onRing),
   ];
   // Answered, turned down, or timed out: the ringtone and notice stop (the call, if answered, took

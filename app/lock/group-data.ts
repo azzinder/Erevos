@@ -238,5 +238,6 @@ function checked(value: unknown): GroupData {
 
 const store = sealedFile({ name: FILE, empty: EMPTY_GROUPS, checked, block: BLOCK });
 
-export const loadGroupData = (space: number, key: Uint8Array) => store.load('space' as Holder, space, key);
-export const saveGroupData = (space: number, key: Uint8Array, data: GroupData) => store.save('space' as Holder, space, key, data);
+/** The groups of a space, or of a hidden place (`holder`, lock/sealed-file.ts hiddenHolder). */
+export const loadGroupData = (space: number, key: Uint8Array, holder: Holder = 'space') => store.load(holder, space, key);
+export const saveGroupData = (space: number, key: Uint8Array, data: GroupData, holder: Holder = 'space') => store.save(holder, space, key, data);
