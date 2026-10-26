@@ -86,6 +86,9 @@ export interface Core {
   /** A relay connection through Tor that asks for a channel (lib/relay.ts), with no token: missing
    *  in a build made before the channel. */
   torOpenChannel?(url: string): Promise<Uint8Array>;
+  /** A relay connection through Tor on the circuits named `way` (a channel when `channel`): every
+   *  connection of one name goes the same way, and none of another's. Missing in a build from before. */
+  torOpenOn?(url: string, token: string, way: string, channel: boolean): Promise<Uint8Array>;
   /** A Nostr relay's connection through Tor, text frames both ways: a frame waits until asked for
    *  (`torTextNext`, the wait in milliseconds, 8 bytes big-endian), '' when none came meanwhile.
    *  Missing in a build made before Nostr (lib/nostr.ts). */
@@ -258,6 +261,18 @@ export function torOpenChannel(url: string): Promise<Uint8Array> {
   const it = need();
   if (!it.torOpenChannel) throw new Error(t('This build of Erevos has no Tor.'));
   return it.torOpenChannel(url);
+}
+
+/** Whether this build's Tor opens connections on circuits of a name (torOpenOn). */
+export function canTorWays(): boolean {
+  return typeof core?.torOpenOn === 'function';
+}
+
+/** A relay connection through Tor on the circuits named `way`, or an error saying this build has none. */
+export function torOpenOn(url: string, token: string, way: string, channel: boolean): Promise<Uint8Array> {
+  const it = need();
+  if (!it.torOpenOn) throw new Error(t('This build of Erevos has no Tor.'));
+  return it.torOpenOn(url, token, way, channel);
 }
 
 /** Opens what `relaySeal` sealed to the public key of `secret`: the sender id, then the message. */

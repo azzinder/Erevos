@@ -12,14 +12,19 @@ import { nostrReady, readNostr } from './nostr';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, sendNostrAgain, sendNostrBackups } from './nostr-chats';
 import { keepOffer, offerOf } from './relay-offer';
 import {
+  canReadManyAt,
   canWaitAt,
   carryTo,
   fromHex,
   isQueueNotFound,
+  MAX_ANY,
+  queueNotFound,
   receiveMessage,
   relayKey,
   sameRelay,
   sendMessage,
+  toHex,
+  waitForAny,
   waitForMessage,
   type Relay,
 } from './relay';
@@ -143,7 +148,8 @@ export type Waited = false | 'came' | 'empty';
  * once while the app shows, at a relay that cannot wait, or once the wait was ended. Throws when
  * the relay cannot be reached, or no longer has the queue: only the queue's own wait throws. One
  * of `others` the relay lost ends the wait, so the look finds it gone and makes it anew; one that
- * fails otherwise drops out, and the others wait on.
+ * fails otherwise drops out, and the others wait on. On a relay that reads many queues at once,
+ * one wait asks of them all, on its `/read` path, with no token (lib/relay.ts waitForAny).
  */
 export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others: Uint8Array[] = []): Promise<Waited> {
   if (shows || !canWaitAt(relay)) return false;
@@ -151,6 +157,15 @@ export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others:
   waits.add(wait);
   let came = false;
   try {
+    if (canReadManyAt(relay) && others.length < MAX_ANY) {
+      // Their own way through Tor, named for the queue: none other goes on it.
+      const found = await waitForAny(relay, [recipient, ...others], WAIT_FOR, `read-${toHex(recipient).slice(0, 16)}`, wait.signal);
+      if (found) {
+        if (found[0] === 'gone') throw queueNotFound('wait');
+        if (!canWaitAt(relay) || ended.has(wait)) return false;
+        return found.some((f) => f !== 'none') ? 'came' : 'empty';
+      }
+    }
     // The first that answers ends the others.
     const mine = waitForMessage(relay, recipient, WAIT_FOR, wait.signal)
       .then((got) => void (came ||= got))

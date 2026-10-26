@@ -74,7 +74,7 @@
 
 import { chacha20poly1305 } from '@noble/ciphers/chacha.js';
 
-import { canRelayChannel, coreReason, relayChannelKeys, relaySeal, sealPublic, tor, torOpenChannel } from './core';
+import { canRelayChannel, canTorWays, coreReason, relayChannelKeys, relaySeal, sealPublic, tor, torOpenChannel, torOpenOn } from './core';
 import { randomBytes, sha256Bytes } from './crypto';
 import { t } from './i18n';
 import { isSignInPage } from './relay-signin';
@@ -107,6 +107,8 @@ const SIGN_IN = 25;
 const CLAIM = 26;
 const NEWS = 27;
 const OWN = 28;
+const WAIT_ANY = 29;
+const NEWS_ANY = 30;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
 const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
@@ -342,7 +344,9 @@ export function setAnswerScale(scale: number | null): void {
 /** How long the request `bytes` may go without its reply before it counts as failed, milliseconds. */
 export function answerWithin(bytes: Uint8Array): number {
   const op = bytes[0];
-  const ms = (op === WAIT || op === NEWS) && bytes.length > 25 ? bytes[25] * 1000 + WAIT_MORE_MS : op === FILE_PUT || op === FILE_GET || op === FILE_VIA || op === FILE_KEEP ? FILE_ANSWER_MS : ANSWER_MS;
+  // A wait's seconds: after the queue for WAIT and NEWS, last for WAIT_ANY and NEWS_ANY.
+  const waits = (op === WAIT || op === NEWS) && bytes.length > 25 ? bytes[25] : (op === WAIT_ANY || op === NEWS_ANY) && bytes.length > 2 ? bytes[bytes.length - 1] : null;
+  const ms = waits !== null ? waits * 1000 + WAIT_MORE_MS : op === FILE_PUT || op === FILE_GET || op === FILE_VIA || op === FILE_KEEP ? FILE_ANSWER_MS : ANSWER_MS;
   return ms * answerScale;
 }
 
@@ -385,7 +389,7 @@ const sameBytes = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.e
 
 /** The address a relay's key is kept by: its own, without one of its paths (relayPath), in any case. */
 export function relayHome(url: string): string {
-  return url.trim().replace(/\/+$/, '').replace(/\/(?:sealed|files|join)$/i, '').toLowerCase();
+  return url.trim().replace(/\/+$/, '').replace(/\/(?:sealed|files|join|read)$/i, '').toLowerCase();
 }
 
 /**
@@ -607,8 +611,12 @@ class TorLine implements Line {
     this.id = id;
   }
 
-  static async open(relay: Relay, channel: boolean): Promise<TorLine> {
-    return new TorLine(await viaTor(() => (channel ? torOpenChannel(relay.url) : tor().torOpen(relay.url, relay.token ?? '')), !channel));
+  /** On the circuits named `way`, when given and this build can (canTorWays). */
+  static async open(relay: Relay, channel: boolean, way?: string): Promise<TorLine> {
+    const token = channel ? '' : (relay.token ?? '');
+    const open = () =>
+      way && canTorWays() ? torOpenOn(relay.url, token, way, channel) : channel ? torOpenChannel(relay.url) : tor().torOpen(relay.url, token);
+    return new TorLine(await viaTor(open, !channel));
   }
 
   call(bytes: Uint8Array, within: number, rest = true): Promise<Uint8Array> {
@@ -659,9 +667,16 @@ function tokenFrame(token: string, request: Uint8Array): Uint8Array {
  * token with `first`, if any, in the first message. Returns the line, the channel and the reply to
  * that message (OK without `first`). `signal` ends it.
  */
-async function openChannel(relay: Relay, pin: Pin, throughTor: boolean, first: Uint8Array | null, signal?: AbortSignal): Promise<{ line: Line; channel: Channel; reply: Uint8Array }> {
+async function openChannel(
+  relay: Relay,
+  pin: Pin,
+  throughTor: boolean,
+  first: Uint8Array | null,
+  signal?: AbortSignal,
+  way?: string,
+): Promise<{ line: Line; channel: Channel; reply: Uint8Array }> {
   const within = ANSWER_MS * answerScale;
-  const line = throughTor ? await TorLine.open(relay, true) : await SocketLine.open(relay, true, within);
+  const line = throughTor ? await TorLine.open(relay, true, way) : await SocketLine.open(relay, true, within);
   const end = () => line.close();
   signal?.addEventListener('abort', end);
   try {
@@ -707,34 +722,40 @@ async function openChannel(relay: Relay, pin: Pin, throughTor: boolean, first: U
 
 /**
  * Opens a connection, sends one request, and returns the reply. Closes the connection, also when
- * `signal` ends it. In a channel when the relay's key is known (see Channels above).
+ * `signal` ends it. In a channel when the relay's key is known (see Channels above). Through Tor on
+ * the circuits named `way`, when given.
  */
-async function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise<Uint8Array> {
+async function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way?: string): Promise<Uint8Array> {
   if (signal?.aborted) throw new Ended();
   if (!isRelayAddress(relay.url)) throw new BadRelayAddressError(relay.url);
   // A space that goes through Tor, waited on while another is open: never straight.
   if (relay.torOnly && !torFor(false)) throw new RelayUnreachableError(t('Tor is not ready.'));
   const pin = channelPin(relay);
-  if (!pin) return plainRequest(relay, bytes, signal);
+  if (!pin) return plainRequest(relay, bytes, signal, way);
   try {
-    const { line, reply } = await openChannel(relay, pin, torFor(false), bytes, signal);
+    const { line, reply } = await openChannel(relay, pin, torFor(false), bytes, signal, way);
     line.close();
     return reply;
   } catch (error) {
     if (!mayGoWithout(error, pin)) throw error;
     // No channel there: a relay from before them, or none could be reached.
-    const reply = await plainRequest(relay, bytes, signal);
+    const reply = await plainRequest(relay, bytes, signal, way);
     noChannelAt(relay.url);
     return reply;
   }
 }
 
-/** One request on a connection of its own, with no channel. */
-function plainRequest(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Promise<Uint8Array> {
+/** One request on a connection of its own, with no channel; through Tor on the circuits named `way`, when given. */
+function plainRequest(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way?: string): Promise<Uint8Array> {
   if (signal?.aborted) return Promise.reject(new Ended());
   const within = answerWithin(bytes);
   if (torFor(false)) {
-    const reply = viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
+    const reply =
+      way && canTorWays()
+        ? TorLine.open(relay, false, way).then((line) =>
+            line.call(bytes, within).finally(() => line.close()),
+          )
+        : viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
     // Tor's request runs on until it ends; its reply is not waited for once the request ended
     // here, or took too long (twice as long as straight, as Tor is slower).
     return new Promise((resolve, reject) => {
@@ -785,9 +806,14 @@ function plainRequest(relay: Relay, bytes: Uint8Array, signal?: AbortSignal): Pr
   });
 }
 
+/** What a request on a queue the relay no longer has throws (isQueueNotFound). */
+export function queueNotFound(what: string): RelayError {
+  return new RelayError(t('{what}: queue not found', { what }), NOT_FOUND);
+}
+
 function check(reply: Uint8Array, what: string): void {
   if (reply[0] === OK) return;
-  if (reply[0] === NOT_FOUND) throw new RelayError(t('{what}: queue not found', { what }), NOT_FOUND);
+  if (reply[0] === NOT_FOUND) throw queueNotFound(what);
   if (reply[0] === FULL) throw new RelayError(t('{what}: queue is full', { what }), FULL);
   if (reply[0] === FAILED) throw new RelayError(t('{what}: the relay could not save it, try again later', { what }), FAILED);
   if (reply[0] === UNREACHABLE)
@@ -1144,6 +1170,111 @@ export async function waitForNews(relay: Relay, recipientId: Uint8Array, seconds
   return { round: read.getUint32(1), messages: read.getUint32(5), unmarked: read.getUint32(9), rings: read.getUint32(13) };
 }
 
+/** Most queues one waitForAny or newsOfAny asks of (the relay's MAX_ANY). */
+export const MAX_ANY = 64;
+// In a reply to WAIT_ANY or NEWS_ANY: no such queue.
+const GONE = 2;
+
+// Relays that cannot read many queues at once on /read (from before WAIT_ANY), by address, for this run.
+const cannotReadMany = new Set<string>();
+
+/** Whether the relay may be asked to wait on many queues at once on /read (waitForAny, newsOfAny), as far as this run knows. */
+export function canReadManyAt(relay: Relay): boolean {
+  return !cannotReadMany.has(relayHome(relay.url));
+}
+
+/** What a queue was, as one waitForAny or newsOfAny found it. */
+export type AnyFound = 'none' | 'waiting' | 'gone';
+
+/**
+ * The relay's path where queues are read with no token (`/read`): knowing a queue's recipient id is
+ * what reads it, so the token, which names this phone, does not tie the queues read there together.
+ * With the relay's key, for its channel, and as reached through Tor as the relay is.
+ */
+function readerOf(relay: Relay): Relay {
+  return { url: relayPath(relay.url, '/read').url, ...(relay.key ? { key: relay.key } : {}), ...(relay.torOnly ? { torOnly: true } : {}) };
+}
+
+/**
+ * One request to the relay's `/read` path, through Tor on the circuits named `way`. Null when the
+ * relay has no such path, as one from before it (it refuses the connection there, or closes it at
+ * the request): then one that answers a plain request is not asked again this run. Throws when the
+ * relay cannot be reached.
+ */
+async function readRequest(relay: Relay, bytes: Uint8Array, way: string, signal?: AbortSignal): Promise<Uint8Array | null | 'ended'> {
+  try {
+    return await request(readerOf(relay), bytes, signal, way);
+  } catch (error) {
+    if (error instanceof Ended) return 'ended';
+    if (!(error instanceof RelayUnreachableError) || error instanceof RelayKeyError || signal?.aborted) throw error;
+    try {
+      await request(relay, Uint8Array.of(KEY), signal);
+    } catch (again) {
+      if (again instanceof Ended) return 'ended';
+      throw error;
+    }
+    cannotReadMany.add(relayHome(relay.url));
+    return null;
+  }
+}
+
+/**
+ * Waits until a message is in one of `recipients` (1 to MAX_ANY queues), `seconds` at most (60),
+ * without taking any, on the relay's `/read` path through Tor on the circuits named `way`: what each
+ * queue was then, in the same order. All 'none' when the wait was ended (`signal`). Null when the
+ * relay cannot (canReadManyAt). Throws when the relay cannot be reached.
+ */
+export async function waitForAny(relay: Relay, recipients: Uint8Array[], seconds: number, way: string, signal?: AbortSignal): Promise<AnyFound[] | null> {
+  if (recipients.length < 1 || recipients.length > MAX_ANY) throw new RangeError(`waitForAny: ${recipients.length} queues`);
+  const bytes = new Uint8Array(2 + 24 * recipients.length + 1);
+  bytes[0] = WAIT_ANY;
+  bytes[1] = recipients.length;
+  recipients.forEach((id, i) => bytes.set(id, 2 + 24 * i));
+  bytes[bytes.length - 1] = Math.max(0, Math.min(60, Math.round(seconds)));
+  const reply = await readRequest(relay, bytes, way, signal);
+  if (reply === null) return null;
+  if (reply === 'ended') return recipients.map(() => 'none');
+  check(reply, 'wait');
+  if (reply.length !== 1 + recipients.length) throw new RelayError(`wait: unexpected reply of ${reply.length} bytes`, reply[0]);
+  return [...reply.slice(1)].map((b) => (b === GONE ? 'gone' : b === 1 ? 'waiting' : 'none'));
+}
+
+/**
+ * Waits until what came into one of the queues `asked` (1 to MAX_ANY, each with what was heard of
+ * it) differs from what was heard, or one is gone, `seconds` at most (60), on `/read` as
+ * waitForAny does: each queue's news now, null for one gone. What was heard again when the wait was
+ * ended. Null when the relay cannot. Throws when the relay cannot be reached.
+ */
+export async function newsOfAny(
+  relay: Relay,
+  asked: { recipient: Uint8Array; heard: News }[],
+  seconds: number,
+  way: string,
+  signal?: AbortSignal,
+): Promise<(News | null)[] | null> {
+  if (asked.length < 1 || asked.length > MAX_ANY) throw new RangeError(`newsOfAny: ${asked.length} queues`);
+  const bytes = new Uint8Array(2 + 40 * asked.length + 1);
+  const view = new DataView(bytes.buffer);
+  bytes[0] = NEWS_ANY;
+  bytes[1] = asked.length;
+  asked.forEach(({ recipient, heard }, i) => {
+    bytes.set(recipient, 2 + 40 * i);
+    [heard.round, heard.messages, heard.unmarked, heard.rings].forEach((n, j) => view.setUint32(2 + 40 * i + 24 + 4 * j, n >>> 0));
+  });
+  bytes[bytes.length - 1] = Math.max(0, Math.min(60, Math.round(seconds)));
+  const reply = await readRequest(relay, bytes, way, signal);
+  if (reply === null) return null;
+  if (reply === 'ended') return asked.map((a) => a.heard);
+  check(reply, 'news');
+  if (reply.length !== 1 + 17 * asked.length) throw new RelayError(`news: unexpected reply of ${reply.length} bytes`, reply[0]);
+  const read = new DataView(reply.buffer, reply.byteOffset, reply.byteLength);
+  return asked.map((_, i) => {
+    const at = 1 + 17 * i;
+    if (reply[at] === GONE) return null;
+    return { round: read.getUint32(at + 1), messages: read.getUint32(at + 5), unmarked: read.getUint32(at + 9), rings: read.getUint32(at + 13) };
+  });
+}
+
 /** What `now` counts that `heard` did not: all of it when it is another round, or nothing was heard. */
 export function newsSince(heard: News | null, now: News): Omit<News, 'round'> {
   const before = heard && heard.round === now.round ? heard : NO_NEWS;
@@ -1424,9 +1555,9 @@ export function ticketExpires(ticket: string): number {
   return parseInt(ticket.slice(7, 23), 16) * 1000;
 }
 
-/** The path of the relay at `url` that other relays use: `/sealed` for sealed sends, `/files` for files; and `/join`, where a
- *  phone takes an invite. No token. */
-export function relayPath(url: string, path: '/sealed' | '/files' | '/join'): Relay {
+/** The path of the relay at `url` that other relays use: `/sealed` for sealed sends, `/files` for files; `/join`, where a
+ *  phone takes an invite; and `/read`, where a phone reads its queues (readQueues). No token. */
+export function relayPath(url: string, path: '/sealed' | '/files' | '/join' | '/read'): Relay {
   return { url: `${url.trim().replace(/\/+$/, '')}${path}` };
 }
 

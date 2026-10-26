@@ -45,6 +45,9 @@ import {
   setPush,
   waitForMessage,
   waitForNews,
+  waitForAny,
+  newsOfAny,
+  canReadManyAt,
   type Relay,
 } from '../lib/relay';
 import { setCurrentSpace } from '../lock/keys';
@@ -273,6 +276,62 @@ test('a relay says what came into a queue by what each send said, without taking
   while (await receiveMessage(own, ids.recipientId));
   assert.deepEqual(await waitForNews(own, ids.recipientId, 0, all), NO_NEWS);
   assert.ok(canTellNewsAt(own));
+});
+
+test('a relay waits on many queues at once, read with no token, and says which', { skip: !ready }, async () => {
+  const url = await startRelay(true, 'many-token');
+  const own: Relay = { url, token: 'many-token' };
+  const a = await createQueue(own);
+  const b = await createQueue(own);
+  let started = Date.now();
+  assert.deepEqual(await waitForAny(own, [a.recipientId, b.recipientId], 1, 'check-a'), ['none', 'none']);
+  assert.ok(Date.now() - started >= 900);
+  // One comes to the second while it waits: the wait ends at once, and nothing is taken.
+  started = Date.now();
+  const waiting = waitForAny(own, [a.recipientId, b.recipientId], 30, 'check-a');
+  await new Promise((r) => setTimeout(r, 200));
+  await sendMessage(own, b.senderId, Uint8Array.of(9));
+  assert.deepEqual(await waiting, ['none', 'waiting']);
+  assert.ok(Date.now() - started < 10_000);
+  assert.deepEqual(await receiveMessage(own, b.recipientId), Uint8Array.of(9));
+  assert.equal(await receiveMessage(own, b.recipientId), null);
+  // A queue the relay does not have is told at once; one ended from this side finds nothing.
+  assert.deepEqual(await waitForAny(own, [a.recipientId, new Uint8Array(24)], 30, 'check-a'), ['none', 'gone']);
+  const ending = new AbortController();
+  const ended = waitForAny(own, [a.recipientId], 30, 'check-a', ending.signal);
+  setTimeout(() => ending.abort(), 100);
+  assert.deepEqual(await ended, ['none']);
+  // What came, by queue, until it changes.
+  await sendMessage(own, a.senderId, Uint8Array.of(1), 'message');
+  const news = (await newsOfAny(own, [{ recipient: a.recipientId, heard: NO_NEWS }, { recipient: b.recipientId, heard: NO_NEWS }], 30, 'check-a'))!;
+  assert.equal(news[0]?.messages, 1);
+  assert.deepEqual(news[1], NO_NEWS);
+  assert.deepEqual(await newsOfAny(own, [{ recipient: new Uint8Array(24), heard: NO_NEWS }], 30, 'check-a'), [null]);
+  // Read with no token: the same relay, its key proven, its token never on that path.
+  assert.ok(canReadManyAt(own));
+  await assert.rejects(waitForAny(own, [], 1, 'check-a'), RangeError);
+});
+
+test('a relay from before reading many queues is waited on one queue at a time', { skip: !ready }, async () => {
+  // As an older relay does: KEY is answered (it has none), anything it does not know closes the connection.
+  const { Server } = createRequire(import.meta.url)('ws') as {
+    Server: new (options: { port: number; host: string }) => {
+      on(event: 'connection', listener: (socket: { on(e: 'message', l: (data: Buffer) => void): void; send(d: Uint8Array): void; terminate(): void }) => void): void;
+      close(): void;
+    };
+  };
+  const port = await freePort();
+  const old = new Server({ port, host: '127.0.0.1' });
+  old.on('connection', (socket) => socket.on('message', (data) => (data[0] === 5 ? socket.send(Uint8Array.of(1)) : socket.terminate())));
+  try {
+    const relay: Relay = { url: `ws://127.0.0.1:${port}` };
+    assert.ok(canReadManyAt(relay));
+    assert.equal(await waitForAny(relay, [new Uint8Array(24)], 30, 'check-old'), null);
+    assert.equal(canReadManyAt(relay), false);
+    assert.equal(await newsOfAny(relay, [{ recipient: new Uint8Array(24), heard: NO_NEWS }], 30, 'check-old'), null);
+  } finally {
+    old.close();
+  }
 });
 
 test('a relay from before waiting is asked plainly from then on, and one not there throws', { skip: !ready }, async () => {
