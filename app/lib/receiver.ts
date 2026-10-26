@@ -671,9 +671,9 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   return changed;
 }
 
-/** Keeps what one message brought as the receiver does, in chats with their own run of looks (`state`): a hidden place's. Says whether anything changed. */
-export function keepWith(chats: SpaceChats, received: Received, state: ReceiveState): Promise<boolean> {
-  return keep(chats, received, state);
+/** Keeps what one message brought as the receiver does, in chats with their own run of looks (`state`): a hidden place's; `nostr` when it came there. Says whether anything changed. */
+export function keepWith(chats: SpaceChats, received: Received, state: ReceiveState, nostr = false): Promise<boolean> {
+  return keep(chats, received, state, nostr);
 }
 
 /** Keeps what one message brought as the receiver does, with what is to be said back (`receipts`), as the checks do. */

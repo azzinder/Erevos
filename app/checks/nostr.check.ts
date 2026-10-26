@@ -12,6 +12,8 @@
 // the two, a link says where it reads on Nostr (`nk`, `nr`), and all that is small goes there, the
 // first packet with each until they answer, several packets in one wrap; texts are put there again
 // each day until said to have come, and an invite to a relay rides in a message with nothing else.
+// Hidden chats that receive while closed read their texts on Nostr too, as the space's receiver
+// does, but not while their chat screen holds them.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -28,8 +30,13 @@ import { nostrOnlyWay, nostrReaderOf, orNostr, sendNostrAgain, sendNostrBackups 
 import { MOST_NOSTR } from '../lib/contact-code';
 import { offerOf } from '../lib/relay-offer';
 import { createQueue, NO_NEWS, receiveMessage, setThroughTor, setTorReady, waitForNews, type Relay } from '../lib/relay';
+import { forgetPlaceChats, placeChats } from '../lib/place-chats';
+import { holdPlace, receivesPocket, startPlaceReceiver } from '../lib/place-receiver';
+import { setAppShown } from '../lib/receiver';
 import { sendSealed } from '../lib/space-chats';
-import { checkedNostr, NOSTR_DEFAULT, NOSTR_RELAYS } from '../lock/space-data';
+import { keepPlace, prepareKeepEntries } from '../lock/hidden-keep';
+import { setCurrentSpace } from '../lock/keys';
+import { checkedNostr, EMPTY_SPACE, NOSTR_DEFAULT, NOSTR_RELAYS, saveHiddenData } from '../lock/space-data';
 import { files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
 import './secure-memory';
@@ -644,3 +651,61 @@ t('with no relay between the two, the first message and texts go through Nostr, 
     stop();
   }
 });
+
+t('a closed place that receives reads its texts on Nostr too, tells their sender they came, and leaves them while its chat screen holds it', async (url) => {
+  const own: Relay = { url };
+  setNostr([ONE]);
+  // Bob's space is open, its hidden chats in pocket 1 closed, their switch on.
+  const spaceKey = randomBytes(32);
+  const placeKey = randomBytes(32);
+  setCurrentSpace(0, spaceKey);
+  await prepareKeepEntries();
+  const ids = await createQueue(own);
+  await saveHiddenData(0, 1, placeKey, { ...EMPTY_SPACE, url, ownQueue: { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) } });
+  const place = await placeChats(0, 1, placeKey);
+  const bob: Chat = { e2e: place.e2e, from: toHex(ids.senderId), recipient: ids.recipientId };
+  const alice = await chat('space', 5, url);
+  const { toBob, toAlice } = await meet(alice, bob, url);
+  if (bob.e2e.contacts().find((c) => c.identity === toAlice)?.request) await bob.e2e.acceptRequest(toAlice);
+  message(await tell(alice, toBob, bob));
+  message(await tell(bob, toAlice, alice));
+  await keepPlace(0, spaceKey, 1, placeKey);
+  setAppShown(true);
+  const stop = startPlaceReceiver(30);
+  const texts = () => place.history.messages().map((m) => [m.text, !!m.nostr]);
+  const send = async (text: string) => {
+    const sealed = await alice.e2e.seal(toBob, text, alice.from);
+    const went = await orNostr(alice.e2e, own, toBob, sealed, [sealed.packet], async () => {
+      throw new Error('it went through the relay');
+    })();
+    assert.equal(went, 'nostr');
+    return sealed;
+  };
+  try {
+    await until(() => receivesPocket(0, 1));
+    const first = await send('on Nostr');
+    await until(() => texts().some(([text, nostr]) => text === 'on Nostr' && nostr));
+    // Its sender is told it came, so it is kept for the relay no more.
+    for (const end = Date.now() + 5000; alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS).length > 0; ) {
+      if (Date.now() > end) throw new Error('timed out');
+      const bytes = await receiveMessage(own, alice.recipient);
+      if (bytes) await alice.e2e.receive(bytes);
+      else await new Promise((r) => setTimeout(r, 20));
+    }
+    assert.ok(!alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS).some((due) => due.tag === first.tag));
+
+    // While its chat screen holds it, the screen reads Nostr itself; let go, the place does again.
+    const release = await holdPlace(0, 1);
+    await send('held');
+    await new Promise((r) => setTimeout(r, 300));
+    assert.ok(!texts().some(([text]) => text === 'held'));
+    release();
+    await until(() => texts().some(([text, nostr]) => text === 'held' && nostr));
+    assert.equal(texts().filter(([text]) => text === 'on Nostr').length, 1, 'kept once');
+  } finally {
+    stop();
+    (await holdPlace(0, 1))();
+    forgetPlaceChats();
+    setCurrentSpace(null);
+  }
+}, true);

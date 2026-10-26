@@ -76,6 +76,9 @@ On main, not released yet:
   screen's, the newest first, each with what was said last, when, and how many are not read; at its top, each place
   has its own Chat with myself, encrypted with that place's key. Its reminders show there once the PIN opens it, and
   the phone tells them at their time, in a notice that says only **Reminder**, only while **Receive while closed** is on.
+- **Hidden chats that receive while closed read Nostr too**: what their contacts send through Nostr is read while the
+  place is closed, as what comes through their relay, and the sender sees at once that it came. In hidden chats, a
+  contact can also be added from a photo of their QR code, and a hidden contact can be given a photo.
 - **A deleted or blocked contact's queue goes at once**, not with the next look at the relay.
 
 ## 3.3.2 (2026-10-25)

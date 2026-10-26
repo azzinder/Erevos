@@ -60,7 +60,7 @@ import { useStyles, useTheme } from '../theme/context';
 // and a ringtone, which are Android's: its star and photo are sealed with it. A phone contact can
 // move into Erevos, and one kept in Erevos out to the phone's contacts. Among the hidden chats'
 // screens (`hidden`), it is one of theirs, never one of the phone's, and shows nothing once they
-// close; it takes no photo there, as picking one leaves Erevos, which closes them.
+// close; a photo is picked or taken there too, as they stay open meanwhile (lib/picking.ts).
 //
 // A contact that is an Erevos contact (linked by hand, kept sealed with the space's or hidden
 // chats' contacts, or by a number linked to it in Erevos) shows its chat, a call and a video call
@@ -454,7 +454,7 @@ export default function ContactCardScreen() {
         {onlyChat ? (
           <KeyFace identity={card.erevos} name={person?.name} size={96} />
         ) : (
-          <Pressable onPress={() => setChoosingPhoto(true)} disabled={hidden} accessibilityRole="button" accessibilityLabel={photo ? t('Change photo') : t('Add a photo')}>
+          <Pressable onPress={() => setChoosingPhoto(true)} accessibilityRole="button" accessibilityLabel={photo ? t('Change photo') : t('Add a photo')}>
             <ContactFace name={card.name} uri={photo} size={96} />
           </Pressable>
         )}

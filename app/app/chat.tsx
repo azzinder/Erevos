@@ -4615,13 +4615,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // photo of its QR code.
   const addTheirs = (
     <>
-      {/* Not in hidden chats: a photo leaves Erevos, which closes them. */}
-      {!hiddenKey ? (
-        <Row wrap>
-          {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the QR code')} compact onPress={() => void addFromQr('camera')} /> : null}
-          <Button title={t('Choose a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
-        </Row>
-      ) : null}
+      {/* In hidden chats too: they stay open while a photo is taken or picked (lib/picking.ts). */}
+      <Row wrap>
+        {CAN_TAKE_PHOTOS ? <Button title={t('Take a photo of the QR code')} compact onPress={() => void addFromQr('camera')} /> : null}
+        <Button title={t('Choose a photo of the QR code')} kind="secondary" compact onPress={() => void addFromQr('photos')} />
+      </Row>
       <Row>
         <Input
           value={contactDraft}

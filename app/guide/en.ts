@@ -1216,9 +1216,10 @@ voice messages through Nostr are still to come.
 > Should your contact's phone not say within five minutes that a text came, it goes through your relay as well, and
 > they see it once. When no Nostr relay takes it, it goes through your relay at once.
 
-- **Hidden chats:** they read on Nostr too, while they are open. Closed, they still show "New message": with each text
-  through Nostr, your contact also sends your relay a bell, a message that says nothing, which your relay counts as
-  one, as before.
+- **Hidden chats:** they read on Nostr too, while they are open, and closed as well while **Receive while closed** is
+  on for them and the space is open (see [Hidden chats](#hidden)). Closed, they still show "New message": with each
+  text through Nostr, your contact also sends your relay a bell, a message that says nothing, which your relay counts
+  as one, as before.
 
 ### With no relay at all {#nostr-only}
 
@@ -1512,8 +1513,9 @@ password, once you type it.
   the phone's call log and SMS like any other. An Erevos backup holds these contacts, sealed.
 - **In hidden chats:** **Contacts** at the top of open hidden chats lists their own contacts, kept only there and
   sealed with them: they show nowhere else, not even in the space's contacts, and the screen shows nothing once the
-  hidden chats close. A new contact there is always one of theirs. They take no photo, file or menu, as those leave
-  Erevos, which closes the hidden chats; so does calling one, which goes through the phone app and its call log.
+  hidden chats close. A new contact there is always one of theirs. A photo can be given to one, as hidden chats stay
+  open while you pick or take it; they have no file or menu, and calling one through the phone app closes the hidden
+  chats once Erevos is away more than 30 seconds, and shows in its call log.
 - **Erevos ID:** a contact's Erevos ID is the contact link their Erevos shows, under **Copy my contact link** or as
   their QR code. On a contact's card, or under **Erevos ID** when you write one, paste it, or read it with **Take a photo
   of the QR code** or **Choose a photo of the QR code**: **Add to Erevos** (or **Save**) adds them to your Erevos chats,
@@ -1667,13 +1669,13 @@ what the places taken away hold.
   while the space is open, whatever screen shows and with Erevos in the background: their contacts see at once that a
   message came, a notice says only "New message", on Android a call rings with "Incoming call" and no name (on the
   ringing screen, tap the small sign, type the PIN and tap **Connect** to answer), and a reminder of their Chat with
-  myself shows a notice that says only **Reminder**. A call that ended before you opened
-  them, or rang too long, shows as missed. Nothing of them shows anywhere until the PIN opens them. A new place starts
-  with it on; places set before stay as they were until you turn it on. For it, the place's key is kept encrypted with the space,
-  among a random key for each other place, so opening the space does not show which places receive, or are set. But
-  whoever opens the space and copies what the phone keeps could open that place too, with no PIN: the PIN then keeps
-  them out of sight of whoever holds the phone, not of a forensic tool. Off, their key is only behind the PIN, and
-  their messages wait on the relay until you open them. Backups keep the switch.
+  myself shows a notice that says only **Reminder**. What comes to them through Nostr is read then too. A call that
+  ended before you opened them, or rang too long, shows as missed. Nothing of them shows anywhere until the PIN opens
+  them. A new place starts with it on; places set before stay as they were until you turn it on. For it, the place's
+  key is kept encrypted with the space, among a random key for each other place, so opening the space does not show
+  which places receive, or are set. But whoever opens the space and copies what the phone keeps could open that place
+  too, with no PIN: the PIN then keeps them out of sight of whoever holds the phone, not of a forensic tool. Off,
+  their key is only behind the PIN, and their messages wait on the relay until you open them. Backups keep the switch.
 - **They close by themselves** once Erevos was in the background for more than 30 seconds, as a chat's own PIN
   locks again, but not during a call, nor while you pick a photo or a file for them or take a photo.
 - **While they are open,** a message that comes plays the sound for new messages, as in your other chats. With Erevos
@@ -1681,7 +1683,8 @@ what the places taken away hold.
   message comes** is on for that place.
 - **Like your other chats:** what cannot go now waits, marked **Waiting**, through their relay only (see **Waiting**
   under [Chat through a relay](#relay)), **Send later** works as there, and a chat exported from another app can be
-  imported into a hidden chat's details (see [Imported chats](#import)). Each place has its own **Chat with myself**,
+  imported into a hidden chat's details (see [Imported chats](#import)). A contact can be added from a photo of their
+  QR code there too, taken or picked while they stay open. Each place has its own **Chat with myself**,
   first in its list (see **Chat with myself and reminders** under [Getting started](#start)).
 - **Link previews** have a switch of their own in a hidden chat's details, for all the chats of that place, off unless
   you turn it on (see **Link previews** under [Chat through a relay](#relay)).

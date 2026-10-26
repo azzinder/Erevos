@@ -12,6 +12,8 @@ import { toBase64Url, type Received } from './e2e';
 import { sendCopies } from './fanout';
 import { isGroupPacket } from './groups';
 import { hiddenRinging, setHiddenRinging } from './hidden-ring';
+import { nostrKeysChanged, readNostr } from './nostr';
+import { nostrReaderOf } from './nostr-chats';
 import { forgetPlaceChats, placeChats } from './place-chats';
 import { QueueMove, tookOf, type Took } from './queue-move';
 import {
@@ -43,8 +45,9 @@ import { sendWaiting } from './waiting';
 // told it came, and the screens hear of it (onPlaceMessage), to say "New message" with no name. A
 // call rings as a hidden ring does, with no name (onPlaceRing, lib/hidden-ring.ts), and is held here
 // until the PIN opens the place (takePlaceCalls); one not taken in time, or that its caller ended,
-// is kept as missed. While the place's chat screen is open, the screen takes its messages itself
-// and holds this (holdPlace). None of it shows anywhere until the PIN opens the place.
+// is kept as missed. What comes for it on Nostr (lib/nostr.ts) is read too, as the space's
+// receiver reads the space's. While the place's chat screen is open, the screen takes its messages
+// itself and holds this (holdPlace). None of it shows anywhere until the PIN opens the place.
 
 const EVERY = 3000;
 // Messages taken in one look, at most.
@@ -65,6 +68,11 @@ type Run = {
   // Asked to look at once while a look was under way: the next one starts as soon as it ends.
   again: boolean;
   wake: () => void;
+  // The place's chats once a look opened them, for what comes on Nostr; reading there while
+  // nothing holds the place (how to stop), and what came there, opened in turn.
+  chats: SpaceChats | null;
+  unlisten: (() => void) | null;
+  nostrTurn: Promise<void>;
 };
 
 type Held = { received: Extract<Received, { kind: 'message' }>; timer: ReturnType<typeof setTimeout> | null };
@@ -118,8 +126,9 @@ export async function holdPlace(space: number, pocket: number): Promise<() => vo
   holds.set(pocket, (holds.get(pocket) ?? 0) + 1);
   const run = openSpace === space ? runs.get(pocket) : undefined;
   if (run) {
+    unlisten(run);
     endWaits();
-    await run.looking.catch(() => undefined);
+    await Promise.all([run.looking.catch(() => undefined), run.nostrTurn]);
   }
   let held = true;
   return () => {
@@ -132,8 +141,10 @@ export async function holdPlace(space: number, pocket: number): Promise<() => vo
     }
     holds.delete(pocket);
     const now = openSpace === space ? runs.get(pocket) : undefined;
-    if (now) now.wake();
-    else forgetPlaceChats(space, pocket);
+    if (now) {
+      listen(now);
+      now.wake();
+    } else forgetPlaceChats(space, pocket);
   };
 }
 
@@ -199,6 +210,45 @@ function stopRun(run: Run) {
   if (run.timer) clearTimeout(run.timer);
   run.timer = null;
   run.mover?.stop();
+  unlisten(run);
+}
+
+// Reads what comes on Nostr for a place while nothing holds it: its chat screen reads it itself.
+function listen(run: Run) {
+  if (run.stopped || run.unlisten || (holds.get(run.pocket) ?? 0) > 0) return;
+  run.unlisten = readNostr(
+    nostrReaderOf(
+      () => run.chats?.e2e ?? null,
+      (bytes) => {
+        const next = run.nostrTurn.then(() => openNostrPlace(run, bytes).catch(() => undefined));
+        run.nostrTurn = next;
+        return next;
+      },
+    ),
+  );
+}
+
+function unlisten(run: Run) {
+  run.unlisten?.();
+  run.unlisten = null;
+}
+
+// What came on Nostr for a closed place, kept as what comes to its queue (lookPlace), and its
+// sender told it came with the next look.
+async function openNostrPlace(run: Run, bytes: Uint8Array): Promise<void> {
+  const chats = run.chats;
+  // A group's message: hidden chats have none.
+  if (!chats || run.stopped || isGroupPacket(bytes)) return;
+  let received: Received;
+  try {
+    received = await chats.e2e.receive(bytes);
+  } catch {
+    return;
+  }
+  const came = cameBefore(chats, received);
+  await keepWith(chats, received, run.state, true);
+  if (came) await heard(run, chats, came);
+  if (run.state.place) await sendReceipts(chats, run.state.place, run.state);
 }
 
 function startRun(space: number, pocket: number, key: Uint8Array, every?: number): Run {
@@ -214,6 +264,9 @@ function startRun(space: number, pocket: number, key: Uint8Array, every?: number
     stopped: false,
     again: false,
     wake: () => undefined,
+    chats: null,
+    unlisten: null,
+    nostrTurn: Promise.resolve(),
   };
   const held = () => (holds.get(pocket) ?? 0) > 0;
   const next = () => {
@@ -241,6 +294,7 @@ function startRun(space: number, pocket: number, key: Uint8Array, every?: number
     run.timer = setTimeout(tick, 0);
   };
   next();
+  listen(run);
   return run;
 }
 
@@ -269,7 +323,7 @@ function placeMover(run: Run, chats: SpaceChats, own: Relay): QueueMove {
 }
 
 // One look at a place's queue, as the receiver's at the space's (lib/receiver.ts lookOnce), with
-// what hidden chats have: no groups, no phones nearby, no Nostr, no SMS.
+// what hidden chats have: no groups, no phones nearby, no SMS. What comes on Nostr is read apart.
 async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   if (!hasCore()) return;
   const { space, pocket, key, state } = run;
@@ -287,6 +341,11 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   }
   state.place = place;
   const chats = await placeChats(space, pocket, key);
+  if (!run.chats) {
+    run.chats = chats;
+    // Its Nostr keys are known now: the relays there are asked for them.
+    nostrKeysChanged();
+  }
   if (stop()) return;
   await sendPending(chats, place.sends);
   await sendKeys(chats, place);
