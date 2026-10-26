@@ -82,6 +82,11 @@ def buildRustCore = tasks.register('buildRustCore', Exec) {
       throw new GradleException('The Erevos core needs Rust for Android to build: rustup, its Android targets and cargo-ndk. See app/modules/erevos-core/README.md.')
     }
     environment 'ANDROID_NDK_HOME', android.ndkDirectory.path
+    // Paths of this computer are left out of the core (panic messages, and C that build scripts
+    // compile), so the same commit builds the same library anywhere: docs/reproducible-builds.md.
+    def maps = [(cargoHome): '/cargo', (repoRoot.canonicalPath): '/erevos', (android.ndkDirectory.path): '/ndk']
+    environment 'CARGO_ENCODED_RUSTFLAGS', maps.collect { from, to -> "--remap-path-prefix=${from}=${to}" }.join('\u001f')
+    environment 'CFLAGS', ([System.getenv('CFLAGS') ?: ''] + maps.collect { from, to -> "-ffile-prefix-map=${from}=${to}" }).join(' ').trim()
     // Build scripts run on this computer. A ~/.cargo/config that names a linker which is not
     // installed would stop them, so they use the system's own unless one is set here.
     if (!System.getenv('CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER')) {

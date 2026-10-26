@@ -1,0 +1,58 @@
+name: reproduce-apk
+
+# Builds a published release's Android app again, on a fresh runner, unsigned, and checks that it
+# is the same as the published APK apart from its signature (scripts/reproduce-apk.sh,
+# docs/reproducible-builds.md). Only by hand: Actions, reproduce-apk, Run workflow. About as many
+# Actions minutes as the release's apk job.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The published release to check, e.g. 3.3.2.
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      # The whole history, so that the release's commit can be checked out in this same folder,
+      # where the release was built (its C++ keeps the paths it was built at).
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      # The same steps, at the same versions, as the apk job of release.yml.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/share/powershell
+          sudo docker image prune --all --force
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable, 2026-10-21
+        with:
+          toolchain: stable
+          targets: aarch64-linux-android
+      - run: cargo install cargo-ndk --version 4.1.2 --locked
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: transports/go.mod
+          cache: false
+      - run: pipx install apksigcopier
+
+      - name: Build it again and compare
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          # The script runs from outside the checkout, which it moves to the release's commit.
+          cp scripts/reproduce-apk.sh "$RUNNER_TEMP/reproduce-apk.sh"
+          sh "$RUNNER_TEMP/reproduce-apk.sh" "$VERSION" "$GITHUB_WORKSPACE"

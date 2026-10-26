@@ -3,7 +3,8 @@
 // there (the release workflow writes it from the ANDROID_KEYSTORE_BASE64 secret, see
 // .github/workflows/release.yml and scripts/make-release-keystore.sh). Its passwords and alias
 // come from Gradle properties or environment variables of the same names. Without the file (a
-// build on a computer) nothing changes.
+// build on a computer) nothing changes, unless EREVOS_UNSIGNED is set: then the release APK is left
+// unsigned, to be compared with a published one (docs/reproducible-builds.md).
 const { withAppBuildGradle } = require('expo/config-plugins');
 
 const GRADLE = `
@@ -22,6 +23,9 @@ if (erevosReleaseKeystore.exists()) {
         keyPassword erevosSigning('ANDROID_KEY_PASSWORD')
     }
     android.buildTypes.release.signingConfig = android.signingConfigs.erevosRelease
+} else if (System.getenv('EREVOS_UNSIGNED')) {
+    // An unsigned release APK, to compare with a published one (scripts/reproduce-apk.sh).
+    android.buildTypes.release.signingConfig = null
 }
 `;
 

@@ -17,6 +17,9 @@ On main, not released yet:
   from its commit and checks that every file comes out the same as the published one, and as what the web server
   serves (docs/reproducible-builds.md). The published 3.3.2 does, all 78 files. One Rust version for every build
   (`rust-toolchain.toml`), and no paths of the build machine in the core any more.
+- **The Android app, ready to be checked the same way**: `scripts/reproduce-apk.sh <version>` (and the workflow
+  `reproduce-apk`, by hand) builds a release's APK unsigned and checks it against the published one apart from its
+  signature, as F-Droid does. Not tried yet.
 
 - **The relay proves its own key**: once Erevos knows your relay's key, every connection to it starts with a check that
   only the relay holding that key can pass, and the token and everything after it go encrypted to that key, inside
