@@ -1829,6 +1829,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         busy = false;
       }
     }
+    // Asked to look at once while a look was under way: the next one starts as soon as it ends.
+    let again = false;
     function next() {
       const inCall = currentCall() || currentGroupCall();
       timer = setTimeout(
@@ -1837,8 +1839,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           await look();
           if (active) next();
         },
-        inCall ? LOOK_IN_CALL : appShown() ? LOOK_EVERY : awayPace(waited, failures),
+        again ? 0 : inCall ? LOOK_IN_CALL : appShown() ? LOOK_EVERY : awayPace(waited, failures),
       );
+      again = false;
     }
     next();
     // The copies for contacts' endpoints of what was just sealed go at once (lib/fanout.ts).
@@ -1850,9 +1853,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       timer = null;
       void look().finally(() => active && !timer && next());
     });
-    // Something came to a contact's own queue (lib/contact-queues.ts): a look at once.
+    // Something came to a contact's own queue (lib/contact-queues.ts): a look at once, or right
+    // after the one under way.
     const stopCame = onContactsCame(() => {
-      if (!timer) return;
+      if (!timer) {
+        again = true;
+        return;
+      }
       clearTimeout(timer);
       timer = null;
       void look().finally(() => active && !timer && next());

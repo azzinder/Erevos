@@ -61,11 +61,19 @@ export function bunches(queues: ContactQueue[], way: string, tor = throughTor())
 }
 
 const cameListeners = new Set<() => void>();
+// The watches going on, to tell whether one found something no look has taken yet.
+const watches = new Set<ContactWatch>();
 
 /** Calls `listener` each time something came to a contact's queue, for a look to take it at once, until the function it gives is called. */
 export function onContactsCame(listener: () => void): () => void {
   cameListeners.add(listener);
   return () => cameListeners.delete(listener);
+}
+
+/** Whether a watch found something in a contact's queue that no look has asked for yet (ContactWatch came): a look then does not wait at the relay first. */
+export function cameUnread(): boolean {
+  for (const watch of watches) if (watch.unread()) return true;
+  return false;
 }
 
 type Loop = { ids: string; stop: AbortController; rest: (() => void) | null };
@@ -100,6 +108,7 @@ export class ContactWatch {
   /** Waits on `list` at `relay` from now on; bunches no longer in it stop waiting. */
   use(relay: Relay, list: Bunch[]): void {
     if (this.stopped) return;
+    watches.add(this);
     if (this.relay && (this.relay.url !== relay.url || this.relay.key !== relay.key)) this.stopLoops();
     this.relay = relay;
     const wanted = new Map(list.map((b) => [b.way, b]));
@@ -120,9 +129,15 @@ export class ContactWatch {
     return found;
   }
 
+  /** Whether a wait found something since this was last asked (came). */
+  unread(): boolean {
+    return this.found.size > 0;
+  }
+
   /** Stops every wait, for good: the space closed. */
   stop(): void {
     this.stopped = true;
+    watches.delete(this);
     this.stopLoops();
   }
 

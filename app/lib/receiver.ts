@@ -37,7 +37,7 @@ import { lookAtSpare, spareBackup } from './spare';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 import { nextDue, sendWaiting, type SendPlace } from './waiting';
 import { keepPush } from './web-push';
-import { onContactsCame } from './contact-queues';
+import { cameUnread, onContactsCame } from './contact-queues';
 import { t } from './i18n';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
@@ -160,7 +160,8 @@ export type Waited = false | 'came' | 'empty';
  * one wait asks of them all, on its `/read` path, with no token (lib/relay.ts waitForAny).
  */
 export async function waitWhileAway(relay: Relay, recipient: Uint8Array, others: Uint8Array[] = []): Promise<Waited> {
-  if (shows || !canWaitAt(relay)) return false;
+  // What came to a contact's own queue, not taken yet, is taken first (lib/contact-queues.ts).
+  if (shows || !canWaitAt(relay) || cameUnread()) return false;
   const wait = new AbortController();
   waits.add(wait);
   let came = false;
@@ -300,6 +301,8 @@ export function startReceiver(every?: number): () => void {
   lastPlace = null;
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  // Asked to look at once while a look was under way: the next one starts as soon as it ends.
+  let again = false;
   // What comes on Nostr for the space's chats (lib/nostr.ts), once they are open.
   let chats: SpaceChats | null = null;
   const stopNostr = readNostr(nostrReaderOf(() => chats?.e2e ?? null, openNostr));
@@ -315,7 +318,9 @@ export function startReceiver(every?: number): () => void {
   };
   openChats();
   const next = () => {
-    if (!stopped) timer = setTimeout(tick, every ?? (shows ? pace() : awayPace(state.waited, state.failures)));
+    if (stopped) return;
+    timer = setTimeout(tick, again ? 0 : (every ?? (shows ? pace() : awayPace(state.waited, state.failures))));
+    again = false;
   };
   const tick = () => {
     timer = null;
@@ -333,7 +338,11 @@ export function startReceiver(every?: number): () => void {
   };
   next();
   const now = () => {
-    if (stopped || !timer) return;
+    if (stopped) return;
+    if (!timer) {
+      again = true;
+      return;
+    }
     clearTimeout(timer);
     timer = setTimeout(tick, 0);
   };
