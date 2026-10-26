@@ -89,7 +89,7 @@ const DOG = { l: 37, r: 63, y: 47, m: 72 };
 const MONSTER = { l: 38, r: 62, y: 46, m: 64 };
 const ROBOT = { l: 39, r: 61, y: 40, m: 54, k: 0.85 };
 const DINO = { l: 38, r: 62, y: 38, m: 54 };
-const TUX = { l: 43, r: 57, y: 29, m: 54, k: 0.75 };
+const TUX = { l: 42, r: 58, y: 27, m: 46, k: 0.8 };
 const AIKI = { l: 42, r: 58, y: 28, m: 38, k: 0.75 };
 function moodMoves(kind: string, { l, r, y, m, k = 1 }: Spot, body: Move[] = [rock(6)]): Move[] {
   const c = (l + r) / 2;

@@ -306,29 +306,32 @@ function dino(face: Shape[], { c = '#6CC24A', dark = '#4E9E33', belly = '#D8F3C8
   ];
 }
 
-// Tux, the penguin of Linux: black with a grey edge (so it reads on a dark look), a white face and
-// belly, a yellow beak and feet, and its flippers as parts.
-const TUX = { l: 43, r: 57, y: 29, m: 54, k: 0.75 };
-const TUX_BLACK = '#2B2F36';
+// Tux, the penguin of Linux, as Larry Ewing drew him: one black pear of a body (a grey edge so
+// it reads on a dark look), a cream belly and two white eye patches that touch, a broad orange
+// beak (where his moods put their mouth) and big orange feet. His flippers are parts.
+const TUX = { l: 42, r: 58, y: 27, m: 46, k: 0.8 };
+const TUX_BLACK = '#23262B';
 const TUX_EDGE = '#7D8BA0';
-const TUX_BEAK = '#F2B33D';
-const flipper = (x: number, y: number, turn: number): Shape[] => [oval(x, y, 16, 34, TUX_EDGE, turn), oval(x, y, 12, 30, TUX_BLACK, turn)];
+const TUX_BEAK = '#F5A623';
+const TUX_BELLY = '#FFF6E0';
+const flipper = (x: number, y: number, turn: number): Shape[] => [oval(x, y, 15, 36, TUX_EDGE, turn), oval(x, y, 11, 32, TUX_BLACK, turn)];
 function tux(face: Shape[], { arm2 = [] as Shape[], front = [] as Shape[] } = {}): Shape[] {
   return [
-    oval(37, 94, 22, 9, TUX_BEAK),
-    oval(63, 94, 22, 9, TUX_BEAK),
-    oval(50, 62, 68, 70, TUX_EDGE),
-    oval(50, 62, 64, 66, TUX_BLACK),
-    part('arm1', flipper(20, 62, 25)),
-    part('arm2', arm2.length ? arm2 : flipper(80, 62, -25)),
-    dot(50, 30, 52, TUX_EDGE),
-    dot(50, 30, 48, TUX_BLACK),
-    oval(50, 68, 44, 50, '#F4F1EA'),
-    oval(43, 29, 14, 19, '#F4F1EA'),
-    oval(57, 29, 14, 19, '#F4F1EA'),
-    oval(50, 41, 20, 9, TUX_BEAK),
-    oval(50, 44, 14, 5, '#D9922A'),
-    ...cheeksAt(35, 65, 40, 6),
+    oval(50, 66, 74, 62, TUX_EDGE),
+    oval(50, 32, 52, 54, TUX_EDGE),
+    oval(50, 66, 70, 58, TUX_BLACK),
+    oval(50, 32, 48, 50, TUX_BLACK),
+    oval(50, 48, 58, 40, TUX_BLACK),
+    part('arm1', flipper(17, 62, 28)),
+    part('arm2', arm2.length ? arm2 : flipper(83, 62, -28)),
+    oval(50, 68, 48, 50, TUX_BELLY),
+    oval(50, 50, 34, 26, TUX_BELLY),
+    oval(42, 26, 15, 22, WHITE),
+    oval(58, 26, 15, 22, WHITE),
+    oval(31, 94, 30, 11, TUX_BEAK, -8),
+    oval(69, 94, 30, 11, TUX_BEAK, 8),
+    oval(50, 42, 30, 11, TUX_BEAK),
+    oval(50, 47, 22, 9, '#E08A0E'),
     ...face,
     ...front,
   ];
@@ -2458,7 +2461,7 @@ export const ART: Record<string, Shape[]> = {
   garlic: [tri(50, 26, 18, 28, '#F3EADB'), oval(50, 62, 64, 50, '#F3EADB'), arc(36, 62, 30, 2.5, 'right', '#D9CFBF'), arc(64, 62, 30, 2.5, 'left', '#D9CFBF'), bar(50, 40, 50, 84, 2, '#D9CFBF'), part('roots', [...[42, 46, 50, 54, 58].map((x) => bar(x, 86, x + (x - 50) * 0.3, 94, 1.5, '#C9B994'))]), oval(34, 52, 8, 14, WHITE, 20)],
 
   // Tux.
-  'tux-hello': tux(mood('smile', TUX), { arm2: flipper(82, 40, -150) }),
+  'tux-hello': tux(mood('smile', TUX), { arm2: flipper(84, 40, -150) }),
   'tux-love': tux(mood('love', TUX)),
   'tux-laugh': tux(mood('laugh', TUX)),
   'tux-happy': tux(mood('happy', TUX)),
@@ -2478,10 +2481,10 @@ export const ART: Record<string, Shape[]> = {
   'tux-heart': tux(mood('happy', TUX), { front: heldHeart(50, 70, 24) }),
   'tux-coffee': tux(mood('happy', TUX), { front: coffeeCup(70, 74) }),
   'tux-ok': tux(mood('smile', TUX), { front: tick(76, 76) }),
-  'tux-nervous': tux([...mood('smile', TUX), part('sweat', [box(68, 8, 8, 8, TEAR, [0, 4, 4, 4], { turn: 45 })])]),
+  'tux-nervous': tux([...mood('smile', TUX), part('sweat', [box(70, 6, 8, 8, TEAR, [0, 4, 4, 4], { turn: 45 })])]),
   'tux-hungry': tux(mood('tongue', TUX), { front: [part('fish', [tri(86, 76, 12, 14, '#5BA8D8', 90), oval(70, 76, 26, 14, '#7FC8F8'), dot(63, 74, 4, INK), arc(74, 76, 8, 2, 'left', '#5BA8D8')])] }),
   'tux-busy': tux(mood('think', TUX), { front: [box(26, 66, 48, 28, '#9AA3AD', 4), box(20, 92, 60, 5, '#6B7480', 2), dot(50, 79, 9, '#F4F1EA'), dot(50, 80, 4, TUX_BEAK)] }),
-  'tux-cold': tux([...mood('wow', TUX), box(26, 46, 48, 9, RED, 4), box(60, 50, 9, 22, RED, 3), part('snow', [dot(12, 14, 5, '#DCEBFA'), dot(88, 22, 4, '#DCEBFA'), dot(16, 44, 4, '#DCEBFA'), dot(86, 50, 5, '#DCEBFA')])]),
+  'tux-cold': tux([...mood('wow', TUX), box(28, 54, 44, 9, RED, 4), box(60, 58, 9, 22, RED, 3), part('snow', [dot(12, 14, 5, '#DCEBFA'), dot(88, 22, 4, '#DCEBFA'), dot(16, 44, 4, '#DCEBFA'), dot(86, 50, 5, '#DCEBFA')])]),
 
   // Aikido.
   'aiki-hello': aikidoka(mood('smile', AIKI), { arm2: sleeve(74, 44, -20, 78, 30) }),
