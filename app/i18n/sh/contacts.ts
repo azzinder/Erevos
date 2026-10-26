@@ -17,6 +17,8 @@ export const contacts: Record<string, string> = {
   'No contacts yet.': 'Još nema kontakata.',
   "These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them. Those with a lock are kept only in Erevos, sealed in this space.":
     'Ovo su kontakti telefona, sačuvani u Androidovim kontaktima: vidi ih svaka aplikacija koja ih smije čitati, a račun (Google) ih može usklađivati. Oni s lokotom čuvaju se samo u Erevosu, zapečaćeni u ovom prostoru.',
+  'These are kept only in these hidden chats, sealed with them. A .vcf file saved from them is outside Erevos and not encrypted.':
+    'Čuvaju se samo u ovim skrivenim razgovorima, zapečaćeni s njima. Datoteka .vcf sačuvana iz njih je izvan Erevosa i nije šifrirana.',
   'New contact': 'Novi kontakt',
 
   // One contact.
@@ -104,6 +106,8 @@ export const contacts: Record<string, string> = {
   // vCard files.
   'Import from a .vcf file': 'Uvezi iz .vcf datoteke',
   'Contacts another phone or app saved as a vCard': 'Kontakti sačuvani kao vCard na drugom telefonu ili u drugoj aplikaciji',
+  'Contacts another phone or app saved as a vCard, kept only in these hidden chats':
+    'Kontakti sačuvani kao vCard na drugom telefonu ili u drugoj aplikaciji, čuvaju se samo u ovim skrivenim razgovorima',
   'Save as a .vcf file': 'Sačuvaj kao .vcf datoteku',
   'The {n} contact shown, in a folder you choose': '{n} prikazani kontakt, u folder koji izaberete',
   'The {n} contacts shown, in a folder you choose': '{n} prikazani kontakt, u folder koji izaberete | {n} prikazana kontakta, u folder koji izaberete | {n} prikazanih kontakata, u folder koji izaberete',
@@ -121,6 +125,9 @@ export const contacts: Record<string, string> = {
   'It has {n} contacts.': 'Sadrži {n} kontakt. | Sadrži {n} kontakta. | Sadrži {n} kontakata.',
   '{n} of them is on the phone already, and is left out.': '{n} od njih je već na telefonu i izostavljen je.',
   '{n} of them are on the phone already, and are left out.': '{n} od njih je već na telefonu i izostavljen je. | {n} od njih su već na telefonu i izostavljena su. | {n} od njih je već na telefonu i izostavljeno je.',
+  '{n} of them is in these hidden chats already, and is left out.': '{n} od njih je već u ovim skrivenim razgovorima i izostavljen je.',
+  '{n} of them are in these hidden chats already, and are left out.':
+    '{n} od njih je već u ovim skrivenim razgovorima i izostavljen je. | {n} od njih su već u ovim skrivenim razgovorima i izostavljena su. | {n} od njih je već u ovim skrivenim razgovorima i izostavljeno je.',
   'Importing… {done} of {total}': 'Uvoz… {done} od {total}',
   'Import {n} contact': 'Uvezi {n} kontakt',
   'Import {n} contacts': 'Uvezi {n} kontakt | Uvezi {n} kontakta | Uvezi {n} kontakata',
@@ -263,8 +270,10 @@ export const contacts: Record<string, string> = {
     'Link za kontakt iz Erevosa te osobe, da biste ovaj kontakt umjesto toga povezali s drugim Erevos kontaktom.',
   'The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join your Erevos chats, and the contact shows their chat and calls.':
     'Link za kontakt koji prikazuje Erevos te osobe, pod „Kopiraj moj link za kontakt“ ili kao QR kod. Kad ga sačuvate, ta osoba ulazi u vaše Erevos razgovore, a kontakt prikazuje njen razgovor i pozive.',
-  "Choose them among these hidden chats' contacts: this card then shows their chat and calls.":
-    'Izaberite osobu među kontaktima ovih skrivenih razgovora: ova kartica tada prikazuje njen razgovor i pozive.',
+  'The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join these hidden chats, and the contact shows their chat and calls.':
+    'Link za kontakt koji prikazuje Erevos te osobe, pod „Kopiraj moj link za kontakt“ ili kao QR kod. Kad ga sačuvate, ta osoba ulazi u ove skrivene razgovore, a kontakt prikazuje njen razgovor i pozive.',
+  "The contact link their Erevos shows, under Copy my contact link or as their QR code, or choose them among these hidden chats' contacts. Added here, they join these hidden chats, and this card shows their chat and calls.":
+    'Link za kontakt koji prikazuje Erevos te osobe, pod „Kopiraj moj link za kontakt“ ili kao QR kod, ili izaberite osobu među kontaktima ovih skrivenih razgovora. Kad ga dodate ovdje, ta osoba ulazi u ove skrivene razgovore, a ova kartica prikazuje njen razgovor i pozive.',
   'The contact link their Erevos shows, under Copy my contact link or as their QR code. Added here, they join your Erevos chats, and this card shows their chat and calls, end-to-end encrypted.':
     'Link za kontakt koji prikazuje Erevos te osobe, pod „Kopiraj moj link za kontakt“ ili kao QR kod. Kad ga dodate ovdje, ta osoba ulazi u vaše Erevos razgovore, a ova kartica prikazuje njen razgovor i pozive, šifrirane s kraja na kraj.',
   'Add to Erevos': 'Dodaj u Erevos',

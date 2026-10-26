@@ -7,7 +7,7 @@ import { Button, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton }
 import { nameErevos, sealedFields } from '../lib/contact-book';
 import { offerContact } from '../lib/contact-code';
 import { askedFields, birthdayText, CHOSEN_KINDS, cleanFields, EMPTY_FIELDS, fieldsName, kindLabel, MAX_ENTRIES, mergeFields, parseBirthday, phoneFields, phoneSave, type Entry, type Fields } from '../lib/contacts';
-import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
+import { enterHiddenScreen, hiddenScreens, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
 import { linkPhoneContact, linkSealed, loadPlace, placeOf, saveSealed, spacePlace, type Place } from '../lib/sealed-contacts';
 import { contactAccounts, contactsReady, phoneContact, savePhoneContact, type ContactAccount, type PhoneContact } from '../modules/erevos-contacts';
@@ -17,7 +17,8 @@ import { useStyles, useTheme } from '../theme/context';
 // A contact being written: a new one, or one of the phone's to change. A new one is kept in
 // Android's contacts on this phone only, or in an account the phone syncs contacts with, as the
 // owner chooses, or only in Erevos, sealed in the space (`sealed`, lib/sealed-contacts.ts). Among
-// the hidden chats' screens (`hidden`), it is always theirs, sealed with them. Another app (or a
+// the hidden chats' screens (`hidden`), it is always theirs, sealed with them, and so is the Erevos
+// contact its Erevos ID adds, in their chats beneath these screens. Another app (or a
 // QR code) can start one with fields of its own (`fill`), which are kept only once the owner saves;
 // one made from an Erevos contact's card (`erevos`) is that Erevos contact once saved, which then
 // takes its name if it has none of its own (lib/linked-name.ts). What another app asks to add to a
@@ -149,8 +150,8 @@ export default function ContactEdit() {
       setNote(t('Give the contact a name, a number or an email.'));
       return;
     }
-    const code = !hidden && erevosCode.trim() ? readErevosId(erevosCode) : null;
-    if (!hidden && erevosCode.trim() && !code) {
+    const code = erevosCode.trim() ? readErevosId(erevosCode) : null;
+    if (erevosCode.trim() && !code) {
       setNote(t('That is not an Erevos ID: an Erevos ID is a contact link starting with erevos://contact'));
       return;
     }
@@ -163,7 +164,9 @@ export default function ContactEdit() {
         if (erevos && !sealedId) await nameErevos(hidden ? hiddenOpen : 'space', erevos, { name: fieldsName(clean) }).catch(() => '');
         if (code) {
           offerContact(code, { place, name: fieldsName(clean), added: (identity) => void linkSealed(place, kept, identity).catch(() => undefined) });
-          router.replace('/chat');
+          // The hidden chats' own chat screen, beneath these, takes them.
+          if (hidden) router.dismiss(hiddenScreens());
+          else router.replace('/chat');
         } else if (sealedId && !added) router.back();
         else router.replace(`/contact-card?sealed=${kept}${hidden ? '&hidden=1' : ''}`);
         return;
@@ -226,22 +229,20 @@ export default function ContactEdit() {
       <Entries list="addresses" entries={fields.addresses} onChange={setEntry} onRemove={removeEntry} />
       <TextButton title={t('Add an address')} onPress={() => addEntry('addresses')} />
 
-      {!hidden ? (
-        <>
-          <SectionTitle title={t('Erevos ID')} />
-          {linkedTo ? (
-            <Text variant="caption" tone="muted" selectable>
-              {t('Erevos ID: {id}', { id: erevosIdText(linkedTo) })}
-            </Text>
-          ) : null}
-          <ErevosIdInput value={erevosCode} onChange={setErevosCode} onNote={setNote} />
-          <Text variant="caption" tone="faint">
-            {linkedTo
-              ? t('Their contact link from Erevos, to link this contact to another Erevos contact instead.')
-              : t('The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join your Erevos chats, and the contact shows their chat and calls.')}
-          </Text>
-        </>
+      <SectionTitle title={t('Erevos ID')} />
+      {linkedTo ? (
+        <Text variant="caption" tone="muted" selectable>
+          {t('Erevos ID: {id}', { id: erevosIdText(linkedTo) })}
+        </Text>
       ) : null}
+      <ErevosIdInput value={erevosCode} onChange={setErevosCode} onNote={setNote} />
+      <Text variant="caption" tone="faint">
+        {linkedTo
+          ? t('Their contact link from Erevos, to link this contact to another Erevos contact instead.')
+          : hidden
+            ? t('The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join these hidden chats, and the contact shows their chat and calls.')
+            : t('The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join your Erevos chats, and the contact shows their chat and calls.')}
+      </Text>
 
       <SectionTitle title={t('More')} />
       <Field label={t('Birthday')} hint={t('Day/month/year, or day/month without the year.')}>

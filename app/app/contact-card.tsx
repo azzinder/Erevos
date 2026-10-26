@@ -60,15 +60,17 @@ import { useStyles, useTheme } from '../theme/context';
 // and a ringtone, which are Android's: its star and photo are sealed with it. A phone contact can
 // move into Erevos, and one kept in Erevos out to the phone's contacts. Among the hidden chats'
 // screens (`hidden`), it is one of theirs, never one of the phone's, and shows nothing once they
-// close; a photo is picked or taken there too, as they stay open meanwhile (lib/picking.ts).
+// close; a photo is picked or taken there too, and its .vcf file saved in a folder picked, as they
+// stay open meanwhile (lib/picking.ts).
 //
 // A contact that is an Erevos contact (linked by hand, kept sealed with the space's or hidden
 // chats' contacts, or by a number linked to it in Erevos) shows its chat, a call and a video call
 // through Erevos, and the start of its key as its Erevos ID; an Erevos contact that no contact is
 // has a card of its own (`erevos`). One that is none yet takes their Erevos ID, their contact link
-// pasted or read from their QR code (components/erevos-id.tsx): the chats add them, and the
-// contact is linked to them. An Erevos contact without a name of its own takes the name of the
-// contact linked to it (lib/linked-name.ts): when they are linked here, or as the card opens. One
+// pasted or read from their QR code (components/erevos-id.tsx): the chats add them (the hidden
+// chats' own beneath these screens, for one of theirs), and the contact is linked to them. An
+// Erevos contact without a name of its own takes the name of the contact linked to it
+// (lib/linked-name.ts): when they are linked here, or as the card opens. One
 // of the chats with a card of its own can be connected to one of my contacts
 // (components/connect-picker.tsx). Below, its history: its calls in the phone's call log, its SMS,
 // and its messages in Erevos.
@@ -378,6 +380,13 @@ export default function ContactCardScreen() {
     const sealed = card.sealed && place ? { place, id: card.sealed.id } : null;
     const lookup = card.phone?.lookup ?? '';
     if (!sealed && !lookup) return;
+    if (hidden) {
+      if (!sealed) return;
+      offerContact(code, { place: sealed.place, name: card.name, added: (identity) => void linkSealed(sealed.place, sealed.id, identity).catch(() => undefined) });
+      setErevosCode('');
+      router.dismiss(hiddenScreens());
+      return;
+    }
     const into = spacePlace();
     offerContact(code, {
       place: into,
@@ -524,15 +533,11 @@ export default function ContactCardScreen() {
           </Row>
           <Text variant="caption" tone="muted">
             {hidden
-              ? t("Choose them among these hidden chats' contacts: this card then shows their chat and calls.")
+              ? t("The contact link their Erevos shows, under Copy my contact link or as their QR code, or choose them among these hidden chats' contacts. Added here, they join these hidden chats, and this card shows their chat and calls.")
               : t('The contact link their Erevos shows, under Copy my contact link or as their QR code. Added here, they join your Erevos chats, and this card shows their chat and calls, end-to-end encrypted.')}
           </Text>
-          {!hidden ? (
-            <>
-              <ErevosIdInput value={erevosCode} onChange={setErevosCode} onNote={setIdNote} />
-              {erevosCode.trim() ? <Button title={t('Add to Erevos')} compact onPress={addErevos} /> : null}
-            </>
-          ) : null}
+          <ErevosIdInput value={erevosCode} onChange={setErevosCode} onNote={setIdNote} />
+          {erevosCode.trim() ? <Button title={t('Add to Erevos')} compact onPress={addErevos} /> : null}
           {people.length > 0 ? <Button title={t('Choose from my Erevos chats')} kind="secondary" compact onPress={() => setLinking(true)} /> : null}
           {!hidden && Platform.OS === 'android' && first ? (
             <>
@@ -647,7 +652,7 @@ export default function ContactCardScreen() {
         <Row wrap>
           <Button title={t('Edit')} kind="secondary" compact onPress={() => router.push(editHref)} />
           <Button title={t('QR code')} kind="secondary" compact onPress={() => setShowingQr(true)} />
-          {!hidden ? <Button title={t('Save as a .vcf file')} kind="secondary" compact onPress={() => void saveFile()} /> : null}
+          <Button title={t('Save as a .vcf file')} kind="secondary" compact onPress={() => void saveFile()} />
           {card.phone ? <Button title={t('Keep only in Erevos')} kind="secondary" compact onPress={() => void moveIntoErevos()} /> : null}
           {card.sealed && !hidden ? <Button title={t("Move to the phone's contacts")} kind="secondary" compact onPress={() => void moveToPhone()} /> : null}
           <Button title={t('Delete')} kind="danger" compact onPress={() => void remove()} />

@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import { callNumber, EMPTY_FIELDS, type Fields } from '../lib/contacts';
 import { randomBytes, setHardCost, setPbkdf2, webCryptoPbkdf2 } from '../lib/crypto';
 import { setOpenHiddenPlace } from '../lib/hidden-contacts';
-import { linkCard, linkedContact, linkPhoneContact, linkSealed, loadPlace, placeOf, removeSealed, saveSealed, sealedNames, setSealedPhoto, spacePlace, starSealed } from '../lib/sealed-contacts';
+import { importSealed, linkCard, linkedContact, linkPhoneContact, linkSealed, loadPlace, placeOf, removeSealed, saveSealed, sealedNames, setSealedPhoto, spacePlace, starSealed } from '../lib/sealed-contacts';
 import { loadPhoto } from '../lock/avatar-photos';
 import { backupKey, makeBackup, openBackup } from '../lock/backup';
 import { FILE, loadContactsData } from '../lock/contacts-data';
@@ -84,6 +84,25 @@ t('the names numbers have: the space, and the hidden chats only while open', asy
   assert.deepEqual(await sealedNames(), { '+306912345678': 'Eleni', '6970000000': 'Nikos' });
   setOpenHiddenPlace(null);
   assert.deepEqual(await sealedNames(), { '+306912345678': 'Eleni' });
+});
+
+t("a file's contacts imported into hidden chats are kept with them only, in one change, with their photos", async () => {
+  setCurrentSpace(0, randomBytes(32));
+  const hidden = placeOf(hiddenPlace(randomBytes(32)));
+  await saveSealed(hidden, null, person('Nikos', '6970000000'));
+  const done: number[] = [];
+  const read = [
+    { ...person('Maria', '6971111111'), photo: new Uint8Array([1, 2, 3]) },
+    { ...person('Petros'), photo: null },
+    { ...EMPTY_FIELDS, note: 'only a note', photo: null },
+  ];
+  assert.deepEqual(await importSealed(hidden, read, (n) => done.push(n)), { saved: 2, failed: 1 });
+  assert.deepEqual(done, [1, 2, 3]);
+  const { contacts } = await loadPlace(hidden);
+  assert.deepEqual(contacts.map((c) => c.given), ['Nikos', 'Maria', 'Petros']);
+  assert.deepEqual(await loadPhoto(contacts[1].photo!), new Uint8Array([1, 2, 3]));
+  assert.equal(contacts[2].photo, null);
+  assert.equal((await loadPlace(spacePlace())).contacts.length, 0, 'none of them in the space');
 });
 
 t('a photo is sealed in its own file, and goes with its contact', async () => {

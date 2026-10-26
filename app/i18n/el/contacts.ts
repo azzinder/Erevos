@@ -16,6 +16,8 @@ export const contacts: Record<string, string> = {
   'No contacts yet.': 'Καμία επαφή ακόμα.',
   "These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them. Those with a lock are kept only in Erevos, sealed in this space.":
     'Αυτές είναι οι επαφές του τηλεφώνου, στις επαφές του ίδιου του Android: τις βλέπει κάθε εφαρμογή που έχει άδεια να τις διαβάζει, και μπορεί να τις συγχρονίζει ένας λογαριασμός (Google). Όσες έχουν λουκέτο φυλάγονται μόνο στο Erevos, κρυπτογραφημένες σε αυτόν τον χώρο.',
+  'These are kept only in these hidden chats, sealed with them. A .vcf file saved from them is outside Erevos and not encrypted.':
+    'Αυτές φυλάγονται μόνο σε αυτές τις κρυφές συνομιλίες, κρυπτογραφημένες μαζί τους. Ένα αρχείο .vcf που αποθηκεύεται από αυτές είναι έξω από το Erevos, χωρίς κρυπτογράφηση.',
   'New contact': 'Νέα επαφή',
 
   // One contact.
@@ -100,6 +102,8 @@ export const contacts: Record<string, string> = {
   // vCard files.
   'Import from a .vcf file': 'Εισαγωγή από αρχείο .vcf',
   'Contacts another phone or app saved as a vCard': 'Επαφές που αποθήκευσε άλλο τηλέφωνο ή εφαρμογή ως vCard',
+  'Contacts another phone or app saved as a vCard, kept only in these hidden chats':
+    'Επαφές που αποθήκευσε άλλο τηλέφωνο ή εφαρμογή ως vCard, μόνο σε αυτές τις κρυφές συνομιλίες',
   'Save as a .vcf file': 'Αποθήκευση ως αρχείο .vcf',
   'The {n} contact shown, in a folder you choose': 'Η {n} επαφή που φαίνεται, σε φάκελο που διαλέγεις',
   'The {n} contacts shown, in a folder you choose': 'Οι {n} επαφές που φαίνονται, σε φάκελο που διαλέγεις',
@@ -117,6 +121,8 @@ export const contacts: Record<string, string> = {
   'It has {n} contacts.': 'Έχει {n} επαφές.',
   '{n} of them is on the phone already, and is left out.': '{n} από αυτές είναι ήδη στο τηλέφωνο, και παραλείπεται.',
   '{n} of them are on the phone already, and are left out.': '{n} από αυτές είναι ήδη στο τηλέφωνο, και παραλείπονται.',
+  '{n} of them is in these hidden chats already, and is left out.': '{n} από αυτές είναι ήδη σε αυτές τις κρυφές συνομιλίες, και παραλείπεται.',
+  '{n} of them are in these hidden chats already, and are left out.': '{n} από αυτές είναι ήδη σε αυτές τις κρυφές συνομιλίες, και παραλείπονται.',
   'Importing… {done} of {total}': 'Εισαγωγή… {done} από {total}',
   'Import {n} contact': 'Εισαγωγή {n} επαφής',
   'Import {n} contacts': 'Εισαγωγή {n} επαφών',
@@ -253,8 +259,10 @@ export const contacts: Record<string, string> = {
     'Ο σύνδεσμος επαφής από το Erevos, για να συνδέσεις αυτή την επαφή με άλλη επαφή Erevos.',
   'The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join your Erevos chats, and the contact shows their chat and calls.':
     'Ο σύνδεσμος επαφής που δείχνει το Erevos της επαφής, στο «Αντιγραφή του συνδέσμου επαφής μου» ή ως κωδικό QR. Μόλις αποθηκευτεί, η επαφή μπαίνει στις συνομιλίες σου στο Erevos και δείχνει τη συνομιλία και τις κλήσεις της.',
-  "Choose them among these hidden chats' contacts: this card then shows their chat and calls.":
-    'Διάλεξέ την ανάμεσα στις επαφές αυτών των κρυφών συνομιλιών: η κάρτα δείχνει τότε τη συνομιλία και τις κλήσεις της.',
+  'The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join these hidden chats, and the contact shows their chat and calls.':
+    'Ο σύνδεσμος επαφής που δείχνει το Erevos της επαφής, στο «Αντιγραφή του συνδέσμου επαφής μου» ή ως κωδικό QR. Μόλις αποθηκευτεί, η επαφή μπαίνει σε αυτές τις κρυφές συνομιλίες και δείχνει τη συνομιλία και τις κλήσεις της.',
+  "The contact link their Erevos shows, under Copy my contact link or as their QR code, or choose them among these hidden chats' contacts. Added here, they join these hidden chats, and this card shows their chat and calls.":
+    'Ο σύνδεσμος επαφής που δείχνει το Erevos της επαφής, στο «Αντιγραφή του συνδέσμου επαφής μου» ή ως κωδικό QR, ή διάλεξέ την ανάμεσα στις επαφές αυτών των κρυφών συνομιλιών. Με την προσθήκη, μπαίνει σε αυτές τις κρυφές συνομιλίες, και η κάρτα δείχνει τη συνομιλία και τις κλήσεις της.',
   'The contact link their Erevos shows, under Copy my contact link or as their QR code. Added here, they join your Erevos chats, and this card shows their chat and calls, end-to-end encrypted.':
     'Ο σύνδεσμος επαφής που δείχνει το Erevos της επαφής, στο «Αντιγραφή του συνδέσμου επαφής μου» ή ως κωδικό QR. Με την προσθήκη, μπαίνει στις συνομιλίες σου στο Erevos, και η κάρτα δείχνει τη συνομιλία και τις κλήσεις της, κρυπτογραφημένα από άκρη σε άκρη.',
   'Add to Erevos': 'Προσθήκη στο Erevos',

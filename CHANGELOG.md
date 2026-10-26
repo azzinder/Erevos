@@ -90,6 +90,11 @@ On main, not released yet:
   is closed shows as missed. None has a PIN of its own, and none is public.
 - **No test version line**: the home screen no longer ends saying this is a test version; the guide's opening note
   keeps that nothing has been audited yet, with what is protected today.
+- **The contacts menu in hidden chats**: their contacts screen has a menu with only what is theirs: a .vcf file
+  imported into them, sealed and never in the phone's contacts; the contacts shown, or one on its card, saved as a
+  .vcf file; and a contact's QR code read from a photo. An Erevos ID typed or read there adds them to the hidden chats,
+  never to the space's, and one handed over as they close is added to no other chats. They stay open while a folder is
+  picked.
 - **A deleted or blocked contact's queue goes at once**, not with the next look at the relay.
 
 ## 3.3.2 (2026-10-25)

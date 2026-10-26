@@ -1641,10 +1641,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [loaded, relayUrl, relayToken, viaUrl, viaToken, ownQueue]);
 
   // Takes a contact opened from a scanned code, once the saved contacts are loaded so they
-  // cannot overwrite it.
+  // cannot overwrite it. One offered among hidden chats' screens is theirs only: should they close
+  // before their chats take it, no other chats add it.
   useEffect(() => {
     if (!loaded || !shown) return;
-    return onContactOffered((code, offer) => void acceptContact(code, offer));
+    return onContactOffered((code, offer) => {
+      if (offer && offer.place.holder !== 'space' && !offerFor(offer, contactsPlace)) return;
+      void acceptContact(code, offer);
+    });
   }, [loaded, shown, relayUrl, relayToken, ownQueue, e2e]);
 
   // Takes an invite to a relay opened from a scanned link (app/relay-invite.tsx), once the saved

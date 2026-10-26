@@ -70,6 +70,37 @@ export async function saveSealed(place: Place, id: string | null, fields: Fields
   return kept;
 }
 
+/**
+ * Keeps new contacts sealed, read from a file (app/contact-import.tsx), all in one change, each
+ * photo sealed in its own file, telling how many are done. Those past the most kept, or with no
+ * name, number or email, are not kept.
+ */
+export async function importSealed(place: Place, cards: (Fields & { photo: Uint8Array | null })[], progress: (done: number) => void): Promise<{ saved: number; failed: number }> {
+  const fresh: SealedContact[] = [];
+  let failed = 0;
+  for (const card of cards) {
+    const clean = cleanFields(card);
+    if (fieldsName(clean)) {
+      const photo = card.photo ? await savePhoto(card.photo).catch(() => null) : null;
+      fresh.push({ ...clean, id: newId(), starred: false, photo, erevos: '', at: Date.now() });
+    } else failed++;
+    progress(fresh.length + failed);
+  }
+  let room = 0;
+  const forget = (gone: SealedContact[]) => Promise.all(gone.map((c) => (c.photo ? deletePhoto(c.photo.id).catch(() => undefined) : undefined)));
+  try {
+    await changePlace(place, (data) => {
+      room = Math.max(0, Math.min(fresh.length, MAX_SEALED - data.contacts.length));
+      return { ...data, contacts: [...data.contacts, ...fresh.slice(0, room)] };
+    });
+  } catch (error) {
+    await forget(fresh);
+    throw error;
+  }
+  await forget(fresh.slice(room));
+  return { saved: room, failed: failed + fresh.length - room };
+}
+
 /** Forgets a contact kept sealed, and its photo. */
 export async function removeSealed(place: Place, id: string): Promise<void> {
   let photo: PhotoRef | null = null;

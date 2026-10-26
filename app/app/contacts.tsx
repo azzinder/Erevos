@@ -36,8 +36,10 @@ import { useStyles, useTheme } from '../theme/context';
 // modules/erevos-contacts) makes it a list to choose that contact from, or a new one.
 //
 // Opened from hidden chats (`hidden`), it shows only their own sealed contacts, and nothing once
-// they close (lib/hidden-contacts.ts): nothing of the phone's or the space's. It has no menu
-// there: what it holds would leave Erevos (a photo picked, a file), which closes them.
+// they close (lib/hidden-contacts.ts): nothing of the phone's or the space's. Its menu there has
+// only what is theirs: a .vcf file in, kept with them, and out, and a QR code read from a photo,
+// whose contact or Erevos ID is theirs too; they stay open while a file, a folder or a photo is
+// picked (lib/picking.ts).
 
 // The phone's contacts as last read, while Erevos runs: the screen shows them at once when it opens
 // again, and reads them anew. Never the hidden chats' or the space's own, which are read each time.
@@ -215,11 +217,12 @@ export default function Contacts() {
       setReadingQr(false);
       const card = text ? contactFromQr(text) : null;
       const invite = text ? parseInvite(text) : null;
-      if (card) router.push(`/contact-edit?fill=${encodeURIComponent(fillText(card))}`);
+      const among = hidden ? '&hidden=1' : '';
+      if (card) router.push(`/contact-edit?fill=${encodeURIComponent(fillText(card))}${among}`);
       // Someone's Erevos QR code starts a contact with their Erevos ID.
-      else if (text && readErevosId(text)) router.push(`/contact-edit?code=${encodeURIComponent(text)}`);
-      // An invite to a relay asks first, as when the camera opens it (app/relay-invite.tsx).
-      else if (invite) router.push(`/relay-invite?relay=${encodeURIComponent(invite.relayUrl)}&code=${invite.code}`);
+      else if (text && readErevosId(text)) router.push(`/contact-edit?code=${encodeURIComponent(text)}${among}`);
+      // An invite to a relay asks first, as when the camera opens it (app/relay-invite.tsx); hidden chats take none.
+      else if (invite && !hidden) router.push(`/relay-invite?relay=${encodeURIComponent(invite.relayUrl)}&code=${invite.code}`);
       else setNote(text ? t('This QR code holds no contact.') : t('No QR code was found in the photo. Take it again closer, with all of the code in it.'));
     } catch (error) {
       setReadingQr(false);
@@ -252,11 +255,9 @@ export default function Contacts() {
     <View style={styles.headerBlock}>
       <View style={styles.topBar}>
         <Text variant="title">{hidden ? t('Hidden contacts') : t('Contacts')}</Text>
-        {!hidden ? (
-          <Pressable onPress={() => setMenu(true)} accessibilityRole="button" accessibilityLabel={t('Menu')} hitSlop={6} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-            <MoreIcon color={colors.text} />
-          </Pressable>
-        ) : null}
+        <Pressable onPress={() => setMenu(true)} accessibilityRole="button" accessibilityLabel={t('Menu')} hitSlop={6} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <MoreIcon color={colors.text} />
+        </Pressable>
       </View>
       {hidden ? <Text tone="muted">{t("Kept only here, sealed with the hidden chats: they show nowhere else, not even in the space's contacts.")}</Text> : null}
       <View style={styles.search}>
@@ -398,7 +399,13 @@ export default function Contacts() {
         ) : null}
         {phoneMenu ? <MenuRow title={t('Find duplicates')} detail={t('The same person kept twice, to merge into one')} onPress={() => go('/contact-duplicates')} /> : null}
         {phoneMenu ? <MenuRow title={t('SIM contacts')} detail={t('Copy the contacts on the SIM card to the phone')} onPress={() => go('/contact-sim')} /> : null}
-        {phoneMenu ? <MenuRow title={t('Import from a .vcf file')} detail={t('Contacts another phone or app saved as a vCard')} onPress={() => go('/contact-import')} /> : null}
+        {phoneMenu || hidden ? (
+          <MenuRow
+            title={t('Import from a .vcf file')}
+            detail={hidden ? t('Contacts another phone or app saved as a vCard, kept only in these hidden chats') : t('Contacts another phone or app saved as a vCard')}
+            onPress={() => go(hidden ? '/contact-import?hidden=1' : '/contact-import')}
+          />
+        ) : null}
         <MenuRow
           title={t("Read a contact's QR code")}
           detail={t('From a photo of it, read on the phone')}
@@ -415,7 +422,9 @@ export default function Contacts() {
           />
         ) : null}
         <Text variant="caption" tone="muted">
-          {t("These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them. Those with a lock are kept only in Erevos, sealed in this space.")}
+          {hidden
+            ? t('These are kept only in these hidden chats, sealed with them. A .vcf file saved from them is outside Erevos and not encrypted.')
+            : t("These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them. Those with a lock are kept only in Erevos, sealed in this space.")}
         </Text>
         <Button title={t('Done')} kind="secondary" compact onPress={() => setMenu(false)} />
       </Sheet>

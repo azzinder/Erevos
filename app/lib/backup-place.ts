@@ -1,10 +1,12 @@
 import { Directory, File } from 'expo-file-system';
 
 import { BACKUP_PREFIX, backupName } from '../lock/backup';
+import { whilePicking } from './picking';
 
 // Where backups go on the phone (lib/backup-folder.ts): a folder the owner picks with Android's
 // folder picker, on the phone, a memory card, or a cloud app that offers its folders there.
-// Android lets Erevos write in that folder from then on. A folder is known by its uri.
+// Android lets Erevos write in that folder from then on. A folder is known by its uri. Hidden chats
+// stay open while one is picked (lib/picking.ts), as a .vcf file of theirs is saved in one.
 
 /** Whether backups can be made here: always on the phone. */
 export const CAN_BACK_UP = true;
@@ -15,7 +17,7 @@ export const CAN_AUTO_BACKUP = true;
 /** A folder picked by the owner, or null if they went back. */
 export async function pickFolder(): Promise<string | null> {
   try {
-    return (await Directory.pickDirectoryAsync()).uri;
+    return (await whilePicking(() => Directory.pickDirectoryAsync())).uri;
   } catch {
     return null;
   }

@@ -16,6 +16,8 @@ export const contacts: Record<string, string> = {
   'No contacts yet.': 'Ancora nessun contatto.',
   "These are the phone's contacts, kept in Android's own contacts: every app allowed to read them sees them, and an account (Google) may sync them. Those with a lock are kept only in Erevos, sealed in this space.":
     'Questi sono i contatti del telefono, salvati nei contatti di Android: li vede ogni app che ha il permesso di leggerli, e un account (Google) può sincronizzarli. Quelli con un lucchetto sono salvati solo in Erevos, sigillati in questo spazio.',
+  'These are kept only in these hidden chats, sealed with them. A .vcf file saved from them is outside Erevos and not encrypted.':
+    'Sono salvati solo in queste chat nascoste, sigillati con esse. Un file .vcf salvato da questi è fuori da Erevos e non cifrato.',
   'New contact': 'Nuovo contatto',
 
   // One contact.
@@ -100,6 +102,8 @@ export const contacts: Record<string, string> = {
   // vCard files.
   'Import from a .vcf file': 'Importa da un file .vcf',
   'Contacts another phone or app saved as a vCard': 'Contatti salvati come vCard da un altro telefono o da un’app',
+  'Contacts another phone or app saved as a vCard, kept only in these hidden chats':
+    'Contatti salvati come vCard da un altro telefono o da un’app, salvati solo in queste chat nascoste',
   'Save as a .vcf file': 'Salva come file .vcf',
   'The {n} contact shown, in a folder you choose': '{n} contatto mostrato, in una cartella a tua scelta',
   'The {n} contacts shown, in a folder you choose': 'I {n} contatti mostrati, in una cartella a tua scelta',
@@ -117,6 +121,8 @@ export const contacts: Record<string, string> = {
   'It has {n} contacts.': 'Contiene {n} contatti.',
   '{n} of them is on the phone already, and is left out.': '{n} di questi è già sul telefono, e viene tralasciato.',
   '{n} of them are on the phone already, and are left out.': '{n} di questi sono già sul telefono, e vengono tralasciati.',
+  '{n} of them is in these hidden chats already, and is left out.': '{n} di questi è già in queste chat nascoste, e viene tralasciato.',
+  '{n} of them are in these hidden chats already, and are left out.': '{n} di questi sono già in queste chat nascoste, e vengono tralasciati.',
   'Importing… {done} of {total}': 'Importazione… {done} di {total}',
   'Import {n} contact': 'Importa {n} contatto',
   'Import {n} contacts': 'Importa {n} contatti',
@@ -253,8 +259,10 @@ export const contacts: Record<string, string> = {
     'Il suo link di contatto di Erevos, per collegare invece questo contatto a un altro contatto Erevos.',
   'The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join your Erevos chats, and the contact shows their chat and calls.':
     'Il link di contatto che mostra il suo Erevos, in “Copia il mio link di contatto” o come codice QR. Una volta salvato, entra nelle tue chat Erevos e il contatto mostra la sua chat e le sue chiamate.',
-  "Choose them among these hidden chats' contacts: this card then shows their chat and calls.":
-    'Sceglilo tra i contatti di queste chat nascoste: questa scheda mostra allora la sua chat e le sue chiamate.',
+  'The contact link their Erevos shows, under Copy my contact link or as their QR code. Once saved, they join these hidden chats, and the contact shows their chat and calls.':
+    'Il link di contatto che mostra il suo Erevos, in “Copia il mio link di contatto” o come codice QR. Una volta salvato, entra in queste chat nascoste e il contatto mostra la sua chat e le sue chiamate.',
+  "The contact link their Erevos shows, under Copy my contact link or as their QR code, or choose them among these hidden chats' contacts. Added here, they join these hidden chats, and this card shows their chat and calls.":
+    'Il link di contatto che mostra il suo Erevos, in “Copia il mio link di contatto” o come codice QR, oppure sceglilo tra i contatti di queste chat nascoste. Aggiunto qui, entra in queste chat nascoste e questa scheda mostra la sua chat e le sue chiamate.',
   'The contact link their Erevos shows, under Copy my contact link or as their QR code. Added here, they join your Erevos chats, and this card shows their chat and calls, end-to-end encrypted.':
     'Il link di contatto che mostra il suo Erevos, in “Copia il mio link di contatto” o come codice QR. Aggiunto qui, entra nelle tue chat Erevos e questa scheda mostra la sua chat e le sue chiamate, crittografate end-to-end.',
   'Add to Erevos': 'Aggiungi a Erevos',
