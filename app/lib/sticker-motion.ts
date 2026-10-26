@@ -89,7 +89,7 @@ const DOG = { l: 37, r: 63, y: 47, m: 72 };
 const MONSTER = { l: 38, r: 62, y: 46, m: 64 };
 const ROBOT = { l: 39, r: 61, y: 40, m: 54, k: 0.85 };
 const DINO = { l: 38, r: 62, y: 38, m: 54 };
-const TUX = { l: 42, r: 58, y: 27, m: 46, k: 0.8 };
+const TUX = { l: 43.1, r: 54.2, y: 25.4, m: 33.5, k: 0.6 };
 const AIKI = { l: 42, r: 58, y: 28, m: 38, k: 0.75 };
 function moodMoves(kind: string, { l, r, y, m, k = 1 }: Spot, body: Move[] = [rock(6)]): Move[] {
   const c = (l + r) / 2;
@@ -605,10 +605,10 @@ export const MOTIONS: Record<string, Motion> = {
   potato: { ms: 2200, moves: [{ part: 'all', about: [50, 90], at: [0, 0.2, 0.35, 0.5, 0.65, 1], y: [0, -10, 0, -4, 0, 0], sy: [1, 1.04, 0.92, 1.02, 1, 1] }] },
   garlic: { ms: 2200, moves: [{ part: 'all', about: [50, 88], at: [0, 0.2, 0.4, 0.6, 1], turn: [0, -8, 8, -4, 0] }, twinkle('roots')] },
   // Tux.
-  'tux-hello': { ms: 2200, moves: [{ part: 'arm2', about: [76, 54], at: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1], turn: [0, -20, 10, -20, 10, -8, 0] }, rock(4, 'all', [50, 96])] },
+  'tux-hello': { ms: 2200, moves: [{ part: 'arm2', about: [70, 43], at: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1], turn: [0, -20, 10, -20, 10, -8, 0] }, rock(4, 'all', [50, 96])] },
   'tux-love': { ms: 2200, moves: moodMoves('love', TUX, [bob(3)]) },
   'tux-laugh': { ms: 1800, moves: moodMoves('laugh', TUX) },
-  'tux-happy': { ms: 2000, moves: [rock(6, 'all', [50, 96]), flap('arm1', [24, 48], 12), flap('arm2', [76, 48], -12)] },
+  'tux-happy': { ms: 2000, moves: [rock(6, 'all', [50, 96]), flap('arm1', [35, 43], 10), flap('arm2', [70, 43], -10)] },
   'tux-sad': { ms: 2600, moves: moodMoves('sad', TUX, [{ part: 'all', at: [0, 0.3, 0.7, 1], y: [0, 2, 2, 0] }]) },
   'tux-angry': { ms: 1600, moves: moodMoves('angry', TUX) },
   'tux-sleep': { ms: 3000, moves: moodMoves('sleep', TUX, [{ part: 'all', about: [50, 96], at: EVEN, sy: [1, 0.97, 1, 0.97, 1] }]) },
@@ -621,16 +621,16 @@ export const MOTIONS: Record<string, Motion> = {
   'tux-tongue': { ms: 2000, moves: moodMoves('tongue', TUX, [rock(5, 'all', [50, 96])]) },
   'tux-dizzy': { ms: 2400, moves: moodMoves('dizzy', TUX, [twinkle('stars'), rock(8, 'all', [50, 96])]) },
   'tux-think': { ms: 2600, moves: moodMoves('think', TUX, [{ part: 'all', about: [50, 96], at: [0, 0.3, 0.7, 1], turn: [0, 6, 6, 0] }]) },
-  'tux-party': { ms: 2200, moves: [{ part: 'all', at: [0, 0.15, 0.3, 0.45, 0.6, 1], y: [0, -8, 0, -6, 0, 0] }, rock(10, 'hat', [50, 14]), twinkle('tears')] },
-  'tux-heart': { ms: 2200, moves: [beat('heart', [50, 74], 1.25), bob(3)] },
+  'tux-party': { ms: 2200, moves: [{ part: 'all', at: [0, 0.15, 0.3, 0.45, 0.6, 1], y: [0, -8, 0, -6, 0, 0] }, rock(10, 'hat', [49, 12]), twinkle('tears')] },
+  'tux-heart': { ms: 2200, moves: [beat('heart', [50, 68], 1.25), bob(3)] },
   'tux-coffee': { ms: 2600, moves: [rise('steam', 8), rock(4, 'all', [50, 96])] },
   'tux-ok': { ms: 1800, moves: [pop('badge', [76, 76]), bob(3)] },
   'tux-nervous': { ms: 2200, moves: [fall('sweat', 10, 0.1), { part: 'all', at: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 1], x: [0, -1.5, 1.5, -1.5, 1.5, 0, 0] }] },
-  'tux-hungry': { ms: 2000, moves: moodMoves('tongue', TUX, [rock(10, 'fish', [70, 76])]) },
+  'tux-hungry': { ms: 2000, moves: moodMoves('tongue', TUX, [rock(10, 'fish', [68, 68])]) },
   'tux-busy': { ms: 2000, moves: [{ part: 'arm1', at: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 1], y: [0, -3, 0, -3, 0, -3, 0, 0] }, { part: 'arm2', at: [0, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 1], y: [0, -3, 0, -3, 0, -3, 0, 0] }] },
   'tux-cold': { ms: 2400, moves: [{ part: 'all', at: [0, 0.08, 0.16, 0.24, 0.32, 0.4, 1], x: [0, -2, 2, -2, 2, 0, 0] }, fall('snow', 10, 0.1)] },
   // Aikido.
-  'aiki-hello': { ms: 2200, moves: [{ part: 'arm2', about: [70, 50], at: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1], turn: [0, 15, -10, 15, -10, 6, 0] }, rock(3, 'all', [50, 96])] },
+  'aiki-hello': { ms: 2200, moves: [{ part: 'arm2', about: [63, 47], at: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1], turn: [0, 15, -10, 15, -10, 6, 0] }, rock(3, 'all', [50, 96])] },
   'aiki-love': { ms: 2200, moves: moodMoves('love', AIKI, [bob(3)]) },
   'aiki-laugh': { ms: 1800, moves: moodMoves('laugh', AIKI) },
   'aiki-happy': { ms: 2000, moves: [bob(4), rock(4, 'upper', [50, 62])] },
@@ -653,7 +653,7 @@ export const MOTIONS: Record<string, Motion> = {
   'aiki-proud': { ms: 2200, moves: [twinkle('shine'), { part: 'all', about: [50, 96], at: EVEN, sy: [1, 1.04, 1, 1.04, 1] }] },
   'aiki-sensei': { ms: 2400, moves: [{ part: 'upper', about: [50, 64], at: [0, 0.3, 0.6, 1], turn: [0, 0, 0, 0], y: [0, 2, 0, 0] }, rock(3, 'all', [50, 96])] },
   'aiki-ok': { ms: 1800, moves: [pop('badge', [78, 76]), bob(3)] },
-  'aiki-heart': { ms: 2200, moves: [beat('heart', [50, 66], 1.25), bob(3)] },
+  'aiki-heart': { ms: 2200, moves: [beat('heart', [50, 64], 1.25), bob(3)] },
 };
 
 /** A sticker's motion, to play now: none for one that stays still, or while motion is to be reduced (or not known yet). */

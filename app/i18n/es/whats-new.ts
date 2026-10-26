@@ -170,4 +170,6 @@ export const whatsNew: Record<string, string> = {
   'Web Push in the web app.': 'Web Push en la app web.',
   'The first signed Android release: encrypted chats, calls, groups, hidden chats, backups, imports, and phones nearby without the internet.':
     'La primera versión firmada para Android: chats cifrados, llamadas, grupos, chats ocultos, copias de seguridad, importaciones y teléfonos cercanos sin internet.',
+  "**Two new sticker sets of 24 moods**: **Tux**, the Linux penguin as he is drawn, and **Aikido**, an aikidoka in keikogi and a wide hakama, who also bows, sits in seiza and rolls.":
+    "**Dos nuevos conjuntos de stickers con 24 estados de ánimo**: **Tux**, el pingüino de Linux tal como está dibujado, y **Aikido**, un aikidoka con keikogi y un hakama amplio, que también se inclina, se sienta en seiza y rueda.",
 };

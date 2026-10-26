@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, Platform, Pressable, ScrollView, Text as RNText, View, type ViewStyle } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 
 import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
@@ -247,6 +248,15 @@ function drawn(shapes: Shape[], k: number, words: string, layer: Layer, prefix =
             >
               {words}
             </RNText>
+          </View>
+        );
+      }
+      case 'svg': {
+        // A drawing of curves, its viewBox stretched over the box.
+        const { x, y, w, h, xml } = shape;
+        return (
+          <View key={key} style={{ position: 'absolute', left: x * k, top: y * k, width: w * k, height: h * k }}>
+            <SvgXml xml={xml} width={w * k} height={h * k} />
           </View>
         );
       }

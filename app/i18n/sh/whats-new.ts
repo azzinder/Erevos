@@ -171,4 +171,6 @@ export const whatsNew: Record<string, string> = {
   'Web Push in the web app.': 'Web Push u web-aplikaciji.',
   'The first signed Android release: encrypted chats, calls, groups, hidden chats, backups, imports, and phones nearby without the internet.':
     'Prvo potpisano izdanje za Android: šifrirani razgovori, pozivi, grupe, skriveni razgovori, rezervne kopije, uvozi i telefoni u blizini bez interneta.',
+  "**Two new sticker sets of 24 moods**: **Tux**, the Linux penguin as he is drawn, and **Aikido**, an aikidoka in keikogi and a wide hakama, who also bows, sits in seiza and rolls.":
+    "**Dva nova kompleta naljepnica s 24 raspoloženja**: **Tux**, Linuxov pingvin kakav je nacrtan, i **Aikido**, aikidoka u keikogiju i širokoj hakami, koji se i klanja, sjedi u seizi i kotrlja se.",
 };

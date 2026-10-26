@@ -10,9 +10,10 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
-- **Two new sticker sets of 24 moods, as emoji are**: **Tux**, the penguin of Linux, and
-  **Aikido**, an aikidoka in keikogi and hakama (who also bows, sits calm in seiza and rolls).
-  Both move a little, as the other sets do.
+- **Two new sticker sets of 24 moods, as emoji are**: **Tux**, the penguin of Linux as he is
+  drawn (the CC0 drawing of the logos collection), and **Aikido**, an aikidoka in keikogi and a
+  wide pleated hakama (who also bows, sits calm in seiza, holds a bokken and rolls). Both move a
+  little, as the other sets do. Stickers can now be drawn in curves too (react-native-svg).
 - **The web app can be built again and checked**: `scripts/reproduce-web.sh <version>` builds a release's web app
   from its commit and checks that every file comes out the same as the published one, and as what the web server
   serves (docs/reproducible-builds.md). The published 3.3.2 does, all 78 files. One Rust version for every build
