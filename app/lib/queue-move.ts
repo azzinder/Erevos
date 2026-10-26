@@ -242,6 +242,15 @@ export class QueueMove {
     this.watch = null;
   }
 
+  /**
+   * Deletes at once the queues of a contact just deleted or blocked, not with the next look: nothing
+   * of theirs comes to them meanwhile, nor wakes the closed web app.
+   */
+  dropGone(own: Relay): Promise<void> {
+    if (!this.at.contacts || this.at.e2e.onLinkedDevice()) return Promise.resolve();
+    return this.run(() => this.deleteGone(own, own.url, Date.now()));
+  }
+
   /** The queues as kept. */
   queues(): Promise<QueuesData> {
     return this.at.queues.load();
@@ -694,15 +703,22 @@ export class QueueMove {
       this.unpushed.add(gone.r);
       await this.at.push!.drop(look.own, { recipientHex: gone.r, senderHex: '' }).catch(() => undefined);
     }
+    await this.deleteGone(look.own, here.url, now, look.stop);
+  }
+
+  // The queues no one writes to any more, deleted at `url`, with the token that made them; those at
+  // another relay are let go of here.
+  private async deleteGone(own: Relay, url: string, now: number, stop?: () => boolean) {
+    const e2e = this.at.e2e;
     const dropped: string[] = [];
     for (const gone of e2e.goneQueues().filter((g) => g.until <= now).slice(0, DELETES_EACH)) {
-      if (look.stop?.()) break;
-      if (!sameRelay(gone.u, here.url)) {
+      if (stop?.()) break;
+      if (!sameRelay(gone.u, url)) {
         dropped.push(gone.r);
         continue;
       }
       try {
-        await deleteQueue(look.own, fromHex(gone.r));
+        await deleteQueue(own, fromHex(gone.r));
         dropped.push(gone.r);
       } catch (error) {
         if (isQueueNotFound(error)) dropped.push(gone.r);

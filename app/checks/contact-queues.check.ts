@@ -196,9 +196,9 @@ test('each kept contact writes to a queue of their own, read with no token, and 
     assert.ok(pushing.has(daves.r));
     assert.deepEqual([...late], []);
 
-    // Alice deletes Carol: Carol's queue is deleted on the relay with the next look, Bob's stays.
+    // Alice deletes Carol: Carol's queue is deleted on the relay at once, not with the next look, Bob's stays.
     await alice.deleteContact(carolId);
-    await look();
+    await mover.dropGone(relay);
     await assert.rejects(sendMessage(relay, fromHex(carols.s), randomBytes(40)), (error) => isQueueNotFound(error));
     assert.equal(await bob.write('still mine'), bobs.s);
     await until('still mine');

@@ -3110,6 +3110,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         ? t('{name} is blocked. Your other contacts learn your new queue as soon as the relay answers.', { name })
         : t('{name} is deleted. Your other contacts learn your new queue as soon as the relay answers.', { name });
     const url = relayUrl.trim();
+    // Their own queue goes at once (lib/queue-move.ts dropGone).
+    if (url && mover.current) void mover.current.dropGone({ url, token: relayToken.trim() || undefined }).catch(() => undefined);
     if (moves && url && ownQueue && mover.current) {
       try {
         // The link and its QR code name the queue the link names from now on, never the new own one.
