@@ -79,7 +79,32 @@ fi
 if apksigcopier compare --unsigned "$work/erevos-android.apk" "$built"; then
 	echo "SAME as the published erevos-android.apk, apart from its signature."
 else
-	echo "DIFFERENT from the published erevos-android.apk. What differs: unzip -l, or diffoscope, on the two:" >&2
+	echo "DIFFERENT from the published erevos-android.apk. The files inside that differ:" >&2
+	# Leaves out the signature files; for each file that differs, a few of the strings only one has.
+	python3 -I - "$work/erevos-android.apk" "$built" >&2 <<'EOF' || true
+import re, sys, zipfile
+a, b = (zipfile.ZipFile(p) for p in sys.argv[1:3])
+ia = {i.filename: i for i in a.infolist() if not i.filename.startswith("META-INF/")}
+ib = {i.filename: i for i in b.infolist() if not i.filename.startswith("META-INF/")}
+for name in sorted(set(ia) - set(ib)): print(f"  only published: {name}")
+for name in sorted(set(ib) - set(ia)): print(f"  only rebuilt:   {name}")
+order = [n for n in ia if n in ib] != [n for n in ib if n in ia]
+if order: print("  the files are in a different order")
+strings = lambda data: set(re.findall(rb"[\x20-\x7e]{8,}", data))
+for name in sorted(set(ia) & set(ib)):
+    x, y = ia[name], ib[name]
+    if (x.CRC, x.file_size) == (y.CRC, y.file_size):
+        if (x.compress_type, x.date_time, x.external_attr) != (y.compress_type, y.date_time, y.external_attr):
+            print(f"  {name}: same content, different zip entry ({x.compress_type},{x.date_time} / {y.compress_type},{y.date_time})")
+        continue
+    print(f"  {name}: {x.file_size} / {y.file_size} bytes")
+    da, db = a.read(name), b.read(name)
+    first = next((i for i, (p, q) in enumerate(zip(da, db)) if p != q), min(len(da), len(db)))
+    print(f"    first difference at byte {first}")
+    sa, sb = strings(da), strings(db)
+    for s in sorted(sa - sb)[:6]: print(f"    published: {s[:160].decode()}")
+    for s in sorted(sb - sa)[:6]: print(f"    rebuilt:   {s[:160].decode()}")
+EOF
 	mkdir -p compared
 	cp "$built" compared/erevos-android-rebuilt.apk
 	cp "$work/erevos-android.apk" compared/erevos-android-published.apk
