@@ -28,6 +28,11 @@ On main, not released yet:
 - **What's new, in the app**: **Settings** → **General** → **What's new**, and a button under the version in
   **Updates**, say in short what each version changed, in every language of the app, the newest first, by its number
   alone, with **This version** beside the one installed. Each release adds its own.
+- **Nothing shows behind a chat's PIN**: with glass, a wallpaper or a style that draws its own scene, the messages of a
+  chat or group locked with a PIN could be seen through the PIN screen. Now none of them is drawn until the PIN is
+  typed, and the PIN screen lies on a dense frost over the look's background, which lets nothing through.
+- **A group video call from the top of the group**: a blue camera beside the green handset starts one, as in a
+  contact's chat; **Video call** under **⋯** stays. While a call is going on, only its own button shows, to join it.
 
 ## 3.3.2 (2026-10-25)
 

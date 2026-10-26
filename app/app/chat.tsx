@@ -4160,10 +4160,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Theirs that came before the time it was sent for shows then (lib/later.ts, showsAt).
   // Worked out again only when the messages, the chat or the time (every few seconds) change.
+  // None while the chat's PIN is asked for: nothing of it lies under the gate (ChatPinGate).
   const visible = useMemo(() => {
     const shownBy = Date.now();
-    return messages.filter((message) => message.peer === selected && (message.mine || message.at <= shownBy));
-  }, [messages, selected, now]);
+    return gated ? [] : messages.filter((message) => message.peer === selected && (message.mine || message.at <= shownBy));
+  }, [messages, selected, now, gated]);
   // The message each tag names, for the one a message answers.
   const byTag = useMemo(() => {
     const named = new Map<string, Message>();
@@ -4238,9 +4239,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [hiddenKey, smsWith]);
   const cardNumber = !hiddenKey && cardPhone.identity === smsWith ? cardPhone.number : '';
   const dialTo = canDial(linkedPhone) ? linkedPhone : canDial(cardNumber) ? cardNumber : '';
-  const lines = useMemo(() => chatLines(visible, chatSms.messages, chatSms.more), [visible, chatSms.messages, chatSms.more]);
+  const lines = useMemo(() => chatLines(visible, gated ? [] : chatSms.messages, chatSms.more), [visible, chatSms.messages, chatSms.more, gated]);
   const selectedIdentity = selected?.startsWith(CONTACT_PREFIX) ? selected.slice(CONTACT_PREFIX.length) : '';
-  const imported = useMemo(() => (archive && selectedIdentity ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity, archiveTick]);
+  const imported = useMemo(() => (archive && selectedIdentity && !gated ? archive.linked(selectedIdentity) : []), [archive, selectedIdentity, archiveTick, gated]);
   const importedChats = useMemo(() => (archive && selectedIdentity ? archive.linkedChats(selectedIdentity) : []), [archive, selectedIdentity, archiveTick]);
   // A chat brought in from the details goes on here at once, kept only in this chat.
   const importFlow = useImportFlow(

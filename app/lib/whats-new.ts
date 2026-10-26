@@ -14,6 +14,8 @@ export const NEXT: string[] = [
   mark('**Your relay proves its own key**: every connection to it starts with a check only the relay holding that key can pass, so no one in between can pass for it. Once it has, Erevos never reaches it without the check. Your relay needs an update for it.'),
   mark('[Transparency](#transparency), a new part of the guide: what the server behind Erevos keeps and for how long, what it does not keep, and who else sees something.'),
   mark("**What's new**: this list, in Settings → General, by version."),
+  mark("**Nothing shows behind a chat's PIN**: none of the messages of a chat locked with a PIN is drawn until its PIN is typed, and with glass, a wallpaper or a style's own scene, the PIN screen is a dense frost that lets nothing through."),
+  mark("**A group video call from the top of the group**: a blue camera beside the green handset, as in a contact's chat."),
 ];
 
 export const VERSIONS: WhatsNew[] = [

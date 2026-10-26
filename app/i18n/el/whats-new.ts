@@ -11,6 +11,10 @@ export const whatsNew: Record<string, string> = {
   '[Transparency](#transparency), a new part of the guide: what the server behind Erevos keeps and for how long, what it does not keep, and who else sees something.':
     '[Διαφάνεια](#transparency), νέο μέρος του οδηγού: τι κρατά ο server πίσω από το Erevos και για πόσο, τι δεν κρατά, και ποιος άλλος βλέπει κάτι.',
   "**What's new**: this list, in Settings → General, by version.": '**Τι νέο υπάρχει**: αυτή η λίστα, στις Ρυθμίσεις → Γενικά, ανά έκδοση.',
+  "**Nothing shows behind a chat's PIN**: none of the messages of a chat locked with a PIN is drawn until its PIN is typed, and with glass, a wallpaper or a style's own scene, the PIN screen is a dense frost that lets nothing through.":
+    "**Τίποτα δεν φαίνεται πίσω από το PIN μιας συνομιλίας**: κανένα μήνυμα μιας συνομιλίας κλειδωμένης με PIN δεν εμφανίζεται πριν γραφτεί το PIN της, και με γυαλί, ταπετσαρία ή στυλ με δική του σκηνή, η οθόνη του PIN είναι πυκνό παγωμένο τζάμι που δεν αφήνει να φανεί τίποτα.",
+  "**A group video call from the top of the group**: a blue camera beside the green handset, as in a contact's chat.":
+    "**Βιντεοκλήση ομάδας από την κορυφή της ομάδας**: μια μπλε κάμερα δίπλα στο πράσινο ακουστικό, όπως στη συνομιλία με μια επαφή.",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Το κουμπί απλής κλήσης για περισσότερες επαφές**: το πορτοκαλί πληκτρολόγιο πάνω στη συνομιλία μιας επαφής παίρνει και τον αριθμό της επαφής με την οποία τη συνέδεσες (**Σύνδεση με μια επαφή μου**), πρώτα το κινητό.',

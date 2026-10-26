@@ -11,6 +11,10 @@ export const whatsNew: Record<string, string> = {
   '[Transparency](#transparency), a new part of the guide: what the server behind Erevos keeps and for how long, what it does not keep, and who else sees something.':
     '[Transparence](#transparency), une nouvelle partie du guide : ce que le serveur derrière Erevos garde et combien de temps, ce qu’il ne garde pas, et qui d’autre voit quelque chose.',
   "**What's new**: this list, in Settings → General, by version.": '**Nouveautés** : cette liste, dans Réglages → Général, par version.',
+  "**Nothing shows behind a chat's PIN**: none of the messages of a chat locked with a PIN is drawn until its PIN is typed, and with glass, a wallpaper or a style's own scene, the PIN screen is a dense frost that lets nothing through.":
+    "**Rien ne se voit derrière le code PIN d’une discussion** : aucun message d’une discussion verrouillée par un code PIN n’est affiché avant que son code PIN soit saisi, et avec le verre, un fond d’écran ou un style qui dessine sa propre scène, l’écran du code PIN est un givre dense qui ne laisse rien voir.",
+  "**A group video call from the top of the group**: a blue camera beside the green handset, as in a contact's chat.":
+    "**Un appel vidéo de groupe en haut du groupe** : une caméra bleue à côté du combiné vert, comme dans la discussion avec un contact.",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Le bouton d’appel mobile pour plus de contacts** : le clavier orange en haut de la discussion d’un contact prend aussi le numéro du contact auquel tu l’as associé (**Associer à un de mes contacts**), le mobile en premier.',

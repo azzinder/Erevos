@@ -11,6 +11,10 @@ export const whatsNew: Record<string, string> = {
   '[Transparency](#transparency), a new part of the guide: what the server behind Erevos keeps and for how long, what it does not keep, and who else sees something.':
     '[Transparentnost](#transparency), novi dio vodiča: šta server iza Erevosa čuva i koliko dugo, šta ne čuva i ko još nešto vidi.',
   "**What's new**: this list, in Settings → General, by version.": '**Šta je novo**: ovaj popis, po verzijama, u „Postavke → Općenito“.',
+  "**Nothing shows behind a chat's PIN**: none of the messages of a chat locked with a PIN is drawn until its PIN is typed, and with glass, a wallpaper or a style's own scene, the PIN screen is a dense frost that lets nothing through.":
+    "**Iza PIN-a razgovora ništa se ne vidi**: nijedna poruka razgovora zaključanog PIN-om ne prikazuje se dok se ne upiše njegov PIN, a uz staklo, pozadinu ili stil s vlastitom scenom, ekran PIN-a je gusto mutno staklo kroz koje se ništa ne vidi.",
+  "**A group video call from the top of the group**: a blue camera beside the green handset, as in a contact's chat.":
+    "**Grupni video poziv s vrha grupe**: plava kamera pored zelene slušalice, kao u razgovoru s kontaktom.",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Dugme za običan poziv za više kontakata**: narandžasta tastatura na vrhu razgovora s kontaktom uzima i broj kontakta s kojim ste ga povezali (**Poveži s jednim od mojih kontakata**), prvo broj mobilnog.',

@@ -945,12 +945,14 @@ out members.
   they delete it.
 - **Leaving:** **Leave the group** asks the admin, whose phone takes you out the next time Erevos is open there. The
   admin's own button is **Close the group**: it takes every member out.
-- **Group calls:** the green handset at the top of the group starts a voice call in it, and **Video call** under **⋯** a video call. It rings on the members' phones
-  where Erevos is open, and whoever answers is in it. A call going on shows at the top of the group, to join it
-  later. Up to eight people: each phone connects to each other one, through the call relay, so no phone sees another's
-  IP address; without a call relay, only on the same Wi-Fi. End-to-end encrypted between each two phones, their keys
-  sent in the group's encryption. In a video call each phone sends its picture to each other one, so pictures show
-  for up to four people; with more, they pause and the sound goes on, until a server for bigger video calls is set up.
+- **Group calls:** the green handset at the top of the group starts a voice call in it, and the blue camera beside it
+  a video call (also **Video call** under **⋯**). While one is going on, only its own button shows, to join it. It
+  rings on the members' phones where Erevos is open, and whoever answers is in it. A call going on shows at the top of
+  the group, to join it later. Up to eight people: each phone connects to each other one, through the call relay, so
+  no phone sees another's IP address; without a call relay, only on the same Wi-Fi. End-to-end encrypted between each
+  two phones, their keys sent in the group's encryption. In a video call each phone sends its picture to each other
+  one, so pictures show for up to four people; with more, they pause and the sound goes on, until a server for bigger
+  video calls is set up.
 - **Photos, files and voice messages:** **+** beside the field sends a photo or a file, as in a contact's chat,
   with the same **Photo quality**; hold the microphone while you talk, and let go to send. Each is encrypted with a key of
   its own and put on your relay once, and only where it is and its key go to the group, in its encryption. Each
@@ -1689,6 +1691,8 @@ its PIN.
 
 - **Opening it:** it asks for the PIN. It locks again once you leave it, open another chat, or Erevos is away more
   than half a minute (as the password lock).
+- **Behind the PIN** nothing of the chat shows: none of its messages is drawn until the PIN is typed, and with glass,
+  a wallpaper or a style's own scene, the PIN screen lies on a dense frost that lets nothing through.
 - **In the list** it shows its name with a lock and **Locked with a PIN**, nothing of its messages, nor in the
   search, in **Starred messages** or in **Imported chats**. The notice says only **New message**, as for every chat.
 - **Wrong PINs** are counted on the phone, for every chat at once and apart from the lock screen's: after five, the

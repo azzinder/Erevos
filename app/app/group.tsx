@@ -14,7 +14,7 @@ import { PasswordSheet } from '../components/PasswordSheet';
 import { KeyFace } from '../components/key-face';
 import { LinkedText } from '../components/linked-text';
 import { usePublicGroup } from '../components/public-group';
-import { PhoneSign, ShortcutTile } from '../components/shortcut-tile';
+import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
 import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from '../components/ui';
 import { choose, confirm } from '../lib/alert';
@@ -71,6 +71,8 @@ const upperFirst = (text: string) => {
 };
 // The touch area around a control under a member's name: the line is short, the finger is not.
 const TALL = { top: 14, bottom: 14, left: 8, right: 8 };
+// The messages drawn while a group's PIN is asked for.
+const NONE: GroupMessage[] = [];
 const askBody = () => t('Only you see this. Send yours if you know who they are: you become each other’s contacts. If you don’t, they are not told.');
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -115,10 +117,16 @@ export default function GroupScreen() {
   // The name a member's picture takes its letter from: none for one who is not a named contact, as
   // "member 1a2b…" would give each the same letter.
   const faceName = (identity: string) => (pub.isPublic ? pub.name(identity) : (contacts.find((c) => c.identity === identity)?.name ?? ''));
+  // A group locked with a PIN of its own (lock/chat-pin.ts) shows only once its PIN is typed, until
+  // it closes or Erevos was away more than RELOCK_MS. Meanwhile it is not read, and none of its
+  // messages is drawn: nothing of it lies under the gate (ChatPinGate).
+  const [unlocked, setUnlocked] = useState(false);
+  const gated = !!info?.locked && !unlocked;
+  const shown = gated ? NONE : messages;
   // Replies, reactions, pins, stickers, places, polls and the rest: the menu, sheets, and bubble parts.
-  const parts = useGroupMessages({ id, info, messages, name, onNote: setNote, scroll, at, draft });
+  const parts = useGroupMessages({ id, info, messages: shown, name, onNote: setNote, scroll, at, draft });
   // Photos, files and voice messages: the panel under the bar, the microphone, sheets, and their place in the bubbles.
-  const media = useGroupMedia(id, messages, setNote, parts.attachMore);
+  const media = useGroupMedia(id, shown, setNote, parts.attachMore);
 
   // A photo or file shared from another app goes as the group opens (lib/share-in.ts).
   useEffect(() => {
@@ -126,9 +134,6 @@ export default function GroupScreen() {
     if (shared) media.sendShared(shared);
   }, [id]);
 
-  // A group locked with a PIN of its own (lock/chat-pin.ts) shows only once its PIN is typed, until
-  // it closes or Erevos was away more than RELOCK_MS. Meanwhile it is not read.
-  const [unlocked, setUnlocked] = useState(false);
   const opened = useRef(false);
   opened.current = unlocked;
   useEffect(() => {
@@ -142,7 +147,6 @@ export default function GroupScreen() {
     });
     return () => subscription.remove();
   }, []);
-  const gated = !!info?.locked && !unlocked;
   const [pinAsk, setPinAsk] = useState<'on' | 'off' | null>(null);
   const lock = useLock();
   // Opened with its PIN, it keeps out of screenshots and the recent apps preview, as hidden chats do.
@@ -370,8 +374,18 @@ export default function GroupScreen() {
               </View>
             </View>
           </Pressable>
-          {out ? null : (
-            <ShortcutTile label={going ? (going.video ? t('A group video call is going on · Join') : t('A group call is going on · Join')) : t('Voice call')} tint="green" onPress={() => void call(false)}>
+          {/* A video call and a voice call, as in a contact's chat; one going on is joined as it is, by its own tile alone. */}
+          {out || going ? null : (
+            <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
+              <VideoSign />
+            </ShortcutTile>
+          )}
+          {out ? null : going?.video ? (
+            <ShortcutTile label={t('A group video call is going on · Join')} tint="blue" onPress={() => void call(true)}>
+              <VideoSign />
+            </ShortcutTile>
+          ) : (
+            <ShortcutTile label={going ? t('A group call is going on · Join') : t('Voice call')} tint="green" onPress={() => void call(false)}>
               <PhoneSign />
             </ShortcutTile>
           )}
@@ -429,7 +443,7 @@ export default function GroupScreen() {
           onScroll={onScroll}
           scrollEventThrottle={100}
         >
-          {messages.map((m, i) => {
+          {shown.map((m, i) => {
             if (m.note) {
               return (
                 <Text key={i} variant="caption" tone="muted" style={styles.noteLine}>
@@ -438,7 +452,7 @@ export default function GroupScreen() {
               );
             }
             const mine = !m.from;
-            const before = messages[i - 1];
+            const before = shown[i - 1];
             const first = !before || before.note || before.from !== m.from;
             const ink = mine ? b.mineText : b.theirsText;
             const caption = parts.caption(m);
