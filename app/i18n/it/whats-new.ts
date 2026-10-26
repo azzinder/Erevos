@@ -6,6 +6,7 @@ export const whatsNew: Record<string, string> = {
   'Not out yet': 'Non ancora uscita',
   'This version': 'Questa versione',
   // Not out yet.
+  // 3.4.0
   '**Your relay proves its own key**: every connection to it starts with a check only the relay holding that key can pass, so no one in between can pass for it. Once it has, Erevos never reaches it without the check. Your relay needs an update for it.':
     '**Il tuo relay dimostra la sua chiave**: ogni connessione inizia con un controllo che solo il relay con quella chiave può superare, così nessuno nel mezzo può spacciarsi per lui. Dopo averla dimostrata, Erevos non lo raggiunge più senza il controllo. Per questo il tuo relay va aggiornato.',
   '[Transparency](#transparency), a new part of the guide: what the server behind Erevos keeps and for how long, what it does not keep, and who else sees something.':

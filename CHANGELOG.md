@@ -10,6 +10,8 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+## 3.4.0 (2026-10-26)
+
 - **Two new sticker sets of 24 moods, as emoji are**: **Tux**, the penguin of Linux as he is
   drawn (the CC0 drawing of the logos collection), and **Aikido**, an aikidoka in keikogi and a
   wide pleated hakama (who also bows, sits calm in seiza, holds a bokken and rolls). Both move a
