@@ -1,0 +1,7 @@
+# One Rust for every build, so that the same commit builds the same files on any machine
+# (docs/reproducible-builds.md). Move it forward by hand, in its own commit.
+[toolchain]
+channel = "1.99.1"
+profile = "minimal"
+components = ["clippy"]
+targets = ["wasm32-unknown-unknown", "aarch64-linux-android", "x86_64-linux-android"]

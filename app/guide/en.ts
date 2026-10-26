@@ -2045,7 +2045,8 @@ send changed code. Erevos does not take that code on trust:
 - An update is taken only if it is signed with the same key and newer than the one in use; it starts the next time
   Erevos opens. An unsigned or older one is refused, and Erevos says so.
 - Whoever wants to can check the server: \`node pwa/release.mjs verify https://<address>\` checks the signature and
-  every file the server gives out.
+  every file the server gives out, and \`scripts/reproduce-web.sh <version> https://<address>\` builds that release again
+  from its source and checks that every file comes out the same.
 
 **What is left.** These are real limits; know them:
 

@@ -10,6 +10,11 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **The web app can be built again and checked**: `scripts/reproduce-web.sh <version>` builds a release's web app
+  from its commit and checks that every file comes out the same as the published one, and as what the web server
+  serves (docs/reproducible-builds.md). The published 3.3.2 does, all 78 files. One Rust version for every build
+  (`rust-toolchain.toml`), and no paths of the build machine in the core any more.
+
 - **The relay proves its own key**: once Erevos knows your relay's key, every connection to it starts with a check that
   only the relay holding that key can pass, and the token and everything after it go encrypted to that key, inside
   TLS. So someone in between with a certificate for the relay's name cannot pass for it, and a renewed certificate
