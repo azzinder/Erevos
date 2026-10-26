@@ -33,10 +33,14 @@ test('a relay with no queue, Nostr, or nothing: each says what is missing and wh
   assert.deepEqual([nostr.reach, nostr.title, nostr.detail], ['part', 'Through Nostr, with no relay', undefined]);
   assert.match(nostr.line, /need a relay: choose a way in below/);
   assert.deepEqual([connectReach(NONE).reach, connectReach(NONE).title], ['none', 'Only nearby, for now']);
-  // Hidden chats with no relay are told where to type one, not to choose a way in.
-  const hidden = connectReach({ ...NONE, hidden: true, nostr: true });
+  // Hidden chats with no relay are told where to type one, not to choose a way in; with Nostr they
+  // reach their contacts there meanwhile, as the space's chats do.
+  const hidden = connectReach({ ...NONE, hidden: true });
   assert.deepEqual([hidden.reach, hidden.title], ['none', 'No relay yet']);
   assert.match(hidden.line, /For advanced users/);
+  const hiddenNostr = connectReach({ ...NONE, hidden: true, nostr: true });
+  assert.deepEqual([hiddenNostr.reach, hiddenNostr.title], ['part', 'Through Nostr, with no relay']);
+  assert.match(hiddenNostr.line, /calls need a relay: type its address under For advanced users/);
 });
 
 test('a linked device says it goes through the phone, with no address of its own', async () => {

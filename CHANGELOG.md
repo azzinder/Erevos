@@ -79,6 +79,10 @@ On main, not released yet:
 - **Hidden chats that receive while closed read Nostr too**: what their contacts send through Nostr is read while the
   place is closed, as what comes through their relay, and the sender sees at once that it came. In hidden chats, a
   contact can also be added from a photo of their QR code, and a hidden contact can be given a photo.
+- **Hidden chats with no relay, through Nostr**: as the space's chats with no relay, their contact link and QR code
+  say where they read on Nostr, with a key of that place alone, and texts, reactions, what waited and the marks that a
+  message came go there, while they are open or, with **Receive while closed** on, closed. Photos, voice messages and
+  calls still need a relay.
 - **A deleted or blocked contact's queue goes at once**, not with the next look at the relay.
 
 ## 3.3.2 (2026-10-25)

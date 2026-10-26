@@ -134,6 +134,7 @@ import {
   receiveMessage,
   redeemInvite,
   relayKey,
+  RelayUnreachableError,
   sameRelay,
   sendMessage,
   takeOwnLine,
@@ -997,7 +998,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       if (target) await sendPending(e2e, target);
       // With no relay between the two, the first message goes through Nostr when they read there, in
       // a quiet message with nothing in it: their phone has this contact then too (lib/nostr-chats.ts).
-      const onNostr = !hiddenKey && (!target || !code.senderHex) && e2e.readsOnNostr(identity);
+      const onNostr = (!target || !code.senderHex) && e2e.readsOnNostr(identity);
       if (onNostr) await sendToContact(target, identity, '', {}, true).catch(() => undefined);
       const nearbyOnly = !onNostr && (!target || !code.senderHex);
       // Connected as it was added, from the screen a scanned link opens: said after the note.
@@ -1939,17 +1940,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // With no relay queue, what goes through Nostr to the contacts it is the only way to (lib/nostr-chats.ts
   // nostrOnlyWay), while Tor is ready: what waited, the marks that messages came and were read, new
-  // prekeys, and what is due there again. What comes there is read as with a relay (takeNostr).
+  // prekeys, and what is due there again. What comes there is read as with a relay (takeNostr). In
+  // hidden chats too, which have no relay then either.
   const nostrLook = useRef(() => Promise.resolve());
   nostrLook.current = async () => {
-    if (!e2e || hiddenKey || !nostrReady()) return;
+    if (!e2e || !nostrReady()) return;
     await sendKeys(null);
     await sendNostrAgain(e2e);
     await sendWaitingNow.current(false);
     await sendReceipts(null);
   };
   useEffect(() => {
-    if (!e2e || hiddenKey || (relayUrl.trim() && ownQueue)) return;
+    if (!e2e || (relayUrl.trim() && ownQueue)) return;
     let active = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
     function next() {
@@ -2679,7 +2681,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // the last packet saying what they carry (`mark`, lib/relay.ts), or, sealed on a linked device for
   // the account's phone, where all goes, quiet (sentMark). When neither, and they went to the phones
   // nearby, those phones may carry them to the contact's relay too (`carried`). Hidden chats go
-  // through the relay only (lib/waiting.ts handOverHidden). Once they went, the copies for the
+  // through the relay only, or Nostr with no relay between the two (lib/waiting.ts handOverHidden).
+  // Once they went, the copies for the
   // endpoints of the contact's account go too (lib/e2e.ts copiesAfter), and, with `waits`, also once
   // the relay could take them only later, as what is tried again as it is goes to those endpoints
   // once: in hidden chats it then throws OwedError, owed to the contact's phone.
@@ -2960,8 +2963,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Why a message could not go now: `lora`, what LoRa says of it, when LoRa was the only way.
   function waitingReason(error: unknown, peer: string, lora: string): string {
-    // Hidden chats go through the relay only.
-    if (hiddenKey) return relayTarget() ? t('The relay cannot be reached.') : t('There is no relay.');
+    // Hidden chats go through the relay only, or Nostr, which says why it could not take it.
+    if (hiddenKey) return relayTarget() ? t('The relay cannot be reached.') : error instanceof RelayUnreachableError ? error.message : t('There is no relay.');
     if (error instanceof TooLargeForLoraError) return `${lora} ${relayTarget() ? t('The relay cannot be reached.') : t('There is no relay.')}`;
     const name = label(peer, contacts);
     return relayTarget()
@@ -3003,10 +3006,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   sendWaitingNow.current = async (relayUp) => {
     const kept = history.current;
     if (!e2e || !kept) return [];
-    if (hiddenKey) {
-      if (!relayUp) return [];
-      await owed.current.retry(e2e, relayTarget()).catch(() => undefined);
-    }
+    // With the relay down, hidden chats' wait, but for what goes through Nostr.
+    if (hiddenKey && relayUp) await owed.current.retry(e2e, relayTarget()).catch(() => undefined);
     const went = await sendWaiting({ e2e, history: kept }, waitingPlace(relayUp)).catch(() => [] as Went[]);
     if (went.length > 0) {
       setMessages((list) =>
@@ -4478,7 +4479,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // settings may have changed meanwhile.
   const [linkNostr, setLinkNostr] = useState<NostrCode | null>(null);
   useEffect(() => {
-    if (!e2e || hiddenKey || !focused) return;
+    if (!e2e || !focused) return;
     let active = true;
     e2e
       .linkNostr()
@@ -4590,9 +4591,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           relayKey: ownRelayKey || undefined,
           spare: linkSpare(linkQueue?.senderHex ?? '', ownQueue.senderHex, spareCode(e2e.spare())),
           lend: ownTicket || undefined,
-          nostr: (!hiddenKey && linkNostr) || undefined,
+          nostr: linkNostr || undefined,
         })
-      : hiddenKey
+      : hiddenKey && !linkNostr
         ? null
         : contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(e2e.bundle), nostr: linkNostr ?? undefined });
   // A phone with no relay yet, in the space's chats: it starts with an invite, or by signing in,
@@ -4606,7 +4607,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     relayUrl,
     queue: !!ownQueue,
     hidden: !!hiddenKey,
-    nostr: !hiddenKey && !!linkNostr,
+    nostr: !!linkNostr,
     nearby: HAS_LINKS,
     lent: isLentToken(relayToken),
     via: !!viaUrl.trim(),

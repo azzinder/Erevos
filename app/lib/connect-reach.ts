@@ -41,13 +41,15 @@ export function connectReach(c: Connection): { reach: Reach; title: string; line
     return { reach: 'ready', title: t('Through your relay'), line, detail };
   }
   if (host) return { reach: 'part', title: t('Relay set, no queue yet'), line: t('Create your queue on it, so that your contacts can write to you there.'), detail };
-  if (c.hidden) return { reach: 'none', title: t('No relay yet'), line: t('Hidden chats need a relay: type its address under For advanced users, then create their queue.') };
   if (c.nostr) {
     return {
       reach: 'part',
       title: t('Through Nostr, with no relay'),
-      line: t('Texts, stickers and reactions go through Nostr, over Tor. Photos, voice messages, calls and groups need a relay: choose a way in below.'),
+      line: c.hidden
+        ? t('Texts, stickers and reactions go through Nostr, over Tor. Photos, voice messages and calls need a relay: type its address under For advanced users, then create their queue.')
+        : t('Texts, stickers and reactions go through Nostr, over Tor. Photos, voice messages, calls and groups need a relay: choose a way in below.'),
     };
   }
+  if (c.hidden) return { reach: 'none', title: t('No relay yet'), line: t('Hidden chats need a relay: type its address under For advanced users, then create their queue.') };
   return { reach: 'none', title: t('Only nearby, for now'), line: t('Contacts you add reach you over Wi-Fi or Bluetooth when near. To reach them anywhere, choose a way in below.') };
 }

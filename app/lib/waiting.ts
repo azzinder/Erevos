@@ -41,8 +41,10 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // what a screen shows.
 //
 // Hidden chats go through the relay only (handOverHidden, SendPlace.hidden), never nearby or over
-// LoRa: what waits there goes with a look at their relay that answers, while they are open or, when
-// they receive while closed, with the place's (lib/place-receiver.ts). But what the relay could not
+// LoRa, or, with no relay between the two, through Nostr when the contact reads there, as the
+// space's chats do: what waits there goes with a look at their relay that answers, or with a look
+// at Nostr, while they are open or, when they receive while closed, with the place's
+// (lib/place-receiver.ts). But what the relay could not
 // take for a contact's account as their queue is full goes to the endpoints of their account all
 // the same, as from the space's chats: then it shows as sent, and is owed to their account (Owed),
 // tried again in memory only while hidden chats stay open, each contact's in order and longer after
@@ -333,7 +335,7 @@ export async function heldAfter({ e2e, history }: Chats, identity: string, kept:
 function canGo(e2e: E2E, place: SendPlace, identity: string, message: Message): boolean {
   const queue = e2e.queueOf(identity);
   if (!queue) return false;
-  if (place.hidden) return place.relayUp && (!message.file || !!place.own) && throughRelay(place, queue);
+  if (place.hidden) return (place.relayUp && (!message.file || !!place.own) && throughRelay(place, queue)) || (!message.voice && !message.file && throughNostr(e2e, place, identity, queue));
   if (message.file) return !!place.own && place.relayUp && (nearby.isNear(identity) || throughRelay(place, queue));
   return nearby.isNear(identity) || (place.relayUp && throughRelay(place, queue)) || (!message.voice && (nearby.hasSlow() || throughNostr(e2e, place, identity, queue)));
 }
@@ -423,14 +425,19 @@ export type Resealed = { sealed: { sender: string; relay: string; relayKey: stri
 /**
  * Hands what hidden chats sealed for a contact to the relay, through `target`, after the
  * conversation's first packet if the relay has not taken that yet, the last packet saying what they
- * carry (`mark`), and then the copies for the endpoints of their account (lib/e2e.ts copiesAfter).
+ * carry (`mark`), and then the copies for the endpoints of their account (lib/e2e.ts copiesAfter);
+ * with no relay between the two, to Nostr when they read there (lib/nostr-chats.ts nostrOnlyWay).
  * With `waits` (it is to go again as it is, with its tag), those go though the relay said their
  * queue is full, and when there were any, it throws OwedError. Otherwise it throws what failed: one
  * with the relay out of reach, say, is not sent, and copies nothing, as hidden chats keep nothing
  * waiting.
  */
-export async function handOverHidden(e2e: E2E, target: Relay | null, identity: string, { sealed, packets }: Resealed, mark: Mark, waits: boolean): Promise<'relay'> {
-  if (!target || !sealed.sender) throw new Error(t('Type the relay address in Relay first.'));
+export async function handOverHidden(e2e: E2E, target: Relay | null, identity: string, { sealed, packets }: Resealed, mark: Mark, waits: boolean): Promise<'relay' | 'nostr'> {
+  if (!target || !sealed.sender) {
+    const nostr = nostrOnlyWay(e2e, identity, sealed, packets);
+    if (!nostr) throw new Error(t('Type the relay address in Relay first.'));
+    return e2e.copiesAfter(sealed.copies, nostr(), waits && 'full');
+  }
   try {
     const send = orNostr(e2e, target, identity, sealed, packets, () => sendSealed(target, sealed, packets, sentMark(sealed, mark), () => e2e.firstSent(identity)));
     await e2e.copiesAfter(sealed.copies, send(), waits && 'full');

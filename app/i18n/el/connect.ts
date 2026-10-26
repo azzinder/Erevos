@@ -13,6 +13,7 @@ export const connect: Record<string, string> = {
   "Contacts near you reach you with no internet too.": "Οι επαφές κοντά σου σε βρίσκουν και χωρίς ίντερνετ.",
   "Create your queue on it, so that your contacts can write to you there.": "Φτιάξε την ουρά σου σε αυτό, για να σου γράφουν εκεί οι επαφές σου.",
   "Hidden chats need a relay: type its address under For advanced users, then create their queue.": "Οι κρυφές συνομιλίες χρειάζονται relay: γράψε τη διεύθυνσή του στο «Για προχωρημένους» και μετά φτιάξε την ουρά τους.",
+  "Texts, stickers and reactions go through Nostr, over Tor. Photos, voice messages and calls need a relay: type its address under For advanced users, then create their queue.": "Κείμενα, αυτοκόλλητα και αντιδράσεις πηγαίνουν μέσω Nostr, μέσω Tor. Οι φωτογραφίες, τα φωνητικά μηνύματα και οι κλήσεις χρειάζονται relay: γράψε τη διεύθυνσή του στο «Για προχωρημένους» και μετά φτιάξε την ουρά τους.",
   "Texts, stickers and reactions go through Nostr, over Tor. Photos, voice messages, calls and groups need a relay: choose a way in below.": "Κείμενα, αυτοκόλλητα και αντιδράσεις πηγαίνουν μέσω Nostr, μέσω Tor. Οι φωτογραφίες, τα φωνητικά μηνύματα, οι κλήσεις και οι ομάδες χρειάζονται relay: διάλεξε έναν τρόπο παρακάτω.",
   "Contacts you add reach you over Wi-Fi or Bluetooth when near. To reach them anywhere, choose a way in below.": "Οι επαφές που προσθέτεις σε βρίσκουν μέσω Wi-Fi ή Bluetooth όταν είστε κοντά. Για να βρίσκεστε παντού, διάλεξε έναν τρόπο παρακάτω.",
   "lent by a contact": "δανεική θέση από επαφή",

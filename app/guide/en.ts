@@ -1219,7 +1219,8 @@ voice messages through Nostr are still to come.
 - **Hidden chats:** they read on Nostr too, while they are open, and closed as well while **Receive while closed** is
   on for them and the space is open (see [Hidden chats](#hidden)). Closed, they still show "New message": with each
   text through Nostr, your contact also sends your relay a bell, a message that says nothing, which your relay counts
-  as one, as before.
+  as one, as before. With no relay, their contact link and QR code say where they read on Nostr, with a key of that
+  place alone, and texts, reactions and the marks that a message came go there, as from a phone with no relay.
 
 ### With no relay at all {#nostr-only}
 
@@ -1230,7 +1231,8 @@ on Nostr, and that is enough to talk.
   and give it to someone who uses Erevos. Who adds it writes to you through Nostr, over Tor, and shows as a message request,
   which you accept. You can add their link or QR code too, the same way.
 - **What goes:** texts, stickers, reactions, edits, and the marks that a message came or was read, all through Nostr.
-  Photos, voice messages, files, calls, groups and hidden chats need a relay, or the other phone nearby.
+  Photos, voice messages, files, calls and groups need a relay, or the other phone nearby. Hidden chats work so too,
+  through Nostr only (see [Hidden chats](#hidden)).
 - **When it does not come:** the Nostr relays keep a text for two days. Until your contact's phone says it came, Erevos
   gives it to them again once a day, for two weeks.
 - **A relay by itself:** when your contact has a relay that lets them invite, their Erevos sends yours an invite to it
@@ -1663,8 +1665,10 @@ what the places taken away hold.
 5. To move a chat back among the space's chats, open it in the hidden chats, then its **Details**, tap **Move back to
    my chats** and **Move**. It goes with its messages, name, picture and look, and its phone is told where to write.
 
-- **Relay only:** hidden chats have their own relay queue and their own keys, and never use the nearby link. While
-  they are closed, their messages wait on the relay, unless **Receive while closed** is on.
+- **Relay or Nostr only:** hidden chats have their own relay queue and their own keys, and never use the nearby link.
+  With no relay, their contact link says where they read on Nostr, with a key of that place alone, and texts go there,
+  as from a phone with no relay; photos, voice messages and calls need a relay. While they are closed, their messages
+  wait on the relay, or on Nostr for two days, unless **Receive while closed** is on.
 - **Receive while closed:** a switch at the top of each place. On, its hidden chats receive as your other chats do
   while the space is open, whatever screen shows and with Erevos in the background: their contacts see at once that a
   message came, a notice says only "New message", on Android a call rings with "Incoming call" and no name (on the
@@ -1681,11 +1685,11 @@ what the places taken away hold.
 - **While they are open,** a message that comes plays the sound for new messages, as in your other chats. With Erevos
   in the background before they close, a notice says "New message" only if **Receive while closed** or **Say when a
   message comes** is on for that place.
-- **Like your other chats:** what cannot go now waits, marked **Waiting**, through their relay only (see **Waiting**
-  under [Chat through a relay](#relay)), **Send later** works as there, and a chat exported from another app can be
-  imported into a hidden chat's details (see [Imported chats](#import)). A contact can be added from a photo of their
-  QR code there too, taken or picked while they stay open. Each place has its own **Chat with myself**,
-  first in its list (see **Chat with myself and reminders** under [Getting started](#start)).
+- **Like your other chats:** what cannot go now waits, marked **Waiting**, through their relay only, or Nostr with no
+  relay (see **Waiting** under [Chat through a relay](#relay)), **Send later** works as there, and a chat exported
+  from another app can be imported into a hidden chat's details (see [Imported chats](#import)). A contact can be
+  added from a photo of their QR code there too, taken or picked while they stay open. Each place has its own
+  **Chat with myself**, first in its list (see **Chat with myself and reminders** under [Getting started](#start)).
 - **Link previews** have a switch of their own in a hidden chat's details, for all the chats of that place, off unless
   you turn it on (see **Link previews** under [Chat through a relay](#relay)).
 - **Say when a message comes** (Android): at the top of a place while **Receive while closed** is off. Turned on,

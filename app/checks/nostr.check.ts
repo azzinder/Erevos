@@ -32,6 +32,8 @@ import { offerOf } from '../lib/relay-offer';
 import { createQueue, NO_NEWS, receiveMessage, setThroughTor, setTorReady, waitForNews, type Relay } from '../lib/relay';
 import { forgetPlaceChats, placeChats } from '../lib/place-chats';
 import { holdPlace, receivesPocket, startPlaceReceiver } from '../lib/place-receiver';
+import { handOverHidden } from '../lib/waiting';
+import { newTag, WAITING } from '../lock/history';
 import { setAppShown } from '../lib/receiver';
 import { sendSealed } from '../lib/space-chats';
 import { keepPlace, prepareKeepEntries } from '../lock/hidden-keep';
@@ -709,3 +711,63 @@ t('a closed place that receives reads its texts on Nostr too, tells their sender
     setCurrentSpace(null);
   }
 }, true);
+
+t('a hidden place with no relay goes through Nostr as the space does: closed, it reads there, says what came and sends what waited; open, it hands its texts there', async () => {
+  setNostr([ONE]);
+  // Bob's hidden chats in pocket 1 have no relay, their switch on; nor has Alice one.
+  const spaceKey = randomBytes(32);
+  const placeKey = randomBytes(32);
+  setCurrentSpace(0, spaceKey);
+  await prepareKeepEntries();
+  await saveHiddenData(0, 1, placeKey, EMPTY_SPACE);
+  const place = await placeChats(0, 1, placeKey);
+  const bobsLink = (await place.e2e.linkNostr())!;
+  assert.ok(bobsLink, 'hidden chats read on Nostr by their link too');
+  const alice = await chat('space', 5);
+  const { identity: toBob } = await alice.e2e.addContact(parseContact(contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(place.e2e.bundle), nostr: bobsLink }))!, '');
+  const came: Extract<Received, { kind: 'message' }>[] = [];
+  const stopAlice = readNostr(
+    nostrReaderOf(
+      () => alice.e2e,
+      async (packet) => {
+        const received = await alice.e2e.receive(packet);
+        if (received.kind === 'message') came.push(received);
+      },
+    ),
+  );
+  await keepPlace(0, spaceKey, 1, placeKey);
+  setAppShown(true);
+  const stop = startPlaceReceiver(30);
+  const texts = () => place.history.messages().map((m) => [m.text, !!m.nostr]);
+  try {
+    await until(() => receivesPocket(0, 1));
+    const hello = await alice.e2e.seal(toBob, 'hello Bob', '', {});
+    assert.equal(await nostrOnlyWay(alice.e2e, toBob, hello, [hello.packet])!(), 'nostr');
+    await until(() => texts().some(([text, nostr]) => text === 'hello Bob' && nostr));
+    const toAlice = place.e2e.contacts()[0].identity;
+    // A message request hears nothing back until accepted; then, closed, the place says through
+    // Nostr what came, and Alice's phone sends it there again no more.
+    await place.e2e.acceptRequest(toAlice);
+    const again = await alice.e2e.seal(toBob, 'again', '', {});
+    assert.equal(await nostrOnlyWay(alice.e2e, toBob, again, [again.packet])!(), 'nostr');
+    await until(() => !alice.e2e.nostrAgainDue(Date.now() + NOSTR_AGAIN_MS).some((due) => due.tag === again.tag));
+    assert.ok(texts().some(([text, nostr]) => text === 'again' && nostr));
+
+    // What waited in the hidden chat goes there too, while the place is closed.
+    await place.history.add({ peer: `contact:${toAlice}`, text: 'waited', mine: true, at: Date.now(), tag: newTag(), mark: WAITING });
+    await until(() => came.some((m) => m.text === 'waited'));
+
+    // Open, the chat screen hands its texts to Nostr, with no relay to go through.
+    const release = await holdPlace(0, 1);
+    const sealed = await place.e2e.seal(toAlice, 'hi Alice', '', {});
+    assert.equal(await handOverHidden(place.e2e, null, toAlice, { sealed: { ...sealed, spare: sealed.spare ?? null }, packets: [sealed.packet] }, 'message', false), 'nostr');
+    await until(() => came.some((m) => m.text === 'hi Alice'));
+    release();
+  } finally {
+    stop();
+    stopAlice();
+    (await holdPlace(0, 1))();
+    forgetPlaceChats();
+    setCurrentSpace(null);
+  }
+});

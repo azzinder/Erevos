@@ -27,6 +27,8 @@ export const whatsNew: Record<string, string> = {
     "**Los chats ocultos en una lista como tus chats**: se abren en una lista como la de la pantalla de inicio, con lo último que se dijo y cuántos no se han leído, y cada posición tiene arriba su propio Chat conmigo. Consulta [Chats ocultos](#hidden).",
   "**More in hidden chats**: with Receive while closed on, what comes to them through Nostr is read while they are closed too; and there a contact can be added from a photo of their QR code, and a hidden contact given a photo. See [Hidden chats](#hidden).":
     "**Más en los chats ocultos**: con Recibir estando cerrados, lo que les llega por Nostr también se lee mientras están cerrados; y allí se puede añadir un contacto desde una foto de su código QR y dar una foto a un contacto oculto. Consulta [Chats ocultos](#hidden).",
+  "**Hidden chats with no relay**: as your other chats, they can begin through Nostr only: their contact link and QR code say where they read there, and texts and reactions go there. See [Hidden chats](#hidden).":
+    "**Chats ocultos sin relay**: como tus otros chats, pueden empezar solo por Nostr: su enlace de contacto y su código QR dicen dónde leen allí, y los textos y las reacciones van allí. Consulta [Chats ocultos](#hidden).",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**El botón de llamada normal, en más contactos**: el teclado naranja de arriba en el chat de un contacto también usa el número del contacto al que lo vinculaste (**Vincular a uno de mis contactos**), primero el móvil.',

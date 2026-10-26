@@ -13,6 +13,7 @@ export const connect: Record<string, string> = {
   "Contacts near you reach you with no internet too.": "Contatos perto de você também te alcançam sem internet.",
   "Create your queue on it, so that your contacts can write to you there.": "Crie sua fila nele, para que seus contatos possam escrever para você lá.",
   "Hidden chats need a relay: type its address under For advanced users, then create their queue.": "Conversas ocultas precisam de um relay: digite o endereço dele em “Para usuários avançados” e depois crie a fila delas.",
+  "Texts, stickers and reactions go through Nostr, over Tor. Photos, voice messages and calls need a relay: type its address under For advanced users, then create their queue.": "Textos, figurinhas e reações vão pelo Nostr, via Tor. Fotos, mensagens de voz e chamadas precisam de um relay: digite o endereço dele em “Para usuários avançados” e depois crie a fila delas.",
   "Texts, stickers and reactions go through Nostr, over Tor. Photos, voice messages, calls and groups need a relay: choose a way in below.": "Textos, figurinhas e reações vão pelo Nostr, via Tor. Fotos, mensagens de voz, chamadas e grupos precisam de um relay: escolha um jeito abaixo.",
   "Contacts you add reach you over Wi-Fi or Bluetooth when near. To reach them anywhere, choose a way in below.": "Os contatos que você adiciona te alcançam por Wi-Fi ou Bluetooth quando estão perto. Para se alcançarem em qualquer lugar, escolha um jeito abaixo.",
   "lent by a contact": "emprestado por um contato",

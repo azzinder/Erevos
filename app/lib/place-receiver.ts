@@ -12,8 +12,8 @@ import { toBase64Url, type Received } from './e2e';
 import { sendCopies } from './fanout';
 import { isGroupPacket } from './groups';
 import { hiddenRinging, setHiddenRinging } from './hidden-ring';
-import { nostrKeysChanged, readNostr } from './nostr';
-import { nostrReaderOf } from './nostr-chats';
+import { nostrKeysChanged, nostrReady, readNostr } from './nostr';
+import { nostrReaderOf, sendNostrAgain } from './nostr-chats';
 import { forgetPlaceChats, placeChats } from './place-chats';
 import { QueueMove, tookOf, type Took } from './queue-move';
 import {
@@ -73,6 +73,8 @@ type Run = {
   chats: SpaceChats | null;
   unlisten: (() => void) | null;
   nostrTurn: Promise<void>;
+  // No relay queue at the last look: what is said back goes through Nostr.
+  relayless: boolean;
 };
 
 type Held = { received: Extract<Received, { kind: 'message' }>; timer: ReturnType<typeof setTimeout> | null };
@@ -248,7 +250,7 @@ async function openNostrPlace(run: Run, bytes: Uint8Array): Promise<void> {
   const came = cameBefore(chats, received);
   await keepWith(chats, received, run.state, true);
   if (came) await heard(run, chats, came);
-  if (run.state.place) await sendReceipts(chats, run.state.place, run.state);
+  if (run.state.place || run.relayless) await sendReceipts(chats, run.state.place, run.state);
 }
 
 function startRun(space: number, pocket: number, key: Uint8Array, every?: number): Run {
@@ -267,6 +269,7 @@ function startRun(space: number, pocket: number, key: Uint8Array, every?: number
     chats: null,
     unlisten: null,
     nostrTurn: Promise.resolve(),
+    relayless: false,
   };
   const held = () => (holds.get(pocket) ?? 0) > 0;
   const next = () => {
@@ -324,28 +327,36 @@ function placeMover(run: Run, chats: SpaceChats, own: Relay): QueueMove {
 
 // One look at a place's queue, as the receiver's at the space's (lib/receiver.ts lookOnce), with
 // what hidden chats have: no groups, no phones nearby, no SMS. What comes on Nostr is read apart.
+// With no relay queue, what goes through Nostr goes, as the receiver's nostrLook does.
 async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   if (!hasCore()) return;
   const { space, pocket, key, state } = run;
   const data = await loadHiddenData(space, pocket, key);
-  const url = data.url.trim();
-  if (!url || !data.ownQueue) return;
-  const own: Relay = { url, token: data.token.trim() || undefined };
-  const sends = relayFor(url, data.token, data.via, data.viaToken, spareBackup(run.spare)) ?? own;
-  const was = state.place && state.place.own.url === url ? state.place : null;
-  let place: ReceivePlace = { own, sends, queue: data.ownQueue, here: was?.here ?? { relay: url, relayKey: '' }, keyAsked: was?.keyAsked ?? !canRelaySeal() };
-  // Contacts on other relays reach the place through its relay's key, said with every message.
-  if (!place.keyAsked) {
-    const found = await relayKey(own).catch(() => undefined);
-    if (found !== undefined) place = { ...place, here: { ...place.here, relayKey: found ? toBase64Url(found) : '' }, keyAsked: true };
-  }
-  state.place = place;
   const chats = await placeChats(space, pocket, key);
   if (!run.chats) {
     run.chats = chats;
     // Its Nostr keys are known now: the relays there are asked for them.
     nostrKeysChanged();
   }
+  if (stop()) return;
+  const url = data.url.trim();
+  const queue = data.ownQueue;
+  run.relayless = !url || !queue;
+  if (!url || !queue) {
+    state.place = null;
+    await nostrLookPlace(chats, state);
+    return;
+  }
+  const own: Relay = { url, token: data.token.trim() || undefined };
+  const sends = relayFor(url, data.token, data.via, data.viaToken, spareBackup(run.spare)) ?? own;
+  const was = state.place && state.place.own.url === url ? state.place : null;
+  let place: ReceivePlace = { own, sends, queue, here: was?.here ?? { relay: url, relayKey: '' }, keyAsked: was?.keyAsked ?? !canRelaySeal() };
+  // Contacts on other relays reach the place through its relay's key, said with every message.
+  if (!place.keyAsked) {
+    const found = await relayKey(own).catch(() => undefined);
+    if (found !== undefined) place = { ...place, here: { ...place.here, relayKey: found ? toBase64Url(found) : '' }, keyAsked: true };
+  }
+  state.place = place;
   if (stop()) return;
   await sendPending(chats, place.sends);
   await sendKeys(chats, place);
@@ -403,6 +414,16 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   }
   await sendReceipts(chats, here, state);
   await sendCopies(chats.e2e, here.sends).catch(() => 0);
+}
+
+// With no relay queue: to the contacts Nostr is the only way to (lib/nostr-chats.ts), while Tor is
+// ready, the place's new prekeys, what is due there again, what waited and what is to be said back.
+async function nostrLookPlace(chats: SpaceChats, state: ReceiveState): Promise<void> {
+  if (!nostrReady()) return;
+  await sendKeys(chats, null);
+  await sendNostrAgain(chats.e2e);
+  await sendWaiting(chats, { sends: null, own: null, senderHex: '', here: { relay: '', relayKey: '' }, ownKey: '', relayUp: false, hidden: true }).catch(() => []);
+  await sendReceipts(chats, null, state);
 }
 
 // What a message that came to a closed place says to the screens. A call is held for the place to
