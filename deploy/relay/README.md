@@ -532,6 +532,7 @@ which. The ones below are all optional.
 | `EREVOS_RELAY_FILES_MB` | 1024 | Room for chunks of files, all together. |
 | `EREVOS_RELAY_MAX_CONNECTIONS` | 512 | Connections at once. |
 | `EREVOS_RELAY_MAX_TOKENLESS_CONNECTIONS` | 128 | Of those, connections at once on `/sealed`, `/files` and `/join`. |
+| `EREVOS_RELAY_MAX_READING_CONNECTIONS` | 256 | Of those, connections at once on `/read`, where phones read their queues, a group of contacts on each, with no token. |
 | `EREVOS_RELAY_PRIVATE_PEERS` | `deny` | `allow` lets forwards go to relays at private addresses. |
 | `EREVOS_RELAY_MAX_QUEUES` | 100000 | Queues the relay holds. |
 | `EREVOS_RELAY_QUEUE_DAYS` | 180 | Days a queue lasts once its phone stops using it. |

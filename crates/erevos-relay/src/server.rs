@@ -30,6 +30,21 @@
 //!   cannot read then, as hidden chats' while they are closed, and nothing of
 //!   word between phones. Kept in memory only: after a restart what waits
 //!   counts as one send that did not say. Older relays close the connection.
+//! - `WAIT_ANY`: a 1-byte count of queues, 1 to `MAX_ANY`, that many
+//!   recipient ids, then 1 byte: seconds to wait, at most `MAX_WAIT`. Reply:
+//!   `OK`, then a byte for each queue in the same order: 1 when a message
+//!   waits in it, 2 when there is no such queue, 0 otherwise. It comes as
+//!   soon as one of them is not 0, or when the time is up. So a phone with a
+//!   queue for each contact waits on them all, or on a group of them, at the
+//!   cost of one `WAIT`. Older relays close the connection.
+//! - `NEWS_ANY`: a 1-byte count of queues, 1 to `MAX_ANY`, then for each its
+//!   recipient id and what the phone last heard of it (16 bytes, as for
+//!   `NEWS`), then 1 byte: seconds to wait, at most `MAX_WAIT`. Reply: `OK`,
+//!   then for each queue in the same order a byte, 0, or 2 when there is no
+//!   such queue, and its 16 bytes as they are now (zeros for one that is
+//!   not). It comes as soon as one of them differs from what the phone heard,
+//!   or is not there, or when the time is up. Older relays close the
+//!   connection.
 //! - `DELETE`: recipient id.
 //! - `KEY`: no fields. Reply: the relay's public key (32 bytes) for sealed
 //!   sends, or `NOT_FOUND` if it has none.
@@ -171,6 +186,15 @@
 //! the chunk id is what guards a chunk, and takes only `FILE_GET` and
 //! `FILE_DELETE`.
 //!
+//! Reading (`/read`): the path needs no token, and takes only `RECEIVE`,
+//! `WAIT`, `NEWS`, `WAIT_ANY` and `NEWS_ANY`, which act only on a queue whose
+//! recipient id the phone gives, so knowing the id is what lets it read, as
+//! the chunk id guards a chunk on `/files`. A phone with a queue for each
+//! contact reads them there, in groups over connections of their own (each
+//! through its own way through Tor), so the token, which names the phone,
+//! does not tie its queues together. It still makes them, sends and deletes
+//! with its token. `limits.reading` connections may read at once.
+//!
 //! Invites (see `invites.rs`): a connection whose token is on a line of the
 //! file of tokens may ask for invites; one with the relay's own token may
 //! not, but may ask for a line of its own (`OWN`) and then invite with it.
@@ -298,6 +322,7 @@ pub struct Shared {
     /// token.
     connections: Arc<AtomicUsize>,
     tokenless: Arc<AtomicUsize>,
+    reading: Arc<AtomicUsize>,
 }
 
 pub type SharedStore = Arc<Shared>;
@@ -307,6 +332,10 @@ pub const DEFAULT_MAX_CONNECTIONS: usize = 512;
 /// Of those, connections on the paths that need no token unless set
 /// (`EREVOS_RELAY_MAX_TOKENLESS_CONNECTIONS`).
 pub const DEFAULT_MAX_TOKENLESS: usize = 128;
+/// Of all, connections on the path that reads with no token unless set
+/// (`EREVOS_RELAY_MAX_READING_CONNECTIONS`): a phone with many contacts reads
+/// on a few at once.
+pub const DEFAULT_MAX_READING: usize = 256;
 /// How long a connection may send nothing before it is closed. The app never
 /// leaves one quiet for long: most of its connections carry one request and
 /// close once it is answered, a `WAIT` too (the relay waits then, not the
@@ -335,6 +364,9 @@ pub struct Limits {
     /// Of those, connections at once on the paths that need no token
     /// (`/sealed`, `/files` and `/join`).
     pub tokenless: usize,
+    /// Of those, connections at once on `/read`, which needs no token
+    /// either: counted apart, as phones keep some open there all the time.
+    pub reading: usize,
     /// See `IDLE_TIMEOUT`.
     pub idle: Duration,
     /// See `HANDSHAKE_TIMEOUT`.
@@ -350,6 +382,7 @@ impl Default for Limits {
         Limits {
             connections: DEFAULT_MAX_CONNECTIONS,
             tokenless: DEFAULT_MAX_TOKENLESS,
+            reading: DEFAULT_MAX_READING,
             idle: IDLE_TIMEOUT,
             handshake: HANDSHAKE_TIMEOUT,
             private_peers: false,
@@ -415,6 +448,7 @@ impl Shared {
             limits,
             connections: Arc::new(AtomicUsize::new(0)),
             tokenless: Arc::new(AtomicUsize::new(0)),
+            reading: Arc::new(AtomicUsize::new(0)),
         })
     }
 
@@ -467,6 +501,8 @@ pub const SIGN_IN: u8 = 25;
 pub const CLAIM: u8 = 26;
 pub const NEWS: u8 = 27;
 pub const OWN: u8 = 28;
+pub const WAIT_ANY: u8 = 29;
+pub const NEWS_ANY: u8 = 30;
 
 /// The marks a send may end with (see the module's doc).
 pub const MESSAGE: u8 = 1;
@@ -498,8 +534,12 @@ impl Mark {
 
 /// The longest a `WAIT` lasts, seconds.
 pub const MAX_WAIT: u8 = 60;
+/// Most queues one `WAIT_ANY` or `NEWS_ANY` asks of.
+pub const MAX_ANY: usize = 64;
 
 pub const OK: u8 = 0;
+/// In a reply to `WAIT_ANY` or `NEWS_ANY`: no such queue.
+pub const GONE: u8 = 2;
 pub const NOT_FOUND: u8 = 1;
 pub const FULL: u8 = 2;
 pub const FAILED: u8 = 3;
@@ -517,6 +557,8 @@ pub const SEALED_PATH: &str = "/sealed";
 pub const FILES_PATH: &str = "/files";
 /// The WebSocket path a phone with no token takes an invite on.
 pub const JOIN_PATH: &str = "/join";
+/// The WebSocket path phones read their queues on, with no token.
+pub const READ_PATH: &str = "/read";
 /// Invites listed at most in one reply, the latest.
 const MAX_LISTED: usize = 500;
 const FORWARD_TIMEOUT: Duration = Duration::from_secs(15);
@@ -545,6 +587,9 @@ enum Access {
     Files,
     /// The `/join` path: `REDEEM` only.
     Join,
+    /// The `/read` path: `RECEIVE`, `WAIT`, `NEWS`, `WAIT_ANY` and `NEWS_ANY`
+    /// only.
+    Read,
     /// A ticket for a place, which expires then (Unix seconds): `KEY` and
     /// `BORROW` only.
     Ticket(Nonce, u64),
@@ -709,14 +754,21 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
             Some(Access::Files)
         } else if path.ends_with(JOIN_PATH) {
             Some(Access::Join)
+        } else if path.ends_with(READ_PATH) {
+            Some(Access::Read)
         } else {
             None
         };
         // A channel to the relay's own key: the token comes inside it.
         let channel = store.key.is_some() && offered_protocols(request).any(|p| p == CHANNEL_PROTOCOL);
         if let Some(open) = open {
-            // Anyone may come here, so only so many at once.
-            tokenless = Slot::take(&store.tokenless, limits.tokenless);
+            // Anyone may come here, so only so many at once; phones reading
+            // their queues have places of their own.
+            tokenless = if open == Access::Read {
+                Slot::take(&store.reading, limits.reading)
+            } else {
+                Slot::take(&store.tokenless, limits.tokenless)
+            };
             if tokenless.is_none() {
                 return Err(busy());
             }
@@ -920,6 +972,7 @@ fn respond(
         Access::Sealed => matches!(op[0], KEY | SEALED_SEND),
         Access::Files => matches!(op[0], FILE_GET | FILE_DELETE),
         Access::Join => matches!(op[0], REDEEM | SIGN_IN | CLAIM),
+        Access::Read => matches!(op[0], RECEIVE | WAIT | NEWS | WAIT_ANY | NEWS_ANY),
         Access::Ticket(..) => matches!(op[0], KEY | BORROW),
         Access::Lent(_) => matches!(
             op[0],
@@ -928,6 +981,8 @@ fn respond(
                 | RECEIVE
                 | WAIT
                 | NEWS
+                | WAIT_ANY
+                | NEWS_ANY
                 | DELETE
                 | KEY
                 | SEALED_SEND
@@ -1029,6 +1084,61 @@ fn respond(
                     Ok(now) if now != heard || left.is_zero() => break news_reply(now),
                     Ok(_) => {}
                     Err(e) => break vec![code(e)],
+                }
+                store = wait_timeout(&shared.arrived, store, left, STORE_LOCK);
+            }
+        }
+        WAIT_ANY => {
+            let recipients = read_ids(r)?;
+            let until = read_until(r)?;
+            let mut store = shared.store();
+            loop {
+                let mut found = Vec::with_capacity(recipients.len());
+                for recipient in &recipients {
+                    found.push(match store.has_waiting(recipient) {
+                        Ok(waiting) => u8::from(waiting),
+                        Err(QueueError::NotFound) => GONE,
+                        Err(e) => return Ok(Some(vec![code(e)])),
+                    });
+                }
+                let left = until.saturating_duration_since(Instant::now());
+                if found.iter().any(|&f| f != 0) || left.is_zero() {
+                    let mut out = vec![OK];
+                    out.extend_from_slice(&found);
+                    break out;
+                }
+                store = wait_timeout(&shared.arrived, store, left, STORE_LOCK);
+            }
+        }
+        NEWS_ANY => {
+            let count = read_count(r)?;
+            let mut asked = Vec::with_capacity(count);
+            for _ in 0..count {
+                asked.push((read_id(r)?, read_news(r)?));
+            }
+            let until = read_until(r)?;
+            let mut store = shared.store();
+            loop {
+                let left = until.saturating_duration_since(Instant::now());
+                let mut out = vec![OK];
+                let mut changed = false;
+                for (recipient, heard) in &asked {
+                    match store.news(recipient) {
+                        Ok(now) => {
+                            changed |= now != *heard;
+                            out.push(0);
+                            out.extend_from_slice(&news_reply(now)[1..]);
+                        }
+                        Err(QueueError::NotFound) => {
+                            changed = true;
+                            out.push(GONE);
+                            out.extend_from_slice(&[0; 16]);
+                        }
+                        Err(e) => return Ok(Some(vec![code(e)])),
+                    }
+                }
+                if changed || left.is_zero() {
+                    break out;
                 }
                 store = wait_timeout(&shared.arrived, store, left, STORE_LOCK);
             }
@@ -1556,6 +1666,29 @@ fn read_id(r: &mut impl Read) -> io::Result<QueueId> {
     let mut id = [0u8; 24];
     r.read_exact(&mut id)?;
     Ok(id)
+}
+
+/// How many queues a `WAIT_ANY` or `NEWS_ANY` asks of: 1 to `MAX_ANY`.
+fn read_count(r: &mut impl Read) -> io::Result<usize> {
+    let mut count = [0u8; 1];
+    r.read_exact(&mut count)?;
+    let count = usize::from(count[0]);
+    if count == 0 || count > MAX_ANY {
+        return Err(io::Error::new(ErrorKind::InvalidData, "too many queues, or none"));
+    }
+    Ok(count)
+}
+
+/// The recipient ids of a `WAIT_ANY`, after their count.
+fn read_ids(r: &mut impl Read) -> io::Result<Vec<QueueId>> {
+    (0..read_count(r)?).map(|_| read_id(r)).collect()
+}
+
+/// When a wait of the seconds asked, at most `MAX_WAIT`, is up.
+fn read_until(r: &mut impl Read) -> io::Result<Instant> {
+    let mut seconds = [0u8; 1];
+    r.read_exact(&mut seconds)?;
+    Ok(Instant::now() + Duration::from_secs(u64::from(seconds[0].min(MAX_WAIT))))
 }
 
 /// What a phone last heard of a queue, in a `NEWS` request.
@@ -2200,6 +2333,147 @@ mod tests {
         // A queue that is not here.
         let r = ws_call(&mut ws, news_request(&[9u8; 24], 30, nothing));
         assert_eq!(r, vec![NOT_FOUND]);
+    }
+
+    fn wait_any_request(recipients: &[QueueId], seconds: u8) -> Vec<u8> {
+        let mut req = vec![WAIT_ANY, recipients.len() as u8];
+        for recipient in recipients {
+            req.extend_from_slice(recipient);
+        }
+        req.push(seconds);
+        req
+    }
+
+    fn news_any_request(asked: &[(QueueId, News)], seconds: u8) -> Vec<u8> {
+        let mut req = vec![NEWS_ANY, asked.len() as u8];
+        for (recipient, heard) in asked {
+            req.extend_from_slice(recipient);
+            req.extend_from_slice(&news_reply(*heard)[1..]);
+        }
+        req.push(seconds);
+        req
+    }
+
+    /// Whether the relay closes the connection for `request`, rather than answer it.
+    fn closes_for(ws: &mut Ws, request: Vec<u8>) -> bool {
+        ws.send(Message::Binary(request.into())).unwrap();
+        !matches!(ws.read(), Ok(Message::Binary(_)))
+    }
+
+    #[test]
+    fn a_wait_on_many_queues_ends_once_a_message_comes_into_one_and_says_which() {
+        let addr = start_ws(None);
+        let mut ws = connect_with_token(addr, "", "");
+        let queues: Vec<(QueueId, QueueId)> = (0..3).map(|_| ws_create(&mut ws)).collect();
+        let recipients: Vec<QueueId> = queues.iter().map(|q| q.0).collect();
+        // None comes: the time is up, with nothing in any.
+        let started = Instant::now();
+        assert_eq!(ws_call(&mut ws, wait_any_request(&recipients, 1)), vec![OK, 0, 0, 0]);
+        assert!(started.elapsed() >= Duration::from_millis(900));
+        // One comes into the second meanwhile: the wait ends at once.
+        let waiting = recipients.clone();
+        let waiter = thread::spawn(move || {
+            let mut w = connect_with_token(addr, READ_PATH, "");
+            let started = Instant::now();
+            (ws_call(&mut w, wait_any_request(&waiting, 30)), started.elapsed())
+        });
+        thread::sleep(Duration::from_millis(300));
+        assert_eq!(ws_send(&mut ws, &queues[1].1, b"hello"), OK);
+        let (reply, took) = waiter.join().unwrap();
+        assert_eq!(reply, vec![OK, 0, 1, 0]);
+        assert!(took < Duration::from_secs(10));
+        // A queue that is not here is told at once, beside the others.
+        let started = Instant::now();
+        let gone = [recipients[0], [9u8; 24]];
+        assert_eq!(ws_call(&mut ws, wait_any_request(&gone, 30)), vec![OK, 0, GONE]);
+        assert!(started.elapsed() < Duration::from_secs(10));
+        // Nothing was taken.
+        assert_eq!(ws_receive(&mut ws, &recipients[1]), Some(b"hello".to_vec()));
+        // None, or more than MAX_ANY, closes the connection.
+        assert!(closes_for(&mut ws, vec![WAIT_ANY, 0, 30]));
+        let mut ws = connect_with_token(addr, "", "");
+        assert!(closes_for(&mut ws, wait_any_request(&[recipients[0]; MAX_ANY + 1], 30)));
+        let mut ws = connect_with_token(addr, "", "");
+        assert_eq!(ws_call(&mut ws, wait_any_request(&[recipients[0]; MAX_ANY], 0)), [vec![OK], vec![0; MAX_ANY]].concat());
+    }
+
+    #[test]
+    fn news_of_many_queues_ends_once_one_of_them_changes() {
+        let addr = start_ws(None);
+        let mut ws = connect_with_token(addr, "", "");
+        let (a, _) = ws_create(&mut ws);
+        let (b, b_sender) = ws_create(&mut ws);
+        let nothing = News::default();
+        let asked = [(a, nothing), (b, nothing)];
+        // Nothing comes: the time is up, and nothing came to either.
+        let started = Instant::now();
+        assert_eq!(ws_call(&mut ws, news_any_request(&asked, 1)), [vec![OK], vec![0; 17], vec![0; 17]].concat());
+        assert!(started.elapsed() >= Duration::from_millis(900));
+        // A message comes to the second meanwhile: it ends at once, with the second's news.
+        let waiter = thread::spawn(move || {
+            let mut w = connect_with_token(addr, READ_PATH, "");
+            let started = Instant::now();
+            (ws_call(&mut w, news_any_request(&asked, 30)), started.elapsed())
+        });
+        thread::sleep(Duration::from_millis(300));
+        assert_eq!(ws_call(&mut ws, marked(send_request(&b_sender, b"hello"), MESSAGE)), vec![OK]);
+        let (reply, took) = waiter.join().unwrap();
+        assert!(took < Duration::from_secs(10));
+        assert_eq!(reply.len(), 1 + 2 * 17);
+        assert_eq!(&reply[..18], &[[OK].as_slice(), &[0; 17]].concat()[..]);
+        assert_eq!(reply[18], 0);
+        let heard = read_news(&mut &reply[19..]).unwrap();
+        assert_ne!(heard.round, 0);
+        assert_eq!((heard.messages, heard.unmarked, heard.rings), (1, 0, 0));
+        // As heard: the time is up; a queue that is not here is told at once.
+        assert_eq!(ws_call(&mut ws, news_any_request(&[(a, nothing), (b, heard)], 0))[18..], reply[18..]);
+        let r = ws_call(&mut ws, news_any_request(&[(b, heard), ([9u8; 24], nothing)], 30));
+        assert_eq!(&r[18..], &[[GONE].as_slice(), &[0; 16]].concat()[..]);
+    }
+
+    #[test]
+    fn queues_are_read_with_no_token_on_their_own_path_and_nothing_else_is_done_there() {
+        let addr = start_ws(Some("t"));
+        let mut owner = connect_with_token(addr, "", "t");
+        let (recipient, sender) = ws_create(&mut owner);
+        assert_eq!(ws_send(&mut owner, &sender, b"hi"), OK);
+        // No token in the handshake, nor any request.
+        let (mut reader, _) = tungstenite::connect(format!("ws://{addr}{READ_PATH}")).unwrap();
+        assert_eq!(ws_call(&mut reader, wait_any_request(&[recipient], 30)), vec![OK, 1]);
+        let mut wait = vec![WAIT];
+        wait.extend_from_slice(&recipient);
+        wait.push(0);
+        assert_eq!(ws_call(&mut reader, wait), vec![OK, 1]);
+        let _ = ws_news(&mut reader, &recipient, 0, News::default());
+        assert_eq!(ws_receive(&mut reader, &recipient), Some(b"hi".to_vec()));
+        assert_eq!(ws_receive(&mut reader, &recipient), None);
+        // Making queues, sending, deleting and the rest need the token there.
+        for request in [vec![CREATE], send_request(&sender, b"x"), id_request(DELETE, &recipient), vec![KEY], vec![LEND]] {
+            let (mut reader, _) = tungstenite::connect(format!("ws://{addr}{READ_PATH}")).unwrap();
+            assert!(closes_for(&mut reader, request));
+        }
+        // The queue is still there for its phone.
+        assert_eq!(ws_send(&mut owner, &sender, b"again"), OK);
+    }
+
+    #[test]
+    fn reading_has_places_of_its_own() {
+        let limits = Limits {
+            tokenless: 1,
+            reading: 1,
+            ..Limits::default()
+        };
+        let addr = start_ws_limited(Some("t"), None, limits);
+        let (_files, _) = tungstenite::connect(format!("ws://{addr}{FILES_PATH}")).unwrap();
+        // The other paths being full keeps no phone from reading, but only so many read at once.
+        let (mut reader, _) = tungstenite::connect(format!("ws://{addr}{READ_PATH}")).unwrap();
+        match tungstenite::connect(format!("ws://{addr}{READ_PATH}")) {
+            Err(tungstenite::Error::Http(response)) => {
+                assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE)
+            }
+            other => panic!("expected a refusal, got {:?}", other.map(|_| ())),
+        }
+        assert_eq!(ws_call(&mut reader, wait_any_request(&[[9u8; 24]], 30)), vec![OK, GONE]);
     }
 
     #[test]

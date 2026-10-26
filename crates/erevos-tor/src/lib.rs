@@ -62,6 +62,7 @@ static CLIENT: Mutex<Option<Running>> = Mutex::new(None);
 static SESSIONS: OnceLock<Mutex<HashMap<u64, Arc<tokio::sync::Mutex<Socket>>>>> = OnceLock::new();
 static TEXTS: OnceLock<Mutex<HashMap<u64, Arc<Text>>>> = OnceLock::new();
 static NOSTR_WAYS: OnceLock<Mutex<HashMap<String, IsolationToken>>> = OnceLock::new();
+static NAMED_WAYS: OnceLock<Mutex<HashMap<String, IsolationToken>>> = OnceLock::new();
 static NEXT: AtomicU64 = AtomicU64::new(1);
 
 fn runtime() -> Result<&'static Runtime> {
@@ -105,6 +106,14 @@ fn nostr_way_failed(host: &str, way: IsolationToken) {
     if ways.get(host) == Some(&way) {
         ways.remove(host);
     }
+}
+
+// The ways the app names (`open_on`): a phone with a queue for each contact reads them in groups,
+// each group's connections on circuits of their own, so the relay sees each group come from
+// another exit, and no exit carries two groups. After a connection on one fails, the next goes on
+// new circuits, as for Nostr's.
+fn named_ways() -> std::sync::MutexGuard<'static, HashMap<String, IsolationToken>> {
+    NAMED_WAYS.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap_or_else(|e| e.into_inner())
 }
 
 /// A connection of Nostr's kind: what is sent goes on `sink`, and what the relay says waits in
@@ -356,21 +365,37 @@ async fn call_on(socket: &mut Socket, bytes: Vec<u8>) -> Result<Vec<u8>> {
 /// Opens a connection to the relay at `url` through Tor, with `token` as a
 /// bearer token if not empty. Returns its handle for [`call`] and [`close`].
 pub fn open(url: &str, token: &str) -> Result<u64> {
-    open_with(url, token, false)
+    open_with(url, token, None, false)
 }
 
 /// Opens a connection to the relay at `url` through Tor for a channel to the
 /// relay's own key (erevos_core::relay_channel), which the app then makes on
 /// it with [`call`]: its hello first, its token in the first message after.
 pub fn open_channel(url: &str) -> Result<u64> {
-    open_with(url, "", true)
+    open_with(url, "", None, true)
 }
 
-fn open_with(url: &str, token: &str, channel: bool) -> Result<u64> {
+/// Opens a connection as [`open`] does, or for a channel as [`open_channel`]
+/// does, on the circuits the app names `way`: every connection of one name
+/// goes the same way, and none of another name's. After one fails, the next
+/// of that name goes on new circuits.
+pub fn open_on(url: &str, token: &str, way: &str, channel: bool) -> Result<u64> {
+    let token_of_way = *named_ways().entry(way.to_string()).or_insert_with(IsolationToken::new);
+    let opened = open_with(url, token, Some(token_of_way), channel);
+    if opened.is_err() {
+        let mut ways = named_ways();
+        if ways.get(way) == Some(&token_of_way) {
+            ways.remove(way);
+        }
+    }
+    opened
+}
+
+fn open_with(url: &str, token: &str, way: Option<IsolationToken>, channel: bool) -> Result<u64> {
     let tor = client()?;
     let (url, token) = (url.to_string(), token.to_string());
     let socket = runtime()?.block_on(async move {
-        tokio::time::timeout(WAIT, connect(tor, url, token, None, channel))
+        tokio::time::timeout(WAIT, connect(tor, url, token, way, channel))
             .await
             .map_err(|_| "Tor took too long to reach the relay".to_string())?
     })?;

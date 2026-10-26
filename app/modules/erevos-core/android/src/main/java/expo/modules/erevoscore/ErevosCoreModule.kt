@@ -115,6 +115,9 @@ class ErevosCoreModule : Module() {
     }
     AsyncFunction("torOpen") Coroutine { url: String, token: String -> torIo { ErevosCoreNative.torOpen(url.toByteArray(), token.toByteArray()) } }
     AsyncFunction("torOpenChannel") Coroutine { url: String -> torIo { ErevosCoreNative.torOpenChannel(url.toByteArray()) } }
+    AsyncFunction("torOpenOn") Coroutine { url: String, token: String, way: String, channel: Boolean ->
+      torIo { ErevosCoreNative.torOpenOn(url.toByteArray(), token.toByteArray(), way.toByteArray(), byteArrayOf(if (channel) 1 else 0)) }
+    }
     AsyncFunction("torCall") Coroutine { id: ByteArray, message: ByteArray -> torIo { ErevosCoreNative.torCall(id, message) } }
     AsyncFunction("torClose") Coroutine { id: ByteArray -> torIo { ErevosCoreNative.torClose(id) } }
     // Nostr relays through Tor: text frames both ways, and what the relay says waits until asked for.
@@ -207,6 +210,7 @@ internal object ErevosCoreNative {
   @JvmStatic external fun torRequest(url: ByteArray, token: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun torOpen(url: ByteArray, token: ByteArray): ByteArray
   @JvmStatic external fun torOpenChannel(url: ByteArray): ByteArray
+  @JvmStatic external fun torOpenOn(url: ByteArray, token: ByteArray, way: ByteArray, channel: ByteArray): ByteArray
   @JvmStatic external fun torCall(id: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun torClose(id: ByteArray): ByteArray
   @JvmStatic external fun torTextOpen(url: ByteArray): ByteArray

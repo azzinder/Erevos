@@ -67,7 +67,10 @@
 //! `EREVOS_RELAY_MAX_CONNECTIONS` at once (512 unless set), both front ends
 //! together, and of those at most `EREVOS_RELAY_MAX_TOKENLESS_CONNECTIONS`
 //! (128 unless set) on the paths that need no token (`/sealed`, `/files`
-//! and `/join`). Past that, a new connection is closed at once. A connection
+//! and `/join`), and apart from those at most
+//! `EREVOS_RELAY_MAX_READING_CONNECTIONS` (256 unless set) on `/read`, where
+//! phones read their queues with no token. Past that, a new connection is
+//! closed at once. A connection
 //! that sends nothing for five minutes is closed (see `server.rs`).
 //!
 //! Set `EREVOS_RELAY_JOURNAL` to a file path to keep queues and waiting
@@ -497,6 +500,13 @@ fn main() -> ExitCode {
     ) else {
         return ExitCode::FAILURE;
     };
+    let Some(reading) = number(
+        "EREVOS_RELAY_MAX_READING_CONNECTIONS",
+        server::DEFAULT_MAX_READING as u64,
+        1,
+    ) else {
+        return ExitCode::FAILURE;
+    };
     let private_peers = match env::var("EREVOS_RELAY_PRIVATE_PEERS").as_deref() {
         Ok("allow") => {
             eprintln!("erevos-relay: EREVOS_RELAY_PRIVATE_PEERS=allow, forwards may go to relays on this machine and its network");
@@ -511,13 +521,15 @@ fn main() -> ExitCode {
     let limits = Limits {
         connections: connections.try_into().unwrap_or(usize::MAX),
         tokenless: tokenless.try_into().unwrap_or(usize::MAX),
+        reading: reading.try_into().unwrap_or(usize::MAX),
         private_peers,
         ..Limits::default()
     };
     eprintln!(
-        "erevos-relay: taking {} connections at once, {} of them on the paths that need no token",
+        "erevos-relay: taking {} connections at once, {} of them on the paths that need no token, and {} reading queues",
         limits.connections,
-        limits.tokenless.min(limits.connections)
+        limits.tokenless.min(limits.connections),
+        limits.reading.min(limits.connections)
     );
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
     let store = Shared::new(store, files, key, turn, limits);

@@ -323,6 +323,11 @@ pub mod tor {
         Ok(erevos_tor::open_channel(text(url)?)?.to_be_bytes().to_vec())
     }
 
+    /// A connection on the circuits named `way`, for a channel when `channel` is 1: its handle.
+    pub fn open_on(url: &[u8], token: &[u8], way: &[u8], channel: &[u8]) -> Result<Vec<u8>> {
+        Ok(erevos_tor::open_on(text(url)?, text(token)?, text(way)?, channel == [1])?.to_be_bytes().to_vec())
+    }
+
     pub fn call(id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
         erevos_tor::call(handle(id)?, message)
     }
