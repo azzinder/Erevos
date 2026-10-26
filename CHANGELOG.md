@@ -40,6 +40,11 @@ On main, not released yet:
   an Erevos of theirs from before takes it too. They are read on the relay's path with no token, waited on while the
   space is open, and through Tor in groups of eight, each on circuits of its own. Hidden chats, linked computers and
   the web app keep one queue for everyone, for now.
+- **Hidden chats, more like the others**: they close by themselves once Erevos was in the background for more than 30
+  seconds, not at once, and never during a call or while a photo or a file is picked for them, so a photo, a file or
+  a QR code from a photo now comes to them. While open, a message plays the sound for new messages; in the background
+  before they close, a notice says "New message" if the place's **Say when a message comes** is on. A hidden chat's
+  details have **Link previews**, a switch of their own for that place, off unless turned on.
 
 ## 3.3.2 (2026-10-25)
 

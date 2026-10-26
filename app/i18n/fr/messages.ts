@@ -636,6 +636,8 @@ export const messages: Record<string, string> = {
     'Aucun tant que cet espace passe par Tor : Erevos n’y fait passer que les requêtes vers le relais.',
   "When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. In all chats of this space, not in hidden chats.":
     'Quand tu envoies un lien, ce téléphone récupère sa page directement sur le site et envoie son titre, une ligne et une petite image dans le message. Le site voit l’adresse internet de ce téléphone. Dans toutes les discussions de cet espace, pas dans les discussions masquées.',
+  "When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. Only in the hidden chats of this place.":
+    'Quand tu envoies un lien, ce téléphone récupère sa page directement sur le site et envoie son titre, une ligne et une petite image dans le message. Le site voit l’adresse internet de ce téléphone. Seulement dans les discussions masquées de cet emplacement.',
   "Links go as they are. Turned on, this phone fetches a link's page as you send it, and the site sees this phone's internet address. The phone that gets it fetches nothing.":
     'Les liens partent tels quels. Si tu l’actives, ce téléphone récupère la page d’un lien quand tu l’envoies, et le site voit l’adresse internet de ce téléphone. Le téléphone qui le reçoit ne récupère rien.',
   // A group's messages (components/group-messages.tsx).

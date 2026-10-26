@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { t } from './i18n';
 import { NoCameraError } from './pick-photo';
+import { whilePicking } from './picking';
 import { readQrCode } from '../modules/erevos-contacts';
 
 // A QR code read from a photo of it, taken with the camera or picked from the phone's photos
@@ -16,9 +17,9 @@ export async function readQrPhoto(from: 'photos' | 'camera'): Promise<string | n
   if (from === 'camera') {
     const allowed = await ImagePicker.requestCameraPermissionsAsync();
     if (!allowed.granted) throw new NoCameraError();
-    picked = await ImagePicker.launchCameraAsync(options);
+    picked = await whilePicking(() => ImagePicker.launchCameraAsync(options));
   } else {
-    picked = await ImagePicker.launchImageLibraryAsync(options);
+    picked = await whilePicking(() => ImagePicker.launchImageLibraryAsync(options));
   }
   const asset = picked.canceled ? null : picked.assets[0];
   if (!asset) return null;

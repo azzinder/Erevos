@@ -3,6 +3,7 @@ import { File, FileMode, Paths } from 'expo-file-system';
 import { type Source } from './attachments';
 import { randomBytes, toHex } from './crypto';
 import { fileName } from './imports';
+import { whilePicking } from './picking';
 
 // A file the owner picks to open (a backup, a chat export), read whole into memory, or to send,
 // read a piece at a time. On the phone, with the system's file picker; on a computer, in the
@@ -33,7 +34,7 @@ export type PickedSource = { name: string; mime: string; source: Source; close()
 
 /** A file to send, or null if the owner went back. Throws TooLargeError above `most` bytes. */
 export async function pickSource(most: number): Promise<PickedSource | null> {
-  const picked = await File.pickFileAsync({ mimeTypes: ['*/*'] });
+  const picked = await whilePicking(() => File.pickFileAsync({ mimeTypes: ['*/*'] }));
   if (picked.canceled) return null;
   const file = picked.result;
   if (file.size > most) throw new TooLargeError();
@@ -66,7 +67,7 @@ export async function pickSource(most: number): Promise<PickedSource | null> {
 
 /** The file's name and bytes, or null if the owner went back. Throws TooLargeError above `most` bytes. */
 export async function pickFile(most: number): Promise<{ name: string; bytes: Uint8Array } | null> {
-  const picked = await File.pickFileAsync({ mimeTypes: ['*/*'] });
+  const picked = await whilePicking(() => File.pickFileAsync({ mimeTypes: ['*/*'] }));
   if (picked.canceled) return null;
   const file = picked.result;
   if (file.size > most) throw new TooLargeError();

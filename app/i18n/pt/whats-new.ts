@@ -17,6 +17,8 @@ export const whatsNew: Record<string, string> = {
     "**Videochamada de grupo no topo do grupo**: uma câmera azul ao lado do fone verde, como na conversa com um contato.",
   "**A relay queue for each contact**: each contact writes to a queue only they know, so the relay cannot tell that two contacts write to the same phone, and deleting or blocking someone deletes only theirs. Your relay needs an update for it.":
     "**Uma fila do relay para cada contato**: cada contato escreve numa fila que só ele conhece, então o relay não consegue saber que dois contatos escrevem para o mesmo telefone, e apagar ou bloquear alguém apaga só a dele. Seu relay precisa ser atualizado para isso.",
+  "**Hidden chats, more like the others**: they close after 30 seconds in the background, not at once, and never during a call or while you pick a photo or a file; while open, a message plays its sound, and link previews have a switch of their own there. See [Hidden chats](#hidden).":
+    "**As conversas ocultas, mais como as outras**: fecham após 30 segundos em segundo plano, não de imediato, e nunca durante uma chamada nem enquanto você escolhe uma foto ou um arquivo; abertas, uma mensagem toca o seu som, e as pré-visualizações de links têm ali um interruptor próprio. Veja [Conversas ocultas](#hidden).",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**O botão de chamada comum para mais contatos**: o teclado laranja no topo da conversa de um contato também usa o número do contato a que você o vinculou (**Vincular a um dos meus contatos**), primeiro o celular.',

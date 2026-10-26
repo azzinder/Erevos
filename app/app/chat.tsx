@@ -25,6 +25,7 @@ import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type Fil
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { readQrPhoto } from '../lib/read-qr';
 import { pickSource, TooLargeError } from '../lib/pick-file';
+import { isPicking } from '../lib/picking';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { saveFile, saveText } from '../lib/save-file';
 import { chatText, exportName } from '../lib/chat-export';
@@ -391,11 +392,18 @@ export default function ChatScreen() {
   // The look of the chat in view (its own, or the space's), as the chat showing says.
   const [chatLook, setChatLook] = useState<ChatLook | null>(null);
 
+  // Hidden chats close once Erevos was away more than RELOCK_MS, as a chat's own PIN locks again,
+  // but not in a call, nor while a photo or a file is picked for them (lib/picking.ts).
   useEffect(() => {
+    let away = 0;
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'background') {
-        closeHidden();
-        setAsking(false);
+      if (state === 'background') away = Date.now();
+      else if (state === 'active' && away) {
+        if (Date.now() - away > RELOCK_MS && !currentCall() && !isPicking()) {
+          closeHidden();
+          setAsking(false);
+        }
+        away = 0;
       }
     });
     return () => subscription.remove();
@@ -512,6 +520,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [previews, setPreviews] = useState(false);
   // Whether these hidden chats say a message came while they are closed (lock/hidden-watch.ts).
   const [watched, setWatched] = useState(false);
+  const watchedNow = useRef(false);
+  watchedNow.current = watched;
   const [watchNote, setWatchNote] = useState('');
   // Whether these hidden chats ring their contacts' calls while closed (lock/hidden-ring.ts), and
   // their ring queue, kept with the place (its own relay). Only set for hidden chats.
@@ -856,13 +866,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setCarryingKept(on).catch(() => setNote(t('Changed until Erevos closes: the phone could not keep it.')));
   }
 
-  // Looks for Erevos on the same Wi-Fi or hotspot too, or no longer (lib/nearby-links.ts).
-  // Makes link previews, or no longer, in the space's chats (lib/make-preview.ts).
+  // Makes link previews, or no longer, in the space's chats, or in these hidden chats only (lib/make-preview.ts).
   function changePreviews(on: boolean) {
     setPreviews(on);
-    updateCurrentSpaceData({ previews: on }).catch((error) => setNote(errorText(error)));
+    (hiddenKey ? updateHiddenData(currentSpace().space, pocket, hiddenKey, { previews: on }) : updateCurrentSpaceData({ previews: on })).catch((error) => setNote(errorText(error)));
   }
 
+  // Looks for Erevos on the same Wi-Fi or hotspot too, or no longer (lib/nearby-links.ts).
   function changeLan(on: boolean) {
     setLanOn(on);
     setLanKept(on).catch(() => setNote(t('Changed until Erevos closes: the phone could not keep it.')));
@@ -1933,7 +1943,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // One that came already, from their account and again from one of their endpoints, or through
     // the phone and again directly, is shown once (docs/multi-device.md).
     const twice = received.twice || (!!received.tag && !!history.current?.has(peer, received.tag));
-    if (!hiddenKey && !twice && isNews(received)) messageCameAt(shows, received.quiet, screenOfChat(received.identity));
+    if (!twice && isNews(received)) {
+      if (!hiddenKey) messageCameAt(shows, received.quiet, screenOfChat(received.identity));
+      // Open hidden chats sound as the others do while Erevos shows; in the background they say it
+      // only if their place says so while closed (Say when a message comes).
+      else if (appShown() || watchedNow.current) messageCameAt(shows, received.quiet, screenOfHidden(pocket));
+    }
     setContacts(e2e.contacts());
     setSelected((current) => current ?? peer);
     if (received.call) {
@@ -2567,10 +2582,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  // The preview of the first link in words typed, when this phone makes them: never in hidden
-  // chats, nor while the space goes through Tor (lib/make-preview.ts). None if it takes too long.
+  // The preview of the first link in words typed, when this phone makes them, here (the space's
+  // chats, or a hidden place, each with its own switch), never while the space goes through Tor
+  // (lib/make-preview.ts). None if it takes too long.
   async function previewOf(text: string): Promise<Carried> {
-    const link = previews && CAN_PREVIEW && !hiddenKey && !throughTor() ? firstLink(text) : null;
+    const link = previews && CAN_PREVIEW && !throughTor() ? firstLink(text) : null;
     if (!link) return {};
     previewing.current = true;
     setNote(t('Making the link’s preview…'));
@@ -4921,13 +4937,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             </Text>
                           </>
                         ) : null}
-                        {CAN_PREVIEW && !hiddenKey ? (
+                        {CAN_PREVIEW ? (
                           <>
                             <View style={styles.rule} />
                             <DetailRow title={t('Link previews')} checked={previews} onPress={() => changePreviews(!previews)} />
                             <Text variant="caption" tone="muted" style={styles.rowMore}>
                               {throughTor()
                                 ? t('None while this space goes through Tor: Erevos sends only relay requests through it.')
+                                : previews && hiddenKey
+                                  ? t("When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. Only in the hidden chats of this place.")
                                 : previews
                                   ? t("When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. In all chats of this space, not in hidden chats.")
                                   : t("Links go as they are. Turned on, this phone fetches a link's page as you send it, and the site sees this phone's internet address. The phone that gets it fetches nothing.")}

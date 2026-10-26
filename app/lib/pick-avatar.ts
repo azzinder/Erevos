@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { fitSticker, STICKER_SIDE } from './own-stickers';
 import { NoCameraError } from './pick-photo';
+import { whilePicking } from './picking';
 
 // A photo for a contact's picture, from the phone's photos or its camera: cut square by the owner,
 // made 256 points wide and drawn anew as a JPEG, so nothing the photo said besides its picture
@@ -37,9 +38,9 @@ async function pick(from: 'photos' | 'camera', square: boolean, side: number, st
   if (from === 'camera') {
     const allowed = await ImagePicker.requestCameraPermissionsAsync();
     if (!allowed.granted) throw new NoCameraError();
-    picked = await ImagePicker.launchCameraAsync(options);
+    picked = await whilePicking(() => ImagePicker.launchCameraAsync(options));
   } else {
-    picked = await ImagePicker.launchImageLibraryAsync(options);
+    picked = await whilePicking(() => ImagePicker.launchImageLibraryAsync(options));
   }
   const asset = picked.canceled ? null : picked.assets[0];
   if (!asset) return null;

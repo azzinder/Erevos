@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { cleanJpeg, cleanPng, isJpeg, isPng, photoSize } from './photo';
 import { t } from './i18n';
+import { whilePicking } from './picking';
 
 // A photo to send, from the phone's photos or its camera, at the quality chosen: the original,
 // with only what it says besides its picture taken out (lib/photo.ts), or a new JPEG at 90% or
@@ -58,9 +59,9 @@ export async function pickPhoto(from: 'photos' | 'camera', quality: PhotoQuality
   if (from === 'camera') {
     const allowed = await ImagePicker.requestCameraPermissionsAsync();
     if (!allowed.granted) throw new NoCameraError();
-    picked = await ImagePicker.launchCameraAsync(options);
+    picked = await whilePicking(() => ImagePicker.launchCameraAsync(options));
   } else {
-    picked = await ImagePicker.launchImageLibraryAsync(options);
+    picked = await whilePicking(() => ImagePicker.launchImageLibraryAsync(options));
   }
   const asset = picked.canceled ? null : picked.assets[0];
   if (!asset) return null;

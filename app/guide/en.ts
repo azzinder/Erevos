@@ -824,7 +824,8 @@ Android: on a computer or in the web app, the browser would ask an outside servi
 A link in a message is underlined, and opens only once you tap it and say so. With **Link previews** on, in a chat's
 details, a link you send goes with its preview: as you send it, this phone fetches the page and takes its title, a line
 about it and a small picture, and they go inside the message, end-to-end encrypted. The phone that gets it fetches
-nothing: it shows what came. It is off unless you turn it on, and then it is on for all the chats of the space.
+nothing: it shows what came. It is off unless you turn it on, and then it is on for all the chats of the space;
+each place of hidden chats has a switch of its own, in a chat's details there.
 
 **Why:** only the sender's phone fetches the page, so the phone that gets a link reaches no site someone else chose,
 and shows that site nothing of itself, not even its address.
@@ -832,7 +833,7 @@ and shows that site nothing of itself, not even its address.
 - **The site sees this phone's internet address**, and when, as it would from a browser, but not who the message is
   for. Through Tor, Erevos sends only its relay requests, not pages, so while everything in the space goes through Tor
   (**Everything** under Tor) no previews are made at all.
-- Hidden chats make none, nor Erevos on a computer, which shows those that come all the same.
+- Erevos on a computer makes none, but shows those that come all the same.
 - **Over LoRa**, which takes only a little, a message goes without its preview rather than wait, and keeps none here.
 - A preview is what the page says of itself, true or not. An Erevos from before this shows the link without it.
 
@@ -900,7 +901,7 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
   Erevos cannot read: tap **I did it** once it is set. After each new version, and the first time, it opens by itself
   when calls or messages need something. In the web app it shows what the browser allows, see [On an iPhone](#iphone).
 - **One call at a time.** A call goes on while you move between screens of the space. It ends when the space closes,
-  and a call in hidden chats when they close, as they do when Erevos goes to the background. Swiping Erevos away from
+  and a call in hidden chats when they close, which they do not do during a call. Swiping Erevos away from
   the recent apps ends a call too.
 - Calls do not go over a nearby phone or Bluetooth. There, **Talkie** under **+** turns the chat into a
   walkie-talkie, and **Talkie is on** shows over the field: hold the walkie-talkie at the end of the bar while you
@@ -1656,7 +1657,13 @@ what the places taken away hold.
 
 - **Relay only:** hidden chats have their own relay queue and their own keys, and never use the nearby link. While
   they are closed, their messages wait on the relay.
-- **They close by themselves** when Erevos goes to the background.
+- **They close by themselves** once Erevos was in the background for more than 30 seconds, as a chat's own PIN
+  locks again, but not during a call, nor while you pick a photo or a file for them or take a photo.
+- **While they are open,** a message that comes plays the sound for new messages, as in your other chats. With Erevos
+  in the background before they close, a notice says "New message" only if **Say when a message comes** is on for
+  that place.
+- **Link previews** have a switch of their own in a hidden chat's details, for all the chats of that place, off unless
+  you turn it on (see **Link previews** under [Chat through a relay](#relay)).
 - **Say when a message comes** (Android): turned on at the top of a place, while it is closed a notice says only
   "New message", or how many came, as for the other chats, with Erevos in the background or showing, each message
   once, also when Erevos was closed and started again; what came while the place was open makes none once it closes. That a message of yours came to them or was read, typing and new keys make none, nor does a call that rang (see **Ring
@@ -2216,7 +2223,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. The relays see when one starts. | Video with more than four people, through a server; more than eight people. |
 | **Public groups** | As group chats, and anyone with the link can ask to join and read from when let in. Requests come to the owner's relay sealed for the owner's phone: the relay sees how many and when, not from whom. Members see each other's chosen names, keys made for that group alone, relay addresses and queue sender ids. Not audited. | |
-| **Link previews** | Off unless turned on. Then, as you send a link, your phone fetches its page straight from the site, which sees your IP address and when, not who the message is for. The preview goes inside the encrypted message; the phone that gets it fetches nothing. None while the space goes through Tor, and none in hidden chats. | Previews through Tor. |
+| **Link previews** | Off unless turned on. Then, as you send a link, your phone fetches its page straight from the site, which sees your IP address and when, not who the message is for. The preview goes inside the encrypted message; the phone that gets it fetches nothing. None while the space goes through Tor; in hidden chats only with their place's own switch. | Previews through Tor. |
 
 ## Transparency {#transparency}
 

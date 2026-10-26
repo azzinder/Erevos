@@ -636,6 +636,8 @@ export const messages: Record<string, string> = {
     'Nema ih dok ovaj prostor ide preko Tora: Erevos kroz njega šalje samo zahtjeve relayu.',
   "When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. In all chats of this space, not in hidden chats.":
     'Kad pošaljete link, ovaj telefon preuzima njegovu stranicu direktno s web-stranice i u poruci šalje naslov, jedan red teksta i malu sliku. Web-stranica vidi IP adresu ovog telefona. U svim razgovorima ovog prostora, ali ne u skrivenim razgovorima.',
+  "When you send a link, this phone fetches its page straight from the site and sends its title, a line and a small picture inside the message. The site sees this phone's internet address. Only in the hidden chats of this place.":
+    'Kad pošaljete link, ovaj telefon preuzima njegovu stranicu direktno s web-stranice i u poruci šalje naslov, jedan red teksta i malu sliku. Web-stranica vidi IP adresu ovog telefona. Samo u skrivenim razgovorima ovog mjesta.',
   "Links go as they are. Turned on, this phone fetches a link's page as you send it, and the site sees this phone's internet address. The phone that gets it fetches nothing.":
     'Linkovi idu onakvi kakvi jesu. Kad je ovo uključeno, ovaj telefon preuzima stranicu linka dok ga šaljete, a web-stranica vidi IP adresu ovog telefona. Telefon koji ga prima ne preuzima ništa.',
   // A group's messages (components/group-messages.tsx).
