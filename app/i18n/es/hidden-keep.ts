@@ -6,4 +6,9 @@ export const hiddenKeep: Record<string, string> = {
     'Cerrados, estos chats ocultos reciben como tus otros chats: sus contactos ven al instante que un mensaje llegó, un aviso dice solo «New message», y una llamada suena sin nombre y se contesta con el PIN. Para ello, su clave se guarda cifrada con el espacio, así que quien abra el espacio y copie lo que guarda el teléfono también podría abrirlos; el PIN los sigue manteniendo fuera de la vista.',
   'Closed, nothing reads these hidden chats: their key is only behind the PIN, and their messages wait on the relay until you open them.':
     'Cerrados, nada lee estos chats ocultos: su clave está solo tras el PIN, y sus mensajes esperan en el relay hasta que los abras.',
+  // What waits in hidden chats, through their relay only (lib/waiting.ts).
+  "Waiting. {reason} It goes by itself once the relay can take it.": "En espera. {reason} Se enviará solo en cuanto el relay pueda recibirlo.",
+  "The voice message waits, and goes by itself once the relay can take it.": "El mensaje de voz espera, y se enviará solo en cuanto el relay pueda recibirlo.",
+  "Closed, these hidden chats send nothing: it goes while they are open, unless you turn on Receive while closed at the top.":
+    "Cerrados, estos chats ocultos no envían nada: se envía mientras estén abiertos, salvo que actives arriba «Recibir estando cerrados».",
 };

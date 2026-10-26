@@ -40,13 +40,14 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // is kept with their removal and asked again with each look. Both go by the messages kept, not by
 // what a screen shows.
 //
-// Hidden chats keep nothing waiting, and go through the relay only (handOverHidden). But what the
-// relay could not take for a contact's account as their queue is full goes to the endpoints of
-// their account all the same, as from the space's chats: then it shows as sent, and is owed to
-// their account (Owed), tried again in memory only while hidden chats stay open, each contact's in
-// order and longer after each failed try, sealed anew with its tag each time, so it is the same
-// message there and no endpoint of theirs is copied it again. Closed before it went, their phone
-// never gets it. With the relay out of reach, it is not sent, as before.
+// Hidden chats go through the relay only (handOverHidden, SendPlace.hidden), never nearby or over
+// LoRa: what waits there goes with a look at their relay that answers, while they are open or, when
+// they receive while closed, with the place's (lib/place-receiver.ts). But what the relay could not
+// take for a contact's account as their queue is full goes to the endpoints of their account all
+// the same, as from the space's chats: then it shows as sent, and is owed to their account (Owed),
+// tried again in memory only while hidden chats stay open, each contact's in order and longer after
+// each failed try, sealed anew with its tag each time, so it is the same message there and no
+// endpoint of theirs is copied it again. Closed before it went, their phone never gets it.
 //
 // Whatever waits is something someone reads (a text, a voice message, a photo or file), so each
 // goes to the relay as a message (lib/relay.ts, Mark), however many tries it took: sealed anew each
@@ -68,9 +69,9 @@ export function canWait(error: unknown): boolean {
  * Where the space's messages go from, as the chat screen or the receiver knows it: the relay that
  * sends (null without one), our own relay, for photos and files (null without one), our queue's
  * sender id, where contacts reach us, our relay's key (base64url, or empty), and whether the relay
- * answered just now.
+ * answered just now. `hidden`: hidden chats', which go through the relay only.
  */
-export type SendPlace = { sends: Relay | null; own: Relay | null; senderHex: string; here: Where; ownKey: string; relayUp: boolean };
+export type SendPlace = { sends: Relay | null; own: Relay | null; senderHex: string; here: Where; ownKey: string; relayUp: boolean; hidden?: boolean };
 
 /**
  * A message that waited and went: its chat, its tag, how long it lasts once read (seconds), and,
@@ -332,6 +333,7 @@ export async function heldAfter({ e2e, history }: Chats, identity: string, kept:
 function canGo(e2e: E2E, place: SendPlace, identity: string, message: Message): boolean {
   const queue = e2e.queueOf(identity);
   if (!queue) return false;
+  if (place.hidden) return place.relayUp && (!message.file || !!place.own) && throughRelay(place, queue);
   if (message.file) return !!place.own && place.relayUp && (nearby.isNear(identity) || throughRelay(place, queue));
   return nearby.isNear(identity) || (place.relayUp && throughRelay(place, queue)) || (!message.voice && (nearby.hasSlow() || throughNostr(e2e, place, identity, queue)));
 }
@@ -377,6 +379,10 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     const text = await e2e.seal(identity, message.text, place.senderHex, { ...options, quiet: message.quiet, more: contentOf(message) });
     sealed = text;
     packets = [text.packet];
+  }
+  if (place.hidden) {
+    await handOverHidden(e2e, place.sends, identity, { sealed, packets }, 'message', false);
+    return { lasts: sealed.timer, bare: false };
   }
   const sends = place.sends;
   const relay =

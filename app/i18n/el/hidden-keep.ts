@@ -6,4 +6,9 @@ export const hiddenKeep: Record<string, string> = {
     'Κλειστές, αυτές οι κρυφές συνομιλίες λαμβάνουν όπως οι άλλες συνομιλίες σου: οι επαφές τους βλέπουν αμέσως ότι ένα μήνυμα έφτασε, μια ειδοποίηση λέει μόνο «Νέο μήνυμα», και μια κλήση χτυπά χωρίς όνομα και απαντιέται με το PIN. Γι’ αυτό το κλειδί τους φυλάγεται κρυπτογραφημένο μαζί με τον χώρο, οπότε όποιος ανοίξει τον χώρο και αντιγράψει ό,τι κρατά το τηλέφωνο θα μπορούσε να τις ανοίξει κι αυτός· το PIN εξακολουθεί να τις κρατά κρυμμένες.',
   'Closed, nothing reads these hidden chats: their key is only behind the PIN, and their messages wait on the relay until you open them.':
     'Κλειστές, τίποτα δεν διαβάζει αυτές τις κρυφές συνομιλίες: το κλειδί τους είναι μόνο πίσω από το PIN, και τα μηνύματά τους περιμένουν στο relay μέχρι να τις ανοίξεις.',
+  // What waits in hidden chats, through their relay only (lib/waiting.ts).
+  "Waiting. {reason} It goes by itself once the relay can take it.": "Σε αναμονή. {reason} Φεύγει μόνο του μόλις το πάρει το relay.",
+  "The voice message waits, and goes by itself once the relay can take it.": "Το φωνητικό μήνυμα περιμένει, και φεύγει μόνο του μόλις το πάρει το relay.",
+  "Closed, these hidden chats send nothing: it goes while they are open, unless you turn on Receive while closed at the top.":
+    "Κλειστές, αυτές οι κρυφές συνομιλίες δεν στέλνουν τίποτα: φεύγει όσο είναι ανοιχτές, εκτός αν ανοίξεις τη «Λήψη όσο είναι κλειστές» στην κορυφή.",
 };

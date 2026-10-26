@@ -340,7 +340,7 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
       .look({ own, found, take: (bytes, kind) => take(bytes, kind), tell: (identity) => tell(chats, here, identity, {}), shows: appShown(), stop, empty: state.waited === 'empty' ? others : [] })
       .catch(() => null);
     // What waited to go, now that the relay answers (lib/waiting.ts).
-    await sendWaiting(chats, { sends: here.sends, own, senderHex: here.queue.senderHex, here: here.here, ownKey: here.here.relayKey, relayUp: true }).catch(() => []);
+    await sendWaiting(chats, { sends: here.sends, own, senderHex: here.queue.senderHex, here: here.here, ownKey: here.here.relayKey, relayUp: true, hidden: true }).catch(() => []);
   }
   await sendReceipts(chats, here, state);
   await sendCopies(chats.e2e, here.sends).catch(() => 0);

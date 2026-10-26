@@ -8,7 +8,7 @@ import { keepPrivate } from '../lib/screen-privacy';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
 import { nearbySettings, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
-import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, holdAgain, holdLater, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
+import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { callPermissions } from '../lib/call-permissions';
@@ -645,7 +645,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [moving, setMoving] = useState(false);
   const router = useRouter();
   const [e2e, setE2E] = useState<E2E | null>(null);
-  // Chats imported into this space. Hidden chats have none.
+  // Chats imported into this space, or into these hidden chats: theirs, kept only in their chats.
   const [archive, setArchive] = useState<Archive | null>(null);
   // Counts the changes to what was imported made here (lock/archive.ts changes in place).
   const [archiveTick, setArchiveTick] = useState(0);
@@ -1434,13 +1434,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         }
         setE2E(chats);
         setContacts(chats.contacts());
-        if (!hiddenKey) {
-          Archive.open('space', space, key)
-            .then((imported) => active && setArchive(imported))
-            .catch(() => {
-              // The chats show without what was imported.
-            });
-        }
+        (hiddenKey ? Archive.open(hiddenHolder(pocket), space, hiddenKey) : Archive.open('space', space, key))
+          .then((imported) => active && setArchive(imported))
+          .catch(() => {
+            // The chats show without what was imported.
+          });
       })
       .catch((error) => {
         if (active) setNote(t('Chats through the relay could not open. {error}', { error: errorText(error) }));
@@ -2860,7 +2858,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setNote(owedNote(to, error));
         return;
       }
-      if (!canWait(error) || hiddenKey) {
+      if (!canWait(error)) {
         setNote(notSent(error));
         return;
       }
@@ -2868,7 +2866,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       addMessage(to, text, true, sealedAs, lasts || timerOf(to), undefined, undefined, WAITING, Date.now(), { quiet, ...parts });
       if (!content) draft.set('');
       setReplying(null);
-      setNote(t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason: waitingReason(error, to, t('It is too long for LoRa.')) }));
+      const reason = waitingReason(error, to, t('It is too long for LoRa.'));
+      setNote(
+        hiddenKey
+          ? withClosedNote(t('Waiting. {reason} It goes by itself once the relay can take it.', { reason }))
+          : t('Waiting. {reason} It goes by itself once the relay or their phone nearby can take it.', { reason }),
+      );
     }
   }
 
@@ -2889,10 +2892,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // Keeps a message to go at `at`: sealed and handed to the relay at once, to hold till then
-  // (lib/waiting.ts, holdLater), so it goes though this phone is off by then. In the space's chats,
-  // while no relay can take it, it waits here, and goes to the relay with the first look that
-  // reaches one. Hidden chats keep nothing waiting: there it goes to the relay now, or is not kept,
-  // and a voice message's sound or a file's chunks kept for it go. Says whether it is kept.
+  // (lib/waiting.ts, holdLater), so it goes though this phone is off by then. While no relay can
+  // take it, it waits here, and goes to the relay with the first look that reaches one (in hidden
+  // chats, theirs). Says whether it is kept.
   async function schedule(peer: string, at: number, what: { text?: string; voice?: VoiceRef; file?: FileRef; lasts?: number }): Promise<boolean> {
     if (!e2e) {
       setNote(t(NO_CORE));
@@ -2905,21 +2907,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const when = laterLabel(at);
     const parts = answering(peer);
     const heldNote = t('Scheduled for {when}. The relay sends it then, even if this phone is off. Until then you can delete it here.', { when });
-    if (hiddenKey) {
-      try {
-        const message: Kept = { peer, text, mine: true, at, tag, lasts, mark: WAITING, voice, file, ...parts };
-        const { held, heldFor: heldAt, lasts: kept } = await holdLater(e2e, waitingPlace(true), peer.slice(CONTACT_PREFIX.length), message);
-        addMessage(peer, text, true, tag, kept, voice, file, 0, at, { held, heldFor: heldAt, ...parts });
-        setReplying(null);
-        setNote(heldNote);
-        return true;
-      } catch (error) {
-        if (voice) await deleteClip(voice.id).catch(() => undefined);
-        if (file) await deleteChunks(file.id, file.count).catch(() => undefined);
-        setNote(t('Not scheduled. {reason}', { reason: notSentReason(error) }));
-        return false;
-      }
-    }
     addMessage(peer, text, true, tag, lasts, voice, file, WAITING, at, parts);
     setReplying(null);
     const went = await sendWaitingNow.current(true);
@@ -2949,11 +2936,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Why a message could not go now: `lora`, what LoRa says of it, when LoRa was the only way.
   function waitingReason(error: unknown, peer: string, lora: string): string {
+    // Hidden chats go through the relay only.
+    if (hiddenKey) return relayTarget() ? t('The relay cannot be reached.') : t('There is no relay.');
     if (error instanceof TooLargeForLoraError) return `${lora} ${relayTarget() ? t('The relay cannot be reached.') : t('There is no relay.')}`;
     const name = label(peer, contacts);
     return relayTarget()
       ? t("The relay cannot be reached, and {name}'s phone is not near.", { name })
       : t("There is no relay, and {name}'s phone is not near.", { name });
+  }
+
+  // What hidden chats that do not receive while closed add to a note that something waits: only
+  // while they are open does it go.
+  function withClosedNote(note: string): string {
+    return receiving ? note : `${note} ${t('Closed, these hidden chats send nothing: it goes while they are open, unless you turn on Receive while closed at the top.')}`;
   }
 
   // Asks whether a voice message, photo or file that nothing could take now waits to go by itself.
@@ -2972,25 +2967,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Where what waits goes from (lib/waiting.ts). `relayUp`: the relay just answered.
   function waitingPlace(relayUp: boolean): SendPlace {
-    return { sends: relayTarget(), own: ownRelay(), senderHex: ownQueue?.senderHex ?? '', here: here(), ownKey: ownRelayKey, relayUp };
+    return { sends: relayTarget(), own: ownRelay(), senderHex: ownQueue?.senderHex ?? '', here: here(), ownKey: ownRelayKey, relayUp, ...(hiddenKey ? { hidden: true } : {}) };
   }
 
   // Sends what waits that can go now (lib/waiting.ts), and shows it as gone, or as held by the
-  // relay till its time. Says what went. Hidden chats keep nothing waiting: what they owe a
-  // contact's phone is tried again instead (Owed), and shows as sent already. In both, what a relay
+  // relay till its time. Says what went. In hidden chats, through the relay only, and what they owe
+  // a contact's phone is tried again first (Owed), shown as sent already. In both, what a relay
   // holds for later for a contact whose queue moved is held anew, and what it holds for one deleted
   // or blocked is dropped.
   const sendWaitingNow = useRef((_relayUp: boolean) => Promise.resolve([] as Went[]));
   sendWaitingNow.current = async (relayUp) => {
     const kept = history.current;
     if (!e2e || !kept) return [];
-    let went: Went[] = [];
     if (hiddenKey) {
       if (!relayUp) return [];
       await owed.current.retry(e2e, relayTarget()).catch(() => undefined);
-      went = await holdAgain({ e2e, history: kept }, waitingPlace(true)).catch(() => [] as Went[]);
-      await dropHeld(e2e, relayTarget());
-    } else went = await sendWaiting({ e2e, history: kept }, waitingPlace(relayUp)).catch(() => [] as Went[]);
+    }
+    const went = await sendWaiting({ e2e, history: kept }, waitingPlace(relayUp)).catch(() => [] as Went[]);
     if (went.length > 0) {
       setMessages((list) =>
         list.map((m) => {
@@ -3002,7 +2995,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         }),
       );
     }
-    return hiddenKey ? [] : went;
+    return went;
   };
 
   async function shareLink(link: string) {
@@ -3329,7 +3322,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return;
       }
       // A walkie-talkie message is for now only.
-      if (!canWait(error) || talk || hiddenKey) {
+      if (!canWait(error) || talk) {
         setNote(notSent(error));
         return;
       }
@@ -3340,7 +3333,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       try {
         addMessage(peer, '', true, sealedAs, lasts || timerOf(peer), await saveClip(audio, ms), undefined, WAITING, Date.now(), parts);
         setReplying(null);
-        setNote(t('The voice message waits, and goes by itself once the relay or their phone nearby can take it.'));
+        setNote(
+          hiddenKey
+            ? withClosedNote(t('The voice message waits, and goes by itself once the relay can take it.'))
+            : t('The voice message waits, and goes by itself once the relay or their phone nearby can take it.'),
+        );
       } catch (failed) {
         setNote(t('Not sent, and it could not wait. {error}', { error: errorText(failed) }));
       }
@@ -3598,12 +3595,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return;
       }
       if (kept) await deleteChunks(kept.id, kept.count).catch(() => undefined);
-      if (!canWait(error) || hiddenKey) {
+      if (!canWait(error)) {
         setNote(error instanceof TooLargeError ? t('Not sent. Files can be 100 MB at most.') : notSent(error));
         return;
       }
       // It waits, kept here only, and goes to the relay later (lib/waiting.ts).
-      const reason = nearby.hasSlow()
+      const reason = nearby.hasSlow() && !hiddenKey
         ? t('Photos and files go through the relay, which cannot be reached, and LoRa takes only text.')
         : t('Photos and files go through the relay, which cannot be reached.');
       if (!(await askToWait(what, reason))) {
@@ -3619,7 +3616,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         });
         addMessage(peer, '', true, newTag(), lasts || timerOf(peer), undefined, ref, WAITING, Date.now(), parts);
         setReplying(null);
-        setNote(what === 'photo' ? t('The photo waits, and goes by itself once the relay can take it.') : t('The file waits, and goes by itself once the relay can take it.'));
+        const waits = what === 'photo' ? t('The photo waits, and goes by itself once the relay can take it.') : t('The file waits, and goes by itself once the relay can take it.');
+        setNote(hiddenKey ? withClosedNote(waits) : waits);
       } catch (failed) {
         setNote(t('Not sent, and it could not wait. {error}', { error: errorText(failed) }));
       }
@@ -5075,10 +5073,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                                   <Text variant="bodyStrong">{title}</Text>
                                   <Text variant="caption" tone="muted">
                                     {SOURCE_LABELS[chat.source]}, {plural(chat.count, '{n} message', '{n} messages')}.{' '}
-                                    {chat.inChat ? t('Kept only in this chat.') : t('Also in Settings → Data and devices → Imported chats.')}
+                                    {hiddenKey || chat.inChat ? t('Kept only in this chat.') : t('Also in Settings → Data and devices → Imported chats.')}
                                   </Text>
                                   <Row wrap>
-                                    {chat.inChat ? (
+                                    {/* Hidden chats' imports are in no list: they show only in their chat, or are deleted. */}
+                                    {hiddenKey ? null : chat.inChat ? (
                                       <TextButton
                                         title={t('Show in Imported chats too')}
                                         onPress={() => void changeImported(() => archive.link(chat.id, selectedIdentity, false))}
@@ -5086,15 +5085,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                                     ) : (
                                       <TextButton title={t('Keep only in the chat')} onPress={() => void changeImported(() => archive.link(chat.id, selectedIdentity, true))} />
                                     )}
-                                    <TextButton
-                                      title={t('Unlink')}
-                                      onPress={() =>
-                                        void changeImported(
-                                          () => archive.link(chat.id, ''),
-                                          t('It no longer shows in this chat. Settings → Data and devices → Imported chats keeps it.'),
-                                        )
-                                      }
-                                    />
+                                    {hiddenKey ? null : (
+                                      <TextButton
+                                        title={t('Unlink')}
+                                        onPress={() =>
+                                          void changeImported(
+                                            () => archive.link(chat.id, ''),
+                                            t('It no longer shows in this chat. Settings → Data and devices → Imported chats keeps it.'),
+                                          )
+                                        }
+                                      />
+                                    )}
                                     <TextButton title={t('Delete')} onPress={() => removeImported(chat.id, title)} />
                                   </Row>
                                   <View style={styles.rule} />

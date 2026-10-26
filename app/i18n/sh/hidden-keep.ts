@@ -6,4 +6,9 @@ export const hiddenKeep: Record<string, string> = {
     'Dok su zatvoreni, ovi skriveni razgovori primaju kao i ostali vaši razgovori: njihovi kontakti odmah vide da je poruka stigla, obavijest kaže samo „New message“, a poziv zvoni bez imena i javljate se PIN-om. Zato se njihov ključ čuva šifriran uz prostor, pa bi ih i onaj tko otvori prostor i kopira ono što telefon čuva mogao otvoriti; PIN ih i dalje drži skrivenima.',
   'Closed, nothing reads these hidden chats: their key is only behind the PIN, and their messages wait on the relay until you open them.':
     'Dok su zatvoreni, ništa ne čita ove skrivene razgovore: njihov ključ je samo iza PIN-a, a njihove poruke čekaju na relayu dok ih ne otvorite.',
+  // What waits in hidden chats, through their relay only (lib/waiting.ts).
+  "Waiting. {reason} It goes by itself once the relay can take it.": "Na čekanju. {reason} Šalje se sama kad je relay može preuzeti.",
+  "The voice message waits, and goes by itself once the relay can take it.": "Glasovna poruka čeka i šalje se sama kad je relay može preuzeti.",
+  "Closed, these hidden chats send nothing: it goes while they are open, unless you turn on Receive while closed at the top.":
+    "Zatvoreni, ovi skriveni razgovori ne šalju ništa: šalje se dok su otvoreni, osim ako na vrhu uključite „Primanje dok su zatvoreni“.",
 };

@@ -536,8 +536,9 @@ at the relay, or at once when they are nearby. A message counts as read once its
 - **Waiting:** a message nothing could take, as the relay cannot be reached and their phone is not near, stays in
   the chat marked **Waiting**, and goes by itself, in order, once the relay or their phone nearby can take it, while a
   space is open; then it shows **✓**. A text waits at once. A voice message, photo or file asks first: **Keep it
-  waiting** or **Delete it**. A waiting message is deleted on this phone only. Hidden chats keep nothing waiting;
-  but when the contact's queue on the relay is full, a text, voice message, photo or file still goes to their linked
+  waiting** or **Delete it**. A waiting message is deleted on this phone only. In hidden chats it waits too, but goes
+  through their relay only, never to the phone nearby or over LoRa: while they are open, or, with **Receive while
+  closed** on, while the space is open. When the contact's queue on the relay is full, a text, voice message, photo or file still goes to their linked
   devices, if they have any, shows as sent, and is tried again for their phone while hidden chats stay open: closed
   before it went, their phone never gets it.
 - **Send later:** hold the send arrow down and choose **Later…**, or tap **+** and then **Send later**. Choose a time
@@ -546,8 +547,7 @@ at the relay, or at once when they are nearby. A message counts as read once its
   phone is off or locked then, and their phone shows it from that time, not sooner. With no relay reachable now, it
   waits on this phone and goes to the relay once one can be reached. With nothing typed, the time you choose is for
   the next photo, file or voice message: a photo or file goes to your relay at once and stays there until they take
-  it, 14 days after its time at most. Hidden chats have it too, but there the relay has to be reachable when you
-  schedule. Until its time, delete it to take it back from the relay, and it never goes. Should their relay queue
+  it, 14 days after its time at most. Hidden chats have it too, the same way, through their relay. Until its time, delete it to take it back from the relay, and it never goes. Should their relay queue
   change before then, Erevos holds it again for the new one the next time it reaches the relay.
   With a token of this phone's own, it goes only if the phone still has its line on that relay then. A message without sound
   stays without sound. A relay from before this keeps nothing for later: then the message waits on this phone and
@@ -1674,6 +1674,9 @@ what the places taken away hold.
 - **While they are open,** a message that comes plays the sound for new messages, as in your other chats. With Erevos
   in the background before they close, a notice says "New message" only if **Receive while closed** or **Say when a
   message comes** is on for that place.
+- **Like your other chats:** what cannot go now waits, marked **Waiting**, through their relay only (see **Waiting**
+  under [Chat through a relay](#relay)), **Send later** works as there, and a chat exported from another app can be
+  imported into a hidden chat's details (see [Imported chats](#import)).
 - **Link previews** have a switch of their own in a hidden chat's details, for all the chats of that place, off unless
   you turn it on (see **Link previews** under [Chat through a relay](#relay)).
 - **Say when a message comes** (Android): at the top of a place while **Receive while closed** is off. Turned on,
@@ -1856,7 +1859,9 @@ and the list in **Settings** keeps only what has nowhere else to go. Nothing of 
 - **Only on this phone, only to read:** imported messages are never sent, so the other phone does not get them. Erevos
   cannot show who really wrote them.
 - **Notices and calls** from the other app are left out, and the chat says how many.
-- **Only a space's own chats** can go on from an imported chat, not hidden chats.
+- **In hidden chats** too: in a hidden chat's **Details**, **Import a chat here** keeps the chat with that place,
+  encrypted with its key, and shows it only in that chat, never in **Settings** → **Data and devices** → **Imported
+  chats**; there it can only be deleted.
 - **Delete messages** in a chat leaves the imported ones: delete those in the chat's **Details**, under **Imported
   chats**, or in **Settings** → **Data and devices** → **Imported chats**.
 

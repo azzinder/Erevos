@@ -171,6 +171,35 @@ test('one waiting to go without sound still goes without sound', { skip: !coreRe
   }
 });
 
+test('in hidden chats, what waits goes through their relay only, never to the phone nearby or over LoRa', { skip: !coreReady || !relayReady }, async () => {
+  const { bob, alice, peer, toAlice, link, radio, done } = await twoPhones();
+  try {
+    const url = await startRelay();
+    const relay = { url };
+    const bobIds = await createQueue(relay);
+    const aliceIds = await createQueue(relay);
+    const bobId = alice.contacts()[0].identity;
+    await bob.e2e.receive((await alice.seal(bobId, 'my queue', toHex(aliceIds.senderId), { at: { relay: url, relayKey: '' } })).packet);
+    const hidden: SendPlace = { sends: relay, own: relay, senderHex: toHex(bobIds.senderId), here: { relay: url, relayKey: '' }, ownKey: '', relayUp: false, hidden: true };
+    await bob.history.add({ peer, text: 'hidden words', mine: true, at: 1, tag: 'dddddddddddd', mark: WAITING });
+    // Their phone near, a radio linked, the relay out of reach: it waits.
+    link(true);
+    radio();
+    assert.deepEqual(await sendWaiting(bob, hidden), []);
+    assert.equal(toAlice.length, 0);
+    // The relay answers: it goes there, and only there.
+    const went = await sendWaiting(bob, { ...hidden, relayUp: true });
+    assert.deepEqual(went.map((w) => w.tag), ['dddddddddddd']);
+    assert.equal(toAlice.length, 0);
+    const packet = await receiveMessage(relay, aliceIds.recipientId);
+    assert.ok(packet);
+    const came = (await alice.receive(packet)) as Extract<Received, { kind: 'message' }>;
+    assert.deepEqual([came.text, came.tag], ['hidden words', 'dddddddddddd']);
+  } finally {
+    done();
+  }
+});
+
 test('one sent for later goes to the relay at once, which sends it at its time, and can be taken back before', { skip: !coreReady || !relayReady }, async () => {
   const { bob, alice, peer, done } = await twoPhones();
   try {

@@ -96,6 +96,11 @@ t('a WhatsApp export comes in, is kept sealed in its space, and can be deleted',
   assert.ok(!files.get(FILE)!.includes('Καλημέρα') && !files.get(FILE)!.includes('Nekten'));
   assert.deepEqual((await Archive.open('space', 1, key)).chats(), []);
   assert.deepEqual((await Archive.open('hidden', 0, key)).chats(), []);
+  // Hidden chats keep their own, which the space does not see.
+  const placeKey = randomBytes(32);
+  const [hiddenId] = await (await Archive.open('hidden2', 0, placeKey)).add(toArchived(chats, 'Nekten', 6));
+  assert.deepEqual((await Archive.open('hidden2', 0, placeKey)).chats().map((chat) => chat.id), [hiddenId]);
+  assert.deepEqual((await Archive.open('space', 0, key)).chats().map((chat) => chat.id), [id]);
 
   await again.remove(id);
   assert.deepEqual((await Archive.open('space', 0, key)).chats(), []);

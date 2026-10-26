@@ -61,6 +61,12 @@ On main, not released yet:
   one for each other place, so opening the space does not show which places receive, but whoever opens the space and
   copies what the phone keeps could open that place with no PIN. With it on, **Say when a message comes** and **Ring
   calls when closed** are not needed and do not show. Backups keep the switch.
+- **Hidden chats wait and import too**: what cannot go now waits there as in your other chats, marked **Waiting**, and
+  goes by itself through their relay only, never to the phone nearby or over LoRa: while they are open, or, with
+  **Receive while closed** on, while the space is open. **Send later** no longer needs the relay to answer when you
+  schedule. A chat exported from Telegram, WhatsApp or Viber can be imported in a hidden chat's details: kept with
+  that place, encrypted with its key, it shows only in that chat.
+- **A deleted or blocked contact's queue goes at once**, not with the next look at the relay.
 
 ## 3.3.2 (2026-10-25)
 
