@@ -4,7 +4,7 @@ import { bytesSource, readFile, refSource, type Source } from './attachments';
 import type { Place, Poll, Preview } from './chat-parts';
 import { sendGroupFile, voiceMime } from './group-media';
 import { t } from './i18n';
-import { groupRelay, spaceGroups, spaceGroupTransport } from './space-groups';
+import { spaceGroupsAt, type GroupsAt } from './space-groups';
 
 // Passing a message on to another chat.
 //
@@ -90,24 +90,25 @@ export function fileCopy(file: FileRef): { source: Source; meta: Omit<FileMeta, 
 }
 
 /**
- * Forwards a message to one of the space's groups (lib/groups.ts): its words, or its sound or its
- * bytes put on our relay anew, as a member's photo, file or voice message goes (lib/group-media.ts).
+ * Forwards a message to one of the space's groups (lib/groups.ts), or of a hidden place's (`at`):
+ * its words, or its sound or its bytes put on its relay anew, as a member's photo, file or voice
+ * message goes (lib/group-media.ts).
  */
-export async function forwardToGroup(id: string, message: Forwardable): Promise<void> {
-  const groups = await spaceGroups();
+export async function forwardToGroup(id: string, message: Forwardable, at: GroupsAt = spaceGroupsAt): Promise<void> {
+  const groups = await at.groups();
   const forwarded = { forwarded: true as const };
   if (message.voice || (message.file && message.ms)) {
     const copy = await voiceCopy(message);
     if (!copy) throw new Error(t('This voice message\'s sound is gone.'));
     const meta = { name: 'voice', mime: copy.mime, kind: 'file' as const };
-    await sendGroupFile(groups, id, await groupRelay(), bytesSource(copy.audio), meta, copy.ms, spaceGroupTransport, undefined, forwarded);
+    await sendGroupFile(groups, id, await at.relay(), bytesSource(copy.audio), meta, copy.ms, at.transport, undefined, forwarded);
     return;
   }
   if (message.file) {
     const { source, meta } = fileCopy(message.file);
-    await sendGroupFile(groups, id, await groupRelay(), source, meta, undefined, spaceGroupTransport, undefined, forwarded);
+    await sendGroupFile(groups, id, await at.relay(), source, meta, undefined, at.transport, undefined, forwarded);
     return;
   }
   const { sticker, place, poll, preview } = message;
-  await groups.send(id, message.text, spaceGroupTransport, { sticker, place, poll, preview, ...forwarded });
+  await groups.send(id, message.text, at.transport, { sticker, place, poll, preview, ...forwarded });
 }

@@ -3,6 +3,7 @@ import { loadPublicGroupData, savePublicGroupData } from '../lock/public-group-d
 import { placeQueues } from '../lock/queues-data';
 import { hiddenHolder } from '../lock/sealed-file';
 import { loadHiddenData } from '../lock/space-data';
+import { CALL_LINE } from './calls';
 import { canGroup } from './core';
 import type { GroupCallSignal } from './group-call-signal';
 import type { GroupSignal } from './group-signal';
@@ -16,7 +17,8 @@ import { groupCalls, groupSettings, groupTransport, openGroups, type GroupsAt } 
 // for its chat screen and its receiver (lib/place-receiver.ts), let go of with them. Their members
 // are the place's contacts. What goes in them goes through the place's relay only, never to phones
 // nearby, and comes to queues of their own there, which the place's moves make and read
-// (lib/queue-move.ts), as the space's do. None is public.
+// (lib/queue-move.ts), as the space's do. None is public. Their calls ring while the place's chats
+// are open, which take them (answerPlaceGroupCalls); closed, one started is kept as missed.
 
 /** A hidden place's groups, and how what comes for them is taken. */
 export type PlaceGroupsAt = GroupsAt & {
@@ -37,7 +39,8 @@ const at = (space: number, pocket: number) => `${space}.${pocket}`;
 const sameKey = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((byte, i) => byte === b[i]);
 
 const messageListeners = new Set<(space: number, pocket: number, group: string) => void>();
-const callListeners = new Set<(space: number, pocket: number, group: string, from: string, signal: GroupCallSignal) => void>();
+type CallTaker = (group: string, from: string, signal: GroupCallSignal) => void;
+const callTakers = new Map<string, CallTaker>();
 
 /** Calls `listener` with the place and the group each time a member's message comes in a hidden place's group. Returns how to stop. */
 export function onPlaceGroupMessage(listener: (space: number, pocket: number, group: string) => void): () => void {
@@ -47,11 +50,11 @@ export function onPlaceGroupMessage(listener: (space: number, pocket: number, gr
   };
 }
 
-/** Calls `listener` with each group call signal in a hidden place's groups. Returns how to stop. */
-export function onPlaceGroupCall(listener: (space: number, pocket: number, group: string, from: string, signal: GroupCallSignal) => void): () => void {
-  callListeners.add(listener);
+/** Has `take` take each group call signal in the place in `pocket` of `space`, while its chats are open. Returns how to stop. */
+export function answerPlaceGroupCalls(space: number, pocket: number, take: CallTaker): () => void {
+  callTakers.set(at(space, pocket), take);
   return () => {
-    callListeners.delete(listener);
+    if (callTakers.get(at(space, pocket)) === take) callTakers.delete(at(space, pocket));
   };
 }
 
@@ -76,7 +79,11 @@ export function placeGroupsAt(space: number, pocket: number, key: Uint8Array): P
         settings,
         chats,
       });
-      place.onCall((group, from, signal) => callListeners.forEach((listener) => listener(space, pocket, group, from, signal)));
+      place.onCall((group, from, signal) => {
+        const take = callTakers.get(at(space, pocket));
+        if (take) take(group, from, signal);
+        else if (signal.kind === 'start') void place.line(group, `${CALL_LINE}Missed ${signal.video ? 'group video call' : 'group call'}`).catch(() => undefined);
+      });
       place.onMessage((group) => messageListeners.forEach((listener) => listener(space, pocket, group)));
       return place;
     })();

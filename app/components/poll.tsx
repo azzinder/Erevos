@@ -8,7 +8,7 @@ import { useColors } from '../theme/context';
 
 import { Button, Chip, Field, Input, Row, Sheet, Text, TextButton } from './ui';
 
-// A poll, in a contact's chat (app/chat.tsx) and in a group (app/group.tsx): the sheet to make one,
+// A poll, in a contact's chat (app/chat.tsx) and in a group (components/group-chat.tsx): the sheet to make one,
 // and the poll in its bubble, where a tap on an option chooses it, or takes the choice back.
 
 /** One who voted: their name, as the chat shows it, and the options they chose. */

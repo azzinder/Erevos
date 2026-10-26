@@ -10,7 +10,7 @@ import { openLink } from './linked-text';
 import { Text } from './ui';
 
 // What a message shows besides its words, in a contact's chat (app/chat.tsx) and in a group
-// (app/group.tsx), drawn the same in both: the message it answers, the reactions to it, the
+// (components/group-chat.tsx), drawn the same in both: the message it answers, the reactions to it, the
 // messages pinned to the top of the chat, a place sent once, and a link's preview.
 
 /**

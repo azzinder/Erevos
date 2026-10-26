@@ -11,16 +11,16 @@ import { pickSource, TooLargeError } from '../lib/pick-file';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import type { Relay } from '../lib/relay';
 import { saveFile } from '../lib/save-file';
-import { groupRelay, spaceGroups, spaceGroupTransport } from '../lib/space-groups';
 import { MAX_VOICE_MS, MIN_VOICE_MS, voiceDuration } from '../lib/voice';
 import { cleanFileName, cleanMime, mimeOf, type FileMeta, type FileRef } from '../lock/attachment-files';
 import type { GroupMessage } from '../lock/group-data';
 import { Attachment, comingText, FileViewer, shownOf, useShownPhotos } from './attachment';
 import { ComposerPanel, type ComposerTile, type VoiceControl } from './composer';
+import { useGroupsWhere } from './groups-at';
 import { PhotoSticker } from './stickers';
 import { Text } from './ui';
 
-// Photos, files and voice messages in a group's thread (app/group.tsx, lib/group-media.ts): the
+// Photos, files and voice messages in a group's thread (components/group-chat.tsx, lib/group-media.ts): the
 // panel "+" opens under its message bar (components/composer.tsx), the bar's microphone, each
 // one's place in its bubble, and the photo or file looked at on its own. Others' up to AUTO_TAKE
 // are taken from the relay while the group is open, as they come; bigger ones when tapped. A voice
@@ -42,6 +42,7 @@ type Picked = { name: string; mime: string; source: Source; w?: number; h?: numb
  * (components/group-messages.tsx), each opened once the panel has closed.
  */
 export function useGroupMedia(id: string, messages: GroupMessage[], onError: (text: string) => void, more?: (afterPanel: (then: () => void) => void) => ComposerTile[]) {
+  const { at: groupsAt } = useGroupsWhere();
   const [own, setOwn] = useState<Relay | null>(null);
   const [quality, setQuality] = useState<PhotoQuality>('original');
   const [attaching, setAttaching] = useState(false);
@@ -78,7 +79,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   useEffect(() => {
     clearLeftovers();
     loadPhotoQuality().then(setQuality, () => undefined);
-    groupRelay().then(setOwn, () => setOwn(null));
+    groupsAt.relay().then(setOwn, () => setOwn(null));
     // Nothing plays, or records, once the group closes.
     return () => {
       stopPlaying.current?.();
@@ -86,7 +87,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
       if (longest.current) clearTimeout(longest.current);
       if (saidTimer.current) clearTimeout(saidTimer.current);
     };
-  }, []);
+  }, [groupsAt]);
 
   const fileOf = (m: GroupMessage) => (m.file ? (taken[m.file.id] ?? m.file) : undefined);
   const shown = messages.map((m) => (m.file ? { ...m, file: fileOf(m) } : m));
@@ -97,13 +98,13 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     takingNow.current.add(ref.id);
     tried.current.add(ref.id);
     try {
-      const relay = own ?? (await groupRelay().catch(() => null));
+      const relay = own ?? (await groupsAt.relay().catch(() => null));
       if (!relay) {
         onError(t('Type the relay address in Relay first.'));
         return;
       }
       setTaking((now) => ({ ...now, [ref.id]: '0%' }));
-      const kept = await takeGroupFile(await spaceGroups(), id, relay, ref, (done, count) =>
+      const kept = await takeGroupFile(await groupsAt.groups(), id, relay, ref, (done, count) =>
         setTaking((now) => ({ ...now, [ref.id]: `${Math.floor((done / count) * 100)}%` })),
       );
       if (kept) setTaken((now) => ({ ...now, [ref.id]: kept }));
@@ -133,9 +134,9 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   async function send(what: 'photo' | 'file' | 'voice', source: Source, meta: Omit<FileMeta, 'size'>, ms?: number) {
     try {
       if (source.size > MAX_FILE) throw new TooLargeError();
-      const relay = own ?? (await groupRelay());
+      const relay = own ?? (await groupsAt.relay());
       if (what !== 'voice') say(what === 'photo' ? t('Sending the photo…') : t('Sending the file…'), true);
-      await sendGroupFile(await spaceGroups(), id, relay, source, meta, ms, spaceGroupTransport, (done, count) => {
+      await sendGroupFile(await groupsAt.groups(), id, relay, source, meta, ms, groupsAt.transport, (done, count) => {
         if (count < 2 || what === 'voice') return;
         const percent = Math.floor((done / count) * 100);
         say(what === 'photo' ? t('Sending the photo, {percent}%', { percent }) : t('Sending the file, {percent}%', { percent }), true);

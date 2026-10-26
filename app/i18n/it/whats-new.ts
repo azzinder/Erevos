@@ -29,6 +29,8 @@ export const whatsNew: Record<string, string> = {
     "**Di più nelle chat nascoste**: con Ricevere da chiuse, ciò che arriva loro tramite Nostr si legge anche mentre sono chiuse; e lì si può aggiungere un contatto da una foto del suo codice QR e dare una foto a un contatto nascosto. Vedi [Chat nascoste](#hidden).",
   "**Hidden chats with no relay**: as your other chats, they can begin through Nostr only: their contact link and QR code say where they read there, and texts and reactions go there. See [Hidden chats](#hidden).":
     "**Chat nascoste senza relay**: come le tue altre chat, possono iniziare solo tramite Nostr: il loro link di contatto e il codice QR dicono dove leggono lì, e testi e reazioni vanno lì. Vedi [Chat nascoste](#hidden).",
+  "**Groups in hidden chats**: under their list, New group makes a group with their contacts; it lists among their chats, goes through their relay only, and is read while they are closed if Receive while closed is on. See [Hidden chats](#hidden).":
+    "**Gruppi nelle chat nascoste**: sotto il loro elenco, Nuovo gruppo crea un gruppo con i loro contatti; compare tra le loro chat, passa solo dal loro relay e viene letto mentre sono chiuse se Ricevere da chiuse è attivo. Vedi [Chat nascoste](#hidden).",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Il pulsante di chiamata normale per più contatti**: il tastierino arancione in cima alla chat di un contatto usa anche il numero del contatto a cui l’hai collegato (**Collega a uno dei miei contatti**), prima il cellulare.',

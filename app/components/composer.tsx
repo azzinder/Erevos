@@ -50,7 +50,7 @@ import {
 import { dismissKeyboard } from './keyboard';
 import { buttonColors, Chip, fontStyle, Text, Toggle } from './ui';
 
-// The message bar under a chat's thread, a contact's (app/chat.tsx) or a group's (app/group.tsx):
+// The message bar under a chat's thread, a contact's (app/chat.tsx) or a group's (components/group-chat.tsx):
 // one floating bar of glass with "+" for the panel under it, the field, the sticker button at the
 // field's end, the stopwatch for a message that disappears (contacts' chats only), and one round
 // button: the microphone, held to record a voice message, which turns into the send arrow once

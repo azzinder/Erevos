@@ -87,8 +87,11 @@ import { chatMedia, dayKey, daysOf, IMPORTED_TAG, importedTag, isImportedSticker
 import { ChatMedia, DayCalendar } from '../components/chat-media';
 import { ChatRow, MyselfRow } from '../components/chat-row';
 import { MyselfChat } from '../components/myself-chat';
+import { GroupChat } from '../components/group-chat';
+import { GroupsWhereProvider, type GroupsWhere } from '../components/groups-at';
+import { NewGroupForm } from '../components/new-group';
 import { armPlaceReminders, myNotes, onNotesChanged, type Note, type NotesAt } from '../lib/myself';
-import { buildInbox } from '../lib/inbox';
+import { buildInbox, groupRows, mergeRows, type InboxGroup } from '../lib/inbox';
 import { FoundExport, useImportFlow } from '../components/import-flow';
 import { Archive, type LinkedMessage } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
@@ -118,7 +121,8 @@ import { linkedCardNumber, type Among, type Card as ContactCard } from '../lib/c
 import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
-import { isGroupPacket, type GroupInfo } from '../lib/groups';
+import { isGroupPacket, memberName, noteText, type GroupInfo } from '../lib/groups';
+import { groupCallSignal } from '../lib/group-calls';
 import { spaceGroups, takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
 import {
   borrowPlace,
@@ -152,7 +156,7 @@ import { answerInvites, answerTextInvite, expireTextInvites, linkInviter, refres
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
 import { placeChats } from '../lib/place-chats';
-import { placeGroupsAt } from '../lib/place-groups';
+import { answerPlaceGroupCalls, placeGroupsAt } from '../lib/place-groups';
 import { holdPlace, takePlaceCalls } from '../lib/place-receiver';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, orNostr, sendNostrAgain, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
 import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
@@ -542,6 +546,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   );
   const [placeNotes, setPlaceNotes] = useState<Note[] | null>(null);
   const [myselfShown, setMyselfShown] = useState(false);
+  // In hidden chats, one of their groups shown over them (components/group-chat.tsx), or a new one being made.
+  const [shownGroup, setShownGroup] = useState<string | null>(null);
+  const [makingGroup, setMakingGroup] = useState(false);
+  const [placeGroupList, setPlaceGroupList] = useState<InboxGroup[]>([]);
   useEffect(() => {
     if (!notesAt) return;
     let live = true;
@@ -815,6 +823,35 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // This hidden place's groups (lib/place-groups.ts), the same its receiver has; the space's otherwise (lib/space-groups.ts).
   const placeGroups = useMemo(() => (hiddenKey ? placeGroupsAt(currentSpace().space, pocket, hiddenKey) : null), [hiddenKey, pocket]);
   const takeGroup = (packet: Uint8Array) => (placeGroups ? placeGroups.take(packet) : takeGroupPacket(packet));
+  // Its groups listed with its chats, as they change; none shows once it closes or another opens.
+  useEffect(() => {
+    setShownGroup(null);
+    setPlaceGroupList([]);
+    if (!placeGroups || !canGroup()) return;
+    let active = true;
+    let stop = () => undefined as void;
+    placeGroups.groups().then(
+      (groups) => {
+        if (!active) return;
+        const read = () => setPlaceGroupList(groups.list());
+        read();
+        stop = groups.onChange(read);
+      },
+      () => undefined,
+    );
+    return () => {
+      active = false;
+      stop();
+    };
+  }, [placeGroups]);
+  // Their calls ring while these hidden chats are open (lib/place-groups.ts).
+  useEffect(
+    () =>
+      placeGroups
+        ? answerPlaceGroupCalls(currentSpace().space, pocket, (group, from, signal) => void groupCallSignal(placeGroups.calls, group, from, signal, rtc).catch(() => undefined))
+        : undefined,
+    [placeGroups, pocket],
+  );
   const [homeUrl, setHomeUrl] = useState('');
   const [homeToken, setHomeToken] = useState('');
   const [homeNote, setHomeNote] = useState('');
@@ -2520,12 +2557,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const forwardable = (message: Message) =>
     message.peer.startsWith(CONTACT_PREFIX) && !!message.tag && !message.lasts && !message.until && !isCallLine(message.text) && canForward(message);
 
-  // Asks where a message goes: to a contact of this place, or, outside hidden chats, to a group.
+  // Asks where a message goes: to a contact of this place, or to one of its groups.
   function startForward(message: Message) {
     setForwarding(message);
     setForwardGroups([]);
-    if (hiddenKey) return;
-    spaceGroups().then(
+    (placeGroups ? placeGroups.groups() : spaceGroups()).then(
       (groups) => setForwardGroups(groups.list().filter((group) => group.status === 'in')),
       () => setForwardGroups([]),
     );
@@ -2566,14 +2602,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setForwarding(null);
     setNote(t('Forwarding…'));
     try {
-      await forwardToGroup(id, message);
+      await forwardToGroup(id, message, placeGroups ?? undefined);
     } catch (error) {
       setNote(notSent(error));
       return;
     }
     setNote('');
     setAttaching(false);
-    router.push(`/group?id=${id}`);
+    if (placeGroups) setShownGroup(id);
+    else router.push(`/group?id=${id}`);
   }
 
   // Finds where the phone is, to show before it goes.
@@ -2628,6 +2665,30 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const { space, key } = currentSpace();
     return { holder: hiddenKey ? hiddenHolder(pocket) : 'space', space, key: hiddenKey ?? key };
   }, [hiddenKey, pocket]);
+
+  // A contact's chat opened from one of these hidden chats' groups, with a message forwarded to it.
+  const openFromGroup = useRef((_identity: string) => undefined as void);
+  openFromGroup.current = (identity) => {
+    const peer = `${CONTACT_PREFIX}${identity}`;
+    setShownGroup(null);
+    setSelected(peer);
+    const message = takeForward(peer);
+    if (message) void forwardTo(message, peer);
+  };
+  // Where the group screens find these hidden chats' groups (components/groups-at.tsx): shown here.
+  const placeWhere = useMemo<GroupsWhere | null>(
+    () =>
+      placeGroups && hiddenKey
+        ? {
+            at: placeGroups,
+            stickers: () => stickerPlace,
+            previews: async () => (await loadHiddenData(currentSpace().space, pocket, hiddenKey)).previews,
+            openGroup: setShownGroup,
+            openContact: (identity) => openFromGroup.current(identity),
+          }
+        : null,
+    [placeGroups, hiddenKey, pocket, stickerPlace],
+  );
 
   // Sends a sticker made from a photo: as a photo goes, marked as a sticker (lib/own-stickers.ts).
   function sendOwnSticker(sticker: OwnSticker) {
@@ -3110,7 +3171,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   async function deleted(peer: string, name: string, block: boolean) {
     if (!e2e) return;
     const identity = peer.slice(CONTACT_PREFIX.length);
-    const shared = hiddenKey ? 0 : await sharedGroups(identity).catch(() => 0);
+    const shared = await sharedGroups(identity).catch(() => 0);
     const request = e2e.contacts().some((c) => c.identity === identity && c.request);
     // What a relay holds for later to them goes no more: kept with their removal, and dropped now
     // or with a later look.
@@ -3167,10 +3228,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (said) setNote(said);
   }
 
-  // The space's groups the contact `identity` is in with this phone, by who each member is.
+  // The groups of the space, or of these hidden chats, the contact `identity` is in with this phone, by who each member is.
   async function sharedGroups(identity: string): Promise<number> {
     if (!canGroup()) return 0;
-    const groups = await spaceGroups();
+    const groups = await (placeGroups ? placeGroups.groups() : spaceGroups());
     let shared = 0;
     for (const group of groups.list()) {
       if (group.status !== 'in') continue;
@@ -4514,20 +4575,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     [contacts, archive],
   );
   const chips = contacts.map((contact) => `${CONTACT_PREFIX}${contact.identity}`);
-  // Hidden chats listed as home lists the space's (app/index.tsx): the newest first, with what was
-  // said last and how many are not read. None is locked with a PIN of its own in them.
-  const placeRows = useMemo(
-    () =>
-      hiddenKey
-        ? buildInbox(
-            shownContacts.map((c) => ({ ...c, locked: false })),
-            messages,
-            archive?.chats() ?? [],
-            Date.now(),
-          )
-        : [],
-    [hiddenKey, shownContacts, messages, archive, archiveTick, now],
-  );
+  // Hidden chats listed as home lists the space's (app/index.tsx), their groups among them: the newest
+  // first, with what was said last and how many are not read. None is locked with a PIN of its own in them.
+  const placeRows = useMemo(() => {
+    if (!hiddenKey) return [];
+    const name = (identity: string) => memberName(identity, shownContacts);
+    return mergeRows(
+      buildInbox(
+        shownContacts.map((c) => ({ ...c, locked: false })),
+        messages,
+        archive?.chats() ?? [],
+        Date.now(),
+      ),
+      // And their groups, with no PIN of their own either.
+      groupRows(
+        placeGroupList.map((g) => ({ ...g, locked: false })),
+        name,
+        (text) => noteText(text, name),
+      ),
+    );
+  }, [hiddenKey, shownContacts, messages, archive, archiveTick, now, placeGroupList]);
   const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
   const talkie = selectedContact ? talkies.has(selectedContact) : false;
   listening.current = shown && appActive && !gated ? selectedContact : null;
@@ -4811,6 +4878,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return (
       <SwipeBack onBack={() => setMyselfShown(false)}>
         <MyselfChat at={notesAt} onBack={() => setMyselfShown(false)} />
+      </SwipeBack>
+    );
+  }
+
+  if (shownGroup && placeWhere) {
+    return (
+      <SwipeBack onBack={() => setShownGroup(null)}>
+        <GroupsWhereProvider value={placeWhere}>
+          <GroupChat id={shownGroup} onBack={() => setShownGroup(null)} />
+        </GroupsWhereProvider>
       </SwipeBack>
     );
   }
@@ -5437,10 +5514,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     row={row}
                     now={now}
                     online={!!e2e && contacts.some((c) => c.identity === row.identity && !c.hide) && e2e.onlineUntil(row.identity, now) > 0}
-                    onOpen={() => setSelected(`${CONTACT_PREFIX}${row.identity}`)}
+                    onOpen={() => (row.identity.startsWith('group:') ? setShownGroup(row.identity.slice('group:'.length)) : setSelected(`${CONTACT_PREFIX}${row.identity}`))}
                   />
                 ))}
                 {placeRows.length === 0 ? <Text tone="muted">{t('No hidden chats yet. Add a contact below, or move a chat here from its details.')}</Text> : null}
+                {placeWhere && canGroup() ? (
+                  <Row>
+                    <Button title={t('New group')} kind="secondary" compact onPress={() => setMakingGroup(true)} />
+                  </Row>
+                ) : null}
               </View>
             ) : chips.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.faces} keyboardShouldPersistTaps="handled">
@@ -6130,6 +6212,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
           <StickerPicker onPick={sendSticker} mine={{ place: stickerPlace, onPick: sendOwnSticker }} />
         </Sheet>
+        {placeWhere ? (
+          <Sheet visible={makingGroup && shown} onClose={() => setMakingGroup(false)} title={t('New group')}>
+            <GroupsWhereProvider value={placeWhere}>
+              <NewGroupForm
+                onMade={(id) => {
+                  setMakingGroup(false);
+                  setShownGroup(id);
+                }}
+              />
+            </GroupsWhereProvider>
+          </Sheet>
+        ) : null}
         <Sheet visible={!!forwarding && shown} onClose={() => setForwarding(null)} title={t('Forward to')}>
           {forwarding ? (
             <>

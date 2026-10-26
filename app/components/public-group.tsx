@@ -4,9 +4,9 @@ import { Platform, Share } from 'react-native';
 import { shownLine } from '../lib/call-lines';
 import { t } from '../lib/i18n';
 import type { PublicGroups, PublicInfo } from '../lib/public-groups';
-import { spaceGroups } from '../lib/space-groups';
 import { voiceDuration } from '../lib/voice';
 import type { GroupMessage } from '../lock/group-data';
+import { useGroupsWhere } from './groups-at';
 
 // What the group screen needs of a public group (lib/public-groups.ts), kept apart from it: whether
 // the group is one, what this phone may do there, and its members' names, all as they change.
@@ -21,12 +21,14 @@ export type PublicGroupView = {
 };
 
 export function usePublicGroup(id: string): PublicGroupView {
+  const { at } = useGroupsWhere();
   const [seen, setSeen] = useState<{ groups: PublicGroups | null; info: PublicInfo | null }>({ groups: null, info: null });
 
   useEffect(() => {
     let stop = () => undefined as void;
     let active = true;
-    void spaceGroups()
+    void at
+      .groups()
       .then((groups) => {
         if (!active) return;
         const read = () => setSeen({ groups, info: groups.publicInfo(id) });
@@ -38,7 +40,7 @@ export function usePublicGroup(id: string): PublicGroupView {
       active = false;
       stop();
     };
-  }, [id]);
+  }, [id, at]);
 
   const info = seen.info;
   return {

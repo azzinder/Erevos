@@ -250,6 +250,13 @@ export function groupCalls(groups: () => Promise<PublicGroups>, transport: Group
         .then((made) => made.line(group, text))
         .catch(() => undefined);
     },
+    async names(group) {
+      const [made, { e2e }] = await Promise.all([groups(), chats()]);
+      return {
+        group: made.list().find((g) => g.id === group)?.name ?? '',
+        contacts: e2e.contacts().map((c) => ({ identity: c.identity, name: c.name })),
+      };
+    },
   };
 }
 

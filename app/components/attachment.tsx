@@ -11,7 +11,7 @@ import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors, useStyles } from '../theme/context';
 import { Button, Row, Text } from './ui';
 
-// Photos and files in a thread, a contact's (app/chat.tsx) or a group's (app/group.tsx): each in
+// Photos and files in a thread, a contact's (app/chat.tsx) or a group's (components/group-chat.tsx): each in
 // its bubble, and the one looked at on its own, to save. They are sent from the panel under the
 // message bar (components/composer.tsx). A photo is read into memory to show, never written out
 // unsealed, and let go of once it no longer shows.

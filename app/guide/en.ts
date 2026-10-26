@@ -988,7 +988,7 @@ out members.
   writes them out; **Starred messages** and the home screen's search take in the groups too. A member whose Erevos is
   from before this version sees the words, a sticker's emoji, a place's coordinates and a poll's question, and
   nothing of reactions, pins, edits and deleting.
-- **Not yet:** marks, typing and disappearing messages in groups, groups in hidden chats, and groups over a nearby phone.
+- **Not yet:** marks, typing and disappearing messages in groups, and groups over a nearby phone.
 
 ## Public groups {#public-groups}
 
@@ -1655,9 +1655,9 @@ what the places taken away hold.
    hold **New chat** down for a second: a field for the PIN opens, the same in every space; type it and
    tap **Open**. It opens only the place with that PIN. A wrong PIN is just a search, or only closes the field:
    nothing happens.
-3. They open titled **Hidden chats**, with **Contacts** and **Change PIN** at the top, and list their chats as the
-   home screen lists yours: the newest first, each with what was said last, when, and how many are not read. Tap one
-   to open it. The back arrow closes them.
+3. They open titled **Hidden chats**, with **Contacts** and **Change PIN** at the top, and list their chats and groups
+   as the home screen lists yours: the newest first, each with what was said last, when, and how many are not read. Tap
+   one to open it. The back arrow closes them.
 4. To move another chat into a place, open its **Details**, tap **Move to hidden chats**, type that place's PIN and
    tap **Move**. The
    chat leaves your list with its messages, name, picture and look, and its safety number stays the same. Their phone
@@ -1667,8 +1667,8 @@ what the places taken away hold.
 
 - **Relay or Nostr only:** hidden chats have their own relay queue and their own keys, and never use the nearby link.
   With no relay, their contact link says where they read on Nostr, with a key of that place alone, and texts go there,
-  as from a phone with no relay; photos, voice messages and calls need a relay. While they are closed, their messages
-  wait on the relay, or on Nostr for two days, unless **Receive while closed** is on.
+  as from a phone with no relay; photos, voice messages, calls and groups need a relay. While they are closed, their
+  messages wait on the relay, or on Nostr for two days, unless **Receive while closed** is on.
 - **Receive while closed:** a switch at the top of each place. On, its hidden chats receive as your other chats do
   while the space is open, whatever screen shows and with Erevos in the background: their contacts see at once that a
   message came, a notice says only "New message", on Android a call rings with "Incoming call" and no name (on the
@@ -1690,6 +1690,13 @@ what the places taken away hold.
   from another app can be imported into a hidden chat's details (see [Imported chats](#import)). A contact can be
   added from a photo of their QR code there too, taken or picked while they stay open. Each place has its own
   **Chat with myself**, first in its list (see **Chat with myself and reminders** under [Getting started](#start)).
+- **Groups:** **New group**, under their list, makes a group with their contacts, as on the home screen (see
+  [Group chats](#groups)), and it shows in their list among their chats. Its members are only contacts of that place,
+  and one you add as a contact from it becomes a contact of that place. What is written in it goes through the place's
+  relay only, to a queue of its own there, never to a phone nearby; while the place is closed it is read only with
+  **Receive while closed** on, and **Say when a message comes** does not count it. Its calls ring only while the
+  hidden chats are open: one started while they are closed shows as missed. A group there has no PIN of its own, and
+  none is public.
 - **Link previews** have a switch of their own in a hidden chat's details, for all the chats of that place, off unless
   you turn it on (see **Link previews** under [Chat through a relay](#relay)).
 - **Say when a message comes** (Android): at the top of a place while **Receive while closed** is off. Turned on,

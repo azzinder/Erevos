@@ -29,6 +29,8 @@ export const whatsNew: Record<string, string> = {
     "**Više u skrivenim razgovorima**: uz Primanje dok su zatvoreni, ono što im stigne preko Nostra čita se i dok su zatvoreni; a tamo se kontakt može dodati s fotografije njegovog QR koda, a skrivenom kontaktu dati fotografija. Pogledajte [Skriveni razgovori](#hidden).",
   "**Hidden chats with no relay**: as your other chats, they can begin through Nostr only: their contact link and QR code say where they read there, and texts and reactions go there. See [Hidden chats](#hidden).":
     "**Skriveni razgovori bez relaya**: kao vaši drugi razgovori, mogu početi samo preko Nostra: njihov link za kontakt i QR kod kažu gdje tamo čitaju, a tekstovi i reakcije idu tamo. Pogledajte [Skriveni razgovori](#hidden).",
+  "**Groups in hidden chats**: under their list, New group makes a group with their contacts; it lists among their chats, goes through their relay only, and is read while they are closed if Receive while closed is on. See [Hidden chats](#hidden).":
+    "**Grupe u skrivenim razgovorima**: ispod njihovog popisa, Nova grupa pravi grupu s njihovim kontaktima; ona stoji među njihovim razgovorima, ide samo preko njihovog relaya i čita se dok su zatvoreni ako je Primanje dok su zatvoreni uključeno. Pogledajte [Skriveni razgovori](#hidden).",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Dugme za običan poziv za više kontakata**: narandžasta tastatura na vrhu razgovora s kontaktom uzima i broj kontakta s kojim ste ga povezali (**Poveži s jednim od mojih kontakata**), prvo broj mobilnog.',

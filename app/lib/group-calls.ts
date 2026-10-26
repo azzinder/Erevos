@@ -19,6 +19,8 @@ export type GroupCallPlace = {
   me(): Promise<string>;
   /** Keeps a line in the group. */
   line(group: string, text: string): void;
+  /** The group's name, and the contacts its members are named by, for the call screen. */
+  names?(group: string): Promise<{ group: string; contacts: { identity: string; name: string }[] }>;
 };
 
 /** A call going on in a group: its id, who started it, whether it is a video call, and who is in

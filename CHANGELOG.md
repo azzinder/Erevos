@@ -83,6 +83,11 @@ On main, not released yet:
   say where they read on Nostr, with a key of that place alone, and texts, reactions, what waited and the marks that a
   message came go there, while they are open or, with **Receive while closed** on, closed. Photos, voice messages and
   calls still need a relay.
+- **Groups in hidden chats**: **New group** under a place's list makes a private group with its contacts, kept with
+  the place and encrypted with its key, listed among its chats and shown inside them, with photos, files, voice
+  messages and calls. It goes through the place's relay only, to a queue of its own there, and is read while the place
+  is closed if **Receive while closed** is on; its calls ring only while the place is open, and one started while it
+  is closed shows as missed. None has a PIN of its own, and none is public.
 - **A deleted or blocked contact's queue goes at once**, not with the next look at the relay.
 
 ## 3.3.2 (2026-10-25)

@@ -11,8 +11,7 @@ import { currentGroupCall, type GroupCall } from '../lib/group-call';
 import { closeGroupCall, endGroupCall, groupCallSignal, onGroupCallChange, shownGroupCall } from '../lib/group-calls';
 import { memberName } from '../lib/groups';
 import { learnSpaceNames, spaceCalls } from '../lib/space-calls';
-import { spaceChats } from '../lib/space-chats';
-import { onSpaceGroupCall, spaceGroupCalls, spaceGroups } from '../lib/space-groups';
+import { onSpaceGroupCall, spaceGroupCalls } from '../lib/space-groups';
 import { rtc } from '../lib/webrtc';
 import { t } from '../lib/i18n';
 import { CallScreen } from './call-screen';
@@ -91,17 +90,15 @@ export function CallHost() {
 
   useEffect(() => {
     const groupChanged = () => {
-      const call = shownGroupCall()?.call ?? null;
-      if (call && call !== knownGroup.current) {
+      const shown = shownGroupCall();
+      const call = shown?.call ?? null;
+      if (shown && call && call !== knownGroup.current) {
         knownGroup.current = call;
         setSpeaker(call.video);
-        void Promise.all([spaceGroups(), spaceChats()])
-          .then(([groups, { e2e }]) =>
-            setNames({
-              group: groups.list().find((g) => g.id === call.group)?.name ?? t('Group'),
-              contacts: e2e.contacts().map((c) => ({ identity: c.identity, name: c.name })),
-            }),
-          )
+        // Named as its group is: the space's, or a hidden place's while its chats are open (lib/place-groups.ts).
+        void shown.place
+          .names?.(call.group)
+          .then((named) => setNames({ group: named.group || t('Group'), contacts: named.contacts }))
           .catch(() => undefined);
       }
       setShown((n) => n + 1);

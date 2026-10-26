@@ -1,19 +1,19 @@
 import { Pressable, View } from 'react-native';
 
 import { memberName } from '../lib/groups';
-import { spaceChats } from '../lib/space-chats';
+import { spaceChats, type SpaceChats } from '../lib/space-chats';
 import { radius, space } from '../theme/colors';
 import { useTheme } from '../theme/context';
 import { KeyFace } from './key-face';
 import { Text } from './ui';
 
-// Choosing contacts for a group (app/new-group.tsx, and adding members in app/group.tsx).
+// Choosing contacts for a group (components/new-group.tsx, and adding members in components/group-chat.tsx).
 
 export type Pick = { identity: string; name: string };
 
-/** The space's contacts who can be asked into a group: accepted, and reachable. */
-export async function groupableContacts(): Promise<Pick[]> {
-  const { e2e } = await spaceChats();
+/** The contacts of the chats `chats` gives (the space's, unless said) who can be asked into a group: accepted, and reachable. */
+export async function groupableContacts(chats: () => Promise<SpaceChats> = spaceChats): Promise<Pick[]> {
+  const { e2e } = await chats();
   return e2e
     .contacts()
     .filter((c) => !c.request && c.sender)

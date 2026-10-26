@@ -9,7 +9,7 @@ import { useColors } from '../theme/context';
 import { Sheet, Text } from './ui';
 
 // A message's menu, opened by pressing and holding it, in a contact's chat (app/chat.tsx) and in a
-// group (app/group.tsx): the message in a line, the reactions at a tap with more behind the last,
+// group (components/group-chat.tsx): the message in a line, the reactions at a tap with more behind the last,
 // then what can be done with it. The menu closes before what was picked runs, so a question it asks
 // shows (on the web, over the sheet, it would not).
 

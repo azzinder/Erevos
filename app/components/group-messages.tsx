@@ -1,4 +1,4 @@
-import { router, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Platform, Pressable, ScrollView, View, type LayoutChangeEvent, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
@@ -20,18 +20,15 @@ import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
 import { CAN_PLACE, findPlace } from '../lib/place';
 import { throughTor } from '../lib/relay';
 import { saveText } from '../lib/save-file';
-import { spaceChats } from '../lib/space-chats';
-import { groupRelay, spaceGroups, spaceGroupTransport } from '../lib/space-groups';
 import { stickerOf } from '../lib/stickers';
 import type { FileRef } from '../lock/attachment-files';
 import type { GroupMessage, GroupParts } from '../lock/group-data';
-import { currentSpace } from '../lock/keys';
-import { loadCurrentSpaceData } from '../lock/space-data';
-import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
+import { openOwnSticker, type OwnSticker } from '../lock/sticker-data';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 import type { Answering, ComposerTile, DraftBox, Editing } from './composer';
+import { useGroupsWhere } from './groups-at';
 import { MessageMenu, type MenuAction } from './message-menu';
 import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from './message-parts';
 import { PollCard, PollSheet } from './poll';
@@ -39,7 +36,7 @@ import { PLAYS_LAST, StickerPicker, StickerView } from './stickers';
 import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
 
 // What a group's messages do beyond words and files (lib/group-parts.ts), in its thread
-// (app/group.tsx), as in a contact's chat: a message held down opens its menu (react, reply,
+// (components/group-chat.tsx), as in a contact's chat: a message held down opens its menu (react, reply,
 // forward, star, pin, copy, delete), and its bubble shows what it answers, a sticker, a place, a
 // poll, a link's preview, its reactions, and that it was forwarded or is starred. The messages
 // pinned show over the thread; a search goes through the group's messages. Under "+", and the
@@ -79,6 +76,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   draft?: DraftBox;
 }) {
   const colors = useColors();
+  const where = useGroupsWhere();
+  const { at: groupsAt } = where;
   const [menuFor, setMenuFor] = useState<GroupMessage | null>(null);
   const [replying, setReplying] = useState<GroupMessage | null>(null);
   // The message of ours the bar gives new words, while it does.
@@ -103,17 +102,14 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   const [asked, setAsked] = useState<Asked | null>(null);
 
   const out = !info || info.status !== 'in';
-  // The space's stickers made from photos: hidden chats have no groups.
-  const stickerPlace = useMemo<StickerPlace>(() => ({ holder: 'space', ...currentSpace() }), []);
+  // The stickers made from photos of the space, or of the hidden place the group is in.
+  const stickerPlace = useMemo(() => where.stickers(), [where]);
   // The last few messages play their sticker as they show.
   const playing = new Set(messages.slice(-PLAYS_LAST).map((m) => m.tag));
 
   useEffect(() => {
-    loadCurrentSpaceData().then(
-      (data) => setPreviews(data.previews),
-      () => setPreviews(false),
-    );
-  }, []);
+    where.previews().then(setPreviews, () => setPreviews(false));
+  }, [where]);
 
   useFocusEffect(
     useCallback(() => {
@@ -159,7 +155,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   // Says something of a message for every member; what went wrong shows.
   async function mark(marked: Marked): Promise<GroupMessage | null> {
     try {
-      return await (await spaceGroups()).mark(id, marked, spaceGroupTransport);
+      return await (await groupsAt.groups()).mark(id, marked, groupsAt.transport);
     } catch (error) {
       onNote(t('Not sent. {reason}', { reason: errorText(error) }));
       return null;
@@ -176,7 +172,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   }
 
   function star(m: GroupMessage) {
-    void spaceGroups()
+    void groupsAt
+      .groups()
       .then((groups) => groups.star(id, m.tag, !m.starred))
       .catch((error) => onNote(errorText(error)));
   }
@@ -188,12 +185,13 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   // Deletes a message here, or, ours, for every member: then its file leaves our relay too.
   function remove(m: GroupMessage) {
     const here = () =>
-      void spaceGroups()
+      void groupsAt
+        .groups()
         .then((groups) => groups.deleteHere(id, m.tag))
         .catch((error) => onNote(errorText(error)));
     const everyone = async () => {
       const gone = await mark({ t: 'erase', tag: m.tag });
-      if (gone?.put) await takeOffRelay(await groupRelay(), gone.put).catch(() => undefined);
+      if (gone?.put) await takeOffRelay(await groupsAt.relay(), gone.put).catch(() => undefined);
     };
     ask(t('Delete message'), t('Delete this message? It cannot be brought back.'), [
       { text: t('Cancel'), style: 'cancel' },
@@ -207,11 +205,11 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     return { text, file, ms, sticker, place, poll, preview };
   };
 
-  // Asks where a message goes: to a contact's chat, or another group of the space.
+  // Asks where a message goes: to a contact's chat, or another group, of the space or the hidden place.
   async function startForward(m: GroupMessage) {
     setForwarding(m);
     setTargets([]);
-    const [chats, groups] = await Promise.all([spaceChats().catch(() => null), spaceGroups().catch(() => null)]);
+    const [chats, groups] = await Promise.all([groupsAt.chats().catch(() => null), groupsAt.groups().catch(() => null)]);
     const contacts: Target[] = (chats?.e2e.contacts() ?? [])
       .filter((c) => !c.request)
       .map((c) => ({
@@ -219,7 +217,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
         name: memberName(c.identity, [c]),
         go: async () => {
           handForward(`contact:${c.identity}`, forwardable(m));
-          router.push(`/chat?contact=${c.identity}`);
+          where.openContact(c.identity);
         },
       }));
     const others: Target[] = (groups?.list() ?? [])
@@ -229,9 +227,9 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
         name: t('{name} (group)', { name: g.name }),
         go: async () => {
           onNote(t('Forwarding…'));
-          await forwardToGroup(g.id, forwardable(m));
+          await forwardToGroup(g.id, forwardable(m), groupsAt);
           onNote('');
-          if (g.id !== id) router.push(`/group?id=${g.id}`);
+          if (g.id !== id) where.openGroup(g.id);
         },
       }));
     setTargets([...contacts, ...others]);
@@ -284,7 +282,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     if (!parts && editing) {
       if (text !== editing.text) {
         try {
-          await (await spaceGroups()).mark(id, { t: 'edit', tag: editing.tag, text }, spaceGroupTransport);
+          await (await groupsAt.groups()).mark(id, { t: 'edit', tag: editing.tag, text }, groupsAt.transport);
         } catch (error) {
           throw new Error(t('Not edited. {reason}', { reason: errorText(error) }));
         }
@@ -294,7 +292,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
       return;
     }
     const carried = parts ?? { ...(replying ? { re: replying.tag } : {}), ...(await previewOf(text)) };
-    await (await spaceGroups()).send(id, text, spaceGroupTransport, carried);
+    await (await groupsAt.groups()).send(id, text, groupsAt.transport, carried);
     stays.current = false;
     if (!parts) setReplying(null);
   }
@@ -310,7 +308,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
       const picture = await openOwnSticker(sticker);
       if (!picture) throw new Error(t('This sticker\'s picture is gone.'));
       onNote(t('Sending the sticker…'));
-      await sendGroupFile(await spaceGroups(), id, await groupRelay(), bytesSource(picture), stickerMeta(picture), undefined, spaceGroupTransport);
+      await sendGroupFile(await groupsAt.groups(), id, await groupsAt.relay(), bytesSource(picture), stickerMeta(picture), undefined, groupsAt.transport);
       stays.current = false;
       onNote('');
     } catch (error) {
