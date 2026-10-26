@@ -1065,11 +1065,18 @@ function onScreen(): boolean {
  * it. `shown`: taken on the screen (see Marks above).
  */
 export async function receiveMessage(relay: Relay, recipientId: Uint8Array, shown = onScreen()): Promise<Uint8Array | null> {
+  return receivedOf(await request(relay, receiveBytes(recipientId, shown)));
+}
+
+function receiveBytes(recipientId: Uint8Array, shown: boolean): Uint8Array {
   const bytes = new Uint8Array(1 + 24 + (shown ? 1 : 0));
   bytes[0] = RECEIVE;
   bytes.set(recipientId, 1);
   if (shown) bytes[25] = SHOWN;
-  const reply = await request(relay, bytes);
+  return bytes;
+}
+
+function receivedOf(reply: Uint8Array): Uint8Array | null {
   check(reply, 'receive');
   if (reply[1] === 0) return null;
   const length = new DataView(reply.buffer, reply.byteOffset, reply.byteLength).getUint32(2);
@@ -1183,6 +1190,31 @@ export function canReadManyAt(relay: Relay): boolean {
   return !cannotReadMany.has(relayHome(relay.url));
 }
 
+// Relays that answered on /read this run, by address.
+const readsMany = new Set<string>();
+
+/**
+ * Whether the relay showed this run that it reads queues on its `/read` path, many at once: asked
+ * once, through Tor on the circuits named `way`, of a queue no one has, so that nothing of this
+ * phone's is named. False for one from before, or when it cannot be reached.
+ */
+export async function readsManyAt(relay: Relay, way: string): Promise<boolean> {
+  const home = relayHome(relay.url);
+  if (readsMany.has(home)) return true;
+  if (cannotReadMany.has(home)) return false;
+  return !!(await waitForAny(relay, [randomBytes(24)], 0, way).catch(() => null));
+}
+
+/**
+ * Takes the oldest message from the queue on the relay's `/read` path, with no token, through Tor
+ * on the circuits named `way`, as receiveMessage does on its own path. Null when it is empty, or
+ * the relay has no such path. Throws when the relay cannot be reached, or has no such queue.
+ */
+export async function receiveOnRead(relay: Relay, recipientId: Uint8Array, way: string, shown = onScreen()): Promise<Uint8Array | null> {
+  const reply = await readRequest(relay, receiveBytes(recipientId, shown), way);
+  return reply === null || reply === 'ended' ? null : receivedOf(reply);
+}
+
 /** What a queue was, as one waitForAny or newsOfAny found it. */
 export type AnyFound = 'none' | 'waiting' | 'gone';
 
@@ -1235,6 +1267,7 @@ export async function waitForAny(relay: Relay, recipients: Uint8Array[], seconds
   if (reply === null) return null;
   if (reply === 'ended') return recipients.map(() => 'none');
   check(reply, 'wait');
+  readsMany.add(relayHome(relay.url));
   if (reply.length !== 1 + recipients.length) throw new RelayError(`wait: unexpected reply of ${reply.length} bytes`, reply[0]);
   return [...reply.slice(1)].map((b) => (b === GONE ? 'gone' : b === 1 ? 'waiting' : 'none'));
 }
@@ -1266,6 +1299,7 @@ export async function newsOfAny(
   if (reply === null) return null;
   if (reply === 'ended') return asked.map((a) => a.heard);
   check(reply, 'news');
+  readsMany.add(relayHome(relay.url));
   if (reply.length !== 1 + 17 * asked.length) throw new RelayError(`news: unexpected reply of ${reply.length} bytes`, reply[0]);
   const read = new DataView(reply.buffer, reply.byteOffset, reply.byteLength);
   return asked.map((_, i) => {

@@ -16,6 +16,7 @@ export const NEXT: string[] = [
   mark("**What's new**: this list, in Settings → General, by version."),
   mark("**Nothing shows behind a chat's PIN**: none of the messages of a chat locked with a PIN is drawn until its PIN is typed, and with glass, a wallpaper or a style's own scene, the PIN screen is a dense frost that lets nothing through."),
   mark("**A group video call from the top of the group**: a blue camera beside the green handset, as in a contact's chat."),
+  mark("**A relay queue for each contact**: each contact writes to a queue only they know, so the relay cannot tell that two contacts write to the same phone, and deleting or blocking someone deletes only theirs. Your relay needs an update for it."),
 ];
 
 export const VERSIONS: WhatsNew[] = [

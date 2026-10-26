@@ -142,7 +142,36 @@ export type Contact = {
   /** The PIN this chat opens with, when locked with one of its own (lock/chat-pin.ts), as kept.
    *  Missing when it has none. Only this phone knows it; it asks nothing while in hidden chats. */
   pin?: ChatPin;
+  /** This chat's queue for them alone (lib/contact-queues.ts), once they have one: what each
+   *  message to them says as where this chat reads (`from`, with its `qa`), so the relay cannot
+   *  tell whom else this phone hears from. Missing while they have none: they write to the own
+   *  queue then, as before contact queues. */
+  mine?: Mine;
+  /** The `qa` of this chat's own queue, the one for all, they were last told, by what a message
+   *  said or by the contact link while it named that queue; 0 for none. Deleting or blocking them
+   *  moves that queue only while it is still the one they know. Missing in what was kept before
+   *  contact queues: they know it. */
+  knows?: number;
 };
+
+/**
+ * A contact's own queue on this chat's relay (Contact.mine): its recipient and sender ids (hex),
+ * the relay it is on (`u`), the `qa` said with it, and the group it is read in (`g`,
+ * lib/contact-queues.ts). `heard`: they wrote to it. `told`: when they were told it, as of the own
+ * queue (lib/moves.ts tellDue). `was`: the one it took the place of, read until its time, then
+ * deleted. `junk`: when it last moved for junk on it.
+ */
+export type Mine = { r: string; s: string; u: string; qa: number; g: number; heard?: true; told?: Told; was?: OldMine; junk?: number };
+
+/** A contact queue no one is to write to any more: its recipient id (hex), its relay, and until when it is read (ms); 0: deleted at once. */
+export type OldMine = { r: string; u: string; until: number };
+
+/** A queue made ahead on this chat's relay for the next contact to have one (E2EData.ready): its recipient and sender ids (hex), and its relay. */
+export type Ready = { r: string; s: string; u: string };
+
+/** The most queues made ahead, and the most kept to delete. */
+export const MAX_READY = 8;
+export const MAX_GONE = 512;
 
 /** A Nostr key: its secret (`s`) and its public key (`p`, x only), hex. */
 export type NostrKey = { s: string; p: string };
@@ -404,6 +433,14 @@ export type E2EData = {
    *  the link writes to first, there, when no relay is between the two (lib/nostr-chats.ts). Made
    *  the first time the link names one, and kept, so the link stays as it was. */
   nostrLink?: NostrKey;
+  /** Queues made ahead on this chat's relay, given to no one yet (lib/contact-queues.ts): the next
+   *  contact written to takes one, so even the first message to someone new says a queue of their
+   *  own. Missing when none. */
+  ready?: Ready[];
+  /** Contact queues no one is to write to any more (a contact deleted, blocked or moved away, or
+   *  queues from before a backup was put back): read until their time, then deleted on the relay,
+   *  the oldest first. Missing when none. */
+  gone?: OldMine[];
 };
 
 export type Prekeys = { secret: string; bundle: string; at: number };
@@ -495,6 +532,36 @@ function checkedContact(value: unknown): Contact | null {
     ...(Array.isArray(v.nostrBackup) ? { nostrBackup: v.nostrBackup.map(checkedNostrBackup).filter((b): b is NostrBackup => b !== null).slice(-MAX_NOSTR_BACKUP) } : {}),
     ...(isTime(v.ri) && v.ri > 0 ? { ri: v.ri } : {}),
     ...(checkedChatPin(v.pin) ? { pin: checkedChatPin(v.pin)! } : {}),
+    ...(checkedMine(v.mine) ? { mine: checkedMine(v.mine)! } : {}),
+    ...(isTime(v.knows) ? { knows: v.knows } : {}),
+  };
+}
+
+const isId = (v: unknown): v is string => isHex(v) && v.length === 48;
+
+function checkedOldMine(value: unknown): OldMine | null {
+  const v = (value ?? {}) as Partial<Record<keyof OldMine, unknown>>;
+  return isId(v.r) && isRelay(v.u) && isTime(v.until) ? { r: v.r, u: v.u, until: v.until } : null;
+}
+
+function checkedReady(value: unknown): Ready | null {
+  const v = (value ?? {}) as Partial<Record<keyof Ready, unknown>>;
+  return isId(v.r) && isId(v.s) && isRelay(v.u) ? { r: v.r, s: v.s, u: v.u } : null;
+}
+
+function checkedMine(value: unknown): Mine | null {
+  const v = (value ?? {}) as Partial<Record<keyof Mine, unknown>>;
+  const ready = checkedReady(v);
+  if (!ready || !isTime(v.qa) || v.qa <= 0 || !isCount(v.g)) return null;
+  const was = checkedOldMine(v.was);
+  return {
+    ...ready,
+    qa: v.qa,
+    g: v.g,
+    ...(v.heard === true ? { heard: true as const } : {}),
+    ...(checkedTold(v.told) ? { told: checkedTold(v.told)! } : {}),
+    ...(was ? { was } : {}),
+    ...(isTime(v.junk) && v.junk > 0 ? { junk: v.junk } : {}),
   };
 }
 
@@ -656,6 +723,8 @@ function checked(value: unknown): E2EData {
     ...(isText(v.invitedAs) && cleanName(v.invitedAs) ? { invitedAs: cleanName(v.invitedAs) } : {}),
     ...(isTime(v.nostrAt) && v.nostrAt > 0 ? { nostrAt: v.nostrAt } : {}),
     ...(checkedNostrKey(v.nostrLink) ? { nostrLink: checkedNostrKey(v.nostrLink)! } : {}),
+    ...(Array.isArray(v.ready) && v.ready.length > 0 ? { ready: v.ready.map(checkedReady).filter((r): r is Ready => r !== null).slice(-MAX_READY) } : {}),
+    ...(Array.isArray(v.gone) && v.gone.length > 0 ? { gone: v.gone.map(checkedOldMine).filter((g): g is OldMine => g !== null).slice(-MAX_GONE) } : {}),
   };
 }
 

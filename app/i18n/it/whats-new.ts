@@ -15,6 +15,8 @@ export const whatsNew: Record<string, string> = {
     "**Dietro il PIN di una chat non si vede niente**: nessun messaggio di una chat bloccata con un PIN viene mostrato prima che il suo PIN sia scritto, e con il vetro, uno sfondo o uno stile con una scena propria, la schermata del PIN è un vetro smerigliato fitto che non lascia vedere niente.",
   "**A group video call from the top of the group**: a blue camera beside the green handset, as in a contact's chat.":
     "**Una videochiamata di gruppo dalla parte alta del gruppo**: una videocamera blu accanto alla cornetta verde, come nella chat con un contatto.",
+  "**A relay queue for each contact**: each contact writes to a queue only they know, so the relay cannot tell that two contacts write to the same phone, and deleting or blocking someone deletes only theirs. Your relay needs an update for it.":
+    "**Una coda del relay per ogni contatto**: ogni contatto scrive in una coda che conosce solo lui, così il relay non può capire che due contatti scrivono allo stesso telefono, ed eliminare o bloccare qualcuno cancella solo la sua. Il tuo relay deve essere aggiornato per questo.",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Il pulsante di chiamata normale per più contatti**: il tastierino arancione in cima alla chat di un contatto usa anche il numero del contatto a cui l’hai collegato (**Collega a uno dei miei contatti**), prima il cellulare.',

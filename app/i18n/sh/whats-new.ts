@@ -15,6 +15,8 @@ export const whatsNew: Record<string, string> = {
     "**Iza PIN-a razgovora ništa se ne vidi**: nijedna poruka razgovora zaključanog PIN-om ne prikazuje se dok se ne upiše njegov PIN, a uz staklo, pozadinu ili stil s vlastitom scenom, ekran PIN-a je gusto mutno staklo kroz koje se ništa ne vidi.",
   "**A group video call from the top of the group**: a blue camera beside the green handset, as in a contact's chat.":
     "**Grupni video poziv s vrha grupe**: plava kamera pored zelene slušalice, kao u razgovoru s kontaktom.",
+  "**A relay queue for each contact**: each contact writes to a queue only they know, so the relay cannot tell that two contacts write to the same phone, and deleting or blocking someone deletes only theirs. Your relay needs an update for it.":
+    "**Red na releju za svaki kontakt**: svaki kontakt piše u red koji zna samo on, pa relej ne može znati da dva kontakta pišu istom telefonu, a brisanje ili blokiranje nekoga briše samo njegov. Vaš relej za to treba ažuriranje.",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Dugme za običan poziv za više kontakata**: narandžasta tastatura na vrhu razgovora s kontaktom uzima i broj kontakta s kojim ste ga povezali (**Poveži s jednim od mojih kontakata**), prvo broj mobilnog.',

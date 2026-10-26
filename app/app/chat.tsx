@@ -98,6 +98,7 @@ import { useLock } from '../lock/context';
 import { LockedOutError, lockedOutMessage } from '../lock/tries';
 import { cleanName, MAX_NAME, type Avatar, type Blocked, type Spare } from '../lock/e2e-data';
 import { placeQueues, type QueueKind } from '../lock/queues-data';
+import { onContactsCame } from '../lib/contact-queues';
 import { QueueMove, linkOf, spaceMover, tookOf, type MoveWhy, type Took } from '../lib/queue-move';
 import { FAKE_RINGS_WITHIN, fakeRings, linkSpare } from '../lib/moves';
 import { HIDDEN_OFFER_MS, hiddenAnswerAt, lapseHiddenAnswer } from '../lib/hidden-ring';
@@ -1701,7 +1702,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       if (backup && !sends.backup) sends = { ...sends, backup: { ...backup, via: sends.via } };
       // One message from our queue (`own`), from one of the others (`old`, lib/queue-move.ts), or
       // from the backup queue: what it was to the junk meter.
-      const take = async (bytes: Uint8Array, kind?: QueueKind | 'old'): Promise<Took> => {
+      const take = async (bytes: Uint8Array, kind?: QueueKind | 'old', mine = ''): Promise<Took> => {
         if (!e2e) return { junk: false };
         // A group's message (lib/groups.ts), to the space's queues only.
         if (isGroupPacket(bytes)) return { junk: hiddenKey ? true : !(await takeGroupPacket(bytes).catch(() => true)) };
@@ -1713,7 +1714,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           return { junk: false };
         }
         // Taken from the relay, so kept even if the chat closed meanwhile.
-        let received = await e2e.receive(bytes, kind === 'own' ? { onOwn: ownSender } : { old: kind !== undefined });
+        let received = await e2e.receive(bytes, kind === 'own' ? { onOwn: ownSender } : mine ? { onMine: mine } : { old: kind !== undefined });
         // Someone whose SMS invite was answered here: a contact at once, not a message request.
         const inviter = !hiddenKey && received.kind === 'message' && received.added ? await linkInviter(e2e, received.identity).catch(() => null) : null;
         if (inviter && received.kind === 'message') received = { ...received, request: false };
@@ -1769,7 +1770,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         await spare();
         // A move due, kept contacts told, the other queues read (lib/queue-move.ts). Moved, the look
         // starts again on the new queue.
-        const moved = active && mover.current ? await mover.current.look({ own, found, take, tell: tellNow, shows: appShown(), stop: () => !active, empty: waited === 'empty' ? others : [] }).catch(() => null) : null;
+        const moved = active && mover.current ? await mover.current.look({ own, found, take, takeMine: (bytes, r) => take(bytes, 'old', r), tell: tellNow, shows: appShown(), stop: () => !active, empty: waited === 'empty' ? others : [] }).catch(() => null) : null;
         if (moved && active) {
           if (moved.notes.length > 0) setNote(moved.notes.join(' '));
           const after = await mover.current!.queues().catch(() => null);
@@ -1839,10 +1840,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       timer = null;
       void look().finally(() => active && !timer && next());
     });
+    // Something came to a contact's own queue (lib/contact-queues.ts): a look at once.
+    const stopCame = onContactsCame(() => {
+      if (!timer) return;
+      clearTimeout(timer);
+      timer = null;
+      void look().finally(() => active && !timer && next());
+    });
 
     return () => {
       active = false;
       shown.remove();
+      stopCame();
       stopCopies();
       if (timer) clearTimeout(timer);
     };

@@ -646,6 +646,16 @@ can still ask to talk again with it, as a message request, like anyone who has i
 can no longer write to you there, nor can whoever sent the junk below. Your contact link names a queue of its own,
 which a deletion leaves alone, so every link and QR code you gave keeps working.
 
+**A queue for each contact:** at a relay updated for it, each contact writes to a queue of their own, which only they
+know, said inside your encrypted messages; your contact link's queue is then only for first messages. So the relay
+cannot tell from where messages go that two contacts write to the same phone, and deleting or blocking someone deletes
+their queue alone: your own moves only if they knew it too, as contacts from before this do, and someone who came
+through your contact link before its first move. Contacts from before get one of their own in turn, a few at a time,
+quietly, and an Erevos of theirs from before takes it too. These queues are read with no token, so the token, which
+names your phone, does not tie them together; through Tor, eight at a time, each eight on circuits of their own. They
+are still made and deleted with the token, so a relay that keeps logs can tie them together then. Hidden chats,
+linked computers and the web app keep one queue for everyone, for now.
+
 - **Block contact**, under it, does the same, and also drops what they send later, a request too. **Block**, beside
   **Refuse**, blocks a message request: a request knows only your contact link, so it moves your queue only while the
   link still names that one, as it does until your first move. Whoever you blocked is under **Blocked contacts** on

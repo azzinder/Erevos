@@ -1,4 +1,4 @@
-import { againAfter, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_NOSTR_BACKUP, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type NostrKey, type NostrTo, type OldFiller, type Own, type OwnList, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
+import { againAfter, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
 import type { ChatPin } from '../lock/chat-pin';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
 
@@ -14,12 +14,13 @@ import { entryKey, isSealedPacket, openPacket, ownPacketKey, packetKeys, SEALED_
 import { bodyOf, checkedList, verifyList, type DeviceList } from './device-list';
 import { blankWay, copiedAs, waysFor, withEarlyFirst, withRoutes, withUnverified } from './endpoints';
 import { fromBase64, fromHex, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
-import { canTryLater, isQueueFull } from './relay';
+import { canTryLater, isQueueFull, sameRelay } from './relay';
 import { TooLargeForLoraError } from './nearby';
 import type { Look } from '../theme/look';
 import { deletePhoto } from '../lock/avatar-photos';
 import { lastRestore } from '../lock/restored';
-import { takesPlace, tellDue, toldOnce } from './moves';
+import { CONTACT_GROUP } from './contact-queues';
+import { GRACE, takesPlace, tellDue, toldOnce } from './moves';
 import { NOSTR_AGAIN_MS, NOSTR_AGAIN_MOST, NOSTR_BACKUP_MS, NOSTR_MOST, nostrKeysChanged, nostrPacked, nostrRelays } from './nostr';
 import { t } from './i18n';
 
@@ -307,6 +308,20 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
 // whichever of the two moved more lately.
 function saidAge(own: number, { qaFloor: floor, qaBase: base = 0 }: Pick<Contact, 'qaFloor' | 'qaBase'> = {}): number {
   return floor ? Math.max(own, floor + 1 + Math.max(0, own - base)) : own;
+}
+
+// A contact's own queue, and the one it took the place of, as queues no one is to write to any
+// more, read until `until` (0: deleted at once), the one before until its own time.
+function minesOf({ mine }: Pick<Contact, 'mine'>, until: number): OldMine[] {
+  if (!mine) return [];
+  return [...(mine.was ? [{ ...mine.was, until: until === 0 ? 0 : Math.min(mine.was.until, until) }] : []), { r: mine.r, u: mine.u, until }];
+}
+
+// The contact queues to delete (E2EData.gone) with `more`, each once, at most MAX_GONE: past
+// that the oldest are forgotten, and the relay lets them go once unused for long.
+function withGone(gone: OldMine[] | undefined, more: OldMine[]): OldMine[] | undefined {
+  if (more.length === 0) return gone;
+  return [...(gone ?? []).filter((g) => !more.some((m) => m.r === g.r)), ...more].slice(-MAX_GONE);
 }
 
 function placeOf(message: Message): Pick<Contact, 'relay' | 'relayKey' | 'spare'> {
@@ -725,6 +740,9 @@ export class E2E {
   private readonly froms = new Map<string, number>();
   // Whether the own queue is the one the contact link names, as before the first move (lib/queue-move.ts).
   private linkOwn = true;
+  // Whether contacts take queues of their own, made ahead (lib/contact-queues.ts), and the relay this chat reads on now.
+  private givesQueues = false;
+  private ownUrl = '';
   // The account's other devices, for the space's own chat (lib/devices.ts).
   private link: Link | null = null;
   // The keys of packet keys (lib/sealed-packet.ts), by the packet key.
@@ -788,8 +806,19 @@ export class E2E {
     }
     const restore = await lastRestore();
     if (restore && data.restore !== restore && core.canRestore()) {
-      // An account made only now was not in the backup: no contact holds a list of it.
-      data = { ...data, contacts: await Promise.all(data.contacts.map(restoredContact)), restore, ...(made ? {} : { putBack: Date.now() }) };
+      // An account made only now was not in the backup: no contact holds a list of it. Each contact's
+      // own queue is still theirs; the ones kept ready may have been given out since, to contacts the
+      // backup does not hold, so none is given again: they go, after the same grace as a queue moved.
+      const until = Date.now() + GRACE;
+      const ready = (data.ready ?? []).map(({ r, u }) => ({ r, u, until }));
+      data = {
+        ...data,
+        contacts: await Promise.all(data.contacts.map(restoredContact)),
+        restore,
+        ...(made ? {} : { putBack: Date.now() }),
+        ready: undefined,
+        gone: withGone(data.gone, ready),
+      };
       await store(data);
     }
     const account = fromBase64(data.account);
@@ -837,11 +866,151 @@ export class E2E {
     this.linkOwn = own;
   }
 
+  /** Gives contacts queues of their own from now on, made ahead (lib/contact-queues.ts), or no more (`on` false), on the relay this chat reads on now (`url`). Those who have one there keep it either way. */
+  useContactQueues(on: boolean, url: string): void {
+    this.givesQueues = on;
+    this.ownUrl = url;
+  }
+
+  // A contact's own queue, when it is on the relay this chat reads on now; never on a linked
+  // device, whose phone holds the queues contacts write to.
+  private mineHere(contact: Pick<Contact, 'mine'> | undefined): Mine | null {
+    const mine = contact?.mine;
+    return mine && !this.link?.through && !!this.ownUrl && sameRelay(mine.u, this.ownUrl) ? mine : null;
+  }
+
+  // Whether a contact knows the own queue as it is now (Contact.knows): one kept from before contact
+  // queues does, as does one told it since it was made.
+  private knowsOwn(contact: Pick<Contact, 'knows'>): boolean {
+    return contact.knows === undefined || (contact.knows > 0 && contact.knows >= this.ownAge);
+  }
+
+  // A queue made ahead, for a contact about to be written to who has none of their own on the relay
+  // this chat reads on now (lib/contact-queues.ts): taken from those made ahead in memory only, so
+  // the save that keeps the contact keeps both. Its `qa` is later than any this chat said them, so
+  // their phone takes it; one they had on another relay is read through its grace. Null while
+  // contacts take no queues of their own, or none is made ahead.
+  private takeReady(contact: Pick<Contact, 'mine' | 'qaFloor' | 'qaBase'> | undefined, now = Date.now()): Mine | null {
+    if (!this.givesQueues || this.link?.through || !this.ownUrl || this.ownAge <= 0 || this.mineHere(contact)) return null;
+    const ready = this.data.ready ?? [];
+    const at = ready.findIndex((r) => sameRelay(r.u, this.ownUrl));
+    if (at < 0) return null;
+    const { r, s, u } = ready[at];
+    const before = contact?.mine;
+    const gone = before?.was ? withGone(this.data.gone, [before.was]) : this.data.gone;
+    this.data = { ...this.data, ready: ready.filter((_, i) => i !== at), ...(gone ? { gone } : {}) };
+    const qa = Math.max(saidAge(this.ownAge, contact), before?.qa ?? 0) + 1;
+    return { r, s, u, qa, g: this.freeGroup(u), ...(before ? { was: { r: before.r, u: before.u, until: now + GRACE } } : {}) };
+  }
+
+  // The first group of contact queues on the relay at `url` with room for one more (CONTACT_GROUP).
+  private freeGroup(url: string): number {
+    const counts = new Map<number, number>();
+    for (const c of this.data.contacts) if (c.mine && sameRelay(c.mine.u, url)) counts.set(c.mine.g, (counts.get(c.mine.g) ?? 0) + 1);
+    let g = 0;
+    while ((counts.get(g) ?? 0) >= CONTACT_GROUP) g++;
+    return g;
+  }
+
+  /** The contacts' own queues (lib/contact-queues.ts), on any relay, each with the one it took the place of while that is read. */
+  contactQueues(): { identity: string; mine: Mine }[] {
+    if (this.link?.through) return [];
+    return this.data.contacts.flatMap((c) => (c.mine ? [{ identity: c.identity, mine: c.mine }] : []));
+  }
+
+  /** How many kept contacts are to take a queue of their own on the relay at `url` and have none there, and how many are made ahead there. */
+  queuesWanted(url: string): { want: number; ready: number } {
+    if (this.link?.through) return { want: 0, ready: 0 };
+    const want = this.data.contacts.filter((c) => !c.request && c.sender && c.conversations[0] && !(c.mine && sameRelay(c.mine.u, url))).length;
+    return { want, ready: (this.data.ready ?? []).filter((r) => sameRelay(r.u, url)).length };
+  }
+
+  /** Keeps queues made ahead on the relay for the next contacts written to; those made ahead on another relay, or past MAX_READY, are to be deleted (`gone`). */
+  addReady(made: Ready[], url: string): Promise<void> {
+    return this.run(async () => {
+      const all = [...(this.data.ready ?? []), ...made];
+      const here = all.filter((r) => sameRelay(r.u, url));
+      const kept = here.slice(-MAX_READY);
+      const over = [...all.filter((r) => !sameRelay(r.u, url)), ...here.slice(0, here.length - kept.length)];
+      if (made.length === 0 && over.length === 0) return;
+      const { ready: _ready, ...rest } = this.data;
+      const gone = withGone(this.data.gone, over.map((r) => ({ r: r.r, u: r.u, until: 0 })));
+      await this.save({ ...rest, ...(kept.length > 0 ? { ready: kept } : {}), ...(gone ? { gone } : {}) });
+    });
+  }
+
+  /** The contact queues no one is to write to any more (E2EData.gone), the oldest first. */
+  goneQueues(): OldMine[] {
+    return this.data.gone ?? [];
+  }
+
+  /** Forgets those of `gone` with these recipient ids (hex): deleted on the relay, or no longer there. */
+  goneDropped(rs: string[]): Promise<void> {
+    return this.run(async () => {
+      const left = this.goneQueues().filter((g) => !rs.includes(g.r));
+      if (left.length === this.goneQueues().length) return;
+      const { gone: _gone, ...rest } = this.data;
+      await this.save(left.length > 0 ? { ...rest, gone: left } : rest);
+    });
+  }
+
+  /**
+   * The queues contacts' own queues took the place of (Mine.was), once their grace is over or the
+   * contact was heard on the new one: to be deleted (`gone`), as no one writes to them any more.
+   */
+  oldMinesOver(now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      const over = this.data.contacts.filter((c) => c.mine?.was && (c.mine.heard || c.mine.was.until <= now));
+      if (over.length === 0) return;
+      const gone = withGone(
+        this.data.gone,
+        over.map((c) => ({ ...c.mine!.was!, until: 0 })),
+      );
+      const ids = new Set(over.map((c) => c.identity));
+      await this.save({
+        ...this.data,
+        contacts: this.data.contacts.map((c) => {
+          if (!ids.has(c.identity) || !c.mine) return c;
+          const { was: _was, ...mine } = c.mine;
+          return { ...c, mine };
+        }),
+        ...(gone ? { gone } : {}),
+      });
+    });
+  }
+
+  /**
+   * A contact's own queue changes: the relay lost it (`lost`), or junk came to it. They take one
+   * made ahead now, which the next tell says; the one before is read through its grace, but one the
+   * relay lost. Says whether one was made ahead: with none, nothing changes yet.
+   */
+  renewMine(identity: string, lost: boolean, now = Date.now()): Promise<boolean> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact?.mine) return false;
+      const { mine: before, ...rest } = contact;
+      // The one the relay lost is not read again; one moved away from for junk is, through its grace.
+      const kept: Contact = lost ? rest : contact;
+      const mine = this.takeReady({ ...kept, mine: undefined }, now) ?? null;
+      if (!mine) return false;
+      const was = lost ? before.was : { r: before.r, u: before.u, until: now + GRACE };
+      const gone = lost && before.was ? this.data.gone : before.was ? withGone(this.data.gone, [before.was]) : this.data.gone;
+      await this.save({
+        ...this.withContact({ ...rest, mine: { ...mine, qa: Math.max(mine.qa, before.qa + 1), ...(was ? { was } : {}), ...(lost ? {} : { junk: now }) } }),
+        ...(gone ? { gone } : {}),
+      });
+      return true;
+    });
+  }
+
   // What a message says of where this chat reads, and when that queue was made: one it moved away
   // from, as a screen that has not heard of the move yet says, is the one it moved to. To a contact
   // moved here from the space or a hidden place, later than what the other said them last (`qaFloor`).
-  private fromNow(from: string, contact?: Pick<Contact, 'qaFloor' | 'qaBase'>): { from: string; qa: number } {
+  private fromNow(from: string, contact?: Pick<Contact, 'qaFloor' | 'qaBase' | 'mine'>): { from: string; qa: number } {
     if (!from) return { from, qa: 0 };
+    // Theirs alone, when they have one (lib/contact-queues.ts).
+    const mine = this.mineHere(contact);
+    if (mine) return { from: mine.s, qa: mine.qa };
     const age = this.froms.get(from);
     const moved = age !== undefined && age < this.ownAge && !!this.ownFrom;
     return { from: moved ? this.ownFrom : from, qa: saidAge(this.ownAge, contact) };
@@ -849,7 +1018,8 @@ export class E2E {
 
   /** The `qa` this chat says a contact now (lib/move-chat.ts, as the chat moves away from here), or 0 while it says none. */
   saidTo(identity: string): number {
-    return saidAge(this.ownAge, this.find(identity));
+    const contact = this.find(identity);
+    return this.mineHere(contact)?.qa ?? saidAge(this.ownAge, contact);
   }
 
   /** When this chat's own queue was made, as last said (`setQueueAge`), or 0. */
@@ -982,12 +1152,24 @@ export class E2E {
   /**
    * The kept contacts to tell where this chat reads now, in a message with nothing in it
    * (lib/queue-move.ts): those not told the own queue made at `moved`, and again those not heard on
-   * it since (lib/moves.ts tellDue). None for the queue the first look found (`since`), none to a
-   * message request, and none on a linked device, whose phone tells them.
+   * it since (lib/moves.ts tellDue). One with a queue of their own (lib/contact-queues.ts) is told
+   * that one the same way, and as many as there are queues made ahead take one each, in the tell.
+   * None for the queue the first look found (`since`), none to a message request, and none on a
+   * linked device, whose phone tells them.
    */
   tellsDue(moved: number, since: number, now = Date.now()): string[] {
-    if (this.link?.through || moved <= 0) return [];
-    return this.data.contacts.filter((c) => !c.request && c.sender && c.conversations[0] && tellDue(c.told, c.onNew, moved, since, now)).map((c) => c.identity);
+    if (this.link?.through) return [];
+    let ready = this.givesQueues && this.ownAge > 0 ? (this.data.ready ?? []).filter((r) => sameRelay(r.u, this.ownUrl)).length : 0;
+    const due = (c: Contact) => {
+      const mine = this.mineHere(c);
+      if (mine) return tellDue(mine.told, mine.heard ? mine.qa : undefined, mine.qa, 0, now);
+      if (ready > 0) {
+        ready--;
+        return true;
+      }
+      return moved > 0 && tellDue(c.told, c.onNew, moved, since, now);
+    };
+    return this.data.contacts.filter((c) => !c.request && c.sender && c.conversations[0] && due(c)).map((c) => c.identity);
   }
 
   /** A contact was told the own queue made at `qa`, and the ring queue as it is now: the relay took it. `qa` 0: only the ring queue was due. */
@@ -996,7 +1178,10 @@ export class E2E {
       const contact = this.find(identity);
       if (!contact) return;
       const { ringTell: _ring, ...rest } = contact;
-      await this.save(this.withContact({ ...rest, ...(qa > 0 ? { told: toldOnce(contact.told, qa) } : {}) }));
+      // Theirs alone, when they have one: the tell said that one.
+      const mine = this.mineHere(contact);
+      const told = qa <= 0 ? {} : mine ? { mine: { ...mine, told: toldOnce(mine.told, mine.qa) } } : { told: toldOnce(contact.told, qa) };
+      await this.save(this.withContact({ ...rest, ...told }));
     });
   }
 
@@ -1018,7 +1203,8 @@ export class E2E {
 
   /** The `qa` of the own queue every kept contact was heard on at least: the least of theirs, Infinity with none (lib/moves.ts graceOver). */
   heardSince(): number {
-    return this.data.contacts.filter((c) => !c.request && c.sender).reduce((least, c) => Math.min(least, c.onNew ?? 0), Infinity);
+    // One heard on a queue of their own writes to none of this chat's own any more.
+    return this.data.contacts.filter((c) => !c.request && c.sender && !this.mineHere(c)?.heard).reduce((least, c) => Math.min(least, c.onNew ?? 0), Infinity);
   }
 
   // The keys of a packet key, made once.
@@ -1194,8 +1380,11 @@ export class E2E {
    */
   removeContact(identity: string, { held = [] }: { held?: Undropped[] } = {}): Promise<void> {
     return this.run(async () => {
-      const gone = this.find(identity)?.avatar;
-      await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity), ...this.withUndropped(held) });
+      const contact = this.find(identity);
+      const gone = contact?.avatar;
+      // Their own queue is deleted on the relay (lib/contact-queues.ts).
+      const queues = contact ? withGone(this.data.gone, minesOf(contact, 0)) : undefined;
+      await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity), ...this.withUndropped(held), ...(queues ? { gone: queues } : {}) });
       if (gone?.kind === 'photo') await deletePhoto(gone.id);
     });
   }
@@ -1219,12 +1408,16 @@ export class E2E {
       const blocked = block && !through ? [...this.blocked().filter((b) => b.identity !== identity), { identity, name: contact?.name ?? '', at: now }].slice(-MAX_BLOCKED) : null;
       // Said before the save, whose change of the contacts tells the phone of it.
       if (contact) this.link?.deleted?.(identity, block);
+      // Their own queue is deleted on the relay at once (lib/contact-queues.ts); the own queue
+      // moves only while it is the one they know.
+      const gone = contact ? withGone(this.data.gone, minesOf(contact, 0)) : undefined;
       await this.save({
         ...this.data,
         contacts: this.data.contacts.filter((c) => c.identity !== identity),
-        ...(through || !contact || (contact.request && !(block && this.linkOwn)) ? {} : { moveDue: now }),
+        ...(through || !contact || (contact.request && !(block && this.linkOwn)) || !this.knowsOwn(contact) ? {} : { moveDue: now }),
         ...(blocked ? { blocked } : {}),
         ...this.withUndropped(held),
+        ...(gone ? { gone } : {}),
       });
       if (blocked) this.link?.blockedChanged?.(blocked);
       if (contact?.avatar?.kind === 'photo') await deletePhoto(contact.avatar.id);
@@ -1416,7 +1609,10 @@ export class E2E {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact) return null;
-      await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity) });
+      // Their own queue here is read through its grace, as they write to it until told where the
+      // other chat reads, then deleted (lib/contact-queues.ts).
+      const gone = withGone(this.data.gone, minesOf(contact, Date.now() + GRACE));
+      await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity), ...(gone ? { gone } : {}) });
       return contact;
     });
   }
@@ -1429,7 +1625,8 @@ export class E2E {
    */
   putIn(contact: Contact, said = 0): Promise<void> {
     return this.run(async () => {
-      const { dv: _dv, list: _list, endpoints: _endpoints, direct: _direct, listSent: _sent, listGiven: _given, took: _took, told: _told, onNew: _onNew, qaFloor: _floor, qaBase: _base, ringTell: _ring, ...plain } = contact;
+      // Its own queue was the other chat's, and what they knew of its own queue is nothing to this one's.
+      const { dv: _dv, list: _list, endpoints: _endpoints, direct: _direct, listSent: _sent, listGiven: _given, took: _took, told: _told, onNew: _onNew, qaFloor: _floor, qaBase: _base, ringTell: _ring, mine: _mine, knows: _knows, ...plain } = contact;
       // Back where it was first: they know this chat by its own identity again.
       const own = contact.ownIdentity === this.identityHex() ? { ownIdentity: '' } : {};
       // When they were told the other's queue, and heard on it, is nothing to this chat's own; what
@@ -1502,6 +1699,11 @@ export class E2E {
         return { identity, added: false };
       }
       const packetKey = this.ownPacketKey({ identity, packetKey: this.find(identity)?.packetKey ?? '' });
+      // A queue of their own, made ahead, said in the first message already (lib/contact-queues.ts):
+      // then they never learn the own queue. Else the first message says that one.
+      const mine = from ? this.takeReady(undefined) : null;
+      const says = mine ? { from: mine.s, qa: mine.qa } : this.fromNow(from);
+      const knows = mine || !from ? { knows: 0 } : this.ownAge > 0 ? { knows: this.ownAge } : {};
       // Where this chat reads on Nostr, said in the first message already, with a key of its own for
       // them: so they can answer there when no relay is between the two (lib/nostr-chats.ts).
       const relays = nostrRelays();
@@ -1510,7 +1712,7 @@ export class E2E {
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined), ...this.fromNow(from), ...(isHi(hi) ? { hi } : {}), ...(ns ? { ns } : {}) }),
+        encodeMessage({ ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined), ...says, ...(isHi(hi) ? { hi } : {}), ...(ns ? { ns } : {}) }),
       );
       const told = nostr ? { nostr, nostrSaid: this.nostrSaid({ nostr } as Contact) } : {};
       await this.save(
@@ -1537,6 +1739,8 @@ export class E2E {
           sealTo: this.find(identity)?.sealTo ?? '',
           sealsIn: false,
           ...told,
+          ...(mine ? { mine } : {}),
+          ...knows,
           // Their link's place on Nostr: where the first message goes when no relay is between the two.
           ...(code.nostr ? { nostrTo: { k: code.nostr.k, r: code.nostr.r } } : {}),
         }),
@@ -1766,6 +1970,10 @@ export class E2E {
     const now = Date.now();
     // Those too old to go go first, so they leave room.
     await this.dropStale(now);
+    // One about to be written to takes a queue of their own made ahead (lib/contact-queues.ts),
+    // kept by this sealing's save: what goes now says it already.
+    const given = this.takeReady(contact, now);
+    if (given) contact = { ...contact, mine: given, knows: contact.knows ?? this.ownAge };
     const release = writes || !contact.hide;
     const direct = this.isDirect(contact, messages) ? contact.direct! : null;
     const through = this.link?.through === true && !direct;
@@ -1829,12 +2037,17 @@ export class E2E {
     const request = contact.request && !writes;
     const held = release ? { heldGot: [], heldRead: [] } : {};
     const kept = this.link?.through ? {} : { packetKey };
+    // What says the own queue, the one for all, to them: they know it as it is now (Contact.knows),
+    // its `qa` too once known.
+    const mine = this.mineHere(contact);
+    const toldOwn = !this.link?.through && said.some((m) => !!m.from && m.from !== mine?.s);
+    const knows = toldOwn ? { knows: this.ownAge > 0 ? this.ownAge : undefined } : {};
     const sentIn = direct
       ? { direct: { ...direct, conversations: [toBase64(conversation!), ...direct.conversations.slice(1)] } }
       : through
         ? {}
         : { conversations: [toBase64(conversation!), ...contact.conversations.slice(1)] };
-    await this.save(this.withContact({ ...contact, ...held, ...kept, request, ...sentIn }));
+    await this.save(this.withContact({ ...contact, ...held, ...kept, request, ...sentIn, ...knows }));
     if (said.some((message) => message.on > 0)) this.told.set(contact.identity, now);
     if (!through) for (const plaintext of plaintexts) this.link?.sealed(contact.identity, plaintext);
     const to = direct ?? contact;
@@ -2437,10 +2650,28 @@ export class E2E {
    * to the one its contact link or its groups name (lib/queue-move.ts), and is read cheaply: one
    * that came sealed opens only in the conversations of the contact whose mark it has, as always;
    * one that came unsealed only in those of contacts whose packets do not come sealed, never in
-   * the few tries the others get (`mayTryUnsealed`).
+   * the few tries the others get (`mayTryUnsealed`). `onMine`: the recipient id (hex) of the
+   * contact queue it came to (lib/contact-queues.ts), read cheaply as `old`: one of that contact's
+   * there says they write to it (Mine.heard).
    */
-  receive(packet: Uint8Array, { onOwn = '', old = false }: { onOwn?: string; old?: boolean } = {}): Promise<Received> {
+  receive(packet: Uint8Array, { onOwn = '', old = false, onMine = '' }: { onOwn?: string; old?: boolean; onMine?: string } = {}): Promise<Received> {
     return this.run(async () => {
+      const received = await this.receiveNow(packet, onOwn, old || !!onMine);
+      if (onMine && received.kind === 'message') await this.heardOnMine(received.identity, onMine);
+      return received;
+    });
+  }
+
+  // A contact heard on the queue of their own (`r`, hex): they write to it, so the one it took the
+  // place of may go (oldMinesOver), and they are not told it again.
+  private async heardOnMine(identity: string, r: string): Promise<void> {
+    const contact = this.find(identity);
+    if (!contact?.mine || contact.mine.r !== r || contact.mine.heard) return;
+    await this.save(this.withContact({ ...contact, mine: { ...contact.mine, heard: true } }));
+  }
+
+  private async receiveNow(packet: Uint8Array, onOwn: string, old: boolean): Promise<Received> {
+    {
       const heard = !!onOwn && !old && onOwn === this.ownFrom;
       // One between the account's devices, first (lib/devices.ts): what it says of the contacts
       // changes them here, and a contact's message the primary passed on opens as theirs.
@@ -2484,7 +2715,7 @@ export class E2E {
       if (kind === 'first') return this.accept(packet, false, heard);
       if (kind === 'following') return this.open(packet, null, { sealed: false, old, heard });
       return { kind: 'refused', reason: 'plain' };
-    });
+    }
   }
 
   // A first packet: a contact starting a conversation with this account, or someone new who has its
@@ -2574,6 +2805,10 @@ export class E2E {
       ...(nostrTo ? { nostrTo } : {}),
       ...(known?.nostrSaid !== undefined ? { nostrSaid: known.nostrSaid } : {}),
       ...(known?.nostrBackup ? { nostrBackup: known.nostrBackup } : {}),
+      // Their own queue here stays theirs (lib/contact-queues.ts). Someone new knows the own queue
+      // when they wrote to it, or the contact link names it; else they know none.
+      ...(known?.mine ? { mine: known.mine } : {}),
+      ...(known ? (known.knows !== undefined ? { knows: known.knows } : {}) : heard || this.linkOwn ? (this.ownAge > 0 ? { knows: this.ownAge } : {}) : { knows: 0 }),
     };
     const learned = this.partOf(contact) ? await this.heardOf(contact, message) : {};
     const { contact: next, twice } = tookIn({ ...contact, ...learned }, message, this.link?.through === true);

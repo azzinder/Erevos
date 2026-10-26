@@ -15,6 +15,8 @@ export const whatsNew: Record<string, string> = {
     "**Τίποτα δεν φαίνεται πίσω από το PIN μιας συνομιλίας**: κανένα μήνυμα μιας συνομιλίας κλειδωμένης με PIN δεν εμφανίζεται πριν γραφτεί το PIN της, και με γυαλί, ταπετσαρία ή στυλ με δική του σκηνή, η οθόνη του PIN είναι πυκνό παγωμένο τζάμι που δεν αφήνει να φανεί τίποτα.",
   "**A group video call from the top of the group**: a blue camera beside the green handset, as in a contact's chat.":
     "**Βιντεοκλήση ομάδας από την κορυφή της ομάδας**: μια μπλε κάμερα δίπλα στο πράσινο ακουστικό, όπως στη συνομιλία με μια επαφή.",
+  "**A relay queue for each contact**: each contact writes to a queue only they know, so the relay cannot tell that two contacts write to the same phone, and deleting or blocking someone deletes only theirs. Your relay needs an update for it.":
+    "**Μια ουρά στο relay για κάθε επαφή**: κάθε επαφή γράφει σε ουρά που ξέρει μόνο εκείνη, οπότε το relay δεν μπορεί να καταλάβει ότι δύο επαφές γράφουν στο ίδιο τηλέφωνο, και η διαγραφή ή ο αποκλεισμός κάποιου σβήνει μόνο τη δική του. Το relay σου χρειάζεται ενημέρωση γι’ αυτό.",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Το κουμπί απλής κλήσης για περισσότερες επαφές**: το πορτοκαλί πληκτρολόγιο πάνω στη συνομιλία μιας επαφής παίρνει και τον αριθμό της επαφής με την οποία τη συνέδεσες (**Σύνδεση με μια επαφή μου**), πρώτα το κινητό.',

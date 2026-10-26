@@ -1,12 +1,14 @@
+import { MAX_READY, type Ready } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import { spaceQueues, type KeptQueue, type MoveReason, type OldQueue, type QueueKind, type QueuesData, type QueuesStore } from '../lock/queues-data';
 import type { Queue, SpaceData } from '../lock/space-data';
+import { bunches, contactQueuesAt, ContactWatch, type ContactQueue } from './contact-queues';
 import { packetKind } from './core';
 import type { E2E, Received } from './e2e';
 import { isGroupPacket } from './groups';
 import { locale, t } from './i18n';
-import { FIRST_QA, GRACE, HEAL_EVERY, JUNK_BATCH, JunkMeter, QUEUE_JITTER, QUEUE_OFFSET, graceOver, junkStep, newOffset, queueAge, randomHours, withOld, type Look } from './moves';
-import { createQueue, deleteQueue, fromHex, isQueueNotFound, receiveMessage, sameRelay, toHex, type Relay } from './relay';
+import { FIRST_QA, GRACE, HEAL_EVERY, JUNK_AGAIN, JUNK_BATCH, JunkMeter, QUEUE_JITTER, QUEUE_OFFSET, graceOver, junkStep, newOffset, queueAge, randomHours, withOld, type Look } from './moves';
+import { createQueue, deleteQueue, fromHex, isQueueNotFound, readsManyAt, receiveMessage, receiveOnRead, sameRelay, toHex, waitForAny, type Relay } from './relay';
 import { isSealedPacket } from './sealed-packet';
 import { joinSpaceChats, type SpaceChats } from './space-chats';
 import { forgetSpare, readySpare, spareSaid, spaceSpare, type SpareStore } from './spare';
@@ -50,6 +52,9 @@ const TELLS_EACH = 20;
 const TELL_RETRY = 60_000;
 // How often the groups are asked which queues they say.
 const NAMED_EVERY = 60 * 60_000;
+// Contact queues (lib/contact-queues.ts): made ahead in one look at most, and deleted in one look at most.
+const FILL_EACH = 4;
+const DELETES_EACH = 10;
 
 /** What one packet that came to a queue was: junk (lib/moves.ts) or not, and the kept contact it came from, if it came from one. */
 export type Took = { junk: boolean; from?: string };
@@ -88,6 +93,8 @@ export type MoveAt = {
   /** A hidden place's: moves its ring queue, if it rings (lib/hidden-ring.ts moveRingPocket). Says
    *  whether it did: false when it does not ring. Throws when the relay cannot be reached. */
   ring?: () => Promise<boolean>;
+  /** The space's: its contacts take queues of their own (lib/contact-queues.ts), read on ways through Tor named from `way`, its own. None in a hidden place. */
+  contacts?: { way: string };
 };
 
 /** One look, as the chat screen or the receiver made it. */
@@ -104,6 +111,8 @@ export type MoveLook = {
   stop?: () => boolean;
   /** The other queues a wait at the relay found nothing come to, by recipient id in hex (lib/receiver.ts awayQueues): not read. */
   empty?: string[];
+  /** Takes one packet from a contact's own queue (`r`, its recipient id in hex), as `take` does from an old one. Without it, those are not read. */
+  takeMine?: (bytes: Uint8Array, r: string) => Promise<Took>;
 };
 
 /** What a look did: the own queue it moved to, if it moved, and what to say. */
@@ -205,6 +214,10 @@ export class QueueMove {
   // What the receiver's looks had to say, for the chat screen to say once it opens.
   private notes: string[] = [];
   private turn: Promise<unknown> = Promise.resolve();
+  // The waits on the contacts' queues, while the space is open, and the looks that read them.
+  private watch: ContactWatch | null = null;
+  private contactLooks = 0;
+  private stopped = false;
 
   private readonly at: MoveAt;
 
@@ -216,6 +229,13 @@ export class QueueMove {
     const next = this.turn.catch(() => undefined).then(call);
     this.turn = next;
     return next;
+  }
+
+  /** Stops the waits on the contacts' queues, for good: the space closed. */
+  stop(): void {
+    this.stopped = true;
+    this.watch?.stop();
+    this.watch = null;
   }
 
   /** The queues as kept. */
@@ -362,6 +382,8 @@ export class QueueMove {
     }
     // A linked device is in no group itself: the phone is, for it.
     if (this.at.groups && !e2e.onLinkedDevice()) q = await this.makeGroupQueues(q, look.own, here);
+    // Contact queues made ahead, before the tells, which give them out; those no one writes to deleted.
+    if (this.at.contacts && !e2e.onLinkedDevice()) await this.contactsNow(look, here, now).catch(() => undefined);
     await this.tellAll(q, look);
     // The other queues: the groups' with every look, the rest less often while the app shows.
     this.looks++;
@@ -398,6 +420,7 @@ export class QueueMove {
       await this.at.queues.update((d) => ({ ...d, junk: { ...d.junk, [kind]: now } }));
     }
     if (lost && this.at.groups && !e2e.onLinkedDevice()) await this.makeGroupQueues(await this.at.queues.load(), look.own, here);
+    if (this.at.contacts && look.takeMine) await this.readContacts(look, here.url, now).catch(() => undefined);
     if (all) await this.readOld(look, now);
     return { queue, notes };
   }
@@ -642,6 +665,94 @@ export class QueueMove {
     }
   }
 
+  // At a relay that showed it reads queues with no token, many at once, contacts take queues of their
+  // own: enough are made ahead for the next few written to, and one more for someone new; those no
+  // one writes to any more are deleted there, with the token that made them. One on another relay
+  // is left to it, as no token here is for it.
+  private async contactsNow(look: MoveLook, here: Here, now: number) {
+    const e2e = this.at.e2e;
+    const proven = await readsManyAt(look.own, `${this.at.contacts!.way}-0`);
+    e2e.useContactQueues(proven, here.url);
+    if (!proven) return;
+    const { want, ready } = e2e.queuesWanted(here.url);
+    const made: Ready[] = [];
+    for (let i = Math.min(MAX_READY, Math.min(want, FILL_EACH) + 1) - ready; i > 0 && made.length < FILL_EACH && !look.stop?.(); i--) {
+      const ids = await createQueue(look.own).catch(() => null);
+      if (!ids) break;
+      made.push({ r: toHex(ids.recipientId), s: toHex(ids.senderId), u: here.url });
+    }
+    await e2e.addReady(made, here.url);
+    await e2e.oldMinesOver(now);
+    const dropped: string[] = [];
+    for (const gone of e2e.goneQueues().filter((g) => g.until <= now).slice(0, DELETES_EACH)) {
+      if (look.stop?.()) break;
+      if (!sameRelay(gone.u, here.url)) {
+        dropped.push(gone.r);
+        continue;
+      }
+      try {
+        await deleteQueue(look.own, fromHex(gone.r));
+        dropped.push(gone.r);
+      } catch (error) {
+        if (isQueueNotFound(error)) dropped.push(gone.r);
+      }
+    }
+    await e2e.goneDropped(dropped);
+  }
+
+  // The contacts' own queues: those the watch found something in, and every READ_EVERY looks all
+  // of them, as one wait of none at the relay finds them. The watch waits on them from now on.
+  private async readContacts(look: MoveLook, url: string, now: number) {
+    const e2e = this.at.e2e;
+    const list = bunches(contactQueuesAt(e2e.contactQueues(), url), this.at.contacts!.way);
+    if (!this.stopped) {
+      this.watch ??= new ContactWatch();
+      this.watch.use(look.own, list);
+    }
+    const came = this.watch?.came() ?? new Set<string>();
+    const all = this.contactLooks++ % READ_EVERY === 0;
+    for (const b of list) {
+      if (look.stop?.()) return;
+      let waiting = b.queues.filter((q) => came.has(q.r));
+      if (all) {
+        const found = await waitForAny(look.own, b.queues.map((q) => fromHex(q.r)), 0, b.way).catch(() => null);
+        if (found) waiting = b.queues.filter((_, i) => found[i] !== 'none');
+      }
+      for (const q of waiting) await this.readContact(look, q, b.way, now);
+    }
+  }
+
+  // Reads one contact's queue, a whole batch at a time as the own queue, so junk is counted the same
+  // way: junk filling theirs has them take a new one, once a day at most. One the relay lost, they
+  // take a new one at once.
+  private async readContact(look: MoveLook, q: ContactQueue, way: string, now: number) {
+    const e2e = this.at.e2e;
+    const recipient = fromHex(q.r);
+    let taken = 0;
+    let junk = 0;
+    for (let i = 0; i < JUNK_BATCH && !look.stop?.(); i++) {
+      let bytes: Uint8Array | null;
+      try {
+        bytes = await receiveOnRead(look.own, recipient, way);
+      } catch (error) {
+        if (isQueueNotFound(error) && !q.was) await e2e.renewMine(q.identity, true, now);
+        return;
+      }
+      if (!bytes) break;
+      taken++;
+      try {
+        if ((await look.takeMine!(bytes, q.r)).junk) junk++;
+      } catch {
+        // This one is lost, as from the own queue; the next ones still come.
+      }
+    }
+    if (q.was || !this.meter.look(`mine:${q.r}`, { taken, junk }, now)) return;
+    const mine = e2e.contactQueues().find((c) => c.identity === q.identity)?.mine;
+    if (mine?.r !== q.r || (mine.junk && now - mine.junk < JUNK_AGAIN)) return;
+    this.meter.forget(`mine:${q.r}`);
+    await e2e.renewMine(q.identity, false, now);
+  }
+
   // The queues the groups say, asked once an hour; null when they could not say, so none goes.
   private async namedNow(): Promise<Set<string> | null> {
     if (!this.at.groups) return new Set();
@@ -677,12 +788,15 @@ let opened: { of: object; e2e: E2E; mover: QueueMove } | null = null;
 export function spaceMover({ e2e }: Pick<SpaceChats, 'e2e'>): QueueMove {
   const current = currentSpace();
   if (opened?.of !== current || opened.e2e !== e2e) {
+    opened?.mover.stop();
     const mover = new QueueMove({
       e2e,
       queues: spaceQueues(current.space, current.key),
       data: spaceSpare(),
       groups: spaceGroups,
       push: spacePush,
+      // Not in the web app, whose pushes (lib/web-push.web.ts) do not say contact queues yet.
+      ...(spacePush ? {} : { contacts: { way: `contacts-${current.space}` } }),
       moved: async (queue, old, why) => {
         for (const listener of movedListeners) await listener(queue, old, why).catch(() => undefined);
       },
@@ -694,6 +808,7 @@ export function spaceMover({ e2e }: Pick<SpaceChats, 'e2e'>): QueueMove {
 
 /** Lets go of the space's moves when it closes. */
 export function forgetSpaceMover(): void {
+  opened?.mover.stop();
   opened = null;
 }
 

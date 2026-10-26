@@ -15,6 +15,8 @@ export const whatsNew: Record<string, string> = {
     "**Rien ne se voit derrière le code PIN d’une discussion** : aucun message d’une discussion verrouillée par un code PIN n’est affiché avant que son code PIN soit saisi, et avec le verre, un fond d’écran ou un style qui dessine sa propre scène, l’écran du code PIN est un givre dense qui ne laisse rien voir.",
   "**A group video call from the top of the group**: a blue camera beside the green handset, as in a contact's chat.":
     "**Un appel vidéo de groupe en haut du groupe** : une caméra bleue à côté du combiné vert, comme dans la discussion avec un contact.",
+  "**A relay queue for each contact**: each contact writes to a queue only they know, so the relay cannot tell that two contacts write to the same phone, and deleting or blocking someone deletes only theirs. Your relay needs an update for it.":
+    "**Une file du relais pour chaque contact** : chaque contact écrit dans une file que lui seul connaît, si bien que le relais ne peut pas savoir que deux contacts écrivent au même téléphone, et supprimer ou bloquer quelqu’un n’efface que la sienne. Votre relais doit être mis à jour pour cela.",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Le bouton d’appel mobile pour plus de contacts** : le clavier orange en haut de la discussion d’un contact prend aussi le numéro du contact auquel tu l’as associé (**Associer à un de mes contacts**), le mobile en premier.',

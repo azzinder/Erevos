@@ -13,6 +13,7 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { E2E, ONLINE, toBase64Url, type Received } from '../lib/e2e';
 import { nearby, Nearby } from '../lib/nearby';
+import { forgetSpaceMover } from '../lib/queue-move';
 import { answersAsk, holdReceiver, onMessage, onReceived, openNearby, setAppShown, startReceiver, takeNearby } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
@@ -156,6 +157,8 @@ test('what comes while no chat is open is kept, and the sender hears it came', {
     (await holdReceiver())();
     stopListening();
     stopOpened();
+    // Its moves go too, and the waits on its contacts' queues with them.
+    forgetSpaceMover();
     forgetSpaceChats();
     setCurrentSpace(null);
   }

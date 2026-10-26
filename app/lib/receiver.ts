@@ -37,6 +37,7 @@ import { lookAtSpare, spareBackup } from './spare';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 import { nextDue, sendWaiting, type SendPlace } from './waiting';
 import { keepPush } from './web-push';
+import { onContactsCame } from './contact-queues';
 import { t } from './i18n';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
@@ -119,6 +120,13 @@ function endWaits() {
   });
   waits.clear();
 }
+
+// Something came to a contact's own queue (lib/contact-queues.ts): the wait at the relay ends, and
+// a look takes it at once, here or in the chat screen.
+onContactsCame(() => {
+  endWaits();
+  hurry?.();
+});
 
 // A look when the next message sent for later should go (lib/waiting.ts), the wait at the relay
 // ended first, so it goes on time while Erevos runs.
@@ -470,7 +478,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   const mover = spaceMover(chats);
   // One message from our queue (`own`), from one of the others (`old`, lib/queue-move.ts), or from
   // the backup queue: what it was to the junk meter.
-  const take = async (bytes: Uint8Array, kind?: QueueKind | 'old'): Promise<Took> => {
+  const take = async (bytes: Uint8Array, kind?: QueueKind | 'old', mine = ''): Promise<Took> => {
     // A group's message (lib/groups.ts): the group screens hear of it themselves.
     if (isGroupPacket(bytes)) return { junk: !(await takeGroupPacket(bytes).catch(() => true)) };
     // Taken from the relay, so kept whatever happens meanwhile.
@@ -480,7 +488,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
         changed = true;
         return { junk: false };
       }
-      let received = await chats.e2e.receive(bytes, kind === 'own' ? { onOwn: here.queue.senderHex } : { old: kind !== undefined });
+      let received = await chats.e2e.receive(bytes, kind === 'own' ? { onOwn: here.queue.senderHex } : mine ? { onMine: mine } : { old: kind !== undefined });
       // Someone whose SMS invite was answered here: no message request.
       if (received.kind === 'message' && received.added && (await linkInviter(chats.e2e, received.identity).catch(() => null))) {
         received = { ...received, request: false };
@@ -529,7 +537,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
   }
   if (!failed && !stop()) {
     const moved = await mover
-      .look({ own: place.own, found, take, tell: (identity) => tell(chats, here, identity, {}), shows, stop, empty: state.waited === 'empty' ? others : [] })
+      .look({ own: place.own, found, take, takeMine: (bytes, r) => take(bytes, 'old', r), tell: (identity) => tell(chats, here, identity, {}), shows, stop, empty: state.waited === 'empty' ? others : [] })
       .catch(() => null);
     if (moved?.queue) {
       place = { ...place, queue: moved.queue };

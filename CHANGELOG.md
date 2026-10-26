@@ -33,6 +33,13 @@ On main, not released yet:
   typed, and the PIN screen lies on a dense frost over the look's background, which lets nothing through.
 - **A group video call from the top of the group**: a blue camera beside the green handset starts one, as in a
   contact's chat; **Video call** under **⋯** stays. While a call is going on, only its own button shows, to join it.
+- **A relay queue for each contact** (needs the relay updated): each kept contact writes to a queue of their own, said
+  only inside the encrypted messages, so the relay cannot tell from where messages go that two contacts write to the
+  same phone, and deleting or blocking someone deletes only their queue; the own queue moves only when they knew it.
+  The contact link's queue is for first messages. Contacts from before get one in turn, a few at a time, quietly, and
+  an Erevos of theirs from before takes it too. They are read on the relay's path with no token, waited on while the
+  space is open, and through Tor in groups of eight, each on circuits of its own. Hidden chats, linked computers and
+  the web app keep one queue for everyone, for now.
 
 ## 3.3.2 (2026-10-25)
 
