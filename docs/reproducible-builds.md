@@ -9,7 +9,7 @@ byte, so that anyone can check that it was built from the code it says, and noth
 | --- | --- | --- |
 | **Web app** (`erevos-web.tar.gz`, what the release key signs and the web server serves) | Yes | `scripts/reproduce-web.sh`. The published 3.3.2 came out the same, all 78 files, built again on another machine on 2026-10-26. |
 | **Desktop apps** (Linux, Windows, macOS) | Their app inside is the same web build; the packages around it are not checked yet | |
-| **Android APK** | Not known yet: prepared, not yet tried | `scripts/reproduce-apk.sh`, or on GitHub `.github/workflows/reproduce-apk.yml` (by hand). |
+| **Android APK** | Not yet: 3.3.2, built before the path fixes below, came out different on 2026-10-26 | `scripts/reproduce-apk.sh`, or on GitHub `.github/workflows/reproduce-apk.yml` (by hand), which now lists in its log the files that differ. |
 | **Sailfish RPM** | Not yet | |
 | **Relay** | Not checked; whoever runs one builds it from the source anyway | |
 
@@ -61,5 +61,5 @@ Actions minutes as a release's Android build.
 
 ## Next
 
-Run `reproduce-apk` on a published release and fix what differs. Then the desktop packages and
+Run `reproduce-apk` on the first release built with the Android path fixes, and fix what still differs. Then the desktop packages and
 the Sailfish RPM.
