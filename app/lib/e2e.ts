@@ -925,6 +925,12 @@ export class E2E {
     return { want, ready: (this.data.ready ?? []).filter((r) => sameRelay(r.u, url)).length };
   }
 
+  /** The recipient ids (hex) of the queues made ahead on the relay at `url`, not given to anyone yet: the web app's pushes go for them already (lib/web-push.web.ts). */
+  readyAt(url: string): string[] {
+    if (this.link?.through) return [];
+    return (this.data.ready ?? []).filter((r) => sameRelay(r.u, url)).map((r) => r.r);
+  }
+
   /** Keeps queues made ahead on the relay for the next contacts written to; those made ahead on another relay, or past MAX_READY, are to be deleted (`gone`). */
   addReady(made: Ready[], url: string): Promise<void> {
     return this.run(async () => {

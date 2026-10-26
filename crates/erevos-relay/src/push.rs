@@ -211,12 +211,21 @@ impl Push {
     }
 
     /// Sets the push address for a queue, with the browser's keys if it gave
-    /// them, or removes it when `endpoint` is empty.
+    /// them, or removes it when `endpoint` is empty. One the queue has already
+    /// is not written again: the web app gives it for each of a space's queues,
+    /// a queue for each contact among them, every time it starts.
     pub fn set(&self, queue: &QueueId, endpoint: &str, keys: Option<Keys>) -> Result<(), SetError> {
         if !endpoint.is_empty() && !self.takes(endpoint) {
             return Err(SetError::Refused);
         }
         let mut endpoints = self.endpoints();
+        let same = match endpoints.get(queue) {
+            None => endpoint.is_empty(),
+            Some(address) => address.endpoint == endpoint && address.keys == keys,
+        };
+        if same {
+            return Ok(());
+        }
         let before = if endpoint.is_empty() {
             endpoints.remove(queue)
         } else {
@@ -999,6 +1008,33 @@ pub(crate) mod tests {
         p.forget(&[1; 24]);
         assert!(load(&file).unwrap().is_empty());
         assert!(fs::read(keys_path(&file)).unwrap().is_empty());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn an_address_a_queue_has_already_is_not_written_again() {
+        let dir = std::env::temp_dir().join(format!("erevos-push-same-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("push");
+        let _ = fs::remove_file(&file);
+        let _ = fs::remove_file(keys_path(&file));
+        let p = push(PUSH_SERVICES, Some(file.clone()));
+        let (_, keys) = browser();
+        p.set(&[1; 24], "https://web.push.apple.com/a", Some(keys.clone()))
+            .unwrap();
+        // Gone from the disk: only a write would bring it back.
+        fs::remove_file(&file).unwrap();
+        p.set(&[1; 24], "https://web.push.apple.com/a", Some(keys.clone()))
+            .unwrap();
+        p.set(&[2; 24], "", None).unwrap();
+        assert!(!file.exists());
+        // Other keys, or none, are a change, and are written.
+        p.set(&[1; 24], "https://web.push.apple.com/a", None).unwrap();
+        assert_eq!(load(&file).unwrap()[&[1; 24]].keys, None);
+        fs::remove_file(&file).unwrap();
+        p.set(&[1; 24], "https://web.push.apple.com/a", Some(keys.clone()))
+            .unwrap();
+        assert_eq!(load(&file).unwrap()[&[1; 24]].keys.as_ref(), Some(&keys));
         fs::remove_dir_all(&dir).unwrap();
     }
 

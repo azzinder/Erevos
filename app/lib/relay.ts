@@ -1819,6 +1819,36 @@ export type PushKeys = { p256dh: Uint8Array; auth: Uint8Array };
  *  many messages came, encrypted for the browser: true when it said it will. An older relay takes
  *  the address alone, and its pushes are empty. */
 export async function setPush(relay: Relay, recipientId: Uint8Array, endpoint: string, keys?: PushKeys): Promise<boolean> {
+  const { bytes, sent } = pushSetBytes(recipientId, endpoint, keys);
+  const reply = await request(relay, bytes);
+  check(reply, 'push');
+  return sent > 0 && reply[1] === 1;
+}
+
+/** Asks as setPush does for each of many queues, one after another on one connection (RelaySession):
+ *  for each, null once the relay took it, or the error it gave for that one, as for a queue it does
+ *  not have. Throws when it cannot be reached; a connection lost partway gives the rest that error. */
+export async function setPushes(relay: Relay, recipientIds: Uint8Array[], endpoint: string, keys?: PushKeys): Promise<(Error | null)[]> {
+  if (recipientIds.length === 0) return [];
+  const session = await RelaySession.open(relay);
+  try {
+    const answers: (Error | null)[] = [];
+    for (const id of recipientIds) {
+      try {
+        check(await session.call(pushSetBytes(id, endpoint, keys).bytes), 'push');
+        answers.push(null);
+      } catch (error) {
+        answers.push(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+    return answers;
+  } finally {
+    session.close();
+  }
+}
+
+// A PUSH_SET request, and how many bytes of the browser's keys it carries.
+function pushSetBytes(recipientId: Uint8Array, endpoint: string, keys?: PushKeys): { bytes: Uint8Array; sent: number } {
   const address = utf8Encode(endpoint);
   const sent = keys && endpoint ? keys.p256dh.length + keys.auth.length : 0;
   const bytes = new Uint8Array(1 + 24 + 2 + address.length + sent);
@@ -1830,7 +1860,5 @@ export async function setPush(relay: Relay, recipientId: Uint8Array, endpoint: s
     bytes.set(keys.p256dh, 27 + address.length);
     bytes.set(keys.auth, 27 + address.length + keys.p256dh.length);
   }
-  const reply = await request(relay, bytes);
-  check(reply, 'push');
-  return sent > 0 && reply[1] === 1;
+  return { bytes, sent };
 }

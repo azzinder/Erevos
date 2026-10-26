@@ -86,8 +86,9 @@ export type MoveAt = {
   data: SpareStore;
   /** The space's groups; none in a hidden place. */
   groups?: MoveGroups;
-  /** The web app's push address for a queue made, and none for one left (lib/web-push.web.ts): the space's only. */
-  push?: { keep(own: Relay, queue: Queue): Promise<void>; drop(own: Relay, queue: Queue): Promise<void> };
+  /** The web app's push address for a queue made, and none for one left (lib/web-push.web.ts). `add`: for contacts'
+   *  queues made ahead (recipient ids in hex); a deleted one's goes with it at the relay. */
+  push?: { keep(own: Relay, queue: Queue): Promise<void>; drop(own: Relay, queue: Queue): Promise<void>; add?(own: Relay, queues: string[]): Promise<void> };
   /** What moves with the own queue besides, and why it moved: a hidden place's watch slot, a phone's linked devices. */
   moved?: (queue: Queue, old: Queue | null, why: MoveWhy) => Promise<void>;
   /** A hidden place's: moves its ring queue, if it rings (lib/hidden-ring.ts moveRingPocket). Says
@@ -218,6 +219,9 @@ export class QueueMove {
   private watch: ContactWatch | null = null;
   private contactLooks = 0;
   private stopped = false;
+  // The contact queues let go of but kept a while (a chat moved into hidden chats) that the web
+  // app's push address was taken from. Only in memory: once each time the space opens.
+  private readonly unpushed = new Set<string>();
 
   private readonly at: MoveAt;
 
@@ -682,7 +686,14 @@ export class QueueMove {
       made.push({ r: toHex(ids.recipientId), s: toHex(ids.senderId), u: here.url });
     }
     await e2e.addReady(made, here.url);
+    if (made.length > 0) await this.at.push?.add?.(look.own, made.map((m) => m.r)).catch(() => undefined);
     await e2e.oldMinesOver(now);
+    // What comes to them no longer wakes the closed web app: it is no chat of this space's now.
+    for (const gone of this.at.push ? e2e.goneQueues() : []) {
+      if (gone.until <= now || this.unpushed.has(gone.r) || !sameRelay(gone.u, here.url) || look.stop?.()) continue;
+      this.unpushed.add(gone.r);
+      await this.at.push!.drop(look.own, { recipientHex: gone.r, senderHex: '' }).catch(() => undefined);
+    }
     const dropped: string[] = [];
     for (const gone of e2e.goneQueues().filter((g) => g.until <= now).slice(0, DELETES_EACH)) {
       if (look.stop?.()) break;
@@ -750,7 +761,8 @@ export class QueueMove {
     const mine = e2e.contactQueues().find((c) => c.identity === q.identity)?.mine;
     if (mine?.r !== q.r || (mine.junk && now - mine.junk < JUNK_AGAIN)) return;
     this.meter.forget(`mine:${q.r}`);
-    await e2e.renewMine(q.identity, false, now);
+    // What comes to the one before, junk as it may be, no longer wakes the closed web app: it is read once Erevos is open.
+    if (await e2e.renewMine(q.identity, false, now)) await this.at.push?.drop(look.own, { recipientHex: mine.r, senderHex: mine.s }).catch(() => undefined);
   }
 
   // The queues the groups say, asked once an hour; null when they could not say, so none goes.
@@ -784,19 +796,34 @@ export function useForMoves({ groups, push }: { groups?: MoveGroups; push?: Move
 
 let opened: { of: object; e2e: E2E; mover: QueueMove } | null = null;
 
+// Whether `space` is the one open now: the web app's pushes are given only for it, as its own
+// settings say whether they are on (lib/web-push.web.ts).
+function isOpen(space: object): boolean {
+  try {
+    return currentSpace() === space;
+  } catch {
+    return false;
+  }
+}
+
 /** The open space's moves, made once while its chats are open. */
 export function spaceMover({ e2e }: Pick<SpaceChats, 'e2e'>): QueueMove {
   const current = currentSpace();
   if (opened?.of !== current || opened.e2e !== e2e) {
     opened?.mover.stop();
+    const push = spacePush;
     const mover = new QueueMove({
       e2e,
       queues: spaceQueues(current.space, current.key),
       data: spaceSpare(),
       groups: spaceGroups,
-      push: spacePush,
-      // Not in the web app, whose pushes (lib/web-push.web.ts) do not say contact queues yet.
-      ...(spacePush ? {} : { contacts: { way: `contacts-${current.space}` } }),
+      // A look that ends after another space opened gives that one nothing: its own looks do.
+      push: push && {
+        keep: (own, queue) => (isOpen(current) ? push.keep(own, queue) : Promise.resolve()),
+        drop: push.drop,
+        ...(push.add ? { add: (own: Relay, queues: string[]) => (isOpen(current) ? push.add!(own, queues) : Promise.resolve()) } : {}),
+      },
+      contacts: { way: `contacts-${current.space}` },
       moved: async (queue, old, why) => {
         for (const listener of movedListeners) await listener(queue, old, why).catch(() => undefined);
       },

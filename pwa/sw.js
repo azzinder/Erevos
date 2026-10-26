@@ -405,9 +405,11 @@ const NOTICE_WORDS = {
 // calls that rang.
 const COUNT_LENGTH = 26;
 const TOTALS = ['total', 'unmarked', 'rings'];
-// Streams kept to tell a round's next push from a new round: a few queues per space. And for each,
-// its last rounds, so a push come late after newer rounds adds only what it had not said.
-const STREAMS = 32;
+// Streams kept to tell a round's next push from a new round: one for each queue that pushed since
+// Erevos was last open, a few for each space and one for each contact who wrote (a queue of their
+// own, lib/push-queues.ts). And for each, its last rounds, so a push come late after newer rounds
+// adds only what it had not said.
+const STREAMS = 128;
 const ROUNDS = 8;
 
 const knownLang = (lang) => typeof lang === 'string' && Object.hasOwn(NOTICE_WORDS, lang);
@@ -574,9 +576,9 @@ function showNotice(said) {
 }
 
 // Erevos open, or left, starts the count again. The streams go too: kept, they would show anyone who
-// can read this browser's storage how many queues got messages, and so that it may hold more than
-// one space. A round that goes on after, of a queue Erevos did not empty, then counts again what
-// came before, which is still not read.
+// can read this browser's storage how many queues got messages, so how many contacts wrote, and
+// that it may hold more than one space. A round that goes on after, of a queue Erevos did
+// not empty, then counts again what came before, which is still not read.
 function noticeSeen() {
   return inTurn(async () => {
     await closeNotices().catch(() => undefined);

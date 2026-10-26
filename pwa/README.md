@@ -64,7 +64,10 @@ app from a store is installed once and changes only when updated.
 - **Not while closed.** iOS stops web apps in the background: messages wait on the relay until
   the app opens. Notifications can say that some came (Lock → Notifications while closed, off
   unless turned on): the relay pushes through the browser's push service, at most once in 15
-  seconds (`crates/erevos-relay/src/push.rs`, `lib/web-push.web.ts`). Each push holds how many
+  seconds (`crates/erevos-relay/src/push.rs`, `lib/web-push.web.ts`), for the space's own queue,
+  its groups' and each contact's own queue (`lib/push-queues.ts`), all with the browser's one push
+  address; with no Tor here the relay sees the contacts' queues waited on together anyway, from one
+  address, while the app is open. Each push holds how many
   messages came, encrypted for the browser, as the sending phones marked them: a message someone
   reads counts, word between phones (that a message came or was read, new keys) pushes nothing,
   and a call that rings pushes and says so without counting. The service worker then shows "3 new
@@ -73,9 +76,11 @@ app from a store is installed once and changes only when updated.
   is empty (a relay from before the counts) or the relay could not count all of it (a sender's
   Erevos from before the marks, or a message other phones carried to the relay, which cannot say
   what it holds), until Erevos is open again. The worker keeps which queues pushed, to count each
-  message once, only until Erevos opens or closes. The push service sees when a message comes,
-  and that the device uses Erevos; never what or from whom (though pushes more than 15 seconds
-  apart can be counted).
+  message once, only until Erevos opens or closes: a short tag of each, unsealed, which shows how
+  many contacts wrote, never who. The push service sees when a message comes, and that
+  the device uses Erevos; never what or from whom (though pushes more than 15 seconds apart can be
+  counted, and the queues that got messages push in turn, so a run of them can hint how many
+  contacts wrote at once).
 - **No Bluetooth, nearby link or SMS**, which Safari does not allow, and no automatic backups: a
   browser gives out a file only after a tap.
 

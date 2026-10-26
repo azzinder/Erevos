@@ -653,8 +653,10 @@ their queue alone: your own moves only if they knew it too, as contacts from bef
 through your contact link before its first move. Contacts from before get one of their own in turn, a few at a time,
 quietly, and an Erevos of theirs from before takes it too. These queues are read with no token, so the token, which
 names your phone, does not tie them together; through Tor, eight at a time, each eight on circuits of their own. They
-are still made and deleted with the token, so a relay that keeps logs can tie them together then. Hidden chats,
-linked computers and the web app keep one queue for everyone, for now.
+are still made and deleted with the token, so a relay that keeps logs can tie them together then. Hidden chats and
+linked computers keep one queue for everyone, for now. The web app has no Tor, so while it is open it waits on all
+your contacts' queues together, from one address; with notifications while closed turned on, your relay also has one
+push address for all your contacts' queues (see [On an iPhone](#iphone)).
 
 - **Block contact**, under it, does the same, and also drops what they send later, a request too. **Block**, beside
   **Refuse**, blocks a message request: a request knows only your contact link, so it moves your queue only while the
@@ -2063,7 +2065,9 @@ send changed code. Erevos does not take that code on trust:
   count is encrypted for your iPhone: Apple sees when something comes for your iPhone, and that it uses Erevos, never
   what or from whom. With a relay or a sender's Erevos older than 2.0.0, or a message that other phones carried to the
   relay, there is no number: Erevos shows **New message**, or **New messages** once more came, until you open it. They
-  are per space, never for hidden chats, and your relay must be set up to send them.
+  are per space, never for hidden chats, and your relay must be set up to send them. They come for each contact's own
+  queue too: your relay then has one push address for all your contacts' queues, and Apple gets one push for each
+  contact who wrote, 15 seconds apart, so from such a run it can guess how many wrote at once, never who.
 - **Permissions:** in Erevos, **Settings** → **General** → **Permissions** shows what the browser lets Erevos do:
   whether it runs from the home screen, notifications while closed (needed once this space turned them on), the
   microphone for calls, the camera for video calls, and whether the browser keeps Erevos's data for good. Without

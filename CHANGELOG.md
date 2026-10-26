@@ -38,8 +38,11 @@ On main, not released yet:
   same phone, and deleting or blocking someone deletes only their queue; the own queue moves only when they knew it.
   The contact link's queue is for first messages. Contacts from before get one in turn, a few at a time, quietly, and
   an Erevos of theirs from before takes it too. They are read on the relay's path with no token, waited on while the
-  space is open, and through Tor in groups of eight, each on circuits of its own. Hidden chats, linked computers and
-  the web app keep one queue for everyone, for now.
+  space is open, and through Tor in groups of eight, each on circuits of its own. Hidden chats and linked computers
+  keep one queue for everyone, for now. The web app has a queue for each contact too, without Tor, so it waits on its
+  contacts' queues together from one address; with notifications while closed on, each contact's queue pushes too,
+  all with the browser's one push address, and a push service sees a push for each contact who wrote, 15 seconds
+  apart.
 - **Hidden chats, more like the others**: they close by themselves once Erevos was in the background for more than 30
   seconds, not at once, and never during a call or while a photo or a file is picked for them, so a photo, a file or
   a QR code from a photo now comes to them. While open, a message plays the sound for new messages; in the background

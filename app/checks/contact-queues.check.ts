@@ -87,7 +87,12 @@ test('each kept contact writes to a queue of their own, read with no token, and 
   const first = await queue();
   await updateSpaceData(0, aliceKey, { url, ownQueue: first });
   const store: SpareStore = { of: {}, load: () => loadSpaceData(0, aliceKey), update: (patch) => updateSpaceData(0, aliceKey, patch) };
-  const mover = new QueueMove({ e2e: alice, queues: spaceQueues(0, aliceKey), data: store, contacts: { way: 'contacts-0' } });
+  // The web app's pushes (lib/web-push.web.ts): each queue made ahead is given its push address as it is made, before anyone has it.
+  const pushing = new Set<string>();
+  const late = new Set<string>();
+  const unpushed: string[] = [];
+  const push = { keep: async () => undefined, drop: async (_own: unknown, q: { recipientHex: string }) => void unpushed.push(q.recipientHex), add: async (_own: unknown, rs: string[]) => rs.forEach((r) => (alice.readyAt(url).includes(r) ? pushing : late).add(r)) };
+  const mover = new QueueMove({ e2e: alice, queues: spaceQueues(0, aliceKey), data: store, push, contacts: { way: 'contacts-0' } });
   const own = async () => (await store.load()).ownQueue!;
   try {
     // One look, as the receiver makes it.
@@ -168,6 +173,8 @@ test('each kept contact writes to a queue of their own, read with no token, and 
     await carol.read();
     assert.equal(bob.alice(), bobs.s);
     assert.equal(carol.alice(), carols.s);
+    // Theirs pushed before they were given out, so the closed web app wakes for them.
+    assert.ok(pushing.has(bobs.r) && pushing.has(carols.r));
 
     // What Bob writes goes to his own queue, and comes; once heard there, he is told it no more.
     assert.equal(await bob.write('to my own'), bobs.s);
@@ -186,6 +193,8 @@ test('each kept contact writes to a queue of their own, read with no token, and 
     const daves = alice.record(daveId)!.mine!;
     assert.ok(daves && ![bobs.s, carols.s, first.senderHex].includes(daves.s));
     assert.equal(dave.alice(), daves.s);
+    assert.ok(pushing.has(daves.r));
+    assert.deepEqual([...late], []);
 
     // Alice deletes Carol: Carol's queue is deleted on the relay with the next look, Bob's stays.
     await alice.deleteContact(carolId);
@@ -194,6 +203,15 @@ test('each kept contact writes to a queue of their own, read with no token, and 
     assert.equal(await bob.write('still mine'), bobs.s);
     await until('still mine');
     assert.ok(!alice.goneQueues().some((g) => g.r === carols.r));
+
+    // Dave's chat goes into hidden chats: his queue here is kept a while, and no longer pushes; it is
+    // let go of once, as is every queue left so.
+    await alice.takeOut(daveId);
+    await look();
+    await look();
+    assert.equal(unpushed.filter((r) => r === daves.r).length, 1);
+    assert.equal(new Set(unpushed).size, unpushed.length);
+    await sendMessage(relay, fromHex(daves.s), randomBytes(40));
   } finally {
     mover.stop();
   }
