@@ -41,7 +41,6 @@ export const screens: Record<string, string> = {
   'No chat has “{query}” in it.': 'Καμία συνομιλία δεν περιέχει «{query}».',
   'No chats yet': 'Καμία συνομιλία ακόμα',
   "No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.": 'Χωρίς λογαριασμό και χωρίς αριθμό τηλεφώνου. Μοιράσου τον σύνδεσμο ή τον κωδικό QR επαφής σου, ή πρόσθεσε κάποιου άλλου, για να ξεκινήσεις μια συνομιλία.',
-  'A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.': 'Δοκιμαστική έκδοση: τα μηνύματα είναι κρυπτογραφημένα από άκρη σε άκρη, μέσω relay και από κοντά, και τίποτα δεν έχει ελεγχθεί από ανεξάρτητους.',
   'New chat': 'Νέα συνομιλία',
   'Imported chat, goes on here': 'Εισαγμένη συνομιλία, συνεχίζει εδώ',
   'No messages yet': 'Κανένα μήνυμα ακόμα',

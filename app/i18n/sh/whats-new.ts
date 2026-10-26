@@ -31,6 +31,8 @@ export const whatsNew: Record<string, string> = {
     "**Skriveni razgovori bez relaya**: kao vaši drugi razgovori, mogu početi samo preko Nostra: njihov link za kontakt i QR kod kažu gdje tamo čitaju, a tekstovi i reakcije idu tamo. Pogledajte [Skriveni razgovori](#hidden).",
   "**Groups in hidden chats**: under their list, New group makes a group with their contacts; it lists among their chats, goes through their relay only, and is read while they are closed if Receive while closed is on. See [Hidden chats](#hidden).":
     "**Grupe u skrivenim razgovorima**: ispod njihovog popisa, Nova grupa pravi grupu s njihovim kontaktima; ona stoji među njihovim razgovorima, ide samo preko njihovog relaya i čita se dok su zatvoreni ako je Primanje dok su zatvoreni uključeno. Pogledajte [Skriveni razgovori](#hidden).",
+  "**No test version line**: the home screen no longer ends saying this is a test version. The guide still says exactly what is protected, and that nothing has been audited yet. See [What is protected today](#privacy).":
+    "**Bez retka o probnoj verziji**: početni ekran više ne završava porukom da je ovo probna verzija. Vodič i dalje kaže točno što je zaštićeno i da još ništa nije provjereno. Pogledajte [Što je danas zaštićeno](#privacy).",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Dugme za običan poziv za više kontakata**: narandžasta tastatura na vrhu razgovora s kontaktom uzima i broj kontakta s kojim ste ga povezali (**Poveži s jednim od mojih kontakata**), prvo broj mobilnog.',

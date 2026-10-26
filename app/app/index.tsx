@@ -539,28 +539,23 @@ export default function Home() {
             )
           }
           ListFooterComponent={
-            <>
-              {hits.length > 0 ? (
-                <View style={styles.found}>
-                  <Text variant="overline" tone="muted">
-                    {t('Messages')}
-                  </Text>
-                  {hits.map((hit) => (
-                    <FoundRow
-                      key={`${hit.peer}|${hit.tag}`}
-                      name={foundName(hit, nameOf(hit.peer))}
-                      line={hit.line}
-                      at={hit.at}
-                      now={now}
-                      onPress={() => router.push(foundAt(hit))}
-                    />
-                  ))}
-                </View>
-              ) : null}
-              <Text variant="caption" tone="faint" style={styles.footer}>
-                {t('A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.')}
-              </Text>
-            </>
+            hits.length > 0 ? (
+              <View style={styles.found}>
+                <Text variant="overline" tone="muted">
+                  {t('Messages')}
+                </Text>
+                {hits.map((hit) => (
+                  <FoundRow
+                    key={`${hit.peer}|${hit.tag}`}
+                    name={foundName(hit, nameOf(hit.peer))}
+                    line={hit.line}
+                    at={hit.at}
+                    now={now}
+                    onPress={() => router.push(foundAt(hit))}
+                  />
+                ))}
+              </View>
+            ) : null
           }
         />
       </SwipeTabs>
@@ -854,11 +849,6 @@ const makeStyles = (colors: Colors) =>
     },
     emptyText: {
       textAlign: 'center',
-    },
-    footer: {
-      textAlign: 'center',
-      paddingTop: space.xl,
-      paddingHorizontal: space.lg,
     },
     // The messages the search found, under the chats it found.
     found: {

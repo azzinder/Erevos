@@ -31,6 +31,8 @@ export const whatsNew: Record<string, string> = {
     "**Chat nascoste senza relay**: come le tue altre chat, possono iniziare solo tramite Nostr: il loro link di contatto e il codice QR dicono dove leggono lì, e testi e reazioni vanno lì. Vedi [Chat nascoste](#hidden).",
   "**Groups in hidden chats**: under their list, New group makes a group with their contacts; it lists among their chats, goes through their relay only, and is read while they are closed if Receive while closed is on. See [Hidden chats](#hidden).":
     "**Gruppi nelle chat nascoste**: sotto il loro elenco, Nuovo gruppo crea un gruppo con i loro contatti; compare tra le loro chat, passa solo dal loro relay e viene letto mentre sono chiuse se Ricevere da chiuse è attivo. Vedi [Chat nascoste](#hidden).",
+  "**No test version line**: the home screen no longer ends saying this is a test version. The guide still says exactly what is protected, and that nothing has been audited yet. See [What is protected today](#privacy).":
+    "**Niente più riga sulla versione di prova**: la schermata iniziale non finisce più dicendo che è una versione di prova. La guida dice ancora esattamente cosa è protetto, e che niente è stato ancora verificato. Vedi [Cosa è protetto oggi](#privacy).",
   // 3.3.2
   '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
     '**Il pulsante di chiamata normale per più contatti**: il tastierino arancione in cima alla chat di un contatto usa anche il numero del contatto a cui l’hai collegato (**Collega a uno dei miei contatti**), prima il cellulare.',

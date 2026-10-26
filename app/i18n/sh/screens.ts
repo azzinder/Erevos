@@ -41,7 +41,6 @@ export const screens: Record<string, string> = {
   'No chat has “{query}” in it.': 'Nijedan razgovor ne sadrži „{query}“.',
   'No chats yet': 'Još nema razgovora',
   "No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.": 'Bez računa i bez broja telefona. Podijelite svoj link za kontakt ili QR kod ili dodajte tuđi da započnete razgovor.',
-  'A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.': 'Probna verzija: poruke su šifrirane s kraja na kraj, i preko relaya i u blizini, a ništa nije nezavisno provjereno.',
   'New chat': 'Novi razgovor',
   'Imported chat, goes on here': 'Uvezeni razgovor, nastavlja se ovdje',
   'No messages yet': 'Još nema poruka',

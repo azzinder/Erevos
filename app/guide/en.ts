@@ -13,9 +13,8 @@ internet.
   space.
 - **Appearance:** the LPHL looks: Classic, Modernist and Nocturne, twelve palettes, and glass as on lphl.nekten.eu.
 
-> This is an early test version. Messages are **end-to-end encrypted**, through a relay and nearby alike, but
-> nothing has been audited yet. Do not rely on it to protect anyone yet.
-> [What is protected today](#privacy) says exactly what is and is not.
+> Messages are **end-to-end encrypted**, through a relay and nearby alike, but nothing has been audited yet by
+> independent experts. [What is protected today](#privacy) says exactly what is and is not.
 
 This guide opens from **User guide** in the home screen's menu (the three dots at the top). The search at its top finds any word in it. The guide
 is in English and Greek, and shows in English in the app's other languages, see [Language](#start).

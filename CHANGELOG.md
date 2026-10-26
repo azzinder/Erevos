@@ -88,6 +88,8 @@ On main, not released yet:
   messages and calls. It goes through the place's relay only, to a queue of its own there, and is read while the place
   is closed if **Receive while closed** is on; its calls ring only while the place is open, and one started while it
   is closed shows as missed. None has a PIN of its own, and none is public.
+- **No test version line**: the home screen no longer ends saying this is a test version; the guide's opening note
+  keeps that nothing has been audited yet, with what is protected today.
 - **A deleted or blocked contact's queue goes at once**, not with the next look at the relay.
 
 ## 3.3.2 (2026-10-25)

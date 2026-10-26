@@ -41,7 +41,6 @@ export const screens: Record<string, string> = {
   'No chat has “{query}” in it.': 'Ningún chat contiene «{query}».',
   'No chats yet': 'Aún no hay chats',
   "No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.": 'Sin cuenta y sin número de teléfono. Comparte tu enlace de contacto o tu código QR, o añade el de otra persona, para empezar un chat.',
-  'A test version: messages are end-to-end encrypted, through a relay and nearby alike, and nothing is audited.': 'Una versión de prueba: los mensajes están cifrados de extremo a extremo, tanto por un relay como cerca, y nada se ha auditado.',
   'New chat': 'Chat nuevo',
   'Imported chat, goes on here': 'Chat importado, continúa aquí',
   'No messages yet': 'Aún no hay mensajes',
