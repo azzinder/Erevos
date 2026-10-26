@@ -85,6 +85,10 @@ import { sendCopies } from '../lib/fanout';
 import { mediaText, SOURCE_LABELS } from '../lib/imports';
 import { chatMedia, dayKey, daysOf, IMPORTED_TAG, importedTag, isImportedSticker, isSound, isVoice, soundEnding } from '../lib/chat-media';
 import { ChatMedia, DayCalendar } from '../components/chat-media';
+import { ChatRow, MyselfRow } from '../components/chat-row';
+import { MyselfChat } from '../components/myself-chat';
+import { armPlaceReminders, myNotes, onNotesChanged, type Note, type NotesAt } from '../lib/myself';
+import { buildInbox } from '../lib/inbox';
 import { FoundExport, useImportFlow } from '../components/import-flow';
 import { Archive, type LinkedMessage } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
@@ -527,6 +531,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [receiving, setReceiving] = useState(false);
   const watchedNow = useRef(false);
   watchedNow.current = watched || receiving;
+  // These hidden chats' own Chat with myself (components/myself-chat.tsx): whose notes, the phone
+  // telling their reminders only while the place receives closed; the notes, for its row at the
+  // top of their chats; and whether it shows in place of them.
+  const notesAt = useMemo<NotesAt | null>(
+    () => (hiddenKey ? { place: { holder: hiddenHolder(pocket), space: currentSpace().space, key: hiddenKey }, arm: receiving } : null),
+    [hiddenKey, pocket, receiving],
+  );
+  const [placeNotes, setPlaceNotes] = useState<Note[] | null>(null);
+  const [myselfShown, setMyselfShown] = useState(false);
+  useEffect(() => {
+    if (!notesAt) return;
+    let live = true;
+    const load = () => myNotes(notesAt).then((list) => live && setPlaceNotes(list), () => undefined);
+    void load();
+    const off = onNotesChanged(() => void load());
+    return () => {
+      live = false;
+      off();
+    };
+  }, [notesAt]);
   const [watchNote, setWatchNote] = useState('');
   // Whether these hidden chats ring their contacts' calls while closed (lock/hidden-ring.ts), and
   // their ring queue, kept with the place (its own relay). Only set for hidden chats.
@@ -4097,10 +4121,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!hiddenKey) return;
     const { space, key } = currentSpace();
     setReceiving(on);
-    await keepPlace(space, key, pocket, on ? hiddenKey : null).catch((error) => {
+    try {
+      await keepPlace(space, key, pocket, on ? hiddenKey : null);
+    } catch (error) {
       setReceiving(!on);
       setNote(errorText(error));
-    });
+      return;
+    }
+    // Their reminders still to come, told by the phone from now on, or no longer.
+    await armPlaceReminders({ holder: hiddenHolder(pocket), space, key: hiddenKey }, on).catch(() => undefined);
   }
 
   // Has these hidden chats say a message came while they are closed, or no longer.
@@ -4470,6 +4499,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     [contacts, archive],
   );
   const chips = contacts.map((contact) => `${CONTACT_PREFIX}${contact.identity}`);
+  // Hidden chats listed as home lists the space's (app/index.tsx): the newest first, with what was
+  // said last and how many are not read. None is locked with a PIN of its own in them.
+  const placeRows = useMemo(
+    () =>
+      hiddenKey
+        ? buildInbox(
+            shownContacts.map((c) => ({ ...c, locked: false })),
+            messages,
+            archive?.chats() ?? [],
+            Date.now(),
+          )
+        : [],
+    [hiddenKey, shownContacts, messages, archive, archiveTick, now],
+  );
   const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
   const talkie = selectedContact ? talkies.has(selectedContact) : false;
   listening.current = shown && appActive && !gated ? selectedContact : null;
@@ -4750,6 +4793,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       : hiddenKey && onHidden
         ? onHidden
         : () => (router.canGoBack() ? router.back() : router.replace('/'));
+
+  if (myselfShown && notesAt) {
+    return (
+      <SwipeBack onBack={() => setMyselfShown(false)}>
+        <MyselfChat at={notesAt} onBack={() => setMyselfShown(false)} />
+      </SwipeBack>
+    );
+  }
 
   return (
     <SwipeBack onBack={goBack}>
@@ -5363,7 +5414,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         </View>
         {!selected ? (
           <ScrollView style={styles.top} contentContainerStyle={styles.topContent} keyboardShouldPersistTaps="handled">
-            {chips.length > 0 ? (
+            {hiddenKey ? (
+              // As home lists the space's chats (app/index.tsx), Chat with myself first.
+              <View>
+                {placeNotes !== null ? <MyselfRow notes={placeNotes} onOpen={() => setMyselfShown(true)} /> : null}
+                {placeRows.map((row) => (
+                  <ChatRow
+                    key={row.identity}
+                    row={row}
+                    now={now}
+                    online={!!e2e && contacts.some((c) => c.identity === row.identity && !c.hide) && e2e.onlineUntil(row.identity, now) > 0}
+                    onOpen={() => setSelected(`${CONTACT_PREFIX}${row.identity}`)}
+                  />
+                ))}
+                {placeRows.length === 0 ? <Text tone="muted">{t('No hidden chats yet. Add a contact below, or move a chat here from its details.')}</Text> : null}
+              </View>
+            ) : chips.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.faces} keyboardShouldPersistTaps="handled">
                 {chips.map((peer) => {
                   const named = contactName(peer, shownContacts);
@@ -5390,15 +5456,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   );
                 })}
               </ScrollView>
-            ) : hiddenKey ? (
-              <Text tone="muted">{t('No hidden chats yet. Add a contact below, or move a chat here from its details.')}</Text>
             ) : null}
             {hiddenKey ? (
               <View style={styles.panel}>
                 <DetailRow title={t('Receive while closed')} checked={receiving} onPress={() => void changeReceiving(!receiving)} />
                 <Text variant="caption" tone="muted">
                   {receiving
-                    ? t('Closed, these hidden chats receive as your other chats do: their contacts see at once that a message came, a notice says only "New message", and a call rings with no name, answered with the PIN. For it, their key is kept encrypted with the space, so whoever opens the space and copies what the phone keeps could open them too; the PIN still keeps them out of sight.')
+                    ? t('Closed, these hidden chats receive as your other chats do: their contacts see at once that a message came, a notice says only "New message", a call rings with no name, answered with the PIN, and a reminder of their Chat with myself says only "Reminder". For it, their key is kept encrypted with the space, so whoever opens the space and copies what the phone keeps could open them too; the PIN still keeps them out of sight.')
                     : t('Closed, nothing reads these hidden chats: their key is only behind the PIN, and their messages wait on the relay until you open them.')}
                 </Text>
                 {canRingInBackground && !receiving ? (

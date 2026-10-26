@@ -1,0 +1,251 @@
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+
+import { t } from '../lib/i18n';
+import { rowTime, shownName, type InboxRow } from '../lib/inbox';
+import { laterLabel } from '../lib/later';
+import { notesSummary, type Note } from '../lib/myself';
+import { radius, space, withAlpha, type Colors } from '../theme/colors';
+import { useStyles, useTheme } from '../theme/context';
+
+import { BellIcon, LockIcon, PinIcon, TimerIcon } from './icons';
+import { KeyFace } from './key-face';
+import { MyselfFace } from './myself-face';
+import { font, Text } from './ui';
+
+const MARKS = ['✓', '✓✓', '✓✓✓'];
+
+/** A chat's row in a list of chats, as home has it (app/index.tsx) and hidden chats too
+ *  (app/chat.tsx): tapped, it opens its chat, or does `onOpen` where one is given. */
+export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: InboxRow; now: number; online?: boolean; onLong?: () => void; onOpen?: () => void }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const name = shownName(row);
+  const preview = row.locked ? t('Locked with a PIN') : row.draft || row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
+  return (
+    <Pressable
+      onLongPress={onLong}
+      onPress={
+        onOpen ??
+        (() =>
+          router.push(
+            row.sms
+              ? `/sms?to=${encodeURIComponent(row.sms)}`
+              : row.identity.startsWith('group:')
+                ? `/group?id=${row.identity.slice(6)}`
+                : `/chat?contact=${row.identity}`,
+          ))
+      }
+      accessibilityRole="button"
+      accessibilityLabel={`${name}${online ? t(', online') : ''}${row.unread ? t(', {n} not read', { n: row.unread }) : ''}`}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      {row.sms && row.photo && !photoFailed ? (
+        // The picture the phone's contacts have for the number, read from them as it shows.
+        <Image source={{ uri: row.photo }} style={styles.smsFace} onError={() => setPhotoFailed(true)} accessibilityIgnoresInvertColors />
+      ) : row.sms ? (
+        <View style={styles.smsFace}>
+          <Text variant="label" tone="muted">
+            SMS
+          </Text>
+        </View>
+      ) : (
+        <View>
+          <KeyFace identity={row.identity.startsWith('group:') ? row.identity.slice(6) : row.identity} name={row.name} size={52} avatar={row.avatar} />
+          {online ? <View style={[styles.onlineDot, { backgroundColor: colors.success, borderColor: colors.background }]} /> : null}
+        </View>
+      )}
+      <View style={styles.rowBody}>
+        <View style={styles.rowLine}>
+          <Text variant="bodyStrong" numberOfLines={1} style={[styles.rowName, !row.name && styles.mono]}>
+            {name}
+          </Text>
+          {row.pinned ? <PinIcon color={colors.textFaint} size={13} /> : null}
+          <Text variant="caption" color={row.unread ? colors.accentText : colors.textFaint}>
+            {rowTime(row.at, now)}
+          </Text>
+        </View>
+        <View style={styles.rowLine}>
+          <View style={styles.previewLine}>
+            {row.locked ? <LockIcon color={colors.textMuted} size={13} /> : null}
+            {row.timer ? <TimerIcon color={colors.textMuted} size={13} /> : null}
+            {row.draft ? (
+              <Text variant="caption" color={colors.danger}>
+                {t('Draft')}
+              </Text>
+            ) : row.lastSms ? (
+              <Text variant="caption" color={colors.warning}>
+                SMS
+              </Text>
+            ) : null}
+            {row.last && row.mine && !row.lastSms && !row.draft ? (
+              <Text variant="caption" color={row.mark === 2 ? colors.accentText : colors.textMuted}>
+                {row.mark < 0 ? t('Waiting') : MARKS[row.mark]}
+              </Text>
+            ) : null}
+            <Text
+              numberOfLines={1}
+              variant="caption"
+              tone={row.unread ? undefined : 'muted'}
+              style={[styles.preview, !row.last && styles.italic, row.unread ? styles.previewUnread : null]}
+            >
+              {preview}
+            </Text>
+          </View>
+          {row.unread ? (
+            <View style={styles.badge}>
+              <Text variant="caption" color={colors.onPrimary} style={styles.badgeText}>
+                {row.unread > 99 ? '99+' : row.unread}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+// Chat with myself's row, at the top of the chats: its last note, or the reminders that came and
+// were not read yet, in amber with their number, as a chat's unread messages are counted. It draws
+// again when the next reminder's time comes. Tapped, it opens the space's, or does `onOpen`.
+export function MyselfRow({ notes, onOpen }: { notes: Note[]; onOpen?: () => void }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const [now, setNow] = useState(Date.now());
+  const { last, due, next } = notesSummary(notes, now);
+  useEffect(() => {
+    if (next === null) return;
+    const timer = setTimeout(() => setNow(Date.now()), Math.min(next - Date.now() + 500, 2 ** 31 - 1));
+    return () => clearTimeout(timer);
+  }, [next]);
+  const line = (note: Note) => note.text.split('\n')[0] || (note.voice ? t('Voice message') : (note.file?.name ?? ''));
+  const shown = due.length > 0 ? due[due.length - 1] : last;
+  const preview = shown ? line(shown) : t('Notes, links and reminders only you see');
+  return (
+    <Pressable
+      onPress={onOpen ?? (() => router.push('/myself'))}
+      accessibilityRole="button"
+      accessibilityLabel={`${t('Chat with myself')}${due.length ? `, ${t('Reminders')}: ${due.length}` : ''}`}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+    >
+      <MyselfFace size={52} />
+      <View style={styles.rowBody}>
+        <View style={styles.rowLine}>
+          <Text variant="bodyStrong" numberOfLines={1} style={styles.rowName}>
+            {t('Chat with myself')}
+          </Text>
+          <PinIcon color={colors.textFaint} size={13} />
+          {last ? (
+            <Text variant="caption" color={due.length ? colors.warning : colors.textFaint}>
+              {rowTime(due.length ? due[due.length - 1].due! : last.at, now)}
+            </Text>
+          ) : null}
+        </View>
+        <View style={styles.rowLine}>
+          <View style={styles.previewLine}>
+            {due.length || (shown?.due !== undefined && shown.due > now) ? <BellIcon color={due.length ? colors.warning : colors.textMuted} size={13} /> : null}
+            <Text
+              numberOfLines={1}
+              variant="caption"
+              tone={due.length ? undefined : 'muted'}
+              color={due.length ? colors.warning : undefined}
+              style={[styles.preview, !shown && styles.italic, due.length ? styles.previewUnread : null]}
+            >
+              {shown?.due !== undefined && shown.due > now ? `${laterLabel(shown.due)} · ${preview}` : preview}
+            </Text>
+          </View>
+          {due.length ? (
+            <View style={[styles.badge, { backgroundColor: colors.warning }]}>
+              <Text variant="caption" color="#ffffff" style={styles.badgeText}>
+                {due.length > 99 ? '99+' : due.length}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.md,
+      paddingVertical: space.sm + 2,
+      paddingHorizontal: space.sm,
+      marginHorizontal: -space.sm,
+      borderRadius: radius.lg,
+    },
+    pressed: {
+      backgroundColor: colors.surfacePressed,
+    },
+    smsFace: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.border, 0.6),
+    },
+    onlineDot: {
+      position: 'absolute',
+      right: 0,
+      bottom: 0,
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 2,
+    },
+    rowBody: {
+      flex: 1,
+      gap: 3,
+    },
+    rowLine: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space.sm,
+    },
+    rowName: {
+      flex: 1,
+    },
+    mono: {
+      fontFamily: 'monospace',
+      fontSize: 14,
+    },
+    previewLine: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    preview: {
+      flex: 1,
+      fontSize: 14,
+    },
+    previewUnread: {
+      ...font('600'),
+    },
+    italic: {
+      fontStyle: 'italic',
+    },
+    badge: {
+      minWidth: 22,
+      height: 22,
+      paddingHorizontal: 6,
+      borderRadius: 11,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primary,
+    },
+    badgeText: {
+      fontSize: 12,
+      ...font('700'),
+    },
+  });

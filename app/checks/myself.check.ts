@@ -1,14 +1,18 @@
 // Chat with myself (lock/myself-data.ts): each space's and each hidden place's notes apart, sealed
 // so no other key reads them; a note's reminder set, changed, taken away and seen; what the home
-// screen's row shows of them; and a note deleted with its photo's chunks and its voice message.
+// screen's row shows of them; a note deleted with its photo's chunks and its voice message; and a
+// hidden place's reminders told by the phone only while that place receives closed.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { reminders } from './device-memory';
 import { blobs, files } from './files-memory';
 import { bytesSource, keepFile } from '../lib/attachments';
 import { randomBytes } from '../lib/crypto';
+import { armPlaceReminders, deleteNote, myNotes, remindAt, writeNote } from '../lib/myself';
+import { setCurrentSpace } from '../lock/keys';
 import { addNote, changeNote, FILE, isDue, isWaiting, loadNotes, markTold, newNoteId, notesSummary, removeNote, type NotesPlace } from '../lock/myself-data';
 import { saveClip } from '../lock/voice-clips';
 
@@ -78,4 +82,44 @@ test('a note deleted takes its photo or file and its voice message with it', asy
   assert.ok(![...blobs.keys()].some((name) => name.includes(file.id) || name.includes(voice.id)));
   assert.deepEqual(await loadNotes(mine), []);
   assert.equal(await removeNote(mine, withFile.id), null);
+});
+
+test("a hidden place's reminders are told by the phone only while it receives closed; the space's always are", async () => {
+  files.clear();
+  blobs.clear();
+  reminders.clear();
+  setCurrentSpace(0, randomBytes(32));
+  try {
+    const later = Date.now() + 3_600_000;
+    const own = await writeNote({ text: 'space', due: later });
+    assert.equal(reminders.get(own.id), later);
+    const hidden = place('hidden1');
+    const closed = { place: hidden, arm: false };
+    const kept = await writeNote({ text: 'hidden', due: later }, closed);
+    assert.ok(!reminders.has(kept.id));
+    assert.deepEqual((await myNotes()).map((n) => n.text), ['space']);
+    assert.deepEqual((await myNotes(closed)).map((n) => n.text), ['hidden']);
+
+    // Its switch on, what is still to come is told; off, no longer, and the space's stays.
+    await armPlaceReminders(hidden, true);
+    assert.equal(reminders.get(kept.id), later);
+    await armPlaceReminders(hidden, false);
+    assert.ok(!reminders.has(kept.id));
+    assert.equal(reminders.get(own.id), later);
+
+    // While it receives, a time set is told; while it does not, it is not.
+    const receiving = { place: hidden, arm: true };
+    await remindAt(kept.id, later + 1000, receiving);
+    assert.equal(reminders.get(kept.id), later + 1000);
+    await remindAt(kept.id, later + 2000, closed);
+    assert.ok(!reminders.has(kept.id));
+    assert.equal((await myNotes(closed))[0].due, later + 2000);
+
+    // Deleted there, the space's note stays.
+    await deleteNote(kept.id, closed);
+    assert.deepEqual(await myNotes(closed), []);
+    assert.deepEqual((await myNotes()).map((n) => n.text), ['space']);
+  } finally {
+    setCurrentSpace(null);
+  }
 });

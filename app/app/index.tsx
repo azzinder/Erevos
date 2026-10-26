@@ -3,12 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ChatRow, MyselfRow } from '../components/chat-row';
 import { FoundRow } from '../components/found-row';
 import { gradientStyle } from '../components/glass';
-import { BellIcon, GearIcon, LockIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, TimerIcon } from '../components/icons';
-import { KeyFace } from '../components/key-face';
+import { BellIcon, GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon } from '../components/icons';
 import { LaterPicker } from '../components/later-picker';
-import { MyselfFace } from '../components/myself-face';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LockSign, PersonSign, PhoneSign, ShortcutTile } from '../components/shortcut-tile';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
@@ -22,11 +21,10 @@ import { copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { lang, mark, t } from '../lib/i18n';
-import { laterLabel } from '../lib/later';
-import { armReminders, myNotes, notesSummary, onNotesChanged, writeNote, type Note } from '../lib/myself';
+import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
 import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
-import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, showsIn, shownName, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, mergeRows, showsIn, shownName, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { checksOffered, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
@@ -59,8 +57,6 @@ import { useStyles, useTheme } from '../theme/context';
 // time a message comes while it shows (lib/receiver.ts). Hidden
 // chats never show here: their PIN, typed in the search or after holding New chat down, opens
 // them, in every space alike.
-
-const MARKS = ['✓', '✓✓', '✓✓✓'];
 
 type Relay = 'ready' | 'no-queue' | 'none';
 
@@ -722,155 +718,6 @@ function ReleaseRow({ release }: { release: Told & { seen: boolean } }) {
   );
 }
 
-// Chat with myself's row, at the top of the chats: its last note, or the reminders that came and
-// were not read yet, in amber with their number, as a chat's unread messages are counted. It draws
-// again when the next reminder's time comes.
-function MyselfRow({ notes }: { notes: Note[] }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const [now, setNow] = useState(Date.now());
-  const { last, due, next } = notesSummary(notes, now);
-  useEffect(() => {
-    if (next === null) return;
-    const timer = setTimeout(() => setNow(Date.now()), Math.min(next - Date.now() + 500, 2 ** 31 - 1));
-    return () => clearTimeout(timer);
-  }, [next]);
-  const line = (note: Note) => note.text.split('\n')[0] || (note.voice ? t('Voice message') : (note.file?.name ?? ''));
-  const shown = due.length > 0 ? due[due.length - 1] : last;
-  const preview = shown ? line(shown) : t('Notes, links and reminders only you see');
-  return (
-    <Pressable
-      onPress={() => router.push('/myself')}
-      accessibilityRole="button"
-      accessibilityLabel={`${t('Chat with myself')}${due.length ? `, ${t('Reminders')}: ${due.length}` : ''}`}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-    >
-      <MyselfFace size={52} />
-      <View style={styles.rowBody}>
-        <View style={styles.rowLine}>
-          <Text variant="bodyStrong" numberOfLines={1} style={styles.rowName}>
-            {t('Chat with myself')}
-          </Text>
-          <PinIcon color={colors.textFaint} size={13} />
-          {last ? (
-            <Text variant="caption" color={due.length ? colors.warning : colors.textFaint}>
-              {rowTime(due.length ? due[due.length - 1].due! : last.at, now)}
-            </Text>
-          ) : null}
-        </View>
-        <View style={styles.rowLine}>
-          <View style={styles.previewLine}>
-            {due.length || (shown?.due !== undefined && shown.due > now) ? <BellIcon color={due.length ? colors.warning : colors.textMuted} size={13} /> : null}
-            <Text
-              numberOfLines={1}
-              variant="caption"
-              tone={due.length ? undefined : 'muted'}
-              color={due.length ? colors.warning : undefined}
-              style={[styles.preview, !shown && styles.italic, due.length ? styles.previewUnread : null]}
-            >
-              {shown?.due !== undefined && shown.due > now ? `${laterLabel(shown.due)} · ${preview}` : preview}
-            </Text>
-          </View>
-          {due.length ? (
-            <View style={[styles.badge, { backgroundColor: colors.warning }]}>
-              <Text variant="caption" color="#ffffff" style={styles.badgeText}>
-                {due.length > 99 ? '99+' : due.length}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
-function ChatRow({ row, now, online = false, onLong }: { row: InboxRow; now: number; online?: boolean; onLong?: () => void }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const name = shownName(row);
-  const preview = row.locked ? t('Locked with a PIN') : row.draft || row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
-  return (
-    <Pressable
-      onLongPress={onLong}
-      onPress={() =>
-        router.push(
-          row.sms
-            ? `/sms?to=${encodeURIComponent(row.sms)}`
-            : row.identity.startsWith('group:')
-              ? `/group?id=${row.identity.slice(6)}`
-              : `/chat?contact=${row.identity}`,
-        )
-      }
-      accessibilityRole="button"
-      accessibilityLabel={`${name}${online ? t(', online') : ''}${row.unread ? t(', {n} not read', { n: row.unread }) : ''}`}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-    >
-      {row.sms && row.photo && !photoFailed ? (
-        // The picture the phone's contacts have for the number, read from them as it shows.
-        <Image source={{ uri: row.photo }} style={styles.smsFace} onError={() => setPhotoFailed(true)} accessibilityIgnoresInvertColors />
-      ) : row.sms ? (
-        <View style={styles.smsFace}>
-          <Text variant="label" tone="muted">
-            SMS
-          </Text>
-        </View>
-      ) : (
-        <View>
-          <KeyFace identity={row.identity.startsWith('group:') ? row.identity.slice(6) : row.identity} name={row.name} size={52} avatar={row.avatar} />
-          {online ? <View style={[styles.onlineDot, { backgroundColor: colors.success, borderColor: colors.background }]} /> : null}
-        </View>
-      )}
-      <View style={styles.rowBody}>
-        <View style={styles.rowLine}>
-          <Text variant="bodyStrong" numberOfLines={1} style={[styles.rowName, !row.name && styles.mono]}>
-            {name}
-          </Text>
-          {row.pinned ? <PinIcon color={colors.textFaint} size={13} /> : null}
-          <Text variant="caption" color={row.unread ? colors.accentText : colors.textFaint}>
-            {rowTime(row.at, now)}
-          </Text>
-        </View>
-        <View style={styles.rowLine}>
-          <View style={styles.previewLine}>
-            {row.locked ? <LockIcon color={colors.textMuted} size={13} /> : null}
-            {row.timer ? <TimerIcon color={colors.textMuted} size={13} /> : null}
-            {row.draft ? (
-              <Text variant="caption" color={colors.danger}>
-                {t('Draft')}
-              </Text>
-            ) : row.lastSms ? (
-              <Text variant="caption" color={colors.warning}>
-                SMS
-              </Text>
-            ) : null}
-            {row.last && row.mine && !row.lastSms && !row.draft ? (
-              <Text variant="caption" color={row.mark === 2 ? colors.accentText : colors.textMuted}>
-                {row.mark < 0 ? t('Waiting') : MARKS[row.mark]}
-              </Text>
-            ) : null}
-            <Text
-              numberOfLines={1}
-              variant="caption"
-              tone={row.unread ? undefined : 'muted'}
-              style={[styles.preview, !row.last && styles.italic, row.unread ? styles.previewUnread : null]}
-            >
-              {preview}
-            </Text>
-          </View>
-          {row.unread ? (
-            <View style={styles.badge}>
-              <Text variant="caption" color={colors.onPrimary} style={styles.badgeText}>
-                {row.unread > 99 ? '99+' : row.unread}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
 const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     container: {
@@ -901,16 +748,6 @@ const makeStyles = (colors: Colors) =>
     tools: {
       flexDirection: 'row',
       gap: space.xs,
-    },
-    smsFace: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.surfaceAlt,
-      borderWidth: 1,
-      borderColor: withAlpha(colors.border, 0.6),
     },
     iconButton: {
       width: 44,
@@ -961,15 +798,6 @@ const makeStyles = (colors: Colors) =>
       height: 8,
       borderRadius: 4,
     },
-    onlineDot: {
-      position: 'absolute',
-      right: 0,
-      bottom: 0,
-      width: 14,
-      height: 14,
-      borderRadius: 7,
-      borderWidth: 2,
-    },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -992,10 +820,6 @@ const makeStyles = (colors: Colors) =>
     rowName: {
       flex: 1,
     },
-    mono: {
-      fontFamily: 'monospace',
-      fontSize: 14,
-    },
     previewLine: {
       flex: 1,
       flexDirection: 'row',
@@ -1008,9 +832,6 @@ const makeStyles = (colors: Colors) =>
     },
     previewUnread: {
       ...font('600'),
-    },
-    italic: {
-      fontStyle: 'italic',
     },
     badge: {
       minWidth: 22,

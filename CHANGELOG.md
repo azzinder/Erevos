@@ -66,6 +66,10 @@ On main, not released yet:
   **Receive while closed** on, while the space is open. **Send later** no longer needs the relay to answer when you
   schedule. A chat exported from Telegram, WhatsApp or Viber can be imported in a hidden chat's details: kept with
   that place, encrypted with its key, it shows only in that chat.
+- **Hidden chats listed like your chats, with a Chat with myself of their own**: they open on a list as the home
+  screen's, the newest first, each with what was said last, when, and how many are not read; at its top, each place
+  has its own Chat with myself, encrypted with that place's key. Its reminders show there once the PIN opens it, and
+  the phone tells them at their time, in a notice that says only **Reminder**, only while **Receive while closed** is on.
 - **A deleted or blocked contact's queue goes at once**, not with the next look at the relay.
 
 ## 3.3.2 (2026-10-25)

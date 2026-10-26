@@ -9,9 +9,17 @@ import { addNote, changeNote, isDue, isWaiting, loadNotes, markTold, newNoteId, 
 // myself after the password. Everywhere, a reminder whose time has come shows in the chat and on its
 // row at the top of the chats until the chat is opened, so it is not missed where no notice came: on
 // a computer, in the web app, with notices turned off, or in another space than the one opened.
+// Each hidden place has its notes too, in its own Chat with myself (app/chat.tsx): the phone tells
+// their reminders only where the place receives while closed (lock/hidden-keep.ts), in the same
+// notice, and they show once its PIN opens it.
 
-/** The open space's notes. Hidden chats have none of their own yet. */
+/** The open space's notes. */
 export const myselfPlace = (): NotesPlace => ({ holder: 'space', ...currentSpace() });
+
+/** Whose notes: a space's or a hidden place's, and whether the phone tells their reminders at their time. */
+export type NotesAt = { place: NotesPlace; arm: boolean };
+
+const spaceNotes = (): NotesAt => ({ place: myselfPlace(), arm: true });
 
 export { isDue, isWaiting, notesSummary } from '../lock/myself-data';
 export type { Note };
@@ -33,37 +41,44 @@ export function armReminders(notes: Note[], now = Date.now()): void {
   for (const note of notes) if (isWaiting(note, now)) device?.remind?.(note.id, note.due!);
 }
 
-export async function myNotes(): Promise<Note[]> {
-  return loadNotes(myselfPlace());
+/** A hidden place's reminders still to come, told by the phone from now on, or no longer: its switch to receive while closed was turned on or off. */
+export async function armPlaceReminders(place: NotesPlace, on: boolean, now = Date.now()): Promise<void> {
+  const notes = await loadNotes(place);
+  if (on) armReminders(notes, now);
+  else for (const note of notes) if (isWaiting(note, now)) device?.forgetReminder?.(note.id);
+}
+
+export async function myNotes(at = spaceNotes()): Promise<Note[]> {
+  return loadNotes(at.place);
 }
 
 /** Writes a note, with a photo, file or voice message, reminding at `due` when it is given. */
-export async function writeNote(note: Omit<Note, 'id' | 'at'>): Promise<Note> {
-  const kept = await addNote(myselfPlace(), { ...note, id: newNoteId(), at: Date.now() });
-  if (kept.due !== undefined) device?.remind?.(kept.id, kept.due);
+export async function writeNote(note: Omit<Note, 'id' | 'at'>, at = spaceNotes()): Promise<Note> {
+  const kept = await addNote(at.place, { ...note, id: newNoteId(), at: Date.now() });
+  if (kept.due !== undefined && at.arm) device?.remind?.(kept.id, kept.due);
   changed();
   return kept;
 }
 
 /** Sets when a note reminds, or with null that it no longer does. */
-export async function remindAt(id: string, due: number | null): Promise<Note | null> {
-  const note = await changeNote(myselfPlace(), id, { due });
-  if (due === null || !note) device?.forgetReminder?.(id);
+export async function remindAt(id: string, due: number | null, at = spaceNotes()): Promise<Note | null> {
+  const note = await changeNote(at.place, id, { due });
+  if (due === null || !note || !at.arm) device?.forgetReminder?.(id);
   else device?.remind?.(id, due);
   changed();
   return note;
 }
 
 /** The reminders that came are seen: the chat was opened. */
-export async function seenReminders(notes: Note[], now = Date.now()): Promise<void> {
+export async function seenReminders(notes: Note[], now = Date.now(), at = spaceNotes()): Promise<void> {
   const due = notes.filter((note) => isDue(note, now)).map((note) => note.id);
   if (due.length === 0) return;
-  await markTold(myselfPlace(), due);
+  await markTold(at.place, due);
   changed();
 }
 
-export async function deleteNote(id: string): Promise<void> {
+export async function deleteNote(id: string, at = spaceNotes()): Promise<void> {
   device?.forgetReminder?.(id);
-  await removeNote(myselfPlace(), id);
+  await removeNote(at.place, id);
   changed();
 }

@@ -139,7 +139,9 @@ voice messages, but not its photos and files, as with chats.
   turned off, that is where you see it.
 - **Holding a note** offers **Copy**, **Open** (a photo or a file), **Remind me**, or **Change the reminder** and **No
   reminder**, and **Delete**.
-- Each space has a Chat with myself of its own; hidden chats have none of their own yet.
+- Each space has a Chat with myself of its own, and so does each place of hidden chats, at the top of their list (see
+  [Hidden chats](#hidden)). A hidden place's reminders show there once its PIN opens it; the phone tells them at their
+  time only while **Receive while closed** is on for that place, in the same notice that says only **Reminder**.
 
 **Why:** a notice shows on the locked screen to whoever holds the phone, so what a reminder says stays encrypted in its
 space and Android is told only its time: the notice cannot tell anyone what you wanted to remember, nor which space it
@@ -1649,7 +1651,9 @@ what the places taken away hold.
    hold **New chat** down for a second: a field for the PIN opens, the same in every space; type it and
    tap **Open**. It opens only the place with that PIN. A wrong PIN is just a search, or only closes the field:
    nothing happens.
-3. They open as their own chat, titled **Hidden chats**, with **Change PIN** at the top. The back arrow closes them.
+3. They open titled **Hidden chats**, with **Contacts** and **Change PIN** at the top, and list their chats as the
+   home screen lists yours: the newest first, each with what was said last, when, and how many are not read. Tap one
+   to open it. The back arrow closes them.
 4. To move another chat into a place, open its **Details**, tap **Move to hidden chats**, type that place's PIN and
    tap **Move**. The
    chat leaves your list with its messages, name, picture and look, and its safety number stays the same. Their phone
@@ -1661,8 +1665,9 @@ what the places taken away hold.
   they are closed, their messages wait on the relay, unless **Receive while closed** is on.
 - **Receive while closed:** a switch at the top of each place. On, its hidden chats receive as your other chats do
   while the space is open, whatever screen shows and with Erevos in the background: their contacts see at once that a
-  message came, a notice says only "New message", and on Android a call rings with "Incoming call" and no name (on the
-  ringing screen, tap the small sign, type the PIN and tap **Connect** to answer). A call that ended before you opened
+  message came, a notice says only "New message", on Android a call rings with "Incoming call" and no name (on the
+  ringing screen, tap the small sign, type the PIN and tap **Connect** to answer), and a reminder of their Chat with
+  myself shows a notice that says only **Reminder**. A call that ended before you opened
   them, or rang too long, shows as missed. Nothing of them shows anywhere until the PIN opens them. A new place starts
   with it on; places set before stay as they were until you turn it on. For it, the place's key is kept encrypted with the space,
   among a random key for each other place, so opening the space does not show which places receive, or are set. But
@@ -1676,7 +1681,8 @@ what the places taken away hold.
   message comes** is on for that place.
 - **Like your other chats:** what cannot go now waits, marked **Waiting**, through their relay only (see **Waiting**
   under [Chat through a relay](#relay)), **Send later** works as there, and a chat exported from another app can be
-  imported into a hidden chat's details (see [Imported chats](#import)).
+  imported into a hidden chat's details (see [Imported chats](#import)). Each place has its own **Chat with myself**,
+  first in its list (see **Chat with myself and reminders** under [Getting started](#start)).
 - **Link previews** have a switch of their own in a hidden chat's details, for all the chats of that place, off unless
   you turn it on (see **Link previews** under [Chat through a relay](#relay)).
 - **Say when a message comes** (Android): at the top of a place while **Receive while closed** is off. Turned on,
