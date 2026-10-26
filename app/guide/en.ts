@@ -2093,6 +2093,12 @@ asking GitHub, as **Told when a new version is out** below says. To update:
    apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take the file
    Erevos names, the one of the package you have, and update as in the table below.
 
+### What's new {#whats-new}
+
+**Settings** → **General** → **What's new** (also **What's new** in **Updates**) says in short what each version
+changed, the newest first, by its number alone; the version you have says **This version**. Each release adds its own.
+The CHANGELOG of the source code tells every change in full.
+
 ### Told when a new version is out {#release-notice}
 
 On Android, once a day, Erevos asks LPHL's server, which runs the relay too, whether a new version is out. When one is,

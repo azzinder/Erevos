@@ -21,6 +21,9 @@ On main, not released yet:
   (messages that wait, files, queues, access lines, push addresses), what it does not keep (no list of connections),
   who else sees something, and that no authority has asked for anything. It goes out inside every release, so each
   release says it again, signed with the release.
+- **What's new, in the app**: **Settings** → **General** → **What's new**, and a button under the version in
+  **Updates**, say in short what each version changed, in every language of the app, the newest first, by its number
+  alone, with **This version** beside the one installed. Each release adds its own.
 
 ## 3.3.2 (2026-10-25)
 

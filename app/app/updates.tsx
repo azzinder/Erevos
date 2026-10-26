@@ -176,6 +176,7 @@ export default function UpdatesScreen() {
           {t('Installed')}
         </Text>
         <Text variant="heading">Erevos {VERSION}</Text>
+        <Button title={t("What's new")} kind="secondary" onPress={() => router.push('/whats-new')} />
       </Card>
       {supported ? (
         <Card>

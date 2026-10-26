@@ -1,0 +1,149 @@
+// The Spanish of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/es/index.ts).
+export const whatsNew: Record<string, string> = {
+  "What's new": 'Novedades',
+  'What each version changed': 'Qué cambió en cada versión',
+  'What each version of Erevos changed, the newest first.': 'Qué cambió en cada versión de Erevos, primero la más reciente.',
+  'Not out yet': 'Aún no ha salido',
+  'This version': 'Esta versión',
+  // Not out yet.
+  '**Your relay proves its own key**: every connection to it starts with a check only the relay holding that key can pass, so no one in between can pass for it. Once it has, Erevos never reaches it without the check. Your relay needs an update for it.':
+    '**Tu relay demuestra su propia clave**: cada conexión con él empieza con una comprobación que solo supera el relay que tiene esa clave, así que nadie en medio puede hacerse pasar por él. Una vez que la ha superado, Erevos ya nunca se conecta a él sin la comprobación. Para ello tu relay necesita una actualización.',
+  '[Transparency](#transparency), a new part of the guide: what the server behind Erevos keeps and for how long, what it does not keep, and who else sees something.':
+    '[Transparencia](#transparency), una parte nueva de la guía: qué guarda el servidor que hay detrás de Erevos y durante cuánto tiempo, qué no guarda y quién más ve algo.',
+  "**What's new**: this list, in Settings → General, by version.": '**Novedades**: esta lista, en Ajustes → General, por versión.',
+  // 3.3.2
+  '**The plain call button for more contacts**: the orange keypad at the top of a contact’s chat also takes the number of a contact you connected them to (**Connect to one of my contacts**), the mobile number first.':
+    '**El botón de llamada normal, en más contactos**: el teclado naranja de arriba en el chat de un contacto también usa el número del contacto al que lo vinculaste (**Vincular a uno de mis contactos**), primero el móvil.',
+  // 3.3.1
+  '**Viber chats can be imported**: from the HTML file of the Android app Backup Text for Viber, words only.':
+    '**Ya se pueden importar chats de Viber**: desde el archivo HTML de la app de Android Backup Text for Viber, solo el texto.',
+  // 3.3.0
+  '**Start without a relay, through Nostr**: **Start without a relay** on New chat. Texts, stickers, reactions, edits and the delivered and read marks go through Nostr over Tor. Photos, voice messages, files and calls still need a relay or a phone nearby.':
+    '**Empezar sin relay, por Nostr**: **Empezar sin relay** en Chat nuevo. Los textos, stickers, reacciones, ediciones y las marcas de entregado y leído van por Nostr a través de Tor. Las fotos, los mensajes de voz, los archivos y las llamadas siguen necesitando un relay o un teléfono cerca.',
+  '**The relay comes by itself**: whoever has a relay that invites sends a contact with no relay an invite once, inside the chat, and the other phone takes it by itself.':
+    '**El relay llega solo**: quien tiene un relay que invita envía una vez una invitación a un contacto sin relay, dentro del chat, y el otro teléfono la acepta solo.',
+  '**Told when a new version is out** (Android): once a day Erevos asks LPHL’s server, then shows a pinned Erevos row and a notice, only for a version the release computer signed. It turns off in Settings → General → Updates.':
+    '**Aviso cuando sale una versión nueva** (Android): una vez al día Erevos pregunta al servidor de LPHL y luego muestra una fila de Erevos fijada y un aviso, solo para una versión firmada por el ordenador de versiones. Se desactiva en Ajustes → General → Actualizaciones.',
+  '**Lock a chat with a PIN**: Details → Lock with a PIN, for chats and groups. Nothing of it shows in search, starred messages or imports. In hidden chats it asks for no PIN.':
+    '**Bloquear un chat con un PIN**: Detalles → Bloquear con un PIN, para chats y grupos. Nada de él aparece en la búsqueda, los mensajes destacados ni las importaciones. En los chats ocultos no pide PIN.',
+  '**A new handset** on the green tiles: Phone, and the call in a chat.': '**Un auricular nuevo** en los recuadros verdes: Teléfono, y la llamada en un chat.',
+  '**A new New chat screen**: How you connect now at the top, three large cards for a phone without a relay (I have an invite, Sign in with LPHL, Start without a relay), and the technical part under For advanced users.':
+    '**Una pantalla de Chat nuevo renovada**: «Cómo te conectas ahora» arriba, tres tarjetas grandes para un teléfono sin relay (Tengo una invitación, Iniciar sesión con LPHL, Empezar sin relay), y la parte técnica en «Para usuarios avanzados».',
+  '**Nostr steadier through Tor**: each Nostr relay has its own way through Tor, and after a failure it tries a new exit. A clearer error on the Nostr screen.':
+    '**Nostr más estable por Tor**: cada relay de Nostr tiene su propio camino por Tor, y tras un fallo prueba una salida nueva. Un error más claro en la pantalla de Nostr.',
+  '**When the connection to the relay drops** while Erevos waits on it, Erevos notices and connects again, where it stayed stuck before.':
+    '**Cuando se corta la conexión con el relay** mientras Erevos espera su respuesta, Erevos se da cuenta y vuelve a conectarse; antes se quedaba atascado.',
+  '**Invite by SMS** (Android): on a phone contact’s card, for one person, for 2 days. The link opens a page that offers Erevos (the APK for Android, the web app for an iPhone or a computer), then opens the invite. The QR code and Share the invite stay as they were.':
+    '**Invitar por SMS** (Android): en la ficha de un contacto del teléfono, para una persona, durante 2 días. El enlace abre una página que ofrece Erevos (el APK para Android, la app web para un iPhone o un ordenador) y luego abre la invitación. El código QR y «Compartir la invitación» siguen como estaban.',
+  '**Fixes to the SMS invite**: a link copied as /i/#… works too, an older web app opens the invite as well, and on iOS 26 it says Share is under •••.':
+    '**Arreglos en la invitación por SMS**: también funciona un enlace copiado como /i/#…, una app web más antigua también abre la invitación, y en iOS 26 indica que Compartir está dentro de •••.',
+  '**A phone call button** in Erevos chats and SMS chats.': '**Un botón de llamada telefónica** en los chats de Erevos y en los de SMS.',
+  // 3.2.1
+  '**Edit a message** you sent, up to a day after: to contacts, groups and linked devices, with Edited beside the time.':
+    '**Editar un mensaje** que enviaste, hasta un día después: a contactos, grupos y dispositivos vinculados, con «Editado» junto a la hora.',
+  '**Nostr says what it did**: Sent through Nostr, and on the Nostr screen what each relay did last.':
+    '**Nostr dice lo que hizo**: «Enviado por Nostr», y en la pantalla de Nostr lo último que hizo cada relay.',
+  '**Coloured call buttons** at the top of a chat: video blue, voice green.': '**Botones de llamada de colores** arriba en el chat: vídeo en azul, voz en verde.',
+  // 3.2.0
+  'Arrows to the start and the end of a chat; earlier messages come by themselves as you scroll.':
+    'Flechas para ir al principio y al final de un chat; los mensajes anteriores se cargan solos al desplazarte.',
+  'Chats imported from Telegram and WhatsApp look like Erevos messages: bubbles, days, photos, voice messages, search.':
+    'Los chats importados de Telegram y WhatsApp se ven como mensajes de Erevos: burbujas, días, fotos, mensajes de voz, búsqueda.',
+  'Dogs instead of cats in the stickers.': 'Perros en lugar de gatos en los stickers.',
+  'Screenshots: a switch in Settings → Privacy and security.': 'Capturas de pantalla: un interruptor en Ajustes → Privacidad y seguridad.',
+  'Hidden chats from New chat: hold it for a second.': 'Chats ocultos desde Chat nuevo: mantenlo pulsado un segundo.',
+  'Coloured tiles on the home screen: Phone green, Contacts violet, the lock orange.': 'Recuadros de colores en la pantalla de inicio: Teléfono verde, Contactos violeta, el candado naranja.',
+  '**Chat with myself**, always first, and **Remind me**, the orange bell.': '**Chat conmigo**, siempre el primero, y **Recordarme**, la campana naranja.',
+  '**Media, links and files** in a chat’s Details, with a calendar and Go to a day.':
+    '**Multimedia, enlaces y archivos** en los Detalles de un chat, con un calendario e «Ir a un día».',
+  'Import a chat from inside the chat: Details → Imported chats.': 'Importar un chat desde dentro del chat: Detalles → Chats importados.',
+  'A closed space can say that a message came while another space is open.': 'Un espacio cerrado puede avisar de que llegó un mensaje mientras otro espacio está abierto.',
+  'The message menu says when a message went or came through Nostr.': 'El menú del mensaje indica cuándo un mensaje se envió o llegó por Nostr.',
+  '**Support Erevos**: Liberapay, PayPal, Monero, Bitcoin.': '**Apoyar Erevos**: Liberapay, PayPal, Monero, Bitcoin.',
+  'Who makes Erevos and why, in About Erevos; the guide says why everywhere.': 'Quién hace Erevos y por qué, en Acerca de Erevos; la guía explica el porqué en todas partes.',
+  // 3.1.2
+  '**Settings in 8 groups**, with a search: General, Appearance, Notifications, Privacy and security, Relay and networks, Phone and SMS, Data and devices, For testing. The home screen’s ⋯ keeps only the places, and Settings last.':
+    '**Ajustes en 8 grupos**, con búsqueda: General, Apariencia, Notificaciones, Privacidad y seguridad, Relay y redes, Teléfono y SMS, Datos y dispositivos, Para pruebas. El ⋯ de la pantalla de inicio solo conserva los lugares, y Ajustes al final.',
+  // 3.1.1
+  'Check for updates says what stopped an update.': '«Buscar actualizaciones» indica qué impidió una actualización.',
+  'Invite someone is not made from a token for all; it asks you to sign in to the relay first.':
+    '«Invitar a alguien» no se crea a partir de un token para todos; primero te pide iniciar sesión en el relay.',
+  'The relay’s token for all becomes a token of the phone’s own, by itself (needs the relay updated).':
+    'El token para todos del relay se convierte solo en un token propio del teléfono (requiere el relay actualizado).',
+  'A relay that refuses through Tor says why.': 'Un relay que rechaza la conexión por Tor dice por qué.',
+  // 3.1.0
+  'Less battery in the background: the relay, Tor and the nearby radios.': 'Menos batería en segundo plano: el relay, Tor y las radios para teléfonos cercanos.',
+  'Erevos no longer closes when you make a sticker from a photo.': 'Erevos ya no se cierra cuando haces un sticker a partir de una foto.',
+  'Hidden chats’ notices are right.': 'Los avisos de los chats ocultos son correctos.',
+  'Hidden chats by holding New chat.': 'Chats ocultos manteniendo pulsado Chat nuevo.',
+  'A search for contacts on the Phone.': 'Búsqueda de contactos en el Teléfono.',
+  'New chat shows first how to add a contact.': 'Chat nuevo muestra primero cómo añadir un contacto.',
+  'A call shows over the screen saver, and the screen wakes.': 'Una llamada aparece por encima del salvapantallas, y la pantalla se enciende.',
+  'Erevos in other apps’ Share.': 'Erevos en el menú Compartir de otras apps.',
+  'A sound for every new message, also while Erevos shows.': 'Un sonido para cada mensaje nuevo, también con Erevos en pantalla.',
+  'The SMS settings say right what holding does.': 'Los ajustes de SMS explican bien qué hace mantener pulsado.',
+  // 3.0.0
+  'Each icon opens what it names: Erevos, SMS, Phone, Contacts, the widget.': 'Cada icono abre lo que indica: Erevos, SMS, Teléfono, Contactos, el widget.',
+  '**Messages through Tor by default**: Messages, Everything or Nothing.': '**Mensajes por Tor de forma predeterminada**: Mensajes, Todo o Nada.',
+  '**Texts through Nostr**: three public relays, through Tor, with your own relay as backup after 5 minutes.':
+    '**Textos por Nostr**: tres relays públicos, por Tor, con tu propio relay como respaldo pasados 5 minutos.',
+  // 2.0.3
+  'One invite for everything: the relay and the contact together.': 'Una sola invitación para todo: el relay y el contacto a la vez.',
+  'Spam rules for senders and numbers abroad, with the reason.': 'Reglas de spam para remitentes y números del extranjero, con el motivo.',
+  '480 stickers in 20 sets.': '480 stickers en 20 paquetes.',
+  'Lighter chats on older phones; QR codes at once.': 'Chats más ligeros en teléfonos antiguos; códigos QR al instante.',
+  'Copy code for one-time codes in SMS.': '«Copiar código» para los códigos de un solo uso en los SMS.',
+  'Locked, Erevos keeps receiving.': 'Bloqueado, Erevos sigue recibiendo.',
+  'Faster contacts; the hidden chats’ notice counts only messages.': 'Contactos más rápidos; el aviso de los chats ocultos solo cuenta mensajes.',
+  'The relay tries every address: push, other relays, the LPHL sign-in.': 'El relay prueba todas las direcciones: push, otros relays, el inicio de sesión con LPHL.',
+  // 2.0.2
+  'Swiping on the tabs only changes the tab.': 'Deslizar sobre las pestañas solo cambia de pestaña.',
+  'The icons fill the launcher’s shape.': 'Los iconos llenan la forma del lanzador.',
+  // 2.0.1
+  'Coloured icons (Erevos red, Phone green, SMS blue, Contacts violet) and a new SMS icon.':
+    'Iconos de colores (Erevos rojo, Teléfono verde, SMS azul, Contactos violeta) y un icono de SMS nuevo.',
+  'A colour for each icon, and the order of the widget’s buttons.': 'Un color para cada icono, y el orden de los botones del widget.',
+  'Swipe to go back, and between tabs.': 'Deslizar para volver atrás, y entre pestañas.',
+  // 2.0.0
+  'An update of the WebView no longer closes Erevos.': 'Una actualización del WebView ya no cierra Erevos.',
+  'Deleting or blocking a contact gives you a new queue on the relay.': 'Al eliminar o bloquear un contacto recibes una cola nueva en el relay.',
+  'A new contact can take the name of a contact on the phone.': 'Un contacto nuevo puede tomar el nombre de un contacto del teléfono.',
+  '**Sign in to the relay with LPHL**, and **invites to the relay**.': '**Iniciar sesión en el relay con LPHL**, e **invitaciones al relay**.',
+  'Permissions in the web app, and more on Android; the web app’s notice says how many came.':
+    'Permisos en la app web, y más en Android; el aviso de la app web dice cuántos mensajes llegaron.',
+  'Hidden chats can ring calls while they are closed.': 'Los chats ocultos pueden sonar las llamadas mientras están cerrados.',
+  'New keys every month in chats, every week in groups.': 'Claves nuevas cada mes en los chats, cada semana en los grupos.',
+  'Linked devices work with the phone off.': 'Los dispositivos vinculados funcionan con el teléfono apagado.',
+  'A new chat screen; QR codes from a photo; the Phone for small screens.': 'Una pantalla de chat nueva; códigos QR desde una foto; el Teléfono para pantallas pequeñas.',
+  'Add as contact inside a group.': '«Añadir como contacto» dentro de un grupo.',
+  'Stickers in sets, moving, and your own.': 'Stickers en paquetes, animados y propios.',
+  'SMS inside the Erevos chat.': 'SMS dentro del chat de Erevos.',
+  'Android updates need the release computer’s signature.': 'Las actualizaciones de Android necesitan la firma del ordenador de versiones.',
+  'An F-Droid build; Serbo-Croatian; new version numbers.': 'Una versión para F-Droid; serbocroata; números de versión nuevos.',
+  'Much for security: Argon2id, messages encrypted for the relay too, a token for each phone, no link starts a call.':
+    'Mucho para la seguridad: Argon2id, mensajes cifrados también para el relay, un token para cada teléfono, ningún enlace inicia una llamada.',
+  // 0.1.16
+  'Imports from Telegram and WhatsApp bring photos, videos, voice messages and files.': 'Las importaciones de Telegram y WhatsApp traen fotos, vídeos, mensajes de voz y archivos.',
+  'A phone without a relay talks through a place on a contact’s relay.': 'Un teléfono sin relay se comunica a través de un sitio en el relay de un contacto.',
+  // 0.1.14
+  'Back to my chats, for hidden chats.': '«Volver a mis chats», para los chats ocultos.',
+  'Erevos receives and rings even after you swipe it away from the recent apps.': 'Erevos recibe y suena incluso después de quitarlo de las apps recientes.',
+  // 0.1.12
+  'Hidden chats can say a message came.': 'Los chats ocultos pueden avisar de que llegó un mensaje.',
+  'Fixes: menus, QR codes from a photo, Bluetooth on Android 17, long lists.': 'Arreglos: menús, códigos QR desde una foto, Bluetooth en Android 17, listas largas.',
+  // 0.1.11
+  'The Phone without the password, if you allow it; a home screen widget; an SMS and Erevos filter.':
+    'El Teléfono sin la contraseña, si lo permites; un widget para la pantalla de inicio; un filtro de SMS y Erevos.',
+  // 0.1.10
+  'Links wait for the password; Phone and Contacts icons; the Erevos ID on a contact.': 'Los enlaces esperan a la contraseña; iconos de Teléfono y Contactos; el ID de Erevos en un contacto.',
+  // 0.1.8
+  '61 new features: 5 new languages, linked devices, public groups, replies, reactions, polls, send later, Erevos as the phone and contacts app, Tor bridges, the fingerprint, Windows and more.':
+    '61 funciones nuevas: 5 idiomas nuevos, dispositivos vinculados, grupos públicos, respuestas, reacciones, encuestas, enviar más tarde, Erevos como app de teléfono y contactos, puentes de Tor, la huella, Windows y más.',
+  // 0.1.7 to 0.1.2
+  'SMS notices in the background.': 'Avisos de SMS en segundo plano.',
+  'The web app comes out with every release.': 'La app web sale con cada versión.',
+  'Greek in the whole app.': 'Griego en toda la app.',
+  'Web Push in the web app.': 'Web Push en la app web.',
+  'The first signed Android release: encrypted chats, calls, groups, hidden chats, backups, imports, and phones nearby without the internet.':
+    'La primera versión firmada para Android: chats cifrados, llamadas, grupos, chats ocultos, copias de seguridad, importaciones y teléfonos cercanos sin internet.',
+};
