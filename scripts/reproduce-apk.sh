@@ -72,12 +72,17 @@ fi
 built=$(ls "$src"/app/android/app/build/outputs/apk/release/*.apk | head -1)
 
 echo "== Comparing"
+# apksigcopier calls apksigner, from the Android SDK's newest build-tools.
+if ! command -v apksigner >/dev/null 2>&1 && [ -n "${ANDROID_HOME:-}" ]; then
+	PATH="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1):$PATH"
+fi
 if apksigcopier compare --unsigned "$work/erevos-android.apk" "$built"; then
 	echo "SAME as the published erevos-android.apk, apart from its signature."
 else
 	echo "DIFFERENT from the published erevos-android.apk. What differs: unzip -l, or diffoscope, on the two:" >&2
-	cp "$built" "./erevos-android-rebuilt.apk"
-	cp "$work/erevos-android.apk" "./erevos-android-published.apk"
-	echo "  ./erevos-android-published.apk ./erevos-android-rebuilt.apk" >&2
+	mkdir -p compared
+	cp "$built" compared/erevos-android-rebuilt.apk
+	cp "$work/erevos-android.apk" compared/erevos-android-published.apk
+	echo "  compared/erevos-android-published.apk compared/erevos-android-rebuilt.apk" >&2
 	exit 1
 fi

@@ -55,4 +55,13 @@ jobs:
         run: |
           # The script runs from outside the checkout, which it moves to the release's commit.
           cp scripts/reproduce-apk.sh "$RUNNER_TEMP/reproduce-apk.sh"
-          sh "$RUNNER_TEMP/reproduce-apk.sh" "$VERSION" "$GITHUB_WORKSPACE"
+          cd "$RUNNER_TEMP"
+          sh reproduce-apk.sh "$VERSION" "$GITHUB_WORKSPACE"
+      # When they differ, both APKs, to see what differs (kept three days).
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: compared
+          path: ${{ runner.temp }}/compared/
+          if-no-files-found: ignore
+          retention-days: 3
