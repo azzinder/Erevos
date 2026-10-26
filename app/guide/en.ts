@@ -1656,16 +1656,26 @@ what the places taken away hold.
    my chats** and **Move**. It goes with its messages, name, picture and look, and its phone is told where to write.
 
 - **Relay only:** hidden chats have their own relay queue and their own keys, and never use the nearby link. While
-  they are closed, their messages wait on the relay.
+  they are closed, their messages wait on the relay, unless **Receive while closed** is on.
+- **Receive while closed:** a switch at the top of each place. On, its hidden chats receive as your other chats do
+  while the space is open, whatever screen shows and with Erevos in the background: their contacts see at once that a
+  message came, a notice says only "New message", and on Android a call rings with "Incoming call" and no name (on the
+  ringing screen, tap the small sign, type the PIN and tap **Connect** to answer). A call that ended before you opened
+  them, or rang too long, shows as missed. Nothing of them shows anywhere until the PIN opens them. A new place starts
+  with it on; places set before stay as they were until you turn it on. For it, the place's key is kept encrypted with the space,
+  among a random key for each other place, so opening the space does not show which places receive, or are set. But
+  whoever opens the space and copies what the phone keeps could open that place too, with no PIN: the PIN then keeps
+  them out of sight of whoever holds the phone, not of a forensic tool. Off, their key is only behind the PIN, and
+  their messages wait on the relay until you open them. Backups keep the switch.
 - **They close by themselves** once Erevos was in the background for more than 30 seconds, as a chat's own PIN
   locks again, but not during a call, nor while you pick a photo or a file for them or take a photo.
 - **While they are open,** a message that comes plays the sound for new messages, as in your other chats. With Erevos
-  in the background before they close, a notice says "New message" only if **Say when a message comes** is on for
-  that place.
+  in the background before they close, a notice says "New message" only if **Receive while closed** or **Say when a
+  message comes** is on for that place.
 - **Link previews** have a switch of their own in a hidden chat's details, for all the chats of that place, off unless
   you turn it on (see **Link previews** under [Chat through a relay](#relay)).
-- **Say when a message comes** (Android): turned on at the top of a place, while it is closed a notice says only
-  "New message", or how many came, as for the other chats, with Erevos in the background or showing, each message
+- **Say when a message comes** (Android): at the top of a place while **Receive while closed** is off. Turned on,
+  while the place is closed a notice says only "New message", or how many came, as for the other chats, with Erevos in the background or showing, each message
   once, also when Erevos was closed and started again; what came while the place was open makes none once it closes. That a message of yours came to them or was read, typing and new keys make none, nor does a call that rang (see **Ring
   calls when closed**); one that did not ring counts as a message. It needs **Receive and ring** and **Say a message
   came** under **In the background**, and a relay that waits (from 18 October 2026 on); one from before 23 October
@@ -1675,8 +1685,8 @@ what the places taken away hold.
   relay; the relay is asked only how many messages came, as it counts them by the byte each one carries (see what
   the relay sees, above), never for them. Whoever sees the notice and finds nothing new in your chats may guess there
   are more. Backups do not keep it: turn it on again after restoring.
-- **Ring calls when closed** (Android): turned on at the top of a place, below **Say when a message comes**, so that
-  while the place is closed and Erevos is in the background a call from one of its contacts makes the phone ring and
+- **Ring calls when closed** (Android): below **Say when a message comes**, while **Receive while closed** is off.
+  Turned on, while the place is closed and Erevos is in the background a call from one of its contacts makes the phone ring and
   show "Incoming call" with no name, as a call from your other chats does. On the ringing screen, tap the small sign,
   type the PIN and tap **Connect** to answer; a plain **Answer** cannot connect it, and **Decline** stops the ring. The
   ring lasts about 45 seconds. It needs **Receive and ring** under **In the background** and a relay that waits, and

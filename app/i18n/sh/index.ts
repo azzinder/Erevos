@@ -17,6 +17,7 @@ import { publicGroups } from './public-groups';
 import { contacts } from './contacts';
 import { linkContact } from './link-contact';
 import { hiddenRing } from './hidden-ring';
+import { hiddenKeep } from './hidden-keep';
 import { relayInvites } from './relay-invites';
 import { moves } from './moves';
 import { settingsMenu } from './settings-menu';
@@ -34,4 +35,4 @@ import { textInvite } from './text-invite';
 import { relayKey } from './relay-key';
 import { whatsNew } from './whats-new';
 
-export const SH: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...connect, ...textInvite, ...relayKey, ...whatsNew };
+export const SH: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...connect, ...textInvite, ...relayKey, ...whatsNew };

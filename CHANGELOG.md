@@ -45,6 +45,14 @@ On main, not released yet:
   a QR code from a photo now comes to them. While open, a message plays the sound for new messages; in the background
   before they close, a notice says "New message" if the place's **Say when a message comes** is on. A hidden chat's
   details have **Link previews**, a switch of their own for that place, off unless turned on.
+- **Hidden chats that receive while closed**: a switch at the top of each place, **Receive while closed**, on for new
+  places and off for those set before, has its hidden chats receive while the space is open, as its other chats do,
+  with Erevos in the background too: their contacts see at once that a message came, a notice says only "New
+  message", and on Android a call rings with "Incoming call" and no name, answered with the PIN; a call that ended
+  before the PIN opened them shows as missed. For it, the place's key is kept encrypted with the space, among a random
+  one for each other place, so opening the space does not show which places receive, but whoever opens the space and
+  copies what the phone keeps could open that place with no PIN. With it on, **Say when a message comes** and **Ring
+  calls when closed** are not needed and do not show. Backups keep the switch.
 
 ## 3.3.2 (2026-10-25)
 

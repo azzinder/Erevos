@@ -1,4 +1,5 @@
 import { hardenSlot, isSlot, ITER, loadLockConfig, SamePasswordError, sealSlot, trySlot, unusedSlot, type Slot } from './config';
+import { keepPlace, prepareKeepEntries } from './hidden-keep';
 import { prepareRingEntries } from './hidden-ring';
 import { prepareDoors } from './doors';
 import { prepareWatchEntries, unwatchPocket } from './hidden-watch';
@@ -28,7 +29,9 @@ import { assertNotLockedOut, LockedOutError, prepareTries, recordRightPassword, 
 //
 // Hidden chats have their own relay queue. While they are closed nothing reads it, and messages to
 // them wait on the relay, so they never show among the other chats. Those that ask for it say
-// that a message came, from the queue kept with their space (hidden-watch.ts).
+// that a message came, from the queue kept with their space (hidden-watch.ts). Those whose switch
+// says they receive while closed have their key kept with their space instead (hidden-keep.ts),
+// and are read as the space's chats are (lib/place-receiver.ts): new ones start so.
 
 /** Hidden chats, open: their key, and which of the space's pockets they are. */
 export type HiddenPlace = { key: Uint8Array; pocket: number };
@@ -59,6 +62,7 @@ export async function prepareHidden(count = SLOTS): Promise<void> {
   await prepareWatchEntries(count);
   await prepareDoors(count);
   await prepareRingEntries(count);
+  await prepareKeepEntries(count);
   await prepareQueueEntries(count);
   await prepareTries();
 }
@@ -107,8 +111,9 @@ export async function searchHidden(space: number, text: string, now = Date.now()
 
 // Sets the PIN of the hidden chats in a space's `pocket`. With `key` (they are open) they stay as
 // they are and only the PIN changes. Without it they start empty, and whatever was in that pocket
-// before cannot be opened any more. The PIN must open nothing else: not the space, nor other
-// hidden chats of it (SamePasswordError).
+// before cannot be opened any more; they receive while closed (hidden-keep.ts), as new ones do,
+// once the space is open. The PIN must open nothing else: not the space, nor other hidden chats
+// of it (SamePasswordError).
 export async function setHiddenPassword(space: number, pocket: number, password: string, key: Uint8Array | null, now = Date.now()): Promise<Uint8Array> {
   await assertNotLockedOut(now);
   const own = (await loadLockConfig()).slots[space];
@@ -122,6 +127,7 @@ export async function setHiddenPassword(space: number, pocket: number, password:
     // What was there before tells of no more messages.
     const open = openSpace(space);
     if (open) await unwatchPocket(space, open, pocket, null).catch(() => undefined);
+    if (open) await keepPlace(space, open, pocket, hiddenKey).catch(() => undefined);
   }
   return hiddenKey;
 }
@@ -142,4 +148,5 @@ export async function removeHiddenPassword(space: number, pocket: number): Promi
   await clearSlot(stores[pocket], space);
   const open = openSpace(space);
   if (open) await unwatchPocket(space, open, pocket, null).catch(() => undefined);
+  if (open) await keepPlace(space, open, pocket, null).catch(() => undefined);
 }

@@ -80,6 +80,15 @@ type State = { place: Place | null; seen: number; receipts: Receipts; answers: S
 // one when set), our queue, and where contacts reach us, said in every message.
 type Place = { own: Relay; sends: Relay; queue: Queue; here: Where; keyAsked: boolean };
 
+/** What a run of looks keeps between them, and where its messages come and go, as the space's has: for a hidden place's own (lib/place-receiver.ts). */
+export type ReceiveState = State;
+export type ReceivePlace = Place;
+
+/** A run of looks' state, before its first look. */
+export function receiveState(): ReceiveState {
+  return { place: null, seen: -1, receipts: {}, answers: new Set(), waited: false, failures: 0 };
+}
+
 let holds = 0;
 // Bumped each time a hold ends: the chat may have changed the relay or the queue meanwhile.
 let released = 0;
@@ -113,7 +122,8 @@ export function onAppShown(listener: (shown: boolean) => void): () => void {
 // The waits ended from outside, not by what came.
 const ended = new WeakSet<AbortController>();
 
-function endWaits() {
+/** Ends the waits at the relay under way, so their looks go on at once (lib/place-receiver.ts). */
+export function endWaits(): void {
   waits.forEach((wait) => {
     ended.add(wait);
     wait.abort();
@@ -599,9 +609,8 @@ export function nearbyChanged(): void {
     .catch(() => undefined);
 }
 
-// A message as the listeners are told it, before it is kept: said to come twice when the chat took
-// it before or the history holds it. Null for what is no message.
-function cameBefore({ history }: SpaceChats, received: Received): Extract<Received, { kind: 'message' }> | null {
+/** A message as the listeners are told it, before it is kept: said to come twice when the chat took it before or the history holds it. Null for what is no message. */
+export function cameBefore({ history }: SpaceChats, received: Received): Extract<Received, { kind: 'message' }> | null {
   if (received.kind !== 'message') return null;
   return { ...received, twice: received.twice || (!!received.tag && history.has(`${CONTACT_PREFIX}${received.identity}`, received.tag)) };
 }
@@ -662,6 +671,11 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   return changed;
 }
 
+/** Keeps what one message brought as the receiver does, in chats with their own run of looks (`state`): a hidden place's. Says whether anything changed. */
+export function keepWith(chats: SpaceChats, received: Received, state: ReceiveState): Promise<boolean> {
+  return keep(chats, received, state);
+}
+
 /** Keeps what one message brought as the receiver does, with what is to be said back (`receipts`), as the checks do. */
 export function keepReceived(chats: SpaceChats, received: Received, receipts: Record<string, string[]> = {}): Promise<boolean> {
   return keep(chats, received, { place: null, seen: -1, receipts, answers: new Set(), waited: false, failures: 0 });
@@ -672,7 +686,7 @@ export function keepReceived(chats: SpaceChats, received: Received, receipts: Re
 // as it is no message (lib/relay.ts, Mark), and then its copies for the endpoints of their
 // account, also once the relay could take it only later, as it is said again with the next look.
 // With no `place`, it says nothing of where this phone's queue is, and goes nearby only.
-async function tell({ e2e }: SpaceChats, place: Place | null, identity: string, extra: Extra) {
+export async function tell({ e2e }: SpaceChats, place: Place | null, identity: string, extra: Extra) {
   const sealed = await e2e.seal(identity, '', place?.queue.senderHex ?? '', { ...extra, at: place?.here ?? { relay: '', relayKey: '' } });
   // With no relay between the two, through Nostr when they read there (lib/nostr-chats.ts).
   const relay = place && sealed.sender ? () => sendSealed(place.sends, sealed, [sealed.packet], 'quiet', () => e2e.firstSent(identity)) : nostrOnlyWay(e2e, identity, sealed, [sealed.packet]);
@@ -682,7 +696,7 @@ async function tell({ e2e }: SpaceChats, place: Place | null, identity: string, 
 // Tells contacts' phones which of their messages came, and, while the app shows, that this phone
 // is open, as the ones who asked wait to hear. What the relay cannot take now is told with the
 // next look.
-async function sendReceipts(chats: SpaceChats, place: Place | null, { receipts, answers }: State) {
+export async function sendReceipts(chats: SpaceChats, place: Place | null, { receipts, answers }: State) {
   for (const peer of new Set([...Object.keys(receipts), ...answers])) {
     const got = receipts[peer] ?? [];
     delete receipts[peer];
@@ -713,7 +727,7 @@ async function nostrLook(state: State): Promise<boolean> {
 
 // This chat's newest prekeys, to the contacts who have not had them (lib/e2e.ts keysDue). What
 // cannot go now goes with the next look.
-async function sendKeys(chats: SpaceChats, place: Place | null) {
+export async function sendKeys(chats: SpaceChats, place: Place | null) {
   for (const identity of chats.e2e.keysDue()) {
     try {
       await tell(chats, place, identity, { keys: true });
@@ -725,7 +739,7 @@ async function sendKeys(chats: SpaceChats, place: Place | null) {
 }
 
 // The first packets of conversations started here that the relay has not taken yet.
-async function sendPending({ e2e }: SpaceChats, sends: Relay) {
+export async function sendPending({ e2e }: SpaceChats, sends: Relay) {
   for (const { identity, sender, relay, relayKey: key, first } of e2e.pending()) {
     try {
       await sendMessage(contactTarget(sends, { relay, relayKey: key }), fromHex(sender), first, 'quiet');

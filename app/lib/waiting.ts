@@ -81,7 +81,8 @@ export type Went = { peer: string; tag: string; lasts: number; held?: HeldAt; he
 
 // Failed tries so far, by tag, and when the next may be.
 const tries = new Map<string, { count: number; next: number }>();
-let sending: Promise<Went[]> | null = null;
+// What sendWaiting is doing for each chats' history: the space's, and each hidden place's that receives.
+const sending = new WeakMap<object, Promise<Went[]>>();
 // What holdAgain is doing for each chats' history.
 const holding = new WeakMap<object, Promise<Went[]>>();
 
@@ -90,12 +91,12 @@ const holding = new WeakMap<object, Promise<Went[]>>();
  * while one of theirs cannot go. Marks each that went as the relay took it. Returns those.
  */
 export function sendWaiting(chats: Chats, place: SendPlace, now = Date.now()): Promise<Went[]> {
-  if (!sending) {
-    sending = sendAll(chats, place, now).finally(() => {
-      sending = null;
-    });
+  let run = sending.get(chats.history);
+  if (!run) {
+    run = sendAll(chats, place, now).finally(() => sending.delete(chats.history));
+    sending.set(chats.history, run);
   }
-  return sending;
+  return run;
 }
 
 async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): Promise<Went[]> {

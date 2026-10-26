@@ -1,0 +1,402 @@
+import { keptPlaces, onKeptChange } from '../lock/hidden-keep';
+import { isRingedQueue, loadRinged, moveRingPocket } from '../lock/hidden-ring';
+import { isWatchedQueue, loadWatched, watchPocket } from '../lock/hidden-watch';
+import { currentSpace } from '../lock/keys';
+import type { QueueKind } from '../lock/queues-data';
+import { placeQueues } from '../lock/queues-data';
+import { loadHiddenData, updateHiddenData } from '../lock/space-data';
+import { OFFER_FRESH_MS } from './call';
+import { callLineMessage, CONTACT_PREFIX } from './calls';
+import { canRelaySeal, hasCore } from './core';
+import { toBase64Url, type Received } from './e2e';
+import { sendCopies } from './fanout';
+import { isGroupPacket } from './groups';
+import { hiddenRinging, setHiddenRinging } from './hidden-ring';
+import { forgetPlaceChats, placeChats } from './place-chats';
+import { QueueMove, tookOf, type Took } from './queue-move';
+import {
+  appShown,
+  awayPace,
+  awayQueues,
+  cameBefore,
+  endWaits,
+  keepWith,
+  onAppShown,
+  receiveState,
+  sendKeys,
+  sendPending,
+  sendReceipts,
+  tell,
+  waitWhileAway,
+  type ReceivePlace,
+  type ReceiveState,
+} from './receiver';
+import { fromHex, isQueueNotFound, receiveMessage, relayKey, type Relay } from './relay';
+import { relayFor, type SpaceChats } from './space-chats';
+import { hiddenSpare, lookAtSpare, spareBackup, type SpareStore } from './spare';
+import { sendWaiting } from './waiting';
+
+// Hidden chats that receive while they are closed (their switch, lock/hidden-keep.ts): while their
+// space is open, whatever screen shows, and with Erevos in the background (lib/background.ts), each
+// such place's relay queue is looked at as the space's is (lib/receiver.ts), with its own key, chats
+// (lib/place-chats.ts), queues and backup relay: what came is kept in its history, its contacts are
+// told it came, and the screens hear of it (onPlaceMessage), to say "New message" with no name. A
+// call rings as a hidden ring does, with no name (onPlaceRing, lib/hidden-ring.ts), and is held here
+// until the PIN opens the place (takePlaceCalls); one not taken in time, or that its caller ended,
+// is kept as missed. While the place's chat screen is open, the screen takes its messages itself
+// and holds this (holdPlace). None of it shows anywhere until the PIN opens the place.
+
+const EVERY = 3000;
+// Messages taken in one look, at most.
+const BATCH = 50;
+// Calls held for their place to open, at most, each place.
+const MOST_CALLS = 8;
+
+type Run = {
+  space: number;
+  pocket: number;
+  key: Uint8Array;
+  state: ReceiveState;
+  spare: SpareStore;
+  mover: QueueMove | null;
+  timer: ReturnType<typeof setTimeout> | null;
+  looking: Promise<unknown>;
+  stopped: boolean;
+  // Asked to look at once while a look was under way: the next one starts as soon as it ends.
+  again: boolean;
+  wake: () => void;
+};
+
+type Held = { received: Extract<Received, { kind: 'message' }>; timer: ReturnType<typeof setTimeout> | null };
+
+const runs = new Map<number, Run>();
+const holds = new Map<number, number>();
+// The calls that came to each closed place, by pocket, oldest first.
+const calls = new Map<number, Held[]>();
+let openSpace: number | null = null;
+const messageListeners = new Set<(space: number, pocket: number, received: Extract<Received, { kind: 'message' }>) => void>();
+const ringListeners = new Set<(space: number, pocket: number) => void>();
+const changeListeners = new Set<() => void>();
+
+const sameKey = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((byte, i) => byte === b[i]);
+
+/** Calls `listener` with each message a closed place's look opens, after it is kept. Returns how to stop. */
+export function onPlaceMessage(listener: (space: number, pocket: number, received: Extract<Received, { kind: 'message' }>) => void): () => void {
+  messageListeners.add(listener);
+  return () => {
+    messageListeners.delete(listener);
+  };
+}
+
+/** Calls `listener` each time a call comes to a closed place, to ring it with no name. Returns how to stop. */
+export function onPlaceRing(listener: (space: number, pocket: number) => void): () => void {
+  ringListeners.add(listener);
+  return () => {
+    ringListeners.delete(listener);
+  };
+}
+
+/** Calls `listener` each time the places that receive change. Returns how to stop. */
+export function onPlacesChange(listener: () => void): () => void {
+  changeListeners.add(listener);
+  return () => {
+    changeListeners.delete(listener);
+  };
+}
+
+/** Whether the hidden chats in `pocket` of the open `space` receive while closed, as last read. */
+export function receivesPocket(space: number, pocket: number): boolean {
+  return openSpace === space && runs.has(pocket);
+}
+
+/**
+ * Stops looking at a place's queue, once a look under way has ended, until the function it gives
+ * is called: its chat screen holds it while open, and a chat moved into it while it moves. Let go
+ * of by all, a place that does not receive lets go of its chats too.
+ */
+export async function holdPlace(space: number, pocket: number): Promise<() => void> {
+  holds.set(pocket, (holds.get(pocket) ?? 0) + 1);
+  const run = openSpace === space ? runs.get(pocket) : undefined;
+  if (run) {
+    endWaits();
+    await run.looking.catch(() => undefined);
+  }
+  let held = true;
+  return () => {
+    if (!held) return;
+    held = false;
+    const left = (holds.get(pocket) ?? 1) - 1;
+    if (left > 0) {
+      holds.set(pocket, left);
+      return;
+    }
+    holds.delete(pocket);
+    const now = openSpace === space ? runs.get(pocket) : undefined;
+    if (now) now.wake();
+    else forgetPlaceChats(space, pocket);
+  };
+}
+
+/** The calls that came to a place while it was closed, still ringing, for its chat screen to take as it opens; taking them clears them. */
+export function takePlaceCalls(space: number, pocket: number): Extract<Received, { kind: 'message' }>[] {
+  if (openSpace !== space) return [];
+  const held = calls.get(pocket) ?? [];
+  calls.delete(pocket);
+  for (const call of held) if (call.timer) clearTimeout(call.timer);
+  return held.map((call) => call.received);
+}
+
+/** Looks at the queues of the open space's places that receive (every `every` milliseconds, in the checks), until the function it gives is called. */
+export function startPlaceReceiver(every?: number): () => void {
+  let open: { space: number; key: Uint8Array };
+  try {
+    open = currentSpace();
+  } catch {
+    return () => undefined;
+  }
+  const { space, key } = open;
+  openSpace = space;
+  let stopped = false;
+  let following: Promise<void> = Promise.resolve();
+  // Which places receive, read again each time a switch changes.
+  const follow = () => {
+    following = following.then(async () => {
+      const found = await keptPlaces(space, key).catch(() => null);
+      if (stopped || !found) return;
+      const wanted = new Map(found.map((place) => [place.pocket, place.key]));
+      for (const [pocket, run] of runs) {
+        const placeKey = wanted.get(pocket);
+        if (placeKey && sameKey(placeKey, run.key)) continue;
+        stopRun(run);
+        runs.delete(pocket);
+        if (!holds.get(pocket)) forgetPlaceChats(space, pocket);
+      }
+      for (const place of found) if (!runs.has(place.pocket)) runs.set(place.pocket, startRun(space, place.pocket, place.key, every));
+      changeListeners.forEach((listener) => listener());
+    });
+  };
+  follow();
+  const stopKept = onKeptChange(follow);
+  // Shown again: each looks at once, not after a wait meant for the background.
+  const stopShown = onAppShown((shown) => {
+    if (shown) runs.forEach((run) => run.wake());
+  });
+  return () => {
+    stopped = true;
+    stopKept();
+    stopShown();
+    for (const run of runs.values()) stopRun(run);
+    runs.clear();
+    for (const held of calls.values()) for (const call of held) if (call.timer) clearTimeout(call.timer);
+    calls.clear();
+    if (openSpace === space) openSpace = null;
+    changeListeners.forEach((listener) => listener());
+  };
+}
+
+function stopRun(run: Run) {
+  run.stopped = true;
+  if (run.timer) clearTimeout(run.timer);
+  run.timer = null;
+  run.mover?.stop();
+}
+
+function startRun(space: number, pocket: number, key: Uint8Array, every?: number): Run {
+  const run: Run = {
+    space,
+    pocket,
+    key,
+    state: receiveState(),
+    spare: hiddenSpare(space, pocket, key),
+    mover: null,
+    timer: null,
+    looking: Promise.resolve(),
+    stopped: false,
+    again: false,
+    wake: () => undefined,
+  };
+  const held = () => (holds.get(pocket) ?? 0) > 0;
+  const next = () => {
+    if (run.stopped) return;
+    run.timer = setTimeout(tick, run.again ? 0 : (every ?? (appShown() ? EVERY : awayPace(run.state.waited, run.state.failures))));
+    run.again = false;
+  };
+  const tick = () => {
+    run.timer = null;
+    if (run.stopped) return;
+    if (held()) return next();
+    run.looking = lookPlace(run, () => run.stopped || held())
+      .catch(() => {
+        // The relay could not be reached: tried again with the next look.
+      })
+      .finally(next);
+  };
+  run.wake = () => {
+    if (run.stopped) return;
+    if (!run.timer) {
+      run.again = true;
+      return;
+    }
+    clearTimeout(run.timer);
+    run.timer = setTimeout(tick, 0);
+  };
+  next();
+  return run;
+}
+
+// What moves with the place's own queue, while closed, as its chat screen does it open: the watch
+// slot, when it said a message came from the queue before; and its ring queue, if it rings.
+function placeMover(run: Run, chats: SpaceChats, own: Relay): QueueMove {
+  const { space, pocket, key } = run;
+  return new QueueMove({
+    e2e: chats.e2e,
+    queues: placeQueues(space, pocket, key),
+    data: run.spare,
+    moved: async (queue, old) => {
+      const spaceKey = currentSpace().key;
+      if (!old || !isWatchedQueue(await loadWatched(space, spaceKey), pocket, old.recipientHex)) return;
+      await watchPocket(space, spaceKey, pocket, { url: own.url, token: own.token ?? '', recipientHex: queue.recipientHex });
+    },
+    ring: async () => {
+      const spaceKey = currentSpace().key;
+      const before = (await loadHiddenData(space, pocket, key)).ringQueue;
+      if (!before || !isRingedQueue(await loadRinged(space, spaceKey), pocket, before.recipientHex)) return false;
+      const made = await moveRingPocket(space, spaceKey, pocket, own, before.recipientHex);
+      await updateHiddenData(space, pocket, key, { ringQueue: { recipientHex: made.recipientHex, senderHex: made.senderHex } });
+      return true;
+    },
+  });
+}
+
+// One look at a place's queue, as the receiver's at the space's (lib/receiver.ts lookOnce), with
+// what hidden chats have: no groups, no phones nearby, no Nostr, no SMS.
+async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
+  if (!hasCore()) return;
+  const { space, pocket, key, state } = run;
+  const data = await loadHiddenData(space, pocket, key);
+  const url = data.url.trim();
+  if (!url || !data.ownQueue) return;
+  const own: Relay = { url, token: data.token.trim() || undefined };
+  const sends = relayFor(url, data.token, data.via, data.viaToken, spareBackup(run.spare)) ?? own;
+  const was = state.place && state.place.own.url === url ? state.place : null;
+  let place: ReceivePlace = { own, sends, queue: data.ownQueue, here: was?.here ?? { relay: url, relayKey: '' }, keyAsked: was?.keyAsked ?? !canRelaySeal() };
+  // Contacts on other relays reach the place through its relay's key, said with every message.
+  if (!place.keyAsked) {
+    const found = await relayKey(own).catch(() => undefined);
+    if (found !== undefined) place = { ...place, here: { ...place.here, relayKey: found ? toBase64Url(found) : '' }, keyAsked: true };
+  }
+  state.place = place;
+  const chats = await placeChats(space, pocket, key);
+  if (stop()) return;
+  await sendPending(chats, place.sends);
+  await sendKeys(chats, place);
+  await sendCopies(chats.e2e, place.sends).catch(() => 0);
+  run.mover ??= placeMover(run, chats, own);
+  const mover = run.mover;
+  const here = place;
+  const take = async (bytes: Uint8Array, kind?: QueueKind | 'old'): Promise<Took> => {
+    // A group's message: hidden chats have none.
+    if (isGroupPacket(bytes)) return { junk: true };
+    // Taken from the relay, so kept whatever happens meanwhile.
+    try {
+      const received = await chats.e2e.receive(bytes, kind === 'own' ? { onOwn: here.queue.senderHex } : { old: kind !== undefined });
+      const came = cameBefore(chats, received);
+      await keepWith(chats, received, state);
+      if (came) await heard(run, chats, came);
+      return tookOf(received);
+    } catch {
+      // This one is lost, as in the chat; the next ones still come.
+      return { junk: false };
+    }
+  };
+  const recipient = fromHex(place.queue.recipientHex);
+  // In the background, what comes to its other queues at its relay wakes the look too.
+  const others = awayQueues(await mover.queues().catch(() => null), url);
+  const found = { taken: 0, junk: 0 };
+  let failed: unknown = null;
+  state.waited = false;
+  try {
+    if (!stop()) state.waited = await waitWhileAway(own, recipient, others.map(fromHex));
+    // Nothing came to the queue while the wait lasted: it is not asked again.
+    for (let i = 0; i < BATCH && state.waited !== 'empty' && !stop(); i++) {
+      const bytes = await receiveMessage(own, recipient);
+      if (!bytes) break;
+      found.taken++;
+      if ((await take(bytes, 'own')).junk) found.junk++;
+    }
+  } catch (error) {
+    failed = error;
+  }
+  state.failures = failed ? state.failures + 1 : 0;
+  // What came to its backup queue, whether or not its relay answered.
+  await lookAtSpare(chats.e2e, (bytes) => take(bytes).then(() => undefined), stop, run.spare).catch(() => undefined);
+  if (failed && isQueueNotFound(failed)) {
+    // The relay no longer has its queue: a new one, which contacts are told quietly.
+    await mover.lost(own).catch(() => null);
+    return;
+  }
+  if (!failed && !stop()) {
+    await mover
+      .look({ own, found, take: (bytes, kind) => take(bytes, kind), tell: (identity) => tell(chats, here, identity, {}), shows: appShown(), stop, empty: state.waited === 'empty' ? others : [] })
+      .catch(() => null);
+    // What waited to go, now that the relay answers (lib/waiting.ts).
+    await sendWaiting(chats, { sends: here.sends, own, senderHex: here.queue.senderHex, here: here.here, ownKey: here.here.relayKey, relayUp: true }).catch(() => []);
+  }
+  await sendReceipts(chats, here, state);
+  await sendCopies(chats.e2e, here.sends).catch(() => 0);
+}
+
+// What a message that came to a closed place says to the screens. A call is held for the place to
+// open: its offer rings, while fresh, with no name; one its caller ended, or not taken in time, is
+// kept as missed, as the chat would.
+async function heard(run: Run, chats: SpaceChats, received: Extract<Received, { kind: 'message' }>) {
+  const { space, pocket } = run;
+  const call = received.call;
+  if (call && !received.twice) {
+    const held = calls.get(pocket) ?? [];
+    const missed = (offer: Extract<Received, { kind: 'message' }>) => {
+      const video = offer.call?.kind === 'offer' && offer.call.video;
+      const timer = chats.e2e.contacts().find((contact) => contact.identity === offer.identity)?.timer ?? 0;
+      void chats.history.add(callLineMessage(`${CONTACT_PREFIX}${offer.identity}`, false, video ? 'Missed video call' : 'Missed voice call', timer)).catch(() => undefined);
+    };
+    const drop = (id: string) => {
+      const left = (calls.get(pocket) ?? []).filter((h) => {
+        if (h.received.call?.id !== id) return true;
+        if (h.timer) clearTimeout(h.timer);
+        return false;
+      });
+      if (left.length > 0) calls.set(pocket, left);
+      else calls.delete(pocket);
+      const ringing = hiddenRinging();
+      if (ringing && ringing.space === space && ringing.pocket === pocket && !left.some((h) => h.received.call?.kind === 'offer')) setHiddenRinging(null);
+    };
+    if (call.kind === 'offer') {
+      // Made while the place was closed and no look took it: it has stopped ringing on their side.
+      if (received.request || Date.now() - call.at > OFFER_FRESH_MS) {
+        if (!received.request) missed(received);
+      } else {
+        const entry: Held = { received, timer: null };
+        entry.timer = setTimeout(
+          () => {
+            entry.timer = null;
+            if (!(calls.get(pocket) ?? []).includes(entry)) return;
+            drop(call.id);
+            missed(received);
+          },
+          Math.max(0, call.at + OFFER_FRESH_MS - Date.now()),
+        );
+        calls.set(pocket, [...held, entry].slice(-MOST_CALLS));
+        ringListeners.forEach((listener) => listener(space, pocket));
+      }
+    } else if (call.kind === 'end') {
+      const offer = held.find((h) => h.received.call?.id === call.id && h.received.call.kind === 'offer');
+      if (offer) {
+        drop(call.id);
+        missed(offer.received);
+      }
+    } else if (held.some((h) => h.received.call?.id === call.id)) {
+      calls.set(pocket, [...held, { received, timer: null }].slice(-MOST_CALLS));
+    }
+  }
+  messageListeners.forEach((listener) => listener(space, pocket, received));
+}

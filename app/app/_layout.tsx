@@ -32,6 +32,8 @@ import { stopReleases, watchReleases } from '../lib/release-look';
 import { startSmsLater } from '../lib/sms-later';
 import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
+import { forgetPlaceChats } from '../lib/place-chats';
+import { startPlaceReceiver } from '../lib/place-receiver';
 import { keepSpaceRunning, onSpaceGatedChange, setSpaceGated, spaceGated, stopSpaceRunning } from '../lib/space-running';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
@@ -530,7 +532,8 @@ function OpenLink() {
 }
 
 // Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), from the
-// relay and from phones nearby (lib/nearby-links.ts), and tells it whether the app shows: only then
+// relay and from phones nearby (lib/nearby-links.ts), and those of its hidden chats that receive
+// while closed (lib/place-receiver.ts), and tells it whether the app shows: only then
 // do contacts hear the phone is open. SMS sent for later go from here too (lib/sms-later.ts), the
 // doors of the public groups the space owns are looked at (lib/space-public-groups.ts), and its
 // calls ring (components/call-host.tsx). While the space is open, a call from a number linked to
@@ -542,6 +545,7 @@ function Receiver({ space }: { space: number }) {
     () =>
       keepSpaceRunning(space, () => [
         startReceiver(),
+        startPlaceReceiver(),
         startNearbyLinks(),
         startSmsLater(),
         startPublicDoors(),
@@ -573,6 +577,7 @@ function closeSpace(): void {
   stopSpaceRunning();
   setCurrentSpace(null);
   forgetSpaceChats();
+  forgetPlaceChats();
   forgetSpaceMover();
   forgetOffered();
   forgetLinks();

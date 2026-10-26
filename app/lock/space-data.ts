@@ -289,9 +289,8 @@ function write(name: string, key: Uint8Array, change: (data: SpaceData) => Space
 
 export const loadSpaceData = (space: number, key: Uint8Array) => load(entry(space), key);
 
-/** Whether `key` is the one a space's entry is sealed with (sealing is authenticated, so another key fails). */
-export async function opensSpace(space: number, key: Uint8Array): Promise<boolean> {
-  const raw = await secureGet(entry(space));
+async function opens(name: string, key: Uint8Array): Promise<boolean> {
+  const raw = await secureGet(name);
   if (!raw) return false;
   try {
     decryptText(key, raw);
@@ -300,6 +299,12 @@ export async function opensSpace(space: number, key: Uint8Array): Promise<boolea
     return false;
   }
 }
+
+/** Whether `key` is the one a space's entry is sealed with (sealing is authenticated, so another key fails). */
+export const opensSpace = (space: number, key: Uint8Array) => opens(entry(space), key);
+
+/** Whether `key` is the one the hidden chats in a space's `pocket` are sealed with, as opensSpace. */
+export const opensHidden = (space: number, pocket: number, key: Uint8Array) => opens(hiddenEntry(space, pocket), key);
 
 export function saveSpaceData(space: number, key: Uint8Array, data: SpaceData): Promise<void> {
   return write(entry(space), key, () => data);

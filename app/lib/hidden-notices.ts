@@ -4,6 +4,7 @@ import { POCKETS } from '../lock/sealed-file';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { onHiddenPlaceChange, openHiddenPlace } from './hidden-contacts';
 import { hiddenRangAt } from './hidden-ring';
+import { onPlacesChange, receivesPocket } from './place-receiver';
 import { canTellNewsAt, canWaitAt, fromHex, isQueueNotFound, newsSince, NO_NEWS, waitForMessage, waitForNews, type News, type Relay } from './relay';
 
 // While Erevos receives (lib/background.ts), in the background or showing, hidden chats that asked
@@ -69,7 +70,8 @@ export function startHiddenNotices(tell: (count: number, pocket: number) => void
       };
       wakers.add(up);
     });
-  const quiet = (pocket: number) => stopped || openHiddenPlace()?.pocket === pocket;
+  // Hidden chats that receive while closed tell of what came themselves (lib/place-receiver.ts).
+  const quiet = (pocket: number) => stopped || openHiddenPlace()?.pocket === pocket || receivesPocket(space, pocket);
   const relayOf = (kept: Watched): Relay => ({ url: kept.url, token: kept.token || undefined });
   const lastHeard = (kept: Watched) => heard.get(kept.recipientHex) ?? heardOf(kept);
 
@@ -163,25 +165,36 @@ export function startHiddenNotices(tell: (count: number, pocket: number) => void
       for (let pocket = 0; pocket < POCKETS; pocket++) if (!stopped) void watch(pocket);
     });
 
+  // What came while a pocket's chats were open, or received while closed, was read: heard as it is
+  // now, not told of, before it is waited on again.
+  const settleNow = (pocket: number) => {
+    const done: Promise<void> = settle(pocket)
+      .catch(() => undefined)
+      .finally(() => {
+        if (settling.get(pocket) === done) settling.delete(pocket);
+      });
+    settling.set(pocket, done);
+  };
   // Hidden chats that open read what came: they may tell again once closed, of what comes after.
   const opened = onHiddenPlaceChange(() => {
     const now = placeOf();
     if (now !== null) told.delete(now);
-    if (openPocket !== null && openPocket !== now) {
-      const pocket = openPocket;
-      const done: Promise<void> = settle(pocket)
-        .catch(() => undefined)
-        .finally(() => {
-          if (settling.get(pocket) === done) settling.delete(pocket);
-        });
-      settling.set(pocket, done);
-    }
+    if (openPocket !== null && openPocket !== now) settleNow(openPocket);
     openPocket = now;
+    wake();
+  });
+  // A place that no longer receives while closed: told of again, from what comes after.
+  let receiving = new Set(Array.from({ length: POCKETS }, (_, pocket) => pocket).filter((pocket) => receivesPocket(space, pocket)));
+  const places = onPlacesChange(() => {
+    const now = new Set(Array.from({ length: POCKETS }, (_, pocket) => pocket).filter((pocket) => receivesPocket(space, pocket)));
+    for (const pocket of receiving) if (!now.has(pocket)) settleNow(pocket);
+    receiving = now;
     wake();
   });
   return () => {
     stopped = true;
     opened();
+    places();
     waits.forEach((wait) => wait.abort());
     wake();
   };

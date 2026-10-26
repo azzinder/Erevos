@@ -89,6 +89,7 @@ import { FoundExport, useImportFlow } from '../components/import-flow';
 import { Archive, type LinkedMessage } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
 import { isWatchedQueue, loadWatched, unwatchPocket, watchPocket } from '../lock/hidden-watch';
+import { keepPlace, keepsPlace } from '../lock/hidden-keep';
 import { isRingedQueue, loadRinged, moveRingPocket, ringPocket, unringPocket } from '../lock/hidden-ring';
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
 import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
@@ -145,6 +146,8 @@ import { nostrReady, readNostr } from '../lib/nostr';
 import { answerInvites, answerTextInvite, expireTextInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
+import { placeChats } from '../lib/place-chats';
+import { holdPlace, takePlaceCalls } from '../lib/place-receiver';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, orNostr, sendNostrAgain, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
 import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
@@ -520,8 +523,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [previews, setPreviews] = useState(false);
   // Whether these hidden chats say a message came while they are closed (lock/hidden-watch.ts).
   const [watched, setWatched] = useState(false);
+  // Whether these hidden chats receive while closed, as the space's chats do (lock/hidden-keep.ts).
+  const [receiving, setReceiving] = useState(false);
   const watchedNow = useRef(false);
-  watchedNow.current = watched;
+  watchedNow.current = watched || receiving;
   const [watchNote, setWatchNote] = useState('');
   // Whether these hidden chats ring their contacts' calls while closed (lock/hidden-ring.ts), and
   // their ring queue, kept with the place (its own relay). Only set for hidden chats.
@@ -1325,11 +1330,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Restores the relay settings and our queue this space keeps on the phone, sealed with its key
   // (lock/space-data.ts), and its account and contacts (lock/e2e-data.ts). Another space finds
   // only its own. The space's own chat takes its messages itself while it is open, so the
-  // receiver beside the other screens (lib/receiver.ts) waits meanwhile, and shares its chats.
+  // receiver beside the other screens (lib/receiver.ts) waits meanwhile, and shares its chats;
+  // hidden chats that receive while closed do the same with theirs (lib/place-receiver.ts).
   useEffect(() => {
     let active = true;
     const { space, key } = currentSpace();
     const held = hiddenKey ? null : holdReceiver();
+    const placeHeld = hiddenKey ? holdPlace(space, pocket) : null;
     (hiddenKey ? loadHiddenData(space, pocket, hiddenKey) : loadCurrentSpaceData())
       .then((data) => {
         if (!active) return;
@@ -1345,6 +1352,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           setRingQueue(data.ringQueue);
           void loadWatched(space, key)
             .then((list) => active && setWatched(isWatchedQueue(list, pocket, data.ownQueue?.recipientHex)))
+            .catch(() => undefined);
+          void keepsPlace(space, key, pocket, hiddenKey)
+            .then((on) => active && setReceiving(on))
             .catch(() => undefined);
           void loadRinged(space, key)
             .then((list) => active && setRinging(isRingedQueue(list, pocket, data.ringQueue?.recipientHex)))
@@ -1384,11 +1394,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           }
         }
         await held;
+        await placeHeld;
         if (!active) return;
-        const shared = hiddenKey ? null : await spaceChats();
-        const kept = shared?.history ?? (await History.open(hiddenHolder(pocket), space, hiddenKey!));
+        const shared = hiddenKey ? await placeChats(space, pocket, hiddenKey) : await spaceChats();
+        const kept = shared.history;
         if (!active) return;
-        if (shared) voiceParts.current = shared.voiceParts;
+        voiceParts.current = shared.voiceParts;
         history.current = kept;
         // What disappeared while the chat was closed goes first.
         await kept.expire(Date.now());
@@ -1400,9 +1411,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           setMessages((list) => [...kept.messages().map(toShown), ...(was ? list.filter((m) => !was.has(m.id)) : list)]);
         }
         // With them, which chats are locked with a PIN, so none shows a moment before its PIN asks.
-        if (shared) setContacts(shared.e2e.contacts());
-        const chats = shared?.e2e ?? (await E2E.open(hiddenHolder(pocket), space, hiddenKey!));
-        if (!active) return;
+        setContacts(shared.e2e.contacts());
+        const chats = shared.e2e;
         // Where its contact link and its old queues are (lib/queue-move.ts), and when its own queue was made, before anything is sealed.
         if (hiddenKey) {
           const queues = placeQueues(space, pocket, hiddenKey);
@@ -1441,6 +1451,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return () => {
       active = false;
       void held?.then((release) => release());
+      void placeHeld?.then((release) => release());
     };
   }, []);
 
@@ -1935,6 +1946,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       if (timer) clearTimeout(timer);
     };
   }, [relayUrl, ownQueue, e2e]);
+
+  // Calls that came while these hidden chats were closed, and still ring (lib/place-receiver.ts):
+  // they ring here, now that the PIN opened them.
+  useEffect(() => {
+    if (!hiddenKey || !e2e || !loaded) return;
+    for (const received of takePlaceCalls(currentSpace().space, pocket)) {
+      if (!received.call) continue;
+      void callSignal(callPlace, `${CONTACT_PREFIX}${received.identity}`, received.call, received.request, rtc).then((said) => {
+        if (said) setNote(said);
+      });
+    }
+  }, [e2e, loaded]);
 
   // What one message from the relay, or from a phone nearby, brings.
   function handle(received: Awaited<ReturnType<E2E['receive']>>, nostr = false) {
@@ -3808,6 +3831,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     setMoving(true);
     setMoveNote('');
+    // The place's chats, held from their receiver while the chat moves into them.
+    let release: (() => void) | null = null;
     try {
       const { space } = currentSpace();
       const place = fresh !== null ? { key: await setHiddenPassword(space, fresh, pin, null), pocket: fresh } : await openHidden(space, pin);
@@ -3829,11 +3854,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
       }
       await updateHiddenData(space, pocket, key, { ...settings, ownQueue: queue });
-      const hiddenChats = await E2E.open(hiddenHolder(pocket), space, key);
-      // When their queue was made, as the hidden chats say it, before the tell below says it.
-      const placeKept = await placeQueues(space, pocket, key).load();
-      if (placeKept.moved > 0) hiddenChats.setQueueAge(placeKept.moved, placeKept.now?.queue.senderHex);
-      const hiddenHistory = await History.open(hiddenHolder(pocket), space, key);
+      // The same chats the place's receiver reads while they receive closed (lib/place-chats.ts),
+      // with when their queue was made, before the tell below says it.
+      release = await holdPlace(space, pocket);
+      const { e2e: hiddenChats, history: hiddenHistory } = await placeChats(space, pocket, key);
       // A contact who knows about devices is told first, by the space's chat, as the hidden chats
       // will say it to one who knows them by the space's identity: nothing of devices. Their devices
       // then stop writing to this account's, and to this account themselves, though their phone is
@@ -3872,6 +3896,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             : t('Not moved. {error}', { error: errorText(error) }),
       );
     } finally {
+      release?.();
       setMoving(false);
     }
   }
@@ -4065,6 +4090,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     } catch (error) {
       setNote(errorText(error));
     }
+  }
+
+  // Has these hidden chats receive while closed, their key kept with the space (lock/hidden-keep.ts), or no longer.
+  async function changeReceiving(on: boolean) {
+    if (!hiddenKey) return;
+    const { space, key } = currentSpace();
+    setReceiving(on);
+    await keepPlace(space, key, pocket, on ? hiddenKey : null).catch((error) => {
+      setReceiving(!on);
+      setNote(errorText(error));
+    });
   }
 
   // Has these hidden chats say a message came while they are closed, or no longer.
@@ -5354,22 +5390,32 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             ) : hiddenKey ? (
               <Text tone="muted">{t('No hidden chats yet. Add a contact below, or move a chat here from its details.')}</Text>
             ) : null}
-            {hiddenKey && canRingInBackground ? (
+            {hiddenKey ? (
               <View style={styles.panel}>
-                <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />
+                <DetailRow title={t('Receive while closed')} checked={receiving} onPress={() => void changeReceiving(!receiving)} />
                 <Text variant="caption" tone="muted">
-                  {watched
-                    ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.')
-                    : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
+                  {receiving
+                    ? t('Closed, these hidden chats receive as your other chats do: their contacts see at once that a message came, a notice says only "New message", and a call rings with no name, answered with the PIN. For it, their key is kept encrypted with the space, so whoever opens the space and copies what the phone keeps could open them too; the PIN still keeps them out of sight.')
+                    : t('Closed, nothing reads these hidden chats: their key is only behind the PIN, and their messages wait on the relay until you open them.')}
                 </Text>
-                {watchNote ? <Text variant="caption" tone="muted">{watchNote}</Text> : null}
-                <DetailRow title={t('Ring calls when closed')} checked={ringing} onPress={() => void changeRinging(!ringing)} />
-                <Text variant="caption" tone="muted">
-                  {ringing
-                    ? t('While these hidden chats are closed and Erevos is in the background, a call from one of their contacts makes the phone ring and show "Incoming call" with no name. On the ringing screen, tap the small sign and type the PIN to answer. Whoever holds the phone sees a call that is in none of your chats, and may guess there are more.')
-                    : t('Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.')}
-                </Text>
-                {ringNote ? <Text variant="caption" tone="muted">{ringNote}</Text> : null}
+                {canRingInBackground && !receiving ? (
+                  <>
+                    <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />
+                    <Text variant="caption" tone="muted">
+                      {watched
+                        ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.')
+                        : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
+                    </Text>
+                    {watchNote ? <Text variant="caption" tone="muted">{watchNote}</Text> : null}
+                    <DetailRow title={t('Ring calls when closed')} checked={ringing} onPress={() => void changeRinging(!ringing)} />
+                    <Text variant="caption" tone="muted">
+                      {ringing
+                        ? t('While these hidden chats are closed and Erevos is in the background, a call from one of their contacts makes the phone ring and show "Incoming call" with no name. On the ringing screen, tap the small sign and type the PIN to answer. Whoever holds the phone sees a call that is in none of your chats, and may guess there are more.')
+                        : t('Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.')}
+                    </Text>
+                    {ringNote ? <Text variant="caption" tone="muted">{ringNote}</Text> : null}
+                  </>
+                ) : null}
               </View>
             ) : null}
             {loaded ? (

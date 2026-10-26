@@ -9,6 +9,7 @@ import { startHiddenNotices } from './hidden-notices';
 import { hiddenRinging, onHiddenRingingChange, setHiddenRinging } from './hidden-ring';
 import { startHiddenRinging } from './hidden-ring-notices';
 import { showsAt } from './later';
+import { onPlaceMessage, onPlaceRing } from './place-receiver';
 import { onSpaceMoved } from './queue-move';
 import { appShown, isNews, onAppShown, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
@@ -255,6 +256,14 @@ export function startBackground(): () => void {
     if (ringTimer) clearTimeout(ringTimer);
     ringTimer = setTimeout(() => setHiddenRinging(null), RING_MS);
   };
+  // Hidden chats that receive while closed (lib/place-receiver.ts): a message says "New message"
+  // with no name, as the space's chats do, and a call rings with none, as a hidden ring does.
+  const places = [
+    onPlaceMessage((_space, pocket, received) => {
+      if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfHidden(pocket));
+    }),
+    onPlaceRing(onRing),
+  ];
   // Answered, turned down, or timed out: the ringtone and notice stop (the call, if answered, took
   // over the sound itself).
   const ringChange = onHiddenRingingChange(() => {
@@ -323,6 +332,7 @@ export function startBackground(): () => void {
     if (door) void keepDoor(door.space, door.key, true).catch(() => undefined);
     changes.delete(follow);
     told.forEach((stopTelling) => stopTelling());
+    places.forEach((stopPlace) => stopPlace());
     shown();
     ringChange();
     ringHidden(false);
