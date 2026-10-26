@@ -306,6 +306,59 @@ function dino(face: Shape[], { c = '#6CC24A', dark = '#4E9E33', belly = '#D8F3C8
   ];
 }
 
+// Tux, the penguin of Linux: black with a grey edge (so it reads on a dark look), a white face and
+// belly, a yellow beak and feet, and its flippers as parts.
+const TUX = { l: 43, r: 57, y: 29, m: 54, k: 0.75 };
+const TUX_BLACK = '#2B2F36';
+const TUX_EDGE = '#7D8BA0';
+const TUX_BEAK = '#F2B33D';
+const flipper = (x: number, y: number, turn: number): Shape[] => [oval(x, y, 16, 34, TUX_EDGE, turn), oval(x, y, 12, 30, TUX_BLACK, turn)];
+function tux(face: Shape[], { arm2 = [] as Shape[], front = [] as Shape[] } = {}): Shape[] {
+  return [
+    oval(37, 94, 22, 9, TUX_BEAK),
+    oval(63, 94, 22, 9, TUX_BEAK),
+    oval(50, 62, 68, 70, TUX_EDGE),
+    oval(50, 62, 64, 66, TUX_BLACK),
+    part('arm1', flipper(20, 62, 25)),
+    part('arm2', arm2.length ? arm2 : flipper(80, 62, -25)),
+    dot(50, 30, 52, TUX_EDGE),
+    dot(50, 30, 48, TUX_BLACK),
+    oval(50, 68, 44, 50, '#F4F1EA'),
+    oval(43, 29, 14, 19, '#F4F1EA'),
+    oval(57, 29, 14, 19, '#F4F1EA'),
+    oval(50, 41, 20, 9, TUX_BEAK),
+    oval(50, 44, 14, 5, '#D9922A'),
+    ...cheeksAt(35, 65, 40, 6),
+    ...face,
+    ...front,
+  ];
+}
+
+// An aikidoka: a white keikogi over a dark hakama, its upper body a part (to bow), its arms parts.
+const SKIN = '#F5C9A0';
+const HAKAMA = '#2C3A63';
+const AIKI = { l: 42, r: 58, y: 28, m: 38, k: 0.75 };
+const sleeve = (x: number, y: number, turn: number, hx: number, hy: number): Shape[] => [oval(x, y, 13, 28, '#C9CED6', turn), oval(x, y, 10, 25, WHITE, turn), dot(hx, hy, 8, SKIN)];
+function aikidoka(face: Shape[], { arm1 = [] as Shape[], arm2 = [] as Shape[], hair = '#3B2A1A', seated = false, front = [] as Shape[] } = {}): Shape[] {
+  return [
+    seated ? box(16, 68, 68, 28, HAKAMA, [16, 16, 6, 6]) : box(28, 64, 44, 33, HAKAMA, [4, 4, 3, 3]),
+    ...(seated ? [] : [bar(50, 74, 50, 97, 2, '#1E2A4A')]),
+    part('upper', [
+      box(31, 44, 38, 26, WHITE, [10, 10, 2, 2], { edge: { w: 2, c: '#C9CED6' } }),
+      bar(43, 45, 53, 64, 2.5, '#C9CED6'),
+      bar(57, 45, 47, 64, 2.5, '#C9CED6'),
+      part('arm1', arm1.length ? arm1 : sleeve(27, 58, 15, 25, 71)),
+      part('arm2', arm2.length ? arm2 : sleeve(73, 58, -15, 75, 71)),
+      box(29, 64, 42, 6, HAKAMA, 2),
+      dot(50, 27, 42, SKIN),
+      box(29, 5, 42, 15, hair, [21, 21, 3, 3]),
+      ...cheeksAt(36, 64, 35, 7),
+      ...face,
+    ]),
+    ...front,
+  ];
+}
+
 // A Words sticker: its card, the words on it, and something drawn at a corner of it.
 const card = (fill: string, edge: string, ink: string, corner: Shape[]): Shape[] => [
   box(6, 24, 88, 56, fill, 16, { edge: { w: 3, c: edge } }),
@@ -2403,6 +2456,58 @@ export const ART: Record<string, Shape[]> = {
   pepper: [dot(36, 62, 42, RED), dot(64, 62, 42, RED), dot(50, 60, 40, RED_DARK), oval(50, 66, 30, 44, RED), oval(32, 54, 8, 18, '#F27D80', 15), box(38, 28, 24, 10, '#4FA34A', 5), part('stem', [bar(50, 30, 54, 14, 4, '#3F8E3F')])],
   potato: [oval(50, 58, 76, 54, '#C9A26B', -10), oval(36, 46, 16, 10, '#DABA88', -10), ...[[30, 60], [52, 48], [66, 66], [44, 72], [70, 50]].map(([x, y]) => dot(x, y, 4, '#9C7A4A'))],
   garlic: [tri(50, 26, 18, 28, '#F3EADB'), oval(50, 62, 64, 50, '#F3EADB'), arc(36, 62, 30, 2.5, 'right', '#D9CFBF'), arc(64, 62, 30, 2.5, 'left', '#D9CFBF'), bar(50, 40, 50, 84, 2, '#D9CFBF'), part('roots', [...[42, 46, 50, 54, 58].map((x) => bar(x, 86, x + (x - 50) * 0.3, 94, 1.5, '#C9B994'))]), oval(34, 52, 8, 14, WHITE, 20)],
+
+  // Tux.
+  'tux-hello': tux(mood('smile', TUX), { arm2: flipper(82, 40, -150) }),
+  'tux-love': tux(mood('love', TUX)),
+  'tux-laugh': tux(mood('laugh', TUX)),
+  'tux-happy': tux(mood('happy', TUX)),
+  'tux-sad': tux(mood('sad', TUX)),
+  'tux-angry': tux(mood('angry', TUX)),
+  'tux-sleep': tux([...mood('sleep', TUX), ...zees(74, 0)]),
+  'tux-wow': tux(mood('wow', TUX)),
+  'tux-wink': tux(mood('wink', TUX)),
+  'tux-cool': tux(mood('cool', TUX)),
+  'tux-shy': tux(mood('shy', TUX)),
+  'tux-cry': tux(mood('cry', TUX)),
+  'tux-kiss': tux(mood('kiss', TUX)),
+  'tux-tongue': tux(mood('tongue', TUX)),
+  'tux-dizzy': tux([...mood('dizzy', TUX), ...dizzyStars(50, 8)]),
+  'tux-think': tux([...mood('think', TUX), ...thought(80, 10)]),
+  'tux-party': [...tux(mood('laugh', TUX)), ...partyHat(50, 10)],
+  'tux-heart': tux(mood('happy', TUX), { front: heldHeart(50, 70, 24) }),
+  'tux-coffee': tux(mood('happy', TUX), { front: coffeeCup(70, 74) }),
+  'tux-ok': tux(mood('smile', TUX), { front: tick(76, 76) }),
+  'tux-nervous': tux([...mood('smile', TUX), part('sweat', [box(68, 8, 8, 8, TEAR, [0, 4, 4, 4], { turn: 45 })])]),
+  'tux-hungry': tux(mood('tongue', TUX), { front: [part('fish', [tri(86, 76, 12, 14, '#5BA8D8', 90), oval(70, 76, 26, 14, '#7FC8F8'), dot(63, 74, 4, INK), arc(74, 76, 8, 2, 'left', '#5BA8D8')])] }),
+  'tux-busy': tux(mood('think', TUX), { front: [box(26, 66, 48, 28, '#9AA3AD', 4), box(20, 92, 60, 5, '#6B7480', 2), dot(50, 79, 9, '#F4F1EA'), dot(50, 80, 4, TUX_BEAK)] }),
+  'tux-cold': tux([...mood('wow', TUX), box(26, 46, 48, 9, RED, 4), box(60, 50, 9, 22, RED, 3), part('snow', [dot(12, 14, 5, '#DCEBFA'), dot(88, 22, 4, '#DCEBFA'), dot(16, 44, 4, '#DCEBFA'), dot(86, 50, 5, '#DCEBFA')])]),
+
+  // Aikido.
+  'aiki-hello': aikidoka(mood('smile', AIKI), { arm2: sleeve(74, 44, -20, 78, 30) }),
+  'aiki-love': aikidoka(mood('love', AIKI)),
+  'aiki-laugh': aikidoka(mood('laugh', AIKI)),
+  'aiki-happy': aikidoka(mood('happy', AIKI)),
+  'aiki-sad': aikidoka(mood('sad', AIKI)),
+  'aiki-angry': aikidoka(mood('angry', AIKI)),
+  'aiki-sleep': aikidoka([...mood('sleep', AIKI), ...zees(68, 0)]),
+  'aiki-wow': aikidoka(mood('wow', AIKI), { arm1: sleeve(26, 44, 20, 22, 30), arm2: sleeve(74, 44, -20, 78, 30) }),
+  'aiki-wink': aikidoka(mood('wink', AIKI)),
+  'aiki-cool': aikidoka(mood('cool', AIKI)),
+  'aiki-shy': aikidoka(mood('shy', AIKI), { arm1: sleeve(36, 54, 35, 44, 42), arm2: sleeve(64, 54, -35, 56, 42) }),
+  'aiki-cry': aikidoka(mood('cry', AIKI)),
+  'aiki-kiss': aikidoka(mood('kiss', AIKI)),
+  'aiki-think': aikidoka([...mood('think', AIKI), ...thought(74, 10)], { arm2: sleeve(64, 54, -35, 56, 42) }),
+  'aiki-dizzy': aikidoka([...mood('dizzy', AIKI), ...dizzyStars(50, 6)]),
+  'aiki-bow': aikidoka(mood('happy', AIKI)),
+  'aiki-calm': aikidoka(mood('happy', AIKI), { seated: true, arm1: sleeve(32, 62, 35, 40, 74), arm2: sleeve(68, 62, -35, 60, 74) }),
+  'aiki-ready': aikidoka([...mood('smile', AIKI), bar(36, 21, 46, 24, 2.5, INK), bar(64, 21, 54, 24, 2.5, INK)], { arm1: sleeve(38, 56, 55, 47, 62), arm2: sleeve(62, 56, -55, 53, 62) }),
+  'aiki-roll': aikidoka(mood('laugh', AIKI)),
+  'aiki-tired': aikidoka([...mood('sad', AIKI), part('sweat', [box(70, 10, 7, 7, TEAR, [0, 3.5, 3.5, 3.5], { turn: 45 })])], { arm1: sleeve(30, 62, 5, 30, 76), arm2: sleeve(70, 62, -5, 70, 76) }),
+  'aiki-proud': aikidoka(mood('happy', AIKI), { front: [box(29, 64, 42, 6, '#2B2F36', 2), bar(46, 68, 42, 80, 3.5, '#2B2F36'), bar(54, 68, 58, 80, 3.5, '#2B2F36'), part('shine', [...star(20, 30, 12, SUN), ...star(82, 24, 10, SUN), ...star(84, 56, 8, SUN)])] }),
+  'aiki-sensei': aikidoka([...mood('happy', AIKI), tri(50, 50, 18, 22, '#E3E6EA', 180), bar(42, 41, 58, 41, 3, '#E3E6EA')], { hair: '#C9CED6' }),
+  'aiki-ok': aikidoka(mood('smile', AIKI), { front: tick(78, 76) }),
+  'aiki-heart': aikidoka(mood('happy', AIKI), { arm1: sleeve(38, 58, 40, 46, 66), arm2: sleeve(62, 58, -40, 54, 66), front: heldHeart(50, 62, 22) }),
 };
 
 /** The names of a sticker's parts, which its motion moves. */

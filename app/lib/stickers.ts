@@ -7,7 +7,7 @@ import { mark } from './i18n';
 // message, and an emoji: the words of the message it goes in, which an Erevos from before shows in
 // its place. A sticker of the Words set shows its words themselves, in the app's language. Every
 // set but the words and the treats moves a little as it shows (lib/sticker-motion.ts); those two
-// stay still. Twenty sets of 24. A set's new stickers go at its end, so the first ones keep their
+// stay still. Every set has 24. A set's new stickers go at its end, so the first ones keep their
 // places. A set may leave the picker (GONE_SETS), as the cats did for the dogs: what was sent of it
 // still shows, drawn as it was.
 
@@ -20,6 +20,7 @@ export type StickerSet =
   | 'dinosaurs'
   | 'monsters'
   | 'robots'
+  | 'tux'
   | 'love'
   | 'sea'
   | 'weather'
@@ -27,6 +28,7 @@ export type StickerSet =
   | 'greece'
   | 'celebrations'
   | 'sports'
+  | 'aikido'
   | 'music'
   | 'transport'
   | 'plants'
@@ -45,6 +47,7 @@ export const SETS: { set: StickerSet; label: string; moves: boolean }[] = [
   { set: 'dinosaurs', label: mark('Dinosaurs'), moves: true },
   { set: 'monsters', label: mark('Monsters'), moves: true },
   { set: 'robots', label: mark('Robots'), moves: true },
+  { set: 'tux', label: mark('Tux'), moves: true },
   { set: 'love', label: mark('Love'), moves: true },
   { set: 'sea', label: mark('Sea'), moves: true },
   { set: 'weather', label: mark('Weather'), moves: true },
@@ -52,6 +55,7 @@ export const SETS: { set: StickerSet; label: string; moves: boolean }[] = [
   { set: 'greece', label: mark('Greece'), moves: true },
   { set: 'celebrations', label: mark('Celebrations'), moves: true },
   { set: 'sports', label: mark('Sports'), moves: true },
+  { set: 'aikido', label: mark('Aikido'), moves: true },
   { set: 'music', label: mark('Music'), moves: true },
   { set: 'transport', label: mark('On the move'), moves: true },
   { set: 'plants', label: mark('Flowers and plants'), moves: true },
@@ -611,6 +615,58 @@ export const STICKERS: Sticker[] = [
     { name: 'pepper', label: mark('Pepper'), emoji: '🫑' },
     { name: 'potato', label: mark('Potato'), emoji: '🥔' },
     { name: 'garlic', label: mark('Garlic'), emoji: '🧄' },
+  ]),
+  ...inSet('tux', [
+    { name: 'tux-hello', label: mark('Tux saying hello'), emoji: '🐧' },
+    { name: 'tux-love', label: mark('Tux in love'), emoji: '😍' },
+    { name: 'tux-laugh', label: mark('Laughing Tux'), emoji: '😂' },
+    { name: 'tux-happy', label: mark('Happy Tux'), emoji: '😊' },
+    { name: 'tux-sad', label: mark('Sad Tux'), emoji: '😢' },
+    { name: 'tux-angry', label: mark('Angry Tux'), emoji: '😠' },
+    { name: 'tux-sleep', label: mark('Sleeping Tux'), emoji: '😴' },
+    { name: 'tux-wow', label: mark('Surprised Tux'), emoji: '😮' },
+    { name: 'tux-wink', label: mark('Winking Tux'), emoji: '😉' },
+    { name: 'tux-cool', label: mark('Cool Tux'), emoji: '😎' },
+    { name: 'tux-shy', label: mark('Shy Tux'), emoji: '☺️' },
+    { name: 'tux-cry', label: mark('Crying Tux'), emoji: '😭' },
+    { name: 'tux-kiss', label: mark('Tux blowing a kiss'), emoji: '😘' },
+    { name: 'tux-tongue', label: mark('Tux sticking its tongue out'), emoji: '😛' },
+    { name: 'tux-dizzy', label: mark('Dizzy Tux'), emoji: '😵' },
+    { name: 'tux-think', label: mark('Thinking Tux'), emoji: '🤔' },
+    { name: 'tux-party', label: mark('Party Tux'), emoji: '🥳' },
+    { name: 'tux-heart', label: mark('Tux with a heart'), emoji: '💙' },
+    { name: 'tux-coffee', label: mark('Tux with coffee'), emoji: '☕' },
+    { name: 'tux-ok', label: mark('Tux saying OK'), emoji: '👍' },
+    { name: 'tux-nervous', label: mark('Nervous Tux'), emoji: '😅' },
+    { name: 'tux-hungry', label: mark('Hungry Tux'), emoji: '🐟' },
+    { name: 'tux-busy', label: mark('Busy Tux'), emoji: '💻' },
+    { name: 'tux-cold', label: mark('Freezing Tux'), emoji: '🥶' },
+  ]),
+  ...inSet('aikido', [
+    { name: 'aiki-hello', label: mark('Aikidoka saying hello'), emoji: '👋' },
+    { name: 'aiki-love', label: mark('Aikidoka in love'), emoji: '😍' },
+    { name: 'aiki-laugh', label: mark('Laughing aikidoka'), emoji: '😂' },
+    { name: 'aiki-happy', label: mark('Happy aikidoka'), emoji: '😊' },
+    { name: 'aiki-sad', label: mark('Sad aikidoka'), emoji: '😢' },
+    { name: 'aiki-angry', label: mark('Angry aikidoka'), emoji: '😠' },
+    { name: 'aiki-sleep', label: mark('Sleeping aikidoka'), emoji: '😴' },
+    { name: 'aiki-wow', label: mark('Surprised aikidoka'), emoji: '😮' },
+    { name: 'aiki-wink', label: mark('Winking aikidoka'), emoji: '😉' },
+    { name: 'aiki-cool', label: mark('Cool aikidoka'), emoji: '😎' },
+    { name: 'aiki-shy', label: mark('Shy aikidoka'), emoji: '☺️' },
+    { name: 'aiki-cry', label: mark('Crying aikidoka'), emoji: '😭' },
+    { name: 'aiki-kiss', label: mark('Aikidoka blowing a kiss'), emoji: '😘' },
+    { name: 'aiki-think', label: mark('Thinking aikidoka'), emoji: '🤔' },
+    { name: 'aiki-dizzy', label: mark('Dizzy aikidoka'), emoji: '😵' },
+    { name: 'aiki-bow', label: mark('Bowing aikidoka'), emoji: '🙇' },
+    { name: 'aiki-calm', label: mark('Calm aikidoka'), emoji: '🧘' },
+    { name: 'aiki-ready', label: mark('Ready aikidoka'), emoji: '💪' },
+    { name: 'aiki-roll', label: mark('Rolling aikidoka'), emoji: '🤸' },
+    { name: 'aiki-tired', label: mark('Tired aikidoka'), emoji: '😓' },
+    { name: 'aiki-proud', label: mark('Proud aikidoka'), emoji: '🥋' },
+    { name: 'aiki-sensei', label: mark('Wise sensei'), emoji: '🧓' },
+    { name: 'aiki-ok', label: mark('Aikidoka saying OK'), emoji: '👍' },
+    { name: 'aiki-heart', label: mark('Aikidoka with a heart'), emoji: '💙' },
   ]),
 ];
 
