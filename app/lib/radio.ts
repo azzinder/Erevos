@@ -219,13 +219,21 @@ let started = false;
 let asked = false;
 let directWanted = false;
 let directOn = false;
+let awareWanted = true;
 
 /** Whether this phone can make a Wi-Fi of its own with Erevos phones nearby (Wi-Fi Direct). */
 export const CAN_DIRECT = HAS_RADIO && hasDirect();
 
-/** Starts the links: the radio, with `lan` the same Wi-Fi, and with `direct` Wi-Fi Direct too. They stay until `stopLinks`. */
-export function startLinks({ lan, direct }: { lan: boolean; direct: boolean }): void {
+/**
+ * A Samsung phone, which asks to turn off its own sharing (Quick Share, «Κοινή χρήση») while an
+ * app uses Wi-Fi Direct or Wi-Fi Aware: there Erevos uses neither until they are turned on.
+ */
+export const SAMSUNG = Platform.OS === 'android' && /samsung/i.test(String((Platform.constants as { Manufacturer?: string }).Manufacturer ?? ''));
+
+/** Starts the links: the radio, with `aware` Wi-Fi Aware in it, with `lan` the same Wi-Fi, and with `direct` Wi-Fi Direct too. They stay until `stopLinks`. */
+export function startLinks({ lan, direct, aware }: { lan: boolean; direct: boolean; aware: boolean }): void {
   directWanted = direct;
+  awareWanted = aware;
   setLanLinks(lan);
   if (!HAS_RADIO) return;
   resumeLora();
@@ -235,7 +243,7 @@ export function startLinks({ lan, direct }: { lan: boolean; direct: boolean }): 
     .finally(() => {
       if (!started) return;
       asked = true;
-      startRadio();
+      startRadio(awareWanted);
       followDirect();
     });
 }
@@ -261,6 +269,13 @@ export function setDirectLinks(on: boolean): void {
   followDirect();
 }
 
+/** Looks with Wi-Fi Aware too, besides Bluetooth, or no longer: the radio starts again so. */
+export function setAwareLinks(on: boolean): void {
+  if (on === awareWanted) return;
+  awareWanted = on;
+  if (HAS_RADIO && started && asked) startRadio(on);
+}
+
 function followDirect() {
   const on = CAN_DIRECT && started && asked && lanOn && directWanted;
   if (on === directOn) return;
@@ -284,7 +299,7 @@ export function setLinksQuiet(on: boolean): void {
 
 /** Starts the radio again if the links want it, as after the radio test screen stopped it (app/radio.tsx). */
 export function resumeRadio(): void {
-  if (HAS_RADIO && started) startRadio();
+  if (HAS_RADIO && started) startRadio(awareWanted);
 }
 
 /** Sends text on a link from an onPeer event. False when the link is not up. */

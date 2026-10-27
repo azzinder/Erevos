@@ -6,6 +6,12 @@ export const whatsNew: Record<string, string> = {
   'Not out yet': 'Još nije izašla',
   'This version': 'Ova verzija',
   // Not out yet.
+  '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
+    '**Poruka poslata dok se razgovor otvara čeka ga**, označena Šalje se…, i ide čim se razgovor otvori, bez poruke da Erevos ne može da šifruje.',
+  '**What you read as a chat opens stays read**: the home screen no longer counts it as new.':
+    '**Ono što pročitaš dok se razgovor otvara ostaje pročitano**: početni ekran ga više ne broji kao novo.',
+  '**No question from Samsung about its sharing**: on a Samsung phone, Wi-Fi Aware and the Wi-Fi with phones nearby stay off until you turn them on. See [Chat with a nearby phone](#nearby).':
+    '**Samsung više ne pita za svoje deljenje**: na Samsung telefonu Wi-Fi Aware i Wi-Fi mreža s telefonima u blizini ostaju isključeni dok ih ne uključiš. Vidi [Razgovor s telefonom u blizini](#nearby).',
   // 3.4.1
   '**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.':
     '**Slanje odgovara odmah**: kratka vibracija kad ga pritisneš, polje se isprazni i poruka se pojavi, označena sa Šalje se…, pa nikad ne ode dvaput.',

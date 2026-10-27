@@ -38,6 +38,9 @@ Meshtastic link have not run on a phone yet.
   on the group's interface. A group no one is in for 90 seconds, or joined with no link after 60,
   is removed, and that phone is left alone for 5 minutes. Only groups it made or joined are removed.
   Compiled with the Android classes; not run on a phone yet.
+- **Samsung phones** ask the user to turn off their own sharing ("Κοινή χρήση" in Greek, seen
+  2026-10-27) when an app uses Wi-Fi Direct or Wi-Fi Aware, so on them the app starts neither
+  until the user turns it on (`lib/nearby-links.ts`).
 - **Quiet** (`setQuiet`), while Erevos is in the background: BLE advertises and scans at low power,
   and scans with a filter on the service UUID, as Android stops unfiltered scans with the screen
   off; the same Wi-Fi is announced every 15 seconds, and its multicast lock is held only 20 seconds
@@ -56,7 +59,8 @@ Meshtastic link have not run on a phone yet.
 
 ## JS API
 
-See `index.ts`: `radioStatus()`, `startRadio()`, `stopRadio()`, `startLan()`, `stopLan()`,
+See `index.ts`: `radioStatus()`, `startRadio(aware)` (Bluetooth, and Wi-Fi Aware unless `aware` is
+false), `stopRadio()`, `startLan()`, `stopLan()`,
 `hasDirect()`, `startDirect()`, `stopDirect()`, `setRadioQuiet(on)`,
 `sendText(linkId, text)`, `hasMesh()`, `meshScan()`, `meshConnect(address)`, `meshDisconnect()`,
 `meshSend(base64)`, and `onRadioEvent(name, listener)` for `onStatus`, `onPeer`, `onText` and

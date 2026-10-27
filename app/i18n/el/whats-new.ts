@@ -6,6 +6,12 @@ export const whatsNew: Record<string, string> = {
   'Not out yet': 'Δεν έχει βγει ακόμη',
   'This version': 'Αυτή η έκδοση',
   // Not out yet.
+  '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
+    '**Ένα μήνυμα που στέλνεις όσο ανοίγει μια συνομιλία την περιμένει**, με την ένδειξη Αποστολή…, και φεύγει μόλις ανοίξει, χωρίς να λέει ότι το Erevos δεν μπορεί να κρυπτογραφήσει.',
+  '**What you read as a chat opens stays read**: the home screen no longer counts it as new.':
+    '**Ό,τι διαβάζεις όσο ανοίγει μια συνομιλία μένει διαβασμένο**: η αρχική οθόνη δεν το μετρά πια ως νέο.',
+  '**No question from Samsung about its sharing**: on a Samsung phone, Wi-Fi Aware and the Wi-Fi with phones nearby stay off until you turn them on. See [Chat with a nearby phone](#nearby).':
+    '**Καμία ερώτηση από τη Samsung για την «Κοινή χρήση» της**: σε τηλέφωνο Samsung, το Wi-Fi Aware και το Wi-Fi με κοντινά τηλέφωνα μένουν κλειστά μέχρι να τα ανοίξεις. Δες [Συνομιλία με κοντινό τηλέφωνο](#nearby).',
   // 3.4.1
   '**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.':
     '**Η αποστολή απαντά αμέσως**: μια σύντομη δόνηση μόλις την πατήσεις, το πεδίο αδειάζει και το μήνυμα φαίνεται, με την ένδειξη «Αποστολή…», ώστε να μη φύγει ποτέ δύο φορές.',

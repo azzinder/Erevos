@@ -36,7 +36,8 @@ class ErevosRadioModule : Module() {
       )
     }
 
-    Function("start") {
+    // Bluetooth, and with `aware` (left out: on) Wi-Fi Aware too.
+    Function("start") { aware: Boolean? ->
       val context = appContext.reactContext ?: throw IllegalStateException("No app context")
       stopRadio()
       val log: (String) -> Unit = { text ->
@@ -59,6 +60,7 @@ class ErevosRadioModule : Module() {
         it.start()
         it.setQuiet(quiet)
       }
+      if (aware == false) return@Function
       link = WifiAwareLink(
         context,
         onLink = { id ->

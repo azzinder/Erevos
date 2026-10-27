@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import { currentSpace } from '../lock/keys';
 import { othersCarried, ownCarried } from './carried-store';
 import { nearby } from './nearby';
-import { HAS_LINKS, onLinkEvent, sendLink, setDirectLinks, setLanLinks, setLinksQuiet, startLinks, stopLinks } from './radio';
+import { HAS_LINKS, onLinkEvent, SAMSUNG, sendLink, setAwareLinks, setDirectLinks, setLanLinks, setLinksQuiet, startLinks, stopLinks } from './radio';
 import { nearbyChanged, openNearby } from './receiver';
 import { secureGet, secureSet } from './secure';
 
@@ -19,11 +19,13 @@ import { secureGet, secureSet } from './secure';
 // background the links are kept quieter, to spare the battery (setLinksQuiet).
 
 // Whether this phone carries messages from phones nearby to their relays, whether it looks for
-// Erevos on the same Wi-Fi, and whether it makes one with Wi-Fi Direct: for the whole phone, on
-// unless turned off.
+// Erevos on the same Wi-Fi, whether it makes one with Wi-Fi Direct, and whether it looks with
+// Wi-Fi Aware: for the whole phone, on unless turned off. On a Samsung phone Wi-Fi Direct and
+// Wi-Fi Aware are off unless turned on, as Samsung asks to turn off its own sharing for them.
 const CARRY_KEY = 'erevos.carry';
 const LAN_KEY = 'erevos.lan';
 const DIRECT_KEY = 'erevos.direct';
+const AWARE_KEY = 'erevos.aware';
 
 let othersKept = false;
 
@@ -47,14 +49,14 @@ export function startNearbyLinks(): () => void {
   const stopWatching = nearby.onChange(nearbyChanged);
   setLinksQuiet(AppState.currentState !== 'active');
   const quiet = AppState.addEventListener('change', (state) => setLinksQuiet(state !== 'active'));
-  void nearbySettings().then(({ carrying, lan, direct }) => {
+  void nearbySettings().then(({ carrying, lan, direct, aware }) => {
     if (!active) return;
     nearby.setCarrying(carrying);
     if (!othersKept) {
       othersKept = true;
       void nearby.keepOthersIn(othersCarried());
     }
-    startLinks({ lan, direct });
+    startLinks({ lan, direct, aware });
   });
   // What came nearby for this space while another was open.
   void (async () => {
@@ -72,12 +74,12 @@ export function startNearbyLinks(): () => void {
   };
 }
 
-/** Whether this phone carries for others, looks on the same Wi-Fi, and makes one with Wi-Fi Direct, as last set. */
-export async function nearbySettings(): Promise<{ carrying: boolean; lan: boolean; direct: boolean }> {
-  const [carry, lan, direct] = await Promise.all([CARRY_KEY, LAN_KEY, DIRECT_KEY].map((key) => secureGet(key).catch(() => null)));
+/** Whether this phone carries for others, looks on the same Wi-Fi, makes one with Wi-Fi Direct, and looks with Wi-Fi Aware, as last set. */
+export async function nearbySettings(): Promise<{ carrying: boolean; lan: boolean; direct: boolean; aware: boolean }> {
+  const [carry, lan, direct, aware] = await Promise.all([CARRY_KEY, LAN_KEY, DIRECT_KEY, AWARE_KEY].map((key) => secureGet(key).catch(() => null)));
   // Carrying for others is off unless turned on: a stranger nearby must not have this phone send
   // what they give it through its relay.
-  return { carrying: carry === 'on', lan: lan !== 'off', direct: direct !== 'off' };
+  return { carrying: carry === 'on', lan: lan !== 'off', direct: SAMSUNG ? direct === 'on' : direct !== 'off', aware: SAMSUNG ? aware === 'on' : aware !== 'off' };
 }
 
 /** Carries messages from phones nearby to their relays, or no longer. Throws when the phone could not keep it: it holds until Erevos closes. */
@@ -90,6 +92,12 @@ export async function setCarryingKept(on: boolean): Promise<void> {
 export async function setLanKept(on: boolean): Promise<void> {
   setLanLinks(on);
   await secureSet(LAN_KEY, on ? 'on' : 'off');
+}
+
+/** Looks for Erevos phones nearby with Wi-Fi Aware too, or no longer. Throws as setCarryingKept. */
+export async function setAwareKept(on: boolean): Promise<void> {
+  setAwareLinks(on);
+  await secureSet(AWARE_KEY, on ? 'on' : 'off');
 }
 
 /** Makes a Wi-Fi with Erevos phones nearby that share none (Wi-Fi Direct), or no longer. Throws as setCarryingKept. */

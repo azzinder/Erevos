@@ -33,7 +33,7 @@ export type MeshEvent =
 // Since Expo SDK 52 the native module object is itself the event emitter.
 type NativeRadio = {
   status(): RadioStatus;
-  start(): void;
+  start(aware?: boolean): void;
   stop(): void;
   startLan?(): void;
   stopLan?(): void;
@@ -54,8 +54,9 @@ export function radioStatus(): RadioStatus | null {
   return native ? native.status() : null;
 }
 
-export function startRadio(): void {
-  native?.start();
+/** Starts Bluetooth, and with `aware` Wi-Fi Aware too; started already, it starts again as asked. */
+export function startRadio(aware = true): void {
+  native?.start(aware);
 }
 
 export function stopRadio(): void {

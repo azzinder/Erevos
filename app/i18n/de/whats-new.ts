@@ -6,6 +6,12 @@ export const whatsNew: Record<string, string> = {
   'Not out yet': 'Noch nicht erschienen',
   'This version': 'Diese Version',
   // Not out yet.
+  '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
+    '**Eine Nachricht, die du sendest, während sich ein Chat öffnet, wartet auf ihn**, markiert mit Wird gesendet…, und geht, sobald er offen ist, ohne zu sagen, dass Erevos nicht verschlüsseln kann.',
+  '**What you read as a chat opens stays read**: the home screen no longer counts it as new.':
+    '**Was du liest, während sich ein Chat öffnet, bleibt gelesen**: Der Startbildschirm zählt es nicht mehr als neu.',
+  '**No question from Samsung about its sharing**: on a Samsung phone, Wi-Fi Aware and the Wi-Fi with phones nearby stay off until you turn them on. See [Chat with a nearby phone](#nearby).':
+    '**Keine Frage von Samsung nach seiner Freigabe**: Auf einem Samsung-Telefon bleiben Wi-Fi Aware und das WLAN mit Telefonen in der Nähe aus, bis du sie einschaltest. Siehe [Chat mit einem Telefon in der Nähe](#nearby).',
   // 3.4.1
   '**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.':
     '**Senden reagiert sofort**: ein kurzes Vibrieren beim Tippen, das Feld leert sich und die Nachricht erscheint mit „Wird gesendet…“, sodass sie nie zweimal geht.',

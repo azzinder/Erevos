@@ -10,6 +10,17 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **A message sent while a chat opens waits for it**: it shows at once as **Sending…** and goes as soon as the
+  chat is open, a voice message too. Until now it said **This build cannot encrypt**, as a chat opens only once a
+  look at the relay under way ends, and a new phone's first looks can take a while; what else cannot wait says the
+  chats are still opening.
+- **What is read as a chat opens stays read**: read in those moments, a contact's messages were read on the screen
+  only, so the home screen still counted them as new and their phone was not told.
+- **Samsung phones no longer ask to turn off their own sharing for Erevos**: Samsung asks so when an app uses Wi-Fi
+  Direct or Wi-Fi Aware, so on a Samsung phone both stay off until turned on under **Nearby, with no internet**,
+  which has a new **Look with Wi-Fi Aware** switch on every Android phone. Bluetooth and the same Wi-Fi work as
+  before.
+
 ## 3.4.1 (2026-10-27)
 
 - **Send answers at once**: pressing it gives a short buzz, empties the field and shows the

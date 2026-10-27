@@ -224,7 +224,8 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
   minute in every five, and on the same Wi-Fi it hears the others twenty seconds in every two minutes. A phone nearby
   may so be found a few minutes later; links that are up stay up, and once Erevos shows it looks as often as before.
 - **Range:** a few tens of metres in the open, less through walls.
-- **Wi-Fi Aware:** faster, but not every phone has it. Bluetooth works on all of them.
+- **Wi-Fi Aware:** faster, but not every phone has it. Bluetooth works on all of them. To stop it, turn off **Look
+  with Wi-Fi Aware**, above **Find Erevos on the same Wi-Fi**.
 - **The same Wi-Fi or a hotspot:** phones on one Wi-Fi, or on one phone's hotspot, find each other and talk directly,
   even when that Wi-Fi has no internet; the desktop app too. If Android asks whether to stay on a Wi-Fi with no
   internet, stay. Anyone on that Wi-Fi can tell an Erevos app is there, not whose. A computer's firewall must let
@@ -235,6 +236,9 @@ needed. It carries messages to your contacts, end-to-end encrypted like those th
   goes over it with no internet. It asks nothing; each phone stays on its own Wi-Fi too where it can. Anyone near can
   tell an Erevos phone is there, and could join that small Wi-Fi, getting only sealed bytes. It needs **Find Erevos
   on the same Wi-Fi** on; to stop it alone, turn off **Make a Wi-Fi with phones nearby** below it.
+- **On a Samsung phone** **Look with Wi-Fi Aware** and **Make a Wi-Fi with phones nearby** are off until you turn
+  them on: while an app uses them, Samsung asks to turn off its own sharing. Bluetooth and the same Wi-Fi work without
+  them.
 - **Other phones nearby** get only sealed bytes they cannot open, and only until your contact's phone is known: from
   then on what you send goes to it alone. Voice messages go only to a contact known to be near. Photos and files need
   the relay.

@@ -5,8 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { takeCall } from '../lib/call-handoff';
 import { keepPrivate } from '../lib/screen-privacy';
-import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora } from '../lib/radio';
-import { nearbySettings, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
+import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora, SAMSUNG } from '../lib/radio';
+import { nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
 import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
 import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
@@ -574,7 +574,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Set while a preview is being made, so the words do not go twice.
   const previewing = useRef(false);
   const editGoing = useRef(false);
-  const [directOn, setDirectOn] = useState(true);
+  const [directOn, setDirectOn] = useState(!SAMSUNG);
+  const [awareOn, setAwareOn] = useState(!SAMSUNG);
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
   // A chat locked with a PIN of its own (lock/chat-pin.ts) shows only once its PIN is typed, until
@@ -954,6 +955,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setLanKept(on).catch(() => setNote(t('Changed until Erevos closes: the phone could not keep it.')));
   }
 
+  // Looks for Erevos phones nearby with Wi-Fi Aware too, or no longer.
+  function changeAware(on: boolean) {
+    setAwareOn(on);
+    setAwareKept(on).catch(() => setNote(t('Changed until Erevos closes: the phone could not keep it.')));
+  }
+
   // Makes a Wi-Fi with Erevos phones nearby that share none (Wi-Fi Direct), or no longer.
   function changeDirect(on: boolean) {
     setDirectOn(on);
@@ -968,7 +975,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // back so they take this phone as a contact at once (lib/welcome.ts). Returns who was added, or null.
   async function acceptContact(code: ContactCode, offered?: Offer, asked = false, mine?: { url: string; token: string; queue: Queue }, hi = ''): Promise<string | null> {
     if (!e2e) {
-      setNote(t(NO_CORE));
+      setNote(notOpen());
       return null;
     }
     if (code.senderHex === ownQueue?.senderHex || (!!linkQueue && code.senderHex === linkQueue.senderHex)) {
@@ -1158,7 +1165,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // this one as a contact at once.
   async function takeWelcome(welcome: Welcome) {
     if (!e2e) {
-      setNote(t(NO_CORE));
+      setNote(notOpen());
       return;
     }
     const mine = await joinInviting(welcome.invite);
@@ -1180,7 +1187,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // as a contact's, no request, named `name` (lib/sms-relay.ts).
   async function takeTextInvite(invite: TextInvite, name: string) {
     if (!e2e) {
-      setNote(t(NO_CORE));
+      setNote(notOpen());
       return;
     }
     if (invite.expires < Date.now()) {
@@ -1322,6 +1329,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setCarrying(settings.carrying);
       setLanOn(settings.lan);
       setDirectOn(settings.direct);
+      setAwareOn(settings.aware);
     });
     // A contact heard nearby, or a LoRa radio linked: what waits for them may go now.
     const stopWatching = nearby.onChange(() => {
@@ -1691,9 +1699,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [hiddenKey]);
 
   // A contact's messages are read once their chat shows on the screen: their phone is told with
-  // the next look at the relay, and the disappearing ones start their time.
+  // the next look at the relay, and the disappearing ones start their time. Not while the chat
+  // opens (e2e not there yet), when the messages show only to read: the history that keeps the
+  // mark is not open yet, and read only on the screen, the home screen would count them still.
   useEffect(() => {
-    if (!shown || gated || !appActive || !selected?.startsWith(CONTACT_PREFIX)) return;
+    if (!shown || gated || !appActive || !e2e || !selected?.startsWith(CONTACT_PREFIX)) return;
     if (!messages.some((m) => m.peer === selected && !m.mine && m.mark < 2)) return;
     const peer = selected;
     markMessages(peer, false, 2)
@@ -1701,7 +1711,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       .catch(() => {
         // Read here, but their phone is not told.
       });
-  }, [shown, gated, appActive, selected, messages]);
+  }, [shown, gated, appActive, e2e, selected, messages]);
 
   // While a contact's chat shows, it asks now and then whether their phone is open, saying this
   // one is. A chat that appears offline asks nothing, so it does not learn it either. It asks
@@ -2547,6 +2557,28 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
+  // A message send() shows as Sending…, with what it needs to go.
+  type Going = { to: string; text: string; lasts: number; quiet: boolean; content?: Content & { text: string }; answer: Parts; answered: Message | null; shown: () => void };
+
+  // What was sent while the chats were still opening (e2e not there yet): it goes, in turn, once
+  // they are, through the functions of the render that has them (sending).
+  const opening = useRef<((now: { sendShown: typeof sendShown; sendVoice: typeof sendVoice }) => Promise<void>)[]>([]);
+  const sending = useRef({ sendShown, sendVoice });
+  sending.current = { sendShown, sendVoice };
+  useEffect(() => {
+    if (!e2e || opening.current.length === 0) return;
+    const waiting = opening.current.splice(0);
+    void (async () => {
+      for (const go of waiting) await go(sending.current).catch(() => undefined);
+    })();
+  }, [e2e]);
+
+  // What says that something cannot be done while the chats have not opened: they are still opening,
+  // unless this build cannot encrypt at all.
+  function notOpen(): string {
+    return hasCore() ? t('Your chats are still opening. Try again in a moment.') : t(NO_CORE);
+  }
+
   // Shows ours the moment Send is pressed, marked Sending…, on screen only and with no tag, so
   // nothing acts on it. Returns what takes it away, once what went or waits shows instead.
   function showSending(peer: string, text: string, parts: Parts): () => void {
@@ -2757,7 +2789,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Seals a message for a contact and hands it to their phone (handOver). Returns the message's
   // tag, how long it lasts, and how it went. `waits`: should it fail, it is tried again as it is.
   async function sendToContact(target: Relay | null, identity: string, text: string, extra: Extra = {}, waits = false): Promise<{ tag: string; timer: number; way: Delivery }> {
-    if (!e2e) throw new Error(t(NO_CORE));
+    if (!e2e) throw new Error(notOpen());
     // A hidden place that rings says its ring queue (lock/hidden-ring.ts); '' tells contacts it no
     // longer rings. The space's own chats never ring, so they say nothing of one.
     const rf = hiddenKey ? (ringing && ringQueue ? ringQueue.senderHex : '') : undefined;
@@ -2867,7 +2899,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // goes straight between the two: to the contact's link when heard on one, else to every link.
     const near = nearby.isNear(identity) || nearby.count() > 0;
     if (!e2e || ((!ownQueue || !relayUrl.trim()) && !near)) {
-      setNote(e2e ? t('Calls are set up through the relay, or with a contact on the same Wi-Fi. Type the relay address in Relay first.') : t(NO_CORE));
+      setNote(e2e ? t('Calls are set up through the relay, or with a contact on the same Wi-Fi. Type the relay address in Relay first.') : notOpen());
       return;
     }
     if (!(await callPermissions(video))) {
@@ -2945,7 +2977,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const text = content ? content.text : draft.text().trim();
     if (!text || !to?.startsWith(CONTACT_PREFIX) || previewing.current) return;
     setVanishing(false);
-    if (!e2e) {
+    if (!e2e && !hasCore()) {
       setNote(t(NO_CORE));
       return;
     }
@@ -2959,6 +2991,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       draft.set('');
       setReplying(null);
     }
+    const going: Going = { to, text, lasts, quiet, content, answer, answered, shown };
+    // The chats still opening (a look at the relay under way ends first), it goes once they are.
+    if (!e2e) opening.current.push((now) => now.sendShown(going));
+    else await sendShown(going);
+  }
+
+  // Sends what send() shows as Sending…, once the chats are open.
+  async function sendShown({ to, text, lasts, quiet, content, answer, answered, shown }: Going) {
     // A preview that cannot be made is left out.
     const carried = content ? contentOf(content) : await previewOf(text).catch((): Carried => ({}));
     const parts = { ...answer, ...carried };
@@ -3032,7 +3072,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // chats, theirs). Says whether it is kept.
   async function schedule(peer: string, at: number, what: { text?: string; voice?: VoiceRef; file?: FileRef; lasts?: number }): Promise<boolean> {
     if (!e2e) {
-      setNote(t(NO_CORE));
+      setNote(notOpen());
       return false;
     }
     // How long it lasts once read: the stopwatch's time for it (`lasts`), or else the chat's.
@@ -3421,7 +3461,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const peer = to;
     if (!peer) return;
     if (!e2e) {
-      setNote(t(NO_CORE));
+      // Held while the chats open, then sent as it was recorded.
+      if (hasCore()) {
+        opening.current.push((now) => now.sendVoice(audio, ms, talk, to, forwarded, lasts));
+        setNote(t('Your chats are still opening. It goes as soon as they are.'));
+      } else setNote(t(NO_CORE));
       return;
     }
     // Picked to go later (laterFor): kept, and handed to the relay for then.
@@ -3634,7 +3678,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return;
     }
     if (!e2e) {
-      setNote(t(NO_CORE));
+      setNote(notOpen());
       return;
     }
     let picked: Picked | null;
@@ -5740,12 +5784,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   <DetailRow title={t('Nearby, with no internet')} open={nearbyShown} onPress={() => setNearbyShown((on) => !on)} />
                   {nearbyShown ? (
                     <View>
+                      {HAS_RADIO ? (
+                        <>
+                          <DetailRow title={t('Look with Wi-Fi Aware')} checked={awareOn} onPress={() => changeAware(!awareOn)} />
+                          <Text variant="caption" tone="muted">
+                            {awareOn
+                              ? t('Besides Bluetooth, Erevos phones near each other find each other and talk over Wi-Fi Aware, faster and farther, with no internet. Anyone near can tell an Erevos phone is there, not whose.')
+                              : t('Only Bluetooth looks for Erevos phones near this one, and the same Wi-Fi when that is on.')}
+                          </Text>
+                        </>
+                      ) : null}
                       <DetailRow title={t('Find Erevos on the same Wi-Fi')} checked={lanOn} onPress={() => changeLan(!lanOn)} />
                       <Text variant="caption" tone="muted">
                         {lanOn
                           ? t('While a space is open, Erevos phones and computers on the same Wi-Fi or hotspot find each other and talk directly, even with no internet. Anyone on that Wi-Fi can tell an Erevos app is there, not whose.')
                           : HAS_RADIO
-                            ? t('Only Bluetooth and Wi-Fi Aware look for phones nearby.')
+                            ? awareOn
+                              ? t('Only Bluetooth and Wi-Fi Aware look for phones nearby.')
+                              : t('Only Bluetooth looks for phones nearby.')
                             : t('Nothing looks for Erevos nearby.')}
                       </Text>
                       {CAN_DIRECT && lanOn ? (
@@ -5757,6 +5813,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                               : t('Erevos phones meet only on a Wi-Fi they share, or over Bluetooth and Wi-Fi Aware.')}
                           </Text>
                         </>
+                      ) : null}
+                      {SAMSUNG ? (
+                        <Text variant="caption" tone="muted">
+                          {t('On a Samsung phone, Wi-Fi Aware and the Wi-Fi with phones nearby stay off until you turn them on: while Erevos uses them, Samsung asks to turn off its own sharing.')}
+                        </Text>
                       ) : null}
                       <DetailRow title={t('Carry messages for others')} checked={carrying} onPress={() => changeCarrying(!carrying)} />
                       <Text variant="caption" tone="muted">
