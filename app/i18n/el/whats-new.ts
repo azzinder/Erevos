@@ -6,6 +6,7 @@ export const whatsNew: Record<string, string> = {
   'Not out yet': 'Δεν έχει βγει ακόμη',
   'This version': 'Αυτή η έκδοση',
   // Not out yet.
+  // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Ένα μήνυμα που στέλνεις όσο ανοίγει μια συνομιλία την περιμένει**, με την ένδειξη Αποστολή…, και φεύγει μόλις ανοίξει, χωρίς να λέει ότι το Erevos δεν μπορεί να κρυπτογραφήσει.',
   '**What you read as a chat opens stays read**: the home screen no longer counts it as new.':

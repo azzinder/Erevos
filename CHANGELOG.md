@@ -10,6 +10,8 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+## 3.4.2 (2026-10-27)
+
 - **A message sent while a chat opens waits for it**: it shows at once as **Sending…** and goes as soon as the
   chat is open, a voice message too. Until now it said **This build cannot encrypt**, as a chat opens only once a
   look at the relay under way ends, and a new phone's first looks can take a while; what else cannot wait says the
