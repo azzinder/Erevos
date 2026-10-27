@@ -23,6 +23,7 @@ import {
   chatSmsNumber,
   contactSmsNumber,
   findSmsConversations,
+  findSmsUnread,
   isSmsLine,
   latestSms,
   linkedContact,
@@ -163,6 +164,24 @@ test("only the conversation with the contact's number alone is read, never a gro
   // A contact's number is one number; a group's numbers are no chat's.
   assert.equal(chatSmsNumber({ hidden: false, access: true, phone: '+306900000001,+306922222222' }), '');
   assert.equal(chatSmsNumber({ hidden: false, access: true, phone: '+306900000001' }), '+306900000001');
+});
+
+test("a chat counts theirs not read in its number's conversations, shown or not, as the home screen does", async () => {
+  const threads = [
+    { address: '+306900000001,+306922222222', unread: 4 },
+    { address: '6900000001', unread: 1 },
+    { address: '+306911111111', unread: 2 },
+    { address: '+30 690 000 0001', unread: 0 },
+  ];
+  const read = { threads: async () => threads };
+  assert.deepEqual(await findSmsUnread('+306900000001', read), { addresses: ['6900000001', '+30 690 000 0001'], unread: 1 });
+  assert.deepEqual(await findSmsUnread('+306933333333', read), { addresses: [], unread: 0 });
+  assert.deepEqual(await findSmsUnread('', read), { addresses: [], unread: 0 });
+  // The home screen counts the same one on the contact's row, whatever the chat shows of it.
+  const rows = buildInbox([{ identity: ANNA, name: 'Anna', timer: 0, phone: '+306900000001' }], [], [], 100, [
+    { address: '6900000001', text: 'Hi', at: 50, mine: false, unread: 1 },
+  ]);
+  assert.equal(rows.find((r) => r.identity === ANNA)?.unread, 1);
 });
 
 test('nothing of the SMS without access to them, and nothing in hidden chats', () => {

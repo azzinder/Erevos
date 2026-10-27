@@ -1285,8 +1285,8 @@ app**, tap **Make Erevos the SMS app**. The home screen then shows SMS and Erevo
   down to copy, forward or delete it, as in the SMS conversation. They stay in the phone's SMS, never in the
   chat's sealed history; only the conversation with that one number shows, not a group MMS, and only while Erevos
   is the SMS app or may read SMS, never in hidden chats. The latest show first: **Show earlier SMS**, above them,
-  brings more, and the chat's search finds them too. A number on their contact card does the same, without linking
-  it.
+  brings more, and the chat's search finds them too. Opening the chat reads all of theirs, the earlier ones too, so
+  none is left counted on the home screen. A number on their contact card does the same, without linking it.
 - **A plain SMS to them:** when there is no internet, say. **Plain SMS** in the chat's **Details** opens their SMS
   conversation to write it there, and **+** → **Send as SMS**, or **As SMS** when you hold the send arrow, sends
   what you typed as one, after asking. It shows in the chat as an SMS. The phone company can read it. An SMS cannot

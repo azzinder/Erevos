@@ -7,7 +7,7 @@ import { phoneFields } from '../lib/contacts';
 import { forwardTo } from '../lib/forward';
 import { t } from '../lib/i18n';
 import { loadPlace, spacePlace } from '../lib/sealed-contacts';
-import { chatSmsNumber, contactSmsNumber, deletingSms, findSmsConversations, latestSms, numberOwned, SMS_PAGE, smsLineId } from '../lib/sms-chat';
+import { chatSmsNumber, contactSmsNumber, deletingSms, findSmsUnread, latestSms, numberOwned, SMS_PAGE, smsLineId } from '../lib/sms-chat';
 import { onSmsOrderChanged, shownMessages, trashOf } from '../lib/sms-folders';
 import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
@@ -265,6 +265,8 @@ export function useChatSms({ identity, phone, hidden, seen }: { identity: string
   // The phone's conversations with the number, found as the chat opens, and again after one of them
   // may have gone: reading one asked for by its number would start it.
   const found = useRef<{ number: string; addresses: string[] }>({ number: '', addresses: [] });
+  // How many of theirs the phone counts not read in them as they were found, shown or not.
+  const [left, setLeft] = useState({ number: '', unread: 0 });
   const turn = useRef(0);
 
   // Erevos may read SMS, as it is now: looked at again as Erevos comes back, from Android's settings say.
@@ -311,8 +313,12 @@ export function useChatSms({ identity, phone, hidden, seen }: { identity: string
       const reader = { threads: smsThreads, messages: smsMessages };
       let addresses = found.current.number === number ? found.current.addresses : [];
       if (anew || addresses.length === 0) {
-        addresses = await findSmsConversations(number, reader).catch(() => []);
-        if (numberNow.current === number) found.current = { number, addresses };
+        const conversations = await findSmsUnread(number, reader).catch(() => ({ addresses: [] as string[], unread: 0 }));
+        addresses = conversations.addresses;
+        if (numberNow.current === number) {
+          found.current = { number, addresses };
+          setLeft({ number, unread: conversations.unread });
+        }
       }
       const latest = await latestSms(addresses, limit, reader);
       if (now === turn.current && numberNow.current === number) setRead({ number, ...latest });
@@ -371,12 +377,16 @@ export function useChatSms({ identity, phone, hidden, seen }: { identity: string
   const hiddenIds = new Set(going.map((g) => g.item.id));
   const messages = read.number === number && order.number === number ? shownMessages(read.messages, order.trashed).filter((m) => !hiddenIds.has(smsLineId(m))) : [];
 
-  // Theirs not read yet are read once they show, as the SMS screen marks them.
-  const unread = seen && smsStatus()?.isDefault && messages.some((m) => !m.mine && !m.read);
+  // Theirs not read yet are read once the chat shows, as the SMS screen marks them: those that show,
+  // and those that do not, older or in the Trash, which the home screen counts too.
+  const unread = seen && smsStatus()?.isDefault && (messages.some((m) => !m.mine && !m.read) || (left.number === number && left.unread > 0));
   useEffect(() => {
     if (!unread) return;
     void Promise.all(found.current.addresses.map((address) => markSmsRead(address)))
-      .then(() => setRead((now) => ({ ...now, messages: now.messages.map((m) => (m.mine || m.read ? m : { ...m, read: true })) })))
+      .then(() => {
+        setRead((now) => ({ ...now, messages: now.messages.map((m) => (m.mine || m.read ? m : { ...m, read: true })) }));
+        setLeft((now) => ({ ...now, unread: 0 }));
+      })
       .catch(() => undefined);
   }, [unread]);
 

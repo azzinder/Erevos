@@ -10,6 +10,11 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **A contact's SMS no longer stay counted as new**: a contact's chat marked their SMS read only when one
+  not read showed among its messages. One older than the SMS that show, or in the Trash, stayed unread on
+  the phone, and the home screen kept counting it on their row however often the chat was opened. Opening
+  the chat now reads every one of theirs that the phone counts not read, as the SMS screen does.
+
 ## 3.4.2 (2026-10-27)
 
 - **A message sent while a chat opens waits for it**: it shows at once as **Sending…** and goes as soon as the

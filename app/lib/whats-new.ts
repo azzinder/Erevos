@@ -10,7 +10,9 @@ import { mark } from './i18n';
 
 export type WhatsNew = { version: string; items: string[] };
 
-export const NEXT: string[] = [];
+export const NEXT: string[] = [
+  mark('**A contact\'s SMS no longer stay counted as new**: opening their chat reads all of them, the earlier ones too, not only those that show.'),
+];
 
 export const VERSIONS: WhatsNew[] = [
   {

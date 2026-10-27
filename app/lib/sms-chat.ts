@@ -84,6 +84,17 @@ export async function findSmsConversations(number: string, read: Pick<SmsReader,
   return number ? smsConversations(number, await read.threads(CONVERSATIONS)) : [];
 }
 
+/**
+ * As findSmsConversations, with how many of theirs the phone counts not read in them, shown in the
+ * chat or not: one older than the SMS that show, or in the Trash, is counted on the home screen too.
+ */
+export async function findSmsUnread(number: string, read: { threads: (limit: number) => Promise<Pick<SmsThread, 'address' | 'unread'>[]> }): Promise<{ addresses: string[]; unread: number }> {
+  if (!number) return { addresses: [], unread: 0 };
+  const threads = await read.threads(CONVERSATIONS);
+  const addresses = smsConversations(number, threads);
+  return { addresses, unread: threads.reduce((n, th) => n + (addresses.includes(th.address) ? th.unread : 0), 0) };
+}
+
 /** The latest `limit` SMS and MMS of these conversations, oldest first, each once; `more` when
  *  there may be earlier ones. */
 export async function latestSms(addresses: string[], limit: number, read: Pick<SmsReader, 'messages'>): Promise<{ messages: SmsMessage[]; more: boolean }> {

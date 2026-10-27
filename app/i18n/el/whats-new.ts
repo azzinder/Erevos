@@ -6,6 +6,8 @@ export const whatsNew: Record<string, string> = {
   'Not out yet': 'Δεν έχει βγει ακόμη',
   'This version': 'Αυτή η έκδοση',
   // Not out yet.
+  '**A contact\'s SMS no longer stay counted as new**: opening their chat reads all of them, the earlier ones too, not only those that show.':
+    '**Τα SMS μιας επαφής δεν μένουν να μετρούν ως νέα**: όταν ανοίγεις τη συνομιλία της διαβάζονται όλα, και τα παλαιότερα, όχι μόνο όσα φαίνονται.',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Ένα μήνυμα που στέλνεις όσο ανοίγει μια συνομιλία την περιμένει**, με την ένδειξη Αποστολή…, και φεύγει μόλις ανοίξει, χωρίς να λέει ότι το Erevos δεν μπορεί να κρυπτογραφήσει.',
