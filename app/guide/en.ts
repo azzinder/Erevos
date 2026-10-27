@@ -534,6 +534,9 @@ Under each of your messages to a contact, **✓** says the relay or a phone near
 their phone, and **✓✓✓** that they read it. Their phone tells yours, inside the encryption, the next time each looks
 at the relay, or at once when they are nearby. A message counts as read once its chat shows on the screen.
 
+- **Sending…:** the moment you press Send, the phone gives a short buzz, the field empties and the message shows,
+  marked **Sending…** until the relay or their phone takes it. If it cannot go and cannot wait, its words go back in
+  the field.
 - **Waiting:** a message nothing could take, as the relay cannot be reached and their phone is not near, stays in
   the chat marked **Waiting**, and goes by itself, in order, once the relay or their phone nearby can take it, while a
   space is open; then it shows **✓**. A text waits at once. A voice message, photo or file asks first: **Keep it
@@ -1662,10 +1665,12 @@ what the places taken away hold.
    one to open it. The back arrow closes them.
 4. To move another chat into a place, open its **Details**, tap **Move to hidden chats**, type that place's PIN and
    tap **Move**. The
-   chat leaves your list with its messages, name, picture and look, and its safety number stays the same. Their phone
+   chat leaves your list with its messages, name, picture and look, and the chats imported into it, and its safety
+   number stays the same. Their phone
    is told at once to write to the hidden chats from now on; a message they send in that very moment may not come.
 5. To move a chat back among the space's chats, open it in the hidden chats, then its **Details**, tap **Move back to
-   my chats** and **Move**. It goes with its messages, name, picture and look, and its phone is told where to write.
+   my chats** and **Move**. It goes with its messages, name, picture, look and imported chats, and its phone is told
+   where to write.
 
 - **Relay or Nostr only:** hidden chats have their own relay queue and their own keys, and never use the nearby link.
   With no relay, their contact link says where they read on Nostr, with a key of that place alone, and texts go there,
@@ -1844,7 +1849,8 @@ Then:
 1. In Erevos, open **Settings** → **Data and devices** → **Imported chats** and tap **Import a file**, then pick the
    file.
 2. Erevos says what it found, with how many photos and files and how large they are together. Tap your own name, so
-   your messages show on the right, and tap **Keep**. The files come in one after another, and it says how far it is.
+   your messages show on the right, and tap **Keep**. The files come in one after another, and it says how many and
+   what share of them are in. **Cancel** stops it then, and keeps none of them.
 3. Delete the export file from the phone yourself: Erevos keeps its own sealed copy, but the file you saved is not
    sealed.
 
@@ -1883,7 +1889,8 @@ and the list in **Settings** keeps only what has nowhere else to go. Nothing of 
 - **Notices and calls** from the other app are left out, and the chat says how many.
 - **In hidden chats** too: in a hidden chat's **Details**, **Import a chat here** keeps the chat with that place,
   encrypted with its key, and shows it only in that chat, never in **Settings** → **Data and devices** → **Imported
-  chats**; there it can only be deleted.
+  chats**; there it can only be deleted. A chat moved into hidden chats takes the chats imported into it along, kept
+  only in it there, and brings them back if it moves back.
 - **Delete messages** in a chat leaves the imported ones: delete those in the chat's **Details**, under **Imported
   chats**, or in **Settings** → **Data and devices** → **Imported chats**.
 

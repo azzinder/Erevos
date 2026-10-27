@@ -704,7 +704,11 @@ export function Composer({
           )}
           {canSend && !holding ? (
             <Pressable
-              onPress={onSend}
+              onPress={() => {
+                // Felt at once, as the press is taken, before the message shows.
+                buzz();
+                onSend();
+              }}
               onLongPress={sendWays.length > 0 ? openMenu : undefined}
               delayLongPress={350}
               accessibilityRole="button"

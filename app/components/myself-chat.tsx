@@ -150,12 +150,14 @@ export function MyselfChat({ at, onBack }: { at?: NotesAt; onBack?: () => void }
   async function send() {
     const text = draft.text().trim();
     if (!text) return;
+    // Emptied at once, so a second press keeps nothing twice; not kept, the words go back.
+    draft.set('');
     try {
       await writeNote({ text: text.slice(0, MAX_NOTE_TEXT), ...(nextDue !== null ? { due: nextDue } : {}) }, where.current);
-      draft.set('');
       setNextDue(null);
       say(nextDue !== null ? t('Reminds you on {when}.', { when: laterLabel(nextDue) }) : '');
     } catch (error) {
+      if (!draft.text().trim()) draft.set(text);
       say(t('Not kept. {reason}', { reason: errorText(error) }), true);
     }
   }

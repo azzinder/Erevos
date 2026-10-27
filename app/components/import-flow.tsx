@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { FileTooLargeError, fileSize } from '../lib/attachments';
 import { canImport } from '../lib/core';
 import { plural, t } from '../lib/i18n';
-import { exportFiles, keepExportFiles, oneChatOf, openExport, senders, SOURCE_LABELS, toArchived, viberOwner, type OpenedExport } from '../lib/imports';
+import { exportFiles, ImportStoppedError, keepExportFiles, oneChatOf, openExport, senders, SOURCE_LABELS, toArchived, viberOwner, type OpenedExport } from '../lib/imports';
 import { pickSource, TooLargeError, type PickedSource } from '../lib/pick-file';
 import type { Archive } from '../lock/archive';
 import { Button, Card, Chip, Field, Input, Row, Text } from './ui';
@@ -34,6 +34,8 @@ export function useImportFlow(archive: Archive | null, say: (text: string) => vo
   const [me, setMe] = useState('');
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
+  // Cancel pressed while the files come in: they stop, and none of them is kept.
+  const stop = useRef(false);
 
   // The picked file's copy goes once it is kept, or let go of.
   useEffect(() => () => found?.picked.close(), [found]);
@@ -90,8 +92,13 @@ export function useImportFlow(archive: Archive | null, say: (text: string) => vo
     try {
       const opened = one ? oneChatOf(found.opened, chosen) : found.opened;
       const files = exportFiles(opened);
-      if (files.count > 0) setProgress(t('Bringing in the files: {done} of {count}', { done: 0, count: files.count }));
-      const withFiles = await keepExportFiles(opened, (done, count) => setProgress(t('Bringing in the files: {done} of {count}', { done, count })));
+      stop.current = false;
+      if (files.count > 0) setProgress(t('Bringing in the files: {done} of {count}, {percent}%', { done: 0, count: files.count, percent: 0 }));
+      const withFiles = await keepExportFiles(
+        opened,
+        (kept) => setProgress(t('Bringing in the files: {done} of {count}, {percent}%', kept)),
+        () => stop.current,
+      );
       const named = withFiles.length === 1 ? [{ ...withFiles[0], title: title.trim() || withFiles[0].title }] : withFiles;
       const ids = await archive.add(toArchived(named, me));
       await onKept(ids);
@@ -108,14 +115,22 @@ export function useImportFlow(archive: Archive | null, say: (text: string) => vo
       );
       setFound(null);
     } catch (error) {
-      say(t('Not kept. {reason}', { reason: errorText(error) }));
+      if (error instanceof ImportStoppedError) {
+        say(error.message);
+        setFound(null);
+      } else say(t('Not kept. {reason}', { reason: errorText(error) }));
     } finally {
       setProgress('');
       setBusy(false);
     }
   }
 
-  return { found, chosen, choose, me, setMe, title, setTitle, busy, progress, pick, keep, cancel: () => setFound(null), one };
+  function cancel() {
+    if (busy) stop.current = true;
+    else setFound(null);
+  }
+
+  return { found, chosen, choose, me, setMe, title, setTitle, busy, progress, pick, keep, cancel, one };
 }
 
 export type ImportFlow = ReturnType<typeof useImportFlow>;
@@ -163,7 +178,7 @@ export function FoundExport({ flow }: { flow: ImportFlow }) {
       </Row>
       <Row wrap>
         <Button title={t('Keep')} compact loading={flow.busy} onPress={() => void flow.keep()} />
-        <Button title={t('Cancel')} kind="secondary" compact disabled={flow.busy} onPress={flow.cancel} />
+        <Button title={t('Cancel')} kind="secondary" compact onPress={flow.cancel} />
       </Row>
       {flow.progress ? <Text variant="caption">{flow.progress}</Text> : null}
     </Card>

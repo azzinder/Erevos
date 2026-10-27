@@ -212,8 +212,10 @@ import { t, plural, mark, locale, useLang } from '../lib/i18n';
 // waits for that. `mark`: as lock/history.ts keeps it.
 // `at`: when it was sent or came, milliseconds. `voice`: where a voice message's sound is.
 // `file`: where a photo or file is, or where to take it from. `held`: ours sent for later, the
-// relay that holds it till `at`. `quiet`: ours that waits, to go without sound. Its Parts: what
-// else it is or carries (lock/history.ts), such as the message it answers and the reactions to it.
+// relay that holds it till `at`. `quiet`: ours that waits, to go without sound. `sending`: ours
+// shown the moment Send is pressed, on screen only, until what went or waits shows instead. Its
+// Parts: what else it is or carries (lock/history.ts), such as the message it answers and the
+// reactions to it.
 type Message = {
   id: number;
   peer: string;
@@ -229,6 +231,7 @@ type Message = {
   held?: HeldAt;
   heldFor?: string;
   quiet?: boolean;
+  sending?: boolean;
 } & Parts;
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
@@ -304,7 +307,8 @@ const scheduled = (message: Message) => message.mine && (message.mark === WAITIN
 // Under a message to or from a contact: its mark if it is ours, and when it disappears.
 function caption(message: Message): string {
   const parts: string[] = message.starred ? ['★'] : [];
-  if (scheduled(message)) parts.push(t('Scheduled · {when}', { when: laterLabel(message.at) }));
+  if (message.sending) parts.push(t('Sending…'));
+  else if (scheduled(message)) parts.push(t('Scheduled · {when}', { when: laterLabel(message.at) }));
   else if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? t('Waiting') : MARKS[message.mark]);
   if (message.until) parts.push(t('Disappears {when}', { when: disappearsAt(message.until) }));
   else if (message.lasts) parts.push(t('Disappears {time} after it is read', { time: timerLabel(message.lasts) }));
@@ -569,6 +573,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [ringNote, setRingNote] = useState('');
   // Set while a preview is being made, so the words do not go twice.
   const previewing = useRef(false);
+  const editGoing = useRef(false);
   const [directOn, setDirectOn] = useState(true);
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
@@ -2346,11 +2351,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     const waits = history.current?.messages().find((m) => m.peer === message.peer && m.tag === message.tag)?.mark === WAITING;
     if (!waits) {
+      // Send pressed again while the edit is on its way does nothing.
+      if (editGoing.current) return;
+      editGoing.current = true;
       try {
         await sendToContact(relayTarget(), message.peer.slice(CONTACT_PREFIX.length), '', { more: { edit: { tag: message.tag, text } } });
       } catch (error) {
         setNote(t('Not edited. {reason}', { reason: notSentReason(error) }));
         return;
+      } finally {
+        editGoing.current = false;
       }
     }
     const at = Date.now();
@@ -2537,11 +2547,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  // Shows what went, and empties the field when it was what is typed (`typed`).
-  function keep(peer: string, text: string, tag = '', timer = 0, parts: Parts = {}, typed = true) {
-    addMessage(peer, text, true, tag, timer, undefined, undefined, 0, Date.now(), parts);
-    if (typed) draft.set('');
-    setReplying(null);
+  // Shows ours the moment Send is pressed, marked Sending…, on screen only and with no tag, so
+  // nothing acts on it. Returns what takes it away, once what went or waits shows instead.
+  function showSending(peer: string, text: string, parts: Parts): () => void {
+    const id = nextId.current++;
+    const at = Date.now();
+    const message: Message = { id, peer, text, mine: true, tag: '', until: 0, lasts: 0, mark: 0, at, sending: true, ...parts };
+    setMessages((list) => {
+      const later = list.findIndex((m) => m.at > at);
+      return later < 0 ? [...list, message] : [...list.slice(0, later), message, ...list.slice(later)];
+    });
+    return () => setMessages((list) => list.filter((m) => m.id !== id));
   }
 
   // Keeps what is typed, and tells a contact who shows online that this phone is typing to them,
@@ -2935,7 +2951,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     // A copy answers nothing.
     const answer = content?.forwarded ? {} : answering(to);
-    const carried = content ? contentOf(content) : await previewOf(text);
+    // Shown at once, with the field emptied, so a second press has nothing to send again. Not sent,
+    // the words go back in the field.
+    const shown = showSending(to, text, answer);
+    const answered = replying;
+    if (!content) {
+      draft.set('');
+      setReplying(null);
+    }
+    // A preview that cannot be made is left out.
+    const carried = content ? contentOf(content) : await previewOf(text).catch((): Carried => ({}));
     const parts = { ...answer, ...carried };
     const identity = to.slice(CONTACT_PREFIX.length);
     // Kept with the message should it wait, or be owed to their phone, so what of it went meanwhile is the same message.
@@ -2949,14 +2974,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         bare = true;
         return sendToContact(null, identity, text, { ...extra, more: withoutPreview(carried) }, true);
       });
-      keep(to, text, tag, timer, bare ? { ...answer, ...withoutPreview(carried) } : parts, !content);
+      shown();
+      addMessage(to, text, true, tag, timer, undefined, undefined, 0, Date.now(), bare ? { ...answer, ...withoutPreview(carried) } : parts);
       const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(to, contacts));
       const said = timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer) }) : sent;
       setNote(bare ? `${said} ${t('It went without the link’s preview, which is too much for LoRa.')}` : said);
     } catch (error) {
+      shown();
       if (error instanceof OwedError && e2e) {
         const chats = e2e;
-        keep(to, text, sealedAs, lasts || timerOf(to), parts, !content);
+        addMessage(to, text, true, sealedAs, lasts || timerOf(to), undefined, undefined, 0, Date.now(), parts);
         owed.current.add(identity, sealedAs, async () => {
           const sealed = await chats.seal(identity, text, ownQueue?.senderHex ?? '', { ...extra, at: here() });
           return { sealed, packets: [sealed.packet] };
@@ -2965,13 +2992,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return;
       }
       if (!canWait(error)) {
+        if (!content && !draft.text().trim()) {
+          draft.set(text);
+          if (answered) setReplying(answered);
+        }
         setNote(notSent(error));
         return;
       }
       // Nothing could take it now: it waits, and goes by itself (lib/waiting.ts).
       addMessage(to, text, true, sealedAs, lasts || timerOf(to), undefined, undefined, WAITING, Date.now(), { quiet, ...parts });
-      if (!content) draft.set('');
-      setReplying(null);
       const reason = waitingReason(error, to, t('It is too long for LoRa.'));
       setNote(
         hiddenKey
@@ -3972,7 +4001,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           .then(() => sendCopies(e2e, sends))
           .catch(() => undefined);
       }
-      await moveChat(identity, { e2e, history: history.current, archive }, { e2e: hiddenChats, history: hiddenHistory });
+      // Its imported chats go along, into the place's own.
+      const hiddenArchive = await Archive.open(hiddenHolder(pocket), space, key);
+      await moveChat(identity, { e2e, history: history.current, archive }, { e2e: hiddenChats, history: hiddenHistory, archive: hiddenArchive });
       setMessages((list) => list.filter((m) => m.peer !== peer));
       setContacts(e2e.contacts());
       setPinDraft('');
@@ -4024,7 +4055,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           .then(() => sendCopies(e2e, sends))
           .catch(() => undefined);
       }
-      await moveChat(identity, { e2e, history: history.current, archive: null }, { e2e: space.e2e, history: space.history });
+      const here = currentSpace();
+      const spaceArchive = await Archive.open('space', here.space, here.key);
+      await moveChat(identity, { e2e, history: history.current, archive }, { e2e: space.e2e, history: space.history, archive: spaceArchive });
       setMessages((list) => list.filter((m) => m.peer !== peer));
       setContacts(e2e.contacts());
       setOpened(null);

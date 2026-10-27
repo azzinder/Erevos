@@ -14,7 +14,7 @@ import { zipSync } from 'fflate';
 import { bytesSource, readFile, type Source } from '../lib/attachments';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
-import { exportFiles, keepExportFiles, MAX_IMPORTED_FILE, openExport, toArchived } from '../lib/imports';
+import { exportFiles, ImportStoppedError, keepExportFiles, MAX_IMPORTED_FILE, openExport, toArchived } from '../lib/imports';
 import { entrySource, isZip, readEntry, zipEntries, ZipError } from '../lib/zip-source';
 import { Archive } from '../lock/archive';
 import { PREFIX } from '../lock/attachment-files';
@@ -180,8 +180,13 @@ withCore('a WhatsApp zip with its media: the files come in sealed, and go with t
   assert.deepEqual(exportFiles(opened), { count: 2, bytes: 340_000, tooLarge: 0 });
 
   const told: string[] = [];
-  const chats = await keepExportFiles(opened, (done, count) => told.push(`${done}/${count}`));
-  assert.deepEqual(told, ['1/2', '2/2']);
+  const chats = await keepExportFiles(opened, ({ done, count, percent }) => told.push(`${done}/${count} ${percent}%`));
+  // Told chunk by chunk, never going back, until all of it is kept.
+  assert.ok(told.length >= 4);
+  assert.deepEqual(told.at(-1), '2/2 100%');
+  assert.ok(told.includes('1/2 88%'));
+  const percents = told.map((line) => Number(line.split(' ')[1].slice(0, -1)));
+  assert.ok(percents.every((p, i) => i === 0 || p >= percents[i - 1]));
   const key = randomBytes(32);
   const archive = await Archive.open('space', 0, key);
   const [id] = await archive.add(toArchived(chats, 'Nekten'));
@@ -205,6 +210,39 @@ withCore('a WhatsApp zip with its media: the files come in sealed, and go with t
   await archive.link(id, 'ab'.repeat(32));
   assert.deepEqual(archive.linked('ab'.repeat(32)).map((m) => m.files.length), [0, 1, 1, 0]);
   await archive.remove(id);
+  assert.deepEqual([...blobs.keys()].filter((name) => name.startsWith(PREFIX)), []);
+});
+
+withCore('keeping the files lets the screen draw, and stopped, keeps none of them', async () => {
+  const zip = zipSync({
+    'WhatsApp Chat with Μαρία.txt': utf8Encode(WHATSAPP),
+    'IMG-20261017-WA0001.jpg': [sample(2_000_000, 6), { level: 0 }],
+    'PTT-20261017-WA0002.opus': sample(40_000, 4),
+  });
+  const opened = await openExport('WhatsApp Chat with Μαρία.zip', bytesSource(zip), 1000);
+  // Some time after the screen last drew, a timer set now runs before the files are all kept.
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  let drew = false;
+  setTimeout(() => (drew = true), 0);
+  let drewBefore = false;
+  await keepExportFiles(opened, ({ done }) => {
+    if (done === 1) drewBefore ||= drew;
+  });
+  assert.ok(drewBefore);
+  for (const name of [...blobs.keys()]) blobs.delete(name);
+
+  // Stopped once one file is kept: neither it nor any of the next is.
+  let stop = false;
+  await assert.rejects(
+    keepExportFiles(
+      opened,
+      ({ done }) => {
+        if (done === 1) stop = true;
+      },
+      () => stop,
+    ),
+    ImportStoppedError,
+  );
   assert.deepEqual([...blobs.keys()].filter((name) => name.startsWith(PREFIX)), []);
 });
 

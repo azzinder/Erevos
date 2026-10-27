@@ -6,6 +6,12 @@ export const whatsNew: Record<string, string> = {
   'Not out yet': 'Još nije izašla',
   'This version': 'Ova verzija',
   // Not out yet.
+  '**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.':
+    '**Slanje odgovara odmah**: kratka vibracija kad ga pritisneš, polje se isprazni i poruka se pojavi, označena sa Šalje se…, pa nikad ne ode dvaput.',
+  '**The screen no longer stays pushed up** after the keyboard closed behind a sheet, a dialog or another app.':
+    '**Ekran više ne ostaje podignut** nakon što se tastatura zatvorila iza prozorčića, dijaloga ili druge aplikacije.',
+  '**Importing a chat with its photos no longer freezes Erevos**: the screen moves while the files come in, says what share of them is in, and **Cancel** stops it. A chat moved into hidden chats takes the chats imported into it along. See [Imported chats](#import).':
+    '**Uvoz razgovora s njegovim fotografijama više ne zamrzava Erevos**: ekran radi dok datoteke stižu, kaže koliki je dio stigao, a **Otkaži** ga zaustavlja. Razgovor premješten u skrivene razgovore nosi sa sobom razgovore uvezene u njega. Vidi [Uvezeni razgovori](#import).',
   // 3.4.0
   '**Your relay proves its own key**: every connection to it starts with a check only the relay holding that key can pass, so no one in between can pass for it. Once it has, Erevos never reaches it without the check. Your relay needs an update for it.':
     '**Vaš relay dokazuje svoj ključ**: svaka veza s njim počinje provjerom koju može proći samo relay koji ima taj ključ, pa se niko između ne može predstaviti kao on. Kad je jednom prođe, Erevos mu više nikad ne pristupa bez provjere. Za to je vašem relayu potrebno ažuriranje.',

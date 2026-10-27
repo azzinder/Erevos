@@ -158,6 +158,19 @@ export function bytesSource(bytes: Uint8Array): Source {
 
 type Progress = (done: number, count: number) => void;
 
+// When keeping a file last let the screen draw, milliseconds.
+let drawn = 0;
+
+/**
+ * Lets the screen draw and take taps, a few times a second at most: reading, sealing and writing
+ * a file's chunks never wait for anything else, so a large one would hold it still till done.
+ */
+async function letDraw(): Promise<void> {
+  if (Date.now() - drawn < 50) return;
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  drawn = Date.now();
+}
+
 /**
  * Encrypts a file, keeps its chunks here and puts them on our relay (`own`, straight, not through
  * a second relay). Returns where it is kept, and the offer for the contact. If the relay cannot
@@ -212,6 +225,7 @@ export async function keepFile(source: Source, meta: Omit<FileMeta, 'size'>, pro
       const at = n * room(chunk);
       await saveChunk(id, n, sealChunk(key, n, await source.read(at, Math.min(room(chunk), size - at)), chunk));
       progress?.(n + 1, count);
+      await letDraw();
     }
   } catch (error) {
     await deleteChunks(id, count).catch(() => undefined);

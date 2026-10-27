@@ -136,23 +136,41 @@ export function exportFiles(opened: OpenedExport): { count: number; bytes: numbe
 
 const IMAGES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
+/** Keeping an export's files was stopped (keepExportFiles `stopped`): none of them is kept. */
+export class ImportStoppedError extends Error {
+  constructor() {
+    super(t('Stopped. Nothing of it was kept.'));
+  }
+}
+
+/** How far keeping an export's files is: how many of how many are kept, and how much of all of them, in hundredths. */
+export type FilesKept = { done: number; count: number; percent: number };
+
 /**
  * Keeps the files the chats name that the export holds, each sealed in chunks of its own as a
  * message's file is, and gives each message its files (`kept`). One file the export names many
- * times is kept once. `progress` hears how many of how many are kept. If any cannot be kept, none
- * are.
+ * times is kept once. `progress` hears how far it is, chunk by chunk, and once `stopped` says so,
+ * it stops. If any cannot be kept, or it stopped, none are.
  */
-export async function keepExportFiles(opened: OpenedExport, progress?: (done: number, count: number) => void): Promise<ImportedChat[]> {
+export async function keepExportFiles(opened: OpenedExport, progress?: (kept: FilesKept) => void, stopped?: () => boolean): Promise<ImportedChat[]> {
   const { zip } = opened;
   if (!zip) return opened.chats;
   const wanted = [...opened.files.entries()].filter(([, entry]) => entry.size <= MAX_IMPORTED_FILE);
+  const total = Math.max(1, wanted.reduce((sum, [, entry]) => sum + entry.size, 0));
   const kept = new Map<string, FileRef>();
+  let before = 0;
   try {
     for (const [path, entry] of wanted) {
       const name = baseOf(path);
       const mime = mimeOf(name);
-      kept.set(path, await keepFile(await entrySource(zip, entry), { name, mime, kind: IMAGES.has(mime) ? 'photo' : 'file' }, undefined, MAX_IMPORTED_FILE));
-      progress?.(kept.size, wanted.length);
+      const told = (part: number) => {
+        if (stopped?.()) throw new ImportStoppedError();
+        progress?.({ done: kept.size, count: wanted.length, percent: Math.floor(((before + part * entry.size) / total) * 100) });
+      };
+      told(0);
+      kept.set(path, await keepFile(await entrySource(zip, entry), { name, mime, kind: IMAGES.has(mime) ? 'photo' : 'file' }, (done, count) => told(done / count), MAX_IMPORTED_FILE));
+      before += entry.size;
+      progress?.({ done: kept.size, count: wanted.length, percent: Math.floor((before / total) * 100) });
     }
   } catch (error) {
     for (const ref of kept.values()) await deleteChunks(ref.id, ref.count).catch(() => undefined);

@@ -22,6 +22,7 @@ import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { History, newTag } from '../lock/history';
 import { makeChatPin, opensChat } from '../lock/chat-pin';
 import { moveChat } from '../lock/move-chat';
+import { Archive, type ArchivedChat } from '../lock/archive';
 import { hiddenHolder } from '../lock/sealed-file';
 import { files } from './files-memory';
 import { store } from './secure-memory';
@@ -963,6 +964,44 @@ t('a chat moves into the hidden chats whole, with the same safety number, and go
   const answer = await bob.e2e.seal(hello.identity, 'εδώ είμαι', bob.from);
   assert.equal(answer.sender, queue);
   assert.equal(message(await reopened.receive(answer.packet)).text, 'εδώ είμαι');
+});
+
+t('a chat moving into hidden chats takes its imported chats along, and brings them back', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('hidden', 1);
+  const added = await alice.e2e.addContact(bob.code, alice.from);
+  await alice.e2e.firstSent(added.identity);
+  const history = await History.open('space', 0, key);
+  const imported = (title: string): Omit<ArchivedChat, 'id'> => ({ source: 'telegram', title, me: 'Nekten', added: 1, skipped: 0, contact: '', messages: [[1, 'Nekten', title, '']] });
+  const archive = await Archive.open('space', 0, key);
+  const [theirs, other] = await archive.add([imported('ours'), imported('another')]);
+  await archive.link(theirs, added.identity);
+  // The space's imported chats as a screen opened them before the move.
+  const before = await Archive.open('space', 0, key);
+
+  const hiddenKey = randomBytes(32);
+  const holder = hiddenHolder(1);
+  const hidden = { e2e: await E2E.open(holder, 0, hiddenKey), history: await History.open(holder, 0, hiddenKey), archive: await Archive.open(holder, 0, hiddenKey) };
+  await moveChat(added.identity, { e2e: alice.e2e, history, archive }, hidden);
+
+  // There, kept only in its chat; gone from the space, where the other stays.
+  assert.deepEqual(
+    (await Archive.open(holder, 0, hiddenKey)).chats().map((c) => [c.id, c.title, c.contact, c.inChat]),
+    [[theirs, 'ours', added.identity, true]],
+  );
+  assert.deepEqual((await Archive.open('space', 0, key)).chats().map((c) => c.id), [other]);
+  // A change made from what was opened before never puts it back in the space.
+  await before.link(other, '');
+  assert.deepEqual((await Archive.open('space', 0, key)).chats().map((c) => c.id), [other]);
+  assert.deepEqual(before.chats().map((c) => c.id), [other]);
+
+  // Moved back, it comes back with it.
+  await moveChat(added.identity, hidden, { e2e: alice.e2e, history, archive });
+  assert.deepEqual((await Archive.open(holder, 0, hiddenKey)).chats(), []);
+  const back = await Archive.open('space', 0, key);
+  assert.deepEqual(back.linkedChats(added.identity).map((c) => c.id), [theirs]);
+  assert.deepEqual(back.chats().map((c) => c.id).sort(), [theirs, other].sort());
 });
 
 t('a chat locked with a PIN keeps it when saved, in hidden chats, where it asks nothing, and back in the space', async () => {

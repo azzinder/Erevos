@@ -10,7 +10,11 @@ import { mark } from './i18n';
 
 export type WhatsNew = { version: string; items: string[] };
 
-export const NEXT: string[] = [];
+export const NEXT: string[] = [
+  mark('**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.'),
+  mark('**The screen no longer stays pushed up** after the keyboard closed behind a sheet, a dialog or another app.'),
+  mark('**Importing a chat with its photos no longer freezes Erevos**: the screen moves while the files come in, says what share of them is in, and **Cancel** stops it. A chat moved into hidden chats takes the chats imported into it along. See [Imported chats](#import).'),
+];
 
 export const VERSIONS: WhatsNew[] = [
   {

@@ -6,6 +6,7 @@ export const chat: Record<string, string> = {
   'at {time}': 'a las {time}',
   'on {date} {time}': 'el {date} a las {time}',
   'Waiting': 'En espera',
+  'Sending…': 'Enviando…',
   // Send held down (components/later-picker.tsx for the time).
   'Scheduled · {when}': 'Programado · {when}',
   'Sent without sound': 'Enviado sin sonido',

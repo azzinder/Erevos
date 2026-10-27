@@ -6,6 +6,12 @@ export const whatsNew: Record<string, string> = {
   'Not out yet': 'Noch nicht erschienen',
   'This version': 'Diese Version',
   // Not out yet.
+  '**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.':
+    '**Senden reagiert sofort**: ein kurzes Vibrieren beim Tippen, das Feld leert sich und die Nachricht erscheint mit „Wird gesendet…“, sodass sie nie zweimal geht.',
+  '**The screen no longer stays pushed up** after the keyboard closed behind a sheet, a dialog or another app.':
+    '**Der Bildschirm bleibt nicht mehr hochgeschoben**, nachdem sich die Tastatur hinter einem Fenster, einem Dialog oder einer anderen App geschlossen hat.',
+  '**Importing a chat with its photos no longer freezes Erevos**: the screen moves while the files come in, says what share of them is in, and **Cancel** stops it. A chat moved into hidden chats takes the chats imported into it along. See [Imported chats](#import).':
+    '**Einen Chat mit seinen Fotos zu importieren friert Erevos nicht mehr ein**: Der Bildschirm bleibt bedienbar, während die Dateien kommen, zeigt, welcher Anteil schon da ist, und **Abbrechen** hält es an. Ein in versteckte Chats verschobener Chat nimmt die in ihn importierten Chats mit. Siehe [Importierte Chats](#import).',
   // 3.4.0
   '**Your relay proves its own key**: every connection to it starts with a check only the relay holding that key can pass, so no one in between can pass for it. Once it has, Erevos never reaches it without the check. Your relay needs an update for it.':
     '**Dein Relay beweist seinen eigenen Schlüssel**: Jede Verbindung dorthin beginnt mit einer Prüfung, die nur das Relay mit diesem Schlüssel bestehen kann, so kann sich niemand dazwischen als es ausgeben. Hat es sie einmal bestanden, verbindet sich Erevos nie mehr ohne die Prüfung damit. Dein Relay braucht dafür ein Update.',

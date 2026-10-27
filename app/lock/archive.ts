@@ -13,6 +13,10 @@ import { sealedFile, type Holder } from './sealed-file';
 //
 // A chat can go on in Erevos: linked to one of the space's contacts, its messages show in the chat
 // with them, ahead of the new ones. They are still only on this phone, and only to read.
+//
+// Each change is made on what the phone holds then, after any change asked for before: a screen
+// that opened the chats earlier never puts back one that another took out (a chat moved into hidden
+// chats takes its imported chats along, lock/move-chat.ts), nor leaves out one put in meanwhile.
 
 export type Source = 'telegram' | 'whatsapp' | 'viber';
 
@@ -82,21 +86,31 @@ function checked(value: unknown): ArchiveData {
 
 const store = sealedFile({ name: FILE, empty: EMPTY, checked, block: BLOCK });
 
+let changes: Promise<unknown> = Promise.resolve();
+
 /** A chat as the list shows it, without its messages. */
 export type ChatSummary = Omit<ArchivedChat, 'messages'> & { count: number; first: number; last: number };
 
 export class Archive {
   private data: ArchiveData;
+  private readonly load: () => Promise<ArchiveData>;
   private readonly store: (data: ArchiveData) => Promise<void>;
 
-  private constructor(data: ArchiveData, store: (data: ArchiveData) => Promise<void>) {
+  private constructor(data: ArchiveData, load: () => Promise<ArchiveData>, store: (data: ArchiveData) => Promise<void>) {
     this.data = data;
+    this.load = load;
     this.store = store;
   }
 
   /** The chats brought into a space (or its hidden chats, `holder`), sealed with `key`. */
   static async open(holder: Holder, space: number, key: Uint8Array): Promise<Archive> {
-    return new Archive(await store.load(holder, space, key), (data) => store.save(holder, space, key, data));
+    const load = () => store.load(holder, space, key);
+    return new Archive(await load(), load, (data) => store.save(holder, space, key, data));
+  }
+
+  /** Reads the chats again as the phone holds them now. */
+  async reload(): Promise<void> {
+    this.data = await this.load();
   }
 
   /** The chats, newest brought in first. */
@@ -119,9 +133,17 @@ export class Archive {
     return this.data.chats.find((chat) => chat.id === id);
   }
 
-  private save(data: ArchiveData): Promise<void> {
-    this.data = data;
-    return this.store(data);
+  // Changes the chats as the phone holds them now, after any change asked for before.
+  private change(make: (data: ArchiveData) => ArchiveData): Promise<void> {
+    const run = changes
+      .catch(() => undefined)
+      .then(async () => {
+        const data = make(await this.load());
+        this.data = data;
+        await this.store(data);
+      });
+    changes = run;
+    return run;
   }
 
   /**
@@ -156,27 +178,39 @@ export class Archive {
    */
   link(id: string, contact: string, inChat = false): Promise<void> {
     if (contact !== '' && !isIdentity(contact)) return Promise.reject(new Error(t('Not a contact.')));
-    return this.save({
-      chats: this.data.chats.map((chat) => {
+    return this.change((data) => ({
+      chats: data.chats.map((chat) => {
         if (chat.id !== id) return chat;
         const { inChat: _was, ...rest } = chat;
         return { ...rest, contact, ...(inChat && contact ? { inChat: true as const } : {}) };
       }),
-    });
+    }));
   }
 
   /** Keeps chats, each under a new id. Returns the ids. */
   async add(chats: Omit<ArchivedChat, 'id'>[]): Promise<string[]> {
     const added = chats.map((chat) => ({ ...chat, id: toHex(randomBytes(8)) }));
-    await this.save({ chats: [...this.data.chats, ...added] });
+    await this.change((data) => ({ chats: [...data.chats, ...added] }));
     return added.map((chat) => chat.id);
   }
 
   /** Deletes a chat from the phone, with its files. */
   async remove(id: string): Promise<void> {
     const files = new Map<string, number>();
-    for (const [, , , , kept = []] of this.chat(id)?.messages ?? []) for (const ref of kept) files.set(ref.id, ref.count);
-    await this.save({ chats: this.data.chats.filter((chat) => chat.id !== id) });
+    await this.change((data) => {
+      for (const [, , , , kept = []] of data.chats.find((chat) => chat.id === id)?.messages ?? []) for (const ref of kept) files.set(ref.id, ref.count);
+      return { chats: data.chats.filter((chat) => chat.id !== id) };
+    });
     for (const [file, count] of files) await deleteChunks(file, count).catch(() => undefined);
+  }
+
+  /** Puts chats in as they are, under their own ids, in place of any with the same id (lock/move-chat.ts). */
+  putIn(chats: ArchivedChat[]): Promise<void> {
+    return this.change((data) => ({ chats: [...data.chats.filter((chat) => !chats.some((put) => put.id === chat.id)), ...chats] }));
+  }
+
+  /** Takes chats out, leaving their files, which went along with them (lock/move-chat.ts). */
+  takeOut(ids: string[]): Promise<void> {
+    return this.change((data) => ({ chats: data.chats.filter((chat) => !ids.includes(chat.id)) }));
   }
 }

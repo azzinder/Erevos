@@ -10,6 +10,23 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+- **Send answers at once**: pressing it gives a short buzz, empties the field and shows the
+  message at once, marked **Sending…** until the relay or their phone takes it, so a second press
+  has nothing to send twice. If it can neither go nor wait, its words go back in the field. An
+  edit on its way, and a note in Chat with myself, are not sent twice either.
+- **The screen no longer stays pushed up** with no keyboard on it: the keyboard library
+  (react-native-keyboard-controller) is now 1.21.14, which notices a keyboard that closed without
+  its usual animation, behind a sheet, a dialog, the share sheet or another app. 1.21.9 kept its
+  height, and every screen stayed lifted by it.
+- **Importing a chat with its photos no longer freezes Erevos**: reading, sealing and keeping a
+  .zip's files never let the screen draw, so a large Telegram export held the app still until it
+  was done. It now draws and takes taps between chunks, says how many files and what share of
+  them are in, and **Cancel** stops it, keeping none of them.
+- **A chat moved into hidden chats takes its imported chats along**, kept only in its chat there,
+  and brings them back if it moves back. Before, they stayed in the space, linked to no one. A
+  change to the imported chats is now made on what the phone holds then, so a screen opened
+  earlier never puts back one that moved, or drops one that came in meanwhile.
+
 ## 3.4.0 (2026-10-26)
 
 - **Two new sticker sets of 24 moods, as emoji are**: **Tux**, the penguin of Linux as he is
