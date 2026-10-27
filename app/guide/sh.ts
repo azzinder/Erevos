@@ -2292,6 +2292,8 @@ kao što kaže **Obavijest kad izađe nova verzija** ispod. Da ažurirate:
 **Postavke** → **Općenito** → **Šta je novo** (i **Šta je novo** u **Ažuriranja**) ukratko kaže šta je svaka verzija
 promijenila, najnovija prva, samo po svom broju; verzija koju imate kaže **Ova verzija**. Svako izdanje dodaje svoje.
 CHANGELOG izvornog koda opisuje svaku promjenu u cijelosti.
+Svaka verzija, tamo kao i ovdje, prvo kaže šta se mijenja **Za vas**, ono što vidite i koristite, a zatim šta se
+promijenilo **Ispod haube**: ispravke, brzina, baterija i sigurnost iznutra.
 
 ### Obavijest kad izađe nova verzija {#release-notice}
 

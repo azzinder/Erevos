@@ -2520,6 +2520,8 @@ unten sagt. Zum Aktualisieren:
 **Einstellungen** → **Allgemein** → **Was ist neu** (auch **Was ist neu** in **Updates**) sagt kurz, was jede Version
 geändert hat, die neueste zuerst, nur nach ihrer Nummer; die Version, die du hast, sagt **Diese Version**. Jedes
 Release fügt seines hinzu. Das CHANGELOG des Quellcodes nennt jede Änderung vollständig.
+Jede Version sagt, dort wie hier, zuerst, was sich **Für dich** ändert, was du siehst und nutzt, dann, was sich
+**Unter der Haube** geändert hat: Korrekturen, Tempo, Akku und Sicherheit im Inneren.
 
 ### Benachrichtigt, wenn eine neue Version da ist {#release-notice}
 

@@ -2395,6 +2395,8 @@ versione, senza chiedere a GitHub, come spiega **Avvisato quando esce una nuova 
 **Impostazioni** → **Generali** → **Novità** (anche **Novità** in **Aggiornamenti**) dice in breve che cosa ha
 cambiato ogni versione, dalla più recente, con il solo numero; la versione che hai dice **Questa versione**. Ogni
 versione aggiunge la sua. Il CHANGELOG del codice sorgente racconta ogni modifica per intero.
+Ogni versione, lì come qui, dice prima cosa cambia **Per te**, ciò che vedi e usi, poi cosa è cambiato **Sotto il
+cofano**: correzioni, velocità, batteria e sicurezza all’interno.
 
 ### Avvisato quando esce una nuova versione {#release-notice}
 

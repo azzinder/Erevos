@@ -1,6 +1,8 @@
 # Changelog
 
-What each release changed, newest first, for whoever taps **Update**. After 0.1.16 comes 2.0.0.
+What each release changed, newest first, for whoever taps **Update**. Each release lists first what
+changes **for you**, what you see and use, then what changed **under the hood**: fixes, speed, battery
+and security inside. After 0.1.16 comes 2.0.0.
 Until then releases were numbered `0.1.<run of the release workflow>`, so some numbers have none:
 0.1.1 went out only on the private repository, without an Android app, and 0.1.3, 0.1.9, 0.1.13
 and 0.1.15 never came out.
@@ -9,6 +11,18 @@ No release so far has a macOS build. **Not audited.**
 ## Unreleased
 
 On main, not released yet:
+
+### For you
+
+- **The user guide is in every language of the app**: German, Spanish, French, Italian, Portuguese and
+  Serbo-Croatian join Greek and English, with the same parts, and each names the buttons as the app shows them
+  in that language. Until now the guide showed in English in those languages. Android's own call screen and
+  notices still show in English there, and the guide says so.
+- **What's new in two parts**: each version in **What's new**, and each release here, says first what changes
+  **for you**, what you see and use, then what changed **under the hood**: fixes, speed, battery and security
+  inside.
+
+### Under the hood
 
 - **A contact's SMS no longer stay counted as new**: a contact's chat marked their SMS read only when one
   not read showed among its messages. One older than the SMS that show, or in the Trash, stayed unread on
@@ -19,12 +33,15 @@ On main, not released yet:
   with Tor's own English words under it, though the Tor screen says a message never waits for Tor. It now goes
   straight at once, as those after it do for a minute; with **Everything** it still waits for Tor. A Tor
   timeout now says that the relay did not answer in time, in the app's language.
-- **The user guide is in every language of the app**: German, Spanish, French, Italian, Portuguese and
-  Serbo-Croatian join Greek and English, with the same parts, and each names the buttons as the app shows them
-  in that language. Until now the guide showed in English in those languages. Android's own call screen and
-  notices still show in English there, and the guide says so.
 
 ## 3.4.2 (2026-10-27)
+
+### For you
+
+- **The SMS field keeps its width on a small screen**: **Photo** and **Send** beside it are round buttons, as in a
+  chat, not words, which with large letters left the field a narrow column.
+
+### Under the hood
 
 - **A message sent while a chat opens waits for it**: it shows at once as **Sending…** and goes as soon as the
   chat is open, a voice message too. Until now it said **This build cannot encrypt**, as a chat opens only once a
@@ -36,15 +53,18 @@ On main, not released yet:
   Direct or Wi-Fi Aware, so on a Samsung phone both stay off until turned on under **Nearby, with no internet**,
   which has a new **Look with Wi-Fi Aware** switch on every Android phone. Bluetooth and the same Wi-Fi work as
   before.
-- **The SMS field keeps its width on a small screen**: **Photo** and **Send** beside it are round buttons, as in a
-  chat, not words, which with large letters left the field a narrow column.
 
 ## 3.4.1 (2026-10-27)
+
+### For you
 
 - **Send answers at once**: pressing it gives a short buzz, empties the field and shows the
   message at once, marked **Sending…** until the relay or their phone takes it, so a second press
   has nothing to send twice. If it can neither go nor wait, its words go back in the field. An
   edit on its way, and a note in Chat with myself, are not sent twice either.
+
+### Under the hood
+
 - **The screen no longer stays pushed up** with no keyboard on it: the keyboard library
   (react-native-keyboard-controller) is now 1.21.14, which notices a keyboard that closed without
   its usual animation, behind a sheet, a dialog, the share sheet or another app. 1.21.9 kept its
@@ -60,51 +80,21 @@ On main, not released yet:
 
 ## 3.4.0 (2026-10-26)
 
+### For you
+
 - **Two new sticker sets of 24 moods, as emoji are**: **Tux**, the penguin of Linux as he is
   drawn (the CC0 drawing of the logos collection), and **Aikido**, an aikidoka in keikogi and a
   wide pleated hakama (who also bows, sits calm in seiza, holds a bokken and rolls). Both move a
   little, as the other sets do. Stickers can now be drawn in curves too (react-native-svg).
-- **The web app can be built again and checked**: `scripts/reproduce-web.sh <version>` builds a release's web app
-  from its commit and checks that every file comes out the same as the published one, and as what the web server
-  serves (docs/reproducible-builds.md). The published 3.3.2 does, all 78 files. One Rust version for every build
-  (`rust-toolchain.toml`), and no paths of the build machine in the core any more.
-- **The Android app, ready to be checked the same way**: `scripts/reproduce-apk.sh <version>` (and the workflow
-  `reproduce-apk`, by hand) builds a release's APK unsigned and checks it against the published one apart from its
-  signature, as F-Droid does. Not tried yet.
-
-- **The relay proves its own key**: once Erevos knows your relay's key, every connection to it starts with a check that
-  only the relay holding that key can pass, and the token and everything after it go encrypted to that key, inside
-  TLS. So someone in between with a certificate for the relay's name cannot pass for it, and a renewed certificate
-  changes nothing. **How you connect now** says whether your relay proved its key; once it has, the space never reaches
-  it without the check, and **It has a new key** is there for when its operator gave it one. A relay older than this
-  works as before. The same in the web app, on a computer, on Sailfish OS and through Tor. The relay needs updating
-  for it.
 - **Transparency, in the guide**: a new part, **Transparency**, says what the server behind Erevos keeps and for how long
   (messages that wait, files, queues, access lines, push addresses), what it does not keep (no list of connections),
   who else sees something, and that no authority has asked for anything. It goes out inside every release, so each
   release says it again, signed with the release.
-- **One wait at the relay for all of a space's queues** (needs the relay updated): in the background, Erevos waits on
-  the space's queue, its contact link's and its groups' in one wait, where it held one connection for each, and reads
-  them on a path of the relay that needs no token, so the token, which names the phone, is not on those connections.
-  Through Tor, those connections go on circuits of their own. A relay from before this is waited on as before.
 - **What's new, in the app**: **Settings** → **General** → **What's new**, and a button under the version in
   **Updates**, say in short what each version changed, in every language of the app, the newest first, by its number
   alone, with **This version** beside the one installed. Each release adds its own.
-- **Nothing shows behind a chat's PIN**: with glass, a wallpaper or a style that draws its own scene, the messages of a
-  chat or group locked with a PIN could be seen through the PIN screen. Now none of them is drawn until the PIN is
-  typed, and the PIN screen lies on a dense frost over the look's background, which lets nothing through.
 - **A group video call from the top of the group**: a blue camera beside the green handset starts one, as in a
   contact's chat; **Video call** under **⋯** stays. While a call is going on, only its own button shows, to join it.
-- **A relay queue for each contact** (needs the relay updated): each kept contact writes to a queue of their own, said
-  only inside the encrypted messages, so the relay cannot tell from where messages go that two contacts write to the
-  same phone, and deleting or blocking someone deletes only their queue; the own queue moves only when they knew it.
-  The contact link's queue is for first messages. Contacts from before get one in turn, a few at a time, quietly, and
-  an Erevos of theirs from before takes it too. They are read on the relay's path with no token, waited on while the
-  space is open, and through Tor in groups of eight, each on circuits of its own. Hidden chats and linked computers
-  keep one queue for everyone, for now. The web app has a queue for each contact too, without Tor, so it waits on its
-  contacts' queues together from one address; with notifications while closed on, each contact's queue pushes too,
-  all with the browser's one push address, and a push service sees a push for each contact who wrote, 15 seconds
-  apart.
 - **Hidden chats, more like the others**: they close by themselves once Erevos was in the background for more than 30
   seconds, not at once, and never during a call or while a photo or a file is picked for them, so a photo, a file or
   a QR code from a photo now comes to them. While open, a message plays the sound for new messages; in the background
@@ -146,9 +136,46 @@ On main, not released yet:
   .vcf file; and a contact's QR code read from a photo. An Erevos ID typed or read there adds them to the hidden chats,
   never to the space's, and one handed over as they close is added to no other chats. They stay open while a folder is
   picked.
+
+### Under the hood
+
+- **The web app can be built again and checked**: `scripts/reproduce-web.sh <version>` builds a release's web app
+  from its commit and checks that every file comes out the same as the published one, and as what the web server
+  serves (docs/reproducible-builds.md). The published 3.3.2 does, all 78 files. One Rust version for every build
+  (`rust-toolchain.toml`), and no paths of the build machine in the core any more.
+- **The Android app, ready to be checked the same way**: `scripts/reproduce-apk.sh <version>` (and the workflow
+  `reproduce-apk`, by hand) builds a release's APK unsigned and checks it against the published one apart from its
+  signature, as F-Droid does. Not tried yet.
+
+- **The relay proves its own key**: once Erevos knows your relay's key, every connection to it starts with a check that
+  only the relay holding that key can pass, and the token and everything after it go encrypted to that key, inside
+  TLS. So someone in between with a certificate for the relay's name cannot pass for it, and a renewed certificate
+  changes nothing. **How you connect now** says whether your relay proved its key; once it has, the space never reaches
+  it without the check, and **It has a new key** is there for when its operator gave it one. A relay older than this
+  works as before. The same in the web app, on a computer, on Sailfish OS and through Tor. The relay needs updating
+  for it.
+- **One wait at the relay for all of a space's queues** (needs the relay updated): in the background, Erevos waits on
+  the space's queue, its contact link's and its groups' in one wait, where it held one connection for each, and reads
+  them on a path of the relay that needs no token, so the token, which names the phone, is not on those connections.
+  Through Tor, those connections go on circuits of their own. A relay from before this is waited on as before.
+- **Nothing shows behind a chat's PIN**: with glass, a wallpaper or a style that draws its own scene, the messages of a
+  chat or group locked with a PIN could be seen through the PIN screen. Now none of them is drawn until the PIN is
+  typed, and the PIN screen lies on a dense frost over the look's background, which lets nothing through.
+- **A relay queue for each contact** (needs the relay updated): each kept contact writes to a queue of their own, said
+  only inside the encrypted messages, so the relay cannot tell from where messages go that two contacts write to the
+  same phone, and deleting or blocking someone deletes only their queue; the own queue moves only when they knew it.
+  The contact link's queue is for first messages. Contacts from before get one in turn, a few at a time, quietly, and
+  an Erevos of theirs from before takes it too. They are read on the relay's path with no token, waited on while the
+  space is open, and through Tor in groups of eight, each on circuits of its own. Hidden chats and linked computers
+  keep one queue for everyone, for now. The web app has a queue for each contact too, without Tor, so it waits on its
+  contacts' queues together from one address; with notifications while closed on, each contact's queue pushes too,
+  all with the browser's one push address, and a push service sees a push for each contact who wrote, 15 seconds
+  apart.
 - **A deleted or blocked contact's queue goes at once**, not with the next look at the relay.
 
 ## 3.3.2 (2026-10-25)
+
+### For you
 
 - **The plain call button for more contacts**: the orange keypad at the top of a contact's chat now shows also when no
   number is linked to them in Erevos but they are connected to one of your contacts that has one (**Connect to one of
@@ -156,6 +183,8 @@ On main, not released yet:
   contacts had the keypad and others did not.
 
 ## 3.3.1 (2026-10-25)
+
+### For you
 
 - **Viber chats come in**: a Viber chat saved as an .html file by the Android app **Backup Text for Viber** (Viber
   itself exports none) comes in with **Import a file**, in **Settings** → **Data and devices** → **Imported chats** or
@@ -165,9 +194,7 @@ On main, not released yet:
 
 ## 3.3.0 (2026-10-25)
 
-- **An invite by SMS taken more ways**: a link pasted as the address bar can show it, with **/i/#**, is taken as the
-  link itself is; and a web app from before the invite page, which opens itself at that address, takes the invite
-  there too. On an iPhone with iOS 26, the steps to add the web app say that **Share** is under **•••**.
+### For you
 
 - **Invite by SMS, to someone with no Erevos yet**: on Android, the card of a contact who is not in Erevos has **Invite
   by SMS**: an SMS to their number with a short link, written in the SMS app for you to send. The link's page on LPHL's
@@ -176,12 +203,6 @@ On main, not released yet:
   number, with no message request. The invite is after the **#** in the link, which no web server is sent; it is for
   one person, for two days, and an invite to the relay no phone used is taken back once they end. The QR code and
   **Share the invite** stay as they are.
-- **Nostr relays that refuse a Tor exit are tried through another**: some Nostr relays refuse some Tor exits (relay.damus.io
-  answers them with HTTP 403), and some exits cannot reach a relay (nos.lol timed out), while Tor kept using the same
-  exit for minutes, so every try failed again. Now each Nostr relay is reached on Tor circuits of its own, never
-  shared with another, and after a failure the next try goes through another exit. No exit carries what goes to two
-  relays any more, so none can tell it is one phone's. The **Nostr** screen says why a relay failed without the
-  Android words around it.
 - **A handset that looks like one**: the white handset on the green tiles (Phone on the home screen, the call at the top
   of a chat and a group) is drawn as the phone widget draws it, no longer as a ring that looked like a tool.
 - **Begin with no relay, through Nostr**: a phone with no relay, invite or LPHL account taps **Start without a relay**
@@ -189,10 +210,6 @@ On main, not released yet:
   over Tor. With no relay between two phones, texts, stickers, reactions, edits and the marks that a message came or
   was read all go through Nostr, the first message too; a text not said to have come goes again once a day, for two
   weeks. Photos, voice messages, files and calls still need a relay or the other phone nearby.
-- **A relay comes by itself**: a phone with a relay that lets it invite sends a contact with no relay an invite to it,
-  once, inside the chat, whether they first met through Nostr or nearby (Bluetooth, Wi-Fi, a QR code). The other phone
-  takes it by itself and tells its contacts where it reads now. It counts as one of the inviter's invites, and none
-  goes to a message request; one from a request waits until it is accepted.
 - **Told when a new version is out**: on Android, once a day, Erevos asks LPHL's server (which runs the relay too)
   whether a new version is out, and when one is, **Erevos** shows at the top of the chats, pinned, saying **Erevos X is
   out**, with a notice too; tapping either opens **Updates**. It counts only once the release computer has signed the
@@ -205,10 +222,6 @@ On main, not released yet:
   messages** or **Imported chats**. The PIN is kept only as Argon2id of it, and wrong ones make the next try wait.
   Moved into hidden chats, it asks nothing there; moved back, the same PIN asks again. Where the space has a password,
   **Forgot the PIN?** takes it off with that password.
-- **No message held back by a dead connection**: a question to the relay with no answer in time (a wait there its
-  seconds and 30 more, anything else 45 seconds, a part of a file 2 minutes) now counts as failed and is asked again.
-  Before, a connection that died on the way, as when the phone's network slept or changed, could leave Erevos waiting
-  on it for good, receiving nothing in the background until it was opened.
 - **A plain call from a chat**: a contact's chat with their number linked, and an SMS conversation, have an orange
   keypad at the top that opens a keypad with the number typed (Erevos's Phone when it is the phone app, else the phone's
   own), for a call on the mobile network, not encrypted. Not in hidden chats, nor on a computer.
@@ -219,7 +232,30 @@ On main, not released yet:
   internet**, **Blocked contacts** and **For advanced users** (the relay's address, token, second relay and invites)
   stay closed until tapped. **Relay and new contacts** and **Relay settings** are gone.
 
+### Under the hood
+
+- **An invite by SMS taken more ways**: a link pasted as the address bar can show it, with **/i/#**, is taken as the
+  link itself is; and a web app from before the invite page, which opens itself at that address, takes the invite
+  there too. On an iPhone with iOS 26, the steps to add the web app say that **Share** is under **•••**.
+
+- **Nostr relays that refuse a Tor exit are tried through another**: some Nostr relays refuse some Tor exits (relay.damus.io
+  answers them with HTTP 403), and some exits cannot reach a relay (nos.lol timed out), while Tor kept using the same
+  exit for minutes, so every try failed again. Now each Nostr relay is reached on Tor circuits of its own, never
+  shared with another, and after a failure the next try goes through another exit. No exit carries what goes to two
+  relays any more, so none can tell it is one phone's. The **Nostr** screen says why a relay failed without the
+  Android words around it.
+- **A relay comes by itself**: a phone with a relay that lets it invite sends a contact with no relay an invite to it,
+  once, inside the chat, whether they first met through Nostr or nearby (Bluetooth, Wi-Fi, a QR code). The other phone
+  takes it by itself and tells its contacts where it reads now. It counts as one of the inviter's invites, and none
+  goes to a message request; one from a request waits until it is accepted.
+- **No message held back by a dead connection**: a question to the relay with no answer in time (a wait there its
+  seconds and 30 more, anything else 45 seconds, a part of a file 2 minutes) now counts as failed and is asked again.
+  Before, a connection that died on the way, as when the phone's network slept or changed, could leave Erevos waiting
+  on it for good, receiving nothing in the background until it was opened.
+
 ## 3.2.1 (2026-10-25)
+
+### For you
 
 - **Edit a message you sent**: hold one of your messages, then **Edit**, up to a day after you sent it. Its words go
   in the field under **Edit message**; change them and send. Both phones show the new words with **Edited** beside the
@@ -234,6 +270,8 @@ On main, not released yet:
   a green tile with a white handset, as **Phone** is on the home screen; a group's call is the green tile too.
 
 ## 3.2.0 (2026-10-25)
+
+### For you
 
 - **Arrows to a chat's start and end**: scrolled up a little, a chat, a group and an SMS conversation show two round
   arrows at the lower right. The upper one goes to the very start (a long chat is then drawn from its first messages,
@@ -288,6 +326,8 @@ On main, not released yet:
 
 ## 3.1.2 (2026-10-25)
 
+### For you
+
 - **Settings, in groups**: the home screen's **⋯** keeps only the places (**New group**, **Public groups**,
   **Starred messages**, **Nearby phones**, **Contacts**, **Phone**, **User guide**) and, last, **Settings**, named in
   English too in the other languages. Settings has a search at the top that finds a setting by its words and says
@@ -301,6 +341,8 @@ On main, not released yet:
   sent you to the menu now give the way through Settings.
 
 ## 3.1.1 (2026-10-24)
+
+### Under the hood
 
 - **Check for updates says what stopped an update** (Android): that the web app's server, which holds the release
   computer's signature, could not be reached (with the reason), that the release computer has not signed the new
@@ -319,6 +361,29 @@ On main, not released yet:
 
 ## 3.1.0 (2026-10-24)
 
+### For you
+
+- **Hidden chats open from New chat too**: hold **New chat** down for a second and a half, type the PIN and tap
+  **Open**. It shows the same in every space, and a wrong PIN only closes it, as a search that finds nothing.
+- **Search contacts in the Phone** (Android): a search at the top finds a contact by name or number, in the phone's
+  contacts and, with Erevos unlocked, in those kept only in Erevos and your Erevos contacts, never in hidden chats.
+  Tap a number to call it, or hold it down to put it on the keypad.
+- **New chat shows how to add a contact first**: the relay's own settings (its address, token, second relay, invites
+  and queue) are closed under **Relay settings** until you tap it; your contact link, its QR code and adding a contact
+  show at once, as before. **Hide relay** is now **Hide relay and new contacts**.
+- **Share to Erevos from other apps** (Android): Erevos is now in other apps' **Share**, such as the browser's for a
+  link. **Send to** lists your chats, groups and SMS conversations, recent ones first, with a search, never hidden
+  chats. Words and links open in the message field of the one you pick, to read and send there; a photo or file goes
+  as soon as that chat or group opens. Before, Erevos took only SMS links from other apps.
+- **Every new message sounds, also while Erevos shows** (Android): the notice that says how many messages came now
+  sounds for each message, not only the first, and shows while you use Erevos too. In the chat or group you have open
+  only the sound plays, and opening a chat takes what came there off the count. Typing, and that a message came or
+  was read, still make none, nor does a message sent without sound. Hidden chats that say when a message comes say so
+  at once too, unless that place is open. **Say a message came** or **No notice** now shows with **Only while Erevos
+  shows** as well.
+
+### Under the hood
+
 - **Less battery in the background** (Android): Erevos waits at the relay a minute at a time, also for what comes to
   your contact link and your public groups, and asks nothing more when nothing came, where before it asked about
   ten times a minute. Tor sends the reduced padding Tor made for phones (every 9 to 14 seconds, none to the phone).
@@ -333,31 +398,15 @@ On main, not released yet:
   when Android closes Erevos in the background and starts it anew, nor do the ones you read while the hidden chats
   were open once they close. A text to hidden chats whose bell their relay did not take (Nostr) is now counted when
   it goes through the relay five minutes later, where before it made no notice at all.
-- **Hidden chats open from New chat too**: hold **New chat** down for a second and a half, type the PIN and tap
-  **Open**. It shows the same in every space, and a wrong PIN only closes it, as a search that finds nothing.
-- **Search contacts in the Phone** (Android): a search at the top finds a contact by name or number, in the phone's
-  contacts and, with Erevos unlocked, in those kept only in Erevos and your Erevos contacts, never in hidden chats.
-  Tap a number to call it, or hold it down to put it on the keypad.
-- **New chat shows how to add a contact first**: the relay's own settings (its address, token, second relay, invites
-  and queue) are closed under **Relay settings** until you tap it; your contact link, its QR code and adding a contact
-  show at once, as before. **Hide relay** is now **Hide relay and new contacts**.
 - **A call shows over the screen saver** (Android): while the phone showed its screen saver (as while charging), a
   call rang but its screen did not show. Now the call notice shows then too, also with Erevos open under it, and the
   screen wakes, which ends the screen saver; so does a screen that is off.
-- **Share to Erevos from other apps** (Android): Erevos is now in other apps' **Share**, such as the browser's for a
-  link. **Send to** lists your chats, groups and SMS conversations, recent ones first, with a search, never hidden
-  chats. Words and links open in the message field of the one you pick, to read and send there; a photo or file goes
-  as soon as that chat or group opens. Before, Erevos took only SMS links from other apps.
-- **Every new message sounds, also while Erevos shows** (Android): the notice that says how many messages came now
-  sounds for each message, not only the first, and shows while you use Erevos too. In the chat or group you have open
-  only the sound plays, and opening a chat takes what came there off the count. Typing, and that a message came or
-  was read, still make none, nor does a message sent without sound. Hidden chats that say when a message comes say so
-  at once too, unless that place is open. **Say a message came** or **No notice** now shows with **Only while Erevos
-  shows** as well.
 - **SMS settings say how the list works now**: an SMS conversation is pinned, archived, marked as spam, blocked or
   deleted by holding it down, as a swipe to the side goes to the tab beside; they still said to swipe it.
 
 ## 3.0.0 (2026-10-24)
+
+### For you
 
 - **Each launcher icon opens what it names** (Android): **Erevos**'s own icon opens its chats (the **Erevos** tab),
   or leaves the chat you had open, instead of whatever Erevos showed last, such as the SMS after SMS's icon or the
@@ -386,6 +435,8 @@ On main, not released yet:
 
 ## 2.0.3 (2026-10-23)
 
+### For you
+
 - **One invite for everything**: **Invite someone**, in the chats, makes one QR code or link for
   someone new, for one person and 7 days. Their phone scans or opens it in Erevos and taps
   **Join**: it gets access of its own to your relay and a queue there, typing nothing, and you are
@@ -405,6 +456,14 @@ On main, not released yet:
   Cats, Dinosaurs, Monsters, Robots, Love, Greece, Sports, Music, On the move, Flowers and plants,
   and Fruit and veg. All but Words and Treats move. As before each phone draws them and only a
   sticker's name travels, so an Erevos from before shows a new one's emoji.
+- **Copy code** for one-time codes (Android, SMS): an SMS that says it holds a code, in any of
+  the app's languages, gets **Copy code** under it in the chat and on its notice, which does not
+  show the code (and on Android 12 and later asks to unlock first). Only the code's digits are
+  copied, marked sensitive so Android shows no preview; a phone number, an amount, a date or a
+  time is never taken for one.
+
+### Under the hood
+
 - **Chats are lighter on older phones**: typing redraws only the message bar, not the whole chat
   with its thread; a message of the thread draws again only when it changes (a voice message
   playing redraws its own line, once a second); a long chat opens at its latest 100 messages, with
@@ -418,11 +477,6 @@ On main, not released yet:
   the time, instead of a view for each stretch of modules (about 11,000 for a contact's code) and a
   slow search for its mask. It looks and scans the same, and letters beyond English go into it as
   UTF-8.
-- **Copy code** for one-time codes (Android, SMS): an SMS that says it holds a code, in any of
-  the app's languages, gets **Copy code** under it in the chat and on its notice, which does not
-  show the code (and on Android 12 and later asks to unlock first). Only the code's digits are
-  copied, marked sensitive so Android shows no preview; a phone number, an amount, a date or a
-  time is never taken for one.
 - **Locked, Erevos still receives** (password lock): when it locks, after 30 seconds away or with
   **Lock now**, the password screen comes in front of the open space, which goes on behind it, so
   messages and calls still come, with their notices, and a call shows over the password screen.
@@ -458,13 +512,20 @@ On main, not released yet:
 
 ## 2.0.2 (2026-10-23)
 
-- **Swipes on tabs only change the tab**: on a screen with tabs a sideways swipe always moves between
-  them; past the first or last tab it gives a little and comes back, instead of going back a screen.
-  SMS conversations in the home list no longer swipe to archive or delete: hold one down for both.
+### For you
+
 - **Launcher icons fill the launcher's shape** (Android 8 and later), as FASOULI's do, in every colour,
   instead of a small square inside a pale tile.
 
+### Under the hood
+
+- **Swipes on tabs only change the tab**: on a screen with tabs a sideways swipe always moves between
+  them; past the first or last tab it gives a little and comes back, instead of going back a screen.
+  SMS conversations in the home list no longer swipe to archive or delete: hold one down for both.
+
 ## 2.0.1 (2026-10-23)
+
+### For you
 
 - **Launcher icons of their own colour** (Android): Erevos red, Phone green, SMS blue and Contacts
   violet, so they can be told apart at a glance. **SMS** is a new icon of its own, which opens the SMS
@@ -483,40 +544,7 @@ On main, not released yet:
 
 ## 2.0.0 (2026-10-22)
 
-- **An update of the phone's WebView no longer closes Erevos** while it receives in the
-  background, which took its notice away and with it calls and messages until you opened it. Erevos
-  keeps no cookies, so its relay connections no longer load the WebView (and hold less memory).
-  When Android closes Erevos all the same while it receives, for memory say, a quiet notice says so
-  from then on: open Erevos and the space to receive again.
-- **Deleting or blocking a contact gives you a new relay queue**: **Delete contact** and **Block
-  contact** in a chat's details forget them and their chat, and Erevos makes a new queue at once,
-  which your other contacts are told quietly, in a message with nothing in it, and again 7, 14 and
-  21 days later while they have not written there; what they wrote to the old one still shows for 14
-  days. The one deleted is not told and nothing they send there shows; your contact link stays, so
-  they can still ask to talk again, unless blocked: then what they send is dropped, a request too,
-  until **Unblock** under **Blocked contacts**, and adding them again from their link asks you to
-  unblock them first; nothing else adds them, neither their answer to an invite by SMS nor their
-  contact link in a group. **Block** sits beside **Refuse** on a request, and moves your queue only
-  while your link still names it, as a request knows only your link. The note says in how many of
-  your groups they still are. What you scheduled for them is taken back from the relay, at once or
-  as soon as it answers, and what you scheduled for a contact whose queue moved is held again for
-  their new one. When junk fills your queue it moves the same way, at most once a day, and junk on
-  the queue your link names gives you a new link, as **New contact link** under **Relay and new
-  contacts** does: the old links and QR codes work 14 days more; when the relay has lost that queue,
-  the new link comes the same way, and the old ones stop at once. Your groups and public groups each
-  say a queue of their own from now on, so a member no longer learns the one in your link, and a
-  group admin says it with new keys, which members take only if it is still the same admin. On a
-  linked computer, deleting or blocking goes to the phone, which moves the places of its list and
-  asks the computer to move its own, and tells the computer who is blocked: adding them there from
-  their link asks to unblock them as the phone does, and **Unblock** unblocks them on the phone too.
-  A backup put back, one from before this version too, says a newer queue than any your contacts
-  hold, and each is told it, so none keeps writing to a queue you no longer read. A flood of
-  made-up requests counts as junk, while a batch of real ones still comes. In hidden chats only
-  that place moves, its ring queue at once, as it does after three rings within a day that brought
-  no call within two minutes of your answer, and its contacts learn the new one as they learn a
-  moved queue. A linked computer never rings a contact's ring queue itself, so a call from it rings
-  their closed hidden chats only once they are open, as the phone does not pass it on to that
-  queue.
+### For you
 
 - **A new Erevos contact can take the name of one of your contacts**: adding someone by their
   Erevos ID, from a scanned link (**Add and connect to one of my contacts**) or under **Relay and
@@ -598,6 +626,151 @@ On main, not released yet:
   show more than one space. An iPhone keeps every notice, so the older ones are closed once the new
   one shows (an iPhone keeps those less than 30 seconds old).
 
+- **Hidden chats can ring their contacts' calls while closed** (**Ring calls when closed**,
+  Android): turned on at the top of a place, a call from one of its contacts then makes the phone
+  ring and show "Incoming call" with no name, as the other chats do, though the place is shut and
+  Erevos is in the background. On the ringing screen a small, discreet sign opens a PIN field; the
+  right PIN opens the place and answers, a plain Answer cannot connect, and Decline stops the ring
+  (about 45 seconds). Like the message notice it needs **Receive and ring** and a relay that waits,
+  and the space keeps a ring queue for each of its 4 places, those not ringing made for nothing on
+  the same relay, so opening the space gives nothing away; the relay is asked only whether a ring
+  waits there, never what, and a caller sends only random bytes of a call's size, never opened. The
+  call's own offer waits on the chat's message queue until the PIN opens it. A contact you deleted
+  can still make it ring but never connect; a call from a linked computer rings only while the
+  hidden chats are open. Backups do not keep it.
+
+- **A new chat screen**: one bar at the top with the contact's picture and name, whether they are
+  online, nearby or typing, and buttons for a video and a voice call, with ⋯ (⋮ on Android) set
+  apart for the chat's details. Under the messages, one floating bar: **+** opens, where the
+  keyboard was, what to send (photo, camera, file, sticker, location, poll) and how the next message
+  goes (disappearing, Talkie, send later, and as an SMS for a contact with a number); the smiley
+  opens the stickers, the stopwatch makes the next message disappear, and the microphone, held,
+  records a voice message. Slide left to drop it; under a second sends nothing, and TalkBack starts
+  and stops it with a tap. With something typed it is the send arrow, which held sends without
+  sound, later, disappearing or as an SMS. A disappearing message can now be a voice message (a
+  walkie-talkie one too), photo, file, sticker, place or poll, sent now or later. Groups have the
+  same bars, with their video call under ⋯. Switches show their knob when off on dark glass, and a
+  light color of your own takes dark text on its buttons in the dark too.
+
+- **Add a contact from a photo of their QR code**: under the contact link field in **Relay and new
+  contacts**, **Take a photo of the QR code** and **Choose a photo of the QR code** read it and add
+  them at once (not in hidden chats, which a photo would close). The computer app, the web app and
+  the Sailfish OS app read QR codes from a photo now too, with **Choose a photo of the QR code**,
+  which on an iPhone offers the camera as well; until now they could not. There, photos sent at a
+  smaller size, contacts' pictures, your own stickers and wallpapers now also work in older browsers
+  (an older Safari, Sailfish OS), which refused them. A button's long label goes on two lines on a
+  narrow phone instead of out of the screen.
+
+- **The Phone screen fits a small phone**: on a short screen (360×640 to 360×800) the keypad no
+  longer runs up over the tabs and the "Erevos is not the phone app" card. That card shows only its
+  title there, with a > that opens the phone settings; the keys, the number and Call shrink to what
+  is left, down to 70%, and scroll past that. The title stays on one line, the three tabs share one
+  row, and "Type a phone number." goes as soon as one is typed.
+
+- **Add as contact in a group**: in a group's members list (**⋯**), **Add as contact** under a
+  member who is not your contact asks them, in a message only they get, for their contact link, and
+  gives them yours. On their phone the ask shows once, at the top of the group, to **Send** or
+  **Don’t**; once they send it you are each other's contacts, with a chat of your own and no message
+  request on either side. Don't, or no answer, tells you nothing, and after a week you can ask
+  again. A member who is your contact already is never changed by it, and nothing of it reaches
+  hidden chats: once you are each other's contacts, in any group or by a contact link, what was
+  asked in your other groups goes, so nothing left over adds them again after their chat is deleted
+  or moved into hidden chats. A member taken out of the group asks nothing more, and when two
+  members show the same key no contact link goes to either or is taken from either. **Name** under a
+  contact who has no name yet gives them one, on a linked device too. Not in public groups, and
+  asking is for the phone that holds the account; an Erevos from before drops the ask. An admin now
+  adds a contact only by a key package that is theirs: one that says it is someone else does not
+  join. A phone joins a group only when its admin is the contact who asked it in.
+
+- **Stickers in sets, that move, and your own**: 48 built-in stickers in five sets (Moons, Animals,
+  Celebrations, Words and Treats). The moons, animals and celebrations move a little for a few
+  seconds as they come and when tapped, then rest, and stay still with the phone's reduce motion
+  setting; the words show in the app's language. Each phone draws them, and only a sticker's name
+  travels. **Mine** holds stickers made from a photo: cut square, 512 by 512 and about 100 KB at
+  most, with nothing but the picture, kept sealed in the space or the hidden chats they were made
+  in, up to 100. They go end-to-end encrypted as photos do, marked as stickers, in chats and
+  groups; an Erevos from before shows them as photos. **Add to my stickers** keeps one you were sent.
+
+- **SMS in the Erevos chat**: with a contact whose number is linked to them, or is on their contact
+  card, the chat shows the SMS and MMS with that number among its messages, by time, each edged and
+  marked SMS (not encrypted), with its ✓ marks and photos. They are read from the phone's SMS,
+  never kept in the chat's history; held down, one is copied, forwarded or deleted as in the SMS
+  conversation, and the chat's search finds them. Only the conversation with that one number, only
+  while Erevos is the SMS app or may read SMS, and never in hidden chats; the latest 50 first, and
+  **Show earlier SMS** for more. New ones show as they come, also while another app is the SMS
+  app: the chat and the SMS conversation hear when Android's SMS store changes, and read it again
+  as Erevos comes back.
+  **Plain SMS** in the chat's details opens the SMS conversation itself, to write one there, and
+  **+** → **Send as SMS** (or **As SMS**, holding the send arrow) sends what is typed as a plain
+  SMS, naming the SIM when there are two, and saying so first when the message was to disappear
+  or to answer one, which an SMS cannot. Before, once a number was linked, its SMS could no longer be reached from the chat. The
+  home screen's **Erevos** list keeps a contact whose last message was an SMS, which it used to
+  drop. No hidden SMS invite goes to an Erevos contact's number any more, linked or on their
+  contact card.
+
+- **An F-Droid build** (`EREVOS_DISTRIBUTION=fdroid`): F-Droid updates it, so its Updates screen
+  says so and has no Check for updates, and it may not install packages. The release APK keeps
+  both. No build's manifest names Google Play services any more: expo-image-picker's hint to
+  Google Play, to install its photo picker on Android 10 and older, is left out.
+
+- **Permissions** (Android, menu → Permissions): what Android lets Erevos do for calls and messages
+  in the background (notices, the call notice, calls over the lock screen, battery saving, Data
+  Saver, the microphone) and for other things (camera, phones nearby, contacts, exact times), each
+  with why and a button for Android's own question or setting. On Huawei, Honor, Xiaomi, OPPO,
+  realme, OnePlus, vivo, Samsung and ASUS it also says where the maker's own background setting is,
+  and opens it. After each new version, and the first time, it opens by itself when calls need
+  something. Also under Lock and second password → In the background → All permissions.
+
+- **Serbo-Croatian** (Srpskohrvatski): the whole app, in Latin letters and ijekavian, in words
+  understood alike in Croatia, Bosnia and Herzegovina, Montenegro and Serbia. A phone in Serbian,
+  Croatian, Bosnian or Montenegrin starts in it. A count takes the form its last digits ask for
+  (1 kontakt, 2 kontakta, 5 kontakata, 21 kontakt), and dates are written as in Bosnia unless the
+  phone itself writes Croatian, Bosnian or Serbian in Latin letters. The user guide shows in
+  English, and Android's notices too, as in the other languages besides Greek.
+
+- **Version numbers**: the next release is 2.0.0, and each one after it the next number (2.0.1,
+  2.0.2…) unless it is given one when started (Actions, release, Run workflow, version). Every
+  release still has its own build number, the run's, so Android installs it over the one before.
+  Updates → Check for updates in 0.1.16 and before offers 2.0.0 as **0.1.<build>** (the only kind
+  of number they read); it is 2.0.0 all the same, and shows as 2.0.0 once installed.
+
+### Under the hood
+
+- **An update of the phone's WebView no longer closes Erevos** while it receives in the
+  background, which took its notice away and with it calls and messages until you opened it. Erevos
+  keeps no cookies, so its relay connections no longer load the WebView (and hold less memory).
+  When Android closes Erevos all the same while it receives, for memory say, a quiet notice says so
+  from then on: open Erevos and the space to receive again.
+- **Deleting or blocking a contact gives you a new relay queue**: **Delete contact** and **Block
+  contact** in a chat's details forget them and their chat, and Erevos makes a new queue at once,
+  which your other contacts are told quietly, in a message with nothing in it, and again 7, 14 and
+  21 days later while they have not written there; what they wrote to the old one still shows for 14
+  days. The one deleted is not told and nothing they send there shows; your contact link stays, so
+  they can still ask to talk again, unless blocked: then what they send is dropped, a request too,
+  until **Unblock** under **Blocked contacts**, and adding them again from their link asks you to
+  unblock them first; nothing else adds them, neither their answer to an invite by SMS nor their
+  contact link in a group. **Block** sits beside **Refuse** on a request, and moves your queue only
+  while your link still names it, as a request knows only your link. The note says in how many of
+  your groups they still are. What you scheduled for them is taken back from the relay, at once or
+  as soon as it answers, and what you scheduled for a contact whose queue moved is held again for
+  their new one. When junk fills your queue it moves the same way, at most once a day, and junk on
+  the queue your link names gives you a new link, as **New contact link** under **Relay and new
+  contacts** does: the old links and QR codes work 14 days more; when the relay has lost that queue,
+  the new link comes the same way, and the old ones stop at once. Your groups and public groups each
+  say a queue of their own from now on, so a member no longer learns the one in your link, and a
+  group admin says it with new keys, which members take only if it is still the same admin. On a
+  linked computer, deleting or blocking goes to the phone, which moves the places of its list and
+  asks the computer to move its own, and tells the computer who is blocked: adding them there from
+  their link asks to unblock them as the phone does, and **Unblock** unblocks them on the phone too.
+  A backup put back, one from before this version too, says a newer queue than any your contacts
+  hold, and each is told it, so none keeps writing to a queue you no longer read. A flood of
+  made-up requests counts as junk, while a batch of real ones still comes. In hidden chats only
+  that place moves, its ring queue at once, as it does after three rings within a day that brought
+  no call within two minutes of your answer, and its contacts learn the new one as they learn a
+  moved queue. A linked computer never rings a contact's ring queue itself, so a call from it rings
+  their closed hidden chats only once they are open, as the phone does not pass it on to that
+  queue.
+
 - Each send now tells the relay what it carries: a message someone reads (a text, a voice message
   in its parts, a photo or file, a sticker, place or poll, a group's message), or word between
   phones (that it came or was read, typing, reactions, new keys, a group's own changes, what goes
@@ -612,19 +785,6 @@ On main, not released yet:
   when it goes after the update, so it still pushes. So a relay that counts can say in a closed web
   app's push how many messages came (above). The relay sees these marks on every system,
   notifications on or not: which packets are messages, and when a call starts.
-
-- **Hidden chats can ring their contacts' calls while closed** (**Ring calls when closed**,
-  Android): turned on at the top of a place, a call from one of its contacts then makes the phone
-  ring and show "Incoming call" with no name, as the other chats do, though the place is shut and
-  Erevos is in the background. On the ringing screen a small, discreet sign opens a PIN field; the
-  right PIN opens the place and answers, a plain Answer cannot connect, and Decline stops the ring
-  (about 45 seconds). Like the message notice it needs **Receive and ring** and a relay that waits,
-  and the space keeps a ring queue for each of its 4 places, those not ringing made for nothing on
-  the same relay, so opening the space gives nothing away; the relay is asked only whether a ring
-  waits there, never what, and a caller sends only random bytes of a call's size, never opened. The
-  call's own offer waits on the chat's message queue until the PIN opens it. A contact you deleted
-  can still make it ring but never connect; a call from a linked computer rings only while the
-  hidden chats are open. Backups do not keep it.
 
 - **Newer keys every month**: each chat's account makes new prekeys (X25519 and ML-KEM-768) every
   30 days and gives them to its contacts inside their chats, whose Erevos starts a new conversation
@@ -674,79 +834,10 @@ On main, not released yet:
   web app's notice to count; the phone passes a contact's message on quiet to a computer they wrote
   it to as well.
 
-- **A new chat screen**: one bar at the top with the contact's picture and name, whether they are
-  online, nearby or typing, and buttons for a video and a voice call, with ⋯ (⋮ on Android) set
-  apart for the chat's details. Under the messages, one floating bar: **+** opens, where the
-  keyboard was, what to send (photo, camera, file, sticker, location, poll) and how the next message
-  goes (disappearing, Talkie, send later, and as an SMS for a contact with a number); the smiley
-  opens the stickers, the stopwatch makes the next message disappear, and the microphone, held,
-  records a voice message. Slide left to drop it; under a second sends nothing, and TalkBack starts
-  and stops it with a tap. With something typed it is the send arrow, which held sends without
-  sound, later, disappearing or as an SMS. A disappearing message can now be a voice message (a
-  walkie-talkie one too), photo, file, sticker, place or poll, sent now or later. Groups have the
-  same bars, with their video call under ⋯. Switches show their knob when off on dark glass, and a
-  light color of your own takes dark text on its buttons in the dark too.
-
-- **Add a contact from a photo of their QR code**: under the contact link field in **Relay and new
-  contacts**, **Take a photo of the QR code** and **Choose a photo of the QR code** read it and add
-  them at once (not in hidden chats, which a photo would close). The computer app, the web app and
-  the Sailfish OS app read QR codes from a photo now too, with **Choose a photo of the QR code**,
-  which on an iPhone offers the camera as well; until now they could not. There, photos sent at a
-  smaller size, contacts' pictures, your own stickers and wallpapers now also work in older browsers
-  (an older Safari, Sailfish OS), which refused them. A button's long label goes on two lines on a
-  narrow phone instead of out of the screen.
-
-- **The Phone screen fits a small phone**: on a short screen (360×640 to 360×800) the keypad no
-  longer runs up over the tabs and the "Erevos is not the phone app" card. That card shows only its
-  title there, with a > that opens the phone settings; the keys, the number and Call shrink to what
-  is left, down to 70%, and scroll past that. The title stays on one line, the three tabs share one
-  row, and "Type a phone number." goes as soon as one is typed.
-
-- **Add as contact in a group**: in a group's members list (**⋯**), **Add as contact** under a
-  member who is not your contact asks them, in a message only they get, for their contact link, and
-  gives them yours. On their phone the ask shows once, at the top of the group, to **Send** or
-  **Don’t**; once they send it you are each other's contacts, with a chat of your own and no message
-  request on either side. Don't, or no answer, tells you nothing, and after a week you can ask
-  again. A member who is your contact already is never changed by it, and nothing of it reaches
-  hidden chats: once you are each other's contacts, in any group or by a contact link, what was
-  asked in your other groups goes, so nothing left over adds them again after their chat is deleted
-  or moved into hidden chats. A member taken out of the group asks nothing more, and when two
-  members show the same key no contact link goes to either or is taken from either. **Name** under a
-  contact who has no name yet gives them one, on a linked device too. Not in public groups, and
-  asking is for the phone that holds the account; an Erevos from before drops the ask. An admin now
-  adds a contact only by a key package that is theirs: one that says it is someone else does not
-  join. A phone joins a group only when its admin is the contact who asked it in.
-
 - **Group keys made new every week**: in every group, private or public, the admin's phone makes
   its own keys new, and each member's phone asks the admin to put it in anew with new ones. So keys
   taken from a phone once stop reading the group within a week. Members see no one leave or join.
   An admin on 0.1.16 and before does not do it, and its members stay as before.
-
-- **Stickers in sets, that move, and your own**: 48 built-in stickers in five sets (Moons, Animals,
-  Celebrations, Words and Treats). The moons, animals and celebrations move a little for a few
-  seconds as they come and when tapped, then rest, and stay still with the phone's reduce motion
-  setting; the words show in the app's language. Each phone draws them, and only a sticker's name
-  travels. **Mine** holds stickers made from a photo: cut square, 512 by 512 and about 100 KB at
-  most, with nothing but the picture, kept sealed in the space or the hidden chats they were made
-  in, up to 100. They go end-to-end encrypted as photos do, marked as stickers, in chats and
-  groups; an Erevos from before shows them as photos. **Add to my stickers** keeps one you were sent.
-
-- **SMS in the Erevos chat**: with a contact whose number is linked to them, or is on their contact
-  card, the chat shows the SMS and MMS with that number among its messages, by time, each edged and
-  marked SMS (not encrypted), with its ✓ marks and photos. They are read from the phone's SMS,
-  never kept in the chat's history; held down, one is copied, forwarded or deleted as in the SMS
-  conversation, and the chat's search finds them. Only the conversation with that one number, only
-  while Erevos is the SMS app or may read SMS, and never in hidden chats; the latest 50 first, and
-  **Show earlier SMS** for more. New ones show as they come, also while another app is the SMS
-  app: the chat and the SMS conversation hear when Android's SMS store changes, and read it again
-  as Erevos comes back.
-  **Plain SMS** in the chat's details opens the SMS conversation itself, to write one there, and
-  **+** → **Send as SMS** (or **As SMS**, holding the send arrow) sends what is typed as a plain
-  SMS, naming the SIM when there are two, and saying so first when the message was to disappear
-  or to answer one, which an SMS cannot. Before, once a number was linked, its SMS could no longer be reached from the chat. The
-  home screen's **Erevos** list keeps a contact whose last message was an SMS, which it used to
-  drop. No hidden SMS invite goes to an Erevos contact's number any more, linked or on their
-  contact card.
 
 - **Android updates need the release computer's signature**: Check for updates installs an APK
   only once `deploy/web/publish.sh` on the release computer has signed its build and SHA-256 with
@@ -760,32 +851,6 @@ On main, not released yet:
   `.cargo/audit.toml`) and the app's packages (`npm audit`, failing on a critical one) for known
   advisories. Updated for them: rustls-webpki and webpki-roots (the relay's and Tor's TLS),
   ml-kem 0.3.3 and fflate 0.8.3.
-
-- **An F-Droid build** (`EREVOS_DISTRIBUTION=fdroid`): F-Droid updates it, so its Updates screen
-  says so and has no Check for updates, and it may not install packages. The release APK keeps
-  both. No build's manifest names Google Play services any more: expo-image-picker's hint to
-  Google Play, to install its photo picker on Android 10 and older, is left out.
-
-- **Permissions** (Android, menu → Permissions): what Android lets Erevos do for calls and messages
-  in the background (notices, the call notice, calls over the lock screen, battery saving, Data
-  Saver, the microphone) and for other things (camera, phones nearby, contacts, exact times), each
-  with why and a button for Android's own question or setting. On Huawei, Honor, Xiaomi, OPPO,
-  realme, OnePlus, vivo, Samsung and ASUS it also says where the maker's own background setting is,
-  and opens it. After each new version, and the first time, it opens by itself when calls need
-  something. Also under Lock and second password → In the background → All permissions.
-
-- **Serbo-Croatian** (Srpskohrvatski): the whole app, in Latin letters and ijekavian, in words
-  understood alike in Croatia, Bosnia and Herzegovina, Montenegro and Serbia. A phone in Serbian,
-  Croatian, Bosnian or Montenegrin starts in it. A count takes the form its last digits ask for
-  (1 kontakt, 2 kontakta, 5 kontakata, 21 kontakt), and dates are written as in Bosnia unless the
-  phone itself writes Croatian, Bosnian or Serbian in Latin letters. The user guide shows in
-  English, and Android's notices too, as in the other languages besides Greek.
-
-- **Version numbers**: the next release is 2.0.0, and each one after it the next number (2.0.1,
-  2.0.2…) unless it is given one when started (Actions, release, Run workflow, version). Every
-  release still has its own build number, the run's, so Android installs it over the one before.
-  Updates → Check for updates in 0.1.16 and before offers 2.0.0 as **0.1.<build>** (the only kind
-  of number they read); it is 2.0.0 all the same, and shows as 2.0.0 once installed.
 
 - **Relay**: closes connections left quiet for 5 minutes or slow in their handshake, and takes at
   most 512 at once (128 without a token). `FORWARD` and `FILE_VIA` refuse addresses that are not
@@ -835,23 +900,38 @@ On main, not released yet:
 
 ## 0.1.16 (2026-10-20)
 
+### For you
+
 - Imported Telegram and WhatsApp chats bring their photos, videos, voice messages and files, up to
   1 GB each. An export larger than the phone's memory can be read.
 - A phone with no relay of its own can chat over the internet through a place lent on its
   contact's relay. That relay must run this version.
+
+### Under the hood
+
 - Adding a link whose relay gives no place adds the contact for nearby use, instead of refusing it.
 
 ## 0.1.14 (2026-10-20)
 
+### For you
+
 - Hidden chats: a chat's Details has **Move back to my chats**.
+
+### Under the hood
+
 - Erevos keeps receiving messages and ringing for calls after you swipe it away from the recent
   apps.
 - The Phone and Contacts icons open the keypad and the contacts every time.
 
 ## 0.1.12 (2026-10-20)
 
+### For you
+
 - Hidden chats can say that a message came (**Say when a message comes**, Android), with the same
   "New message" notice as other chats.
+
+### Under the hood
+
 - The home menu no longer goes under the status bar.
 - Reading a QR code from a photo works again.
 - No more Bluetooth crashes on Android 17, and a Bluetooth scan Android refuses starts again later.
@@ -859,14 +939,21 @@ On main, not released yet:
 
 ## 0.1.11 (2026-10-20)
 
+### For you
+
 - The Phone can open without the password, if you allow it in the phone settings.
-- Recents show at once.
 - A home-screen widget: Phone, SMS, Messages and Contacts, with how many are new.
 - The chat list can show only SMS or only Erevos chats.
 - **Names** above the list shows contact names on SMS, also of contacts kept only in Erevos. Off
   unless turned on.
 
+### Under the hood
+
+- Recents show at once.
+
 ## 0.1.10 (2026-10-20)
+
+### For you
 
 - A link Erevos opens with (the Phone and Contacts icons, `tel:` links, an SMS notice, a scanned
   code) waits for the password and then opens, instead of being lost.
@@ -875,6 +962,8 @@ On main, not released yet:
 - **Add to contacts** for a number that is no contact, from its SMS or its calls.
 
 ## 0.1.8 (2026-10-19)
+
+### For you
 
 - German, French, Spanish, Italian and Portuguese.
 - **Linked devices**: link a computer or a browser to the phone by QR code.
@@ -899,34 +988,53 @@ On main, not released yet:
 
 ## 0.1.7 (2026-10-19)
 
+### For you
+
 - SMS notices while Erevos runs in the background, and **Allow notifications** when Android holds
   them back.
+
+### Under the hood
+
 - No crash when a phone knocks over Wi-Fi Aware on Android 17.
 
 ## 0.1.6 (2026-10-19)
+
+### Under the hood
 
 - Nothing new on the phone. The web app is now built with every release, at the same version, and
   signed on the release computer.
 
 ## 0.1.5 (2026-10-19)
 
+### For you
+
 - The whole app in English or Greek: Home → Menu → Language. The first start follows the phone's
   language.
+
+### Under the hood
+
 - SMS: Android now counts Erevos as the SMS app, and Erevos says how to choose it in Default apps.
 
 ## 0.1.4 (2026-10-19)
 
+### For you
+
 - Web app: notifications while it is closed, through Web Push, off unless turned on.
 - **Check for updates** works on a computer and on Sailfish OS.
-- Linux: the icon shows in the launcher and the task bar.
 - SMS: Erevos says when Android holds back reading the SMS and how to allow it, and one MMS it
   cannot read no longer empties the list.
+
+### Under the hood
+
+- Linux: the icon shows in the launcher and the task bar.
 - Typing a relay address no longer closes Erevos.
 
 ## 0.1.2 (2026-10-19)
 
 The first release with a signed Android app in the public download repository, and the first that
 **Check for updates** finds. Packages: Android, Linux and Sailfish OS. It had:
+
+### For you
 
 - 1:1 chats through a relay, end-to-end encrypted (PQXDH, then the double ratchet), with marks for
   sent, came and read, online status, appearing offline, and message requests.

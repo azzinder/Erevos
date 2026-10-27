@@ -2492,6 +2492,8 @@ version sort** plus bas. Pour mettre à jour :
 **Réglages** → **Général** → **Nouveautés** (aussi **Nouveautés** dans **Mises à jour**) dit en bref ce que chaque
 version a changé, la plus récente d’abord, sous son seul numéro ; la version que tu as indique **Cette version**. Chaque
 version ajoute la sienne. Le CHANGELOG du code source raconte chaque changement en entier.
+Chaque version, là-bas comme ici, dit d’abord ce qui change **Pour toi**, ce que tu vois et utilises, puis ce qui a
+changé **Sous le capot** : corrections, vitesse, batterie et sécurité à l’intérieur.
 
 ### Prévenu quand une nouvelle version sort {#release-notice}
 

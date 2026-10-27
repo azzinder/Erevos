@@ -1,6 +1,6 @@
 // What's new (lib/whats-new.ts): a version for each release of CHANGELOG.md, in its order, each
-// with words; what is not out yet shows under the number of the version that runs; its links go
-// to sections of the guide.
+// with words, for you and under the hood as the CHANGELOG splits them; what is not out yet shows
+// under the number of the version that runs; its links go to sections of the guide.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -10,13 +10,14 @@ import { test } from 'node:test';
 
 import { GUIDE_SOURCES } from '../guide/index';
 import { parseGuide, parseInline } from '../lib/guide';
-import { laterThan, NEXT, VERSIONS, whatsNewFor } from '../lib/whats-new';
+import { laterThan, NEXT, VERSIONS, whatsNewFor, type Changes } from '../lib/whats-new';
 
 import { ROOT } from './words';
 
 // "## 3.3.2 (2026-10-25)": the releases, newest first; "## Unreleased" is NEXT.
-const releases = () =>
-  [...readFileSync(join(ROOT, '..', 'CHANGELOG.md'), 'utf8').matchAll(/^## (\d+\.\d+\.\d+)\b/gm)].map((m) => m[1]);
+const changelog = () => readFileSync(join(ROOT, '..', 'CHANGELOG.md'), 'utf8');
+const releases = () => [...changelog().matchAll(/^## (\d+\.\d+\.\d+)\b/gm)].map((m) => m[1]);
+const lines = (changes: Changes) => [...changes.forYou, ...changes.underTheHood];
 
 test('a version for each release of CHANGELOG.md, in its order, by its number alone', () => {
   // After a release, NEXT's words move under its number here, as the CHANGELOG's do.
@@ -24,11 +25,21 @@ test('a version for each release of CHANGELOG.md, in its order, by its number al
     VERSIONS.map((v) => v.version),
     releases(),
   );
-  for (const v of VERSIONS) assert.ok(v.items.length > 0, v.version);
+  for (const v of VERSIONS) assert.ok(lines(v).length > 0, v.version);
+});
+
+test("the CHANGELOG splits each release as What's new does: for you first, then under the hood", () => {
+  for (const section of changelog().split(/^## /m).slice(1)) {
+    const name = section.slice(0, section.indexOf('\n'));
+    const kinds = [...section.matchAll(/^### (.+)$/gm)].map((m) => m[1]).join(' + ');
+    assert.ok(['For you', 'Under the hood', 'For you + Under the hood'].includes(kinds), `${name}: ${kinds}`);
+    // No entry outside the two kinds.
+    assert.doesNotMatch(section.slice(0, section.indexOf('\n### ')), /^- /m, name);
+  }
 });
 
 test('each line once', () => {
-  const all = [...NEXT, ...VERSIONS.flatMap((v) => v.items)];
+  const all = [...lines(NEXT), ...VERSIONS.flatMap(lines)];
   assert.deepEqual(
     all.filter((item, i) => all.indexOf(item) !== i),
     [],
@@ -41,16 +52,17 @@ test('what is not out yet shows under the version that runs, once it comes after
   assert.equal(laterThan('3.3.2', '3.3.2'), false);
   assert.equal(laterThan('0.0.1', last), false);
   const shown = whatsNewFor('99.0.0');
-  assert.equal(shown.length, VERSIONS.length + (NEXT.length > 0 ? 1 : 0));
-  if (NEXT.length > 0) assert.deepEqual(shown[0], { version: '99.0.0', items: NEXT });
+  const pending = lines(NEXT).length > 0;
+  assert.equal(shown.length, VERSIONS.length + (pending ? 1 : 0));
+  if (pending) assert.deepEqual(shown[0], { version: '99.0.0', ...NEXT });
   // A build of a release: no list of what is to come.
   assert.deepEqual(whatsNewFor(last), VERSIONS);
   // A build of main for testing: with no number.
-  if (NEXT.length > 0) assert.equal(whatsNewFor('0.0.1')[0].version, null);
+  if (pending) assert.equal(whatsNewFor('0.0.1')[0].version, null);
 });
 
-test("its links go to the guide's sections, in both of its languages", () => {
-  const links = [...NEXT, ...VERSIONS.flatMap((v) => v.items)].flatMap((item) => parseInline(item).flatMap((span) => (span.link ? [span.link] : [])));
+test("its links go to the guide's sections, in every one of its languages", () => {
+  const links = [...lines(NEXT), ...VERSIONS.flatMap(lines)].flatMap((item) => parseInline(item).flatMap((span) => (span.link ? [span.link] : [])));
   for (const source of Object.values(GUIDE_SOURCES)) {
     const ids = new Set(parseGuide(source).map((s) => s.id));
     for (const link of links) {

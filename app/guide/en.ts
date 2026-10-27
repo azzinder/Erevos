@@ -2173,6 +2173,8 @@ asking GitHub, as **Told when a new version is out** below says. To update:
 **Settings** → **General** → **What's new** (also **What's new** in **Updates**) says in short what each version
 changed, the newest first, by its number alone; the version you have says **This version**. Each release adds its own.
 The CHANGELOG of the source code tells every change in full.
+Each version, there as here, says first what changes **For you**, what you see and use, then what changed
+**Under the hood**: fixes, speed, battery and security inside.
 
 ### Told when a new version is out {#release-notice}
 

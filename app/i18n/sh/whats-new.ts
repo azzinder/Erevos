@@ -5,7 +5,11 @@ export const whatsNew: Record<string, string> = {
   'What each version of Erevos changed, the newest first.': 'Šta je promijenila svaka verzija Erevosa, najnovija prva.',
   'Not out yet': 'Još nije izašla',
   'This version': 'Ova verzija',
+  'For you': 'Za vas',
+  'Under the hood': 'Ispod haube',
   // Not out yet.
+  '**What\'s new in two parts**: each version says first what changes for you, then what changed under the hood: fixes, speed, battery and security inside. See [Updates](#updates).':
+    '**Šta je novo, u dva dijela**: svaka verzija prvo kaže šta se mijenja za vas, a zatim šta se promijenilo ispod haube: ispravke, brzina, baterija i sigurnost iznutra. Vidi [Ažuriranja](#updates).',
   '**A contact\'s SMS no longer stay counted as new**: opening their chat reads all of them, the earlier ones too, not only those that show.':
     '**SMS-ovi kontakta više ne ostaju brojani kao novi**: otvaranje njegovog četa čita sve, i ranije, ne samo one koji se vide.',
   '**A message no longer waits when Tor cannot reach the relay**: with Tor for messages, it goes straight at once, as the Tor settings say. See [Through Tor](#tor).':

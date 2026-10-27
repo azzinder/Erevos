@@ -2362,6 +2362,8 @@ versión nueva, sin preguntar a GitHub, como explica **Aviso cuando sale una ver
 **Ajustes** → **General** → **Novedades** (también **Novedades** en **Actualizaciones**) dice en breve qué cambió cada
 versión, la más nueva primero, solo por su número; la versión que tienes dice **Esta versión**. Cada versión añade lo
 suyo. El CHANGELOG del código fuente cuenta cada cambio en detalle.
+Cada versión, allí como aquí, dice primero qué cambia **Para ti**, lo que ves y usas, y luego qué cambió
+**Bajo el capó**: arreglos, velocidad, batería y seguridad por dentro.
 
 ### Aviso cuando sale una versión nueva {#release-notice}
 
