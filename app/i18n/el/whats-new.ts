@@ -10,6 +10,8 @@ export const whatsNew: Record<string, string> = {
     '**Τα SMS μιας επαφής δεν μένουν να μετρούν ως νέα**: όταν ανοίγεις τη συνομιλία της διαβάζονται όλα, και τα παλαιότερα, όχι μόνο όσα φαίνονται.',
   '**A message no longer waits when Tor cannot reach the relay**: with Tor for messages, it goes straight at once, as the Tor settings say. See [Through Tor](#tor).':
     '**Ένα μήνυμα δεν μένει πια σε αναμονή όταν το Tor δεν φτάνει στο relay**: με το Tor για τα μηνύματα, πάει αμέσως κατευθείαν, όπως λένε οι ρυθμίσεις του Tor. Δες [Μέσω Tor](#tor).',
+  '**The user guide is in every language of the app**: it shows in the one you chose, and names the buttons as the app shows them. See [Language](#start).':
+    '**Ο οδηγός χρήσης είναι σε όλες τις γλώσσες της εφαρμογής**: δείχνεται σε αυτήν που διάλεξες, και λέει τα κουμπιά όπως τα δείχνει η εφαρμογή. Δες [Γλώσσα](#start).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Ένα μήνυμα που στέλνεις όσο ανοίγει μια συνομιλία την περιμένει**, με την ένδειξη Αποστολή…, και φεύγει μόλις ανοίξει, χωρίς να λέει ότι το Erevos δεν μπορεί να κρυπτογραφήσει.',

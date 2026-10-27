@@ -67,7 +67,7 @@ cryptography. Do not rely on it to protect anyone yet.
   password's space.
 - **Eight languages**: English, Greek, German, French, Spanish, Italian, Portuguese and
   Serbo-Croatian. The first start follows the phone's language, and Home → ⋯ → Settings →
-  Language switches it. The user guide is in English and Greek.
+  Language switches it. The user guide is in all eight.
 
 ## How it works
 

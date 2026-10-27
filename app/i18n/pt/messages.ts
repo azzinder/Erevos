@@ -699,10 +699,10 @@ export const messages: Record<string, string> = {
   // Send to, for what another app shares (app/share.tsx).
   'Send to': 'Enviar para',
   'A photo: {name}': 'Uma foto: {name}',
-  'A file: {name}': 'Um ficheiro: {name}',
+  'A file: {name}': 'Um arquivo: {name}',
   'Nothing came to send.': 'Não chegou nada para enviar.',
-  'The photo or file goes as soon as the chat or group you pick opens. Never to hidden chats, nor as an SMS.': 'A foto ou o ficheiro vai assim que abrir o chat ou o grupo que escolheres. Nunca para chats ocultos, nem como SMS.',
-  'It opens in the chat, group or SMS conversation you pick, in the message field, to read and send there. Never in hidden chats.': 'Abre no chat, no grupo ou na conversa SMS que escolheres, no campo da mensagem, para leres e enviares lá. Nunca em chats ocultos.',
+  'The photo or file goes as soon as the chat or group you pick opens. Never to hidden chats, nor as an SMS.': 'A foto ou o arquivo vai assim que abrir a conversa ou o grupo que você escolher. Nunca para conversas ocultas, nem como SMS.',
+  'It opens in the chat, group or SMS conversation you pick, in the message field, to read and send there. Never in hidden chats.': 'Abre na conversa, no grupo ou na conversa SMS que você escolher, no campo da mensagem, para você ler e enviar lá. Nunca em conversas ocultas.',
   'No chat matches.': 'Nenhum chat corresponde.',
   'Erevos chat': 'Chat Erevos',
 };

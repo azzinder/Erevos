@@ -7,9 +7,11 @@ export const whatsNew: Record<string, string> = {
   'This version': 'Esta versão',
   // Not out yet.
   '**A contact\'s SMS no longer stay counted as new**: opening their chat reads all of them, the earlier ones too, not only those that show.':
-    '**Os SMS de um contacto já não ficam contados como novos**: abrir a conversa lê todos, também os anteriores, não só os que aparecem.',
+    '**Os SMS de um contato não ficam mais contados como novos**: abrir a conversa lê todos, também os anteriores, não só os que aparecem.',
   '**A message no longer waits when Tor cannot reach the relay**: with Tor for messages, it goes straight at once, as the Tor settings say. See [Through Tor](#tor).':
-    '**Uma mensagem já não fica à espera quando o Tor não chega ao relay**: com o Tor para as mensagens, segue logo direta, como dizem as definições do Tor. Ver [Pelo Tor](#tor).',
+    '**Uma mensagem não fica mais esperando quando o Tor não chega ao relay**: com o Tor para as mensagens, ela sai direto na hora, como dizem as configurações do Tor. Veja [Pelo Tor](#tor).',
+  '**The user guide is in every language of the app**: it shows in the one you chose, and names the buttons as the app shows them. See [Language](#start).':
+    '**O guia de uso está em todos os idiomas do app**: aparece no que você escolheu e chama os botões como o app os mostra. Veja [Idioma](#start).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Uma mensagem enviada enquanto uma conversa abre espera por ela**, marcada Enviando…, e vai assim que a conversa abre, sem dizer que o Erevos não pode criptografar.',

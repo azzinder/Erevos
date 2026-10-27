@@ -21,7 +21,7 @@ export const relayInvites: Record<string, string> = {
   'Take back this invite?': 'Revogar este convite?',
   'Its QR code no longer lets a phone in.': 'O código QR dele não vai mais deixar nenhum celular entrar.',
   'Taken back.': 'Revogado.',
-  'That invite was gone already.': 'Esse convite já não existia.',
+  'That invite was gone already.': 'Esse convite não existia mais.',
   'Who is it for?': 'Para quem é?',
   'Maria': 'Maria',
   'Make the invite': 'Criar o convite',

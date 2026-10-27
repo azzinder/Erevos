@@ -17,7 +17,7 @@ internet.
 > independent experts. [What is protected today](#privacy) says exactly what is and is not.
 
 This guide opens from **User guide** in the home screen's menu (the three dots at the top). The search at its top finds any word in it. The guide
-is in English and Greek, and shows in English in the app's other languages, see [Language](#start).
+is in every language of the app, and shows in the one you chose, see [Language](#start).
 
 ### Who makes it, and why
 
@@ -195,9 +195,9 @@ language, each named in its own words: **Ελληνικά**, **English**,
 **Deutsch**, **Español**, **Français**, **Italiano**, **Português** or **Srpskohrvatski**. The whole app changes
 at once.
 
-- **This guide** is in English and Greek only: in the other languages it shows in English, and names the buttons as
-  the app does in English. A word new to the app may also show in English in those languages for a while, until it
-  is translated.
+- **This guide** is in each of these languages too, and names the buttons as the app shows them in yours. In the
+  languages other than English and Greek, a word new to the app may show in English for a while, until it is
+  translated.
 - **Kept on the phone:** the choice is kept on this phone, outside every space, so the password screen shows in it
   too, and every space opens in it. It is not sealed: whoever holds the phone can see which language you chose.
 - **Android's notices** (an incoming call, new messages, Erevos receiving in the background) are in Greek when Erevos

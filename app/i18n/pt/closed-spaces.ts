@@ -11,7 +11,7 @@ export const closedSpaces: Record<string, string> = {
   'Could not be read on, at {time}. {why}': 'Não foi possível ler, às {time}. {why}',
   'Not read on yet.': 'Ainda não é lido.',
   'What the relays did last': 'O que os relays fizeram por último',
-  'Since Erevos started, kept on this phone only, and only for as long as it runs: whether each relay took the last text it was given, and whether it is read on. Your contacts\' relays show here too once a text went to them.': 'Desde que o Erevos abriu, só neste telefone e só enquanto está a funcionar: se cada relay aceitou o último texto que recebeu e se é lido. Os relays dos teus contactos também aparecem aqui quando um texto foi para eles.',
+  'Since Erevos started, kept on this phone only, and only for as long as it runs: whether each relay took the last text it was given, and whether it is read on. Your contacts\' relays show here too once a text went to them.': 'Desde que o Erevos abriu, só neste telefone e só enquanto está funcionando: se cada relay aceitou o último texto que recebeu e se é lido. Os relays dos seus contatos também aparecem aqui quando um texto foi para eles.',
   'It did not say it took it within {seconds} seconds.': 'Não disse que o aceitou em {seconds} segundos.',
   'It refused it: "{reason}"': 'Recusou-o: «{reason}»',
   'It refused it.': 'Recusou-o.',

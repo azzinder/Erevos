@@ -4,8 +4,18 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { guideFor } from '../guide/index';
+import { GUIDE_LANGS, guideFor } from '../guide/index';
+import { DE } from '../i18n/de/index';
+import { EL } from '../i18n/el/index';
+import { ES } from '../i18n/es/index';
+import { FR } from '../i18n/fr/index';
+import { IT } from '../i18n/it/index';
+import { PT } from '../i18n/pt/index';
+import { SH } from '../i18n/sh/index';
 import { blockTexts, parseGuide, parseInline, searchGuide, type GuideBlock } from '../lib/guide';
+import { LANGS } from '../lib/i18n';
+
+const WORDS: Record<string, Record<string, string>> = { de: DE, el: EL, es: ES, fr: FR, it: IT, pt: PT, sh: SH };
 
 const SAMPLE = `
 ## First {#first}
@@ -100,29 +110,38 @@ function inlineTexts(block: GuideBlock): string[] {
 
 const el = guideFor('el');
 const en = guideFor('en');
+/** The guide in every language it is written in: all of the app's. */
+const all = GUIDE_LANGS.map((lang) => [lang, guideFor(lang)] as const);
 
-test('the guide has the same sections, in the same order and shape, in Greek and English', () => {
-  assert.ok(el.length >= 12);
-  assert.deepEqual(
-    en.map((s) => s.id),
-    el.map((s) => s.id),
-  );
-  assert.equal(new Set(el.map((s) => s.id)).size, el.length);
-  el.forEach((section, i) => {
-    assert.deepEqual({ id: section.id, blocks: en[i].blocks.map(shape) }, { id: section.id, blocks: section.blocks.map(shape) });
-  });
+test('the guide is in every language of the app', () => {
+  assert.deepEqual([...GUIDE_LANGS].sort(), [...LANGS].sort());
 });
 
-test('the guide links only to sections that exist, the same ones in both languages, and leaves no mark unread', () => {
-  const ids = new Set(el.map((s) => s.id));
+test('the guide has the same sections, in the same order and shape, in every language', () => {
+  assert.ok(en.length >= 12);
+  assert.equal(new Set(en.map((s) => s.id)).size, en.length);
+  for (const [lang, sections] of all) {
+    assert.deepEqual(
+      sections.map((s) => s.id),
+      en.map((s) => s.id),
+      lang,
+    );
+    sections.forEach((section, i) => {
+      assert.deepEqual({ lang, id: section.id, blocks: section.blocks.map(shape) }, { lang, id: section.id, blocks: en[i].blocks.map(shape) });
+    });
+  }
+});
+
+test('the guide links only to sections that exist, the same ones in every language, and leaves no mark unread', () => {
+  const ids = new Set(en.map((s) => s.id));
   const unread: string[] = [];
-  for (const sections of [el, en]) {
+  for (const [lang, sections] of all) {
     for (const section of sections) {
       for (const text of section.blocks.flatMap(inlineTexts)) {
         for (const span of parseInline(text)) {
           if (span.link?.startsWith('#')) assert.ok(ids.has(span.link.slice(1)), `${section.id}: ${span.link}`);
           else if (span.link) assert.match(span.link, /^https:\/\//);
-          if (/\*\*|`|\]\(/.test(span.text)) unread.push(`${section.id}: ${span.text}`);
+          if (/\*\*|`|\]\(/.test(span.text)) unread.push(`${lang} ${section.id}: ${span.text}`);
         }
       }
     }
@@ -130,7 +149,7 @@ test('the guide links only to sections that exist, the same ones in both languag
   assert.deepEqual(unread, []);
   const links = (sections: typeof el) =>
     sections.map((s) => s.blocks.flatMap(inlineTexts).flatMap((t) => parseInline(t).flatMap((sp) => (sp.link ? [sp.link] : []))));
-  assert.deepEqual(links(en), links(el));
+  for (const [lang, sections] of all) assert.deepEqual(links(sections), links(en), lang);
 });
 
 test('the guide says plainly what is end-to-end encrypted, and that nothing is audited', () => {
@@ -155,12 +174,10 @@ test('the guide is searched ignoring case and accents, titles first', () => {
   assert.ok(deep.map((h) => h.section.id).includes('relay'));
   assert.ok(deep.find((h) => h.section.id === 'faq')?.snippet?.toLowerCase().includes('safety number'));
   // Each guide names the buttons as the app shows them in its language.
-  for (const [sections, labels] of [
-    [en, ['Delete messages', 'Rename', 'Both phones']],
-    [el, ['Διαγραφή μηνυμάτων', 'Μετονομασία', 'Και τα δύο τηλέφωνα']],
-  ] as const) {
-    for (const words of labels) {
-      assert.ok(searchGuide(sections, words).some((h) => h.section.id === 'relay'), words);
+  for (const [lang, sections] of all) {
+    for (const button of ['Delete messages', 'Rename', 'Both phones']) {
+      const words = lang === 'en' ? button : WORDS[lang][button];
+      assert.ok(searchGuide(sections, words).some((h) => h.section.id === 'relay'), `${lang}: ${words}`);
     }
   }
   assert.deepEqual(searchGuide(en, '  '), []);
@@ -170,10 +187,10 @@ test('the guide is searched ignoring case and accents, titles first', () => {
 });
 
 test('no list marker is left inside a step, an item or a note', () => {
-  for (const sections of [en, el]) {
+  for (const [lang, sections] of all) {
     for (const section of sections) {
       for (const block of section.blocks) {
-        for (const text of blockTexts(block)) assert.doesNotMatch(text, / - \*\*|^- /, `${section.id}: ${text}`);
+        for (const text of blockTexts(block)) assert.doesNotMatch(text, / - \*\*|^- /, `${lang} ${section.id}: ${text}`);
       }
     }
   }

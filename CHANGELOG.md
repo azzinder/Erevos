@@ -19,6 +19,10 @@ On main, not released yet:
   with Tor's own English words under it, though the Tor screen says a message never waits for Tor. It now goes
   straight at once, as those after it do for a minute; with **Everything** it still waits for Tor. A Tor
   timeout now says that the relay did not answer in time, in the app's language.
+- **The user guide is in every language of the app**: German, Spanish, French, Italian, Portuguese and
+  Serbo-Croatian join Greek and English, with the same parts, and each names the buttons as the app shows them
+  in that language. Until now the guide showed in English in those languages. Android's own call screen and
+  notices still show in English there, and the guide says so.
 
 ## 3.4.2 (2026-10-27)
 

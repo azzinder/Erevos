@@ -14,8 +14,7 @@ import { secureGet, secureSet } from './secure';
  * The words are written in English in the code, inside t('…'), and i18n/el/ has each in Greek,
  * i18n/de/ in German and so on, keyed by the English. Greek has every one (checks/i18n.check.ts
  * makes sure none is missing); a word another language does not have yet shows in English, and
- * `npm run i18n-missing` lists them. The guide is in English and Greek only, so the other
- * languages show it in English. The first start follows the phone's language, if it is one of
+ * `npm run i18n-missing` lists them. The guide (guide/) is in each of LANGS too. The first start follows the phone's language, if it is one of
  * these; the choice (Home → Menu → Settings → Language) is kept on the phone, outside every space, so the
  * password screen shows it too.
  */

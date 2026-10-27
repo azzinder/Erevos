@@ -13,6 +13,7 @@ export type WhatsNew = { version: string; items: string[] };
 export const NEXT: string[] = [
   mark('**A contact\'s SMS no longer stay counted as new**: opening their chat reads all of them, the earlier ones too, not only those that show.'),
   mark('**A message no longer waits when Tor cannot reach the relay**: with Tor for messages, it goes straight at once, as the Tor settings say. See [Through Tor](#tor).'),
+  mark('**The user guide is in every language of the app**: it shows in the one you chose, and names the buttons as the app shows them. See [Language](#start).'),
 ];
 
 export const VERSIONS: WhatsNew[] = [
