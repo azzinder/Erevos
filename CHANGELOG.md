@@ -10,6 +10,8 @@ No release so far has a macOS build. **Not audited.**
 
 On main, not released yet:
 
+## 3.4.1 (2026-10-27)
+
 - **Send answers at once**: pressing it gives a short buzz, empties the field and shows the
   message at once, marked **Sending…** until the relay or their phone takes it, so a second press
   has nothing to send twice. If it can neither go nor wait, its words go back in the field. An

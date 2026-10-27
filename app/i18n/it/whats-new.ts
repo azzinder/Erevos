@@ -6,6 +6,7 @@ export const whatsNew: Record<string, string> = {
   'Not out yet': 'Non ancora uscita',
   'This version': 'Questa versione',
   // Not out yet.
+  // 3.4.1
   '**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.':
     '**Invia risponde subito**: una breve vibrazione quando lo premi, il campo si svuota e il messaggio compare, segnato Invio…, così non parte mai due volte.',
   '**The screen no longer stays pushed up** after the keyboard closed behind a sheet, a dialog or another app.':

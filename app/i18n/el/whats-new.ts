@@ -6,6 +6,7 @@ export const whatsNew: Record<string, string> = {
   'Not out yet': 'Δεν έχει βγει ακόμη',
   'This version': 'Αυτή η έκδοση',
   // Not out yet.
+  // 3.4.1
   '**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.':
     '**Η αποστολή απαντά αμέσως**: μια σύντομη δόνηση μόλις την πατήσεις, το πεδίο αδειάζει και το μήνυμα φαίνεται, με την ένδειξη «Αποστολή…», ώστε να μη φύγει ποτέ δύο φορές.',
   '**The screen no longer stays pushed up** after the keyboard closed behind a sheet, a dialog or another app.':
