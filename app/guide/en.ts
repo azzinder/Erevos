@@ -1163,8 +1163,9 @@ messages, which are large, go straight and so faster.
   relay; nearby phones and SMS, which do not use the internet.
 - **On Android only:** Erevos on a computer and the web app have no Tor yet, so there everything goes straight.
 
-> With **Messages**, a message never waits for Tor: while Tor starts, or for a minute after it could not reach the
-> relay, messages go straight, and then Tor is tried again. With **Everything**, nothing goes to a relay without Tor:
+> With **Messages**, a message never waits for Tor: one Tor could not take to the relay goes straight at once, and so
+> do messages while Tor starts, or for a minute after it could not reach the relay; then Tor is tried again. With
+> **Everything**, nothing goes to a relay without Tor:
 > when Tor cannot reach the relay, the message waits and is tried again; Erevos never falls back to your own
 > connection by itself.
 

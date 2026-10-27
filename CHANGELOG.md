@@ -14,6 +14,11 @@ On main, not released yet:
   not read showed among its messages. One older than the SMS that show, or in the Trash, stayed unread on
   the phone, and the home screen kept counting it on their row however often the chat was opened. Opening
   the chat now reads every one of theirs that the phone counts not read, as the SMS screen does.
+- **A message no longer waits when Tor cannot reach the relay**: with the Tor way **Messages**, a message
+  whose send Tor could not take to the relay (its exit timed out, say) was marked waiting until a later look,
+  with Tor's own English words under it, though the Tor screen says a message never waits for Tor. It now goes
+  straight at once, as those after it do for a minute; with **Everything** it still waits for Tor. A Tor
+  timeout now says that the relay did not answer in time, in the app's language.
 
 ## 3.4.2 (2026-10-27)
 

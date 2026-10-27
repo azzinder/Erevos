@@ -222,6 +222,24 @@ test("the way 'messages' goes straight while Tor is not ready, and for a while a
   assert.equal(torFor(false), false);
 });
 
+test("the way 'messages' sends straight at once what Tor could not take to the relay, so it never waits for Tor", async () => {
+  const seen: Seen[] = [];
+  const exit = 'cannot reach relay.example.org through Tor: tor: operation timed out at exit: Timed out while waiting for answer from exit';
+  setCore({ ...fakeCore(seen, true), torRequest: async () => Promise.reject(new Error(exit)) } as Core);
+  setThroughTor('messages');
+  setTorReady(true);
+  mayGoStraight = true;
+  await assert.rejects(createQueue({ url: 'wss://relay.example.org' }), /straight/);
+  assert.equal(straight, 1, 'tried straight once Tor failed');
+  assert.equal(torFor(false), false, 'and those after it go straight for a while');
+  // Everything through Tor: never straight, and Tor's timeout said as a direct one is.
+  straight = 0;
+  mayGoStraight = false;
+  setThroughTor('all');
+  await assert.rejects(createQueue({ url: 'wss://relay.example.org' }), (error: Error) => error.message === 'Through Tor: the relay did not answer in time');
+  assert.equal(straight, 0);
+});
+
 test("through Tor, a relay whose key is known but that has no channel, as one from before them, is asked again through Tor, never straight", async () => {
   const seen: Seen[] = [];
   setCore({

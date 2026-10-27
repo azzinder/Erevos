@@ -320,7 +320,9 @@ async function viaTor<T>(call: () => Promise<T>, rest = true): Promise<T> {
     return await call();
   } catch (error) {
     if (rest && torWay === 'messages') torRestUntil = Date.now() + TOR_REST_MS;
-    throw new RelayUnreachableError(t('Through Tor: {reason}', { reason: coreReason(error) }));
+    // Tor's own words for a relay that took too long, said as a direct connection's are.
+    const reason = coreReason(error);
+    throw new RelayUnreachableError(t('Through Tor: {reason}', { reason: /timed? ?out/i.test(reason) ? t('the relay did not answer in time') : reason }));
   }
 }
 
@@ -723,9 +725,22 @@ async function openChannel(
 /**
  * Opens a connection, sends one request, and returns the reply. Closes the connection, also when
  * `signal` ends it. In a channel when the relay's key is known (see Channels above). Through Tor on
- * the circuits named `way`, when given.
+ * the circuits named `way`, when given. With the way 'messages' a message never waits for Tor: one
+ * Tor could not take to the relay goes straight at once, as those after it do for a while
+ * (TOR_REST_MS). Never one a relay refused, nor to a relay that did not prove its key.
  */
 async function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way?: string): Promise<Uint8Array> {
+  const tor = torFor(false);
+  try {
+    return await requestOnce(relay, bytes, signal, way);
+  } catch (error) {
+    if (!tor || torWay !== 'messages' || relay.torOnly || signal?.aborted || !(error instanceof RelayUnreachableError) || error instanceof RelayKeyError) throw error;
+    torRestUntil = Math.max(torRestUntil, Date.now() + TOR_REST_MS);
+    return requestOnce(relay, bytes, signal, way);
+  }
+}
+
+async function requestOnce(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way?: string): Promise<Uint8Array> {
   if (signal?.aborted) throw new Ended();
   if (!isRelayAddress(relay.url)) throw new BadRelayAddressError(relay.url);
   // A space that goes through Tor, waited on while another is open: never straight.

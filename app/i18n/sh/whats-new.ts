@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   // Not out yet.
   '**A contact\'s SMS no longer stay counted as new**: opening their chat reads all of them, the earlier ones too, not only those that show.':
     '**SMS-ovi kontakta više ne ostaju brojani kao novi**: otvaranje njegovog četa čita sve, i ranije, ne samo one koji se vide.',
+  '**A message no longer waits when Tor cannot reach the relay**: with Tor for messages, it goes straight at once, as the Tor settings say. See [Through Tor](#tor).':
+    '**Poruka više ne čeka kad Tor ne stigne do releja**: s Torom za poruke odmah ide direktno, kako kažu postavke Tora. Vidi [Preko Tora](#tor).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Poruka poslata dok se razgovor otvara čeka ga**, označena Šalje se…, i ide čim se razgovor otvori, bez poruke da Erevos ne može da šifruje.',
