@@ -16,6 +16,8 @@ export const whatsNew: Record<string, string> = {
     '**Un messaggio non resta più in attesa quando Tor non raggiunge il relay**: con Tor per i messaggi, parte subito in diretta, come dicono le impostazioni di Tor. Vedi [Tramite Tor](#tor).',
   '**The user guide is in every language of the app**: it shows in the one you chose, and names the buttons as the app shows them. See [Language](#start).':
     '**La guida è in tutte le lingue dell’app**: appare in quella che hai scelto e chiama i pulsanti come li mostra l’app. Vedi [Lingua](#start).',
+  '**Location finds where you are, indoors too**: the phone looks by satellite and by its network at once, a sheet says it is looking, and when nothing is found it says why, with Try again. See [Chat through a relay](#relay).':
+    '**Posizione trova dove ti trovi, anche al chiuso**: il telefono cerca via satellite e con la sua rete insieme, un foglio dice che sta cercando, e se non trova niente dice perché, con Riprova. Vedi [Chat tramite un relay](#relay).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Un messaggio inviato mentre una chat si apre la aspetta**, segnato Invio…, e parte appena la chat è aperta, senza dire che Erevos non può cifrare.',

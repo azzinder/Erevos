@@ -814,11 +814,14 @@ stickers too):
   goes, end-to-end encrypted through the relay, marked as a sticker, so it shows on its own with no bubble; an Erevos
   from before this shows it as a photo. Hold a sticker someone sent you and tap **Add to my stickers** to keep it.
 - **Location** (on Android): sends where you are, once, as a place. The first time, Android asks whether Erevos may use
-  the location. The phone finds where it is by satellite when you allowed the precise location and it is on, otherwise
-  as its location settings say, which on many phones asks Google or the phone's maker. Erevos looks only when you tap,
-  shows you the place before it goes, and does not follow you after. The message holds only the coordinates, end-to-end
-  encrypted; no map is loaded in Erevos. **Open in maps** hands the place to your maps app, which may load its map from
-  the internet. An Erevos from before this shows the coordinates as words.
+  the location. The phone looks on every way it has at once: by satellite, when you allowed the precise location, and by
+  its network location, which on many phones asks Google or the phone's maker. A sheet opens at once and says it is
+  looking; indoors, where the satellites are hard to see, that can take up to a minute. When nothing comes in time, it
+  offers the place the phone found in the last ten minutes, saying how long ago, or says why none was found, with **Try
+  again** and the phone's screen that changes it. Erevos looks only when you tap, shows you the place before it goes, and
+  does not follow you after. The message holds only the coordinates, end-to-end encrypted; no map is loaded in Erevos.
+  **Open in maps** hands the place to your maps app, which may load its map from the internet. An Erevos from before this
+  shows the coordinates as words.
 - **Poll:** a question with two options or more, up to 12, and, with **More than one answer**, more than one to choose.
   Tap an option to choose it, again to take it back; each option shows how many chose it, and who. Votes travel inside
   the encryption, as reactions do. An Erevos from before this shows the question and its options as words, to answer in

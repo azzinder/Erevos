@@ -5,7 +5,7 @@ import { Platform, Pressable, ScrollView, View, type LayoutChangeEvent, type Sty
 import { ask } from '../lib/alert';
 import { bytesSource, takeOffRelay } from '../lib/attachments';
 import { chatText, exportName } from '../lib/chat-export';
-import { choose as chooseOption, editableWords, placeText, placeWords, pollWords, stillEditable, type Place, type Poll } from '../lib/chat-parts';
+import { choose as chooseOption, editableWords, placeWords, pollWords, stillEditable, type Place, type Poll } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canForward, forwardToGroup, handForward, type Forwardable } from '../lib/forward';
 import { sendGroupFile } from '../lib/group-media';
@@ -17,7 +17,7 @@ import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { messageLine } from '../lib/message-line';
 import { searchMessages, type Findable } from '../lib/message-search';
 import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
-import { CAN_PLACE, findPlace } from '../lib/place';
+import { CAN_PLACE } from '../lib/place';
 import { throughTor } from '../lib/relay';
 import { saveText } from '../lib/save-file';
 import { stickerOf } from '../lib/stickers';
@@ -30,7 +30,8 @@ import { useColors } from '../theme/context';
 import type { Answering, ComposerTile, DraftBox, Editing } from './composer';
 import { useGroupsWhere } from './groups-at';
 import { MessageMenu, type MenuAction } from './message-menu';
-import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from './message-parts';
+import { PlaceCard, Pinned, PreviewCard, Quote, Reactions } from './message-parts';
+import { PlaceSheet } from './place-sheet';
 import { PollCard, PollSheet } from './poll';
 import { PLAYS_LAST, StickerPicker, StickerView } from './stickers';
 import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
@@ -86,7 +87,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   const [targets, setTargets] = useState<Target[]>([]);
   const [stickering, setStickering] = useState(false);
   const [polling, setPolling] = useState(false);
-  const [placeFound, setPlaceFound] = useState<Place | null>(null);
+  const [placing, setPlacing] = useState(false);
   const [pinShown, setPinShown] = useState(0);
   const [previews, setPreviews] = useState(false);
   // What is looked for in the group (null: no search), and which of what it found is gone to.
@@ -326,17 +327,6 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     }
   }
 
-  async function locate() {
-    onNote(t('Finding where you are…'));
-    try {
-      const place = await findPlace();
-      onNote('');
-      setPlaceFound(place);
-    } catch (error) {
-      onNote(errorText(error));
-    }
-  }
-
   // Writes the group out as text where the owner picks (lib/chat-export.ts), once they say so.
   async function exportGroup() {
     if (!info) return;
@@ -475,7 +465,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     /** The panel's tiles after the photos and files: a sticker, where you are, a poll. */
     attachMore: (afterPanel: (then: () => void) => void): ComposerTile[] => [
       { key: 'sticker', title: t('Sticker'), icon: 'sticker', onPress: () => afterPanel(() => setStickering(true)) },
-      ...(CAN_PLACE ? [{ key: 'place', title: t('Location'), icon: 'place' as const, onPress: () => afterPanel(() => void locate()) }] : []),
+      ...(CAN_PLACE ? [{ key: 'place', title: t('Location'), icon: 'place' as const, onPress: () => afterPanel(() => setPlacing(true)) }] : []),
       { key: 'poll', title: t('Poll'), icon: 'poll', onPress: () => afterPanel(() => setPolling(true)) },
     ],
     sheets: (
@@ -528,33 +518,15 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
             sendParts(pollWords(poll), { poll });
           }}
         />
-        <Sheet visible={!!placeFound} onClose={() => setPlaceFound(null)} title={t('Send where you are?')}>
-          {placeFound ? (
-            <>
-              <Text selectable>{placeText(placeFound)}</Text>
-              {placeFound.acc !== undefined ? (
-                <Text variant="caption" tone="muted">
-                  {t('Within about {m} m', { m: placeFound.acc })}
-                </Text>
-              ) : null}
-              <Text variant="caption" tone="muted">
-                {t('Everyone in {name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.', { name: info?.name ?? '' })}
-              </Text>
-              <Row wrap>
-                <Button
-                  title={t('Send')}
-                  compact
-                  onPress={() => {
-                    setPlaceFound(null);
-                    sendParts(placeWords(placeFound), { place: placeFound });
-                  }}
-                />
-                <TextButton title={t('Open in maps')} onPress={() => openPlace(placeFound)} />
-                <TextButton title={t('Cancel')} onPress={() => setPlaceFound(null)} />
-              </Row>
-            </>
-          ) : null}
-        </Sheet>
+        <PlaceSheet
+          visible={placing}
+          onClose={() => setPlacing(false)}
+          onSend={(place: Place) => {
+            setPlacing(false);
+            sendParts(placeWords(place), { place });
+          }}
+          said={t('Everyone in {name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.', { name: info?.name ?? '' })}
+        />
       </>
     ),
   };

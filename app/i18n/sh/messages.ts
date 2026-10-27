@@ -641,6 +641,15 @@ export const messages: Record<string, string> = {
   "The phone's location is off. Turn it on to send where you are.": 'Lokacija telefona je isključena. Uključite je da biste poslali svoju lokaciju.',
   'Where you are was not found in time. Try again outdoors, or in a while.':
     'Vaša lokacija nije pronađena na vrijeme. Pokušajte ponovo na otvorenom ili malo kasnije.',
+  "Erevos may use only the approximate location, which this phone cannot find now. Allow the precise location in Erevos's App info to send where you are.":
+    'Erevos smije koristiti samo približnu lokaciju, koju ovaj telefon sada ne može pronaći. Dozvolite preciznu lokaciju u informacijama o aplikaciji Erevos da biste poslali svoju lokaciju.',
+  'The phone found this {n} minute ago; nothing newer came in time.':
+    'Telefon ju je pronašao prije {n} minute; ništa novije nije stiglo na vrijeme.',
+  'The phone found this {n} minutes ago; nothing newer came in time.':
+    'Telefon ju je pronašao prije {n} minute; ništa novije nije stiglo na vrijeme. | Telefon ju je pronašao prije {n} minute; ništa novije nije stiglo na vrijeme. | Telefon ju je pronašao prije {n} minuta; ništa novije nije stiglo na vrijeme.',
+  'Try again': 'Pokušajte ponovo',
+  'Indoors this can take up to a minute.': 'U zatvorenom ovo može potrajati do jedne minute.',
+  'Open location settings': 'Otvori postavke lokacije',
   // Polls (components/poll.tsx).
   Poll: 'Anketa',
   'Poll: {question}': 'Anketa: {question}',

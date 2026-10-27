@@ -1,15 +1,17 @@
 import { requireOptionalNativeModule, type EventSubscription } from 'expo-modules-core';
 
 export type DeviceEvents = {
-  /** Where the phone was found, once findPlace started: `acc` metres, -1 when not said; or `error`. */
-  onPlace: (event: { lat?: number; lon?: number; acc?: number; error?: 'timeout' }) => void;
+  /** Where the phone was found, once findPlace started: `acc` metres, -1 when not said, `age` seconds before; or `error`. */
+  onPlace: (event: { lat?: number; lon?: number; acc?: number; age?: number; error?: 'timeout' }) => void;
 };
 
 type Device = {
   /** Puts the text on the phone's clipboard, marked sensitive. False when it could not. */
   copyText(text: string): boolean;
   /** Starts looking for where the phone is, once: '' when it did, else why not. Missing in a build before places. */
-  findPlace?(): '' | 'permission' | 'off';
+  findPlace?(): '' | 'permission' | 'off' | 'approximate';
+  /** Stops looking, with nothing said. Missing in a build before it. */
+  stopPlace?(): void;
   /** Keeps the app out of screenshots and the recent apps preview while on. False with no screen showing. Missing in a build before it. */
   setSecure?(on: boolean): boolean;
   /** Keeps a reminder of Chat with myself for `at` (ms), told with Erevos closed; one with this id is replaced. False when too many wait. Missing in a build before it. */

@@ -16,6 +16,8 @@ export const whatsNew: Record<string, string> = {
     '**Poruka više ne čeka kad Tor ne stigne do releja**: s Torom za poruke odmah ide direktno, kako kažu postavke Tora. Vidi [Preko Tora](#tor).',
   '**The user guide is in every language of the app**: it shows in the one you chose, and names the buttons as the app shows them. See [Language](#start).':
     '**Korisnički vodič je na svim jezicima aplikacije**: prikazuje se na onom koji ste izabrali i naziva dugmad kako ih aplikacija prikazuje. Vidi [Jezik](#start).',
+  '**Location finds where you are, indoors too**: the phone looks by satellite and by its network at once, a sheet says it is looking, and when nothing is found it says why, with Try again. See [Chat through a relay](#relay).':
+    '**Lokacija pronalazi gdje ste, i u zatvorenom**: telefon traži preko satelita i preko svoje mreže odjednom, list kaže da traži, a kad ništa ne pronađe kaže zašto, s Pokušajte ponovo. Pogledajte [Razgovor preko relaya](#relay).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Poruka poslata dok se razgovor otvara čeka ga**, označena Šalje se…, i ide čim se razgovor otvori, bez poruke da Erevos ne može da šifruje.',

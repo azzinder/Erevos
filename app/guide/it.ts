@@ -884,12 +884,15 @@ sticker):
   così appare da solo senza nuvoletta; un Erevos di prima di questa funzione lo mostra come foto. Tieni premuto uno
   sticker che qualcuno ti ha inviato e tocca **Aggiungi ai miei sticker** per tenerlo.
 - **Posizione** (su Android): invia dove ti trovi, una volta, come luogo. La prima volta, Android chiede se Erevos può
-  usare la posizione. Il telefono trova dove si trova via satellite quando hai consentito la posizione precisa ed è
-  attiva, altrimenti come dicono le sue impostazioni di posizione, che su molti telefoni chiedono a Google o al
-  produttore del telefono. Erevos guarda solo quando tocchi, ti mostra il luogo prima che parta, e non ti segue dopo.
-  Il messaggio contiene solo le coordinate, crittografate end-to-end; in Erevos non viene caricata nessuna mappa.
-  **Apri nelle mappe** passa il luogo alla tua app di mappe, che potrebbe caricare la sua mappa da internet. Un Erevos
-  di prima di questa funzione mostra le coordinate come parole.
+  usare la posizione. Il telefono cerca in tutti i modi che ha insieme: via satellite, quando hai consentito la posizione
+  precisa, e con la sua posizione di rete, che su molti telefoni chiede a Google o al produttore del telefono. Si apre
+  subito un foglio che dice che sta cercando; al chiuso, dove i satelliti si vedono male, può volerci fino a un minuto. Se
+  non arriva niente in tempo, propone il luogo che il telefono ha trovato negli ultimi dieci minuti, dicendo quanto tempo
+  fa, oppure dice perché non ne è stato trovato nessuno, con **Riprova** e la schermata del telefono che lo cambia. Erevos
+  guarda solo quando tocchi, ti mostra il luogo prima che parta, e non ti segue dopo. Il messaggio contiene solo le
+  coordinate, crittografate end-to-end; in Erevos non viene caricata nessuna mappa. **Apri nelle mappe** passa il luogo
+  alla tua app di mappe, che potrebbe caricare la sua mappa da internet. Un Erevos di prima di questa funzione mostra le
+  coordinate come parole.
 - **Sondaggio:** una domanda con due opzioni o più, fino a 12, e, con **Più di una risposta**, più di una da scegliere.
   Tocca un’opzione per sceglierla, di nuovo per ritirarla; ogni opzione mostra quanti l’hanno scelta, e chi. I voti
   viaggiano dentro la crittografia, come le reazioni. Un Erevos di prima di questa funzione mostra la domanda e le sue

@@ -950,13 +950,16 @@ Sticker):
   Ende-zu-Ende-verschlüsselt über das Relay, als Sticker markiert, sodass er für sich ohne Blase erscheint; ein Erevos
   von vor dieser Funktion zeigt ihn als Foto. Halte einen Sticker, den dir jemand geschickt hat, gedrückt und tippe auf
   **Zu meinen Stickern hinzufügen**, um ihn zu behalten.
-- **Standort** (auf Android): sendet, wo du bist, einmal, als Ort. Beim ersten Mal fragt Android, ob Erevos den
-  Standort nutzen darf. Das Telefon findet per Satellit, wo es ist, wenn du den genauen Standort erlaubt hast und er an
-  ist, sonst so, wie es seine Standorteinstellungen sagen, was auf vielen Telefonen Google oder den Hersteller des
-  Telefons fragt. Erevos sucht nur, wenn du tippst, zeigt dir den Ort, bevor er geht, und folgt dir danach nicht. Die
-  Nachricht enthält nur die Koordinaten, Ende-zu-Ende-verschlüsselt; in Erevos wird keine Karte geladen.
-  **In Karten öffnen** übergibt den Ort an deine Karten-App, die ihre Karte aus dem Internet laden kann. Ein Erevos von
-  vor dieser Funktion zeigt die Koordinaten als Worte.
+- **Standort** (auf Android): sendet, wo du bist, einmal, als Ort. Beim ersten Mal fragt Android, ob Erevos den Standort
+  nutzen darf. Das Telefon sucht auf allen Wegen, die es hat, zugleich: per Satellit, wenn du den genauen Standort erlaubt
+  hast, und über seinen Netzwerkstandort, der auf vielen Telefonen Google oder den Hersteller des Telefons fragt. Sofort
+  öffnet sich ein Blatt, das sagt, dass es sucht; in Gebäuden, wo die Satelliten schwer zu sehen sind, kann das bis zu
+  einer Minute dauern. Kommt nichts rechtzeitig, bietet es den Ort an, den das Telefon in den letzten zehn Minuten
+  gefunden hat, und sagt, wie lange das her ist, oder es sagt, warum keiner gefunden wurde, mit **Erneut versuchen** und
+  dem Bildschirm des Telefons, der das ändert. Erevos sucht nur, wenn du tippst, zeigt dir den Ort, bevor er geht, und
+  folgt dir danach nicht. Die Nachricht enthält nur die Koordinaten, Ende-zu-Ende-verschlüsselt; in Erevos wird keine
+  Karte geladen. **In Karten öffnen** übergibt den Ort an deine Karten-App, die ihre Karte aus dem Internet laden kann.
+  Ein Erevos von vor dieser Funktion zeigt die Koordinaten als Worte.
 - **Umfrage:** eine Frage mit zwei oder mehr Optionen, bis zu 12, und, mit **Mehrere Antworten**, mehr als einer zur
   Wahl. Tippe auf eine Option, um sie zu wählen, noch einmal, um sie zurückzunehmen; jede Option zeigt, wie viele sie
   gewählt haben, und wer. Stimmen reisen innerhalb der Verschlüsselung, wie Reaktionen. Ein Erevos von vor dieser

@@ -874,9 +874,12 @@ los stickers):
   que aparece solo, sin burbuja; un Erevos anterior a esto lo muestra como una foto. Mantén pulsado un sticker que te
   hayan enviado y toca **Añadir a mis stickers** para guardarlo.
 - **Ubicación** (en Android): envía dónde estás, una vez, como un lugar. La primera vez, Android pregunta si Erevos
-  puede usar la ubicación. El teléfono encuentra dónde está por satélite cuando permitiste la ubicación precisa y está
-  activada; si no, como digan sus ajustes de ubicación, que en muchos teléfonos preguntan a Google o al fabricante del
-  teléfono. Erevos solo mira cuando tocas, te muestra el lugar antes de enviarlo, y no te sigue después. El mensaje solo
+  puede usar la ubicación. El teléfono busca por todas las vías que tiene a la vez: por satélite, cuando permitiste la
+  ubicación precisa, y por su ubicación de red, que en muchos teléfonos pregunta a Google o al fabricante del teléfono. Se
+  abre en seguida una hoja que dice que está buscando; en interiores, donde los satélites se ven mal, eso puede tardar
+  hasta un minuto. Si no llega nada a tiempo, ofrece el lugar que el teléfono encontró en los últimos diez minutos,
+  diciendo hace cuánto, o dice por qué no se encontró ninguno, con **Volver a intentarlo** y la pantalla del teléfono que
+  lo cambia. Erevos solo mira cuando tocas, te muestra el lugar antes de enviarlo, y no te sigue después. El mensaje solo
   contiene las coordenadas, cifradas de extremo a extremo; en Erevos no se carga ningún mapa. **Abrir en mapas** pasa el
   lugar a tu app de mapas, que puede cargar su mapa de internet. Un Erevos anterior a esto muestra las coordenadas como
   palabras.

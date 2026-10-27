@@ -54,13 +54,14 @@ import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { deleteSms, maySendSms, sendSmsAgain, SmsForward, useChatSms } from '../components/sms-message';
 import { UndoBar } from '../components/undo-bar';
 import { SwipeBack } from '../components/swipe-back';
-import { openPlace, PlaceCard, Pinned, PreviewCard, Quote, Reactions } from '../components/message-parts';
+import { PlaceCard, Pinned, PreviewCard, Quote, Reactions } from '../components/message-parts';
 import { PhotoSticker, PLAYS_LAST, StickerPicker, StickerView } from '../components/stickers';
+import { PlaceSheet } from '../components/place-sheet';
 import { PollCard, PollSheet } from '../components/poll';
-import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, placeText, placeWords, pollWords, previewAfterEdit, stillEditable, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
+import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, placeWords, pollWords, previewAfterEdit, stillEditable, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
-import { CAN_PLACE, findPlace } from '../lib/place';
+import { CAN_PLACE } from '../lib/place';
 import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
 import { stickerOf } from '../lib/stickers';
 import { CAN_COPY, copyText } from '../lib/clipboard';
@@ -799,7 +800,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [forwarding, setForwarding] = useState<Message | null>(null);
   const [forwardGroups, setForwardGroups] = useState<GroupInfo[]>([]);
   // Where the phone was found, to send once it is looked at.
-  const [placeFound, setPlaceFound] = useState<Place | null>(null);
+  const [placing, setPlacing] = useState(false);
   const [polling, setPolling] = useState(false);
   // Until when each contact shows typing, and when this phone last said it is typing to each.
   const [typing, setTyping] = useState<Record<string, number>>({});
@@ -2665,18 +2666,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     else router.push(`/group?id=${id}`);
   }
 
-  // Finds where the phone is, to show before it goes.
-  async function locate() {
-    setNote(t('Finding where you are…'));
-    try {
-      const place = await findPlace();
-      setNote('');
-      setPlaceFound(place);
-    } catch (error) {
-      setNote(errorText(error));
-    }
-  }
-
   // Sends a poll, with its question and options as its words for an Erevos from before.
   function sendPoll(poll: Poll) {
     setPolling(false);
@@ -2701,7 +2690,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Sends the place found, with where it is as its words for an Erevos from before.
   function sendPlace(place: Place) {
-    setPlaceFound(null);
+    setPlacing(false);
     void send(undefined, false, { text: placeWords(place), place });
   }
 
@@ -4836,7 +4825,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     { key: 'file', title: t('File'), icon: 'file', onPress: sendPickedFile },
     { key: 'sticker', title: t('Sticker'), icon: 'sticker', onPress: () => afterSheet(() => setStickering(true)) },
   );
-  if (CAN_PLACE) tiles.push({ key: 'place', title: t('Location'), icon: 'place', onPress: () => afterSheet(() => void locate()) });
+  if (CAN_PLACE) tiles.push({ key: 'place', title: t('Location'), icon: 'place', onPress: () => afterSheet(() => setPlacing(true)) });
   tiles.push({ key: 'poll', title: t('Poll'), icon: 'poll', onPress: () => afterSheet(() => setPolling(true)) });
   const ways: ComposerWay[] = selectedContact
     ? [
@@ -6286,26 +6275,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           }}
         />
         <PollSheet visible={polling && shown} onClose={() => setPolling(false)} onSend={sendPoll} />
-        <Sheet visible={!!placeFound && shown} onClose={() => setPlaceFound(null)} title={t('Send where you are?')}>
-          {placeFound ? (
-            <>
-              <Text selectable>{placeText(placeFound)}</Text>
-              {placeFound.acc !== undefined ? (
-                <Text variant="caption" tone="muted">
-                  {t('Within about {m} m', { m: placeFound.acc })}
-                </Text>
-              ) : null}
-              <Text variant="caption" tone="muted">
-                {t('{name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.', { name: selectedName })}
-              </Text>
-              <Row wrap>
-                <Button title={t('Send')} compact onPress={() => sendPlace(placeFound)} />
-                <TextButton title={t('Open in maps')} onPress={() => openPlace(placeFound)} />
-                <TextButton title={t('Cancel')} onPress={() => setPlaceFound(null)} />
-              </Row>
-            </>
-          ) : null}
-        </Sheet>
+        <PlaceSheet
+          visible={placing && shown}
+          onClose={() => setPlacing(false)}
+          onSend={sendPlace}
+          said={t('{name} gets this place once, end-to-end encrypted. Erevos does not follow where you go after.', { name: selectedName })}
+        />
         <ConnectPicker visible={picking && shown && !!connecting} among={among} identity={connecting ?? ''} onPick={(card) => void connectTo(card)} onClose={() => setPicking(false)} note={pickNote} />
         <Sheet visible={stickering && shown} onClose={() => setStickering(false)} title={t('Send a sticker')}>
           <StickerPicker onPick={sendSticker} mine={{ place: stickerPlace, onPick: sendOwnSticker }} />

@@ -641,6 +641,15 @@ export const messages: Record<string, string> = {
   "The phone's location is off. Turn it on to send where you are.": 'Der Standort des Telefons ist aus. Schalte ihn ein, um deinen Standort zu senden.',
   'Where you are was not found in time. Try again outdoors, or in a while.':
     'Dein Standort wurde nicht rechtzeitig gefunden. Versuche es draußen erneut oder etwas später.',
+  "Erevos may use only the approximate location, which this phone cannot find now. Allow the precise location in Erevos's App info to send where you are.":
+    'Erevos darf nur den ungefähren Standort nutzen, den dieses Telefon gerade nicht finden kann. Erlaube den genauen Standort in der App-Info von Erevos, um deinen Standort zu senden.',
+  'The phone found this {n} minute ago; nothing newer came in time.':
+    'Das Telefon hat ihn vor {n} Minute gefunden; nichts Neueres kam rechtzeitig.',
+  'The phone found this {n} minutes ago; nothing newer came in time.':
+    'Das Telefon hat ihn vor {n} Minuten gefunden; nichts Neueres kam rechtzeitig.',
+  'Try again': 'Erneut versuchen',
+  'Indoors this can take up to a minute.': 'In Gebäuden kann das bis zu einer Minute dauern.',
+  'Open location settings': 'Standorteinstellungen öffnen',
   // Polls (components/poll.tsx).
   Poll: 'Umfrage',
   'Poll: {question}': 'Umfrage: {question}',

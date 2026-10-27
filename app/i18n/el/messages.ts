@@ -641,6 +641,15 @@ export const messages: Record<string, string> = {
   "The phone's location is off. Turn it on to send where you are.": 'Η τοποθεσία του τηλεφώνου είναι κλειστή. Άνοιξέ την για να στείλεις πού είσαι.',
   'Where you are was not found in time. Try again outdoors, or in a while.':
     'Δεν βρέθηκε εγκαίρως πού είσαι. Δοκίμασε ξανά σε ανοιχτό χώρο, ή σε λίγο.',
+  "Erevos may use only the approximate location, which this phone cannot find now. Allow the precise location in Erevos's App info to send where you are.":
+    'Το Erevos μπορεί να χρησιμοποιεί μόνο την κατά προσέγγιση τοποθεσία, που αυτό το τηλέφωνο δεν μπορεί να βρει τώρα. Επίτρεψε την ακριβή τοποθεσία στις «Πληροφορίες εφαρμογής» του Erevos για να στείλεις πού είσαι.',
+  'The phone found this {n} minute ago; nothing newer came in time.':
+    'Το τηλέφωνο το βρήκε πριν από {n} λεπτό· τίποτα νεότερο δεν ήρθε εγκαίρως.',
+  'The phone found this {n} minutes ago; nothing newer came in time.':
+    'Το τηλέφωνο το βρήκε πριν από {n} λεπτά· τίποτα νεότερο δεν ήρθε εγκαίρως.',
+  'Try again': 'Δοκίμασε ξανά',
+  'Indoors this can take up to a minute.': 'Σε κλειστό χώρο αυτό μπορεί να πάρει έως ένα λεπτό.',
+  'Open location settings': 'Άνοιγμα ρυθμίσεων τοποθεσίας',
   // Polls (components/poll.tsx).
   Poll: 'Δημοσκόπηση',
   'Poll: {question}': 'Δημοσκόπηση: {question}',

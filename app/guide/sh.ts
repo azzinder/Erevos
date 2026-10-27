@@ -863,12 +863,14 @@ Pod **+** ima više za slanje od fotografija i datoteka (smajli na kraju polja z
   označena kao naljepnica, pa se prikazuje sama, bez oblačića; Erevos od prije ovoga prikazuje je kao fotografiju.
   Zadržite prst na naljepnici koju vam je neko poslao i dodirnite **Dodaj u moje naljepnice** da je zadržite.
 - **Lokacija** (na Androidu): šalje gdje se nalazite, jednom, kao mjesto. Prvi put Android pita smije li Erevos
-  koristiti lokaciju. Telefon pronalazi gdje se nalazi preko satelita kad ste dozvolili preciznu lokaciju i kad je ona
-  uključena, inače onako kako kažu njegove postavke lokacije, što na mnogim telefonima znači pitati Google ili
-  proizvođača telefona. Erevos gleda samo kad dodirnete, prikazuje vam mjesto prije nego što ode i ne prati vas nakon
-  toga. Poruka sadrži samo koordinate, šifrirane s kraja na kraj; u Erevosu se ne učitava nikakva karta. **Otvori u
-  kartama** predaje mjesto vašoj aplikaciji za karte, koja svoju kartu može učitati s interneta. Erevos od prije ovoga
-  prikazuje koordinate kao riječi.
+  koristiti lokaciju. Telefon traži na sve načine koje ima odjednom: preko satelita, kad ste dozvolili preciznu lokaciju,
+  i preko svoje mrežne lokacije, što na mnogim telefonima znači pitati Google ili proizvođača telefona. Odmah se otvara
+  list koji kaže da traži; u zatvorenom, gdje se sateliti teško vide, to može potrajati do jedne minute. Kad ništa ne
+  stigne na vrijeme, nudi mjesto koje je telefon pronašao u posljednjih deset minuta i kaže prije koliko, ili kaže zašto
+  nijedno nije pronađeno, s **Pokušajte ponovo** i ekranom telefona koji to mijenja. Erevos gleda samo kad dodirnete,
+  prikazuje vam mjesto prije nego što ode i ne prati vas nakon toga. Poruka sadrži samo koordinate, šifrirane s kraja na
+  kraj; u Erevosu se ne učitava nikakva karta. **Otvori u kartama** predaje mjesto vašoj aplikaciji za karte, koja svoju
+  kartu može učitati s interneta. Erevos od prije ovoga prikazuje koordinate kao riječi.
 - **Anketa:** pitanje s dvije ili više opcija, najviše 12, i, s **Više od jednog odgovora**, mogućnošću izbora više
   njih. Dodirnite opciju da je izaberete, a ponovo da povučete izbor; svaka opcija pokazuje koliko ju je izabralo, i
   ko. Glasovi putuju unutar šifriranja, kao i reakcije. Erevos od prije ovoga prikazuje pitanje i njegove opcije kao

@@ -930,12 +930,15 @@ stickers) :
   Erevos d’avant cela l’affiche comme une photo. Appuie longuement sur un sticker qu’on t’a envoyé et appuie sur
   **Ajouter à mes stickers** pour le garder.
 - **Position** (sur Android) : envoie où tu es, une fois, comme un lieu. La première fois, Android demande si Erevos
-  peut utiliser la position. Le téléphone trouve où il est par satellite quand tu as autorisé la position précise et
-  qu’elle est activée, sinon comme le disent ses réglages de position, ce qui sur beaucoup de téléphones interroge
-  Google ou le fabricant du téléphone. Erevos ne regarde que quand tu appuies, te montre le lieu avant qu’il parte, et
-  ne te suit pas ensuite. Le message ne contient que les coordonnées, chiffrées de bout en bout ; aucune carte n’est
-  chargée dans Erevos. **Ouvrir la carte** passe le lieu à ton app de cartes, qui peut charger sa carte depuis internet.
-  Un Erevos d’avant cela affiche les coordonnées en mots.
+  peut utiliser la position. Le téléphone cherche par tous ses moyens à la fois : par satellite, quand tu as autorisé la
+  position précise, et par sa position réseau, ce qui sur beaucoup de téléphones interroge Google ou le fabricant du
+  téléphone. Une feuille s’ouvre tout de suite et dit qu’il cherche ; à l’intérieur, où les satellites se voient mal, cela
+  peut prendre jusqu’à une minute. Si rien n’arrive à temps, il propose le lieu que le téléphone a trouvé dans les dix
+  dernières minutes, en disant il y a combien de temps, ou il dit pourquoi aucun n’a été trouvé, avec **Réessayer** et
+  l’écran du téléphone qui change cela. Erevos ne regarde que quand tu appuies, te montre le lieu avant qu’il parte, et ne
+  te suit pas ensuite. Le message ne contient que les coordonnées, chiffrées de bout en bout ; aucune carte n’est chargée
+  dans Erevos. **Ouvrir la carte** passe le lieu à ton app de cartes, qui peut charger sa carte depuis internet. Un Erevos
+  d’avant cela affiche les coordonnées en mots.
 - **Sondage :** une question avec deux options ou plus, jusqu’à 12, et, avec **Plusieurs réponses possibles**, plus
   d’une à choisir. Appuie sur une option pour la choisir, de nouveau pour la retirer ; chaque option montre combien
   l’ont choisie, et qui. Les votes voyagent à l’intérieur du chiffrement, comme les réactions. Un Erevos d’avant cela

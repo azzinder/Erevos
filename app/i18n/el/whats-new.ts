@@ -16,6 +16,8 @@ export const whatsNew: Record<string, string> = {
     '**Ένα μήνυμα δεν μένει πια σε αναμονή όταν το Tor δεν φτάνει στο relay**: με το Tor για τα μηνύματα, πάει αμέσως κατευθείαν, όπως λένε οι ρυθμίσεις του Tor. Δες [Μέσω Tor](#tor).',
   '**The user guide is in every language of the app**: it shows in the one you chose, and names the buttons as the app shows them. See [Language](#start).':
     '**Ο οδηγός χρήσης είναι σε όλες τις γλώσσες της εφαρμογής**: δείχνεται σε αυτήν που διάλεξες, και λέει τα κουμπιά όπως τα δείχνει η εφαρμογή. Δες [Γλώσσα](#start).',
+  '**Location finds where you are, indoors too**: the phone looks by satellite and by its network at once, a sheet says it is looking, and when nothing is found it says why, with Try again. See [Chat through a relay](#relay).':
+    '**Η Τοποθεσία βρίσκει πού είσαι, και σε κλειστό χώρο**: το τηλέφωνο ψάχνει μέσω δορυφόρου και μέσω δικτύου μαζί, ένα φύλλο λέει ότι ψάχνει, και όταν δεν βρεθεί τίποτα λέει γιατί, με το Δοκίμασε ξανά. Δες [Συνομιλία μέσω relay](#relay).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Ένα μήνυμα που στέλνεις όσο ανοίγει μια συνομιλία την περιμένει**, με την ένδειξη Αποστολή…, και φεύγει μόλις ανοίξει, χωρίς να λέει ότι το Erevos δεν μπορεί να κρυπτογραφήσει.',

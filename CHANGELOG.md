@@ -18,6 +18,14 @@ On main, not released yet:
   Serbo-Croatian join Greek and English, with the same parts, and each names the buttons as the app shows them
   in that language. Until now the guide showed in English in those languages. Android's own call screen and
   notices still show in English there, and the guide says so.
+- **Location finds where you are, indoors too**: **Location** under **+** looked only by satellite when
+  Erevos might use the precise location, which indoors finds nothing in 30 seconds, and said so only in a
+  small line under the chat; with only the approximate location allowed, a phone without Google's network
+  location was said to have its location off. The phone now looks on every way it has at once (satellite,
+  its network location, and from Android 12 Android's own mix of them) for up to a minute, and takes the
+  nearest place it finds. A sheet opens at once and says it is looking; when nothing comes in time, it offers
+  the place the phone found in the last ten minutes, saying how long ago, or says why none was found, with
+  **Try again** and a button to the phone's setting that changes it. Closing the sheet stops the look.
 - **What's new in two parts**: each version in **What's new**, and each release here, says first what changes
   **for you**, what you see and use, then what changed **under the hood**: fixes, speed, battery and security
   inside.

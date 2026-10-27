@@ -878,12 +878,15 @@ figurinhas):
   sozinha sem balão; um Erevos de antes disso a mostra como foto. Segure uma figurinha que alguém enviou a você e
   toque em **Adicionar às minhas figurinhas** para guardá-la.
 - **Localização** (no Android): envia onde você está, uma vez, como um lugar. Na primeira vez, o Android pergunta se o
-  Erevos pode usar a localização. O celular descobre onde está por satélite quando você permitiu a localização precisa
-  e ela está ativada, senão como dizem as configurações de localização dele, o que em muitos celulares pergunta ao
-  Google ou ao fabricante do celular. O Erevos só olha quando você toca, mostra o lugar antes de ele ir, e não segue
-  você depois. A mensagem leva só as coordenadas, criptografadas de ponta a ponta; nenhum mapa é carregado no Erevos.
-  **Abrir no mapa** entrega o lugar ao seu app de mapas, que pode carregar o mapa dele da internet. Um Erevos de antes
-  disso mostra as coordenadas como palavras.
+  Erevos pode usar a localização. O celular procura de todos os jeitos que tem ao mesmo tempo: por satélite, quando você
+  permitiu a localização precisa, e pela localização de rede dele, o que em muitos celulares pergunta ao Google ou ao
+  fabricante do celular. Uma folha se abre na hora e diz que está procurando; em lugares fechados, onde os satélites mal
+  aparecem, isso pode levar até um minuto. Quando nada chega a tempo, ele oferece o lugar que o celular encontrou nos
+  últimos dez minutos, dizendo há quanto tempo, ou diz por que nenhum foi encontrado, com **Tentar de novo** e a tela do
+  celular que muda isso. O Erevos só olha quando você toca, mostra o lugar antes de ele ir, e não segue você depois. A
+  mensagem leva só as coordenadas, criptografadas de ponta a ponta; nenhum mapa é carregado no Erevos. **Abrir no mapa**
+  entrega o lugar ao seu app de mapas, que pode carregar o mapa dele da internet. Um Erevos de antes disso mostra as
+  coordenadas como palavras.
 - **Enquete:** uma pergunta com duas opções ou mais, até 12, e, com **Mais de uma resposta**, mais de uma para
   escolher. Toque numa opção para escolhê-la, de novo para retirá-la; cada opção mostra quantos a escolheram, e quem.
   Os votos viajam dentro da criptografia, como as reações. Um Erevos de antes disso mostra a pergunta e as opções dela
