@@ -20,6 +20,8 @@ On main, not released yet:
   Direct or Wi-Fi Aware, so on a Samsung phone both stay off until turned on under **Nearby, with no internet**,
   which has a new **Look with Wi-Fi Aware** switch on every Android phone. Bluetooth and the same Wi-Fi work as
   before.
+- **The SMS field keeps its width on a small screen**: **Photo** and **Send** beside it are round buttons, as in a
+  chat, not words, which with large letters left the field a narrow column.
 
 ## 3.4.1 (2026-10-27)
 

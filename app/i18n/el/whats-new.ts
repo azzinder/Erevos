@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
     '**Ό,τι διαβάζεις όσο ανοίγει μια συνομιλία μένει διαβασμένο**: η αρχική οθόνη δεν το μετρά πια ως νέο.',
   '**No question from Samsung about its sharing**: on a Samsung phone, Wi-Fi Aware and the Wi-Fi with phones nearby stay off until you turn them on. See [Chat with a nearby phone](#nearby).':
     '**Καμία ερώτηση από τη Samsung για την «Κοινή χρήση» της**: σε τηλέφωνο Samsung, το Wi-Fi Aware και το Wi-Fi με κοντινά τηλέφωνα μένουν κλειστά μέχρι να τα ανοίξεις. Δες [Συνομιλία με κοντινό τηλέφωνο](#nearby).',
+  '**The SMS field keeps its width on a small screen**: Photo and Send beside it are round buttons, as in a chat.':
+    '**Το πεδίο του SMS κρατά το πλάτος του σε μικρή οθόνη**: η Φωτογραφία και η Αποστολή δίπλα του είναι στρογγυλά κουμπιά, όπως σε μια συνομιλία.',
   // 3.4.1
   '**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.':
     '**Η αποστολή απαντά αμέσως**: μια σύντομη δόνηση μόλις την πατήσεις, το πεδίο αδειάζει και το μήνυμα φαίνεται, με την ένδειξη «Αποστολή…», ώστε να μη φύγει ποτέ δύο φορές.',

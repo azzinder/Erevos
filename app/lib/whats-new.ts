@@ -14,6 +14,7 @@ export const NEXT: string[] = [
   mark('**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.'),
   mark('**What you read as a chat opens stays read**: the home screen no longer counts it as new.'),
   mark('**No question from Samsung about its sharing**: on a Samsung phone, Wi-Fi Aware and the Wi-Fi with phones nearby stay off until you turn them on. See [Chat with a nearby phone](#nearby).'),
+  mark('**The SMS field keeps its width on a small screen**: Photo and Send beside it are round buttons, as in a chat.'),
 ];
 
 export const VERSIONS: WhatsNew[] = [

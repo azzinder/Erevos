@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
     '**Ono što pročitaš dok se razgovor otvara ostaje pročitano**: početni ekran ga više ne broji kao novo.',
   '**No question from Samsung about its sharing**: on a Samsung phone, Wi-Fi Aware and the Wi-Fi with phones nearby stay off until you turn them on. See [Chat with a nearby phone](#nearby).':
     '**Samsung više ne pita za svoje deljenje**: na Samsung telefonu Wi-Fi Aware i Wi-Fi mreža s telefonima u blizini ostaju isključeni dok ih ne uključiš. Vidi [Razgovor s telefonom u blizini](#nearby).',
+  '**The SMS field keeps its width on a small screen**: Photo and Send beside it are round buttons, as in a chat.':
+    '**Polje za SMS zadržava svoju širinu na malom ekranu**: Fotografija i Pošalji pored njega su okrugla dugmad, kao u razgovoru.',
   // 3.4.1
   '**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.':
     '**Slanje odgovara odmah**: kratka vibracija kad ga pritisneš, polje se isprazni i poruka se pojavi, označena sa Šalje se…, pa nikad ne ode dvaput.',

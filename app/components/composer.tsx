@@ -1,6 +1,7 @@
 import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import {
+  ActivityIndicator,
   BackHandler,
   Keyboard,
   Modal,
@@ -191,6 +192,44 @@ export function IconButton({ label, onPress, children, state, role = 'button', w
       })}
     >
       {children}
+    </Pressable>
+  );
+}
+
+/**
+ * The round Send of a bar of its own, as the chat bar's (app/sms.tsx): it leaves the field the
+ * width a word would take, on a narrow phone with large letters too. `busy`: a spinner in its place.
+ */
+export function SendDisc({ onPress, onLongPress, disabled, busy }: { onPress: () => void; onLongPress?: () => void; disabled?: boolean; busy?: boolean }) {
+  const { colors } = useTheme();
+  const button = buttonColors('primary', colors);
+  return (
+    <Pressable
+      onPress={
+        disabled
+          ? undefined
+          : () => {
+              try {
+                Vibration.vibrate(12);
+              } catch {
+                // A phone without a vibrator: nothing to feel.
+              }
+              onPress();
+            }
+      }
+      onLongPress={onLongPress}
+      delayLongPress={350}
+      disabled={(disabled && !onLongPress) || busy}
+      accessibilityRole="button"
+      accessibilityLabel={t('Send')}
+      accessibilityState={{ disabled: !!disabled, busy: !!busy }}
+      style={({ pressed }) => [
+        disc(button.line),
+        { backgroundColor: pressed ? button.pressed : button.bg, opacity: disabled ? 0.45 : 1 },
+        shape.glow && !disabled ? { boxShadow: `0px 0px 14px ${withAlpha(colors.primary, 0.55)}` } : null,
+      ]}
+    >
+      {busy ? <ActivityIndicator color={button.fg} /> : <SendIcon color={button.fg} cut={button.line ? 'transparent' : button.bg} size={22} />}
     </Pressable>
   );
 }

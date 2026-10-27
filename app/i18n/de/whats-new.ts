@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
     '**Was du liest, während sich ein Chat öffnet, bleibt gelesen**: Der Startbildschirm zählt es nicht mehr als neu.',
   '**No question from Samsung about its sharing**: on a Samsung phone, Wi-Fi Aware and the Wi-Fi with phones nearby stay off until you turn them on. See [Chat with a nearby phone](#nearby).':
     '**Keine Frage von Samsung nach seiner Freigabe**: Auf einem Samsung-Telefon bleiben Wi-Fi Aware und das WLAN mit Telefonen in der Nähe aus, bis du sie einschaltest. Siehe [Chat mit einem Telefon in der Nähe](#nearby).',
+  '**The SMS field keeps its width on a small screen**: Photo and Send beside it are round buttons, as in a chat.':
+    '**Das SMS-Feld behält seine Breite auf einem kleinen Bildschirm**: Foto und Senden daneben sind runde Knöpfe, wie in einem Chat.',
   // 3.4.1
   '**Send answers at once**: a short buzz as you press it, the field empties and the message shows, marked Sending…, so it never goes twice.':
     '**Senden reagiert sofort**: ein kurzes Vibrieren beim Tippen, das Feld leert sich und die Nachricht erscheint mit „Wird gesendet…“, sodass sie nie zweimal geht.',

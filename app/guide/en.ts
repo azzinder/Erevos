@@ -1304,7 +1304,7 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
 - **✓ and ✓✓✓:** an SMS of yours shows ✓ once it went, and ✓✓✓ once the network's delivery report says it reached
   their phone, or "not delivered". Some phone companies send no delivery reports; then it stays ✓. SMS cannot say
   whether it was read.
-- **Photos (MMS):** **Photo** beside the message field adds a photo, made smaller to fit one MMS (about 280 KB),
+- **Photos (MMS):** the picture before the message field (**Photo**) adds a photo, made smaller to fit one MMS (about 280 KB),
   with nothing in it besides the picture. Photos that come by MMS show in the conversation. An MMS is as plain as an
   SMS: the phone company can see it.
 - **Group MMS:** under **Settings** → **Phone and SMS** → **SMS** → **New SMS**, type several numbers separated by
@@ -1314,7 +1314,7 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
 - **Two SIMs:** the SIM to send on shows above the message field; tap **Choose the SIM** once to let Erevos see
   them. Your choice is kept for that number; until then, Erevos answers on the SIM the last message came on. Each
   message shows its SIM.
-- **SMS later:** hold **Send** down and choose a time, as in a chat. The SMS shows at the end of the conversation
+- **SMS later:** hold the round **Send** after the field down and choose a time, as in a chat. The SMS shows at the end of the conversation
   marked **Scheduled**; tap it to cancel it. It goes at that time, with Erevos closed and locked too; if the phone is
   off then, as soon as it is on and unlocked again. Until then it is not in the phone's SMS, where other apps would
   see it, and the phone company does not have it. It waits locked with a key of the phone itself (Android

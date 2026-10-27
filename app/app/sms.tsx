@@ -4,7 +4,8 @@ import { AppState, Image, PermissionsAndroid, Pressable, ScrollView, StyleSheet,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { canDial, DialTile } from '../components/dial-tile';
-import { MoreIcon } from '../components/icons';
+import { IconButton, SendDisc } from '../components/composer';
+import { MoreIcon, PhotoIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LaterPicker } from '../components/later-picker';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
@@ -635,12 +636,14 @@ export default function Sms() {
       ) : null}
       {mayAnswer ? (
         <View style={styles.composer}>
-          {mmsReady() ? <Button title={t('Photo')} kind="ghost" compact onPress={() => void addPhoto()} /> : null}
+          {mmsReady() ? (
+            <IconButton label={t('Photo')} onPress={() => void addPhoto()}>
+              <PhotoIcon color={colors.text} size={22} />
+            </IconButton>
+          ) : null}
           <Input value={draft} onChangeText={setDraft} placeholder={photo || group ? t('MMS (not encrypted)') : t('SMS (not encrypted)')} multiline style={styles.input} />
-          <Button
-            title={t('Send')}
-            compact
-            loading={sending}
+          <SendDisc
+            busy={sending}
             disabled={!draft.trim() && !photo}
             onPress={() => void send()}
             onLongPress={!group && !photo && draft.trim() ? () => setLaterMenu(true) : undefined}
