@@ -33,7 +33,7 @@ app from a store is installed once and changes only when updated.
   warns: **Erevos was tampered with**.
 - **The server is watched.** `node pwa/release.mjs verify https://<address>` checks the
   signature and every file the server gives out; anyone can run it.
-  `.github/workflows/web-watch.yml` runs it every day once the repository variable
+  `.github/workflows/web-watch.yml` runs it every Monday once the repository variable
   `EREVOS_WEB_URL` is set. `deploy/web/deploy.sh` keeps each signed list in `pwa/releases/`, so
   every release is on record.
 - **The page is shut to anything else**: a Content-Security-Policy that allows scripts only from
@@ -55,10 +55,10 @@ app from a store is installed once and changes only when updated.
   request the server can tell apart from the browser's own, so a server that knows about it can
   give the check the right file and the browser another. Then the new worker takes over once the
   app is closed. No web page can stop the browser doing this. What remains: the warning when the
-  server is careless, the daily check of the server, and the password lock, which keeps the chats
+  server is careless, the weekly check of the server, and the password lock, which keeps the chats
   sealed from code that does not know the password (it would have to ask for it).
 - **One person singled out.** A server that gives changed code only to one person is not seen
-  by the daily check, only by that person's app, as above.
+  by the weekly check, only by that person's app, as above.
 - **The browser itself.** Apple makes Safari and could change what it does, as with any iPhone
   app.
 - **Not while closed.** iOS stops web apps in the background: messages wait on the relay until

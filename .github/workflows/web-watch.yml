@@ -1,13 +1,13 @@
 name: web-watch
 
-# Checks, every day, the Erevos web app as the server gives it out (pwa/): that its release is
+# Checks, every Monday, the Erevos web app as the server gives it out (pwa/): that its release is
 # signed with pwa/release-key.pub and every file matches. A server that gave out other code to
 # everyone would fail here; one that did so to a single person would not, which README.md in pwa/
 # says. Runs once the repository variable EREVOS_WEB_URL holds the address (https://…).
 
 on:
   schedule:
-    - cron: "17 6 * * *"
+    - cron: "17 6 * * 1"
   workflow_dispatch:
 
 jobs:
