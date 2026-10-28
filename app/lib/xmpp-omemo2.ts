@@ -1,5 +1,5 @@
 import { randomBytes, toBase64 } from './crypto';
-import { omemoCall, PRE_KEYS, type KeyPair, type PreKey, type SignedPreKey } from './xmpp-omemo';
+import { omemoCall, PRE_KEYS, type KeyPair, type PreKey, type SignedPreKey, type UsedPreKey } from './xmpp-omemo';
 import { child, children, el, parseXml, render, textOf, type XmlElement } from './xmpp-xml';
 
 // OMEMO 2 for XMPP chats (docs/xmpp.md): version 0.8 of XEP-0384, `urn:xmpp:omemo:2`, as Kaidan
@@ -19,6 +19,8 @@ export type OwnOmemo2 = {
   ik: string;
   signedPreKey: SignedPreKey;
   preKeys: PreKey[];
+  /** One-time pre-keys used, kept a while (keptPreKeys in lib/xmpp-omemo.ts). */
+  used?: UsedPreKey[];
   nextPreKey: number;
   /** Whether the bundle on the server is the one kept here. */
   published: boolean;

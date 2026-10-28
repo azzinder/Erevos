@@ -16,12 +16,14 @@ import {
   HINT_BODY,
   itemOf,
   itemsElement,
+  keptPreKeys,
   keyFor,
   newOwnOmemo,
   NoOmemoError,
   OMEMO,
   omemoCall,
   publishElement,
+  usePreKey,
   type OmemoPeople,
   type OwnOmemo,
   type PreKey,
@@ -894,7 +896,7 @@ async function openOmemo(state: XmppState, connection: XmppConnection, from: str
       op: 'decrypt',
       identity: state.omemo.identity,
       signed_pre_keys: [state.omemo.signedPreKey],
-      pre_keys: state.omemo.preKeys,
+      pre_keys: keptPreKeys(state.omemo),
       session: device.session ?? null,
       key: ours.key,
       prekey: ours.prekey,
@@ -906,8 +908,7 @@ async function openOmemo(state: XmppState, connection: XmppConnection, from: str
     device.session = answer.session;
     delete device.failedAt;
     if (answer.used_pre_key !== null) {
-      await replacePreKey(state, answer.used_pre_key);
-      taken.republish = true;
+      if (await replacePreKey(state, answer.used_pre_key)) taken.republish = true;
       // An empty message back completes the session, so their next ones are short (XEP-0384).
       if (live) await sendEmpty(state, connection, from, sid, false).catch(() => undefined);
     }
@@ -931,7 +932,7 @@ async function openOmemo2(state: XmppState, connection: XmppConnection, from: st
       op: 'two_decrypt',
       identity: state.omemo.identity,
       signed_pre_keys: [own.signedPreKey],
-      pre_keys: own.preKeys,
+      pre_keys: keptPreKeys(own),
       session: device.session ?? null,
       key: ours.key,
       kex: ours.kex,
@@ -942,8 +943,7 @@ async function openOmemo2(state: XmppState, connection: XmppConnection, from: st
     device.session = answer.session;
     delete device.failedAt;
     if (answer.used_pre_key !== null) {
-      await replacePreKey2(own, answer.used_pre_key);
-      taken.republish = true;
+      if (await replacePreKey2(own, answer.used_pre_key)) taken.republish = true;
       if (live) await sendEmpty(state, connection, from, sid, true).catch(() => undefined);
     }
     if (answer.text === null) return 'empty';
@@ -955,21 +955,24 @@ async function openOmemo2(state: XmppState, connection: XmppConnection, from: st
   }
 }
 
-async function replacePreKey2(own: OwnOmemo2, used: number): Promise<void> {
-  own.preKeys = own.preKeys.filter((k) => k.id !== used);
+/** A one-time pre-key a message used goes off the bundle, kept a while, and a new one takes its place: whether the bundle changed. */
+async function replacePreKey2(own: OwnOmemo2, used: number): Promise<boolean> {
+  if (!usePreKey(own, used)) return false;
   const { pre_keys } = await omemoCall<{ pre_keys: PreKey[] }>({ op: 'two_pre_keys_new', start: own.nextPreKey, count: 1 });
   own.preKeys.push(...pre_keys);
   own.nextPreKey += 1;
   own.published = false;
+  return true;
 }
 
-async function replacePreKey(state: XmppState, used: number): Promise<void> {
+async function replacePreKey(state: XmppState, used: number): Promise<boolean> {
   const own = state.omemo;
-  own.preKeys = own.preKeys.filter((k) => k.id !== used);
+  if (!usePreKey(own, used)) return false;
   const { pre_keys } = await omemoCall<{ pre_keys: PreKey[] }>({ op: 'pre_keys_new', start: own.nextPreKey, count: 1 });
   own.preKeys.push(...pre_keys);
   own.nextPreKey += 1;
   own.published = false;
+  return true;
 }
 
 function takeDeviceList(state: XmppState, jid: string, ids: number[], two = false): void {

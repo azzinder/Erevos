@@ -47,7 +47,9 @@ is what is written, once OMEMO encrypts it.
   OMEMO needs), entity capabilities (XEP-0115) with `+notify` for device lists, and answers to
   pings and disco#info. A message goes to every device of the person and to the account's own
   other devices; when the person has none with OMEMO, nothing is sent unless the chat chooses to
-  write without encryption. Used one-time pre-keys are replaced and published again.
+  write without encryption. Used one-time pre-keys are replaced and published again; the used
+  one is kept three days (50 at most), so someone who took it from the bundle before the new one
+  was out, as another did, still begins a session that opens (both versions).
 - `app/lib/xmpp-files.ts`: photos and files, below.
 - `app/lib/xmpp-muc.ts`: groups, below.
 - `app/lib/xmpp-store.ts` keeps the open space's account connected while the space is open

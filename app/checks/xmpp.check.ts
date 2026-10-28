@@ -231,6 +231,44 @@ test('someone without OMEMO gets nothing, unless the chat chooses to write witho
   old.connection.close();
 });
 
+test('two who began a session with the same pre-key, before the new bundle was out, are both read', { skip: !coreReady }, async (t) => {
+  const server = new Server();
+  // Each bundle is given with one pre-key only, so all who write to Ann (OMEMO 2) and to Fay (only
+  // OMEMO 0.3) take the same, as two may when both fetch a bundle before its new one is out.
+  server.onePreKey.add(`ann@${DOMAIN}`);
+  server.onePreKey.add(`fay@${DOMAIN}`);
+  for (const user of ['dee', 'eve', 'fay']) server.onlyOmemo1.add(`${user}@${DOMAIN}`);
+  const people = await Promise.all(['ann', 'ben', 'cid', 'dee', 'eve', 'fay'].map((user) => person(server, user)));
+  const [ann, ben, cid, dee, eve, fay] = people;
+  t.after(() => people.forEach((p) => p.connection.close()));
+  await settle(people);
+  const words = (who: typeof ann, jid: string) => who.state.chats[jid]?.messages.map((m) => m.text);
+
+  await sendXmppText(ben.state, ben.connection, `ann@${DOMAIN}`, 'από τον Ben');
+  await sendXmppText(cid.state, cid.connection, `ann@${DOMAIN}`, 'από τον Cid');
+  await sendXmppText(dee.state, dee.connection, `fay@${DOMAIN}`, 'από τη Dee');
+  await sendXmppText(eve.state, eve.connection, `fay@${DOMAIN}`, 'από την Eve');
+  await settle(people);
+  assert.deepEqual(words(ann, `ben@${DOMAIN}`), ['από τον Ben']);
+  assert.deepEqual(words(ann, `cid@${DOMAIN}`), ['από τον Cid']);
+  assert.deepEqual(words(fay, `dee@${DOMAIN}`), ['από τη Dee']);
+  assert.deepEqual(words(fay, `eve@${DOMAIN}`), ['από την Eve']);
+  // The pre-key went off the bundle once, kept a while for the second.
+  assert.equal(ann.state.omemo2?.used?.length, 1);
+  assert.equal(fay.state.omemo.used?.length, 1);
+  assert.equal(ann.state.omemo2?.preKeys.length, 100);
+
+  // And the sessions go on, both ways.
+  await sendXmppText(cid.state, cid.connection, `ann@${DOMAIN}`, 'πάλι από τον Cid');
+  await settle(people);
+  await sendXmppText(ann.state, ann.connection, `cid@${DOMAIN}`, 'προς τον Cid');
+  await sendXmppText(eve.state, eve.connection, `fay@${DOMAIN}`, 'πάλι από την Eve');
+  await settle(people);
+  assert.deepEqual(words(ann, `cid@${DOMAIN}`), ['από τον Cid', 'πάλι από τον Cid', 'προς τον Cid']);
+  assert.deepEqual(words(cid, `ann@${DOMAIN}`), ['από τον Cid', 'πάλι από τον Cid', 'προς τον Cid']);
+  assert.deepEqual(words(fay, `eve@${DOMAIN}`), ['από την Eve', 'πάλι από την Eve']);
+});
+
 test('OMEMO 2 goes to the apps that have it, OMEMO 0.3 to those that have only that', { skip: !coreReady }, async (t) => {
   const server = new Server();
   // Kai's app has only OMEMO 2, as Kaidan; Cid's only OMEMO 0.3, as Conversations; Ann's (Erevos) both.

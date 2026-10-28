@@ -53,6 +53,8 @@ export class Server {
   /** Accounts whose apps have only one OMEMO: 0.3 (as Conversations), or only OMEMO 2 (as Kaidan). */
   readonly onlyOmemo1 = new Set<string>();
   readonly onlyOmemo2 = new Set<string>();
+  /** Accounts whose bundles are given with their first one-time pre-key only, so all who start a session with them take the same. */
+  readonly onePreKey = new Set<string>();
   /** The TURN server it tells of (XEP-0215), if any. */
   turn: { host: string; port: string; username: string; password: string } | null = null;
   /** The upload service it offers, with the largest file it takes; none when null. */
@@ -504,7 +506,9 @@ export class Link implements XmppLink {
       const itemId = child(items, 'item')?.attrs.id;
       const payload = items && server.pep.get(itemId ? `${owner} ${items.attrs.node} ${itemId}` : `${owner} ${items.attrs.node}`);
       if (!payload) return error('item-not-found');
-      return reply(el('pubsub', { xmlns: 'http://jabber.org/protocol/pubsub' }, el('items', { node: items.attrs.node }, el('item', { id: itemId ?? 'current' }, payload))));
+      const prekeys = payload.name === 'bundle' && server.onePreKey.has(owner) ? child(payload, 'prekeys') : undefined;
+      const given = prekeys ? { ...payload, children: payload.children.map((c) => (c === prekeys ? { ...prekeys, children: prekeys.children.filter((k) => typeof k !== 'string').slice(0, 1) } : c)) } : payload;
+      return reply(el('pubsub', { xmlns: 'http://jabber.org/protocol/pubsub' }, el('items', { node: items.attrs.node }, el('item', { id: itemId ?? 'current' }, given))));
     }
     if (query.ns === 'urn:xmpp:mam:2') return this.page(server.archives.get(this.jid) ?? [], iq, query);
     if (query.ns === NS_ITEMS) {

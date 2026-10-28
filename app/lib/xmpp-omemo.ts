@@ -26,10 +26,40 @@ export type OwnOmemo = {
   identity: KeyPair;
   signedPreKey: SignedPreKey;
   preKeys: PreKey[];
+  /** One-time pre-keys used, kept a while (keptPreKeys). */
+  used?: UsedPreKey[];
   nextPreKey: number;
   /** Whether the bundle on the server is the one kept here. */
   published: boolean;
 };
+
+/** A one-time pre-key a message used, and when. */
+export type UsedPreKey = { key: PreKey; at: number };
+
+/** How long, and how many, used one-time pre-keys are kept. */
+const KEEP_USED_MS = 3 * 24 * 3600_000;
+const KEEP_USED = 50;
+
+/**
+ * The one-time pre-keys a message to this device may use: those on the server, and those used in
+ * the last days. Two people who took the same pre-key from the bundle before the new one was out
+ * both begin a session with it; one used and deleted at once would leave the second one's messages
+ * locked for good. XEP-0384 lets a device keep used pre-keys a while, as python-omemo does until
+ * the archive is read.
+ */
+export function keptPreKeys(own: { preKeys: PreKey[]; used?: UsedPreKey[] }, now = Date.now()): PreKey[] {
+  own.used = (own.used ?? []).filter((u) => now - u.at < KEEP_USED_MS).slice(-KEEP_USED);
+  return [...own.preKeys, ...own.used.map((u) => u.key)];
+}
+
+/** Takes a used one-time pre-key off the bundle, keeping it a while: whether it was on it, and needs another in its place. */
+export function usePreKey(own: { preKeys: PreKey[]; used?: UsedPreKey[] }, id: number, now = Date.now()): boolean {
+  const key = own.preKeys.find((k) => k.id === id);
+  if (!key) return false;
+  own.preKeys = own.preKeys.filter((k) => k !== key);
+  own.used = [...(own.used ?? []), { key, at: now }].slice(-KEEP_USED);
+  return true;
+}
 
 /** One device of a person, ours included: its identity key once seen, and the session with it. */
 export type OmemoDevice = {
