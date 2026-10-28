@@ -1989,7 +1989,11 @@ zapečaćen vlastitom lozinkom, a datoteka je ponovo zapečaćena vlastitom lozi
 2. **Automatske rezervne kopije:** izaberite **Svaki dan** ili **Svake sedmice**, zatim folder i lozinku. Erevos pravi
    kopiju kad se otvori, a posljednja je starija od toga, a folder čuva 3 najnovije. Ispod njih su **Napravi kopiju
    sada**, **Promijeni folder** i **Promijeni lozinku**; **Isključeno** ih zaustavlja, a napravljene ostaju u folderu.
-3. **Vrati:** dodirnite **Vrati rezervnu kopiju**, izaberite datoteku i upišite njenu lozinku. Erevos pita još jednom,
+3. **I na server:** na Androidu, s uključenim automatskim rezervnim kopijama, **Dodaj server** pod **I na server**
+   šalje svaku i u folder na serveru koji izaberete i koji govori WebDAV, kao vaš vlastiti Nextcloud: upišite adresu
+   foldera, korisničko ime i, najbolje, lozinku aplikacije samo za Erevos, pa dodirnite **Poveži**. Server čuva 3
+   najnovije; **Prestani slati** to zaustavlja, a one koje su tamo ostaju.
+4. **Vrati:** dodirnite **Vrati rezervnu kopiju**, izaberite datoteku i upišite njenu lozinku. Erevos pita još jednom,
    a zatim stavlja rezervnu kopiju umjesto svega što je na telefonu i otvara se onakav kakav je bio kad je kopija
    napravljena, s lozinkama koje su se tada koristile.
 
@@ -1999,6 +2003,14 @@ zapečaćen vlastitom lozinkom, a datoteka je ponovo zapečaćena vlastitom lozi
   prihvata nijednu kraću od 12 znakova.
 - **Automatske rezervne kopije čuvaju svoju lozinku na telefonu,** pa im lozinka ne treba svaki put. Onome ko otvori
   njihov folder i dalje trebaju lozinke prostora da bi čitao razgovore.
+- **Na serveru:** rezervna kopija koja ide tamo zapečaćena je svojom lozinkom kao i ostale, a ta lozinka nikad ne
+  napušta telefon, pa je server ne može otvoriti. Ime joj je nasumično, a datoteka izgleda kao nasumični bajtovi,
+  jedne od nekoliko veličina, pa ni jedno ni drugo ne kaže da je Erevosova niti koliko tačno sadrži. Server ipak vidi
+  vaš nalog, adresu telefona, kad jedna stigne i otprilike koliko je velika. Rezervne kopije idu direktno, ne preko
+  Tora: dok neki prostor šalje **Sve** preko Tora, ne ide nijedna. Da biste je vratili, preuzmite najnoviju sa servera
+  i dodirnite **Vrati rezervnu kopiju**; Erevos stariji od ove verzije je ne otvara. Google Drive je namjerno
+  izostavljen: Google vezuje datoteku za vaše ime, a Erevos bi trebao Googleove aplikacije i prijavu na Google na
+  telefonu.
 - **Razgovori koji su se nastavili nakon kopije:** vraćanje vraća ključeve svakog razgovora kakvi su tada bili. Poruke
   koje su stigle nakon kopije i već su pročitane nisu u njoj, a razgovor koji se nastavio može prestati otvarati nove
   poruke. Tada zamolite kontakt ponovo za njegov link za kontakt. Prije nego što vraćeni razgovor ponovo piše, njegovi
@@ -2511,7 +2523,7 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Glasovne poruke** | Šifrirane s kraja na kraj preko relaya ili u blizini, u dijelovima: relay, ili onaj ko prisluškuje u blizini, može otprilike saznati koliko je svaka duga. Svaki zvuk zapečaćen je u vlastitoj datoteci; broj datoteka i njihove veličine otprilike pokazuju koliko ih se čuva, ali ne i u kojem prostoru. Otpečaćen u kešu samo dok se pušta. | Zvučne datoteke sve iste veličine. |
 | **Fotografije i datoteke** | Šifrirane s kraja na kraj, preko pohrane datoteka relaya, u dijelovima iste veličine: relay vidi koliko ih je i kada, dakle otprilike koliko su velike. Vaš relay vidi vašu adresu, kao i kod poruka; kontakt ih preuzima preko vlastitog relaya. Fotografije gube lokaciju, telefon i vrijeme, osim ako su poslane kao datoteka; datoteka zadržava ono što govori u sebi. Zapečaćene na telefonu u svojim dijelovima, prikazane iz memorije. Sačuvane kopije su izvan Erevosa. Još nisu u rezervnim kopijama. | Rezervne kopije koje ih sadrže. |
 | **Na računaru** | Zapečaćeno kao na telefonu, u vlastitom folderu aplikacije. Njeno spremište ključeva zapečaćeno je privjeskom za ključeve sistema (na Windowsu ključem vašeg naloga); na Linux sistemu bez njega Erevos ne čuva ništa osim ako nije pokrenut sa \`--plain-secrets\`, a tada ga čuva onakvo kakvo jeste. | |
-| **Rezervne kopije** | Jedna datoteka zapečaćena vlastitom lozinkom, koja sadrži svaki prostor onako kako je zapečaćen na telefonu. Njeno ime kaže da je to Erevos rezervna kopija, a njena veličina otprilike pokazuje koliko se čuva. Automatske rezervne kopije čuvaju svoju lozinku na telefonu. | Rezervne kopije direktno na Nextcloud ili WebDAV. |
+| **Rezervne kopije** | Jedna datoteka zapečaćena vlastitom lozinkom, koja sadrži svaki prostor onako kako je zapečaćen na telefonu. Njeno ime kaže da je to Erevos rezervna kopija, a njena veličina otprilike pokazuje koliko se čuva. Automatske rezervne kopije čuvaju svoju lozinku na telefonu. Ide na server samo ako ga dodate: nasumični bajtovi pod nasumičnim imenom, zaokružene veličine; server vidi vaš nalog, vašu adresu i kada. | Rezervne kopije na server preko Tora. |
 | **Oznake ✓✓ i ✓✓✓** | Telefon kontakta saznaje, šifrirano, kada je vaš dobio i pročitao njegove poruke. Relay, ili onaj ko prisluškuje u blizini, vidi još jednu malu poruku. | Prekidač da se ne javlja kada čitate. |
 | **Otisak prsta ili lice (Android)** | Isključeno dok se ne uključi. Otvara samo prostor prve lozinke: njegov ključ zapečaćen je u Android Keystoreu, upotrebljiv samo odmah nakon jake provjere otiska prsta ili lica, i odbacuje se kad se oni promijene. Neko ko vas drži može upotrijebiti vaš prst. | |
 | **Obavijesti (Android)** | U pozadini: „Erevos – Ready for calls and messages“ (ne na zaključanom ekranu), „Incoming call“ ili „Incoming video call“ – „Open Erevos to answer“, i „New message“ ili koliko ih je stiglo; kad ga zaustavi Android ili lozinka, „Closed by Android“ ili „Locked“ – „Open it to receive calls and messages again“; podsjetnik, „Reminder“ ili koliko ih je; nova verzija, „Erevos X is out“. Nikad od koga ni šta. Na zaključanom telefonu obavijest o porukama kaže samo „Erevos“. Skriveni razgovori kojima je to dozvoljeno prikazuju istu obavijest, brojanu s ostalima: onaj ko je vidi i ne nađe ništa novo mogao bi pretpostaviti da ih ima još. Kao aplikacija za telefon, obavijest o telefonskom pozivu navodi ko zove, i preko zaključanog ekrana, kao kod svake aplikacije za telefon, ali nikad imenom koje znaju samo skriveni razgovori: poziv od jednog od njihovih kontakata prikazuje broj. | |

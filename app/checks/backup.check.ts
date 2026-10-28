@@ -6,7 +6,9 @@ import { test } from 'node:test';
 
 import { encryptBytes, HARD, hardCost, randomBytes, setHardCost, setPbkdf2, toHex, utf8Encode, webCryptoPbkdf2 } from '../lib/crypto';
 import { SmsLink } from '../lib/sms-link';
-import { backupKey, backupName, backupPhoneSms, hardBackupKey, makeBackup, newBackupHard, NotABackupError, openBackup, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
+import { backupKey, backupName, backupPhoneSms, hardBackupKey, makeBackup, newBackupHard, NotABackupError, openBackup, padme, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
+import { cloudFolder, CloudError, loadCloudBackup, sendToCloud, setCloudHttp, startCloudBackup, stopCloudBackup } from '../lib/backup-cloud';
+import { setThroughTor } from '../lib/relay';
 import { loadLockConfig, setLockPassword, unlock } from '../lock/config';
 import { History, newTag } from '../lock/history';
 import { openHidden, prepareHidden, setHiddenPassword } from '../lock/hidden';
@@ -261,4 +263,90 @@ t('holds each space\'s own order of its SMS, never the SMS it sends later', asyn
   assert.equal(files.has('erevos-sms-order'), false);
   assert.deepEqual((await SmsLink.open(0, key)).state.pinned, []);
   assert.equal((await loadSpaceData(0, key)).url, 'wss://relay.example');
+});
+
+t('a bare backup, as sent to a server, looks like random bytes of a Padmé size, and opens as the others do', async () => {
+  await phone();
+  const key = await backupKey('backup-pass');
+  const plain = await makeBackup(key);
+  const bare = await makeBackup(key, null, true);
+  assert.equal(bare.length, padme(bare.length));
+  assert.ok(bare.length >= plain.length - 16);
+  // Nothing in it says Erevos, nor the rounds and cost the plain one shows after its salt.
+  assert.ok(!new TextDecoder().decode(bare).includes('EREVOS'));
+  assert.notDeepEqual(bare.subarray(16, 44), plain.subarray(32, 60));
+  const opened = await openBackup(bare, 'backup-pass');
+  // The padding is nothing to restore, and no sign of a newer Erevos.
+  assert.equal(opened.unknown, 0);
+  assert.ok(!opened.entries.some((entry) => entry.name === 'pad'));
+  assert.deepEqual(
+    opened.entries.map((e) => e.name),
+    (await openBackup(plain, 'backup-pass')).entries.map((e) => e.name),
+  );
+  await assert.rejects(openBackup(bare, 'not-the-pass'), WrongBackupPasswordError);
+  await assert.rejects(openBackup(randomBytes(bare.length), 'backup-pass'), NotABackupError);
+});
+
+test('Padmé sizes add at most 12%, and grow with what they hold', () => {
+  for (const n of [1, 2, 100, 1000, 4097, 123_456, 9_999_999, 150_000_000]) {
+    const padded = padme(n);
+    assert.ok(padded >= n && padded <= n * 1.12 + 1, `${n} → ${padded}`);
+    assert.equal(padme(padded), padded);
+  }
+});
+
+t('sends automatic backups to a WebDAV folder under random names, keeps the newest there, and sends none while a space sends Everything through Tor', async () => {
+  const asked: string[] = [];
+  const there = new Map<string, Uint8Array>();
+  let password = 'app-pass';
+  setCloudHttp(async (method, url, headers, body) => {
+    asked.push(`${method} ${url}`);
+    if (headers.Authorization !== `Basic ${Buffer.from(`me:${password}`).toString('base64')}`) return 401;
+    if (!url.startsWith('https://cloud.example/dav/Backups/')) return 404;
+    const name = url.slice('https://cloud.example/dav/Backups/'.length);
+    if (method === 'PROPFIND') return 207;
+    if (method === 'PUT') return there.set(name, body!), 201;
+    if (method === 'DELETE') return there.delete(name) ? 204 : 404;
+    return 405;
+  });
+  try {
+    assert.equal(cloudFolder(' https://cloud.example/dav/Backups '), 'https://cloud.example/dav/Backups/');
+    assert.throws(() => cloudFolder('http://cloud.example/dav'), CloudError);
+    assert.throws(() => cloudFolder('https://me:pw@cloud.example/dav'), CloudError);
+    await assert.rejects(startCloudBackup('https://cloud.example/dav/Backups', 'me', 'wrong'), /did not take/);
+    await assert.rejects(startCloudBackup('https://cloud.example/dav/Elsewhere', 'me', 'app-pass'), /not on the server/);
+    let cloud = await startCloudBackup('https://cloud.example/dav/Backups', 'me', 'app-pass');
+    assert.equal(cloud.names.length, 0);
+
+    await phone();
+    const key = await backupKey('backup-pass');
+    for (let i = 1; i <= 4; i++) cloud = await sendToCloud(cloud, await makeBackup(key, null, true), 3, i);
+    assert.equal(cloud.error, '');
+    assert.equal(cloud.last, 4);
+    assert.equal(there.size, 3);
+    assert.deepEqual([...there.keys()].sort(), [...cloud.names].sort());
+    for (const name of cloud.names) assert.match(name, /^[0-9a-f]{16}$/);
+    assert.deepEqual(await loadCloudBackup(), cloud);
+    const newest = there.get(cloud.names[2])!;
+    assert.equal((await openBackup(newest, 'backup-pass')).unknown, 0);
+
+    // The server's own words for what went wrong, kept to show, and tried again next time.
+    password = 'taken-back';
+    const failed = await sendToCloud(cloud, await makeBackup(key, null, true), 3, 5);
+    assert.match(failed.error, /did not take/);
+    assert.equal(failed.last, 4);
+
+    // A space that sends Everything through Tor sends nothing straight to a server.
+    password = 'app-pass';
+    asked.length = 0;
+    setThroughTor('all');
+    const held = await sendToCloud(cloud, await makeBackup(key, null, true), 3, 6);
+    assert.match(held.error, /through Tor/);
+    assert.deepEqual(asked, []);
+  } finally {
+    setThroughTor('off');
+    setCloudHttp(null);
+    await stopCloudBackup();
+  }
+  assert.equal(await loadCloudBackup(), null);
 });

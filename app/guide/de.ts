@@ -2193,7 +2193,12 @@ findest du unter **Einstellungen** → **Daten und Geräte** → **Backups**.
    eines, wenn es öffnet und das letzte älter ist, und der Ordner behält die 3 neuesten. Darunter sind
    **Jetzt sichern**, **Ordner ändern** und **Passwort ändern**; **Aus** beendet sie, und die gemachten bleiben im
    Ordner.
-3. **Wiederherstellen:** Tippe auf **Backup wiederherstellen**, wähle die Datei und gib ihr Passwort ein. Erevos fragt
+3. **Auch auf einen Server:** Auf Android schickt **Server hinzufügen** unter **Auch auf einen Server**, bei
+   eingeschalteten automatischen Backups, jedes davon auch in einen Ordner auf einem Server deiner Wahl, der WebDAV
+   spricht, etwa deiner eigenen Nextcloud: Gib die Adresse des Ordners, einen Benutzernamen und am besten ein
+   App-Passwort nur für Erevos ein, dann tippe auf **Verbinden**. Der Server behält die 3 neuesten; **Nicht mehr
+   senden** beendet es, und die dort bleiben.
+4. **Wiederherstellen:** Tippe auf **Backup wiederherstellen**, wähle die Datei und gib ihr Passwort ein. Erevos fragt
    noch einmal, setzt dann das Backup an die Stelle von allem auf dem Telefon und öffnet sich so, wie es war, als das
    Backup gemacht wurde, mit den damals genutzten Passwörtern.
 
@@ -2203,6 +2208,14 @@ findest du unter **Einstellungen** → **Daten und Geräte** → **Backups**.
   nimmt keines unter 12 Zeichen.
 - **Automatische Backups bewahren ihr Passwort auf dem Telefon auf,** sodass sie nicht jedes Mal ein Passwort
   brauchen. Wer ihren Ordner öffnet, braucht trotzdem die Passwörter der Bereiche, um die Chats zu lesen.
+- **Auf einem Server:** Das Backup, das dorthin geht, ist wie die anderen mit seinem Passwort versiegelt, und dieses
+  Passwort verlässt nie das Telefon, also kann der Server es nicht öffnen. Sein Name ist zufällig und die Datei sieht
+  aus wie zufällige Bytes, in einer von wenigen Größen, also sagt keines von beiden, dass es von Erevos ist, oder
+  genau, wie viel es enthält. Der Server sieht aber dein Konto, die Adresse des Telefons, wann eines kommt und
+  ungefähr wie groß es ist. Backups gehen direkt dorthin, nicht über Tor: Solange ein Bereich **Alles** über Tor
+  sendet, geht keines. Zum Wiederherstellen lade das neueste vom Server herunter und tippe auf **Backup
+  wiederherstellen**; ein Erevos vor dieser Version öffnet es nicht. Google Drive fehlt mit Absicht: Google verbindet
+  die Datei mit deinem Namen, und Erevos bräuchte die Apps von Google und eine Google-Anmeldung auf dem Telefon.
 - **Chats, die nach dem Backup weitergingen:** Das Wiederherstellen setzt die Schlüssel jeder Unterhaltung so zurück,
   wie sie damals waren. Nachrichten, die nach dem Backup kamen und schon gelesen waren, sind nicht darin, und ein Chat,
   der weiterging, kann aufhören, neue Nachrichten zu öffnen. Bitte den Kontakt dann erneut um seinen Kontaktlink. Bevor
@@ -2760,7 +2773,7 @@ Erevos sagt offen, was es schützt und was es noch nicht schützt.
 | **Sprachnachrichten** | Ende-zu-Ende-verschlüsselt über das Relay oder in der Nähe, in Stücken: Das Relay, oder wer in der Nähe mithört, kann ungefähr erkennen, wie lang jede ist. Jeder Ton ist in einer eigenen Datei versiegelt; wie viele Dateien es gibt und wie groß sie sind, zeigt ungefähr, wie viele aufbewahrt werden, nicht in welchem Bereich. Nur während des Abspielens entsiegelt im Cache. | Tondateien alle gleich groß. |
 | **Fotos und Dateien** | Ende-zu-Ende-verschlüsselt, über den Dateispeicher des Relays, in Stücken gleicher Größe: Das Relay sieht wie viele und wann, also ungefähr wie groß. Dein Relay sieht deine Adresse, wie bei Nachrichten; der Kontakt holt sie über sein eigenes Relay. Fotos verlieren ihren Ort, ihr Telefon und ihre Zeit, außer sie werden als Datei gesendet; eine Datei behält, was sie in sich sagt. Auf dem Telefon in ihren Stücken versiegelt, aus dem Arbeitsspeicher gezeigt. Gespeicherte Kopien sind außerhalb von Erevos. Noch nicht in Backups. | Backups, die sie enthalten. |
 | **Auf einem Computer** | Versiegelt wie auf dem Telefon, im eigenen Ordner der App. Sein Schlüsselspeicher ist mit dem Schlüsselbund des Systems versiegelt (unter Windows mit dem Schlüssel deines Kontos); auf einem Linux-System ohne Schlüsselbund bewahrt Erevos nichts auf, außer es wurde mit \`--plain-secrets\` gestartet, und bewahrt ihn dann so auf, wie er ist. | |
-| **Backups** | Eine mit eigenem Passwort versiegelte Datei, die jeden Bereich so enthält, wie er auf dem Telefon versiegelt ist. Ihr Name sagt, dass sie ein Erevos-Backup ist, und ihre Größe zeigt ungefähr, wie viel aufbewahrt wird. Automatische Backups bewahren ihr Passwort auf dem Telefon auf. | Backups direkt zu Nextcloud oder WebDAV. |
+| **Backups** | Eine mit eigenem Passwort versiegelte Datei, die jeden Bereich so enthält, wie er auf dem Telefon versiegelt ist. Ihr Name sagt, dass sie ein Erevos-Backup ist, und ihre Größe zeigt ungefähr, wie viel aufbewahrt wird. Automatische Backups bewahren ihr Passwort auf dem Telefon auf. Geht nur an einen Server, wenn du einen hinzufügst: zufällige Bytes unter einem zufälligen Namen, in aufgerundeter Größe; der Server sieht dein Konto, deine Adresse und wann. | Backups auf einen Server über Tor. |
 | **Zeichen ✓✓ und ✓✓✓** | Das Telefon des Kontakts erfährt, verschlüsselt, wann deines seine Nachrichten bekommen und gelesen hat. Das Relay, oder wer in der Nähe mithört, sieht eine weitere kleine Nachricht. | Ein Schalter, um nicht mehr mitzuteilen, wann du liest. |
 | **Fingerabdruck oder Gesicht (Android)** | Aus, solange nicht eingeschaltet. Öffnet nur den Bereich des ersten Passworts: sein Schlüssel im Android Keystore versiegelt, nur direkt nach einer starken Fingerabdruck- oder Gesichtsprüfung nutzbar und verworfen, wenn diese sich ändern. Jemand, der dich festhält, kann deinen Finger benutzen. | |
 | **Benachrichtigungen (Android)** | Im Hintergrund: „Erevos – Ready for calls and messages“ (nicht auf dem Sperrbildschirm), „Incoming call“ oder „Incoming video call“ – „Open Erevos to answer“, und „New message“ oder wie viele kamen; wenn Android oder das Passwort es beendet, „Closed by Android“ oder „Locked“ – „Open it to receive calls and messages again“; eine Erinnerung, „Reminder“ oder wie viele; eine neue Version, „Erevos X is out“. Nie wer oder was. Auf einem gesperrten Telefon sagt die für Nachrichten nur „Erevos“. Versteckte Chats, die es dürfen, zeigen dieselbe Benachrichtigung, mit dem Rest gezählt: Wer sie sieht und nichts Neues findet, kann ahnen, dass es mehr gibt. Als Telefon-App nennt die Benachrichtigung eines Telefonanrufs, wer anruft, auch über dem Sperrbildschirm, wie die jeder Telefon-App, aber nie mit einem Namen, den nur versteckte Chats kennen: Ein Anruf von einem ihrer Kontakte zeigt die Nummer. | |

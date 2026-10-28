@@ -1883,7 +1883,11 @@ sealed with its own password, and the file is sealed again with a password of it
 2. **Automatic backups:** choose **Every day** or **Every week**, then a folder and a password. Erevos makes one when
    it opens and the last one is older than that, and the folder keeps the 3 newest. Under them are **Back up now**,
    **Change folder** and **Change password**; **Off** stops them, and the ones made stay in the folder.
-3. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, then puts the
+3. **To a server too:** on Android, with automatic backups on, **Add a server** under **To a server too** sends each
+   one also to a folder on a server you choose that speaks WebDAV, such as your own Nextcloud: give the folder's
+   address, a user name and, best, an app password made for Erevos alone, then tap **Connect**. The server keeps the 3
+   newest; **Stop sending** stops it, and those there stay.
+4. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, then puts the
    backup in place of everything on the phone, and opens as it was when the backup was made, with the passwords used
    then.
 
@@ -1892,6 +1896,13 @@ sealed with its own password, and the file is sealed again with a password of it
   computer goes, with no phone to slow them down, so a short one does not hold: Erevos takes none under 12 characters.
 - **Automatic backups keep their password on the phone,** so they need no password each time. Whoever opens their
   folder still needs the spaces' passwords to read the chats.
+- **On a server:** the backup sent there is sealed with its password like the others, and that password never leaves
+  the phone, so the server cannot open it. Its name is random and the file looks like random bytes, of one of a few
+  sizes, so neither says it is Erevos's nor tells exactly how much it holds. The server still sees your account, the
+  phone's address, when one comes and roughly how big it is. Backups go to it straight, not through Tor: while a space
+  sends **Everything** through Tor, none goes. To restore one, download the newest from the server and tap **Restore a
+  backup**; an Erevos from before this version does not open it. Google Drive is left out on purpose: Google ties the
+  file to your name, and Erevos would need Google's apps and a Google sign-in on the phone.
 - **Chats that went on after the backup:** restoring puts back each conversation's keys as they were then. Messages
   that came after the backup and were already read are not in it, and a chat that went on may stop opening new
   messages. Then ask the contact for their contact link again. Before a restored chat writes again, its conversations
@@ -2384,7 +2395,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
 | **Photos and files** | End-to-end encrypted, through the relay's file store, in pieces of one size: the relay sees how many and when, so roughly how big. Your relay sees your address, as for messages; the contact takes them through their own relay. Photos lose their place, phone and time, unless sent as a file; a file keeps what it says inside. Sealed on the phone in their pieces, shown from memory. Saved copies are outside Erevos. Not in backups yet. | Backups that hold them. |
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring (on Windows, your account's key); on a Linux system without one, Erevos keeps nothing unless started with \`--plain-secrets\`, and then keeps it as it is. | |
-| **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
+| **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. Sent to a server only once you add one: random bytes under a random name, of a padded size; the server sees your account, your address and when. | Backups to a server through Tor. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
 | **Notices (Android)** | In the background: "Erevos – Ready for calls and messages" (not on the lock screen), "Incoming call" or "Incoming video call" – "Open Erevos to answer", and "New message" or how many came; when Android or the password stops it, "Closed by Android" or "Locked" – "Open it to receive calls and messages again"; a reminder, "Reminder" or how many; a new version, "Erevos X is out". Never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same notice, counted with the rest: whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does, but never by a name only hidden chats know: a call from one of their contacts shows the number. | |

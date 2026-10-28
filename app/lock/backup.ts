@@ -1,4 +1,4 @@
-import { decryptBytes, deriveKey, encryptBytes, hardCost, hardKey, isHardCost, randomBytes, sameBytes, utf8Decode, utf8Encode, type HardCost } from '../lib/crypto';
+import { decryptBytes, deriveKey, encryptBytes, hardCost, hardKey, isHardCost, randomBytes, sameBytes, sha256Bytes, utf8Decode, utf8Encode, type HardCost } from '../lib/crypto';
 import { deleteFile, listFiles, readBytes, readFile, writeBytes, writeFile } from '../lib/files';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';
 import { t } from '../lib/i18n';
@@ -45,6 +45,13 @@ import { PREFIX as VOICE } from './voice-clips';
 // one entry of its own kind, PHONE_SMS: they are the phone's, not a space's, the same in every
 // space. Restoring the backup does not write them anywhere; the backup screen puts them back into
 // the phone's SMS. An Erevos from before this kind does not open such a backup.
+//
+// A backup sent to a server (lib/backup-cloud.ts) is made bare: without MAGIC, and with what
+// follows the first salt in the head masked with that salt's SHA-256, so the whole file looks like
+// random bytes and says to no one that it is Erevos's, nor its cost. It is padded, inside the
+// seal, with an entry of kind PAD, to a size of Padmé's (padme below), so its size tells roughly
+// how much it holds and no more. openBackup takes either; an Erevos from before bare backups does
+// not open one.
 
 const MAGIC_1 = utf8Encode('EREVOS BACKUP 1\n');
 const MAGIC = utf8Encode('EREVOS BACKUP 2\n');
@@ -79,6 +86,13 @@ const KIND_TEXT = 1;
 const KIND_BYTES = 2;
 const KIND_PHONE_SMS = 3;
 const PHONE_SMS = 'phone-sms';
+// Bytes of nothing, so a bare backup is of one of Padmé's sizes. Skipped when opened.
+const KIND_PAD = 4;
+const PAD = 'pad';
+// An entry's kind, name length and data length, and PAD's name.
+const PAD_ENTRY = 1 + 2 + 4 + PAD.length;
+// What follows MAGIC: the salt, PBKDF2's rounds, Argon2id's salt, memory and passes.
+const HEAD = SALT + 4 + SALT + 8;
 
 type Entry = { kind: number; name: string; data: Uint8Array };
 
@@ -179,54 +193,84 @@ function unpack(bytes: Uint8Array): { entries: Entry[]; unknown: number } {
     at += 4;
     if (at + length > bytes.length) throw new NotABackupError();
     // One this Erevos does not know, as a newer one may hold, is left out and never written.
-    if (allowed(kind, name)) entries.push({ kind, name, data: bytes.slice(at, at + length) });
+    if (kind === KIND_PAD && name === PAD) {
+      // Nothing, there for the size.
+    } else if (allowed(kind, name)) entries.push({ kind, name, data: bytes.slice(at, at + length) });
     else unknown++;
     at += length;
   }
   return { entries, unknown };
 }
 
+/**
+ * Padmé's size for `length` bytes: rounded up so that only its top bits, about log2 of its log2,
+ * can differ, which adds 12% at most. Sizes of this kind tell little more than the order of size.
+ */
+export function padme(length: number): number {
+  if (length < 2) return length;
+  const e = Math.floor(Math.log2(length));
+  const step = 2 ** (e - (Math.floor(Math.log2(e)) + 1));
+  return Math.ceil(length / step) * step;
+}
+
+// The mask of a bare backup's head after its first salt: SHA-256 of that salt.
+function maskHead(head: Uint8Array) {
+  const mask = sha256Bytes(head.subarray(0, SALT));
+  for (let i = SALT; i < head.length; i++) head[i] ^= mask[i - SALT];
+}
+
 /** A backup of everything on the phone, sealed with `key`: the bytes of the file. With
- *  `phoneSms`, the phone's SMS and MMS too (lib/backup-sms.ts). */
-export async function makeBackup({ key, salt, iter, hard }: BackupKey, phoneSms: Uint8Array | null = null): Promise<Uint8Array> {
+ *  `phoneSms`, the phone's SMS and MMS too (lib/backup-sms.ts). `bare` makes it as one sent to a
+ *  server is: random bytes to look at, of one of Padmé's sizes. */
+export async function makeBackup({ key, salt, iter, hard }: BackupKey, phoneSms: Uint8Array | null = null, bare = false): Promise<Uint8Array> {
   // Every backup made has Argon2id: a key without it is only for opening old ones.
   if (!hard) throw new Error('a backup is made with Argon2id');
   const entries = await collect();
   if (phoneSms) entries.push({ kind: KIND_PHONE_SMS, name: PHONE_SMS, data: phoneSms });
+  if (bare) {
+    // What the seal adds: its nonce and tag.
+    const sealing = encryptBytes(key, new Uint8Array(0)).length;
+    const size = HEAD + sealing + pack(entries).length + PAD_ENTRY;
+    entries.push({ kind: KIND_PAD, name: PAD, data: new Uint8Array(padme(size) - size) });
+  }
   const sealed = encryptBytes(key, pack(entries));
-  const head = MAGIC.length + SALT + 4 + SALT + 8;
-  const out = new Uint8Array(head + sealed.length);
+  const at = bare ? 0 : MAGIC.length;
+  const out = new Uint8Array(at + HEAD + sealed.length);
   const view = new DataView(out.buffer);
-  out.set(MAGIC);
-  out.set(salt, MAGIC.length);
-  view.setUint32(MAGIC.length + SALT, iter);
-  out.set(hard.salt, MAGIC.length + SALT + 4);
-  view.setUint32(MAGIC.length + SALT + 4 + SALT, hard.m);
-  view.setUint32(MAGIC.length + SALT + 4 + SALT + 4, hard.t);
-  out.set(sealed, head);
+  if (!bare) out.set(MAGIC);
+  out.set(salt, at);
+  view.setUint32(at + SALT, iter);
+  out.set(hard.salt, at + SALT + 4);
+  view.setUint32(at + SALT + 4 + SALT, hard.m);
+  view.setUint32(at + SALT + 4 + SALT + 4, hard.t);
+  if (bare) maskHead(out.subarray(0, HEAD));
+  out.set(sealed, at + HEAD);
   return out;
 }
 
-/** Opens a backup file with its password. Throws NotABackupError or WrongBackupPasswordError. */
+/** Opens a backup file with its password, a bare one too. Throws NotABackupError or WrongBackupPasswordError. */
 export async function openBackup(bytes: Uint8Array, password: string): Promise<Backup> {
   const old = bytes.length >= MAGIC_1.length && sameBytes(bytes.subarray(0, MAGIC_1.length), MAGIC_1);
-  const head = MAGIC.length + SALT + 4 + (old ? 0 : SALT + 8);
-  if (bytes.length < head || !(old || sameBytes(bytes.subarray(0, MAGIC.length), MAGIC))) throw new NotABackupError();
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const salt = bytes.slice(MAGIC.length, MAGIC.length + SALT);
-  const iter = view.getUint32(MAGIC.length + SALT);
+  const bare = !old && !(bytes.length >= MAGIC.length && sameBytes(bytes.subarray(0, MAGIC.length), MAGIC));
+  const at = bare ? 0 : MAGIC.length;
+  const length = old ? SALT + 4 : HEAD;
+  if (bytes.length < at + length) throw new NotABackupError();
+  const head = bytes.slice(at, at + length);
+  if (bare) maskHead(head);
+  const view = new DataView(head.buffer);
+  const salt = head.slice(0, SALT);
+  const iter = view.getUint32(SALT);
   if (iter < 1000 || iter > 10_000_000) throw new NotABackupError();
   let hard: BackupHard | null = null;
   if (!old) {
-    const at = MAGIC.length + SALT + 4;
-    hard = { salt: bytes.slice(at, at + SALT), m: view.getUint32(at + SALT), t: view.getUint32(at + SALT + 4) };
+    hard = { salt: head.slice(SALT + 4, SALT + 4 + SALT), m: view.getUint32(SALT + 4 + SALT), t: view.getUint32(SALT + 4 + SALT + 4) };
     // A cost no Erevos makes, as a made-up file may name to keep the phone busy.
     if (!isHardCost(hard)) throw new NotABackupError();
   }
   const { key } = await backupKey(password, salt, iter, hard);
   let packed: Uint8Array;
   try {
-    packed = decryptBytes(key, bytes.subarray(head));
+    packed = decryptBytes(key, bytes.subarray(at + length));
   } catch {
     throw new WrongBackupPasswordError();
   }

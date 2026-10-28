@@ -2075,7 +2075,11 @@ sigillato con la sua password, e il file è sigillato di nuovo con una sua passw
    uno quando si apre e l’ultimo è più vecchio di così, e la cartella conserva i 3 più recenti. Sotto ci sono **Fai il
    backup ora**, **Cambia cartella** e **Cambia password**; **Disattivato** li ferma, e quelli fatti restano nella
    cartella.
-3. **Ripristina:** tocca **Ripristina un backup**, scegli il file e scrivi la sua password. Erevos chiede ancora una
+3. **Anche su un server:** su Android, con i backup automatici attivi, **Aggiungi un server** sotto **Anche su un
+   server** invia ognuno anche in una cartella su un server che scegli tu e che parla WebDAV, come il tuo Nextcloud:
+   dai l’indirizzo della cartella, un nome utente e, meglio, una password per app solo per Erevos, poi tocca
+   **Connetti**. Il server tiene i 3 più recenti; **Smetti di inviare** lo ferma, e quelli che ci sono restano.
+4. **Ripristina:** tocca **Ripristina un backup**, scegli il file e scrivi la sua password. Erevos chiede ancora una
    volta, poi mette il backup al posto di tutto quello che c’è sul telefono, e si apre com’era quando il backup è stato
    fatto, con le password di allora.
 
@@ -2085,6 +2089,14 @@ sigillato con la sua password, e il file è sigillato di nuovo con una sua passw
   accetta sotto i 12 caratteri.
 - **I backup automatici conservano la loro password sul telefono,** così non serve una password ogni volta. Chi apre la
   loro cartella ha comunque bisogno delle password degli spazi per leggere le chat.
+- **Su un server:** il backup che va lì è sigillato con la sua password come gli altri, e quella password non lascia
+  mai il telefono, quindi il server non può aprirlo. Il suo nome è casuale e il file sembra fatto di byte casuali, di
+  una tra poche dimensioni, quindi né l’uno né l’altro dice che è di Erevos né quanto contiene esattamente. Il server
+  vede comunque il tuo account, l’indirizzo del telefono, quando ne arriva uno e più o meno quanto è grande. I backup
+  ci vanno direttamente, non tramite Tor: finché uno spazio invia **Tutto** tramite Tor, non ne parte nessuno. Per
+  ripristinarne uno, scarica il più recente dal server e tocca **Ripristina un backup**; un Erevos precedente a questa
+  versione non lo apre. Google Drive è escluso apposta: Google lega il file al tuo nome, ed Erevos avrebbe bisogno
+  delle app di Google e di un accesso a Google sul telefono.
 - **Le chat proseguite dopo il backup:** il ripristino rimette le chiavi di ogni conversazione com’erano allora. I
   messaggi arrivati dopo il backup e già letti non ci sono, e una chat che è proseguita potrebbe non aprire più i nuovi
   messaggi. Allora chiedi di nuovo al contatto il suo link di contatto. Prima che una chat ripristinata scriva di nuovo,
@@ -2618,7 +2630,7 @@ Erevos dice chiaramente che cosa protegge e che cosa non protegge, ancora.
 | **Messaggi vocali** | Crittografati end-to-end tramite il relay o da vicino, in pezzi: il relay, o chi ascolta da vicino, può capire più o meno quanto dura ognuno. Ogni suono è sigillato in un file a sé; quanti file ci sono, e le loro dimensioni, mostrano più o meno quanti ne sono conservati, non in quale spazio. Dissigillati nella cache solo durante la riproduzione. | File audio tutti della stessa dimensione. |
 | **Foto e file** | Crittografati end-to-end, tramite l’archivio di file del relay, in pezzi della stessa dimensione: il relay vede quanti e quando, quindi più o meno quanto sono grandi. Il tuo relay vede il tuo indirizzo, come per i messaggi; il contatto li prende tramite il suo relay. Le foto perdono luogo, telefono e ora, a meno che non vengano inviate come file; un file conserva quello che dice al suo interno. Sigillati sul telefono nei loro pezzi, mostrati dalla memoria. Le copie salvate sono fuori da Erevos. Non ancora nei backup. | Backup che li contengano. |
 | **Su un computer** | Sigillato come sul telefono, nella cartella dell’app. Il suo archivio di chiavi è sigillato con il portachiavi del sistema (su Windows, la chiave del tuo account); su un sistema Linux senza portachiavi, Erevos non conserva nulla a meno che non venga avviato con \`--plain-secrets\`, e allora lo conserva così com’è. | |
-| **Backup** | Un unico file sigillato con una sua password, che contiene ogni spazio così come è sigillato sul telefono. Il suo nome dice che è un backup di Erevos, e la sua dimensione mostra più o meno quanto viene conservato. I backup automatici conservano la loro password sul telefono. | Backup direttamente su Nextcloud o WebDAV. |
+| **Backup** | Un unico file sigillato con una sua password, che contiene ogni spazio così come è sigillato sul telefono. Il suo nome dice che è un backup di Erevos, e la sua dimensione mostra più o meno quanto viene conservato. I backup automatici conservano la loro password sul telefono. Inviato a un server solo se ne aggiungi uno: byte casuali con un nome casuale, di una dimensione arrotondata; il server vede il tuo account, il tuo indirizzo e quando. | Backup su un server tramite Tor. |
 | **Segni ✓✓ e ✓✓✓** | Il telefono del contatto sa quando il tuo ha ricevuto e letto i suoi messaggi, in modo crittografato. Il relay, o chi ascolta da vicino, vede un piccolo messaggio in più. | Un interruttore per non dire più quando leggi. |
 | **Impronta o volto (Android)** | Disattivato finché non lo attivi. Apre solo lo spazio della prima password: la sua chiave è sigillata nell’Android Keystore, utilizzabile solo subito dopo un controllo forte dell’impronta o del volto, e scartata quando questi cambiano. Qualcuno che ti trattiene può usare il tuo dito. | |
 | **Notifiche (Android)** | In background: «Erevos – Ready for calls and messages» (non sulla schermata di blocco), «Incoming call» o «Incoming video call» – «Open Erevos to answer», e «New message» o quanti ne sono arrivati; quando Android o la password lo fermano, «Closed by Android» o «Locked» – «Open it to receive calls and messages again»; un promemoria, «Reminder» o quanti; una nuova versione, «Erevos X is out». Mai chi o cosa. A telefono bloccato quella dei messaggi dice solo «Erevos». Le chat nascoste a cui è permesso dirlo mostrano la stessa notifica, contata con il resto: chi la vede e non trova niente di nuovo può immaginare che ce ne siano altre. Come app Telefono, la notifica di una chiamata telefonica dice chi chiama, anche sulla schermata di blocco, come fa quella di ogni app Telefono, ma mai con un nome che conoscono solo le chat nascoste: una chiamata da uno dei loro contatti mostra il numero. | |

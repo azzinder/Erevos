@@ -2046,7 +2046,12 @@ sellar con una contraseña propia. Está en **Ajustes** → **Datos y dispositiv
    cuando se abre y la última es más antigua que eso, y la carpeta conserva las 3 más nuevas. Debajo están **Hacer
    copia ahora**, **Cambiar carpeta** y **Cambiar contraseña**; **Desactivado** las detiene, y las ya hechas se quedan
    en la carpeta.
-3. **Restaurar:** toca **Restaurar una copia de seguridad**, elige el archivo y escribe su contraseña. Erevos pregunta
+3. **También a un servidor:** en Android, con las copias automáticas activadas, **Añadir un servidor** en **También a
+   un servidor** envía cada una también a una carpeta en un servidor que elijas y que hable WebDAV, como tu propio
+   Nextcloud: da la dirección de la carpeta, un nombre de usuario y, mejor, una contraseña de aplicación solo para
+   Erevos, y toca **Conectar**. El servidor guarda las 3 más recientes; **Dejar de enviar** lo detiene, y las que hay
+   allí se quedan.
+4. **Restaurar:** toca **Restaurar una copia de seguridad**, elige el archivo y escribe su contraseña. Erevos pregunta
    una vez más, y luego pone la copia en lugar de todo lo que hay en el teléfono, y se abre como estaba cuando se hizo
    la copia, con las contraseñas de entonces.
 
@@ -2056,6 +2061,14 @@ sellar con una contraseña propia. Está en **Ajustes** → **Datos y dispositiv
   ninguna de menos de 12 caracteres.
 - **Las copias automáticas guardan su contraseña en el teléfono,** así que no necesitan contraseña cada vez. Quien abra
   su carpeta sigue necesitando las contraseñas de los espacios para leer los chats.
+- **En un servidor:** la copia que va allí está sellada con su contraseña como las demás, y esa contraseña nunca sale
+  del teléfono, así que el servidor no puede abrirla. Su nombre es aleatorio y el archivo parece bytes aleatorios, de
+  uno de pocos tamaños, así que ninguno dice que es de Erevos ni cuánto guarda exactamente. Aun así el servidor ve tu
+  cuenta, la dirección del teléfono, cuándo llega una y más o menos cuánto ocupa. Las copias van directamente, no por
+  Tor: mientras un espacio envía **Todo** por Tor, no va ninguna. Para restaurar una, descarga la más reciente del
+  servidor y toca **Restaurar una copia de seguridad**; un Erevos anterior a esta versión no la abre. Google Drive
+  queda fuera a propósito: Google ata el archivo a tu nombre, y Erevos necesitaría las apps de Google y una sesión de
+  Google en el teléfono.
 - **Chats que siguieron después de la copia:** restaurar devuelve las claves de cada conversación como estaban
   entonces. Los mensajes que llegaron después de la copia y ya se leyeron no están en ella, y un chat que siguió puede
   dejar de abrir mensajes nuevos. Entonces pide al contacto su enlace de contacto otra vez. Antes de que un chat
@@ -2587,7 +2600,7 @@ Erevos dice claramente lo que protege y lo que todavía no.
 | **Mensajes de voz** | Cifrados de extremo a extremo por el relay o de cerca, en trozos: el relay, o quien escuche cerca, puede saber más o menos cuánto dura cada uno. Cada sonido se sella en un archivo propio; cuántos archivos hay, y sus tamaños, muestran más o menos cuántos se guardan, no en qué espacio. Sin sellar en la caché solo mientras se reproduce. | Archivos de sonido todos del mismo tamaño. |
 | **Fotos y archivos** | Cifrados de extremo a extremo, a través del almacén de archivos del relay, en trozos del mismo tamaño: el relay ve cuántos y cuándo, así que más o menos lo grandes que son. Tu relay ve tu dirección, como para los mensajes; el contacto los recoge a través de su propio relay. Las fotos pierden su lugar, su teléfono y su hora, salvo que se envíen como archivo; un archivo conserva lo que dice dentro. Sellados en el teléfono en sus trozos, mostrados desde la memoria. Las copias guardadas están fuera de Erevos. Aún no en las copias de seguridad. | Copias de seguridad que los contengan. |
 | **En un ordenador** | Sellado como en el teléfono, en la carpeta propia de la app. Su almacén de claves está sellado con el llavero del sistema (en Windows, la clave de tu cuenta); en un sistema Linux sin llavero, Erevos no guarda nada salvo que se inicie con \`--plain-secrets\`, y entonces lo guarda tal cual. | |
-| **Copias de seguridad** | Un archivo sellado con su propia contraseña, que contiene cada espacio tal como está sellado en el teléfono. Su nombre dice que es una copia de seguridad de Erevos, y su tamaño muestra más o menos cuánto se guarda. Las copias automáticas guardan su contraseña en el teléfono. | Copias directamente a Nextcloud o WebDAV. |
+| **Copias de seguridad** | Un archivo sellado con su propia contraseña, que contiene cada espacio tal como está sellado en el teléfono. Su nombre dice que es una copia de seguridad de Erevos, y su tamaño muestra más o menos cuánto se guarda. Las copias automáticas guardan su contraseña en el teléfono. Va a un servidor solo si añades uno: bytes aleatorios con un nombre aleatorio, de un tamaño redondeado; el servidor ve tu cuenta, tu dirección y cuándo. | Copias a un servidor por Tor. |
 | **Marcas ✓✓ y ✓✓✓** | El teléfono del contacto sabe cuándo el tuyo recibió y leyó sus mensajes, cifrado. El relay, o quien escuche cerca, ve un mensaje pequeño más. | Un interruptor para dejar de decir cuándo lees. |
 | **Huella o cara (Android)** | Desactivado salvo que se active. Solo abre el espacio de la primera contraseña: su clave sellada en el Android Keystore, utilizable solo justo después de una comprobación fuerte de huella o cara, y descartada cuando estas cambian. Alguien que te retenga puede usar tu dedo. | |
 | **Avisos (Android)** | En segundo plano: «Erevos – Ready for calls and messages» (no en la pantalla de bloqueo), «Incoming call» o «Incoming video call» – «Open Erevos to answer», y «New message» o cuántos llegaron; cuando Android o la contraseña lo detienen, «Closed by Android» o «Locked» – «Open it to receive calls and messages again»; un recordatorio, «Reminder» o cuántos; una versión nueva, «Erevos X is out». Nunca quién ni qué. En un teléfono bloqueado, el de los mensajes solo dice «Erevos». Los chats ocultos que pueden decirlo muestran el mismo aviso, contado con el resto: quien lo vea y no encuentre nada nuevo puede suponer que hay más. Como app de teléfono, el aviso de una llamada telefónica nombra a quien llama, también sobre la pantalla de bloqueo, como el de cualquier app de teléfono, pero nunca con un nombre que solo conozcan los chats ocultos: una llamada de uno de sus contactos muestra el número. | |

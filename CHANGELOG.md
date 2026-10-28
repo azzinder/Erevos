@@ -106,6 +106,15 @@ On main, not released yet:
   rings every 3 seconds, made by the browser, and vibrates where the phone can, until the call is answered or ends; a
   chat whose ring is set to none stays silent. A browser lets a page sound only once it was touched, so a call that
   comes before any touch since Erevos opened shows without sound, and an iPhone on silent makes none.
+- **Automatic backups to your own server too** (Android): under **Settings** → **Data and devices** → **Backups**, with
+  automatic backups on, **Add a server** sends each one also to a folder on a server you choose that speaks WebDAV,
+  such as your own Nextcloud, with an app password made for Erevos alone. Off until you add one. What goes there is
+  sealed with the backup's password, which never leaves the phone; it has no Erevos header, its few header numbers are
+  masked, it is padded inside the seal to a Padmé size, and it goes under a random name, so the file looks like random
+  bytes and says neither that it is Erevos's nor exactly how much it holds. The server keeps the 3 newest. It still
+  sees the account, the phone's address, when one comes and roughly how big it is. Not through Tor yet: while a space
+  sends Everything through Tor, none goes. Restore by downloading one and choosing it under **Restore a backup**;
+  Erevos from before this version does not open such a file. Google Drive is left out on purpose.
 
 ### Under the hood
 

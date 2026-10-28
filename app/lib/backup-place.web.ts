@@ -16,6 +16,10 @@ export const CAN_BACK_UP = true;
 /** Whether backups can be made by themselves, every day or week: in the desktop app. */
 export const CAN_AUTO_BACKUP = SHELL !== null;
 
+/** Whether automatic backups can go to a server too (lib/backup-cloud.ts): not yet. A browser
+ *  reaches no server that does not let it, as WebDAV servers do not. */
+export const CAN_CLOUD_BACKUP = false;
+
 // The one "folder" of a plain browser.
 const HANDED = 'browser';
 

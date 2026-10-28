@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { MIN_BACKUP_PASSWORD, PasswordSheet } from '../components/PasswordSheet';
-import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
+import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask, choose as chooseOne, confirm } from '../lib/alert';
 import { locale, mark, plural, t } from '../lib/i18n';
+import { cloudLabel, loadCloudBackup, startCloudBackup, stopCloudBackup, type CloudBackup } from '../lib/backup-cloud';
 import {
   CAN_AUTO_BACKUP,
   CAN_BACK_UP,
+  CAN_CLOUD_BACKUP,
   changeAutoBackup,
   folderLabel,
   KEEP,
@@ -32,7 +34,8 @@ import { useTheme } from '../theme/context';
 // owner picks, made by themselves every day or week (lib/backup-folder.ts), and put back. Every
 // space shows the same screen and the same settings, and a backup holds every space, so nothing
 // here says how many there are. On Android a backup can hold the phone's SMS and MMS too
-// (lib/backup-sms.ts), put back into the phone's SMS when it is restored.
+// (lib/backup-sms.ts), put back into the phone's SMS when it is restored. On Android, automatic
+// backups can go to a server too (lib/backup-cloud.ts), once the owner gives one.
 
 // What the password sheet is for: a backup made now, automatic backups' password, or a backup to open.
 type Asking = { kind: 'make'; folder: string } | { kind: 'auto'; every: number; folder: string } | { kind: 'open'; bytes: Uint8Array; name: string } | null;
@@ -78,9 +81,16 @@ export default function Backups() {
   const picking = useRef(false);
   // Whether backups hold the phone's SMS and MMS.
   const [smsToo, setSmsToo] = useState(false);
+  // The server automatic backups go to as well, and what is typed to add one.
+  const [cloud, setCloud] = useState<CloudBackup | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [address, setAddress] = useState('');
+  const [user, setUser] = useState('');
+  const [secret, setSecret] = useState('');
 
   useEffect(() => {
     loadAutoBackup().then(setAuto);
+    void loadCloudBackup().then(setCloud);
     void backsUpSms().then(setSmsToo);
   }, []);
 
@@ -122,6 +132,7 @@ export default function Backups() {
     if (!every) {
       await stopAutoBackup();
       setAuto(null);
+      setCloud(null);
       say(t('Automatic backups are off. The ones already made stay in their folder.'));
       return;
     }
@@ -146,13 +157,39 @@ export default function Backups() {
   async function backUpNow() {
     setBusy(true);
     try {
-      const next = await runAutoBackup(true);
+      const { auto: next, cloud: sent } = await runAutoBackup(true);
       setAuto(next);
+      setCloud(sent);
       if (next?.error) say(t('Not made. {error}', { error: next.error }), true);
+      else if (next && sent?.error) say(t('Made a backup in {folder}, but it did not go to the server. {error}', { folder: folderLabel(next.folder), error: sent.error }), true);
+      else if (next && sent) say(t('Made a backup in {folder} and sent it to {server}.', { folder: folderLabel(next.folder), server: cloudLabel(sent) }));
       else if (next) say(t('Made a backup in {folder}.', { folder: folderLabel(next.folder) }));
     } finally {
       setBusy(false);
     }
+  }
+
+  async function addServer() {
+    say('');
+    setBusy(true);
+    try {
+      setCloud(await startCloudBackup(address, user.trim(), secret));
+      setAdding(false);
+      setSecret('');
+    } catch (error) {
+      say(errorText(error), true);
+      return;
+    } finally {
+      setBusy(false);
+    }
+    await backUpNow();
+  }
+
+  async function stopServer() {
+    if (!(await confirm(t('Stop sending to the server'), t('Automatic backups will go only to the folder from now on. Those already on the server stay there until you delete them.')))) return;
+    await stopCloudBackup();
+    setCloud(null);
+    say(t('Backups no longer go to the server.'));
   }
 
   async function pickBackup() {
@@ -325,6 +362,58 @@ export default function Backups() {
               {t('Erevos can make a backup by itself every day or week, into a folder you choose, with a password you set once.')}
             </Text>
           )}
+        </>
+      ) : null}
+
+      {CAN_AUTO_BACKUP && CAN_CLOUD_BACKUP && auto ? (
+        <>
+          <SectionTitle title={t('To a server too')} />
+          <Card>
+            {cloud ? (
+              <>
+                <Text variant="bodyStrong">{t('To {server}', { server: cloudLabel(cloud) })}</Text>
+                <Text variant="caption" tone="muted" style={hint}>
+                  {cloud.last ? t('Last one sent {when}.', { when: whenText(cloud.last) }) : t('None sent yet.')}{' '}
+                  {t('Each automatic backup goes there too, and the server keeps the {n} newest.', { n: KEEP })}
+                </Text>
+                {cloud.error ? (
+                  <Text variant="caption" color={colors.danger} style={hint}>
+                    {t('The last one did not go: {error} Erevos tries again next time it opens.', { error: cloud.error })}
+                  </Text>
+                ) : null}
+                <Row wrap>
+                  <Button title={t('Stop sending')} kind="secondary" compact onPress={() => void stopServer()} disabled={busy} />
+                </Row>
+              </>
+            ) : adding ? (
+              <>
+                <Field label={t('Folder address (WebDAV)')} hint={t('In Nextcloud: Files → Files settings → WebDAV gives the start; add a folder you made for backups, like …/remote.php/dav/files/NAME/Backups')}>
+                  <Input value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://" accessibilityLabel={t('Folder address (WebDAV)')} />
+                </Field>
+                <Field label={t('User name')}>
+                  <Input value={user} onChangeText={setUser} autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('User name')} />
+                </Field>
+                <Field label={t('Password')} hint={t("Best an app password made for Erevos alone, in the server's security settings: you can take it back there without changing your own.")}>
+                  <Input value={secret} onChangeText={setSecret} secureTextEntry autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('Password')} />
+                </Field>
+                <Row wrap>
+                  <Button title={busy ? t('One moment…') : t('Connect')} compact loading={busy} onPress={() => void addServer()} disabled={busy || !address.trim() || !user.trim() || !secret} />
+                  <Button title={t('Cancel')} kind="secondary" compact onPress={() => setAdding(false)} disabled={busy} />
+                </Row>
+              </>
+            ) : (
+              <>
+                <Text variant="caption" tone="muted" style={hint}>
+                  {t(
+                    "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.",
+                  )}
+                </Text>
+                <Row wrap>
+                  <Button title={t('Add a server')} kind="secondary" compact onPress={() => setAdding(true)} disabled={busy} />
+                </Row>
+              </>
+            )}
+          </Card>
         </>
       ) : null}
 

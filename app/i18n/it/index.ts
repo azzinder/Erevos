@@ -34,6 +34,7 @@ import { textInvite } from './text-invite';
 import { relayKey } from './relay-key';
 import { whatsNew } from './whats-new';
 import { iconNumber } from './icon-number';
+import { cloudBackup } from './cloud-backup';
 import { matrix } from './matrix';
 
-export const IT: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...chatNotify, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber, ...matrix };
+export const IT: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...chatNotify, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber, ...matrix, ...cloudBackup };
