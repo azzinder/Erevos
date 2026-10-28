@@ -942,9 +942,10 @@ Erevos merkt es sich:
 Fotos und Dateien des Kontakts bis 16 MB kommen von selbst; tippe auf ein größeres, um es zu holen. Tippe auf ein
 Foto, um es auf dem ganzen Bildschirm zu sehen, mit seiner Größe: Zwei Finger oder zweimal Tippen zoomen hinein, ein
 Finger verschiebt es, solange es gezoomt ist, und einmal Tippen blendet aus oder ein, was darum ist. Tippe auf eine
-Datei, um sie zu speichern. Erevos dreht sich mit dem Telefon, solange dort **Automatisch drehen** an ist.
-**Speichern** legt eine Kopie in einen Ordner, den du beim ersten Mal wählst, und **In anderem Ordner speichern**
-ändert ihn. Fotos und Dateien haben dieselben Zeichen wie der Rest und folgen der Verschwinden-Einstellung des Chats.
+Datei, um sie zu speichern. Erevos dreht sich mit dem Telefon, solange dort **Automatisch drehen** an ist, und ein
+allein gezeigtes Foto dreht sich auch, wenn es aus ist. **Speichern** legt eine Kopie in einen Ordner, den du beim
+ersten Mal wählst, und **In anderem Ordner speichern** ändert ihn. Fotos und Dateien haben dieselben Zeichen wie der
+Rest und folgen der Verschwinden-Einstellung des Chats.
 
 - **Wie sie reisen:** Jede Datei wird auf dem Telefon mit einem eigenen Schlüssel verschlüsselt, in Stücken gleicher
   Größe, und auf dein Relay gelegt. Nur wo die Stücke sind und der Schlüssel gehen an den Kontakt,

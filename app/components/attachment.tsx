@@ -7,6 +7,7 @@ import { t } from '../lib/i18n';
 import { photoUri, releaseUri } from '../lib/photo-uri';
 import { doubleTapped, fitted, kept, moved, pinched, WHOLE, type Look, type Point, type Size } from '../lib/photo-zoom';
 import { CAN_CHOOSE_FOLDER } from '../lib/save-file';
+import { device } from '../modules/erevos-device';
 import type { FileRef } from '../lock/attachment-files';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors, useStyles } from '../theme/context';
@@ -115,8 +116,9 @@ export function useShownPhotos(files: FileRef[], onError: (error: unknown) => vo
 
 /**
  * A photo (`uri` once it is read) or file shown on its own, with how big it is, to save; none while
- * `file` is null. A photo fills the screen, turned as the phone is: two fingers or a double tap zoom
- * in, one finger moves it while zoomed, and a tap hides or shows what is around it.
+ * `file` is null. A photo fills the screen, turned as the phone is, even with its auto-rotate off:
+ * two fingers or a double tap zoom in, one finger moves it while zoomed, and a tap hides or shows
+ * what is around it.
  */
 export function FileViewer({ file, uri, onSave, onClose }: { file: FileRef | null; uri?: string; onSave: (choose: boolean) => void; onClose: () => void }) {
   const styles = useStyles(makeStyles);
@@ -124,6 +126,15 @@ export function FileViewer({ file, uri, onSave, onClose }: { file: FileRef | nul
   const [bars, setBars] = useState(true);
   const id = file?.id;
   useEffect(() => setBars(true), [id]);
+  // A photo shown turns with the phone, its auto-rotate on or off; the rest of Erevos follows the setting.
+  const photo = file?.kind === 'photo';
+  useEffect(() => {
+    if (!photo) return;
+    device?.turnWithPhone?.(true);
+    return () => {
+      device?.turnWithPhone?.(false);
+    };
+  }, [photo]);
   const tools = (
     <Row wrap style={styles.viewerTools}>
       <Button title={t('Save')} compact onPress={() => onSave(false)} />

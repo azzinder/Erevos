@@ -866,9 +866,9 @@ MB. Debajo, **Calidad de la foto** fija cómo van las fotos, y Erevos lo recuerd
 Sus fotos y archivos de hasta 16 MB llegan solos; toca uno más grande para recogerlo. Toca una foto para verla en toda
 la pantalla, con su tamaño: dos dedos o un doble toque la amplían, un dedo la mueve mientras está ampliada, y un toque
 oculta o muestra lo que hay alrededor. Toca un archivo para guardarlo. Erevos gira con el teléfono mientras **Girar
-automáticamente** está activado en él. **Guardar** pone una copia en una carpeta que eliges la primera vez, y
-**Guardar en otra carpeta** la cambia. Las fotos y los archivos tienen las mismas marcas que el resto, y siguen el
-ajuste de mensajes temporales del chat.
+automáticamente** está activado en él, y una foto vista sola gira incluso cuando está desactivado. **Guardar** pone
+una copia en una carpeta que eliges la primera vez, y **Guardar en otra carpeta** la cambia. Las fotos y los archivos
+tienen las mismas marcas que el resto, y siguen el ajuste de mensajes temporales del chat.
 
 - **Cómo viajan:** cada archivo se cifra en el teléfono con una clave propia, en trozos todos del mismo tamaño, y se
   pone en tu relay. Solo dónde están los trozos y la clave van al contacto, cifrados de extremo a extremo. Su teléfono

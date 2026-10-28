@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
@@ -21,8 +22,8 @@ import expo.modules.kotlin.modules.ModuleDefinition
 
 // What a chat asks of the phone itself and React Native does not give: the clipboard, for Copy in
 // a message's menu, where the phone is, once, to send as a place, keeping Erevos's screen out of
-// screenshots and the recent apps preview (lib/screen-privacy.ts), and the reminders of Chat with
-// myself (Reminders.kt). What is copied is marked sensitive, so Android's notice of a copy
+// screenshots and the recent apps preview (lib/screen-privacy.ts), turning a photo shown on its own
+// with the phone, and the reminders of Chat with myself (Reminders.kt). What is copied is marked sensitive, so Android's notice of a copy
 // (Android 13 and later) does not show the words. Where
 // the phone is comes from its own location, on every way it has at once (satellites, network,
 // and Android's own mix of them); only when asked, and never followed after. Plain Android, no
@@ -66,6 +67,18 @@ class ErevosDeviceModule : Module() {
       activity.runOnUiThread {
         if (on) activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         else activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+      }
+      true
+    }
+
+    // While `on`, the screen turns with the phone even with its auto-rotate off, as a photo shown on
+    // its own does (components/attachment.tsx); off, it follows the phone's setting again. False when
+    // no activity is showing.
+    Function("turnWithPhone") { on: Boolean ->
+      val activity = appContext.currentActivity ?: return@Function false
+      activity.runOnUiThread {
+        activity.requestedOrientation =
+          if (on) ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
       }
       true
     }

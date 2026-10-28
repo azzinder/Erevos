@@ -876,9 +876,10 @@ Erevos se lo ricorda:
 Le sue foto e i suoi file fino a 16 MB arrivano da soli; tocca uno più grande per prenderlo. Tocca una foto per
 vederla a tutto schermo, con le sue dimensioni: due dita o un doppio tocco la ingrandiscono, un dito la sposta mentre
 è ingrandita, e un tocco nasconde o mostra ciò che ha intorno. Tocca un file per salvarlo. Erevos ruota con il
-telefono finché la sua **Rotazione automatica** è attiva. **Salva** mette una copia in una cartella che scegli la
-prima volta, e **Salva in un’altra cartella** la cambia. Foto e file hanno gli stessi segni degli altri messaggi, e
-seguono l’impostazione dei messaggi effimeri della chat.
+telefono finché la sua **Rotazione automatica** è attiva, e una foto mostrata da sola ruota anche quando è
+disattivata. **Salva** mette una copia in una cartella che scegli la prima volta, e **Salva in un’altra cartella** la
+cambia. Foto e file hanno gli stessi segni degli altri messaggi, e seguono l’impostazione dei messaggi effimeri della
+chat.
 
 - **Come viaggiano:** ogni file viene crittografato sul telefono con una chiave tutta sua, in pezzi tutti della stessa
   dimensione, e messo sul tuo relay. Al contatto vanno solo dove sono i pezzi e la chiave, crittografati end-to-end. Il

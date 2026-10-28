@@ -79,7 +79,8 @@ On main, not released yet:
   **Media, links and files** now shows edge to edge on black, turned as the phone is. Two fingers or a double tap zoom
   in, one finger moves it while zoomed, and a tap hides or shows its size and **Save** and **Close**. It is decoded at
   about twice the screen's size, so a very big photo, such as one of 50 megapixels, opens as a small one does instead
-  of being drawn whole. Erevos also turns with the phone while the phone's **Auto-rotate** is on; it was held upright.
+  of being drawn whole. Erevos also turns with the phone while the phone's **Auto-rotate** is on (it was held upright),
+  and a photo shown on its own turns with it even when **Auto-rotate** is off.
 
 - **Matrix accounts in Erevos**: under **Settings** → **Relay and networks** → **Matrix**, a space signs in to a
   Matrix account as a new device named Erevos, and chats with people who use Element or another Matrix app: invites

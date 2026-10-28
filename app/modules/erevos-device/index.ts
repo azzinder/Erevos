@@ -14,6 +14,8 @@ type Device = {
   stopPlace?(): void;
   /** Keeps the app out of screenshots and the recent apps preview while on. False with no screen showing. Missing in a build before it. */
   setSecure?(on: boolean): boolean;
+  /** While on, the screen turns with the phone even with its auto-rotate off; off, it follows the setting again. False with no screen showing. Missing in a build before it. */
+  turnWithPhone?(on: boolean): boolean;
   /** Keeps a reminder of Chat with myself for `at` (ms), told with Erevos closed; one with this id is replaced. False when too many wait. Missing in a build before it. */
   remind?(id: string, at: number): boolean;
   /** Forgets a reminder that has not come. Missing in a build before reminders. */

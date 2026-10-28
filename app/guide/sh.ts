@@ -855,9 +855,9 @@ Erevos to pamti:
 Fotografije i datoteke te osobe do 16 MB stižu same; dodirnite veću da je preuzmete. Dodirnite fotografiju da je
 vidite preko cijelog ekrana, s njenom veličinom: dva prsta ili dvostruki dodir je uvećavaju, jedan prst je pomjera dok
 je uvećana, a jedan dodir skriva ili prikazuje ono što je oko nje. Dodirnite datoteku da je sačuvate. Erevos se okreće
-s telefonom dok je na telefonu uključeno **Automatsko okretanje**. **Sačuvaj** stavlja kopiju u folder koji izaberete
-prvi put, a **Sačuvaj u drugi folder** ga mijenja. Fotografije i datoteke imaju iste oznake kao i ostale i prate
-postavku nestajanja razgovora.
+s telefonom dok je na telefonu uključeno **Automatsko okretanje**, a fotografija prikazana sama okreće se i kad je
+isključeno. **Sačuvaj** stavlja kopiju u folder koji izaberete prvi put, a **Sačuvaj u drugi folder** ga mijenja.
+Fotografije i datoteke imaju iste oznake kao i ostale i prate postavku nestajanja razgovora.
 
 - **Kako putuju:** svaka datoteka šifrira se na telefonu vlastitim ključem, u dijelovima iste veličine, i stavlja na
   vaš relay. Kontaktu idu samo lokacija dijelova i ključ, šifrirani s kraja na kraj. Njegov telefon preuzima dijelove

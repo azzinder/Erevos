@@ -870,9 +870,9 @@ até 100 MB. Abaixo deles, **Qualidade da foto** define como as fotos vão, e o 
 As fotos e os arquivos da pessoa de até 16 MB chegam sozinhos; toque num maior para baixá-lo. Toque numa foto para
 vê-la na tela inteira, com o tamanho dela: dois dedos ou um toque duplo a ampliam, um dedo a move enquanto está
 ampliada, e um toque esconde ou mostra o que há em volta. Toque num arquivo para salvá-lo. O Erevos gira com o
-telefone enquanto **Girar automaticamente** estiver ativado nele. **Salvar** põe uma cópia numa pasta que você escolhe
-na primeira vez, e **Salvar em outra pasta** a muda. Fotos e arquivos têm as mesmas marcas que o resto, e seguem a
-configuração de mensagens temporárias da conversa.
+telefone enquanto **Girar automaticamente** estiver ativado nele, e uma foto vista sozinha gira mesmo quando está
+desativado. **Salvar** põe uma cópia numa pasta que você escolhe na primeira vez, e **Salvar em outra pasta** a muda.
+Fotos e arquivos têm as mesmas marcas que o resto, e seguem a configuração de mensagens temporárias da conversa.
 
 - **Como eles viajam:** cada arquivo é criptografado no celular com uma chave própria, em pedaços todos do mesmo
   tamanho, e posto no seu relay. Só o lugar onde estão os pedaços e a chave vão para o contato, criptografados de ponta
