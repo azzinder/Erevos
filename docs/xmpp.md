@@ -343,8 +343,13 @@ nothing outside its hidden chats shows.
   under it, and lists the place's chats (`xmppInboxRows`), which open with `hidden=1`
   (`components/chat-row.tsx`).
 - It tells nothing outside its hidden chats: no notice, no number on Erevos's icon or the home list,
-  and no notification settings. It has no calls: the tiles are not on its chats, and a call to it is
-  refused (`app/lib/xmpp-calls.ts` takes calls for the space's account only).
+  and no notification settings.
+- Its calls are its own, a place of calls apart from the space's (`xmppPlaceCalls` in
+  `app/lib/xmpp-calls.ts`, each call's session marked `place`): the tiles of its chats call from its
+  account, and a call to it rings while the hidden chats are open (the only time it is connected), with
+  the phone's ringtone and named as its contacts name the caller. The hidden chats stay open through the
+  call (`app/app/chat.tsx`), and a call still on as they close ends (`watch` in `XmppCallsSpace`).
+  Checked in `app/checks/xmpp-calls.check.ts`.
 - `app/checks/place-networks.check.ts` checks the stores against the server played in the checks,
   with the real core; not yet on a phone.
 

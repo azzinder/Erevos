@@ -53,8 +53,8 @@ import { useColors } from '../theme/context';
 // (lib/matrix-media.ts); a photo is fetched only when tapped, so the homeserver does not learn
 // which were looked at merely by scrolling. Its call buttons open Element Call (lib/matrix-calls.ts),
 // where Erevos has it. Opened from a hidden place's hidden chats (`hidden=1`) it is the chat of
-// that place's own account (lib/network-place.ts): no call buttons and no notification settings,
-// as a place's chats tell nothing outside the hidden chats.
+// that place's own account (lib/network-place.ts), whose calls are that account's, and has no
+// notification settings, as a place's chats tell nothing outside the hidden chats.
 //
 // A message held down opens its menu (components/message-menu.tsx): react to it, answer it, copy
 // it, and for one of ours change it or delete it for everyone. An answer shows the message it is to
@@ -191,7 +191,7 @@ export default function MatrixChatScreen() {
       return;
     }
     try {
-      startMatrixCall(roomId, video);
+      startMatrixCall(roomId, video, where === 'place');
     } catch (error) {
       fail(error);
     }
@@ -309,7 +309,7 @@ export default function MatrixChatScreen() {
         <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
           {room.name}
         </Text>
-        {canElementCall() && where === 'space' && !room.invitedBy ? (
+        {canElementCall() && !room.invitedBy ? (
           <>
             <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
               <VideoSign />

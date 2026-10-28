@@ -574,3 +574,76 @@ test('a ring missed long ago leaves one line, however often sync brings it', { s
     stop();
   }
 });
+
+test("a hidden place's own account rings and calls as itself, and its call ends as its hidden chats close", { skip: !coreReady }, async () => {
+  await twoPeople();
+  // The phone's open hidden place has an account of its own, carol, in a chat with Alice.
+  const carol = await signIn(HS, 'carol', PASSWORD);
+  const carolRoom = (await startChat(alice, carol.userId)).id;
+  await sync(carol, 0);
+  await joinRoom(carol, carolRoom);
+  await sync(carol, 0);
+  await sync(alice, 0);
+  let open = true;
+  const watching = new Set<() => void>();
+  const closePlace = () => {
+    open = false;
+    watching.forEach((listener) => listener());
+  };
+  const w = window_();
+  const stop = watchMatrixCalls(w.shownIn, {
+    now: () => bob,
+    ...accountOf(() => bob),
+    place: { now: () => (open ? carol : null), ...accountOf(() => carol) },
+    watch: (listener) => {
+      watching.add(listener);
+      return () => watching.delete(listener);
+    },
+    page: 'https://x/index.html',
+    parentUrl: 'https://x/index.html',
+  });
+  try {
+    // A ring to the place's account rings as the place's, and is answered as carol, in her room.
+    await sendEvent(alice, carolRoom, 'org.matrix.msc4075.rtc.notification', { ...ring(false), 'm.mentions': { user_ids: [carol.userId], room: false } });
+    await sync(carol, 0);
+    const call = shownMatrixCall()!;
+    assert.equal(call.place, true);
+    assert.equal(call.roomId, carolRoom);
+    // The space's account hears nothing of it, and a ring of its own waits: the phone is busy.
+    await sync(bob, 0);
+    assert.equal(shownMatrixCall(), call);
+    answerMatrixCall(call);
+    const params = new URLSearchParams(w.opened[0].url.split('#?')[1]);
+    assert.equal(params.get('userId'), carol.userId);
+    assert.equal(params.get('deviceId'), carol.deviceId);
+    assert.equal(params.get('roomId'), carolRoom);
+    assert.equal(params.get('intent'), 'join_existing_dm_voice');
+
+    // Element Call hears of carol's room, through carol's sync only.
+    await w.app.send('content_loaded');
+    await until(() => w.app.told('update_state').length > 0, 'the room state');
+    await sendStateEvent(alice, carolRoom, CALL_MEMBER, `_${alice.userId}_${alice.deviceId}_m.call`, { application: 'm.call', device_id: alice.deviceId, focus_active: { type: 'livekit' } });
+    await sync(carol, 0);
+    await until(() => w.app.told('update_state').some((m) => (m.data.state as Json[]).some((e) => e.sender === alice.userId && e.type === CALL_MEMBER)), 'Alice in the call');
+
+    // The hidden chats close: the call ends with them, and Element Call's window closes.
+    closePlace();
+    assert.equal(call.state, 'ended');
+    assert.equal(shownMatrixCall(), null);
+    assert.equal(w.closed(), 1);
+    await sendStateEvent(alice, carolRoom, CALL_MEMBER, `_${alice.userId}_${alice.deviceId}_m.call`, {});
+
+    // Open again, a call from the place's chat goes as carol; the space's account is not in that room.
+    open = true;
+    assert.throws(() => startMatrixCall(carolRoom, true), /Not signed in/);
+    const ours = startMatrixCall(carolRoom, true, true);
+    assert.equal(ours.place, true);
+    assert.equal(new URLSearchParams(w.opened[1].url.split('#?')[1]).get('userId'), carol.userId);
+    hangUpMatrixCall();
+    await until(() => ours.state === 'ended', 'the call to end');
+    // Its line is in the place's chat, not the space's.
+    assert.ok(carol.rooms[carolRoom].messages.some((m) => m.call && m.text.includes('Video call')));
+  } finally {
+    stop();
+  }
+});

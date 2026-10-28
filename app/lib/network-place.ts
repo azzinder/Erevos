@@ -6,8 +6,9 @@ import { enterHiddenScreen } from './hidden-contacts';
 // app/nostr-chats.tsx and their chats): the open space's, or the open hidden place's own
 // (lib/place-networks.ts) when the screen was opened from its hidden chats (`hidden=1`). Each
 // screen shows its own (matrixNow(where) and the like); what it does goes to the account of the
-// screen on top, said as it shows and given back as it goes. Home, the notices and calls use the
-// space's only, so nothing of a hidden place's accounts ever shows outside its hidden chats.
+// screen on top, said as it shows and given back as it goes. Home and the notices use the space's
+// only, and a place's calls ring only while its hidden chats are open (lib/matrix-calls.ts,
+// lib/xmpp-calls.ts), so nothing of a hidden place's accounts ever shows outside its hidden chats.
 
 export type NetworkWhere = 'space' | 'place';
 

@@ -19,6 +19,11 @@ import { CALL_MEMBER, hostWidget, type WidgetHost, type WidgetMessage, type Widg
 // the caller (MSC4310). Answering opens Element Call into the call.
 //
 // The older Matrix calls (m.call.*, one to one, as FluffyChat makes them) do not ring here.
+//
+// A hidden place's own account (lib/place-networks.ts) calls and is called the same way while its
+// hidden chats are open, and only then: its account runs only then, and they stay open through
+// its call (app/chat.tsx). Its call rings with the phone's ringtone, as the hidden chats' do, and
+// ends as they close.
 
 /** Where Element Call shows: its window on Android, a frame on the web. The checks give their own. */
 export type CallWindow = {
@@ -29,15 +34,23 @@ export type CallWindow = {
   close(): void;
 };
 
-/** What the calls need of the open space: its Matrix account (lib/matrix-store.ts), and where
- *  Element Call's page is. */
-export type MatrixCallsSpace = {
+/** A Matrix account that calls (lib/matrix-store.ts). */
+export type MatrixCallsAccount = {
   /** The account as it is now, or null. */
   now(): MatrixState | null;
   /** Runs `use` with the account after the changes asked for before it, and keeps what it changed. */
   change<T>(use: (state: MatrixState) => Promise<T>): Promise<T>;
   /** Runs `use` with the account at once, for what changes nothing of it. */
   read<T>(use: (state: MatrixState) => Promise<T>): Promise<T>;
+};
+
+/** What the calls need of the open space: its Matrix account, the open hidden place's own, and
+ *  where Element Call's page is. */
+export type MatrixCallsSpace = MatrixCallsAccount & {
+  /** The open hidden place's own account, whose `now` is null while none is open. */
+  place?: MatrixCallsAccount;
+  /** Calls the listener as the accounts change (one signed in or out, a place's opened or closed). Returns how to stop. */
+  watch?(listener: () => void): () => void;
   /** Element Call's page, and the address its host says it is at (the Widget API's parentUrl). */
   page: string;
   parentUrl: string;
@@ -65,6 +78,8 @@ export type MatrixCall = {
   /** How it ended, when not hung up: turned down (by them, or here or on another of our devices),
    *  answered on another device, not answered, or rung while in another call. */
   end?: 'declined' | 'elsewhere' | 'missed' | 'busy';
+  /** A call of the open hidden place's own account, not the space's. */
+  place?: true;
 };
 
 /** The rings of a call: the one MatrixRTC sends now, and the older one sent beside it. */
@@ -86,6 +101,17 @@ let space: MatrixCallsSpace | null = null;
 let ringEnds: ReturnType<typeof setTimeout> | null = null;
 let closing: ReturnType<typeof setTimeout> | null = null;
 const listeners = new Set<() => void>();
+
+/** The account a call is of: the space's, or the open hidden place's. */
+const accountOf = (call: Pick<MatrixCall, 'place'>): MatrixCallsAccount | undefined => (call.place ? space?.place : (space ?? undefined));
+
+/** Whose `state` is, as its events come: the space's account (false), the open hidden place's
+ *  (true), or neither (null), one let go of whose last sync still ends. */
+function placeOf(state: MatrixState): boolean | null {
+  if (space?.now() === state) return false;
+  if (space?.place?.now() === state) return true;
+  return null;
+}
 
 function changed(): void {
   listeners.forEach((listener) => {
@@ -193,7 +219,7 @@ function line(call: MatrixCall, state?: MatrixState): void {
   const mine = call.outgoing || call.end === 'declined' || call.end === 'elsewhere';
   // Inside a change already (a sync's), or a change of its own.
   if (state) addMatrixCallLine(state, call.roomId, mine, text, call.id);
-  else void space?.change(async (s) => addMatrixCallLine(s, call.roomId, mine, text, call.id)).catch(() => undefined);
+  else void accountOf(call)?.change(async (s) => addMatrixCallLine(s, call.roomId, mine, text, call.id)).catch(() => undefined);
 }
 
 function finish(call: MatrixCall, state?: MatrixState): void {
@@ -225,20 +251,24 @@ function busy(): boolean {
 // A call's event, as sync brings it (lib/matrix.ts): a ring, a decline, a member come or gone, or
 // one for Element Call, which gets every event of its room through the room tap meanwhile.
 async function onCallEvent(state: MatrixState, event: CallEvent): Promise<boolean> {
+  // The space's account, or the open hidden place's: each hears only its own calls.
+  const place = placeOf(state);
+  if (place === null) return false;
+  const ours = (call: MatrixCall) => !!call.place === place;
   if (event.encrypted !== undefined) {
-    host?.toDevice({ type: event.type, sender: event.sender, content: event.content }, event.encrypted);
+    if (shown && ours(shown)) host?.toDevice({ type: event.type, sender: event.sender, content: event.content }, event.encrypted);
     return false;
   }
   if (!event.roomId) return false;
   const now = Date.now();
   const me = state.userId;
-  const call = shown && shown.state !== 'ended' && shown.roomId === event.roomId ? shown : null;
+  const call = shown && shown.state !== 'ended' && shown.roomId === event.roomId && ours(shown) ? shown : null;
   if (RINGS.has(event.type)) {
     const ring = ringOf(event, me, now);
     if (!ring || !event.eventId) return false;
     // The older ring beside the newer one, or another for a call that already rings or is open.
     if (call) return false;
-    const rung: MatrixCall = { id: event.eventId, roomId: event.roomId, video: ring.video, outgoing: false, state: 'incoming', from: event.sender, ring: event.eventId };
+    const rung: MatrixCall = { id: event.eventId, roomId: event.roomId, video: ring.video, outgoing: false, state: 'incoming', from: event.sender, ring: event.eventId, ...(place ? { place: true as const } : {}) };
     if (ring.until <= now) {
       if ((event.age ?? now - event.ts) < LINE_AGE_MOST_MS && !state.rooms[event.roomId]?.messages.some((m) => m.id === event.eventId)) {
         rung.state = 'ended';
@@ -299,10 +329,11 @@ async function onCallEvent(state: MatrixState, event: CallEvent): Promise<boolea
 
 function open(call: MatrixCall, intent: string): void {
   if (!space || !callWindow) throw new Error(t('Matrix calls are not ready on this device.'));
-  const state = space.now();
-  if (!state) throw new Error(t('Not signed in to Matrix.'));
+  const from = accountOf(call);
+  const state = from?.now();
+  if (!from || !state) throw new Error(t('Not signed in to Matrix.'));
   const widgetId = toHex(randomBytes(12));
-  const account = { userId: state.userId, deviceId: state.deviceId, change: space.change, read: space.read };
+  const account = { userId: state.userId, deviceId: state.deviceId, change: from.change, read: from.read };
   const opened = callWindow;
   host = hostWidget({
     widgetId,
@@ -312,8 +343,9 @@ function open(call: MatrixCall, intent: string): void {
     told: (news) => heard(call, news),
   });
   const own = host;
-  setRoomTap((roomId, event, timeline) => {
-    if (roomId === call.roomId) own.roomEvent(event, timeline);
+  // Only the call's account's: the other may be in the same room.
+  setRoomTap((roomId, event, timeline, tapped) => {
+    if (roomId === call.roomId && tapped === from.now()) own.roomEvent(event, timeline);
   });
   call.state = 'open';
   opened.open(
@@ -334,12 +366,13 @@ function heard(call: MatrixCall, news: WidgetNews): void {
   finish(call);
 }
 
-/** Calls the people of a Matrix room: Element Call opens and rings them. Throws if a call is on. */
-export function startMatrixCall(roomId: string, video: boolean): MatrixCall {
+/** Calls the people of a Matrix room, of the space's account or (`place`) the open hidden place's:
+ *  Element Call opens and rings them. Throws if a call is on. */
+export function startMatrixCall(roomId: string, video: boolean, place = false): MatrixCall {
   if (busy()) throw new Error(t('There is a call already.'));
-  const room = space?.now()?.rooms[roomId];
+  const room = accountOf({ place: place || undefined })?.now()?.rooms[roomId];
   if (!room) throw new Error(t('Not signed in to Matrix.'));
-  const call: MatrixCall = { id: `call-${toHex(randomBytes(8))}`, roomId, video, outgoing: true, state: 'open' };
+  const call: MatrixCall = { id: `call-${toHex(randomBytes(8))}`, roomId, video, outgoing: true, state: 'open', ...(place ? { place: true as const } : {}) };
   shown = call;
   try {
     open(call, room.direct ? (video ? 'start_call_dm' : 'start_call_dm_voice') : video ? 'start_call' : 'start_call_voice');
@@ -355,7 +388,7 @@ export function answerMatrixCall(call: MatrixCall): void {
   if (shown !== call || call.state !== 'incoming') return;
   if (ringEnds) clearTimeout(ringEnds);
   ringEnds = null;
-  const direct = space?.now()?.rooms[call.roomId]?.direct ?? true;
+  const direct = accountOf(call)?.now()?.rooms[call.roomId]?.direct ?? true;
   open(call, direct ? (call.video ? 'join_existing_dm' : 'join_existing_dm_voice') : call.video ? 'join_existing' : 'join_existing_voice');
 }
 
@@ -366,7 +399,7 @@ export function declineMatrixCall(call: MatrixCall): void {
   const ring = call.ring;
   // The older ring has no decline: it just stops ringing.
   if (ring) {
-    void space
+    void accountOf(call)
       ?.change((state) => sendEvent(state, call.roomId, 'org.matrix.msc4310.rtc.decline', { 'm.relates_to': { rel_type: 'm.reference', event_id: ring } }))
       .catch(() => undefined);
   }
@@ -405,7 +438,15 @@ export function watchMatrixCalls(shownIn: CallWindow, given: MatrixCallsSpace): 
   callWindow = shownIn;
   space = given;
   setCallHandler(onCallEvent);
+  // A hidden place's call ends as its hidden chats close: its account goes with them.
+  const stopWatch = given.watch?.(() => {
+    if (shown?.place && shown.state !== 'ended' && !given.place?.now()) {
+      if (shown.state === 'incoming') shown.end = 'missed';
+      finish(shown);
+    }
+  });
   return () => {
+    stopWatch?.();
     if (shown) {
       if (shown.state === 'incoming') shown.end = 'missed';
       finish(shown);

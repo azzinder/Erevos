@@ -2187,10 +2187,12 @@ lo que contienen los lugares que se quitaran.
   [Matrix](#matrix), [XMPP](#xmpp) y [Chats con otras apps de Nostr](#nostr-chats)) para cuentas propias de los chats
   ocultos, aparte de las del espacio: una cuenta de Matrix y otra de XMPP en las que iniciar sesión, y una clave de
   Nostr. Las sesiones y la clave se guardan cifradas con la clave de los chats ocultos, y nada de ellas se ve fuera de
-  los chats ocultos: sus chats están solo en la lista de los chats ocultos, y no suman al número del icono de Erevos
-  ni a la lista de inicio. Las cuentas se conectan solo mientras los chats ocultos están abiertos, así que mientras
-  están cerrados no llega nada y no sale ningún aviso, ni siquiera con **Recibir estando cerrados** activado. No
-  tienen llamadas, y una cuenta de Matrix no tiene **Avisar de mensajes nuevos**.
+  los chats ocultos: sus chats están solo en la lista de los chats ocultos, y no suman al número del icono de Erevos ni
+  a la lista de inicio. Las cuentas se conectan solo mientras los chats ocultos están abiertos, así que mientras están
+  cerrados no llega nada y no sale ningún aviso, ni siquiera con **Recibir estando cerrados** activado. Sus chats llaman
+  como los del espacio, desde la cuenta propia de los chats ocultos; una llamada a ella suena solo mientras los chats
+  ocultos están abiertos, con el tono del teléfono, y siguen abiertos hasta que termina. Una cuenta de Matrix suya no
+  tiene **Avisar de mensajes nuevos**.
 - **Las vistas previas de enlaces** tienen un interruptor propio en los detalles de un chat oculto, para todos los chats
   de ese lugar, desactivado salvo que lo actives (ver **Vistas previas de enlaces** en
   [Chatear a través de un relay](#relay)).

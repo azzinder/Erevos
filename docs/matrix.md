@@ -234,8 +234,12 @@ nothing outside its hidden chats shows.
   open with `hidden=1` (`components/chat-row.tsx`).
 - It tells nothing outside its hidden chats: no notice, no number on Erevos's icon or the home list, no
   notification settings, and no closed-space notice (`matrixSetPush` refuses a place, and its section
-  is not on the screen). It has no calls: the buttons are not there, and Element Call is the space's
-  account's.
+  is not on the screen).
+- Its calls are its own (`MatrixCall.place` and `MatrixCallsSpace.place` in `app/lib/matrix-calls.ts`):
+  the buttons of its chats open Element Call as that account, a ring to it rings while the hidden chats
+  are open, with the phone's ringtone, and Element Call hears only its account's sync (the room tap
+  says which account an event came to). The hidden chats stay open through the call (`app/app/chat.tsx`),
+  and a call still on as they close ends. Checked in `app/checks/matrix-calls.check.ts`.
 - `app/checks/place-networks.check.ts` checks the stores against the homeserver played in the checks,
   with the real core; not yet on a phone.
 
@@ -261,7 +265,7 @@ phone it is restored on go. Not yet on a phone.
 - Checking by QR, and trust shown per device in a group.
 - A room's history beyond the 2000 messages it keeps.
 - Notices while no space is open, or Android stopped Erevos; a closed space's notice naming the chat.
-- Calls in a hidden chat's place (its account has none), and on Sailfish OS.
+- Calls on Sailfish OS.
 - A ring while Erevos is closed: it shows as missed when the space next syncs.
 - Older one-to-one calls (`m.call.*`), and MatrixRTC's sticky membership (MSC4354, Element Call's
   "Matrix 2.0" mode): Element Call is not given sticky events.

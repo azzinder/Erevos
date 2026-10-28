@@ -428,20 +428,34 @@ export function xmppDecline(jid: string): Promise<void> {
   return changeAccount(it, () => declineXmppRequest(it.state, online(it), jid));
 }
 
-/** The open space's account and its connection, while it is connected: for calls (lib/xmpp-calls.ts). */
-export function xmppLink(): { state: XmppState; connection: XmppConnection } | null {
-  const it = live;
+// An account and its connection, while it is connected.
+function linkOf(it: Live | null): { state: XmppState; connection: XmppConnection } | null {
   return it?.state && it.connection?.isOpen ? { state: it.state, connection: it.connection } : null;
 }
 
-/** Keeps a call's line in a chat; one with the same `id` is said again in its place. */
-export function xmppCallLine(jid: string, mine: boolean, text: string, id: string, at = Date.now()): Promise<void> {
-  const it = live;
+// Keeps a call's line in a chat of the account; one with the same `id` is said again in its place.
+function callLineOf(it: Live | null, jid: string, mine: boolean, text: string, id: string, at: number): Promise<void> {
   if (!it?.state) return Promise.resolve();
   return changeAccount(it, async () => {
     if (it.state) addCallLine(it.state, jid, mine, text, id, at);
   });
 }
+
+const openPlace = () => (place && !place.stopped ? place : null);
+
+/** The open space's account and its connection, while it is connected: for calls (lib/xmpp-calls.ts). */
+export const xmppLink = () => linkOf(live);
+
+/** Keeps a call's line in a chat of the space's account; one with the same `id` is said again in its place. */
+export const xmppCallLine = (jid: string, mine: boolean, text: string, id: string, at = Date.now()) => callLineOf(live, jid, mine, text, id, at);
+
+/** The open hidden place's own account, for its calls while its hidden chats are open: whether they
+ *  are, its connection while it is connected, and its chats' call lines. */
+export const xmppPlaceAccount = {
+  open: () => !!openPlace(),
+  link: () => linkOf(openPlace()),
+  line: (jid: string, mine: boolean, text: string, id: string, at = Date.now()) => callLineOf(openPlace(), jid, mine, text, id, at),
+};
 
 export function xmppForgetChat(jid: string): Promise<void> {
   const it = need();

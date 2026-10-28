@@ -6,7 +6,7 @@ import { candidatesOf, GROUPING, ICE, JINGLE, jingleToSdp, otherSetup, RTP, sdpT
 import type { CallRelay } from './relay';
 import { spaceCalls } from './space-calls';
 import { bare, nameOf, NS, setCallHook, type XmppConnection, type XmppState } from './xmpp';
-import { xmppCallLine, xmppLink, xmppNow } from './xmpp-store';
+import { onXmppChange, xmppCallLine, xmppLink, xmppNow, xmppPlaceAccount } from './xmpp-store';
 import { child, children, el, type XmlElement } from './xmpp-xml';
 
 // One-to-one calls with people on XMPP (docs/xmpp.md), as Conversations, Monal and Dino make them:
@@ -27,6 +27,10 @@ import { child, children, el, type XmlElement } from './xmpp-xml';
 // those servers could put themselves in between. The call goes through our own call relay when
 // the space has one, else the XMPP server's (XEP-0215), and only through it, so the other side
 // learns no address of this phone; with neither, it goes straight and they learn it.
+//
+// A hidden place's own account (lib/place-networks.ts) calls and is called the same way while its
+// hidden chats are open, and only then, as a place of calls of its own (xmppPlaceCalls): they stay
+// open through its call (app/chat.tsx), and it ends as they close.
 
 export const XMPP_PREFIX = 'xmpp:';
 
@@ -64,6 +68,8 @@ type Session = {
   adding: { names: string[]; done: (accepted: XmlElement[] | null) => void } | null;
   /** Theirs, adding video: the contents they add, waiting for our yes or no. */
   asked: XmlElement[] | null;
+  /** Of the open hidden place's own account, not the space's. */
+  place?: true;
 };
 
 const noneYet = { initiate: null, waiting: null, theirs: [], bundled: false, adding: null, asked: null } as const;
@@ -71,18 +77,26 @@ const noneYet = { initiate: null, waiting: null, theirs: [], bundled: false, add
 /** How long video added from here waits for their yes, milliseconds: their screen asks them. */
 const ADD_MS = 60_000;
 
-/** What the calls need of the open space: its XMPP account (lib/xmpp-store.ts) and its own call
- *  relay. The checks give their own. */
-export type XmppCallsSpace = {
+/** An XMPP account that calls (lib/xmpp-store.ts). */
+export type XmppCallsAccount = {
   /** The account and its connection, while it is connected. */
   link(): { state: XmppState; connection: XmppConnection } | null;
   /** Keeps a call's line in the chat with `jid`; one with the same `id` is said again in its place. */
   line(jid: string, mine: boolean, text: string, id: string, at?: number): Promise<void>;
-  /** The call relay beside the space's relay, or null. */
-  callRelay(): Promise<CallRelay | null>;
 };
 
-const theSpace: XmppCallsSpace = { link: xmppLink, line: xmppCallLine, callRelay: () => spaceCalls.callRelay() };
+/** What the calls need of the open space: its XMPP account, the open hidden place's own, and its
+ *  own call relay. The checks give their own. */
+export type XmppCallsSpace = XmppCallsAccount & {
+  /** The call relay beside the space's relay, or null. */
+  callRelay(): Promise<CallRelay | null>;
+  /** The open hidden place's own account, and whether its hidden chats are open (connected or not). */
+  place?: XmppCallsAccount & { open(): boolean };
+  /** Calls the listener as the accounts change (a place's opened or closed). Returns how to stop. */
+  watch?(listener: () => void): () => void;
+};
+
+const theSpace: XmppCallsSpace = { link: xmppLink, line: xmppCallLine, callRelay: () => spaceCalls.callRelay(), place: xmppPlaceAccount, watch: onXmppChange };
 
 const sessions = new Map<string, Session>();
 let rtcNow: Rtc | null = null;
@@ -93,11 +107,27 @@ const calling = (id: string): Call | null => {
   return call?.id === id ? call : null;
 };
 
-function link(): { state: XmppState; connection: XmppConnection } {
-  const now = space.link();
+/** The account of the space (false) or of the open hidden place (true). */
+const accountOf = (place: boolean | undefined): XmppCallsAccount | undefined => (place ? space.place : space);
+
+function link(place: boolean): { state: XmppState; connection: XmppConnection } {
+  const now = accountOf(place)?.link();
   if (!now) throw new Error(t('Not connected to the XMPP server yet. Try again in a moment.'));
   return now;
 }
+
+/** Whether `state` is the open hidden place's account (true) or the space's (false); null for neither. */
+function placeOf(state: XmppState): boolean | null {
+  if (space.link()?.state === state) return false;
+  if (space.place?.link()?.state === state) return true;
+  return null;
+}
+
+/** A call of the account `place` says: one of the other is none of its. */
+const sessionOf = (id: string, place: boolean): Session | undefined => {
+  const s = sessions.get(id);
+  return s && !!s.place === place ? s : undefined;
+};
 
 const jmi = (to: string, name: string, id: string, ...inner: XmlElement[]) =>
   el('message', { to, type: 'chat', id: `${name}-${id}` }, el(name, { xmlns: JMI, id }, ...inner), el('store', { xmlns: NS.hints }));
@@ -123,134 +153,144 @@ function callEnd(reason: XmlElement | undefined, connected: boolean): CallEnd {
   return 'failed';
 }
 
-// ---- the place, as lib/calls.ts knows places ----
+// ---- the places, as lib/calls.ts knows places: the space's account's calls, and the open hidden place's ----
 
-export const xmppCalls: CallPlace = {
-  async send(jid, signal) {
-    const { connection } = link();
-    const s = sessions.get(signal.id);
-    switch (signal.kind) {
-      case 'offer': {
-        // Ours: it rings on every device of theirs that can take calls.
-        sessions.set(signal.id, { ...noneYet, theirs: [], id: signal.id, jid, full: '', outgoing: true, video: signal.video, offer: signal.sdp, rung: true, started: false });
-        const media = [el('description', { xmlns: 'urn:xmpp:jingle:apps:rtp:1', media: 'audio' }), signal.video ? el('description', { xmlns: 'urn:xmpp:jingle:apps:rtp:1', media: 'video' }) : null];
-        await connection.send(jmi(jid, 'propose', signal.id, ...media.filter((m): m is XmlElement => m !== null)));
-        return;
-      }
-      case 'ringing':
-        if (!s) return;
-        if (s.rung) await connection.send(jmi(s.full, 'ringing', s.id));
-        else await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'session-info', sid: s.id }, el('ringing', { xmlns: RTP_INFO })));
-        return;
-      case 'answer':
-        if (!s) throw new Error(t('The call ended.'));
-        await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'session-accept', sid: s.id, responder: connection.fullJid }, ...sdpToJingle(signal.sdp, 'responder')));
-        // The call as their offer and our answer set it up, for video added later.
-        if (s.initiate) settle(s, s.initiate, otherSetup(setupOf(signal.sdp)));
-        return;
-      case 'end': {
-        if (!s) return;
-        sessions.delete(s.id);
-        // The call has ended here already, and is no longer the current one: the one shown.
-        const call = shownCall()?.call;
-        const reason = jingleReason(signal.reason, s.outgoing, call?.id === s.id && !!call.connectedAt);
-        if (s.started) {
-          await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'session-terminate', sid: s.id }, reasonElement(reason))).catch(() => undefined);
-          // Rung with XEP-0353: the end is told in both archives too, for their other devices.
-          if (s.rung) await connection.send(jmi(s.jid, 'finish', s.id, reasonElement(reason))).catch(() => undefined);
-        } else if (s.outgoing) {
-          await connection.send(jmi(s.jid, 'retract', s.id, reasonElement(reason)));
-        } else if (s.rung) {
-          // Ours turned it down, or it rang out here: their phone stops ringing, and our other devices too.
-          await connection.send(jmi(s.full, 'reject', s.id, reasonElement(reason)));
+function callsOf(place: boolean): CallPlace {
+  const mark = place ? { place: true as const } : {};
+  return {
+    async send(jid, signal) {
+      const { connection } = link(place);
+      const s = sessionOf(signal.id, place);
+      switch (signal.kind) {
+        case 'offer': {
+          // Ours: it rings on every device of theirs that can take calls.
+          sessions.set(signal.id, { ...noneYet, theirs: [], id: signal.id, jid, full: '', outgoing: true, video: signal.video, offer: signal.sdp, rung: true, started: false, ...mark });
+          const media = [el('description', { xmlns: 'urn:xmpp:jingle:apps:rtp:1', media: 'audio' }), signal.video ? el('description', { xmlns: 'urn:xmpp:jingle:apps:rtp:1', media: 'video' }) : null];
+          await connection.send(jmi(jid, 'propose', signal.id, ...media.filter((m): m is XmlElement => m !== null)));
+          return;
         }
+        case 'ringing':
+          if (!s) return;
+          if (s.rung) await connection.send(jmi(s.full, 'ringing', s.id));
+          else await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'session-info', sid: s.id }, el('ringing', { xmlns: RTP_INFO })));
+          return;
+        case 'answer':
+          if (!s) throw new Error(t('The call ended.'));
+          await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'session-accept', sid: s.id, responder: connection.fullJid }, ...sdpToJingle(signal.sdp, 'responder')));
+          // The call as their offer and our answer set it up, for video added later.
+          if (s.initiate) settle(s, s.initiate, otherSetup(setupOf(signal.sdp)));
+          return;
+        case 'end': {
+          if (!s) return;
+          sessions.delete(s.id);
+          // The call has ended here already, and is no longer the current one: the one shown.
+          const call = shownCall()?.call;
+          const reason = jingleReason(signal.reason, s.outgoing, call?.id === s.id && !!call.connectedAt);
+          if (s.started) {
+            await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'session-terminate', sid: s.id }, reasonElement(reason))).catch(() => undefined);
+            // Rung with XEP-0353: the end is told in both archives too, for their other devices.
+            if (s.rung) await connection.send(jmi(s.jid, 'finish', s.id, reasonElement(reason))).catch(() => undefined);
+          } else if (s.outgoing) {
+            await connection.send(jmi(s.jid, 'retract', s.id, reasonElement(reason)));
+          } else if (s.rung) {
+            // Ours turned it down, or it rang out here: their phone stops ringing, and our other devices too.
+            await connection.send(jmi(s.full, 'reject', s.id, reasonElement(reason)));
+          }
+          return;
+        }
+      }
+    },
+
+    async callRelay() {
+      // Our own call relay first: the XMPP server then sees nothing of the call's addresses.
+      const ours = await space.callRelay().catch(() => null);
+      if (ours) return ours;
+      const now = accountOf(place)?.link();
+      return now ? serverTurn(now.state, now.connection).catch(() => null) : null;
+    },
+
+    line(peer, mine, text, id) {
+      // By the call's id, the same as its ring's: a call has one line, however it ended.
+      void accountOf(place)?.line(peer.slice(XMPP_PREFIX.length), mine, `${CALL_LINE}${text}`, `call-${id}`).catch(() => undefined);
+    },
+
+    name(peer) {
+      const jid = peer.slice(XMPP_PREFIX.length);
+      const state = accountOf(place)?.link()?.state ?? xmppNow(place ? 'place' : 'space').state;
+      return state ? nameOf(state, jid) : jid;
+    },
+
+    // Video added from here: the contents our new description adds go to them (content-add), and
+    // once they take them (content-accept), the call's whole description as theirs is now.
+    async addMedia(jid, id, sdp) {
+      const s = sessionOf(id, place);
+      const { connection } = link(place);
+      if (!s || s.jid !== jid || !s.theirs.length || s.adding || s.asked) throw new Error(t('The call ended.'));
+      const ours: Role = s.outgoing ? 'initiator' : 'responder';
+      const known = new Set(s.theirs.map((c) => c.attrs.name));
+      const all = sdpToJingle(sdp, ours);
+      const added = all.filter((c) => c.name === 'content' && !known.has(c.attrs.name));
+      if (!added.length) throw new Error('Nothing to add.');
+      for (const content of added) content.attrs.creator = ours;
+      const came = new Promise<XmlElement[] | null>((resolve) => (s.adding = { names: added.map((c) => c.attrs.name ?? ''), done: resolve }));
+      const timer = setTimeout(() => s.adding?.done(null), ADD_MS);
+      try {
+        await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'content-add', sid: s.id }, ...added, all.find((c) => c.name === 'group') ?? null));
+        const accepted = await came;
+        if (!accepted) throw new Error('They did not take the video.');
+        const contents = [...s.theirs, ...accepted];
+        const answer = described(s, contents, s.outgoing ? 'responder' : 'initiator');
+        s.theirs = contents;
+        return answer;
+      } finally {
+        clearTimeout(timer);
+        s.adding = null;
+      }
+    },
+
+    // Our yes to their video, with our camera's (content-accept), or our no (content-reject).
+    async answerMedia(jid, id, sdp) {
+      const s = sessionOf(id, place);
+      const asked = s?.asked;
+      if (!s || s.jid !== jid || !asked) return;
+      s.asked = null;
+      const { connection } = link(place);
+      if (sdp === null) {
+        await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'content-reject', sid: s.id }, ...asked.map((c) => el('content', { creator: c.attrs.creator, name: c.attrs.name })), reasonElement('decline')));
         return;
       }
-    }
-  },
+      const names = new Map(asked.map((c) => [c.attrs.name, c.attrs.creator]));
+      const all = sdpToJingle(sdp, s.outgoing ? 'initiator' : 'responder');
+      const answered = all.filter((c) => c.name === 'content' && names.has(c.attrs.name));
+      for (const content of answered) content.attrs.creator = names.get(content.attrs.name) ?? content.attrs.creator;
+      await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'content-accept', sid: s.id }, ...answered, all.find((c) => c.name === 'group') ?? null));
+      s.theirs = [...s.theirs, ...asked];
+    },
 
-  async callRelay() {
-    // Our own call relay first: the XMPP server then sees nothing of the call's addresses.
-    const ours = await space.callRelay().catch(() => null);
-    if (ours) return ours;
-    const now = space.link();
-    return now ? serverTurn(now.state, now.connection).catch(() => null) : null;
-  },
+    // Answering: their device is told to go on (proceed), our other devices to stop ringing
+    // (accept), and the call waits for their session-initiate.
+    async offer(jid) {
+      const call = currentCall();
+      const s = call ? sessionOf(call.id, place) : undefined;
+      if (!s || s.jid !== jid || s.outgoing) throw new Error(t('The call ended.'));
+      if (!s.initiate) {
+        const { state, connection } = link(place);
+        const came = new Promise<XmlElement>((resolve) => (s.waiting = resolve));
+        await connection.send(jmi(s.full, 'proceed', s.id));
+        await connection.send(jmi(state.jid, 'accept', s.id)).catch(() => undefined);
+        s.initiate = await came;
+      }
+      return jingleToSdp(s.initiate, 'initiator', s.id);
+    },
+  };
+}
 
-  line(peer, mine, text, id) {
-    // By the call's id, the same as its ring's: a call has one line, however it ended.
-    void space.line(peer.slice(XMPP_PREFIX.length), mine, `${CALL_LINE}${text}`, `call-${id}`).catch(() => undefined);
-  },
+/** The calls of the space's XMPP account. */
+export const xmppCalls: CallPlace = callsOf(false);
+/** The calls of the open hidden place's own XMPP account, while its hidden chats are open. */
+export const xmppPlaceCalls: CallPlace = callsOf(true);
 
-  name(peer) {
-    const jid = peer.slice(XMPP_PREFIX.length);
-    const state = space.link()?.state ?? xmppNow().state;
-    return state ? nameOf(state, jid) : jid;
-  },
-
-  // Video added from here: the contents our new description adds go to them (content-add), and
-  // once they take them (content-accept), the call's whole description as theirs is now.
-  async addMedia(jid, id, sdp) {
-    const s = sessions.get(id);
-    const { connection } = link();
-    if (!s || s.jid !== jid || !s.theirs.length || s.adding || s.asked) throw new Error(t('The call ended.'));
-    const ours: Role = s.outgoing ? 'initiator' : 'responder';
-    const known = new Set(s.theirs.map((c) => c.attrs.name));
-    const all = sdpToJingle(sdp, ours);
-    const added = all.filter((c) => c.name === 'content' && !known.has(c.attrs.name));
-    if (!added.length) throw new Error('Nothing to add.');
-    for (const content of added) content.attrs.creator = ours;
-    const came = new Promise<XmlElement[] | null>((resolve) => (s.adding = { names: added.map((c) => c.attrs.name ?? ''), done: resolve }));
-    const timer = setTimeout(() => s.adding?.done(null), ADD_MS);
-    try {
-      await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'content-add', sid: s.id }, ...added, all.find((c) => c.name === 'group') ?? null));
-      const accepted = await came;
-      if (!accepted) throw new Error('They did not take the video.');
-      const contents = [...s.theirs, ...accepted];
-      const answer = described(s, contents, s.outgoing ? 'responder' : 'initiator');
-      s.theirs = contents;
-      return answer;
-    } finally {
-      clearTimeout(timer);
-      s.adding = null;
-    }
-  },
-
-  // Our yes to their video, with our camera's (content-accept), or our no (content-reject).
-  async answerMedia(jid, id, sdp) {
-    const s = sessions.get(id);
-    const asked = s?.asked;
-    if (!s || s.jid !== jid || !asked) return;
-    s.asked = null;
-    const { connection } = link();
-    if (sdp === null) {
-      await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'content-reject', sid: s.id }, ...asked.map((c) => el('content', { creator: c.attrs.creator, name: c.attrs.name })), reasonElement('decline')));
-      return;
-    }
-    const names = new Map(asked.map((c) => [c.attrs.name, c.attrs.creator]));
-    const all = sdpToJingle(sdp, s.outgoing ? 'initiator' : 'responder');
-    const answered = all.filter((c) => c.name === 'content' && names.has(c.attrs.name));
-    for (const content of answered) content.attrs.creator = names.get(content.attrs.name) ?? content.attrs.creator;
-    await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'content-accept', sid: s.id }, ...answered, all.find((c) => c.name === 'group') ?? null));
-    s.theirs = [...s.theirs, ...asked];
-  },
-
-  // Answering: their device is told to go on (proceed), our other devices to stop ringing
-  // (accept), and the call waits for their session-initiate.
-  async offer(jid) {
-    const call = currentCall();
-    const s = call ? sessions.get(call.id) : undefined;
-    if (!s || s.jid !== jid || s.outgoing) throw new Error(t('The call ended.'));
-    if (!s.initiate) {
-      const { state, connection } = link();
-      const came = new Promise<XmlElement>((resolve) => (s.waiting = resolve));
-      await connection.send(jmi(s.full, 'proceed', s.id));
-      await connection.send(jmi(state.jid, 'accept', s.id)).catch(() => undefined);
-      s.initiate = await came;
-    }
-    return jingleToSdp(s.initiate, 'initiator', s.id);
-  },
-};
+const callsFor = (place: boolean | undefined) => (place ? xmppPlaceCalls : xmppCalls);
 
 /** Keeps the call's contents as their description set it up, and their DTLS role. */
 function settle(s: Session, theirs: XmlElement, setup: string | undefined): void {
@@ -304,12 +344,12 @@ function ring(state: XmppState, s: Session, at: number): void {
   const rtc = rtcNow;
   const missed = (why = '') => {
     sessions.delete(s.id);
-    void space.line(s.jid, false, `${CALL_LINE}Missed ${kindOf(s.video)}${why}`, `call-${s.id}`, at).catch(() => undefined);
+    void accountOf(s.place)?.line(s.jid, false, `${CALL_LINE}Missed ${kindOf(s.video)}${why}`, `call-${s.id}`, at).catch(() => undefined);
   };
   if (!rtc || !mayRing(state, s.jid)) return missed();
   // By the relay's clock, as lib/calls.ts judges an offer fresh.
   const stamp = callNow() - (Date.now() - at);
-  void callSignal(xmppCalls, `${XMPP_PREFIX}${s.jid}`, { id: s.id, kind: 'offer', video: s.video, sdp: '', at: stamp }, false, rtc)
+  void callSignal(callsFor(s.place), `${XMPP_PREFIX}${s.jid}`, { id: s.id, kind: 'offer', video: s.video, sdp: '', at: stamp }, false, rtc)
     .then(() => {
       // Not rung here (missed, or busy with another call): lib/calls.ts said so, and kept its line.
       if (!calling(s.id)) sessions.delete(s.id);
@@ -318,13 +358,15 @@ function ring(state: XmppState, s: Session, at: number): void {
 }
 
 function onMessage(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; live: boolean; mine: boolean }): void {
-  // Calls are the space's own account's: a hidden place's takes none.
-  if (space.link()?.state !== state) return;
+  // The space's account's calls, or the open hidden place's: each hears its own.
+  const place = placeOf(state);
+  if (place === null) return;
+  const account = accountOf(place);
   const what = message.children.find((c): c is XmlElement => typeof c !== 'string' && c.ns === JMI);
   const id = what?.attrs.id;
   if (!what || !id) return;
   const from = message.attrs.from ?? '';
-  const s = sessions.get(id);
+  const s = sessionOf(id, place);
   // Our propose came back as an error: their server or device cannot take it.
   if (message.attrs.type === 'error') {
     if (s?.outgoing) calling(id)?.receive({ id, kind: 'end', reason: 'failed' });
@@ -340,7 +382,7 @@ function onMessage(state: XmppState, connection: XmppConnection, message: XmlEle
     // From the archive: a call that rang here, answered or turned down elsewhere.
     if (!how.live && (what.name === 'proceed' || what.name === 'accept')) {
       const peer = bare(message.attrs.to ?? '');
-      if (peer && peer !== state.jid) void space.line(peer, false, `${CALL_LINE}${s?.video ? 'Video' : 'Voice'} call, answered on another device`, `call-${id}`, how.at).catch(() => undefined);
+      if (peer && peer !== state.jid) void account?.line(peer, false, `${CALL_LINE}${s?.video ? 'Video' : 'Voice'} call, answered on another device`, `call-${id}`, how.at).catch(() => undefined);
     }
     return;
   }
@@ -349,9 +391,9 @@ function onMessage(state: XmppState, connection: XmppConnection, message: XmlEle
     case 'propose': {
       const video = children(what, 'description').some((d) => d.attrs.media === 'video');
       const fresh = how.live && Date.now() - how.at < OFFER_FRESH_MS;
-      const next: Session = { ...noneYet, theirs: [], id, jid, full: from, outgoing: false, video, offer: '', rung: true, started: false };
+      const next: Session = { ...noneYet, theirs: [], id, jid, full: from, outgoing: false, video, offer: '', rung: true, started: false, ...(place ? { place: true as const } : {}) };
       if (!fresh) {
-        void space.line(jid, false, `${CALL_LINE}Missed ${kindOf(video)}`, `call-${id}`, how.at).catch(() => undefined);
+        void account?.line(jid, false, `${CALL_LINE}Missed ${kindOf(video)}`, `call-${id}`, how.at).catch(() => undefined);
         return;
       }
       ring(state, next, how.at);
@@ -397,8 +439,9 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
   const reply = () => connection.send(el('iq', { type: 'result', id: iq.attrs.id, to: from }));
   const refuse = (condition: string, extra?: XmlElement) =>
     connection.send(el('iq', { type: 'error', id: iq.attrs.id, to: from }, el('error', { type: 'cancel' }, el(condition, { xmlns: NS.stanzas }), extra ?? null)));
-  if (space.link()?.state !== state) return refuse('service-unavailable');
-  const s = sessions.get(sid);
+  const place = placeOf(state);
+  if (place === null) return refuse('service-unavailable');
+  const s = sessionOf(sid, place);
   if (action === 'session-initiate') {
     if (s) {
       // Ours answered their ring: this is the description it waits for.
@@ -418,7 +461,7 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
     }
     await reply();
     const video = children(jingle, 'content').some((c) => children(c, 'description').some((d) => d.attrs.media === 'video'));
-    ring(state, { ...noneYet, theirs: [], id: sid, jid: bare(from), full: from, outgoing: false, video, offer: '', rung: false, started: true, initiate: jingle }, Date.now());
+    ring(state, { ...noneYet, theirs: [], id: sid, jid: bare(from), full: from, outgoing: false, video, offer: '', rung: false, started: true, initiate: jingle, ...(place ? { place: true as const } : {}) }, Date.now());
     return;
   }
   if (!s || s.full !== from) return refuse('item-not-found', el('unknown-session', { xmlns: ERRORS }));
@@ -454,7 +497,7 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
       }
       s.asked = added;
       if (sdp && call) call.videoAsked(sdp);
-      else await xmppCalls.answerMedia!(s.jid, sid, null).catch(() => undefined);
+      else await callsFor(place).answerMedia!(s.jid, sid, null).catch(() => undefined);
       return;
     }
     case 'content-accept':
@@ -494,7 +537,15 @@ export function watchXmppCalls(rtc: Rtc, given: XmppCallsSpace = theSpace): () =
   rtcNow = rtc;
   space = given;
   setCallHook({ message: onMessage, iq: onIq });
+  // A hidden place's call ends as its hidden chats close: its account goes with them.
+  const stopWatch = given.watch?.(() => {
+    const shown = shownCall();
+    if (shown?.place !== xmppPlaceCalls || given.place?.open()) return;
+    if (shown.call.state === 'incoming') shown.call.decline();
+    else shown.call.hangUp();
+  });
   return () => {
+    stopWatch?.();
     setCallHook(null);
     rtcNow = null;
     space = theSpace;
@@ -502,11 +553,13 @@ export function watchXmppCalls(rtc: Rtc, given: XmppCallsSpace = theSpace): () =
   };
 }
 
-/** Calls someone on XMPP from their chat. Throws when not connected, or a call is going on. */
-export async function startXmppCall(jid: string, video: boolean, rtc: Rtc): Promise<Call> {
-  link();
-  const relay = await xmppCalls.callRelay();
-  return startCall(xmppCalls, `${XMPP_PREFIX}${jid}`, video, relay, rtc);
+/** Calls someone on XMPP from their chat, of the space's account or (`place`) the open hidden
+ *  place's. Throws when not connected, or a call is going on. */
+export async function startXmppCall(jid: string, video: boolean, rtc: Rtc, place = false): Promise<Call> {
+  link(place);
+  const calls = callsFor(place);
+  const relay = await calls.callRelay();
+  return startCall(calls, `${XMPP_PREFIX}${jid}`, video, relay, rtc);
 }
 
 /** For the checks: what is going on. */

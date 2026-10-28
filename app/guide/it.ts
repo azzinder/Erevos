@@ -2215,12 +2215,14 @@ cancellerebbe quello che contengono i posti tolti.
   non ha un PIN suo, e nessuno è pubblico.
 - **Matrix, XMPP e Nostr:** sotto il loro elenco, **Matrix**, **XMPP** e **Nostr** aprono le schermate di quelle reti
   (vedi [Matrix](#matrix), [XMPP](#xmpp) e [Chat con altre app Nostr](#nostr-chats)) per account propri delle chat
-  nascoste, a parte quelli dello spazio: un account Matrix e uno XMPP a cui accedere, e una chiave Nostr. Gli accessi
-  e la chiave sono tenuti cifrati con la chiave delle chat nascoste, e niente di essi si vede fuori dalle chat
-  nascoste: le loro chat stanno solo nell’elenco delle chat nascoste, e non aggiungono nulla al numero sull’icona di
-  Erevos né all’elenco della schermata principale. Gli account si collegano solo mentre le chat nascoste sono aperte,
-  quindi da chiuse non arriva niente e non compare nessun avviso, anche con **Ricevere da chiuse** attivo. Non hanno
-  chiamate, e un account Matrix non ha **Avvisa dei nuovi messaggi**.
+  nascoste, a parte quelli dello spazio: un account Matrix e uno XMPP a cui accedere, e una chiave Nostr. Gli accessi e
+  la chiave sono tenuti cifrati con la chiave delle chat nascoste, e niente di essi si vede fuori dalle chat nascoste:
+  le loro chat stanno solo nell’elenco delle chat nascoste, e non aggiungono nulla al numero sull’icona di Erevos né
+  all’elenco della schermata principale. Gli account si collegano solo mentre le chat nascoste sono aperte, quindi da
+  chiuse non arriva niente e non compare nessun avviso, anche con **Ricevere da chiuse** attivo. Le loro chat chiamano
+  come quelle dello spazio, dall’account proprio delle chat nascoste; una chiamata a esso squilla solo mentre le chat
+  nascoste sono aperte, con la suoneria del telefono, e restano aperte finché non finisce. Un loro account Matrix non ha
+  **Avvisa dei nuovi messaggi**.
 - **Le anteprime dei link** hanno un loro interruttore nei dettagli di una chat nascosta, per tutte le chat di quel
   posto, disattivato finché non lo attivi (vedi **Anteprime dei link** in [Chat tramite un relay](#relay)).
 - **Avvisa quando arriva un messaggio** (Android): in cima a un posto mentre **Ricevere da chiuse** è disattivato. Se

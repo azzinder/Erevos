@@ -17,7 +17,7 @@ import { sha256Bytes, toHex, utf8Encode } from '../lib/crypto';
 import { learnSpaceNames, spaceCalls } from '../lib/space-calls';
 import { onSpaceGroupCall, spaceGroupCalls } from '../lib/space-groups';
 import { rtc } from '../lib/webrtc';
-import { watchXmppCalls, xmppCalls, XMPP_PREFIX } from '../lib/xmpp-calls';
+import { watchXmppCalls, xmppCalls, xmppPlaceCalls, XMPP_PREFIX } from '../lib/xmpp-calls';
 import { elementCall } from '../lib/element-call-window';
 import { answerMatrixCall, declineMatrixCall, inMatrixCall, onMatrixCallChange, shownMatrixCall, watchMatrixCalls, type MatrixCall } from '../lib/matrix-calls';
 import { matrixNow } from '../lib/matrix-store';
@@ -94,8 +94,9 @@ export function watchCalls(): () => void {
     const call = shownMatrixCall();
     if (call?.state === 'incoming' && rangMatrix !== call) {
       rangMatrix = call;
-      // With its room's ringtone, as the room has one of its own (Notifications in the Matrix chat).
-      ring(call.video, `matrix:${call.roomId}`);
+      // With its room's ringtone, as the room has one of its own (Notifications in the Matrix chat);
+      // a hidden place's with the phone's, which tells no one's.
+      ring(call.video, call.place ? '' : `matrix:${call.roomId}`);
     }
     if (rangMatrix && (call !== rangMatrix || call.state !== 'incoming')) {
       rangMatrix = null;
@@ -166,7 +167,7 @@ export function CallHost() {
         if (shown?.place === spaceCalls) void learnSpaceNames().then(() => setShown((n) => n + 1), () => undefined);
         // A hidden call just opened by its PIN on the ring screen (lib/hidden-ring.ts): the owner
         // already chose to answer it, so it is answered at once. Never a call of the space's, nor of XMPP.
-        if (call.state === 'incoming' && shown?.place !== spaceCalls && shown?.place !== xmppCalls && takeHiddenAnswer()) {
+        if (call.state === 'incoming' && shown?.place !== spaceCalls && shown?.place !== xmppCalls && shown?.place !== xmppPlaceCalls && takeHiddenAnswer()) {
           callAudio?.stopRinging?.();
           void callPermissions(call.video).then((granted) => (granted ? (setSpeaker(call.video), callAudio?.start(call.video), call.answer()) : call.decline()));
         }
@@ -219,7 +220,7 @@ export function CallHost() {
   // A Matrix call that rings; answered, it goes on in Element Call's window.
   const matrix = shownMatrixCall();
   if (matrix?.state === 'incoming') {
-    const room = matrixNow().state?.rooms[matrix.roomId];
+    const room = matrixNow(matrix.place ? 'place' : 'space').state?.rooms[matrix.roomId];
     const answerMatrix = () => {
       void callPermissions(matrix.video).then((granted) => {
         if (!granted) {

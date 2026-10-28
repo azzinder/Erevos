@@ -20,7 +20,7 @@ import { closeCall, shownCall } from '../lib/calls';
 import { setCore, type Core } from '../lib/core';
 import { ICE, JINGLE, jingleToSdp, RTP, sdpToJingle } from '../lib/jingle-sdp';
 import { addCallLine, addXmppContact, NS, takeStanza, XmppError, type Taken, type XmppConnection, type XmppState } from '../lib/xmpp';
-import { startXmppCall, watchXmppCalls, xmppCallSessions, type XmppCallsSpace } from '../lib/xmpp-calls';
+import { startXmppCall, watchXmppCalls, xmppCallSessions, xmppPlaceCalls, type XmppCallsSpace } from '../lib/xmpp-calls';
 import { child, children, el, type XmlElement } from '../lib/xmpp-xml';
 import { FakeConnection, FakeStream, FakeTrack } from './fake-rtc';
 import { DOMAIN, person, Server, settle } from './xmpp-server';
@@ -553,5 +553,74 @@ test('video is added to a voice call both ways, said no to and yes to', { skip: 
     stop();
     ann.connection.close();
     bob.connection.close();
+  }
+});
+
+test("a hidden place's own account rings and calls as itself, and its call ends as its hidden chats close", { skip: !coreReady }, async () => {
+  const server = new Server();
+  const { ann, bob } = await pair(server);
+  // The phone's open hidden place has an account of its own, cat, in Bob's contacts too.
+  const CAT = `cat@${DOMAIN}`;
+  const cat = await person(server, 'cat');
+  await addXmppContact(cat.state, cat.connection, BOB, 'Bob of the place');
+  await settle([cat, bob]);
+  await addXmppContact(bob.state, bob.connection, CAT);
+  await settle([cat, bob]);
+  const { rtc } = sdpRtc();
+  let open = true;
+  const watching = new Set<() => void>();
+  const stop = watchXmppCalls(rtc, {
+    ...spaceOf(ann),
+    place: { ...spaceOf(cat), open: () => open },
+    watch: (listener) => {
+      watching.add(listener);
+      return () => watching.delete(listener);
+    },
+  });
+  const both = async () => {
+    await run(ann, [bob]);
+    await run(cat, [bob]);
+  };
+  try {
+    // Bob calls the place's account: it rings as the place's, named as its contacts name him.
+    await bob.connection.send(jmi(CAT, 'propose', 'p1', el('description', { xmlns: RTP, media: 'audio' })));
+    await both();
+    const shown = shownCall()!;
+    assert.equal(shown.place, xmppPlaceCalls);
+    assert.deepEqual([shown.call.id, shown.call.peer, shown.call.state], ['p1', `xmpp:${BOB}`, 'incoming']);
+    assert.equal(shown.place.name(shown.call.peer), 'Bob of the place');
+    assert.equal(cameJmi(bob, 'ringing').attrs.to, bob.connection.fullJid);
+    assert.ok(bob.got.filter((s) => s.attrs.from === ann.connection.fullJid).length === 0);
+
+    // The hidden chats close: it stops ringing, and Bob's phone is told, by the place's account.
+    open = false;
+    watching.forEach((listener) => listener());
+    await both();
+    const reject = cameJmi(bob, 'reject');
+    assert.equal(reject.attrs.from, cat.connection.fullJid);
+    closeCall(shown.call);
+
+    // Open again, a call from the place's chat goes from its account, and only from it.
+    open = true;
+    bob.got.length = 0;
+    const mine = await startXmppCall(BOB, true, rtc, true);
+    await both();
+    assert.equal(shownCall()!.place, xmppPlaceCalls);
+    assert.equal(cameJmi(bob, 'propose').attrs.from, cat.connection.fullJid);
+    mine.hangUp();
+    await both();
+    assert.equal(cameJmi(bob, 'retract').attrs.from, cat.connection.fullJid);
+    closeCall(mine);
+
+    // Its lines are in the place's chats, none in the space's.
+    assert.deepEqual(calls(cat, BOB), [
+      ['call-p1', false, '📞 Voice call, turned down'],
+      [`call-${mine.id}`, true, '📞 Video call, not answered'],
+    ]);
+    assert.deepEqual(calls(ann, BOB), []);
+    assert.equal(xmppCallSessions(), 0);
+  } finally {
+    stop();
+    for (const device of [ann, bob, cat]) device.connection.close();
   }
 });

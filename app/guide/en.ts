@@ -2018,12 +2018,13 @@ what the places taken away hold.
   none is public.
 - **Matrix, XMPP and Nostr:** under their list, **Matrix**, **XMPP** and **Nostr** open the screens of those networks
   (see [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats)) for accounts of the hidden
-  chats' own, apart from the space's: a Matrix account and an XMPP account to sign in to, and a Nostr key. The
-  sign-ins and the key are kept encrypted with the hidden chats' key, and nothing of them shows outside the hidden
-  chats: their chats are in the hidden chats' list only, and add nothing to the number on Erevos's icon or to the home
-  list. The accounts connect only while the hidden chats are open, so while they are closed nothing comes and no
-  notice shows, even with **Receive while closed** on. They have no calls, and a Matrix account has no **Say a message
-  came**.
+  chats' own, apart from the space's: a Matrix account and an XMPP account to sign in to, and a Nostr key. The sign-ins
+  and the key are kept encrypted with the hidden chats' key, and nothing of them shows outside the hidden chats: their
+  chats are in the hidden chats' list only, and add nothing to the number on Erevos's icon or to the home list. The
+  accounts connect only while the hidden chats are open, so while they are closed nothing comes and no notice shows,
+  even with **Receive while closed** on. Their chats call as the space's do, from the hidden chats' own account; a call
+  to it rings only while the hidden chats are open, with the phone's ringtone, and they stay open until it ends. A
+  Matrix account of theirs has no **Say a message came**.
 - **Link previews** have a switch of their own in a hidden chat's details, for all the chats of that place, off unless
   you turn it on (see **Link previews** under [Chat through a relay](#relay)).
 - **Say when a message comes** (Android): at the top of a place while **Receive while closed** is off. Turned on,

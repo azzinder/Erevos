@@ -42,6 +42,7 @@ import {
 import { followDoor, spaceRelayOf } from './closed-notices';
 import { keepMatrixPush, startMatrixPush, stopMatrixPush } from './matrix-push';
 import { addNetwork, hearing } from './network-notices';
+import type { MatrixCallsAccount } from './matrix-calls';
 import { actingWhere, type NetworkWhere } from './network-place';
 
 // The open space's Matrix account as the screens use it (app/matrix.tsx, app/matrix-chat.tsx):
@@ -52,7 +53,8 @@ import { actingWhere, type NetworkWhere } from './network-place';
 // It runs once something asks for it (runMatrix), and goes on until the space closes or another
 // opens: then it stops and lets go of the account. A hidden place's own account runs beside it
 // while its hidden chats are open (openMatrixPlace, lib/place-networks.ts): their screens show it
-// and act on it (lib/network-place.ts); it tells nothing outside them, and has no calls nor push.
+// and act on it (lib/network-place.ts); it tells nothing outside them, and has no push. Its calls
+// ring and are made while they are open (lib/matrix-calls.ts).
 
 type Live = {
   /** The space's account, or a hidden place's. */
@@ -349,18 +351,27 @@ export function stopMatrix(): void {
   told();
 }
 
-/** The open space's account for its calls (lib/matrix-calls.ts): as it is now, and changed after
- *  what was asked before, then kept. */
-export const matrixCallAccount = {
-  now: (): MatrixState | null => live?.state ?? null,
-  change<T>(use: (state: MatrixState) => Promise<T>): Promise<T> {
-    const it = need(live);
-    return changeAccount(it, () => use(it.state));
-  },
-  /** For what changes nothing of the account: at once, and nothing kept. */
-  async read<T>(use: (state: MatrixState) => Promise<T>): Promise<T> {
-    return use(need(live).state);
-  },
+/** An account for its calls (lib/matrix-calls.ts): as it is now, and changed after what was asked
+ *  before, then kept. */
+function callAccount(of: () => Live | null): MatrixCallsAccount {
+  return {
+    now: () => of()?.state ?? null,
+    change<T>(use: (state: MatrixState) => Promise<T>): Promise<T> {
+      const it = need(of());
+      return changeAccount(it, () => use(it.state));
+    },
+    /** For what changes nothing of the account: at once, and nothing kept. */
+    async read<T>(use: (state: MatrixState) => Promise<T>): Promise<T> {
+      return use(need(of()).state);
+    },
+  };
+}
+
+/** The open space's account for its calls, and its open hidden place's while their chats are open. */
+export const matrixCallAccount: MatrixCallsAccount & { place: MatrixCallsAccount; watch(listener: () => void): () => void } = {
+  ...callAccount(() => live),
+  place: callAccount(() => (place && !place.stopped ? place : null)),
+  watch: onMatrixChange,
 };
 
 function need(it = acting()): Live & { state: MatrixState } {

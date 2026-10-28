@@ -259,9 +259,11 @@ On main, not released yet:
   `hidden1` to `hidden3` of `lock/sealed-file.ts`), apart from the space's, which never sees them. They connect only
   while the hidden chats are open and are let go of as they close (`lib/place-networks.ts`), so nothing comes and no
   notice shows while they are closed. Their chats are rows of the hidden chats' list and nowhere else: no notice, no
-  number on Erevos's icon, nothing on the home list, and no notification settings. They have no calls (their chats have
-  no call buttons, and an XMPP call to a place's account is refused; Matrix calls are the space's account's) and, for
-  Matrix, no notice while closed. A screen opened from the hidden chats says so under its title and shows the place's
+  number on Erevos's icon, nothing on the home list, and no notification settings; and, for Matrix, no notice while
+  closed. Their Matrix and XMPP chats call as the space's do, from the place's account (`MatrixCall.place` in
+  `lib/matrix-calls.ts`, `xmppPlaceCalls` in `lib/xmpp-calls.ts`): a call to it rings only while the hidden chats are
+  open, with the phone's ringtone, they stay open through the call, and one still on as they close ends (checked in
+  `app/checks/matrix-calls.check.ts` and `app/checks/xmpp-calls.check.ts`). A screen opened from the hidden chats says so under its title and shows the place's
   account while it is on top (`lib/network-place.ts`); the user guide, What's new and `docs/` say it. The stores are
   checked with `app/checks/place-networks.check.ts`, against the servers played in the checks and with the real core;
   not yet on a phone.

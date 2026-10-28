@@ -2120,12 +2120,13 @@ sadrže uklonjena mjesta.
   Grupa tamo nema vlastiti PIN, i nijedna nije javna.
 - **Matrix, XMPP i Nostr:** ispod njihovog popisa, **Matrix**, **XMPP** i **Nostr** otvaraju ekrane tih mreža
   (pogledajte [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats)) za vlastite
-  račune skrivenih razgovora, odvojene od računa prostora: Matrix račun i XMPP račun za prijavu, te Nostr ključ.
-  Prijave i ključ čuvaju se šifrovani ključem skrivenih razgovora, i ništa od toga ne vidi se izvan skrivenih
-  razgovora: njihovi razgovori su samo u popisu skrivenih razgovora i ne dodaju ništa broju na ikoni Erevosa ni popisu
-  na početnom ekranu. Računi se povezuju samo dok su skriveni razgovori otvoreni, pa dok su zatvoreni ništa ne stiže i
-  nijedna obavijest se ne prikazuje, čak ni uz uključeno **Primanje dok su zatvoreni**. Nemaju pozive, a Matrix račun
-  nema **Javi da je stigla poruka**.
+  račune skrivenih razgovora, odvojene od računa prostora: Matrix račun i XMPP račun za prijavu, te Nostr ključ. Prijave
+  i ključ čuvaju se šifrovani ključem skrivenih razgovora, i ništa od toga ne vidi se izvan skrivenih razgovora: njihovi
+  razgovori su samo u popisu skrivenih razgovora i ne dodaju ništa broju na ikoni Erevosa ni popisu na početnom ekranu.
+  Računi se povezuju samo dok su skriveni razgovori otvoreni, pa dok su zatvoreni ništa ne stiže i nijedna obavijest se
+  ne prikazuje, čak ni uz uključeno **Primanje dok su zatvoreni**. Njihovi razgovori zovu kao razgovori prostora, s
+  vlastitog računa skrivenih razgovora; poziv na njega zvoni samo dok su skriveni razgovori otvoreni, zvukom zvona
+  telefona, i oni ostaju otvoreni dok ne završi. Njihov Matrix račun nema **Javi da je stigla poruka**.
 - **Pregledi linkova** imaju vlastiti prekidač u detaljima skrivenog razgovora, za sve razgovore tog mjesta,
   isključen dok ga ne uključite (pogledajte **Pregledi linkova** pod [Razgovor preko relaya](#relay)).
 - **Javi kad stigne poruka** (Android): na vrhu mjesta dok je **Primanje dok su zatvoreni** isključeno. Kad je

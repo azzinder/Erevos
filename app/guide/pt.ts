@@ -2174,13 +2174,15 @@ as posições retiradas guardam.
   não o conta. As chamadas dele só tocam enquanto as conversas ocultas estão abertas: uma iniciada enquanto estão
   fechadas aparece como perdida. Um grupo ali não tem PIN próprio, e nenhum é público.
 - **Matrix, XMPP e Nostr:** abaixo da lista delas, **Matrix**, **XMPP** e **Nostr** abrem as telas dessas redes (veja
-  [Matrix](#matrix), [XMPP](#xmpp) e [Conversas com outros apps Nostr](#nostr-chats)) para contas próprias das
-  conversas ocultas, separadas das do espaço: uma conta Matrix e uma XMPP para entrar, e uma chave Nostr. As sessões e
-  a chave ficam guardadas criptografadas com a chave das conversas ocultas, e nada delas aparece fora das conversas
-  ocultas: as conversas delas ficam só na lista das conversas ocultas, e não somam ao número no ícone do Erevos nem à
-  lista da tela inicial. As contas se conectam só enquanto as conversas ocultas estão abertas, então, fechadas, nada
-  chega e nenhum aviso aparece, nem com **Receber quando fechadas** ativado. Não têm chamadas, e uma conta Matrix não
-  tem **Avisar quando chega mensagem**.
+  [Matrix](#matrix), [XMPP](#xmpp) e [Conversas com outros apps Nostr](#nostr-chats)) para contas próprias das conversas
+  ocultas, separadas das do espaço: uma conta Matrix e uma XMPP para entrar, e uma chave Nostr. As sessões e a chave
+  ficam guardadas criptografadas com a chave das conversas ocultas, e nada delas aparece fora das conversas ocultas: as
+  conversas delas ficam só na lista das conversas ocultas, e não somam ao número no ícone do Erevos nem à lista da tela
+  inicial. As contas se conectam só enquanto as conversas ocultas estão abertas, então, fechadas, nada chega e nenhum
+  aviso aparece, nem com **Receber quando fechadas** ativado. As conversas delas ligam como as do espaço, pela conta
+  própria das conversas ocultas; uma chamada para ela toca só enquanto as conversas ocultas estão abertas, com o toque
+  do telefone, e elas ficam abertas até a chamada acabar. Uma conta Matrix delas não tem **Avisar quando chega
+  mensagem**.
 - **As prévias de links** têm um interruptor próprio nos detalhes de uma conversa oculta, para todas as conversas
   daquela posição, desativado a menos que você o ative (veja **Prévias de links** em
   [Conversar por um relay](#relay)).

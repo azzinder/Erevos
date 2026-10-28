@@ -2304,14 +2304,16 @@ supprimerait ce que contiennent les emplacements retirés.
   fermées** activé, et **Prévenir quand un message arrive** ne le compte pas. Ses appels ne sonnent que tant que les
   discussions masquées sont ouvertes : un appel lancé pendant qu’elles sont fermées s’affiche comme manqué. Un groupe
   là-bas n’a pas de code PIN à lui, et aucun n’est public.
-- **Matrix, XMPP et Nostr :** sous leur liste, **Matrix**, **XMPP** et **Nostr** ouvrent les écrans de ces réseaux
-  (voir [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats)) pour des comptes à
-  elles, à part de ceux de l’espace : un compte Matrix et un compte XMPP où se connecter, et une clé Nostr. Les
-  connexions et la clé sont gardées chiffrées avec la clé des discussions masquées, et rien d’elles ne se voit en
-  dehors des discussions masquées : leurs discussions ne sont que dans la liste des discussions masquées, et
-  n’ajoutent rien au numéro sur l’icône d’Erevos ni à la liste de l’accueil. Les comptes ne se connectent que tant que
-  les discussions masquées sont ouvertes, donc fermées, rien n’arrive et aucune notification ne s’affiche, même avec
-  **Recevoir une fois fermées** activé. Il n’y a pas d’appels, et un compte Matrix n’a pas **Signaler les nouveaux
+- **Matrix, XMPP et Nostr :** sous leur liste, **Matrix**, **XMPP** et **Nostr** ouvrent les écrans de ces réseaux (voir
+  [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats)) pour des comptes à elles,
+  à part de ceux de l’espace : un compte Matrix et un compte XMPP où se connecter, et une clé Nostr. Les connexions et
+  la clé sont gardées chiffrées avec la clé des discussions masquées, et rien d’elles ne se voit en dehors des
+  discussions masquées : leurs discussions ne sont que dans la liste des discussions masquées, et n’ajoutent rien au
+  numéro sur l’icône d’Erevos ni à la liste de l’accueil. Les comptes ne se connectent que tant que les discussions
+  masquées sont ouvertes, donc fermées, rien n’arrive et aucune notification ne s’affiche, même avec **Recevoir une fois
+  fermées** activé. Leurs discussions appellent comme celles de l’espace, depuis le compte propre aux discussions
+  masquées ; un appel vers lui ne sonne que tant que les discussions masquées sont ouvertes, avec la sonnerie du
+  téléphone, et elles restent ouvertes jusqu’à sa fin. Un compte Matrix à elles n’a pas **Signaler les nouveaux
   messages**.
 - **Aperçus des liens** a son propre interrupteur dans les détails d’une discussion masquée, pour toutes les discussions
   de cet emplacement, désactivé tant que tu ne l’actives pas (voir **Aperçus des liens** sous [Discuter par un

@@ -479,8 +479,9 @@ async function passCall(state: MatrixState, event: CallEvent): Promise<boolean> 
 }
 
 /** An event of a room as the homeserver has it (`room_id` set), opened when it came encrypted.
- *  `timeline`: it came in the room's timeline, not only as a piece of its state. */
-export type RoomTap = (roomId: string, event: Json, timeline: boolean) => void;
+ *  `timeline`: it came in the room's timeline, not only as a piece of its state; `state`: the
+ *  account it came to (the space's, or a hidden place's). */
+export type RoomTap = (roomId: string, event: Json, timeline: boolean, state: MatrixState) => void;
 let roomTap: RoomTap | null = null;
 
 /** Where every event of the rooms goes as it comes, or nowhere: Element Call, while it shows (lib/matrix-calls.ts). */
@@ -488,9 +489,9 @@ export function setRoomTap(next: RoomTap | null): void {
   roomTap = next;
 }
 
-function tap(roomId: string, event: Json, timeline: boolean): void {
+function tap(state: MatrixState, roomId: string, event: Json, timeline: boolean): void {
   try {
-    roomTap?.(roomId, { ...event, room_id: roomId }, timeline);
+    roomTap?.(roomId, { ...event, room_id: roomId }, timeline, state);
   } catch {
     // Whoever listens, the sync goes on.
   }
@@ -591,7 +592,7 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
   let seen = false;
   for (const event of ((data.state as Json | undefined)?.events as Json[] | undefined) ?? []) {
     takeState(room, event);
-    tap(id, event, false);
+    tap(state, id, event, false);
     if (isCallEvent(event.type) && (await passCall(state, callIn(id, event, event.type, (event.content as Json) ?? {})))) seen = true;
   }
   const timeline = (data.timeline as Json | undefined) ?? {};
@@ -605,7 +606,7 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
   for (const event of (timeline.events as Json[] | undefined) ?? []) {
     if (typeof event.state_key === 'string') {
       takeState(room, event);
-      tap(id, event, true);
+      tap(state, id, event, true);
       if (isCallEvent(event.type) && (await passCall(state, callIn(id, event, event.type, (event.content as Json) ?? {})))) seen = true;
       continue;
     }
@@ -684,7 +685,7 @@ async function takeEvent(state: MatrixState, roomId: string, event: Json, older:
     if (relation && !content['m.relates_to']) content = { ...content, 'm.relates_to': relation };
   }
   if (!older) {
-    tap(roomId, { ...event, type, content }, true);
+    tap(state, roomId, { ...event, type, content }, true);
     if (isVerification(type, content)) await passVerification(state, inRoom(roomId, event, type, content));
     // A call's events show as its line, which the calls keep (lib/matrix-calls.ts).
     if (isCallEvent(type)) await passCall(state, callIn(roomId, event, type, content));

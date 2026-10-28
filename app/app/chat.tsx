@@ -11,6 +11,7 @@ import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
 import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
+import { inMatrixCall, onMatrixCallChange } from '../lib/matrix-calls';
 import { callPermissions } from '../lib/call-permissions';
 import { CALL_LINE, callLineMessage, callSignal, endCallsOf, onCallChange, startCall as beginCall, type CallPlace } from '../lib/calls';
 import { shownLine } from '../lib/call-lines';
@@ -435,12 +436,14 @@ export default function ChatScreen() {
           onCallChange: (listener) => {
             const stopCall = onCallChange(listener);
             const stopGroupCall = onGroupCallChange(listener);
+            const stopMatrixCall = onMatrixCallChange(listener);
             return () => {
               stopCall();
               stopGroupCall();
+              stopMatrixCall();
             };
           },
-          inCall: () => !!(currentCall() || currentGroupCall()),
+          inCall: () => !!(currentCall() || currentGroupCall()) || inMatrixCall(),
           picking: isPicking,
         },
       ),

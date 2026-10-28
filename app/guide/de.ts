@@ -2349,8 +2349,10 @@ löschen, was die weggenommenen Plätze enthalten.
   verschlüsselt aufbewahrt, und nichts davon zeigt sich außerhalb der versteckten Chats: Ihre Chats stehen nur in der
   Liste der versteckten Chats und zählen weder in der Zahl auf dem Symbol von Erevos noch in der Startliste mit. Die
   Konten verbinden sich nur, solange die versteckten Chats offen sind; sind sie geschlossen, kommt nichts an und keine
-  Benachrichtigung erscheint, auch mit **Empfangen, wenn geschlossen**. Es gibt keine Anrufe, und ein Matrix-Konto hat
-  kein **Neue Nachrichten melden**.
+  Benachrichtigung erscheint, auch mit **Empfangen, wenn geschlossen**. Ihre Chats rufen an wie die des Bereichs, vom
+  eigenen Konto der versteckten Chats; ein Anruf an dieses klingelt nur, solange die versteckten Chats offen sind, mit
+  dem Klingelton des Telefons, und sie bleiben offen, bis er endet. Ein Matrix-Konto von ihnen hat kein **Neue
+  Nachrichten melden**.
 - **Linkvorschauen** haben einen eigenen Schalter in den Details eines versteckten Chats, für alle Chats dieses
   Platzes, aus, solange du ihn nicht einschaltest (siehe **Linkvorschauen** unter [Chat über ein Relay](#relay)).
 - **Melden, wenn eine Nachricht kommt** (Android): oben auf einem Platz, solange **Empfangen, wenn geschlossen** aus

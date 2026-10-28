@@ -50,8 +50,9 @@ import { useColors } from '../theme/context';
 // one through the server's HTTP upload, encrypted as the chat is (lib/xmpp-files.ts). The keys of
 // their devices are listed below, to compare with them. The two tiles at the top call them
 // (lib/xmpp-calls.ts), on the same call screen as Erevos's own calls. Opened from a hidden place's
-// hidden chats (`hidden=1`) it is the place's own account's chat (lib/network-place.ts): no call
-// tiles and no notifications, as a place's chats tell nothing outside the hidden chats.
+// hidden chats (`hidden=1`) it is the place's own account's chat (lib/network-place.ts), whose
+// calls are that account's, and no notifications, as a place's chats tell nothing outside the
+// hidden chats.
 //
 // A group (lib/xmpp-muc.ts) is the same screen with its own words: its name and address, whether
 // it is encrypted (a private group is, to every member; a channel is not), whether we are in it
@@ -168,7 +169,7 @@ export default function XmppChatScreen() {
       setNote(video ? t('A video call needs the camera and the microphone.') : t('A call needs the microphone.'));
       return;
     }
-    await startXmppCall(jid, video, rtc).catch(fail);
+    await startXmppCall(jid, video, rtc, where === 'place').catch(fail);
   }
 
   const name = nameOf(state, jid);
@@ -190,7 +191,7 @@ export default function XmppChatScreen() {
         <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
           {name}
         </Text>
-        {room || where === 'place' ? null : (
+        {room ? null : (
           <>
             <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
               <VideoSign />
